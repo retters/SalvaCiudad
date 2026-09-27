@@ -314,6 +314,9 @@ Se documenta en `docs/DETERMINISMO.md` y se verifica con pruebas:
 
 - Gigante y Colosal se agregaron después de la fase 20 (fase 21); piden mucha más memoria y tiempo de generación (ver `docs/RENDIMIENTO.md`).
 - **Islas** (fase 22): un tipo de mapa en el que el mar rodea islas. Se configura cuántas islas hay por pueblo: con 2 pueblos y 3 islas por pueblo hay 6 islas. Cada pueblo empieza en una isla propia.
+- **Archipiélagos** (fase 25): cada pueblo tiene una isla principal y sus islas secundarias, más pequeñas, alrededor; todas de contorno irregular.
+- **Costas** (fase 26): los demás tipos de mapa pueden tener mar en uno o dos lados ("Mar": sin mar, a veces o siempre), con golfos, bahías, penínsulas, cabos, islotes y estrechos; bajo el mar puede haber fosas y dorsales.
+- **Accidentes del terreno** (fase 27): mesetas, valles, cordilleras y cañones, más o menos frecuentes según "Accidentes del terreno" (pocos, normales o muchos). Ninguno aparece siempre, pero todos pueden aparecer.
 
 - Generación a partir de la semilla, en etapas que a su vez son deterministas: relieve suave (ruido con poca amplitud), ríos que bajan por el relieve hasta lagos o al borde, lagos, humedad, fertilidad del suelo, tipos de suelo, bosques y praderas, piedra, arcilla, mineral de hierro, arbustos de bayas, hierbas, zonas de fauna y posiciones de salida justas para cada jugador.
 - Las etapas y sus parámetros son datos del mod `core` (`mapFeature`), para que un mod pueda agregar rasgos del mapa.
@@ -527,7 +530,13 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - *Criterios:* la configuración sobrevive a reiniciar el juego; un valor inválido en el archivo vuelve al de omisión sin perder los demás; restablecer deja todo como en una instalación nueva.
 24. **Minimapa y brújula.** Minimapa del mundo con los cuatro puntos cardinales, los edificios de cada pueblo y lo que ve la cámara; un clic lleva la cámara ahí. Una brújula en pantalla con una flecha que apunta al norte y gira con la cámara.
    - *Criterios:* el minimapa corresponde al terreno; el clic mueve la cámara al lugar; la flecha apunta al norte con cualquier giro de la cámara.
-25. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+25. **Archipiélagos.** En el mapa de islas, una isla principal por pueblo y las secundarias, más pequeñas, agrupadas a su alrededor; contornos irregulares con bahías, penínsulas y cabos en lugar de círculos.
+   - *Criterios:* sigue habiendo exactamente pueblos × islas por pueblo islas; cada secundaria está más cerca de la principal de su pueblo que de las demás y es más pequeña que ella; las islas son claramente menos redondas que un círculo (prueba de compacidad); la misma semilla da el mismo mapa.
+26. **Costas y fondo marino.** Opción "Mar" (sin mar, a veces, siempre) para los tipos de mapa sin islas: mar en uno o dos lados, con golfos, bahías, penínsulas, cabos e islotes que forman estrechos. Fosas marinas y dorsales oceánicas bajo el mar, también en el mapa de islas.
+   - *Criterios:* con "siempre" hay mar que toca el borde y la tierra conserva al menos la mitad del mapa; con "sin mar" el mapa no cambia; las fosas son más hondas y las dorsales más altas que el fondo que las rodea sin salir del agua; los pueblos empiezan en tierra con sus recursos.
+27. **Accidentes del terreno.** Opción "Accidentes del terreno" (pocos, normales, muchos): mesetas de cima plana con una subida suave, valles anchos, cordilleras y cañones de paredes empinadas que desaguan.
+   - *Criterios:* con "muchos", en varios mapas grandes aparecen los cuatro tipos; la cima de una meseta es plana, un cañón es más hondo que sus bordes y su fondo baja hasta el borde del mapa o el mar; un mapa enorme sigue generándose en menos de 30 s.
+28. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 

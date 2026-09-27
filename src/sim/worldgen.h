@@ -36,7 +36,7 @@ public:
 namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
 // the map (decision D-620).
-inline constexpr std::uint16_t kGeneratorVersion = 3;
+inline constexpr std::uint16_t kGeneratorVersion = 4;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 2;
@@ -49,12 +49,14 @@ inline constexpr std::int32_t kSeaLevelMm = 20000;  // Sea surface, millimeters.
 struct Island {
     std::int32_t x = 0;       // Center, meters.
     std::int32_t z = 0;
-    std::int32_t radius = 0;  // Before its shoreline is bent: land reaches up to 1.2 times this.
+    std::int32_t radius = 0;  // Before its shape is bent: land reaches up to 1.7 times this.
+    std::uint8_t town = 0;    // Whose archipelago.
     bool operator==(const Island&) const = default;
 };
-// Where the islands of a map of `cells` per side go: one home island per
-// town first (the bigger ones, far from each other), then the others; all
-// apart, with sea between them and around the map.
+// Where the islands of a map of `cells` per side go (phase 25): one main
+// island per town first, far from each other, then each town's smaller
+// ones around its main island; all apart, with sea between them and
+// around the map.
 [[nodiscard]] std::vector<Island> island_layout(std::uint64_t seed, std::int32_t cells, std::int32_t towns,
                                                 std::int32_t per_town);
 // How many islands per town fit in a map size so that towns still get

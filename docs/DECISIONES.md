@@ -1230,3 +1230,27 @@ Un disco con una flecha: la mitad roja y la letra N apuntan al norte, y giran co
 
 **D-2405. Imágenes en la interfaz.**
 El dibujo de la interfaz solo tenía el atlas de letras. Ahora un comando de dibujo puede usar una imagen a color que el renderizador guarda por número (la del minimapa es la 1). El sombreador de la interfaz tiene un modo para eso; lo demás se dibuja igual que antes.
+
+## Fase 25: archipiélagos (2026-09-27)
+
+Pedido del 2026-09-27: islas de formas irregulares, en archipiélagos con una isla principal por jugador y secundarias más pequeñas; y en general que los mapas puedan tener golfos, penínsulas, bahías, estrechos, cabos, mesetas, valles, cordilleras, cañones, fosas marinas y dorsales (fases 26 y 27).
+
+**D-2501. Archipiélagos.**
+Cada pueblo tiene una isla principal (peso 5) y sus secundarias (peso 0,8 a 1,8). Las principales se colocan lo más lejos posible entre sí; cada secundaria, alrededor de la principal de su pueblo y siempre más cerca de ella que de las de los demás. Reemplaza el reparto de D-2202, donde las islas "de origen" pesaban 3 y las demás iban donde cupieran.
+
+**D-2502. Formas irregulares.**
+Una isla ya no es un círculo con el borde ondulado. Es un disco deformado por tres campos de ruido:
+- uno mueve cada punto hasta media isla en cada eje: lóbulos, penínsulas y cuellos angostos;
+- otro, de manchas grandes, empuja la costa hacia adentro y hacia afuera: bahías y cabos grandes;
+- un tercero, de manchas chicas: caletas y puntas.
+
+Un núcleo en el centro (un quinto del radio, sin deformar) garantiza que el medio de cada isla es tierra: ahí empieza el pueblo y desde ahí se reconoce la isla. En mapas de prueba, la compacidad de las islas (4π·área/perímetro², que para un disco dibujado en casillas da unos 0,6) queda en promedio entre 0,18 y 0,37.
+
+**D-2503. Canales en lugar de distancia.**
+Para que las islas no se toquen, antes se separaban tanto como su forma podía crecer, y quedaban chicas y lejanas. Ahora cada punto del mar pertenece a la isla más cercana (medida en radios de cada isla), y a lo largo de la línea donde se encuentran dos islas siempre corre un canal de mar de al menos `gap` metros (1/64 del mapa, mínimo 20 m). Así las islas pueden quedar juntas y forman estrechos, y sigue habiendo exactamente las islas pedidas. El mar también rodea el mapa.
+
+**D-2504. Tierra suelta.**
+La tierra que se une a su isla solo por una esquina de casilla contaba como otra isla. Ahora la limpieza de tierra suelta trabaja por casillas (las cuatro esquinas sobre el mar), igual que se recorre y se cuenta el mapa. Además no se cavan lagos en el centro de una isla.
+
+**D-2505. Versión del generador.**
+Los mapas de islas cambian con la misma semilla: el generador pasa a la versión 4 y cambió la suma de verificación del mapa pequeño de referencia. Los demás tipos de mapa salen igual.

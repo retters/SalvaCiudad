@@ -43,51 +43,33 @@ std::int64_t amount_factor(Amount a) {
     return a == Amount::Low ? 1 : (a == Amount::Normal ? 2 : 4);
 }
 
-// Land reaches up to this share (percent) of an island's radius, however
-// its shoreline bends.
-constexpr std::int32_t kIslandReach = 120;
-// The island's slope under the sea reaches this far (percent of the radius).
-constexpr std::int32_t kIslandSkirt = 144;
-constexpr std::int32_t kIslandAngles = 1024;
+// Islands (phases 22 and 25). An island's shape is a disc whose points
+// are moved by a noise field up to half its radius each way (lobes,
+// peninsulas, straits between them) and whose edge is pushed in and out by
+// two more (bays and capes, big and small). A core keeps its middle dry.
+// Land never reaches past this share (percent) of the radius.
+constexpr std::int32_t kIslandReach = 185;
+constexpr std::int32_t kIslandWarp = 50;       // Percent of the radius, each axis.
+constexpr std::int64_t kIslandLobes = 36045;   // 0.55 of the big shape noise, 16.16.
+constexpr std::int64_t kIslandCoves = 19661;   // 0.3 of the small one.
+constexpr std::uint64_t kIslandCoveSeed = 0x49434f5645000021ull;
+constexpr std::uint64_t kIslandWarpX = 0x4957415250580018ull;
+constexpr std::uint64_t kIslandWarpZ = 0x495741525a5a0019ull;
+constexpr std::uint64_t kIslandShape = 0x4953484150450020ull;
 
-// A position around a point, 0..1023 going once around, without
-// trigonometry: 0 east (+x), 256 south (+z), 512 west, 768 north.
-std::int32_t pseudo_angle(std::int64_t dx, std::int64_t dz) {
-    const std::int64_t s = (dx < 0 ? -dx : dx) + (dz < 0 ? -dz : dz);
-    if (s == 0) {
-        return 0;
-    }
-    std::int64_t q = 0;
-    if (dz >= 0) {
-        q = dx >= 0 ? dz * 256 / s : 256 + (-dx) * 256 / s;
-    } else {
-        q = dx < 0 ? 512 + (-dz) * 256 / s : 768 + dx * 256 / s;
-    }
-    return static_cast<std::int32_t>(q) & (kIslandAngles - 1);
-}
+}  // namespace
 
-// How far an island's shoreline reaches in each direction: a smooth loop
-// of values in [-32768, 32767], from three layers of value noise.
-std::vector<std::int16_t> shoreline(std::uint64_t seed) {
-    std::vector<std::int16_t> out(kIslandAngles);
-    const auto layer = [&](std::int32_t points, std::uint64_t salt, std::int32_t q) {
-        const std::int32_t pos = q * points;  // In 1/1024 of a point.
-        const std::int32_t i = pos / kIslandAngles;
-        const std::int64_t f = pos % kIslandAngles;
-        const auto value = [&](std::int32_t k) {
-            return static_cast<std::int64_t>(static_cast<std::int16_t>(mix64(seed ^ salt ^ static_cast<std::uint64_t>(k % points)) & 0xFFFF));
-        };
-        const std::int64_t a = value(i);
-        const std::int64_t b = value(i + 1);
-        const std::int64_t smooth = f * f * (3 * kIslandAngles - 2 * f) / (static_cast<std::int64_t>(kIslandAngles) * kIslandAngles);
-        return a + (b - a) * smooth / kIslandAngles;
-    };
-    for (std::int32_t q = 0; q < kIslandAngles; ++q) {
-        const std::int64_t v = (layer(6, 1, q) * 4 + layer(13, 2, q) * 2 + layer(29, 3, q)) / 7;
-        out[static_cast<std::size_t>(q)] = static_cast<std::int16_t>(std::clamp<std::int64_t>(v, -32768, 32767));
-    }
-    return out;
-}
+namespace worldgen {
+namespace {
+std::int32_t island_edge(std::int32_t cells);
+std::int32_t island_gap(std::int32_t cells);
+}  // namespace
+}  // namespace worldgen
+
+namespace {
+
+using worldgen::island_edge;
+using worldgen::island_gap;
 
 class Generator {
 public:
@@ -199,6 +181,9 @@ private:
             const std::int32_t cz = rng_.range(margin, n_ - margin);
             const std::int32_t r = rng_.range(35, 110);
             const std::int64_t depth = rng_.range(2500, 5000);
+            if (!islands_.empty() && near_island_middle(cx, cz)) {
+                continue;
+            }
             // One to three overlapping lobes, each with a shoreline bent by
             // noise: irregular lakes with bays and points.
             const std::int32_t lobes = rng_.range(1, 3);
@@ -243,18 +228,15 @@ private:
     // Raises the islands out of the sea: land keeps the relief it had, the
     // rest drops to the sea floor, with a sloping shore between them.
     bool shape_islands(std::int64_t amp) {
-        std::vector<std::vector<std::int16_t>> shores;
-        shores.reserve(islands_.size());
-        for (std::size_t i = 0; i < islands_.size(); ++i) {
-            shores.push_back(shoreline(s_.seed ^ kCoastSeed ^ (static_cast<std::uint64_t>(i) << 40)));
-        }
         // Islands by blocks of the map, to test only the nearby ones.
         constexpr std::int32_t kBlock = 256;
         const std::int32_t blocks = (v_ + kBlock - 1) / kBlock;
         std::vector<std::vector<std::uint16_t>> near(static_cast<std::size_t>(blocks) * static_cast<std::size_t>(blocks));
+        std::int32_t biggest = 1;
         for (std::size_t i = 0; i < islands_.size(); ++i) {
             const Island& is = islands_[i];
-            const std::int32_t reach = is.radius * kIslandSkirt / 100 + 1;
+            biggest = std::max(biggest, is.radius);
+            const std::int32_t reach = is.radius * kIslandReach / 100 + 2;
             for (std::int32_t bz = std::max(0, (is.z - reach) / kBlock); bz <= std::min(blocks - 1, (is.z + reach) / kBlock); ++bz) {
                 for (std::int32_t bx = std::max(0, (is.x - reach) / kBlock); bx <= std::min(blocks - 1, (is.x + reach) / kBlock);
                      ++bx) {
@@ -262,40 +244,92 @@ private:
                 }
             }
         }
+        // Noise features about half the size of the main islands.
+        std::int32_t cell = 4;
+        while (cell < 11 && (1 << (cell + 1)) <= biggest * 2 / 3) {
+            ++cell;
+        }
         const std::int64_t spread = amp * 3 / 2;  // How far the relief goes below its middle.
+        const auto smooth = [](std::int64_t u) { return (((u * u) >> 16) * (3 * 65536 - 2 * u)) >> 16; };
+        const std::int32_t gap = island_gap(n_);
+        const std::int32_t edge = island_edge(n_);
         for (std::int32_t z = 0; z < v_; ++z) {
             for (std::int32_t x = 0; x < v_; ++x) {
-                // How far into the nearest island, as squared distance over
-                // squared radius (65536 = the shore).
-                std::int64_t t = INT64_MAX;
-                for (const std::uint16_t i : near[static_cast<std::size_t>((z / kBlock) * blocks + x / kBlock)]) {
-                    const Island& is = islands_[i];
-                    const std::int64_t dx = x - is.x;
-                    const std::int64_t dz = z - is.z;
-                    const std::int64_t r2 = static_cast<std::int64_t>(is.radius) * is.radius;
-                    const std::int64_t d2 = dx * dx + dz * dz;
-                    if (d2 * 10000 >= r2 * kIslandSkirt * kIslandSkirt) {
-                        continue;
+                const std::vector<std::uint16_t>& here = near[static_cast<std::size_t>((z / kBlock) * blocks + x / kBlock)];
+                // How far inland, 16.16: above 0 is land, 0 the shore.
+                std::int64_t c = INT64_MIN;
+                if (!here.empty()) {
+                    const std::int64_t ux = fbm(s_.seed ^ kIslandWarpX, x, z, cell, 3);
+                    const std::int64_t uz = fbm(s_.seed ^ kIslandWarpZ, x, z, cell, 3);
+                    const std::int64_t shape = fbm(s_.seed ^ kIslandShape, x, z, cell, 3) * kIslandLobes / 32768 +
+                                               fbm(s_.seed ^ kIslandCoveSeed, x, z, cell - 2, 3) * kIslandCoves / 32768;
+                    // Each point belongs to the island it is nearest to,
+                    // measured in radii along the bent positions; between
+                    // two islands a channel of sea always runs.
+                    std::int64_t t1 = INT64_MAX;  // Squared distance in radii, 16.16.
+                    std::int64_t t2 = INT64_MAX;
+                    std::size_t owner = 0;
+                    std::size_t second = 0;
+                    for (const std::uint16_t i : here) {
+                        const Island& is = islands_[i];
+                        const std::int64_t r = is.radius;
+                        // In sixteenths of a meter.
+                        const std::int64_t dx = x * 16 + ux * r * 16 * kIslandWarp / (100 * 32768) - is.x * 16;
+                        const std::int64_t dz = z * 16 + uz * r * 16 * kIslandWarp / (100 * 32768) - is.z * 16;
+                        const std::int64_t t = (dx * dx + dz * dz) * 65536 / (r * r * 256);
+                        if (t < t1) {
+                            t2 = t1;
+                            second = owner;
+                            t1 = t;
+                            owner = i;
+                        } else if (t < t2) {
+                            t2 = t;
+                            second = i;
+                        }
                     }
-                    // The shoreline bends the distance by up to 30 %, by
-                    // direction only, so every island is one piece.
-                    const std::int64_t warp = shores[i][static_cast<std::size_t>(pseudo_angle(dx, dz))];
-                    t = std::min(t, d2 * 65536 / r2 * (65536 + warp * 19661 / 32768) / 65536);
+                    const Island& is = islands_[owner];
+                    const std::int64_t r = is.radius;
+                    c = 65536 - t1 + shape;
+                    // Past 1.1 times the radius the sea wins fast: land
+                    // stays within kIslandReach.
+                    if (t1 > 72090) {
+                        c -= (t1 - 72090) * 3;
+                    }
+                    // The core: within a fifth of the radius (not bent), up
+                    // to 1.5 more, so the middle is always dry.
+                    const std::int64_t mx = x - is.x;
+                    const std::int64_t mz = z - is.z;
+                    const std::int64_t core = 65536 - (mx * mx + mz * mz) * 25 * 65536 / (r * r);
+                    if (core > 0) {
+                        c += core * 3 / 2;
+                    }
+                    // The channel: about how far from the line where the
+                    // two nearest islands meet, in meters (16.16); the sea
+                    // takes the `gap` around it.
+                    if (t2 != INT64_MAX) {
+                        const std::int64_t q1 = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(t1) << 16));
+                        const std::int64_t q2 = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(t2) << 16));
+                        const std::int64_t r_min = std::min<std::int64_t>(r, islands_[second].radius);
+                        const std::int64_t apart = (q2 - q1) * r_min / 2;
+                        c = std::min(c, (apart - static_cast<std::int64_t>(gap) * 32768) / std::max(8, gap));
+                    }
                 }
-                const auto smooth = [](std::int64_t u) { return (((u * u) >> 16) * (3 * 65536 - 2 * u)) >> 16; };
+                // Sea all around the map.
+                const std::int64_t border = std::min({x, z, v_ - 1 - x, v_ - 1 - z});
+                c = std::min(c, (border - edge) * 65536 / std::max(8, edge));
                 const std::int64_t rel = h_[vi(x, z)] - 20000;
                 const std::int64_t sea = std::clamp<std::int64_t>(kSeaLevelMm - 6000 + rel / 8, kSeaLevelMm - 9000,
                                                                   kSeaLevelMm - 2000);
                 const std::int64_t top = kSeaLevelMm + 800 + std::max<std::int64_t>(0, rel + spread) / 2;
                 std::int64_t h = sea;
-                if (t < 65536) {
-                    // Land: from a beach just above the sea, up gently over
-                    // the outer 70 % to the island's own relief.
-                    const std::int64_t u = std::min<std::int64_t>(65536, (65536 - t) * 65536 / 45875);
+                if (c > 0) {
+                    // Land: from a beach just above the sea, up gently to
+                    // the island's own relief.
+                    const std::int64_t u = std::min<std::int64_t>(65536, c * 65536 / 45875);
                     h = kSeaLevelMm + 100 + (((top - kSeaLevelMm - 100) * smooth(u)) >> 16);
-                } else if (t < 65536 * 144 / 100) {
+                } else if (c > -28836) {
                     // Under the sea: down to the sea floor.
-                    const std::int64_t u = (t - 65536) * 65536 / (65536 * 44 / 100);
+                    const std::int64_t u = -c * 65536 / 28836;
                     h = kSeaLevelMm - 100 - (((kSeaLevelMm - 100 - sea) * smooth(u)) >> 16);
                 }
                 h_[vi(x, z)] = static_cast<std::int32_t>(h);
@@ -307,40 +341,67 @@ private:
         return true;
     }
 
+    // Whether a point is near the middle of an island (no lake basin
+    // there, so the island stays whole).
+    [[nodiscard]] bool near_island_middle(std::int32_t x, std::int32_t z) const {
+        return std::any_of(islands_.begin(), islands_.end(), [&](const Island& is) {
+            const std::int64_t dx = x - is.x;
+            const std::int64_t dz = z - is.z;
+            return dx * dx + dz * dz < static_cast<std::int64_t>(is.radius) * is.radius * 4 / 9;
+        });
+    }
+
     // Land cut off from its island (by a lake at the shore, say) sinks, so
     // the map has exactly the islands it was asked for.
     void sink_strays() {
-        std::vector<std::uint8_t> kept(h_.size(), 0);
+        // By cells, as the map is walked and counted: a cell is dry when
+        // its four corners are above the sea. Land touching an island only
+        // at a corner is a piece of its own.
+        const auto dry = [&](std::int32_t cx, std::int32_t cz) {
+            return h_[vi(cx, cz)] >= kSeaLevelMm && h_[vi(cx + 1, cz)] >= kSeaLevelMm &&
+                   h_[vi(cx, cz + 1)] >= kSeaLevelMm && h_[vi(cx + 1, cz + 1)] >= kSeaLevelMm;
+        };
+        std::vector<std::uint8_t> kept(static_cast<std::size_t>(n_) * static_cast<std::size_t>(n_), 0);
         std::vector<std::uint32_t> queue;
-        const auto keep = [&](std::int32_t x, std::int32_t z) {
-            if (x < 0 || z < 0 || x >= v_ || z >= v_) {
+        const auto keep = [&](std::int32_t cx, std::int32_t cz) {
+            if (cx < 0 || cz < 0 || cx >= n_ || cz >= n_) {
                 return;
             }
-            const std::size_t v = vi(x, z);
-            if (kept[v] == 0 && h_[v] >= kSeaLevelMm) {
-                kept[v] = 1;
-                queue.push_back(static_cast<std::uint32_t>(v));
+            const std::size_t c = ci(cx, cz);
+            if (kept[c] == 0 && dry(cx, cz)) {
+                kept[c] = 1;
+                queue.push_back(static_cast<std::uint32_t>(c));
             }
         };
-        // Each island is the land around its middle.
+        // Each island is the land around its middle, which its shape keeps
+        // dry within an eighth of its radius.
         for (const Island& is : islands_) {
-            const std::int32_t r = std::max(1, is.radius / 3);
-            for (std::int32_t z = is.z - r; z <= is.z + r; ++z) {
-                for (std::int32_t x = is.x - r; x <= is.x + r; ++x) {
+            const std::int32_t r = std::max(1, is.radius / 8);
+            for (std::int32_t z = is.z - r; z < is.z + r; ++z) {
+                for (std::int32_t x = is.x - r; x < is.x + r; ++x) {
                     keep(x, z);
                 }
             }
         }
         for (std::size_t q = 0; q < queue.size(); ++q) {
-            const std::int32_t x = static_cast<std::int32_t>(queue[q] % static_cast<std::uint32_t>(v_));
-            const std::int32_t z = static_cast<std::int32_t>(queue[q] / static_cast<std::uint32_t>(v_));
+            const std::int32_t x = static_cast<std::int32_t>(queue[q] % static_cast<std::uint32_t>(n_));
+            const std::int32_t z = static_cast<std::int32_t>(queue[q] / static_cast<std::uint32_t>(n_));
             keep(x - 1, z);
             keep(x + 1, z);
             keep(x, z - 1);
             keep(x, z + 1);
         }
+        // Every corner of a kept cell stays; any other land sinks.
+        std::vector<std::uint8_t> stays(h_.size(), 0);
+        for (std::int32_t cz = 0; cz < n_; ++cz) {
+            for (std::int32_t cx = 0; cx < n_; ++cx) {
+                if (kept[ci(cx, cz)] != 0) {
+                    stays[vi(cx, cz)] = stays[vi(cx + 1, cz)] = stays[vi(cx, cz + 1)] = stays[vi(cx + 1, cz + 1)] = 1;
+                }
+            }
+        }
         for (std::size_t v = 0; v < h_.size(); ++v) {
-            if (kept[v] == 0 && h_[v] >= kSeaLevelMm) {
+            if (stays[v] == 0 && h_[v] >= kSeaLevelMm) {
                 h_[v] = kSeaLevelMm - 1000;
             }
         }
@@ -1392,7 +1453,7 @@ std::int32_t island_gap(std::int32_t cells) {
 }
 // Area an island takes with the sea it needs around it (about pi r^2).
 std::int64_t island_footprint(std::int32_t radius, std::int32_t gap) {
-    const std::int64_t reach = static_cast<std::int64_t>(radius) * kIslandReach / 100 + gap / 2;
+    const std::int64_t reach = static_cast<std::int64_t>(radius) + gap / 2;
     return reach * reach * 22 / 7;
 }
 
@@ -1401,75 +1462,115 @@ std::int64_t island_footprint(std::int32_t radius, std::int32_t gap) {
 std::vector<Island> island_layout(std::uint64_t seed, std::int32_t cells, std::int32_t towns, std::int32_t per_town) {
     towns = std::max(1, towns);
     per_town = std::clamp(per_town, 1, static_cast<std::int32_t>(kMaxIslandsPerTown));
-    const std::int32_t count = towns * per_town;
     Rng rng(seed ^ kIslandSeed, 11);
-    // Home islands weigh 3, the others 1 to 2; about 40 % of the map is land.
-    std::vector<std::int64_t> weight(static_cast<std::size_t>(count), 300);
-    for (std::int32_t i = towns; i < count; ++i) {
-        weight[static_cast<std::size_t>(i)] = rng.range(100, 200);
+    // Archipelagos: each town's main island weighs 5, its others 0.8 to
+    // 1.8, biggest first. The discs cover 60 % of the map; with their bent
+    // shapes about a third of it is land.
+    struct Wanted {
+        std::int64_t weight = 0;
+        std::uint8_t town = 0;
+    };
+    std::vector<Wanted> wanted;
+    for (std::int32_t t = 0; t < towns; ++t) {
+        wanted.push_back({500, static_cast<std::uint8_t>(t)});
     }
-    // The others biggest first, so they find room.
-    std::sort(weight.begin() + towns, weight.end(), std::greater<>());
+    for (std::int32_t t = 0; t < towns; ++t) {
+        std::vector<std::int64_t> w;
+        for (std::int32_t k = 1; k < per_town; ++k) {
+            w.push_back(rng.range(80, 180));
+        }
+        std::sort(w.begin(), w.end(), std::greater<>());
+        for (const std::int64_t v : w) {
+            wanted.push_back({v, static_cast<std::uint8_t>(t)});
+        }
+    }
     std::int64_t total = 0;
-    for (const std::int64_t w : weight) {
-        total += w;
+    for (const Wanted& w : wanted) {
+        total += w.weight;
     }
-    const std::int64_t land = static_cast<std::int64_t>(cells) * cells * 40 / 100;
-    std::vector<std::int32_t> radius(static_cast<std::size_t>(count));
+    const std::int64_t land = static_cast<std::int64_t>(cells) * cells * 60 / 100;
+    std::vector<std::int32_t> radius(wanted.size());
     for (std::size_t i = 0; i < radius.size(); ++i) {
         radius[i] = std::max<std::int32_t>(
-            12, static_cast<std::int32_t>(isqrt(static_cast<std::uint64_t>(weight[i] * land * 7 / (total * 22)))));
+            12, static_cast<std::int32_t>(isqrt(static_cast<std::uint64_t>(wanted[i].weight * land * 7 / (total * 22)))));
     }
     const std::int32_t edge = island_edge(cells);
     const std::int32_t gap = island_gap(cells);
+    // The discs may not overlap; the channels between the islands keep them apart.
+    const auto reach_of = [](std::int32_t r) { return static_cast<std::int64_t>(r); };
     std::vector<Island> out;
     // Placed one by one where they fit; if some island finds no room, all
     // shrink a little and the placement starts over.
     for (int round = 0; round < 60; ++round) {
         out.clear();
         bool ok = true;
-        for (std::int32_t i = 0; i < count && ok; ++i) {
-            const std::int32_t r = radius[static_cast<std::size_t>(i)];
-            const std::int32_t reach = r * kIslandReach / 100;
-            const std::int32_t lo = edge + reach;
-            const std::int32_t hi = cells - edge - reach;
+        for (std::size_t i = 0; i < wanted.size() && ok; ++i) {
+            const std::int32_t r = radius[i];
+            const std::int64_t reach = reach_of(r);
+            const std::int64_t lo = edge + reach;
+            const std::int64_t hi = cells - edge - reach;
             if (lo > hi) {
                 ok = false;
                 break;
             }
-            const bool home = i < towns;
-            bool found = false;
-            Island best;
-            std::int64_t best_score = -1;
-            for (int t = 0; t < (home ? 48 : 160); ++t) {
-                const Island c{rng.range(lo, hi), rng.range(lo, hi), r};
-                bool fits = true;
-                std::int64_t nearest_home = INT64_MAX;
-                for (std::size_t j = 0; j < out.size() && fits; ++j) {
-                    const Island& o = out[j];
+            const bool main = static_cast<std::int32_t>(i) < towns;
+            const auto fits = [&](const Island& c) {
+                if (c.x < lo || c.x > hi || c.z < lo || c.z > hi) {
+                    return false;
+                }
+                return std::all_of(out.begin(), out.end(), [&](const Island& o) {
                     const std::int64_t dx = c.x - o.x;
                     const std::int64_t dz = c.z - o.z;
-                    const std::int64_t d2 = dx * dx + dz * dz;
-                    const std::int64_t apart = reach + static_cast<std::int64_t>(o.radius) * kIslandReach / 100 + gap;
-                    fits = d2 >= apart * apart;
-                    if (static_cast<std::int32_t>(j) < towns) {
-                        nearest_home = std::min(nearest_home, d2);
+                    const std::int64_t apart = reach + reach_of(o.radius) + gap;
+                    return dx * dx + dz * dz >= apart * apart;
+                });
+            };
+            const auto d2 = [](const Island& a, const Island& b) {
+                return static_cast<std::int64_t>(a.x - b.x) * (a.x - b.x) + static_cast<std::int64_t>(a.z - b.z) * (a.z - b.z);
+            };
+            bool found = false;
+            Island best;
+            if (main) {
+                // Main islands as far from each other as they can.
+                std::int64_t best_score = -1;
+                for (int t = 0; t < 48; ++t) {
+                    const Island c{rng.range(static_cast<std::int32_t>(lo), static_cast<std::int32_t>(hi)),
+                                   rng.range(static_cast<std::int32_t>(lo), static_cast<std::int32_t>(hi)), r, wanted[i].town};
+                    if (!fits(c)) {
+                        continue;
+                    }
+                    std::int64_t nearest = INT64_MAX;
+                    for (const Island& o : out) {
+                        nearest = std::min(nearest, d2(c, o));
+                    }
+                    if (nearest > best_score) {
+                        best_score = nearest;
+                        best = c;
+                        found = true;
                     }
                 }
-                if (!fits) {
-                    continue;
-                }
-                // Homes as far from each other as they can; the others
-                // wherever they fit first.
-                if (!home) {
-                    best = c;
-                    found = true;
-                    break;
-                }
-                if (nearest_home > best_score) {
-                    best_score = nearest_home;
-                    best = c;
-                    found = true;
+            } else {
+                // The others around their town's main island, nearer to it
+                // than to any other main island.
+                const Island& home = out[wanted[i].town];
+                const std::int64_t ring = reach_of(home.radius) + reach + gap;
+                for (int t = 0; t < 160 && !found; ++t) {
+                    const Angle a = rng.angle();
+                    const std::int64_t d = ring + rng.range(0, std::max(gap, home.radius / 2) * (1 + t / 40));
+                    const Island c{home.x + (cos(a) * Fixed::from_int(static_cast<std::int32_t>(d))).floor_int(),
+                                   home.z + (sin(a) * Fixed::from_int(static_cast<std::int32_t>(d))).floor_int(), r,
+                                   wanted[i].town};
+                    if (!fits(c)) {
+                        continue;
+                    }
+                    bool own = true;
+                    for (std::int32_t m = 0; m < towns && own; ++m) {
+                        own = m == wanted[i].town || d2(c, out[static_cast<std::size_t>(m)]) > d2(c, home);
+                    }
+                    if (own) {
+                        best = c;
+                        found = true;
+                    }
                 }
             }
             if (!found) {
@@ -1489,12 +1590,12 @@ std::vector<Island> island_layout(std::uint64_t seed, std::int32_t cells, std::i
 }
 
 std::int32_t max_islands_per_town(MapSize size, std::int32_t towns) {
-    // Room for a town: a home island of 110 m at least; the others 45 m.
+    // Room for a town: a main island of 110 m at least; the others 40 m.
     const std::int32_t cells = map_cells(size);
     const std::int32_t gap = island_gap(cells);
     const std::int64_t budget = static_cast<std::int64_t>(cells) * cells * 35 / 100;
     const std::int64_t home = island_footprint(110, gap);
-    const std::int64_t other = island_footprint(45, gap);
+    const std::int64_t other = island_footprint(40, gap);
     towns = std::max(1, towns);
     for (std::int32_t k = kMaxIslandsPerTown; k > 1; --k) {
         if (towns * home + towns * (k - 1) * other <= budget) {

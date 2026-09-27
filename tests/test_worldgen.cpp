@@ -150,7 +150,7 @@ std::vector<std::int32_t> island_ids(const MapData& m, std::int32_t& count) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0xee1b6d3d04290585ull;
+constexpr std::uint64_t kGoldenSmallMap = 0xf8a930e6954b4446ull;
 
 }  // namespace
 
@@ -364,24 +364,34 @@ TEST_SUITE("worldgen") {
         }
     }
 
-    TEST_CASE("island layouts: the islands asked for, apart and inside the map") {
+    TEST_CASE("island layouts: archipelagos, apart and inside the map") {
         for (const auto& [cells, towns, per_town] : {std::tuple{1024, 1, 1}, std::tuple{1024, 2, 3}, std::tuple{2048, 4, 4},
                                                      std::tuple{4096, 12, 8}, std::tuple{512, 1, 1}}) {
             const std::vector<worldgen::Island> a = worldgen::island_layout(7, cells, towns, per_town);
             CHECK(a == worldgen::island_layout(7, cells, towns, per_town));
             REQUIRE(a.size() == static_cast<std::size_t>(towns * per_town));
             for (std::size_t i = 0; i < a.size(); ++i) {
-                const std::int32_t reach = a[i].radius * 120 / 100;
-                CHECK(a[i].x - reach >= 16);
-                CHECK(a[i].z - reach >= 16);
-                CHECK(a[i].x + reach <= cells - 16);
-                CHECK(a[i].z + reach <= cells - 16);
-                if (i > 0 && static_cast<std::int32_t>(i) < towns) {
-                    CHECK(a[i].radius <= a[0].radius);  // Homes are alike.
-                }
+                const bool main = static_cast<std::int32_t>(i) < towns;
+                CHECK(a[i].x - a[i].radius >= 16);
+                CHECK(a[i].z - a[i].radius >= 16);
+                CHECK(a[i].x + a[i].radius <= cells - 16);
+                CHECK(a[i].z + a[i].radius <= cells - 16);
+                CHECK(a[i].town == (main ? i : a[i].town));
+                // The discs never overlap; channels keep the shapes apart.
                 for (std::size_t j = 0; j < i; ++j) {
                     const double d = std::hypot(a[i].x - a[j].x, a[i].z - a[j].z);
-                    CHECK(d >= (a[i].radius + a[j].radius) * 1.2);
+                    CHECK(d >= a[i].radius + a[j].radius);
+                }
+                if (!main) {
+                    // Smaller than its main island, and nearer to it than to any other.
+                    const worldgen::Island& home = a[a[i].town];
+                    CHECK(a[i].radius < home.radius);
+                    const double own = std::hypot(a[i].x - home.x, a[i].z - home.z);
+                    for (std::int32_t t = 0; t < towns; ++t) {
+                        if (t != a[i].town) {
+                            CHECK(own < std::hypot(a[i].x - a[static_cast<std::size_t>(t)].x, a[i].z - a[static_cast<std::size_t>(t)].z));
+                        }
+                    }
                 }
             }
         }
@@ -430,6 +440,55 @@ TEST_SUITE("worldgen") {
             // The sea surrounds the map.
             CHECK(m->water_at(0, 0));
             CHECK(m->water_at(m->size - 1, m->size / 2));
+        }
+    }
+
+    TEST_CASE("islands are irregular, the main ones bigger") {
+        for (const std::uint64_t seed : {21u, 22u, 23u}) {
+            MapSettings s = settings(seed, MapSize::Medium, 2);
+            s.map_type = map_type("islands");
+            s.islands = 3;
+            const auto m = gen(s);
+            REQUIRE(m.has_value());
+            std::int32_t count = 0;
+            const std::vector<std::int32_t> id = island_ids(*m, count);
+            REQUIRE(count == 6);
+            // Area and shoreline (cell edges between land and sea) of each.
+            std::vector<double> area(static_cast<std::size_t>(count), 0.0);
+            std::vector<double> shore(static_cast<std::size_t>(count), 0.0);
+            const std::int32_t n = m->size;
+            for (std::int32_t z = 0; z < n; ++z) {
+                for (std::int32_t x = 0; x < n; ++x) {
+                    const std::int32_t k = id[static_cast<std::size_t>(z * n + x)];
+                    if (k < 0) {
+                        continue;
+                    }
+                    area[static_cast<std::size_t>(k)] += 1.0;
+                    for (const auto& [nx, nz] : {std::pair{x + 1, z}, std::pair{x - 1, z}, std::pair{x, z + 1}, std::pair{x, z - 1}}) {
+                        if (nx < 0 || nz < 0 || nx >= n || nz >= n || id[static_cast<std::size_t>(nz * n + nx)] != k) {
+                            shore[static_cast<std::size_t>(k)] += 1.0;
+                        }
+                    }
+                }
+            }
+            // A disc drawn in cells scores about 0.6 (its staircase shore is
+            // 4/pi longer); bays and peninsulas bring it well down.
+            double mean = 0.0;
+            for (std::int32_t k = 0; k < count; ++k) {
+                const double compact = 4.0 * 3.14159265 * area[static_cast<std::size_t>(k)] /
+                                       (shore[static_cast<std::size_t>(k)] * shore[static_cast<std::size_t>(k)]);
+                CHECK(compact < 0.55);
+                mean += compact / count;
+            }
+            MESSAGE("seed " << seed << ": mean compactness " << mean);
+            CHECK(mean < 0.4);
+            // Each town starts on the biggest island of its archipelago.
+            for (const StartPosition& st : m->starts) {
+                const std::int32_t home = id[static_cast<std::size_t>(st.z.floor_int() * n + st.x.floor_int())];
+                REQUIRE(home >= 0);
+                const double biggest = *std::max_element(area.begin(), area.end());
+                CHECK(area[static_cast<std::size_t>(home)] >= biggest * 0.35);
+            }
         }
     }
 

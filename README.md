@@ -328,6 +328,12 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] A la izquierda del minimapa, la brújula: al girar la cámara con Q y E, la flecha roja sigue apuntando al norte del minimapa.
 - [ ] Al seleccionar un edificio o un aldeano, su ventana se abre debajo del minimapa.
 
+### Fase 25 (archipiélagos)
+
+- [ ] En un mapa de islas, cada pueblo tiene una isla principal grande y sus secundarias, más chicas, cerca de ella.
+- [ ] Las islas tienen formas irregulares: bahías, penínsulas, cabos y estrechos entre islas cercanas; ninguna parece un círculo.
+- [ ] Sigue habiendo exactamente pueblos × islas por pueblo islas, y ninguna se une a otra.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

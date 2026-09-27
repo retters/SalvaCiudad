@@ -341,4 +341,3 @@ TEST_SUITE("minimap") {
         CHECK(minimap::render(*m) == img);
     }
 }
-
