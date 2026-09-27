@@ -312,6 +312,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con Ctrl+F3 → Pueblo → "Traer asaltantes ahora", llegan desembarcando en la costa de la isla.
 - [ ] En versus de 2 jugadores con islas, al ordenar atacar, el ejército desaparece y aparece después en la costa de la isla rival.
 
+### Fase 23 (partida nueva recordada)
+
+- [ ] Cambiar opciones en "Partida nueva", volver al menú y entrar otra vez: siguen igual, salvo la semilla, que es nueva.
+- [ ] Cerrar el juego y abrirlo: la partida nueva sigue recordando lo elegido.
+- [ ] "Restablecer" deja todo como en una instalación nueva y no cambia la semilla.
+- [ ] Con un tipo de mapa de un mod que después se desactiva, la partida nueva vuelve a "Clásico" sin perder el resto.
+- [ ] El juego se cierra sin error (antes, a veces Windows registraba un fallo al cerrar).
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

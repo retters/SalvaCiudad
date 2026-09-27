@@ -290,4 +290,57 @@ TEST_SUITE("settings") {
         CHECK(r.ignored_fields == 1);
         CHECK(s.ui.windows.empty());
     }
+
+    TEST_CASE("the last new game round-trips") {
+        test::TempDir dir;
+        NewGameSettings n;
+        n.size = "colossal";
+        n.map_type = "core:islands";
+        n.biome = "core:pinewood";
+        n.islands = 5;
+        n.water = "high";
+        n.forests = "low";
+        n.resources = "high";
+        n.relief = "mountainous";
+        n.players = 7;
+        n.seasons = 0b1000;
+        n.year = "long";
+        n.winter = "harsh";
+        n.start = "plenty";
+        n.diseases = "none";
+        n.fires = "brutal";
+        n.raiders = "low";
+        n.wildlife = "high";
+        n.race = "mixed";
+        n.other_races = 50;
+        n.max_population = 350;
+        {
+            SettingsStore store(dir / "settings.json");
+            (void)store.load();
+            store.settings().new_game = n;
+            REQUIRE(store.save());
+        }
+        SettingsStore again(dir / "settings.json");
+        CHECK(again.load().ignored_fields == 0);
+        CHECK(again.settings().new_game == n);
+    }
+
+    TEST_CASE("each invalid new game field falls back on its own") {
+        test::TempDir dir;
+        Settings s;
+        const auto r = load_text(dir, R"({"schemaVersion": 1, "newGame": {
+            "size": "enormous", "mapType": "../x", "biome": "Core:Pine", "islands": 9, "water": "lots",
+            "forests": 3, "relief": "cliffs", "players": 13, "seasons": 16, "year": "", "winter": "cold",
+            "startGoods": "none", "diseases": "extreme", "race": "mixed!", "otherRaces": 101,
+            "maxPopulation": 20, "resources": "high", "fires": "low"}})", s);
+        CHECK(r.ignored_fields == 16);
+        NewGameSettings expected;
+        expected.resources = "high";
+        expected.fires = "low";
+        CHECK(s.new_game == expected);
+        CHECK(is_valid_def_id("core:giants"));
+        CHECK_FALSE(is_valid_def_id(""));
+        CHECK_FALSE(is_valid_def_id("core/../x"));
+        CHECK_FALSE(is_valid_def_id(std::string(65, 'a')));
+    }
 }

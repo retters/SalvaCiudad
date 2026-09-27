@@ -56,6 +56,15 @@ bool is_valid_address(std::string_view a) {
     return true;
 }
 
+bool is_valid_def_id(std::string_view id) {
+    if (id.empty() || id.size() > lim::kMaxDefIdBytes) {
+        return false;
+    }
+    return std::all_of(id.begin(), id.end(), [](char c) {
+        return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ':' || c == '_' || c == '-' || c == '.';
+    });
+}
+
 namespace {
 struct PresetLevels {
     QualityPreset preset;
@@ -351,6 +360,59 @@ void read_gameplay(Reader& r, yyjson_mut_val* obj, GameplaySettings& g) {
     r.read_int(obj, "joinPort", "gameplay.joinPort", lim::kMinPort, lim::kMaxPort, g.join_port);
 }
 
+// One of `names`, kept as written.
+template <std::size_t N>
+void read_choice(Reader& r, yyjson_mut_val* obj, const char* key, std::string_view path,
+                 const std::string_view (&names)[N], std::string& out) {
+    std::string text;
+    json::Field f = json::get_string(obj, key, 32, text);
+    if (f == json::Field::Ok && std::find(std::begin(names), std::end(names), text) == std::end(names)) {
+        f = json::Field::Invalid;
+    }
+    if (f == json::Field::Ok) {
+        out = text;
+    }
+    r.count(f, path);
+}
+
+// A definition's id, or empty; `mixed` also allows the mixed race.
+void read_def_id(Reader& r, yyjson_mut_val* obj, const char* key, std::string_view path, bool mixed, std::string& out) {
+    std::string text;
+    json::Field f = json::get_string(obj, key, lim::kMaxDefIdBytes, text);
+    if (f == json::Field::Ok && !text.empty() && !is_valid_def_id(text) &&
+        !(mixed && text == new_game_names::kMixedRace)) {
+        f = json::Field::Invalid;
+    }
+    if (f == json::Field::Ok) {
+        out = text;
+    }
+    r.count(f, path);
+}
+
+void read_new_game(Reader& r, yyjson_mut_val* obj, NewGameSettings& n) {
+    namespace names = new_game_names;
+    read_choice(r, obj, "size", "newGame.size", names::kSizes, n.size);
+    read_def_id(r, obj, "mapType", "newGame.mapType", false, n.map_type);
+    read_def_id(r, obj, "biome", "newGame.biome", false, n.biome);
+    r.read_int(obj, "islands", "newGame.islands", 1, lim::kMaxIslandsPerTown, n.islands);
+    read_choice(r, obj, "water", "newGame.water", names::kAmounts, n.water);
+    read_choice(r, obj, "forests", "newGame.forests", names::kAmounts, n.forests);
+    read_choice(r, obj, "resources", "newGame.resources", names::kAmounts, n.resources);
+    read_choice(r, obj, "relief", "newGame.relief", names::kReliefs, n.relief);
+    r.read_int(obj, "players", "newGame.players", 1, lim::kMaxPlayers, n.players);
+    r.read_int(obj, "seasons", "newGame.seasons", 1, 0b1111, n.seasons);
+    read_choice(r, obj, "year", "newGame.year", names::kYears, n.year);
+    read_choice(r, obj, "winter", "newGame.winter", names::kWinters, n.winter);
+    read_choice(r, obj, "startGoods", "newGame.startGoods", names::kStarts, n.start);
+    read_choice(r, obj, "diseases", "newGame.diseases", names::kThreats, n.diseases);
+    read_choice(r, obj, "fires", "newGame.fires", names::kThreats, n.fires);
+    read_choice(r, obj, "raiders", "newGame.raiders", names::kThreats, n.raiders);
+    read_choice(r, obj, "wildlife", "newGame.wildlife", names::kThreats, n.wildlife);
+    read_def_id(r, obj, "race", "newGame.race", true, n.race);
+    r.read_int(obj, "otherRaces", "newGame.otherRaces", 0, 100, n.other_races);
+    r.read_int(obj, "maxPopulation", "newGame.maxPopulation", lim::kMinPopulation, lim::kMaxPopulation, n.max_population);
+}
+
 bool write_bindings(yyjson_mut_doc* doc, yyjson_mut_val* obj, const KeyBindings& bindings) {
     for (const ActionInfo& info : action_table()) {
         yyjson_mut_val* arr = yyjson_mut_arr(doc);
@@ -439,6 +501,30 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_string(doc, gp, "playerName", s.gameplay.player_name);
     ok = ok && json::set_string(doc, gp, "joinAddress", s.gameplay.join_address);
     ok = ok && json::set_int(doc, gp, "joinPort", s.gameplay.join_port);
+
+    const NewGameSettings& n = s.new_game;
+    yyjson_mut_val* ng = json::ensure_object(doc, root, "newGame");
+    ok = ok && ng != nullptr;
+    ok = ok && json::set_string(doc, ng, "size", n.size);
+    ok = ok && json::set_string(doc, ng, "mapType", n.map_type);
+    ok = ok && json::set_string(doc, ng, "biome", n.biome);
+    ok = ok && json::set_int(doc, ng, "islands", n.islands);
+    ok = ok && json::set_string(doc, ng, "water", n.water);
+    ok = ok && json::set_string(doc, ng, "forests", n.forests);
+    ok = ok && json::set_string(doc, ng, "resources", n.resources);
+    ok = ok && json::set_string(doc, ng, "relief", n.relief);
+    ok = ok && json::set_int(doc, ng, "players", n.players);
+    ok = ok && json::set_int(doc, ng, "seasons", n.seasons);
+    ok = ok && json::set_string(doc, ng, "year", n.year);
+    ok = ok && json::set_string(doc, ng, "winter", n.winter);
+    ok = ok && json::set_string(doc, ng, "startGoods", n.start);
+    ok = ok && json::set_string(doc, ng, "diseases", n.diseases);
+    ok = ok && json::set_string(doc, ng, "fires", n.fires);
+    ok = ok && json::set_string(doc, ng, "raiders", n.raiders);
+    ok = ok && json::set_string(doc, ng, "wildlife", n.wildlife);
+    ok = ok && json::set_string(doc, ng, "race", n.race);
+    ok = ok && json::set_int(doc, ng, "otherRaces", n.other_races);
+    ok = ok && json::set_int(doc, ng, "maxPopulation", n.max_population);
     return ok;
 }
 
@@ -531,6 +617,9 @@ SettingsLoadReport SettingsStore::load() {
     }
     if (yyjson_mut_val* gp = r.read_section(root, "gameplay")) {
         read_gameplay(r, gp, settings_.gameplay);
+    }
+    if (yyjson_mut_val* ng = r.read_section(root, "newGame")) {
+        read_new_game(r, ng, settings_.new_game);
     }
 
     report.ignored_fields = r.ignored;

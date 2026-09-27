@@ -290,6 +290,8 @@
       "one": "{0} pueblo",
       "other": "{0} pueblos"
     },
+    "newGame.defaults": "Restablecer",
+    "newGame.defaults.tooltip": "Volver todas las opciones a sus valores por omisión (la semilla se queda).",
     "newGame.back": "Volver",
     "newGame.back.tooltip": "Volver al menú principal.",
     "newGame.generate": "Generar mapa",

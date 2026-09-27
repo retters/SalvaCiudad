@@ -158,6 +158,7 @@ Límite de 256 KB. Contenido:
 - `ui`: tipografía de la interfaz (una de las incluidas en `data/fonts/`; por omisión la primera), disposición de las ventanas del juego (posición, tamaño, anclaje y minimizada o no), mostrar tooltips y retraso de los tooltips.
 - `network`: último nombre de jugador, última IP usada y puerto (por omisión 27960, a confirmar).
 - `gameplay`: autoguardado (cada N minutos y cuántos conservar), tutorial visto.
+- `newGame`: la última configuración de partida nueva (fase 23), salvo la semilla; tipos de mapa, biomas y razas por su id.
 
 ### 5.3 Archivos de idioma
 

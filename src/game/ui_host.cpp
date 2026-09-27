@@ -175,6 +175,11 @@ void UiHost::frame(ui::Context& ctx) {
     } else if (screen_ == Screen::NewGame) {
         ctx.set_input_blocked(modal);
         const NewGameScreen::Result r = new_game_.frame(ctx, modal);
+        // The form is remembered however it is left (phase 23).
+        if (r != NewGameScreen::Result::None && services_.settings().new_game != new_game_.remembered()) {
+            services_.settings().new_game = new_game_.remembered();
+            services_.settings_changed();
+        }
         if (r == NewGameScreen::Result::Back) {
             screen_ = Screen::MainMenu;
             host_new_game_ = false;
@@ -374,11 +379,11 @@ void UiHost::main_menu(ui::Context& ctx) {
             } else if (std::string_view(e.id) == "tutorial") {
                 start_tutorial(0);
             } else if (std::string_view(e.id) == "single") {
-                new_game_.open(services_.content());
+                new_game_.open(services_.content(), false, services_.settings().new_game);
                 host_new_game_ = false;
                 screen_ = Screen::NewGame;
             } else if (std::string_view(e.id) == "host") {
-                new_game_.open(services_.content(), true);
+                new_game_.open(services_.content(), true, services_.settings().new_game);
                 host_new_game_ = true;
                 screen_ = Screen::NewGame;
             } else if (std::string_view(e.id) == "join") {

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 
+#include "game/settings.h"
 #include "sim/climate.h"
 #include "sim/content.h"
 #include "sim/map.h"
@@ -26,11 +27,16 @@ class NewGameScreen {
 public:
     enum class Result : std::uint8_t { None, Back, Generate };
 
-    // Resets the form with a fresh random seed; map types and biomes come
-    // from `content`, which must outlive the screen's use.
-    // `multiplayer`: the map of a network game; the button opens the lobby.
-    void open(const sim::Content* content, bool multiplayer = false);
+    // Fills the form with the last choices (`remembered`) and a fresh
+    // random seed; map types, biomes and races come from `content`, which
+    // must outlive the screen's use. `multiplayer`: the map of a network
+    // game; the button opens the lobby.
+    void open(const sim::Content* content, bool multiplayer = false, const NewGameSettings& remembered = {});
     Result frame(ui::Context& ctx, bool modal);
+    // The choices on the form, to remember them (phase 23).
+    [[nodiscard]] NewGameSettings remembered() const;
+    // Every choice back to its default; the seed stays.
+    void reset();
 
     // Valid once frame() returned Generate.
     [[nodiscard]] const sim::MapSettings& settings() const { return settings_; }
@@ -39,6 +45,7 @@ public:
 
 private:
     void seed_field(ui::Context& ctx, const ui::Rect& r, bool modal);
+    void apply(const NewGameSettings& n);
 
     const sim::Content* content_ = nullptr;
     sim::MapSettings settings_;

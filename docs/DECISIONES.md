@@ -1192,3 +1192,20 @@ Las dos últimas reglas valen en cualquier mapa donde el agua separe las tierras
 
 **D-2207. Islas y mapas separados.**
 Con mapas separados, cada jugador tiene su propio mapa de islas con sus islas por pueblo.
+
+## Fase 23: partida nueva recordada (2026-09-27)
+
+**D-2301. Qué se recuerda.**
+Todo lo del formulario de partida nueva salvo la semilla, que sigue siendo nueva al azar en cada partida: con la misma semilla saldría siempre el mismo mapa. Se guarda en `settings.json`, sección `newGame`.
+
+**D-2302. Por nombre, no por posición.**
+Los tipos de mapa, los biomas y las razas se guardan por su id de mod (`core:islands`, `core:dwarf`…), porque su orden cambia al activar o quitar mods. Si uno ya no existe, esa opción vuelve a su valor por omisión y las demás se conservan. Las demás opciones se guardan con nombres legibles (`"size": "giant"`, `"raiders": "high"`). Cada campo se valida por separado, como el resto del archivo; uno inválido se ignora y cuenta como aviso.
+
+**D-2303. Cuándo se guarda.**
+Al salir del formulario, con "Generar mapa", "Abrir la sala" o "Volver". Así queda la última configuración aunque no se haya jugado. El formulario de la partida multijugador es el mismo y comparte lo recordado.
+
+**D-2304. Restablecer.**
+El botón "Restablecer", a la izquierda de "Volver", devuelve todas las opciones a sus valores por omisión (los de una instalación nueva) y deja la semilla escrita. Lo restablecido se guarda al salir, como cualquier otro cambio.
+
+**D-2305. Arreglo: cierre del juego.**
+Al probar esta fase, el juego terminaba con un error de memoria al cerrarse (Windows lo informaba como 0xC0000374 o 0xC0000005 desde la fase 18). La compilación con AddressSanitizer mostró la causa: `SDL_Quit` liberaba el sonido y el director de sonido lo volvía a liberar después. Ahora el sonido se cierra antes de `SDL_Quit` (commit aparte).

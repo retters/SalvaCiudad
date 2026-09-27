@@ -21,5 +21,27 @@
     "ambient": 100,
     "music": 70,
     "ui": 100
+  },
+  "newGame": {
+    "size": "large",
+    "mapType": "core:islands",
+    "biome": "core:temperate",
+    "islands": 3,
+    "water": "normal",
+    "forests": "high",
+    "resources": "normal",
+    "relief": "gentle",
+    "players": 2,
+    "seasons": 15,
+    "year": "normal",
+    "winter": "mild",
+    "startGoods": "normal",
+    "diseases": "medium",
+    "fires": "medium",
+    "raiders": "high",
+    "wildlife": "medium",
+    "race": "core:elf",
+    "otherRaces": 20,
+    "maxPopulation": 600
   }
 }

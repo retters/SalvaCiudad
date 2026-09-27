@@ -232,4 +232,74 @@ TEST_SUITE("new_game") {
         CHECK(screen.settings().players == 1);
         CHECK(frame(SDL_SCANCODE_ESCAPE) == NewGameScreen::Result::Back);
     }
+
+    TEST_CASE("the form opens with the last choices, remembers them and resets") {
+        const sim::Content& content = sc::test::core_content();
+        NewGameSettings last;
+        last.size = "giant";
+        last.map_type = "core:islands";
+        last.biome = "core:pinewood";
+        last.islands = 3;
+        last.water = "high";
+        last.relief = "gentle";
+        last.players = 2;
+        last.seasons = 0b1000;
+        last.year = "short";
+        last.raiders = "brutal";
+        last.race = "core:dwarf";
+        last.other_races = 50;
+        last.max_population = 400;
+        NewGameScreen screen;
+        screen.open(&content, false, last);
+        const sim::MapSettings& m = screen.settings();
+        CHECK(m.size == sim::MapSize::Giant);
+        CHECK(content.flora.map_types[m.map_type].id == "core:islands");
+        CHECK(content.flora.biomes[m.biome].id == "core:pinewood");
+        CHECK(m.islands == 3);
+        CHECK(m.water == sim::Amount::High);
+        CHECK(m.relief == sim::Relief::Gentle);
+        CHECK(m.players == 2);
+        CHECK(m.seed >= 1u);
+        const sim::GameRules& g = screen.rules();
+        CHECK(g.climate.seasons == 0b1000);
+        CHECK(g.climate.year == sim::YearLength::Short);
+        CHECK(g.raiders == sim::Threat::Brutal);
+        CHECK(content.races[g.races[0]].id == "core:dwarf");
+        CHECK(g.races[11] == g.races[0]);
+        CHECK(g.other_races == 50);
+        CHECK(g.max_population == 400);
+        // What it remembers opens the same form again.
+        const NewGameSettings back = screen.remembered();
+        CHECK(back.size == "giant");
+        CHECK(back.map_type == "core:islands");
+        CHECK(back.race == "core:dwarf");
+        NewGameScreen again;
+        again.open(&content, false, back);
+        CHECK(again.remembered() == back);
+        // Reset: the defaults, with the same seed.
+        const std::uint64_t seed = screen.settings().seed;
+        screen.reset();
+        CHECK(screen.settings().seed == seed);
+        sim::MapSettings defaults;
+        defaults.seed = seed;
+        CHECK(screen.settings() == defaults);
+        CHECK(screen.rules() == sim::GameRules{});
+        // Choices that no longer exist, or seasons the form does not offer, fall back.
+        NewGameSettings gone;
+        gone.map_type = "oldmod:swamp";
+        gone.race = "oldmod:orc";
+        gone.seasons = 0b0101;
+        gone.max_population = 437;
+        NewGameScreen fallback;
+        fallback.open(&content, false, gone);
+        CHECK(fallback.settings().map_type == 0);
+        CHECK(fallback.rules().races[0] == 0);
+        CHECK(fallback.rules().climate.seasons == 0b1111);
+        CHECK(fallback.rules().max_population == 400);
+        NewGameSettings mixed;
+        mixed.race = "mixed";
+        fallback.open(&content, false, mixed);
+        CHECK(fallback.rules().races[0] == sim::kMixedRace);
+        CHECK(fallback.remembered().race == "mixed");
+    }
 }

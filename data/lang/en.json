@@ -290,6 +290,8 @@
       "one": "{0} town",
       "other": "{0} towns"
     },
+    "newGame.defaults": "Reset",
+    "newGame.defaults.tooltip": "Set every option back to its default (the seed stays).",
     "newGame.back": "Back",
     "newGame.back.tooltip": "Return to the main menu.",
     "newGame.generate": "Generate map",

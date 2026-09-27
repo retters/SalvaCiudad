@@ -7,6 +7,7 @@
 #include <SDL3/SDL_timer.h>
 
 #include "i18n/translator.h"
+#include "sim/command.h"
 #include "sim/worldgen.h"
 
 namespace sc {
@@ -86,6 +87,14 @@ std::uint64_t random_seed() {
     return 1 + z % 999'999'999ull;
 }
 
+// Seasons presets: which seasons the year has.
+namespace {
+constexpr std::uint8_t kSeasonPresets[] = {0b1111, 0b0111, 0b0010, 0b1000, 0b1010, 0b0001};
+constexpr const char* kSeasonPresetKeys[] = {"newGame.seasons.four",   "newGame.seasons.noWinter",
+                                             "newGame.seasons.summer", "newGame.seasons.winter",
+                                             "newGame.seasons.summerWinter", "newGame.seasons.spring"};
+}  // namespace
+
 const char* map_size_text_key(sim::MapSize size) {
     static constexpr const char* kKeys[] = {"newGame.size.small", "newGame.size.medium", "newGame.size.large",
                                             "newGame.size.huge",  "newGame.size.giant",  "newGame.size.colossal"};
@@ -93,13 +102,131 @@ const char* map_size_text_key(sim::MapSize size) {
     return kKeys[std::min<std::size_t>(static_cast<std::size_t>(size), std::size(kKeys) - 1)];
 }
 
-void NewGameScreen::open(const sim::Content* content, bool multiplayer) {
+void NewGameScreen::open(const sim::Content* content, bool multiplayer, const NewGameSettings& remembered) {
     multiplayer_ = multiplayer;
     content_ = content;
-    settings_ = sim::MapSettings{};
+    reset();
+    apply(remembered);
     settings_.seed = random_seed();
     seed_text_ = std::to_string(settings_.seed);
     seed_focused_ = false;
+}
+
+void NewGameScreen::reset() {
+    const std::uint64_t seed = settings_.seed;
+    settings_ = sim::MapSettings{};
+    settings_.seed = seed;
+    rules_ = sim::GameRules{};
+}
+
+namespace {
+
+namespace names = new_game_names;
+static_assert(std::size(names::kSizes) == static_cast<std::size_t>(sim::MapSize::Count));
+static_assert(std::size(names::kAmounts) == static_cast<std::size_t>(sim::Amount::Count));
+static_assert(std::size(names::kReliefs) == static_cast<std::size_t>(sim::Relief::Count));
+static_assert(std::size(names::kYears) == static_cast<std::size_t>(sim::YearLength::Count));
+static_assert(std::size(names::kWinters) == static_cast<std::size_t>(sim::Harshness::Count));
+static_assert(std::size(names::kStarts) == static_cast<std::size_t>(sim::StartGoods::Count));
+static_assert(std::size(names::kThreats) == static_cast<std::size_t>(sim::Threat::Count));
+static_assert(settings_limits::kMaxIslandsPerTown == sim::kMaxIslandsPerTown);
+static_assert(settings_limits::kMaxPlayers == static_cast<int>(sim::kMaxPlayers));
+static_assert(settings_limits::kMinPopulation == sim::kMinPopulationLimit);
+static_assert(settings_limits::kMaxPopulation == sim::kMaxPopulationLimit);
+
+// The value named `text` in `list`, or `fallback`.
+template <class E, std::size_t N>
+E named(const std::string_view (&list)[N], std::string_view text, E fallback) {
+    for (std::size_t i = 0; i < N; ++i) {
+        if (list[i] == text) {
+            return static_cast<E>(i);
+        }
+    }
+    return fallback;
+}
+
+template <class E, std::size_t N>
+std::string name_of(const std::string_view (&list)[N], E value) {
+    return std::string(list[std::min<std::size_t>(static_cast<std::size_t>(value), N - 1)]);
+}
+
+}  // namespace
+
+void NewGameScreen::apply(const NewGameSettings& n) {
+    settings_.size = named(names::kSizes, n.size, settings_.size);
+    settings_.water = named(names::kAmounts, n.water, settings_.water);
+    settings_.forests = named(names::kAmounts, n.forests, settings_.forests);
+    settings_.resources = named(names::kAmounts, n.resources, settings_.resources);
+    settings_.relief = named(names::kReliefs, n.relief, settings_.relief);
+    settings_.players = static_cast<std::uint8_t>(std::clamp(n.players, 1, static_cast<int>(sim::kMaxPlayers)));
+    settings_.islands = static_cast<std::uint8_t>(std::clamp(n.islands, 1, static_cast<int>(sim::kMaxIslandsPerTown)));
+    if (content_ != nullptr) {
+        if (const int t = content_->flora.find_map_type(n.map_type); t >= 0) {
+            settings_.map_type = static_cast<std::uint8_t>(t);
+        }
+        if (const int b = content_->flora.find_biome(n.biome); b >= 0) {
+            settings_.biome = static_cast<std::uint8_t>(b);
+        }
+        if (n.race == names::kMixedRace) {
+            rules_.races.fill(sim::kMixedRace);
+        } else {
+            for (std::size_t r = 0; r < content_->races.size(); ++r) {
+                if (content_->races[r].id == n.race) {
+                    rules_.races.fill(static_cast<std::uint8_t>(r));
+                }
+            }
+        }
+    }
+    // Only the seasons the form offers.
+    if (std::find(std::begin(kSeasonPresets), std::end(kSeasonPresets), n.seasons) != std::end(kSeasonPresets)) {
+        rules_.climate.seasons = static_cast<std::uint8_t>(n.seasons);
+    }
+    rules_.climate.year = named(names::kYears, n.year, rules_.climate.year);
+    rules_.climate.winter = named(names::kWinters, n.winter, rules_.climate.winter);
+    rules_.start = named(names::kStarts, n.start, rules_.start);
+    rules_.diseases = named(names::kThreats, n.diseases, rules_.diseases);
+    rules_.fires = named(names::kThreats, n.fires, rules_.fires);
+    rules_.raiders = named(names::kThreats, n.raiders, rules_.raiders);
+    rules_.wildlife = named(names::kThreats, n.wildlife, rules_.wildlife);
+    rules_.other_races = static_cast<std::uint8_t>(std::clamp(n.other_races, 0, 100));
+    // On the slider's steps.
+    rules_.max_population = std::clamp(n.max_population / 50 * 50, sim::kMinPopulationLimit, sim::kMaxPopulationLimit);
+}
+
+NewGameSettings NewGameScreen::remembered() const {
+    NewGameSettings n;
+    n.size = name_of(names::kSizes, settings_.size);
+    n.water = name_of(names::kAmounts, settings_.water);
+    n.forests = name_of(names::kAmounts, settings_.forests);
+    n.resources = name_of(names::kAmounts, settings_.resources);
+    n.relief = name_of(names::kReliefs, settings_.relief);
+    n.players = settings_.players;
+    n.islands = settings_.islands;
+    if (content_ != nullptr) {
+        if (settings_.map_type < content_->flora.map_types.size()) {
+            n.map_type = content_->flora.map_types[settings_.map_type].id;
+        }
+        if (settings_.biome < content_->flora.biomes.size()) {
+            n.biome = content_->flora.biomes[settings_.biome].id;
+        }
+        const std::uint8_t race = rules_.races[0];
+        if (race == sim::kMixedRace) {
+            n.race = std::string(names::kMixedRace);
+        } else if (race < content_->races.size()) {
+            n.race = content_->races[race].id;
+        }
+    }
+    n.seasons = rules_.climate.seasons;
+    n.year = name_of(names::kYears, rules_.climate.year);
+    n.winter = name_of(names::kWinters, rules_.climate.winter);
+    n.start = name_of(names::kStarts, rules_.start);
+    n.diseases = name_of(names::kThreats, rules_.diseases);
+    n.fires = name_of(names::kThreats, rules_.fires);
+    n.raiders = name_of(names::kThreats, rules_.raiders);
+    n.wildlife = name_of(names::kThreats, rules_.wildlife);
+    n.other_races = rules_.other_races;
+    n.max_population = rules_.max_population;
+    return n;
 }
 
 void NewGameScreen::seed_field(ui::Context& ctx, const ui::Rect& r, bool modal) {
@@ -157,14 +284,6 @@ void NewGameScreen::seed_field(ui::Context& ctx, const ui::Rect& r, bool modal) 
         seed_focused_ = false;
     }
 }
-
-// Seasons presets: which seasons the year has.
-namespace {
-constexpr std::uint8_t kSeasonPresets[] = {0b1111, 0b0111, 0b0010, 0b1000, 0b1010, 0b0001};
-constexpr const char* kSeasonPresetKeys[] = {"newGame.seasons.four",   "newGame.seasons.noWinter",
-                                             "newGame.seasons.summer", "newGame.seasons.winter",
-                                             "newGame.seasons.summerWinter", "newGame.seasons.spring"};
-}  // namespace
 
 void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
     {
@@ -406,9 +525,13 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
 
     y += pad - ctx.s(kRowGap);
     const float gap = ctx.s(12.0f);
-    const float bw = std::min(ctx.s(220.0f), (cw - gap) * 0.5f);
+    const float bw = std::min(ctx.s(200.0f), (cw - 2 * gap) / 3.0f);
     const ui::Rect generate{x + cw - bw, y, bw, button_h};
     const ui::Rect back{generate.x - gap - bw, y, bw, button_h};
+    const ui::Rect defaults{x, y, bw, button_h};
+    if (ctx.button(ctx.id("defaults"), defaults, tr("newGame.defaults"), tr("newGame.defaults.tooltip"))) {
+        reset();
+    }
     const std::uint64_t seed = parse_seed(seed_text_);
     if (ctx.button(ctx.id("back"), back, tr("newGame.back"), tr("newGame.back.tooltip")) ||
         (!modal && ctx.input().key(SDL_SCANCODE_ESCAPE))) {

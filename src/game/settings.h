@@ -101,6 +101,48 @@ struct GameplaySettings {
     bool operator==(const GameplaySettings&) const = default;
 };
 
+// The last "New game" form (phase 23), shown again the next time. Choices
+// are kept by name: map types, biomes and races by their mod id, since
+// their order depends on the mods. One that no longer exists falls back
+// to its default. The seed is not kept: each new game gets a fresh one.
+struct NewGameSettings {
+    std::string size = "medium";    // new_game_names::kSizes
+    std::string map_type;           // Empty: the first one.
+    std::string biome;              // Empty: the first one.
+    int islands = 2;                // Per town, with islands.
+    std::string water = "normal";   // new_game_names::kAmounts
+    std::string forests = "normal";
+    std::string resources = "normal";
+    std::string relief = "low";     // new_game_names::kReliefs
+    int players = 1;
+    int seasons = 0b1111;           // Bit per season: spring, summer, autumn, winter.
+    std::string year = "normal";    // new_game_names::kYears
+    std::string winter = "normal";  // new_game_names::kWinters
+    std::string start = "normal";   // new_game_names::kStarts
+    std::string diseases = "medium";  // new_game_names::kThreats
+    std::string fires = "medium";
+    std::string raiders = "medium";
+    std::string wildlife = "medium";
+    std::string race;               // A race's id, "mixed", or empty for the first.
+    int other_races = 20;           // Percent of newcomers.
+    int max_population = 1000;
+
+    bool operator==(const NewGameSettings&) const = default;
+};
+
+// Names of the choices in NewGameSettings, in the order of the game's own
+// values.
+namespace new_game_names {
+inline constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge", "giant", "colossal"};
+inline constexpr std::string_view kAmounts[] = {"low", "normal", "high"};
+inline constexpr std::string_view kReliefs[] = {"low", "gentle", "mountainous"};
+inline constexpr std::string_view kYears[] = {"short", "normal", "long"};
+inline constexpr std::string_view kWinters[] = {"mild", "normal", "harsh"};
+inline constexpr std::string_view kStarts[] = {"scarce", "normal", "plenty"};
+inline constexpr std::string_view kThreats[] = {"none", "low", "medium", "high", "brutal"};
+inline constexpr std::string_view kMixedRace = "mixed";
+}  // namespace new_game_names
+
 struct Settings {
     std::string language = "auto";  // "auto" or a BCP 47 tag.
     DisplaySettings display;
@@ -109,6 +151,7 @@ struct Settings {
     InputSettings input;
     UiSettings ui;
     GameplaySettings gameplay;
+    NewGameSettings new_game;
 
     bool operator==(const Settings&) const = default;
 };
@@ -135,10 +178,19 @@ inline constexpr std::size_t kMaxPlayerNameBytes = 32;
 inline constexpr std::size_t kMaxAddressBytes = 64;
 inline constexpr int kMinPort = 1024;
 inline constexpr int kMaxPort = 65535;
+// New game (phase 23); the game checks that these match its own limits.
+inline constexpr std::size_t kMaxDefIdBytes = 64;
+inline constexpr int kMaxIslandsPerTown = 8;
+inline constexpr int kMaxPlayers = 12;
+inline constexpr int kMinPopulation = 50;
+inline constexpr int kMaxPopulation = 1000;
 }  // namespace settings_limits
 
 // A host name or IPv4 address to join: letters, digits, dots and dashes.
 [[nodiscard]] bool is_valid_address(std::string_view address);
+// A mod definition's id as the new game keeps it: lowercase letters,
+// digits, ':', '_', '-' and '.', at most kMaxDefIdBytes.
+[[nodiscard]] bool is_valid_def_id(std::string_view id);
 
 struct SettingsLoadReport {
     bool created_default = false;  // No file existed.
