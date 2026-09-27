@@ -1137,6 +1137,82 @@
       "hp": 200,
       "trap": true,
       "attackDamage": 300
+    },
+    {
+      "type": "building",
+      "id": "core:bowyer",
+      "name": "building.bowyer",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 14
+      },
+      "buildWork": 300,
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:make_bows"
+      ],
+      "storage": 40,
+      "stores": [
+        "material",
+        "good"
+      ],
+      "tier": 2,
+      "category": "defense"
+    },
+    {
+      "type": "building",
+      "id": "core:armory",
+      "name": "building.armory",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 12,
+        "core:bricks": 10
+      },
+      "buildWork": 350,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:forge_weapons"
+      ],
+      "storage": 40,
+      "stores": [
+        "material",
+        "good"
+      ],
+      "tier": 3,
+      "desirability": -4,
+      "category": "defense"
+    },
+    {
+      "type": "building",
+      "id": "core:barracks",
+      "name": "building.barracks",
+      "kind": "military",
+      "model": "models/props/house_small.glb",
+      "size": [
+        8,
+        6
+      ],
+      "cost": {
+        "core:log": 30,
+        "core:stone": 20
+      },
+      "buildWork": 500,
+      "trains": true,
+      "unique": true,
+      "tier": 2,
+      "category": "defense"
     }
   ]
 }

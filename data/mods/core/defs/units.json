@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "unit",
+      "id": "core:levy",
+      "name": "unit.levy",
+      "health": 500,
+      "damage": 40,
+      "attackEvery": 10,
+      "range": 2,
+      "speed": 21,
+      "cost": {
+        "core:log": 3
+      },
+      "trainWork": 200,
+      "power": 2
+    },
+    {
+      "type": "unit",
+      "id": "core:archer",
+      "name": "unit.archer",
+      "health": 400,
+      "damage": 45,
+      "attackEvery": 20,
+      "range": 20,
+      "speed": 22,
+      "cost": {
+        "core:bows": 1
+      },
+      "trainWork": 300,
+      "power": 3
+    },
+    {
+      "type": "unit",
+      "id": "core:spearman",
+      "name": "unit.spearman",
+      "health": 800,
+      "damage": 70,
+      "attackEvery": 10,
+      "range": 2,
+      "speed": 21,
+      "cost": {
+        "core:weapons": 1
+      },
+      "trainWork": 400,
+      "power": 5,
+      "tier": 3
+    }
+  ]
+}

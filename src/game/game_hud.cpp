@@ -166,6 +166,9 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     if (trade_open_) {
         trade_window(ctx, *s);
     }
+    if (army_open_) {
+        army_window(ctx, *s);
+    }
     return open_menu;
 }
 
@@ -258,6 +261,21 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     for (std::uint8_t p = 0; p < game.player_count(); ++p) {
         others = others || (game.town_of(p) == p && p != s.town() && game.player(p).active);
     }
+    // The army.
+    bool barracks = false;
+    for (const sim::Building& b : game.buildings().data()) {
+        barracks = barracks || (b.owner == s.town() && game.content().buildings[b.def].trains);
+    }
+    if (barracks || game.soldiers(s.town()) > 0) {
+        const std::string label = tr("hud.army", game.soldiers(s.town()));
+        const float aw = ctx.text().measure(st, label) + ctx.s(28.0f);
+        right -= aw + ctx.s(6.0f);
+        const ui::Rect r{right, bar.y + ctx.s(5.0f), aw, bar.h - ctx.s(10.0f)};
+        if (ctx.button(ctx.id("hud_army"), r, label, tr("hud.army.tooltip"), true, army_open_)) {
+            army_open_ = !army_open_;
+            trade_open_ = trade_open_ && !army_open_;
+        }
+    }
     if (others) {
         const std::string label = tr("hud.trade");
         const float tw = ctx.text().measure(st, label) + ctx.s(28.0f);
@@ -265,6 +283,7 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
         const ui::Rect r{right, bar.y + ctx.s(5.0f), tw, bar.h - ctx.s(10.0f)};
         if (ctx.button(ctx.id("hud_trade"), r, label, tr("hud.trade.tooltip"), true, trade_open_)) {
             trade_open_ = !trade_open_;
+            army_open_ = army_open_ && !trade_open_;
         }
     }
     const std::string pop_text = tr("hud.population", pop);
@@ -569,6 +588,10 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         h += button_h + pad * 0.5f;
     }
     const bool post = d.trade && b->state == sim::BuildingState::Complete;
+    const bool barracks = d.trains && b->state == sim::BuildingState::Complete;
+    if (barracks) {
+        h += pad * 0.5f + field_row + static_cast<float>(content.units.size()) * field_row + ctx.s(14.0f);
+    }
     if (post) {
         const std::size_t rows = game.merchant_here(s.town()) ? merchant_rows(game, s.town()).size() : 0;
         h += pad * 0.5f + line + static_cast<float>(rows) * field_row;
@@ -623,6 +646,10 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     if (post) {
         y += pad * 0.5f;
         merchant_section(ctx, s, box, y, field_row);
+    }
+    if (barracks) {
+        y += pad * 0.5f;
+        barracks_section(ctx, s, *b, box, y, field_row);
     }
     if (workshop) {
         // How much of its product to keep: automatic, or a set amount.
@@ -695,6 +722,172 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
             s.issue(c);
             ui.selected_building = {};
         }
+    }
+    ctx.pop_id();
+}
+
+void GameHud::barracks_section(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
+                               float row_h) {
+    const sim::Game& game = s.game();
+    const sim::Content& content = game.content();
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const float pad = ctx.s(14.0f);
+    // What is being trained.
+    std::string queue = tr("hud.barracks.idle");
+    if (!b.training.empty() && b.training.front() < content.units.size()) {
+        const sim::UnitDef& u = content.units[b.training.front()];
+        queue = tr("hud.barracks.training", tr(u.name_key), static_cast<int>(b.training.size()));
+    }
+    const float bw = std::round(ctx.s(96.0f));
+    ctx.label({box.x + pad, y, box.w - 2 * pad - bw - ctx.s(6.0f), row_h}, queue, body, ctx.theme().text);
+    const ui::Rect cancel{box.right() - pad - bw, y + ctx.s(2.0f), bw, row_h - ctx.s(4.0f)};
+    if (ctx.button(ctx.id("cancel"), cancel, tr("hud.barracks.cancel"), tr("hud.barracks.cancel.tooltip"),
+                   !b.training.empty())) {
+        sim::Command c;
+        c.type = sim::CommandType::TrainUnit;
+        c.entity = s.ui().selected_building;
+        c.value = 0;
+        s.issue(c);
+    }
+    y += row_h;
+    if (!b.training.empty() && b.training.front() < content.units.size()) {
+        const float done = static_cast<float>(b.train_progress) /
+                           static_cast<float>(std::max(1, content.units[b.training.front()].train_work));
+        meter(ctx, {box.x + pad, y + ctx.s(3.0f), box.w - 2 * pad, ctx.s(6.0f)}, done, ctx.theme().accent);
+    }
+    y += ctx.s(14.0f);
+    for (std::size_t i = 0; i < content.units.size(); ++i) {
+        const sim::UnitDef& u = content.units[i];
+        std::string cost;
+        for (const sim::ResourceAmount& c : u.cost) {
+            cost += (cost.empty() ? "" : ", ") + tr("hud.amount", tr(content.resources[c.resource].name_key), c.amount);
+        }
+        ctx.push_id(u.id);
+        const bool locked = u.tier > game.tier(b.owner);
+        ctx.label({box.x + pad, y, box.w - 2 * pad - bw - ctx.s(6.0f), row_h},
+                  locked ? tr("hud.barracks.locked", tr(u.name_key), static_cast<int>(u.tier))
+                         : tr("hud.barracks.unit", tr(u.name_key), cost),
+                  small, locked ? ctx.theme().text_dim : ctx.theme().text);
+        const auto order = [&](std::int32_t value) {
+            sim::Command c;
+            c.type = sim::CommandType::TrainUnit;
+            c.entity = s.ui().selected_building;
+            c.def = static_cast<sim::DefIndex>(i);
+            c.value = value;
+            s.issue(c);
+        };
+        const ui::Rect train{box.right() - pad - bw, y + ctx.s(2.0f), bw, row_h - ctx.s(4.0f)};
+        if (ctx.button(ctx.id("train"), train, tr("hud.barracks.train"),
+                       tr("hud.barracks.train.tooltip", u.health, u.damage, u.range), !locked && b.training.size() < 10)) {
+            order(1);
+        }
+        ctx.pop_id();
+        y += row_h;
+    }
+}
+
+void GameHud::army_window(ui::Context& ctx, GameSession& s) {
+    const sim::Game& game = s.game();
+    const std::uint8_t town = s.town();
+    const sim::PlayerState& ps = game.player(town);
+    const sim::GameRules& rules = game.rules();
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const ui::TextStyle title = ctx.style(ctx.theme().heading, ui::FontRole::Bold);
+    const float pad = ctx.s(14.0f);
+    const float line = ctx.text().line_height(body);
+    const float row = std::round(ctx.s(34.0f));
+    const float gap = ctx.s(6.0f);
+    const float w = std::min(ctx.s(420.0f), ctx.width() - 2 * pad);
+
+    std::vector<std::uint8_t> enemies;
+    std::vector<std::string> enemy_names;
+    std::vector<std::uint8_t> towns;
+    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
+        if (game.town_of(p) != p || !game.player(p).active) {
+            continue;
+        }
+        towns.push_back(p);
+        if (game.enemies(town, p) && game.buildings().get(game.player(p).town_center) != nullptr) {
+            enemies.push_back(p);
+            enemy_names.push_back(town_name(p));
+        }
+    }
+    const float title_h = ctx.text().line_height(title);
+    float h = pad + title_h + pad * 0.5f + 2 * line + gap;
+    h += 3 * (row + gap);  // Defend, defend here, retreat.
+    h += enemies.empty() ? line : row + gap + row;
+    h += pad + line + static_cast<float>(towns.size()) * line + pad;
+    const ui::Rect box{pad, std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
+    ctx.panel(box);
+    block(s, box);
+    ctx.push_id("army_window");
+    float y = box.y + pad;
+    ctx.label({box.x + pad, y, box.w - 2 * pad - row, title_h}, tr("hud.army.title"), title, ctx.theme().accent);
+    if (ctx.button(ctx.id("close"), {box.right() - pad - row, y, row, row}, tr("hud.close"), tr("hud.close.tooltip"))) {
+        army_open_ = false;
+    }
+    y += title_h + pad * 0.5f;
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line},
+              tr("hud.army.strength", game.soldiers(town), game.military_power(town)), body, ctx.theme().text);
+    y += line;
+    static constexpr const char* kOrders[] = {"hud.army.order.defend", "hud.army.order.attack", "hud.army.order.retreat"};
+    std::string order = tr(kOrders[static_cast<std::size_t>(ps.order) % 3]);
+    if (ps.order == sim::ArmyOrderKind::Attack) {
+        order = tr("hud.army.order.attacking", town_name(ps.enemy));
+    }
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line}, order, small, ctx.theme().text_dim);
+    y += line + gap;
+    const auto issue = [&](std::int32_t value, std::uint8_t enemy, sim::FixedVec2 at) {
+        sim::Command c;
+        c.type = sim::CommandType::ArmyOrder;
+        c.value = value;
+        c.count = enemy;
+        c.position = at;
+        s.issue(c);
+    };
+    const ui::Rect full{box.x + pad, y, box.w - 2 * pad, row};
+    if (ctx.button(ctx.id("defend"), full, tr("hud.army.defend"), tr("hud.army.defend.tooltip"))) {
+        issue(0, 0, {});
+    }
+    y += row + gap;
+    if (ctx.button(ctx.id("defend_here"), {box.x + pad, y, box.w - 2 * pad, row}, tr("hud.army.defendHere"),
+                   tr("hud.army.defendHere.tooltip"), true, s.ui().rally_mode)) {
+        s.ui().rally_mode = !s.ui().rally_mode;
+    }
+    y += row + gap;
+    if (ctx.button(ctx.id("retreat"), {box.x + pad, y, box.w - 2 * pad, row}, tr("hud.army.retreat"),
+                   tr("hud.army.retreat.tooltip"))) {
+        issue(2, 0, {});
+    }
+    y += row + gap;
+    if (enemies.empty()) {
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line},
+                  tr(rules.versus && rules.pvp ? "hud.army.noEnemies" : "hud.army.peace"), small, ctx.theme().text_dim);
+        y += line;
+    } else {
+        attack_pick_ = std::clamp(attack_pick_, 0, static_cast<int>(enemies.size()) - 1);
+        ctx.selector(ctx.id("enemy"), {box.x + pad, y, box.w - 2 * pad, row}, attack_pick_, enemy_names);
+        y += row + gap;
+        if (ctx.button(ctx.id("attack"), {box.x + pad, y, box.w - 2 * pad, row}, tr("hud.army.attack"),
+                       tr("hud.army.attack.tooltip"), game.soldiers(town) > 0)) {
+            issue(1, enemies[static_cast<std::size_t>(attack_pick_)], {});
+        }
+        y += row;
+    }
+    y += pad;
+    // The scores.
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr("hud.army.scores"), body, ctx.theme().text);
+    y += line;
+    static constexpr const char* kOutcomes[] = {"hud.outcome.playing", "hud.outcome.won", "hud.outcome.lost"};
+    for (const std::uint8_t p : towns) {
+        const sim::PlayerState& other = game.player(p);
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line},
+                  tr("hud.army.scoreRow", town_name(p), game.score(p), game.military_power(p),
+                     tr(kOutcomes[static_cast<std::size_t>(other.outcome) % 3])),
+                  small, p == town ? ctx.theme().accent : ctx.theme().text);
+        y += line;
     }
     ctx.pop_id();
 }

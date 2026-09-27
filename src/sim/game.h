@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 15;
+inline constexpr std::uint32_t kGameRulesVersion = 16;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -132,6 +132,9 @@ struct Building {
     // Phase 15.
     std::int32_t damage = 0;         // From raiders; at its def's hp it breaks.
     std::int32_t rearm = 0;          // Traps: ticks until armed again.
+    // Phase 16: barracks.
+    std::vector<DefIndex> training;  // Units waiting, first in training.
+    std::int32_t train_progress = 0;
     bool operator==(const Building&) const = default;
 };
 
@@ -208,6 +211,9 @@ struct MerchantGood {
     bool operator==(const MerchantGood&) const = default;
 };
 
+enum class ArmyOrderKind : std::uint8_t { Defend, Attack, Retreat, Count };
+enum class Outcome : std::uint8_t { Playing, Won, Lost, Count };
+
 struct PlayerState {
     bool active = false;
     EntityId town_center;
@@ -226,13 +232,20 @@ struct PlayerState {
     bool alarm = false;                  // The bell: adults fight, children hide.
     std::uint64_t next_raid = 0;         // Tick; 0 = not yet planned.
     std::int32_t raids = 0;
+    // Phase 16: the army's standing order and the outcome of the game.
+    ArmyOrderKind order = ArmyOrderKind::Defend;
+    FixedVec2 rally;                     // Defend: where (zero: the town center).
+    std::uint8_t enemy = 0;              // Attack: whom.
+    Outcome outcome = Outcome::Playing;
     bool operator==(const PlayerState&) const = default;
 };
 
 // Animals and raiders (phase 15). Animals live in a zone of the map;
 // raiders come from the edge to rob or burn a town, then go back.
-enum class CreatureKind : std::uint8_t { Deer, Boar, Wolf, Bear, Raider, Count };
-enum class CreatureState : std::uint8_t { Wander, Flee, Chase, Approach, Bash, Leave, Count };
+enum class CreatureKind : std::uint8_t { Deer, Boar, Wolf, Bear, Raider, Soldier, Count };
+enum class CreatureState : std::uint8_t { Wander, Flee, Chase, Approach, Bash, Leave, Travel, Count };
+// What a creature's `target` is.
+enum class TargetKind : std::uint8_t { Villager, Creature, Building, Count };
 
 struct Creature {
     CreatureKind kind = CreatureKind::Deer;
@@ -249,6 +262,9 @@ struct Creature {
     std::int32_t timer = 0;
     EntityId target;              // A villager (chase) or a building (raid, bash).
     Stock loot;
+    // Phase 16.
+    TargetKind target_kind = TargetKind::Villager;
+    DefIndex unit = 0;            // Soldiers: their UnitDef.
     bool operator==(const Creature&) const = default;
 };
 
@@ -392,6 +408,9 @@ public:
             CaravanArrived,
             RaidStarted,     // `value`: raiders.
             Attacked,        // A villager hurt by an animal (`value`: its kind) or a raider.
+            UnitTrained,     // `value`: the unit.
+            TownLost,        // `owner` is out of the game.
+            GameOver,        // `value`: the winner + 1, or 0.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -427,6 +446,14 @@ public:
     [[nodiscard]] std::int32_t raiders_near(std::uint8_t player) const;
     // Whether animals of a zone live there (no predators by a starting town).
     [[nodiscard]] bool zone_open(std::size_t zone) const;
+
+    // Armies and the end of the game (phase 16).
+    [[nodiscard]] std::int32_t soldiers(std::uint8_t player) const;
+    [[nodiscard]] std::int32_t military_power(std::uint8_t player) const;
+    [[nodiscard]] std::int32_t score(std::uint8_t player) const;
+    [[nodiscard]] bool game_over() const { return game_over_; }
+    // Whether two towns fight each other (versus with combat on).
+    [[nodiscard]] bool enemies(std::uint8_t a, std::uint8_t b) const;
 
     // Animals left in each of the map's zones (hunting).
     [[nodiscard]] const std::vector<std::int32_t>& zone_animals() const { return zone_animals_; }
@@ -481,6 +508,7 @@ private:
     std::int32_t fires_ = 0;          // Buildings burning (follows from them).
     std::vector<TradeOffer> offers_;
     ComponentStore<Creature> creatures_;
+    bool game_over_ = false;
     std::vector<Caravan> caravans_;
     std::uint32_t next_offer_ = 1;
     std::vector<Event> events_;

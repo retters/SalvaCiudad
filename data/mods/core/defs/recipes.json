@@ -207,6 +207,29 @@
         "core:smoked_fish": 3
       },
       "work": 70
+    },
+    {
+      "type": "recipe",
+      "id": "core:make_bows",
+      "inputs": {
+        "core:log": 2
+      },
+      "outputs": {
+        "core:bows": 1
+      },
+      "work": 90
+    },
+    {
+      "type": "recipe",
+      "id": "core:forge_weapons",
+      "inputs": {
+        "core:iron": 1,
+        "core:log": 1
+      },
+      "outputs": {
+        "core:weapons": 1
+      },
+      "work": 120
     }
   ]
 }

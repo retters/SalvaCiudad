@@ -485,6 +485,11 @@ void DevTools::village_tab(DevContext& ctx) {
         ctx.session->issue(c);
     }
     ImGui::EndDisabled();
+    if (ImGui::Button((tr("dev.village.level") + "###level").c_str())) {
+        sim::Command c;
+        c.type = sim::CommandType::DevLevel;
+        ctx.session->issue(c);
+    }
     if (ImGui::Button((tr("dev.village.raid") + "###raid").c_str())) {
         sim::Command c;
         c.type = sim::CommandType::DevRaid;

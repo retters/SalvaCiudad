@@ -1306,6 +1306,18 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
         return;  // Fields are marked by dragging (update_placement).
     }
     const sim::Game& game = session_->game();
+    if (ui.rally_mode) {
+        ui.rally_mode = false;
+        if (const std::optional<math::Vec3> hit = ground_hit(game.map(), origin, dir)) {
+            sim::Command c;
+            c.type = sim::CommandType::ArmyOrder;
+            c.value = 0;
+            c.position = {sim::Fixed::from_ratio(static_cast<std::int32_t>(std::lround(hit->x * 100.0f)), 100),
+                          sim::Fixed::from_ratio(static_cast<std::int32_t>(std::lround(hit->z * 100.0f)), 100)};
+            session_->issue(c);
+        }
+        return;
+    }
     if (ui.placing != sim::kNoDef) {
         const sim::BuildingDef& pd = game.content().buildings[ui.placing];
         if (pd.kind == sim::BuildingKind::Defense && !pd.trap && pd.width == 2 && pd.depth == 2) {
@@ -1671,7 +1683,8 @@ void App::report_game_events() {
     sim::Game& game = session_->game();
     const sim::Content& content = game.content();
     for (const sim::Game::Event& e : game.take_events()) {
-        if (e.owner != session_->town()) {
+        if (e.owner != session_->town() && e.kind != sim::Game::Event::Kind::TownLost &&
+            e.kind != sim::Game::Event::Kind::GameOver) {
             continue;
         }
         const std::string place = e.entity.valid() && game.buildings().get(e.entity) != nullptr
@@ -1693,6 +1706,13 @@ void App::report_game_events() {
                 break;
             case sim::Game::Event::Kind::CaravanArrived: host_->toast(tr("event.caravanArrived", town_name(e.other))); break;
             case sim::Game::Event::Kind::RaidStarted: host_->toast(tr("event.raid", static_cast<int>(e.value))); break;
+            case sim::Game::Event::Kind::UnitTrained:
+                if (e.value < content.units.size()) {
+                    host_->toast(tr("event.unitTrained", tr(content.units[e.value].name_key)));
+                }
+                break;
+            case sim::Game::Event::Kind::TownLost: host_->toast(tr("event.townLost", town_name(e.owner))); break;
+            case sim::Game::Event::Kind::GameOver: break;  // The end panel shows it.
             case sim::Game::Event::Kind::Attacked: {
                 static constexpr const char* kKeys[] = {"event.attacked.deer", "event.attacked.boar", "event.attacked.wolf",
                                                         "event.attacked.bear", "event.attacked.raider"};

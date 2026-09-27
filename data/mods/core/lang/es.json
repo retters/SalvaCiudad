@@ -132,6 +132,14 @@
     "building.stoneWall": "Muro de piedra",
     "building.gate": "Puerta",
     "building.watchtower": "Torre de vigía",
-    "building.trap": "Trampa"
+    "building.trap": "Trampa",
+    "resource.bows": "Arcos",
+    "resource.weapons": "Armas",
+    "building.bowyer": "Arquería",
+    "building.armory": "Armería",
+    "building.barracks": "Cuartel",
+    "unit.levy": "Leva",
+    "unit.archer": "Arquero",
+    "unit.spearman": "Lancero"
   }
 }

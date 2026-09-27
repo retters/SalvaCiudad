@@ -122,6 +122,7 @@ struct BuildingDef {
     std::int32_t attack_range = 0;  // Towers shoot enemies this close (meters).
     std::int32_t attack_damage = 0; // Per shot (towers) or per trap.
     std::int32_t attack_every = 20; // Ticks between shots.
+    bool trains = false;            // A barracks: turns villagers into soldiers (phase 16).
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.
@@ -134,6 +135,22 @@ struct DiseaseDef {
     std::int32_t contagion = 20;  // Per 1000 and day, for each sick person at home or at work.
     std::int32_t severity = 60;   // Health lost per day, of 1000 (the sick do not heal).
     std::int32_t days = 8;        // How long it lasts.
+};
+
+// A kind of soldier (phase 16): trained at a barracks from an adult
+// villager and its equipment.
+struct UnitDef {
+    std::string id;
+    std::string name_key;
+    std::int32_t health = 500;
+    std::int32_t damage = 50;        // Per blow or shot.
+    std::int32_t attack_every = 10;  // Ticks between blows.
+    std::int32_t range = 2;          // Meters; more than 4 shoots.
+    std::int32_t speed = 21;         // Hundredths of a meter per tick.
+    std::vector<ResourceAmount> cost;
+    std::int32_t train_work = 300;   // Ticks at the barracks.
+    std::int32_t power = 1;          // Military power (score).
+    std::uint8_t tier = 0;
 };
 
 // Groups of the build bar.
@@ -178,6 +195,7 @@ struct Content {
     std::vector<FeatureDef> features;
     std::vector<CropDef> crops;
     std::vector<DiseaseDef> diseases;
+    std::vector<UnitDef> units;
     Flora flora;
 
     // Hash of the mods that affect the simulation (section 7.4), for

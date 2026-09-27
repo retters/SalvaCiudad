@@ -24,7 +24,7 @@ bool valid_name_part(std::string_view s) {
 }
 
 constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome", "mapType",
-                                        "crop",     "disease"};
+                                        "crop",     "disease",    "unit"};
 constexpr std::string_view kDiseaseSources[] = {"cold", "water", "rats"};
 constexpr std::string_view kSeasons[] = {"spring", "summer", "autumn", "winter"};
 
@@ -348,7 +348,8 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                    sim::Content& out, std::vector<DefError>& errors) {
     out = sim::Content{};
     // Ids first, so definitions can refer to each other in any order.
-    std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops, diseases;
+    std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops, diseases,
+        units;
     for (const RawDef& d : set.defs()) {
         if (d.type == "resource") resources.push_back(&d);
         else if (d.type == "mapFeature") features.push_back(&d);
@@ -359,6 +360,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         else if (d.type == "mapType") map_types.push_back(&d);
         else if (d.type == "crop") crops.push_back(&d);
         else if (d.type == "disease") diseases.push_back(&d);
+        else if (d.type == "unit") units.push_back(&d);
     }
     if (species.size() > sim::kMaxSpecies || biomes.size() > sim::kMaxBiomes || map_types.size() > sim::kMaxMapTypes ||
         resources.size() > 1000 || buildings.size() > 1000 || recipes.size() > 2000) {
@@ -396,6 +398,25 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
     }
     const auto find_recipe = [&](std::string_view id) { return index_of(out.recipes, id); };
+    // Units.
+    for (const RawDef* d : units) {
+        Reader r(*d, errors);
+        sim::UnitDef def;
+        def.id = d->id;
+        def.name_key = r.text("name", true);
+        def.health = r.integer("health", 1, 100000, 500);
+        def.damage = r.integer("damage", 0, 10000, 50);
+        def.attack_every = r.integer("attackEvery", 1, 1000, 10);
+        def.range = r.integer("range", 1, 60, 2);
+        def.speed = r.integer("speed", 5, 60, 21);
+        def.cost = amounts(r.table("cost", find_resource, 1, 1000, 8));
+        def.train_work = r.integer("trainWork", 1, 100000, 300);
+        def.power = r.integer("power", 0, 1000, 1);
+        def.tier = static_cast<std::uint8_t>(r.integer("tier", 0, 10, 0));
+        if (r.ok() && out.units.size() < 64) {
+            out.units.push_back(std::move(def));
+        }
+    }
     // Diseases.
     for (const RawDef* d : diseases) {
         Reader r(*d, errors);
@@ -499,6 +520,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.attack_range = r.integer("attackRange", 0, 200, 0);
         def.attack_damage = r.integer("attackDamage", 0, 10000, 0);
         def.attack_every = r.integer("attackEvery", 1, 1000, 20);
+        def.trains = r.flag("trains");
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);

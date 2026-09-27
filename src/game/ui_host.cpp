@@ -531,6 +531,12 @@ void UiHost::map_hud(ui::Context& ctx) {
         ctx.set_input_blocked(modal_open() || game_menu_open_ || paused);
         const bool wants_menu = hud_.frame(ctx, modal_open() || game_menu_open_ || paused);
         ctx.set_input_blocked(modal_open());
+        if (!services_.session()->game().game_over()) {
+            end_seen_ = false;
+        } else if (!end_seen_ && !game_menu_open_) {
+            end_panel(ctx);
+            return;
+        }
         if (game_menu_open_) {
             game_menu(ctx);
         } else if (paused) {
@@ -565,6 +571,55 @@ void UiHost::map_hud(ui::Context& ctx) {
 
 // Esc during a game: continue, settings, or leave. In phase 8 it will also
 // pause a single-player game (decision D-616).
+void UiHost::end_panel(ui::Context& ctx) {
+    GameSession* s = services_.session();
+    const sim::Game& game = s->game();
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const float line = ctx.text().line_height(body);
+    const float button_h = ctx.s(48.0f);
+    const float gap = ctx.s(10.0f);
+    std::vector<std::uint8_t> towns;
+    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
+        if (game.town_of(p) == p && game.player(p).active) {
+            towns.push_back(p);
+        }
+    }
+    const sim::Outcome mine = game.player(s->town()).outcome;
+    const char* title = mine == sim::Outcome::Won ? "end.won" : mine == sim::Outcome::Lost ? "end.lost" : "end.over";
+    const float content_h = line * static_cast<float>(towns.size() + 1) + gap + 2 * (button_h + gap);
+    float y = 0.0f;
+    const ui::Rect content = dialog_frame(ctx, content_h, tr(title), y);
+    ctx.label({content.x, y, content.w, line}, tr("end.header"), ctx.style(ctx.theme().small), ctx.theme().text_dim);
+    y += line;
+    static constexpr const char* kOutcomes[] = {"hud.outcome.playing", "hud.outcome.won", "hud.outcome.lost"};
+    for (const std::uint8_t p : towns) {
+        const sim::PlayerState& ps = game.player(p);
+        std::string name = tr("hud.trade.town", static_cast<int>(p) + 1);
+        if (net::NetSession* net = services_.net()) {
+            for (const net::LobbyPlayer& lp : net->lobby().players) {
+                name = lp.slot == p ? lp.name : name;
+            }
+        }
+        ctx.label({content.x, y, content.w, line},
+                  tr("end.row", name, tr(kOutcomes[static_cast<std::size_t>(ps.outcome) % 3]), game.score(p),
+                     game.population(p), game.military_power(p)),
+                  body, p == s->town() ? ctx.theme().accent : ctx.theme().text);
+        y += line;
+    }
+    y += gap;
+    if (ctx.button(ctx.id("end_watch"), {content.x, y, content.w, button_h}, tr("end.watch"), tr("end.watch.tooltip"))) {
+        end_seen_ = true;
+    }
+    y += button_h + gap;
+    if (ctx.button(ctx.id("end_leave"), {content.x, y, content.w, button_h}, tr("gameMenu.leave"),
+                   tr("gameMenu.leave.tooltip"))) {
+        end_seen_ = true;
+        services_.leave_map();
+        services_.leave_network();
+        screen_ = Screen::MainMenu;
+    }
+}
+
 void UiHost::game_menu(ui::Context& ctx) {
     const float button_h = ctx.s(48.0f);
     const float gap = ctx.s(10.0f);

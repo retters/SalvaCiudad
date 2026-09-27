@@ -132,6 +132,14 @@
     "building.stoneWall": "Stone wall",
     "building.gate": "Gate",
     "building.watchtower": "Watchtower",
-    "building.trap": "Trap"
+    "building.trap": "Trap",
+    "resource.bows": "Bows",
+    "resource.weapons": "Weapons",
+    "building.bowyer": "Bowyer",
+    "building.armory": "Armory",
+    "building.barracks": "Barracks",
+    "unit.levy": "Levy",
+    "unit.archer": "Archer",
+    "unit.spearman": "Spearman"
   }
 }

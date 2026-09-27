@@ -184,7 +184,7 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
     const float gap = ctx.s(8.0f);
     const float button_h = ctx.s(44.0f);
     const float list_h = static_cast<float>(sim::kMaxPlayers / 2) * (row_h + gap);
-    const float content_h = line * 2 + gap + row_h * 2 + gap * 2 + list_h + gap + button_h;
+    const float content_h = line * 2 + gap + row_h * 3 + gap * 3 + list_h + gap + button_h;
     float y = 0.0f;
     const ui::Rect c = frame_panel(ctx, 760.0f, content_h, tr(host ? "lobby.title.host" : "lobby.title.client"), y);
     Result result = Result::None;
@@ -213,6 +213,34 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
             static_cast<net::NetHost*>(net)->set_config(cfg);
         }
         y += row_h + gap;
+        // Cooperative or versus, and how a versus game is won.
+        {
+            const std::string kinds[] = {tr("lobby.versus.coop"),      tr("lobby.versus.peace"),
+                                         tr("lobby.versus.elimination"), tr("lobby.versus.score"),
+                                         tr("lobby.versus.objective"),   tr("lobby.versus.free")};
+            const sim::GameRules& rules = lobby.config.rules;
+            int kind = 0;
+            if (rules.versus) {
+                kind = !rules.pvp                                  ? 1
+                       : rules.victory == sim::Victory::Elimination ? 2
+                       : rules.victory == sim::Victory::Score       ? 3
+                       : rules.victory == sim::Victory::Objective   ? 4
+                                                                    : 5;
+            }
+            ctx.label({c.x, y, label_w, row_h}, tr("lobby.versus"), body, ctx.theme().text);
+            if (ctx.selector(ctx.id("lobby_versus"), {c.x + label_w, y, c.w - label_w, row_h}, kind, kinds,
+                             tr("lobby.versus.tooltip"), host)) {
+                net::GameConfig cfg = lobby.config;
+                static constexpr sim::Victory kVictory[] = {sim::Victory::None,        sim::Victory::Score,
+                                                            sim::Victory::Elimination, sim::Victory::Score,
+                                                            sim::Victory::Objective,   sim::Victory::None};
+                cfg.rules.versus = kind != 0;
+                cfg.rules.pvp = kind >= 2;
+                cfg.rules.victory = kVictory[kind];
+                static_cast<net::NetHost*>(net)->set_config(cfg);
+            }
+            y += row_h + gap;
+        }
 
         // This player's name and color.
         const float name_w = std::round((c.w - label_w) * 0.6f);

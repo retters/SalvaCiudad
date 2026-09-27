@@ -45,6 +45,12 @@ private:
     [[nodiscard]] std::vector<sim::DefIndex> merchant_rows(const sim::Game& game, std::uint8_t town) const;
     void merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h);
     void trade_window(ui::Context& ctx, GameSession& s);
+    // Phase 16: the barracks and the army.
+    void barracks_section(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
+                          float row_h);
+    void army_window(ui::Context& ctx, GameSession& s);
+    bool army_open_ = false;
+    int attack_pick_ = 0;
     [[nodiscard]] std::string town_name(std::uint8_t player) const;
     [[nodiscard]] std::string goods_name(const sim::Game& game, sim::DefIndex r) const;
     bool trade_open_ = false;

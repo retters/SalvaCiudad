@@ -67,6 +67,8 @@ private:
     void map_hud(ui::Context& ctx);
     void game_menu(ui::Context& ctx);
     void pause_panel(ui::Context& ctx);
+    void end_panel(ui::Context& ctx);  // The game is over: who won, the scores.
+    bool end_seen_ = false;
     void load_screen(ui::Context& ctx, bool modal);
     void game_keys(ui::Context& ctx);
     [[nodiscard]] std::string camera_line() const;

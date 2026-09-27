@@ -267,6 +267,22 @@
       "nutrition": 4,
       "weight": 1,
       "value": 5
+    },
+    {
+      "type": "resource",
+      "id": "core:bows",
+      "name": "resource.bows",
+      "category": "good",
+      "weight": 2,
+      "value": 8
+    },
+    {
+      "type": "resource",
+      "id": "core:weapons",
+      "name": "resource.weapons",
+      "category": "good",
+      "weight": 3,
+      "value": 16
     }
   ]
 }

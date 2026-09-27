@@ -254,6 +254,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En la ventana del centro del pueblo, "Tocar la campana" hace que los adultos salgan a pelear; los asaltantes caen o huyen, y "Silenciar la campana" los devuelve al trabajo.
 - [ ] Una torre de vigía cerca del camino de los asaltantes les dispara.
 
+### Fase 16 (ejército y versus)
+
+- [ ] Con Ctrl+F3 → Pueblo → "Subir de nivel el centro del pueblo" se desbloquean el cuartel y la arquería.
+- [ ] En el cuartel, "Entrenar" una leva: al rato baja la población y la barra muestra "Ejército 1"; el soldado lleva una marca de color.
+- [ ] La ventana del ejército muestra soldados, poder militar, las órdenes y los puntos de cada pueblo; "Defender aquí..." y un clic en el mapa los lleva a ese punto.
+- [ ] Con "Traer asaltantes ahora", los soldados salen a pelear solos.
+- [ ] En la sala multijugador, "Partida" ofrece cooperativa y los modos versus; en "Versus: el último pueblo en pie", "Atacar" manda al ejército al centro del pueblo rival y, si cae, aparece el panel de victoria o derrota.
+- [ ] Una partida de un jugador en la que muere todo el pueblo muestra el panel de fin de partida.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

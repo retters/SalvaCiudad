@@ -33,6 +33,9 @@ enum class CommandType : std::uint8_t {
     AnswerOffer = 22,     // Offer `value`: accept (`count` 1) or decline / withdraw (0).
     RingBell = 23,        // The town's alarm on (`value` 1) or off (0): adults take up arms.
     DevRaid = 24,         // Developer tools: raiders come now.
+    TrainUnit = 25,       // Barracks `entity`: train one unit `def` (`value` 1), or cancel the last (`value` 0).
+    DevLevel = 27,        // Developer tools: the town center goes up a level at once.
+    ArmyOrder = 26,       // The army: defend around `position` (`value` 0), attack player `count` (1) or retreat (2).
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;

@@ -49,6 +49,10 @@ void GameRules::write(BinaryWriter& w) const {
     w.u8(static_cast<std::uint8_t>(fires));
     w.u8(static_cast<std::uint8_t>(raiders));
     w.u8(static_cast<std::uint8_t>(wildlife));
+    w.u8(versus ? 1 : 0);
+    w.u8(pvp ? 1 : 0);
+    w.u8(static_cast<std::uint8_t>(victory));
+    w.i32(score_years);
 }
 
 bool GameRules::read(BinaryReader& r, GameRules& out) {
@@ -67,6 +71,18 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
     g.fires = static_cast<Threat>(fires);
     g.raiders = static_cast<Threat>(raiders);
     g.wildlife = static_cast<Threat>(wildlife);
+    std::uint8_t versus = 0, pvp = 0, victory = 0;
+    if (!r.u8(versus) || !r.u8(pvp) || !r.u8(victory) || !r.i32(g.score_years)) {
+        return false;
+    }
+    if (versus > 1 || pvp > 1 || victory >= static_cast<std::uint8_t>(Victory::Count) || g.score_years < 1 ||
+        g.score_years > 100) {
+        r.fail();
+        return false;
+    }
+    g.versus = versus != 0;
+    g.pvp = pvp != 0;
+    g.victory = static_cast<Victory>(victory);
     if (g.climate.seasons == 0 || g.climate.seasons > 0b1111 || year >= static_cast<std::uint8_t>(YearLength::Count) ||
         winter >= static_cast<std::uint8_t>(Harshness::Count) || start >= static_cast<std::uint8_t>(StartGoods::Count) ||
         g.max_population < kMinPopulationLimit || g.max_population > kMaxPopulationLimit) {

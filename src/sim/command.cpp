@@ -88,6 +88,14 @@ bool Command::read(BinaryReader& r, Command& out) {
             ok = ok && (c.value == 0 || c.value == 1);
             break;
         case CommandType::DevRaid:
+        case CommandType::DevLevel:
+            break;
+        case CommandType::TrainUnit:
+            ok = ok && c.entity.valid() && (c.value == 0 || c.value == 1);
+            break;
+        case CommandType::ArmyOrder:
+            ok = ok && c.value >= 0 && c.value <= 2 && c.count < kMaxPlayers && c.position.x >= Fixed{} &&
+                 c.position.z >= Fixed{};
             break;
         default:
             ok = false;

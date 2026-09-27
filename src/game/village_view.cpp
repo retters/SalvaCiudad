@@ -1,5 +1,7 @@
 #include "game/village_view.h"
 
+#include "game/multiplayer_screens.h"
+
 #include <algorithm>
 #include <cmath>
 #include <numbers>
@@ -357,8 +359,12 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
             look.yaw += wrap_angle(want - look.yaw) * std::min(1.0f, dt * 8.0f);
         }
         look.time += dt * (moving ? 2.0f * static_cast<float>(std::max(speed, 1)) : 1.0f);
-        if (a.kind == sim::CreatureKind::Raider) {
-            // A villager body with a red mark under it.
+        if (a.state == sim::CreatureState::Travel) {
+            continue;  // Away on the world map.
+        }
+        if (a.kind == sim::CreatureKind::Raider || a.kind == sim::CreatureKind::Soldier) {
+            // A villager body with a mark under it: red for raiders, the
+            // town's color for soldiers.
             if (bodies_ != nullptr && !bodies_->empty()) {
                 const TestCrowd::BodyKind& kind = bodies_->front();
                 render::CharacterInstance c;
@@ -375,6 +381,12 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
             mark.position = {at.x, at.y + 0.02f, at.z};
             mark.scale = 0.4f;
             mark.tint = {1.6f, 0.15f, 0.1f};
+            if (a.kind == sim::CreatureKind::Soldier) {
+                const ui::Color color = player_color(a.town);
+                mark.tint = {static_cast<float>(color.r) / 160.0f, static_cast<float>(color.g) / 160.0f,
+                             static_cast<float>(color.b) / 160.0f};
+                mark.scale = 0.45f;
+            }
             marks_.push_back(mark);
             continue;
         }

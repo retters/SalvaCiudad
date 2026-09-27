@@ -935,3 +935,53 @@ La prueba de "una hora de juego" mide la economía; con asaltantes en medio y si
 
 **D-1508. Índices de aldeanos tras una muerte.**
 Las criaturas buscan aldeanos en una cuadrícula que se arma una vez por tick. Si un asaltante o una fiera mata a un aldeano, el almacén de aldeanos se reordena y la cuadrícula queda con índices viejos. En debug, la biblioteca estándar lo detectó como un índice fuera de rango. Ahora se rearma tras cada muerte.
+
+## Fase 16: ejército y versus (2026-09-27)
+
+**D-1601. Unidades como datos.**
+Cada `unit` define salud, daño, cadencia, alcance, velocidad, costo en equipo, tiempo de entrenamiento, poder militar y el nivel del centro del pueblo que pide.
+- **Leva:** 3 troncos.
+- **Arquero:** un arco; dispara a 20 m. Los arcos se hacen en la arquería (nivel 2) con 2 troncos.
+- **Lancero:** unas armas; nivel 3. Las armas se hacen en la armería (nivel 3) con hierro y un tronco.
+
+**D-1602. El cuartel.**
+Uno por pueblo, nivel 2. Tiene una fila de hasta 10 unidades. Al terminar el tiempo de entrenamiento, toma el equipo de los almacenes y a un adulto sano (primero los peones), que deja de ser aldeano: no cuenta como muerte. Si falta el equipo o la gente, la unidad espera en la fila.
+
+Los soldados no comen ni cobran por ahora; queda anotado para balancear más adelante.
+
+**D-1603. Órdenes.**
+El jugador da una orden a todo el ejército (comando `ArmyOrder`):
+- **Defender el pueblo:** se reúnen en el centro del pueblo.
+- **Defender aquí:** se reúnen en un punto del mapa.
+- **Atacar a un pueblo:** van por su centro del pueblo rompiendo lo que estorbe, como los asaltantes.
+- **Retirarse:** vuelven sin pelear.
+
+Mientras no se retiran, pelean solos contra el enemigo más cercano (asaltantes, lobos, osos y soldados enemigos) a menos de 16 m, o de su alcance más 6 m. Quien recibe un golpe responde, salvo los ciervos. Las torres y las trampas también dañan a los soldados enemigos, y la milicia pelea contra ellos.
+
+Los soldados no atacan a los aldeanos enemigos.
+
+**D-1604. Mapas separados.**
+Con mapas separados, un ejército que ataca a otro pueblo viaja por el mapa del mundo: desaparece del mapa propio, tarda lo mismo que una caravana y aparece en un borde del mapa enemigo. Al retirarse vuelve igual.
+
+**D-1605. Versus y victoria.**
+`GameRules` tiene `versus`, `pvp` (combate entre jugadores), `victory` y `score_years`. La sala ofrece seis opciones:
+- cooperativa;
+- versus sin guerra, que gana la mejor puntuación a 5 años (el ejército cuenta como poder militar);
+- versus por eliminación;
+- versus por puntuación;
+- versus por objetivo (derribar los centros del pueblo rivales);
+- versus sin final.
+
+Reglas del resultado:
+- Un pueblo queda fuera si pierde su centro del pueblo o, salvo en "objetivo", si no le queda gente ni soldados.
+- Los asaltantes no pueden derribar un centro del pueblo; solo un ejército enemigo.
+- Se revisa cada mes y en cuanto cae un centro del pueblo.
+
+**Puntuación:** 10 por habitante, 5 por edificio terminado, 100 por nivel del centro del pueblo, una por cada 10 monedas y 10 por punto de poder militar.
+
+**D-1606. Fin de la partida.**
+- En una partida cooperativa o de un jugador, la partida termina cuando no queda ningún pueblo.
+- Al terminar, un panel muestra victoria, derrota o fin, con los puntos de cada pueblo. Permite seguir mirando o salir al menú.
+
+**D-1607. Subir de nivel para probar.**
+`DevLevel` sube un nivel el centro del pueblo sin costo, solo con las herramientas de desarrollo. Sirve para revisar a mano lo que pide nivel 2 o 3 sin juntar 30 o 70 aldeanos.

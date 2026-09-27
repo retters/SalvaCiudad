@@ -575,6 +575,7 @@ public:
         {32, 250, 40, 18},  // Wolf.
         {26, 700, 120, 12}, // Bear.
         {22, 400, 60, 6},   // Raider.
+        {21, 500, 50, 16},  // Soldier (its unit decides).
     };
     [[nodiscard]] static const CreatureStats& stats(CreatureKind k) {
         return kStats[static_cast<std::size_t>(k) % std::size(kStats)];
@@ -697,8 +698,28 @@ public:
         return true;
     }
 
+    [[nodiscard]] const UnitDef* unit_of(const Creature& a) const {
+        return a.kind == CreatureKind::Soldier && a.unit < c_.units.size() ? &c_.units[a.unit] : nullptr;
+    }
+    [[nodiscard]] std::int32_t damage_of(const Creature& a) const {
+        const UnitDef* u = unit_of(a);
+        return u != nullptr ? u->damage : stats(a.kind).damage;
+    }
+    [[nodiscard]] std::int32_t max_health(const Creature& a) const {
+        const UnitDef* u = unit_of(a);
+        return u != nullptr ? u->health : stats(a.kind).health;
+    }
+    [[nodiscard]] std::int32_t every_of(const Creature& a) const {
+        const UnitDef* u = unit_of(a);
+        return u != nullptr ? u->attack_every : 10;
+    }
+    [[nodiscard]] std::int32_t range_of(const Creature& a) const {
+        const UnitDef* u = unit_of(a);
+        return u != nullptr ? u->range : 1;
+    }
     [[nodiscard]] Fixed speed_of(const Creature& a) const {
-        return Fixed::from_ratio(stats(a.kind).speed, 100) * Fixed::from_ratio(200 - g_.snow_, 200);
+        const UnitDef* u = unit_of(a);
+        return Fixed::from_ratio(u != nullptr ? u->speed : stats(a.kind).speed, 100) * Fixed::from_ratio(200 - g_.snow_, 200);
     }
 
     // A villager is attacked: it runs to the town center unless it fights.
@@ -746,8 +767,17 @@ public:
                 (a.kind != CreatureKind::Boar || g_.rng_.below(2) == 0)) {
                 a.state = CreatureState::Chase;
                 a.target = near;
+                a.target_kind = TargetKind::Villager;
                 return;
             }
+        }
+        if (a.state == CreatureState::Chase && a.target_kind == TargetKind::Creature) {
+            if (g_.creatures_.get(a.target) == nullptr || distance2(a.position, a.home) > meters2(territory + 20)) {
+                a.state = CreatureState::Wander;
+                a.target = {};
+                a.goal = a.home;
+            }
+            return;
         }
         if (a.state == CreatureState::Chase) {
             const Villager* v = g_.villagers_.get(a.target);
@@ -771,21 +801,42 @@ public:
         if (a.state == CreatureState::Leave) {
             return;
         }
-        if (a.health * 100 < stats(a.kind).health * 35) {
+        if (a.health * 100 < max_health(a) * 35) {
             leave(a);
             return;
         }
         if (a.state == CreatureState::Chase) {
-            const Villager* v = g_.villagers_.get(a.target);
-            if (v == nullptr || distance2(v->position, a.position) > meters2(14)) {
+            const FixedVec2* at = nullptr;
+            if (a.target_kind == TargetKind::Creature) {
+                const Creature* o = g_.creatures_.get(a.target);
+                at = o != nullptr ? &o->position : nullptr;
+            } else {
+                const Villager* v = g_.villagers_.get(a.target);
+                at = v != nullptr ? &v->position : nullptr;
+            }
+            if (at == nullptr || distance2(*at, a.position) > meters2(14)) {
                 resume_raid(a);
             }
             return;
         }
+        if (a.state == CreatureState::Bash) {
+            return;
+        }
+        // Soldiers of the town first, then anybody.
+        const EntityId soldier = creature_near(a.position, stats(a.kind).aggro, [&](const Creature& o) {
+            return o.kind == CreatureKind::Soldier && o.town == a.town && o.state != CreatureState::Travel;
+        });
+        if (soldier.valid()) {
+            a.state = CreatureState::Chase;
+            a.target = soldier;
+            a.target_kind = TargetKind::Creature;
+            return;
+        }
         const EntityId near = villager_near(a.position, stats(a.kind).aggro, a.town);
-        if (near.valid() && a.state != CreatureState::Bash) {
+        if (near.valid()) {
             a.state = CreatureState::Chase;
             a.target = near;
+            a.target_kind = TargetKind::Villager;
         }
     }
 
@@ -892,7 +943,10 @@ public:
         if (b == nullptr) {
             return;
         }
-        b->damage += stats(a.kind).damage;
+        b->damage += damage_of(a);
+        if (def(*b).kind == BuildingKind::TownCenter && a.kind == CreatureKind::Raider) {
+            b->damage = std::min(b->damage, def(*b).hp - 1);  // Raiders cannot bring a town center down.
+        }
         if (b->damage >= def(*b).hp) {
             remove_building(id);
             if (a.state == CreatureState::Bash) {
@@ -921,7 +975,7 @@ public:
         } else if (!def(*b).fireproof) {
             ignite(*b, a.target);
         } else {
-            b->damage += stats(a.kind).damage * 5;
+            b->damage = std::min(def(*b).hp - 1, b->damage + damage_of(a) * 5);
         }
         leave(a);
     }
@@ -938,14 +992,16 @@ public:
             const EntityId self = cs.entities()[i];
             a.previous = a.position;
             const bool think = (g_.tick_ + self.index) % 10 == 0;
+            if (a.kind == CreatureKind::Soldier) {
+                soldier_tick(a, self, think);
+                continue;
+            }
             if (a.kind == CreatureKind::Raider) {
                 if (think) {
                     raider_think(a);
                 }
                 if (a.state == CreatureState::Chase) {
-                    fight_villager(a, self);
-                } else if (a.state == CreatureState::Bash) {
-                    raider_move(a, self);
+                    fight(a, self);
                 } else {
                     raider_move(a, self);
                 }
@@ -955,7 +1011,7 @@ public:
                 animal_think(a);
             }
             if (a.state == CreatureState::Chase) {
-                fight_villager(a, self);
+                fight(a, self);
             } else if (!step_toward(a, a.goal, speed_of(a) * (a.state == CreatureState::Flee ? Fixed::one() : Fixed::from_ratio(1, 3)))) {
                 a.goal = a.position;
             }
@@ -978,6 +1034,405 @@ public:
     }
     std::vector<EntityId> gone_;
 
+    void fight(Creature& a, EntityId self) {
+        if (a.target_kind == TargetKind::Creature) {
+            fight_creature(a, self);
+        } else {
+            fight_villager(a, self);
+        }
+    }
+
+    // The nearest creature within `radius` meters that `pick` accepts.
+    template <typename Pick>
+    [[nodiscard]] EntityId creature_near(FixedVec2 at, std::int32_t radius, Pick pick) const {
+        EntityId best;
+        std::uint64_t best_d = meters2(radius);
+        const auto& cs = g_.creatures_;
+        for (std::size_t i = 0; i < cs.size(); ++i) {
+            const Creature& o = cs.data()[i];
+            if (o.health <= 0 || !pick(o)) {
+                continue;
+            }
+            const std::uint64_t d = distance2(o.position, at);
+            if (d < best_d) {
+                best_d = d;
+                best = cs.entities()[i];
+            }
+        }
+        return best;
+    }
+
+    // Creature against creature: soldiers, raiders, animals.
+    void fight_creature(Creature& a, EntityId self) {
+        Creature* o = g_.creatures_.get(a.target);
+        if (o == nullptr || o->health <= 0 || o->state == CreatureState::Travel) {
+            a.target = {};
+            a.target_kind = TargetKind::Villager;
+            if (a.kind == CreatureKind::Raider) {
+                resume_raid(a);
+            } else {
+                a.state = CreatureState::Wander;
+                a.goal = a.kind == CreatureKind::Soldier ? a.position : a.home;
+            }
+            return;
+        }
+        const std::int32_t reach = range_of(a);
+        if (distance2(a.position, o->position) > meters2(reach) + (meters2(1) >> 1)) {
+            (void)step_toward(a, o->position, speed_of(a));
+            return;
+        }
+        if (++a.timer % every_of(a) != 0) {
+            return;
+        }
+        o->health -= damage_of(a);
+        // Whoever is hit fights back (deer run).
+        if (o->kind != CreatureKind::Deer && o->state != CreatureState::Chase && o->state != CreatureState::Travel &&
+            o->state != CreatureState::Leave) {
+            o->state = CreatureState::Chase;
+            o->target = self;
+            o->target_kind = TargetKind::Creature;
+        }
+    }
+
+    // --- Soldiers (phase 16) ----------------------------------------------------------
+
+    [[nodiscard]] bool foe_of_soldier(const Creature& me, const Creature& o) const {
+        if (o.state == CreatureState::Travel) {
+            return false;
+        }
+        switch (o.kind) {
+            case CreatureKind::Raider: return o.state != CreatureState::Leave;
+            case CreatureKind::Wolf:
+            case CreatureKind::Bear: return true;
+            case CreatureKind::Soldier: return g_.enemies(me.town, o.town);
+            default: return false;
+        }
+    }
+
+    [[nodiscard]] FixedVec2 rally_of(std::uint8_t town) const {
+        const PlayerState& ps = g_.players_[town];
+        if (ps.rally.x != Fixed{} || ps.rally.z != Fixed{}) {
+            return ps.rally;
+        }
+        const Building* tc = g_.buildings_.get(ps.town_center);
+        return tc != nullptr ? g_.door(*tc) : FixedVec2{};
+    }
+
+    // Separate maps: whether a soldier is on another town's map.
+    [[nodiscard]] bool in_region_of(const Creature& a, std::uint8_t town) const {
+        return g_.map_.region_size() == 0 ||
+               g_.map_.region_at(a.position.x.floor_int(), a.position.z.floor_int()) == static_cast<std::int32_t>(town);
+    }
+
+    // Off to another map over the world map; back on its edge later.
+    void travel(Creature& a, std::uint8_t to) {
+        a.state = CreatureState::Travel;
+        a.timer = static_cast<std::int32_t>(g_.travel_ticks(a.town, to));
+        a.goal = {Fixed::from_int(to), Fixed{}};  // Where to, while away.
+        a.path.clear();
+        a.path_index = 0;
+    }
+
+    void arrive_from_travel(Creature& a) {
+        const std::uint8_t to = static_cast<std::uint8_t>(a.goal.x.floor_int());
+        const Game::Region r = g_.region(to);
+        // A walkable point on the edge nearest the town it came from.
+        FixedVec2 at{Fixed::from_int(r.x + r.size / 2), Fixed::from_int(r.z + 8)};
+        for (int attempt = 0; attempt < 12; ++attempt) {
+            const std::int32_t along = static_cast<std::int32_t>(g_.rng_.below(static_cast<std::uint32_t>(r.size - 16))) + 8;
+            const std::int32_t side = attempt % 4;
+            const std::int32_t x = side == 0 ? 8 : side == 1 ? r.size - 9 : along;
+            const std::int32_t z = side == 2 ? 8 : side == 3 ? r.size - 9 : along;
+            const FixedVec2 p{Fixed::from_int(r.x + x), Fixed::from_int(r.z + z)};
+            if (g_.nav_.walkable(p.x.floor_int() / NavGrid::kCellMeters, p.z.floor_int() / NavGrid::kCellMeters)) {
+                at = p;
+                break;
+            }
+        }
+        a.position = at;
+        a.previous = at;
+        a.state = CreatureState::Wander;
+    }
+
+    void soldier_tick(Creature& a, EntityId self, bool think) {
+        if (a.state == CreatureState::Travel) {
+            if (--a.timer <= 0) {
+                arrive_from_travel(a);
+            }
+            return;
+        }
+        const PlayerState& ps = g_.players_[a.town];
+        if (think && a.state != CreatureState::Chase) {
+            soldier_think(a);
+        }
+        if (a.state == CreatureState::Chase) {
+            if (a.target_kind == TargetKind::Creature) {
+                fight_creature(a, self);
+            } else {
+                a.state = CreatureState::Wander;
+            }
+            return;
+        }
+        // Following a path: to the rally point, or at the enemy (breaking
+        // what is in the way).
+        Fixed budget = speed_of(a);
+        const bool siege = ps.order == ArmyOrderKind::Attack && a.target_kind == TargetKind::Building;
+        while (budget > Fixed{} && a.path_index < a.path.size()) {
+            const FixedVec2 to = a.path[a.path_index];
+            const FixedVec2 d = to - a.position;
+            const Fixed len = d.length();
+            const FixedVec2 next = len <= budget ? to : a.position + d * (budget / len);
+            if (siege) {
+                const std::int32_t cx = next.x.floor_int();
+                const std::int32_t cz = next.z.floor_int();
+                if (g_.nav_.obstacle(cx / NavGrid::kCellMeters, cz / NavGrid::kCellMeters)) {
+                    const EntityId wall = building_at(cx, cz);
+                    if (wall.valid() && wall != a.target) {
+                        strike(a, wall);
+                        return;
+                    }
+                }
+            }
+            if (len <= budget) {
+                a.position = to;
+                budget -= len;
+                ++a.path_index;
+            } else {
+                a.position = next;
+                budget = Fixed{};
+            }
+        }
+        if (a.path_index >= a.path.size() && siege) {
+            strike(a, a.target);
+        }
+    }
+
+    // Every 10 ticks: an enemy to fight, or the order to follow.
+    void soldier_think(Creature& a) {
+        const PlayerState& ps = g_.players_[a.town];
+        if (ps.outcome == Outcome::Lost) {
+            a.health = 0;
+            return;
+        }
+        if (ps.order != ArmyOrderKind::Retreat) {
+            const std::int32_t reach = std::max(range_of(a) + 6, 16);
+            const EntityId foe = creature_near(a.position, reach, [&](const Creature& o) { return foe_of_soldier(a, o); });
+            if (foe.valid()) {
+                a.state = CreatureState::Chase;
+                a.target = foe;
+                a.target_kind = TargetKind::Creature;
+                a.path.clear();
+                a.path_index = 0;
+                return;
+            }
+        }
+        const bool moving = a.path_index < a.path.size();
+        switch (ps.order) {
+            case ArmyOrderKind::Attack: {
+                const PlayerState& enemy = g_.players_[ps.enemy];
+                const Building* tc = g_.buildings_.get(enemy.town_center);
+                if (tc == nullptr || !g_.enemies(a.town, ps.enemy)) {
+                    return;  // Nothing left to attack: wait there.
+                }
+                if (!in_region_of(a, ps.enemy)) {
+                    travel(a, ps.enemy);
+                    return;
+                }
+                if (!moving && (a.target != enemy.town_center || a.target_kind != TargetKind::Building ||
+                                distance2(a.position, g_.door(*tc)) > meters2(12))) {
+                    a.target = enemy.town_center;
+                    a.target_kind = TargetKind::Building;
+                    a.path_index = 0;
+                    if (!g_.nav_.find_path_through(a.position, g_.door(*tc), a.path)) {
+                        a.path.clear();
+                    }
+                }
+                return;
+            }
+            case ArmyOrderKind::Defend:
+            case ArmyOrderKind::Retreat:
+            case ArmyOrderKind::Count: {
+                if (!in_region_of(a, a.town)) {
+                    travel(a, a.town);
+                    return;
+                }
+                a.target_kind = TargetKind::Villager;
+                a.target = {};
+                const FixedVec2 at = rally_of(a.town);
+                if (!moving && distance2(a.position, at) > meters2(8)) {
+                    // Around the rally point, not all on one spot.
+                    const FixedVec2 spot{at.x + Fixed::from_int(g_.rng_.range(-5, 5)), at.z + Fixed::from_int(g_.rng_.range(-5, 5))};
+                    a.path_index = 0;
+                    if (!g_.nav_.find_path(a.position, spot, a.path)) {
+                        a.path.clear();
+                    }
+                }
+                return;
+            }
+        }
+    }
+
+    // Soldiers hitting a building (every attack): a town center brought
+    // down loses its town the game.
+    void strike(Creature& a, EntityId id) {
+        if (++a.timer % every_of(a) != 0) {
+            return;
+        }
+        Building* b = g_.buildings_.get(id);
+        if (b == nullptr) {
+            a.target = {};
+            return;
+        }
+        if (b->owner != a.town && !g_.enemies(a.town, b->owner)) {
+            return;  // Allies' walls are left alone.
+        }
+        b->damage += damage_of(a) * 2;
+        if (b->damage >= def(*b).hp) {
+            const std::uint8_t owner = b->owner;
+            const bool tc = id == g_.players_[owner].town_center;
+            remove_building(id);
+            a.path.clear();
+            a.path_index = 0;
+            if (tc) {
+                g_.players_[owner].town_center = {};
+                check_outcomes();
+            }
+        }
+    }
+
+    // Barracks: the unit in front is trained, then takes a villager and
+    // its equipment.
+    void train() {
+        auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            Building& b = list.data()[i];
+            if (!def(b).trains || !complete(b) || b.training.empty()) {
+                continue;
+            }
+            const DefIndex u = b.training.front();
+            if (u >= c_.units.size()) {
+                b.training.erase(b.training.begin());
+                continue;
+            }
+            const UnitDef& unit = c_.units[u];
+            if (b.train_progress < unit.train_work) {
+                b.train_progress = std::min(unit.train_work, b.train_progress + 10);
+                continue;
+            }
+            // Ready: someone to arm, and the arms.
+            bool have = true;
+            for (const ResourceAmount& c : unit.cost) {
+                have = have && g_.tradeable(b.owner, c.resource) >= c.amount;
+            }
+            EntityId recruit;
+            std::uint64_t best = UINT64_MAX;
+            const FixedVec2 door = g_.door(b);
+            for (std::size_t k = 0; k < g_.villagers_.size() && have; ++k) {
+                const Villager& v = g_.villagers_.data()[k];
+                // Laborers first: a villager with a job counts double the distance.
+                const std::uint64_t d = distance2(v.position, door) * (v.job.valid() ? 2u : 1u);
+                if (v.owner == b.owner && g_.adult(v) && v.disease == 0 && d < best) {
+                    best = d;
+                    recruit = g_.villagers_.entities()[k];
+                }
+            }
+            if (!have || !recruit.valid()) {
+                continue;
+            }
+            for (const ResourceAmount& c : unit.cost) {
+                (void)take_from_town(b.owner, c.resource, c.amount);
+            }
+            kill(recruit);
+            --g_.players_[b.owner].deaths;  // Not a death: a soldier now.
+            Creature s;
+            s.kind = CreatureKind::Soldier;
+            s.state = CreatureState::Wander;
+            s.town = b.owner;
+            s.zone = 0xFFFF;
+            s.unit = u;
+            s.position = door;
+            s.previous = door;
+            s.home = door;
+            s.goal = door;
+            s.health = unit.health;
+            s.timer = static_cast<std::int32_t>(g_.rng_.below(10));
+            g_.creatures_.add(g_.registry_.create(), s);
+            b.training.erase(b.training.begin());
+            b.train_progress = 0;
+            g_.events_.push_back({Game::Event::Kind::UnitTrained, b.owner, {}, door, u, 0});
+        }
+    }
+
+    // Who is still in the game, and whether it is over (section 6.3).
+    void check_outcomes() {
+        if (g_.game_over_) {
+            return;
+        }
+        std::vector<std::uint8_t> towns;
+        for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+            if (g_.town_of(p) == p && g_.players_[p].active) {
+                towns.push_back(p);
+            }
+        }
+        const GameRules& rules = g_.rules_;
+        for (const std::uint8_t p : towns) {
+            PlayerState& ps = g_.players_[p];
+            if (ps.outcome != Outcome::Playing) {
+                continue;
+            }
+            const bool no_center = g_.buildings_.get(ps.town_center) == nullptr;
+            const bool no_people = g_.population(p) == 0 && g_.soldiers(p) == 0;
+            const bool objective = rules.versus && rules.victory == Victory::Objective;
+            if (no_center || (no_people && !objective)) {
+                ps.outcome = Outcome::Lost;
+                ps.alarm = false;
+                g_.events_.push_back({Game::Event::Kind::TownLost, p, {}, {}, 0, 0});
+            }
+        }
+        std::vector<std::uint8_t> alive;
+        for (const std::uint8_t p : towns) {
+            if (g_.players_[p].outcome == Outcome::Playing) {
+                alive.push_back(p);
+            }
+        }
+        std::int32_t winner = -1;
+        bool over = alive.empty();
+        if (rules.versus && !over) {
+            switch (rules.victory) {
+                case Victory::Elimination:
+                case Victory::Objective:
+                    if (towns.size() > 1 && alive.size() == 1) {
+                        winner = alive.front();
+                        over = true;
+                    }
+                    break;
+                case Victory::Score:
+                    if (g_.tick_ >= static_cast<std::uint64_t>(rules.score_years) * g_.year_ticks()) {
+                        std::int32_t best = INT32_MIN;
+                        for (const std::uint8_t p : alive) {
+                            const std::int32_t sc = g_.score(p);
+                            if (sc > best) {
+                                best = sc;
+                                winner = p;
+                            }
+                        }
+                        over = true;
+                    }
+                    break;
+                case Victory::None:
+                case Victory::Count: break;
+            }
+        }
+        if (!over) {
+            return;
+        }
+        g_.game_over_ = true;
+        for (const std::uint8_t p : alive) {
+            g_.players_[p].outcome = static_cast<std::int32_t>(p) == winner ? Outcome::Won : Outcome::Lost;
+        }
+        g_.events_.push_back({Game::Event::Kind::GameOver, 0, {}, {}, static_cast<std::uint16_t>(winner + 1), 0});
+    }
+
     // Chasing and biting (or hitting) a villager.
     void fight_villager(Creature& a, EntityId self) {
         Villager* v = g_.villagers_.get(a.target);
@@ -997,7 +1452,7 @@ public:
         if (++a.timer % 10 != 0) {
             return;
         }
-        hurt(*v, a.target, stats(a.kind).damage, a.kind, self);
+        hurt(*v, a.target, damage_of(a), a.kind, self);
         if (a.kind == CreatureKind::Boar && v->health > 0) {
             a.state = CreatureState::Wander;  // Enough: back to the herd.
             a.target = {};
@@ -1036,7 +1491,11 @@ public:
                     Creature& a = cs.data()[k];
                     const std::int32_t ax = a.position.x.floor_int();
                     const std::int32_t az = a.position.z.floor_int();
-                    if (Game::hostile(a.kind) && ax >= b.x && ax < b.x + b.width && az >= b.z && az < b.z + b.depth) {
+                    const bool foe = a.kind == CreatureKind::Soldier ? g_.enemies(a.town, b.owner)
+                                     : a.kind == CreatureKind::Raider  ? a.town == b.owner
+                                                                       : Game::hostile(a.kind);
+                    if (foe && a.state != CreatureState::Travel && ax >= b.x && ax < b.x + b.width && az >= b.z &&
+                        az < b.z + b.depth) {
                         a.health -= d.attack_damage;
                         b.rearm = 300;
                         break;
@@ -1051,7 +1510,10 @@ public:
             std::uint64_t aim_d = meters2(d.attack_range);
             const FixedVec2 c = center_of(b);
             for (Creature& a : cs.data()) {
-                const bool enemy = a.kind == CreatureKind::Raider ? a.town == b.owner : Game::hostile(a.kind);
+                const bool enemy = a.kind == CreatureKind::Raider    ? a.town == b.owner
+                                   : a.kind == CreatureKind::Soldier ? g_.enemies(a.town, b.owner) &&
+                                                                           a.state != CreatureState::Travel
+                                                                     : Game::hostile(a.kind);
                 if (enemy && distance2(a.position, c) < aim_d) {
                     aim_d = distance2(a.position, c);
                     aim = &a;
@@ -1147,8 +1609,10 @@ public:
         const auto& cs = g_.creatures_;
         for (std::size_t i = 0; i < cs.size(); ++i) {
             const Creature& a = cs.data()[i];
-            const bool enemy = a.kind == CreatureKind::Raider ? a.town == v.owner && a.state != CreatureState::Leave
-                                                              : Game::hostile(a.kind);
+            const bool enemy = a.kind == CreatureKind::Raider    ? a.town == v.owner && a.state != CreatureState::Leave
+                               : a.kind == CreatureKind::Soldier ? g_.enemies(a.town, v.owner) &&
+                                                                       a.state != CreatureState::Travel
+                                                                 : Game::hostile(a.kind);
             if (!enemy || distance2(a.position, at) > meters2(160)) {
                 continue;
             }
@@ -2604,6 +3068,7 @@ public:
     }
 
     void monthly() {
+        check_outcomes();
         // Diets: last month's variety; the game comes back to its zones.
         for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
             const std::int32_t cap = g_.zone_open(z) ? zone_capacity(g_.map_.zones[z].type, g_.rules_) : 0;
@@ -2979,6 +3444,9 @@ public:
         }
         update_creatures();
         defend();
+        if (g_.tick_ % 10 == 0) {
+            train();
+        }
     }
 
     // --- Setup and commands ---------------------------------------------------------
@@ -3217,6 +3685,64 @@ public:
                 break;
             }
             case CommandType::Trade: trade_with_merchant(c); break;
+            case CommandType::TrainUnit: {
+                Building* b = g_.buildings_.get(c.entity);
+                const std::uint8_t town = g_.town_of(c.player);
+                if (b == nullptr || b->owner != town || !def(*b).trains || !complete(*b) ||
+                    (c.value == 1 && (c.def >= c_.units.size() || c_.units[c.def].tier > g_.tier(town) ||
+                                      b->training.size() >= 10)) ||
+                    (c.value == 0 && b->training.empty())) {
+                    ++g_.rejected_;
+                    break;
+                }
+                if (c.value == 1) {
+                    b->training.push_back(c.def);
+                } else {
+                    b->training.pop_back();
+                    if (b->training.empty()) {
+                        b->train_progress = 0;
+                    }
+                }
+                break;
+            }
+            case CommandType::ArmyOrder: {
+                const std::uint8_t town = g_.town_of(c.player);
+                PlayerState& ps = g_.players_[town];
+                const auto order = static_cast<ArmyOrderKind>(c.value);
+                const auto enemy = static_cast<std::uint8_t>(c.count);  // Below kMaxPlayers: checked when read.
+                if (order == ArmyOrderKind::Attack &&
+                    (!g_.enemies(town, enemy) || g_.buildings_.get(g_.players_[enemy].town_center) == nullptr)) {
+                    ++g_.rejected_;
+                    break;
+                }
+                ps.order = order;
+                if (order == ArmyOrderKind::Defend) {
+                    ps.rally = c.position;
+                } else if (order == ArmyOrderKind::Attack) {
+                    ps.enemy = enemy;
+                }
+                // The soldiers heed it at once.
+                for (Creature& a : g_.creatures_.data()) {
+                    if (a.kind == CreatureKind::Soldier && a.town == town && a.state != CreatureState::Travel) {
+                        a.state = CreatureState::Wander;
+                        a.target = {};
+                        a.path.clear();
+                        a.path_index = 0;
+                    }
+                }
+                break;
+            }
+            case CommandType::DevLevel: {
+                Building* tc = g_.buildings_.get(g_.players_[g_.town_of(c.player)].town_center);
+                if (!g_.dev_commands_ || tc == nullptr || tc->level >= def(*tc).levels.size()) {
+                    ++g_.rejected_;
+                    break;
+                }
+                ++tc->level;
+                tc->upgrading = false;
+                g_.buildings_changed_ = true;
+                break;
+            }
             case CommandType::DevRaid:
                 if (!g_.dev_commands_ || !g_.players_[g_.town_of(c.player)].town_center.valid()) {
                     ++g_.rejected_;
@@ -3553,6 +4079,40 @@ bool Game::zone_open(std::size_t z) const {
         }
     }
     return true;
+}
+
+std::int32_t Game::soldiers(std::uint8_t player) const {
+    std::int32_t n = 0;
+    const std::uint8_t town = town_of(player);
+    for (const Creature& a : creatures_.data()) {
+        n += a.kind == CreatureKind::Soldier && a.town == town ? 1 : 0;
+    }
+    return n;
+}
+
+std::int32_t Game::military_power(std::uint8_t player) const {
+    std::int32_t n = 0;
+    const std::uint8_t town = town_of(player);
+    for (const Creature& a : creatures_.data()) {
+        if (a.kind == CreatureKind::Soldier && a.town == town && a.unit < content_->units.size()) {
+            n += content_->units[a.unit].power;
+        }
+    }
+    return n;
+}
+
+std::int32_t Game::score(std::uint8_t player) const {
+    const std::uint8_t town = town_of(player);
+    std::int64_t s = static_cast<std::int64_t>(population(town)) * 10 + static_cast<std::int64_t>(tier(town)) * 100 +
+                     players_[town].coins / 10 + static_cast<std::int64_t>(military_power(town)) * 10;
+    for (const Building& b : buildings_.data()) {
+        s += b.owner == town && b.state == BuildingState::Complete ? 5 : 0;
+    }
+    return static_cast<std::int32_t>(std::min<std::int64_t>(s, INT32_MAX));
+}
+
+bool Game::enemies(std::uint8_t a, std::uint8_t b) const {
+    return rules_.versus && rules_.pvp && a < player_count_ && b < player_count_ && town_of(a) != town_of(b);
 }
 
 std::int32_t Game::raiders_near(std::uint8_t player) const {
@@ -3903,6 +4463,10 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(ps.alarm ? 1 : 0);
         w.u64(ps.next_raid);
         w.i32(ps.raids);
+        w.u8(static_cast<std::uint8_t>(ps.order));
+        w.vec2(ps.rally);
+        w.u8(ps.enemy);
+        w.u8(static_cast<std::uint8_t>(ps.outcome));
         w.u32(static_cast<std::uint32_t>(ps.merchant.size()));
         for (const MerchantGood& good : ps.merchant) {
             w.u16(good.resource);
@@ -3911,6 +4475,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
             w.i32(good.sell);
         }
     }
+    w.u8(g.game_over() ? 1 : 0);
     w.u32(g.next_offer());
     w.u32(static_cast<std::uint32_t>(g.offers().size()));
     for (const TradeOffer& o : g.offers()) {
@@ -3996,6 +4561,11 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(b.burned);
         w.i32(b.damage);
         w.i32(b.rearm);
+        w.u32(static_cast<std::uint32_t>(b.training.size()));
+        for (const DefIndex u : b.training) {
+            w.u16(u);
+        }
+        w.i32(b.train_progress);
         w.u32(static_cast<std::uint32_t>(b.fields.size()));
         for (const Field& f : b.fields) {
             w.i32(f.x);
@@ -4092,6 +4662,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u32(a.target.generation);
         w.u16(a.loot.resource);
         w.i32(a.loot.amount);
+        w.u8(static_cast<std::uint8_t>(a.target_kind));
+        w.u16(a.unit);
     }
     if (marks != nullptr) {
         *marks = m;
@@ -4177,11 +4749,15 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             !r.u64(ps.merchant_leaves)) {
             return false;
         }
-        std::uint8_t alarm = 0;
-        if (!r.u8(alarm) || alarm > 1 || !r.u64(ps.next_raid) || !r.i32(ps.raids)) {
+        std::uint8_t alarm = 0, order = 0, outcome = 0;
+        if (!r.u8(alarm) || alarm > 1 || !r.u64(ps.next_raid) || !r.i32(ps.raids) || !r.u8(order) ||
+            order >= static_cast<std::uint8_t>(ArmyOrderKind::Count) || !r.vec2(ps.rally) || !r.u8(ps.enemy) ||
+            ps.enemy >= kMaxPlayers || !r.u8(outcome) || outcome >= static_cast<std::uint8_t>(Outcome::Count)) {
             r.fail();
             return false;
         }
+        ps.order = static_cast<ArmyOrderKind>(order);
+        ps.outcome = static_cast<Outcome>(outcome);
         ps.alarm = alarm != 0;
         ps.active = active != 0;
         std::uint32_t goods = 0;
@@ -4198,10 +4774,13 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         }
     }
     const auto trade_def = [&](DefIndex d) { return d == kCoins || d < c.resources.size(); };
+    std::uint8_t over = 0;
     std::uint32_t offers = 0;
-    if (!r.u32(g.next_offer_) || !r.count(64, 28, offers)) {
+    if (!r.u8(over) || over > 1 || !r.u32(g.next_offer_) || !r.count(64, 28, offers)) {
+        r.fail();
         return false;
     }
+    g.game_over_ = over != 0;
     g.offers_.resize(offers);
     for (TradeOffer& o : g.offers_) {
         if (!r.u32(o.id) || o.id >= g.next_offer_ || !r.u8(o.from) || o.from >= pc || !r.u8(o.to) || o.to >= pc ||
@@ -4314,6 +4893,21 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             r.fail();
             return false;
         }
+        std::uint32_t queued = 0;
+        if (!r.count(10, 2, queued)) {
+            return false;
+        }
+        b.training.resize(queued);
+        for (DefIndex& u : b.training) {
+            if (!r.u16(u) || u >= c.units.size()) {
+                r.fail();
+                return false;
+            }
+        }
+        if (!r.i32(b.train_progress) || b.train_progress < 0) {
+            r.fail();
+            return false;
+        }
         b.upgrading = upgrading != 0;
         g.fires_ += b.fire > 0 ? 1 : 0;
         std::uint32_t nf = 0;
@@ -4405,7 +4999,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         if (!r.u32(id.index) || !r.u32(id.generation) || !g.registry_.alive(id) || !r.u8(kind) ||
             kind >= static_cast<std::uint8_t>(CreatureKind::Count) || !r.u8(state) ||
             state >= static_cast<std::uint8_t>(CreatureState::Count) || !r.u8(a.town) || a.town >= pc || !r.u16(a.zone) ||
-            (kind != static_cast<std::uint8_t>(CreatureKind::Raider) && a.zone >= g.map_.zones.size()) ||
+            (kind < static_cast<std::uint8_t>(CreatureKind::Raider) && a.zone >= g.map_.zones.size()) ||
             !r.vec2(a.position) || !r.vec2(a.previous) || !r.vec2(a.home) || !r.vec2(a.goal) || !r.count(100000, 8, steps)) {
             r.fail();
             return false;
@@ -4424,6 +5018,13 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             r.fail();
             return false;
         }
+        std::uint8_t target_kind = 0;
+        if (!r.u8(target_kind) || target_kind >= static_cast<std::uint8_t>(TargetKind::Count) || !r.u16(a.unit) ||
+            (a.kind == CreatureKind::Soldier && a.unit >= c.units.size())) {
+            r.fail();
+            return false;
+        }
+        a.target_kind = static_cast<TargetKind>(target_kind);
         g.creatures_.add(id, a);
     }
     std::uint64_t state = 0, inc = 0;

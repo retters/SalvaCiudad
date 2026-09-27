@@ -55,6 +55,7 @@ public:
         sim::EntityId field_farm;
         bool field_dragging = false;
         bool line_dragging = false;  // Walls: pressed at one end, released at the other.
+        bool rally_mode = false;     // The next click on the ground: where the army defends.
         std::int32_t drag_x = 0;
         std::int32_t drag_z = 0;
         // Screen rectangles of the interface this frame (x, y, w, h):
