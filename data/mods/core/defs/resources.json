@@ -6,28 +6,32 @@
       "id": "core:log",
       "name": "resource.log",
       "category": "material",
-      "weight": 2
+      "weight": 2,
+      "value": 2
     },
     {
       "type": "resource",
       "id": "core:stone",
       "name": "resource.stone",
       "category": "material",
-      "weight": 3
+      "weight": 3,
+      "value": 3
     },
     {
       "type": "resource",
       "id": "core:iron_ore",
       "name": "resource.ironOre",
       "category": "material",
-      "weight": 3
+      "weight": 3,
+      "value": 4
     },
     {
       "type": "resource",
       "id": "core:firewood",
       "name": "resource.firewood",
       "category": "fuel",
-      "weight": 1
+      "weight": 1,
+      "value": 2
     },
     {
       "type": "resource",
@@ -35,14 +39,16 @@
       "name": "resource.berries",
       "category": "food",
       "nutrition": 3,
-      "weight": 1
+      "weight": 1,
+      "value": 1
     },
     {
       "type": "resource",
       "id": "core:herbs",
       "name": "resource.herbs",
       "category": "good",
-      "weight": 1
+      "weight": 1,
+      "value": 3
     },
     {
       "type": "resource",
@@ -50,14 +56,16 @@
       "name": "resource.roots",
       "category": "food",
       "nutrition": 2,
-      "weight": 1
+      "weight": 1,
+      "value": 1
     },
     {
       "type": "resource",
       "id": "core:clothes",
       "name": "resource.clothes",
       "category": "good",
-      "weight": 1
+      "weight": 1,
+      "value": 12
     },
     {
       "type": "resource",
@@ -65,7 +73,8 @@
       "name": "resource.wheat",
       "category": "food",
       "nutrition": 1,
-      "weight": 2
+      "weight": 2,
+      "value": 1
     },
     {
       "type": "resource",
@@ -73,7 +82,8 @@
       "name": "resource.vegetables",
       "category": "food",
       "nutrition": 2,
-      "weight": 1
+      "weight": 1,
+      "value": 2
     },
     {
       "type": "resource",
@@ -81,7 +91,8 @@
       "name": "resource.beans",
       "category": "food",
       "nutrition": 2,
-      "weight": 1
+      "weight": 1,
+      "value": 2
     },
     {
       "type": "resource",
@@ -89,7 +100,8 @@
       "name": "resource.fruit",
       "category": "food",
       "nutrition": 3,
-      "weight": 1
+      "weight": 1,
+      "value": 3
     },
     {
       "type": "resource",
@@ -97,7 +109,8 @@
       "name": "resource.meat",
       "category": "food",
       "nutrition": 4,
-      "weight": 2
+      "weight": 2,
+      "value": 3
     },
     {
       "type": "resource",
@@ -105,28 +118,32 @@
       "name": "resource.fish",
       "category": "food",
       "nutrition": 3,
-      "weight": 1
+      "weight": 1,
+      "value": 2
     },
     {
       "type": "resource",
       "id": "core:hide",
       "name": "resource.hide",
       "category": "good",
-      "weight": 2
+      "weight": 2,
+      "value": 4
     },
     {
       "type": "resource",
       "id": "core:fertilizer",
       "name": "resource.fertilizer",
       "category": "material",
-      "weight": 2
+      "weight": 2,
+      "value": 1
     },
     {
       "type": "resource",
       "id": "core:flour",
       "name": "resource.flour",
       "category": "material",
-      "weight": 2
+      "weight": 2,
+      "value": 3
     },
     {
       "type": "resource",
@@ -134,91 +151,104 @@
       "name": "resource.bread",
       "category": "food",
       "nutrition": 5,
-      "weight": 1
+      "weight": 1,
+      "value": 5
     },
     {
       "type": "resource",
       "id": "core:barley",
       "name": "resource.barley",
       "category": "material",
-      "weight": 2
+      "weight": 2,
+      "value": 1
     },
     {
       "type": "resource",
       "id": "core:beer",
       "name": "resource.beer",
       "category": "good",
-      "weight": 1
+      "weight": 1,
+      "value": 6
     },
     {
       "type": "resource",
       "id": "core:flax",
       "name": "resource.flax",
       "category": "material",
-      "weight": 1
+      "weight": 1,
+      "value": 1
     },
     {
       "type": "resource",
       "id": "core:linen",
       "name": "resource.linen",
       "category": "good",
-      "weight": 1
+      "weight": 1,
+      "value": 5
     },
     {
       "type": "resource",
       "id": "core:leather",
       "name": "resource.leather",
       "category": "good",
-      "weight": 1
+      "weight": 1,
+      "value": 6
     },
     {
       "type": "resource",
       "id": "core:shoes",
       "name": "resource.shoes",
       "category": "good",
-      "weight": 1
+      "weight": 1,
+      "value": 10
     },
     {
       "type": "resource",
       "id": "core:clay",
       "name": "resource.clay",
       "category": "material",
-      "weight": 3
+      "weight": 3,
+      "value": 1
     },
     {
       "type": "resource",
       "id": "core:bricks",
       "name": "resource.bricks",
       "category": "material",
-      "weight": 3
+      "weight": 3,
+      "value": 4
     },
     {
       "type": "resource",
       "id": "core:roof_tiles",
       "name": "resource.roofTiles",
       "category": "material",
-      "weight": 2
+      "weight": 2,
+      "value": 5
     },
     {
       "type": "resource",
       "id": "core:coal",
       "name": "resource.coal",
       "category": "fuel",
-      "weight": 2
+      "weight": 2,
+      "value": 4
     },
     {
       "type": "resource",
       "id": "core:iron",
       "name": "resource.iron",
       "category": "material",
-      "weight": 3
+      "weight": 3,
+      "value": 8
     },
     {
       "type": "resource",
       "id": "core:tools",
       "name": "resource.tools",
       "category": "good",
-      "weight": 2
+      "weight": 2,
+      "value": 15
     },
     {
       "type": "resource",
@@ -226,7 +256,8 @@
       "name": "resource.smokedMeat",
       "category": "food",
       "nutrition": 5,
-      "weight": 1
+      "weight": 1,
+      "value": 6
     },
     {
       "type": "resource",
@@ -234,7 +265,8 @@
       "name": "resource.smokedFish",
       "category": "food",
       "nutrition": 4,
-      "weight": 1
+      "weight": 1,
+      "value": 5
     }
   ]
 }

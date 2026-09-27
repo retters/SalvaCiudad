@@ -372,6 +372,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.name_key = r.text("name", true);
         def.category = static_cast<sim::ResourceCategory>(r.choice("category", kCategories, 1, true));
         def.nutrition = r.integer("nutrition", 0, 1000, 0);
+        def.value = r.integer("value", 0, 10000, 0);
         def.weight = r.integer("weight", 1, 12, 1);
         if (r.ok()) {
             out.resources.push_back(std::move(def));
@@ -490,6 +491,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.desirability = r.integer("desirability", -100, 100, 0);
         def.unique = r.flag("unique");
         def.fireproof = r.flag("fireproof");
+        def.trade = r.flag("trade");
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);

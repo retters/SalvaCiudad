@@ -126,6 +126,7 @@
     "disease.plague": "Plague",
     "building.healer": "Healer's hut",
     "building.physician": "Physician",
-    "building.bathhouse": "Bathhouse"
+    "building.bathhouse": "Bathhouse",
+    "building.tradingPost": "Trading post"
   }
 }

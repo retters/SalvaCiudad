@@ -102,7 +102,7 @@ std::vector<WaterArea> water_areas(const MapData& m) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0x02797a3d14672e4bull;
+constexpr std::uint64_t kGoldenSmallMap = 0x63af48c1451b654full;
 
 }  // namespace
 

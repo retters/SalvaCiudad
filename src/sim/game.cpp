@@ -534,6 +534,242 @@ public:
         return true;
     }
 
+    // --- Trade (phase 14) ----------------------------------------------------------------
+
+    // The town's trading post, if it has a finished one.
+    [[nodiscard]] Building* trading_post(std::uint8_t town) {
+        for (Building& b : g_.buildings_.data()) {
+            if (b.owner == town && def(b).trade && complete(b)) {
+                return &b;
+            }
+        }
+        return nullptr;
+    }
+
+    // Takes goods (or coins) from a town: the trading post first, then its
+    // other storages. False, and nothing taken, if it has not enough.
+    bool take_from_town(std::uint8_t town, DefIndex r, std::int32_t n) {
+        if (r == kCoins) {
+            if (g_.players_[town].coins < n) {
+                return false;
+            }
+            g_.players_[town].coins -= n;
+            return true;
+        }
+        if (r >= c_.resources.size() || g_.tradeable(town, r) < n) {
+            return false;
+        }
+        std::vector<Building*> order;
+        if (Building* post = trading_post(town)) {
+            order.push_back(post);
+        }
+        for (Building& b : g_.buildings_.data()) {
+            if (b.owner == town && complete(b) && def(b).storage > 0 && !def(b).trade && gives_out(c_, b, r)) {
+                order.push_back(&b);
+            }
+        }
+        for (Building* b : order) {
+            const std::int32_t take = std::min(n, amount_of(b->stock, r));
+            if (take > 0) {
+                add_to(b->stock, r, -take);
+                compact(b->stock);
+                n -= take;
+            }
+            if (n == 0) {
+                break;
+            }
+        }
+        return true;
+    }
+
+    // Gives goods to a town: into its trading post while there is room,
+    // the rest to the town center (which may overflow).
+    void give_to_town(std::uint8_t town, DefIndex r, std::int32_t n) {
+        if (r == kCoins) {
+            g_.players_[town].coins += n;
+            return;
+        }
+        if (Building* post = trading_post(town)) {
+            const std::int32_t put = std::min(n, free_space(*post));
+            if (put > 0) {
+                add_to(post->stock, r, put);
+                n -= put;
+            }
+        }
+        if (n > 0) {
+            if (Building* tc = g_.buildings_.get(g_.players_[town].town_center)) {
+                add_to(tc->stock, r, n);
+            }
+        }
+    }
+
+    // Once a day: merchants come and go, caravans arrive, offers expire.
+    void daily_trade() {
+        for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+            if (g_.town_of(p) != p || !g_.players_[p].active) {
+                continue;
+            }
+            PlayerState& ps = g_.players_[p];
+            if (ps.merchant_leaves != 0 && g_.tick_ >= ps.merchant_leaves) {
+                ps.merchant_leaves = 0;
+                ps.merchant.clear();
+                g_.events_.push_back({Game::Event::Kind::MerchantLeft, p, {}, {}, 0, 0});
+            }
+            if (ps.merchant_arrives == 0) {
+                // The first one comes a month after there is a trading post.
+                if (trading_post(p) != nullptr) {
+                    ps.merchant_arrives = g_.tick_ + g_.month_ticks();
+                }
+            } else if (g_.tick_ >= ps.merchant_arrives) {
+                ps.merchant_arrives = g_.tick_ + 2 * g_.month_ticks() + g_.rng_.below(static_cast<std::uint32_t>(g_.month_ticks()));
+                if (Building* post = trading_post(p)) {
+                    merchant_arrives(p, *post);
+                } else {
+                    ps.merchant_arrives = 0;
+                }
+            }
+        }
+        // Caravans that got there.
+        for (std::size_t i = 0; i < g_.caravans_.size();) {
+            const Caravan c = g_.caravans_[i];
+            if (g_.tick_ < c.arrives) {
+                ++i;
+                continue;
+            }
+            g_.caravans_.erase(g_.caravans_.begin() + static_cast<std::ptrdiff_t>(i));
+            give_to_town(c.to, c.resource, c.amount);
+            g_.events_.push_back({Game::Event::Kind::CaravanArrived, c.to, {}, {}, c.resource, c.from});
+        }
+        // Offers nobody answered: the goods go back.
+        for (std::size_t i = 0; i < g_.offers_.size();) {
+            const TradeOffer o = g_.offers_[i];
+            if (g_.tick_ < o.expires) {
+                ++i;
+                continue;
+            }
+            g_.offers_.erase(g_.offers_.begin() + static_cast<std::ptrdiff_t>(i));
+            give_to_town(o.from, o.give, o.give_amount);
+            g_.events_.push_back({Game::Event::Kind::OfferAnswered, o.from, {}, {}, 0, o.to});
+        }
+    }
+
+    // A merchant with a few goods at prices of the day.
+    void merchant_arrives(std::uint8_t p, Building& post) {
+        PlayerState& ps = g_.players_[p];
+        ps.merchant.clear();
+        ps.merchant_leaves = g_.tick_ + g_.month_ticks();
+        std::vector<DefIndex> goods;
+        for (std::size_t r = 0; r < c_.resources.size(); ++r) {
+            if (c_.resources[r].value > 0) {
+                goods.push_back(static_cast<DefIndex>(r));
+            }
+        }
+        // Every tradeable good gets a price; a few of them are for sale.
+        const std::uint32_t for_sale = 4 + g_.rng_.below(3);
+        for (std::size_t i = 0; i < goods.size(); ++i) {
+            const std::int32_t value = c_.resources[goods[i]].value;
+            const std::int32_t factor = 75 + static_cast<std::int32_t>(g_.rng_.below(51));  // 75..125 %.
+            MerchantGood m;
+            m.resource = goods[i];
+            m.sell = value * factor * 3 / 400;  // 75 % of the day's price; 0: he does not buy it.
+            m.buy = std::max(m.sell + 1, (value * factor * 5 + 399) / 400);  // 125 %.
+            ps.merchant.push_back(m);
+        }
+        for (std::uint32_t k = 0; k < for_sale && !ps.merchant.empty(); ++k) {
+            MerchantGood& m = ps.merchant[g_.rng_.below(static_cast<std::uint32_t>(ps.merchant.size()))];
+            m.stock += 20 + static_cast<std::int32_t>(g_.rng_.below(41));
+        }
+        g_.events_.push_back({Game::Event::Kind::MerchantArrived, p, id_of(post), center_of(post), 0, 0});
+    }
+
+    [[nodiscard]] EntityId id_of(const Building& b) const {
+        const auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            if (&list.data()[i] == &b) {
+                return list.entities()[i];
+            }
+        }
+        return {};
+    }
+
+    void trade_with_merchant(const Command& c) {
+        const std::uint8_t town = g_.town_of(c.player);
+        Building* post = g_.buildings_.get(c.entity);
+        PlayerState& ps = g_.players_[town];
+        MerchantGood* good = nullptr;
+        for (MerchantGood& m : ps.merchant) {
+            good = m.resource == c.def ? &m : good;
+        }
+        if (post == nullptr || post->owner != town || !def(*post).trade || !complete(*post) || !g_.merchant_here(town) ||
+            good == nullptr) {
+            ++g_.rejected_;
+            return;
+        }
+        if (c.value > 0) {
+            const std::int32_t n = c.value;
+            if (good->stock < n || ps.coins < n * good->buy) {
+                ++g_.rejected_;
+                return;
+            }
+            good->stock -= n;
+            ps.coins -= n * good->buy;
+            give_to_town(town, c.def, n);
+        } else {
+            const std::int32_t n = -c.value;
+            if (good->sell == 0 || !take_from_town(town, c.def, n)) {
+                ++g_.rejected_;
+                return;
+            }
+            ps.coins += n * good->sell;
+        }
+    }
+
+    void offer_trade(const Command& c) {
+        const std::uint8_t from = g_.town_of(c.player);
+        const auto to = static_cast<std::uint8_t>(c.count);  // Checked when read.
+        const auto valid = [&](DefIndex r) { return r == kCoins || (r < c_.resources.size() && c_.resources[r].value > 0); };
+        if (to >= g_.player_count_ || !g_.players_[to].active || g_.town_of(to) != to || to == from || !valid(c.def) ||
+            !valid(c.def2) || g_.offers_.size() >= 64 || !take_from_town(from, c.def, c.value)) {
+            ++g_.rejected_;
+            return;
+        }
+        TradeOffer o;
+        o.id = g_.next_offer_++;
+        o.from = from;
+        o.to = to;
+        o.give = c.def;
+        o.give_amount = c.value;
+        o.want = c.def2;
+        o.want_amount = c.value2;
+        o.expires = g_.tick_ + g_.month_ticks();
+        g_.offers_.push_back(o);
+        g_.events_.push_back({Game::Event::Kind::OfferReceived, to, {}, {}, 0, from});
+    }
+
+    void answer_offer(const Command& c) {
+        const std::uint8_t town = g_.town_of(c.player);
+        auto it = std::find_if(g_.offers_.begin(), g_.offers_.end(),
+                               [&](const TradeOffer& o) { return o.id == static_cast<std::uint32_t>(c.value); });
+        if (it == g_.offers_.end() || (it->to != town && it->from != town) || (c.count == 1 && it->to != town)) {
+            ++g_.rejected_;
+            return;
+        }
+        const TradeOffer o = *it;
+        if (c.count == 1) {
+            if (!take_from_town(o.to, o.want, o.want_amount)) {
+                ++g_.rejected_;
+                return;
+            }
+            const std::uint64_t travel = g_.travel_ticks(o.from, o.to);
+            g_.caravans_.push_back({o.from, o.to, o.give, o.give_amount, g_.tick_, g_.tick_ + travel});
+            g_.caravans_.push_back({o.to, o.from, o.want, o.want_amount, g_.tick_, g_.tick_ + travel});
+        } else {
+            give_to_town(o.from, o.give, o.give_amount);
+        }
+        g_.offers_.erase(std::find(g_.offers_.begin(), g_.offers_.end(), o));
+        g_.events_.push_back({Game::Event::Kind::OfferAnswered, o.from, {}, {}, static_cast<std::uint16_t>(c.count), o.to});
+    }
+
     // --- Health and fire (phase 13) ---------------------------------------------------
 
     [[nodiscard]] static FixedVec2 center_of(const Building& b) {
@@ -1909,6 +2145,7 @@ public:
         update_homes();
         update_health();
         start_fires();
+        daily_trade();
         const std::int32_t t = g_.temperature_;
         if (t < 0) {
             g_.snow_ = std::min(village::kMaxSnow, g_.snow_ + 1 + std::min(-t, 10) / 2);
@@ -2269,6 +2506,9 @@ public:
                 b->limit = c.value;
                 break;
             }
+            case CommandType::Trade: trade_with_merchant(c); break;
+            case CommandType::OfferTrade: offer_trade(c); break;
+            case CommandType::AnswerOffer: answer_offer(c); break;
             case CommandType::DevIgnite: {
                 Building* b = g_.buildings_.get(c.entity);
                 if (!g_.dev_commands_ || b == nullptr || b->owner != c.player) {
@@ -2335,6 +2575,7 @@ public:
                     add_to(tc->stock, r, item.amount * percent / 100);
                 }
             }
+            ps.coins = 100 * percent / 100;
             // Five couples and two children.
             const FixedVec2 at = g_.door(*tc);
             for (std::int32_t n = 0; n < 5; ++n) {
@@ -2479,6 +2720,12 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
     if (x < kMargin || z < kMargin || x + w > map_.size - kMargin || z + dp > map_.size - kMargin) {
         return PlaceError::OutsideMap;
     }
+    if (map_.region_size() > 0) {
+        const Region r = region(town_of(player));
+        if (x < r.x + kMargin || z < r.z + kMargin || x + w > r.x + r.size - kMargin || z + dp > r.z + r.size - kMargin) {
+            return PlaceError::OutsideMap;
+        }
+    }
     std::int32_t lo = 65535, hi = 0;
     for (std::int32_t cz = z; cz < z + dp; ++cz) {
         for (std::int32_t cx = x; cx < x + w; ++cx) {
@@ -2556,6 +2803,53 @@ std::int32_t Game::sick(std::uint8_t player) const {
         n += v.owner == town && v.disease != 0 ? 1 : 0;
     }
     return n;
+}
+
+bool Game::merchant_here(std::uint8_t player) const {
+    const PlayerState& ps = players_[town_of(player)];
+    return ps.merchant_leaves != 0 && tick_ < ps.merchant_leaves;
+}
+
+std::uint64_t Game::travel_ticks(std::uint8_t from, std::uint8_t to) const {
+    if (map_.region_size() > 0) {
+        // The world map: squares apart, a day to load and five per square.
+        const std::int32_t k = map_.size / map_.region_size();
+        const std::int32_t dx = std::abs(from % k - to % k);
+        const std::int32_t dz = std::abs(from / k - to / k);
+        return static_cast<std::uint64_t>(day_ticks()) * static_cast<std::uint64_t>(1 + 5 * std::max(dx, dz));
+    }
+    // The same map: the road between the town centers at walking pace.
+    const Building* a = buildings_.get(players_[from].town_center);
+    const Building* b = buildings_.get(players_[to].town_center);
+    if (a == nullptr || b == nullptr) {
+        return day_ticks();
+    }
+    const std::int64_t dx = a->x - b->x;
+    const std::int64_t dz = a->z - b->z;
+    const std::uint64_t meters = isqrt(static_cast<std::uint64_t>(dx * dx + dz * dz));
+    return day_ticks() + meters * kTicksPerSecond / 2;  // Carts at 2 m/s, like people.
+}
+
+std::int32_t Game::tradeable(std::uint8_t player, DefIndex resource) const {
+    std::int32_t n = 0;
+    const std::uint8_t town = town_of(player);
+    for (const Building& b : buildings_.data()) {
+        const BuildingDef& d = content_->buildings[b.def];
+        if (b.owner == town && b.state == BuildingState::Complete && d.storage > 0 && (d.trade || gives_out(*content_, b, resource))) {
+            n += amount_of(b.stock, resource);
+        }
+    }
+    return n;
+}
+
+Game::Region Game::region(std::uint8_t player) const {
+    const std::int32_t size = map_.region_size();
+    if (size == 0) {
+        return {0, 0, map_.size};
+    }
+    const std::int32_t k = map_.size / size;
+    const std::int32_t p = town_of(player);
+    return {(p % k) * size, (p / k) * size, size};
 }
 
 std::vector<Game::Event> Game::take_events() {
@@ -2735,7 +3029,7 @@ bool read_map(BinaryReader& r, MapData& m, const Content& c) {
     if (!MapSettings::read(r, m.settings) || !r.u16(m.generator_version) || !r.i32(m.size)) {
         return false;
     }
-    if (m.size != map_cells(m.settings.size)) {
+    if (m.size != world_cells(m.settings)) {
         r.fail();
         return false;
     }
@@ -2835,6 +3129,37 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(ps.arrivals);
         w.i32(ps.departures);
         w.i32(ps.burned_down);
+        w.i32(ps.coins);
+        w.u64(ps.merchant_arrives);
+        w.u64(ps.merchant_leaves);
+        w.u32(static_cast<std::uint32_t>(ps.merchant.size()));
+        for (const MerchantGood& good : ps.merchant) {
+            w.u16(good.resource);
+            w.i32(good.stock);
+            w.i32(good.buy);
+            w.i32(good.sell);
+        }
+    }
+    w.u32(g.next_offer());
+    w.u32(static_cast<std::uint32_t>(g.offers().size()));
+    for (const TradeOffer& o : g.offers()) {
+        w.u32(o.id);
+        w.u8(o.from);
+        w.u8(o.to);
+        w.u16(o.give);
+        w.i32(o.give_amount);
+        w.u16(o.want);
+        w.i32(o.want_amount);
+        w.u64(o.expires);
+    }
+    w.u32(static_cast<std::uint32_t>(g.caravans().size()));
+    for (const Caravan& c : g.caravans()) {
+        w.u8(c.from);
+        w.u8(c.to);
+        w.u16(c.resource);
+        w.i32(c.amount);
+        w.u64(c.departs);
+        w.u64(c.arrives);
     }
     m.registry = w.bytes().size();
     const EntityRegistry& reg = g.registry();
@@ -3048,10 +3373,49 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t active = 0;
         if (!r.u8(active) || !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
             !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures) ||
-            !r.i32(ps.burned_down)) {
+            !r.i32(ps.burned_down) || !r.i32(ps.coins) || ps.coins < 0 || !r.u64(ps.merchant_arrives) ||
+            !r.u64(ps.merchant_leaves)) {
             return false;
         }
         ps.active = active != 0;
+        std::uint32_t goods = 0;
+        if (!r.count(1024, 14, goods)) {
+            return false;
+        }
+        ps.merchant.resize(goods);
+        for (MerchantGood& m : ps.merchant) {
+            if (!r.u16(m.resource) || m.resource >= c.resources.size() || !r.i32(m.stock) || m.stock < 0 || !r.i32(m.buy) ||
+                m.buy < 1 || !r.i32(m.sell) || m.sell < 0) {
+                r.fail();
+                return false;
+            }
+        }
+    }
+    const auto trade_def = [&](DefIndex d) { return d == kCoins || d < c.resources.size(); };
+    std::uint32_t offers = 0;
+    if (!r.u32(g.next_offer_) || !r.count(64, 28, offers)) {
+        return false;
+    }
+    g.offers_.resize(offers);
+    for (TradeOffer& o : g.offers_) {
+        if (!r.u32(o.id) || o.id >= g.next_offer_ || !r.u8(o.from) || o.from >= pc || !r.u8(o.to) || o.to >= pc ||
+            !r.u16(o.give) || !trade_def(o.give) || !r.i32(o.give_amount) || o.give_amount < 1 || !r.u16(o.want) ||
+            !trade_def(o.want) || !r.i32(o.want_amount) || o.want_amount < 1 || !r.u64(o.expires)) {
+            r.fail();
+            return false;
+        }
+    }
+    std::uint32_t caravans = 0;
+    if (!r.count(4096, 28, caravans)) {
+        return false;
+    }
+    g.caravans_.resize(caravans);
+    for (Caravan& cv : g.caravans_) {
+        if (!r.u8(cv.from) || cv.from >= pc || !r.u8(cv.to) || cv.to >= pc || !r.u16(cv.resource) || !trade_def(cv.resource) ||
+            !r.i32(cv.amount) || cv.amount < 1 || !r.u64(cv.departs) || !r.u64(cv.arrives)) {
+            r.fail();
+            return false;
+        }
     }
     std::uint32_t slots = 0;
     if (!r.count(EntityRegistry::kMaxEntities, 5, slots)) {

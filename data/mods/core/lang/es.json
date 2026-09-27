@@ -126,6 +126,7 @@
     "disease.plague": "Peste",
     "building.healer": "Curandero",
     "building.physician": "Médico",
-    "building.bathhouse": "Casa de baños"
+    "building.bathhouse": "Casa de baños",
+    "building.tradingPost": "Puesto de comercio"
   }
 }

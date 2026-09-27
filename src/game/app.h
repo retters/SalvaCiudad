@@ -113,6 +113,7 @@ private:
     void update_network(std::uint64_t now_ms);
     void handle_net_event(const net::NetEvent& e);
     void report_game_events();  // Toasts for fires and outbreaks in the local town.
+    [[nodiscard]] std::string town_name(std::uint8_t player) const;
     void apply_snapshot(std::vector<std::uint8_t> state);
     void close_network();
     [[nodiscard]] net::LocalInfo local_info() const;

@@ -1,5 +1,6 @@
 #include "sim/map.h"
 
+#include <algorithm>
 #include <span>
 
 namespace sc::sim {
@@ -14,15 +15,55 @@ void MapSettings::write(BinaryWriter& w) const {
     w.u8(players);
     w.u8(map_type);
     w.u8(biome);
+    w.u8(separate ? 1 : 0);
+}
+
+std::int32_t world_grid(const MapSettings& s) {
+    if (!s.separate || s.players <= 1) {
+        return 1;
+    }
+    return s.players <= 4 ? 2 : s.players <= 9 ? 3 : 4;
+}
+
+MapSize region_map_size(const MapSettings& s) {
+    const std::int32_t k = world_grid(s);
+    MapSize size = s.size;
+    while (k * map_cells(size) > map_cells(MapSize::Huge) && size != MapSize::Small) {
+        size = static_cast<MapSize>(static_cast<std::uint8_t>(size) - 1);
+    }
+    return size;
+}
+
+std::int32_t world_cells(const MapSettings& s) {
+    return world_grid(s) * map_cells(region_map_size(s));
+}
+
+std::int32_t MapData::region_size() const {
+    const std::int32_t k = world_grid(settings);
+    return k > 1 ? size / k : 0;
+}
+
+std::int32_t MapData::region_at(std::int32_t cx, std::int32_t cz) const {
+    const std::int32_t k = world_grid(settings);
+    if (k <= 1) {
+        return 0;
+    }
+    const std::int32_t t = size / k;
+    return std::clamp(cz / t, 0, k - 1) * k + std::clamp(cx / t, 0, k - 1);
 }
 
 bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     MapSettings s;
-    std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, map_type = 0, biome = 0;
+    std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, map_type = 0, biome = 0, separate = 0;
     if (!r.u64(s.seed) || !r.u8(size) || !r.u8(water) || !r.u8(forests) || !r.u8(resources) || !r.u8(relief) ||
-        !r.u8(s.players) || !r.u8(map_type) || !r.u8(biome)) {
+        !r.u8(s.players) || !r.u8(map_type) || !r.u8(biome) || !r.u8(separate)) {
         return false;
     }
+    if (separate > 1) {
+        r.fail();
+        return false;
+    }
+    s.separate = separate != 0;
     if (size >= static_cast<std::uint8_t>(MapSize::Count) || water >= static_cast<std::uint8_t>(Amount::Count) ||
         forests >= static_cast<std::uint8_t>(Amount::Count) || resources >= static_cast<std::uint8_t>(Amount::Count) ||
         relief >= static_cast<std::uint8_t>(Relief::Count) || s.players < 1 || s.players > 12 ||

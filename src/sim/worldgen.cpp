@@ -1010,8 +1010,113 @@ private:
 
 }  // namespace
 
+namespace {
+
+// Separate maps: one map per player from seed + player number, side by
+// side; the squares nobody has are sea.
+std::optional<MapData> generate_world(const MapSettings& settings, const Content& content, const GenProgress& progress,
+                                      MapHooks* hooks) {
+    const std::int32_t k = world_grid(settings);
+    const std::int32_t n = settings.players;
+    MapSettings tile = settings;
+    tile.separate = false;
+    tile.players = 1;
+    tile.size = region_map_size(settings);
+    const std::int32_t t = map_cells(tile.size);
+    MapData world;
+    world.settings = settings;
+    world.generator_version = kGeneratorVersion;
+    world.size = t * k;
+    const auto side = static_cast<std::size_t>(world.size);
+    const auto vside = side + 1;
+    world.heights.assign(vside * vside, 0);
+    world.water.assign(side * side, 0);
+    world.terrain.assign(side * side, static_cast<std::uint8_t>(Terrain::Water));
+    world.fertility.assign(side * side, 0);
+    world.biome.assign(side * side, 0);
+    std::uint16_t lowest = 65535;
+    constexpr auto kStages = static_cast<std::int32_t>(GenStage::Count);
+    for (std::int32_t i = 0; i < n; ++i) {
+        tile.seed = settings.seed + static_cast<std::uint64_t>(i);
+        // Progress through all the maps: each stage once per map.
+        const GenProgress each = [&](GenStage stage, int percent) {
+            if (!progress) {
+                return true;
+            }
+            const std::int32_t at = i * kStages + static_cast<std::int32_t>(stage);
+            return progress(static_cast<GenStage>(at / n), ((at % n) * 100 + percent) / n);
+        };
+        std::optional<MapData> m = generate_map(tile, content, each, hooks);
+        if (!m.has_value()) {
+            return std::nullopt;
+        }
+        const auto ox = static_cast<std::size_t>((i % k) * t);
+        const auto oz = static_cast<std::size_t>((i / k) * t);
+        const auto tv = static_cast<std::size_t>(t) + 1;
+        for (std::size_t vz = 0; vz < tv; ++vz) {
+            for (std::size_t vx = 0; vx < tv; ++vx) {
+                const std::uint16_t h = m->heights[vz * tv + vx];
+                world.heights[(oz + vz) * vside + ox + vx] = h;
+                lowest = std::min(lowest, h);
+            }
+        }
+        const auto tc = static_cast<std::size_t>(t);
+        for (std::size_t cz = 0; cz < tc; ++cz) {
+            for (std::size_t cx = 0; cx < tc; ++cx) {
+                const std::size_t from = cz * tc + cx;
+                const std::size_t to = (oz + cz) * side + ox + cx;
+                world.water[to] = m->water[from];
+                world.terrain[to] = m->terrain[from];
+                world.fertility[to] = m->fertility[from];
+                world.biome[to] = m->biome[from];
+            }
+        }
+        const Fixed fx = Fixed::from_int(static_cast<std::int32_t>(ox));
+        const Fixed fz = Fixed::from_int(static_cast<std::int32_t>(oz));
+        for (MapFeature f : m->features) {
+            f.x = f.x + fx;
+            f.z = f.z + fz;
+            world.features.push_back(f);
+        }
+        for (Zone z : m->zones) {
+            z.x = z.x + fx;
+            z.z = z.z + fz;
+            world.zones.push_back(z);
+        }
+        StartPosition start{fx + Fixed::from_int(t / 2), fz + Fixed::from_int(t / 2)};
+        if (!m->starts.empty()) {
+            start = {m->starts[0].x + fx, m->starts[0].z + fz};
+        }
+        world.starts.push_back(start);
+    }
+    // The empty squares: sea a little below the lowest land.
+    for (std::int32_t i = n; i < k * k; ++i) {
+        const auto ox = static_cast<std::size_t>((i % k) * t);
+        const auto oz = static_cast<std::size_t>((i / k) * t);
+        for (std::size_t vz = 0; vz <= static_cast<std::size_t>(t); ++vz) {
+            for (std::size_t vx = 0; vx <= static_cast<std::size_t>(t); ++vx) {
+                const bool edge = (vz == 0 || vx == 0 || vz == static_cast<std::size_t>(t) || vx == static_cast<std::size_t>(t));
+                if (!edge) {
+                    world.heights[(oz + vz) * vside + ox + vx] = static_cast<std::uint16_t>(std::max(0, lowest - 300));
+                }
+            }
+        }
+        for (std::size_t cz = 0; cz < static_cast<std::size_t>(t); ++cz) {
+            for (std::size_t cx = 0; cx < static_cast<std::size_t>(t); ++cx) {
+                world.water[(oz + cz) * side + ox + cx] = static_cast<std::uint16_t>(std::max(100, static_cast<int>(lowest) - 100));
+            }
+        }
+    }
+    return world;
+}
+
+}  // namespace
+
 std::optional<MapData> generate_map(const MapSettings& settings, const Content& content, const GenProgress& progress,
                                     MapHooks* hooks) {
+    if (world_grid(settings) > 1) {
+        return generate_world(settings, content, progress, hooks);
+    }
     Generator gen(settings, content, progress);
     std::optional<MapData> map = gen.run();
     if (map.has_value() && hooks != nullptr && !hooks->map_generated(*map)) {

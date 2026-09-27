@@ -28,11 +28,17 @@ enum class CommandType : std::uint8_t {
     UpgradeBuilding = 17, // Start upgrading `entity` (the town center) to its next level.
     SetLimit = 18,        // Stock of its product `entity` works up to: `value` (0 = automatic).
     DevIgnite = 19,       // Developer tools: set `entity` on fire.
+    Trade = 20,           // With the merchant at trading post `entity`: buy (`value` > 0) or sell `def`.
+    OfferTrade = 21,      // To player `count`: give `value` of `def`, want `value2` of `def2` (kCoins: coins).
+    AnswerOffer = 22,     // Offer `value`: accept (`count` 1) or decline / withdraw (0).
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;
 inline constexpr std::uint16_t kMaxSpawnPerCommand = 64;
 inline constexpr std::int32_t kMaxDevGrant = 10000;
+inline constexpr std::int32_t kMaxTrade = 10000;
+// Coins in a trade offer, in place of a resource.
+inline constexpr std::uint16_t kCoins = 0xFFFE;
 
 struct Command {
     CommandType type = CommandType::SpawnWalkers;
@@ -42,6 +48,8 @@ struct Command {
     std::uint16_t count = 0;
     std::uint16_t def = 0;     // Definition index (buildings...).
     std::int32_t value = 0;    // Rotation, worker count...
+    std::uint16_t def2 = 0;    // A second definition (trade offers).
+    std::int32_t value2 = 0;
 
     void write(BinaryWriter& w) const;
     // Reads and validates the shape of a command (not whether its target

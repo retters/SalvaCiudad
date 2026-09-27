@@ -846,3 +846,44 @@ La simulación junta eventos (incendio, edificio quemado, brote de una enfermeda
 
 **D-1306. Fuego de prueba.**
 El comando `DevIgnite` prende fuego a un edificio propio; solo funciona con las herramientas de desarrollo permitidas, como `DevGrant`. Las herramientas (Ctrl+F3, pestaña Pueblo) tienen un botón para el edificio seleccionado.
+
+## Fase 14: comercio (2026-09-27)
+
+**D-1401. Monedas como tesoro del pueblo.**
+Las monedas no son un recurso que se carga ni se guarda en almacenes: son un número por pueblo (`coins`). Cada pueblo empieza con 100 (50 con recursos escasos, 200 con abundantes). Así el comercio no depende de que los peones muevan monedas.
+
+**D-1402. Precios en los datos.**
+Cada recurso tiene `value`, su precio base en monedas; con 0, los mercaderes no lo compran ni lo venden. Los valores de `core` van de 1 (bayas, trigo, arcilla) a 15 (herramientas).
+
+**D-1403. Mercaderes del entorno.**
+- Llegan al puesto de comercio (`trade: true` en los datos; uno por pueblo) un mes después de construirlo y luego cada dos o tres meses. Se quedan un mes.
+- Cada visita trae precios del día (entre 75 % y 125 % del valor): el pueblo compra al 125 % de ese precio y vende al 75 %, así que no hay ganancia comprando y vendiendo lo mismo.
+- Traen de cuatro a seis lotes de 20 a 60 unidades para vender, y compran cualquier bien con precio de venta mayor que cero, sin límite.
+- Lo comprado queda en el puesto de comercio (o en el centro del pueblo si no cabe); lo vendido sale primero del puesto y luego de los demás almacenes.
+
+**D-1404. Comercio entre jugadores.**
+Un jugador ofrece a otro "doy X de A por Y de B" (A o B pueden ser monedas).
+- Lo que ofrece queda apartado hasta que el otro acepta o rechaza, o hasta que la oferta vence al mes; si no se acepta, vuelve.
+- Al aceptar salen dos caravanas, una en cada sentido, que tardan lo mismo.
+- En un mapa compartido, la caravana tarda un día más el camino recto entre los centros de los pueblos a 2 m/s. Con mapas separados, un día más cinco por cuadro de distancia en el mapa del mundo.
+- Las caravanas son abstractas: no caminan por el mapa. Se verán en la fase 18.
+- En un pueblo común no hay comercio entre jugadores.
+
+**D-1405. Mapas separados como regiones de un solo mundo.**
+Con mapas separados, cada jugador recibe el mapa del tamaño elegido, generado con la semilla más su número. Todos se ponen lado a lado en un solo mapa grande: 2 × 2 hasta cuatro jugadores, 3 × 3 hasta nueve, 4 × 4 hasta doce.
+- Los cuadros que no son de nadie son mar.
+- La navegación bloquea las costuras, así que nadie cruza de un mapa a otro. Solo se construye dentro del mapa propio, y la cámara no sale de él.
+- El mundo no pasa de 4096 m: si el tamaño elegido no cabe, cada mapa se reduce (por ejemplo, Mediano con cinco jugadores o más).
+
+Se prefirió esto a varias simulaciones separadas: la simulación, el guardado, la red y la verificación por hash quedan como estaban. La otra opción obligaba a rehacer los tres. Las costuras se ven si se mira hacia el borde; se pulirán en la fase 18.
+
+**D-1406. Barra superior compacta.**
+Con monedas, comercio y enfermos, la barra ya no cabía en una ventana de 1024 px.
+- El clima con la fecha, la felicidad con las monedas y los enfermos con los incendios ahora van en dos líneas pequeñas.
+- La población muestra solo el total; los adultos van en el tooltip.
+- Los bienes que no caben se juntan en "+N más", con la lista en el tooltip.
+
+La fase 17 rehará la barra.
+
+**D-1407. Formato de los comandos.**
+`Command` suma `def2` y `value2` para las ofertas; todos los comandos ocupan 6 bytes más. La suma de verificación dorada del mapa pequeño cambió porque `MapSettings` guarda ahora `separate` (sin compatibilidad con partidas anteriores, D-631).

@@ -28,6 +28,7 @@ struct ResourceDef {
     ResourceCategory category = ResourceCategory::Material;
     std::int32_t nutrition = 0;  // Food points per unit (Food only).
     std::int32_t weight = 1;     // Units a villager carries per trip: 12 / weight.
+    std::int32_t value = 0;      // Base price in coins; 0 = merchants do not trade it (phase 14).
 };
 
 struct ResourceAmount {
@@ -113,6 +114,7 @@ struct BuildingDef {
     std::vector<ResourceAmount> service_uses;  // Used up each day to provide it (a tavern's beer).
     std::uint8_t category = 0;      // BuildCategory, for the build bar.
     bool fireproof = false;         // Stone: does not catch fire (phase 13).
+    bool trade = false;             // Merchants come to it (phase 14).
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.

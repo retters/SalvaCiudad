@@ -236,6 +236,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En invierno, sin casas calientes ni ropa, aparece la gripe: aviso de brote, "Enfermos" en la barra y la enfermedad en la ventana del aldeano.
 - [ ] Un curandero con hierbas cerca de las casas acorta las enfermedades.
 
+### Fase 14 (comercio)
+
+- [ ] La barra superior muestra las monedas (100 al empezar) y, en una ventana de 1024 px, no se encima.
+- [ ] Construye un puesto de comercio (Servicios): al mes llega un mercader con aviso; la ventana del puesto lista lo que trae y lo que puedes venderle.
+- [ ] Comprar gasta monedas y deja los bienes en el puesto; vender da monedas y saca los bienes de los almacenes.
+- [ ] En multijugador con "un pueblo por jugador" o "mapas separados", el botón Comercio abre la ventana: envía una oferta, el otro jugador recibe el aviso y la acepta; las caravanas llegan a los días indicados.
+- [ ] Con "Mapas separados", cada jugador ve su propio mapa, la cámara no sale de él y la ventana de comercio muestra el mapa del mundo con las caravanas.
+- [ ] Una oferta rechazada o sin respuesta en un mes devuelve lo apartado.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

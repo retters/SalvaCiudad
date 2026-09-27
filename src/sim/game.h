@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 13;
+inline constexpr std::uint32_t kGameRulesVersion = 14;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -193,6 +193,15 @@ struct Villager {
     bool operator==(const Villager&) const = default;
 };
 
+// A good a merchant has: how many and at what prices (coins per unit).
+struct MerchantGood {
+    DefIndex resource = 0;
+    std::int32_t stock = 0;  // Units to sell; buying from the town has no limit.
+    std::int32_t buy = 0;    // What the town pays.
+    std::int32_t sell = 0;   // What the town gets.
+    bool operator==(const MerchantGood&) const = default;
+};
+
 struct PlayerState {
     bool active = false;
     EntityId town_center;
@@ -202,7 +211,37 @@ struct PlayerState {
     std::int32_t arrivals = 0;
     std::int32_t departures = 0;      // Unhappy villagers who left.
     std::int32_t burned_down = 0;     // Buildings lost to fire.
+    // Phase 14: the treasury and the merchant from the surroundings.
+    std::int32_t coins = 0;
+    std::uint64_t merchant_arrives = 0;  // Tick; 0 = not yet planned.
+    std::uint64_t merchant_leaves = 0;   // Tick; past it, no merchant.
+    std::vector<MerchantGood> merchant;  // What this merchant sells and buys.
     bool operator==(const PlayerState&) const = default;
+};
+
+// Trade between players (phase 14): the offer holds the sender's goods
+// until it is answered.
+struct TradeOffer {
+    std::uint32_t id = 0;
+    std::uint8_t from = 0;
+    std::uint8_t to = 0;
+    DefIndex give = 0;  // A resource or kCoins.
+    std::int32_t give_amount = 0;
+    DefIndex want = 0;
+    std::int32_t want_amount = 0;
+    std::uint64_t expires = 0;
+    bool operator==(const TradeOffer&) const = default;
+};
+
+// Goods on the road (or on the world map) to another town.
+struct Caravan {
+    std::uint8_t from = 0;
+    std::uint8_t to = 0;
+    DefIndex resource = 0;  // Or kCoins.
+    std::int32_t amount = 0;
+    std::uint64_t departs = 0;
+    std::uint64_t arrives = 0;
+    bool operator==(const Caravan&) const = default;
 };
 
 // Why a building cannot go somewhere.
@@ -309,14 +348,41 @@ public:
 
     // What happened that the player should hear about (for the view).
     struct Event {
-        enum class Kind : std::uint8_t { FireStarted, BurnedDown, Outbreak };
+        enum class Kind : std::uint8_t {
+            FireStarted,
+            BurnedDown,
+            Outbreak,
+            MerchantArrived,
+            MerchantLeft,
+            OfferReceived,
+            OfferAnswered,  // `value`: 1 accepted, 0 declined.
+            CaravanArrived,
+        };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
         EntityId entity;
         FixedVec2 at;
         std::uint16_t value = 0;  // Disease index, for outbreaks.
+        std::uint8_t other = 0;   // The other player, for trade.
     };
     [[nodiscard]] std::vector<Event> take_events();
+
+    // Trade (phase 14).
+    [[nodiscard]] bool merchant_here(std::uint8_t player) const;
+    [[nodiscard]] const std::vector<TradeOffer>& offers() const { return offers_; }
+    [[nodiscard]] const std::vector<Caravan>& caravans() const { return caravans_; }
+    [[nodiscard]] std::uint32_t next_offer() const { return next_offer_; }
+    // Ticks a caravan takes between two towns.
+    [[nodiscard]] std::uint64_t travel_ticks(std::uint8_t from, std::uint8_t to) const;
+    // Goods of a town in its storages that trade can take.
+    [[nodiscard]] std::int32_t tradeable(std::uint8_t player, DefIndex resource) const;
+    // Separate maps: the region of a player's town, in cells (x, z, side).
+    struct Region {
+        std::int32_t x = 0;
+        std::int32_t z = 0;
+        std::int32_t size = 0;
+    };
+    [[nodiscard]] Region region(std::uint8_t player) const;
 
     // Animals left in each of the map's zones (hunting).
     [[nodiscard]] const std::vector<std::int32_t>& zone_animals() const { return zone_animals_; }
@@ -369,6 +435,9 @@ private:
     DefIndex shoes_ = kNoDef;
     std::vector<std::int32_t> zone_animals_;
     std::int32_t fires_ = 0;          // Buildings burning (follows from them).
+    std::vector<TradeOffer> offers_;
+    std::vector<Caravan> caravans_;
+    std::uint32_t next_offer_ = 1;
     std::vector<Event> events_;
 
     std::vector<std::pair<std::uint64_t, std::uint32_t>> regrow_;  // (tick, node), sorted.

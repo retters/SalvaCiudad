@@ -38,11 +38,24 @@ struct MapSettings {
     std::uint8_t players = 1;           // Start positions to place (1..12).
     std::uint8_t map_type = 0;          // Index into the content's map types.
     std::uint8_t biome = 0;             // The only biome, for a map type without biomes.
+    // Separate maps (section 7.7): each player gets a map of `size` from
+    // seed + player number, laid side by side in one world with no way
+    // across. Only with more than one player.
+    bool separate = false;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);
     bool operator==(const MapSettings&) const = default;
 };
+
+// Regions per side of the world: 1 for a shared map, else enough for
+// every player (2 x 2 up to four, 3 x 3 up to nine, 4 x 4 up to twelve).
+[[nodiscard]] std::int32_t world_grid(const MapSettings& s);
+// Each player's map size with separate maps: the chosen one, smaller if
+// the whole world would pass 4096 m.
+[[nodiscard]] MapSize region_map_size(const MapSettings& s);
+// Cells per side of the whole world.
+[[nodiscard]] std::int32_t world_cells(const MapSettings& s);
 
 enum class Terrain : std::uint8_t { Grass, Meadow, ForestFloor, Sand, Rock, Clay, Water, Count };
 
@@ -97,6 +110,11 @@ struct MapData {
     std::vector<StartPosition> starts;
 
     [[nodiscard]] std::int32_t vertices_per_side() const { return size + 1; }
+    // Separate maps: cells per side of a region (0 for a shared map) and
+    // the region a cell is in (always 0 for a shared map). Player p's town
+    // is in region p.
+    [[nodiscard]] std::int32_t region_size() const;
+    [[nodiscard]] std::int32_t region_at(std::int32_t cx, std::int32_t cz) const;
     [[nodiscard]] std::uint16_t height_cm(std::int32_t vx, std::int32_t vz) const;
     // Ground height in meters at a point, interpolated between vertices.
     [[nodiscard]] Fixed height_at(Fixed x, Fixed z) const;

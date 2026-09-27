@@ -398,6 +398,7 @@ bool NetHost::start() {
     Start st;
     st.config = lobby_.config;
     st.config.map.players = lobby_.config.shared_town ? std::uint8_t{1} : n;
+    st.config.map.separate = st.config.map.separate && !lobby_.config.shared_town;
     st.players = n;
     lobby_.config = st.config;
     state_ = State::Loading;

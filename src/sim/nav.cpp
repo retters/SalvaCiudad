@@ -39,8 +39,12 @@ void NavGrid::build(const MapData& map) {
                 }
             }
             const std::int32_t slope = hi - lo;  // cm over 2 m.
+            // The seams between separate maps.
+            const std::int32_t region = map.region_size();
+            const bool seam = region > 0 && (mx % region == 0 || mz % region == 0 || (mx + kCell) % region == 0 ||
+                                             (mz + kCell) % region == 0);
             std::uint8_t cost = 10;
-            if (wet >= 2 || slope > 180) {
+            if (wet >= 2 || slope > 180 || seam) {
                 cost = 0;  // Water or cliffs.
             } else {
                 cost = static_cast<std::uint8_t>(10 + std::min(20, slope / 12) + (forest > 0 ? 2 : 0) + (wet > 0 ? 6 : 0));

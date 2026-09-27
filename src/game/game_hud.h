@@ -41,6 +41,18 @@ private:
     void farm_fields(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
                      float row_h);
     void placement_hint(ui::Context& ctx, GameSession& s);
+    // Phase 14: the merchant at a trading post, and trade with other towns.
+    [[nodiscard]] std::vector<sim::DefIndex> merchant_rows(const sim::Game& game, std::uint8_t town) const;
+    void merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h);
+    void trade_window(ui::Context& ctx, GameSession& s);
+    [[nodiscard]] std::string town_name(std::uint8_t player) const;
+    [[nodiscard]] std::string goods_name(const sim::Game& game, sim::DefIndex r) const;
+    bool trade_open_ = false;
+    int offer_to_ = 0;
+    int offer_give_ = 0;
+    int offer_give_amount_ = 20;
+    int offer_want_ = 1;
+    int offer_want_amount_ = 20;
     // Multiplayer: who plays, whom the game waits for, speed votes.
     void network(ui::Context& ctx, GameSession& s, float& right);
     std::uint32_t answered_vote_ = 0;

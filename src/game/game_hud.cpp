@@ -160,6 +160,9 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     } else if (ui.selected_villager.valid()) {
         villager_window(ctx, *s);
     }
+    if (trade_open_) {
+        trade_window(ctx, *s);
+    }
     return open_menu;
 }
 
@@ -173,35 +176,6 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     const ui::TextStyle st = ctx.style(ctx.theme().body);
     const float pad = ctx.s(12.0f);
     float x = pad;
-
-    // Goods: food as one total (with the kinds in the tooltip), then
-    // everything else the town has.
-    const std::vector<std::int32_t> stored = game.stored(s.town());
-    std::int32_t food = 0;
-    std::string food_detail;
-    for (std::size_t r = 0; r < stored.size(); ++r) {
-        if (content.resources[r].category == sim::ResourceCategory::Food) {
-            food += stored[r];
-            if (stored[r] > 0) {
-                food_detail += (food_detail.empty() ? "" : "\n") + tr("hud.amount", tr(content.resources[r].name_key), stored[r]);
-            }
-        }
-    }
-    const auto item = [&](const std::string& text, const std::string& tooltip, const char* id) {
-        const float w = ctx.text().measure(st, text) + ctx.s(18.0f);
-        const ui::Rect r{x, bar.y, w, bar.h};
-        ctx.label(r, text, st, ctx.theme().text);
-        ctx.tooltip_area(ctx.id(id), r, tooltip);
-        x += w;
-    };
-    item(tr("hud.food", food), food_detail.empty() ? tr("hud.food.tooltip") : food_detail, "hud_food");
-    for (std::size_t r = 0; r < stored.size(); ++r) {
-        const sim::ResourceDef& def = content.resources[r];
-        if (def.category == sim::ResourceCategory::Food || (stored[r] == 0 && def.id != "core:log" && def.id != "core:stone")) {
-            continue;
-        }
-        item(tr("hud.amount", tr(def.name_key), stored[r]), tr(def.name_key), def.id.c_str());
-    }
 
     // Population and date in the middle-right; speed on the right.
     const std::int32_t pop = game.population(s.town());
@@ -232,42 +206,108 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
                                                   "hud.season.winter"};
     const std::string weather = tr("hud.weather", tr(kSeasonKeys[static_cast<std::size_t>(cal.season) % 4]),
                                    game.temperature());
-    const float ww = ctx.text().measure(st, weather) + ctx.s(24.0f);
-    right -= ww;
-    ctx.label({right, bar.y, ww, bar.h}, weather, st, game.temperature() < 0 ? ui::Color::rgb(0x9CC7F0) : ctx.theme().text);
-    ctx.tooltip_area(ctx.id("hud_weather"), {right, bar.y, ww, bar.h},
-                     tr(game.frozen() ? "hud.weather.frozen" : "hud.weather.tooltip", game.snow()));
     const std::string date_text = tr("hud.date", static_cast<int>(cal.year), static_cast<int>(cal.month),
                                      static_cast<int>(cal.day));
-    const float dw = ctx.text().measure(st, date_text) + ctx.s(24.0f);
-    right -= dw;
-    ctx.label({right, bar.y, dw, bar.h}, date_text, st, ctx.theme().text_dim);
+    // Weather over the date, in two small lines.
+    const ui::TextStyle two = ctx.style(ctx.theme().small);
+    const float half = std::round(bar.h * 0.5f);
+    const float ww = std::max(ctx.text().measure(two, weather), ctx.text().measure(two, date_text)) + ctx.s(24.0f);
+    right -= ww;
+    ctx.label({right, bar.y + ctx.s(3.0f), ww, half - ctx.s(3.0f)}, weather, two,
+              game.temperature() < 0 ? ui::Color::rgb(0x9CC7F0) : ctx.theme().text);
+    ctx.label({right, bar.y + half, ww, half - ctx.s(3.0f)}, date_text, two, ctx.theme().text_dim);
+    ctx.tooltip_area(ctx.id("hud_weather"), {right, bar.y, ww, bar.h},
+                     tr(game.frozen() ? "hud.weather.frozen" : "hud.weather.tooltip", game.snow()));
+    // Two small lines in one slot of the bar.
+    const ui::TextStyle small2 = ctx.style(ctx.theme().small);
+    const float half2 = std::round(bar.h * 0.5f);
+    const auto stacked = [&](const std::string& top, ui::Color top_color, const std::string& bottom, ui::Color bottom_color,
+                             const char* id, const std::string& tooltip) {
+        const float w = std::max(ctx.text().measure(small2, top), ctx.text().measure(small2, bottom)) + ctx.s(20.0f);
+        right -= w;
+        ctx.label({right, bar.y + ctx.s(3.0f), w, half2 - ctx.s(3.0f)}, top, small2, top_color);
+        ctx.label({right, bar.y + half2, w, half2 - ctx.s(3.0f)}, bottom, small2, bottom_color);
+        ctx.tooltip_area(ctx.id(id), {right, bar.y, w, bar.h}, tooltip);
+    };
+    // Happiness over the treasury.
     const std::int32_t joy = game.happiness(s.town());
-    const std::string joy_text = tr("hud.happiness", joy);
-    const float jw = ctx.text().measure(st, joy_text) + ctx.s(24.0f);
-    right -= jw;
-    ctx.label({right, bar.y, jw, bar.h}, joy_text, st, joy < 35 ? ctx.theme().danger : ctx.theme().text);
-    ctx.tooltip_area(ctx.id("hud_happiness"), {right, bar.y, jw, bar.h}, tr("hud.happiness.tooltip"));
-    // Troubles: the sick and the fires, only when there are some.
+    stacked(tr("hud.happiness", joy), joy < 35 ? ctx.theme().danger : ctx.theme().text,
+            tr("hud.coins", game.player(s.town()).coins), ui::Color::rgb(0xE8C45A), "hud_happiness",
+            tr("hud.happiness.tooltip") + "\n" + tr("hud.coins.tooltip"));
+    // Troubles: the sick over the fires, only when there are some.
     const std::int32_t sick = game.sick(s.town());
     std::int32_t fires = 0;
     for (const sim::Building& b : game.buildings().data()) {
         fires += b.fire > 0 && b.owner == s.town() ? 1 : 0;
     }
     if (sick > 0 || fires > 0) {
-        const std::string text = tr("hud.troubles", sick, fires);
-        const float tw = ctx.text().measure(st, text) + ctx.s(24.0f);
-        right -= tw;
-        ctx.label({right, bar.y, tw, bar.h}, text, st, fires > 0 ? ctx.theme().danger : ctx.theme().text);
-        ctx.tooltip_area(ctx.id("hud_troubles"), {right, bar.y, tw, bar.h}, tr("hud.troubles.tooltip"));
+        stacked(tr("hud.sick", sick), ctx.theme().text, tr("hud.fires", fires),
+                fires > 0 ? ctx.theme().danger : ctx.theme().text_dim, "hud_troubles", tr("hud.troubles.tooltip"));
     }
-    const std::string pop_text = tr("hud.population", pop, adults);
+    // Trade with other towns.
+    bool others = false;
+    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
+        others = others || (game.town_of(p) == p && p != s.town() && game.player(p).active);
+    }
+    if (others) {
+        const std::string label = tr("hud.trade");
+        const float tw = ctx.text().measure(st, label) + ctx.s(28.0f);
+        right -= tw + ctx.s(6.0f);
+        const ui::Rect r{right, bar.y + ctx.s(5.0f), tw, bar.h - ctx.s(10.0f)};
+        if (ctx.button(ctx.id("hud_trade"), r, label, tr("hud.trade.tooltip"), true, trade_open_)) {
+            trade_open_ = !trade_open_;
+        }
+    }
+    const std::string pop_text = tr("hud.population", pop);
     const float pw = ctx.text().measure(st, pop_text) + ctx.s(24.0f);
     right -= pw;
     ctx.label({right, bar.y, pw, bar.h}, pop_text, st, ctx.theme().text);
     const sim::PlayerState& ps = game.player(s.town());
     ctx.tooltip_area(ctx.id("hud_population"), {right, bar.y, pw, bar.h},
-                     tr("hud.population.tooltip", ps.births, ps.arrivals, ps.deaths));
+                     tr("hud.population.tooltip", adults, ps.births, ps.arrivals, ps.deaths));
+
+    // Goods: food as one total (with the kinds in the tooltip), then
+    // everything else the town has.
+    const std::vector<std::int32_t> stored = game.stored(s.town());
+    std::int32_t food = 0;
+    std::string food_detail;
+    for (std::size_t r = 0; r < stored.size(); ++r) {
+        if (content.resources[r].category == sim::ResourceCategory::Food) {
+            food += stored[r];
+            if (stored[r] > 0) {
+                food_detail += (food_detail.empty() ? "" : "\n") + tr("hud.amount", tr(content.resources[r].name_key), stored[r]);
+            }
+        }
+    }
+    // What does not fit before the right side goes into a "+N" item.
+    const float more_w = ctx.text().measure(st, tr("hud.more", 99)) + ctx.s(18.0f);
+    int hidden = 0;
+    std::string hidden_detail;
+    const auto item = [&](const std::string& text, const std::string& tooltip, const char* id) {
+        const float w = ctx.text().measure(st, text) + ctx.s(18.0f);
+        if (hidden > 0 || x + w + more_w > right) {
+            ++hidden;
+            hidden_detail += (hidden_detail.empty() ? "" : "\n") + text;
+            return;
+        }
+        const ui::Rect r{x, bar.y, w, bar.h};
+        ctx.label(r, text, st, ctx.theme().text);
+        ctx.tooltip_area(ctx.id(id), r, tooltip);
+        x += w;
+    };
+    item(tr("hud.food", food), food_detail.empty() ? tr("hud.food.tooltip") : food_detail, "hud_food");
+    for (std::size_t r = 0; r < stored.size(); ++r) {
+        const sim::ResourceDef& def = content.resources[r];
+        if (def.category == sim::ResourceCategory::Food || (stored[r] == 0 && def.id != "core:log" && def.id != "core:stone")) {
+            continue;
+        }
+        item(tr("hud.amount", tr(def.name_key), stored[r]), tr(def.name_key), def.id.c_str());
+    }
+    if (hidden > 0) {
+        const ui::Rect r{x, bar.y, more_w, bar.h};
+        ctx.label(r, tr("hud.more", hidden), st, ctx.theme().text_dim);
+        ctx.tooltip_area(ctx.id("hud_more"), r, hidden_detail);
+    }
 }
 
 void GameHud::network(ui::Context& ctx, GameSession& s, float& right) {
@@ -476,7 +516,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
             }
             lines.push_back(tr("hud.building.storage", total, d.storage));
             for (const sim::Stock& st : b->stock) {
-                if (st.amount > 0 && lines.size() < 16) {
+                if (st.amount > 0 && lines.size() < (d.trade ? 4u : 16u)) {
                     lines.push_back("  " + tr("hud.amount", tr(content.resources[st.resource].name_key), st.amount));
                 }
             }
@@ -508,6 +548,11 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     }
     if (workshop) {
         h += button_h + pad * 0.5f;
+    }
+    const bool post = d.trade && b->state == sim::BuildingState::Complete;
+    if (post) {
+        const std::size_t rows = game.merchant_here(s.town()) ? merchant_rows(game, s.town()).size() : 0;
+        h += pad * 0.5f + line + static_cast<float>(rows) * field_row;
     }
     h += pad;
     const ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
@@ -555,6 +600,10 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     if (farm) {
         y += pad * 0.5f;
         farm_fields(ctx, s, *b, box, y, field_row);
+    }
+    if (post) {
+        y += pad * 0.5f;
+        merchant_section(ctx, s, box, y, field_row);
     }
     if (workshop) {
         // How much of its product to keep: automatic, or a set amount.
@@ -617,6 +666,289 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
             s.issue(c);
             ui.selected_building = {};
         }
+    }
+    ctx.pop_id();
+}
+
+std::string GameHud::town_name(std::uint8_t player) const {
+    if (net::NetSession* net = services_.net()) {
+        for (const net::LobbyPlayer& p : net->lobby().players) {
+            if (p.slot == player) {
+                return p.name;
+            }
+        }
+    }
+    return tr("hud.trade.town", static_cast<int>(player) + 1);
+}
+
+std::string GameHud::goods_name(const sim::Game& game, sim::DefIndex r) const {
+    if (r == sim::kCoins) {
+        return tr("hud.trade.coins");
+    }
+    return r < game.content().resources.size() ? tr(game.content().resources[r].name_key) : std::string();
+}
+
+// What the merchant sells, and what the town has to sell him.
+std::vector<sim::DefIndex> GameHud::merchant_rows(const sim::Game& game, std::uint8_t town) const {
+    std::vector<sim::DefIndex> rows;
+    for (const sim::MerchantGood& m : game.player(town).merchant) {
+        if ((m.stock > 0 || (m.sell > 0 && game.tradeable(town, m.resource) >= 10)) && rows.size() < 14) {
+            rows.push_back(m.resource);
+        }
+    }
+    return rows;
+}
+
+void GameHud::merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h) {
+    const sim::Game& game = s.game();
+    const std::uint8_t town = s.town();
+    const sim::PlayerState& ps = game.player(town);
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const float line = ctx.text().line_height(body);
+    const float pad = ctx.s(14.0f);
+    if (!game.merchant_here(town)) {
+        const std::uint64_t next = ps.merchant_arrives > game.tick() ? ps.merchant_arrives - game.tick() : 0;
+        const auto days = static_cast<int>((next + game.day_ticks() - 1) / game.day_ticks());
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line},
+                  ps.merchant_arrives == 0 ? tr("hud.merchant.none") : tr("hud.merchant.next", days), body,
+                  ctx.theme().text_dim);
+        y += line;
+        return;
+    }
+    const std::uint64_t left = ps.merchant_leaves - game.tick();
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line},
+              tr("hud.merchant.here", static_cast<int>((left + game.day_ticks() - 1) / game.day_ticks())), body,
+              ctx.theme().accent);
+    y += line;
+    const float bw = std::round(ctx.s(74.0f));
+    for (const sim::DefIndex r : merchant_rows(game, town)) {
+        const sim::MerchantGood* m = nullptr;
+        for (const sim::MerchantGood& g : ps.merchant) {
+            m = g.resource == r ? &g : m;
+        }
+        if (m == nullptr) {
+            continue;
+        }
+        const std::int32_t have = game.tradeable(town, r);
+        const std::int32_t buy = std::min(10, m->stock);
+        const std::int32_t sell = std::min(10, have);
+        ctx.push_id(std::to_string(r));
+        ctx.label({box.x + pad, y, box.w - 2 * pad - 2 * bw - ctx.s(8.0f), row_h},
+                  tr("hud.merchant.row", goods_name(game, r), have, m->stock), small, ctx.theme().text);
+        const auto trade = [&](std::int32_t n) {
+            sim::Command c;
+            c.type = sim::CommandType::Trade;
+            c.entity = s.ui().selected_building;
+            c.def = r;
+            c.value = n;
+            s.issue(c);
+        };
+        const ui::Rect buy_r{box.right() - pad - 2 * bw - ctx.s(4.0f), y + ctx.s(2.0f), bw, row_h - ctx.s(4.0f)};
+        const ui::Rect sell_r{box.right() - pad - bw, y + ctx.s(2.0f), bw, row_h - ctx.s(4.0f)};
+        if (ctx.button(ctx.id("buy"), buy_r, tr("hud.merchant.buy"), tr("hud.merchant.buy.tooltip", buy, buy * m->buy),
+                       buy > 0 && ps.coins >= buy * m->buy)) {
+            trade(buy);
+        }
+        if (ctx.button(ctx.id("sell"), sell_r, tr("hud.merchant.sell"),
+                       tr("hud.merchant.sell.tooltip", sell, sell * m->sell), sell > 0 && m->sell > 0)) {
+            trade(-sell);
+        }
+        ctx.pop_id();
+        y += row_h;
+    }
+}
+
+void GameHud::trade_window(ui::Context& ctx, GameSession& s) {
+    const sim::Game& game = s.game();
+    const std::uint8_t town = s.town();
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const ui::TextStyle title = ctx.style(ctx.theme().heading, ui::FontRole::Bold);
+    const float pad = ctx.s(14.0f);
+    const float line = ctx.text().line_height(body);
+    const float row = std::round(ctx.s(34.0f));
+    const float gap = ctx.s(6.0f);
+    const float w = std::min(ctx.s(440.0f), ctx.width() - 2 * pad);
+
+    // Who can be traded with, and what.
+    std::vector<std::uint8_t> towns;
+    std::vector<std::string> town_names;
+    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
+        if (game.town_of(p) == p && p != town && game.player(p).active) {
+            towns.push_back(p);
+            town_names.push_back(town_name(p));
+        }
+    }
+    if (towns.empty()) {
+        trade_open_ = false;
+        return;
+    }
+    std::vector<sim::DefIndex> goods{sim::kCoins};
+    std::vector<std::string> goods_names{tr("hud.trade.coins")};
+    for (std::size_t r = 0; r < game.content().resources.size(); ++r) {
+        if (game.content().resources[r].value > 0) {
+            goods.push_back(static_cast<sim::DefIndex>(r));
+            goods_names.push_back(tr(game.content().resources[r].name_key));
+        }
+    }
+    offer_to_ = std::clamp(offer_to_, 0, static_cast<int>(towns.size()) - 1);
+    offer_give_ = std::clamp(offer_give_, 0, static_cast<int>(goods.size()) - 1);
+    offer_want_ = std::clamp(offer_want_, 0, static_cast<int>(goods.size()) - 1);
+    std::vector<const sim::TradeOffer*> offers;
+    for (const sim::TradeOffer& o : game.offers()) {
+        if (o.from == town || o.to == town) {
+            offers.push_back(&o);
+        }
+    }
+    std::vector<const sim::Caravan*> caravans;
+    for (const sim::Caravan& c : game.caravans()) {
+        if ((c.from == town || c.to == town) && caravans.size() < 8) {
+            caravans.push_back(&c);
+        }
+    }
+    const std::int32_t region = game.map().region_size();
+    const float map_side = region > 0 ? std::round(ctx.s(150.0f)) : 0.0f;
+    const float title_h = ctx.text().line_height(title);
+    float h = pad + title_h + pad * 0.5f;
+    h += map_side > 0 ? map_side + pad : 0.0f;
+    h += line + 3 * (row + gap) + row + pad;  // The new offer.
+    h += line + static_cast<float>(offers.size()) * (row + gap) + pad * 0.5f;
+    h += line + static_cast<float>(caravans.size()) * line + pad;
+    const ui::Rect box{pad, std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
+    ctx.panel(box);
+    block(s, box);
+    ctx.push_id("trade_window");
+    float y = box.y + pad;
+    ctx.label({box.x + pad, y, box.w - 2 * pad - row, title_h}, tr("hud.trade.title"), title, ctx.theme().accent);
+    if (ctx.button(ctx.id("close"), {box.right() - pad - row, y, row, row}, tr("hud.close"), tr("hud.close.tooltip"))) {
+        trade_open_ = false;
+    }
+    y += title_h + pad * 0.5f;
+
+    // The world map: one square per player's map, caravans on the way.
+    if (map_side > 0) {
+        const std::int32_t k = game.map().size / region;
+        const float cell = map_side / static_cast<float>(k);
+        const float mx = box.x + (box.w - map_side) * 0.5f;
+        const auto center = [&](std::uint8_t p) {
+            return std::pair<float, float>{mx + (static_cast<float>(p % k) + 0.5f) * cell,
+                                           y + (static_cast<float>(p / k) + 0.5f) * cell};
+        };
+        for (std::int32_t i = 0; i < k * k; ++i) {
+            const ui::Rect r{mx + static_cast<float>(i % k) * cell + 2, y + static_cast<float>(i / k) * cell + 2, cell - 4,
+                             cell - 4};
+            const bool used = i < game.player_count() && game.player(static_cast<std::uint8_t>(i)).active;
+            ctx.draw().rect(r, !used ? ui::Color::rgb(0x2A4A66) : i == town ? ctx.theme().accent.with_alpha(0.8f)
+                                                                            : ui::Color::rgb(0x5F7F3F));
+            if (used) {
+                ctx.label(r, std::to_string(i + 1), small, ctx.theme().text, ui::Align::Center);
+            }
+        }
+        for (const sim::Caravan& c : game.caravans()) {
+            const float t = c.arrives > c.departs ? static_cast<float>(game.tick() - c.departs) /
+                                                        static_cast<float>(c.arrives - c.departs)
+                                                  : 1.0f;
+            const auto [ax, az] = center(c.from);
+            const auto [bx, bz] = center(c.to);
+            const float px = ax + (bx - ax) * std::clamp(t, 0.0f, 1.0f);
+            const float pz = az + (bz - az) * std::clamp(t, 0.0f, 1.0f);
+            const float dot = ctx.s(6.0f);
+            ctx.draw().rect({px - dot * 0.5f, pz - dot * 0.5f, dot, dot}, ui::Color::rgb(0xE8C45A));
+        }
+        ctx.tooltip_area(ctx.id("world_map"), {mx, y, map_side, map_side}, tr("hud.trade.worldMap"));
+        y += map_side + pad;
+    }
+
+    // A new offer.
+    const float label_w = std::round(ctx.s(80.0f));
+    const float amount_w = std::round(ctx.s(120.0f));
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr("hud.trade.new"), body, ctx.theme().text);
+    y += line;
+    ctx.label({box.x + pad, y, label_w, row}, tr("hud.trade.to"), small, ctx.theme().text_dim);
+    ctx.selector(ctx.id("to"), {box.x + pad + label_w, y, box.w - 2 * pad - label_w, row}, offer_to_, town_names);
+    y += row + gap;
+    const float pick_w = box.w - 2 * pad - label_w - amount_w - gap;
+    ctx.label({box.x + pad, y, label_w, row}, tr("hud.trade.give"), small, ctx.theme().text_dim);
+    ctx.selector(ctx.id("give"), {box.x + pad + label_w, y, pick_w, row}, offer_give_, goods_names);
+    ctx.slider(ctx.id("give_n"), {box.right() - pad - amount_w, y, amount_w, row}, offer_give_amount_, 10, 500, 10,
+               [](int v) { return std::to_string(v); });
+    y += row + gap;
+    ctx.label({box.x + pad, y, label_w, row}, tr("hud.trade.want"), small, ctx.theme().text_dim);
+    ctx.selector(ctx.id("want"), {box.x + pad + label_w, y, pick_w, row}, offer_want_, goods_names);
+    ctx.slider(ctx.id("want_n"), {box.right() - pad - amount_w, y, amount_w, row}, offer_want_amount_, 10, 500, 10,
+               [](int v) { return std::to_string(v); });
+    y += row + gap;
+    const sim::DefIndex give = goods[static_cast<std::size_t>(offer_give_)];
+    const sim::DefIndex want = goods[static_cast<std::size_t>(offer_want_)];
+    const std::int32_t have = give == sim::kCoins ? game.player(town).coins : game.tradeable(town, give);
+    const bool can = give != want && have >= offer_give_amount_;
+    if (ctx.button(ctx.id("send"), {box.x + pad, y, box.w - 2 * pad, row}, tr("hud.trade.send"),
+                   can ? tr("hud.trade.send.tooltip") : tr("hud.trade.send.cannot", have), can)) {
+        sim::Command c;
+        c.type = sim::CommandType::OfferTrade;
+        c.count = towns[static_cast<std::size_t>(offer_to_)];
+        c.def = give;
+        c.value = offer_give_amount_;
+        c.def2 = want;
+        c.value2 = offer_want_amount_;
+        s.issue(c);
+    }
+    y += row + pad;
+
+    // Offers made and received.
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr(offers.empty() ? "hud.trade.noOffers" : "hud.trade.offers"), body,
+              ctx.theme().text);
+    y += line;
+    const float bw = std::round(ctx.s(96.0f));
+    for (const sim::TradeOffer* o : offers) {
+        ctx.push_id(std::to_string(o->id));
+        const bool mine = o->from == town;
+        const std::string what = mine ? tr("hud.trade.offerOut", town_name(o->to), o->give_amount, goods_name(game, o->give),
+                                           o->want_amount, goods_name(game, o->want))
+                                      : tr("hud.trade.offerIn", town_name(o->from), o->give_amount,
+                                           goods_name(game, o->give), o->want_amount, goods_name(game, o->want));
+        const float buttons = mine ? bw : 2 * bw + gap;
+        ctx.label({box.x + pad, y, box.w - 2 * pad - buttons - gap, row}, what, small, ctx.theme().text);
+        const auto answer = [&](std::uint16_t yes) {
+            sim::Command c;
+            c.type = sim::CommandType::AnswerOffer;
+            c.value = static_cast<std::int32_t>(o->id);
+            c.count = yes;
+            s.issue(c);
+        };
+        if (mine) {
+            if (ctx.button(ctx.id("withdraw"), {box.right() - pad - bw, y, bw, row}, tr("hud.trade.withdraw"))) {
+                answer(0);
+            }
+        } else {
+            const std::int32_t mine_have = o->want == sim::kCoins ? game.player(town).coins : game.tradeable(town, o->want);
+            if (ctx.button(ctx.id("accept"), {box.right() - pad - 2 * bw - gap, y, bw, row}, tr("hud.trade.accept"),
+                           tr("hud.trade.accept.tooltip", static_cast<int>(game.travel_ticks(o->from, o->to) / game.day_ticks())),
+                           mine_have >= o->want_amount)) {
+                answer(1);
+            }
+            if (ctx.button(ctx.id("decline"), {box.right() - pad - bw, y, bw, row}, tr("hud.trade.decline"))) {
+                answer(0);
+            }
+        }
+        ctx.pop_id();
+        y += row + gap;
+    }
+    y += pad * 0.5f;
+    // Caravans on the way.
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr(caravans.empty() ? "hud.trade.noCaravans" : "hud.trade.caravans"),
+              body, ctx.theme().text);
+    y += line;
+    for (const sim::Caravan* c : caravans) {
+        const std::uint64_t left = c->arrives > game.tick() ? c->arrives - game.tick() : 0;
+        const auto days = static_cast<int>((left + game.day_ticks() - 1) / game.day_ticks());
+        const std::string text = c->to == town ? tr("hud.trade.caravanIn", c->amount, goods_name(game, c->resource),
+                                                    town_name(c->from), days)
+                                               : tr("hud.trade.caravanOut", c->amount, goods_name(game, c->resource),
+                                                    town_name(c->to), days);
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, text, small, ctx.theme().text_dim);
+        y += line;
     }
     ctx.pop_id();
 }

@@ -203,12 +203,13 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
         y += line + gap;
         const float label_w = std::round(c.w * 0.3f);
         ctx.label({c.x, y, label_w, row_h}, tr("lobby.world"), body, ctx.theme().text);
-        const std::string modes[] = {tr("lobby.world.shared"), tr("lobby.world.towns")};
-        int mode = lobby.config.shared_town ? 0 : 1;
+        const std::string modes[] = {tr("lobby.world.shared"), tr("lobby.world.towns"), tr("lobby.world.separate")};
+        int mode = lobby.config.shared_town ? 0 : lobby.config.map.separate ? 2 : 1;
         if (ctx.selector(ctx.id("lobby_world"), {c.x + label_w, y, c.w - label_w, row_h}, mode, modes,
                          tr("lobby.world.tooltip"), host)) {
             net::GameConfig cfg = lobby.config;
             cfg.shared_town = mode == 0;
+            cfg.map.separate = mode == 2;
             static_cast<net::NetHost*>(net)->set_config(cfg);
         }
         y += row_h + gap;

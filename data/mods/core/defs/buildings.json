@@ -1022,6 +1022,32 @@
       "tier": 2,
       "desirability": 4,
       "category": "services"
+    },
+    {
+      "type": "building",
+      "id": "core:trading_post",
+      "name": "building.tradingPost",
+      "kind": "storage",
+      "model": "models/props/house_small.glb",
+      "size": [
+        7,
+        7
+      ],
+      "cost": {
+        "core:log": 30,
+        "core:stone": 10
+      },
+      "buildWork": 450,
+      "storage": 200,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "unique": true,
+      "trade": true,
+      "category": "services"
     }
   ]
 }

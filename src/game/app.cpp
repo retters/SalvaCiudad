@@ -1309,6 +1309,10 @@ void App::start_session(std::unique_ptr<GameSession> session) {
         camera_.set_target({x, map_surface_height(game.map(), x, z), z});
         camera_.set_distance(70.0f);
         camera_.snap();
+        // Separate maps: the camera stays over the player's own map.
+        const sim::Game::Region r = game.region(session_->town());
+        camera_.set_bounds(static_cast<float>(r.x), static_cast<float>(r.z), static_cast<float>(r.x + r.size),
+                           static_cast<float>(r.z + r.size));
     }
 }
 
@@ -1609,6 +1613,17 @@ void App::apply_snapshot(std::vector<std::uint8_t> state) {
     net_->snapshot_loaded(&session_->game());
 }
 
+std::string App::town_name(std::uint8_t player) const {
+    if (net_) {
+        for (const net::LobbyPlayer& p : net_->lobby().players) {
+            if (p.slot == player) {
+                return p.name;
+            }
+        }
+    }
+    return tr("hud.trade.town", static_cast<int>(player) + 1);
+}
+
 void App::report_game_events() {
     sim::Game& game = session_->game();
     const sim::Content& content = game.content();
@@ -1627,6 +1642,13 @@ void App::report_game_events() {
                     host_->toast(tr("event.outbreak", tr(content.diseases[e.value].name_key)));
                 }
                 break;
+            case sim::Game::Event::Kind::MerchantArrived: host_->toast(tr("event.merchantArrived")); break;
+            case sim::Game::Event::Kind::MerchantLeft: host_->toast(tr("event.merchantLeft")); break;
+            case sim::Game::Event::Kind::OfferReceived: host_->toast(tr("event.offerReceived", town_name(e.other))); break;
+            case sim::Game::Event::Kind::OfferAnswered:
+                host_->toast(tr(e.value == 1 ? "event.offerAccepted" : "event.offerDeclined", town_name(e.other)));
+                break;
+            case sim::Game::Event::Kind::CaravanArrived: host_->toast(tr("event.caravanArrived", town_name(e.other))); break;
         }
     }
 }

@@ -22,13 +22,16 @@ void Command::write(BinaryWriter& w) const {
     w.u16(count);
     w.u16(def);
     w.i32(value);
+    w.u16(def2);
+    w.i32(value2);
 }
 
 bool Command::read(BinaryReader& r, Command& out) {
     std::uint8_t type = 0;
     Command c;
     if (!r.u8(type) || !r.u8(c.player) || !r.u32(c.entity.index) || !r.u32(c.entity.generation) ||
-        !r.vec2(c.position) || !r.u16(c.count) || !r.u16(c.def) || !r.i32(c.value)) {
+        !r.vec2(c.position) || !r.u16(c.count) || !r.u16(c.def) || !r.i32(c.value) || !r.u16(c.def2) ||
+        !r.i32(c.value2)) {
         return false;
     }
     bool ok = c.player < kMaxPlayers && coordinate_ok(c.position.x) && coordinate_ok(c.position.z);
@@ -70,6 +73,16 @@ bool Command::read(BinaryReader& r, Command& out) {
             break;
         case CommandType::DevIgnite:
             ok = ok && c.entity.valid();
+            break;
+        case CommandType::Trade:
+            ok = ok && c.entity.valid() && c.value != 0 && c.value >= -kMaxTrade && c.value <= kMaxTrade;
+            break;
+        case CommandType::OfferTrade:
+            ok = ok && c.count < kMaxPlayers && c.count != c.player && c.value >= 1 && c.value <= kMaxTrade &&
+                 c.value2 >= 1 && c.value2 <= kMaxTrade && c.def != c.def2;
+            break;
+        case CommandType::AnswerOffer:
+            ok = ok && c.value >= 1 && c.count <= 1;
             break;
         default:
             ok = false;
