@@ -132,12 +132,8 @@ def select_only(objects):
     bpy.context.view_layer.objects.active = objects[0]
 
 
-def export_glb(path, objects, animations=False, images=False):
-    """Exports the given objects with fixed options, so output is reproducible.
-
-    With `images`, textures are embedded (as PNG) and materials named
-    "card..." become alpha-tested and two-sided (see mark_cutouts).
-    """
+def export_glb(path, objects, animations=False):
+    """Exports the given objects with fixed options, so output is reproducible."""
     select_only(objects)
     bpy.ops.export_scene.gltf(
         filepath=path,
@@ -148,7 +144,7 @@ def export_glb(path, objects, animations=False, images=False):
         export_normals=True,
         export_tangents=False,
         export_materials="EXPORT",
-        export_image_format="AUTO" if images else "NONE",
+        export_image_format="NONE",
         export_vertex_color="NONE",
         export_extras=False,
         export_copyright="",
@@ -165,43 +161,6 @@ def export_glb(path, objects, animations=False, images=False):
         export_current_frame=False,
     )
     canonicalize_triangle_order(path)
-    if images:
-        mark_cutouts(path)
-
-
-def mark_cutouts(path, prefix="card"):
-    """Makes materials whose name starts with `prefix` alpha-tested (glTF
-    alphaMode MASK) and two-sided: leaf cards are flat pictures of leaves
-    whose transparent parts must be cut away (decision D-625). Rewrites the
-    JSON chunk of the .glb in place."""
-    with open(path, "rb") as f:
-        data = f.read()
-    json_len = struct.unpack_from("<I", data, 12)[0]
-    doc = json.loads(data[20:20 + json_len])
-    changed = False
-    for mat in doc.get("materials", []):
-        if mat.get("name", "").startswith(prefix):
-            mat["alphaMode"] = "MASK"
-            mat["alphaCutoff"] = 0.5
-            mat["doubleSided"] = True
-            # The exporter may not find the UV map of a joined mesh.
-            tex = mat.get("pbrMetallicRoughness", {}).get("baseColorTexture")
-            if tex is not None and tex.get("texCoord", 0) < 0:
-                tex["texCoord"] = 0
-            changed = True
-    if not changed:
-        return
-    text = json.dumps(doc, separators=(",", ":"), sort_keys=True).encode("utf-8")
-    text += b" " * ((4 - len(text) % 4) % 4)
-    rest = data[20 + json_len:]
-    total = 12 + 8 + len(text) + len(rest)
-    out = bytearray()
-    out += data[0:8]
-    out += struct.pack("<I", total)
-    out += struct.pack("<I", len(text)) + b"JSON" + text
-    out += rest
-    with open(path, "wb") as f:
-        f.write(bytes(out))
 
 
 def canonicalize_triangle_order(path):
