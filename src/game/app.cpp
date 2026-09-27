@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <ctime>
 #include <string_view>
 
 #include <SDL3/SDL_filesystem.h>
@@ -21,6 +22,8 @@
 #include "mods/mod_settings.h"
 #include "core/file_io.h"
 #include "version.h"
+
+#include <SDL3/SDL_keyboard.h>
 
 namespace sc {
 
@@ -44,10 +47,13 @@ constexpr std::size_t kTestSceneInstances = 50'000;
 constexpr std::size_t kTestCrowd = 2'000;
 constexpr float kTestCrowdRadius = 70.0f;
 
-// The sample village on a generated map: villagers in the square in the
-// middle of a ring of houses (decision D-617).
-constexpr std::size_t kSampleVillagers = 40;
-constexpr float kSampleVillageRadius = 11.0f;
+
+// Autosaves every ten minutes of game time at x1, into three rotating files.
+constexpr std::uint64_t kAutosaveTicks = 6000;
+constexpr int kAutosaveSlots = 3;
+
+// Blur behind the pause, in pixels at 1080p.
+constexpr float kPauseBlur = 3.0f;
 
 // Pixels from the window edge where edge scrolling starts.
 constexpr float kEdgeScrollPx = 3.0f;
@@ -182,6 +188,10 @@ bool App::init() {
     }
     if (scene_ok_ && !map_scene_.load_models(scene_, *pack_)) {
         log::warn("map: no feature models; maps will show bare ground");
+    }
+    if (scene_ok_) {
+        village_.load(scene_, *pack_);
+        village_.set_bodies(&crowd_.bodies(), static_cast<std::uint32_t>(make_villager_palettes().size()));
     }
     if (!scene_ok_) {
         log::warn("scene: 3D view unavailable, menus only");
@@ -357,6 +367,7 @@ void App::apply_mods(const std::vector<std::string>& enabled) {
     apply_language();
     if (scene_ok_) {
         (void)map_scene_.load_models(scene_, *pack_);
+        village_.load(scene_, *pack_);
     }
 }
 
@@ -409,6 +420,8 @@ void App::handle_event(const SDL_Event& event) {
             }
             if (event.button.button == SDL_BUTTON_RIGHT) {
                 right_down_ = true;
+                right_press_x_ = input_.mouse_x;
+                right_press_y_ = input_.mouse_y;
             }
             if (event.button.button == SDL_BUTTON_LEFT) {
                 input_.mouse_down = true;
@@ -423,6 +436,8 @@ void App::handle_event(const SDL_Event& event) {
             }
             if (event.button.button == SDL_BUTTON_RIGHT) {
                 right_down_ = false;
+                right_clicked_ = std::abs(input_.mouse_x - right_press_x_) <= 6.0f &&
+                                 std::abs(input_.mouse_y - right_press_y_) <= 6.0f;
             }
             if (event.button.button == SDL_BUTTON_LEFT) {
                 input_.mouse_down = false;
@@ -614,7 +629,14 @@ void App::render_frame(float dt) {
         if (scene_ok_ && host_->scene_mode() != UiHost::SceneMode::None) {
             handle_scene_click(frame.width, frame.height);
             update_camera(dt);
-            crowd_.update(scene_, dt);
+            if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
+                update_placement(frame.width, frame.height);
+                const int speed = host_->game_paused() ? 0 : clock_.speed();
+                village_.update(scene_, map_scene_, session_->game(), static_cast<float>(clock_.interpolation()), dt,
+                                speed);
+            } else {
+                crowd_.update(scene_, dt);
+            }
             render::SceneView view;
             view.view = camera_.view();
             view.eye = camera_.eye();
@@ -628,6 +650,9 @@ void App::render_frame(float dt) {
                 view.terrain_distance = camera_.distance() * 2.5f + static_cast<float>(map_->map.size);
             }
             view.time = static_cast<float>(static_cast<double>(SDL_GetTicksNS() % 3'600'000'000'000ull) * 1e-9);
+            if (session_ && host_->scene_paused()) {
+                view.blur = kPauseBlur;
+            }
             scene_drawn = scene_.render(frame, view, lighting_);
         }
 
@@ -643,8 +668,19 @@ void App::render_frame(float dt) {
             input_.keys.clear();  // Typing in a tool, not in the game.
         }
         // Markers belong to the 3D view, under the interface.
-        if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
+        if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map && !session_) {
             draw_start_markers(frame.width, frame.height);
+        }
+        if (scene_drawn && session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
+            // A marker over the selected villager or building.
+            const sim::Game& g = session_->game();
+            const GameSession::Interaction& sel = session_->ui();
+            if (const sim::Villager* v = g.villagers().get(sel.selected_villager)) {
+                const math::Vec3 p = village_.villager_position(g, *v, static_cast<float>(clock_.interpolation()));
+                draw_marker(frame.width, frame.height, p + math::Vec3{0.0f, 2.3f, 0.0f}, ui_.theme().accent);
+            } else if (const sim::Building* b = g.buildings().get(sel.selected_building)) {
+                draw_marker(frame.width, frame.height, village_.building_top(g, *b), ui_.theme().accent);
+            }
         }
         if (scene_drawn && (host_->scene_mode() == UiHost::SceneMode::TestScene ||
                             host_->scene_mode() == UiHost::SceneMode::Map)) {
@@ -670,9 +706,19 @@ void App::render_frame(float dt) {
         debug_info_.camera_distance = camera_.distance();
         debug_info_.camera_x = camera_.target().x;
         debug_info_.camera_z = camera_.target().z;
-        debug_info_.sim_tick = sim_.tick();
-        debug_info_.sim_hash = sim_.last_hash();
-        debug_info_.sim_entities = sim_.world().registry().alive_count();
+        if (session_) {
+            const sim::Game& g = session_->game();
+            debug_info_.sim_tick = g.tick();
+            // The full hash serializes the game: only now and then.
+            if (debug_.visible() && g.tick() % 50 == 0) {
+                debug_info_.sim_hash = g.hash();
+            }
+            debug_info_.sim_entities = g.registry().alive_count();
+        } else {
+            debug_info_.sim_tick = sim_.tick();
+            debug_info_.sim_hash = sim_.last_hash();
+            debug_info_.sim_entities = sim_.world().registry().alive_count();
+        }
         debug_.build(debug_info_, [&] { dev_tools_.draw(dev); }, dev_tools_.visible());
 
         const bool uploaded = ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_);
@@ -699,6 +745,7 @@ void App::render_frame(float dt) {
 void App::frame() {
     input_.mouse_pressed = false;
     input_.mouse_released = false;
+    right_clicked_ = false;
     input_.wheel = 0.0f;
     input_.keys.clear();
 
@@ -717,8 +764,18 @@ void App::frame() {
     last_frame_ns_ = now;
 
     const int ticks = clock_.advance(static_cast<std::int64_t>(elapsed));
-    for (int i = 0; i < ticks; ++i) {
-        sim_.step();
+    if (session_) {
+        // A menu over a single-player game stops it.
+        if (host_ && !host_->game_paused()) {
+            for (int i = 0; i < ticks; ++i) {
+                session_->step();
+            }
+            autosave_if_due();
+        }
+    } else {
+        for (int i = 0; i < ticks; ++i) {
+            sim_.step();
+        }
     }
 
     const float dt = static_cast<float>(elapsed) * 1e-9f;
@@ -803,14 +860,12 @@ bool App::enter_generated_map() {
     camera_.set_yaw(0.6f);
     camera_.set_distance(110.0f);
     camera_.snap();
-    // A sample village at the first start, to judge sizes (until phase 8).
-    const math::Vec3 start{sx, map_surface_height(*map, sx, sz), sz};
-    map_scene_.show_sample_village(scene_, *map, start);
     map_scene_.show_sky(scene_, *map);
-    crowd_.set_area(start, [map](float x, float z) { return map_surface_height(*map, x, z); });
-    crowd_.spawn(kSampleVillagers, 7, kSampleVillageRadius);
     selected_.reset();
     following_ = false;
+    // A village game on it (phase 8); its own stream of random numbers.
+    const std::shared_ptr<const sim::Content> content(pack_, &pack_->content);
+    start_session(std::make_unique<GameSession>(content, *map, map->settings.seed ^ 0x5A17C1DAull));
     return true;
 }
 
@@ -819,6 +874,9 @@ void App::leave_map() {
         return;
     }
     dev_tools_.reset();
+    village_.end(scene_);
+    session_.reset();
+    clock_.set_speed(1);
     map_scene_.hide(scene_);
     test_scene_.set_visible(scene_, true);
     crowd_.set_area({}, {});
@@ -841,6 +899,7 @@ DevContext App::dev_context(std::uint32_t width, std::uint32_t height) {
     ctx.renderer = &scene_;
     ctx.crowd = &crowd_;
     ctx.camera = &camera_;
+    ctx.session = on_map ? session_.get() : nullptr;
     const float x = input_.mouse_x;
     const float y = input_.mouse_y;
     if (x >= 0.0f && y >= 0.0f && !debug_.wants_mouse() && !mouse_captured_) {
@@ -946,6 +1005,10 @@ void App::handle_scene_click(std::uint32_t width, std::uint32_t height) {
     const float ny = 1.0f - y / static_cast<float>(height) * 2.0f;
     const math::Vec3 near_point = inv.transform_point({nx, ny, 1.0f});
     const math::Vec3 far_point = inv.transform_point({nx, ny, 0.01f});
+    if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
+        handle_game_click(width, height, near_point, math::normalize(far_point - near_point));
+        return;
+    }
     const std::optional<std::size_t> hit = crowd_.pick(near_point, far_point - near_point);
     // In first person while following, the viewer's own body cannot be picked.
     if (hit && !(following_ && camera_.mode() == CameraMode::FirstPerson && hit == selected_)) {
@@ -986,6 +1049,210 @@ void App::draw_scene_markers(std::uint32_t width, std::uint32_t height) {
     const float r = ui_.s(11.0f);
     dl.triangle(sx - r - 2, sy - r * 1.6f - 2, sx + r + 2, sy - r * 1.6f - 2, sx, sy + 2, ui::Color::rgb(0x000000, 150));
     dl.triangle(sx - r, sy - r * 1.6f, sx + r, sy - r * 1.6f, sx, sy, following_ ? accent : ui_.theme().text);
+}
+
+}  // namespace sc
+
+namespace sc {
+
+bool App::mouse_ray(std::uint32_t width, std::uint32_t height, math::Vec3& origin, math::Vec3& dir) const {
+    const float x = input_.mouse_x;
+    const float y = input_.mouse_y;
+    if (x < 0.0f || y < 0.0f || mouse_captured_) {
+        return false;
+    }
+    const math::Mat4 inv = math::inverse(camera_view_proj(width, height));
+    const float nx = x / static_cast<float>(width) * 2.0f - 1.0f;
+    const float ny = 1.0f - y / static_cast<float>(height) * 2.0f;
+    origin = inv.transform_point({nx, ny, 1.0f});
+    dir = math::normalize(inv.transform_point({nx, ny, 0.01f}) - origin);
+    return true;
+}
+
+void App::update_placement(std::uint32_t width, std::uint32_t height) {
+    GameSession::Interaction& ui = session_->ui();
+    const sim::Game& game = session_->game();
+    ui.hover_valid = false;
+    if (right_clicked_ && ui.placing != sim::kNoDef) {
+        ui.placing = sim::kNoDef;  // Right click cancels.
+    }
+    math::Vec3 origin;
+    math::Vec3 dir;
+    if (ui.placing == sim::kNoDef || ui.placing >= game.content().buildings.size() || !interactive_scene() ||
+        !mouse_ray(width, height, origin, dir) || ui.over_hud(input_.mouse_x, input_.mouse_y)) {
+        village_.set_ghost(std::nullopt);
+        return;
+    }
+    const std::optional<math::Vec3> hit = ground_hit(game.map(), origin, dir);
+    if (!hit) {
+        village_.set_ghost(std::nullopt);
+        return;
+    }
+    std::int32_t w = 0;
+    std::int32_t d = 0;
+    sim::Game::footprint(game.content().buildings[ui.placing], ui.rotation, w, d);
+    ui.hover_valid = true;
+    ui.hover_x = static_cast<std::int32_t>(std::lround(hit->x - static_cast<float>(w) * 0.5f));
+    ui.hover_z = static_cast<std::int32_t>(std::lround(hit->z - static_cast<float>(d) * 0.5f));
+    ui.hover_error = game.can_place(session_->local_player(), ui.placing, ui.hover_x, ui.hover_z, ui.rotation);
+    VillageView::Ghost ghost;
+    ghost.def = ui.placing;
+    ghost.x = ui.hover_x;
+    ghost.z = ui.hover_z;
+    ghost.rotation = ui.rotation;
+    ghost.allowed = ui.hover_error == sim::PlaceError::None;
+    village_.set_ghost(ghost);
+}
+
+void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec3 origin, math::Vec3 dir) {
+    (void)width;
+    (void)height;
+    GameSession::Interaction& ui = session_->ui();
+    if (ui.over_hud(input_.mouse_x, input_.mouse_y)) {
+        return;
+    }
+    const sim::Game& game = session_->game();
+    if (ui.placing != sim::kNoDef) {
+        if (ui.hover_valid && ui.hover_error == sim::PlaceError::None) {
+            sim::Command c;
+            c.type = sim::CommandType::PlaceBuilding;
+            c.def = ui.placing;
+            c.position = {sim::Fixed::from_int(ui.hover_x), sim::Fixed::from_int(ui.hover_z)};
+            c.value = ui.rotation;
+            session_->issue(c);
+            // Shift keeps placing more of the same.
+            if ((SDL_GetModState() & SDL_KMOD_SHIFT) == 0) {
+                ui.placing = sim::kNoDef;
+                village_.set_ghost(std::nullopt);
+            }
+        }
+        return;
+    }
+    const float alpha = static_cast<float>(clock_.interpolation());
+    ui.selected_villager = {};
+    ui.selected_building = {};
+    if (const auto v = village_.pick_villager(game, origin, dir, alpha)) {
+        ui.selected_villager = *v;
+    } else if (const auto b = village_.pick_building(game, origin, dir)) {
+        ui.selected_building = *b;
+    }
+}
+
+void App::start_session(std::unique_ptr<GameSession> session) {
+    session_ = std::move(session);
+    const sim::Game& game = session_->game();
+    // The sample village and the test crowd make way for the real town.
+    map_scene_.hide_sample_village(scene_);
+    crowd_.spawn(0, 1, 1.0f);
+    village_.begin(scene_, map_scene_, session_->game());
+    clock_.set_speed(1);
+    next_autosave_tick_ = game.tick() + kAutosaveTicks;
+    if (const sim::Building* tc = game.buildings().get(game.player(session_->local_player()).town_center)) {
+        const float x = static_cast<float>(tc->x) + static_cast<float>(tc->width) * 0.5f;
+        const float z = static_cast<float>(tc->z) + static_cast<float>(tc->depth) * 0.5f;
+        camera_.set_target({x, map_surface_height(game.map(), x, z), z});
+        camera_.set_distance(70.0f);
+        camera_.snap();
+    }
+}
+
+void App::write_save(const std::string& stem, const std::string& name, bool quiet) {
+    if (!session_ || !paths_) {
+        return;
+    }
+    const save::SaveData data = session_->make_save(name, mod_library_);
+    const std::filesystem::path file = paths_->saves_dir() / (stem + save::kExtension);
+    const bool ok = save::write_file(file, data);
+    if (ok) {
+        log::info("save: game saved ({} bytes of game state)", data.find("GAME")->data.size());
+    }
+    if (host_ && (!ok || !quiet)) {
+        if (ok) {
+            host_->toast(tr("save.done"));
+        } else {
+            host_->show_message(tr("save.failed.title"), tr("save.failed.body"));
+        }
+    }
+}
+
+void App::save_game() {
+    if (!session_) {
+        return;
+    }
+    const sim::Game& game = session_->game();
+    const std::uint64_t t = game.tick();
+    const std::string name = tr("save.name", static_cast<int>(t / sim::kTicksPerYear) + 1,
+                                game.population(session_->local_player()));
+    // One file per save, named by the real time.
+    const std::time_t now = std::time(nullptr);
+    std::tm local{};
+    (void)localtime_s(&local, &now);
+    char stamp[32];
+    (void)std::strftime(stamp, sizeof(stamp), "save-%Y%m%d-%H%M%S", &local);
+    write_save(stamp, name, false);
+}
+
+void App::autosave_if_due() {
+    if (!session_ || session_->game().tick() < next_autosave_tick_) {
+        return;
+    }
+    next_autosave_tick_ = session_->game().tick() + kAutosaveTicks;
+    autosave_slot_ = autosave_slot_ % kAutosaveSlots + 1;
+    const sim::Game& game = session_->game();
+    write_save("autosave-" + std::to_string(autosave_slot_),
+               tr("save.autoName", static_cast<int>(game.tick() / sim::kTicksPerYear) + 1,
+                  game.population(session_->local_player())),
+               true);
+}
+
+std::vector<save::Entry> App::list_saves() {
+    return paths_ ? save::list(paths_->saves_dir()) : std::vector<save::Entry>{};
+}
+
+bool App::load_game(const std::filesystem::path& file) {
+    if (!scene_ok_ || !host_) {
+        return false;
+    }
+    save::SaveData data;
+    const save::LoadError err = save::read_file(file, data);
+    const std::shared_ptr<const sim::Content> content(pack_, &pack_->content);
+    std::unique_ptr<GameSession> loaded;
+    GameSession::LoadResult result = GameSession::LoadResult::Unreadable;
+    if (err == save::LoadError::NewerSchema) {
+        result = GameSession::LoadResult::OtherVersion;
+    } else if (err == save::LoadError::None) {
+        result = GameSession::load(data, content, loaded);
+    }
+    if (result != GameSession::LoadResult::Ok) {
+        log::warn("save: cannot load a game (error {}, result {})", static_cast<int>(err), static_cast<int>(result));
+        host_->show_message(tr("load.failed.title"), tr(load_result_key(result)));
+        return false;
+    }
+    // The map is shown from the saved game's own copy.
+    auto generated = std::make_unique<GeneratedMap>();
+    generated->map = loaded->game().map();
+    generated->visuals = build_map_visuals(generated->map, pack_->content);
+    leave_map();
+    test_scene_.set_visible(scene_, false);
+    if (!map_scene_.show(scene_, generated->visuals)) {
+        test_scene_.set_visible(scene_, true);
+        host_->show_message(tr("load.failed.title"), tr("load.error.damaged"));
+        return false;
+    }
+    generated->visuals = MapVisuals{};
+    map_ = std::move(generated);
+    const sim::MapData* map = &map_->map;
+    const float size = static_cast<float>(map->size);
+    camera_.set_mode(CameraMode::Aerial);
+    camera_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
+    camera_.set_bounds(0.0f, 0.0f, size, size);
+    camera_.set_max_distance_override(size * 1.6f);
+    camera_.set_yaw(0.6f);
+    map_scene_.show_sky(scene_, *map);
+    start_session(std::move(loaded));
+    host_->show_game();
+    host_->toast(tr("load.done"));
+    return true;
 }
 
 }  // namespace sc

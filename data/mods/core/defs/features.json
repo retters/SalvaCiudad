@@ -34,7 +34,7 @@
       "resource": "core:berries",
       "amount": 12,
       "work": 15,
-      "regrowDays": 60,
+      "regrowDays": 30,
       "model": "models/props/berry_bush.glb"
     },
     {
@@ -44,7 +44,7 @@
       "resource": "core:herbs",
       "amount": 6,
       "work": 20,
-      "regrowDays": 90,
+      "regrowDays": 45,
       "model": "models/props/herb.glb"
     }
   ]

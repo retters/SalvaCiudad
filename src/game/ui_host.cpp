@@ -33,7 +33,8 @@ ui::Rect dialog_frame(ui::Context& ctx, float content_height, std::string_view t
 
 }  // namespace
 
-UiHost::UiHost(Services& services) : services_(services), settings_screen_(services), mods_screen_(services) {}
+UiHost::UiHost(Services& services)
+    : services_(services), settings_screen_(services), mods_screen_(services), hud_(services) {}
 
 void UiHost::show_message(std::string title, std::string body) {
     messages_.push_back({std::move(title), std::move(body)});
@@ -41,6 +42,32 @@ void UiHost::show_message(std::string title, std::string body) {
 
 void UiHost::add_notice(std::string text) {
     notices_.push_back(std::move(text));
+}
+
+void UiHost::toast(std::string text) {
+    toast_ = std::move(text);
+    toast_since_ns_ = 0;
+}
+
+void UiHost::draw_toast(ui::Context& ctx) {
+    constexpr std::uint64_t kToastNs = 3'000'000'000ull;
+    if (toast_.empty()) {
+        return;
+    }
+    if (toast_since_ns_ == 0) {
+        toast_since_ns_ = ctx.now_ns();
+    }
+    if (ctx.now_ns() - toast_since_ns_ > kToastNs) {
+        toast_.clear();
+        return;
+    }
+    const ui::TextStyle st = ctx.style(ctx.theme().body);
+    const float w = std::min(ctx.width() - ctx.s(32.0f), ctx.text().measure(st, toast_) + ctx.s(40.0f));
+    const float h = ctx.text().line_height(st) + ctx.s(16.0f);
+    const ui::Rect r{std::round((ctx.width() - w) * 0.5f), std::round(ctx.s(60.0f)), std::round(w), std::round(h)};
+    ctx.draw().rect(r, ctx.theme().tooltip.with_alpha(0.9f));
+    ctx.draw().rect_outline(r, ctx.theme().accent, std::max(1.0f, std::round(ctx.s(1.0f))));
+    ctx.label(r, toast_, st, ctx.theme().text, ui::Align::Center);
 }
 
 bool UiHost::wants_keyboard() const {
@@ -51,9 +78,10 @@ UiHost::SceneMode UiHost::scene_mode() const {
     if (!services_.scene_available()) {
         return SceneMode::None;
     }
-    // Settings opened from the game keep the map behind them.
+    // Settings and the load list opened from the game keep the map behind them.
     const bool over_map = screen_ == Screen::MapView ||
-                          (screen_ == Screen::Settings && settings_return_ == Screen::MapView);
+                          (screen_ == Screen::Settings && settings_return_ == Screen::MapView) ||
+                          (screen_ == Screen::Load && load_return_ == Screen::MapView);
     if (over_map && services_.current_map() != nullptr) {
         return SceneMode::Map;
     }
@@ -61,7 +89,16 @@ UiHost::SceneMode UiHost::scene_mode() const {
 }
 
 bool UiHost::scene_paused() const {
-    return scene_mode() == SceneMode::Map && (game_menu_open_ || screen_ == Screen::Settings);
+    if (scene_mode() != SceneMode::Map) {
+        return false;
+    }
+    const bool menu = game_menu_open_ || screen_ == Screen::Settings || screen_ == Screen::Load;
+    return menu || (services_.session() != nullptr && services_.game_speed() == 0);
+}
+
+bool UiHost::game_paused() const {
+    return services_.session() == nullptr || screen_ != Screen::MapView || game_menu_open_ ||
+           services_.game_speed() == 0;
 }
 
 bool UiHost::modal_open() const {
@@ -118,6 +155,9 @@ void UiHost::frame(ui::Context& ctx) {
     } else if (screen_ == Screen::MapView) {
         ctx.set_input_blocked(modal);
         map_hud(ctx);
+    } else if (screen_ == Screen::Load) {
+        ctx.set_input_blocked(modal);
+        load_screen(ctx, modal);
     } else if (screen_ == Screen::Mods) {
         if (!mods_screen_.frame(ctx, modal)) {
             screen_ = Screen::MainMenu;
@@ -133,6 +173,7 @@ void UiHost::frame(ui::Context& ctx) {
     }
 
     ctx.set_input_blocked(false);
+    draw_toast(ctx);
     if (pending_display_) {
         display_confirm_dialog(ctx);
     } else if (!messages_.empty()) {
@@ -204,7 +245,7 @@ void UiHost::main_menu(ui::Context& ctx) {
         {"single", tr("menu.main.singlePlayer"), tr("menu.main.singlePlayer.tooltip"), true},
         {"host", tr("menu.main.hostGame"), tr("menu.main.hostGame.tooltip"), false},
         {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), false},
-        {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), false},
+        {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), true},
         {"mods", tr("menu.main.mods"), tr("menu.main.mods.tooltip"), true},
         {"testScene", tr("menu.main.testScene"), tr("menu.main.testScene.tooltip"), services_.scene_available()},
         {"settings", tr("menu.main.settings"), tr("menu.main.settings.tooltip"), true},
@@ -262,6 +303,10 @@ void UiHost::main_menu(ui::Context& ctx) {
         if (ctx.button(ctx.id(e.id), r, e.label, e.tooltip)) {
             if (!e.available) {
                 show_message(tr("dialog.comingSoon.title"), tr("dialog.comingSoon.body", e.label));
+            } else if (std::string_view(e.id) == "load") {
+                saves_ = services_.list_saves();
+                load_return_ = Screen::MainMenu;
+                screen_ = Screen::Load;
             } else if (std::string_view(e.id) == "mods") {
                 mods_screen_.open();
                 screen_ = Screen::Mods;
@@ -309,6 +354,7 @@ void UiHost::generating_screen(ui::Context& ctx, bool modal) {
         if (services_.enter_generated_map()) {
             screen_ = Screen::MapView;
             game_menu_open_ = false;
+            last_speed_ = 1;
         } else {
             show_message(tr("generating.showFailed.title"), tr("generating.showFailed.body"));
             screen_ = Screen::NewGame;
@@ -350,10 +396,79 @@ void UiHost::generating_screen(ui::Context& ctx, bool modal) {
     }
 }
 
+void UiHost::game_keys(ui::Context& ctx) {
+    const KeyBindings& b = services_.settings().input.bindings;
+    for (const SDL_Scancode k : ctx.input().keys) {
+        if (b.matches(Action::GamePause, k)) {
+            if (services_.game_speed() == 0) {
+                services_.set_game_speed(last_speed_);
+            } else {
+                last_speed_ = services_.game_speed();
+                services_.set_game_speed(0);
+            }
+        } else if (b.matches(Action::GameSpeed1, k)) {
+            services_.set_game_speed(1);
+        } else if (b.matches(Action::GameSpeed2, k)) {
+            services_.set_game_speed(2);
+        } else if (b.matches(Action::GameSpeed3, k)) {
+            services_.set_game_speed(3);
+        } else if (b.matches(Action::GameQuickSave, k)) {
+            services_.save_game();
+        } else if (b.matches(Action::GameQuickLoad, k)) {
+            const std::vector<save::Entry> saves = services_.list_saves();
+            const auto it = std::find_if(saves.begin(), saves.end(), [](const save::Entry& e) { return e.readable; });
+            if (it != saves.end()) {
+                (void)services_.load_game(it->file);
+            } else {
+                show_message(tr("load.title"), tr("load.empty"));
+            }
+        }
+    }
+    if (services_.game_speed() > 0) {
+        last_speed_ = services_.game_speed();
+    }
+}
+
+void UiHost::pause_panel(ui::Context& ctx) {
+    const float button_h = ctx.s(48.0f);
+    const float gap = ctx.s(10.0f);
+    float y = 0.0f;
+    const ui::Rect content = dialog_frame(ctx, 2 * button_h + gap, tr("pause.title"), y);
+    if (ctx.button(ctx.id("pause_resume"), {content.x, std::round(y), content.w, std::round(button_h)},
+                   tr("pause.resume"), tr("pause.resume.tooltip"), true, true)) {
+        services_.set_game_speed(last_speed_);
+    }
+    y += button_h + gap;
+    if (ctx.button(ctx.id("pause_menu"), {content.x, std::round(y), content.w, std::round(button_h)},
+                   tr("gameMenu.title"), tr("pause.menu.tooltip"))) {
+        game_menu_open_ = true;
+    }
+}
+
 void UiHost::map_hud(ui::Context& ctx) {
     const sim::MapData* map = services_.current_map();
     if (map == nullptr) {
         screen_ = Screen::MainMenu;
+        return;
+    }
+    if (services_.session() != nullptr) {
+        const bool paused = services_.game_speed() == 0;
+        if (!game_menu_open_ && !modal_open()) {
+            game_keys(ctx);
+        }
+        ctx.set_input_blocked(modal_open() || game_menu_open_ || paused);
+        const bool wants_menu = hud_.frame(ctx, modal_open() || game_menu_open_ || paused);
+        ctx.set_input_blocked(modal_open());
+        if (game_menu_open_) {
+            game_menu(ctx);
+        } else if (paused) {
+            pause_panel(ctx);
+            if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
+                game_menu_open_ = true;
+            }
+        } else if (wants_menu && !modal_open()) {
+            game_menu_open_ = true;
+        }
         return;
     }
     const float pad = ctx.s(12.0f);
@@ -388,19 +503,36 @@ void UiHost::game_menu(ui::Context& ctx) {
     };
     static constexpr Entry kEntries[] = {
         {"resume", "gameMenu.resume", "gameMenu.resume.tooltip"},
+        {"save", "gameMenu.save", "gameMenu.save.tooltip"},
+        {"load", "menu.main.loadGame", "menu.main.loadGame.tooltip"},
         {"settings", "menu.main.settings", "menu.main.settings.tooltip"},
         {"leave", "gameMenu.leave", "gameMenu.leave.tooltip"},
         {"quit", "gameMenu.quit", "menu.main.quit.tooltip"},
     };
-    const float content_h = static_cast<float>(std::size(kEntries)) * (button_h + gap) - gap;
+    const bool playing = services_.session() != nullptr;
+    std::vector<const Entry*> entries;
+    for (const Entry& e : kEntries) {
+        const std::string_view id = e.id;
+        if (playing || (id != "save" && id != "load")) {
+            entries.push_back(&e);
+        }
+    }
+    const float content_h = static_cast<float>(entries.size()) * (button_h + gap) - gap;
     float y = 0.0f;
     const ui::Rect content = dialog_frame(ctx, content_h, tr("gameMenu.title"), y);
-    for (const Entry& e : kEntries) {
+    for (const Entry* ep : entries) {
+        const Entry& e = *ep;
         const ui::Rect r{content.x, std::round(y), content.w, std::round(button_h)};
         if (ctx.button(ctx.id(std::string("game_menu_") + e.id), r, tr(e.label), tr(e.tooltip))) {
             const std::string_view id = e.id;
             if (id == "resume") {
                 game_menu_open_ = false;
+            } else if (id == "save") {
+                services_.save_game();
+            } else if (id == "load") {
+                saves_ = services_.list_saves();
+                load_return_ = Screen::MapView;
+                screen_ = Screen::Load;
             } else if (id == "settings") {
                 settings_return_ = Screen::MapView;
                 screen_ = Screen::Settings;
@@ -417,6 +549,61 @@ void UiHost::game_menu(ui::Context& ctx) {
     }
     if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
         game_menu_open_ = false;
+    }
+}
+
+void UiHost::load_screen(ui::Context& ctx, bool modal) {
+    const float button_h = ctx.s(44.0f);
+    const float row_h = ctx.s(64.0f);
+    const float gap = ctx.s(8.0f);
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const float list_h = saves_.empty() ? ctx.text().line_height(body)
+                                        : std::min(ctx.height() * 0.6f, static_cast<float>(saves_.size()) * (row_h + gap));
+    float y = 0.0f;
+    const ui::Rect content = dialog_frame(ctx, list_h + gap * 2 + button_h, tr("load.title"), y);
+    bool back = false;
+    if (saves_.empty()) {
+        ctx.label({content.x, y, content.w, list_h}, tr("load.empty"), body, ctx.theme().text_dim);
+    } else {
+        const ui::Rect view{content.x, y, content.w, list_h};
+        float ry = ctx.begin_scroll(ctx.id("load_list"), view);
+        const float bw = std::min(ctx.s(140.0f), content.w * 0.3f);
+        for (std::size_t i = 0; i < saves_.size(); ++i) {
+            const save::Entry& e = saves_[i];
+            const ui::Rect row{content.x, ry, content.w - ctx.s(12.0f), row_h};
+            ctx.draw().rect(row, ctx.theme().button_active.with_alpha(0.6f));
+            const float line = ctx.text().line_height(body);
+            ctx.label({row.x + gap, row.y + gap, row.w - bw - 3 * gap, line}, e.header.name, body,
+                      e.readable ? ctx.theme().text : ctx.theme().text_disabled);
+            const std::string detail = e.readable ? tr("load.detail", e.header.saved_at, static_cast<int>(e.header.population),
+                                                       e.header.game_version)
+                                                  : tr("load.unreadable");
+            ctx.label({row.x + gap, row.y + gap + line, row.w - bw - 3 * gap, ctx.text().line_height(small)}, detail, small,
+                      ctx.theme().text_dim);
+            ctx.push_id("load_row");
+            if (ctx.button(ctx.id(std::to_string(i)), {row.right() - bw - gap, row.y + (row_h - button_h) * 0.5f, bw, button_h},
+                           tr("load.load"), tr("load.load.tooltip"), e.readable)) {
+                if (services_.load_game(e.file)) {
+                    screen_ = Screen::MapView;
+                    game_menu_open_ = false;
+                    ctx.pop_id();
+                    ctx.end_scroll(static_cast<float>(saves_.size()) * (row_h + gap));
+                    return;
+                }
+            }
+            ctx.pop_id();
+            ry += row_h + gap;
+        }
+        ctx.end_scroll(static_cast<float>(saves_.size()) * (row_h + gap));
+    }
+    const float bw = std::min(ctx.s(180.0f), content.w);
+    back = ctx.button(ctx.id("load_back"), {content.right() - bw, content.bottom() - button_h, bw, button_h},
+                      tr("load.back"), tr("load.back.tooltip")) ||
+           (!modal && ctx.input().key(SDL_SCANCODE_ESCAPE));
+    if (back) {
+        screen_ = load_return_ == Screen::MapView && services_.current_map() != nullptr ? Screen::MapView
+                                                                                         : Screen::MainMenu;
     }
 }
 

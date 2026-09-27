@@ -8,6 +8,7 @@
 #include <imgui.h>
 
 #include "game/camera.h"
+#include "game/game_session.h"
 #include "game/map_scene.h"
 #include "game/test_scene.h"
 #include "i18n/translator.h"
@@ -447,11 +448,38 @@ void DevTools::draw(DevContext& ctx) {
                 explorer_tab(ctx);
                 ImGui::EndTabItem();
             }
+            if (ctx.session != nullptr && tab(Tab::Village, "dev.tab.village", "village")) {
+                active_tab_ = Tab::Village;
+                village_tab(ctx);
+                ImGui::EndTabItem();
+            }
             switch_to_.reset();
             ImGui::EndTabBar();
         }
     }
     ImGui::End();
+}
+
+// Village: goods for testing (a command, so the game stays deterministic).
+void DevTools::village_tab(DevContext& ctx) {
+    if (ctx.session == nullptr) {
+        return;
+    }
+    const sim::Game& game = ctx.session->game();
+    ImGui::SliderInt("##grant", &grant_amount_, 10, 1000);
+    if (ImGui::Button((tr("dev.village.grant", grant_amount_) + "###grant").c_str())) {
+        for (std::size_t r = 0; r < game.content().resources.size(); ++r) {
+            sim::Command c;
+            c.type = sim::CommandType::DevGrant;
+            c.def = static_cast<sim::DefIndex>(r);
+            c.value = grant_amount_;
+            ctx.session->issue(c);
+        }
+    }
+    ImGui::Separator();
+    ImGui::Text("tick %llu", static_cast<unsigned long long>(game.tick()));
+    ImGui::Text("villagers %zu, buildings %zu", game.villagers().size(), game.buildings().size());
+    ImGui::Text("rejected commands %u", game.rejected_commands());
 }
 
 void DevTools::terrain_info(const DevContext& ctx, math::Vec3 at) {

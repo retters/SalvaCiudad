@@ -2,8 +2,8 @@
 // they are what travels over the network (section 7.4), so they are small,
 // fully validated when read, and applied in a fixed order.
 //
-// The command set is a test set for the deterministic core (phase 5);
-// the game's real commands arrive with the game (phase 8).
+// The first three are the test set of the deterministic core (phase 5,
+// the walkers world); the others are the village game's (phase 8 on).
 #pragma once
 
 #include <cstdint>
@@ -18,10 +18,16 @@ enum class CommandType : std::uint8_t {
     SpawnWalkers = 1,  // `count` walkers around `position`.
     SendWalker = 2,    // Walker `entity` walks to `position`.
     RemoveWalker = 3,  // Walker `entity` leaves.
+    PlaceBuilding = 10,   // Building `def` with its corner cell at `position`, rotation `value` (0..3).
+    RemoveBuilding = 11,  // Cancel a construction or demolish `entity`.
+    SetWorkers = 12,      // Wanted workers of `entity`: `value`.
+    PlaceField = 13,      // Reserved for fields (phase 11).
+    DevGrant = 14,        // Developer tools: `value` units of resource `def` to the town center.
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;
 inline constexpr std::uint16_t kMaxSpawnPerCommand = 64;
+inline constexpr std::int32_t kMaxDevGrant = 10000;
 
 struct Command {
     CommandType type = CommandType::SpawnWalkers;
@@ -29,6 +35,8 @@ struct Command {
     EntityId entity;
     FixedVec2 position;
     std::uint16_t count = 0;
+    std::uint16_t def = 0;     // Definition index (buildings...).
+    std::int32_t value = 0;    // Rotation, worker count...
 
     void write(BinaryWriter& w) const;
     // Reads and validates the shape of a command (not whether its target

@@ -561,3 +561,69 @@ El usuario pidió avanzar de la fase 7 a la 20 sin detenerse, tomando en cada du
 
 **D-707. Elección de mods en `mods.json`.**
 Separado de `settings.json`, con escritura atómica y cuarentena si está dañado. Aplicar los mods reconstruye el contenido, recarga los textos y carga solo los modelos nuevos (los ya cargados se reutilizan por ruta). Si había un mapa abierto, se cierra.
+
+## Fase 8: primer pueblo jugable (2026-09-27)
+
+**D-801. Tiempo del juego.**
+10 ticks por segundo a x1; un día son 100 ticks (10 s), un mes 10 días y un año 12 meses: un año dura unos 20 minutos a velocidad normal. La edad de juego va comprimida: se es adulto a los 5 años y la vejez empieza a los 45 (con una probabilidad mensual de morir que crece con la edad).
+
+**D-802. Hambre y salud.**
+- Cada aldeano tiene un medidor de comida de 0 a 1000. Un adulto gasta un punto cada 4 ticks y un niño la mitad; un medidor lleno dura unos cuatro meses.
+- Va a comer por debajo de 500 al almacén con comida más cercano y come varias raciones, primero la más nutritiva (bayas 3, raíces 2; 100 puntos por punto de nutrición).
+- Con el medidor en cero pierde un punto de salud cada 2 ticks: muere de hambre en unos 3 minutos si no come. Con comida, la salud se recupera sola.
+- Se descartó 1 punto por tick: la comida inicial duraba menos de 3 minutos.
+
+**D-803. Crecimiento de la población.**
+- Nacimientos: una vez al mes, cada casa con un hombre y una mujer adultos de hasta 40 años, bien alimentados, con lugar libre y con comida guardada para al menos 3 raciones por habitante tiene un 12 % de probabilidad.
+- Inmigración: una vez al mes llega una familia (2 a 4 personas) si hay al menos 2 lugares libres en casas y comida guardada de al menos 40 + 10 por habitante.
+- Arranque: centro del pueblo, cinco parejas y dos niños, 60 troncos, 20 piedras, 150 bayas y 40 raíces.
+
+**D-804. Caminar: rejilla de 2 m y A\*.**
+- `NavGrid` marca como bloqueadas las celdas con agua o con más de 1.8 m de desnivel, y las de los edificios; el bosque y las pendientes cuestan más.
+- A\* con 8 vecinos, sin cortar esquinas, con la clave del montículo `(f << 32) | celda` para desempatar por índice (determinista). Presupuesto de 150 000 nodos por búsqueda.
+- Quien queda dentro de un edificio recién puesto sale por la celda libre más cercana.
+- Los aldeanos caminan a 2 m/s (los niños a 1.6).
+- Para usar un edificio se acercan a cualquier lado de su contorno, el más cercano a ellos, no a una puerta fija: con una puerta fija, un barranco detrás de ella provocaba rodeos de cientos de metros.
+
+**D-805. Área de trabajo por distancia caminando.**
+El radio de trabajo de un taller (leñador 55 m, recolector 65 m…) se mide caminando: un Dijkstra desde el taller hasta 1.5 veces el radio, recalculado cuando cambian los edificios. Los recolectores eligen el recurso más cercano **por camino**, no en línea recta. En la prueba, un leñador al otro lado de un río mandaba a sus trabajadores a rodearlo y morían de hambre en el camino.
+
+**D-806. Recolectar, guardar y acarrear.**
+- Los recolectores cargan lo que llevan (12 unidades de peso 1; troncos pesan 2) y lo dejan en su propio taller si tiene lugar, o en el almacén más cercano.
+- Los peones (adultos sin trabajo) construyen primero y, si no hay obras, acarrean: llevan a un almacén lo que se juntó en los talleres cuando hay una carga completa o el taller está casi lleno.
+- Construir, comer y producir también toman bienes de los talleres, salvo los insumos de sus recetas.
+- Los arbustos se vacían y rebrotan (bayas en 30 días, hierbas en 45); los árboles talados y las piedras agotadas desaparecen.
+
+**D-807. Construcción por etapas.**
+Colocar un edificio despeja al instante los árboles y rocas de su terreno. Los peones llevan los materiales (reservados para que dos no lleven lo mismo) y luego trabajan: la obra termina con todos los materiales y el trabajo hecho. En la vista, el edificio sube desde el suelo con color de madera sin terminar. Cancelar devuelve los materiales al centro del pueblo.
+
+**D-808. Trabajos y casas.**
+Cada 20 ticks se asignan trabajadores a los talleres terminados (el adulto libre más cercano) y casa a quien no tiene (primero con su familia). El jugador cambia cuántos trabajadores quiere en cada taller (comando `SetWorkers`).
+
+**D-809. Todo cambio pasa por comandos.**
+El juego solo cambia con los comandos `PlaceBuilding`, `RemoveBuilding`, `SetWorkers` y `DevGrant` (herramientas de desarrollo, aceptado solo si la partida lo permite; el permiso es parte del estado). La sesión aplica los comandos del jugador al empezar el siguiente tick, como se hará en multijugador. Los comandos inválidos se ignoran y se cuentan igual en todas las máquinas.
+
+**D-810. Pausa y velocidad.**
+Espacio pausa y reanuda; 1, 2 y 3 eligen la velocidad. En pausa, y con el menú del juego abierto en una partida de un jugador, el juego se detiene, la escena se desenfoca (dos pasadas gaussianas sobre la imagen terminada, solo mientras dura la pausa) y la interfaz no se puede usar, como pide la especificación.
+
+**D-811. Partidas guardadas.**
+- Archivo `.scsave`: firma, versión del esquema, cabecera JSON legible (nombre, versión del juego, fecha, jugadores, reglas, hash del contenido, mods, semilla, tick, población) y bloques con etiqueta, tamaños y CRC32. Los bloques desconocidos se conservan.
+- El bloque `GAME` es la serialización del juego (mapa incluido) y es la que se usará para sincronizar partidas en red.
+- Se guarda con escritura atómica verificada. F5 guarda una partida nueva con fecha y hora; F9 carga la más reciente. Autoguardado cada 10 minutos de juego en tres archivos que rotan.
+- Una partida de otra versión del juego o de las reglas, o con otros mods, se rechaza con un mensaje claro (D-631).
+- Sin miniatura por ahora: requiere leer la imagen de la GPU; queda para la fase 17.
+
+**D-812. zstd todavía no está vendorizado.**
+La especificación pide comprimir los bloques con zstd, pero no hay red para descargarlo. Cada bloque lleva un campo de compresión (0 = sin comprimir, 1 = zstd) y por ahora se guardan sin comprimir. Una partida pequeña ocupa unos pocos MB y una enorme puede llegar a decenas de MB. **Pendiente para el usuario:** descargar zstd (licencia BSD) a `third_party/zstd` para activarlo.
+
+**D-813. Vista del pueblo.**
+- Cada edificio usa el modelo de su definición, escalado a su huella; por ahora todos usan la casa de prueba (el arte llega en la fase 18).
+- Los aldeanos usan los cuerpos del grupo de prueba; su aspecto (paleta, sombrero, barba, delantal) sale de bits aleatorios guardados en el juego, así que es igual en todas las máquinas y después de cargar.
+- Los rasgos del mapa cambian uno por uno (`update_instance`) cuando se talan o se vacían, sin reconstruir las listas.
+- Se quitaron del mapa el pueblo de muestra y la multitud de prueba (D-617).
+
+**D-814. Interfaz de la fase 8.**
+Barra superior (comida total, otros bienes, población, fecha y velocidad), barra de construcción con descripción de costo y tamaño, fantasma verde o rojo con el motivo del rechazo, R para girar, Mayús+clic para colocar varios, clic derecho o Esc para cancelar, y ventanas de edificio y de aldeano con marcador sobre lo seleccionado. Las ventanas con imán y anclaje quedan para la fase 17. Las herramientas de desarrollo tienen una pestaña "Pueblo" para dar bienes al centro del pueblo.
+
+**D-815. Balance comprobado con una prueba de una hora.**
+La prueba `village` juega una hora a x1 (36 000 ticks, 0.2 s de CPU) con un jugador simulado que construye casas, recolectores, leñadores y un almacén: el pueblo pasa de 12 a unos 18 habitantes sin muertes. Sin edificios, el pueblo muere de hambre. El ritmo de crecimiento se ajustará con las fases 10 a 12 (estaciones, agricultura, necesidades).

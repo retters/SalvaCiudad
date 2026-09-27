@@ -17,6 +17,7 @@
 namespace sc {
 
 class Camera;
+class GameSession;
 class MapScene;
 class TestCrowd;
 namespace render {
@@ -31,6 +32,7 @@ struct DevContext {
     render::SceneRenderer* renderer = nullptr;
     TestCrowd* crowd = nullptr;
     Camera* camera = nullptr;
+    GameSession* session = nullptr;  // The village game, if any.
     bool ray_valid = false;  // The pointer is over the world, not a window.
     math::Vec3 ray_origin;
     math::Vec3 ray_dir;      // Normalized.
@@ -62,7 +64,7 @@ public:
     void reset();
 
 private:
-    enum class Tab : std::uint8_t { Inspector, Create, Explorer };
+    enum class Tab : std::uint8_t { Inspector, Create, Explorer, Village };
     enum class CreateKind : std::uint8_t { Tree, BerryBush, Herbs, Stone, IronOre, House, Person, Count };
     enum class Filter : std::uint8_t { All, Trees, Plants, Rocks, Houses, People, Count };
 
@@ -83,6 +85,8 @@ private:
     void terrain_info(const DevContext& ctx, math::Vec3 at);
     void create_tab(DevContext& ctx);
     void explorer_tab(DevContext& ctx);
+    void village_tab(DevContext& ctx);
+    int grant_amount_ = 100;
     void rebuild_list(const DevContext& ctx);
 
     bool visible_ = false;

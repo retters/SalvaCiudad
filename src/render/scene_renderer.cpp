@@ -8,6 +8,7 @@
 #include <SDL3/SDL_error.h>
 
 #include "core/log.h"
+#include "shaders/blur_frag_dxil.h"
 #include "shaders/mesh_frag_dxil.h"
 #include "shaders/mesh_vert_dxil.h"
 #include "shaders/shadow_frag_dxil.h"
@@ -171,8 +172,14 @@ struct GpuModel {
     std::vector<SDL_GPUTexture*> textures;
     float radius = 1.0f;
     std::uint64_t triangles = 0;
-    std::vector<Instance> instances;  // Sorted by region once uploaded.
+    std::vector<Instance> instances;     // In the caller's order.
+    std::vector<std::uint32_t> order;    // Region-sorted position -> index in `instances`.
+    std::vector<std::uint32_t> slot_of;  // Index in `instances` -> region-sorted position.
     std::vector<Bucket> buckets;
+    std::uint32_t base = 0;              // First slot in the GPU instance buffer.
+    std::uint32_t capacity = 0;          // Slots reserved there.
+    bool dirty = true;                   // Whole range must be rebuilt.
+    std::vector<std::uint32_t> changed;  // Sorted positions updated one by one.
     ModelClass model_class = ModelClass::Normal;
 };
 
@@ -271,12 +278,21 @@ struct SceneRenderer::Impl {
     SDL_GPUTexture* shadow_map = nullptr;
     SDL_GPUTexture* color_msaa = nullptr;
     SDL_GPUTexture* depth = nullptr;
+    // Pause blur: the scene goes to post_a, is blurred across into post_b
+    // and down into the swapchain.
+    SDL_GPUGraphicsPipeline* blur_pipeline = nullptr;
+    SDL_GPUSampler* clamp_sampler = nullptr;
+    SDL_GPUTexture* post_a = nullptr;
+    SDL_GPUTexture* post_b = nullptr;
+    std::uint32_t post_w = 0;
+    std::uint32_t post_h = 0;
     std::uint32_t target_w = 0;
     std::uint32_t target_h = 0;
 
     SDL_GPUBuffer* instance_buffer = nullptr;  // Storage: all instances.
     std::uint32_t instance_capacity = 0;
-    bool instances_dirty = true;
+    bool layout_dirty = true;   // Some model outgrew its room: lay out again.
+    bool full_upload = true;    // The whole instance buffer must be sent.
     SDL_GPUBuffer* visible_buffer = nullptr;   // Vertex: visible indices.
     std::uint32_t visible_capacity = 0;
     SDL_GPUTransferBuffer* transfer = nullptr;
@@ -315,7 +331,41 @@ struct SceneRenderer::Impl {
 
     ~Impl() { release_all(); }
 
+    void release_post() {
+        SDL_ReleaseGPUTexture(device, post_a);
+        SDL_ReleaseGPUTexture(device, post_b);
+        post_a = post_b = nullptr;
+        post_w = post_h = 0;
+    }
+
+    bool ensure_post(std::uint32_t w, std::uint32_t h) {
+        if (w == post_w && h == post_h && post_a != nullptr) {
+            return true;
+        }
+        release_post();
+        SDL_GPUTextureCreateInfo info{};
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.width = w;
+        info.height = h;
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        info.sample_count = SDL_GPU_SAMPLECOUNT_1;
+        info.format = swapchain_format;
+        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        post_a = SDL_CreateGPUTexture(device, &info);
+        post_b = SDL_CreateGPUTexture(device, &info);
+        if (post_a == nullptr || post_b == nullptr) {
+            log::warn("scene: cannot create the blur targets: {}", SDL_GetError());
+            release_post();
+            return false;
+        }
+        post_w = w;
+        post_h = h;
+        return true;
+    }
+
     void release_targets() {
+        release_post();
         SDL_ReleaseGPUTexture(device, color_msaa);
         SDL_ReleaseGPUTexture(device, depth);
         color_msaa = nullptr;
@@ -329,6 +379,8 @@ struct SceneRenderer::Impl {
         SDL_ReleaseGPUGraphicsPipeline(device, shadow_pipeline);
         SDL_ReleaseGPUGraphicsPipeline(device, skinned_pipeline);
         SDL_ReleaseGPUGraphicsPipeline(device, skinned_shadow_pipeline);
+        SDL_ReleaseGPUGraphicsPipeline(device, blur_pipeline);
+        blur_pipeline = nullptr;
         mesh_pipeline = sky_pipeline = shadow_pipeline = nullptr;
         skinned_pipeline = skinned_shadow_pipeline = nullptr;
     }
@@ -360,6 +412,8 @@ struct SceneRenderer::Impl {
         bone_capacity = palette_capacity = character_capacity = 0;
         SDL_ReleaseGPUSampler(device, base_sampler);
         SDL_ReleaseGPUSampler(device, shadow_sampler);
+        SDL_ReleaseGPUSampler(device, clamp_sampler);
+        clamp_sampler = nullptr;
         SDL_ReleaseGPUTexture(device, white);
         SDL_ReleaseGPUTexture(device, shadow_map);
         SDL_ReleaseGPUBuffer(device, instance_buffer);
@@ -525,6 +579,7 @@ struct SceneRenderer::Impl {
         SDL_GPUShader* skinned_vs = make_shader(device, kSkinnedVertDxil, kSkinnedVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 3, 2);
         SDL_GPUShader* skinned_shadow_vs =
             make_shader(device, kSkinnedShadowVertDxil, kSkinnedShadowVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 2, 1);
+        SDL_GPUShader* blur_fs = make_shader(device, kBlurFragDxil, kBlurFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 1);
         const bool shaders_ok =
             mesh_vs && mesh_fs && sky_vs && sky_fs && shadow_vs && shadow_fs && skinned_vs && skinned_shadow_vs;
 
@@ -605,12 +660,23 @@ struct SceneRenderer::Impl {
             cs.vertex_input_state = {sbuffers, 2, sattrs, 6};
             skinned_shadow_pipeline = SDL_CreateGPUGraphicsPipeline(device, &cs);
 
+            // Pause blur: full-screen, one sample, no depth. Optional.
+            if (blur_fs != nullptr) {
+                SDL_GPUGraphicsPipelineCreateInfo bi{};
+                bi.vertex_shader = sky_vs;
+                bi.fragment_shader = blur_fs;
+                bi.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+                bi.target_info.color_target_descriptions = &color;
+                bi.target_info.num_color_targets = 1;
+                blur_pipeline = SDL_CreateGPUGraphicsPipeline(device, &bi);
+            }
+
             // The ground shares the lit fragment shader.
             if (!terrain.create_pipelines(device, swapchain_format, depth_format, to_sample_count(samples), mesh_fs)) {
                 log::warn("scene: terrain unavailable");
             }
         }
-        for (SDL_GPUShader* s : {mesh_vs, mesh_fs, sky_vs, sky_fs, shadow_vs, shadow_fs, skinned_vs, skinned_shadow_vs}) {
+        for (SDL_GPUShader* s : {mesh_vs, mesh_fs, sky_vs, sky_fs, shadow_vs, shadow_fs, skinned_vs, skinned_shadow_vs, blur_fs}) {
             SDL_ReleaseGPUShader(device, s);
         }
         if (mesh_pipeline == nullptr || sky_pipeline == nullptr || shadow_pipeline == nullptr ||
@@ -653,24 +719,32 @@ struct SceneRenderer::Impl {
 
     // --- Per frame ---------------------------------------------------------
 
-    // Sorts each model's instances by region and records the regions.
+    // Orders each model's instances by region and records the regions.
     static void build_buckets(GpuModel& m) {
         m.buckets.clear();
-        const auto key = [](const Instance& inst) {
+        const auto key = [&](std::uint32_t idx) {
+            const Instance& inst = m.instances[idx];
             const auto bx = static_cast<std::int64_t>(std::floor(inst.position.x / kBucketSize));
             const auto bz = static_cast<std::int64_t>(std::floor(inst.position.z / kBucketSize));
             return bz * (std::int64_t{1} << 32) + bx;
         };
-        std::stable_sort(m.instances.begin(), m.instances.end(),
-                         [&](const Instance& a, const Instance& b) { return key(a) < key(b); });
+        m.order.resize(m.instances.size());
+        for (std::uint32_t k = 0; k < m.order.size(); ++k) {
+            m.order[k] = k;
+        }
+        std::stable_sort(m.order.begin(), m.order.end(), [&](std::uint32_t a, std::uint32_t b) { return key(a) < key(b); });
+        m.slot_of.resize(m.order.size());
+        for (std::uint32_t k = 0; k < m.order.size(); ++k) {
+            m.slot_of[m.order[k]] = k;
+        }
         std::size_t i = 0;
-        while (i < m.instances.size()) {
-            const std::int64_t k = key(m.instances[i]);
+        while (i < m.order.size()) {
+            const std::int64_t k = key(m.order[i]);
             std::size_t j = i;
-            math::Vec3 lo = m.instances[i].position;
+            math::Vec3 lo = m.instances[m.order[i]].position;
             math::Vec3 hi = lo;
-            while (j < m.instances.size() && key(m.instances[j]) == k) {
-                const math::Vec3 p = m.instances[j].position;
+            while (j < m.order.size() && key(m.order[j]) == k) {
+                const math::Vec3 p = m.instances[m.order[j]].position;
                 lo = {std::min(lo.x, p.x), std::min(lo.y, p.y), std::min(lo.z, p.z)};
                 hi = {std::max(hi.x, p.x), std::max(hi.y, p.y), std::max(hi.z, p.z)};
                 ++j;
@@ -680,34 +754,75 @@ struct SceneRenderer::Impl {
             b.count = static_cast<std::uint32_t>(j - i);
             b.center = (lo + hi) * 0.5f;
             for (std::size_t n = i; n < j; ++n) {
-                const Instance& inst = m.instances[n];
-                b.radius = std::max(b.radius, math::length(inst.position - b.center) + m.radius * inst.scale);
+                const Instance& inst = m.instances[m.order[n]];
+                // Room for small moves of updated instances.
+                b.radius = std::max(b.radius, math::length(inst.position - b.center) + m.radius * inst.scale + 2.0f);
             }
             m.buckets.push_back(b);
             i = j;
         }
     }
 
-    void rebuild_instance_data() {
-        gpu_instances.clear();
+    static GpuInstance to_gpu(const Instance& inst) {
+        const float c = std::cos(inst.yaw) * inst.scale;
+        const float s = std::sin(inst.yaw) * inst.scale;
+        GpuInstance g{};
+        g.row0[0] = c;
+        g.row0[2] = s;
+        g.row0[3] = inst.position.x;
+        g.row1[1] = inst.scale;
+        g.row1[3] = inst.position.y;
+        g.row2[0] = -s;
+        g.row2[2] = c;
+        g.row2[3] = inst.position.z;
+        set4(g.tint, inst.tint, 1.0f);
+        return g;
+    }
+
+    // Brings gpu_instances up to date and lists what must be uploaded, as
+    // (first slot, count) ranges.
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> prepare_instances() {
+        std::vector<std::pair<std::uint32_t, std::uint32_t>> ranges;
+        if (layout_dirty) {
+            std::uint32_t base = 0;
+            for (GpuModel& m : models) {
+                const auto count = static_cast<std::uint32_t>(m.instances.size());
+                m.base = base;
+                m.capacity = count + count / 4 + 16;
+                m.dirty = true;
+                base += m.capacity;
+            }
+            gpu_instances.assign(base, GpuInstance{});
+            layout_dirty = false;
+            full_upload = true;
+        }
         for (GpuModel& m : models) {
-            build_buckets(m);
-            for (const Instance& inst : m.instances) {
-                const float c = std::cos(inst.yaw) * inst.scale;
-                const float s = std::sin(inst.yaw) * inst.scale;
-                GpuInstance g{};
-                g.row0[0] = c;
-                g.row0[2] = s;
-                g.row0[3] = inst.position.x;
-                g.row1[1] = inst.scale;
-                g.row1[3] = inst.position.y;
-                g.row2[0] = -s;
-                g.row2[2] = c;
-                g.row2[3] = inst.position.z;
-                set4(g.tint, inst.tint, 1.0f);
-                gpu_instances.push_back(g);
+            if (m.dirty) {
+                build_buckets(m);
+                for (std::uint32_t k = 0; k < m.order.size(); ++k) {
+                    gpu_instances[m.base + k] = to_gpu(m.instances[m.order[k]]);
+                }
+                if (!full_upload && !m.order.empty()) {
+                    ranges.emplace_back(m.base, static_cast<std::uint32_t>(m.order.size()));
+                }
+                m.dirty = false;
+                m.changed.clear();
+            }
+            for (const std::uint32_t k : m.changed) {
+                gpu_instances[m.base + k] = to_gpu(m.instances[m.order[k]]);
+                if (!full_upload) {
+                    ranges.emplace_back(m.base + k, 1u);
+                }
+            }
+            m.changed.clear();
+        }
+        if (full_upload) {
+            ranges.clear();
+            if (!gpu_instances.empty()) {
+                ranges.emplace_back(0u, static_cast<std::uint32_t>(gpu_instances.size()));
             }
         }
+        return ranges;
     }
 
     void rebuild_character_data() {
@@ -803,12 +918,10 @@ struct SceneRenderer::Impl {
     // vegetation distance. Whole regions are tested first.
     std::vector<Range> cull(const math::Frustum& frustum, math::Vec3 eye, float max_distance, bool shadows) {
         std::vector<Range> ranges(models.size());
-        std::uint32_t global = 0;
         for (std::size_t mi = 0; mi < models.size(); ++mi) {
             const GpuModel& m = models[mi];
             ranges[mi].first = static_cast<std::uint32_t>(visible.size());
             if (shadows && m.model_class == ModelClass::Sky) {
-                global += static_cast<std::uint32_t>(m.instances.size());
                 ranges[mi].count = 0;
                 continue;
             }
@@ -823,19 +936,18 @@ struct SceneRenderer::Impl {
                     continue;
                 }
                 for (std::uint32_t n = b.first; n < b.first + b.count; ++n) {
-                    const Instance& inst = m.instances[n];
+                    const Instance& inst = m.instances[m.order[n]];
                     const float r = m.radius * inst.scale;
-                    if (!frustum.sphere_visible(inst.position, r)) {
+                    if (inst.scale <= 0.0f || !frustum.sphere_visible(inst.position, r)) {
                         continue;
                     }
                     const math::Vec3 d = inst.position - eye;
                     const float reach = limit + r;
                     if (math::dot(d, d) <= reach * reach) {
-                        visible.push_back(global + n);
+                        visible.push_back(m.base + n);
                     }
                 }
             }
-            global += static_cast<std::uint32_t>(m.instances.size());
             ranges[mi].count = static_cast<std::uint32_t>(visible.size()) - ranges[mi].first;
         }
         return ranges;
@@ -873,6 +985,12 @@ bool SceneRenderer::create(GpuDevice& gpu, const GraphicsSettings& graphics) {
     sh.enable_compare = true;
     sh.compare_op = SDL_GPU_COMPAREOP_GREATER_OR_EQUAL;
     d.shadow_sampler = SDL_CreateGPUSampler(d.device, &sh);
+
+    SDL_GPUSamplerCreateInfo cl{};
+    cl.min_filter = SDL_GPU_FILTER_LINEAR;
+    cl.mag_filter = SDL_GPU_FILTER_LINEAR;
+    cl.address_mode_u = cl.address_mode_v = cl.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    d.clamp_sampler = SDL_CreateGPUSampler(d.device, &cl);
 
     ModelTexture white;
     white.width = white.height = 1;
@@ -980,8 +1098,26 @@ void SceneRenderer::clear_terrain() {
 
 void SceneRenderer::set_instances(ModelId model, std::span<const Instance> instances) {
     if (model < impl_->models.size()) {
-        impl_->models[model].instances.assign(instances.begin(), instances.end());
-        impl_->instances_dirty = true;
+        GpuModel& m = impl_->models[model];
+        m.instances.assign(instances.begin(), instances.end());
+        m.dirty = true;
+        if (m.instances.size() > m.capacity) {
+            impl_->layout_dirty = true;
+        }
+    }
+}
+
+void SceneRenderer::update_instance(ModelId model, std::uint32_t index, const Instance& instance) {
+    if (model >= impl_->models.size()) {
+        return;
+    }
+    GpuModel& m = impl_->models[model];
+    if (index >= m.instances.size()) {
+        return;
+    }
+    m.instances[index] = instance;
+    if (!m.dirty && index < m.slot_of.size()) {
+        m.changed.push_back(m.slot_of[index]);
     }
 }
 
@@ -1120,8 +1256,8 @@ void SceneRenderer::set_characters(std::span<const CharacterInstance> characters
 void SceneRenderer::clear_instances() {
     for (GpuModel& m : impl_->models) {
         m.instances.clear();
+        m.dirty = true;
     }
-    impl_->instances_dirty = true;
 }
 
 bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lighting& lighting) {
@@ -1189,9 +1325,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
 
     d.draw_distance_now = draw_distance;
     // Culling (instances are grouped by region first, when they changed).
-    if (d.instances_dirty) {
-        d.rebuild_instance_data();
-    }
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>> instance_ranges = d.prepare_instances();
     d.visible.clear();
     const std::vector<Range> main_ranges = d.cull(frustum, view.eye, view_distance, false);
     const std::vector<Range> main_characters = d.cull_characters(frustum, &view.eye, draw_distance);
@@ -1217,12 +1351,24 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const auto character_bytes = static_cast<std::uint32_t>(d.gpu_characters.size() * sizeof(GpuCharacter));
     const auto bone_bytes = static_cast<std::uint32_t>(d.bone_rows.size() * sizeof(float));
     const auto palette_bytes = static_cast<std::uint32_t>(d.palette_data.size() * sizeof(float));
-    const std::uint32_t upload_instances = d.instances_dirty ? instance_bytes : 0;
+    std::uint32_t upload_instances = 0;
+    for (const auto& [first, count] : instance_ranges) {
+        upload_instances += count * static_cast<std::uint32_t>(sizeof(GpuInstance));
+    }
     const std::uint32_t upload_bones = d.bones_dirty ? bone_bytes : 0;
     const std::uint32_t upload_palettes = d.palettes_dirty ? palette_bytes : 0;
     constexpr SDL_GPUBufferUsageFlags kStorage = SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ;
+    // A new (bigger) instance buffer starts empty: everything goes up again.
+    const std::uint32_t old_instance_capacity = d.instance_capacity;
+    if (!d.ensure_buffer(d.instance_buffer, d.instance_capacity, instance_bytes + 64, kStorage)) {
+        return false;
+    }
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> send_instances = instance_ranges;
+    if (d.instance_capacity != old_instance_capacity && !d.gpu_instances.empty()) {
+        send_instances.assign(1, {0u, static_cast<std::uint32_t>(d.gpu_instances.size())});
+        upload_instances = instance_bytes;
+    }
     if (!d.ensure_buffer(d.visible_buffer, d.visible_capacity, visible_bytes + 16, SDL_GPU_BUFFERUSAGE_VERTEX) ||
-        !d.ensure_buffer(d.instance_buffer, d.instance_capacity, instance_bytes + 64, kStorage) ||
         !d.ensure_buffer(d.character_buffer, d.character_capacity, character_bytes + 80, kStorage) ||
         !d.ensure_buffer(d.palette_buffer, d.palette_capacity, palette_bytes + 16, kStorage)) {
         return false;
@@ -1252,9 +1398,16 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             SDL_GPUBuffer* dst;
             bool cycle;
         };
+        // Instance ranges go first, each to its own place in the buffer.
+        std::vector<std::pair<std::uint32_t, std::uint32_t>> instance_offsets;  // (transfer offset, bytes)
+        for (const auto& [first, count] : send_instances) {
+            const auto bytes = count * static_cast<std::uint32_t>(sizeof(GpuInstance));
+            std::memcpy(mapped + offset, d.gpu_instances.data() + first, bytes);
+            instance_offsets.emplace_back(offset, bytes);
+            offset += bytes;
+        }
         const Item items[] = {
             {d.visible.data(), visible_bytes, d.visible_buffer, true},
-            {d.gpu_instances.data(), upload_instances, d.instance_buffer, false},
             {d.gpu_characters.data(), character_bytes, d.character_buffer, true},
             {d.bone_rows.data(), bones_to_upload, d.bone_buffer, false},
             {d.palette_data.data(), palettes_to_upload, d.palette_buffer, false},
@@ -1269,6 +1422,13 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         }
         SDL_UnmapGPUTransferBuffer(d.device, d.transfer);
         SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(frame.cmd);
+        for (std::size_t r = 0; r < send_instances.size(); ++r) {
+            const SDL_GPUTransferBufferLocation src{d.transfer, instance_offsets[r].first};
+            const SDL_GPUBufferRegion dst{d.instance_buffer,
+                                          send_instances[r].first * static_cast<std::uint32_t>(sizeof(GpuInstance)),
+                                          instance_offsets[r].second};
+            SDL_UploadToGPUBuffer(copy, &src, &dst, false);
+        }
         for (std::size_t i = 0; i < std::size(items); ++i) {
             if (items[i].bytes == 0) {
                 continue;
@@ -1279,7 +1439,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         }
         SDL_EndGPUCopyPass(copy);
         if (upload_instances > 0) {
-            d.instances_dirty = false;
+            d.full_upload = false;
         }
         if (bones_to_upload > 0) {
             d.bones_dirty = false;
@@ -1391,12 +1551,15 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const math::Vec3 horizon = lighting.horizon_color;
     ct.clear_color = SDL_FColor{horizon.x, horizon.y, horizon.z, 1.0f};
     ct.load_op = SDL_GPU_LOADOP_CLEAR;
+    const bool blur = view.blur > 0.0f && d.blur_pipeline != nullptr && d.clamp_sampler != nullptr &&
+                      d.ensure_post(frame.width, frame.height);
+    SDL_GPUTexture* scene_target = blur ? d.post_a : frame.target;
     if (d.samples > 1) {
         ct.texture = d.color_msaa;
-        ct.resolve_texture = frame.target;
+        ct.resolve_texture = scene_target;
         ct.store_op = SDL_GPU_STOREOP_RESOLVE;
     } else {
-        ct.texture = frame.target;
+        ct.texture = scene_target;
         ct.store_op = SDL_GPU_STOREOP_STORE;
     }
     SDL_GPUDepthStencilTargetInfo dt{};
@@ -1474,6 +1637,33 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     stats_.draw_calls += ts.draw_calls;
     stats_.triangles += ts.triangles;
     SDL_EndGPURenderPass(pass);
+    if (blur) {
+        // Across into post_b, then down into the swapchain, a little darker.
+        const float px = view.blur * static_cast<float>(frame.height) / 1080.0f;
+        const struct {
+            SDL_GPUTexture* from;
+            SDL_GPUTexture* to;
+            float step[4];
+        } passes[2] = {{d.post_a, d.post_b, {px / static_cast<float>(frame.width), 0.0f, 0.0f, 0.0f}},
+                       {d.post_b, frame.target, {0.0f, px / static_cast<float>(frame.height), 0.25f, 0.0f}}};
+        for (const auto& bp : passes) {
+            SDL_GPUColorTargetInfo bt{};
+            bt.texture = bp.to;
+            bt.load_op = SDL_GPU_LOADOP_DONT_CARE;
+            bt.store_op = SDL_GPU_STOREOP_STORE;
+            SDL_GPURenderPass* blur_pass = SDL_BeginGPURenderPass(frame.cmd, &bt, 1, nullptr);
+            if (blur_pass == nullptr) {
+                return false;
+            }
+            SDL_BindGPUGraphicsPipeline(blur_pass, d.blur_pipeline);
+            const SDL_GPUTextureSamplerBinding binding{bp.from, d.clamp_sampler};
+            SDL_BindGPUFragmentSamplers(blur_pass, 0, &binding, 1);
+            SDL_PushGPUFragmentUniformData(frame.cmd, 0, bp.step, sizeof(bp.step));
+            SDL_DrawGPUPrimitives(blur_pass, 3, 1, 0, 0);
+            SDL_EndGPURenderPass(blur_pass);
+            ++stats_.draw_calls;
+        }
+    }
     return true;
 }
 

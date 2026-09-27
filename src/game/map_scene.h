@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <map>
+#include <optional>
 
 #include "mods/mod_library.h"
 #include "render/scene_renderer.h"
@@ -45,6 +46,8 @@ inline constexpr std::int32_t kMaxGroundColorSize = 2048;
 // Only the feature instances, by visual slot.
 [[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map,
                                                                                  const sim::Content& content);
+// One feature's instance (for trees, scale is the height in meters).
+[[nodiscard]] render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f);
 
 // Ground color of a cell, sRGB (presentation only).
 struct Rgb8 {
@@ -58,6 +61,11 @@ struct Rgb8 {
 // Height in meters at a point, for the camera: the ground, or the water
 // surface where there is water. Outside the map it takes the nearest edge.
 [[nodiscard]] float map_surface_height(const sim::MapData& map, float x, float z);
+
+// Where a ray from the camera meets the map's surface, if it does within
+// `max_distance` meters.
+[[nodiscard]] std::optional<math::Vec3> ground_hit(const sim::MapData& map, math::Vec3 origin, math::Vec3 dir,
+                                                   float max_distance = 4000.0f);
 
 class MapScene {
 public:
@@ -86,6 +94,15 @@ public:
 
     [[nodiscard]] bool shown() const { return shown_; }
 
+    // How a natural feature looks during a game.
+    enum class FeatureLook : std::uint8_t { Normal, Empty, Gone };
+    // Changes one feature (by its index in the map's list) without
+    // rebuilding the others: a felled tree, a picked bush.
+    void set_feature_look(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
+                          std::size_t feature, FeatureLook look);
+    // Takes out the sample village (a real game has its own town).
+    void hide_sample_village(render::SceneRenderer& renderer);
+
 private:
     static constexpr std::uint32_t kNoModel = ~0u;
     struct Slot {
@@ -98,6 +115,15 @@ private:
     std::map<std::string, Slot> files_;  // Loaded model files by path.
     Slot load_file(render::SceneRenderer& renderer, const std::filesystem::path& file, render::ModelClass model_class);
     std::vector<render::Instance> scratch_;
+    // Where each map feature went: its model and its index in that model's
+    // instance list. Built on first use after the features were shown.
+    struct FeatureRef {
+        render::ModelId model = kNoModel;
+        std::uint32_t index = 0;
+    };
+    std::vector<FeatureRef> feature_refs_;
+    std::vector<std::size_t> slot_counts_;  // Features per visual slot, as last shown.
+    void build_feature_refs(const sim::MapData& map, const sim::Content& content);
     std::vector<render::Instance> houses_;
 
     void apply_features(render::SceneRenderer& renderer, const std::vector<std::vector<render::Instance>>& features);

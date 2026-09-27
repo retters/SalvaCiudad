@@ -12,6 +12,7 @@
 
 #include "game/camera.h"
 #include "game/dev_tools.h"
+#include "game/game_session.h"
 #include "game/game_clock.h"
 #include "game/map_generation.h"
 #include "game/map_scene.h"
@@ -19,6 +20,7 @@
 #include "game/settings.h"
 #include "game/test_scene.h"
 #include "game/ui_host.h"
+#include "game/village_view.h"
 #include "platform/paths.h"
 #include "platform/window.h"
 #include "render/debug_overlay.h"
@@ -67,6 +69,12 @@ public:
     bool enter_generated_map() override;
     void leave_map() override;
     const sim::MapData* current_map() const override { return map_ ? &map_->map : nullptr; }
+    GameSession* session() override { return session_.get(); }
+    int game_speed() const override { return clock_.speed(); }
+    void set_game_speed(int speed) override { clock_.set_speed(speed); }
+    void save_game() override;
+    std::vector<save::Entry> list_saves() override;
+    bool load_game(const std::filesystem::path& file) override;
 
 private:
     bool init();
@@ -83,6 +91,15 @@ private:
     void update_camera(float dt);
     void update_frame_stats(float dt);
     void handle_scene_click(std::uint32_t width, std::uint32_t height);
+    // A village game: the ghost of the building being placed, and clicks.
+    void update_placement(std::uint32_t width, std::uint32_t height);
+    void handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec3 origin, math::Vec3 dir);
+    // The mouse ray into the world; false when the mouse is outside.
+    bool mouse_ray(std::uint32_t width, std::uint32_t height, math::Vec3& origin, math::Vec3& dir) const;
+    // Shows a game (new or loaded) on its map, with the camera at its town.
+    void start_session(std::unique_ptr<GameSession> session);
+    void autosave_if_due();
+    void write_save(const std::string& stem, const std::string& name, bool quiet);
     void draw_scene_markers(std::uint32_t width, std::uint32_t height);
     void draw_start_markers(std::uint32_t width, std::uint32_t height);
     void draw_marker(std::uint32_t width, std::uint32_t height, math::Vec3 at, ui::Color color);
@@ -118,6 +135,13 @@ private:
     DevTools dev_tools_;
     MapGenerationJob map_job_;
     std::unique_ptr<GeneratedMap> map_;  // The map being shown.
+    std::unique_ptr<GameSession> session_;  // The village game on it (phase 8).
+    VillageView village_;
+    std::uint64_t next_autosave_tick_ = 0;
+    int autosave_slot_ = 0;
+    bool right_clicked_ = false;  // Right button released without dragging.
+    float right_press_x_ = 0.0f;
+    float right_press_y_ = 0.0f;
     bool scene_ok_ = false;
     Camera camera_;
     DebugOverlay debug_;

@@ -30,6 +30,7 @@ enum class Action : std::uint8_t {
     GameSpeed3,
     GameQuickSave,
     GameQuickLoad,
+    GameRotateBuilding,
     UiToggleFullscreen,
     UiScreenshot,
     UiDebugOverlay,

@@ -1,6 +1,7 @@
 #include <doctest.h>
 
 #include "core/file_io.h"
+#include "sim/worldgen.h"
 #include "game/services.h"
 #include "game/ui_host.h"
 #include "i18n/translator.h"
@@ -53,11 +54,26 @@ public:
     void cancel_map_generation() override { generation_status.state = MapGenStatus::State::Cancelled; }
     bool enter_generated_map() override { return false; }
     void leave_map() override {}
-    const sim::MapData* current_map() const override { return nullptr; }
+    const sim::MapData* current_map() const override { return game ? &game->game().map() : nullptr; }
+
+    GameSession* session() override { return game.get(); }
+    int game_speed() const override { return speed; }
+    void set_game_speed(int s) override { speed = s; }
+    void save_game() override { ++games_saved; }
+    std::vector<save::Entry> list_saves() override { return saves; }
+    bool load_game(const std::filesystem::path& file) override {
+        loaded.push_back(file);
+        return false;
+    }
 
     bool generation_started = false;
     sim::MapSettings last_map_settings;
     MapGenStatus generation_status;
+    std::unique_ptr<GameSession> game;
+    int speed = 1;
+    int games_saved = 0;
+    std::vector<save::Entry> saves;
+    std::vector<std::filesystem::path> loaded;
 };
 
 struct Harness {
@@ -151,5 +167,67 @@ TEST_SUITE("menus") {
         h.frame(20000);
         CHECK(h.services.applied.size() == 1);
         CHECK_FALSE(h.services.settings_value.display.vsync);
+    }
+
+    TEST_CASE("the game interface places buildings, pauses and saves") {
+        Harness h;
+        sim::MapSettings ms;
+        ms.seed = 3;
+        ms.size = sim::MapSize::Small;
+        std::optional<sim::MapData> map = sim::generate_map(ms, sc::test::core_content());
+        REQUIRE(map.has_value());
+        const std::shared_ptr<const sim::Content> content(std::shared_ptr<const sim::Content>{}, &sc::test::core_content());
+        h.services.game = std::make_unique<GameSession>(content, std::move(*map), 1);
+        GameSession::Interaction& ui = h.services.game->ui();
+        h.host.show_game();
+        h.frame(0);
+        REQUIRE(ui.hud_rects.size() >= 2);
+        CHECK_FALSE(h.host.game_paused());
+
+        // The first button of the build bar starts placing a building.
+        const auto bar = ui.hud_rects[1];
+        ui::Input press;
+        press.mouse_x = bar[0] + 8.0f + 75.0f;
+        press.mouse_y = bar[1] + 8.0f + 22.0f;
+        press.mouse_down = true;
+        press.mouse_pressed = true;
+        h.frame(16, press);
+        ui::Input release = press;
+        release.mouse_down = false;
+        release.mouse_pressed = false;
+        release.mouse_released = true;
+        h.frame(32, release);
+        REQUIRE(ui.placing != sim::kNoDef);
+        CHECK(ui.over_hud(press.mouse_x, press.mouse_y));
+
+        ui::Input key;
+        key.keys.push_back(SDL_SCANCODE_R);
+        h.frame(48, key);
+        CHECK(ui.rotation == 1);
+
+        // Esc cancels the placing first, then opens the menu, which pauses.
+        key.keys = {SDL_SCANCODE_ESCAPE};
+        h.frame(64, key);
+        CHECK(ui.placing == sim::kNoDef);
+        CHECK_FALSE(h.host.game_paused());
+        h.frame(80, key);
+        CHECK(h.host.game_paused());
+        h.frame(96, key);  // Esc again closes it.
+        CHECK_FALSE(h.host.game_paused());
+
+        // Space pauses and resumes; the number keys set the speed.
+        key.keys = {SDL_SCANCODE_SPACE};
+        h.frame(112, key);
+        CHECK(h.services.speed == 0);
+        CHECK(h.host.game_paused());
+        h.frame(128, key);
+        CHECK(h.services.speed == 1);
+        key.keys = {SDL_SCANCODE_3};
+        h.frame(144, key);
+        CHECK(h.services.speed == 3);
+
+        key.keys = {SDL_SCANCODE_F5};
+        h.frame(160, key);
+        CHECK(h.services.games_saved == 1);
     }
 }

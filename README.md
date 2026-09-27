@@ -47,6 +47,13 @@ Todas se cambian en Configuración → Controles, salvo Alt+Enter.
 | F4 | Cambiar de cámara: aérea, tercera persona, primera persona |
 | Botón derecho o central (arrastrar) | Girar; en tercera persona también sube y baja la vista |
 | Clic en un aldeano | Seleccionarlo y seguirlo (W A S D deja de seguirlo; clic en el suelo lo deselecciona) |
+| Espacio | Pausa y reanuda la partida |
+| 1 / 2 / 3 | Velocidad normal, doble o triple |
+| R | Girar el edificio que se está colocando |
+| Mayús + clic | Colocar varios edificios iguales |
+| Clic derecho o Esc | Cancelar la colocación, o quitar la selección |
+| F5 / F9 | Guardado rápido / cargar la partida más reciente |
+| Ctrl+F3 | Herramientas de desarrollo |
 
 ## Idiomas
 
@@ -163,6 +170,18 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Romper a propósito el mod (por ejemplo, `"category": "nada"` en `defs/example.json`) y aplicar: el mod queda desactivado con el error explicado, y el juego sigue funcionando.
 - [ ] Un error en `scripts/main.lua` (por ejemplo `error("x")` dentro de `on_map_generated`) genera el mapa igual y muestra un aviso.
 - [ ] La guía `docs/CREAR_MODS.md` se entiende sin mirar el código.
+
+### Fase 8 (primer pueblo jugable)
+
+- [ ] Partida nueva: aparece el centro del pueblo con 12 aldeanos, la barra superior (comida 190, troncos 60, piedra 20, población, fecha) y la barra de construcción.
+- [ ] Colocar una casa: el fantasma es verde donde se puede y rojo (con el motivo) sobre agua, pendientes o edificios; R la gira; clic derecho cancela.
+- [ ] Los peones llevan troncos y la casa sube desde el suelo hasta terminarse; luego se mudan familias.
+- [ ] Un leñador y un recolector terminados tienen 2 trabajadores; los árboles desaparecen al talarlos y los arbustos se ven vacíos y rebrotan.
+- [ ] La ventana de un edificio muestra progreso, materiales, trabajadores (con − y +), bienes guardados, y permite cancelar o demoler.
+- [ ] La ventana de un aldeano muestra edad, qué hace, trabajo, hogar, comida y salud.
+- [ ] Espacio pausa con la escena desenfocada y el menú de pausa; nada del juego se puede tocar hasta continuar.
+- [ ] F5 guarda ("Partida guardada."), F9 carga; "Cargar partida" en el menú principal y en el menú del juego lista las partidas.
+- [ ] Jugar una hora: el pueblo crece si hay comida, y muere de hambre si no se construyen recolectores.
 
 ## Licencia
 

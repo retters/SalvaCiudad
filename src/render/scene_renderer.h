@@ -68,6 +68,8 @@ struct SceneView {
     // The ground and water may reach farther than the models (to see a
     // whole map from high up); 0 = the draw distance.
     float terrain_distance = 0.0f;
+    // Blur over the whole scene (the pause), in pixels at 1080p; 0 = sharp.
+    float blur = 0.0f;
 };
 
 struct RenderStats {
@@ -113,7 +115,14 @@ public:
     // Uploads a model; returns false on GPU errors.
     bool add_model(const ModelData& data, ModelId& id);
     void set_model_class(ModelId model, ModelClass model_class);
+    // Replaces a model's instances. Only that model's part of the GPU
+    // buffer is rebuilt (unless it outgrows its room).
     void set_instances(ModelId model, std::span<const Instance> instances);
+    // Changes one instance (by its index in the last set_instances list)
+    // without rebuilding anything: for a felled tree or a building that
+    // rises. An instance with scale 0 is not drawn. The position should
+    // stay within a few meters, so its region stays right.
+    void update_instance(ModelId model, std::uint32_t index, const Instance& instance);
     void clear_instances();
 
     // The map's ground and water. Returns false on invalid data or GPU

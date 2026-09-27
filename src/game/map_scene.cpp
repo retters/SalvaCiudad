@@ -124,29 +124,69 @@ float map_surface_height(const sim::MapData& map, float x, float z) {
     return std::max(ground, static_cast<float>(water) * 0.01f);
 }
 
+render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f) {
+    const float x = to_float(f.x);
+    const float z = to_float(f.z);
+    render::Instance inst;
+    inst.position = {x, to_float(map.height_at(f.x, f.z)), z};
+    inst.yaw = static_cast<float>(f.rotation) / 65536.0f * 2.0f * std::numbers::pi_v<float>;
+    inst.scale = f.type == sim::FeatureType::Tree ? static_cast<float>(sim::MapData::tree_height_cm(f)) / 100.0f
+                                                  : to_float(f.scale);
+    // Slightly different shades so forests do not look copied.
+    const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
+    const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
+    inst.tint = {shade, shade, shade};
+    return inst;
+}
+
+std::optional<math::Vec3> ground_hit(const sim::MapData& map, math::Vec3 origin, math::Vec3 dir, float max_distance) {
+    if (map.size <= 0) {
+        return std::nullopt;
+    }
+    dir = math::normalize(dir);
+    const float size = static_cast<float>(map.size);
+    const auto above = [&](float t) {
+        const math::Vec3 p = origin + dir * t;
+        return p.y > map_surface_height(map, p.x, p.z);
+    };
+    // March in steps of a meter, then narrow down the crossing.
+    float prev = 0.0f;
+    for (float t = 1.0f; t <= max_distance; t += 1.0f) {
+        const math::Vec3 p = origin + dir * t;
+        if (p.x < -50.0f || p.z < -50.0f || p.x > size + 50.0f || p.z > size + 50.0f) {
+            if (dir.y >= 0.0f) {
+                return std::nullopt;
+            }
+        }
+        if (!above(t)) {
+            float lo = prev;
+            float hi = t;
+            for (int i = 0; i < 16; ++i) {
+                const float mid = (lo + hi) * 0.5f;
+                (above(mid) ? lo : hi) = mid;
+            }
+            const math::Vec3 hit = origin + dir * hi;
+            if (hit.x < 0.0f || hit.z < 0.0f || hit.x > size || hit.z > size) {
+                return std::nullopt;
+            }
+            return hit;
+        }
+        prev = t;
+    }
+    return std::nullopt;
+}
+
 std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map,
                                                                   const sim::Content& content) {
-    MapVisuals v;
-    v.features.resize(visual_slot_count(content));
+    std::vector<std::vector<render::Instance>> features(visual_slot_count(content));
     // One instance per natural feature, standing on the ground.
     for (const sim::MapFeature& f : map.features) {
-        const float x = to_float(f.x);
-        const float z = to_float(f.z);
-        render::Instance inst;
-        inst.position = {x, to_float(map.height_at(f.x, f.z)), z};
-        inst.yaw = static_cast<float>(f.rotation) / 65536.0f * 2.0f * std::numbers::pi_v<float>;
-        inst.scale = f.type == sim::FeatureType::Tree ? static_cast<float>(sim::MapData::tree_height_cm(f)) / 100.0f
-                                                      : to_float(f.scale);
-        // Slightly different shades so forests do not look copied.
-        const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
-        const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
-        inst.tint = {shade, shade, shade};
         const std::size_t slot = visual_slot(content, f);
-        if (slot < v.features.size()) {
-            v.features[slot].push_back(inst);
+        if (slot < features.size()) {
+            features[slot].push_back(feature_instance(map, f));
         }
     }
-    return std::move(v.features);
+    return features;
 }
 
 MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& content) {
@@ -301,6 +341,11 @@ void MapScene::refresh_features(render::SceneRenderer& renderer, const sim::MapD
 
 void MapScene::apply_features(render::SceneRenderer& renderer,
                               const std::vector<std::vector<render::Instance>>& features) {
+    feature_refs_.clear();
+    slot_counts_.assign(features.size(), 0);
+    for (std::size_t i = 0; i < features.size(); ++i) {
+        slot_counts_[i] = features[i].size();
+    }
     if (models_loaded_) {
         // Slots that share a model (stand-ins) go into one list.
         for (const render::ModelId model : used_models_) {
@@ -321,6 +366,64 @@ void MapScene::apply_features(render::SceneRenderer& renderer,
         }
         scratch_.clear();
         scratch_.shrink_to_fit();
+    }
+}
+
+void MapScene::build_feature_refs(const sim::MapData& map, const sim::Content& content) {
+    feature_refs_.assign(map.features.size(), FeatureRef{});
+    // The same order as apply_features: per model, its slots in order.
+    std::vector<std::uint32_t> base(slots_.size(), 0);
+    for (const render::ModelId model : used_models_) {
+        std::uint32_t offset = 0;
+        for (std::size_t i = 0; i < slots_.size() && i < slot_counts_.size(); ++i) {
+            if (slots_[i].model == model) {
+                base[i] = offset;
+                offset += static_cast<std::uint32_t>(slot_counts_[i]);
+            }
+        }
+    }
+    std::vector<std::uint32_t> next(slots_.size(), 0);
+    for (std::size_t k = 0; k < map.features.size(); ++k) {
+        const std::size_t slot = visual_slot(content, map.features[k]);
+        if (slot >= slots_.size()) {
+            continue;
+        }
+        feature_refs_[k] = {slots_[slot].model, base[slot] + next[slot]++};
+    }
+}
+
+void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
+                                std::size_t feature, FeatureLook look) {
+    if (!models_loaded_ || feature >= map.features.size()) {
+        return;
+    }
+    if (feature_refs_.size() != map.features.size()) {
+        build_feature_refs(map, content);
+    }
+    const FeatureRef ref = feature_refs_[feature];
+    const sim::MapFeature& f = map.features[feature];
+    const std::size_t slot = visual_slot(content, f);
+    if (ref.model == kNoModel || slot >= slots_.size()) {
+        return;
+    }
+    render::Instance inst = feature_instance(map, f);
+    if (slot < tree_slots_) {
+        inst.scale /= slots_[slot].height;
+    }
+    if (look == FeatureLook::Gone) {
+        inst.scale = 0.0f;
+    } else if (look == FeatureLook::Empty) {
+        // A picked bush: smaller and duller until it grows back.
+        inst.scale *= 0.8f;
+        inst.tint = inst.tint * 0.55f;
+    }
+    renderer.update_instance(ref.model, ref.index, inst);
+}
+
+void MapScene::hide_sample_village(render::SceneRenderer& renderer) {
+    houses_.clear();
+    if (house_ != kNoModel) {
+        renderer.set_instances(house_, {});
     }
 }
 

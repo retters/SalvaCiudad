@@ -78,7 +78,8 @@ public:
     // Walking speed at which the walk clip plays at its authored rate.
     static constexpr float kWalkReferenceSpeed = 1.45f;
 
-private:
+    // A loaded body with its clips and accessories; the village's
+    // villagers use the same ones.
     struct BodyKind {
         bool female = false;
         render::SkinnedId id = 0;
@@ -88,6 +89,9 @@ private:
         std::uint32_t beard = ~0u;
         std::uint32_t apron = ~0u;
     };
+    [[nodiscard]] const std::vector<BodyKind>& bodies() const { return kinds_; }
+
+private:
     struct Villager {
         render::CharacterInstance look;
         std::size_t kind = 0;

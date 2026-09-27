@@ -2,11 +2,13 @@
 // not depend on the window, the GPU or SDL directly.
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "game/camera.h"
+#include "game/game_session.h"
 #include "game/map_generation.h"
 #include "game/settings.h"
 #include "mods/mod_library.h"
@@ -66,6 +68,18 @@ public:
     // The content of the loaded mods; never null after start-up.
     [[nodiscard]] virtual const sim::Content* content() const = 0;
     virtual void request_quit() = 0;
+
+    // The village game being played, if any (phase 8).
+    [[nodiscard]] virtual GameSession* session() = 0;
+    // 0 pauses; 1..3.
+    [[nodiscard]] virtual int game_speed() const = 0;
+    virtual void set_game_speed(int speed) = 0;
+    // Saves the game in the saves folder and tells the player how it went.
+    virtual void save_game() = 0;
+    [[nodiscard]] virtual std::vector<save::Entry> list_saves() = 0;
+    // Loads a saved game and shows it. On failure the player is told why
+    // and false is returned; a game being played is kept.
+    virtual bool load_game(const std::filesystem::path& file) = 0;
 };
 
 }  // namespace sc
