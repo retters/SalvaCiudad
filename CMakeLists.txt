@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(SalvaCiudad
-    VERSION 0.8.0
+    VERSION 0.9.0
     DESCRIPTION "Multiplayer medieval town-building survival game"
     LANGUAGES C CXX)
 
@@ -259,6 +259,7 @@ set(SC_ENGINE_SOURCES
     src/game/map_generation.cpp
     src/game/map_scene.cpp
     src/game/mods_screen.cpp
+    src/game/multiplayer_screens.cpp
     src/game/new_game_screen.cpp
     src/game/settings.cpp
     src/game/settings_screen.cpp
@@ -267,6 +268,10 @@ set(SC_ENGINE_SOURCES
     src/game/village_view.cpp
     src/i18n/catalog.cpp
     src/mods/defs.cpp
+    src/net/enet_link.cpp
+    src/net/link.cpp
+    src/net/lockstep.cpp
+    src/net/protocol.cpp
     src/mods/mod_library.cpp
     src/mods/mod_manifest.cpp
     src/mods/mod_settings.cpp
@@ -357,14 +362,15 @@ if(SC_BUILD_TESTS)
         tests/test_terrain_mesh.cpp
         tests/test_mods.cpp
         tests/test_village.cpp
-        tests/test_save.cpp)
+        tests/test_save.cpp
+        tests/test_net.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

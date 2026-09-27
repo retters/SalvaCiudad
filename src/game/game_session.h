@@ -16,13 +16,30 @@
 
 namespace sc {
 
+namespace net {
+class NetSession;
+}
+
 class GameSession {
 public:
-    GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, std::uint64_t seed);
+    // A new game. In multiplayer `players` seats share the map (one common
+    // town when `shared_town`) and this machine plays `local_player`.
+    GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, std::uint64_t seed,
+                std::uint8_t players = 1, bool shared_town = false, std::uint8_t local_player = 0);
+    // A game that already exists (loaded, or received from the host).
+    GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_player);
+
+    // Multiplayer: commands go to the network, which runs the turns.
+    void attach(net::NetSession* net) { net_ = net; }
+    [[nodiscard]] bool networked() const { return net_ != nullptr; }
+    // The host's state replaces this machine's (a resynchronization).
+    void replace_game(std::unique_ptr<sim::Game> game) { game_ = std::move(game); }
 
     [[nodiscard]] sim::Game& game() { return *game_; }
     [[nodiscard]] const sim::Game& game() const { return *game_; }
-    [[nodiscard]] std::uint8_t local_player() const { return 0; }
+    [[nodiscard]] std::uint8_t local_player() const { return local_player_; }
+    // The town the local player runs (their own, or the common one).
+    [[nodiscard]] std::uint8_t town() const { return game_->town_of(local_player_); }
 
     // What the player is doing with the interface (not part of the game).
     struct Interaction {
@@ -66,6 +83,8 @@ private:
     GameSession() = default;
     std::unique_ptr<sim::Game> game_;
     std::vector<sim::Command> pending_;
+    std::uint8_t local_player_ = 0;
+    net::NetSession* net_ = nullptr;
     Interaction ui_;
 };
 

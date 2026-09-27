@@ -5,6 +5,7 @@
 #include <format>
 
 #include "core/log.h"
+#include "net/lockstep.h"
 #include "version.h"
 
 namespace sc {
@@ -29,11 +30,20 @@ std::string now_iso() {
 
 }  // namespace
 
-GameSession::GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, std::uint64_t seed)
-    : game_(std::make_unique<sim::Game>(std::move(content), std::move(map), 1, seed)) {}
+GameSession::GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, std::uint64_t seed,
+                         std::uint8_t players, bool shared_town, std::uint8_t local_player)
+    : game_(std::make_unique<sim::Game>(std::move(content), std::move(map), players, seed, shared_town)),
+      local_player_(local_player) {}
+
+GameSession::GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_player)
+    : game_(std::move(game)), local_player_(local_player) {}
 
 void GameSession::issue(sim::Command command) {
     command.player = local_player();
+    if (net_ != nullptr) {
+        net_->issue(command);
+        return;
+    }
     if (pending_.size() < 256) {
         pending_.push_back(command);
     }
@@ -53,13 +63,13 @@ save::SaveData GameSession::make_save(const std::string& name, const mods::ModLi
     h.name = name;
     h.game_version = SC_VERSION_STRING;
     h.saved_at = now_iso();
-    h.mode = "single";
+    h.mode = net_ != nullptr ? (game_->shared_town() ? "coopShared" : "coopTowns") : "single";
     h.players = game_->player_count();
     h.rules_version = sim::kGameRulesVersion;
     h.content_hash = game_->content().hash;
     h.seed = game_->map().settings.seed;
     h.tick = game_->tick();
-    h.population = static_cast<std::uint32_t>(game_->population(local_player()));
+    h.population = static_cast<std::uint32_t>(game_->population(town()));
     for (const mods::ModInfo& m : mods.mods()) {
         if (m.loaded) {
             h.mods.push_back({m.manifest.id, mods::version_text(m.manifest.version), std::format("{:016x}", m.hash)});

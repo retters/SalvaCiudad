@@ -48,9 +48,8 @@ constexpr std::size_t kTestCrowd = 2'000;
 constexpr float kTestCrowdRadius = 70.0f;
 
 
-// Autosaves every ten minutes of game time at x1, into three rotating files.
-constexpr std::uint64_t kAutosaveTicks = 6000;
-constexpr int kAutosaveSlots = 3;
+// Game ticks in a minute at x1 (autosave interval is set in minutes).
+constexpr std::uint64_t kTicksPerMinute = 600;
 
 // Blur behind the pause, in pixels at 1080p.
 constexpr float kPauseBlur = 3.0f;
@@ -86,7 +85,7 @@ std::vector<std::string> preferred_languages() {
 
 }  // namespace
 
-App::App() : text_(atlas_), ui_(text_) {}
+App::App(int instance, bool loopback) : text_(atlas_), ui_(text_), instance_(instance), loopback_(loopback) {}
 
 App::~App() = default;
 
@@ -140,6 +139,16 @@ bool App::init() {
         fatal_error("error.fatal.dataFolder");
         return false;
     }
+    if (instance_ > 0) {
+        // Its own settings, saves and logs, next to the normal ones.
+        paths_->user_dir /= "instance-" + std::to_string(instance_);
+        std::error_code ec;
+        std::filesystem::create_directories(paths_->user_dir, ec);
+        if (ec) {
+            fatal_error("error.fatal.dataFolder");
+            return false;
+        }
+    }
 
     log::Options log_options;
 #ifndef NDEBUG
@@ -156,6 +165,15 @@ bool App::init() {
 
     settings_.emplace(paths_->settings_file());
     const SettingsLoadReport report = settings_->load();
+    if (report.created_default && instance_ > 0) {
+        // Extra instances start in a small window, side by side.
+        DisplaySettings& d = settings_->settings().display;
+        d.mode = WindowMode::Windowed;
+        d.window_width = 1024;
+        d.window_height = 640;
+        d.window_x = 40 + (instance_ - 1) % 3 * 60;
+        d.window_y = 40 + (instance_ - 1) * 40;
+    }
     load_mods();
     apply_language();
 
@@ -216,6 +234,7 @@ bool App::init() {
 
 void App::shutdown() {
     map_job_.cancel();
+    close_network();
     if (settings_) {
         save_settings_if_due(true);
     }
@@ -452,8 +471,16 @@ void App::handle_event(const SDL_Event& event) {
             input_.mouse_x = -1.0f;
             input_.mouse_y = -1.0f;
             return;
+        case SDL_EVENT_TEXT_INPUT:
+            if (event.text.text != nullptr && input_.text.size() < 256) {
+                input_.text += event.text.text;
+            }
+            return;
         case SDL_EVENT_KEY_DOWN: {
             input_.keys.push_back(event.key.scancode);
+            if (ui_.typing()) {
+                return;  // Typing in a text field: no shortcuts.
+            }
             if (event.key.repeat || (host_ && host_->wants_keyboard())) {
                 return;
             }
@@ -650,7 +677,7 @@ void App::render_frame(float dt) {
                 view.terrain_distance = camera_.distance() * 2.5f + static_cast<float>(map_->map.size);
             }
             view.time = static_cast<float>(static_cast<double>(SDL_GetTicksNS() % 3'600'000'000'000ull) * 1e-9);
-            if (session_ && host_->scene_paused()) {
+            if (session_ && host_->game_paused() && host_->scene_mode() == UiHost::SceneMode::Map) {
                 view.blur = kPauseBlur;
             }
             scene_drawn = scene_.render(frame, view, lighting_);
@@ -748,6 +775,15 @@ void App::frame() {
     right_clicked_ = false;
     input_.wheel = 0.0f;
     input_.keys.clear();
+    input_.text.clear();
+    // Text arrives only while a field has the keyboard.
+    if (window_.sdl() != nullptr && ui_.typing() != SDL_TextInputActive(window_.sdl())) {
+        if (ui_.typing()) {
+            (void)SDL_StartTextInput(window_.sdl());
+        } else {
+            (void)SDL_StopTextInput(window_.sdl());
+        }
+    }
 
     SDL_Event event;
     if (window_.minimized()) {
@@ -763,8 +799,15 @@ void App::frame() {
     const std::uint64_t elapsed = now - last_frame_ns_;
     last_frame_ns_ = now;
 
+    update_network(now / 1'000'000ull);
+    if (net_ && session_ && session_->networked()) {
+        clock_.set_speed(net_->speed());
+    }
     const int ticks = clock_.advance(static_cast<std::int64_t>(elapsed));
-    if (session_) {
+    if (net_ && session_ && session_->networked()) {
+        (void)net_->advance(ticks, now / 1'000'000ull);
+        autosave_if_due();
+    } else if (session_) {
         // A menu over a single-player game stops it.
         if (host_ && !host_->game_paused()) {
             for (int i = 0; i < ticks; ++i) {
@@ -865,6 +908,17 @@ bool App::enter_generated_map() {
     following_ = false;
     // A village game on it (phase 8); its own stream of random numbers.
     const std::shared_ptr<const sim::Content> content(pack_, &pack_->content);
+    if (net_start_ && net_) {
+        const net::Start st = *net_start_;
+        net_start_.reset();
+        auto session = std::make_unique<GameSession>(content, *map, st.config.seed, st.players, st.config.shared_town,
+                                                     net_->local_slot());
+        session->attach(net_.get());
+        session->game().set_dev_commands(false);  // Not in network games (decision D-910).
+        start_session(std::move(session));
+        net_->game_built(&session_->game(), net::map_hash(*map));
+        return true;
+    }
     start_session(std::make_unique<GameSession>(content, *map, map->settings.seed ^ 0x5A17C1DAull));
     return true;
 }
@@ -1094,7 +1148,7 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
     ui.hover_valid = true;
     ui.hover_x = static_cast<std::int32_t>(std::lround(hit->x - static_cast<float>(w) * 0.5f));
     ui.hover_z = static_cast<std::int32_t>(std::lround(hit->z - static_cast<float>(d) * 0.5f));
-    ui.hover_error = game.can_place(session_->local_player(), ui.placing, ui.hover_x, ui.hover_z, ui.rotation);
+    ui.hover_error = game.can_place(session_->town(), ui.placing, ui.hover_x, ui.hover_z, ui.rotation);
     VillageView::Ghost ghost;
     ghost.def = ui.placing;
     ghost.x = ui.hover_x;
@@ -1146,8 +1200,9 @@ void App::start_session(std::unique_ptr<GameSession> session) {
     crowd_.spawn(0, 1, 1.0f);
     village_.begin(scene_, map_scene_, session_->game());
     clock_.set_speed(1);
-    next_autosave_tick_ = game.tick() + kAutosaveTicks;
-    if (const sim::Building* tc = game.buildings().get(game.player(session_->local_player()).town_center)) {
+    next_autosave_tick_ =
+        game.tick() + static_cast<std::uint64_t>(std::max(1, settings_->settings().gameplay.autosave_minutes)) * kTicksPerMinute;
+    if (const sim::Building* tc = game.buildings().get(game.player(session_->town()).town_center)) {
         const float x = static_cast<float>(tc->x) + static_cast<float>(tc->width) * 0.5f;
         const float z = static_cast<float>(tc->z) + static_cast<float>(tc->depth) * 0.5f;
         camera_.set_target({x, map_surface_height(game.map(), x, z), z});
@@ -1182,7 +1237,7 @@ void App::save_game() {
     const sim::Game& game = session_->game();
     const std::uint64_t t = game.tick();
     const std::string name = tr("save.name", static_cast<int>(t / sim::kTicksPerYear) + 1,
-                                game.population(session_->local_player()));
+                                game.population(session_->town()));
     // One file per save, named by the real time.
     const std::time_t now = std::time(nullptr);
     std::tm local{};
@@ -1193,15 +1248,17 @@ void App::save_game() {
 }
 
 void App::autosave_if_due() {
-    if (!session_ || session_->game().tick() < next_autosave_tick_) {
+    // Every few minutes of game time (0 = off), rotating over a few files.
+    const GameplaySettings& g = settings_->settings().gameplay;
+    if (!session_ || g.autosave_minutes <= 0 || session_->game().tick() < next_autosave_tick_) {
         return;
     }
-    next_autosave_tick_ = session_->game().tick() + kAutosaveTicks;
-    autosave_slot_ = autosave_slot_ % kAutosaveSlots + 1;
+    next_autosave_tick_ = session_->game().tick() + static_cast<std::uint64_t>(g.autosave_minutes) * kTicksPerMinute;
+    autosave_slot_ = autosave_slot_ % std::max(1, g.autosave_keep) + 1;
     const sim::Game& game = session_->game();
     write_save("autosave-" + std::to_string(autosave_slot_),
                tr("save.autoName", static_cast<int>(game.tick() / sim::kTicksPerYear) + 1,
-                  game.population(session_->local_player())),
+                  game.population(session_->town())),
                true);
 }
 
@@ -1228,15 +1285,33 @@ bool App::load_game(const std::filesystem::path& file) {
         host_->show_message(tr("load.failed.title"), tr(load_result_key(result)));
         return false;
     }
-    // The map is shown from the saved game's own copy.
-    auto generated = std::make_unique<GeneratedMap>();
-    generated->map = loaded->game().map();
-    generated->visuals = build_map_visuals(generated->map, pack_->content);
+    if (session_ && session_->networked()) {
+        host_->show_message(tr("load.failed.title"), tr("load.error.network"));
+        return false;
+    }
     leave_map();
+    if (!show_map_of(loaded->game().map())) {
+        host_->show_message(tr("load.failed.title"), tr("load.error.damaged"));
+        return false;
+    }
+    start_session(std::move(loaded));
+    host_->show_game();
+    host_->toast(tr("load.done"));
+    return true;
+}
+
+}  // namespace sc
+
+namespace sc {
+
+bool App::show_map_of(const sim::MapData& source) {
+    // The map is shown from its own copy.
+    auto generated = std::make_unique<GeneratedMap>();
+    generated->map = source;
+    generated->visuals = build_map_visuals(generated->map, pack_->content);
     test_scene_.set_visible(scene_, false);
     if (!map_scene_.show(scene_, generated->visuals)) {
         test_scene_.set_visible(scene_, true);
-        host_->show_message(tr("load.failed.title"), tr("load.error.damaged"));
         return false;
     }
     generated->visuals = MapVisuals{};
@@ -1249,10 +1324,257 @@ bool App::load_game(const std::filesystem::path& file) {
     camera_.set_max_distance_override(size * 1.6f);
     camera_.set_yaw(0.6f);
     map_scene_.show_sky(scene_, *map);
-    start_session(std::move(loaded));
-    host_->show_game();
-    host_->toast(tr("load.done"));
     return true;
+}
+
+int App::game_speed() const {
+    return net_ && session_ && session_->networked() ? net_->speed() : clock_.speed();
+}
+
+void App::set_game_speed(int speed) {
+    if (net_ && session_ && session_->networked()) {
+        net_->request_speed(speed);  // Pause at once; the rest by vote.
+    } else {
+        clock_.set_speed(speed);
+    }
+}
+
+std::string App::player_name() const {
+    const std::string& name = settings_->settings().gameplay.player_name;
+    return net::valid_name(name) ? name : tr("net.defaultName", instance_ + 1);
+}
+
+net::LocalInfo App::local_info() const {
+    net::LocalInfo info;
+    info.game_version = SC_VERSION_STRING;
+    info.content_hash = pack_->content.hash;
+    for (const mods::ModInfo& m : mod_library_.mods()) {
+        if (m.loaded && m.manifest.affects_simulation) {
+            info.mods.push_back({m.manifest.id, mods::version_text(m.manifest.version), m.hash});
+        }
+    }
+    info.name = player_name();
+    return info;
+}
+
+bool App::ensure_enet() {
+    if (!enet_) {
+        enet_ = std::make_unique<net::EnetLibrary>();
+    }
+    return enet_->ok();
+}
+
+bool App::host_game(const sim::MapSettings& map) {
+    close_network();
+    if (!ensure_enet()) {
+        return false;
+    }
+    link_ = std::make_unique<net::EnetLink>();
+    if (!link_->listen(game_port(), sim::kMaxPlayers - 1, loopback_)) {
+        link_.reset();
+        return false;
+    }
+    auto host = std::make_unique<net::NetHost>(*link_, local_info());
+    net::GameConfig config;
+    config.map = map;
+    config.shared_town = true;
+    config.seed = map.seed * 0x9E3779B97F4A7C15ull ^ 0x5A17C1DAull;
+    host->set_config(config);
+    net_ = std::move(host);
+    if (!loopback_) {
+        lan_announce_ = std::make_unique<net::LanDiscovery>();
+        (void)lan_announce_->announce(game_port());
+    }
+    log::info("net: hosting on port {}", game_port());
+    return true;
+}
+
+bool App::join_game(const std::string& address, std::uint16_t port) {
+    close_network();
+    if (!ensure_enet()) {
+        return false;
+    }
+    link_ = std::make_unique<net::EnetLink>();
+    if (!link_->connect(address, port)) {
+        link_.reset();
+        host_->show_message(tr("net.connectFailed.title"), tr("net.connectFailed.body"));
+        return false;
+    }
+    net_ = std::make_unique<net::NetClient>(*link_, link_->server(), local_info());
+    log::info("net: joining a game on port {}", port);
+    return true;
+}
+
+void App::close_network() {
+    if (net_ && session_ && session_->networked()) {
+        leave_map();
+    }
+    net_.reset();
+    net_start_.reset();
+    if (link_) {
+        link_->close();
+        link_.reset();
+    }
+    lan_announce_.reset();
+}
+
+void App::leave_network() {
+    close_network();
+}
+
+void App::set_lan_search(bool on) {
+    if (on && !loopback_ && ensure_enet()) {
+        lan_search_ = std::make_unique<net::LanDiscovery>();
+        if (!lan_search_->search()) {
+            lan_search_.reset();
+        }
+    } else {
+        lan_search_.reset();
+    }
+}
+
+std::vector<net::LanGame> App::lan_games() {
+    return lan_search_ ? lan_search_->games() : std::vector<net::LanGame>{};
+}
+
+std::string App::seat_name(std::uint8_t slot) const {
+    if (net_) {
+        for (const net::LobbyPlayer& p : net_->lobby().players) {
+            if (p.slot == slot) {
+                return p.name;
+            }
+        }
+    }
+    return tr("net.defaultName", slot + 1);
+}
+
+void App::update_network(std::uint64_t now_ms) {
+    if (lan_search_) {
+        lan_search_->update(now_ms);
+    }
+    if (lan_announce_ && net_) {
+        lan_announce_->set_game(player_name(), static_cast<std::uint8_t>(net_->lobby().players.size()),
+                                net_->state() == net::NetSession::State::Playing);
+        lan_announce_->update(now_ms);
+    }
+    if (!net_) {
+        return;
+    }
+    net_->poll(now_ms);
+    if (std::optional<net::Start> st = net_->take_start()) {
+        net_start_ = *st;
+        leave_map();
+        start_map_generation(st->config.map);
+    }
+    if (std::optional<std::vector<std::uint8_t>> snap = net_->take_snapshot()) {
+        apply_snapshot(std::move(*snap));
+    }
+    for (const net::NetEvent& e : net_->take_events()) {
+        handle_net_event(e);
+        if (!net_) {
+            return;  // The event closed the network.
+        }
+    }
+}
+
+void App::apply_snapshot(std::vector<std::uint8_t> state) {
+    const std::shared_ptr<const sim::Content> content(pack_, &pack_->content);
+    auto game = std::make_unique<sim::Game>(content, sim::MapData{}, 0, 0);
+    sim::BinaryReader r(state);
+    if (!game->load(r, content) || !r.at_end()) {
+        log::error("net: the host's game could not be loaded");
+        host_->show_message(tr("net.lost.title"), tr("net.snapshotFailed"));
+        close_network();
+        return;
+    }
+    if (session_ && session_->networked()) {
+        // A resynchronization: same map, the host's state.
+        village_.end(scene_);
+        session_->replace_game(std::move(game));
+        map_scene_.refresh_features(scene_, session_->game().map(), pack_->content);
+        village_.begin(scene_, map_scene_, session_->game());
+    } else {
+        // Joining a game already started.
+        leave_map();
+        if (!show_map_of(game->map())) {
+            host_->show_message(tr("net.lost.title"), tr("net.snapshotFailed"));
+            close_network();
+            return;
+        }
+        auto session = std::make_unique<GameSession>(std::move(game), net_->local_slot());
+        session->attach(net_.get());
+        start_session(std::move(session));
+    }
+    net_->snapshot_loaded(&session_->game());
+}
+
+void App::handle_net_event(const net::NetEvent& e) {
+    using Kind = net::NetEvent::Kind;
+    switch (e.kind) {
+        case Kind::PlayerJoined: host_->toast(tr("net.joined", seat_name(e.slot))); break;
+        case Kind::PlayerLeft: host_->toast(tr("net.left", seat_name(e.slot))); break;
+        case Kind::PlayerRejoined: host_->toast(tr("net.rejoined", seat_name(e.slot))); break;
+        case Kind::WrongMap: host_->toast(tr("net.wrongMap", seat_name(e.slot))); break;
+        case Kind::VoteFailed: host_->toast(tr("net.voteFailed")); break;
+        case Kind::Resynced: host_->toast(tr("net.resynced")); break;
+        case Kind::Desync: {
+            host_->toast(tr("net.desync", seat_name(e.slot)));
+            if (net_->role() == net::NetSession::Role::Host && paths_) {
+                // A report for whoever looks into it.
+                const std::string text = "SalvaCiudad " + std::string(SC_VERSION_STRING) + "\ndesync with seat " +
+                                         std::to_string(e.slot) + " at tick " + std::to_string(e.value) +
+                                         "\ndifferent parts: " + e.detail + "\n";
+                const std::filesystem::path file =
+                    paths_->logs_dir() / ("desync-" + std::to_string(e.value) + "-seat" + std::to_string(e.slot) + ".txt");
+                (void)fs::write_file_atomic(file, text);
+            }
+            break;
+        }
+        case Kind::SpeedChanged: {
+            const char* key = e.reason == net::SpeedReason::Pause        ? "net.paused"
+                              : e.reason == net::SpeedReason::SlowPlayer ? "net.slowPlayer"
+                                                                          : "net.speed";
+            host_->toast(tr(key, seat_name(e.slot), e.value));
+            break;
+        }
+        case Kind::Rejected: {
+            std::string body;
+            switch (e.reject.reason) {
+                case net::RejectReason::Version:
+                    body = tr("net.rejected.version", e.reject.host_version, std::string(SC_VERSION_STRING));
+                    break;
+                case net::RejectReason::Mods: {
+                    // What the host has that we do not, and the other way round.
+                    const net::LocalInfo mine = local_info();
+                    std::string missing;
+                    std::string extra;
+                    for (const net::ModRef& m : e.reject.host_mods) {
+                        if (std::find(mine.mods.begin(), mine.mods.end(), m) == mine.mods.end()) {
+                            missing += "\n- " + m.id + " " + m.version;
+                        }
+                    }
+                    for (const net::ModRef& m : mine.mods) {
+                        if (std::find(e.reject.host_mods.begin(), e.reject.host_mods.end(), m) == e.reject.host_mods.end()) {
+                            extra += "\n- " + m.id + " " + m.version;
+                        }
+                    }
+                    body = tr("net.rejected.mods", missing.empty() ? tr("net.rejected.none") : missing,
+                              extra.empty() ? tr("net.rejected.none") : extra);
+                    break;
+                }
+                case net::RejectReason::Full: body = tr("net.rejected.full"); break;
+                case net::RejectReason::BadName: body = tr("net.rejected.name"); break;
+                default: body = tr("net.rejected.protocol"); break;
+            }
+            host_->show_message(tr("net.rejected.title"), body);
+            close_network();
+            break;
+        }
+        case Kind::ConnectionLost:
+            host_->show_message(tr("net.lost.title"), tr("net.lost.body"));
+            close_network();
+            break;
+    }
 }
 
 }  // namespace sc

@@ -55,6 +55,8 @@ Todas se cambian en Configuración → Controles, salvo Alt+Enter.
 | F5 / F9 | Guardado rápido / cargar la partida más reciente |
 | Ctrl+F3 | Herramientas de desarrollo |
 
+Opciones de línea de comandos: `--instance <1-8>` usa una carpeta de datos y un puerto propios (para abrir varias ventanas en una PC) y `--loopback` limita el multijugador a esa misma PC. Ver `docs/RED.md`.
+
 ## Idiomas
 
 Español, español de México (solo cambia el formato de números) e inglés. Para agregar otro idioma sin tocar el código, ver [docs/AGREGAR_IDIOMA.md](docs/AGREGAR_IDIOMA.md).
@@ -182,6 +184,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Espacio pausa con la escena desenfocada y el menú de pausa; nada del juego se puede tocar hasta continuar.
 - [ ] F5 guarda ("Partida guardada."), F9 carga; "Cargar partida" en el menú principal y en el menú del juego lista las partidas.
 - [ ] Jugar una hora: el pueblo crece si hay comida, y muere de hambre si no se construyen recolectores.
+
+### Fase 9 (multijugador)
+
+- [ ] Abrir dos ventanas con `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --instance 2 --loopback`. En la 1, "Crear partida multijugador", elegir el mapa y "Abrir la sala".
+- [ ] En la 2, "Unirse a partida", puerto 47801, "Conectar": los dos aparecen en la sala con su nombre y color; cambiar el nombre y el color se ve en la otra ventana.
+- [ ] "Listo" en la 2 y "Empezar" en la 1: las dos generan el mapa y juegan la misma partida (mismo pueblo, mismos aldeanos).
+- [ ] Una casa colocada en una ventana aparece en la otra; en "un pueblo por jugador" cada uno tiene su centro del pueblo.
+- [ ] Espacio pausa a los dos al instante; 2 en una ventana pregunta en la otra, y la velocidad cambia al aceptar.
+- [ ] Cerrar a la fuerza la ventana 2 (Administrador de tareas), abrirla de nuevo y unirse con el mismo nombre: vuelve a su lugar y la partida sigue igual.
+- [ ] Jugar 30 minutos con 2 a 4 ventanas sin avisos de desincronización (si aparece uno, el informe queda en `userdata/instance-1/logs/`).
+- [ ] En dos computadoras de la misma red: la partida aparece sola en "Partidas en tu red local" (Windows pedirá permiso del firewall la primera vez).
 
 ## Licencia
 

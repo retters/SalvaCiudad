@@ -42,6 +42,19 @@ std::optional<QualityPreset> quality_preset_from_string(std::string_view s) {
     return std::nullopt;
 }
 
+// Host names and IPv4 addresses: letters, digits, dots and dashes.
+bool is_valid_address(std::string_view a) {
+    if (a.empty() || a.size() > lim::kMaxAddressBytes) {
+        return false;
+    }
+    for (const char c : a) {
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.' || c == '-')) {
+            return false;
+        }
+    }
+    return true;
+}
+
 namespace {
 struct PresetLevels {
     QualityPreset preset;
@@ -308,6 +321,21 @@ void read_gameplay(Reader& r, yyjson_mut_val* obj, GameplaySettings& g) {
     r.read_int(obj, "autosaveMinutes", "gameplay.autosaveMinutes", 0, lim::kMaxAutosaveMinutes, g.autosave_minutes);
     r.read_int(obj, "autosaveKeep", "gameplay.autosaveKeep", 1, lim::kMaxAutosaveKeep, g.autosave_keep);
     r.read_bool(obj, "tutorialSeen", "gameplay.tutorialSeen", g.tutorial_seen);
+    std::string text;
+    json::Field f = json::get_string(obj, "playerName", lim::kMaxPlayerNameBytes, text);
+    if (f == json::Field::Ok) {
+        g.player_name = text;
+    }
+    r.count(f, "gameplay.playerName");
+    f = json::get_string(obj, "joinAddress", lim::kMaxAddressBytes, text);
+    if (f == json::Field::Ok && !is_valid_address(text)) {
+        f = json::Field::Invalid;
+    }
+    if (f == json::Field::Ok) {
+        g.join_address = text;
+    }
+    r.count(f, "gameplay.joinAddress");
+    r.read_int(obj, "joinPort", "gameplay.joinPort", lim::kMinPort, lim::kMaxPort, g.join_port);
 }
 
 bool write_bindings(yyjson_mut_doc* doc, yyjson_mut_val* obj, const KeyBindings& bindings) {
@@ -394,6 +422,9 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_int(doc, gp, "autosaveMinutes", s.gameplay.autosave_minutes);
     ok = ok && json::set_int(doc, gp, "autosaveKeep", s.gameplay.autosave_keep);
     ok = ok && json::set_bool(doc, gp, "tutorialSeen", s.gameplay.tutorial_seen);
+    ok = ok && json::set_string(doc, gp, "playerName", s.gameplay.player_name);
+    ok = ok && json::set_string(doc, gp, "joinAddress", s.gameplay.join_address);
+    ok = ok && json::set_int(doc, gp, "joinPort", s.gameplay.join_port);
     return ok;
 }
 

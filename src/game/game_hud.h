@@ -37,6 +37,9 @@ private:
     void building_window(ui::Context& ctx, GameSession& s);
     void villager_window(ui::Context& ctx, GameSession& s);
     void placement_hint(ui::Context& ctx, GameSession& s);
+    // Multiplayer: who plays, whom the game waits for, speed votes.
+    void network(ui::Context& ctx, GameSession& s, float& right);
+    std::uint32_t answered_vote_ = 0;
     [[nodiscard]] bool pressed(const ui::Context& ctx, Action action) const;
     void block(GameSession& s, const ui::Rect& r);
     [[nodiscard]] std::string cost_text(const sim::BuildingDef& def) const;

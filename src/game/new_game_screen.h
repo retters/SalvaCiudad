@@ -25,7 +25,8 @@ public:
 
     // Resets the form with a fresh random seed; map types and biomes come
     // from `content`, which must outlive the screen's use.
-    void open(const sim::Content* content);
+    // `multiplayer`: the map of a network game; the button opens the lobby.
+    void open(const sim::Content* content, bool multiplayer = false);
     Result frame(ui::Context& ctx, bool modal);
 
     // Valid once frame() returned Generate.
@@ -37,6 +38,7 @@ private:
     const sim::Content* content_ = nullptr;
     sim::MapSettings settings_;
     std::string seed_text_;
+    bool multiplayer_ = false;
     bool seed_focused_ = false;
 };
 

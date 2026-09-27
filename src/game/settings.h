@@ -91,6 +91,10 @@ struct GameplaySettings {
     int autosave_minutes = 10;  // 0 = off; otherwise 1..120.
     int autosave_keep = 3;      // 1..20.
     bool tutorial_seen = false;
+    // Multiplayer (phase 9). An empty name shows a default one.
+    std::string player_name;
+    std::string join_address = "127.0.0.1";
+    int join_port = 47800;
 
     bool operator==(const GameplaySettings&) const = default;
 };
@@ -125,7 +129,14 @@ inline constexpr int kMaxTooltipDelayMs = 3000;
 inline constexpr int kMaxAutosaveMinutes = 120;
 inline constexpr int kMaxAutosaveKeep = 20;
 inline constexpr std::size_t kMaxFontIdBytes = 64;
+inline constexpr std::size_t kMaxPlayerNameBytes = 32;
+inline constexpr std::size_t kMaxAddressBytes = 64;
+inline constexpr int kMinPort = 1024;
+inline constexpr int kMaxPort = 65535;
 }  // namespace settings_limits
+
+// A host name or IPv4 address to join: letters, digits, dots and dashes.
+[[nodiscard]] bool is_valid_address(std::string_view address);
 
 struct SettingsLoadReport {
     bool created_default = false;  // No file existed.

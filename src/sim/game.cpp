@@ -946,7 +946,7 @@ public:
         }
         // Newcomers, when there is room and food to spare.
         for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
-            if (!g_.players_[p].active) {
+            if (!g_.players_[p].active || g_.town_of(p) != p) {
                 continue;
             }
             std::int32_t room = 0;
@@ -1119,11 +1119,14 @@ public:
         g_.buildings_changed_ = true;
     }
 
-    void apply(const Command& c) {
-        if (c.player >= g_.player_count_ || !g_.players_[c.player].active) {
+    void apply(const Command& command) {
+        if (command.player >= g_.player_count_ || !g_.players_[command.player].active) {
             ++g_.rejected_;
             return;
         }
+        // In a common town every player gives orders to player 0's town.
+        Command c = command;
+        c.player = g_.town_of(command.player);
         switch (c.type) {
             case CommandType::PlaceBuilding: {
                 const std::int32_t x = c.position.x.floor_int();
@@ -1171,7 +1174,9 @@ public:
     }
 
     void setup(std::uint8_t players) {
-        g_.player_count_ = std::min<std::uint8_t>(players, static_cast<std::uint8_t>(g_.map_.starts.size()));
+        const auto towns = static_cast<std::uint8_t>(g_.map_.starts.size());
+        // A common town has room for every seat, so anyone can join later.
+        g_.player_count_ = g_.shared_town_ ? kMaxPlayers : std::min<std::uint8_t>(players, towns);
         DefIndex tc_def = kNoDef;
         for (std::size_t i = 0; i < c_.buildings.size(); ++i) {
             if (c_.buildings[i].kind == BuildingKind::TownCenter && tc_def == kNoDef) {
@@ -1181,8 +1186,8 @@ public:
         for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
             PlayerState& ps = g_.players_[p];
             ps.active = true;
-            if (tc_def == kNoDef) {
-                continue;
+            if (tc_def == kNoDef || p >= towns || g_.town_of(p) != p) {
+                continue;  // The common town is player 0's.
             }
             const StartPosition& s = g_.map_.starts[p];
             std::int32_t w = 0, d = 0;
@@ -1229,8 +1234,9 @@ private:
 
 // --- Game ---------------------------------------------------------------------
 
-Game::Game(std::shared_ptr<const Content> content, MapData map, std::uint8_t players, std::uint64_t seed)
-    : content_(std::move(content)), map_(std::move(map)), seed_(seed), rng_(seed, 21) {
+Game::Game(std::shared_ptr<const Content> content, MapData map, std::uint8_t players, std::uint64_t seed,
+           bool shared_town)
+    : content_(std::move(content)), map_(std::move(map)), seed_(seed), rng_(seed, 21), shared_town_(shared_town) {
     build_indexes();
     nodes_.assign(map_.features.size(), Node{});
     for (std::size_t i = 0; i < map_.features.size(); ++i) {
@@ -1244,6 +1250,10 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, std::uint8_t pla
         }
     }
     VillageRules(*this).setup(players);
+    // Players of a common town share its town center.
+    for (std::uint8_t p = 1; p < player_count_ && shared_town_; ++p) {
+        players_[p].town_center = players_[0].town_center;
+    }
     buildings_changed_ = true;
 }
 
@@ -1558,12 +1568,20 @@ bool read_map(BinaryReader& r, MapData& m, const Content& c) {
     return true;
 }
 
+// Where each part of the state starts in the written bytes.
+struct Marks {
+    std::size_t players = 0, registry = 0, nodes = 0, buildings = 0, villagers = 0;
+};
+
 void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32_t rejected,
-                 const std::vector<std::pair<std::uint64_t, std::uint32_t>>& regrow) {
+                 const std::vector<std::pair<std::uint64_t, std::uint32_t>>& regrow, Marks* marks = nullptr) {
+    Marks m;
     w.u64(g.tick());
     w.u64(seed);
     w.u32(rejected);
     w.u8(g.dev_commands() ? 1 : 0);
+    w.u8(g.shared_town() ? 1 : 0);
+    m.players = w.bytes().size();
     w.u8(g.player_count());
     for (std::uint8_t p = 0; p < g.player_count(); ++p) {
         const PlayerState& ps = g.player(p);
@@ -1575,6 +1593,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(ps.deaths);
         w.i32(ps.arrivals);
     }
+    m.registry = w.bytes().size();
     const EntityRegistry& reg = g.registry();
     w.u32(reg.slot_count());
     for (std::uint32_t i = 0; i < reg.slot_count(); ++i) {
@@ -1586,6 +1605,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u32(f);
     }
     // Nodes: amounts, reservations and regrowth.
+    m.nodes = w.bytes().size();
     w.u32(static_cast<std::uint32_t>(g.nodes().size()));
     for (const Node& n : g.nodes()) {
         w.i32(n.amount);
@@ -1597,6 +1617,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u64(t);
         w.u32(i);
     }
+    m.buildings = w.bytes().size();
     const auto& bs = g.buildings();
     w.u32(static_cast<std::uint32_t>(bs.size()));
     for (std::size_t i = 0; i < bs.size(); ++i) {
@@ -1618,6 +1639,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(b.wanted_workers);
         write_ids(w, b.residents);
     }
+    m.villagers = w.bytes().size();
     const auto& vs = g.villagers();
     w.u32(static_cast<std::uint32_t>(vs.size()));
     for (std::size_t i = 0; i < vs.size(); ++i) {
@@ -1655,9 +1677,28 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u16(v.path_index);
         w.i32(v.idle_ticks);
     }
+    if (marks != nullptr) {
+        *marks = m;
+    }
 }
 
 }  // namespace
+
+std::vector<Game::PartHash> Game::hash_parts() const {
+    BinaryWriter w;
+    Marks m;
+    write_state(*this, w, seed_, rejected_, regrow_, &m);
+    const std::size_t end = w.bytes().size();
+    w.u64(rng_.state());
+    w.u64(rng_.increment());
+    const auto part = [&](const char* name, std::size_t from, std::size_t to) {
+        return PartHash{name, fnv1a64(std::span(w.bytes()).subspan(from, to - from))};
+    };
+    return {part("header", 0, m.players),         part("players", m.players, m.registry),
+            part("entities", m.registry, m.nodes), part("nodes", m.nodes, m.buildings),
+            part("buildings", m.buildings, m.villagers), part("villagers", m.villagers, end),
+            part("random", end, w.bytes().size())};
+}
 
 std::uint64_t Game::hash() const {
     BinaryWriter w;
@@ -1698,13 +1739,15 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
     std::uint32_t rejected = 0;
     std::uint8_t pc = 0;
     std::uint8_t dev = 0;
-    if (!r.u64(g.tick_) || !r.u64(g.seed_) || !r.u32(rejected) || !r.u8(dev) || dev > 1 || !r.u8(pc) ||
-        pc > kMaxPlayers) {
+    std::uint8_t shared = 0;
+    if (!r.u64(g.tick_) || !r.u64(g.seed_) || !r.u32(rejected) || !r.u8(dev) || dev > 1 || !r.u8(shared) ||
+        shared > 1 || !r.u8(pc) || pc > kMaxPlayers) {
         r.fail();
         return false;
     }
     g.rejected_ = rejected;
     g.dev_commands_ = dev != 0;
+    g.shared_town_ = shared != 0;
     g.player_count_ = pc;
     for (std::uint8_t p = 0; p < pc; ++p) {
         PlayerState& ps = g.players_[p];

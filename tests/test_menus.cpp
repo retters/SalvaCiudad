@@ -66,6 +66,14 @@ public:
         return false;
     }
 
+    bool host_game(const sim::MapSettings&) override { return false; }
+    bool join_game(const std::string&, std::uint16_t) override { return false; }
+    void leave_network() override {}
+    net::NetSession* net() override { return nullptr; }
+    void set_lan_search(bool) override {}
+    std::vector<net::LanGame> lan_games() override { return {}; }
+    std::string player_name() const override { return "Tester"; }
+
     bool generation_started = false;
     sim::MapSettings last_map_settings;
     MapGenStatus generation_status;

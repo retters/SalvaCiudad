@@ -34,7 +34,12 @@ ui::Rect dialog_frame(ui::Context& ctx, float content_height, std::string_view t
 }  // namespace
 
 UiHost::UiHost(Services& services)
-    : services_(services), settings_screen_(services), mods_screen_(services), hud_(services) {}
+    : services_(services),
+      settings_screen_(services),
+      mods_screen_(services),
+      hud_(services),
+      join_(services),
+      lobby_screen_(services) {}
 
 void UiHost::show_message(std::string title, std::string body) {
     messages_.push_back({std::move(title), std::move(body)});
@@ -97,8 +102,34 @@ bool UiHost::scene_paused() const {
 }
 
 bool UiHost::game_paused() const {
-    return services_.session() == nullptr || screen_ != Screen::MapView || game_menu_open_ ||
-           services_.game_speed() == 0;
+    const GameSession* s = services_.session();
+    if (s == nullptr) {
+        return true;
+    }
+    // A network game only stops when the players pause it.
+    if (s->networked()) {
+        return services_.game_speed() == 0;
+    }
+    return screen_ != Screen::MapView || game_menu_open_ || services_.game_speed() == 0;
+}
+
+void UiHost::follow_network() {
+    net::NetSession* net = services_.net();
+    if (net == nullptr) {
+        if (screen_ == Screen::Lobby) {
+            screen_ = Screen::MainMenu;
+        }
+        return;
+    }
+    // The host started: everybody builds the map; a game already running
+    // is shown as soon as its state arrives.
+    if (screen_ == Screen::Lobby && net->state() == net::NetSession::State::Loading) {
+        screen_ = Screen::Generating;
+    } else if ((screen_ == Screen::Lobby || screen_ == Screen::Generating) && services_.session() != nullptr &&
+               net->state() == net::NetSession::State::Playing) {
+        screen_ = Screen::MapView;
+        game_menu_open_ = false;
+    }
 }
 
 bool UiHost::modal_open() const {
@@ -137,6 +168,7 @@ void UiHost::frame(ui::Context& ctx) {
         ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().background.with_alpha(0.45f));
     }
 
+    follow_network();
     if (screen_ == Screen::TestScene) {
         ctx.set_input_blocked(modal);
         test_scene_hud(ctx);
@@ -145,9 +177,33 @@ void UiHost::frame(ui::Context& ctx) {
         const NewGameScreen::Result r = new_game_.frame(ctx, modal);
         if (r == NewGameScreen::Result::Back) {
             screen_ = Screen::MainMenu;
+            host_new_game_ = false;
+        } else if (r == NewGameScreen::Result::Generate && host_new_game_) {
+            host_new_game_ = false;
+            if (services_.host_game(new_game_.settings())) {
+                lobby_screen_.open();
+                screen_ = Screen::Lobby;
+            } else {
+                show_message(tr("lobby.hostFailed.title"), tr("lobby.hostFailed.body"));
+            }
         } else if (r == NewGameScreen::Result::Generate) {
             services_.start_map_generation(new_game_.settings());
             screen_ = Screen::Generating;
+        }
+    } else if (screen_ == Screen::Join) {
+        ctx.set_input_blocked(modal);
+        const JoinScreen::Result r = join_.frame(ctx, modal);
+        if (r == JoinScreen::Result::Back) {
+            screen_ = Screen::MainMenu;
+        } else if (r == JoinScreen::Result::Joining) {
+            lobby_screen_.open();
+            screen_ = Screen::Lobby;
+        }
+    } else if (screen_ == Screen::Lobby) {
+        ctx.set_input_blocked(modal);
+        if (lobby_screen_.frame(ctx, modal) == LobbyScreen::Result::Leave) {
+            services_.leave_network();
+            screen_ = Screen::MainMenu;
         }
     } else if (screen_ == Screen::Generating) {
         ctx.set_input_blocked(modal);
@@ -243,8 +299,8 @@ void UiHost::main_menu(ui::Context& ctx) {
     };
     const Entry entries[] = {
         {"single", tr("menu.main.singlePlayer"), tr("menu.main.singlePlayer.tooltip"), true},
-        {"host", tr("menu.main.hostGame"), tr("menu.main.hostGame.tooltip"), false},
-        {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), false},
+        {"host", tr("menu.main.hostGame"), tr("menu.main.hostGame.tooltip"), true},
+        {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), true},
         {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), true},
         {"mods", tr("menu.main.mods"), tr("menu.main.mods.tooltip"), true},
         {"testScene", tr("menu.main.testScene"), tr("menu.main.testScene.tooltip"), services_.scene_available()},
@@ -312,7 +368,15 @@ void UiHost::main_menu(ui::Context& ctx) {
                 screen_ = Screen::Mods;
             } else if (std::string_view(e.id) == "single") {
                 new_game_.open(services_.content());
+                host_new_game_ = false;
                 screen_ = Screen::NewGame;
+            } else if (std::string_view(e.id) == "host") {
+                new_game_.open(services_.content(), true);
+                host_new_game_ = true;
+                screen_ = Screen::NewGame;
+            } else if (std::string_view(e.id) == "join") {
+                join_.open();
+                screen_ = Screen::Join;
             } else if (std::string_view(e.id) == "testScene") {
                 screen_ = Screen::TestScene;
             } else if (std::string_view(e.id) == "settings") {
@@ -362,6 +426,9 @@ void UiHost::generating_screen(ui::Context& ctx, bool modal) {
         return;
     }
     if (status.state != MapGenStatus::State::Running) {
+        if (services_.net() != nullptr) {
+            return;  // The network game shows once its state is ready.
+        }
         screen_ = Screen::NewGame;
         return;
     }
@@ -392,7 +459,12 @@ void UiHost::generating_screen(ui::Context& ctx, bool modal) {
     if (ctx.button(ctx.id("generating_cancel"), cancel, tr("generating.cancel"), tr("generating.cancel.tooltip")) ||
         (!modal && ctx.input().key(SDL_SCANCODE_ESCAPE))) {
         services_.cancel_map_generation();
-        screen_ = Screen::NewGame;
+        if (services_.net() != nullptr) {
+            services_.leave_network();
+            screen_ = Screen::MainMenu;
+        } else {
+            screen_ = Screen::NewGame;
+        }
     }
 }
 
@@ -510,10 +582,12 @@ void UiHost::game_menu(ui::Context& ctx) {
         {"quit", "gameMenu.quit", "menu.main.quit.tooltip"},
     };
     const bool playing = services_.session() != nullptr;
+    const bool networked = playing && services_.session()->networked();
     std::vector<const Entry*> entries;
     for (const Entry& e : kEntries) {
         const std::string_view id = e.id;
-        if (playing || (id != "save" && id != "load")) {
+        // Loading a saved game is for single player only.
+        if ((id != "save" && id != "load") || (id == "save" && playing) || (id == "load" && playing && !networked)) {
             entries.push_back(&e);
         }
     }
@@ -539,6 +613,7 @@ void UiHost::game_menu(ui::Context& ctx) {
             } else if (id == "leave") {
                 game_menu_open_ = false;
                 services_.leave_map();
+                services_.leave_network();
                 screen_ = Screen::MainMenu;
             } else {
                 services_.request_quit();

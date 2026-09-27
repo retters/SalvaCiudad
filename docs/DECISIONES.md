@@ -630,3 +630,48 @@ La prueba `village` juega una hora a x1 (36 000 ticks, 0.2 s de CPU) con un juga
 
 **D-816. Advertencias en bibliotecas de terceros.**
 Las bibliotecas vendorizadas no se modifican. ENet 1.3.18 combina valores de dos enumeraciones con `|` a propósito y MSVC 17 lo advierte (C5287); esa advertencia se desactiva solo para el objetivo `enet`. En nuestro código ninguna advertencia se desactiva. ENet se vendorizó ya en esta fase (aprobado en la especificación) para la fase 9.
+
+## Fase 9: multijugador por lockstep (2026-09-27)
+
+**D-901. Turnos cerrados por adelantado desde el anfitrión.**
+El anfitrión es la autoridad de los turnos. Antes de ejecutar el tick *T* cierra el turno *T + retraso* con las órdenes que tenga y lo envía. Nadie espera respuestas de los demás para avanzar, solo los turnos del anfitrión. Esto mantiene la estrella de la especificación y hace que una orden nunca se aplique en máquinas distintas en ticks distintos. El detalle está en `docs/RED.md`.
+
+**D-902. Cada máquina genera el mapa.**
+El mapa no viaja por la red: la configuración y el contenido bastan, y cada máquina confirma con el hash del mapa. Así empezar una partida en un mapa enorme no manda decenas de MB. Las instantáneas (entrar a una partida empezada, resincronizar) sí llevan el mapa.
+
+**D-903. ENet en el hilo principal.**
+La red se atiende una vez por cuadro en el hilo principal (`enet_host_service` sin espera) en lugar de en un hilo propio (sección 7.2). Con pocos mensajes por tick no hace falta otro hilo; se moverá si la fase 20 lo pide.
+
+**D-904. Comprobación por partes cada 50 ticks.**
+El hash del estado se divide en siete partes para que el informe de desincronización diga dónde está la diferencia. Cada comprobación serializa el estado completo; en la fase 20 se medirá su costo con 12 000 aldeanos.
+
+**D-905. Reparar una desincronización con la instantánea del anfitrión.**
+El estado del anfitrión manda: se le envía al jugador desincronizado, que lo carga y sigue. El informe queda en la carpeta de registros.
+
+**D-906. Volver a entrar por nombre.**
+Un jugador que cerró el juego a la fuerza no guarda ninguna credencial. Al volver con el mismo nombre recupera su asiento, que estaba desconectado. Como en las partidas de LAN no hay cuentas, alcanza. Si un nombre ya está en uso en la sala se le agrega " (2)".
+
+**D-907. Asientos y mundo.**
+- Al empezar, los asientos se ordenan 0..n−1 y se reenvía a cada uno su número.
+- En un **pueblo común** la partida tiene los 12 asientos activos que dan órdenes al pueblo 0, así que cualquiera puede entrar después.
+- En **pueblos separados** hay un pueblo por jugador presente al empezar. Quien entra después solo puede tomar el pueblo de un jugador que se fue.
+- El modo "mapas separados" (7.7) llega con el comercio y el mapa del mundo (fase 14).
+
+**D-908. Velocidad.**
+La pausa es inmediata; lo demás se vota con 15 s de plazo (7.5). Un jugador que retrasa a todos más de 3 s baja la velocidad un paso. En red, abrir el menú del juego no pausa la partida.
+
+**D-909. `--instance` y `--loopback`.**
+`--instance n` (1 a 8) usa la carpeta de datos `instance-n`, el puerto 47800 + n y una ventana pequeña si es la primera vez. `--loopback` escucha solo en 127.0.0.1 y no usa el descubrimiento. Se agregó para probar varias ventanas en una PC sin que Windows pregunte por el firewall. Sin esa opción, crear una partida hace que Windows pida permiso la primera vez.
+
+**D-910. Sin herramientas de desarrollo en red.**
+Los comandos de las herramientas de desarrollo (`DevGrant`) se rechazan en partidas en red: el permiso es parte del estado y está apagado. Más adelante podrá ser una opción de la sala.
+
+**D-911. Qué no entra en esta fase.**
+- Cargar una partida guardada en red, que debe reabrir la sala (6.2), queda para la fase 17, con la interfaz completa. En red se puede guardar (F5), pero la partida guardada se abre como de un jugador.
+- La contraseña opcional de la sala tampoco se hizo.
+
+**D-912. Campo de texto.**
+La interfaz propia tiene ahora un campo de texto de una línea con entrada de SDL (`SDL_StartTextInput` solo mientras un campo tiene el teclado). Mientras se escribe, los atajos del juego no actúan.
+
+**D-913. Autoguardado según la configuración.**
+El autoguardado usa los minutos y la cantidad de archivos de Configuración → Juego (antes eran constantes).

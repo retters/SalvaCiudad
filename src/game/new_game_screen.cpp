@@ -85,7 +85,8 @@ std::uint64_t random_seed() {
     return 1 + z % 999'999'999ull;
 }
 
-void NewGameScreen::open(const sim::Content* content) {
+void NewGameScreen::open(const sim::Content* content, bool multiplayer) {
+    multiplayer_ = multiplayer;
     content_ = content;
     settings_ = sim::MapSettings{};
     settings_.seed = random_seed();
@@ -276,7 +277,9 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const std::string tip = tr(can_generate ? "newGame.generate.tooltip" : "newGame.generate.noSeed.tooltip");
     const bool enter = !modal && can_generate &&
                        (ctx.input().key(SDL_SCANCODE_RETURN) || ctx.input().key(SDL_SCANCODE_KP_ENTER));
-    if (ctx.button(ctx.id("generate"), generate, tr("newGame.generate"), tip, can_generate, true) || enter) {
+    if (ctx.button(ctx.id("generate"), generate, tr(multiplayer_ ? "newGame.openLobby" : "newGame.generate"), tip,
+                   can_generate, true) ||
+        enter) {
         settings_.seed = seed;
         seed_focused_ = false;
         result = Result::Generate;

@@ -9,6 +9,7 @@
 
 #include "game/game_hud.h"
 #include "game/mods_screen.h"
+#include "game/multiplayer_screens.h"
 #include "game/new_game_screen.h"
 #include "game/services.h"
 #include "game/settings_screen.h"
@@ -59,7 +60,7 @@ public:
     [[nodiscard]] SceneMode scene_mode() const;
 
 private:
-    enum class Screen : std::uint8_t { MainMenu, Settings, TestScene, NewGame, Generating, MapView, Mods, Load };
+    enum class Screen : std::uint8_t { MainMenu, Settings, TestScene, NewGame, Generating, MapView, Mods, Load, Join, Lobby };
 
     void test_scene_hud(ui::Context& ctx);
     void generating_screen(ui::Context& ctx, bool modal);
@@ -86,6 +87,10 @@ private:
     Screen load_return_ = Screen::MainMenu;      // Where closing the load list goes.
     bool game_menu_open_ = false;
     GameHud hud_;
+    JoinScreen join_;
+    LobbyScreen lobby_screen_;
+    bool host_new_game_ = false;  // The new game screen is choosing a multiplayer map.
+    void follow_network();
     int last_speed_ = 1;  // Speed to go back to after a pause.
     std::vector<save::Entry> saves_;  // The load list, read when it opens.
 

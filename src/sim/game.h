@@ -143,8 +143,10 @@ enum class PlaceError : std::uint8_t { None, UnknownBuilding, OutsideMap, Water,
 class Game {
 public:
     // Sets up a new game on `map`: a town center, villagers and starting
-    // goods at each of the first `players` start positions.
-    Game(std::shared_ptr<const Content> content, MapData map, std::uint8_t players, std::uint64_t seed);
+    // goods at each of the first `players` start positions. With
+    // `shared_town`, all the players run one town (section 7.7).
+    Game(std::shared_ptr<const Content> content, MapData map, std::uint8_t players, std::uint64_t seed,
+         bool shared_town = false);
 
     // Applies a command at the current tick. Invalid ones are ignored and
     // counted, the same on every machine.
@@ -167,6 +169,17 @@ public:
     // Whether the developer tools' commands are accepted (single player,
     // or a multiplayer game that allows them). Part of the state.
     [[nodiscard]] bool dev_commands() const { return dev_commands_; }
+    // The town a player runs: their own, or the common one.
+    [[nodiscard]] std::uint8_t town_of(std::uint8_t player) const { return shared_town_ ? 0 : player; }
+    [[nodiscard]] bool shared_town() const { return shared_town_; }
+
+    // Hashes of the parts of the state, to find where two games differ
+    // after a desynchronization.
+    struct PartHash {
+        const char* name;
+        std::uint64_t hash;
+    };
+    [[nodiscard]] std::vector<PartHash> hash_parts() const;
     void set_dev_commands(bool allowed) { dev_commands_ = allowed; }
 
     // Totals in the player's storage, per resource definition.
@@ -215,6 +228,7 @@ private:
     std::uint8_t player_count_ = 0;
     std::uint32_t rejected_ = 0;
     bool dev_commands_ = true;
+    bool shared_town_ = false;
 
     std::vector<std::pair<std::uint64_t, std::uint32_t>> regrow_;  // (tick, node), sorted.
     std::vector<std::uint32_t> changed_nodes_;

@@ -27,6 +27,7 @@ struct Input {
     bool mouse_released = false;  // Left button went up this frame.
     float wheel = 0.0f;           // Positive scrolls up.
     std::vector<SDL_Scancode> keys;  // Keys pressed this frame, including repeats.
+    std::string text;                // Text typed this frame (UTF-8).
 
     [[nodiscard]] bool key(SDL_Scancode k) const;
 };
@@ -109,6 +110,14 @@ public:
     bool selector(Id id, const Rect& r, int& index, std::span<const std::string> options,
                   std::string_view tooltip = {}, bool enabled = true);
 
+    // One-line text field. Click to type; Enter, Esc or a click elsewhere
+    // ends. `allowed` filters typed characters (all printable ones if
+    // empty). Returns true when the text changed.
+    bool text_field(Id id, const Rect& r, std::string& value, std::size_t max_bytes, std::string_view tooltip = {},
+                    std::string_view allowed = {});
+    // True while a text field has the keyboard: global keys must not act.
+    [[nodiscard]] bool typing() const { return focus_id_ != 0; }
+
     // Vertical scrolling region. Content is drawn with its top at the
     // returned y; call end_scroll with the content height.
     float begin_scroll(Id id, const Rect& viewport);
@@ -145,6 +154,8 @@ private:
 
     std::vector<Id> id_stack_;
     Id active_id_ = 0;    // Widget holding the mouse button.
+    Id focus_id_ = 0;     // Text field being typed in.
+    bool focus_seen_ = false;  // The focused field was drawn this frame.
     Id hovered_id_ = 0;   // Widget under the mouse this frame.
     Id tooltip_id_ = 0;   // Widget whose tooltip is being timed.
     std::uint64_t tooltip_since_ns_ = 0;

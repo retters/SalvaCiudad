@@ -26,6 +26,11 @@ bool Input::key(SDL_Scancode k) const {
 void Context::begin_frame(const Input& input, float width, float height, float scale, std::uint64_t now_ns,
                           float white_u, float white_v) {
     input_ = input;
+    // A field that was not drawn last frame loses the keyboard.
+    if (!focus_seen_) {
+        focus_id_ = 0;
+    }
+    focus_seen_ = false;
     width_ = width;
     height_ = height;
     scale_ = scale;
@@ -168,6 +173,69 @@ bool Context::checkbox(Id id, const Rect& r, bool& value, std::string_view toolt
         return true;
     }
     return false;
+}
+
+bool Context::text_field(Id id, const Rect& r, std::string& value, std::size_t max_bytes, std::string_view tooltip,
+                         std::string_view allowed) {
+    const Interaction it = interact(id, r, true, tooltip);
+    if (it.clicked && !blocked_) {
+        focus_id_ = id;
+    } else if (input_.mouse_pressed && !mouse_in(r) && focus_id_ == id) {
+        focus_id_ = 0;
+    }
+    const bool focused = focus_id_ == id && !blocked_;
+    bool changed = false;
+    if (focused) {
+        focus_seen_ = true;
+        for (std::size_t i = 0; i < input_.text.size();) {
+            // One UTF-8 sequence at a time.
+            std::size_t len = 1;
+            const auto c = static_cast<unsigned char>(input_.text[i]);
+            if (c >= 0xF0) {
+                len = 4;
+            } else if (c >= 0xE0) {
+                len = 3;
+            } else if (c >= 0xC0) {
+                len = 2;
+            }
+            const std::string_view ch = std::string_view(input_.text).substr(i, len);
+            i += len;
+            const bool printable = ch.size() > 1 || (ch[0] >= 0x20 && ch[0] != 0x7F);
+            const bool ok = allowed.empty() ? printable : (ch.size() == 1 && allowed.find(ch[0]) != std::string_view::npos);
+            if (ok && value.size() + ch.size() <= max_bytes) {
+                value += ch;
+                changed = true;
+            }
+        }
+        for (const SDL_Scancode k : input_.keys) {
+            if (k == SDL_SCANCODE_BACKSPACE && !value.empty()) {
+                // Remove the whole last UTF-8 sequence.
+                std::size_t cut = value.size() - 1;
+                while (cut > 0 && (static_cast<unsigned char>(value[cut]) & 0xC0) == 0x80) {
+                    --cut;
+                }
+                value.erase(cut);
+                changed = true;
+            } else if (k == SDL_SCANCODE_RETURN || k == SDL_SCANCODE_KP_ENTER || k == SDL_SCANCODE_ESCAPE ||
+                       k == SDL_SCANCODE_TAB) {
+                focus_id_ = 0;
+            }
+        }
+    }
+    draw_.rect(r, focused ? theme_.button_active : theme_.button);
+    draw_.rect_outline(r, focused || it.hovered ? theme_.accent : theme_.panel_border,
+                       std::max(1.0f, std::round(s(1.0f))));
+    const TextStyle st = style(theme_.body);
+    const float pad = s(8.0f);
+    const Rect inner{r.x + pad, r.y, r.w - 2 * pad, r.h};
+    label(inner, value, st, theme_.text);
+    if (focused && (now_ns_ / 500'000'000ull) % 2 == 0) {
+        const float x = std::min(inner.right() - 1.0f, inner.x + text_.measure(st, value) + 1.0f);
+        const float h = text_.line_height(st);
+        draw_.rect({std::round(x), std::round(r.y + (r.h - h) * 0.5f), std::max(1.0f, std::round(s(2.0f))), std::round(h)},
+                   theme_.text);
+    }
+    return changed;
 }
 
 bool Context::slider(Id id, const Rect& r, int& value, int min, int max, int step,

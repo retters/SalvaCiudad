@@ -154,7 +154,7 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
 
     // Goods: food as one total (with the kinds in the tooltip), then
     // everything else the town has.
-    const std::vector<std::int32_t> stored = game.stored(s.local_player());
+    const std::vector<std::int32_t> stored = game.stored(s.town());
     std::int32_t food = 0;
     std::string food_detail;
     for (std::size_t r = 0; r < stored.size(); ++r) {
@@ -182,8 +182,8 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     }
 
     // Population and date in the middle-right; speed on the right.
-    const std::int32_t pop = game.population(s.local_player());
-    const std::int32_t adults = game.population(s.local_player(), true);
+    const std::int32_t pop = game.population(s.town());
+    const std::int32_t adults = game.population(s.town(), true);
     const GameDate date = game_date(game.tick());
     const float button = std::round(ctx.s(36.0f));
     const float gap = ctx.s(4.0f);
@@ -204,6 +204,7 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
             services_.set_game_speed(kSpeeds[i].value);
         }
     }
+    network(ctx, s, right);
     const std::string date_text = tr("hud.date", date.year, date.month, date.day);
     const float dw = ctx.text().measure(st, date_text) + ctx.s(24.0f);
     right -= dw;
@@ -212,9 +213,72 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     const float pw = ctx.text().measure(st, pop_text) + ctx.s(24.0f);
     right -= pw;
     ctx.label({right, bar.y, pw, bar.h}, pop_text, st, ctx.theme().text);
-    const sim::PlayerState& ps = game.player(s.local_player());
+    const sim::PlayerState& ps = game.player(s.town());
     ctx.tooltip_area(ctx.id("hud_population"), {right, bar.y, pw, bar.h},
                      tr("hud.population.tooltip", ps.births, ps.arrivals, ps.deaths));
+}
+
+void GameHud::network(ui::Context& ctx, GameSession& s, float& right) {
+    net::NetSession* net = services_.net();
+    if (net == nullptr || !s.networked()) {
+        return;
+    }
+    const ui::TextStyle st = ctx.style(ctx.theme().body);
+    const float bar_h = std::round(ctx.s(kTopBarH));
+    // Players: a count, with the names in the tooltip.
+    int connected = 0;
+    std::string names;
+    std::string waiting;
+    for (const net::LobbyPlayer& p : net->lobby().players) {
+        connected += p.connected ? 1 : 0;
+        names += (names.empty() ? "" : "\n") + tr(p.connected ? "hud.net.player" : "hud.net.playerAway", p.name);
+        if (net->waiting_for() && *net->waiting_for() == p.slot && p.slot != net->local_slot()) {
+            waiting = p.name;
+        }
+    }
+    const std::string text = tr("hud.net.players", connected);
+    const float w = ctx.text().measure(st, text) + ctx.s(24.0f);
+    right -= w;
+    ctx.label({right, 0, w, bar_h}, text, st, ctx.theme().text);
+    ctx.tooltip_area(ctx.id("hud_players"), {right, 0, w, bar_h}, names);
+
+    // Waiting for somebody.
+    if (!waiting.empty()) {
+        const std::string wt = tr("hud.net.waiting", waiting);
+        const float ww = ctx.text().measure(st, wt) + ctx.s(32.0f);
+        const ui::Rect r{std::round((ctx.width() - ww) * 0.5f), bar_h + ctx.s(10.0f), std::round(ww),
+                         std::round(ctx.text().line_height(st) + ctx.s(12.0f))};
+        ctx.draw().rect(r, ctx.theme().tooltip.with_alpha(0.85f));
+        ctx.label(r, wt, st, ctx.theme().text, ui::Align::Center);
+    }
+
+    // A speed vote someone else asked for.
+    const std::optional<net::SpeedVote>& vote = net->vote();
+    if (vote && vote->from != net->local_slot() && answered_vote_ != vote->id) {
+        std::string from;
+        for (const net::LobbyPlayer& p : net->lobby().players) {
+            from = p.slot == vote->from ? p.name : from;
+        }
+        const std::string q = tr("hud.net.vote", from, static_cast<int>(vote->speed));
+        const float pad = ctx.s(12.0f);
+        const float bh = std::round(ctx.s(36.0f));
+        const float vw = std::min(ctx.width() - 2 * pad, std::max(ctx.s(360.0f), ctx.text().measure(st, q) + 2 * pad));
+        const float vh = ctx.text().line_height(st) + bh + 3 * pad;
+        const ui::Rect box{std::round((ctx.width() - vw) * 0.5f), std::round(bar_h + ctx.s(56.0f)), std::round(vw),
+                           std::round(vh)};
+        ctx.panel(box);
+        block(s, box);
+        ctx.label({box.x + pad, box.y + pad, box.w - 2 * pad, ctx.text().line_height(st)}, q, st, ctx.theme().text);
+        const float bw = (box.w - 3 * pad) * 0.5f;
+        const float by = box.bottom() - pad - bh;
+        if (ctx.button(ctx.id("vote_yes"), {box.x + pad, by, bw, bh}, tr("hud.net.accept"), {}, true, true)) {
+            net->answer_vote(true);
+            answered_vote_ = vote->id;
+        } else if (ctx.button(ctx.id("vote_no"), {box.x + 2 * pad + bw, by, bw, bh}, tr("hud.net.refuse"))) {
+            net->answer_vote(false);
+            answered_vote_ = vote->id;
+        }
+    }
 }
 
 void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
@@ -340,7 +404,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     if (has_workers) {
         h += button_h + pad * 0.5f;
     }
-    const bool removable = ui.selected_building != game.player(s.local_player()).town_center;
+    const bool removable = ui.selected_building != game.player(s.town()).town_center;
     if (removable) {
         h += button_h + pad * 0.5f;
     }

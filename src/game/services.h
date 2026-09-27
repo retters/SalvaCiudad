@@ -12,6 +12,8 @@
 #include "game/map_generation.h"
 #include "game/settings.h"
 #include "mods/mod_library.h"
+#include "net/enet_link.h"
+#include "net/lockstep.h"
 #include "sim/content.h"
 #include "ui/font_library.h"
 
@@ -80,6 +82,18 @@ public:
     // Loads a saved game and shows it. On failure the player is told why
     // and false is returned; a game being played is kept.
     virtual bool load_game(const std::filesystem::path& file) = 0;
+
+    // Multiplayer (phase 9).
+    // Opens a lobby as host with this map; false if the port is busy.
+    virtual bool host_game(const sim::MapSettings& map) = 0;
+    // Connects to a host; the lobby shows once it answers.
+    virtual bool join_game(const std::string& address, std::uint16_t port) = 0;
+    virtual void leave_network() = 0;
+    [[nodiscard]] virtual net::NetSession* net() = 0;
+    virtual void set_lan_search(bool on) = 0;
+    [[nodiscard]] virtual std::vector<net::LanGame> lan_games() = 0;
+    // The player's name: from the settings, or a default one.
+    [[nodiscard]] virtual std::string player_name() const = 0;
 };
 
 }  // namespace sc

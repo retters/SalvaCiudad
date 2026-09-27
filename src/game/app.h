@@ -37,7 +37,9 @@ namespace sc {
 
 class App final : public Services {
 public:
-    App();
+    // `instance` 0 is the normal game; 1..8 use their own data folder and
+    // network port (for trying multiplayer on one computer).
+    explicit App(int instance = 0, bool loopback = false);
     ~App() override;
     App(const App&) = delete;
     App& operator=(const App&) = delete;
@@ -70,11 +72,18 @@ public:
     void leave_map() override;
     const sim::MapData* current_map() const override { return map_ ? &map_->map : nullptr; }
     GameSession* session() override { return session_.get(); }
-    int game_speed() const override { return clock_.speed(); }
-    void set_game_speed(int speed) override { clock_.set_speed(speed); }
+    int game_speed() const override;
+    void set_game_speed(int speed) override;
     void save_game() override;
     std::vector<save::Entry> list_saves() override;
     bool load_game(const std::filesystem::path& file) override;
+    bool host_game(const sim::MapSettings& map) override;
+    bool join_game(const std::string& address, std::uint16_t port) override;
+    void leave_network() override;
+    net::NetSession* net() override { return net_.get(); }
+    void set_lan_search(bool on) override;
+    std::vector<net::LanGame> lan_games() override;
+    std::string player_name() const override;
 
 private:
     bool init();
@@ -99,6 +108,17 @@ private:
     // Shows a game (new or loaded) on its map, with the camera at its town.
     void start_session(std::unique_ptr<GameSession> session);
     void autosave_if_due();
+    // Multiplayer.
+    bool ensure_enet();
+    void update_network(std::uint64_t now_ms);
+    void handle_net_event(const net::NetEvent& e);
+    void apply_snapshot(std::vector<std::uint8_t> state);
+    void close_network();
+    [[nodiscard]] net::LocalInfo local_info() const;
+    [[nodiscard]] std::string seat_name(std::uint8_t slot) const;
+    [[nodiscard]] std::uint16_t game_port() const { return static_cast<std::uint16_t>(net::kDefaultPort + instance_); }
+    // Shows a game's map (loaded or received) with a fresh view.
+    bool show_map_of(const sim::MapData& map);
     void write_save(const std::string& stem, const std::string& name, bool quiet);
     void draw_scene_markers(std::uint32_t width, std::uint32_t height);
     void draw_start_markers(std::uint32_t width, std::uint32_t height);
@@ -136,6 +156,16 @@ private:
     MapGenerationJob map_job_;
     std::unique_ptr<GeneratedMap> map_;  // The map being shown.
     std::unique_ptr<GameSession> session_;  // The village game on it (phase 8).
+    // Multiplayer (phase 9); destroyed in reverse order: the session
+    // first, then the link it uses, then ENet.
+    int instance_ = 0;
+    bool loopback_ = false;  // Multiplayer on this computer only.
+    std::unique_ptr<net::EnetLibrary> enet_;
+    std::unique_ptr<net::EnetLink> link_;
+    std::unique_ptr<net::LanDiscovery> lan_search_;
+    std::unique_ptr<net::LanDiscovery> lan_announce_;
+    std::unique_ptr<net::NetSession> net_;
+    std::optional<net::Start> net_start_;  // The network game whose map is being generated.
     VillageView village_;
     std::uint64_t next_autosave_tick_ = 0;
     int autosave_slot_ = 0;
