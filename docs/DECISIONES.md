@@ -851,6 +851,7 @@ El comando `DevIgnite` prende fuego a un edificio propio; solo funciona con las 
 
 **D-1401. Monedas como tesoro del pueblo.**
 Las monedas no son un recurso que se carga ni se guarda en almacenes: son un número por pueblo (`coins`). Cada pueblo empieza con 100 (50 con recursos escasos, 200 con abundantes). Así el comercio no depende de que los peones muevan monedas.
+*Reemplazada el 2026-09-27 a pedido del usuario:* el oro pasará a ser un recurso que se carga, con bóveda (fase 28), y el puesto de comercio podrá comerciar solo mientras haya mercaderes de visita (fase 29).
 
 **D-1402. Precios en los datos.**
 Cada recurso tiene `value`, su precio base en monedas; con 0, los mercaderes no lo compran ni lo venden. Los valores de `core` van de 1 (bayas, trigo, arcilla) a 15 (herramientas).

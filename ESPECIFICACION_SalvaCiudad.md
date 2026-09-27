@@ -536,7 +536,38 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - *Criterios:* con "siempre" hay mar que toca el borde y la tierra conserva al menos la mitad del mapa; con "sin mar" el mapa no cambia; las fosas son más hondas y las dorsales más altas que el fondo que las rodea sin salir del agua; los pueblos empiezan en tierra con sus recursos.
 27. **Accidentes del terreno.** Opción "Accidentes del terreno" (pocos, normales, muchos): mesetas de cima plana con una subida suave, valles anchos, cordilleras y cañones de paredes empinadas que desaguan.
    - *Criterios:* con "muchos", en varios mapas grandes aparecen los cuatro tipos; la cima de una meseta es plana, un cañón es más hondo que sus bordes y su fondo baja hasta el borde del mapa o el mar; un mapa enorme sigue generándose en menos de 30 s.
-28. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+28. **Oro que se carga y bóveda** (agregada el 2026-09-27 a pedido del usuario; reemplaza D-1401).
+   - Las monedas pasan a ser oro, el recurso `core:gold`, con una categoría propia (`gold`) y `value` 0 para que los mercaderes no lo compren ni lo vendan como mercancía. Los peones lo cargan y ocupa espacio como cualquier recurso. Desaparece el número `coins` del pueblo.
+   - Guardan oro la bóveda, el puesto de comercio y el centro del pueblo; los almacenes comunes no. El oro inicial (100, o 50 con recursos escasos y 200 con abundantes) empieza en el centro del pueblo.
+   - Bóveda (`core:vault`): guarda solo oro, con mucha capacidad, y no se quema.
+   - Reserva del puesto de comercio: el jugador fija cuánto oro mantener ahí. Si sobra, los peones llevan el excedente a la bóveda (o al centro del pueblo si no hay); si falta, lo traen de ella.
+   - Las compras a los mercaderes y el oro de las ofertas entre jugadores salen primero del puesto y luego de los demás edificios, como hoy los bienes vendidos (D-1403). El oro de las ventas entra al puesto, o al centro del pueblo si no cabe. En las caravanas, el oro viaja como cualquier bien.
+   - Los asaltantes pueden llevarse oro como cualquier otro bien. Si un edificio que guarda oro se quema, el oro se pierde igual que el resto de lo que guarda.
+   - La barra superior muestra el oro total; su tooltip lo separa en puesto, bóveda y otros edificios.
+   - *Criterios:* el oro del pueblo solo cambia por comercio, robo o incendio; los peones mantienen la reserva del puesto, llevándola y trayéndola de la bóveda; una bóveda en llamas no pierde oro y un puesto en llamas sí; comprar sin oro suficiente en el pueblo se rechaza; guardar y cargar conserva el oro de cada edificio (verificado por hash).
+29. **Comercio automático en el puesto** (agregada el 2026-09-27 a pedido del usuario).
+   - En la ventana del puesto de comercio, reglas por recurso: "vender si en el pueblo hay más de N" y "comprar si hay menos de M".
+   - Solo se aplican mientras hay mercaderes de visita, una vez al día. Compran solo con el oro que está en el puesto, nunca con el de la bóveda; así la reserva del puesto es el presupuesto del comercio automático. Venden igual que la venta a mano: primero del puesto y luego de los demás almacenes. Lo comprado queda en el puesto.
+   - Las reglas son comandos (deterministas en multijugador) y se guardan con la partida.
+   - Al irse los mercaderes, un aviso resume lo que se compró y se vendió y el oro que entró o salió.
+   - *Criterios:* sin mercaderes no se compra ni se vende nada; con el puesto sin oro no se compra aunque haya oro en la bóveda; ninguna regla deja el pueblo por debajo de N al vender ni por encima de M al comprar; dos instancias con las mismas reglas no se desincronizan.
+30. **Visor de modelos** (agregada el 2026-09-27 a pedido del usuario).
+   - Herramienta de desarrollo aparte, `SalvaCiudadModelos.exe`: se compila con el juego y usa `sc_engine` (renderizador, cargador de glTF, Dear ImGui), pero no abre el juego ni lo necesita. Sin red y sin dependencias nuevas.
+   - Navegación por categorías según las carpetas del mod (edificios, objetos, personajes, animales); los árboles agrupados por especie. Elección del mod (`core` o uno instalado) y buscador por nombre.
+   - Vista 3D con la luz, sombras y niebla del juego: cámara que gira alrededor del modelo, cuadrícula en metros y un aldeano de referencia para la escala. Modo "todas las variantes" que pone lado a lado los modelos de un grupo.
+   - Vista previa de lo que hace el juego: tinte de estación en los árboles, paletas al azar en personajes y accesorios, animaciones de los personajes.
+   - Ficha del modelo: triángulos, vértices, materiales (cada uno es una llamada de dibujo), texturas, tamaño en metros y qué definiciones lo usan.
+   - Revisión del contenido: modelos que ninguna definición usa, definiciones que apuntan a un modelo que no existe y cuántas variantes tiene cada tipo.
+   - Recarga automática de un modelo cuando cambia su `.glb` (al volver a correr su script de Blender). Textos en español e inglés.
+   - *Criterios:* el visor abre sin el juego y lista todos los modelos de `core` por categoría; muestra cada modelo con la luz del juego y en modo de variantes; la ficha coincide con los datos de los modelos de `tests/data_models_test`; con un mod de prueba que tiene un modelo sin usar y una definición con un modelo que falta, el visor señala los dos; compila en todas las configuraciones sin advertencias.
+31. **Variantes de modelos** (agregada el 2026-09-27 a pedido del usuario).
+   - Las definiciones declaran sus variantes en el JSON: `"models": [...]` en lugar de `"model"` (una lista de un elemento equivale al `"model"` de hoy, que se sigue aceptando). Un mod puede agregar variantes con un parche.
+   - La variante de cada objeto se elige solo en la vista, a partir del id de la entidad o de la celda; no entra en el estado de la simulación, así que no cambia el hash ni el lockstep.
+   - Primero variedad sin geometría nueva: rotación, escala y espejo al azar donde el objeto lo permita, y paleta por material en los edificios (techo y paredes), como la de los aldeanos.
+   - Geometría nueva donde más se nota la repetición: 3 a 5 nubes, 3 o 4 casas por nivel, rocas y arbustos. Sombreros y accesorios como mucho 2 o 3 formas cada uno, porque se dibujan animados en cada aldeano.
+   - El visor de la fase 30 muestra las variantes de cada definición.
+   - *Criterios:* un pueblo de 1000 aldeanos y el mapa colosal en Ultra pierden como mucho un 5 % de FPS frente a la fase 30 (medido y anotado en `docs/RENDIMIENTO.md` con las llamadas de dibujo antes y después); la misma partida muestra las mismas variantes en todas las instancias y al cargarla; el hash de la simulación no cambia; una definición con `"model"` sigue funcionando.
+32. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 
