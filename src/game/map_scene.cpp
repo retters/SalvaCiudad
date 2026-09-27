@@ -5,6 +5,7 @@
 #include <numbers>
 
 #include "core/log.h"
+#include "game/builtin_models.h"
 #include "game/test_scene.h"
 
 namespace sc {
@@ -136,27 +137,31 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     // Slightly different shades so forests do not look copied.
     const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
     const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
-    inst.tint = {shade, shade, shade};
-    // The season's colors.
     const bool tree = f.type == sim::FeatureType::Tree;
     const bool evergreen = tree && content != nullptr && f.species < content->flora.species.size() &&
                            content->flora.species[f.species].evergreen;
+    inst.tint = season_tint(shade, tree, evergreen, h >> 8, season, snowy);
+    return inst;
+}
+
+math::Vec3 season_tint(float shade, bool tree, bool evergreen, std::uint32_t pick, sim::Season season, bool snowy) {
+    math::Vec3 tint{shade, shade, shade};
     if (!evergreen) {
         if (season == sim::Season::Spring && tree) {
-            inst.tint = inst.tint * 1.0f + math::Vec3{0.02f, 0.08f, -0.02f};
+            tint = tint * 1.0f + math::Vec3{0.02f, 0.08f, -0.02f};
         } else if (season == sim::Season::Autumn) {
             // Each tree turns its own way: gold, orange or red.
             static constexpr math::Vec3 kAutumn[3] = {{1.45f, 1.15f, 0.4f}, {1.5f, 0.9f, 0.35f}, {1.35f, 0.6f, 0.35f}};
-            const math::Vec3 c = tree ? kAutumn[(h >> 8) % 3] : math::Vec3{1.2f, 0.95f, 0.6f};
-            inst.tint = {inst.tint.x * c.x, inst.tint.y * c.y, inst.tint.z * c.z};
+            const math::Vec3 c = tree ? kAutumn[pick % 3] : math::Vec3{1.2f, 0.95f, 0.6f};
+            tint = {tint.x * c.x, tint.y * c.y, tint.z * c.z};
         } else if (season == sim::Season::Winter) {
-            inst.tint = {inst.tint.x * 0.85f, inst.tint.y * 0.72f, inst.tint.z * 0.55f};
+            tint = {tint.x * 0.85f, tint.y * 0.72f, tint.z * 0.55f};
         }
     }
     if (snowy) {
-        inst.tint = inst.tint * 0.6f + math::Vec3{0.5f, 0.52f, 0.56f};
+        tint = tint * 0.6f + math::Vec3{0.5f, 0.52f, 0.56f};
     }
-    return inst;
+    return tint;
 }
 
 std::optional<math::Vec3> ground_hit(const sim::MapData& map, math::Vec3 origin, math::Vec3 dir, float max_distance) {
@@ -335,9 +340,9 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
     if (missing > 0) {
         log::warn("map: {} model(s) missing; those objects will not be drawn", missing);
     }
-    const std::filesystem::path core = pack.dir(mods::kCoreModId) / "models" / "props";
-    house_ = load_file(renderer, core / "house_small.glb", render::ModelClass::Normal).model;
-    cloud_ = load_file(renderer, core / "cloud.glb", render::ModelClass::Sky).model;
+    const std::filesystem::path core = pack.dir(mods::kCoreModId);
+    house_ = load_file(renderer, core / builtin_models::kSampleHouse, render::ModelClass::Normal).model;
+    cloud_ = load_file(renderer, core / builtin_models::kCloud, render::ModelClass::Sky).model;
     models_loaded_ = any;
     return any;
 }

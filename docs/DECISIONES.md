@@ -1316,3 +1316,32 @@ El generador pasa a la versión 6: todos los mapas cambian. Algunas pruebas de j
 - las de salud, ejército y aldea usan ahora mapas sin mar, porque no son sobre costas;
 - "una hora de juego" usa el mapa 29. Con 16 semillas, el jugador de prueba (que construye siempre lo mismo) prospera en 7 tanto antes como después de esta fase: los cambios no empeoraron la economía;
 - "el fuego se propaga" se comprueba en 5 pueblos y pide que se propague en 3. Es por azar: se propaga en 16 de 20 mapas probados.
+
+## Fase 30: visor de modelos (2026-09-27)
+
+Se hizo antes que las fases 28 y 29 porque es una herramienta aparte y no toca el juego.
+
+**D-3001. Un programa aparte sobre el mismo motor.**
+- `SalvaCiudadModelos.exe` se compila con el juego y usa su renderizador, su cargador de glTF y sus textos, así que cada modelo se ve con la misma luz, sombras y colores que en el juego. No abre el juego ni lo necesita.
+- La interfaz es Dear ImGui, como las demás herramientas de desarrollo, con la fuente del juego (Alegreya Sans) para que se vean los acentos.
+- No escribe ningún archivo del juego ni del usuario. No usa `settings.json`: la ventana es siempre de 1600 × 900, el idioma es el del sistema y se cambia en el propio visor sin guardarse. Su registro va a `logs/viewer/`, para no rotar el del juego.
+
+**D-3002. Qué cuenta como "usado" y qué es una variante.**
+- El cargador de mods anota cada modelo que usan las definiciones (`ModelRef`: tipo, id, mod y ruta, y si el archivo existe), también los de un mod que quedó fuera por errores. Así el visor puede señalar una definición cuyo archivo falta aunque el juego la haya descartado.
+- Los modelos que el código carga por nombre (nubes, casa de muestra, escena de prueba, animales, sombreros, barba y delantales) están ahora en una sola lista, `src/game/builtin_models.h`, que usan tanto el juego como el visor.
+- Los cuerpos de las razas se buscan en `core`, como hace el juego (`sim::race_body_file`). Si falta uno, el juego solo lo deja fuera, así que no es un error del mod; el visor sí lo señala.
+- Grupo de un modelo: la primera definición que lo usa (las tallas de una especie, los dos cuerpos de una raza); si no, su uso en el código (los sombreros); si nada lo usa, su nombre sin el sufijo de talla o de sexo. En la fase 31, las variantes de una definición formarán un grupo del mismo modo.
+- La categoría sale de la carpeta (`buildings`, `characters`, `animals`, `props`). Los árboles son los de una especie o los archivos `tree_*`.
+- Los objetos del mapa no tienen nombre propio: se muestran con el nombre del recurso que dan (bayas, piedra…).
+
+**D-3003. Lee los mods del código fuente.**
+Los scripts de Blender escriben en `data/mods` del repositorio, pero la compilación copia `data/` junto al ejecutable. Si el visor leyera esa copia, no vería los modelos recién exportados. Por eso lee `data/mods` del código fuente mientras esa carpeta exista (la ruta se fija al compilar) y, si no existe, la del juego instalado. La pestaña Revisión muestra qué carpetas lee.
+
+**D-3004. Recarga automática.**
+Cada medio segundo compara la fecha y el tamaño de los archivos mostrados; si cambian, los carga otra vez y avisa abajo. El renderizador no puede liberar un modelo, así que la copia anterior queda en la tarjeta gráfica hasta cerrar el visor. Para una herramienta de desarrollo son unos pocos MB, y es más simple y seguro que agregar al renderizador del juego una forma de borrar modelos.
+
+**D-3005. Cómo se muestran.**
+- Los modelos de un grupo van en fila de izquierda a derecha, con un aldeano humano de 1,7 m a la izquierda como referencia de escala, sobre un suelo con líneas cada metro y más marcadas cada 5 m.
+- Calidad Ultra y la luz por omisión del juego (verano). Los árboles y objetos del mapa toman el color de la estación elegida con la misma función que el mapa (`season_tint`, que se separó de `feature_instance`).
+- Los sombreros, la barba y los delantales se muestran puestos en un cuerpo humano, cada uno en su propia copia del cuerpo, porque son accesorios rígidos fijados a un hueso.
+- En la ficha, "llamadas de dibujo" son las primitivas del modelo (una por material), que se dibujan en la vista y en cada cascada de sombras. "Materiales" cuenta solo los que usan sus primitivas.

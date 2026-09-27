@@ -86,14 +86,26 @@ Cualquier otro nombre (`eyes`, `mouth`…) conserva su color.
 
 ### Accesorios
 
-Un accesorio es un **modelo rígido cuyo origen es el punto donde se fija**: el comienzo de un hueso (`head` es la parte alta del cuello; `hips` es la pelvis). El juego lo lleva a la posición de ese hueso en la pose de reposo del cuerpo y lo mueve con la animación de ese hueso (D-404). Hoy, qué accesorio va en qué hueso está en el código de la escena de prueba; en la fase 7 pasará a las definiciones de los mods.
+Un accesorio es un **modelo rígido cuyo origen es el punto donde se fija**: el comienzo de un hueso (`head` es la parte alta del cuello; `hips` es la pelvis). El juego lo lleva a la posición de ese hueso en la pose de reposo del cuerpo y lo mueve con la animación de ese hueso (D-404). Qué accesorio va en qué hueso está en `src/game/builtin_models.h`.
 
 ## Cómo agregar un modelo
 
 1. Escribe una función en el script que corresponda (o un script nuevo, llamado desde `build_all.py`), usando `MeshBuilder` y `common.export_glb`.
-2. Genera con el comando de arriba y revisa las vistas previas.
+2. Genera con el comando de arriba y revísalo en el visor de modelos (abajo) o en las vistas previas.
 3. Si es un personaje, usa el esqueleto humano y nombres de material de la tabla de paletas.
 4. Comprueba que regenerar da el mismo archivo.
+
+## Visor de modelos
+
+`SalvaCiudadModelos.exe` se compila junto al juego (queda en `build\<preset>\bin\`) y sirve para revisar los modelos sin abrir el juego (D-3001):
+
+- A la izquierda, los modelos del mod elegido por categoría (edificios, árboles, objetos del mapa, personajes y accesorios, animales). Al elegir un tipo se ven **todas sus variantes lado a lado**; al elegir un archivo, solo ese.
+- Se ven con la luz y las sombras del juego, junto a un aldeano de 1,7 m y sobre una cuadrícula de 1 m. Los árboles se pueden ver en cada estación y con nieve, y los personajes con otra paleta y cada animación.
+- A la derecha, la ficha: triángulos, vértices, llamadas de dibujo, materiales, texturas, tamaño en metros, qué definiciones lo usan y si nada lo usa.
+- La pestaña **Revisión** lista los modelos que nada usa, las definiciones cuyo modelo falta, los tipos que tienen una sola variante y los errores del mod.
+- Cuando se vuelve a correr un script de Blender, el modelo cambia solo en el visor: lee `data/mods` del código fuente (D-3003).
+
+Controles: arrastrar con el botón izquierdo gira la cámara, con el derecho la mueve; la rueda acerca. F encuadra lo que se ve y F5 vuelve a leer los mods.
 
 ## Sonidos
 

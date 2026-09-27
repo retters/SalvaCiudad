@@ -7,6 +7,7 @@
 #include <numbers>
 
 #include "core/log.h"
+#include "game/builtin_models.h"
 #include "game/camera.h"
 
 namespace sc {
@@ -177,13 +178,11 @@ float wrap_angle(float a) {
 void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult& pack) {
     const sim::Content& content = pack.content;
     // The animals (phase 18).
-    static constexpr const char* kAnimals[] = {"models/animals/deer.glb", "models/animals/boar.glb",
-                                               "models/animals/wolf.glb", "models/animals/bear.glb"};
-    for (std::size_t k = 0; k < std::size(kAnimals); ++k) {
+    for (std::size_t k = 0; k < std::size(builtin_models::kAnimals); ++k) {
         if (species_models_[k] != kNoModel) {
             continue;
         }
-        const std::filesystem::path file = mods::mod_file(pack.dir("core"), kAnimals[k]);
+        const std::filesystem::path file = mods::mod_file(pack.dir("core"), builtin_models::kAnimals[k]);
         const auto data = file.empty() ? std::nullopt : load_model_file(file);
         render::ModelId id = 0;
         if (data.has_value() && renderer.add_model(*data, id)) {

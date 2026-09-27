@@ -325,6 +325,11 @@ BuildResult ModLibrary::build() {
         const ModInfo* m = find(id);
         return m != nullptr ? m->dir : std::filesystem::path{};
     };
+    // The models of every attempt, so those of mods left out still show.
+    std::vector<ModelRef> refs;
+    const auto same = [](const ModelRef& a, const ModelRef& b) {
+        return a.def_id == b.def_id && a.mod == b.mod && a.path == b.path;
+    };
     // Build; if a mod has errors, leave it out and build again.
     for (int attempt = 0; attempt < 16; ++attempt) {
         DefSet set;
@@ -341,7 +346,13 @@ BuildResult ModLibrary::build() {
             }
         }
         result.content = sim::Content{};
-        build_content(set, dir_of, result.content, errors);
+        std::vector<ModelRef> attempt_refs;
+        build_content(set, dir_of, result.content, errors, &attempt_refs);
+        for (ModelRef& ref : attempt_refs) {
+            if (std::none_of(refs.begin(), refs.end(), [&](const ModelRef& m) { return same(m, ref); })) {
+                refs.push_back(std::move(ref));
+            }
+        }
         // Errors that blame a mod other than core drop that mod.
         std::vector<std::string> blamed;
         for (const DefError& e : errors) {
@@ -373,6 +384,7 @@ BuildResult ModLibrary::build() {
             return false;
         });
     }
+    result.model_refs = std::move(refs);
     std::uint64_t hash = kFnvBasis;
     for (const std::size_t i : order) {
         ModInfo& m = mods_[i];

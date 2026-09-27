@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "core/json.h"
+#include "mods/mod_library.h"
 #include "sim/content.h"
 
 namespace sc::mods {
@@ -47,9 +48,10 @@ private:
 
 // Checks every definition and fills `out` (except `hash`). `mod_dir` gives
 // each mod's folder, to find model files. Definitions with errors are left
-// out and the errors blame the mod that last changed them.
+// out and the errors blame the mod that last changed them. With `refs`,
+// also lists the model files the definitions use.
 void build_content(const DefSet& defs, const std::function<std::filesystem::path(const std::string&)>& mod_dir,
-                   sim::Content& out, std::vector<DefError>& errors);
+                   sim::Content& out, std::vector<DefError>& errors, std::vector<ModelRef>* refs = nullptr);
 
 // Definition ids: "<mod>:<name>", name of 1..48 characters of [a-z0-9_].
 [[nodiscard]] bool is_valid_def_id(std::string_view id);

@@ -38,10 +38,10 @@ inline constexpr float kTestSceneHalfSize = 1000.0f;  // Meters from the center 
 // animated character path (phase 4 acceptance: 2000 on screen).
 class TestCrowd {
 public:
-    // Loads the bodies and accessories from data/models/characters.
-    // Bodies of each race in `bodies` (file prefixes: <body>_male.glb and
-    // <body>_female.glb); missing races are skipped.
-    bool load(render::SceneRenderer& renderer, const std::filesystem::path& characters_dir,
+    // Loads the bodies and accessories from the core mod's folder. Bodies
+    // of each race in `bodies` (see sim::race_body_file); missing races are
+    // skipped.
+    bool load(render::SceneRenderer& renderer, const std::filesystem::path& core_dir,
               const std::vector<std::string>& bodies = {"human"});
     void spawn(std::size_t count, std::uint32_t seed, float radius);
     // Where the next spawn() puts the crowd, and the ground it walks on
@@ -125,9 +125,9 @@ private:
 
 class TestScene {
 public:
-    // Loads the props from data/models/props and fills the renderer.
+    // Loads the props from the core mod's folder and fills the renderer.
     // Models that fail to load are skipped (and logged).
-    bool load(render::SceneRenderer& renderer, const std::filesystem::path& models_dir, std::size_t count);
+    bool load(render::SceneRenderer& renderer, const std::filesystem::path& core_dir, std::size_t count);
 
     [[nodiscard]] bool loaded() const { return loaded_; }
     [[nodiscard]] std::size_t instance_count() const { return instances_; }

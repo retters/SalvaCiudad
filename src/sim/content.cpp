@@ -32,6 +32,10 @@ DefIndex Content::find_crop(std::string_view id) const {
     return find_def(crops, id);
 }
 
+std::string race_body_file(std::string_view body, bool female) {
+    return "models/characters/" + std::string(body) + (female ? "_female.glb" : "_male.glb");
+}
+
 const FeatureDef* Content::feature(FeatureKind kind) const {
     for (const FeatureDef& f : features) {
         if (f.kind == kind) {

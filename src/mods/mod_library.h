@@ -44,8 +44,22 @@ struct ModScript {
     std::string source;  // scripts/main.lua
 };
 
+// A model file a definition uses, found or not (for the model viewer,
+// phase 30).
+struct ModelRef {
+    std::string def_type;  // "building", "mapFeature", "species" or "race".
+    std::string def_id;
+    std::string name_key;  // The definition's name, if it has one.
+    std::string mod;       // Mod whose folder holds the file.
+    std::string path;      // Inside that mod: "models/props/rock.glb".
+    bool exists = false;
+};
+
 struct BuildResult {
     sim::Content content;
+    // Every model the definitions use, found or not, including those of
+    // mods left out for errors.
+    std::vector<ModelRef> model_refs;
     std::vector<ModScript> scripts;
     std::vector<std::filesystem::path> language_files;  // lang/*.json of the loaded mods, in order.
     std::vector<std::string> load_order;                // Mod ids.

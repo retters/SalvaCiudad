@@ -183,16 +183,21 @@ public:
     }
 
     // A file inside the model's mod folder that must exist.
+    // With `refs`, records the file (found or not) under `name_key`.
     std::string model(const std::function<std::filesystem::path(const std::string&)>& mod_dir, bool required,
-                      std::string_view suffix = {}) {
+                      std::vector<ModelRef>* refs, const std::string& name_key = {}) {
         const std::string rel = text("model", required, 200);
         if (rel.empty()) {
             return rel;
         }
-        const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), std::string(rel) + std::string(suffix));
+        const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), rel);
         std::error_code ec;
-        if (path.empty() || !std::filesystem::is_regular_file(path, ec)) {
-            fail(std::format("model '{}{}' not found in mod '{}'", rel, suffix, def_.model_mod));
+        const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
+        if (!exists) {
+            fail(std::format("model '{}' not found in mod '{}'", rel, def_.model_mod));
+        }
+        if (refs != nullptr) {
+            refs->push_back({def_.type, def_.id, name_key, def_.model_mod, rel, exists});
         }
         return rel;
     }
@@ -350,7 +355,7 @@ void DefSet::add_file(std::string_view json_text, const std::string& mod, const 
 }
 
 void build_content(const DefSet& set, const std::function<std::filesystem::path(const std::string&)>& mod_dir,
-                   sim::Content& out, std::vector<DefError>& errors) {
+                   sim::Content& out, std::vector<DefError>& errors, std::vector<ModelRef>* refs) {
     out = sim::Content{};
     // Ids first, so definitions can refer to each other in any order.
     std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops, diseases,
@@ -416,6 +421,16 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                 return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
             })) {
             r.fail("\"body\" must be a plain file name ([a-z0-9_])");
+        } else if (!def.body.empty() && refs != nullptr) {
+            // The game takes every body from core; a missing one is only
+            // left out of the crowd, so it is not an error here.
+            for (const bool female : {false, true}) {
+                const std::string rel = sim::race_body_file(def.body, female);
+                const std::filesystem::path path = mod_file(mod_dir(kCoreModId), rel);
+                std::error_code ec;
+                refs->push_back({d->type, d->id, def.name_key, kCoreModId, rel,
+                                 !path.empty() && std::filesystem::is_regular_file(path, ec)});
+            }
         }
         def.move = r.integer("move", 50, 200, 100);
         def.cold = r.integer("cold", -100, 90, 0);
@@ -545,7 +560,9 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.amount = r.integer("amount", 1, 10000, 10);
         def.work = r.integer("work", 1, 10000, 20);
         def.regrow_days = r.integer("regrowDays", 0, 3650, 0);
-        def.model = r.model(mod_dir, false);
+        // Features have no name of their own: the viewer shows the resource's.
+        def.model = r.model(mod_dir, false, refs,
+                            ri < 0 ? std::string{} : out.resources[static_cast<std::size_t>(ri)].name_key);
         def.mod = d->model_mod;
         if (r.ok()) {
             out.features.push_back(std::move(def));
@@ -558,7 +575,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.id = d->id;
         def.name_key = r.text("name", true);
         def.mod = d->model_mod;
-        def.model = r.model(mod_dir, true);
+        def.model = r.model(mod_dir, true, refs, def.name_key);
         def.kind = static_cast<sim::BuildingKind>(r.choice("kind", kBuildingKinds, 2, true));
         std::int32_t size[2] = {4, 4};
         r.numbers("size", size, 2, 1, 32);
@@ -687,12 +704,15 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             if (((def.sizes >> s) & 1u) == 0) {
                 continue;
             }
-            const std::filesystem::path path =
-                mod_file(mod_dir(d->model_mod), prefix + "_" + sim::size_info(static_cast<sim::TreeSize>(s)).id + ".glb");
+            const std::string rel = prefix + "_" + sim::size_info(static_cast<sim::TreeSize>(s)).id + ".glb";
+            const std::filesystem::path path = mod_file(mod_dir(d->model_mod), rel);
             std::error_code ec;
-            if (path.empty() || !std::filesystem::is_regular_file(path, ec)) {
-                r.fail(std::format("model '{}_{}.glb' not found in mod '{}'", prefix,
-                                   sim::size_info(static_cast<sim::TreeSize>(s)).id, d->model_mod));
+            const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
+            if (!exists) {
+                r.fail(std::format("model '{}' not found in mod '{}'", rel, d->model_mod));
+            }
+            if (refs != nullptr) {
+                refs->push_back({d->type, d->id, def.name_key, d->model_mod, rel, exists});
             }
         }
         def.model = prefix;

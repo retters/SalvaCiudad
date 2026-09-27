@@ -222,8 +222,8 @@ bool App::init() {
 
     // The 3D scene is optional: without it the menus still work.
     if (scene_.create(gpu_, settings_->settings().graphics)) {
-        const std::filesystem::path models = pack_->dir(mods::kCoreModId) / "models";
-        scene_ok_ = test_scene_.load(scene_, models / "props", kTestSceneInstances);
+        const std::filesystem::path core = pack_->dir(mods::kCoreModId);
+        scene_ok_ = test_scene_.load(scene_, core, kTestSceneInstances);
         // Every race's bodies (phase 19), humans first.
         std::vector<std::string> bodies{"human"};
         for (const sim::RaceDef& r : pack_->content.races) {
@@ -231,7 +231,7 @@ bool App::init() {
                 bodies.push_back(r.body);
             }
         }
-        if (scene_ok_ && crowd_.load(scene_, models / "characters", bodies)) {
+        if (scene_ok_ && crowd_.load(scene_, core, bodies)) {
             crowd_.spawn(kTestCrowd, 2026, kTestCrowdRadius);
         }
     }

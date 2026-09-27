@@ -25,6 +25,8 @@ ctest --preset release
 
 Los modelos de `data/mods/core/models` se generan con Blender desde los scripts de `art/blender`. Ver [docs/ARTE.md](docs/ARTE.md). Compilar el juego no requiere Blender.
 
+El visor de modelos, `build\release\bin\SalvaCiudadModelos.exe`, es una herramienta aparte para revisar los modelos por categoría con todas sus variantes, ver cuánto cuesta dibujarlos y encontrar los que sobran o faltan (ver [docs/ARTE.md](docs/ARTE.md#visor-de-modelos)).
+
 ## Dónde guarda sus datos
 
 - Normalmente en `%APPDATA%\Salva\SalvaCiudad\`: `settings.json`, `logs\`, `saves\` y `mods\`.
@@ -349,6 +351,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Se puede subir a una meseta por su rampa; las paredes de un cañón no se pueden cruzar.
 - [ ] Los ríos serpentean en lugar de ir en línea recta.
 - [ ] En costas e islas, un valle o cañón que llega al mar termina en él.
+
+### Fase 30 (visor de modelos)
+
+- [ ] `SalvaCiudadModelos.exe` abre sin el juego, en una ventana, con los textos en tu idioma.
+- [ ] A la izquierda están los modelos de "SalvaCiudad (juego base)" por categoría; al elegir un tipo con varias variantes (por ejemplo, Roble o Sombreros) se ven todas lado a lado, con el aldeano de referencia a la izquierda.
+- [ ] Al elegir un archivo, la ficha muestra sus triángulos, llamadas de dibujo, tamaño y quién lo usa.
+- [ ] En un árbol, cambiar la estación a Otoño o marcar "Con nieve" cambia su color como en el juego; en un personaje, "Otra paleta" cambia su ropa y el menú de animación lo pone a caminar.
+- [ ] La pestaña Revisión lista `tree_oak.glb` como modelo sin usar.
+- [ ] Con el visor abierto en un modelo, volver a correr su script de Blender (o guardar otra vez el archivo) lo actualiza solo y abajo aparece "Recargado".
+- [ ] El juego sigue viéndose igual (nubes, casas de muestra, animales y sombreros de los aldeanos).
 
 ## Licencia
 

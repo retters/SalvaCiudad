@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {"type": "building", "id": "viewer_test:shed", "name": "building.shed", "kind": "decoration",
+     "model": "models/buildings/shed.glb", "size": [2, 2], "cost": {"core:log": 2}},
+    {"type": "building", "id": "viewer_test:hut", "name": "building.hut", "kind": "decoration",
+     "model": "models/buildings/hut.glb", "size": [2, 2], "cost": {"core:log": 2}}
+  ]
+}

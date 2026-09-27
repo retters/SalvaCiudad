@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "viewer_test",
+  "name": "mod.viewer_test.name",
+  "description": "mod.viewer_test.description",
+  "version": "1.0.0",
+  "gameVersion": ">=0.7.0",
+  "authors": ["Salva"],
+  "affectsSimulation": true,
+  "dependencies": ["core"],
+  "loadAfter": []
+}

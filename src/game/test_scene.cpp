@@ -7,7 +7,9 @@
 #include "core/file_io.h"
 #include "core/log.h"
 #include "core/text.h"
+#include "game/builtin_models.h"
 #include "game/camera.h"
+#include "sim/content.h"
 
 namespace sc {
 
@@ -157,9 +159,9 @@ std::optional<render::ModelData> load_model_file(const std::filesystem::path& fi
     return std::move(model.model);
 }
 
-bool TestScene::load(render::SceneRenderer& renderer, const std::filesystem::path& models_dir, std::size_t count) {
-    const auto load_model = [&](const char* file, render::ModelId& id) {
-        const auto model = load_model_file(models_dir / file);
+bool TestScene::load(render::SceneRenderer& renderer, const std::filesystem::path& core_dir, std::size_t count) {
+    const auto load_model = [&](std::string_view file, render::ModelId& id) {
+        const auto model = load_model_file(core_dir / file);
         return model.has_value() && renderer.add_model(*model, id);
     };
 
@@ -173,15 +175,15 @@ bool TestScene::load(render::SceneRenderer& renderer, const std::filesystem::pat
     TestSceneLayout layout = make_test_scene_layout(count, 2026);
     render::ModelId id = 0;
     instances_ = 0;
-    if (load_model("tree_pine.glb", id)) {
+    if (load_model(builtin_models::kTestTree, id)) {
         instances_ += layout.trees.size();
         placed_.push_back({id, std::move(layout.trees)});
     }
-    if (load_model("house_small.glb", id)) {
+    if (load_model(builtin_models::kSampleHouse, id)) {
         instances_ += layout.houses.size();
         placed_.push_back({id, std::move(layout.houses)});
     }
-    if (load_model("rock.glb", id)) {
+    if (load_model(builtin_models::kTestRock, id)) {
         instances_ += layout.rocks.size();
         placed_.push_back({id, std::move(layout.rocks)});
     }
@@ -271,16 +273,16 @@ void TestCrowd::set_area(math::Vec3 center, std::function<float(float, float)> g
     ground_ = std::move(ground);
 }
 
-bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::path& dir,
+bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::path& core_dir,
                      const std::vector<std::string>& bodies) {
     kinds_.clear();
-    const auto accessory = [&](const char* file, render::SkinnedId body, const char* bone, std::uint32_t& bit) {
-        const auto model = load_model_file(dir / file);
+    const auto accessory = [&](std::string_view file, render::SkinnedId body, const char* bone, std::uint32_t& bit) {
+        const auto model = load_model_file(core_dir / file);
         return model.has_value() && renderer.add_accessory(*model, body, bone, bit);
     };
     for (const std::string& prefix : bodies) {
     for (const bool female : {false, true}) {
-        const auto body = load_model_file(dir / (prefix + (female ? "_female.glb" : "_male.glb")));
+        const auto body = load_model_file(core_dir / sim::race_body_file(prefix, female));
         BodyKind kind;
         kind.female = female;
         kind.body = prefix;
@@ -292,15 +294,16 @@ bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::pat
         kind.idle = static_cast<std::uint32_t>(body->clip_index("idle"));
         kind.walk = static_cast<std::uint32_t>(body->clip_index("walk"));
         std::uint32_t bit = 0;
-        for (const char* hat : {"hat_straw.glb", "hat_cap.glb"}) {
-            if (accessory(hat, kind.id, "head", bit)) {
+        for (const std::string_view hat : builtin_models::kHats) {
+            if (accessory(hat, kind.id, builtin_models::kHeadBone, bit)) {
                 kind.hats.push_back(bit);
             }
         }
-        if (!female && accessory("beard.glb", kind.id, "head", bit)) {
+        if (!female && accessory(builtin_models::kBeard, kind.id, builtin_models::kHeadBone, bit)) {
             kind.beard = bit;
         }
-        if (accessory(female ? "apron_female.glb" : "apron_male.glb", kind.id, "hips", bit)) {
+        if (accessory(female ? builtin_models::kApronFemale : builtin_models::kApronMale, kind.id,
+                      builtin_models::kHipsBone, bit)) {
             kind.apron = bit;
         }
         kinds_.push_back(kind);

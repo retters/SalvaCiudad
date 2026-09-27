@@ -54,6 +54,11 @@ inline constexpr std::int32_t kMaxGroundColorSize = 2048;
                                                 const sim::Content* content = nullptr,
                                                 sim::Season season = sim::Season::Summer, bool snowy = false);
 
+// The color a tree or bush takes in a season: `shade` is its own
+// brightness (0.9 to 1.1) and `pick` chooses its autumn color.
+[[nodiscard]] math::Vec3 season_tint(float shade, bool tree, bool evergreen, std::uint32_t pick, sim::Season season,
+                                     bool snowy);
+
 // Ground color of a cell, sRGB (presentation only).
 struct Rgb8 {
     std::uint8_t r = 0, g = 0, b = 0;

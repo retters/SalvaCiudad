@@ -161,13 +161,17 @@ inline constexpr std::size_t kSkills = static_cast<std::size_t>(Skill::Count);
 struct RaceDef {
     std::string id;
     std::string name_key;
-    std::string body;            // Character files: characters/<body>_male.glb and _female.glb.
+    std::string body;            // Character files in core: see race_body_file().
     std::int32_t move = 100;     // Walking speed, percent.
     std::array<std::int32_t, kSkills> work{100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
     std::int32_t cold = 0;       // Resistance to cold, percent (less warmth lost, less flu); may be negative.
     std::int32_t disease = 0;    // Resistance to every disease, percent.
     bool night_vision = false;   // Declared for a day and night cycle (not in the game yet).
 };
+
+// Path of a race's body model inside the core mod:
+// "models/characters/<body>_male.glb" or "..._female.glb".
+[[nodiscard]] std::string race_body_file(std::string_view body, bool female);
 
 // A tutorial (section 6.5): a map and steps, each with a text, a goal that
 // ends it and the part of the interface to point at.

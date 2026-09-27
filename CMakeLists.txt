@@ -341,6 +341,27 @@ add_custom_command(TARGET SalvaCiudad POST_BUILD
     VERBATIM)
 
 # ---------------------------------------------------------------------------
+# Model viewer (phase 30): a developer tool apart from the game. Its catalog
+# is a library so the tests can check it.
+# ---------------------------------------------------------------------------
+add_library(sc_viewer STATIC src/viewer/model_catalog.cpp)
+target_link_libraries(sc_viewer PUBLIC sc_engine)
+sc_harden_target(sc_viewer)
+
+add_executable(SalvaCiudadModelos WIN32 src/viewer/main.cpp src/viewer/viewer_app.cpp)
+target_link_libraries(SalvaCiudadModelos PRIVATE sc_viewer)
+# Reads the source tree's mods while that folder exists (decision D-3003).
+target_compile_definitions(SalvaCiudadModelos PRIVATE SC_VIEWER_SOURCE_DATA="${CMAKE_CURRENT_SOURCE_DIR}/data")
+sc_harden_target(SalvaCiudadModelos)
+set_target_properties(SalvaCiudadModelos PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+# It reads the game's data/ next to it, like the game.
+add_custom_command(TARGET SalvaCiudadModelos POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:SalvaCiudadModelos>/data"
+    VERBATIM)
+
+# ---------------------------------------------------------------------------
 # Tests.
 # ---------------------------------------------------------------------------
 if(SC_BUILD_TESTS)
@@ -380,14 +401,15 @@ if(SC_BUILD_TESTS)
         tests/test_army.cpp
         tests/test_audio.cpp
         tests/test_races.cpp
-        tests/test_perf.cpp)
-    target_link_libraries(salvaciudad_tests PRIVATE sc_engine doctest)
+        tests/test_perf.cpp
+        tests/test_viewer.cpp)
+    target_link_libraries(salvaciudad_tests PRIVATE sc_engine sc_viewer doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade wildlife army audio races sim_perf)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade wildlife army audio races sim_perf viewer)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)
