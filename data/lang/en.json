@@ -12,21 +12,18 @@
     "app.name": "SalvaCiudad",
     "app.logo.top": "- SALVA -",
     "app.logo.bottom": "CIUDAD",
-
     "error.fatal.title": "SalvaCiudad cannot start",
     "error.fatal.sdl": "The system's graphics and input layer could not be started. Update your graphics drivers and try again.",
     "error.fatal.dataFolder": "The folder for your settings and saved games could not be created. Check that you can write to your user folder.",
     "error.fatal.fonts": "The game's fonts are missing or damaged. Reinstall the game.",
     "error.fatal.window": "The game window could not be created.",
     "error.fatal.gpu": "Your graphics card could not be used. SalvaCiudad needs a Direct3D 12 compatible graphics card with up-to-date drivers.",
-
     "notice.settings.quarantined": "Your settings file was damaged and default settings are in use. The damaged file was kept as {0:file}.",
     "notice.settings.readOnly": "Your settings were saved by a newer version of the game. They were loaded, but changes will not be saved so that version's settings are not lost.",
     "notice.settings.ignored": {
       "one": "{0} setting was not valid and went back to its default value.",
       "other": "{0} settings were not valid and went back to their default values."
     },
-
     "menu.main.singlePlayer": "Single player",
     "menu.main.singlePlayer.tooltip": "Start a new game on your own.",
     "menu.main.hostGame": "Host multiplayer game",
@@ -43,7 +40,6 @@
     "menu.main.quit.tooltip": "Close the game.",
     "menu.main.dismissNotice.tooltip": "Dismiss this notice.",
     "menu.main.version": "Version {0:version}",
-
     "dialog.ok": "OK",
     "dialog.comingSoon.title": "Coming soon",
     "dialog.comingSoon.body": "\"{0:feature}\" is not available yet. It will arrive in an upcoming version.",
@@ -56,7 +52,6 @@
     },
     "dialog.keepDisplay.keep": "Keep",
     "dialog.keepDisplay.revert": "Revert",
-
     "settings.title": "Settings",
     "settings.tab.display": "Display",
     "settings.tab.graphics": "Graphics",
@@ -70,7 +65,6 @@
     "settings.back": "Back",
     "settings.value.percent": "{0} %",
     "settings.value.ms": "{0} ms",
-
     "settings.display.mode": "Window mode",
     "settings.display.mode.tooltip": "Fullscreen gives the game the whole screen and may change its resolution. Borderless fills the screen without changing its resolution and makes switching to other programs faster. Windowed shows the game in a normal window.",
     "settings.display.mode.fullscreen": "Fullscreen",
@@ -91,8 +85,7 @@
     "settings.display.fpsLimit.disabledTooltip": "Vertical sync already limits the frame rate. Turn it off to choose a limit.",
     "settings.display.fpsLimit.none": "No limit",
     "settings.display.fpsLimit.value": "{0} FPS",
-
-    "settings.graphics.pendingNote": "These options will take effect when the game world is added. They are saved already.",
+    "settings.graphics.pendingNote": "Vegetation will take effect when the map is added. It is saved already.",
     "settings.graphics.preset": "Quality",
     "settings.graphics.preset.tooltip": "Sets all the graphics options at once. Choosing an option below by hand switches to Custom.",
     "settings.graphics.preset.low": "Low",
@@ -119,12 +112,11 @@
     "settings.graphics.vegetation.level.2": "High",
     "settings.graphics.vegetation.level.3": "Very high",
     "settings.graphics.antialiasing": "Antialiasing",
-    "settings.graphics.antialiasing.tooltip": "Smooths jagged edges. MSAA looks best and costs the most.",
+    "settings.graphics.antialiasing.tooltip": "Smooths jagged edges. More samples look better and cost more performance.",
     "settings.graphics.antialiasing.level.0": "Off",
-    "settings.graphics.antialiasing.level.1": "FXAA",
-    "settings.graphics.antialiasing.level.2": "MSAA 2x",
-    "settings.graphics.antialiasing.level.3": "MSAA 4x",
-
+    "settings.graphics.antialiasing.level.1": "MSAA 2x",
+    "settings.graphics.antialiasing.level.2": "MSAA 4x",
+    "settings.graphics.antialiasing.level.3": "MSAA 8x",
     "settings.audio.pendingNote": "Sound will be added in an upcoming version. These volumes are saved already.",
     "settings.audio.master": "Master volume",
     "settings.audio.master.tooltip": "Volume of everything the game plays.",
@@ -136,7 +128,6 @@
     "settings.audio.music.tooltip": "Background music.",
     "settings.audio.ui": "Interface",
     "settings.audio.ui.tooltip": "Clicks and notifications.",
-
     "settings.controls.camera": "Camera",
     "settings.controls.panSpeed": "Movement speed",
     "settings.controls.panSpeed.tooltip": "How fast the camera moves with the keys or at the screen edge.",
@@ -155,7 +146,6 @@
     "settings.controls.unbound": "—",
     "settings.controls.capture": "Press a key for \"{0:action}\".\nEsc cancels. Delete removes the key.",
     "settings.controls.moved": "{0:key} was used by \"{1:action}\"; that action no longer has it.",
-
     "action.camera.forward": "Move forward",
     "action.camera.back": "Move back",
     "action.camera.left": "Move left",
@@ -172,7 +162,6 @@
     "action.game.quickLoad": "Quick load",
     "action.ui.toggleFullscreen": "Change window mode",
     "action.ui.screenshot": "Screenshot",
-
     "settings.interface.scale": "Interface size",
     "settings.interface.scale.tooltip": "Size of menus, text and windows, relative to your screen's scale setting.",
     "settings.interface.scale.auto": "Automatic (100 %)",
@@ -182,11 +171,9 @@
     "settings.interface.tooltips.tooltip": "Shows help like this one when the pointer rests on something.",
     "settings.interface.tooltipDelay": "Tooltip delay",
     "settings.interface.tooltipDelay.tooltip": "How long the pointer must rest before a tooltip appears.",
-
     "settings.language.auto": "Automatic (system language)",
     "settings.language.auto.tooltip": "Uses your system's language if the game has it, English otherwise.",
     "settings.language.addHint": "To add a language, copy data/lang/en.json with the name of the new language code and translate its texts. No reinstall is needed.",
-
     "settings.game.autosave": "Autosave",
     "settings.game.autosave.tooltip": "How often the game saves automatically.",
     "settings.game.autosave.off": "Off",
@@ -233,6 +220,23 @@
     "key.keypadPlus": "Keypad +",
     "key.keypadMinus": "Keypad -",
     "key.keypadMultiply": "Keypad *",
-    "key.keypadDivide": "Keypad /"
+    "key.keypadDivide": "Keypad /",
+    "menu.main.testScene": "3D test scene",
+    "menu.main.testScene.tooltip": "A temporary scene to try the camera and the renderer, with 50,000 objects. It will be replaced by real games.",
+    "testScene.hint": "3D test scene. W A S D or arrows: move. Q / E or middle mouse button: turn. Mouse wheel: zoom. F3: statistics. Esc: back to the menu.",
+    "action.ui.debugOverlay": "Statistics (developers)",
+    "debug.title": "Statistics",
+    "debug.fps": "FPS",
+    "debug.gpu": "GPU",
+    "debug.uiScale": "Interface scale",
+    "debug.drawCalls": "Draw calls",
+    "debug.instances": "Objects drawn",
+    "debug.shadowInstances": "Objects casting shadows",
+    "debug.triangles": "Triangles",
+    "debug.cull": "Culling",
+    "debug.shadows": "Shadow cascades",
+    "debug.drawDistance": "Draw distance",
+    "debug.camera": "Camera distance",
+    "debug.stressView": "Stress view (whole scene)"
   }
 }

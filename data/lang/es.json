@@ -12,21 +12,18 @@
     "app.name": "SalvaCiudad",
     "app.logo.top": "- SALVA -",
     "app.logo.bottom": "CIUDAD",
-
     "error.fatal.title": "SalvaCiudad no puede iniciar",
     "error.fatal.sdl": "No se pudo iniciar la capa de gráficos y controles del sistema. Actualiza los controladores de tu tarjeta gráfica y vuelve a intentarlo.",
     "error.fatal.dataFolder": "No se pudo crear la carpeta para tu configuración y tus partidas. Comprueba que puedes escribir en tu carpeta de usuario.",
     "error.fatal.fonts": "Faltan las tipografías del juego o están dañadas. Vuelve a instalar el juego.",
     "error.fatal.window": "No se pudo crear la ventana del juego.",
     "error.fatal.gpu": "No se pudo usar tu tarjeta gráfica. SalvaCiudad necesita una tarjeta compatible con Direct3D 12 y controladores actualizados.",
-
     "notice.settings.quarantined": "Tu archivo de configuración estaba dañado y se usa la configuración por omisión. El archivo dañado se guardó como {0:file}.",
     "notice.settings.readOnly": "Tu configuración la guardó una versión más nueva del juego. Se cargó, pero los cambios no se guardarán para no perder la configuración de esa versión.",
     "notice.settings.ignored": {
       "one": "{0} ajuste no era válido y volvió a su valor por omisión.",
       "other": "{0} ajustes no eran válidos y volvieron a su valor por omisión."
     },
-
     "menu.main.singlePlayer": "Un jugador",
     "menu.main.singlePlayer.tooltip": "Empieza una partida nueva tú solo.",
     "menu.main.hostGame": "Crear partida multijugador",
@@ -43,7 +40,6 @@
     "menu.main.quit.tooltip": "Cierra el juego.",
     "menu.main.dismissNotice.tooltip": "Cerrar este aviso.",
     "menu.main.version": "Versión {0:version}",
-
     "dialog.ok": "Aceptar",
     "dialog.comingSoon.title": "Próximamente",
     "dialog.comingSoon.body": "«{0:feature}» todavía no está disponible. Llegará en una próxima versión.",
@@ -56,7 +52,6 @@
     },
     "dialog.keepDisplay.keep": "Conservar",
     "dialog.keepDisplay.revert": "Revertir",
-
     "settings.title": "Configuración",
     "settings.tab.display": "Pantalla",
     "settings.tab.graphics": "Gráficos",
@@ -70,7 +65,6 @@
     "settings.back": "Volver",
     "settings.value.percent": "{0} %",
     "settings.value.ms": "{0} ms",
-
     "settings.display.mode": "Modo de ventana",
     "settings.display.mode.tooltip": "Pantalla completa le da al juego toda la pantalla y puede cambiar su resolución. Ventana sin bordes llena la pantalla sin cambiar la resolución y permite cambiar más rápido a otros programas. Ventana muestra el juego en una ventana normal.",
     "settings.display.mode.fullscreen": "Pantalla completa",
@@ -91,8 +85,7 @@
     "settings.display.fpsLimit.disabledTooltip": "La sincronización vertical ya limita los cuadros por segundo. Desactívala para elegir un límite.",
     "settings.display.fpsLimit.none": "Sin límite",
     "settings.display.fpsLimit.value": "{0} FPS",
-
-    "settings.graphics.pendingNote": "Estas opciones tendrán efecto cuando se agregue el mundo del juego. Ya quedan guardadas.",
+    "settings.graphics.pendingNote": "La vegetación tendrá efecto cuando se agregue el mapa. Ya queda guardada.",
     "settings.graphics.preset": "Calidad",
     "settings.graphics.preset.tooltip": "Ajusta todas las opciones de gráficos a la vez. Si eliges a mano una opción de abajo, pasa a Personalizada.",
     "settings.graphics.preset.low": "Baja",
@@ -119,12 +112,11 @@
     "settings.graphics.vegetation.level.2": "Mucha",
     "settings.graphics.vegetation.level.3": "Muchísima",
     "settings.graphics.antialiasing": "Suavizado de bordes",
-    "settings.graphics.antialiasing.tooltip": "Suaviza los bordes dentados. MSAA se ve mejor y es el que más rendimiento exige.",
+    "settings.graphics.antialiasing.tooltip": "Suaviza los bordes dentados. Más muestras se ven mejor y exigen más rendimiento.",
     "settings.graphics.antialiasing.level.0": "Desactivado",
-    "settings.graphics.antialiasing.level.1": "FXAA",
-    "settings.graphics.antialiasing.level.2": "MSAA 2x",
-    "settings.graphics.antialiasing.level.3": "MSAA 4x",
-
+    "settings.graphics.antialiasing.level.1": "MSAA 2x",
+    "settings.graphics.antialiasing.level.2": "MSAA 4x",
+    "settings.graphics.antialiasing.level.3": "MSAA 8x",
     "settings.audio.pendingNote": "El sonido llegará en una próxima versión. Estos volúmenes ya quedan guardados.",
     "settings.audio.master": "Volumen general",
     "settings.audio.master.tooltip": "Volumen de todo lo que suena en el juego.",
@@ -136,7 +128,6 @@
     "settings.audio.music.tooltip": "Música de fondo.",
     "settings.audio.ui": "Interfaz",
     "settings.audio.ui.tooltip": "Clics y notificaciones.",
-
     "settings.controls.camera": "Cámara",
     "settings.controls.panSpeed": "Velocidad de movimiento",
     "settings.controls.panSpeed.tooltip": "Qué tan rápido se mueve la cámara con las teclas o en el borde de la pantalla.",
@@ -155,7 +146,6 @@
     "settings.controls.unbound": "—",
     "settings.controls.capture": "Pulsa una tecla para «{0:action}».\nEsc cancela. Supr quita la tecla.",
     "settings.controls.moved": "{0:key} lo usaba «{1:action}»; esa acción ya no la tiene.",
-
     "action.camera.forward": "Avanzar",
     "action.camera.back": "Retroceder",
     "action.camera.left": "Mover a la izquierda",
@@ -172,7 +162,6 @@
     "action.game.quickLoad": "Carga rápida",
     "action.ui.toggleFullscreen": "Cambiar modo de ventana",
     "action.ui.screenshot": "Captura de pantalla",
-
     "settings.interface.scale": "Tamaño de la interfaz",
     "settings.interface.scale.tooltip": "Tamaño de los menús, el texto y las ventanas, en relación con la escala de tu pantalla.",
     "settings.interface.scale.auto": "Automático (100 %)",
@@ -182,11 +171,9 @@
     "settings.interface.tooltips.tooltip": "Muestra ayudas como esta cuando el puntero se detiene sobre algo.",
     "settings.interface.tooltipDelay": "Retraso de las ayudas",
     "settings.interface.tooltipDelay.tooltip": "Cuánto tiempo debe detenerse el puntero antes de que aparezca la ayuda.",
-
     "settings.language.auto": "Automático (idioma del sistema)",
     "settings.language.auto.tooltip": "Usa el idioma de tu sistema si el juego lo tiene; si no, inglés.",
     "settings.language.addHint": "Para agregar un idioma, copia data/lang/en.json con el nombre del código del nuevo idioma y traduce sus textos. No hace falta reinstalar.",
-
     "settings.game.autosave": "Guardado automático",
     "settings.game.autosave.tooltip": "Cada cuánto guarda el juego automáticamente.",
     "settings.game.autosave.off": "Desactivado",
@@ -233,6 +220,23 @@
     "key.keypadPlus": "+ (teclado numérico)",
     "key.keypadMinus": "- (teclado numérico)",
     "key.keypadMultiply": "* (teclado numérico)",
-    "key.keypadDivide": "/ (teclado numérico)"
+    "key.keypadDivide": "/ (teclado numérico)",
+    "menu.main.testScene": "Escena de prueba 3D",
+    "menu.main.testScene.tooltip": "Una escena provisional para probar la cámara y el render, con 50 000 objetos. Se reemplazará por partidas de verdad.",
+    "testScene.hint": "Escena de prueba 3D. W A S D o flechas: mover. Q / E o botón central del ratón: girar. Rueda: acercar y alejar. F3: estadísticas. Esc: volver al menú.",
+    "action.ui.debugOverlay": "Estadísticas (desarrollo)",
+    "debug.title": "Estadísticas",
+    "debug.fps": "FPS",
+    "debug.gpu": "GPU",
+    "debug.uiScale": "Escala de la interfaz",
+    "debug.drawCalls": "Llamadas de dibujo",
+    "debug.instances": "Objetos dibujados",
+    "debug.shadowInstances": "Objetos que proyectan sombra",
+    "debug.triangles": "Triángulos",
+    "debug.cull": "Descarte",
+    "debug.shadows": "Cascadas de sombra",
+    "debug.drawDistance": "Distancia de dibujo",
+    "debug.camera": "Distancia de la cámara",
+    "debug.stressView": "Vista de estrés (toda la escena)"
   }
 }

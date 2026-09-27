@@ -31,6 +31,7 @@ enum class Action : std::uint8_t {
     GameQuickLoad,
     UiToggleFullscreen,
     UiScreenshot,
+    UiDebugOverlay,
     Count,
 };
 

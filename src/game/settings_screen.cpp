@@ -303,6 +303,7 @@ void SettingsScreen::tab_graphics(ui::Context& ctx, float x, float& y, float w) 
     }
     if (changed) {
         g.preset = g.matching_preset();
+        services_.apply_graphics();
         services_.settings_changed();
     }
 }
@@ -565,7 +566,10 @@ void SettingsScreen::restore_tab_defaults(UiHost& host) {
             host.change_display(d);
             break;
         }
-        case Tab::Graphics: s.graphics = defaults.graphics; break;
+        case Tab::Graphics:
+            s.graphics = defaults.graphics;
+            services_.apply_graphics();
+            break;
         case Tab::Audio: s.audio = defaults.audio; break;
         case Tab::Controls:
             s.input = defaults.input;

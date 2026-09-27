@@ -108,6 +108,25 @@ target_compile_definitions(yyjson PUBLIC YYJSON_DISABLE_INCR_READER=1 YYJSON_DIS
 add_library(stb_truetype STATIC third_party/stb/stb_truetype.c)
 target_include_directories(stb_truetype SYSTEM PUBLIC third_party/stb)
 
+add_library(stb_image STATIC third_party/stb/stb_image.c)
+target_include_directories(stb_image SYSTEM PUBLIC third_party/stb)
+
+add_library(cgltf STATIC third_party/cgltf/cgltf.c)
+target_include_directories(cgltf SYSTEM PUBLIC third_party/cgltf)
+
+# Dear ImGui: developer statistics only, never the player's interface.
+add_library(imgui STATIC
+    third_party/imgui/imgui.cpp
+    third_party/imgui/imgui_draw.cpp
+    third_party/imgui/imgui_tables.cpp
+    third_party/imgui/imgui_widgets.cpp
+    third_party/imgui/backends/imgui_impl_sdl3.cpp
+    third_party/imgui/backends/imgui_impl_sdlgpu3.cpp)
+target_include_directories(imgui SYSTEM PUBLIC third_party/imgui third_party/imgui/backends)
+target_link_libraries(imgui PUBLIC SDL3::SDL3-static)
+# No imgui.ini or log files, and no obsolete API.
+target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+
 add_library(doctest INTERFACE)
 target_include_directories(doctest SYSTEM INTERFACE third_party/doctest)
 
@@ -143,12 +162,19 @@ function(sc_add_shader source profile symbol)
         COMMAND ${CMAKE_COMMAND} -DINPUT=${dxil} -DOUTPUT=${header} -DSYMBOL=${symbol}
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
+                "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_common.hlsli"
         COMMENT "Compiling shader ${source}"
         VERBATIM)
     set(SC_SHADER_HEADERS ${SC_SHADER_HEADERS} "${header}" PARENT_SCOPE)
 endfunction()
 sc_add_shader(shaders/ui.vert.hlsl vs_6_0 kUiVertDxil)
 sc_add_shader(shaders/ui.frag.hlsl ps_6_0 kUiFragDxil)
+sc_add_shader(shaders/mesh.vert.hlsl vs_6_0 kMeshVertDxil)
+sc_add_shader(shaders/mesh.frag.hlsl ps_6_0 kMeshFragDxil)
+sc_add_shader(shaders/shadow.vert.hlsl vs_6_0 kShadowVertDxil)
+sc_add_shader(shaders/shadow.frag.hlsl ps_6_0 kShadowFragDxil)
+sc_add_shader(shaders/sky.vert.hlsl vs_6_0 kSkyVertDxil)
+sc_add_shader(shaders/sky.frag.hlsl ps_6_0 kSkyFragDxil)
 
 # The base language is built in, so the game shows text even if data/lang
 # is missing.
@@ -173,17 +199,23 @@ set(SC_ENGINE_SOURCES
     src/core/log.cpp
     src/core/text.cpp
     src/game/app.cpp
+    src/game/camera.cpp
     src/game/game_clock.cpp
     src/game/input_actions.cpp
     src/game/settings.cpp
     src/game/settings_screen.cpp
+    src/game/test_scene.cpp
     src/game/ui_host.cpp
     src/i18n/catalog.cpp
     src/i18n/plural.cpp
     src/i18n/translator.cpp
+    src/math/vec.cpp
     src/platform/paths.cpp
     src/platform/window.cpp
+    src/render/debug_overlay.cpp
     src/render/gpu_device.cpp
+    src/render/model.cpp
+    src/render/scene_renderer.cpp
     src/render/ui_renderer.cpp
     src/ui/context.cpp
     src/ui/draw_list.cpp
@@ -194,7 +226,7 @@ set(SC_ENGINE_SOURCES
 
 add_library(sc_engine STATIC ${SC_ENGINE_SOURCES})
 target_include_directories(sc_engine PUBLIC src "${SC_GENERATED_DIR}")
-target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype)
+target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui)
 add_dependencies(sc_engine sc_generated)
 sc_harden_target(sc_engine)
 
@@ -231,14 +263,18 @@ if(SC_BUILD_TESTS)
         tests/test_i18n.cpp
         tests/test_input_actions.cpp
         tests/test_menus.cpp
-        tests/test_ui.cpp)
+        tests/test_ui.cpp
+        tests/test_math.cpp
+        tests/test_model.cpp
+        tests/test_camera.cpp
+        tests/test_scene.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

@@ -60,17 +60,22 @@ void GpuDevice::destroy() {
 
 bool GpuDevice::set_vsync(bool vsync) {
     SDL_GPUPresentMode mode = SDL_GPU_PRESENTMODE_VSYNC;
+    // Without vsync, immediate presentation first: mailbox still waits for
+    // the display refresh on Direct3D 12 (decision D-306).
     if (!vsync) {
-        if (SDL_WindowSupportsGPUPresentMode(device_, window_, SDL_GPU_PRESENTMODE_MAILBOX)) {
-            mode = SDL_GPU_PRESENTMODE_MAILBOX;
-        } else if (SDL_WindowSupportsGPUPresentMode(device_, window_, SDL_GPU_PRESENTMODE_IMMEDIATE)) {
+        if (SDL_WindowSupportsGPUPresentMode(device_, window_, SDL_GPU_PRESENTMODE_IMMEDIATE)) {
             mode = SDL_GPU_PRESENTMODE_IMMEDIATE;
+        } else if (SDL_WindowSupportsGPUPresentMode(device_, window_, SDL_GPU_PRESENTMODE_MAILBOX)) {
+            mode = SDL_GPU_PRESENTMODE_MAILBOX;
         }
     }
     if (!SDL_SetGPUSwapchainParameters(device_, window_, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, mode)) {
         log::error("gpu: SDL_SetGPUSwapchainParameters failed: {}", SDL_GetError());
         return false;
     }
+    log::info("gpu: present mode {}", mode == SDL_GPU_PRESENTMODE_VSYNC       ? "vsync"
+                                      : mode == SDL_GPU_PRESENTMODE_MAILBOX ? "mailbox"
+                                                                            : "immediate");
     return true;
 }
 

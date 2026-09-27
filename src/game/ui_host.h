@@ -34,8 +34,14 @@ public:
 
     void open_settings() { screen_ = Screen::Settings; }
 
+    // What the 3D view behind the interface should show.
+    enum class SceneMode : std::uint8_t { None, MenuBackground, TestScene };
+    [[nodiscard]] SceneMode scene_mode() const;
+
 private:
-    enum class Screen : std::uint8_t { MainMenu, Settings };
+    enum class Screen : std::uint8_t { MainMenu, Settings, TestScene };
+
+    void test_scene_hud(ui::Context& ctx);
 
     void main_menu(ui::Context& ctx);
     void draw_logo(ui::Context& ctx, float center_x, float y, float max_width, float max_height, float& height_out,

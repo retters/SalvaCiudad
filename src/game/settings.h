@@ -52,13 +52,13 @@ enum class QualityPreset : std::uint8_t { Low, Medium, High, Ultra, Custom };
 [[nodiscard]] const char* quality_preset_to_string(QualityPreset preset);
 [[nodiscard]] std::optional<QualityPreset> quality_preset_from_string(std::string_view s);
 
-// Levels are 0..3. Stored now; applied by the 3D renderer from phase 3.
+// Levels are 0..3. Vegetation takes effect with the map (phase 6).
 struct GraphicsSettings {
     QualityPreset preset = QualityPreset::High;
     int shadows = 2;        // Off, low, medium, high.
     int draw_distance = 2;  // Short, medium, far, very far.
     int vegetation = 2;     // Low, medium, high, very high.
-    int antialiasing = 1;   // Off, FXAA, MSAA 2x, MSAA 4x.
+    int antialiasing = 2;   // Off, MSAA 2x, MSAA 4x, MSAA 8x.
 
     // Sets the levels of a preset (does nothing for Custom).
     void apply_preset(QualityPreset p);

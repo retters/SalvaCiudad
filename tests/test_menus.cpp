@@ -29,6 +29,8 @@ public:
         return !refuse;
     }
     void apply_vsync() override {}
+    void apply_graphics() override {}
+    bool scene_available() const override { return false; }
     void apply_language() override {}
     void apply_font() override {}
     std::vector<std::string> monitor_names() override { return {"Monitor A"}; }

@@ -34,7 +34,7 @@ public:
     bool create(SDL_Window* window, bool vsync);
     void destroy();
 
-    // With vsync off, uses mailbox or immediate presentation if available.
+    // With vsync off, uses immediate (or else mailbox) presentation.
     bool set_vsync(bool vsync);
 
     bool begin_frame(GpuFrame& frame);

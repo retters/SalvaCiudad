@@ -152,7 +152,7 @@ Reglas comunes a todos los archivos (skill `datos-usuario-persistencia`):
 Límite de 256 KB. Contenido:
 
 - `language`: código BCP 47 o `"auto"`, que es el valor por omisión y usa el idioma de interfaz del sistema.
-- `display`: `mode` (`fullscreen` | `windowed` | `borderless`, por omisión `borderless`), `monitor`, `resolution`, `vsync` (sí), `fpsLimit` (0 = sin límite; por omisión 0 con vsync), `uiScale` (0.75 a 2.0, por omisión según el DPI) y `quality` (`low` | `medium` | `high` | `ultra` más ajustes individuales: sombras, distancia de dibujo, densidad de vegetación, antialiasing).
+- `display`: `mode` (`fullscreen` | `windowed` | `borderless`, por omisión `borderless`), `monitor`, `resolution`, `vsync` (sí), `fpsLimit` (0 = sin límite; por omisión 0 con vsync), `uiScale` (0.75 a 2.0, por omisión según el DPI) y `quality` (`low` | `medium` | `high` | `ultra` más ajustes individuales: sombras, distancia de dibujo, densidad de vegetación y suavizado de bordes MSAA 2x/4x/8x; ver D-307).
 - `audio`: volúmenes `master`, `effects`, `ambient`, `music` y `ui` (0 a 100).
 - `input`: asignación de teclas por acción (`"camera.forward": "W"`…), velocidades de la cámara (desplazamiento, rotación y zoom), invertir zoom y desplazamiento por el borde de la pantalla.
 - `ui`: tipografía de la interfaz (una de las incluidas en `data/fonts/`; por omisión la primera), disposición de las ventanas del juego (posición, tamaño, anclaje y minimizada o no), mostrar tooltips y retraso de los tooltips.

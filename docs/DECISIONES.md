@@ -125,3 +125,45 @@ SDL toma la posición del cursor real para los clics, no la del mensaje de Windo
 
 **D-214. Las acciones de pausa, velocidades y guardado rápido ya son reasignables.**
 Se pueden reasignar aunque todavía no hacen nada. Pausa y velocidades se aplican desde la fase 8, y el guardado rápido desde la fase 8 o 9. La captura de pantalla (F12) queda pendiente sin fase asignada.
+
+## Fase 3: render 3D base (2026-09-26)
+
+**D-301. Modelos de prueba generados con Python.**
+`tools/models/make_test_models.py` genera `data/models/test/*.glb` (árbol, casa con textura de entramado y roca). Usa solo la biblioteca estándar de Python y el resultado es idéntico en cada ejecución. Los `.glb` se guardan en el repositorio. Sirven para probar el render hasta que la fase 4 produzca los modelos reales con Blender.
+
+**D-302. Solo `.glb` autocontenidos, y solo desde la carpeta del juego.**
+El cargador acepta únicamente glTF binario con todos sus datos en el propio archivo: sin URIs externas ni `data:`. Valida tamaños, cantidades, índices y que las posiciones sean números finitos. Como stb_image, igual que stb_truetype (D-205), no está pensado para archivos maliciosos, por ahora los modelos solo se cargan de `data/`. Los mods podrán aportar modelos cuando se evalúe un decodificador endurecido (fase 7).
+
+**D-303. Instancias en un búfer de almacenamiento.**
+Todas las instancias viven en un búfer de la GPU que solo se vuelve a subir cuando la escena cambia. Cada cuadro se sube únicamente la lista de índices visibles, 4 bytes por objeto, para la vista y para cada cascada de sombra. El recorte por frustum se hace en la CPU: con 50 000 objetos y tres cascadas tarda alrededor de 1 ms.
+
+**D-304. Profundidad invertida (reversed Z) con 32 bits en coma flotante.**
+Da precisión uniforme en mapas de varios kilómetros, sin parpadeo entre superficies lejanas.
+
+**D-305. Sombras en cascada por nivel de calidad.**
+Desactivadas; 1 cascada de 1024 px hasta 120 m; 2 de 2048 px hasta 250 m; 3 de 2048 px hasta 400 m. Cada cascada se ajusta a una esfera alrededor de su tramo de la vista, de tamaño redondeado y con el centro alineado a los texeles, para que los bordes no titilen al mover la cámara. Filtrado PCF de 3 × 3, con desplazamiento por la normal y sesgo de profundidad.
+
+**D-306. Sin sincronización vertical se usa el modo de presentación inmediato.**
+Con "mailbox", Direct3D 12 seguía esperando al refresco del monitor: la medición se quedaba clavada en 100 FPS en un monitor de 100 Hz. Con el modo inmediato la misma escena da unos 600 FPS. Puede haber tearing, que es lo esperable al desactivar la sincronización vertical. "Mailbox" queda como respaldo si el inmediato no está disponible. Se verificó en Windows 11 build 26200.
+
+**D-307. El suavizado de bordes ahora es MSAA 2x, 4x u 8x.**
+Se reemplazó la opción FXAA, que habría requerido un pase de posprocesado extra, por niveles de MSAA, que la API de SDL resuelve sola. El valor guardado 1 pasa a significar MSAA 2x. El preset "Alta" usa 4x y "Ultra" 8x. Si la GPU no admite un nivel, se baja al siguiente disponible.
+
+**D-308. Iluminación en espacio lineal.**
+El swapchain no es sRGB, así que el sombreador convierte el resultado a gamma al final. Las texturas de los modelos se suben como sRGB, con mipmaps. La iluminación es estilizada: sol con sombra, luz ambiental de cielo y suelo, y niebla que se funde con el horizonte del cielo.
+
+**D-309. Escena de prueba y fondo del menú.**
+La escena de prueba tiene 50 000 objetos en 2 km × 2 km: 42 000 árboles, 3000 casas en aldeas y 5000 rocas. También sirve de fondo del menú principal, con la cámara girando despacio detrás de un velo oscuro. El botón "Escena de prueba 3D" del menú es provisional: se quita cuando exista la partida de un jugador (fase 8).
+
+**D-310. Panel de estadísticas con Dear ImGui.**
+Se abre con F3 (reasignable). Sus textos también están traducidos. Se desactivaron `imgui.ini` y el registro de ImGui para que no escriba archivos. Incluye una "vista de estrés" de depuración que aleja la cámara hasta ver toda la escena, para medir el peor caso.
+
+**D-311. Rendimiento medido en el equipo de desarrollo.**
+`release`, ventana de 1600 × 900, calidad Alta (MSAA 4x, 2 cascadas) y sin sincronización vertical:
+- Vista normal: unos 600 FPS.
+- Vista de estrés con 49 025 objetos en pantalla (2,35 M triángulos): unos 525 FPS.
+
+El criterio de la fase era 60 FPS o más con 50 000 instancias. Falta medir en una PC de gama media de referencia.
+
+**D-312. Parámetros de la cámara.**
+Distancia de 8 a 260 m, con una inclinación que pasa de 28° (cerca) a 68° (lejos). El desplazamiento es proporcional a la distancia, con suavizado exponencial independiente de los FPS. Gira con Q/E o arrastrando con el botón central, y se desplaza al acercar el puntero a 3 px del borde. Los valores están en `src/game/camera.cpp` y se ajustarán según tu opinión.

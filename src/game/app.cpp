@@ -35,6 +35,12 @@ constexpr std::int32_t kMinimizedWaitMs = 50;
 
 constexpr int kAtlasSize = 2048;
 
+// Objects in the renderer test scene (phase 3 acceptance: 50 000).
+constexpr std::size_t kTestSceneInstances = 50'000;
+
+// Pixels from the window edge where edge scrolling starts.
+constexpr float kEdgeScrollPx = 3.0f;
+
 std::string_view builtin_base_language() {
     return {reinterpret_cast<const char*>(kLangEn), kLangEn_size};
 }
@@ -154,6 +160,22 @@ bool App::init() {
         return false;
     }
 
+    // The 3D scene is optional: without it the menus still work.
+    if (scene_.create(gpu_, settings_->settings().graphics)) {
+        scene_ok_ = test_scene_.load(scene_, paths_->game_data_dir() / "models" / "test", kTestSceneInstances);
+    }
+    if (!scene_ok_) {
+        log::warn("scene: 3D view unavailable, menus only");
+    }
+    camera_.set_bounds(-kTestSceneHalfSize, -kTestSceneHalfSize, kTestSceneHalfSize, kTestSceneHalfSize);
+    camera_.set_target({0.0f, 0.0f, 0.0f});
+    camera_.set_yaw(0.6f);
+    camera_.set_distance(80.0f);
+    camera_.snap();
+    if (!debug_.create(window_.sdl(), gpu_)) {
+        log::warn("debug overlay unavailable");
+    }
+
     host_ = std::make_unique<UiHost>(*this);
     if (report.quarantined) {
         host_->add_notice(tr("notice.settings.quarantined", text::path_to_utf8(report.quarantine_path.filename())));
@@ -172,6 +194,11 @@ void App::shutdown() {
         save_settings_if_due(true);
     }
     host_.reset();
+    if (gpu_.device() != nullptr) {
+        (void)SDL_WaitForGPUIdle(gpu_.device());
+    }
+    debug_.destroy();
+    scene_.destroy();
     ui_renderer_.destroy();
     gpu_.destroy();
     window_.destroy();
@@ -204,6 +231,12 @@ bool App::apply_display(const DisplaySettings& display) {
 
 void App::apply_vsync() {
     (void)gpu_.set_vsync(settings_->settings().display.vsync);
+}
+
+void App::apply_graphics() {
+    if (scene_ok_) {
+        (void)scene_.apply_settings(settings_->settings().graphics);
+    }
 }
 
 void App::apply_language() {
@@ -286,6 +319,7 @@ void App::cycle_window_mode() {
 
 void App::handle_event(const SDL_Event& event) {
     const float density = window_.sdl() != nullptr ? SDL_GetWindowPixelDensity(window_.sdl()) : 1.0f;
+    debug_.process_event(event);
     switch (event.type) {
         case SDL_EVENT_QUIT:
             running_ = false;
@@ -293,14 +327,23 @@ void App::handle_event(const SDL_Event& event) {
         case SDL_EVENT_MOUSE_MOTION:
             input_.mouse_x = event.motion.x * density;
             input_.mouse_y = event.motion.y * density;
+            if (middle_down_) {
+                camera_drag_px_ += event.motion.xrel * density;
+            }
             return;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            if (event.button.button == SDL_BUTTON_MIDDLE) {
+                middle_down_ = true;
+            }
             if (event.button.button == SDL_BUTTON_LEFT) {
                 input_.mouse_down = true;
                 input_.mouse_pressed = true;
             }
             return;
         case SDL_EVENT_MOUSE_BUTTON_UP:
+            if (event.button.button == SDL_BUTTON_MIDDLE) {
+                middle_down_ = false;
+            }
             if (event.button.button == SDL_BUTTON_LEFT) {
                 input_.mouse_down = false;
                 input_.mouse_released = true;
@@ -308,6 +351,7 @@ void App::handle_event(const SDL_Event& event) {
             return;
         case SDL_EVENT_MOUSE_WHEEL:
             input_.wheel += event.wheel.y;
+            camera_wheel_ += event.wheel.y;
             return;
         case SDL_EVENT_WINDOW_MOUSE_LEAVE:
             input_.mouse_x = -1.0f;
@@ -328,6 +372,8 @@ void App::handle_event(const SDL_Event& event) {
                 }
             } else if (settings_->settings().input.bindings.matches(Action::UiToggleFullscreen, event.key.scancode)) {
                 cycle_window_mode();
+            } else if (settings_->settings().input.bindings.matches(Action::UiDebugOverlay, event.key.scancode)) {
+                debug_.toggle();
             }
             return;
         }
@@ -352,12 +398,111 @@ void App::save_settings_if_due(bool force) {
     (void)settings_->save();
 }
 
-void App::render_ui() {
+void App::update_camera(float dt) {
+    const UiHost::SceneMode mode = host_->scene_mode();
+    CameraInput in;
+    if (mode == UiHost::SceneMode::TestScene) {
+        const InputSettings& s = settings_->settings().input;
+        const bool* keys = SDL_GetKeyboardState(nullptr);
+        const auto held = [&](Action a) {
+            for (std::size_t slot = 0; slot < kKeysPerAction; ++slot) {
+                const SDL_Scancode k = s.bindings.key(a, slot);
+                if (k != SDL_SCANCODE_UNKNOWN && keys != nullptr && keys[k]) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        const bool focused = (SDL_GetWindowFlags(window_.sdl()) & SDL_WINDOW_INPUT_FOCUS) != 0;
+        if (focused) {
+            in.move_forward = (held(Action::CameraForward) ? 1.0f : 0.0f) - (held(Action::CameraBack) ? 1.0f : 0.0f);
+            in.move_right = (held(Action::CameraRight) ? 1.0f : 0.0f) - (held(Action::CameraLeft) ? 1.0f : 0.0f);
+            in.rotate = (held(Action::CameraRotateRight) ? 1.0f : 0.0f) - (held(Action::CameraRotateLeft) ? 1.0f : 0.0f);
+            float zoom_keys = (held(Action::CameraZoomIn) ? 1.0f : 0.0f) - (held(Action::CameraZoomOut) ? 1.0f : 0.0f);
+            in.zoom_steps = (camera_wheel_ + zoom_keys * dt * 8.0f) * (s.invert_zoom ? -1.0f : 1.0f);
+            in.drag_rotate_px = camera_drag_px_;
+            // Edge scrolling, only while the pointer is inside the window.
+            int w = 0;
+            int h = 0;
+            SDL_GetWindowSizeInPixels(window_.sdl(), &w, &h);
+            const float mx = input_.mouse_x;
+            const float my = input_.mouse_y;
+            if (s.edge_scroll && mx >= 0.0f && my >= 0.0f && !middle_down_) {
+                if (mx <= kEdgeScrollPx) in.move_right -= 1.0f;
+                if (mx >= static_cast<float>(w) - 1.0f - kEdgeScrollPx) in.move_right += 1.0f;
+                if (my <= kEdgeScrollPx) in.move_forward += 1.0f;
+                if (my >= static_cast<float>(h) - 1.0f - kEdgeScrollPx) in.move_forward -= 1.0f;
+            }
+            in.move_forward = std::clamp(in.move_forward, -1.0f, 1.0f);
+            in.move_right = std::clamp(in.move_right, -1.0f, 1.0f);
+        }
+    } else if (mode == UiHost::SceneMode::MenuBackground) {
+        in.rotate = 0.025f;  // A slow turn behind the menus.
+    }
+    camera_wheel_ = 0.0f;
+    camera_drag_px_ = 0.0f;
+    // Debug stress view: the whole test scene on screen at once.
+    const bool stress = mode == UiHost::SceneMode::TestScene && debug_.stress_view();
+    if (stress != stress_view_active_) {
+        stress_view_active_ = stress;
+        camera_.set_max_distance_override(stress ? 2600.0f : 0.0f);
+        camera_.set_distance(stress ? 2600.0f : 120.0f);
+    }
+    const InputSettings& s = settings_->settings().input;
+    const CameraSpeeds speeds{static_cast<float>(s.camera_pan_speed), static_cast<float>(s.camera_rotate_speed),
+                              static_cast<float>(s.camera_zoom_speed)};
+    camera_.update(in, mode == UiHost::SceneMode::MenuBackground ? CameraSpeeds{} : speeds, dt);
+}
+
+void App::update_frame_stats(float dt) {
+    debug_info_.frame_ms = dt * 1000.0f;
+    fps_window_s_ += dt;
+    ++fps_window_frames_;
+    if (fps_window_s_ >= 0.5f) {
+        debug_info_.fps = static_cast<float>(fps_window_frames_) / fps_window_s_;
+        fps_window_s_ = 0.0f;
+        fps_window_frames_ = 0;
+    }
+    // In the test scene, log the average every few seconds so performance
+    // can be checked without watching the screen.
+    if (host_->scene_mode() == UiHost::SceneMode::TestScene) {
+        perf_log_s_ += dt;
+        ++perf_log_frames_;
+        if (perf_log_s_ >= 5.0f) {
+            const render::RenderStats& st = scene_.stats();
+            log::info("perf: {:.1f} FPS average, {} of {} instances drawn, {} draw calls, {:.2f} M triangles, cull {:.2f} ms",
+                      static_cast<float>(perf_log_frames_) / perf_log_s_, st.instances_drawn, st.instances_total,
+                      st.draw_calls, static_cast<double>(st.triangles) / 1e6, st.cull_ms);
+            perf_log_s_ = 0.0f;
+            perf_log_frames_ = 0;
+        }
+    } else {
+        perf_log_s_ = 0.0f;
+        perf_log_frames_ = 0;
+    }
+}
+
+void App::render_frame(float dt) {
     GpuFrame frame;
     if (!gpu_.begin_frame(frame)) {
         return;
     }
     if (frame.target != nullptr) {
+        // 3D scene first, straight into the swapchain.
+        bool scene_drawn = false;
+        if (scene_ok_ && host_->scene_mode() != UiHost::SceneMode::None) {
+            update_camera(dt);
+            render::SceneView view;
+            view.view = camera_.view();
+            view.eye = camera_.eye();
+            view.fov_y = math::radians(Camera::kFovY);
+            view.near_z = camera_.near_z();
+            view.aspect = static_cast<float>(frame.width) / static_cast<float>(std::max(1u, frame.height));
+            view.draw_distance_override = stress_view_active_ ? 5000.0f : 0.0f;
+            scene_drawn = scene_.render(frame, view, lighting_);
+        }
+
+        // Interface on top.
         const Settings& s = settings_->settings();
         ui_.set_tooltips(s.ui.show_tooltips, s.ui.tooltip_delay_ms);
         ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
@@ -365,19 +510,33 @@ void App::render_ui() {
         host_->frame(ui_);
         ui_.end_frame();
 
-        if (ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_)) {
-            SDL_GPUColorTargetInfo target{};
-            target.texture = frame.target;
-            const ui::Color bg = ui_.theme().background;
-            target.clear_color = SDL_FColor{static_cast<float>(bg.r) / 255.0f, static_cast<float>(bg.g) / 255.0f,
-                                            static_cast<float>(bg.b) / 255.0f, 1.0f};
-            target.load_op = SDL_GPU_LOADOP_CLEAR;
-            target.store_op = SDL_GPU_STOREOP_STORE;
-            SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(frame.cmd, &target, 1, nullptr);
-            if (pass != nullptr) {
+        debug_info_.backend = gpu_.driver_name();
+        debug_info_.width = frame.width;
+        debug_info_.height = frame.height;
+        debug_info_.ui_scale = ui_scale();
+        debug_info_.scene_drawn = scene_drawn;
+        debug_info_.scene = scene_.stats();
+        debug_info_.camera_distance = camera_.distance();
+        debug_info_.camera_x = camera_.target().x;
+        debug_info_.camera_z = camera_.target().z;
+        debug_.build(debug_info_);
+
+        const bool uploaded = ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_);
+        debug_.prepare(frame.cmd);
+        SDL_GPUColorTargetInfo target{};
+        target.texture = frame.target;
+        const ui::Color bg = ui_.theme().background;
+        target.clear_color = SDL_FColor{static_cast<float>(bg.r) / 255.0f, static_cast<float>(bg.g) / 255.0f,
+                                        static_cast<float>(bg.b) / 255.0f, 1.0f};
+        target.load_op = scene_drawn ? SDL_GPU_LOADOP_LOAD : SDL_GPU_LOADOP_CLEAR;
+        target.store_op = SDL_GPU_STOREOP_STORE;
+        SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(frame.cmd, &target, 1, nullptr);
+        if (pass != nullptr) {
+            if (uploaded) {
                 ui_renderer_.draw(frame.cmd, pass, ui_.draw());
-                SDL_EndGPURenderPass(pass);
             }
+            debug_.render(frame.cmd, pass);
+            SDL_EndGPURenderPass(pass);
         }
     }
     (void)gpu_.end_frame(frame);
@@ -408,8 +567,10 @@ void App::frame() {
         // The deterministic simulation plugs in here (phase 5).
     }
 
+    const float dt = static_cast<float>(elapsed) * 1e-9f;
+    update_frame_stats(dt);
     if (!window_.minimized()) {
-        render_ui();
+        render_frame(dt);
     }
     save_settings_if_due(false);
 

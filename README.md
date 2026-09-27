@@ -2,7 +2,7 @@
 
 Juego 3D de construcción y supervivencia de pueblos medievales con multijugador de 1 a 12 jugadores. Motor propio en C++20 sobre SDL3. El diseño completo está en [ESPECIFICACION_SalvaCiudad.md](ESPECIFICACION_SalvaCiudad.md) y las decisiones en [docs/DECISIONES.md](docs/DECISIONES.md).
 
-**Estado:** fase 2 de 21 (idiomas, texto e interfaz base). El juego abre el menú principal y la pantalla de Configuración completa, en español o inglés. Las opciones de partida todavía muestran "Próximamente".
+**Estado:** fase 3 de 21 (render 3D base). El menú principal tiene de fondo una escena 3D, y la "Escena de prueba 3D" permite recorrer 50 000 objetos con la cámara del juego. Las opciones de partida todavía muestran "Próximamente".
 
 Requisito para jugar: una tarjeta gráfica compatible con Direct3D 12 (ver D-201).
 
@@ -35,7 +35,11 @@ Todas se cambian en Configuración → Controles, salvo Alt+Enter.
 |---|---|
 | F11 | Cambia en ciclo: ventana, ventana sin bordes, pantalla completa |
 | Alt+Enter | Alterna entre ventana y el último modo de pantalla completa |
-| Esc | Cierra un diálogo o vuelve desde Configuración |
+| Esc | Cierra un diálogo, o vuelve al menú desde Configuración o la escena de prueba |
+| F3 | Panel de estadísticas (FPS, objetos dibujados, sombras…) |
+| W A S D o flechas | Mover la cámara |
+| Q / E, o arrastrar con el botón central | Girar la cámara |
+| Rueda del ratón, o + / - | Acercar y alejar |
 
 ## Idiomas
 
@@ -72,6 +76,16 @@ Se completa en cada fase.
 - [ ] Configuración → Juego → "Abrir carpeta" abre la carpeta de datos.
 - [ ] Todos los ajustes se conservan al cerrar y volver a abrir el juego.
 - [ ] Borrar `data\lang` del juego instalado: el juego arranca en inglés (idioma incrustado).
+
+### Fase 3
+
+- [ ] El menú principal muestra detrás una escena 3D que gira despacio, y los botones se leen bien.
+- [ ] "Escena de prueba 3D": la cámara se mueve con WASD y las flechas, gira con Q/E y con el botón central, acerca y aleja con la rueda, y se desplaza al llevar el puntero al borde. **¿Se siente como la de Farthest Frontier?** Anota lo que cambiarías: velocidad, inclinación o suavidad.
+- [ ] Al acercarse, la cámara baja hacia el horizonte; al alejarse, mira más desde arriba.
+- [ ] Las casas, los árboles y las rocas proyectan sombras, y los bordes de las sombras no titilan al mover la cámara.
+- [ ] F3 muestra las estadísticas. Con la sincronización vertical desactivada, los FPS pasan de 60. Activar "Vista de estrés" (casi los 50 000 objetos en pantalla) y comprobar que siguen por encima de 60.
+- [ ] Configuración → Gráficos: cambiar la calidad de Baja a Ultra; las sombras, la distancia de dibujo y el suavizado cambian al instante.
+- [ ] Redimensionar la ventana y cambiar a pantalla completa con la escena abierta: no se deforma ni queda en negro.
 
 ## Licencia
 

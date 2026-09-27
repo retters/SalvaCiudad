@@ -27,6 +27,7 @@ constexpr ActionInfo kActions[] = {
     {Action::GameQuickLoad, "game.quickLoad", ActionGroup::Game, {SDL_SCANCODE_F9, kNone}},
     {Action::UiToggleFullscreen, "ui.toggleFullscreen", ActionGroup::Interface, {SDL_SCANCODE_F11, kNone}},
     {Action::UiScreenshot, "ui.screenshot", ActionGroup::Interface, {SDL_SCANCODE_F12, kNone}},
+    {Action::UiDebugOverlay, "ui.debugOverlay", ActionGroup::Interface, {SDL_SCANCODE_F3, kNone}},
 };
 static_assert(std::size(kActions) == kActionCount, "every action needs an entry");
 

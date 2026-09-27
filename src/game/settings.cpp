@@ -53,7 +53,7 @@ struct PresetLevels {
 constexpr PresetLevels kPresets[] = {
     {QualityPreset::Low, 0, 0, 0, 0},
     {QualityPreset::Medium, 1, 1, 1, 1},
-    {QualityPreset::High, 2, 2, 2, 1},
+    {QualityPreset::High, 2, 2, 2, 2},
     {QualityPreset::Ultra, 3, 3, 3, 3},
 };
 }  // namespace

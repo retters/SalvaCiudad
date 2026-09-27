@@ -29,6 +29,7 @@ public:
     // system refused; the previous state is then restored.
     virtual bool apply_display(const DisplaySettings& display) = 0;
     virtual void apply_vsync() = 0;
+    virtual void apply_graphics() = 0;
     virtual void apply_language() = 0;
     virtual void apply_font() = 0;
 
@@ -36,6 +37,9 @@ public:
     // Exclusive fullscreen resolutions of a monitor, largest first.
     [[nodiscard]] virtual std::vector<Resolution> fullscreen_resolutions(const std::string& monitor) = 0;
     [[nodiscard]] virtual const ui::FontLibrary& fonts() const = 0;
+
+    // True when the 3D test scene loaded and can be shown.
+    [[nodiscard]] virtual bool scene_available() const = 0;
 
     virtual void open_data_folder() = 0;
     virtual void request_quit() = 0;

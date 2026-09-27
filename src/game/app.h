@@ -10,13 +10,17 @@
 
 #include <SDL3/SDL_events.h>
 
+#include "game/camera.h"
 #include "game/game_clock.h"
 #include "game/services.h"
 #include "game/settings.h"
+#include "game/test_scene.h"
 #include "game/ui_host.h"
 #include "platform/paths.h"
 #include "platform/window.h"
+#include "render/debug_overlay.h"
 #include "render/gpu_device.h"
+#include "render/scene_renderer.h"
 #include "render/ui_renderer.h"
 #include "ui/context.h"
 #include "ui/font_library.h"
@@ -39,6 +43,8 @@ public:
     void settings_changed() override;
     bool apply_display(const DisplaySettings& display) override;
     void apply_vsync() override;
+    void apply_graphics() override;
+    bool scene_available() const override { return scene_ok_; }
     void apply_language() override;
     void apply_font() override;
     std::vector<std::string> monitor_names() override;
@@ -54,7 +60,9 @@ private:
     void fatal_error(const char* text_key);
     void handle_event(const SDL_Event& event);
     void frame();
-    void render_ui();
+    void render_frame(float dt);
+    void update_camera(float dt);
+    void update_frame_stats(float dt);
     void cycle_window_mode();
     void save_settings_if_due(bool force);
     [[nodiscard]] float ui_scale() const;
@@ -70,6 +78,21 @@ private:
     ui::Context ui_;
     std::unique_ptr<UiHost> host_;
     ui::Input input_;
+    render::SceneRenderer scene_;
+    render::Lighting lighting_;
+    TestScene test_scene_;
+    bool scene_ok_ = false;
+    Camera camera_;
+    DebugOverlay debug_;
+    DebugInfo debug_info_;
+    float camera_wheel_ = 0.0f;   // Wheel notches since the last camera update.
+    float camera_drag_px_ = 0.0f;  // Middle-button drag since the last update.
+    bool middle_down_ = false;
+    bool stress_view_active_ = false;
+    float fps_window_s_ = 0.0f;
+    int fps_window_frames_ = 0;
+    float perf_log_s_ = 0.0f;
+    int perf_log_frames_ = 0;
     GameClock clock_;
     bool running_ = true;
     bool sdl_ready_ = false;

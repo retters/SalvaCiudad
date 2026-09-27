@@ -47,6 +47,13 @@ bool UiHost::wants_keyboard() const {
     return screen_ == Screen::Settings && settings_screen_.capturing_key();
 }
 
+UiHost::SceneMode UiHost::scene_mode() const {
+    if (!services_.scene_available()) {
+        return SceneMode::None;
+    }
+    return screen_ == Screen::TestScene ? SceneMode::TestScene : SceneMode::MenuBackground;
+}
+
 bool UiHost::modal_open() const {
     return !messages_.empty() || pending_display_.has_value();
 }
@@ -73,9 +80,18 @@ void UiHost::change_display(const DisplaySettings& wanted) {
 
 void UiHost::frame(ui::Context& ctx) {
     const bool modal = modal_open();
-    ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().background);
+    // Behind the menus, the 3D scene shows through a dark veil.
+    const SceneMode mode = scene_mode();
+    if (mode == SceneMode::None) {
+        ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().background);
+    } else if (mode == SceneMode::MenuBackground) {
+        ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().background.with_alpha(0.55f));
+    }
 
-    if (screen_ == Screen::Settings) {
+    if (screen_ == Screen::TestScene) {
+        ctx.set_input_blocked(modal);
+        test_scene_hud(ctx);
+    } else if (screen_ == Screen::Settings) {
         if (!settings_screen_.frame(ctx, *this, modal)) {
             screen_ = Screen::MainMenu;
         }
@@ -158,6 +174,7 @@ void UiHost::main_menu(ui::Context& ctx) {
         {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), false},
         {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), false},
         {"mods", tr("menu.main.mods"), tr("menu.main.mods.tooltip"), false},
+        {"testScene", tr("menu.main.testScene"), tr("menu.main.testScene.tooltip"), services_.scene_available()},
         {"settings", tr("menu.main.settings"), tr("menu.main.settings.tooltip"), true},
         {"quit", tr("menu.main.quit"), tr("menu.main.quit.tooltip"), true},
     };
@@ -213,6 +230,8 @@ void UiHost::main_menu(ui::Context& ctx) {
         if (ctx.button(ctx.id(e.id), r, e.label, e.tooltip)) {
             if (!e.available) {
                 show_message(tr("dialog.comingSoon.title"), tr("dialog.comingSoon.body", e.label));
+            } else if (std::string_view(e.id) == "testScene") {
+                screen_ = Screen::TestScene;
             } else if (std::string_view(e.id) == "settings") {
                 screen_ = Screen::Settings;
             } else if (std::string_view(e.id) == "quit") {
@@ -231,6 +250,20 @@ void UiHost::main_menu(ui::Context& ctx) {
     if (version_in_corner) {
         ctx.label({margin, ctx.height() - margin - version_h, ctx.width() - 2 * margin, version_h}, version, small,
                   ctx.theme().text_dim, ui::Align::Right);
+    }
+}
+
+void UiHost::test_scene_hud(ui::Context& ctx) {
+    const float pad = ctx.s(12.0f);
+    const ui::TextStyle st = ctx.style(ctx.theme().body);
+    const float w = std::min(ctx.s(560.0f), ctx.width() - 2 * pad);
+    const std::string text = tr("testScene.hint");
+    const float h = ctx.paragraph_height(w - 2 * pad, text, st);
+    const ui::Rect box{pad, pad, w, h + 2 * pad};
+    ctx.draw().rect(box, ctx.theme().tooltip.with_alpha(0.8f));
+    ctx.paragraph(box.inset(pad), text, st, ctx.theme().text);
+    if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
+        screen_ = Screen::MainMenu;
     }
 }
 
