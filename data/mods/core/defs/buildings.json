@@ -6,7 +6,7 @@
       "id": "core:town_center",
       "name": "building.townCenter",
       "kind": "townCenter",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/town_center.glb",
       "size": [
         8,
         8
@@ -46,7 +46,7 @@
       "id": "core:house",
       "name": "building.house",
       "kind": "house",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/house.glb",
       "size": [
         6,
         5
@@ -100,7 +100,7 @@
       "id": "core:storehouse",
       "name": "building.storehouse",
       "kind": "storage",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/storehouse.glb",
       "size": [
         7,
         6
@@ -123,7 +123,7 @@
       "id": "core:woodcutter",
       "name": "building.woodcutter",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/woodcutter.glb",
       "size": [
         5,
         5
@@ -148,7 +148,7 @@
       "id": "core:forager",
       "name": "building.forager",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/forager.glb",
       "size": [
         5,
         5
@@ -176,7 +176,7 @@
       "id": "core:stonecutter",
       "name": "building.stonecutter",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/stonecutter.glb",
       "size": [
         5,
         5
@@ -201,7 +201,7 @@
       "id": "core:firewood_splitter",
       "name": "building.firewoodSplitter",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/firewood_splitter.glb",
       "size": [
         5,
         4
@@ -227,7 +227,7 @@
       "id": "core:farm",
       "name": "building.farm",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/farm.glb",
       "size": [
         6,
         5
@@ -251,7 +251,7 @@
       "id": "core:orchard",
       "name": "building.orchard",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/orchard.glb",
       "size": [
         5,
         5
@@ -282,7 +282,7 @@
       "id": "core:hunter",
       "name": "building.hunter",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/hunter.glb",
       "size": [
         5,
         4
@@ -305,7 +305,7 @@
       "id": "core:fisher",
       "name": "building.fisher",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/fisher.glb",
       "size": [
         5,
         4
@@ -327,7 +327,7 @@
       "id": "core:herbalist",
       "name": "building.herbalist",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/herbalist.glb",
       "size": [
         4,
         4
@@ -353,7 +353,7 @@
       "id": "core:granary",
       "name": "building.granary",
       "kind": "storage",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/granary.glb",
       "size": [
         8,
         7
@@ -374,7 +374,7 @@
       "id": "core:compost_yard",
       "name": "building.compostYard",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/compost_yard.glb",
       "size": [
         5,
         5
@@ -399,7 +399,7 @@
       "id": "core:mill",
       "name": "building.mill",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/mill.glb",
       "size": [
         5,
         5
@@ -429,7 +429,7 @@
       "id": "core:bakery",
       "name": "building.bakery",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/bakery.glb",
       "size": [
         5,
         5
@@ -459,7 +459,7 @@
       "id": "core:brewery",
       "name": "building.brewery",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/brewery.glb",
       "size": [
         5,
         5
@@ -489,7 +489,7 @@
       "id": "core:tannery",
       "name": "building.tannery",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/tannery.glb",
       "size": [
         5,
         5
@@ -518,7 +518,7 @@
       "id": "core:weaver",
       "name": "building.weaver",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/weaver.glb",
       "size": [
         5,
         5
@@ -546,7 +546,7 @@
       "id": "core:tailor",
       "name": "building.tailor",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/tailor.glb",
       "size": [
         5,
         5
@@ -575,7 +575,7 @@
       "id": "core:cobbler",
       "name": "building.cobbler",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/cobbler.glb",
       "size": [
         5,
         5
@@ -603,7 +603,7 @@
       "id": "core:clay_pit",
       "name": "building.clayPit",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/clay_pit.glb",
       "size": [
         5,
         5
@@ -632,7 +632,7 @@
       "id": "core:kiln",
       "name": "building.kiln",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/kiln.glb",
       "size": [
         5,
         5
@@ -664,7 +664,7 @@
       "id": "core:charcoal_kiln",
       "name": "building.charcoalKiln",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/charcoal_kiln.glb",
       "size": [
         5,
         5
@@ -695,7 +695,7 @@
       "id": "core:iron_mine",
       "name": "building.ironMine",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/iron_mine.glb",
       "size": [
         5,
         4
@@ -723,7 +723,7 @@
       "id": "core:smelter",
       "name": "building.smelter",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/smelter.glb",
       "size": [
         5,
         5
@@ -754,7 +754,7 @@
       "id": "core:blacksmith",
       "name": "building.blacksmith",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/blacksmith.glb",
       "size": [
         5,
         5
@@ -784,7 +784,7 @@
       "id": "core:smokehouse",
       "name": "building.smokehouse",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/smokehouse.glb",
       "size": [
         5,
         5
@@ -814,7 +814,7 @@
       "id": "core:well",
       "name": "building.well",
       "kind": "decoration",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/well.glb",
       "size": [
         2,
         2
@@ -834,7 +834,7 @@
       "id": "core:chapel",
       "name": "building.chapel",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/chapel.glb",
       "size": [
         6,
         8
@@ -855,7 +855,7 @@
       "id": "core:tavern",
       "name": "building.tavern",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/tavern.glb",
       "size": [
         6,
         6
@@ -883,7 +883,7 @@
       "id": "core:market",
       "name": "building.market",
       "kind": "market",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/market.glb",
       "size": [
         8,
         6
@@ -909,7 +909,7 @@
       "id": "core:garden",
       "name": "building.garden",
       "kind": "decoration",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/garden.glb",
       "size": [
         3,
         3
@@ -927,7 +927,7 @@
       "id": "core:statue",
       "name": "building.statue",
       "kind": "decoration",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/statue.glb",
       "size": [
         3,
         3
@@ -945,7 +945,7 @@
       "id": "core:healer",
       "name": "building.healer",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/healer.glb",
       "size": [
         4,
         4
@@ -971,7 +971,7 @@
       "id": "core:physician",
       "name": "building.physician",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/physician.glb",
       "size": [
         6,
         6
@@ -999,7 +999,7 @@
       "id": "core:bathhouse",
       "name": "building.bathhouse",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/bathhouse.glb",
       "size": [
         6,
         5
@@ -1028,7 +1028,7 @@
       "id": "core:trading_post",
       "name": "building.tradingPost",
       "kind": "storage",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/trading_post.glb",
       "size": [
         7,
         7
@@ -1054,7 +1054,7 @@
       "id": "core:palisade",
       "name": "building.palisade",
       "kind": "defense",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/palisade.glb",
       "size": [
         2,
         2
@@ -1070,7 +1070,7 @@
       "id": "core:stone_wall",
       "name": "building.stoneWall",
       "kind": "defense",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/stone_wall.glb",
       "size": [
         2,
         2
@@ -1088,7 +1088,7 @@
       "id": "core:gate",
       "name": "building.gate",
       "kind": "defense",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/gate.glb",
       "size": [
         4,
         2
@@ -1105,7 +1105,7 @@
       "id": "core:watchtower",
       "name": "building.watchtower",
       "kind": "defense",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/watchtower.glb",
       "size": [
         3,
         3
@@ -1125,7 +1125,7 @@
       "id": "core:trap",
       "name": "building.trap",
       "kind": "defense",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/trap.glb",
       "size": [
         2,
         2
@@ -1143,7 +1143,7 @@
       "id": "core:bowyer",
       "name": "building.bowyer",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/bowyer.glb",
       "size": [
         5,
         5
@@ -1170,7 +1170,7 @@
       "id": "core:armory",
       "name": "building.armory",
       "kind": "workplace",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/armory.glb",
       "size": [
         5,
         5
@@ -1199,7 +1199,7 @@
       "id": "core:barracks",
       "name": "building.barracks",
       "kind": "military",
-      "model": "models/props/house_small.glb",
+      "model": "models/buildings/barracks.glb",
       "size": [
         8,
         6

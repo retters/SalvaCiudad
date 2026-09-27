@@ -14,7 +14,7 @@ Se separan en dos grupos, porque se implementan distinto:
 ## Solo aspecto
 
 - Oclusión ambiental en pantalla (oscurecer esquinas y bases de los objetos), para acercarse a las imágenes de referencia de la fase 6c.
-- Nubes que se mueven lentamente con el viento.
+- ~~Nubes que se mueven lentamente con el viento.~~ Hecho en la fase 18 (D-1805).
 - Balanceo leve de las copas de los árboles con el viento.
 - Colores de los árboles y del pasto por estación (se hace en la fase 10 sobre los colores actuales).
 
@@ -25,6 +25,6 @@ Se separan en dos grupos, porque se implementan distinto:
 ## Estaciones (anotado en la fase 10)
 
 - Árboles de hoja caduca sin hojas en invierno (modelos aparte), y el color de otoño solo en la copa, no en el tronco (colores por material en lugar del tinte de la instancia).
-- Lagos y ríos helados en invierno duro.
+- ~~Lagos y ríos helados en invierno duro.~~ Hecho en la fase 18: el agua se congela bajo −3 °C.
 - Huellas o caminos marcados en la nieve.
-- Humo de chimenea en las casas con fuego.
+- ~~Humo de chimenea en las casas con fuego.~~ Hecho en la fase 18 (partículas).

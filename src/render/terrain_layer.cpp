@@ -759,14 +759,18 @@ void TerrainLayer::draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass
     set4(wu.sun_direction, look.sun_direction, 0.0f);
     set4(wu.sun_color, look.sun_color, 1.0f);
     set4(wu.fog_color, look.fog_color, look.fog_density);
-    set4(wu.camera_position, look.eye, look.time);
-    // Turquoise, as in the low-poly reference (linear colors).
-    set4(wu.shallow_color, {0.12f, 0.66f, 0.70f}, 1.0f);
-    set4(wu.deep_color, {0.02f, 0.28f, 0.46f}, 1.0f);
+    // Ice stops the waves where they are.
+    const float ice = std::clamp(look.ice, 0.0f, 1.0f);
+    const float time = ice > 0.5f ? 0.0f : look.time;
+    set4(wu.camera_position, look.eye, time);
+    // Turquoise, as in the low-poly reference (linear colors); pale blue ice.
+    const auto mix = [ice](math::Vec3 water, math::Vec3 frozen) { return water + (frozen - water) * ice; };
+    set4(wu.shallow_color, mix({0.12f, 0.66f, 0.70f}, {0.72f, 0.84f, 0.90f}), 1.0f);
+    set4(wu.deep_color, mix({0.02f, 0.28f, 0.46f}, {0.50f, 0.66f, 0.78f}), 1.0f);
     SDL_PushGPUFragmentUniformData(cmd, 0, &wu, sizeof(wu));
     for (int lod = kMinWaterLod; lod <= kMaxWaterLod; ++lod) {
         const Range r = water_ranges_[lod];
-        const WaterGeometryUniforms gu{view_proj, {cells_ + 1, cells_, 1 << lod, 0}, {look.time, 0.0f, 0.0f, 0.0f}};
+        const WaterGeometryUniforms gu{view_proj, {cells_ + 1, cells_, 1 << lod, 0}, {time, 0.0f, 0.0f, 0.0f}};
         SDL_PushGPUVertexUniformData(cmd, 0, &gu, sizeof(gu));
         if (r.count == 0) {
             continue;

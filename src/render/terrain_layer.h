@@ -77,6 +77,7 @@ public:
         float fog_density = 0.0f;
         math::Vec3 eye;
         float time = 0.0f;
+        float ice = 0.0f;  // 0..1: frozen over.
     };
     // Draws the water surfaces; call after everything opaque.
     void draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,

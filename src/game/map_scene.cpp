@@ -519,8 +519,8 @@ void MapScene::remove_house(render::SceneRenderer& renderer, std::size_t index) 
     renderer.set_instances(house_, houses_);
 }
 
-// Low-poly clouds high over the map and the mountains around it; they do
-// not move and cast no shadow (decision D-628).
+// Low-poly clouds high over the map and the mountains around it; they cast
+// no shadow (decision D-628) and drift with the wind (phase 18).
 void MapScene::show_clouds(render::SceneRenderer& renderer, const sim::MapData& map) {
     if (cloud_ == kNoModel) {
         return;
@@ -529,7 +529,10 @@ void MapScene::show_clouds(render::SceneRenderer& renderer, const sim::MapData& 
     const float reach = side + 3000.0f;
     // About one cloud every 600 x 600 m.
     const auto count = static_cast<std::size_t>(reach * reach / 360000.0f) + 4;
-    std::vector<render::Instance> clouds;
+    std::vector<render::Instance>& clouds = clouds_;
+    clouds.clear();
+    cloud_min_ = -1500.0f;
+    cloud_max_ = -1500.0f + reach;
     std::uint32_t h = static_cast<std::uint32_t>(map.settings.seed) * 2654435761u + 12345u;
     const auto next = [&h] {
         h ^= h << 13;
@@ -545,6 +548,21 @@ void MapScene::show_clouds(render::SceneRenderer& renderer, const sim::MapData& 
         clouds.push_back(c);
     }
     renderer.set_instances(cloud_, clouds);
+}
+
+void MapScene::update_sky(render::SceneRenderer& renderer, float dt) {
+    if (cloud_ == kNoModel || clouds_.empty()) {
+        return;
+    }
+    constexpr float kWind = 5.0f;  // Meters per second, west to east.
+    const float span = cloud_max_ - cloud_min_;
+    for (render::Instance& c : clouds_) {
+        c.position.x += kWind * dt * (0.8f + 0.1f * c.scale / 8.0f);
+        if (c.position.x > cloud_max_) {
+            c.position.x -= span;
+        }
+    }
+    renderer.set_instances(cloud_, clouds_);
 }
 
 void MapScene::hide(render::SceneRenderer& renderer) {

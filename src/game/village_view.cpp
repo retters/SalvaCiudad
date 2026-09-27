@@ -127,6 +127,35 @@ render::ModelData make_overlay_model() {
     return m;
 }
 
+// A puff for smoke and flames: a low-poly ball, white for the tint.
+render::ModelData make_puff_model() {
+    render::ModelData m;
+    constexpr int kRings = 4;
+    constexpr int kSegments = 6;
+    constexpr float kPi = std::numbers::pi_v<float>;
+    for (int r = 0; r <= kRings; ++r) {
+        const float phi = kPi * static_cast<float>(r) / kRings;
+        for (int s = 0; s <= kSegments; ++s) {
+            const float theta = 2.0f * kPi * static_cast<float>(s) / kSegments;
+            const math::Vec3 n{std::sin(phi) * std::cos(theta), std::cos(phi), std::sin(phi) * std::sin(theta)};
+            m.vertices.push_back({n.x * 0.5f, n.y * 0.5f + 0.5f, n.z * 0.5f, n.x, n.y, n.z, 0.0f, 0.0f});
+        }
+    }
+    for (int r = 0; r < kRings; ++r) {
+        for (int s = 0; s < kSegments; ++s) {
+            const auto a = static_cast<std::uint32_t>(r * (kSegments + 1) + s);
+            const auto b = a + kSegments + 1;
+            m.indices.insert(m.indices.end(), {a, a + 1, b, a + 1, b + 1, b});
+        }
+    }
+    m.materials.push_back({});
+    m.primitives.push_back({0, static_cast<std::uint32_t>(m.indices.size()), 0});
+    m.bounds_min = {-0.5f, 0.0f, -0.5f};
+    m.bounds_max = {0.5f, 1.0f, 0.5f};
+    m.radius = 0.8f;
+    return m;
+}
+
 // Red (0) through yellow to green (1).
 math::Vec3 ramp(float v) {
     v = std::clamp(v, 0.0f, 1.0f);
@@ -147,6 +176,21 @@ float wrap_angle(float a) {
 
 void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult& pack) {
     const sim::Content& content = pack.content;
+    // The animals (phase 18).
+    static constexpr const char* kAnimals[] = {"models/animals/deer.glb", "models/animals/boar.glb",
+                                               "models/animals/wolf.glb", "models/animals/bear.glb"};
+    for (std::size_t k = 0; k < std::size(kAnimals); ++k) {
+        if (species_models_[k] != kNoModel) {
+            continue;
+        }
+        const std::filesystem::path file = mods::mod_file(pack.dir("core"), kAnimals[k]);
+        const auto data = file.empty() ? std::nullopt : load_model_file(file);
+        render::ModelId id = 0;
+        if (data.has_value() && renderer.add_model(*data, id)) {
+            species_models_[k] = id;
+            used_.push_back(id);
+        }
+    }
     def_models_.assign(content.buildings.size(), Model{});
     std::size_t missing = 0;
     for (std::size_t i = 0; i < content.buildings.size(); ++i) {
@@ -198,6 +242,10 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
         }
         if (renderer.add_model(make_overlay_model(), id)) {
             overlay_model_ = id;
+            used_.push_back(id);
+        }
+        if (renderer.add_model(make_puff_model(), id)) {
+            puff_model_ = id;
             used_.push_back(id);
         }
     }
@@ -352,7 +400,120 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
     update_characters(renderer, game, alpha, dt, speed);
     update_creatures(renderer, game, alpha, dt, speed);
     update_overlay(renderer, game, dt);
+    update_particles(renderer, game, dt, speed);
 }
+
+float VillageView::random01() {
+    particle_seed_ ^= particle_seed_ << 13;
+    particle_seed_ ^= particle_seed_ >> 17;
+    particle_seed_ ^= particle_seed_ << 5;
+    return static_cast<float>(particle_seed_ & 0xFFFFu) / 65535.0f;
+}
+
+void VillageView::update_particles(render::SceneRenderer& renderer, const sim::Game& game, float dt, int speed) {
+    if (puff_model_ == kNoModel) {
+        return;
+    }
+    constexpr std::size_t kMaxParticles = 4000;
+    const float step = speed == 0 ? 0.0f : dt * static_cast<float>(speed);
+    // New puffs a few times a second, near the view only.
+    emit_timer_ -= step;
+    if (emit_timer_ <= 0.0f && speed > 0) {
+        emit_timer_ = 0.12f;
+        const sim::Content& content = game.content();
+        const bool cold = game.temperature() < sim::village::kColdBelow;
+        for (const sim::Building& b : game.buildings().data()) {
+            const float cx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
+            const float cz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
+            if (std::abs(cx - view_x_) > 180.0f || std::abs(cz - view_z_) > 180.0f || particles_.size() >= kMaxParticles) {
+                continue;
+            }
+            const sim::BuildingDef& d = content.buildings[b.def];
+            const math::Vec3 top = building_top(game, b);
+            if (b.fire > 0) {
+                // Flames low on the building, dark smoke above.
+                const float strength = static_cast<float>(b.fire) / 100.0f;
+                const int flames = 2 + static_cast<int>(strength * 4.0f);
+                for (int k = 0; k < flames; ++k) {
+                    Particle p;
+                    p.position = {static_cast<float>(b.x) + random01() * static_cast<float>(b.width),
+                                  top.y - 2.5f + random01() * 1.5f,
+                                  static_cast<float>(b.z) + random01() * static_cast<float>(b.depth)};
+                    p.velocity = {(random01() - 0.5f) * 0.4f, 1.6f + random01(), (random01() - 0.5f) * 0.4f};
+                    p.life = 0.6f + random01() * 0.4f;
+                    p.size0 = 0.9f + strength;
+                    p.size1 = 0.2f;
+                    p.color0 = {2.4f, 1.4f, 0.3f};
+                    p.color1 = {1.8f, 0.3f, 0.05f};
+                    particles_.push_back(p);
+                }
+                Particle smoke;
+                smoke.position = {cx + (random01() - 0.5f) * 2.0f, top.y, cz + (random01() - 0.5f) * 2.0f};
+                smoke.velocity = {0.6f + random01() * 0.3f, 1.4f, 0.2f};
+                smoke.life = 4.0f;
+                smoke.size0 = 1.2f;
+                smoke.size1 = 4.0f;
+                smoke.color0 = {0.18f, 0.16f, 0.15f};
+                smoke.color1 = {0.35f, 0.34f, 0.34f};
+                particles_.push_back(smoke);
+                continue;
+            }
+            // Chimneys: homes with a fire in the cold, and workshops at work
+            // with a recipe that burns fuel.
+            bool smokes = false;
+            if (b.state == sim::BuildingState::Complete) {
+                if (d.kind == sim::BuildingKind::House || d.kind == sim::BuildingKind::TownCenter) {
+                    smokes = cold && b.heated && (!b.residents.empty() || d.kind == sim::BuildingKind::TownCenter);
+                } else if (!b.workers.empty()) {
+                    for (const sim::DefIndex r : d.recipes) {
+                        for (const sim::ResourceAmount& in : content.recipes[r].inputs) {
+                            smokes = smokes || content.resources[in.resource].category == sim::ResourceCategory::Fuel;
+                        }
+                    }
+                }
+            }
+            if (!smokes || random01() > 0.45f) {
+                continue;
+            }
+            Particle p;
+            p.position = {cx + static_cast<float>(b.width) * 0.2f, top.y - 0.6f, cz + static_cast<float>(b.depth) * 0.1f};
+            p.velocity = {0.35f + random01() * 0.2f, 0.9f + random01() * 0.3f, 0.1f};
+            p.life = 3.5f + random01();
+            p.size0 = 0.35f;
+            p.size1 = 1.8f;
+            p.color0 = {0.62f, 0.62f, 0.64f};
+            p.color1 = {0.86f, 0.87f, 0.9f};
+            particles_.push_back(p);
+        }
+    }
+    // Move, grow and fade (by shrinking at the end).
+    puffs_.clear();
+    std::size_t kept = 0;
+    for (std::size_t i = 0; i < particles_.size(); ++i) {
+        Particle p = particles_[i];
+        p.age += step;
+        if (p.age >= p.life) {
+            continue;
+        }
+        p.position = p.position + p.velocity * step;
+        p.velocity.y *= 1.0f - 0.15f * step;
+        const float t = p.age / p.life;
+        float size = p.size0 + (p.size1 - p.size0) * t;
+        if (t > 0.75f) {
+            size *= 1.0f - (t - 0.75f) * 3.2f;
+        }
+        render::Instance inst;
+        inst.position = p.position;
+        inst.scale = std::max(0.01f, size);
+        inst.yaw = p.age;
+        inst.tint = p.color0 + (p.color1 - p.color0) * t;
+        puffs_.push_back(inst);
+        particles_[kept++] = p;
+    }
+    particles_.resize(kept);
+    renderer.set_instances(puff_model_, puffs_);
+}
+
 
 void VillageView::update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt) {
     if (overlay_model_ == kNoModel) {
@@ -496,6 +657,9 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
                                    int speed) {
     animals_.clear();
     marks_.clear();
+    for (auto& list : species_) {
+        list.clear();
+    }
     static constexpr math::Vec3 kColors[] = {
         {0.55f, 0.36f, 0.2f},   // Deer.
         {0.25f, 0.18f, 0.14f},  // Boar.
@@ -563,9 +727,18 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
             inst.position.y += 0.06f * std::abs(std::sin(look.time * 6.0f));  // A trot.
         }
         inst.yaw = look.yaw;
+        if (kind < species_models_.size() && species_models_[kind] != kNoModel) {
+            species_[kind].push_back(inst);  // Its own model, in its own colors.
+            continue;
+        }
         inst.scale = kScales[kind];
         inst.tint = kColors[kind];
         animals_.push_back(inst);
+    }
+    for (std::size_t k = 0; k < species_models_.size(); ++k) {
+        if (species_models_[k] != kNoModel) {
+            renderer.set_instances(species_models_[k], species_[k]);
+        }
     }
     if (animal_model_ != kNoModel) {
         renderer.set_instances(animal_model_, animals_);
@@ -606,7 +779,8 @@ render::Instance VillageView::building_instance(const sim::Game& game, sim::DefI
 void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::Game& game) {
     std::map<render::ModelId, std::vector<render::Instance>> lists;
     for (const render::ModelId id : used_) {
-        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_) {
+        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
+            id != puff_model_ && std::find(species_models_.begin(), species_models_.end(), id) == species_models_.end()) {
             lists[id];
         }
     }
@@ -637,7 +811,8 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         lists[def_models_[ghost_->def].id].push_back(g);
     }
     for (auto& [id, list] : lists) {
-        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_) {
+        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
+            id != puff_model_ && std::find(species_models_.begin(), species_models_.end(), id) == species_models_.end()) {
             renderer.set_instances(id, list);
         }
     }

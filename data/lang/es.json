@@ -116,7 +116,7 @@
     "settings.graphics.antialiasing.level.1": "MSAA 2x",
     "settings.graphics.antialiasing.level.2": "MSAA 4x",
     "settings.graphics.antialiasing.level.3": "MSAA 8x",
-    "settings.audio.pendingNote": "El sonido llegará en una próxima versión. Estos volúmenes ya quedan guardados.",
+    "settings.audio.pendingNote": "Los efectos y el sonido ambiente siguen estos volúmenes. La música llegará más adelante.",
     "settings.audio.master": "Volumen general",
     "settings.audio.master.tooltip": "Volumen de todo lo que suena en el juego.",
     "settings.audio.effects": "Efectos",

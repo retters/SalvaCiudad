@@ -89,6 +89,8 @@ public:
 
     // The clouds over a shown map.
     void show_sky(render::SceneRenderer& renderer, const sim::MapData& map);
+    // The clouds drift with the wind (phase 18); `dt` in seconds.
+    void update_sky(render::SceneRenderer& renderer, float dt);
 
     // Developer tools: redraw the features after the map's list changed,
     // and edit the houses.
@@ -141,6 +143,9 @@ private:
     void apply_features(render::SceneRenderer& renderer, const std::vector<std::vector<render::Instance>>& features);
     render::ModelId house_ = kNoModel;
     render::ModelId cloud_ = kNoModel;
+    std::vector<render::Instance> clouds_;
+    float cloud_min_ = 0.0f;  // The x range the clouds wrap around.
+    float cloud_max_ = 0.0f;
     void show_clouds(render::SceneRenderer& renderer, const sim::MapData& map);
     bool models_loaded_ = false;
     bool shown_ = false;

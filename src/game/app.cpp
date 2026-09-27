@@ -400,6 +400,7 @@ void App::load_mods() {
             (void)t.add_mod_texts(r.data, text::path_to_utf8(file));
         }
     }
+    sound_.load(*pack);
     pack_ = std::move(pack);
 }
 
@@ -685,6 +686,7 @@ void App::render_frame(float dt) {
                 const sim::Game& g = session_->game();
                 const sim::Season season = g.calendar().season;
                 map_scene_.set_season(scene_, g.map(), g.content(), season, g.snow() > 25);
+                map_scene_.update_sky(scene_, dt * static_cast<float>(host_->game_paused() ? 0 : 1));
                 village_.set_season(season);
                 lighting_ = seasonal_lighting(season);
                 update_placement(frame.width, frame.height);
@@ -713,6 +715,9 @@ void App::render_frame(float dt) {
             }
             if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
                 view.snow = static_cast<float>(session_->game().snow()) / static_cast<float>(sim::village::kMaxSnow);
+                // The water freezes over below -3 °C, as fishing stops (sim).
+                const float t = static_cast<float>(session_->game().temperature());
+                view.ice = t <= -3.0f ? std::min(1.0f, (-t - 2.0f) / 3.0f) : 0.0f;
             }
             scene_drawn = scene_.render(frame, view, lighting_);
         }
@@ -860,6 +865,7 @@ void App::frame() {
     }
     const float dt = static_cast<float>(elapsed) * 1e-9f;
     update_frame_stats(dt);
+    update_sound(dt);
     if (!window_.minimized()) {
         render_frame(dt);
     }
@@ -1680,6 +1686,23 @@ std::string App::town_name(std::uint8_t player) const {
     return tr("hud.trade.town", static_cast<int>(player) + 1);
 }
 
+void App::update_sound(float dt) {
+    if (!sound_started_) {
+        sound_started_ = true;
+        (void)sound_.start();
+    }
+    sound_.set_volumes(settings_->settings().audio);
+    if (input_.mouse_pressed) {
+        sound_.ui_click();  // Every click: the interface or the world.
+    }
+    if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
+        sound_.update(session_->game(), camera_.target().x, camera_.target().z, camera_.distance(), host_->game_paused(),
+                      dt * static_cast<float>(std::max(1, clock_.speed())));
+    } else {
+        sound_.stop();
+    }
+}
+
 void App::focus_camera(float x, float z) {
     if (!map_) {
         return;
@@ -1737,6 +1760,9 @@ void App::report_game_events() {
             }
             case sim::Game::Event::Kind::Born: text = tr("event.born"); break;
             case sim::Game::Event::Kind::Died: text = tr("event.died"); break;
+        }
+        if (e.kind != sim::Game::Event::Kind::GameOver) {
+            sound_.event(e.kind);
         }
         if (!text.empty()) {
             const bool has_pos = e.at.x != sim::Fixed{} || e.at.z != sim::Fixed{};

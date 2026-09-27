@@ -273,6 +273,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Capas: fertilidad, belleza, agua, mercado, religión, salud, riesgo de incendio y rutas se ven sobre el mapa.
 - [ ] Las notificaciones aparecen abajo a la derecha; un clic lleva la cámara al lugar y la ventana Eventos guarda las últimas.
 
+### Fase 18 (arte y sonido)
+
+- [ ] Cada edificio tiene su modelo: el centro del pueblo con torre, la capilla con aguja, el molino con aspas, el mercado con puestos, el pozo, las defensas y los talleres con su patio.
+- [ ] Ciervos, jabalíes, lobos y osos tienen su forma y trotan al moverse.
+- [ ] Las casas echan humo por la chimenea cuando hace frío; un incendio muestra llamas y humo negro.
+- [ ] Las nubes se mueven despacio; en invierno duro el agua se ve blanca y quieta.
+- [ ] Suena un clic al usar la interfaz, hachas y martillos al acercar la cámara al trabajo, la campana con un incendio o un asalto, pájaros de fondo (viento en invierno); los volúmenes de Configuración → Sonido los controlan.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

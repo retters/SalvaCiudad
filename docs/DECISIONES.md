@@ -1027,3 +1027,41 @@ Un tutorial es un tipo de definición (`tutorial`) con un mapa (semilla y tamañ
 
 **D-1706. Tooltips.**
 Las ventanas nuevas tienen tooltips en cada elemento: los bienes con su valor y alimento, las capas con qué muestran, y las notificaciones con "clic para ir".
+
+## Fase 18: arte y sonido (2026-09-27)
+
+**D-1801. Un modelo por edificio.**
+`art/blender/buildings.py` genera los 46 edificios de `core` en `models/buildings/`. Cada uno ocupa su terreno (ancho en X, fondo en Y) con la puerta hacia −Y.
+- La mayoría de los talleres son una casita de entramado al fondo del terreno con el patio del oficio al frente: troncos en el leñador, yunque en la herrería, horno en la panadería, barriles en la cervecería, telar en el tejedor, aspas en el molino...
+- Los edificios propios tienen su forma: el centro del pueblo con torre y campana, la capilla con aguja, el mercado con tres puestos de toldos, el pozo, las defensas, el cuartel con patio de entrenamiento...
+- Techos de teja, paja o pizarra según el oficio.
+
+Todo se regenera con Blender y da archivos idénticos.
+
+**D-1802. Animales con modelo propio.**
+`art/blender/animals.py` hace ciervo (con cornamenta), jabalí (con colmillos), lobo y oso, sin esqueleto. El juego los hace trotar subiendo y bajando. Las animaciones con huesos quedan para más adelante. Los asaltantes y soldados siguen con el cuerpo de los aldeanos y una marca de color.
+
+**D-1803. Partículas.**
+Son bolitas de pocos polígonos que suben, crecen y se achican al final; se calculan en la CPU y se dibujan como instancias, sin shaders nuevos. Solo se emiten cerca de la cámara, con un máximo de 4000:
+- humo de chimenea en las casas con fuego cuando hace frío y en los talleres que queman combustible;
+- llamas y humo negro en los incendios.
+
+**D-1804. Sonido.**
+- **Los sonidos:** `art/audio/make_sounds.py` los sintetiza en Python puro, con semilla fija (WAV mono de 16 bits a 22 050 Hz): hacha, martillo, campana, fuego, clic, aviso, monedas, espada, pájaros y viento. Sin bancos de sonidos externos ni dependencias nuevas.
+- **La mezcla:** `src/audio/mixer` los lee con validación estricta (solo ese formato), mezcla hasta 24 voces y dos sonidos de fondo en bucle con volumen por categoría (maestro, efectos, ambiente e interfaz, de la configuración), y los envía por SDL3.
+- **Qué suena:**
+  - clic en la interfaz;
+  - campana con incendios y asaltos, monedas con el comercio, espada con los soldados nuevos y un aviso con el resto;
+  - hachas y martillos de los aldeanos cerca de la cámara;
+  - crepitar del incendio más cercano;
+  - de fondo, pájaros (se apagan al alejar la cámara) o viento en invierno.
+- Sin dispositivo de sonido, el juego sigue en silencio y lo anota en el registro.
+- La música queda pendiente (sección 14 de la especificación).
+
+**D-1805. Ideas visuales hechas.**
+De `docs/IDEAS_VISUALES.md`:
+- las nubes se mueven con el viento;
+- el agua se congela bajo −3 °C (más blanca y quieta), igual que la pesca se detiene en la simulación;
+- las chimeneas echan humo.
+
+Quedan para más adelante la oclusión ambiental, el balanceo de los árboles, los árboles sin hojas en invierno y las huellas en la nieve.

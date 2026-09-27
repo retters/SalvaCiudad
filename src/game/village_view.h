@@ -4,6 +4,7 @@
 // and never changes its state (it only takes the "what changed" lists).
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <map>
@@ -103,7 +104,10 @@ private:
     render::ModelId plant_model_ = kNoModel;
     // Animals: one low-poly body for all kinds (phase 18 brings real ones),
     // and a red mark under raiders.
-    render::ModelId animal_model_ = kNoModel;
+    render::ModelId animal_model_ = kNoModel;  // The fallback body for animals without a model.
+    // Deer, boar, wolf and bear (models/animals in core), if found.
+    std::array<render::ModelId, 4> species_models_{kNoModel, kNoModel, kNoModel, kNoModel};
+    std::array<std::vector<render::Instance>, 4> species_;
     render::ModelId mark_model_ = kNoModel;
     render::ModelId overlay_model_ = kNoModel;
     int overlay_ = 0;
@@ -112,6 +116,24 @@ private:
     float view_z_ = 0.0f;
     std::uint8_t town_ = 0;
     std::vector<render::Instance> overlay_tiles_;
+    // Particles (phase 18): chimney smoke and fires, made of small puffs.
+    struct Particle {
+        math::Vec3 position;
+        math::Vec3 velocity;
+        float age = 0.0f;
+        float life = 1.0f;
+        float size0 = 0.3f;
+        float size1 = 1.0f;
+        math::Vec3 color0;
+        math::Vec3 color1;
+    };
+    render::ModelId puff_model_ = kNoModel;
+    std::vector<Particle> particles_;
+    std::vector<render::Instance> puffs_;
+    std::uint32_t particle_seed_ = 12345u;
+    float emit_timer_ = 0.0f;
+    [[nodiscard]] float random01();
+    void update_particles(render::SceneRenderer& renderer, const sim::Game& game, float dt, int speed);
     void update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt);
     std::vector<render::Instance> animals_;
     std::vector<render::Instance> marks_;

@@ -1633,6 +1633,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     water.fog_density = su.fog_color[3];
     water.eye = view.eye;
     water.time = view.time;
+    water.ice = view.ice;
     d.terrain.draw_water(frame.cmd, pass, view_proj, water);
     const TerrainStats& ts = d.terrain.stats();
     stats_.terrain_chunks = ts.chunks_drawn;

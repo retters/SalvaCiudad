@@ -12,7 +12,7 @@ blender --background --factory-startup --python art/blender/build_all.py -- data
 
 - `--background` no abre la interfaz ni toca tus escenas abiertas.
 - `--factory-startup` ignora tus preferencias y complementos, para que el resultado no dependa del equipo.
-- Se puede limitar a un grupo: `... -- data/mods/core/models characters`, `... -- data/mods/core/models props` o `... -- data/mods/core/models trees` (y después de `trees`, las especies: `trees oak elm`).
+- Se puede limitar a un grupo: `characters`, `props`, `trees` (y después, las especies: `trees oak elm`), `buildings` o `animals`, por ejemplo `... -- data/mods/core/models buildings`.
 - Vista previa de los árboles, cada especie en sus tamaños junto a un aldeano: `blender --background --factory-startup --python art/blender/preview_trees.py -- data/mods/core/models tmp/arboles`.
 - Los `.glb` generados se guardan en el repositorio, así compilar el juego no requiere Blender.
 
@@ -39,6 +39,8 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `human.py` | `characters/human_male.glb` y `human_female.glb` (con esqueleto y animaciones `idle` y `walk`); accesorios `hat_straw`, `hat_cap`, `beard`, `apron_male` y `apron_female` |
 | `props.py` | `props/tree_pine.glb`, `tree_oak.glb`, `rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb` |
 | `trees.py` | `props/tree_<especie>_<tamaño>.glb`: 21 especies en sus tamaños (ver `docs/ARBOLES.md`) |
+| `buildings.py` | `buildings/<id>.glb`: un modelo por edificio de `core` (46), cada uno del tamaño de su terreno |
+| `animals.py` | `animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb` (sin esqueleto) |
 | `build_all.py` | Ejecuta todo |
 | `preview.py` | Imágenes de revisión |
 
@@ -92,3 +94,13 @@ Un accesorio es un **modelo rígido cuyo origen es el punto donde se fija**: el 
 2. Genera con el comando de arriba y revisa las vistas previas.
 3. Si es un personaje, usa el esqueleto humano y nombres de material de la tabla de paletas.
 4. Comprueba que regenerar da el mismo archivo.
+
+## Sonidos
+
+Los efectos de sonido también salen de un script versionado, en Python puro (sin Blender ni bibliotecas):
+
+```
+python art/audio/make_sounds.py data/mods/core/sounds
+```
+
+Son WAV mono de 16 bits a 22 050 Hz; el juego no acepta otro formato. Generar dos veces da archivos idénticos.

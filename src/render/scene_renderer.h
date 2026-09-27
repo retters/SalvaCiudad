@@ -73,6 +73,8 @@ struct SceneView {
     // Snow on the ground and on what faces up, 0..1 (phase 10); the grass
     // hides under it.
     float snow = 0.0f;
+    // Ice over the water, 0..1 (phase 18): whiter and still.
+    float ice = 0.0f;
 };
 
 struct RenderStats {

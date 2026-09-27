@@ -17,6 +17,7 @@
 #include "game/map_generation.h"
 #include "game/map_scene.h"
 #include "game/services.h"
+#include "game/sound_director.h"
 #include "game/settings.h"
 #include "game/test_scene.h"
 #include "game/ui_host.h"
@@ -115,6 +116,7 @@ private:
     void report_game_events();  // Toasts for fires and outbreaks in the local town.
     [[nodiscard]] std::string town_name(std::uint8_t player) const;
     void focus_camera(float x, float z) override;
+    void update_sound(float dt);
     [[nodiscard]] std::array<float, 3> camera_view() const override {
         return {camera_.target().x, camera_.target().z, camera_.distance()};
     }
@@ -124,6 +126,8 @@ private:
     [[nodiscard]] int overlay() const override { return overlay_; }
     void set_overlay(int layer) override;
     int overlay_ = 0;
+    SoundDirector sound_;  // Phase 18.
+    bool sound_started_ = false;
     void apply_snapshot(std::vector<std::uint8_t> state);
     void close_network();
     [[nodiscard]] net::LocalInfo local_info() const;
