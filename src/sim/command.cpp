@@ -90,6 +90,9 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::DevRaid:
         case CommandType::DevLevel:
             break;
+        case CommandType::DevSpawn:
+            ok = ok && c.value >= 1 && c.value <= 1000;
+            break;
         case CommandType::TrainUnit:
             ok = ok && c.entity.valid() && (c.value == 0 || c.value == 1);
             break;

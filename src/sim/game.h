@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 19;
+inline constexpr std::uint32_t kGameRulesVersion = 20;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -514,6 +514,21 @@ private:
     std::int32_t fires_ = 0;          // Buildings burning (follows from them).
     std::vector<TradeOffer> offers_;
     ComponentStore<Creature> creatures_;
+    // Phase 20: counts that were recomputed over and over. Derived state,
+    // never saved: the population by player (until a villager comes or
+    // goes) and the stored goods by player (until the next tick or command).
+    mutable std::array<std::int32_t, kMaxPlayers> pop_cache_{};
+    mutable bool pop_dirty_ = true;
+    mutable std::array<std::vector<std::int32_t>, kMaxPlayers> stored_cache_;
+    mutable std::uint32_t stored_valid_ = 0;  // Bit per player.
+    void villagers_changed() { pop_dirty_ = true; }
+    // Each town's buildings, in the store's order (rebuilt when buildings
+    // come or go): the searches of one villager look only at its town's.
+    mutable std::array<std::vector<EntityId>, kMaxPlayers> owned_;
+    mutable bool owned_dirty_ = true;
+    [[nodiscard]] const std::vector<EntityId>& owned(std::uint8_t town) const;
+    void building_set_changed() { owned_dirty_ = true; }
+    void goods_changed() { stored_valid_ = 0; }
     bool game_over_ = false;
     std::vector<Caravan> caravans_;
     std::uint32_t next_offer_ = 1;

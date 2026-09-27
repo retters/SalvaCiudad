@@ -1111,3 +1111,22 @@ La cabeza mide lo mismo en todas las razas, así los sombreros les sirven a todo
 
 **D-1908. Pruebas de economía sin amenazas.**
 Las pruebas de necesidades, cultivos y clima ahora apagan incendios, asaltantes y fauna. Al cambiar las velocidades, un incendio al azar quemaba la panadería de la prueba. Las amenazas tienen sus propias pruebas.
+
+## Fase 20: rendimiento (2026-09-27)
+
+**D-2001. Medir con una prueba, no con el juego.**
+La prueba `sim_perf` arma 12 pueblos de 1000 aldeanos en un mapa enorme sin interfaz: casas, trabajo y comida con los comandos de desarrollo, y la gente con `DevSpawn` (nuevo, solo con las herramientas de desarrollo, que también ganan un botón "500 aldeanos más"). El caso grande se corre a mano (`--no-skip`); uno chico corre siempre y falla si el tick pasa de 33 ms. Resultados y método en `docs/RENDIMIENTO.md`.
+
+**D-2002. Índices derivados del estado.**
+Las optimizaciones no cambian la partida guardada ni el protocolo; son datos que se rehacen:
+- la lista de edificios por pueblo;
+- la población por pueblo;
+- los bienes guardados por pueblo durante un tick;
+- las casas libres al asignar hogares.
+
+Las búsquedas recorren los edificios en el mismo orden de antes y eligen igual.
+
+La única diferencia de reglas: dentro de un tick, las decisiones ven lo guardado al empezar el tick. Es igual en todas las máquinas, así que no afecta al determinismo.
+
+**D-2003. Límites y aviso.**
+El tick promedio con 12 × 1000 bajó de 61 a 12,5 ms, así que el límite de 1000 por jugador se mantiene. La sala avisa por encima de 6000 aldeanos posibles en total (la especificación sugería 600 por jugador, 7200 con 12): desde ahí los ticks más pesados pasan de 33 ms en este equipo.

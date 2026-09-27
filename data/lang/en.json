@@ -918,6 +918,9 @@
     "newGame.otherRaces.many": "Many (50 %)",
     "lobby.race.tooltip": "Everyone's people (the host chooses).",
     "hud.villager.race": "People: {0:race}",
-    "hud.stats.races": "Peoples: {0:list}"
+    "hud.stats.races": "Peoples: {0:list}",
+    "dev.village.spawn": "500 more villagers",
+    "lobby.heavy": "Up to {0:count} villagers in all: the game may run slowly on modest computers.",
+    "lobby.heavy.tooltip": "Measured: 12 towns of 1000 take 13 ms per tick on a desktop computer; triple speed needs under 33. Lower the population limit if anyone falls behind."
   }
 }

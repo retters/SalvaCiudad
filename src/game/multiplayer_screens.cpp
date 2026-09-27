@@ -184,7 +184,10 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
     const float gap = ctx.s(8.0f);
     const float button_h = ctx.s(44.0f);
     const float list_h = static_cast<float>(sim::kMaxPlayers / 2) * (row_h + gap);
-    const float content_h = line * 2 + gap + row_h * 4 + gap * 4 + list_h + gap + button_h;
+    // Many villagers in all: a warning (phase 20, docs/RENDIMIENTO.md).
+    const std::int32_t seats = static_cast<std::int32_t>(lobby.players.size());
+    const bool heavy = seats * lobby.config.rules.max_population > sim::kPopulationWarning;
+    const float content_h = line * (heavy ? 3 : 2) + gap + row_h * 4 + gap * 4 + list_h + gap + button_h;
     float y = 0.0f;
     const ui::Rect c = frame_panel(ctx, 760.0f, content_h, tr(host ? "lobby.title.host" : "lobby.title.client"), y);
     Result result = Result::None;
@@ -200,7 +203,14 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
                   tr("lobby.map", std::to_string(lobby.config.map.seed),
                      tr(kSizeKeys[std::min<std::size_t>(size, 3)], sim::map_cells(lobby.config.map.size))),
                   body, ctx.theme().text_dim);
-        y += line + gap;
+        y += line;
+        if (heavy) {
+            ctx.label({c.x, y, c.w, line}, tr("lobby.heavy", seats * lobby.config.rules.max_population),
+                      ctx.style(ctx.theme().small), ctx.theme().danger);
+            ctx.tooltip_area(ctx.id("lobby_heavy"), {c.x, y, c.w, line}, tr("lobby.heavy.tooltip"));
+            y += line;
+        }
+        y += gap;
         const float label_w = std::round(c.w * 0.3f);
         ctx.label({c.x, y, label_w, row_h}, tr("lobby.world"), body, ctx.theme().text);
         const std::string modes[] = {tr("lobby.world.shared"), tr("lobby.world.towns"), tr("lobby.world.separate")};

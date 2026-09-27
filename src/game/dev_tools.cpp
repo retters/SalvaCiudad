@@ -490,6 +490,12 @@ void DevTools::village_tab(DevContext& ctx) {
         c.type = sim::CommandType::DevLevel;
         ctx.session->issue(c);
     }
+    if (ImGui::Button((tr("dev.village.spawn") + "###spawn").c_str())) {
+        sim::Command c;
+        c.type = sim::CommandType::DevSpawn;
+        c.value = 500;
+        ctx.session->issue(c);
+    }
     if (ImGui::Button((tr("dev.village.raid") + "###raid").c_str())) {
         sim::Command c;
         c.type = sim::CommandType::DevRaid;

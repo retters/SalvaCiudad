@@ -58,6 +58,9 @@ struct GameRules {
 
 inline constexpr std::int32_t kMinPopulationLimit = 50;
 inline constexpr std::int32_t kMaxPopulationLimit = 1000;
+// Above this many villagers in all, the lobby warns that the game may run
+// slowly (measured in phase 20: docs/RENDIMIENTO.md).
+inline constexpr std::int32_t kPopulationWarning = 6000;
 
 // Ticks in a year: about 10, 20 or 40 minutes at x1.
 [[nodiscard]] std::uint32_t year_ticks(YearLength length);

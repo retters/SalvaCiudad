@@ -156,16 +156,15 @@ public:
     EntityId storage_for(std::uint8_t owner, FixedVec2 from, DefIndex resource) const {
         EntityId best;
         std::uint64_t best_d = UINT64_MAX;
-        const auto& list = g_.buildings_;
-        for (std::size_t i = 0; i < list.size(); ++i) {
-            const Building& b = list.data()[i];
-            if (b.owner != owner || !accepts(b, resource) || free_space(b) <= 0) {
+        for (const EntityId id : g_.owned(owner)) {
+            const Building& b = *g_.buildings_.get(id);
+            if (!accepts(b, resource) || free_space(b) <= 0) {
                 continue;
             }
             const std::uint64_t d = distance2(from, g_.door(b));
             if (d < best_d) {
                 best_d = d;
-                best = list.entities()[i];
+                best = id;
             }
         }
         return best;
@@ -176,10 +175,9 @@ public:
     EntityId storage_with(std::uint8_t owner, FixedVec2 from, DefIndex resource, bool skip_markets = false) const {
         EntityId best;
         std::uint64_t best_d = UINT64_MAX;
-        const auto& list = g_.buildings_;
-        for (std::size_t i = 0; i < list.size(); ++i) {
-            const Building& b = list.data()[i];
-            if (b.owner != owner || !complete(b) || def(b).storage <= 0 ||
+        for (const EntityId id : g_.owned(owner)) {
+            const Building& b = *g_.buildings_.get(id);
+            if (!complete(b) || def(b).storage <= 0 ||
                 (skip_markets && def(b).kind == BuildingKind::Market)) {
                 continue;
             }
@@ -199,7 +197,7 @@ public:
             const std::uint64_t d = distance2(from, g_.door(b));
             if (d < best_d) {
                 best_d = d;
-                best = list.entities()[i];
+                best = id;
             }
         }
         return best;
@@ -568,10 +566,9 @@ public:
         EntityId best;
         DefIndex best_res = kNoDef;
         std::uint64_t best_d = UINT64_MAX;
-        const auto& list = g_.buildings_;
-        for (std::size_t i = 0; i < list.size(); ++i) {
-            const Building& b = list.data()[i];
-            if (b.owner != v.owner || !complete(b) || def(b).kind != BuildingKind::Workplace) {
+        for (const EntityId id : g_.owned(v.owner)) {
+            const Building& b = *g_.buildings_.get(id);
+            if (!complete(b) || def(b).kind != BuildingKind::Workplace) {
                 continue;
             }
             DefIndex res = kNoDef;
@@ -589,7 +586,7 @@ public:
             const std::uint64_t d = distance2(v.position, g_.door(b));
             if (d < best_d) {
                 best_d = d;
-                best = list.entities()[i];
+                best = id;
                 best_res = res;
             }
         }
@@ -1986,16 +1983,15 @@ public:
     bool start_firefighting(Villager& v) {
         EntityId best;
         std::uint64_t best_d = meters2(80);
-        const auto& list = g_.buildings_;
-        for (std::size_t i = 0; i < list.size(); ++i) {
-            const Building& b = list.data()[i];
-            if (b.fire <= 0 || b.owner != v.owner) {
+        for (const EntityId id : g_.owned(v.owner)) {
+            const Building& b = *g_.buildings_.get(id);
+            if (b.fire <= 0) {
                 continue;
             }
             const std::uint64_t d = distance2(v.position, center_of(b));
             if (d < best_d && well_near(b)) {
                 best_d = d;
-                best = list.entities()[i];
+                best = id;
             }
         }
         if (!best.valid()) {
@@ -2625,10 +2621,9 @@ public:
         std::uint64_t best_fetch_d = UINT64_MAX;
         EntityId best_build;
         std::uint64_t best_build_d = UINT64_MAX;
-        const auto& list = g_.buildings_;
-        for (std::size_t i = 0; i < list.size(); ++i) {
-            const Building& b = list.data()[i];
-            if (b.owner != v.owner || !is_site(b)) {
+        for (const EntityId id : g_.owned(v.owner)) {
+            const Building& b = *g_.buildings_.get(id);
+            if (!is_site(b)) {
                 continue;
             }
             const std::uint64_t d = distance2(v.position, g_.door(b));
@@ -2645,14 +2640,14 @@ public:
                 const EntityId from = storage_with(v.owner, v.position, cost.resource);
                 if (from.valid()) {
                     best_fetch_d = d;
-                    best_fetch_site = list.entities()[i];
+                    best_fetch_site = id;
                     best_fetch_from = from;
                     best_res = cost.resource;
                 }
             }
             if (all_there && b.work_done < site_work(b) && d < best_build_d) {
                 best_build_d = d;
-                best_build = list.entities()[i];
+                best_build = id;
             }
         }
         if (best_fetch_site.valid()) {
@@ -3020,6 +3015,7 @@ public:
         v.food = 700 + static_cast<std::int32_t>(g_.rng_.below(300));
         v.idle_ticks = static_cast<std::int32_t>(g_.rng_.below(40));
         g_.villagers_.add(id, v);
+        g_.villagers_changed();
         return id;
     }
 
@@ -3043,6 +3039,7 @@ public:
         }
         ++g_.players_[v->owner].deaths;
         g_.villagers_.remove(id);
+        g_.villagers_changed();
         g_.registry_.destroy(id);
     }
 
@@ -3109,20 +3106,39 @@ public:
 
     void assign_homes() {
         auto& vs = g_.villagers_;
+        auto& list = g_.buildings_;
+        // Houses with room, by town (found once; before, every homeless
+        // villager looked through every building).
+        std::array<std::vector<std::size_t>, kMaxPlayers> open;
+        bool any_homeless = false;
+        for (const Villager& v : vs.data()) {
+            any_homeless = any_homeless || g_.buildings_.get(v.home) == nullptr;
+        }
+        if (!any_homeless) {
+            return;
+        }
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            const Building& b = list.data()[i];
+            if (b.owner < kMaxPlayers && complete(b) && g_.capacity(b) > 0 &&
+                static_cast<std::int32_t>(b.residents.size()) < g_.capacity(b)) {
+                open[b.owner].push_back(i);
+            }
+        }
         for (std::size_t k = 0; k < vs.size(); ++k) {
             Villager& v = vs.data()[k];
             if (g_.buildings_.get(v.home) != nullptr) {
                 continue;
             }
             v.home = {};
+            if (v.owner >= kMaxPlayers) {
+                continue;
+            }
             // A house with room; one with family is better.
-            EntityId best;
+            std::size_t best = SIZE_MAX;
             int best_score = -1;
-            auto& list = g_.buildings_;
-            for (std::size_t i = 0; i < list.size(); ++i) {
-                Building& b = list.data()[i];
-                if (b.owner != v.owner || !complete(b) || g_.capacity(b) <= 0 ||
-                    static_cast<std::int32_t>(b.residents.size()) >= g_.capacity(b)) {
+            for (const std::size_t i : open[v.owner]) {
+                const Building& b = list.data()[i];
+                if (static_cast<std::int32_t>(b.residents.size()) >= g_.capacity(b)) {
                     continue;
                 }
                 int score = 1;
@@ -3137,12 +3153,12 @@ public:
                 }
                 if (score > best_score) {
                     best_score = score;
-                    best = list.entities()[i];
+                    best = i;
                 }
             }
-            if (best.valid()) {
-                v.home = best;
-                g_.buildings_.get(best)->residents.push_back(vs.entities()[k]);
+            if (best != SIZE_MAX) {
+                v.home = list.entities()[best];
+                list.data()[best].residents.push_back(vs.entities()[k]);
             }
         }
     }
@@ -3555,6 +3571,7 @@ public:
         }
         block_nav(g_.nav_, d, x, z, b.width, b.depth, true);
         g_.buildings_.add(id, b);
+        g_.building_set_changed();
         g_.buildings_changed_ = true;
         return id;
     }
@@ -3646,6 +3663,7 @@ public:
         }
         block_nav(g_.nav_, def(*b), b->x, b->z, b->width, b->depth, false);
         g_.buildings_.remove(id);
+        g_.building_set_changed();
         g_.registry_.destroy(id);
         g_.buildings_changed_ = true;
     }
@@ -3791,6 +3809,23 @@ public:
                         a.path.clear();
                         a.path_index = 0;
                     }
+                }
+                break;
+            }
+            case CommandType::DevSpawn: {
+                const std::uint8_t town = g_.town_of(c.player);
+                const Building* tc = g_.buildings_.get(g_.players_[town].town_center);
+                if (!g_.dev_commands_ || tc == nullptr) {
+                    ++g_.rejected_;
+                    break;
+                }
+                const FixedVec2 at = g_.door(*tc);
+                for (std::int32_t n = 0; n < c.value; ++n) {
+                    const std::uint32_t family = n % 2 == 0 ? g_.players_[town].next_family++ : g_.players_[town].next_family - 1;
+                    const FixedVec2 spot{at.x + Fixed::from_int(static_cast<std::int32_t>(g_.rng_.below(9)) - 4),
+                                         at.z - Fixed::from_int(2 + static_cast<std::int32_t>(g_.rng_.below(4)))};
+                    (void)spawn_villager(town, spot, n % 2 == 0 ? Sex::Male : Sex::Female,
+                                         18 + static_cast<std::int32_t>(g_.rng_.below(20)), family, newcomer_race(town));
                 }
                 break;
             }
@@ -3994,11 +4029,15 @@ void Game::build_indexes() {
 }
 
 void Game::apply(const Command& command) {
+    goods_changed();
     VillageRules(*this).apply(command);
+    goods_changed();
 }
 
 void Game::step() {
+    goods_changed();
     VillageRules(*this).step();
+    goods_changed();
 }
 
 void Game::footprint(const BuildingDef& def, std::uint8_t rotation, std::int32_t& w, std::int32_t& d) {
@@ -4180,6 +4219,23 @@ bool Game::zone_open(std::size_t z) const {
     return true;
 }
 
+const std::vector<EntityId>& Game::owned(std::uint8_t town) const {
+    if (owned_dirty_) {
+        for (auto& list : owned_) {
+            list.clear();
+        }
+        for (std::size_t i = 0; i < buildings_.size(); ++i) {
+            const std::uint8_t o = buildings_.data()[i].owner;
+            if (o < kMaxPlayers) {
+                owned_[o].push_back(buildings_.entities()[i]);
+            }
+        }
+        owned_dirty_ = false;
+    }
+    static const std::vector<EntityId> kNone;
+    return town < kMaxPlayers ? owned_[town] : kNone;
+}
+
 std::int32_t Game::soldiers(std::uint8_t player) const {
     std::int32_t n = 0;
     const std::uint8_t town = town_of(player);
@@ -4315,6 +4371,11 @@ std::int32_t Game::happiness(std::uint8_t player) const {
 }
 
 std::vector<std::int32_t> Game::stored(std::uint8_t player) const {
+    // Within a tick the totals are counted once per player (decisions see
+    // them as the tick began; the same on every machine).
+    if (player < kMaxPlayers && (stored_valid_ >> player & 1u) != 0) {
+        return stored_cache_[player];
+    }
     std::vector<std::int32_t> out(content_->resources.size(), 0);
     for (std::size_t i = 0; i < buildings_.size(); ++i) {
         const Building& b = buildings_.data()[i];
@@ -4328,10 +4389,26 @@ std::vector<std::int32_t> Game::stored(std::uint8_t player) const {
             }
         }
     }
+    if (player < kMaxPlayers) {
+        stored_cache_[player] = out;
+        stored_valid_ |= 1u << player;
+    }
     return out;
 }
 
 std::int32_t Game::population(std::uint8_t player, bool adults_only) const {
+    if (!adults_only && player < kMaxPlayers) {
+        if (pop_dirty_) {
+            pop_cache_.fill(0);
+            for (const Villager& v : villagers_.data()) {
+                if (v.owner < kMaxPlayers) {
+                    ++pop_cache_[v.owner];
+                }
+            }
+            pop_dirty_ = false;
+        }
+        return pop_cache_[player];
+    }
     std::int32_t n = 0;
     for (const Villager& v : villagers_.data()) {
         if (v.owner == player && (!adults_only || adult(v))) {
@@ -5048,6 +5125,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         block_nav(g.nav_, c.buildings[b.def], b.x, b.z, b.width, b.depth, true);
         g.buildings_.add(id, b);
     }
+    g.building_set_changed();
     if (!r.count(village::kMaxVillagersPerPlayer * kMaxPlayers, 60, n)) {
         return false;
     }
@@ -5088,6 +5166,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         }
         g.villagers_.add(id, v);
     }
+    g.villagers_changed();
+    g.goods_changed();
     std::uint32_t creatures = 0;
     if (!r.count(1000000, 60, creatures)) {
         return false;

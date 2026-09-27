@@ -918,6 +918,9 @@
     "newGame.otherRaces.many": "Muchas (50 %)",
     "lobby.race.tooltip": "La raza de todos los pueblos (la elige el anfitrión).",
     "hud.villager.race": "Raza: {0:race}",
-    "hud.stats.races": "Razas: {0:list}"
+    "hud.stats.races": "Razas: {0:list}",
+    "dev.village.spawn": "500 aldeanos más",
+    "lobby.heavy": "Hasta {0:count} aldeanos en total: la partida puede ir lenta en equipos modestos.",
+    "lobby.heavy.tooltip": "Medido: 12 pueblos de 1000 toman 13 ms por tick en un equipo de escritorio; la velocidad triple pide menos de 33. Baja la población máxima si alguien se queda atrás."
   }
 }

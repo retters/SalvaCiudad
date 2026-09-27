@@ -289,6 +289,12 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Los enanos cortan piedra más rápido y los gatunos caminan más rápido (se nota al mirarlos).
 - [ ] En multijugador, el anfitrión elige la raza de todos en la sala.
 
+### Fase 20 (rendimiento)
+
+- [ ] `salvaciudad_tests -ts=sim_perf --no-skip` (compilación release) da un tick en marcha de unos 12 ms con 12 × 1000 aldeanos (ver `docs/RENDIMIENTO.md`).
+- [ ] Con Ctrl+F3 → Pueblo → "500 aldeanos más" dos veces y F3, el juego sigue fluido a x3 con 1000 aldeanos a la vista.
+- [ ] En la sala multijugador, con población máxima 1000 y siete jugadores o más, aparece el aviso de rendimiento en rojo.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).
