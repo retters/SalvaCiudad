@@ -7,6 +7,7 @@
 #include "core/file_io.h"
 #include "core/log.h"
 #include "core/text.h"
+#include "game/camera.h"
 
 namespace sc {
 
@@ -321,9 +322,26 @@ void TestCrowd::spawn(std::size_t count, std::uint32_t seed, float radius) {
     }
 }
 
+std::optional<std::size_t> TestCrowd::pick(math::Vec3 origin, math::Vec3 dir) const {
+    constexpr float kHeight = 1.8f;
+    constexpr float kRadius = 0.4f;
+    std::optional<std::size_t> best;
+    float best_t = 1e30f;
+    for (std::size_t i = 0; i < villagers_.size(); ++i) {
+        const render::CharacterInstance& c = villagers_[i].look;
+        const RayHit hit = ray_to_vertical_segment(origin, dir, c.position, kHeight * c.scale);
+        if (hit.distance <= kRadius * c.scale && hit.t < best_t) {
+            best_t = hit.t;
+            best = i;
+        }
+    }
+    return best;
+}
+
 void TestCrowd::update(render::SceneRenderer& renderer, float dt) {
     instances_.clear();
-    for (Villager& v : villagers_) {
+    for (std::size_t index = 0; index < villagers_.size(); ++index) {
+        Villager& v = villagers_[index];
         const BodyKind& kind = kinds_[v.kind];
         const math::Vec3 to = v.target - v.look.position;
         const float distance = math::length(to);
@@ -350,7 +368,9 @@ void TestCrowd::update(render::SceneRenderer& renderer, float dt) {
             // Play the walk faster or slower so the feet match the ground.
             v.look.time += dt * (v.speed / kWalkReferenceSpeed);
         }
-        instances_.push_back(v.look);
+        if (hidden_ != index) {
+            instances_.push_back(v.look);
+        }
     }
     renderer.set_characters(instances_);
 }

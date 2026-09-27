@@ -45,6 +45,8 @@ public:
     // Debug option: pull the camera far back so the whole test scene is on
     // screen at once, to measure the worst case.
     [[nodiscard]] bool stress_view() const { return visible_ && stress_view_; }
+    // True while the pointer is over the statistics window.
+    [[nodiscard]] bool wants_mouse() const;
 
     // Builds the window for this frame. Call before prepare().
     void build(const DebugInfo& info);

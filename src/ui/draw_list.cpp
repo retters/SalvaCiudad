@@ -1,6 +1,7 @@
 #include "ui/draw_list.h"
 
 #include <algorithm>
+#include <utility>
 
 namespace sc::ui {
 
@@ -83,6 +84,20 @@ void DrawList::rect_outline(const Rect& r, Color c, float t) {
     rect({r.x, r.bottom() - t, r.w, t}, c);
     rect({r.x, r.y + t, t, r.h - 2 * t}, c);
     rect({r.right() - t, r.y + t, t, r.h - 2 * t}, c);
+}
+
+void DrawList::triangle(float x0, float y0, float x1, float y1, float x2, float y2, Color c) {
+    if (c.a == 0) {
+        return;
+    }
+    const auto base = static_cast<std::uint32_t>(vertices_.size());
+    for (const auto& [x, y] : {std::pair{x0, y0}, std::pair{x1, y1}, std::pair{x2, y2}}) {
+        vertices_.push_back({x, y, white_u_, white_v_, c.r, c.g, c.b, c.a});
+    }
+    for (const std::uint32_t i : {0u, 1u, 2u}) {
+        indices_.push_back(base + i);
+    }
+    commands_.back().index_count += 3;
 }
 
 void DrawList::image(const Rect& r, float u0, float v0, float u1, float v1, Color c) {

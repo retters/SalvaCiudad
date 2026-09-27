@@ -197,3 +197,28 @@ Equipo de desarrollo, `release`, 1600 × 900, calidad Alta y sin sincronización
 - Vista cercana con 579 aldeanos: unos 375 FPS.
 
 El criterio era 60 FPS o más con 2000 aldeanos.
+
+## Petición del usuario: modos de cámara y seguimiento (2026-09-26)
+
+El usuario pidió, tras la fase 4, cambiar entre cámara aérea, tercera persona (estilo World of Warcraft) y primera persona con F4, y que la cámara siga a un personaje seleccionado: WASD deja de seguirlo, girar no.
+
+**D-409. Tres modos en la misma cámara.**
+`Camera` conserva la vista aérea (D-312) y suma dos modos:
+- **Tercera persona:** órbita libre alrededor de un punto a 1,5 m del suelo, a entre 2 y 60 m, con una elevación de -30° a 85°. Al entrar, se acerca a 10 m y 25°. Gira con Q/E o arrastrando con el botón derecho o el central, en ambos ejes.
+- **Primera persona:** ojos a 1,65 m; el ratón queda capturado (modo relativo de SDL) para mirar; WASD camina a 5,5 m/s hacia donde se mira, con la mirada limitada a ±85°.
+
+Al cambiar de modo se conserva el punto observado. El desplazamiento por el borde de la pantalla solo aplica a la vista aérea. F4 es la acción reasignable "Cambiar cámara".
+
+**D-410. La tercera persona nunca atraviesa el suelo.**
+Si el ojo quedara a menos de 0,4 m del suelo (en el punto del ojo o en el observado), la órbita sube hasta el mínimo necesario: la vista hace un paneo hacia arriba. La altura del suelo es una función que la cámara recibe (hoy plana; el terreno de la fase 6 la dará).
+
+**D-411. Selección y seguimiento de personajes.**
+- Un clic, sin arrastrar, lanza un rayo desde la cámara y elige al aldeano más cercano cuyo cuerpo (un segmento vertical de 1,8 m con 0,4 m de radio) toca el rayo. En primera persona se apunta con la cruz del centro.
+- El seleccionado muestra un marcador sobre la cabeza, dorado mientras se lo sigue.
+- La cámara sigue sus pies en los tres modos. En primera persona se ve con sus ojos y ese aldeano no se dibuja, para que no tape la vista.
+- WASD (o el borde de la pantalla) deja de seguirlo; girar no. Un clic en el suelo quita la selección.
+
+Esta selección vive por ahora en la escena de prueba. Es la misma mecánica que necesitará la partida (fase 8, abrir la ventana de un aldeano) y no afecta al determinismo: la cámara y la selección son solo presentación.
+
+**D-412. Con el panel de estadísticas abierto no se captura el ratón.**
+Así la ventana de Dear ImGui se puede usar también en primera persona.

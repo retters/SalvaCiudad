@@ -44,6 +44,9 @@ Todas se cambian en Configuración → Controles, salvo Alt+Enter.
 | W A S D o flechas | Mover la cámara |
 | Q / E, o arrastrar con el botón central | Girar la cámara |
 | Rueda del ratón, o + / - | Acercar y alejar |
+| F4 | Cambiar de cámara: aérea, tercera persona, primera persona |
+| Botón derecho o central (arrastrar) | Girar; en tercera persona también sube y baja la vista |
+| Clic en un aldeano | Seleccionarlo y seguirlo (W A S D deja de seguirlo; clic en el suelo lo deselecciona) |
 
 ## Idiomas
 
@@ -101,6 +104,14 @@ Se completa en cada fase.
 - [ ] La casa tiene entramado de madera, ventanas con contraventanas, puerta, chimenea y tejas; el pino y la roca se ven bien de cerca.
 - [ ] Con Blender instalado, generar dos veces con `build_all.py` (ver docs/ARTE.md) da archivos idénticos.
 - [ ] **Tu opinión del estilo:** ¿te gusta este low-poly para los personajes y la casa? Qué cambiarías (proporciones, nivel de detalle, colores).
+
+### Modos de cámara (petición del 2026-09-26)
+
+- [ ] En la escena de prueba, F4 pasa por Aérea, Tercera persona y Primera persona; la línea "Cámara:" de la ayuda lo indica.
+- [ ] Tercera persona: arrastrar con el botón derecho gira en todos los ejes; al bajar mucho, la vista sube sola en lugar de atravesar el suelo.
+- [ ] Primera persona: el ratón mira alrededor sin cursor visible, W A S D camina, Esc vuelve al menú y suelta el ratón.
+- [ ] Clic en un aldeano: aparece el marcador y la cámara lo sigue en los tres modos. Girar sigue funcionando; W A S D deja de seguirlo.
+- [ ] Primera persona siguiendo a un aldeano: se ve con sus ojos, y el aldeano no tapa la vista.
 
 ## Licencia
 

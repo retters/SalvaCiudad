@@ -19,6 +19,7 @@ constexpr ActionInfo kActions[] = {
     {Action::CameraRotateRight, "camera.rotateRight", ActionGroup::Camera, {SDL_SCANCODE_E, kNone}},
     {Action::CameraZoomIn, "camera.zoomIn", ActionGroup::Camera, {SDL_SCANCODE_EQUALS, SDL_SCANCODE_KP_PLUS}},
     {Action::CameraZoomOut, "camera.zoomOut", ActionGroup::Camera, {SDL_SCANCODE_MINUS, SDL_SCANCODE_KP_MINUS}},
+    {Action::CameraCycleMode, "camera.cycleMode", ActionGroup::Camera, {SDL_SCANCODE_F4, kNone}},
     {Action::GamePause, "game.pause", ActionGroup::Game, {SDL_SCANCODE_SPACE, SDL_SCANCODE_PAUSE}},
     {Action::GameSpeed1, "game.speed1", ActionGroup::Game, {SDL_SCANCODE_1, kNone}},
     {Action::GameSpeed2, "game.speed2", ActionGroup::Game, {SDL_SCANCODE_2, kNone}},

@@ -31,6 +31,7 @@ public:
     void apply_vsync() override {}
     void apply_graphics() override {}
     bool scene_available() const override { return false; }
+    CameraMode camera_mode() const override { return CameraMode::Aerial; }
     void apply_language() override {}
     void apply_font() override {}
     std::vector<std::string> monitor_names() override { return {"Monitor A"}; }

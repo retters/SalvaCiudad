@@ -23,6 +23,7 @@ enum class Action : std::uint8_t {
     CameraRotateRight,
     CameraZoomIn,
     CameraZoomOut,
+    CameraCycleMode,
     GamePause,
     GameSpeed1,
     GameSpeed2,

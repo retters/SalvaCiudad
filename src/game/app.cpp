@@ -332,24 +332,39 @@ void App::handle_event(const SDL_Event& event) {
             running_ = false;
             return;
         case SDL_EVENT_MOUSE_MOTION:
+            if (mouse_captured_) {
+                // First person: the pointer is hidden; motion turns the view.
+                camera_look_dx_ += event.motion.xrel;
+                camera_look_dy_ += event.motion.yrel;
+                return;
+            }
             input_.mouse_x = event.motion.x * density;
             input_.mouse_y = event.motion.y * density;
-            if (middle_down_) {
+            if (middle_down_ || right_down_) {
                 camera_drag_px_ += event.motion.xrel * density;
+                camera_drag_py_ += event.motion.yrel * density;
             }
             return;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             if (event.button.button == SDL_BUTTON_MIDDLE) {
                 middle_down_ = true;
             }
+            if (event.button.button == SDL_BUTTON_RIGHT) {
+                right_down_ = true;
+            }
             if (event.button.button == SDL_BUTTON_LEFT) {
                 input_.mouse_down = true;
                 input_.mouse_pressed = true;
+                press_x_ = input_.mouse_x;
+                press_y_ = input_.mouse_y;
             }
             return;
         case SDL_EVENT_MOUSE_BUTTON_UP:
             if (event.button.button == SDL_BUTTON_MIDDLE) {
                 middle_down_ = false;
+            }
+            if (event.button.button == SDL_BUTTON_RIGHT) {
+                right_down_ = false;
             }
             if (event.button.button == SDL_BUTTON_LEFT) {
                 input_.mouse_down = false;
@@ -381,6 +396,9 @@ void App::handle_event(const SDL_Event& event) {
                 cycle_window_mode();
             } else if (settings_->settings().input.bindings.matches(Action::UiDebugOverlay, event.key.scancode)) {
                 debug_.toggle();
+            } else if (settings_->settings().input.bindings.matches(Action::CameraCycleMode, event.key.scancode) &&
+                       host_ && host_->scene_mode() == UiHost::SceneMode::TestScene) {
+                camera_.set_mode(next_camera_mode(camera_.mode()));
             }
             return;
         }
@@ -427,14 +445,24 @@ void App::update_camera(float dt) {
             in.rotate = (held(Action::CameraRotateRight) ? 1.0f : 0.0f) - (held(Action::CameraRotateLeft) ? 1.0f : 0.0f);
             float zoom_keys = (held(Action::CameraZoomIn) ? 1.0f : 0.0f) - (held(Action::CameraZoomOut) ? 1.0f : 0.0f);
             in.zoom_steps = (camera_wheel_ + zoom_keys * dt * 8.0f) * (s.invert_zoom ? -1.0f : 1.0f);
-            in.drag_rotate_px = camera_drag_px_;
-            // Edge scrolling, only while the pointer is inside the window.
+            const CameraMode cam = camera_.mode();
+            if (cam == CameraMode::FirstPerson) {
+                in.look_dx = camera_look_dx_;
+                in.look_dy = camera_look_dy_;
+            } else {
+                in.drag_rotate_px = camera_drag_px_;
+                if (cam == CameraMode::ThirdPerson) {
+                    in.drag_pitch_px = camera_drag_py_;
+                }
+            }
+            // Edge scrolling (aerial view only), while the pointer is inside the window.
             int w = 0;
             int h = 0;
             SDL_GetWindowSizeInPixels(window_.sdl(), &w, &h);
             const float mx = input_.mouse_x;
             const float my = input_.mouse_y;
-            if (s.edge_scroll && mx >= 0.0f && my >= 0.0f && !middle_down_) {
+            if (cam == CameraMode::Aerial && s.edge_scroll && mx >= 0.0f && my >= 0.0f && !middle_down_ &&
+                !right_down_) {
                 if (mx <= kEdgeScrollPx) in.move_right -= 1.0f;
                 if (mx >= static_cast<float>(w) - 1.0f - kEdgeScrollPx) in.move_right += 1.0f;
                 if (my <= kEdgeScrollPx) in.move_forward += 1.0f;
@@ -443,11 +471,26 @@ void App::update_camera(float dt) {
             in.move_forward = std::clamp(in.move_forward, -1.0f, 1.0f);
             in.move_right = std::clamp(in.move_right, -1.0f, 1.0f);
         }
+        // Moving stops following the selected villager; turning does not.
+        if (following_ && (in.move_forward != 0.0f || in.move_right != 0.0f)) {
+            following_ = false;
+        }
     } else if (mode == UiHost::SceneMode::MenuBackground) {
         in.rotate = 0.025f;  // A slow turn behind the menus.
     }
     camera_wheel_ = 0.0f;
     camera_drag_px_ = 0.0f;
+    camera_drag_py_ = 0.0f;
+    camera_look_dx_ = 0.0f;
+    camera_look_dy_ = 0.0f;
+    const bool follow = following_ && selected_ && mode == UiHost::SceneMode::TestScene;
+    if (follow) {
+        camera_.set_follow(crowd_.position(*selected_), crowd_.scale(*selected_));
+    } else {
+        camera_.set_follow(std::nullopt);
+    }
+    // In first person, the followed villager is where the eyes are.
+    crowd_.set_hidden(follow && camera_.mode() == CameraMode::FirstPerson ? selected_ : std::nullopt);
     // Debug stress view: the whole test scene on screen at once.
     const bool stress = mode == UiHost::SceneMode::TestScene && debug_.stress_view();
     if (stress != stress_view_active_) {
@@ -497,7 +540,9 @@ void App::render_frame(float dt) {
     if (frame.target != nullptr) {
         // 3D scene first, straight into the swapchain.
         bool scene_drawn = false;
+        update_mouse_capture();
         if (scene_ok_ && host_->scene_mode() != UiHost::SceneMode::None) {
+            handle_scene_click(frame.width, frame.height);
             update_camera(dt);
             crowd_.update(scene_, dt);
             render::SceneView view;
@@ -516,6 +561,9 @@ void App::render_frame(float dt) {
         ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
                         SDL_GetTicksNS(), atlas_.white_u(), atlas_.white_v());
         host_->frame(ui_);
+        if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::TestScene) {
+            draw_scene_markers(frame.width, frame.height);
+        }
         ui_.end_frame();
 
         debug_info_.backend = gpu_.driver_name();
@@ -590,6 +638,93 @@ void App::frame() {
             SDL_DelayPrecise(budget - spent);
         }
     }
+}
+
+}  // namespace sc
+
+namespace sc {
+
+math::Mat4 App::camera_view_proj(std::uint32_t width, std::uint32_t height) const {
+    const float aspect = static_cast<float>(width) / static_cast<float>(std::max(1u, height));
+    // The far plane does not change where things land on screen.
+    return camera_.projection(aspect, 1000.0f) * camera_.view();
+}
+
+void App::update_mouse_capture() {
+    // First person in the test scene looks around with a captured pointer,
+    // unless the statistics window needs it.
+    const bool focused = window_.sdl() != nullptr && (SDL_GetWindowFlags(window_.sdl()) & SDL_WINDOW_INPUT_FOCUS) != 0;
+    const bool want = scene_ok_ && host_ && host_->scene_mode() == UiHost::SceneMode::TestScene &&
+                      camera_.mode() == CameraMode::FirstPerson && focused && !debug_.visible();
+    if (want != mouse_captured_) {
+        if (SDL_SetWindowRelativeMouseMode(window_.sdl(), want)) {
+            mouse_captured_ = want;
+        } else {
+            log::warn("cannot change the mouse capture: {}", SDL_GetError());
+        }
+        camera_look_dx_ = 0.0f;
+        camera_look_dy_ = 0.0f;
+    }
+}
+
+void App::handle_scene_click(std::uint32_t width, std::uint32_t height) {
+    if (host_->scene_mode() != UiHost::SceneMode::TestScene || !input_.mouse_released || debug_.wants_mouse()) {
+        return;
+    }
+    // A click, not the end of a drag.
+    float x = input_.mouse_x;
+    float y = input_.mouse_y;
+    if (mouse_captured_) {
+        x = static_cast<float>(width) * 0.5f;  // First person aims with the center.
+        y = static_cast<float>(height) * 0.5f;
+    } else if (std::abs(x - press_x_) > 6.0f || std::abs(y - press_y_) > 6.0f || x < 0.0f) {
+        return;
+    }
+    const math::Mat4 inv = math::inverse(camera_view_proj(width, height));
+    const float nx = x / static_cast<float>(width) * 2.0f - 1.0f;
+    const float ny = 1.0f - y / static_cast<float>(height) * 2.0f;
+    const math::Vec3 near_point = inv.transform_point({nx, ny, 1.0f});
+    const math::Vec3 far_point = inv.transform_point({nx, ny, 0.01f});
+    const std::optional<std::size_t> hit = crowd_.pick(near_point, far_point - near_point);
+    // In first person while following, the viewer's own body cannot be picked.
+    if (hit && !(following_ && camera_.mode() == CameraMode::FirstPerson && hit == selected_)) {
+        selected_ = hit;
+        following_ = true;
+    } else if (!hit) {
+        selected_.reset();
+        following_ = false;
+    }
+}
+
+void App::draw_scene_markers(std::uint32_t width, std::uint32_t height) {
+    ui::DrawList& dl = ui_.draw();
+    const ui::Color accent = ui_.theme().accent;
+    if (camera_.mode() == CameraMode::FirstPerson) {
+        // A small cross in the middle of the screen.
+        const float cx = std::round(static_cast<float>(width) * 0.5f);
+        const float cy = std::round(static_cast<float>(height) * 0.5f);
+        const float len = std::round(ui_.s(8.0f));
+        const float th = std::max(2.0f, std::round(ui_.s(2.0f)));
+        const ui::Color shadow = ui::Color::rgb(0x000000, 140);
+        dl.rect({cx - len - 1, cy - th / 2 - 1, 2 * len + 2, th + 2}, shadow);
+        dl.rect({cx - th / 2 - 1, cy - len - 1, th + 2, 2 * len + 2}, shadow);
+        dl.rect({cx - len, cy - th / 2, 2 * len, th}, ui_.theme().text);
+        dl.rect({cx - th / 2, cy - len, th, 2 * len}, ui_.theme().text);
+    }
+    if (!selected_ || (following_ && camera_.mode() == CameraMode::FirstPerson)) {
+        return;
+    }
+    // A marker pointing down at the selected villager's head.
+    const math::Vec3 head = crowd_.position(*selected_) + math::Vec3{0.0f, 2.15f * crowd_.scale(*selected_), 0.0f};
+    const math::Vec4 clip = camera_view_proj(width, height) * math::Vec4{head.x, head.y, head.z, 1.0f};
+    if (clip.w <= 0.01f) {
+        return;
+    }
+    const float sx = (clip.x / clip.w * 0.5f + 0.5f) * static_cast<float>(width);
+    const float sy = (0.5f - clip.y / clip.w * 0.5f) * static_cast<float>(height);
+    const float r = ui_.s(11.0f);
+    dl.triangle(sx - r - 2, sy - r * 1.6f - 2, sx + r + 2, sy - r * 1.6f - 2, sx, sy + 2, ui::Color::rgb(0x000000, 150));
+    dl.triangle(sx - r, sy - r * 1.6f, sx + r, sy - r * 1.6f, sx, sy, following_ ? accent : ui_.theme().text);
 }
 
 }  // namespace sc

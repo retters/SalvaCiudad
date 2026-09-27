@@ -54,6 +54,10 @@ void DebugOverlay::destroy() {
     ready_ = false;
 }
 
+bool DebugOverlay::wants_mouse() const {
+    return ready_ && visible_ && ImGui::GetIO().WantCaptureMouse;
+}
+
 void DebugOverlay::process_event(const SDL_Event& event) {
     if (ready_) {
         ImGui_ImplSDL3_ProcessEvent(&event);

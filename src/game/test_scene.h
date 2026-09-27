@@ -44,6 +44,13 @@ public:
     [[nodiscard]] bool loaded() const { return loaded_; }
     [[nodiscard]] std::size_t size() const { return villagers_.size(); }
 
+    // The villager nearest to the ray origin whose body the ray touches.
+    [[nodiscard]] std::optional<std::size_t> pick(math::Vec3 origin, math::Vec3 dir) const;
+    [[nodiscard]] math::Vec3 position(std::size_t i) const { return villagers_[i].look.position; }
+    [[nodiscard]] float scale(std::size_t i) const { return villagers_[i].look.scale; }
+    // A villager not drawn (the one seen through in first person).
+    void set_hidden(std::optional<std::size_t> i) { hidden_ = i; }
+
     // Walking speed at which the walk clip plays at its authored rate.
     static constexpr float kWalkReferenceSpeed = 1.45f;
 
@@ -73,6 +80,7 @@ private:
     std::vector<render::CharacterInstance> instances_;
     std::uint32_t random_state_ = 1;
     float radius_ = 60.0f;
+    std::optional<std::size_t> hidden_;
 };
 
 class TestScene {

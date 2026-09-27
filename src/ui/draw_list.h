@@ -57,6 +57,8 @@ public:
 
     void rect(const Rect& r, Color c);
     void rect_outline(const Rect& r, Color c, float thickness);
+    // A solid triangle (any winding).
+    void triangle(float x0, float y0, float x1, float y1, float x2, float y2, Color c);
     // A textured quad; uv are atlas coordinates in [0, 1].
     void image(const Rect& r, float u0, float v0, float u1, float v1, Color c);
 

@@ -76,3 +76,106 @@ TEST_SUITE("camera") {
         CHECK(a.target().x == doctest::Approx(b.target().x).epsilon(0.001));
     }
 }
+
+TEST_SUITE("camera") {
+    TEST_CASE("modes cycle aerial, third person, first person") {
+        CHECK(next_camera_mode(CameraMode::Aerial) == CameraMode::ThirdPerson);
+        CHECK(next_camera_mode(CameraMode::ThirdPerson) == CameraMode::FirstPerson);
+        CHECK(next_camera_mode(CameraMode::FirstPerson) == CameraMode::Aerial);
+    }
+
+    TEST_CASE("third person never looks from under the ground") {
+        Camera cam;
+        cam.set_mode(CameraMode::ThirdPerson);
+        cam.set_distance(20.0f);
+        cam.snap();
+        CameraInput in;
+        in.drag_pitch_px = -5000.0f;  // Try hard to swing below the ground.
+        for (int i = 0; i < 120; ++i) {
+            cam.update(in, {}, 1.0f / 60.0f);
+            CHECK(cam.eye().y >= Camera::kGroundClearance - 1e-3f);
+            in.drag_pitch_px = -50.0f;
+        }
+        // It still reaches low angles when there is room (pivot at eye height).
+        CHECK(cam.pitch() < math::radians(10.0f));
+    }
+
+    TEST_CASE("third person keeps the pivot at eye height over bumpy ground") {
+        Camera cam;
+        cam.set_ground([](float x, float) { return x * 0.1f; });
+        cam.set_mode(CameraMode::ThirdPerson);
+        cam.set_target({10.0f, 0.0f, 0.0f});
+        cam.snap();
+        for (int i = 0; i < 200; ++i) {
+            cam.update({}, {}, 1.0f / 60.0f);
+        }
+        CHECK(cam.target().y == doctest::Approx(1.0f + Camera::kPivotHeight).epsilon(0.01));
+        CHECK(cam.eye().y >= 1.0f);
+    }
+
+    TEST_CASE("first person walks where it looks and clamps the look up and down") {
+        Camera cam;
+        cam.set_mode(CameraMode::FirstPerson);
+        cam.snap();
+        CameraInput look;
+        look.look_dx = 1.0f / 0.0025f * (math::kPi / 2);  // A quarter turn right.
+        cam.update(look, {}, 0.016f);
+        CHECK(cam.yaw() == doctest::Approx(math::kPi / 2).epsilon(0.001));
+        CameraInput walk;
+        walk.move_forward = 1.0f;
+        for (int i = 0; i < 60; ++i) {
+            cam.update(walk, {}, 1.0f / 60.0f);
+        }
+        CHECK(cam.target().x > 2.0f);        // Walked along +x.
+        CHECK(std::abs(cam.target().z) < 0.01f);
+        CHECK(cam.eye().y == doctest::Approx(Camera::kEyeHeight).epsilon(0.01));
+        CameraInput up;
+        up.look_dy = -100000.0f;
+        cam.update(up, {}, 0.016f);
+        CHECK(cam.pitch() == doctest::Approx(math::radians(Camera::kMaxLookPitch)));
+        CHECK(cam.forward().y > 0.99f);
+    }
+
+    TEST_CASE("following overrides moving the focus until it stops") {
+        Camera cam;
+        cam.set_follow(math::Vec3{30.0f, 0.0f, -12.0f});
+        for (int i = 0; i < 200; ++i) {
+            cam.update({}, {}, 1.0f / 60.0f);
+        }
+        CHECK(cam.target().x == doctest::Approx(30.0f).epsilon(0.01));
+        CHECK(cam.target().z == doctest::Approx(-12.0f).epsilon(0.01));
+        CHECK(cam.following());
+        cam.set_follow(std::nullopt);
+        CHECK_FALSE(cam.following());
+    }
+
+    TEST_CASE("switching modes keeps the focus point") {
+        Camera cam;
+        cam.set_target({5.0f, 0.0f, 7.0f});
+        cam.snap();
+        cam.set_mode(CameraMode::ThirdPerson);
+        for (int i = 0; i < 200; ++i) {
+            cam.update({}, {}, 1.0f / 60.0f);
+        }
+        CHECK(cam.target().x == doctest::Approx(5.0f).epsilon(0.01));
+        cam.set_mode(CameraMode::Aerial);
+        for (int i = 0; i < 200; ++i) {
+            cam.update({}, {}, 1.0f / 60.0f);
+        }
+        CHECK(cam.distance() >= Camera::kMinDistance);
+        CHECK(cam.target().y == doctest::Approx(0.0f).epsilon(0.01));
+    }
+
+    TEST_CASE("rays pick a standing character") {
+        // Looking straight at a 1.8 m figure 10 m away.
+        const RayHit hit = ray_to_vertical_segment({0, 1, 10}, {0, 0, -1}, {0, 0, 0}, 1.8f);
+        CHECK(hit.distance == doctest::Approx(0.0f));
+        CHECK(hit.t == doctest::Approx(10.0f));
+        // Passing over its head.
+        const RayHit over = ray_to_vertical_segment({0, 3, 10}, {0, 0, -1}, {0, 0, 0}, 1.8f);
+        CHECK(over.distance == doctest::Approx(1.2f));
+        // From above, as the aerial camera looks.
+        const RayHit down = ray_to_vertical_segment({0.2f, 50, 0}, {0, -1, 0}, {0, 0, 0}, 1.8f);
+        CHECK(down.distance == doctest::Approx(0.2f));
+    }
+}

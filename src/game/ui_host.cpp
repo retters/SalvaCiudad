@@ -257,7 +257,17 @@ void UiHost::test_scene_hud(ui::Context& ctx) {
     const float pad = ctx.s(12.0f);
     const ui::TextStyle st = ctx.style(ctx.theme().body);
     const float w = std::min(ctx.s(560.0f), ctx.width() - 2 * pad);
-    const std::string text = tr("testScene.hint");
+    // The camera line names the current mode and the key that changes it.
+    const char* mode_key = "camera.mode.aerial";
+    if (services_.camera_mode() == CameraMode::ThirdPerson) {
+        mode_key = "camera.mode.thirdPerson";
+    } else if (services_.camera_mode() == CameraMode::FirstPerson) {
+        mode_key = "camera.mode.firstPerson";
+    }
+    const std::string key = key_display_name(services_.settings().input.bindings.key(Action::CameraCycleMode, 0));
+    const std::string text = tr("testScene.hint") + "\n" + tr("testScene.camera", tr(mode_key), key) + "\n" +
+                             tr(services_.camera_mode() == CameraMode::FirstPerson ? "testScene.follow.firstPerson"
+                                                                                   : "testScene.follow");
     const float h = ctx.paragraph_height(w - 2 * pad, text, st);
     const ui::Rect box{pad, pad, w, h + 2 * pad};
     ctx.draw().rect(box, ctx.theme().tooltip.with_alpha(0.8f));

@@ -45,6 +45,7 @@ public:
     void apply_vsync() override;
     void apply_graphics() override;
     bool scene_available() const override { return scene_ok_; }
+    CameraMode camera_mode() const override { return camera_.mode(); }
     void apply_language() override;
     void apply_font() override;
     std::vector<std::string> monitor_names() override;
@@ -63,6 +64,10 @@ private:
     void render_frame(float dt);
     void update_camera(float dt);
     void update_frame_stats(float dt);
+    void handle_scene_click(std::uint32_t width, std::uint32_t height);
+    void draw_scene_markers(std::uint32_t width, std::uint32_t height);
+    void update_mouse_capture();
+    [[nodiscard]] math::Mat4 camera_view_proj(std::uint32_t width, std::uint32_t height) const;
     void cycle_window_mode();
     void save_settings_if_due(bool force);
     [[nodiscard]] float ui_scale() const;
@@ -89,6 +94,15 @@ private:
     float camera_wheel_ = 0.0f;   // Wheel notches since the last camera update.
     float camera_drag_px_ = 0.0f;  // Middle-button drag since the last update.
     bool middle_down_ = false;
+    bool right_down_ = false;
+    float camera_drag_py_ = 0.0f;  // Vertical drag (third person pitch).
+    float camera_look_dx_ = 0.0f;  // Relative mouse motion (first person).
+    float camera_look_dy_ = 0.0f;
+    float press_x_ = 0.0f;         // Where the left button went down.
+    float press_y_ = 0.0f;
+    bool mouse_captured_ = false;
+    std::optional<std::size_t> selected_;  // Villager in the test crowd.
+    bool following_ = false;
     bool stress_view_active_ = false;
     float fps_window_s_ = 0.0f;
     int fps_window_frames_ = 0;

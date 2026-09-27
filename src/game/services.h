@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 
+#include "game/camera.h"
 #include "game/settings.h"
 #include "ui/font_library.h"
 
@@ -40,6 +41,7 @@ public:
 
     // True when the 3D test scene loaded and can be shown.
     [[nodiscard]] virtual bool scene_available() const = 0;
+    [[nodiscard]] virtual CameraMode camera_mode() const = 0;
 
     virtual void open_data_folder() = 0;
     virtual void request_quit() = 0;
