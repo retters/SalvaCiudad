@@ -344,3 +344,29 @@ Mapa Enorme, semilla 2026, calidad Ultra (MSAA 8x, 3 cascadas de sombra, 2500 m 
 - primera persona mirando al bosque, el peor caso: unos 220 FPS con 8,5 millones de triángulos.
 
 Con la calidad Alta por omisión, la vista aérea supera los 500 FPS.
+
+## Peticiones del usuario tras la fase 6 (2026-09-27)
+
+**D-614. Cambiar la sincronización vertical se aplica entre cuadros.**
+- El juego se cerraba al desactivar la sincronización vertical. La casilla cambiaba el modo de presentación a mitad del cuadro, con una imagen del swapchain todavía en uso. Para pasar a presentación inmediata, Direct3D 12 tiene que recrear el swapchain, y falló con "Acceso denegado" (0x80070005).
+- Ahora el cambio queda pendiente y se aplica después de enviar el cuadro.
+- Si aun así falla, se vuelve al modo anterior y se corrige el ajuste guardado.
+- Verificado activándola y desactivándola varias veces seguidas.
+
+**D-615. Cámara hasta ver el mapa entero (provisional).**
+- Sobre un mapa, la vista aérea se puede alejar hasta 1,6 veces el lado del mapa: unos 6,5 km en el Enorme.
+- Más allá del límite normal (260 m):
+  - el suelo y el agua se dibujan hasta donde haga falta;
+  - la niebla se ajusta a esa distancia;
+  - los modelos siguen limitados por la distancia de dibujo, así que desde muy alto solo se ve el suelo, con los bosques en su color, a más de 1000 FPS.
+- Las ondas del agua se desvanecen con la distancia, porque de lejos solo producían brillos granulados.
+- Cuando se decida, se vuelve al límite normal quitando `set_max_distance_override` en `App::enter_generated_map`.
+
+**D-616. Menú del juego.**
+- Con un mapa abierto, Esc ya no vuelve al menú principal: abre el menú del juego, con Continuar, Configuración, Salir al menú principal y Salir del juego. Esc lo cierra.
+- Mientras el menú o la configuración están abiertos:
+  - el mapa sigue detrás, oscurecido;
+  - la cámara no se mueve y el ratón se libera.
+- Cerrar la configuración vuelve al mapa con el menú abierto.
+- En la fase 8, este menú también pausará la partida de un jugador y avisará antes de salir sin guardar.
+- La escena de prueba sigue volviendo directo al menú principal con Esc.

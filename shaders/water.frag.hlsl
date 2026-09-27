@@ -31,10 +31,11 @@ float4 main(PixelInput input) : SV_Target0
     // Two layers of slow waves for the surface normal.
     float2 slope = float2(cos(p.x * 0.35 + t * 0.9) + cos((p.x + p.y) * 0.21 - t * 0.6),
                           cos(p.y * 0.31 - t * 0.8) + cos((p.x - p.y) * 0.27 + t * 0.7)) * 0.06;
-    float3 n = normalize(float3(-slope.x, 1.0, -slope.y));
-
     float3 to_camera = camera_position.xyz - input.world_pos;
     float distance = length(to_camera);
+    // Ripples fade with distance, where they would only sparkle.
+    slope *= 1.0 / (1.0 + distance / 250.0);
+    float3 n = normalize(float3(-slope.x, 1.0, -slope.y));
     float3 v = to_camera / max(distance, 0.001);
     float3 l = normalize(sun_direction.xyz);
 

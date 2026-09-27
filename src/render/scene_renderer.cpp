@@ -1177,9 +1177,10 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const auto t0 = std::chrono::steady_clock::now();
     const float draw_distance = view.draw_distance_override > 0.0f ? view.draw_distance_override : d.draw_distance;
     stats_.draw_distance = draw_distance;
+    const float view_distance = std::max(draw_distance, view.terrain_distance);
 
     // Camera matrices.
-    const math::Mat4 proj = math::perspective_reverse_z(view.fov_y, view.aspect, view.near_z, draw_distance);
+    const math::Mat4 proj = math::perspective_reverse_z(view.fov_y, view.aspect, view.near_z, view_distance);
     const math::Mat4 view_proj = proj * view.view;
     const math::Frustum frustum = math::Frustum::from_matrix(view_proj);
 
@@ -1240,7 +1241,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         shadow_ranges[c] = d.cull(light, view.eye, 0.0f);
         shadow_characters[c] = d.cull_characters(light, nullptr, 0.0f);
     }
-    if (!d.terrain.prepare(frame.cmd, frustum, view.eye, draw_distance)) {
+    if (!d.terrain.prepare(frame.cmd, frustum, view.eye, view_distance)) {
         log::warn("scene: terrain lists not uploaded this frame");
     }
     stats_.cull_ms = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
@@ -1470,7 +1471,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     set4(su.sky_ambient, lighting.sky_ambient, 1.0f);
     set4(su.ground_ambient, lighting.ground_ambient, 1.0f);
     // Fog reaches about 90 % at the draw distance: 1 - 2^(-k d^2) = 0.9.
-    set4(su.fog_color, lighting.horizon_color, 3.32f / (draw_distance * draw_distance));
+    set4(su.fog_color, lighting.horizon_color, 3.32f / (view_distance * view_distance));
     set4(su.camera_position, view.eye, static_cast<float>(d.cascades));
     su.shadow_params[0] = d.shadow_size > 0 ? 1.0f / static_cast<float>(d.shadow_size) : 0.0f;
     su.shadow_params[1] = 0.0002f;

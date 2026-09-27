@@ -298,7 +298,13 @@
     "generating.showFailed.title": "No se pudo mostrar el mapa",
     "generating.showFailed.body": "La tarjeta gráfica no pudo cargar el mapa. Prueba con un tamaño menor o con gráficos más bajos.",
     "map.info": "Semilla {0:seed}, {1:size}. Los números marcan las posiciones de inicio.",
-    "map.hint": "W A S D o flechas: mover. Q / E: girar. Rueda: acercar y alejar. F3: estadísticas. Esc: volver al menú.",
+    "map.hint": "W A S D o flechas: mover. Q / E: girar. Rueda: acercar y alejar. F3: estadísticas. Esc: menú del juego.",
+    "gameMenu.title": "Menú del juego",
+    "gameMenu.resume": "Continuar",
+    "gameMenu.resume.tooltip": "Cerrar este menú y volver al mapa (Esc).",
+    "gameMenu.leave": "Salir al menú principal",
+    "gameMenu.leave.tooltip": "Cerrar el mapa y volver al menú principal.",
+    "gameMenu.quit": "Salir del juego",
     "debug.terrain": "Parcelas de terreno (agua)",
     "debug.vegetation": "Distancia de la vegetación"
   }

@@ -33,7 +33,14 @@ public:
     // shortcuts must not act.
     [[nodiscard]] bool wants_keyboard() const;
 
-    void open_settings() { screen_ = Screen::Settings; }
+    void open_settings() {
+        settings_return_ = Screen::MainMenu;
+        screen_ = Screen::Settings;
+    }
+
+    // True while a menu covers the 3D view (the in-game menu, or settings
+    // opened from it): the camera must not move.
+    [[nodiscard]] bool scene_paused() const;
 
     // What the 3D view behind the interface should show.
     enum class SceneMode : std::uint8_t { None, MenuBackground, TestScene, Map };
@@ -45,6 +52,7 @@ private:
     void test_scene_hud(ui::Context& ctx);
     void generating_screen(ui::Context& ctx, bool modal);
     void map_hud(ui::Context& ctx);
+    void game_menu(ui::Context& ctx);
     [[nodiscard]] std::string camera_line() const;
 
     void main_menu(ui::Context& ctx);
@@ -58,6 +66,8 @@ private:
     SettingsScreen settings_screen_;
     NewGameScreen new_game_;
     Screen screen_ = Screen::MainMenu;
+    Screen settings_return_ = Screen::MainMenu;  // Where closing settings goes.
+    bool game_menu_open_ = false;
 
     struct Message {
         std::string title;

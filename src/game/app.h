@@ -82,6 +82,7 @@ private:
     void update_mouse_capture();
     [[nodiscard]] math::Mat4 camera_view_proj(std::uint32_t width, std::uint32_t height) const;
     void cycle_window_mode();
+    void apply_pending_vsync();
     void save_settings_if_due(bool force);
     [[nodiscard]] float ui_scale() const;
 
@@ -128,6 +129,9 @@ private:
     // The deterministic simulation, stepped by the clock on the main thread
     // (decision D-506). For now it runs the phase 5 test world.
     sim::Simulation sim_{0};
+    // Vsync changes wait until the frame is submitted: the swapchain cannot
+    // be rebuilt while one of its images is in use (decision D-614).
+    bool vsync_pending_ = false;
     bool running_ = true;
     bool sdl_ready_ = false;
     std::uint64_t last_frame_ns_ = 0;

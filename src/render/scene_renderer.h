@@ -64,6 +64,9 @@ struct SceneView {
     float aspect = 1.0f;
     float draw_distance_override = 0.0f;  // Debug stress view; 0 uses the settings.
     float time = 0.0f;                    // Seconds, for moving water.
+    // The ground and water may reach farther than the models (to see a
+    // whole map from high up); 0 = the draw distance.
+    float terrain_distance = 0.0f;
 };
 
 struct RenderStats {

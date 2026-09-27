@@ -237,7 +237,22 @@ bool App::apply_display(const DisplaySettings& display) {
 }
 
 void App::apply_vsync() {
-    (void)gpu_.set_vsync(settings_->settings().display.vsync);
+    vsync_pending_ = true;
+}
+
+void App::apply_pending_vsync() {
+    if (!vsync_pending_) {
+        return;
+    }
+    vsync_pending_ = false;
+    bool& vsync = settings_->settings().display.vsync;
+    if (!gpu_.set_vsync(vsync)) {
+        // Keep the mode that works.
+        log::warn("gpu: cannot change vsync; keeping it {}", !vsync ? "on" : "off");
+        vsync = !vsync;
+        (void)gpu_.set_vsync(vsync);
+        settings_changed();
+    }
 }
 
 void App::apply_graphics() {
@@ -562,6 +577,11 @@ void App::render_frame(float dt) {
             view.near_z = camera_.near_z();
             view.aspect = static_cast<float>(frame.width) / static_cast<float>(std::max(1u, frame.height));
             view.draw_distance_override = stress_view_active_ ? 5000.0f : 0.0f;
+            // Zoomed out past the normal limit over a map: the whole ground
+            // stays visible (temporary, decision D-615).
+            if (map_ && host_->scene_mode() == UiHost::SceneMode::Map && camera_.distance() > Camera::kMaxDistance) {
+                view.terrain_distance = camera_.distance() * 2.5f + static_cast<float>(map_->map.size);
+            }
             view.time = static_cast<float>(static_cast<double>(SDL_GetTicksNS() % 3'600'000'000'000ull) * 1e-9);
             scene_drawn = scene_.render(frame, view, lighting_);
         }
@@ -571,12 +591,13 @@ void App::render_frame(float dt) {
         ui_.set_tooltips(s.ui.show_tooltips, s.ui.tooltip_delay_ms);
         ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
                         SDL_GetTicksNS(), atlas_.white_u(), atlas_.white_v());
-        host_->frame(ui_);
+        // Markers belong to the 3D view, under the interface.
         if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::TestScene) {
             draw_scene_markers(frame.width, frame.height);
         } else if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
             draw_start_markers(frame.width, frame.height);
         }
+        host_->frame(ui_);
         ui_.end_frame();
 
         debug_info_.backend = gpu_.driver_name();
@@ -644,6 +665,7 @@ void App::frame() {
     if (!window_.minimized()) {
         render_frame(dt);
     }
+    apply_pending_vsync();
     save_settings_if_due(false);
 
     const DisplaySettings& display = settings_->settings().display;
@@ -665,11 +687,12 @@ bool App::interactive_scene() const {
         return false;
     }
     const UiHost::SceneMode mode = host_->scene_mode();
-    return mode == UiHost::SceneMode::TestScene || mode == UiHost::SceneMode::Map;
+    return (mode == UiHost::SceneMode::TestScene || mode == UiHost::SceneMode::Map) && !host_->scene_paused();
 }
 
 void App::reset_camera_to_test_scene() {
     camera_.set_ground({});
+    camera_.set_max_distance_override(0.0f);
     camera_.set_mode(CameraMode::Aerial);
     camera_.set_bounds(-kTestSceneHalfSize, -kTestSceneHalfSize, kTestSceneHalfSize, kTestSceneHalfSize);
     camera_.set_target({0.0f, 0.0f, 0.0f});
@@ -703,6 +726,8 @@ bool App::enter_generated_map() {
     camera_.set_mode(CameraMode::Aerial);
     camera_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
     camera_.set_bounds(0.0f, 0.0f, size, size);
+    // For now the camera can back off until the whole map fits (D-615).
+    camera_.set_max_distance_override(size * 1.6f);
     const float sx = map->starts.empty() ? size * 0.5f : static_cast<float>(map->starts[0].x.raw()) / 65536.0f;
     const float sz = map->starts.empty() ? size * 0.5f : static_cast<float>(map->starts[0].z.raw()) / 65536.0f;
     camera_.set_target({sx, map_surface_height(*map, sx, sz), sz});

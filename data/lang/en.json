@@ -298,7 +298,13 @@
     "generating.showFailed.title": "The map could not be shown",
     "generating.showFailed.body": "The graphics card could not load the map. Try a smaller size or lower graphics settings.",
     "map.info": "Seed {0:seed}, {1:size}. The numbers mark the start positions.",
-    "map.hint": "W A S D or arrows: move. Q / E: turn. Mouse wheel: zoom. F3: statistics. Esc: back to the menu.",
+    "map.hint": "W A S D or arrows: move. Q / E: turn. Mouse wheel: zoom. F3: statistics. Esc: game menu.",
+    "gameMenu.title": "Game menu",
+    "gameMenu.resume": "Continue",
+    "gameMenu.resume.tooltip": "Close this menu and go back to the map (Esc).",
+    "gameMenu.leave": "Leave to main menu",
+    "gameMenu.leave.tooltip": "Close the map and go back to the main menu.",
+    "gameMenu.quit": "Quit the game",
     "debug.terrain": "Terrain chunks (water)",
     "debug.vegetation": "Vegetation distance"
   }

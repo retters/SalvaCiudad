@@ -51,10 +51,17 @@ UiHost::SceneMode UiHost::scene_mode() const {
     if (!services_.scene_available()) {
         return SceneMode::None;
     }
-    if (screen_ == Screen::MapView && services_.current_map() != nullptr) {
+    // Settings opened from the game keep the map behind them.
+    const bool over_map = screen_ == Screen::MapView ||
+                          (screen_ == Screen::Settings && settings_return_ == Screen::MapView);
+    if (over_map && services_.current_map() != nullptr) {
         return SceneMode::Map;
     }
     return screen_ == Screen::TestScene ? SceneMode::TestScene : SceneMode::MenuBackground;
+}
+
+bool UiHost::scene_paused() const {
+    return scene_mode() == SceneMode::Map && (game_menu_open_ || screen_ == Screen::Settings);
 }
 
 bool UiHost::modal_open() const {
@@ -89,6 +96,8 @@ void UiHost::frame(ui::Context& ctx) {
         ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().background);
     } else if (mode == SceneMode::MenuBackground) {
         ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().background.with_alpha(0.55f));
+    } else if (scene_paused()) {
+        ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().background.with_alpha(0.45f));
     }
 
     if (screen_ == Screen::TestScene) {
@@ -111,7 +120,8 @@ void UiHost::frame(ui::Context& ctx) {
         map_hud(ctx);
     } else if (screen_ == Screen::Settings) {
         if (!settings_screen_.frame(ctx, *this, modal)) {
-            screen_ = Screen::MainMenu;
+            screen_ = settings_return_ == Screen::MapView && services_.current_map() != nullptr ? Screen::MapView
+                                                                                                : Screen::MainMenu;
         }
     } else {
         ctx.set_input_blocked(modal);
@@ -254,7 +264,7 @@ void UiHost::main_menu(ui::Context& ctx) {
             } else if (std::string_view(e.id) == "testScene") {
                 screen_ = Screen::TestScene;
             } else if (std::string_view(e.id) == "settings") {
-                screen_ = Screen::Settings;
+                open_settings();
             } else if (std::string_view(e.id) == "quit") {
                 services_.request_quit();
             }
@@ -291,6 +301,7 @@ void UiHost::generating_screen(ui::Context& ctx, bool modal) {
     if (status.state == MapGenStatus::State::Done) {
         if (services_.enter_generated_map()) {
             screen_ = Screen::MapView;
+            game_menu_open_ = false;
         } else {
             show_message(tr("generating.showFailed.title"), tr("generating.showFailed.body"));
             screen_ = Screen::NewGame;
@@ -350,9 +361,54 @@ void UiHost::map_hud(ui::Context& ctx) {
     const ui::Rect box{pad, pad, w, h + 2 * pad};
     ctx.draw().rect(box, ctx.theme().tooltip.with_alpha(0.8f));
     ctx.paragraph(box.inset(pad), text, st, ctx.theme().text);
+    if (game_menu_open_) {
+        game_menu(ctx);
+    } else if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
+        game_menu_open_ = true;
+    }
+}
+
+// Esc during a game: continue, settings, or leave. In phase 8 it will also
+// pause a single-player game (decision D-616).
+void UiHost::game_menu(ui::Context& ctx) {
+    const float button_h = ctx.s(48.0f);
+    const float gap = ctx.s(10.0f);
+    struct Entry {
+        const char* id;
+        const char* label;
+        const char* tooltip;
+    };
+    static constexpr Entry kEntries[] = {
+        {"resume", "gameMenu.resume", "gameMenu.resume.tooltip"},
+        {"settings", "menu.main.settings", "menu.main.settings.tooltip"},
+        {"leave", "gameMenu.leave", "gameMenu.leave.tooltip"},
+        {"quit", "gameMenu.quit", "menu.main.quit.tooltip"},
+    };
+    const float content_h = static_cast<float>(std::size(kEntries)) * (button_h + gap) - gap;
+    float y = 0.0f;
+    const ui::Rect content = dialog_frame(ctx, content_h, tr("gameMenu.title"), y);
+    for (const Entry& e : kEntries) {
+        const ui::Rect r{content.x, std::round(y), content.w, std::round(button_h)};
+        if (ctx.button(ctx.id(std::string("game_menu_") + e.id), r, tr(e.label), tr(e.tooltip))) {
+            const std::string_view id = e.id;
+            if (id == "resume") {
+                game_menu_open_ = false;
+            } else if (id == "settings") {
+                settings_return_ = Screen::MapView;
+                screen_ = Screen::Settings;
+            } else if (id == "leave") {
+                game_menu_open_ = false;
+                services_.leave_map();
+                screen_ = Screen::MainMenu;
+            } else {
+                services_.request_quit();
+            }
+            return;
+        }
+        y += button_h + gap;
+    }
     if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
-        services_.leave_map();
-        screen_ = Screen::MainMenu;
+        game_menu_open_ = false;
     }
 }
 
