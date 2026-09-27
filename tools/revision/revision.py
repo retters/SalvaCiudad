@@ -13,6 +13,13 @@ docs/revision/index.html.
         note from Salvador newer than Claude's last answer.
     python tools/revision/revision.py responder <id> <estado|-> <texto>
         Claude's answer on an item (and its new state, or - to keep it).
+    python tools/revision/revision.py compactar
+        Turns history written by the first version of the page (one entry per
+        pause while typing a note) into one entry per state change and one
+        for the note as it was finally left.
+
+History entries have an "accion": "estado" (a state chosen), "nota" (a note
+saved with its button) or "respuesta" (Claude's answer).
 
 Standard library only. The file is written atomically (temporary file, then
 replace) and read with strict checks.
@@ -255,12 +262,57 @@ def cmd_answer(item_id, state, text):
                 it['estado'] = state
             it['respuesta'] = text
             it['actualizado'] = now()
-            it.setdefault('historial', []).append({'fecha': it['actualizado'], 'quien': 'Claude',
+            it.setdefault('historial', []).append({'fecha': it['actualizado'], 'quien': 'Claude', 'accion': 'respuesta',
                                                    'estado': it['estado'], 'texto': text})
             save(doc)
             print('answered', item_id)
             return
     sys.exit('no item ' + item_id)
+
+
+def compact_history(it):
+    """Runs of Salvador's old entries (no 'accion') become state changes and a
+    single final note; everything else stays as it was."""
+    out = []
+    state = STATES[it['tipo']][0]
+    note = ''
+    run = []
+
+    def flush():
+        nonlocal state, note
+        for e in run:
+            if e.get('estado') != state:
+                state = e.get('estado', state)
+                out.append({'fecha': e['fecha'], 'quien': e['quien'], 'accion': 'estado', 'estado': state, 'texto': ''})
+        if run:
+            last = run[-1]
+            text = (last.get('texto') or '').strip()
+            if text != note:
+                note = text
+                out.append({'fecha': last['fecha'], 'quien': last['quien'], 'accion': 'nota', 'estado': state, 'texto': text})
+        run.clear()
+
+    for e in it.get('historial', []):
+        if e.get('quien') != 'Claude' and 'accion' not in e:
+            run.append(e)
+            continue
+        flush()
+        out.append(e)
+        if e.get('accion') == 'estado' or e.get('quien') == 'Claude':
+            state = e.get('estado', state)
+        if e.get('accion') == 'nota':
+            note = (e.get('texto') or '').strip()
+    flush()
+    changed = len(out) != len(it.get('historial', []))
+    it['historial'] = sorted(out, key=lambda e: e['fecha'])
+    return changed
+
+
+def cmd_compact():
+    doc = load()
+    changed = [it['id'] for it in doc['items'] if compact_history(it)]
+    save(doc)
+    print('compacted:', ', '.join(changed) if changed else 'nothing')
 
 
 def main():
@@ -269,6 +321,8 @@ def main():
         cmd_sync()
     elif args[:1] == ['agregar'] and len(args) == 2:
         cmd_add(args[1])
+    elif args[:1] == ['compactar']:
+        cmd_compact()
     elif args[:1] == ['pendientes']:
         cmd_pending()
     elif args[:1] == ['responder'] and len(args) == 4:

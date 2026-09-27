@@ -55,10 +55,19 @@
    "detalle": "Solo viajan los comandos de los jugadores y cada máquina simula todo. Se descartó sincronizar el estado desde el anfitrión: con hasta 12 000 aldeanos el ancho de banda sería inviable. El costo es que la simulación debe ser determinista entre máquinas, compiladores y sistemas operativos. Por eso la simulación usa punto fijo, un RNG propio y un orden de iteración definido (ver 7.3 de la especificación).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:00:51-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:00:51-06:00"
   },
   {
    "id": "D-002",
@@ -69,10 +78,19 @@
    "detalle": "\"Sin motores comerciales\" se interpreta como sin Unity, Unreal ni Godot. Las bibliotecas pequeñas y enfocadas (SDL3, cgltf, stb, Lua, ENet, yyjson, zstd, Dear ImGui, doctest) se vendorizan con su licencia. Todas están **pendientes de aprobación** (pregunta P-5).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:01:26-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:01:26-06:00"
   },
   {
    "id": "D-003",
@@ -83,10 +101,26 @@
    "detalle": "10 ticks por segundo bastan para un juego de construcción y dejan margen de CPU para 12 jugadores a x3 (30 ticks por segundo). El render interpola entre ticks para verse fluido a la frecuencia de la pantalla.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
-   "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "estado": "requiere cambio",
+   "nota": "¿Sería posible implementar más velocidades? como x4 hasta x9",
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:10:00-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "requiere cambio",
+     "texto": ""
+    },
+    {
+     "fecha": "2026-09-27T15:10:00-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "requiere cambio",
+     "texto": "¿Sería posible implementar más velocidades? como x4 hasta x9"
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:10:00-06:00"
   },
   {
    "id": "D-004",
@@ -97,10 +131,19 @@
    "detalle": "La configuración es pequeña y conviene que el usuario la pueda leer y reparar, así que va en JSON. Una partida con miles de aldeanos y un mapa de 4096 × 4096 sería de cientos de MB en JSON, así que va en binario por bloques con etiqueta, versión, CRC y compresión zstd. Se conservan los bloques desconocidos. La misma serialización sirve para las instantáneas de red.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:06:26-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:06:26-06:00"
   },
   {
    "id": "D-005",
@@ -111,10 +154,19 @@
    "detalle": "60 FPS en una PC de gama media con 4 jugadores de 500 aldeanos en un mapa Grande. Con 12 jugadores de 1000 aldeanos en un mapa Enorme, el objetivo es que la simulación aguante x1; si no, el lobby lo advierte (fase 20).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:06:45-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:06:45-06:00"
   },
   {
    "id": "D-006",
@@ -125,10 +177,19 @@
    "detalle": "La API de GPU de SDL3 recibe código ya compilado para cada backend (SPIR-V, DXIL, MSL). Escribirlos una sola vez en HLSL y convertirlos con `shadercross` al construir evita mantener tres versiones. Los mods no pueden agregar sombreadores en la primera versión.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:07:03-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:07:03-06:00"
   },
   {
    "id": "D-007",
@@ -139,10 +200,19 @@
    "detalle": "En lugar de modelar a mano con el MCP y guardar solo el `.blend`, cada modelo sale de un script de Python en `art/blender/`. Así se puede regenerar, mejorar y producir variantes, y cualquier agente puede retomar el trabajo.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:07:20-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:07:20-06:00"
   },
   {
    "id": "D-008",
@@ -153,10 +223,19 @@
    "detalle": "En el modo de mapas separados, todos los mapas se simulan en la misma simulación determinista, como regiones sin contacto físico, conectadas por un mapa del mundo abstracto. Se descartó tener simulaciones independientes por jugador: complicaría la sincronización del comercio y de los ataques entre mapas.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:07:33-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:07:33-06:00"
   },
   {
    "id": "D-009",
@@ -167,10 +246,19 @@
    "detalle": "Cualquier jugador pausa sin votación. Reanudar y cambiar de velocidad requieren que todos acepten, o se descartan a los 15 s. En el pueblo común todos los jugadores tienen permisos iguales. Si un jugador se desconecta, sus aldeanos siguen trabajando sin órdenes nuevas hasta que vuelva.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:07:40-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:07:40-06:00"
   },
   {
    "id": "D-010",
@@ -181,10 +269,26 @@
    "detalle": "Por omisión, unos 20 minutos a x1, igual que en Farthest Frontier. Es configurable al crear la partida.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
-   "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "estado": "requiere cambio",
+   "nota": "quiero agregar años de 60, 75 y 90 minutos.",
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:09:49-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "requiere cambio",
+     "texto": ""
+    },
+    {
+     "fecha": "2026-09-27T15:09:49-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "requiere cambio",
+     "texto": "quiero agregar años de 60, 75 y 90 minutos."
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:09:49-06:00"
   },
   {
    "id": "D-011",
@@ -195,10 +299,19 @@
    "detalle": "Un pueblo puede mezclar razas. Los rasgos son modificadores declarados en datos: los enanos minan más rápido, los elfos cazan mejor, los gatunos ven de noche y se mueven más rápido. No hay edificios exclusivos por raza, porque no se pidió y duplicaría el trabajo de arte y de equilibrio. El sistema de definiciones permite agregarlos después.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:10:25-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:10:25-06:00"
   },
   {
    "id": "D-012",
@@ -209,10 +322,19 @@
    "detalle": "Se pidió la licencia \"que permita usar más assets y bibliotecas\".\n- Todas las bibliotecas elegidas son permisivas (MIT, zlib, BSD, Apache 2.0 o dominio público), y la MIT es compatible con todas.\n- Los assets son archivos de datos separados del código y conservan su propia licencia (CC0, CC-BY, CC-BY-SA, OFL) sin afectar a la del código. Basta cumplir la atribución en `CREDITS.md`.\n- Se descartó la GPL. Permitiría usar bibliotecas GPL, que en el desarrollo de juegos son raras, pero es incompatible con SDK propietarios como el de Steamworks, que se necesitará para publicar en Steam.\n- Limitación: no se pueden usar bibliotecas con licencia GPL. Si alguna vez hiciera falta una, se revisa entonces.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:10:51-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:10:51-06:00"
   },
   {
    "id": "D-013",
@@ -223,10 +345,19 @@
    "detalle": "Se incluyen varias fuentes OFL y el jugador elige la de la interfaz en Configuración. El logotipo usa una fuente decorativa fija. Todas cubren al menos el latín extendido; un idioma con otro alfabeto necesitará agregar una fuente que lo cubra.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:11:03-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:11:03-06:00"
   },
   {
    "id": "D-101",
@@ -237,10 +368,19 @@
    "detalle": "SDL recomienda un nombre de organización no vacío en `SDL_GetPrefPath`: sin él, el juego no pasaría la certificación de algunas tiendas. Se usa \"Salva\" como organización, que sirve para todos los juegos de la familia. La especificación decía `%APPDATA%\\SalvaCiudad` y se actualizó.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:52:53-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:52:53-06:00"
   },
   {
    "id": "D-102",
@@ -251,10 +391,19 @@
    "detalle": "Versiones y hashes en `third_party/README.md`. De SDL3 se quitaron solo las carpetas que no se compilan (`test`, `examples`, `VisualC`, `VisualC-GDK` y `Xcode`). El resto queda intacto para poder actualizarla reemplazando la carpeta. SDL incluye `AGENTS.md` y `CLAUDE.md`: piden no usar IA **para contribuir a SDL**. Este proyecto solo usa la biblioteca, sin modificarla ni enviarle cambios.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:52:57-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:52:57-06:00"
   },
   {
    "id": "D-103",
@@ -265,10 +414,19 @@
    "detalle": "El motor y el juego se compilan con `/EHs-c- /GR-` y `_HAS_EXCEPTIONS=0` (con `-fno-exceptions -fno-rtti` en GCC y Clang). doctest reporta los fallos con excepciones, así que solo el ejecutable de pruebas las activa. Consecuencia: toda función de la biblioteca estándar que pueda lanzar se llama en su versión con `error_code`, o se validan antes sus entradas. Por ejemplo, `path_from_utf8` rechaza el UTF-8 inválido, y `path_to_utf8` convierte con `WideCharToMultiByte` para tolerar sustitutos sueltos en nombres de archivo de Windows.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:05-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:05-06:00"
   },
   {
    "id": "D-104",
@@ -279,10 +437,19 @@
    "detalle": "La especificación prevé un hilo de simulación (7.2). En la fase 1 no hay simulación, así que el reloj de paso fijo (`GameClock`) vive en el hilo principal. El hilo aparte se decide en la fase 5, midiendo, junto con el núcleo determinista.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:10-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:10-06:00"
   },
   {
    "id": "D-105",
@@ -293,10 +460,19 @@
    "detalle": "F11 cambia en ciclo entre ventana, sin bordes y pantalla completa. Alt+Enter alterna entre ventana y el último modo de pantalla completa usado. En la fase 2 pasan al sistema de teclas reasignables y al menú de Configuración.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:14-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:14-06:00"
   },
   {
    "id": "D-106",
@@ -307,10 +483,19 @@
    "detalle": "Con `fullscreenWidth` y `fullscreenHeight` en 0, la pantalla completa no cambia el modo de vídeo del monitor. Elegir otra resolución llega en la fase 2, con confirmación y reversión automática a los 15 s.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:31-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:31-06:00"
   },
   {
    "id": "D-107",
@@ -321,10 +506,19 @@
    "detalle": "Un error al iniciar SDL o al crear la carpeta de datos se escribe en stderr y en el registro. Los cuadros de diálogo necesitan los textos traducidos, que llegan en la fase 2. Lo mismo vale para el aviso de \"N ajustes ignorados\", que por ahora solo va al registro.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:40-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:40-06:00"
   },
   {
    "id": "D-108",
@@ -335,10 +529,19 @@
    "detalle": "Así los registros de jugadores en distintas zonas horarias se pueden comparar al diagnosticar el multijugador.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:42-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:42-06:00"
   },
   {
    "id": "D-201",
@@ -349,10 +552,19 @@
    "detalle": "Los sombreadores se escriben en HLSL y se compilan a DXIL con el `dxc.exe` del Windows SDK que ya está instalado, sin dependencias nuevas. Se incrustan en el ejecutable como arreglos de bytes. El dispositivo de GPU pide solo DXIL, así que SDL elige Direct3D 12.\n- Se descartó `SDL_shadercross` por ahora: compilarlo arrastra DXC y SPIRV-Cross completos, que son enormes, cuando lo único que se prueba es Windows.\n- Consecuencias: una PC sin Direct3D 12 no puede jugar (el juego lo dice con un mensaje claro), y en Linux y macOS CMake se detiene con un mensaje que apunta a esta decisión.\n- Cuando se pruebe Linux se agregará SPIR-V (con el `dxc` del SDK de Vulkan) y MSL.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:49-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:49-06:00"
   },
   {
    "id": "D-202",
@@ -363,10 +575,19 @@
    "detalle": "Cada cuadro, las pantallas llaman a funciones de widgets que se dibujan y devuelven la interacción. Es lo más simple para menús y configuración, y no guarda estado duplicado. Las ventanas acoplables de la fase 17 se construirán encima, con su propio estado de posición y tamaño.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:52-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:52-06:00"
   },
   {
    "id": "D-203",
@@ -377,10 +598,19 @@
    "detalle": "En `settings.json` se guarda el nombre del scancode de SDL (la posición física), así WASD sigue en su lugar con cualquier distribución de teclado. En pantalla se muestra la letra que la distribución actual pone en esa tecla. Las teclas especiales (flechas, Espacio, Intro…) tienen nombre traducido (`key.*`), porque SDL solo da nombres en inglés.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:53:56-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:53:56-06:00"
   },
   {
    "id": "D-204",
@@ -391,10 +621,19 @@
    "detalle": "Al asignar una tecla que ya usa otra acción, la otra acción la pierde y se muestra un aviso con el nombre de las dos. Se descartó rechazar la asignación: obliga a buscar y borrar primero la tecla en la otra acción, que es más pesado. Al cargar `settings.json`, un duplicado se desasigna y cuenta como ajuste inválido.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:54:02-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:54:02-06:00"
   },
   {
    "id": "D-205",
@@ -405,10 +644,19 @@
    "detalle": "stb_truetype no está preparada para archivos de fuente maliciosos. Por eso las fuentes solo se cargan desde `data/fonts/` (instalado con el juego), con rutas validadas dentro de esa carpeta, y los mods no pueden agregar fuentes. Si en el futuro hace falta, se evaluará un cargador endurecido.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:54:07-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:54:07-06:00"
   },
   {
    "id": "D-206",
@@ -419,10 +667,19 @@
    "detalle": "Con el español, el inglés y pocos tamaños de letra, el atlas no se llena. Si se llenara, se vacía y los glifos se vuelven a rasterizar. El texto de ese cuadro puede verse mal durante un solo cuadro. Se registra en el registro.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:54:26-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:54:26-06:00"
   },
   {
    "id": "D-207",
@@ -433,10 +690,19 @@
    "detalle": "La escala final es la del monitor (la de Windows, por ejemplo 150 %) multiplicada por el ajuste del jugador. \"Automático\" equivale a 100 %, así que el 100 % no aparece dos veces en la lista. El diseño se hace en unidades pensadas para 1080p al 100 %.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:54:30-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:54:30-06:00"
   },
   {
    "id": "D-208",
@@ -447,10 +713,19 @@
    "detalle": "- `es.json` sigue la RAE: coma decimal, espacio duro como separador de miles, y sin separar los números de cuatro cifras (`minimumGroupingDigits` 2).\n- `es-MX.json` solo cambia el formato de números (punto decimal y coma de miles) y hereda todos los textos de `es`.\n- Además, `es-MX.json` demuestra que un idioma nuevo puede ser solo una variante.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:54:33-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:54:33-06:00"
   },
   {
    "id": "D-209",
@@ -461,10 +736,19 @@
    "detalle": "`data/lang/en.json` se incrusta en el ejecutable al compilar. Si falta la carpeta de datos, el juego igual muestra textos y puede explicar el error. Si existe, el archivo reemplaza a la copia incrustada. Los idiomas se cargan antes de iniciar SDL, para mostrar en el idioma del jugador incluso los errores fatales.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:54:47-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:54:47-06:00"
   },
   {
    "id": "D-210",
@@ -475,10 +759,19 @@
    "detalle": "Las pestañas Gráficos y Audio ya guardan sus valores y lo dicen con una nota. Las notas (`settings.graphics.pendingNote` y `settings.audio.pendingNote`) se quitan cuando el render 3D (fase 3) y el sonido (fase 18) los apliquen. La calidad general se deriva siempre de los niveles individuales, así nunca se contradicen.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:55:06-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:55:06-06:00"
   },
   {
    "id": "D-211",
@@ -489,10 +782,19 @@
    "detalle": "Si el título y las pestañas dejan menos del 45 % del alto para las opciones, se desplazan junto con ellas. Los botones \"Restaurar\" y \"Volver\" quedan siempre fijos. Con poco ancho, cada etiqueta va encima de su control. El menú principal limita el logotipo a un tercio del alto y se desplaza si no cabe.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:55:16-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:55:16-06:00"
   },
   {
    "id": "D-212",
@@ -503,10 +805,19 @@
    "detalle": "El selector de Configuración lista las familias de `data/fonts/fonts.json`, así que agregar otra es un cambio de datos. Ver D-013.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:55:19-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:55:19-06:00"
   },
   {
    "id": "D-213",
@@ -517,10 +828,19 @@
    "detalle": "SDL toma la posición del cursor real para los clics, no la del mensaje de Windows. Las pruebas de humo con capturas de pantalla usan `SetCursorPos` y devuelven el cursor a su posición al terminar. Los cambios de modo de pantalla no se prueban en vivo, porque ocuparían la pantalla; se prueban con servicios simulados (`tests/test_menus.cpp`).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:55:49-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:55:49-06:00"
   },
   {
    "id": "D-214",
@@ -531,10 +851,19 @@
    "detalle": "Se pueden reasignar aunque todavía no hacen nada. Pausa y velocidades se aplican desde la fase 8, y el guardado rápido desde la fase 8 o 9. La captura de pantalla (F12) queda pendiente sin fase asignada.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:55:56-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:55:56-06:00"
   },
   {
    "id": "D-301",
@@ -545,10 +874,19 @@
    "detalle": "`tools/models/make_test_models.py` genera `data/models/test/*.glb` (árbol, casa con textura de entramado y roca). Usa solo la biblioteca estándar de Python y el resultado es idéntico en cada ejecución. Los `.glb` se guardan en el repositorio. Sirven para probar el render hasta que la fase 4 produzca los modelos reales con Blender.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:14-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:14-06:00"
   },
   {
    "id": "D-302",
@@ -559,10 +897,19 @@
    "detalle": "El cargador acepta únicamente glTF binario con todos sus datos en el propio archivo: sin URIs externas ni `data:`. Valida tamaños, cantidades, índices y que las posiciones sean números finitos. Como stb_image, igual que stb_truetype (D-205), no está pensado para archivos maliciosos, por ahora los modelos solo se cargan de `data/`. Los mods podrán aportar modelos cuando se evalúe un decodificador endurecido (fase 7).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:19-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:19-06:00"
   },
   {
    "id": "D-303",
@@ -573,10 +920,19 @@
    "detalle": "Todas las instancias viven en un búfer de la GPU que solo se vuelve a subir cuando la escena cambia. Cada cuadro se sube únicamente la lista de índices visibles, 4 bytes por objeto, para la vista y para cada cascada de sombra. El recorte por frustum se hace en la CPU: con 50 000 objetos y tres cascadas tarda alrededor de 1 ms.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:22-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:22-06:00"
   },
   {
    "id": "D-304",
@@ -587,10 +943,19 @@
    "detalle": "Da precisión uniforme en mapas de varios kilómetros, sin parpadeo entre superficies lejanas.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:26-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:26-06:00"
   },
   {
    "id": "D-305",
@@ -601,10 +966,19 @@
    "detalle": "Desactivadas; 1 cascada de 1024 px hasta 120 m; 2 de 2048 px hasta 250 m; 3 de 2048 px hasta 400 m. Cada cascada se ajusta a una esfera alrededor de su tramo de la vista, de tamaño redondeado y con el centro alineado a los texeles, para que los bordes no titilen al mover la cámara. Filtrado PCF de 3 × 3, con desplazamiento por la normal y sesgo de profundidad.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:30-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:30-06:00"
   },
   {
    "id": "D-306",
@@ -615,10 +989,19 @@
    "detalle": "Con \"mailbox\", Direct3D 12 seguía esperando al refresco del monitor: la medición se quedaba clavada en 100 FPS en un monitor de 100 Hz. Con el modo inmediato la misma escena da unos 600 FPS. Puede haber tearing, que es lo esperable al desactivar la sincronización vertical. \"Mailbox\" queda como respaldo si el inmediato no está disponible. Se verificó en Windows 11 build 26200.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:34-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:34-06:00"
   },
   {
    "id": "D-307",
@@ -629,10 +1012,19 @@
    "detalle": "Se reemplazó la opción FXAA, que habría requerido un pase de posprocesado extra, por niveles de MSAA, que la API de SDL resuelve sola. El valor guardado 1 pasa a significar MSAA 2x. El preset \"Alta\" usa 4x y \"Ultra\" 8x. Si la GPU no admite un nivel, se baja al siguiente disponible.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:37-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:37-06:00"
   },
   {
    "id": "D-308",
@@ -643,10 +1035,19 @@
    "detalle": "El swapchain no es sRGB, así que el sombreador convierte el resultado a gamma al final. Las texturas de los modelos se suben como sRGB, con mipmaps. La iluminación es estilizada: sol con sombra, luz ambiental de cielo y suelo, y niebla que se funde con el horizonte del cielo.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:40-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:40-06:00"
   },
   {
    "id": "D-309",
@@ -657,10 +1058,19 @@
    "detalle": "La escena de prueba tiene 50 000 objetos en 2 km × 2 km: 42 000 árboles, 3000 casas en aldeas y 5000 rocas. También sirve de fondo del menú principal, con la cámara girando despacio detrás de un velo oscuro. El botón \"Escena de prueba 3D\" del menú es provisional: se quita cuando exista la partida de un jugador (fase 8).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:43-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:43-06:00"
   },
   {
    "id": "D-310",
@@ -671,10 +1081,19 @@
    "detalle": "Se abre con F3 (reasignable). Sus textos también están traducidos. Se desactivaron `imgui.ini` y el registro de ImGui para que no escriba archivos. Incluye una \"vista de estrés\" de depuración que aleja la cámara hasta ver toda la escena, para medir el peor caso.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:47-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:47-06:00"
   },
   {
    "id": "D-311",
@@ -685,10 +1104,19 @@
    "detalle": "`release`, ventana de 1600 × 900, calidad Alta (MSAA 4x, 2 cascadas) y sin sincronización vertical:\n- Vista normal: unos 600 FPS.\n- Vista de estrés con 49 025 objetos en pantalla (2,35 M triángulos): unos 525 FPS.\n\nEl criterio de la fase era 60 FPS o más con 50 000 instancias. Falta medir en una PC de gama media de referencia.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:52-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:52-06:00"
   },
   {
    "id": "D-312",
@@ -699,10 +1127,19 @@
    "detalle": "Distancia de 8 a 260 m, con una inclinación que pasa de 28° (cerca) a 68° (lejos). El desplazamiento es proporcional a la distancia, con suavizado exponencial independiente de los FPS. Gira con Q/E o arrastrando con el botón central, y se desplaza al acercar el puntero a 3 px del borde. Los valores están en `src/game/camera.cpp` y se ajustarán según tu opinión.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:56:54-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:56:54-06:00"
   },
   {
    "id": "D-401",
@@ -713,10 +1150,19 @@
    "detalle": "Los modelos se generan con `blender --background --factory-startup`. Así el resultado no depende de las preferencias ni de los complementos de Blender, y nunca se toca la escena que el usuario tenga abierta. El MCP de Blender queda para inspeccionar o para trabajo interactivo si el usuario lo pide. Se verificó con Blender 5.2.0 LTS.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:57:08-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:57:08-06:00"
   },
   {
    "id": "D-402",
@@ -727,10 +1173,19 @@
    "detalle": "El exportador glTF de Blender 5.2 no mantiene el orden de las caras entre ejecuciones: los vértices salían idénticos, pero los índices en otro orden. Tras exportar, `common.canonicalize_triangle_order` gira cada triángulo para que empiece por su índice menor, sin cambiar el sentido de giro, y ordena la lista. Con esto, regenerar da archivos idénticos byte a byte (el criterio de la fase).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:57:18-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:57:18-06:00"
   },
   {
    "id": "D-403",
@@ -741,10 +1196,19 @@
    "detalle": "Al cargar un modelo, cada animación se muestrea a 30 fotogramas por segundo y se guarda la matriz de piel de cada hueso y fotograma en un búfer de la GPU (unos 30 KB por cuerpo). El sombreador interpola entre dos fotogramas y mezcla hasta 4 huesos por vértice. Por cuadro, cada personaje solo sube 80 bytes (posición, clip, tiempo y paleta), así que 2000 aldeanos animados cuestan poco. Se descartó animar los esqueletos en la CPU cada cuadro, que escala peor. Si más adelante hacen falta mezclas entre animaciones, se agregará un segundo clip con un peso por personaje.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:57:24-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:57:24-06:00"
   },
   {
    "id": "D-404",
@@ -755,10 +1219,19 @@
    "detalle": "Sombreros, barba y delantales son modelos sin esqueleto, con el origen en el punto de fijación. El juego los traslada al comienzo del hueso en la pose de reposo del cuerpo y los mueve con la matriz de ese hueso. Un mismo sombrero sirve para los dos cuerpos porque la cabeza mide lo mismo. Se descartó exportar cada accesorio con el esqueleto completo, porque obligaría a una copia por cuerpo. Un personaje elige sus accesorios con una máscara de bits, hasta 32 por cuerpo.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:57:30-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:57:30-06:00"
   },
   {
    "id": "D-405",
@@ -769,10 +1242,19 @@
    "detalle": "Cada material cuyo nombre es un \"espacio de paleta\" (piel, pelo, prenda de arriba, de abajo, zapatos, cinturón, sombrero y delantal) se pinta con la paleta del personaje, sin cambiar de modelo ni de llamada de dibujo. Las tres variantes de ropa son tres combinaciones de colores (campesino, trabajador y lugareño) que se cruzan con 5 tonos de piel y 5 colores de pelo: 75 paletas. A eso se suman el delantal, dos sombreros y la barba como piezas opcionales. Las prendas con otra forma se agregarán como accesorios.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:57:37-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:57:37-06:00"
   },
   {
    "id": "D-406",
@@ -783,10 +1265,19 @@
    "detalle": "Cada pieza del cuerpo (brazo, antebrazo, muslo…) sigue a un solo hueso, con esferas en las articulaciones para que no se abran huecos. Es el aspecto típico del low-poly estilizado y se genera de forma fiable desde código. El motor ya admite pesos repartidos entre 4 huesos, así que se puede pasar a una piel suave sin cambiarlo.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:57:38-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:57:38-06:00"
   },
   {
    "id": "D-407",
@@ -799,8 +1290,24 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:57:46-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    },
+    {
+     "fecha": "2026-09-27T14:58:07-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "sin revisar",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:58:07-06:00"
   },
   {
    "id": "D-408",
@@ -811,10 +1318,19 @@
    "detalle": "Equipo de desarrollo, `release`, 1600 × 900, calidad Alta y sin sincronización vertical:\n- 1996 aldeanos animados en pantalla, más casas, árboles y sombras: unos 365 FPS, con 3,5 M de triángulos.\n- Vista cercana con 579 aldeanos: unos 375 FPS.\n\nEl criterio era 60 FPS o más con 2000 aldeanos.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:58:18-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:58:18-06:00"
   },
   {
    "id": "D-409",
@@ -825,10 +1341,19 @@
    "detalle": "`Camera` conserva la vista aérea (D-312) y suma dos modos:\n- **Tercera persona:** órbita libre alrededor de un punto a 1,5 m del suelo, a entre 2 y 60 m, con una elevación de -30° a 85°. Al entrar, se acerca a 10 m y 25°. Gira con Q/E o arrastrando con el botón derecho o el central, en ambos ejes.\n- **Primera persona:** ojos a 1,65 m; el ratón queda capturado (modo relativo de SDL) para mirar; WASD camina a 5,5 m/s hacia donde se mira, con la mirada limitada a ±85°.\n\nAl cambiar de modo se conserva el punto observado. El desplazamiento por el borde de la pantalla solo aplica a la vista aérea. F4 es la acción reasignable \"Cambiar cámara\".",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:11:51-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:11:51-06:00"
   },
   {
    "id": "D-410",
@@ -839,10 +1364,33 @@
    "detalle": "Si el ojo quedara a menos de 0,4 m del suelo (en el punto del ojo o en el observado), la órbita sube hasta el mínimo necesario: la vista hace un paneo hacia arriba. La altura del suelo es una función que la cámara recibe (hoy plana; el terreno de la fase 6 la dará).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
-   "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "estado": "requiere cambio",
+   "nota": "quiero mejorar un poco la camara en tercera persona, para que cuando se baje la camara al suelo, el objetivo se eleve, haciendo el efecto de que se observa hacia arriba/el cielo, manteniendo la visión desde tercera persona. También quiero agregar un modelo \"fantasma\" (semi transparente) que sirva como referencia de donde se está anclando la camara cuando no se seleccionó a un aldeano para seguirlo.",
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:13:51-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "requiere definición",
+     "texto": ""
+    },
+    {
+     "fecha": "2026-09-27T15:16:12-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "requiere cambio",
+     "texto": ""
+    },
+    {
+     "fecha": "2026-09-27T15:16:58-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "requiere cambio",
+     "texto": "quiero mejorar un poco la camara en tercera persona, para que cuando se baje la camara al suelo, el objetivo se eleve, haciendo el efecto de que se observa hacia arriba/el cielo, manteniendo la visión desde tercera persona. También quiero agregar un modelo \"fantasma\" (semi transparente) que sirva como referencia de donde se está anclando la camara cuando no se seleccionó a un aldeano para seguirlo."
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:16:58-06:00"
   },
   {
    "id": "D-411",
@@ -853,10 +1401,19 @@
    "detalle": "- Un clic, sin arrastrar, lanza un rayo desde la cámara y elige al aldeano más cercano cuyo cuerpo (un segmento vertical de 1,8 m con 0,4 m de radio) toca el rayo. En primera persona se apunta con la cruz del centro.\n- El seleccionado muestra un marcador sobre la cabeza, dorado mientras se lo sigue.\n- La cámara sigue sus pies en los tres modos. En primera persona se ve con sus ojos y ese aldeano no se dibuja, para que no tape la vista.\n- WASD (o el borde de la pantalla) deja de seguirlo; girar no. Un clic en el suelo quita la selección.\n\nEsta selección vive por ahora en la escena de prueba. Es la misma mecánica que necesitará la partida (fase 8, abrir la ventana de un aldeano) y no afecta al determinismo: la cámara y la selección son solo presentación.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:16:48-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:16:48-06:00"
   },
   {
    "id": "D-412",
@@ -867,10 +1424,19 @@
    "detalle": "Así la ventana de Dear ImGui se puede usar también en primera persona.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:17:06-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:17:06-06:00"
   },
   {
    "id": "D-501",
@@ -881,10 +1447,19 @@
    "detalle": "`Fixed` guarda 32 bits: rango de ±32 767 m con 1/65 536 de precisión, suficiente para mapas de 4 km. Las operaciones se calculan en 64 bits y **saturan** en vez de desbordar, así que nunca hay comportamiento indefinido. Las divisiones redondean hacia cero, las multiplicaciones hacia abajo (desplazamiento aritmético, definido en C++20) y dividir por cero da el extremo del signo. Las distancias al cuadrado se calculan exactas en 64 bits sin signo.\n- Se descartó un tipo de 64 bits para todo: duplica la memoria de cada entidad sin necesidad.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:58:27-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:58:27-06:00"
   },
   {
    "id": "D-502",
@@ -895,10 +1470,19 @@
    "detalle": "- `tools/sim/make_trig_tables.py` genera `src/sim/fixed_tables.inc`: un cuarto de onda de seno con 1024 pasos y los ángulos de CORDIC. Es código generado y guardado en el repositorio: el juego no calcula esos números en tiempo de ejecución.\n- El error del seno es menor de 2·10⁻⁵ y el de `atan2`, de pocas unidades de las 65 536 de una vuelta.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:58:44-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:58:44-06:00"
   },
   {
    "id": "D-503",
@@ -909,10 +1493,19 @@
    "detalle": "Cada sistema tiene su propio flujo de números aleatorios, así agregar o quitar un sistema no cambia la secuencia de los demás. `below` usa el método de Lemire con rechazo: es exactamente uniforme y siempre consume la misma cantidad de números. La prueba compara con la secuencia de referencia de PCG (semilla 42, flujo 54).",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:58:48-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:58:48-06:00"
   },
   {
    "id": "D-504",
@@ -923,10 +1516,19 @@
    "detalle": "Hasta la fase 8, la simulación es un mundo de \"caminantes\" que ejercita todo el núcleo: números aleatorios, raíces, trigonometría, entidades que aparecen y desaparecen, y comandos válidos e inválidos. Los comandos de prueba (`SpawnWalkers`, `SendWalker`, `RemoveWalker`) se reemplazarán por los del juego. El formato de los comandos (20 bytes) y las reglas de validación se mantienen.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:59:02-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:59:02-06:00"
   },
   {
    "id": "D-505",
@@ -937,10 +1539,19 @@
    "detalle": "Un escenario fijo de 1500 ticks debe dar `0xed6fa5148c47bb17`. La prueba corre en `debug`, `release` y `debug-asan`, así que verifica que las optimizaciones del compilador no cambian nada. Cuando se compile en Linux y macOS, la misma prueba verificará las otras plataformas. Si cambian las reglas a propósito, se actualiza el número y se sube `kRulesVersion`.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:59:10-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:59:10-06:00"
   },
   {
    "id": "D-506",
@@ -951,10 +1562,19 @@
    "detalle": "Esto resuelve D-104. A 10 ticks por segundo, el mundo actual cuesta microsegundos, y un hilo aparte agregaría sincronización sin beneficio. `App` avanza la simulación con `GameClock` y el panel F3 muestra el tick y el último hash. Cuando la aldea pese de verdad (fase 8, medido en la fase 20), se evaluará moverla a un hilo propio. Las reglas de determinismo ya lo permiten: la simulación no comparte estado con el render salvo lo que se le lee.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:59:13-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:59:13-06:00"
   },
   {
    "id": "D-507",
@@ -965,10 +1585,19 @@
    "detalle": "La simulación no toca archivos. `game/replay_file` guarda y lee las repeticiones con escritura atómica, un límite de 256 MB y validación completa (firma, versiones, orden de los ticks y suma de verificación). Una prueba estática impide usar en `src/sim` coma flotante, contenedores desordenados, relojes, archivos, hilos o números aleatorios estándar.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:59:16-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:59:16-06:00"
   },
   {
    "id": "D-601",
@@ -979,10 +1608,19 @@
    "detalle": "`sim/worldgen` usa solo enteros, `Fixed` y su propio ruido (`sim/noise`: ruido de valor sobre una retícula con hash y fBm). Así el mapa sale idéntico en todas las máquinas y la prueba estática de `src/sim` también lo cubre.\n- El mapa (`sim::MapData`) guarda:\n  - alturas de los vértices en centímetros;\n  - la superficie del agua por celda;\n  - tipo de suelo y fertilidad;\n  - objetos naturales, zonas de animales y posiciones de inicio.\n- Una celda mide 1 m. Pequeño, Mediano, Grande y Enorme miden 512, 1024, 2048 y 4096 m de lado.\n- La prueba `worldgen` fija la suma de verificación de un mapa Pequeño (semilla 12345): `0x9171cd08375d6a63`. Si el generador cambia a propósito, se actualiza.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:59:38-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T14:59:38-06:00"
   },
   {
    "id": "D-602",
@@ -1161,10 +1799,19 @@
    "detalle": "- El juego se cerraba al desactivar la sincronización vertical. La casilla cambiaba el modo de presentación a mitad del cuadro, con una imagen del swapchain todavía en uso. Para pasar a presentación inmediata, Direct3D 12 tiene que recrear el swapchain, y falló con \"Acceso denegado\" (0x80070005).\n- Ahora el cambio queda pendiente y se aplica después de enviar el cuadro.\n- Si aun así falla, se vuelve al modo anterior y se corrige el ajuste guardado.\n- Verificado activándola y desactivándola varias veces seguidas.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:17:16-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:17:16-06:00"
   },
   {
    "id": "D-615",
@@ -1175,10 +1822,19 @@
    "detalle": "- Sobre un mapa, la vista aérea se puede alejar hasta 1,6 veces el lado del mapa: unos 6,5 km en el Enorme.\n- Más allá del límite normal (260 m):\n  - el suelo y el agua se dibujan hasta donde haga falta;\n  - la niebla se ajusta a esa distancia;\n  - los modelos siguen limitados por la distancia de dibujo, así que desde muy alto solo se ve el suelo, con los bosques en su color, a más de 1000 FPS.\n- Las ondas del agua se desvanecen con la distancia, porque de lejos solo producían brillos granulados.\n- Cuando se decida, se vuelve al límite normal quitando `set_max_distance_override` en `App::enter_generated_map`.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:17:24-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:17:24-06:00"
   },
   {
    "id": "D-616",
@@ -1189,10 +1845,19 @@
    "detalle": "- Con un mapa abierto, Esc ya no vuelve al menú principal: abre el menú del juego, con Continuar, Configuración, Salir al menú principal y Salir del juego. Esc lo cierra.\n- Mientras el menú o la configuración están abiertos:\n  - el mapa sigue detrás, oscurecido;\n  - la cámara no se mueve y el ratón se libera.\n- Cerrar la configuración vuelve al mapa con el menú abierto.\n- En la fase 8, este menú también pausará la partida de un jugador y avisará antes de salir sin guardar.\n- La escena de prueba sigue volviendo directo al menú principal con Esc.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:17:28-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:17:28-06:00"
   },
   {
    "id": "D-617",
@@ -1399,10 +2064,19 @@
    "detalle": "El usuario no quiere compatibilidad de partidas guardadas entre versiones del juego, ni siquiera después de la entrega: cada versión empieza partidas nuevas. Una partida de otra versión se rechaza con un mensaje claro. Así el generador de mapas y las reglas pueden cambiar en cualquier fase; solo hay que actualizar las sumas de referencia de las pruebas.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:17:47-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:17:47-06:00"
   },
   {
    "id": "D-632",
@@ -1427,10 +2101,19 @@
    "detalle": "El usuario pidió avanzar de la fase 7 a la 20 sin detenerse, tomando en cada duda la opción recomendada, y un resumen al final con lo que debe revisar por fase. Cada fase termina igual que las anteriores: todas las configuraciones compiladas sin advertencias, pruebas en verde, una prueba en vivo, documentación y un commit. Cada decisión que la especificación no cubre se anota aquí.",
    "fuente": "docs/DECISIONES.md",
    "origen": "DECISIONES",
-   "estado": "sin revisar",
+   "estado": "aprobada",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:18:07-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "aprobada",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T15:18:07-06:00"
   },
   {
    "id": "D-701",
@@ -6586,24 +7269,28 @@
     {
      "fecha": "2026-09-27T14:02:18-06:00",
      "quien": "Salvador",
+     "accion": "estado",
      "estado": "confirmado",
      "texto": ""
     },
     {
      "fecha": "2026-09-27T14:05:46-06:00",
      "quien": "Salvador",
+     "accion": "estado",
      "estado": "requiere definición",
      "texto": ""
     },
     {
      "fecha": "2026-09-27T14:06:25-06:00",
      "quien": "Salvador",
+     "accion": "estado",
      "estado": "rechazado",
      "texto": ""
     },
     {
      "fecha": "2026-09-27T14:06:28-06:00",
      "quien": "Salvador",
+     "accion": "estado",
      "estado": "pendiente",
      "texto": ""
     },
@@ -6626,9 +7313,18 @@
    "fuente": "Claude",
    "origen": "curado",
    "estado": "pendiente",
-   "nota": "",
+   "nota": "Si quiero que coman y cobren sueldo en monedas.",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:46:51-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "pendiente",
+     "texto": "Si quiero que coman y cobren sueldo en monedas."
+    }
+   ],
+   "actualizado": "2026-09-27T14:46:51-06:00"
   },
   {
    "id": "conf-raza-sala",
@@ -6640,9 +7336,18 @@
    "fuente": "Claude",
    "origen": "curado",
    "estado": "pendiente",
-   "nota": "",
+   "nota": "De acuerdo con que el anfitrión lo decida.",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:48:19-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "pendiente",
+     "texto": "De acuerdo con que el anfitrión lo decida."
+    }
+   ],
+   "actualizado": "2026-09-27T14:48:19-06:00"
   },
   {
    "id": "conf-vision-nocturna",
@@ -6656,7 +7361,8 @@
    "estado": "pendiente",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "actualizado": "2026-09-27T14:50:12-06:00"
   },
   {
    "id": "conf-aviso-6000",
@@ -6667,10 +7373,19 @@
    "detalle": "La especificación sugería 600 por jugador (7200 con 12). Elegí 6000 porque desde ahí los ticks más pesados pasan de 33 ms (D-2003).",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "pendiente",
+   "estado": "confirmado",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:50:52-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "confirmado",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-27T14:50:52-06:00"
   },
   {
    "id": "conf-pruebas-amenazas",
@@ -6695,10 +7410,26 @@
    "detalle": "En islas, asaltantes y ejércitos que no pueden llegar caminando desembarcan en la costa o viajan como entre mapas separados (D-2206). ¿Lo dejamos así hasta que haya barcos?",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "pendiente",
-   "nota": "",
+   "estado": "confirmado",
+   "nota": "Sí.",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:51:30-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "confirmado",
+     "texto": ""
+    },
+    {
+     "fecha": "2026-09-27T14:51:30-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "confirmado",
+     "texto": "Sí."
+    }
+   ],
+   "actualizado": "2026-09-27T14:51:30-06:00"
   },
   {
    "id": "conf-sonidos",
@@ -6709,10 +7440,26 @@
    "detalle": "Los sintetiza un script (art/audio/make_sounds.py) y solo verifiqué que cargan: en las pruebas en vivo el volumen estaba en 0 para no molestarte. Escúchalos y dime qué cambiar.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "pendiente",
-   "nota": "",
+   "estado": "confirmado",
+   "nota": "Por ahora están bien.",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "fecha": "2026-09-27T15:00:07-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "confirmado",
+     "texto": ""
+    },
+    {
+     "fecha": "2026-09-27T15:00:07-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "confirmado",
+     "texto": "Por ahora están bien."
+    }
+   ],
+   "actualizado": "2026-09-27T15:00:07-06:00"
   },
   {
    "id": "sug-modelos-combate",
@@ -6975,10 +7722,26 @@
    "detalle": "Por omisión, 4 de cada 10 mapas sin islas tienen costa en uno o dos lados (D-2601). ¿Lo dejamos así, o prefieres \"Sin mar\" por omisión?",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "pendiente",
-   "nota": "",
+   "estado": "confirmado",
+   "nota": "Así está bien.",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:51:52-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "confirmado",
+     "texto": ""
+    },
+    {
+     "fecha": "2026-09-27T14:51:52-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "confirmado",
+     "texto": "Así está bien."
+    }
+   ],
+   "actualizado": "2026-09-27T14:51:52-06:00"
   },
   {
    "id": "conf-accidentes-normales",
@@ -7003,10 +7766,19 @@
    "detalle": "Al cambiar el generador, tres pruebas de juego que dependían de la forma de un mapa se ajustaron (D-2705): salud, ejército y aldea usan mapas sin mar; \"una hora de juego\" usa el mapa 29 (el jugador de prueba prospera en 7 de 16 mapas, igual que antes); \"el fuego se propaga\" pide 3 de 5 pueblos.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "pendiente",
+   "estado": "confirmado",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "fecha": "2026-09-27T14:52:31-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "confirmado",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-27T14:52:31-06:00"
   },
   {
    "id": "pend-medir-colosal-27",
@@ -7177,5 +7949,5 @@
    "historial": []
   }
  ],
- "generado": "2026-09-27T14:32:52-06:00"
+ "generado": "2026-09-27T15:22:14-06:00"
 }

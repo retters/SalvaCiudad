@@ -25,7 +25,11 @@ En Firefox la página no puede escribir en el archivo: usa **Descargar** y reemp
 | Pendientes | Trabajo abierto de la especificación | abierto, autorizado, requiere definición, pospuesto, descartado, en curso, hecho |
 | Resumen | Cuántos hay en cada estado, y un cuadro por fase | — |
 
-Cada elemento tiene tu **nota** (lo que ves, lo que autorizas, lo que falta definir), mi **respuesta** y el **historial** de quién cambió qué y cuándo. Hay filtros por fase, estado y texto, y se pueden cambiar varios a la vez.
+Cada elemento tiene tu **nota** (lo que ves, lo que autorizas, lo que falta definir), mi **respuesta** y el **historial** de quién cambió qué y cuándo.
+
+- **La nota se guarda con ✓ Guardar nota** (o Ctrl+Enter). Mientras escribes es un borrador: se marca "nota sin guardar", no llega al archivo y sobrevive si cierras la pestaña. "Descartar cambios" vuelve a la nota guardada.
+- **El estado se guarda al elegirlo.**
+- **El historial** tiene una entrada por acción: cada estado elegido, cada nota guardada y cada respuesta mía. Hay filtros por fase, estado y texto, y se pueden cambiar varios a la vez.
 
 ## Cómo lo uso yo
 
@@ -45,6 +49,7 @@ python tools/revision/revision.py sincronizar            # vuelve a leer DECISIO
 python tools/revision/revision.py pendientes             # lo que espera que yo actúe
 python tools/revision/revision.py responder <id> <estado|-> "<texto>"
 python tools/revision/revision.py agregar <archivo.json> # cambios, dudas y sugerencias nuevas
+python tools/revision/revision.py compactar              # limpia historiales de la primera versión (nota guardada por partes)
 ```
 
 Si la página está abierta mientras actualizo el archivo, se vuelve a leer sola; lo que estés editando en ese momento no se pierde.

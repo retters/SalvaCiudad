@@ -77,6 +77,10 @@ select.state { border-radius: 14px; padding: 3px 8px; border: 1px solid transpar
 .answer { margin-top: 8px; border-left: 3px solid var(--info); background: var(--info-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; font-size: 14px; }
 .answer b { color: var(--info); }
 label.note { display: block; margin-top: 10px; font-size: 13px; color: var(--dim); }
+.note-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.note-actions .hint { font-size: 12px; color: var(--dim); }
+.note-actions .hint.warn { color: var(--warn); font-weight: 600; }
+textarea.draft { border-color: var(--warn); }
 textarea { width: 100%; min-height: 58px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; margin-top: 3px; }
 details.hist { margin-top: 8px; font-size: 13px; color: var(--dim); }
 details.hist li { margin: 2px 0; }
@@ -264,7 +268,10 @@ function useDoc(data) {
     for (const it of doc.items) {
       const k = kept[it.id];
       if (k && k.actualizado && (!it.actualizado || k.actualizado > it.actualizado)) {
-        Object.assign(it, k); dirty.set(it.id, k); restored++;
+        it.estado = k.estado; it.nota = k.nota; it.actualizado = k.actualizado;
+        const seen = new Set(it.historial.map(entryKey));
+        for (const h of k.historial || []) if (!seen.has(entryKey(h))) it.historial.push(h);
+        dirty.set(it.id, k); restored++;
       }
     }
     if (restored) { toast(`${restored} cambio(s) sin guardar recuperados.`); scheduleSave(); }
@@ -287,6 +294,13 @@ async function openFile() {
     setStatus('Guardado automático en ' + handle.name, 'good');
     showButtons();
   } catch (e) { setStatus('No se pudo leer: ' + e.message, 'bad'); }
+}
+function entryKey(h) { return h.id || [h.fecha, h.quien, h.estado, h.texto].join('|'); }
+const drafts = new Map();   // id -> a note being written, not saved yet.
+try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem('revision.drafts') || '{}'))) drafts.set(k, String(v)); }
+catch (e) { /* No drafts kept. */ }
+function keepDrafts() {
+  try { localStorage.setItem('revision.drafts', JSON.stringify(Object.fromEntries(drafts))); } catch (e) { /* Only in memory. */ }
 }
 function keepUnsaved() {
   try {
@@ -317,8 +331,8 @@ async function save() {
       const it = byId.get(id);
       if (!it) continue;
       it.estado = mine.estado; it.nota = mine.nota; it.actualizado = mine.actualizado;
-      const seen = new Set(it.historial.map((h) => h.fecha + '|' + h.quien));
-      for (const h of mine.historial) if (!seen.has(h.fecha + '|' + h.quien)) it.historial.push(h);
+      const seen = new Set(it.historial.map(entryKey));
+      for (const h of mine.historial) if (!seen.has(entryKey(h))) it.historial.push(h);
       it.historial.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
     }
     const text = JSON.stringify(disk, null, 1) + '\n';
@@ -401,20 +415,33 @@ function showButtons() {
 }
 
 // ---- Editing ---------------------------------------------------------------------------------
+// One history entry per deliberate action: a state chosen, or a note saved
+// with its button (never the note while it is being typed).
 function edit(it, changes) {
+  const accion = changes.estado !== undefined ? 'estado' : 'nota';
   Object.assign(it, changes);
   it.actualizado = now();
-  // One history line per state change; a note edit updates Salvador's
-  // latest line when nothing came after it.
-  const h = it.historial;
-  const last = h[h.length - 1];
-  if (changes.estado !== undefined || !last || last.quien !== USER) {
-    h.push({fecha: it.actualizado, quien: USER, estado: it.estado, texto: it.nota});
-  } else {
-    last.fecha = it.actualizado; last.estado = it.estado; last.texto = it.nota;
-  }
-  dirty.set(it.id, {estado: it.estado, nota: it.nota, actualizado: it.actualizado, historial: h.filter((x) => x.quien === USER)});
+  const entry = {id: it.actualizado + '-' + Math.random().toString(36).slice(2, 8), fecha: it.actualizado, quien: USER, accion,
+    estado: it.estado, texto: accion === 'nota' ? it.nota : ''};
+  it.historial.push(entry);
+  const prev = dirty.get(it.id);
+  dirty.set(it.id, {estado: it.estado, nota: it.nota, actualizado: it.actualizado,
+    historial: [...(prev ? prev.historial : []), entry]});
   scheduleSave();
+}
+function saveNote(it) {
+  if (!drafts.has(it.id)) return;
+  const text = drafts.get(it.id).trim();
+  drafts.delete(it.id);
+  keepDrafts();
+  if (text !== (it.nota || '')) edit(it, {nota: text});
+  render();
+}
+function historyLine(h) {
+  const who = h.quien === 'Claude' ? 'Claude' : 'Tú';
+  if (h.accion === 'estado') return `${fmtDate(h.fecha)} · ${who} · estado: ${h.estado}`;
+  if (h.accion === 'nota') return `${fmtDate(h.fecha)} · ${who} · nota: ${h.texto || '(borrada)'}`;
+  return `${fmtDate(h.fecha)} · ${who} · ${h.estado}${h.texto ? ' — ' + h.texto : ''}`;
 }
 
 // ---- Rendering -------------------------------------------------------------------------------
@@ -463,20 +490,36 @@ function card(it, showKind) {
       showKind ? el('span', {class: 'chip'}, KIND_LABEL[it.tipo]) : null,
       it.fase && !/^\d+[a-z]?$/.test(it.fase) ? null : (it.fase ? el('span', {class: 'chip'}, 'Fase ' + it.fase) : null),
       it.nota ? el('span', {}, '✎ tu nota') : null,
+      drafts.has(it.id) ? el('span', {class: 'flag'}, 'nota sin guardar') : null,
       ...flags));
   c.append(el('div', {class: 'head'}, check, title, stateSelect(it)));
   const body = el('div', {class: 'body'});
   if (it.detalle) body.append(markdown(it.detalle));
   if (it.respuesta) body.append(el('div', {class: 'answer'}, el('b', {}, 'Claude: '), it.respuesta));
   const area = el('textarea', {placeholder: 'Tu nota: qué ves, qué autorizas, qué falta definir…'});
-  area.value = it.nota || '';
-  let t = 0;
-  area.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => edit(it, {nota: area.value}), 700); });
-  area.addEventListener('blur', () => { clearTimeout(t); if (area.value !== (it.nota || '')) edit(it, {nota: area.value}); });
-  body.append(el('label', {class: 'note'}, 'Tu nota', area));
+  area.value = drafts.has(it.id) ? drafts.get(it.id) : (it.nota || '');
+  const saveBtn = el('button', {class: 'btn primary', title: 'Guarda la nota (Ctrl+Enter)', onclick: () => saveNote(it)}, '✓ Guardar nota');
+  const discardBtn = el('button', {class: 'btn', onclick: () => { drafts.delete(it.id); keepDrafts(); render(); }}, 'Descartar cambios');
+  const hint = el('span', {class: 'hint'});
+  const sync = () => {
+    const changed = drafts.has(it.id);
+    saveBtn.disabled = !changed;
+    discardBtn.hidden = !changed;
+    area.classList.toggle('draft', changed);
+    hint.className = 'hint' + (changed ? ' warn' : '');
+    hint.textContent = changed ? 'Sin guardar: no llega al registro hasta que la guardes.' : (it.nota ? 'Guardada.' : '');
+  };
+  area.addEventListener('input', () => {
+    if (area.value === (it.nota || '')) drafts.delete(it.id); else drafts.set(it.id, area.value);
+    keepDrafts();
+    sync();
+  });
+  area.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveNote(it); } });
+  sync();
+  body.append(el('label', {class: 'note'}, 'Tu nota', area), el('div', {class: 'note-actions'}, saveBtn, discardBtn, hint));
   if (it.historial.length) {
     body.append(el('details', {class: 'hist'}, el('summary', {}, `Historial (${it.historial.length})`),
-      el('ul', {}, it.historial.map((h) => el('li', {}, `${fmtDate(h.fecha)} · ${h.quien === 'Claude' ? 'Claude' : 'Tú'} · ${h.estado}${h.texto ? ' — ' + h.texto : ''}`)))));
+      el('ul', {}, it.historial.map((h) => el('li', {}, historyLine(h))))));
   }
   if (it.fuente) body.append(el('div', {class: 'meta'}, 'Fuente: ' + it.fuente));
   c.append(body);
@@ -629,7 +672,7 @@ $('theme').addEventListener('click', () => {
   try { localStorage.setItem('revision.theme', root.dataset.theme); } catch (e) { /* Not kept. */ }
 });
 try { const th = localStorage.getItem('revision.theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) { /* Default theme. */ }
-window.addEventListener('beforeunload', (e) => { if (dirty.size) { keepUnsaved(); e.preventDefault(); } });
+window.addEventListener('beforeunload', (e) => { if (dirty.size || drafts.size) { keepUnsaved(); e.preventDefault(); } });
 setInterval(watch, 4000);
 render();
 (async () => {
