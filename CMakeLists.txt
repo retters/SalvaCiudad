@@ -105,6 +105,30 @@ target_include_directories(yyjson SYSTEM PUBLIC third_party/yyjson)
 # Only the parts we use: no incremental reader, no utilities.
 target_compile_definitions(yyjson PUBLIC YYJSON_DISABLE_INCR_READER=1 YYJSON_DISABLE_UTILS=1)
 
+# zstd: the library's C sources, without assembly or legacy formats.
+file(GLOB SC_ZSTD_SOURCES CONFIGURE_DEPENDS third_party/zstd/common/*.c third_party/zstd/compress/*.c
+     third_party/zstd/decompress/*.c)
+add_library(zstd STATIC ${SC_ZSTD_SOURCES})
+target_include_directories(zstd SYSTEM PUBLIC third_party/zstd)
+target_compile_definitions(zstd PRIVATE ZSTD_DISABLE_ASM=1 ZSTD_LEGACY_SUPPORT=0 XXH_NAMESPACE=ZSTD_)
+
+# ENet: reliable UDP for multiplayer (phase 9).
+add_library(enet STATIC third_party/enet/callbacks.c third_party/enet/compress.c third_party/enet/host.c
+    third_party/enet/list.c third_party/enet/packet.c third_party/enet/peer.c third_party/enet/protocol.c
+    $<IF:$<BOOL:${WIN32}>,third_party/enet/win32.c,third_party/enet/unix.c>)
+target_include_directories(enet SYSTEM PUBLIC third_party/enet/include)
+# ENet combines values of two enums with "|" on purpose; MSVC 17.x warns
+# about it (C5287). Only for this unmodified library (decision D-816).
+if(MSVC)
+    target_compile_options(enet PRIVATE /wd5287)
+endif()
+if(WIN32)
+    target_link_libraries(enet PUBLIC ws2_32 winmm)
+else()
+    target_compile_definitions(enet PRIVATE HAS_SOCKLEN_T=1 HAS_POLL=1 HAS_MSGHDR_FLAGS=1 HAS_GETADDRINFO=1
+                                            HAS_GETNAMEINFO=1 HAS_INET_PTON=1 HAS_INET_NTOP=1)
+endif()
+
 add_library(stb_truetype STATIC third_party/stb/stb_truetype.c)
 target_include_directories(stb_truetype SYSTEM PUBLIC third_party/stb)
 
@@ -285,7 +309,7 @@ add_library(sc_engine STATIC ${SC_ENGINE_SOURCES})
 target_include_directories(sc_engine PUBLIC src "${SC_GENERATED_DIR}")
 # Map generation runs on a worker thread.
 find_package(Threads REQUIRED)
-target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui lua Threads::Threads)
+target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui lua zstd enet Threads::Threads)
 add_dependencies(sc_engine sc_generated)
 sc_harden_target(sc_engine)
 

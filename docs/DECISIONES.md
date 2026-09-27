@@ -613,8 +613,8 @@ Espacio pausa y reanuda; 1, 2 y 3 eligen la velocidad. En pausa, y con el menú 
 - Una partida de otra versión del juego o de las reglas, o con otros mods, se rechaza con un mensaje claro (D-631).
 - Sin miniatura por ahora: requiere leer la imagen de la GPU; queda para la fase 17.
 
-**D-812. zstd todavía no está vendorizado.**
-La especificación pide comprimir los bloques con zstd, pero no hay red para descargarlo. Cada bloque lleva un campo de compresión (0 = sin comprimir, 1 = zstd) y por ahora se guardan sin comprimir. Una partida pequeña ocupa unos pocos MB y una enorme puede llegar a decenas de MB. **Pendiente para el usuario:** descargar zstd (licencia BSD) a `third_party/zstd` para activarlo.
+**D-812. Bloques comprimidos con zstd.** *(Reemplaza a una primera versión sin compresión.)*
+Cada bloque se comprime con zstd nivel 3 si así ocupa menos; el campo de compresión dice cuál (0 = sin comprimir, 1 = zstd). Al leer, el tamaño del marco de zstd tiene que coincidir con el del bloque, y ningún bloque descomprimido pasa de 1 GiB. Se vendorizó zstd 1.5.7 (licencia BSD) sin ensamblador ni formatos antiguos.
 
 **D-813. Vista del pueblo.**
 - Cada edificio usa el modelo de su definición, escalado a su huella; por ahora todos usan la casa de prueba (el arte llega en la fase 18).
@@ -627,3 +627,6 @@ Barra superior (comida total, otros bienes, población, fecha y velocidad), barr
 
 **D-815. Balance comprobado con una prueba de una hora.**
 La prueba `village` juega una hora a x1 (36 000 ticks, 0.2 s de CPU) con un jugador simulado que construye casas, recolectores, leñadores y un almacén: el pueblo pasa de 12 a unos 18 habitantes sin muertes. Sin edificios, el pueblo muere de hambre. El ritmo de crecimiento se ajustará con las fases 10 a 12 (estaciones, agricultura, necesidades).
+
+**D-816. Advertencias en bibliotecas de terceros.**
+Las bibliotecas vendorizadas no se modifican. ENet 1.3.18 combina valores de dos enumeraciones con `|` a propósito y MSVC 17 lo advierte (C5287); esa advertencia se desactiva solo para el objetivo `enet`. En nuestro código ninguna advertencia se desactiva. ENet se vendorizó ya en esta fase (aprobado en la especificación) para la fase 9.

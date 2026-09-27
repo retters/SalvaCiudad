@@ -10,11 +10,15 @@
 #include "core/log.h"
 #include "core/text.h"
 
+#include <zstd.h>
+
 namespace sc::save {
 
 namespace {
 
 constexpr char kMagic[8] = {'S', 'C', 'S', 'A', 'V', 'E', '\r', '\n'};
+constexpr int kZstdLevel = 3;  // Fast, and still several times smaller.
+constexpr std::size_t kMaxChunkBytes = 1024u * 1024u * 1024u;  // Unpacked, per chunk.
 
 void put_u32(std::vector<std::uint8_t>& out, std::uint32_t v) {
     for (int i = 0; i < 4; ++i) {
@@ -191,13 +195,20 @@ std::vector<std::uint8_t> encode(const SaveData& save) {
     put_u32(out, static_cast<std::uint32_t>(header.size()));
     out.insert(out.end(), header.begin(), header.end());
     put_u32(out, static_cast<std::uint32_t>(save.chunks.size()));
+    std::vector<std::uint8_t> packed;
     for (const Chunk& c : save.chunks) {
+        // Compressed when it helps; small chunks may not shrink.
+        packed.resize(ZSTD_compressBound(c.data.size()));
+        const std::size_t n = ZSTD_compress(packed.data(), packed.size(), c.data.data(), c.data.size(), kZstdLevel);
+        const bool zstd = ZSTD_isError(n) == 0 && n < c.data.size();
+        const std::span<const std::uint8_t> stored =
+            zstd ? std::span<const std::uint8_t>(packed.data(), n) : std::span<const std::uint8_t>(c.data);
         out.insert(out.end(), c.tag.begin(), c.tag.end());
-        out.push_back(static_cast<std::uint8_t>(Compression::None));
+        out.push_back(static_cast<std::uint8_t>(zstd ? Compression::Zstd : Compression::None));
         put_u32(out, static_cast<std::uint32_t>(c.data.size()));  // Size when unpacked.
-        put_u32(out, static_cast<std::uint32_t>(c.data.size()));  // Size stored.
-        put_u32(out, crc32(c.data));
-        out.insert(out.end(), c.data.begin(), c.data.end());
+        put_u32(out, static_cast<std::uint32_t>(stored.size()));  // Size stored.
+        put_u32(out, crc32(stored));
+        out.insert(out.end(), stored.begin(), stored.end());
     }
     return out;
 }
@@ -254,10 +265,27 @@ LoadError decode(std::span<const std::uint8_t> bytes, SaveData& out, bool header
         if (crc32(data) != crc) {
             return LoadError::Corrupt;
         }
-        if (compression != static_cast<std::uint8_t>(Compression::None) || raw != stored) {
-            return LoadError::Corrupt;  // Nothing else can be read yet.
+        if (raw > kMaxChunkBytes) {
+            return LoadError::TooLarge;
         }
-        c.data.assign(data.begin(), data.end());
+        if (compression == static_cast<std::uint8_t>(Compression::None)) {
+            if (raw != stored) {
+                return LoadError::Corrupt;
+            }
+            c.data.assign(data.begin(), data.end());
+        } else if (compression == static_cast<std::uint8_t>(Compression::Zstd)) {
+            // The frame must give the same size the chunk does.
+            if (ZSTD_getFrameContentSize(data.data(), data.size()) != raw) {
+                return LoadError::Corrupt;
+            }
+            c.data.resize(raw);
+            const std::size_t n = ZSTD_decompress(c.data.data(), c.data.size(), data.data(), data.size());
+            if (ZSTD_isError(n) != 0 || n != raw) {
+                return LoadError::Corrupt;
+            }
+        } else {
+            return LoadError::Corrupt;
+        }
         result.chunks.push_back(std::move(c));
     }
     if (pos != bytes.size()) {

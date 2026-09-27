@@ -65,6 +65,24 @@ TEST_SUITE("save") {
         CHECK(head.chunks.empty());
     }
 
+    TEST_CASE("big chunks are compressed with zstd") {
+        save::SaveData d = sample();
+        std::vector<std::uint8_t> big(200000);
+        for (std::size_t i = 0; i < big.size(); ++i) {
+            big[i] = static_cast<std::uint8_t>(i % 7);
+        }
+        d.put("GAME", big);
+        const std::vector<std::uint8_t> bytes = save::encode(d);
+        CHECK(bytes.size() < 20000);
+        save::SaveData back;
+        REQUIRE(save::decode(bytes, back) == save::LoadError::None);
+        CHECK(back.chunks == d.chunks);
+        // A flipped byte inside the compressed data is caught.
+        std::vector<std::uint8_t> bad = bytes;
+        bad[bad.size() - 40] ^= 0x10;
+        CHECK(save::decode(bad, back) != save::LoadError::None);
+    }
+
     TEST_CASE("broken files are rejected") {
         const std::vector<std::uint8_t> good = save::encode(sample());
         save::SaveData out;

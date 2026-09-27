@@ -21,8 +21,7 @@ inline constexpr std::size_t kMaxHeaderBytes = 256u * 1024u;
 inline constexpr std::size_t kMaxChunks = 64;
 inline constexpr const char* kExtension = ".scsave";
 
-// Compression of a chunk. zstd (section 5.5) is written as 1 once it is
-// vendored; until then chunks are stored as they are (decision D-812).
+// Compression of a chunk: zstd when it makes the chunk smaller (section 5.5).
 enum class Compression : std::uint8_t { None = 0, Zstd = 1 };
 
 struct ModRef {

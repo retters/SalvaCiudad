@@ -11,6 +11,8 @@ Todas se vendorizan sin modificar, con su licencia, y se compilan con sus propia
 | cgltf | 1.15 | MIT (`cgltf/LICENSE`) | https://github.com/jkuhlmann/cgltf/archive/refs/tags/v1.15.tar.gz | `84e352092e5cd6aab7f66de62ddb66beb5e6f18d412ca9d12950d7a55bfef25a` |
 | Dear ImGui | 1.92.9b | MIT (`imgui/LICENSE.txt`) | https://github.com/ocornut/imgui/archive/refs/tags/v1.92.9b.tar.gz | `21d8a0a565e85dce943e375db00812c2f3f0ab21f3f0f7964e364a63422d7f99` |
 | doctest | 2.5.3 | MIT (`doctest/LICENSE.txt`) | https://github.com/doctest/doctest/archive/refs/tags/v2.5.3.tar.gz | `174ebc4e769928959614789c5b4e9c3d0a0f81a62bb608756b127bfebfb21331` |
+| zstd | 1.5.7 | BSD (`zstd/LICENSE`) | https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz | `eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3` |
+| ENet | 1.3.18 | MIT (`enet/LICENSE`) | https://github.com/lsalzman/enet/archive/refs/tags/v1.3.18.tar.gz | `28603c895f9ed24a846478180ee72c7376b39b4bb1287b73877e5eae7d96b0dd` |
 | Lua | 5.4.7 | MIT (`lua/LICENSE`) | https://www.lua.org/ftp/lua-5.4.7.tar.gz | `9fbf5e28ef86c69858f6d3d34eccc32e911c1a28b4120ff3e84aaa70cfbf1e30` |
 
 Notas:
@@ -23,6 +25,9 @@ Notas:
 - **Dear ImGui:** el núcleo (`imgui*.cpp/h`, `imconfig.h`, `imstb_*.h`) y los backends `imgui_impl_sdl3` e `imgui_impl_sdlgpu3`. Solo para el panel de estadísticas de desarrollo.
 - **doctest:** solo `doctest.h` y la licencia. Solo se usa en las pruebas.
 - **Lua:** los archivos de `src/` sin `lua.c` ni `luac.c`, y la licencia (copiada del final de `lua.h`). Se compilan solo el núcleo y las bibliotecas que abre el sandbox; `luai_makeseed` se fija en 0 para que las tablas se comporten igual en todas las máquinas.
+
+- **zstd:** solo `lib/common`, `lib/compress`, `lib/decompress`, `zstd.h`, `zstd_errors.h` y la licencia BSD (zstd también se ofrece bajo GPLv2; se usa la BSD). Se compila sin ensamblador (`ZSTD_DISABLE_ASM`) y sin formatos antiguos.
+- **ENet:** los `.c`, `include/` y la licencia. En Windows se enlaza con `ws2_32` y `winmm`. La advertencia C5287 de MSVC se desactiva solo para esta biblioteca (D-816).
 
 ## Tipografías (en `data/fonts/`)
 
