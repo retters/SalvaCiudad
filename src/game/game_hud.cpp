@@ -29,6 +29,7 @@ const char* place_error_key(sim::PlaceError e) {
         case sim::PlaceError::TooFar: return "hud.place.error.tooFar";
         case sim::PlaceError::TooMany: return "hud.place.error.tooMany";
         case sim::PlaceError::BadSize: return "hud.place.error.badSize";
+        case sim::PlaceError::Locked: return "hud.place.error.locked";
     }
     return "hud.place.error.unknown";
 }
@@ -41,6 +42,13 @@ void meter(ui::Context& ctx, const ui::Rect& r, float fraction, ui::Color fill) 
 }
 
 }  // namespace
+
+const char* need_text_key(std::uint8_t need) {
+    static constexpr const char* kKeys[] = {"need.food",   "need.water",   "need.clothes", "need.shoes",
+                                            "need.religion", "need.entertainment", "need.heating", "need.beauty",
+                                            "need.market", "need.hygiene"};
+    return need < std::size(kKeys) ? kKeys[need] : "need.food";
+}
 
 const char* task_text_key(sim::Task task) {
     switch (task) {
@@ -232,6 +240,12 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     const float dw = ctx.text().measure(st, date_text) + ctx.s(24.0f);
     right -= dw;
     ctx.label({right, bar.y, dw, bar.h}, date_text, st, ctx.theme().text_dim);
+    const std::int32_t joy = game.happiness(s.town());
+    const std::string joy_text = tr("hud.happiness", joy);
+    const float jw = ctx.text().measure(st, joy_text) + ctx.s(24.0f);
+    right -= jw;
+    ctx.label({right, bar.y, jw, bar.h}, joy_text, st, joy < 35 ? ctx.theme().danger : ctx.theme().text);
+    ctx.tooltip_area(ctx.id("hud_happiness"), {right, bar.y, jw, bar.h}, tr("hud.happiness.tooltip"));
     const std::string pop_text = tr("hud.population", pop, adults);
     const float pw = ctx.text().measure(st, pop_text) + ctx.s(24.0f);
     right -= pw;
@@ -307,33 +321,45 @@ void GameHud::network(ui::Context& ctx, GameSession& s, float& right) {
 void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
     const sim::Content& content = s.game().content();
     GameSession::Interaction& ui = s.ui();
+    static constexpr const char* kCategoryKeys[] = {"hud.build.cat.housing",  "hud.build.cat.food",
+                                                    "hud.build.cat.resources", "hud.build.cat.industry",
+                                                    "hud.build.cat.services", "hud.build.cat.decoration"};
+    constexpr std::size_t kCategories = std::size(kCategoryKeys);
     std::vector<sim::DefIndex> defs;
     for (std::size_t i = 0; i < content.buildings.size(); ++i) {
-        if (content.buildings[i].kind != sim::BuildingKind::TownCenter) {
+        const sim::BuildingDef& d = content.buildings[i];
+        if (d.kind != sim::BuildingKind::TownCenter && d.category % kCategories == category_ % kCategories) {
             defs.push_back(static_cast<sim::DefIndex>(i));
         }
     }
-    if (defs.empty()) {
-        return;
-    }
     const float bw = std::round(ctx.s(kBuildButtonW));
     const float bh = std::round(ctx.s(kBuildButtonH));
+    const float tab_h = std::round(ctx.s(32.0f));
     const float gap = ctx.s(6.0f);
     const float pad = ctx.s(8.0f);
-    // As many per row as fit.
+    // As many per row as fit; the tabs on top.
     const auto per_row = static_cast<std::size_t>(std::max(1.0f, (ctx.width() - 2 * pad + gap) / (bw + gap)));
-    const std::size_t rows = (defs.size() + per_row - 1) / per_row;
-    const std::size_t cols = std::min(per_row, defs.size());
+    const std::size_t rows = std::max<std::size_t>(1, (defs.size() + per_row - 1) / per_row);
+    const std::size_t cols = std::max(std::min(per_row, defs.size()), std::min(per_row, kCategories));
     const float w = static_cast<float>(cols) * (bw + gap) - gap + 2 * pad;
-    const float h = static_cast<float>(rows) * (bh + gap) - gap + 2 * pad;
+    const float h = tab_h + gap + static_cast<float>(rows) * (bh + gap) - gap + 2 * pad;
     const ui::Rect panel{std::round((ctx.width() - w) * 0.5f), std::round(ctx.height() - h), std::round(w), std::round(h)};
     ctx.panel(panel);
     block(s, panel);
     ctx.push_id("build_bar");
+    const float tab_w = std::min(bw, (w - 2 * pad - gap * static_cast<float>(kCategories - 1)) / static_cast<float>(kCategories));
+    for (std::size_t c = 0; c < kCategories; ++c) {
+        const ui::Rect tr_rect{panel.x + pad + static_cast<float>(c) * (tab_w + gap), panel.y + pad, tab_w, tab_h};
+        if (ctx.button(ctx.id(kCategoryKeys[c]), tr_rect, tr(kCategoryKeys[c]), {}, true, category_ == c)) {
+            category_ = static_cast<std::uint8_t>(c);
+        }
+    }
+    const std::int32_t tier = s.game().tier(s.town());
     for (std::size_t i = 0; i < defs.size(); ++i) {
         const sim::BuildingDef& d = content.buildings[defs[i]];
         const float bx = panel.x + pad + static_cast<float>(i % per_row) * (bw + gap);
-        const float by = panel.y + pad + static_cast<float>(i / per_row) * (bh + gap);
+        const float by = panel.y + pad + tab_h + gap + static_cast<float>(i / per_row) * (bh + gap);
+        const bool locked = d.tier > tier;
         std::string tooltip = tr(d.name_key) + "\n" + tr("hud.build.cost", cost_text(d)) + "\n" +
                               tr("hud.build.size", d.width, d.depth);
         if (d.workers > 0) {
@@ -345,7 +371,13 @@ void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
         if (d.storage > 0) {
             tooltip += "\n" + tr("hud.build.storage", d.storage);
         }
-        if (ctx.button(ctx.id(d.id), {bx, by, bw, bh}, tr(d.name_key), tooltip, true, ui.placing == defs[i])) {
+        if (locked) {
+            tooltip += "\n" + tr("hud.build.locked", d.tier);
+        }
+        if (d.service != sim::kNoNeed) {
+            tooltip += "\n" + tr("hud.build.service", tr(need_text_key(d.service)), d.service_radius);
+        }
+        if (ctx.button(ctx.id(d.id), {bx, by, bw, bh}, tr(d.name_key), tooltip, !locked, ui.placing == defs[i])) {
             ui.placing = ui.placing == defs[i] ? sim::kNoDef : defs[i];
             ui.selected_building = {};
             ui.selected_villager = {};
@@ -405,6 +437,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         if (d.residents > 0) {
             lines.push_back(tr("hud.building.residents", static_cast<int>(b->residents.size()), d.residents));
             if (d.kind == sim::BuildingKind::House) {
+                house_lines(game, *b, lines);
                 const sim::DefIndex fw = content.find_resource("core:firewood");
                 std::int32_t wood = 0;
                 for (const sim::Stock& st : b->stock) {
@@ -447,6 +480,14 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     }
     if (farm) {
         h += static_cast<float>(b->fields.size()) * (line + field_row + pad * 0.5f) + button_h + pad;
+    }
+    const bool town_center = d.kind == sim::BuildingKind::TownCenter && b->state == sim::BuildingState::Complete;
+    const bool workshop = d.work == sim::WorkKind::Produce && b->state == sim::BuildingState::Complete;
+    if (town_center) {
+        h += 2 * line + button_h + pad;
+    }
+    if (workshop) {
+        h += button_h + pad * 0.5f;
     }
     h += pad;
     const ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
@@ -495,6 +536,55 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         y += pad * 0.5f;
         farm_fields(ctx, s, *b, box, y, field_row);
     }
+    if (workshop) {
+        // How much of its product to keep: automatic, or a set amount.
+        y += pad * 0.5f;
+        const std::string text = b->limit > 0 ? tr("hud.building.limit", b->limit) : tr("hud.building.limitAuto");
+        ctx.label({box.x + pad, y, box.w - 2 * pad - 2 * button_h - ctx.s(8.0f), button_h}, text, body, ctx.theme().text);
+        const auto set_limit = [&](std::int32_t n) {
+            sim::Command c;
+            c.type = sim::CommandType::SetLimit;
+            c.entity = ui.selected_building;
+            c.value = std::clamp(n, 0, 10000);
+            s.issue(c);
+        };
+        if (ctx.button(ctx.id("limit_less"), {box.right() - pad - 2 * button_h - ctx.s(4.0f), y, button_h, button_h},
+                       tr("hud.building.fewer"), tr("hud.building.limit.tooltip"), b->limit > 0)) {
+            set_limit(b->limit - 10);
+        }
+        if (ctx.button(ctx.id("limit_more"), {box.right() - pad - button_h, y, button_h, button_h},
+                       tr("hud.building.more"), tr("hud.building.limit.tooltip"))) {
+            set_limit(b->limit + 10);
+        }
+        y += button_h;
+    }
+    if (town_center) {
+        y += pad * 0.5f;
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr("hud.tc.level", game.tier(b->owner)), body, ctx.theme().text);
+        y += line;
+        const bool has_next = b->level < d.levels.size();
+        std::string req = tr("hud.tc.max");
+        bool can = false;
+        if (has_next) {
+            const sim::LevelDef& next = d.levels[b->level];
+            std::string cost;
+            for (const sim::ResourceAmount& c : next.cost) {
+                cost += (cost.empty() ? "" : ", ") + tr("hud.amount", tr(content.resources[c.resource].name_key), c.amount);
+            }
+            req = b->upgrading ? tr("hud.tc.upgrading") : tr("hud.tc.next", next.population, cost);
+            can = !b->upgrading && game.population(b->owner) >= next.population;
+        }
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, req, ctx.style(ctx.theme().small), ctx.theme().text_dim);
+        y += line;
+        if (ctx.button(ctx.id("tc_upgrade"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr("hud.tc.upgrade"),
+                       tr("hud.tc.upgrade.tooltip"), can)) {
+            sim::Command c;
+            c.type = sim::CommandType::UpgradeBuilding;
+            c.entity = ui.selected_building;
+            s.issue(c);
+        }
+        y += button_h;
+    }
     if (removable) {
         y += pad * 0.5f;
         const bool building = b->state == sim::BuildingState::Construction;
@@ -509,6 +599,30 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         }
     }
     ctx.pop_id();
+}
+
+void GameHud::house_lines(const sim::Game& game, const sim::Building& b, std::vector<std::string>& lines) const {
+    const sim::BuildingDef& d = game.content().buildings[b.def];
+    lines.push_back(tr("hud.house.level", static_cast<int>(b.level) + 1, static_cast<int>(d.levels.size()) + 1));
+    lines.push_back(tr("hud.house.happiness", b.happiness, b.desirability));
+    if (b.upgrading) {
+        lines.push_back(tr("hud.house.upgrading"));
+    } else if (b.level < d.levels.size()) {
+        // What the next level still needs.
+        const sim::LevelDef& next = d.levels[b.level];
+        std::string missing;
+        for (std::uint8_t n = 0; n < static_cast<std::uint8_t>(sim::Need::Count); ++n) {
+            const bool needed = ((next.needs >> n) & 1u) != 0;
+            const bool met = ((b.needs >> n) & 1u) != 0;
+            if (needed && !met) {
+                missing += (missing.empty() ? "" : ", ") + tr(need_text_key(n));
+            }
+        }
+        if (next.tier > game.tier(b.owner)) {
+            missing += (missing.empty() ? "" : ", ") + tr("hud.house.needsTier", next.tier);
+        }
+        lines.push_back(missing.empty() ? tr("hud.house.readyToGrow") : tr("hud.house.missing", missing));
+    }
 }
 
 void GameHud::farm_fields(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,

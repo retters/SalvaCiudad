@@ -66,7 +66,7 @@ std::uint64_t distance2(FixedVec2 a, FixedVec2 b) {
 // and what a workplace made or gathered (not the inputs of its recipes).
 bool gives_out(const Content& c, const Building& b, DefIndex r) {
     const BuildingDef& d = c.buildings[b.def];
-    if (d.kind == BuildingKind::Storage || d.kind == BuildingKind::TownCenter) {
+    if (d.kind == BuildingKind::Storage || d.kind == BuildingKind::TownCenter || d.kind == BuildingKind::Market) {
         return true;
     }
     if (d.kind != BuildingKind::Workplace) {
@@ -77,6 +77,12 @@ bool gives_out(const Content& c, const Building& b, DefIndex r) {
             if (in.resource == r) {
                 return false;
             }
+        }
+    }
+    // What a service uses stays there too (a tavern's beer).
+    for (const ResourceAmount& use : d.service_uses) {
+        if (use.resource == r) {
+            return false;
         }
     }
     return true;
@@ -104,6 +110,18 @@ public:
     [[nodiscard]] const BuildingDef& def(const Building& b) const { return c_.buildings[b.def]; }
 
     [[nodiscard]] bool complete(const Building& b) const { return b.state == BuildingState::Complete; }
+
+    // Something laborers work on: a new building, or an upgrade.
+    [[nodiscard]] bool is_site(const Building& b) const {
+        return b.state == BuildingState::Construction ||
+               (b.upgrading && b.level < def(b).levels.size());
+    }
+    [[nodiscard]] const std::vector<ResourceAmount>& site_cost(const Building& b) const {
+        return b.state == BuildingState::Construction ? def(b).cost : def(b).levels[b.level].cost;
+    }
+    [[nodiscard]] std::int32_t site_work(const Building& b) const {
+        return b.state == BuildingState::Construction ? def(b).build_work : def(b).levels[b.level].work;
+    }
 
     [[nodiscard]] std::int32_t free_space(const Building& b) const {
         return complete(b) ? def(b).storage - total(b.stock) : 0;
@@ -138,14 +156,16 @@ public:
         return best;
     }
 
-    // Nearest storage of `owner` holding `resource` (any food if kNoDef).
-    EntityId storage_with(std::uint8_t owner, FixedVec2 from, DefIndex resource) const {
+    // Nearest storage of `owner` holding `resource` (any food if kNoDef);
+    // markets restock from the others.
+    EntityId storage_with(std::uint8_t owner, FixedVec2 from, DefIndex resource, bool skip_markets = false) const {
         EntityId best;
         std::uint64_t best_d = UINT64_MAX;
         const auto& list = g_.buildings_;
         for (std::size_t i = 0; i < list.size(); ++i) {
             const Building& b = list.data()[i];
-            if (b.owner != owner || !complete(b) || def(b).storage <= 0) {
+            if (b.owner != owner || !complete(b) || def(b).storage <= 0 ||
+                (skip_markets && def(b).kind == BuildingKind::Market)) {
                 continue;
             }
             bool has = false;
@@ -236,7 +256,7 @@ public:
         }
         if (v.task == Task::GoFetch && v.carrying.amount == 0 && v.timer > 0) {
             // Goods promised to a site but not picked up.
-            if (Building* s = g_.buildings_.get(v.site); s != nullptr && s->state == BuildingState::Construction) {
+            if (Building* s = g_.buildings_.get(v.site); s != nullptr && is_site(*s)) {
                 add_to(s->incoming, v.carrying.resource, -v.timer);
                 compact(s->incoming);
             }
@@ -244,7 +264,7 @@ public:
         }
         if (v.task == Task::GoSite && v.carrying.amount > 0) {
             // Goods on their way that will not arrive; they go to storage.
-            if (Building* s = g_.buildings_.get(v.target); s != nullptr && s->state == BuildingState::Construction) {
+            if (Building* s = g_.buildings_.get(v.target); s != nullptr && is_site(*s)) {
                 add_to(s->incoming, v.carrying.resource, -v.carrying.amount);
                 compact(s->incoming);
             }
@@ -264,6 +284,19 @@ public:
         v.task = Task::Wander;
         if (!walk_to(v, to)) {
             v.task = Task::Idle;
+        } else {
+            // A stroll, not a trek around a lake.
+            Fixed length;
+            FixedVec2 at = v.position;
+            for (const FixedVec2& p : v.path) {
+                length += (p - at).length();
+                at = p;
+            }
+            if (length > Fixed::from_int(kWanderRadius * 3)) {
+                v.path.clear();
+                v.path_index = 0;
+                v.task = Task::Idle;
+            }
         }
         v.idle_ticks = 40 + static_cast<std::int32_t>(g_.rng_.below(80));
     }
@@ -323,6 +356,12 @@ public:
                 return;
             }
             if (d.work == WorkKind::Fish && start_fishing(v, *job)) {
+                return;
+            }
+            if (d.kind == BuildingKind::Market && start_restocking(v, *job)) {
+                return;
+            }
+            if (!d.service_uses.empty() && start_supplying(v, *job)) {
                 return;
             }
             wander(v, g_.door(*job));
@@ -482,6 +521,48 @@ public:
         v.timer = 0;
         go(v, Task::GoFetch, from);
         return true;
+    }
+
+    // --- Markets and services (phase 12) ------------------------------------------
+
+    // Brings `res` from a storage to the worker's job.
+    bool fetch_to_job(Villager& v, DefIndex res, bool skip_markets) {
+        const EntityId from = storage_with(v.owner, v.position, res, skip_markets);
+        if (!from.valid() || from == v.job) {
+            return false;
+        }
+        v.site = v.job;
+        v.carrying = {res, 0};
+        v.timer = 0;
+        go(v, Task::GoFetch, from);
+        return true;
+    }
+
+    // A market keeps a little of every food and good the homes want.
+    bool start_restocking(Villager& v, const Building& market) {
+        if (free_space(market) <= 0) {
+            return false;
+        }
+        for (std::size_t r = 0; r < c_.resources.size(); ++r) {
+            const ResourceDef& rd = c_.resources[r];
+            const auto res = static_cast<DefIndex>(r);
+            const bool wanted = (rd.category == ResourceCategory::Food && rd.nutrition > 0) || res == g_.clothes_ ||
+                                res == g_.shoes_;
+            if (wanted && amount_of(market.stock, res) < 12 && fetch_to_job(v, res, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // A tavern keeps its beer (whatever its service uses).
+    bool start_supplying(Villager& v, const Building& place) {
+        for (const ResourceAmount& use : def(place).service_uses) {
+            if (amount_of(place.stock, use.resource) < 10 && fetch_to_job(v, use.resource, false)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // --- Farming (phase 11) -----------------------------------------------------
@@ -767,39 +848,35 @@ public:
                 return false;
             }
         }
-        const RecipeDef& recipe = c_.recipes[d.recipes.front()];
-        // Enough in store: the inputs are kept for other uses.
-        if (!recipe.outputs.empty()) {
-            const std::int32_t target = 30 + 3 * g_.population(v.owner);
-            if (g_.stored(v.owner)[recipe.outputs.front().resource] >= target) {
-                return false;
+        // The first recipe whose product is short: with its inputs here,
+        // work; otherwise fetch what is missing for the first one possible.
+        const std::int32_t target = job.limit > 0 ? job.limit : 30 + 3 * g_.population(v.owner);
+        const std::vector<std::int32_t> totals = g_.stored(v.owner);
+        for (std::size_t k = 0; k < d.recipes.size(); ++k) {
+            const RecipeDef& recipe = c_.recipes[d.recipes[k]];
+            if (!recipe.outputs.empty() && totals[recipe.outputs.front().resource] >= target) {
+                continue;  // Enough in store: the inputs are kept for other uses.
+            }
+            bool ready = true;
+            for (const ResourceAmount& in : recipe.inputs) {
+                ready = ready && amount_of(job.stock, in.resource) >= in.amount;
+            }
+            if (ready) {
+                job.recipe = static_cast<std::uint8_t>(k);
+                go(v, Task::GoWorkplace, v.job);
+                return true;
             }
         }
-        // Inputs at the workplace: work there.
-        bool ready = true;
-        for (const ResourceAmount& in : recipe.inputs) {
-            if (amount_of(job.stock, in.resource) < in.amount) {
-                ready = false;
-            }
-        }
-        if (ready) {
-            go(v, Task::GoWorkplace, v.job);
-            return true;
-        }
-        // Otherwise fetch the first missing input.
-        for (const ResourceAmount& in : recipe.inputs) {
-            if (amount_of(job.stock, in.resource) >= in.amount) {
+        for (std::size_t k = 0; k < d.recipes.size(); ++k) {
+            const RecipeDef& recipe = c_.recipes[d.recipes[k]];
+            if (!recipe.outputs.empty() && totals[recipe.outputs.front().resource] >= target) {
                 continue;
             }
-            const EntityId from = storage_with(v.owner, v.position, in.resource);
-            if (!from.valid()) {
-                return false;
+            for (const ResourceAmount& in : recipe.inputs) {
+                if (amount_of(job.stock, in.resource) < in.amount && fetch_to_job(v, in.resource, true)) {
+                    return true;
+                }
             }
-            v.site = v.job;  // The goods go to the workplace.
-            v.carrying = {in.resource, 0};
-            v.timer = 0;
-            go(v, Task::GoFetch, from);
-            return true;
         }
         return false;
     }
@@ -815,12 +892,12 @@ public:
         const auto& list = g_.buildings_;
         for (std::size_t i = 0; i < list.size(); ++i) {
             const Building& b = list.data()[i];
-            if (b.owner != v.owner || b.state != BuildingState::Construction) {
+            if (b.owner != v.owner || !is_site(b)) {
                 continue;
             }
             const std::uint64_t d = distance2(v.position, g_.door(b));
             bool all_there = true;
-            for (const ResourceAmount& cost : def(b).cost) {
+            for (const ResourceAmount& cost : site_cost(b)) {
                 const std::int32_t missing = cost.amount - amount_of(b.delivered, cost.resource);
                 if (missing <= 0) {
                     continue;
@@ -837,7 +914,7 @@ public:
                     best_res = cost.resource;
                 }
             }
-            if (all_there && b.work_done < def(b).build_work && d < best_build_d) {
+            if (all_there && b.work_done < site_work(b) && d < best_build_d) {
                 best_build_d = d;
                 best_build = list.entities()[i];
             }
@@ -846,7 +923,7 @@ public:
             Building& site = *g_.buildings_.get(best_fetch_site);
             const Building& from = *g_.buildings_.get(best_fetch_from);
             std::int32_t missing = 0;
-            for (const ResourceAmount& cost : def(site).cost) {
+            for (const ResourceAmount& cost : site_cost(site)) {
                 if (cost.resource == best_res) {
                     missing = cost.amount - amount_of(site.delivered, best_res) - amount_of(site.incoming, best_res);
                 }
@@ -910,12 +987,12 @@ public:
         if (b == nullptr) {
             return;
         }
-        // Several helpings: kinds not eaten this month first (a varied diet
+        // Several helpings: kinds not among the last helpings first (a varied diet
         // keeps villagers healthy), then the most nutritious.
         while (v.food < village::kFoodMax - 100) {
             Stock* best = nullptr;
             const auto score = [&](const Stock& s) {
-                const bool fresh = ((v.diet >> (s.resource % 32u)) & 1u) == 0;
+                const bool fresh = std::find(v.meals.begin(), v.meals.end(), s.resource) == v.meals.end();
                 return (fresh ? 1000 : 0) + c_.resources[s.resource].nutrition;
             };
             for (Stock& s : b->stock) {
@@ -929,14 +1006,29 @@ public:
                 break;
             }
             --best->amount;
-            v.diet |= 1u << (best->resource % 32u);
+            v.meals[v.meal_index++ % v.meals.size()] = best->resource;
+            v.meal_index = static_cast<std::uint8_t>(v.meal_index % v.meals.size());
+            // Variety: the kinds among the last helpings.
+            std::uint8_t kinds = 0;
+            for (std::size_t m = 0; m < v.meals.size(); ++m) {
+                const DefIndex kind = v.meals[m];
+                if (kind != kNoDef && std::find(v.meals.begin(), v.meals.begin() + static_cast<std::ptrdiff_t>(m), kind) ==
+                                          v.meals.begin() + static_cast<std::ptrdiff_t>(m)) {
+                    ++kinds;
+                }
+            }
+            v.variety = kinds;
             v.food = std::min(village::kFoodMax, v.food + c_.resources[best->resource].nutrition * village::kFoodPerNutrition);
         }
-        // New clothes when the old ones are worn out; they last a year.
+        // New clothes and shoes when the old ones are worn out; they last a year.
         if (v.clothes <= 0 && g_.clothes_ != kNoDef && gives_out(c_, *b, g_.clothes_) &&
             amount_of(b->stock, g_.clothes_) > 0) {
             add_to(b->stock, g_.clothes_, -1);
             v.clothes = static_cast<std::int32_t>(g_.year_ticks());
+        }
+        if (v.shoes <= 0 && g_.shoes_ != kNoDef && gives_out(c_, *b, g_.shoes_) && amount_of(b->stock, g_.shoes_) > 0) {
+            add_to(b->stock, g_.shoes_, -1);
+            v.shoes = static_cast<std::int32_t>(g_.year_ticks());
         }
         compact(b->stock);
     }
@@ -968,7 +1060,7 @@ public:
         Building* from = g_.buildings_.get(v.target);
         Building* site = g_.buildings_.get(v.site);
         const DefIndex res = v.carrying.resource;
-        const bool for_site = site != nullptr && site->state == BuildingState::Construction;
+        const bool for_site = site != nullptr && is_site(*site);
         const std::int32_t promised = for_site ? v.timer : 0;
         v.timer = 0;
         v.carrying = {};
@@ -1003,7 +1095,7 @@ public:
     void deliver_to_site(Villager& v) {
         Building* site = g_.buildings_.get(v.target);
         v.task = Task::Idle;
-        if (site == nullptr || site->state != BuildingState::Construction) {
+        if (site == nullptr || !is_site(*site)) {
             return;  // Goods stay in hand; delivered to storage next.
         }
         add_to(site->incoming, v.carrying.resource, -v.carrying.amount);
@@ -1076,7 +1168,7 @@ public:
 
     void build(Villager& v) {
         Building* site = g_.buildings_.get(v.target);
-        if (site == nullptr || site->state != BuildingState::Construction) {
+        if (site == nullptr || !is_site(*site)) {
             v.task = Task::Idle;
             return;
         }
@@ -1084,8 +1176,18 @@ public:
         if (site->work_done % 25 == 0) {
             g_.buildings_changed_ = true;  // The view shows the rising building.
         }
-        if (site->work_done >= def(*site).build_work) {
-            finish(*site);
+        if (site->work_done >= site_work(*site)) {
+            if (site->state == BuildingState::Construction) {
+                finish(*site);
+            } else {
+                // An upgrade done.
+                ++site->level;
+                site->upgrading = false;
+                site->delivered.clear();
+                site->incoming.clear();
+                site->work_done = 0;
+                g_.buildings_changed_ = true;
+            }
             v.task = Task::Idle;
         }
     }
@@ -1106,7 +1208,8 @@ public:
             v.task = Task::Idle;
             return;
         }
-        const RecipeDef& recipe = c_.recipes[def(*job).recipes.front()];
+        const RecipeDef& recipe =
+            c_.recipes[def(*job).recipes[std::min<std::size_t>(job->recipe, def(*job).recipes.size() - 1)]];
         for (const ResourceAmount& in : recipe.inputs) {
             if (amount_of(job->stock, in.resource) < in.amount) {
                 v.task = Task::Idle;
@@ -1261,8 +1364,8 @@ public:
             auto& list = g_.buildings_;
             for (std::size_t i = 0; i < list.size(); ++i) {
                 Building& b = list.data()[i];
-                if (b.owner != v.owner || !complete(b) || def(b).residents <= 0 ||
-                    static_cast<std::int32_t>(b.residents.size()) >= def(b).residents) {
+                if (b.owner != v.owner || !complete(b) || g_.capacity(b) <= 0 ||
+                    static_cast<std::int32_t>(b.residents.size()) >= g_.capacity(b)) {
                     continue;
                 }
                 int score = 1;
@@ -1289,10 +1392,6 @@ public:
 
     void monthly() {
         // Diets: last month's variety; the game comes back to its zones.
-        for (Villager& v : g_.villagers_.data()) {
-            v.variety = static_cast<std::uint8_t>(std::popcount(v.diet));
-            v.diet = 0;
-        }
         for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
             const std::int32_t cap = zone_capacity(g_.map_.zones[z].type);
             g_.zone_animals_[z] = std::min(cap, g_.zone_animals_[z] + std::max(1, cap / 6));
@@ -1315,7 +1414,7 @@ public:
         auto& list = g_.buildings_;
         for (std::size_t i = 0; i < list.size(); ++i) {
             Building& b = list.data()[i];
-            if (!complete(b) || def(b).residents <= 0 || static_cast<std::int32_t>(b.residents.size()) >= def(b).residents) {
+            if (!complete(b) || g_.capacity(b) <= 0 || static_cast<std::int32_t>(b.residents.size()) >= g_.capacity(b)) {
                 continue;
             }
             const Villager* mother = nullptr;
@@ -1331,8 +1430,9 @@ public:
                     father = true;
                 }
             }
-            if (mother == nullptr || !father || food_stored(b.owner) < 3 * g_.population(b.owner) ||
-                g_.rng_.below(1000) >= 120) {
+            // Happier homes have more children (12 % a month at 60).
+            if (mother == nullptr || !father || food_stored(b.owner) < 3 * g_.population(b.owner) || b.happiness < 25 ||
+                g_.rng_.below(1000) >= static_cast<std::uint32_t>(2 * b.happiness)) {
                 continue;
             }
             const std::uint32_t family = mother->family;
@@ -1356,14 +1456,14 @@ public:
             std::int32_t room = 0;
             for (std::size_t i = 0; i < list.size(); ++i) {
                 const Building& b = list.data()[i];
-                if (b.owner == p && complete(b) && def(b).residents > 0) {
-                    room += def(b).residents - static_cast<std::int32_t>(b.residents.size());
+                if (b.owner == p && complete(b) && g_.capacity(b) > 0) {
+                    room += g_.capacity(b) - static_cast<std::int32_t>(b.residents.size());
                 }
             }
             const std::int32_t food = food_stored(p);
             const std::int32_t pop = g_.population(p);
-            // Newcomers want a town that has food to spare.
-            if (room < 2 || food < 40 + pop * 10) {
+            // Newcomers want a town that has food to spare and happy people.
+            if (room < 2 || food < 40 + pop * 10 || g_.happiness(p) < 35) {
                 continue;
             }
             const Building* tc = g_.buildings_.get(g_.players_[p].town_center);
@@ -1381,14 +1481,145 @@ public:
                 }
             }
         }
+        // Very unhappy homes may pack up and leave.
+        std::vector<EntityId> leaving;
+        for (const Building& b : list.data()) {
+            if (def(b).kind == BuildingKind::House && !b.residents.empty() && b.happiness < 15 &&
+                g_.rng_.below(100) < 25) {
+                leaving.insert(leaving.end(), b.residents.begin(), b.residents.end());
+            }
+        }
+        for (const EntityId id : leaving) {
+            if (const Villager* v = g_.villagers_.get(id)) {
+                ++g_.players_[v->owner].departures;
+                --g_.players_[v->owner].deaths;  // kill() counts a death; this was a departure.
+            }
+            kill(id);
+        }
     }
 
     // --- The tick -------------------------------------------------------------
 
     // Once a day: the weather, the snow and the houses' fires.
+    // Once a day: which services work, and each home's needs, beauty,
+    // happiness and upgrade.
+    void update_homes() {
+        struct Service {
+            std::uint8_t need;
+            std::uint8_t owner;
+            FixedVec2 at;
+            std::uint64_t reach2;
+        };
+        std::vector<Service> services;
+        const auto center = [](const Building& b) {
+            return FixedVec2{Fixed::from_int(b.x) + Fixed::from_ratio(b.width, 2), Fixed::from_int(b.z) + Fixed::from_ratio(b.depth, 2)};
+        };
+        const auto meters2 = [](std::int64_t m) { return static_cast<std::uint64_t>(m * m) << 32; };
+        for (Building& b : g_.buildings_.data()) {
+            const BuildingDef& d = def(b);
+            if (d.service == kNoNeed || !complete(b)) {
+                continue;
+            }
+            bool active = d.workers == 0 || !b.workers.empty();
+            for (const ResourceAmount& use : d.service_uses) {
+                active = active && amount_of(b.stock, use.resource) >= use.amount;
+            }
+            if (!active) {
+                continue;
+            }
+            for (const ResourceAmount& use : d.service_uses) {
+                add_to(b.stock, use.resource, -use.amount);
+            }
+            compact(b.stock);
+            services.push_back({d.service, b.owner, center(b), meters2(d.service_radius)});
+        }
+        const auto& all = g_.buildings_.data();
+        for (Building& b : g_.buildings_.data()) {
+            const BuildingDef& d = def(b);
+            if (d.kind != BuildingKind::House || !complete(b)) {
+                continue;
+            }
+            const FixedVec2 here = center(b);
+            std::uint16_t bits = 0;
+            const auto set = [&](Need n) { bits = static_cast<std::uint16_t>(bits | (1u << static_cast<unsigned>(n))); };
+            // What the residents have.
+            std::int32_t fed = 0, clothed = 0, shod = 0, n = 0;
+            for (const EntityId r : b.residents) {
+                if (const Villager* v = g_.villagers_.get(r)) {
+                    ++n;
+                    fed += v->variety >= 3 ? 1 : 0;
+                    clothed += v->clothes > 0 ? 1 : 0;
+                    shod += v->shoes > 0 ? 1 : 0;
+                }
+            }
+            if (n > 0 && fed * 2 >= n) {
+                set(Need::Food);
+            }
+            if (n > 0 && clothed * 2 >= n) {
+                set(Need::Clothes);
+            }
+            if (n > 0 && shod * 2 >= n) {
+                set(Need::Shoes);
+            }
+            if (b.heated) {
+                set(Need::Heating);
+            }
+            for (const Service& sv : services) {
+                if (sv.owner == b.owner && distance2(here, sv.at) <= sv.reach2) {
+                    bits = static_cast<std::uint16_t>(bits | (1u << sv.need));
+                }
+            }
+            // Beauty: pleasant and unpleasant buildings nearby, and trees.
+            std::int32_t beauty = 0;
+            for (const Building& o : all) {
+                const std::int32_t des = def(o).desirability;
+                if (des == 0 || &o == &b) {
+                    continue;
+                }
+                const std::uint64_t d2 = distance2(here, center(o));
+                if (d2 < meters2(30)) {
+                    const auto dist = static_cast<std::int32_t>(isqrt(d2 >> 32));
+                    beauty += des * (30 - dist) / 30;
+                }
+            }
+            std::int32_t trees = 0;
+            const std::int32_t side = g_.node_cells_side_;
+            const std::int32_t cx = here.x.floor_int() / kNodeCell;
+            const std::int32_t cz = here.z.floor_int() / kNodeCell;
+            for (std::int32_t z = std::max(0, cz - 1); z <= std::min(side - 1, cz + 1); ++z) {
+                for (std::int32_t x = std::max(0, cx - 1); x <= std::min(side - 1, cx + 1); ++x) {
+                    for (const std::uint32_t i : g_.node_cells_[static_cast<std::size_t>(z * side + x)]) {
+                        const MapFeature& f = g_.map_.features[i];
+                        if (f.type == FeatureType::Tree && g_.nodes_[i].amount > 0 &&
+                            distance2(here, {f.x, f.z}) < meters2(16)) {
+                            ++trees;
+                        }
+                    }
+                }
+            }
+            beauty += std::min(trees, 8);
+            b.desirability = beauty;
+            if (beauty >= 10) {
+                set(Need::Beauty);
+            }
+            b.needs = bits;
+            // Happiness: a base, each need met, and the neighborhood.
+            const auto met = static_cast<std::int32_t>(std::popcount(static_cast<unsigned>(bits)));
+            b.happiness = std::clamp(28 + 8 * met + std::clamp(beauty / 2, -10, 10), 0, 100);
+            // An upgrade when the next level's needs are met.
+            if (!b.upgrading && b.level < d.levels.size()) {
+                const LevelDef& next = d.levels[b.level];
+                if ((bits & next.needs) == next.needs && g_.tier(b.owner) >= std::max(1, next.tier)) {
+                    b.upgrading = true;
+                }
+            }
+        }
+    }
+
     void daily() {
         g_.temperature_ = sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_);
         grow_fields();
+        update_homes();
         const std::int32_t t = g_.temperature_;
         if (t < 0) {
             g_.snow_ = std::min(village::kMaxSnow, g_.snow_ + 1 + std::min(-t, 10) / 2);
@@ -1424,6 +1655,9 @@ public:
     bool weather(Villager& v) {
         if (v.clothes > 0) {
             --v.clothes;
+        }
+        if (v.shoes > 0) {
+            --v.shoes;
         }
         if (g_.tick_ % 4 != 0) {
             return true;
@@ -1718,6 +1952,27 @@ public:
                 g_.buildings_changed_ = true;
                 break;
             }
+            case CommandType::UpgradeBuilding: {
+                Building* b = g_.buildings_.get(c.entity);
+                if (b == nullptr || b->owner != c.player || !complete(*b) || b->upgrading ||
+                    def(*b).kind != BuildingKind::TownCenter || b->level >= def(*b).levels.size() ||
+                    g_.population(c.player) < def(*b).levels[b->level].population) {
+                    ++g_.rejected_;
+                    break;
+                }
+                b->upgrading = true;
+                g_.buildings_changed_ = true;
+                break;
+            }
+            case CommandType::SetLimit: {
+                Building* b = g_.buildings_.get(c.entity);
+                if (b == nullptr || b->owner != c.player) {
+                    ++g_.rejected_;
+                    break;
+                }
+                b->limit = c.value;
+                break;
+            }
             case CommandType::DevGrant: {
                 Building* tc = g_.buildings_.get(g_.players_[c.player].town_center);
                 if (!g_.dev_commands_ || tc == nullptr || c.def >= c_.resources.size() || c.value < 1 ||
@@ -1817,6 +2072,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     meat_ = content_->find_resource("core:meat");
     hide_ = content_->find_resource("core:hide");
     fish_ = content_->find_resource("core:fish");
+    shoes_ = content_->find_resource("core:shoes");
     zone_animals_.resize(map_.zones.size());
     for (std::size_t z = 0; z < map_.zones.size(); ++z) {
         zone_animals_[z] = VillageRules::zone_capacity(map_.zones[z].type);
@@ -1901,6 +2157,9 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
         return PlaceError::UnknownBuilding;
     }
     const BuildingDef& d = content_->buildings[def_index];
+    if (d.tier > tier(player)) {
+        return PlaceError::Locked;
+    }
     if (d.kind == BuildingKind::TownCenter || d.unique) {
         for (std::size_t i = 0; i < buildings_.size(); ++i) {
             const Building& b = buildings_.data()[i];
@@ -1983,6 +2242,35 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
         return PlaceError::TooSteep;
     }
     return PlaceError::None;
+}
+
+std::int32_t Game::tier(std::uint8_t player) const {
+    const Building* tc = buildings_.get(players_[town_of(player)].town_center);
+    return tc == nullptr ? 1 : tc->level + 1;
+}
+
+std::int32_t Game::capacity(const Building& b) const {
+    const BuildingDef& d = content_->buildings[b.def];
+    if (b.level > 0 && b.level <= d.levels.size() && d.levels[b.level - 1u].residents > 0) {
+        return d.levels[b.level - 1u].residents;
+    }
+    return d.residents;
+}
+
+std::int32_t Game::happiness(std::uint8_t player) const {
+    const std::uint8_t town = town_of(player);
+    std::int64_t sum = 0;
+    std::int64_t people = 0;
+    for (const Building& b : buildings_.data()) {
+        if (b.owner == town && content_->buildings[b.def].kind == BuildingKind::House && !b.residents.empty()) {
+            sum += static_cast<std::int64_t>(b.happiness) * static_cast<std::int64_t>(b.residents.size());
+            people += static_cast<std::int64_t>(b.residents.size());
+        }
+    }
+    const std::int64_t homeless = population(town) - people;
+    sum += 25 * std::max<std::int64_t>(0, homeless);  // No home, less joy.
+    people += std::max<std::int64_t>(0, homeless);
+    return people == 0 ? 50 : static_cast<std::int32_t>(sum / people);
 }
 
 std::vector<std::int32_t> Game::stored(std::uint8_t player) const {
@@ -2225,6 +2513,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(ps.births);
         w.i32(ps.deaths);
         w.i32(ps.arrivals);
+        w.i32(ps.departures);
     }
     m.registry = w.bytes().size();
     const EntityRegistry& reg = g.registry();
@@ -2279,6 +2568,13 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i64(b.built_tick);
         w.u32(b.produced_year);
         w.i32(b.produced);
+        w.u8(b.level);
+        w.u8(b.upgrading ? 1 : 0);
+        w.i32(b.limit);
+        w.u8(b.recipe);
+        w.u16(b.needs);
+        w.i32(b.happiness);
+        w.i32(b.desirability);
         w.u32(static_cast<std::uint32_t>(b.fields.size()));
         for (const Field& f : b.fields) {
             w.i32(f.x);
@@ -2319,9 +2615,13 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(v.health);
         w.i32(v.warmth);
         w.i32(v.clothes);
-        w.u32(v.diet);
+        for (const DefIndex meal : v.meals) {
+            w.u16(meal);
+        }
+        w.u8(v.meal_index);
         w.u8(v.variety);
         w.u16(v.spot);
+        w.i32(v.shoes);
         w.u32(v.home.index);
         w.u32(v.home.generation);
         w.u32(v.job.index);
@@ -2421,7 +2721,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         PlayerState& ps = g.players_[p];
         std::uint8_t active = 0;
         if (!r.u8(active) || !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
-            !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals)) {
+            !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures)) {
             return false;
         }
         ps.active = active != 0;
@@ -2508,6 +2808,14 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             r.fail();
             return false;
         }
+        std::uint8_t upgrading = 0;
+        if (!r.u8(b.level) || b.level > c.buildings[b.def].levels.size() || !r.u8(upgrading) || upgrading > 1 ||
+            !r.i32(b.limit) || b.limit < 0 || b.limit > 10000 || !r.u8(b.recipe) || !r.u16(b.needs) ||
+            !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability)) {
+            r.fail();
+            return false;
+        }
+        b.upgrading = upgrading != 0;
         std::uint32_t nf = 0;
         if (!r.count(16, 40, nf)) {
             return false;
@@ -2555,8 +2863,9 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t sex = 0, task = 0;
         if (!r.u32(id.index) || !r.u32(id.generation) || !r.u8(v.owner) || !r.u8(sex) || !r.u8(v.race) ||
             !r.u32(v.appearance) || !r.u32(v.family) || !r.i64(v.born_tick) || !r.vec2(v.position) || !r.vec2(v.previous) ||
-            !r.i32(v.food) || !r.i32(v.health) || !r.i32(v.warmth) || !r.i32(v.clothes) || !r.u32(v.diet) ||
-            !r.u8(v.variety) || !r.u16(v.spot) || !r.u32(v.home.index) || !r.u32(v.home.generation) ||
+            !r.i32(v.food) || !r.i32(v.health) || !r.i32(v.warmth) || !r.i32(v.clothes) || !r.u16(v.meals[0]) || !r.u16(v.meals[1]) ||
+            !r.u16(v.meals[2]) || !r.u16(v.meals[3]) || !r.u8(v.meal_index) || v.meal_index >= 4 ||
+            !r.u8(v.variety) || !r.u16(v.spot) || !r.i32(v.shoes) || !r.u32(v.home.index) || !r.u32(v.home.generation) ||
             !r.u32(v.job.index) || !r.u32(v.job.generation) || !r.u8(task) || !r.u32(v.target.index) ||
             !r.u32(v.target.generation) || !r.u32(v.site.index) || !r.u32(v.site.generation) || !r.u32(v.node) ||
             !r.i32(v.timer) || !r.u16(v.carrying.resource) || !r.i32(v.carrying.amount) || v.owner >= pc || sex > 1 ||

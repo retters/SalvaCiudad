@@ -763,3 +763,57 @@ Los campos se dibujan con dos modelos hechos en código: una losa de tierra de 2
 
 **D-1109. Qué no entra.**
 Las malas hierbas, las piedras en los campos y las plagas (7.9) quedan para después de la fase 12; no están en los criterios de esta fase.
+
+## Fase 12: cadenas de producción y necesidades (2026-09-27)
+
+**D-1201. Cadenas como datos.**
+Las cadenas de 7.9 son recetas y talleres en `core`:
+- alimentos: trigo → harina → pan (con leña); cebada → cerveza; carne o pescado → ahumados;
+- ropa y calzado: pieles → cuero → ropa o calzado; lino → tela → ropa;
+- construcción: arcilla → ladrillos o tejas;
+- hierro: troncos → carbón; mineral y carbón → hierro; hierro → herramientas.
+
+Un taller con varias recetas trabaja la primera cuyo producto falta y cuyos insumos tiene; si no, va a buscar lo que falta para la primera posible. La salazón quedó fuera: no hay sal en el mapa.
+
+**D-1202. Límite de producción por taller.**
+Cada taller guarda un límite de su producto: automático (30 + 3 por aldeano, D-1006) o el que ponga el jugador, de 10 en 10, con el comando `SetLimit`.
+
+**D-1203. Necesidades.**
+Cada día, cada casa revisa diez necesidades (una por bit):
+- dieta variada, ropa y calzado: para al menos la mitad de sus habitantes;
+- agua (un pozo), religión (una capilla con sacerdote), entretenimiento (una taberna con tabernero y cerveza, que gasta una por día) y mercado: un edificio de servicio a su alcance;
+- calefacción: su fuego;
+- belleza: un entorno de 10 o más;
+- higiene: en la fase 13.
+
+Los servicios se definen en datos (`service`, `serviceRadius`, `serviceUses`). Lo que un servicio consume no se lo llevan los peones.
+
+**D-1204. Dieta variada por comidas.**
+La variedad cuenta los tipos entre los últimos cuatro bocados, sin importar cuándo fueron. Primero se contó por mes y luego por dos meses: un aldeano come cada uno o dos meses, así que la ventana se vaciaba entre comidas y nunca llegaba a tres tipos.
+
+**D-1205. Entorno y felicidad.**
+- **Entorno:** la suma de la deseabilidad de los edificios a menos de 30 m (disminuye con la distancia) más un punto por árbol cercano, hasta 8. Los jardines y estatuas suben; curtiduría, fundición, horno y carbonera bajan.
+- **Felicidad de una casa:** 28 + 8 por necesidad cubierta + la mitad del entorno (±10), entre 0 y 100.
+- **Felicidad del pueblo:** el promedio por habitante, y quien no tiene casa cuenta 25.
+- **Efectos:**
+  - los nacimientos dependen de la felicidad del hogar (12 % al mes con 60);
+  - llegan recién llegados si el pueblo tiene 35 o más;
+  - un hogar con menos de 15 tiene 25 % cada mes de irse entero.
+
+**D-1206. Niveles de las casas.**
+Una casa sube de nivel sola cuando cubre las necesidades del siguiente nivel: los peones traen los materiales y hacen el trabajo, como en una obra.
+- Nivel 2 (7 habitantes): dieta, agua, ropa y calefacción; troncos y piedra.
+- Nivel 3 (9 habitantes): además calzado, mercado, religión, entretenimiento y belleza, y el centro del pueblo en nivel 2; ladrillos, tejas y herramientas.
+
+Las casas no bajan de nivel.
+
+**D-1207. Niveles del centro del pueblo.**
+El jugador lo mejora desde su ventana cuando tiene los aldeanos necesarios (30 y 70), y los peones hacen la obra. Cada nivel desbloquea edificios (`tier` en los datos):
+- nivel 2: molino, panadería, cervecería, talleres, horno, carbonera, mercado, capilla, taberna y estatua;
+- nivel 3: mina de hierro, fundición y herrería.
+
+**D-1208. Paseos cortos.**
+Un aldeano sin nada que hacer ya no pasea si el camino mide más de 54 m (tres veces el radio del paseo). Un tabernero pasaba más de 1000 ticks rodeando un lago y dejaba la taberna sin cerveza.
+
+**D-1209. Categorías en la barra de construcción.**
+Seis grupos (vivienda, alimentos, recursos, industria, servicios, decoración) con pestañas. Cada edificio los toma de su `category` o de su tipo y trabajo. Los edificios de un nivel mayor del centro del pueblo aparecen desactivados, con el nivel que necesitan.

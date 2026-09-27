@@ -34,7 +34,10 @@ bool known_type(std::string_view t) {
 // Reads fields of one definition, collecting its errors.
 class Reader {
 public:
-    Reader(const RawDef& def, std::vector<DefError>& errors) : def_(def), errors_(errors) {}
+    Reader(const RawDef& def, std::vector<DefError>& errors) : def_(def), obj_(def.obj), errors_(errors) {}
+    // Fields of an object inside the definition (errors name the definition).
+    Reader(const RawDef& def, yyjson_mut_val* obj, std::vector<DefError>& errors)
+        : def_(def), obj_(obj), errors_(errors) {}
 
     void fail(std::string message) {
         ok_ = false;
@@ -44,7 +47,7 @@ public:
 
     std::int32_t integer(const char* key, std::int32_t min, std::int32_t max, std::int32_t fallback, bool required = false) {
         std::int64_t v = 0;
-        const json::Field f = json::get_int(def_.obj, key, min, max, v);
+        const json::Field f = json::get_int(obj_, key, min, max, v);
         if (f == json::Field::Ok) {
             return static_cast<std::int32_t>(v);
         }
@@ -56,7 +59,7 @@ public:
 
     std::string text(const char* key, bool required, std::size_t max = 128) {
         std::string v;
-        const json::Field f = json::get_string(def_.obj, key, max, v);
+        const json::Field f = json::get_string(obj_, key, max, v);
         if (f == json::Field::Invalid || (required && f == json::Field::Missing)) {
             fail(std::format("\"{}\" must be a text", key));
         }
@@ -65,7 +68,7 @@ public:
 
     bool flag(const char* key) {
         bool v = false;
-        if (json::get_bool(def_.obj, key, v) == json::Field::Invalid) {
+        if (json::get_bool(obj_, key, v) == json::Field::Invalid) {
             fail(std::format("\"{}\" must be true or false", key));
         }
         return v;
@@ -74,9 +77,9 @@ public:
     // One of `names`; returns its index.
     template <std::size_t N>
     int choice(const char* key, const std::string_view (&names)[N], int fallback, bool required = false) {
-        const char* v = str(def_.obj, key);
+        const char* v = str(obj_, key);
         if (v == nullptr) {
-            if (required || yyjson_mut_obj_get(def_.obj, key) != nullptr) {
+            if (required || yyjson_mut_obj_get(obj_, key) != nullptr) {
                 fail(std::format("\"{}\" is required", key));
             }
             return fallback;
@@ -91,10 +94,10 @@ public:
     }
 
     // A list of choices, as bits.
-    template <std::size_t N>
-    std::uint8_t choices(const char* key, const std::string_view (&names)[N]) {
-        std::uint8_t bits = 0;
-        yyjson_mut_val* arr = yyjson_mut_obj_get(def_.obj, key);
+    template <typename Bits = std::uint8_t, std::size_t N>
+    Bits choices(const char* key, const std::string_view (&names)[N]) {
+        Bits bits = 0;
+        yyjson_mut_val* arr = yyjson_mut_obj_get(obj_, key);
         if (arr == nullptr) {
             return 0;
         }
@@ -107,9 +110,9 @@ public:
         yyjson_mut_arr_foreach(arr, idx, max, item) {
             const char* v = yyjson_mut_get_str(item);
             bool found = false;
-            for (std::size_t i = 0; v != nullptr && i < N && i < 8; ++i) {
+            for (std::size_t i = 0; v != nullptr && i < N && i < sizeof(Bits) * 8; ++i) {
                 if (names[i] == v) {
-                    bits = static_cast<std::uint8_t>(bits | (1u << i));
+                    bits = static_cast<Bits>(bits | (1u << i));
                     found = true;
                 }
             }
@@ -123,7 +126,7 @@ public:
     // A list of exactly `n` numbers.
     template <typename T>
     void numbers(const char* key, T* out, std::size_t n, std::int32_t min, std::int32_t max) {
-        yyjson_mut_val* arr = yyjson_mut_obj_get(def_.obj, key);
+        yyjson_mut_val* arr = yyjson_mut_obj_get(obj_, key);
         if (arr == nullptr) {
             return;
         }
@@ -146,7 +149,7 @@ public:
     std::vector<std::pair<int, std::int32_t>> table(const char* key, Find find, std::int32_t min, std::int32_t max,
                                                     std::size_t most) {
         std::vector<std::pair<int, std::int32_t>> out;
-        yyjson_mut_val* obj = yyjson_mut_obj_get(def_.obj, key);
+        yyjson_mut_val* obj = yyjson_mut_obj_get(obj_, key);
         if (obj == nullptr) {
             return out;
         }
@@ -190,13 +193,18 @@ public:
 
 private:
     const RawDef& def_;
+    yyjson_mut_val* obj_ = nullptr;
     std::vector<DefError>& errors_;
     bool ok_ = true;
 };
 
 constexpr std::string_view kCategories[] = {"food", "material", "fuel", "good"};
 constexpr std::string_view kWorkKinds[] = {"none", "gather", "produce", "build", "haul", "farm", "hunt", "fish"};
-constexpr std::string_view kBuildingKinds[] = {"house", "storage", "workplace", "townCenter", "decoration", "defense", "military"};
+constexpr std::string_view kBuildingKinds[] = {"house",   "storage", "workplace", "townCenter", "decoration",
+                                               "defense", "military", "market"};
+constexpr std::string_view kBuildCategories[] = {"housing", "food", "resources", "industry", "services", "decoration"};
+constexpr std::string_view kNeeds[] = {"food",   "water", "clothes", "shoes",  "religion",
+                                       "entertainment", "heating", "beauty", "market", "hygiene"};
 constexpr std::string_view kFeatureKinds[] = {"tree", "stone", "ironOre", "berryBush", "herbs"};
 constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge"};
 
@@ -468,6 +476,58 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);
         def.fields = r.integer("fields", 0, 16, 0);
+        // Upgrades.
+        if (yyjson_mut_val* levels = yyjson_mut_obj_get(d->obj, "levels"); levels != nullptr) {
+            if (!yyjson_mut_is_arr(levels) || yyjson_mut_arr_size(levels) > 8) {
+                r.fail("\"levels\" must be a list of at most 8 objects");
+            } else {
+                std::size_t li = 0, lmax = 0;
+                yyjson_mut_val* item = nullptr;
+                yyjson_mut_arr_foreach(levels, li, lmax, item) {
+                    if (!yyjson_mut_is_obj(item)) {
+                        r.fail("\"levels\" entries must be objects");
+                        continue;
+                    }
+                    Reader lr(*d, item, errors);
+                    sim::LevelDef level;
+                    level.residents = lr.integer("residents", 0, 50, 0);
+                    level.cost = amounts(lr.table("cost", find_resource, 1, 10000, 8));
+                    level.work = lr.integer("work", 0, 100000, 200);
+                    level.needs = lr.choices<std::uint16_t>("needs", kNeeds);
+                    level.tier = lr.integer("tier", 0, 10, 0);
+                    level.population = lr.integer("population", 0, 100000, 0);
+                    if (!lr.ok()) {
+                        r.fail("a level has errors");
+                    }
+                    def.levels.push_back(std::move(level));
+                }
+            }
+        }
+        // Service to the homes nearby.
+        const int service = r.choice("service", kNeeds, -1);
+        def.service = service < 0 ? sim::kNoNeed : static_cast<std::uint8_t>(service);
+        def.service_radius = r.integer("serviceRadius", 0, 500, 0);
+        def.service_uses = amounts(r.table("serviceUses", find_resource, 1, 1000, 4));
+        // The build bar's group: given, or from what the building is.
+        auto category = sim::BuildCategory::Industry;
+        switch (def.kind) {
+            case sim::BuildingKind::House: category = sim::BuildCategory::Housing; break;
+            case sim::BuildingKind::Storage:
+            case sim::BuildingKind::Market:
+            case sim::BuildingKind::TownCenter: category = sim::BuildCategory::Services; break;
+            case sim::BuildingKind::Decoration: category = sim::BuildCategory::Decoration; break;
+            default:
+                if (def.work == sim::WorkKind::Gather) {
+                    category = sim::BuildCategory::Resources;
+                } else if (def.work == sim::WorkKind::Farm || def.work == sim::WorkKind::Hunt ||
+                           def.work == sim::WorkKind::Fish) {
+                    category = sim::BuildCategory::Food;
+                } else if (def.service != sim::kNoNeed) {
+                    category = sim::BuildCategory::Services;
+                }
+                break;
+        }
+        def.category = static_cast<std::uint8_t>(r.choice("category", kBuildCategories, static_cast<int>(category)));
         if (def.work == sim::WorkKind::Farm && def.fields == 0) {
             r.fail("a farm needs \"fields\"");
         }

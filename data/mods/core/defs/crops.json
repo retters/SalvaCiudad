@@ -27,6 +27,24 @@
       "yield": 10,
       "growDays": 35,
       "fertility": 12
+    },
+    {
+      "type": "crop",
+      "id": "core:barley",
+      "name": "crop.barley",
+      "resource": "core:barley",
+      "yield": 14,
+      "growDays": 40,
+      "fertility": -10
+    },
+    {
+      "type": "crop",
+      "id": "core:flax",
+      "name": "crop.flax",
+      "resource": "core:flax",
+      "yield": 10,
+      "growDays": 40,
+      "fertility": -10
     }
   ]
 }

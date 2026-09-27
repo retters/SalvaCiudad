@@ -217,6 +217,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] El cazador trae carne y pieles; el pescador, pescado (no con el agua helada).
 - [ ] Con varias comidas, la ventana de los aldeanos muestra buena salud.
 
+### Fase 12 (cadenas de producción y necesidades)
+
+- [ ] La barra de construcción tiene pestañas; los edificios de nivel 2 y 3 aparecen desactivados con el nivel que necesitan.
+- [ ] La barra superior muestra la felicidad del pueblo.
+- [ ] La ventana del centro del pueblo muestra su nivel y lo que pide el siguiente; con 30 aldeanos, "Mejorar" lo sube y desbloquea edificios.
+- [ ] Molino y panadería convierten trigo en pan; el sastre hace ropa con tela de lino o con cuero; el horno, ladrillos o tejas.
+- [ ] En un taller, − y + fijan cuánto de su producto guardar; con el límite alcanzado el taller se detiene.
+- [ ] Un pozo junto a una casa le da agua (la ventana de la casa dice qué le falta para mejorar); con dieta, agua, ropa y fuego la casa sube a nivel 2 y admite 7 habitantes.
+- [ ] Una taberna con cerveza da entretenimiento; sin cerveza, no.
+- [ ] Un mercado se llena de comida y ropa, y los aldeanos cercanos comen ahí.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

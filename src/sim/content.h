@@ -48,7 +48,35 @@ enum class WorkKind : std::uint8_t {
     Count
 };
 
-enum class BuildingKind : std::uint8_t { House, Storage, Workplace, TownCenter, Decoration, Defense, Military, Count };
+enum class BuildingKind : std::uint8_t { House, Storage, Workplace, TownCenter, Decoration, Defense, Military, Market, Count };
+
+// What a home needs to be happy and to grow (phase 12). Service buildings
+// provide some of them to the homes within their reach.
+enum class Need : std::uint8_t {
+    Food,           // A varied diet: three kinds a month.
+    Water,          // A well nearby.
+    Clothes,
+    Shoes,
+    Religion,       // A chapel nearby, with its priest.
+    Entertainment,  // A tavern nearby, with beer.
+    Heating,        // Firewood in the hearth.
+    Beauty,         // A pleasant neighborhood.
+    Market,         // A market nearby.
+    Hygiene,        // Phase 13.
+    Count
+};
+inline constexpr std::uint8_t kNoNeed = 0xFF;
+
+// A level a building can be upgraded to: houses (by themselves, when their
+// needs are met) and the town center (by the player).
+struct LevelDef {
+    std::int32_t residents = 0;     // Houses: room at this level.
+    std::vector<ResourceAmount> cost;
+    std::int32_t work = 200;
+    std::uint16_t needs = 0;        // Need bits that must be met.
+    std::int32_t tier = 0;          // Town center level needed.
+    std::int32_t population = 0;    // Town center: villagers needed.
+};
 
 struct BuildingDef {
     std::string id;
@@ -76,7 +104,16 @@ struct BuildingDef {
     std::int32_t mature_years = 0;  // Years after it is built before it produces (orchards).
     std::int32_t yearly_limit = 0;  // Most units produced per year (0 = no limit).
     std::int32_t fields = 0;        // Farms: how many fields it can have.
+    // Phase 12.
+    std::vector<LevelDef> levels;   // Upgrades, in order.
+    std::uint8_t service = kNoNeed; // Need it provides to homes nearby.
+    std::int32_t service_radius = 0;
+    std::vector<ResourceAmount> service_uses;  // Used up each day to provide it (a tavern's beer).
+    std::uint8_t category = 0;      // BuildCategory, for the build bar.
 };
+
+// Groups of the build bar.
+enum class BuildCategory : std::uint8_t { Housing, Food, Resources, Industry, Services, Decoration, Count };
 
 // A crop for the fields (phase 11).
 struct CropDef {

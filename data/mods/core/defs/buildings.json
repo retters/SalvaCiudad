@@ -20,7 +20,26 @@
         "fuel",
         "good"
       ],
-      "unique": true
+      "unique": true,
+      "levels": [
+        {
+          "population": 30,
+          "cost": {
+            "core:log": 60,
+            "core:stone": 40
+          },
+          "work": 600
+        },
+        {
+          "population": 70,
+          "cost": {
+            "core:bricks": 40,
+            "core:stone": 60,
+            "core:tools": 10
+          },
+          "work": 900
+        }
+      ]
     },
     {
       "type": "building",
@@ -36,7 +55,44 @@
         "core:log": 12
       },
       "buildWork": 300,
-      "residents": 5
+      "residents": 5,
+      "levels": [
+        {
+          "residents": 7,
+          "needs": [
+            "food",
+            "water",
+            "clothes",
+            "heating"
+          ],
+          "cost": {
+            "core:log": 8,
+            "core:stone": 8
+          },
+          "work": 200
+        },
+        {
+          "residents": 9,
+          "needs": [
+            "food",
+            "water",
+            "clothes",
+            "heating",
+            "market",
+            "shoes",
+            "religion",
+            "entertainment",
+            "beauty"
+          ],
+          "tier": 2,
+          "cost": {
+            "core:bricks": 12,
+            "core:roof_tiles": 12,
+            "core:tools": 2
+          },
+          "work": 300
+        }
+      ]
     },
     {
       "type": "building",
@@ -111,7 +167,8 @@
       "stores": [
         "food",
         "good"
-      ]
+      ],
+      "category": "food"
     },
     {
       "type": "building",
@@ -161,7 +218,8 @@
       "stores": [
         "material",
         "fuel"
-      ]
+      ],
+      "category": "resources"
     },
     {
       "type": "building",
@@ -215,7 +273,8 @@
       "storage": 60,
       "stores": [
         "food"
-      ]
+      ],
+      "category": "food"
     },
     {
       "type": "building",
@@ -285,7 +344,8 @@
       "storage": 30,
       "stores": [
         "good"
-      ]
+      ],
+      "category": "resources"
     },
     {
       "type": "building",
@@ -305,7 +365,8 @@
       "storage": 900,
       "stores": [
         "food"
-      ]
+      ],
+      "category": "food"
     },
     {
       "type": "building",
@@ -329,7 +390,549 @@
       "storage": 40,
       "stores": [
         "material"
-      ]
+      ],
+      "category": "food"
+    },
+    {
+      "type": "building",
+      "id": "core:mill",
+      "name": "building.mill",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 20,
+        "core:stone": 10
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:mill_flour"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2,
+      "category": "food"
+    },
+    {
+      "type": "building",
+      "id": "core:bakery",
+      "name": "building.bakery",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 16,
+        "core:bricks": 6
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:bake_bread"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2,
+      "category": "food"
+    },
+    {
+      "type": "building",
+      "id": "core:brewery",
+      "name": "building.brewery",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 20,
+        "core:stone": 6
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:brew_beer"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2,
+      "category": "food"
+    },
+    {
+      "type": "building",
+      "id": "core:tannery",
+      "name": "building.tannery",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 14
+      },
+      "buildWork": 300,
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:tan_leather"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2,
+      "desirability": -10
+    },
+    {
+      "type": "building",
+      "id": "core:weaver",
+      "name": "building.weaver",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 14
+      },
+      "buildWork": 300,
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:weave_linen"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2
+    },
+    {
+      "type": "building",
+      "id": "core:tailor",
+      "name": "building.tailor",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 14
+      },
+      "buildWork": 300,
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:sew_linen",
+        "core:sew_leather"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2
+    },
+    {
+      "type": "building",
+      "id": "core:cobbler",
+      "name": "building.cobbler",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 14
+      },
+      "buildWork": 300,
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:make_shoes"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2
+    },
+    {
+      "type": "building",
+      "id": "core:clay_pit",
+      "name": "building.clayPit",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 8
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:dig_clay"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "desirability": -4,
+      "category": "resources"
+    },
+    {
+      "type": "building",
+      "id": "core:kiln",
+      "name": "building.kiln",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 10,
+        "core:stone": 12
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:fire_bricks",
+        "core:fire_tiles"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2,
+      "desirability": -8
+    },
+    {
+      "type": "building",
+      "id": "core:charcoal_kiln",
+      "name": "building.charcoalKiln",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 10,
+        "core:stone": 6
+      },
+      "buildWork": 300,
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:burn_charcoal"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 2,
+      "desirability": -10,
+      "category": "industry"
+    },
+    {
+      "type": "building",
+      "id": "core:iron_mine",
+      "name": "building.ironMine",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        4
+      ],
+      "cost": {
+        "core:log": 20,
+        "core:stone": 10
+      },
+      "buildWork": 350,
+      "workers": 2,
+      "work": "gather",
+      "gathers": [
+        "ironOre"
+      ],
+      "radius": 70,
+      "storage": 40,
+      "stores": [
+        "material"
+      ],
+      "tier": 3,
+      "desirability": -8
+    },
+    {
+      "type": "building",
+      "id": "core:smelter",
+      "name": "building.smelter",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:stone": 20,
+        "core:bricks": 10
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:smelt_iron"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 3,
+      "desirability": -15
+    },
+    {
+      "type": "building",
+      "id": "core:blacksmith",
+      "name": "building.blacksmith",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 12,
+        "core:bricks": 10
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:forge_tools"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "tier": 3,
+      "desirability": -6
+    },
+    {
+      "type": "building",
+      "id": "core:smokehouse",
+      "name": "building.smokehouse",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 14
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:smoke_meat",
+        "core:smoke_fish"
+      ],
+      "storage": 40,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "desirability": -5,
+      "category": "food"
+    },
+    {
+      "type": "building",
+      "id": "core:well",
+      "name": "building.well",
+      "kind": "decoration",
+      "model": "models/props/house_small.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 10
+      },
+      "buildWork": 120,
+      "service": "water",
+      "serviceRadius": 45,
+      "desirability": 4,
+      "category": "housing"
+    },
+    {
+      "type": "building",
+      "id": "core:chapel",
+      "name": "building.chapel",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        6,
+        8
+      ],
+      "cost": {
+        "core:log": 30,
+        "core:stone": 30
+      },
+      "buildWork": 600,
+      "workers": 1,
+      "service": "religion",
+      "serviceRadius": 70,
+      "tier": 2,
+      "desirability": 10
+    },
+    {
+      "type": "building",
+      "id": "core:tavern",
+      "name": "building.tavern",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        6,
+        6
+      ],
+      "cost": {
+        "core:log": 30,
+        "core:stone": 10
+      },
+      "buildWork": 450,
+      "workers": 1,
+      "service": "entertainment",
+      "serviceRadius": 70,
+      "serviceUses": {
+        "core:beer": 1
+      },
+      "storage": 40,
+      "stores": [
+        "good"
+      ],
+      "tier": 2,
+      "desirability": 4
+    },
+    {
+      "type": "building",
+      "id": "core:market",
+      "name": "building.market",
+      "kind": "market",
+      "model": "models/props/house_small.glb",
+      "size": [
+        8,
+        6
+      ],
+      "cost": {
+        "core:log": 24,
+        "core:stone": 8
+      },
+      "buildWork": 400,
+      "workers": 2,
+      "service": "market",
+      "serviceRadius": 80,
+      "storage": 300,
+      "stores": [
+        "food",
+        "good"
+      ],
+      "tier": 2,
+      "desirability": 6
+    },
+    {
+      "type": "building",
+      "id": "core:garden",
+      "name": "building.garden",
+      "kind": "decoration",
+      "model": "models/props/house_small.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 4
+      },
+      "buildWork": 80,
+      "desirability": 12
+    },
+    {
+      "type": "building",
+      "id": "core:statue",
+      "name": "building.statue",
+      "kind": "decoration",
+      "model": "models/props/house_small.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 30
+      },
+      "buildWork": 200,
+      "desirability": 25,
+      "tier": 2
     }
   ]
 }

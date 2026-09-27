@@ -198,7 +198,7 @@ TEST_SUITE("menus") {
         const auto bar = ui.hud_rects[1];
         ui::Input press;
         press.mouse_x = bar[0] + 8.0f + 75.0f;
-        press.mouse_y = bar[1] + 8.0f + 22.0f;
+        press.mouse_y = bar[1] + 8.0f + 32.0f + 6.0f + 22.0f;  // Below the category tabs.
         press.mouse_down = true;
         press.mouse_pressed = true;
         h.frame(16, press);

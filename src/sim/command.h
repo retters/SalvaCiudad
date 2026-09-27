@@ -25,6 +25,8 @@ enum class CommandType : std::uint8_t {
     DevGrant = 14,        // Developer tools: `value` units of resource `def` to the town center.
     SetCrop = 15,         // Farm `entity`, field `value & 0xFF`, year `value >> 8`: crop `def` (kNoDef = fallow).
     RemoveField = 16,     // Farm `entity`, field `value`.
+    UpgradeBuilding = 17, // Start upgrading `entity` (the town center) to its next level.
+    SetLimit = 18,        // Stock of its product `entity` works up to: `value` (0 = automatic).
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;

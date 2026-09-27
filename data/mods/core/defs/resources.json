@@ -120,6 +120,121 @@
       "name": "resource.fertilizer",
       "category": "material",
       "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:flour",
+      "name": "resource.flour",
+      "category": "material",
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:bread",
+      "name": "resource.bread",
+      "category": "food",
+      "nutrition": 5,
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:barley",
+      "name": "resource.barley",
+      "category": "material",
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:beer",
+      "name": "resource.beer",
+      "category": "good",
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:flax",
+      "name": "resource.flax",
+      "category": "material",
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:linen",
+      "name": "resource.linen",
+      "category": "good",
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:leather",
+      "name": "resource.leather",
+      "category": "good",
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:shoes",
+      "name": "resource.shoes",
+      "category": "good",
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:clay",
+      "name": "resource.clay",
+      "category": "material",
+      "weight": 3
+    },
+    {
+      "type": "resource",
+      "id": "core:bricks",
+      "name": "resource.bricks",
+      "category": "material",
+      "weight": 3
+    },
+    {
+      "type": "resource",
+      "id": "core:roof_tiles",
+      "name": "resource.roofTiles",
+      "category": "material",
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:coal",
+      "name": "resource.coal",
+      "category": "fuel",
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:iron",
+      "name": "resource.iron",
+      "category": "material",
+      "weight": 3
+    },
+    {
+      "type": "resource",
+      "id": "core:tools",
+      "name": "resource.tools",
+      "category": "good",
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:smoked_meat",
+      "name": "resource.smokedMeat",
+      "category": "food",
+      "nutrition": 5,
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:smoked_fish",
+      "name": "resource.smokedFish",
+      "category": "food",
+      "nutrition": 4,
+      "weight": 1
     }
   ]
 }

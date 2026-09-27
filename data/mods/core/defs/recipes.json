@@ -27,6 +27,186 @@
         "core:fertilizer": 2
       },
       "work": 150
+    },
+    {
+      "type": "recipe",
+      "id": "core:mill_flour",
+      "inputs": {
+        "core:wheat": 2
+      },
+      "outputs": {
+        "core:flour": 2
+      },
+      "work": 60
+    },
+    {
+      "type": "recipe",
+      "id": "core:bake_bread",
+      "inputs": {
+        "core:flour": 2,
+        "core:firewood": 1
+      },
+      "outputs": {
+        "core:bread": 4
+      },
+      "work": 80
+    },
+    {
+      "type": "recipe",
+      "id": "core:brew_beer",
+      "inputs": {
+        "core:barley": 2
+      },
+      "outputs": {
+        "core:beer": 2
+      },
+      "work": 90
+    },
+    {
+      "type": "recipe",
+      "id": "core:tan_leather",
+      "inputs": {
+        "core:hide": 1
+      },
+      "outputs": {
+        "core:leather": 1
+      },
+      "work": 70
+    },
+    {
+      "type": "recipe",
+      "id": "core:weave_linen",
+      "inputs": {
+        "core:flax": 2
+      },
+      "outputs": {
+        "core:linen": 1
+      },
+      "work": 70
+    },
+    {
+      "type": "recipe",
+      "id": "core:sew_linen",
+      "inputs": {
+        "core:linen": 1
+      },
+      "outputs": {
+        "core:clothes": 1
+      },
+      "work": 60
+    },
+    {
+      "type": "recipe",
+      "id": "core:sew_leather",
+      "inputs": {
+        "core:leather": 1
+      },
+      "outputs": {
+        "core:clothes": 1
+      },
+      "work": 60
+    },
+    {
+      "type": "recipe",
+      "id": "core:make_shoes",
+      "inputs": {
+        "core:leather": 1
+      },
+      "outputs": {
+        "core:shoes": 2
+      },
+      "work": 80
+    },
+    {
+      "type": "recipe",
+      "id": "core:dig_clay",
+      "outputs": {
+        "core:clay": 2
+      },
+      "work": 60
+    },
+    {
+      "type": "recipe",
+      "id": "core:fire_bricks",
+      "inputs": {
+        "core:clay": 2,
+        "core:firewood": 1
+      },
+      "outputs": {
+        "core:bricks": 2
+      },
+      "work": 90
+    },
+    {
+      "type": "recipe",
+      "id": "core:fire_tiles",
+      "inputs": {
+        "core:clay": 2,
+        "core:firewood": 1
+      },
+      "outputs": {
+        "core:roof_tiles": 2
+      },
+      "work": 90
+    },
+    {
+      "type": "recipe",
+      "id": "core:burn_charcoal",
+      "inputs": {
+        "core:log": 2
+      },
+      "outputs": {
+        "core:coal": 2
+      },
+      "work": 80
+    },
+    {
+      "type": "recipe",
+      "id": "core:smelt_iron",
+      "inputs": {
+        "core:iron_ore": 2,
+        "core:coal": 1
+      },
+      "outputs": {
+        "core:iron": 1
+      },
+      "work": 100
+    },
+    {
+      "type": "recipe",
+      "id": "core:forge_tools",
+      "inputs": {
+        "core:iron": 1,
+        "core:log": 1
+      },
+      "outputs": {
+        "core:tools": 2
+      },
+      "work": 100
+    },
+    {
+      "type": "recipe",
+      "id": "core:smoke_meat",
+      "inputs": {
+        "core:meat": 2,
+        "core:firewood": 1
+      },
+      "outputs": {
+        "core:smoked_meat": 3
+      },
+      "work": 70
+    },
+    {
+      "type": "recipe",
+      "id": "core:smoke_fish",
+      "inputs": {
+        "core:fish": 2,
+        "core:firewood": 1
+      },
+      "outputs": {
+        "core:smoked_fish": 3
+      },
+      "work": 70
     }
   ]
 }

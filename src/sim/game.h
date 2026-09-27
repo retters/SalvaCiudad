@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 11;
+inline constexpr std::uint32_t kGameRulesVersion = 12;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -118,6 +118,14 @@ struct Building {
     std::int64_t built_tick = 0;     // When it was finished (orchards mature).
     std::uint32_t produced_year = 0; // Workplaces with a yearly limit.
     std::int32_t produced = 0;
+    // Phase 12.
+    std::uint8_t level = 0;          // Upgrades done (houses, the town center).
+    bool upgrading = false;          // Materials and work for the next level.
+    std::int32_t limit = 0;          // Workplaces: stock of their product to reach (0 = automatic).
+    std::uint8_t recipe = 0;         // The recipe being worked.
+    std::uint16_t needs = 0;         // Houses: Need bits met today.
+    std::int32_t happiness = 50;     // Houses: 0..100.
+    std::int32_t desirability = 0;   // Houses: how pleasant the place is.
     bool operator==(const Building&) const = default;
 };
 
@@ -158,8 +166,10 @@ struct Villager {
     std::int32_t health = village::kHealthMax;
     std::int32_t warmth = village::kWarmthMax;
     std::int32_t clothes = 0;         // Ticks left of the clothes worn; 0 = none.
-    std::uint32_t diet = 0;           // Bit per kind of food eaten this month.
-    std::uint8_t variety = 0;         // Kinds of food eaten last month.
+    std::int32_t shoes = 0;           // Ticks left of the shoes worn.
+    std::array<DefIndex, 4> meals{kNoDef, kNoDef, kNoDef, kNoDef};  // The last helpings eaten.
+    std::uint8_t meal_index = 0;
+    std::uint8_t variety = 0;         // Kinds of food among those helpings.
     std::uint16_t spot = 0;           // Field or animal zone being worked (index + 1).
     EntityId home;
     EntityId job;                     // Workplace.
@@ -182,6 +192,7 @@ struct PlayerState {
     std::int32_t births = 0;
     std::int32_t deaths = 0;
     std::int32_t arrivals = 0;
+    std::int32_t departures = 0;      // Unhappy villagers who left.
     bool operator==(const PlayerState&) const = default;
 };
 
@@ -198,6 +209,7 @@ enum class PlaceError : std::uint8_t {
     TooFar,      // A field beyond its farm's reach.
     TooMany,     // A farm with all its fields.
     BadSize,
+    Locked,      // Needs a bigger town center.
 };
 
 // How a game is set up besides its map.
@@ -276,6 +288,12 @@ public:
     // Whether `player` may add a field of `w` x `d` at (x, z) to `farm`.
     [[nodiscard]] PlaceError can_place_field(std::uint8_t player, EntityId farm, std::int32_t x, std::int32_t z,
                                              std::int32_t w, std::int32_t d) const;
+    // The level of a player's town center, from 1.
+    [[nodiscard]] std::int32_t tier(std::uint8_t player) const;
+    // How happy a player's villagers are, 0..100 (homes weighted by residents).
+    [[nodiscard]] std::int32_t happiness(std::uint8_t player) const;
+    // Room in a house at its level.
+    [[nodiscard]] std::int32_t capacity(const Building& b) const;
     // Animals left in each of the map's zones (hunting).
     [[nodiscard]] const std::vector<std::int32_t>& zone_animals() const { return zone_animals_; }
     // Point in front of a building's door, where villagers go.
@@ -324,6 +342,7 @@ private:
     DefIndex meat_ = kNoDef;
     DefIndex hide_ = kNoDef;
     DefIndex fish_ = kNoDef;
+    DefIndex shoes_ = kNoDef;
     std::vector<std::int32_t> zone_animals_;
 
     std::vector<std::pair<std::uint64_t, std::uint32_t>> regrow_;  // (tick, node), sorted.
