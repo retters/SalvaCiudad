@@ -30,6 +30,18 @@ public:
     // the closest walkable point to it). False if no path was found within
     // the budget.
     bool find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes = kDefaultMaxNodes);
+    // Raiders: a path over the ground that may cross buildings and gates
+    // (they break them), which cost a lot more than open ground.
+    bool find_path_through(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out,
+                           std::int32_t max_nodes = kDefaultMaxNodes);
+    // Cell size in meters.
+    static constexpr std::int32_t kCellMeters = 2;
+    // Gates: walkable for villagers, an obstacle for raiders.
+    void set_gate(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, bool on);
+    // Whether a cell (2 m) has a building or a gate in the way of raiders.
+    [[nodiscard]] bool obstacle(std::int32_t cx, std::int32_t cz) const;
+    // Open ground (no water or cliff), whatever is built on it.
+    [[nodiscard]] bool ground(std::int32_t cx, std::int32_t cz) const;
 
     // Straight-line guess of the walking distance, in meters.
     [[nodiscard]] static std::int32_t distance_estimate(FixedVec2 a, FixedVec2 b);
@@ -64,6 +76,7 @@ private:
     [[nodiscard]] std::size_t index(std::int32_t cx, std::int32_t cz) const {
         return static_cast<std::size_t>(cz) * static_cast<std::size_t>(side_) + static_cast<std::size_t>(cx);
     }
+    bool search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes, bool through);
     // Nearest walkable cell to (cx, cz) within a few cells; false if none.
     bool nearest_walkable(std::int32_t& cx, std::int32_t& cz) const;
     // Labels connected walkable areas, so a search to a place that cannot
@@ -75,6 +88,7 @@ private:
     std::int32_t side_ = 0;
     std::vector<std::uint8_t> terrain_cost_;  // 0 = blocked, else cost of a straight step (10 = normal).
     std::vector<std::uint8_t> building_;      // Cells under buildings.
+    std::vector<std::uint8_t> gate_;          // Cells under gates (walkable, but raiders break them).
 
     // Search scratch, reused between searches (stamped instead of cleared).
     std::vector<std::uint32_t> stamp_;

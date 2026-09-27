@@ -242,8 +242,9 @@ TEST_SUITE("farming") {
         // The lodge next to the first zone with deer or boar.
         std::optional<std::size_t> zone;
         for (std::size_t z = 0; z < g.map().zones.size() && !zone; ++z) {
-            if (g.zone_animals()[z] > 0) {
-                zone = z;
+            const ZoneType t = g.map().zones[z].type;
+            if (g.zone_animals()[z] > 0 && (t == ZoneType::Deer || t == ZoneType::Boar)) {
+                zone = z;  // Game, not wolves.
             }
         }
         REQUIRE(zone.has_value());
@@ -255,7 +256,8 @@ TEST_SUITE("farming") {
         CHECK(total(g, "core:meat") > meat);
         std::int32_t left = 0;
         for (std::size_t z = 0; z < g.zone_animals().size(); ++z) {
-            left += g.zone_animals()[z];
+            const ZoneType t = g.map().zones[z].type;
+            left += t == ZoneType::Deer || t == ZoneType::Boar ? g.zone_animals()[z] : 0;
         }
         std::int32_t full = 0;
         for (const Zone& z2 : g.map().zones) {

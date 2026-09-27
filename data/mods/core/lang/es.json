@@ -127,6 +127,11 @@
     "building.healer": "Curandero",
     "building.physician": "Médico",
     "building.bathhouse": "Casa de baños",
-    "building.tradingPost": "Puesto de comercio"
+    "building.tradingPost": "Puesto de comercio",
+    "building.palisade": "Empalizada",
+    "building.stoneWall": "Muro de piedra",
+    "building.gate": "Puerta",
+    "building.watchtower": "Torre de vigía",
+    "building.trap": "Trampa"
   }
 }

@@ -54,6 +54,7 @@ public:
         // Marking out a field for this farm: dragged from one corner cell.
         sim::EntityId field_farm;
         bool field_dragging = false;
+        bool line_dragging = false;  // Walls: pressed at one end, released at the other.
         std::int32_t drag_x = 0;
         std::int32_t drag_z = 0;
         // Screen rectangles of the interface this frame (x, y, w, h):

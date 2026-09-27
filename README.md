@@ -245,6 +245,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con "Mapas separados", cada jugador ve su propio mapa, la cámara no sale de él y la ventana de comercio muestra el mapa del mundo con las caravanas.
 - [ ] Una oferta rechazada o sin respuesta en un mes devuelve lo apartado.
 
+### Fase 15 (fauna y asaltantes)
+
+- [ ] La pantalla de partida nueva tiene Asaltantes y Fauna peligrosa.
+- [ ] En el mapa se ven animales (cajas de colores) que pasean en sus zonas; los ciervos huyen al acercarse un aldeano.
+- [ ] La pestaña Defensa tiene empalizada, muro de piedra (nivel 2), puerta, torre de vigía y trampa; la empalizada se coloca en línea arrastrando.
+- [ ] Con Ctrl+F3 → Pueblo → "Traer asaltantes ahora" aparece el aviso y la barra superior muestra "Asaltantes N".
+- [ ] En la ventana del centro del pueblo, "Tocar la campana" hace que los adultos salgan a pelear; los asaltantes caen o huyen, y "Silenciar la campana" los devuelve al trabajo.
+- [ ] Una torre de vigía cerca del camino de los asaltantes les dispara.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

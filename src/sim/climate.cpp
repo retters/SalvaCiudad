@@ -47,21 +47,26 @@ void GameRules::write(BinaryWriter& w) const {
     w.i32(max_population);
     w.u8(static_cast<std::uint8_t>(diseases));
     w.u8(static_cast<std::uint8_t>(fires));
+    w.u8(static_cast<std::uint8_t>(raiders));
+    w.u8(static_cast<std::uint8_t>(wildlife));
 }
 
 bool GameRules::read(BinaryReader& r, GameRules& out) {
     GameRules g;
-    std::uint8_t year = 0, winter = 0, start = 0, diseases = 0, fires = 0;
+    std::uint8_t year = 0, winter = 0, start = 0, diseases = 0, fires = 0, raiders = 0, wildlife = 0;
     if (!r.u8(g.climate.seasons) || !r.u8(year) || !r.u8(winter) || !r.u8(start) || !r.i32(g.max_population) ||
-        !r.u8(diseases) || !r.u8(fires)) {
+        !r.u8(diseases) || !r.u8(fires) || !r.u8(raiders) || !r.u8(wildlife)) {
         return false;
     }
-    if (diseases >= static_cast<std::uint8_t>(Threat::Count) || fires >= static_cast<std::uint8_t>(Threat::Count)) {
+    constexpr auto kLevels = static_cast<std::uint8_t>(Threat::Count);
+    if (diseases >= kLevels || fires >= kLevels || raiders >= kLevels || wildlife >= kLevels) {
         r.fail();
         return false;
     }
     g.diseases = static_cast<Threat>(diseases);
     g.fires = static_cast<Threat>(fires);
+    g.raiders = static_cast<Threat>(raiders);
+    g.wildlife = static_cast<Threat>(wildlife);
     if (g.climate.seasons == 0 || g.climate.seasons > 0b1111 || year >= static_cast<std::uint8_t>(YearLength::Count) ||
         winter >= static_cast<std::uint8_t>(Harshness::Count) || start >= static_cast<std::uint8_t>(StartGoods::Count) ||
         g.max_population < kMinPopulationLimit || g.max_population > kMaxPopulationLimit) {

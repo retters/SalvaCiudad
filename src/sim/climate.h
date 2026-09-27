@@ -33,6 +33,8 @@ struct GameRules {
     std::int32_t max_population = 1000;  // Per player, 50..1000.
     Threat diseases = Threat::Medium;
     Threat fires = Threat::Medium;
+    Threat raiders = Threat::Medium;   // Phase 15.
+    Threat wildlife = Threat::Medium;  // Wolves and bears.
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, GameRules& out);

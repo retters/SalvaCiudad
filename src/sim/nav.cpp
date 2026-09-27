@@ -16,6 +16,7 @@ void NavGrid::build(const MapData& map) {
     const auto cells = static_cast<std::size_t>(side_) * static_cast<std::size_t>(side_);
     terrain_cost_.assign(cells, 10);
     building_.assign(cells, 0);
+    gate_.assign(cells, 0);
     for (std::int32_t cz = 0; cz < side_; ++cz) {
         for (std::int32_t cx = 0; cx < side_; ++cx) {
             const std::int32_t mx = cx * kCell;
@@ -161,7 +162,36 @@ bool NavGrid::connected(FixedVec2 a, FixedVec2 b) const {
     return region_[index(ax, az)] == region_[index(bx, bz)];
 }
 
+void NavGrid::set_gate(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, bool on) {
+    for (std::int32_t cz = std::max(0, z0 / kCell); cz <= std::min(side_ - 1, (z1 - 1) / kCell); ++cz) {
+        for (std::int32_t cx = std::max(0, x0 / kCell); cx <= std::min(side_ - 1, (x1 - 1) / kCell); ++cx) {
+            std::uint8_t& g = gate_[index(cx, cz)];
+            g = static_cast<std::uint8_t>(on ? std::min(255, g + 1) : std::max(0, g - 1));
+        }
+    }
+}
+
+bool NavGrid::obstacle(std::int32_t cx, std::int32_t cz) const {
+    if (cx < 0 || cz < 0 || cx >= side_ || cz >= side_) {
+        return false;
+    }
+    const std::size_t i = index(cx, cz);
+    return building_[i] != 0 || gate_[i] != 0;
+}
+
+bool NavGrid::ground(std::int32_t cx, std::int32_t cz) const {
+    return cx >= 0 && cz >= 0 && cx < side_ && cz < side_ && terrain_cost_[index(cx, cz)] != 0;
+}
+
+bool NavGrid::find_path_through(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes) {
+    return search(from, to, out, max_nodes, true);
+}
+
 bool NavGrid::find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes) {
+    return search(from, to, out, max_nodes, false);
+}
+
+bool NavGrid::search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes, bool through) {
     out.clear();
     ++searches_;
     if (side_ == 0) {
@@ -171,15 +201,19 @@ bool NavGrid::find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& ou
     std::int32_t sz = cell_of(from.z);
     std::int32_t tx = cell_of(to.x);
     std::int32_t tz = cell_of(to.z);
-    const bool exact_target = walkable(tx, tz);
+    const auto pass = [&](std::int32_t x, std::int32_t z) { return through ? ground(x, z) : walkable(x, z); };
+    const bool exact_target = pass(tx, tz);
     // Someone standing on a blocked cell (a building just placed on them)
     // walks out from the nearest free one.
-    if (!nearest_walkable(sx, sz) || !nearest_walkable(tx, tz)) {
+    if (!through && (!nearest_walkable(sx, sz) || !nearest_walkable(tx, tz))) {
+        return false;
+    }
+    if (through && (!ground(sx, sz) || !ground(tx, tz))) {
         return false;
     }
     // Another island, or the other side of a wall: no need to search.
     update_regions();
-    if (region_[index(sx, sz)] != region_[index(tx, tz)]) {
+    if (!through && region_[index(sx, sz)] != region_[index(tx, tz)]) {
         return false;
     }
     if (sx == tx && sz == tz) {
@@ -240,11 +274,11 @@ bool NavGrid::find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& ou
         for (int k = 0; k < 8; ++k) {
             const std::int32_t nx = cx + kDx[k];
             const std::int32_t nz = cz + kDz[k];
-            if (!walkable(nx, nz)) {
+            if (!pass(nx, nz)) {
                 continue;
             }
             // No corner cutting past blocked cells.
-            if (k >= 4 && (!walkable(cx + kDx[k], cz) || !walkable(cx, cz + kDz[k]))) {
+            if (k >= 4 && (!pass(cx + kDx[k], cz) || !pass(cx, cz + kDz[k]))) {
                 continue;
             }
             const std::size_t ni = index(nx, nz);
@@ -252,7 +286,8 @@ bool NavGrid::find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& ou
             if (closed_[ni] != 0) {
                 continue;
             }
-            const std::uint32_t step = terrain_cost_[ni];
+            // Breaking through costs what walking 25 cells around would.
+            const std::uint32_t step = terrain_cost_[ni] + (through && obstacle(nx, nz) ? 250u : 0u);
             const std::uint32_t g = g_[cur] + (k >= 4 ? step * 14 / 10 : step);
             if (g < g_[ni]) {
                 g_[ni] = g;

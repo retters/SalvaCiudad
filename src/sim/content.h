@@ -115,6 +115,13 @@ struct BuildingDef {
     std::uint8_t category = 0;      // BuildCategory, for the build bar.
     bool fireproof = false;         // Stone: does not catch fire (phase 13).
     bool trade = false;             // Merchants come to it (phase 14).
+    // Phase 15: defenses.
+    std::int32_t hp = 500;          // Damage raiders must do to break it.
+    bool gate = false;              // Villagers walk through; raiders must break it.
+    bool trap = false;              // Walkable; hurts the first enemy on it, then rearms.
+    std::int32_t attack_range = 0;  // Towers shoot enemies this close (meters).
+    std::int32_t attack_damage = 0; // Per shot (towers) or per trap.
+    std::int32_t attack_every = 20; // Ticks between shots.
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.
@@ -130,7 +137,7 @@ struct DiseaseDef {
 };
 
 // Groups of the build bar.
-enum class BuildCategory : std::uint8_t { Housing, Food, Resources, Industry, Services, Decoration, Count };
+enum class BuildCategory : std::uint8_t { Housing, Food, Resources, Industry, Services, Decoration, Defense, Count };
 
 // A crop for the fields (phase 11).
 struct CropDef {

@@ -887,3 +887,51 @@ La fase 17 rehará la barra.
 
 **D-1407. Formato de los comandos.**
 `Command` suma `def2` y `value2` para las ofertas; todos los comandos ocupan 6 bytes más. La suma de verificación dorada del mapa pequeño cambió porque `MapSettings` guarda ahora `separate` (sin compatibilidad con partidas anteriores, D-631).
+
+## Fase 15: fauna y asaltantes (2026-09-27)
+
+**D-1501. Animales como criaturas.**
+Ciervos, jabalíes, lobos y osos son entidades (`Creature`) que viven en las zonas del mapa. La cantidad por zona sigue siendo `zone_animals`: cazar o matar un animal la baja; cada mes vuelve a crecer y nacen animales nuevos.
+
+Se mueven en línea recta, sin buscar caminos. Es barato con cientos de animales y basta para pasear dentro de la zona.
+- **Ciervos:** huyen de quien se acerque a menos de 14 m.
+- **Jabalíes:** muerden una vez (30 de daño) a quien se acerque a menos de 4 m y vuelven a su zona. Primero perseguían hasta matar, y en las pruebas acababan con los constructores.
+- **Lobos y osos:** persiguen a los aldeanos dentro de su territorio (el radio de la zona más 20 m) y los dejan al salir. El nivel de fauna peligrosa ajusta su alcance; con "ninguno" no hay lobos ni osos.
+- No hay guaridas a menos de 150 m de un punto de inicio.
+
+**D-1502. Asaltantes.**
+- **Cuándo:** el primer asalto llega tras un año de gracia más el intervalo del nivel: 2 años en bajo, 1 en medio, 6 meses en alto y 3 en brutal. Los siguientes llegan con esa frecuencia, ±25 %.
+- **Cuántos:** 2 + riqueza / 400 + población / 15, escalado por el nivel, entre 2 y 40. La riqueza suma las monedas y el valor de lo guardado.
+- **Qué hacen:** salen del borde del mapa del pueblo y eligen el almacén más lleno (o, una vez de cada tres, una casa). Al llegar roban hasta 30 unidades de un bien o prenden fuego, y se van.
+- **Cuándo se van antes:** pelean con quien tengan a menos de 6 m y se retiran al bajar del 35 % de salud.
+- **Su camino:** buscan una ruta que puede cruzar edificios, cada uno con un costo alto. Rodean si pueden; si no, rompen lo que esté en medio (muros, puertas o casas) hasta su `hp`.
+
+**D-1503. Defensas.**
+- **Empalizada:** 400 de `hp`.
+- **Muro de piedra:** 1500 de `hp`, no arde.
+- **Puerta:** los aldeanos pasan y los asaltantes tienen que romperla. La navegación tiene una capa aparte para las puertas.
+- **Torre de vigía:** dispara sola (60 de daño cada 2 s a menos de 30 m) a asaltantes, lobos y osos, sin guarnición: todavía no hay soldados (fase 16).
+- **Trampa:** se puede pisar, hace 300 de daño al primer enemigo y se rearma en 30 s.
+
+Las empalizadas y los muros se colocan en línea arrastrando el ratón.
+
+**D-1504. La campana y la milicia.**
+El centro del pueblo tiene un botón para tocar la campana (comando `RingBell`).
+- Mientras suena, los adultos sanos dejan lo que hacen y pelean contra el enemigo más cercano a menos de 160 m del centro del pueblo. Eligen de nuevo cada 2 s y dejan ir a los asaltantes que huyen.
+- Un miliciano atacado pelea contra quien lo ataca.
+- Los niños y los enfermos van a casa.
+- Sin campana, un aldeano atacado corre al centro del pueblo.
+
+La milicia hace 35 de daño cada segundo: sin armas todavía (fase 16).
+
+**D-1505. Asalto de prueba.**
+`DevRaid` trae asaltantes en el acto; como los demás comandos de desarrollo, solo funciona con las herramientas permitidas (Ctrl+F3 → Pueblo).
+
+**D-1506. Aspecto provisional.**
+Los animales son un cuerpo de cajas teñido por especie y los asaltantes usan el cuerpo de los aldeanos con una marca roja en el suelo. Las defensas usan el modelo de casa. Todo se reemplaza en la fase 18.
+
+**D-1507. La prueba del pueblo que crece, sin asaltantes.**
+La prueba de "una hora de juego" mide la economía; con asaltantes en medio y sin nadie que toque la campana, el pueblo no crece. Los asaltantes tienen su propia suite (`wildlife`).
+
+**D-1508. Índices de aldeanos tras una muerte.**
+Las criaturas buscan aldeanos en una cuadrícula que se arma una vez por tick. Si un asaltante o una fiera mata a un aldeano, el almacén de aldeanos se reordena y la cuadrícula queda con índices viejos. En debug, la biblioteca estándar lo detectó como un índice fuera de rango. Ahora se rearma tras cada muerte.

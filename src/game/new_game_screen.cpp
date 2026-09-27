@@ -213,6 +213,16 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
         if (ctx.selector(ctx.id("fires"), f.control, index, options, tr("newGame.fires.tooltip"))) {
             rules_.fires = static_cast<sim::Threat>(index);
         }
+        index = static_cast<int>(rules_.raiders);
+        const Row rr = row(ctx, x, y, cw, tr("newGame.raiders"), tr("newGame.raiders.tooltip"));
+        if (ctx.selector(ctx.id("raiders"), rr.control, index, options, tr("newGame.raiders.tooltip"))) {
+            rules_.raiders = static_cast<sim::Threat>(index);
+        }
+        index = static_cast<int>(rules_.wildlife);
+        const Row wr = row(ctx, x, y, cw, tr("newGame.wildlife"), tr("newGame.wildlife.tooltip"));
+        if (ctx.selector(ctx.id("wildlife"), wr.control, index, options, tr("newGame.wildlife.tooltip"))) {
+            rules_.wildlife = static_cast<sim::Threat>(index);
+        }
     }
     {
         int limit = rules_.max_population;
@@ -233,7 +243,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 16;
+    constexpr int kRows = 18;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;

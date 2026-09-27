@@ -1048,6 +1048,95 @@
       "unique": true,
       "trade": true,
       "category": "services"
+    },
+    {
+      "type": "building",
+      "id": "core:palisade",
+      "name": "building.palisade",
+      "kind": "defense",
+      "model": "models/props/house_small.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 40,
+      "hp": 400
+    },
+    {
+      "type": "building",
+      "id": "core:stone_wall",
+      "name": "building.stoneWall",
+      "kind": "defense",
+      "model": "models/props/house_small.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 4
+      },
+      "buildWork": 80,
+      "hp": 1500,
+      "fireproof": true,
+      "tier": 2
+    },
+    {
+      "type": "building",
+      "id": "core:gate",
+      "name": "building.gate",
+      "kind": "defense",
+      "model": "models/props/house_small.glb",
+      "size": [
+        4,
+        2
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 80,
+      "hp": 600,
+      "gate": true
+    },
+    {
+      "type": "building",
+      "id": "core:watchtower",
+      "name": "building.watchtower",
+      "kind": "defense",
+      "model": "models/props/house_small.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 16,
+        "core:stone": 4
+      },
+      "buildWork": 200,
+      "hp": 800,
+      "attackRange": 30,
+      "attackDamage": 60,
+      "attackEvery": 20
+    },
+    {
+      "type": "building",
+      "id": "core:trap",
+      "name": "building.trap",
+      "kind": "defense",
+      "model": "models/props/house_small.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 6
+      },
+      "buildWork": 40,
+      "hp": 200,
+      "trap": true,
+      "attackDamage": 300
     }
   ]
 }

@@ -74,6 +74,40 @@ render::ModelData make_plant_model() {
     return m;
 }
 
+// A four-legged animal 1.6 m long, facing +Z, white so the tint colors it.
+render::ModelData make_animal_model() {
+    render::ModelData m;
+    const auto box = [&](math::Vec3 lo, math::Vec3 hi) {
+        const math::Vec3 c[8] = {{lo.x, lo.y, lo.z}, {hi.x, lo.y, lo.z}, {hi.x, hi.y, lo.z}, {lo.x, hi.y, lo.z},
+                                 {lo.x, lo.y, hi.z}, {hi.x, lo.y, hi.z}, {hi.x, hi.y, hi.z}, {lo.x, hi.y, hi.z}};
+        const int faces[6][4] = {{0, 3, 2, 1}, {4, 5, 6, 7}, {0, 4, 7, 3}, {1, 2, 6, 5}, {3, 7, 6, 2}, {0, 1, 5, 4}};
+        const math::Vec3 normals[6] = {{0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, -1, 0}};
+        for (int f = 0; f < 6; ++f) {
+            const auto base = static_cast<std::uint32_t>(m.vertices.size());
+            for (int k = 0; k < 4; ++k) {
+                const math::Vec3& p = c[faces[f][k]];
+                m.vertices.push_back({p.x, p.y, p.z, normals[f].x, normals[f].y, normals[f].z, 0.0f, 0.0f});
+            }
+            for (const std::uint32_t i : {0u, 1u, 2u, 0u, 2u, 3u}) {
+                m.indices.push_back(base + i);
+            }
+        }
+    };
+    box({-0.25f, 0.55f, -0.7f}, {0.25f, 1.0f, 0.55f});    // Body.
+    box({-0.15f, 0.8f, 0.5f}, {0.15f, 1.15f, 0.95f});     // Head.
+    for (const float x : {-0.2f, 0.12f}) {
+        for (const float z : {-0.6f, 0.38f}) {
+            box({x, 0.0f, z}, {x + 0.08f, 0.6f, z + 0.1f});  // Legs.
+        }
+    }
+    m.materials.push_back({});
+    m.primitives.push_back({0, static_cast<std::uint32_t>(m.indices.size()), 0});
+    m.bounds_min = {-0.25f, 0.0f, -0.7f};
+    m.bounds_max = {0.25f, 1.15f, 0.95f};
+    m.radius = 1.2f;
+    return m;
+}
+
 float wrap_angle(float a) {
     while (a > std::numbers::pi_v<float>) {
         a -= 2.0f * std::numbers::pi_v<float>;
@@ -127,6 +161,14 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
         if (renderer.add_model(make_plant_model(), id)) {
             renderer.set_model_class(id, render::ModelClass::SmallVegetation);
             plant_model_ = id;
+            used_.push_back(id);
+        }
+        if (renderer.add_model(make_animal_model(), id)) {
+            animal_model_ = id;
+            used_.push_back(id);
+        }
+        if (renderer.add_model(make_tile_model(), id)) {
+            mark_model_ = id;
             used_.push_back(id);
         }
     }
@@ -279,6 +321,81 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
         ghost_changed_ = false;
     }
     update_characters(renderer, game, alpha, dt, speed);
+    update_creatures(renderer, game, alpha, dt, speed);
+}
+
+void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,
+                                   int speed) {
+    animals_.clear();
+    marks_.clear();
+    static constexpr math::Vec3 kColors[] = {
+        {0.55f, 0.36f, 0.2f},   // Deer.
+        {0.25f, 0.18f, 0.14f},  // Boar.
+        {0.45f, 0.45f, 0.48f},  // Wolf.
+        {0.3f, 0.2f, 0.12f},    // Bear.
+    };
+    static constexpr float kScales[] = {1.0f, 0.75f, 0.8f, 1.5f};
+    const auto& store = game.creatures();
+    for (std::size_t k = 0; k < store.size(); ++k) {
+        const sim::EntityId id = store.entities()[k];
+        const sim::Creature& a = store.data()[k];
+        const float x = to_float(a.previous.x) + (to_float(a.position.x) - to_float(a.previous.x)) * alpha;
+        const float z = to_float(a.previous.z) + (to_float(a.position.z) - to_float(a.previous.z)) * alpha;
+        const math::Vec3 at{x, map_surface_height(game.map(), x, z), z};
+        if (id.index >= looks_.size()) {
+            looks_.resize(static_cast<std::size_t>(id.index) + 1);
+        }
+        Look& look = looks_[id.index];
+        if (look.generation != id.generation) {
+            look = Look{};
+            look.generation = id.generation;
+            look.yaw = static_cast<float>(id.index % 628u) / 100.0f;
+        }
+        const bool moving = a.position != a.previous;
+        if (moving) {
+            const float want = std::atan2(to_float(a.position.x - a.previous.x), to_float(a.position.z - a.previous.z));
+            look.yaw += wrap_angle(want - look.yaw) * std::min(1.0f, dt * 8.0f);
+        }
+        look.time += dt * (moving ? 2.0f * static_cast<float>(std::max(speed, 1)) : 1.0f);
+        if (a.kind == sim::CreatureKind::Raider) {
+            // A villager body with a red mark under it.
+            if (bodies_ != nullptr && !bodies_->empty()) {
+                const TestCrowd::BodyKind& kind = bodies_->front();
+                render::CharacterInstance c;
+                c.body = kind.id;
+                c.clip = moving ? kind.walk : kind.idle;
+                c.time = look.time;
+                c.position = at;
+                c.yaw = look.yaw;
+                c.scale = 1.05f;
+                c.palette = id.index % palette_count_;
+                characters_.push_back(c);
+            }
+            render::Instance mark;
+            mark.position = {at.x, at.y + 0.02f, at.z};
+            mark.scale = 0.4f;
+            mark.tint = {1.6f, 0.15f, 0.1f};
+            marks_.push_back(mark);
+            continue;
+        }
+        const auto kind = static_cast<std::size_t>(a.kind) % std::size(kColors);
+        render::Instance inst;
+        inst.position = at;
+        if (moving) {
+            inst.position.y += 0.06f * std::abs(std::sin(look.time * 6.0f));  // A trot.
+        }
+        inst.yaw = look.yaw;
+        inst.scale = kScales[kind];
+        inst.tint = kColors[kind];
+        animals_.push_back(inst);
+    }
+    if (animal_model_ != kNoModel) {
+        renderer.set_instances(animal_model_, animals_);
+    }
+    if (mark_model_ != kNoModel) {
+        renderer.set_instances(mark_model_, marks_);
+    }
+    renderer.set_characters(characters_);
 }
 
 render::Instance VillageView::building_instance(const sim::Game& game, sim::DefIndex def, std::int32_t x,
@@ -311,7 +428,7 @@ render::Instance VillageView::building_instance(const sim::Game& game, sim::DefI
 void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::Game& game) {
     std::map<render::ModelId, std::vector<render::Instance>> lists;
     for (const render::ModelId id : used_) {
-        if (id != tile_model_ && id != plant_model_) {
+        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_) {
             lists[id];
         }
     }
@@ -342,7 +459,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         lists[def_models_[ghost_->def].id].push_back(g);
     }
     for (auto& [id, list] : lists) {
-        if (id != tile_model_ && id != plant_model_) {
+        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_) {
             renderer.set_instances(id, list);
         }
     }

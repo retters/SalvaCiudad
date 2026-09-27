@@ -31,6 +31,8 @@ enum class CommandType : std::uint8_t {
     Trade = 20,           // With the merchant at trading post `entity`: buy (`value` > 0) or sell `def`.
     OfferTrade = 21,      // To player `count`: give `value` of `def`, want `value2` of `def2` (kCoins: coins).
     AnswerOffer = 22,     // Offer `value`: accept (`count` 1) or decline / withdraw (0).
+    RingBell = 23,        // The town's alarm on (`value` 1) or off (0): adults take up arms.
+    DevRaid = 24,         // Developer tools: raiders come now.
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;

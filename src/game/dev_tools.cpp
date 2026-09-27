@@ -485,6 +485,11 @@ void DevTools::village_tab(DevContext& ctx) {
         ctx.session->issue(c);
     }
     ImGui::EndDisabled();
+    if (ImGui::Button((tr("dev.village.raid") + "###raid").c_str())) {
+        sim::Command c;
+        c.type = sim::CommandType::DevRaid;
+        ctx.session->issue(c);
+    }
     ImGui::Separator();
     ImGui::Text("tick %llu", static_cast<unsigned long long>(game.tick()));
     ImGui::Text("villagers %zu, buildings %zu", game.villagers().size(), game.buildings().size());

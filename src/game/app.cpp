@@ -1250,6 +1250,45 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
     ui.hover_x = static_cast<std::int32_t>(std::lround(hit->x - static_cast<float>(w) * 0.5f));
     ui.hover_z = static_cast<std::int32_t>(std::lround(hit->z - static_cast<float>(d) * 0.5f));
     ui.hover_error = game.can_place(session_->town(), ui.placing, ui.hover_x, ui.hover_z, ui.rotation);
+    // Walls go in lines: press at one end, release at the other.
+    const sim::BuildingDef& pd = game.content().buildings[ui.placing];
+    if (pd.kind == sim::BuildingKind::Defense && !pd.trap && w == 2 && d == 2) {
+        if (input_.mouse_pressed) {
+            ui.line_dragging = true;
+            ui.drag_x = ui.hover_x;
+            ui.drag_z = ui.hover_z;
+        }
+        if (ui.line_dragging) {
+            // Along the longer side, every 2 m.
+            const bool along_x = std::abs(ui.hover_x - ui.drag_x) >= std::abs(ui.hover_z - ui.drag_z);
+            const std::int32_t end_x = along_x ? ui.hover_x : ui.drag_x;
+            const std::int32_t end_z = along_x ? ui.drag_z : ui.hover_z;
+            ui.hover_x = end_x;
+            ui.hover_z = end_z;
+            ui.hover_error = game.can_place(session_->town(), ui.placing, end_x, end_z, ui.rotation);
+            if (input_.mouse_released) {
+                ui.line_dragging = false;
+                const std::int32_t steps = std::max(std::abs(end_x - ui.drag_x), std::abs(end_z - ui.drag_z)) / 2;
+                for (std::int32_t k = 0; k <= std::min(steps, 100); ++k) {
+                    const std::int32_t x = ui.drag_x + (along_x ? (end_x > ui.drag_x ? 2 * k : -2 * k) : 0);
+                    const std::int32_t z = ui.drag_z + (along_x ? 0 : (end_z > ui.drag_z ? 2 * k : -2 * k));
+                    if (game.can_place(session_->town(), ui.placing, x, z, 0) != sim::PlaceError::None) {
+                        continue;
+                    }
+                    sim::Command c;
+                    c.type = sim::CommandType::PlaceBuilding;
+                    c.def = ui.placing;
+                    c.position = {sim::Fixed::from_int(x), sim::Fixed::from_int(z)};
+                    session_->issue(c);
+                }
+                if ((SDL_GetModState() & SDL_KMOD_SHIFT) == 0) {
+                    ui.placing = sim::kNoDef;
+                    village_.set_ghost(std::nullopt);
+                    return;
+                }
+            }
+        }
+    }
     VillageView::Ghost ghost;
     ghost.def = ui.placing;
     ghost.x = ui.hover_x;
@@ -1268,6 +1307,10 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
     }
     const sim::Game& game = session_->game();
     if (ui.placing != sim::kNoDef) {
+        const sim::BuildingDef& pd = game.content().buildings[ui.placing];
+        if (pd.kind == sim::BuildingKind::Defense && !pd.trap && pd.width == 2 && pd.depth == 2) {
+            return;  // Walls are placed by dragging (update_placement).
+        }
         if (ui.hover_valid && ui.hover_error == sim::PlaceError::None) {
             sim::Command c;
             c.type = sim::CommandType::PlaceBuilding;
@@ -1649,6 +1692,13 @@ void App::report_game_events() {
                 host_->toast(tr(e.value == 1 ? "event.offerAccepted" : "event.offerDeclined", town_name(e.other)));
                 break;
             case sim::Game::Event::Kind::CaravanArrived: host_->toast(tr("event.caravanArrived", town_name(e.other))); break;
+            case sim::Game::Event::Kind::RaidStarted: host_->toast(tr("event.raid", static_cast<int>(e.value))); break;
+            case sim::Game::Event::Kind::Attacked: {
+                static constexpr const char* kKeys[] = {"event.attacked.deer", "event.attacked.boar", "event.attacked.wolf",
+                                                        "event.attacked.bear", "event.attacked.raider"};
+                host_->toast(tr(kKeys[e.value % std::size(kKeys)]));
+                break;
+            }
         }
     }
 }

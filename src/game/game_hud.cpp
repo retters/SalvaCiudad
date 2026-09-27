@@ -72,6 +72,9 @@ const char* task_text_key(sim::Task task) {
         case sim::Task::Fish: return "task.fish";
         case sim::Task::GoFire: return "task.goFire";
         case sim::Task::FightFire: return "task.fightFire";
+        case sim::Task::GoFight: return "task.goFight";
+        case sim::Task::Fight: return "task.fight";
+        case sim::Task::Flee: return "task.flee";
         case sim::Task::Count: break;
     }
     return "task.idle";
@@ -240,6 +243,12 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     for (const sim::Building& b : game.buildings().data()) {
         fires += b.fire > 0 && b.owner == s.town() ? 1 : 0;
     }
+    const std::int32_t raiders = game.raiders_near(s.town());
+    if (raiders > 0) {
+        stacked(tr("hud.raiders", raiders), ctx.theme().danger,
+                tr(game.player(s.town()).alarm ? "hud.alarm.on" : "hud.alarm.off"), ctx.theme().text_dim, "hud_raiders",
+                tr("hud.raiders.tooltip"));
+    }
     if (sick > 0 || fires > 0) {
         stacked(tr("hud.sick", sick), ctx.theme().text, tr("hud.fires", fires),
                 fires > 0 ? ctx.theme().danger : ctx.theme().text_dim, "hud_troubles", tr("hud.troubles.tooltip"));
@@ -378,7 +387,8 @@ void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
     GameSession::Interaction& ui = s.ui();
     static constexpr const char* kCategoryKeys[] = {"hud.build.cat.housing",  "hud.build.cat.food",
                                                     "hud.build.cat.resources", "hud.build.cat.industry",
-                                                    "hud.build.cat.services", "hud.build.cat.decoration"};
+                                                    "hud.build.cat.services", "hud.build.cat.decoration",
+                                                    "hud.build.cat.defense"};
     constexpr std::size_t kCategories = std::size(kCategoryKeys);
     std::vector<sim::DefIndex> defs;
     for (std::size_t i = 0; i < content.buildings.size(); ++i) {
@@ -477,6 +487,15 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
 
     // Lines first, to size the window.
     std::vector<std::string> lines;
+    if (b->damage > 0) {
+        lines.push_back(tr("hud.building.damage", b->damage * 100 / std::max(1, d.hp)));
+    }
+    if (d.attack_range > 0 && b->state == sim::BuildingState::Complete) {
+        lines.push_back(tr("hud.building.tower", d.attack_range, d.attack_damage));
+    }
+    if (d.trap && b->state == sim::BuildingState::Complete) {
+        lines.push_back(tr(b->rearm > 0 ? "hud.building.trapRearming" : "hud.building.trapArmed"));
+    }
     if (b->fire > 0) {
         lines.push_back(tr("hud.building.fire", b->fire, b->burned / 10));
     } else if (b->burned > 0) {
@@ -544,7 +563,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     const bool town_center = d.kind == sim::BuildingKind::TownCenter && b->state == sim::BuildingState::Complete;
     const bool workshop = d.work == sim::WorkKind::Produce && b->state == sim::BuildingState::Complete;
     if (town_center) {
-        h += 2 * line + button_h + pad;
+        h += 2 * line + 2 * button_h + pad * 1.5f;
     }
     if (workshop) {
         h += button_h + pad * 0.5f;
@@ -650,6 +669,16 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
             sim::Command c;
             c.type = sim::CommandType::UpgradeBuilding;
             c.entity = ui.selected_building;
+            s.issue(c);
+        }
+        y += button_h + pad * 0.5f;
+        // The bell: the militia.
+        const bool alarm = game.player(b->owner).alarm;
+        if (ctx.button(ctx.id("tc_bell"), {box.x + pad, y, box.w - 2 * pad, button_h},
+                       tr(alarm ? "hud.bell.stop" : "hud.bell.ring"), tr("hud.bell.tooltip"), true, alarm)) {
+            sim::Command c;
+            c.type = sim::CommandType::RingBell;
+            c.value = alarm ? 0 : 1;
             s.issue(c);
         }
         y += button_h;

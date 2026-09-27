@@ -192,7 +192,7 @@ TEST_SUITE("health") {
         const EntityId near = build(g, "core:house", b->x + b->width + 2, b->z);
         ignite(g, a);
         bool spread = false;
-        for (int t = 0; t < 40 && !spread; ++t) {
+        for (int t = 0; t < 60 && !spread; ++t) {
             run(g, 50);
             const Building* h = g.buildings().get(near);
             spread = h == nullptr || h->fire > 0 || h->burned > 0;

@@ -127,6 +127,11 @@
     "building.healer": "Healer's hut",
     "building.physician": "Physician",
     "building.bathhouse": "Bathhouse",
-    "building.tradingPost": "Trading post"
+    "building.tradingPost": "Trading post",
+    "building.palisade": "Palisade",
+    "building.stoneWall": "Stone wall",
+    "building.gate": "Gate",
+    "building.watchtower": "Watchtower",
+    "building.trap": "Trap"
   }
 }

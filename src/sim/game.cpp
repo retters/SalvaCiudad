@@ -54,6 +54,20 @@ std::int32_t total(const std::vector<Stock>& list) {
     return t;
 }
 
+// A building on the walking grid: most block it, gates only stop raiders
+// and traps nothing.
+void block_nav(NavGrid& nav, const BuildingDef& d, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t depth,
+               bool on) {
+    if (d.trap) {
+        return;
+    }
+    if (d.gate) {
+        nav.set_gate(x, z, x + w, z + depth, on);
+        return;
+    }
+    nav.set_building(x, z, x + w, z + depth, on);
+}
+
 void compact(std::vector<Stock>& list) {
     std::erase_if(list, [](const Stock& s) { return s.amount <= 0; });
 }
@@ -95,7 +109,8 @@ const char* task_name(Task t) {
                                              "gathering", "delivering", "fetching",     "carrying to a site",
                                              "going to build", "building", "going to work", "producing",
                                              "going to a field", "farming", "going hunting", "hunting",
-                                             "going fishing", "fishing", "running to a fire", "fighting a fire"};
+                                             "going fishing", "fishing", "running to a fire", "fighting a fire",
+                                             "going to fight", "fighting", "fleeing"};
     const auto i = static_cast<std::size_t>(t);
     return i < std::size(kNames) ? kNames[i] : "?";
 }
@@ -318,6 +333,18 @@ public:
                 return;
             }
         }
+        // 1a. The bell: adults take up arms, children stay home.
+        if (g_.players_[owner].alarm) {
+            if (g_.adult(v) && v.disease == 0 && start_fight(v)) {
+                return;
+            }
+            const Building* home = g_.buildings_.get(v.home);
+            const Building* tc = g_.buildings_.get(g_.players_[owner].town_center);
+            if (home != nullptr || tc != nullptr) {
+                wander(v, g_.door(home != nullptr ? *home : *tc));
+                return;
+            }
+        }
         // 1b. The sick rest at home.
         if (v.disease != 0) {
             if (const Building* home = g_.buildings_.get(v.home)) {
@@ -532,6 +559,642 @@ public:
         v.timer = 0;
         go(v, Task::GoFetch, from);
         return true;
+    }
+
+    // --- Wildlife, raiders and the militia (phase 15) -------------------------------------
+
+    struct CreatureStats {
+        std::int32_t speed;   // Hundredths of a meter per tick.
+        std::int32_t health;
+        std::int32_t damage;  // Per bite or blow, every 10 ticks.
+        std::int32_t aggro;   // Meters: predators attack, prey flees, raiders fight.
+    };
+    static constexpr CreatureStats kStats[] = {
+        {30, 150, 0, 14},   // Deer: flee.
+        {25, 300, 30, 4},   // Boar: bite once when cornered.
+        {32, 250, 40, 18},  // Wolf.
+        {26, 700, 120, 12}, // Bear.
+        {22, 400, 60, 6},   // Raider.
+    };
+    [[nodiscard]] static const CreatureStats& stats(CreatureKind k) {
+        return kStats[static_cast<std::size_t>(k) % std::size(kStats)];
+    }
+    [[nodiscard]] static CreatureKind kind_of(ZoneType t) {
+        switch (t) {
+            case ZoneType::Deer: return CreatureKind::Deer;
+            case ZoneType::Boar: return CreatureKind::Boar;
+            case ZoneType::Wolves: return CreatureKind::Wolf;
+            case ZoneType::Bears: return CreatureKind::Bear;
+            case ZoneType::Count: break;
+        }
+        return CreatureKind::Deer;
+    }
+
+    // A walkable point near `at` within `radius` meters (or `at`).
+    [[nodiscard]] FixedVec2 open_point(FixedVec2 at, std::int32_t radius) {
+        for (int attempt = 0; attempt < 8; ++attempt) {
+            const FixedVec2 p{at.x + Fixed::from_int(g_.rng_.range(-radius, radius)),
+                              at.z + Fixed::from_int(g_.rng_.range(-radius, radius))};
+            const std::int32_t cx = p.x.floor_int() / NavGrid::kCellMeters;
+            const std::int32_t cz = p.z.floor_int() / NavGrid::kCellMeters;
+            if (g_.nav_.walkable(cx, cz)) {
+                return p;
+            }
+        }
+        return at;
+    }
+
+    void spawn_animal(std::size_t z) {
+        const Zone& zone = g_.map_.zones[z];
+        Creature a;
+        a.kind = kind_of(zone.type);
+        a.zone = static_cast<std::uint16_t>(z);
+        a.home = {zone.x, zone.z};
+        a.position = open_point(a.home, std::max(2, zone.radius.floor_int()));
+        a.previous = a.position;
+        a.goal = a.position;
+        a.health = stats(a.kind).health;
+        a.timer = static_cast<std::int32_t>(g_.rng_.below(10));
+        g_.creatures_.add(g_.registry_.create(), a);
+    }
+
+    void remove_creature(EntityId id) {
+        const Creature* a = g_.creatures_.get(id);
+        if (a == nullptr) {
+            return;
+        }
+        if (a->kind != CreatureKind::Raider && a->zone < g_.zone_animals_.size()) {
+            g_.zone_animals_[a->zone] = std::max(0, g_.zone_animals_[a->zone] - 1);
+        }
+        g_.creatures_.remove(id);
+        g_.registry_.destroy(id);
+    }
+
+    // Villagers by 32 m square, rebuilt each tick for the creatures.
+    struct Grid {
+        std::int32_t side = 0;
+        std::vector<std::pair<std::uint32_t, std::uint32_t>> cells;  // (square, villager index), sorted.
+    };
+    Grid grid_;
+    static constexpr std::int32_t kGridMeters = 32;
+
+    void build_grid() {
+        grid_.side = (g_.map_.size + kGridMeters - 1) / kGridMeters;
+        grid_.cells.clear();
+        const auto& vs = g_.villagers_;
+        for (std::size_t k = 0; k < vs.size(); ++k) {
+            const FixedVec2 p = vs.data()[k].position;
+            const std::int32_t gx = std::clamp(p.x.floor_int() / kGridMeters, 0, grid_.side - 1);
+            const std::int32_t gz = std::clamp(p.z.floor_int() / kGridMeters, 0, grid_.side - 1);
+            grid_.cells.emplace_back(static_cast<std::uint32_t>(gz * grid_.side + gx), static_cast<std::uint32_t>(k));
+        }
+        std::sort(grid_.cells.begin(), grid_.cells.end());
+    }
+
+    // The nearest villager within `radius` meters (of a town, if given).
+    [[nodiscard]] EntityId villager_near(FixedVec2 at, std::int32_t radius, std::int32_t town = -1) const {
+        EntityId best;
+        std::uint64_t best_d = meters2(radius);
+        const std::int32_t reach = radius / kGridMeters + 1;
+        const std::int32_t gx = at.x.floor_int() / kGridMeters;
+        const std::int32_t gz = at.z.floor_int() / kGridMeters;
+        const auto& vs = g_.villagers_;
+        for (std::int32_t z = std::max(0, gz - reach); z <= std::min(grid_.side - 1, gz + reach); ++z) {
+            for (std::int32_t x = std::max(0, gx - reach); x <= std::min(grid_.side - 1, gx + reach); ++x) {
+                const auto key = static_cast<std::uint32_t>(z * grid_.side + x);
+                auto it = std::lower_bound(grid_.cells.begin(), grid_.cells.end(), std::make_pair(key, 0u));
+                for (; it != grid_.cells.end() && it->first == key; ++it) {
+                    const Villager& v = vs.data()[it->second];
+                    if (town >= 0 && v.owner != town) {
+                        continue;
+                    }
+                    const std::uint64_t d = distance2(v.position, at);
+                    if (d < best_d) {
+                        best_d = d;
+                        best = vs.entities()[it->second];
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+    // Moves toward `to` by `step`; false if the ground ahead is blocked.
+    bool step_toward(Creature& a, FixedVec2 to, Fixed step) {
+        const FixedVec2 d = to - a.position;
+        const Fixed len = d.length();
+        if (len <= step) {
+            a.position = to;
+            return true;
+        }
+        const FixedVec2 next = a.position + d * (step / len);
+        const std::int32_t cx = next.x.floor_int() / NavGrid::kCellMeters;
+        const std::int32_t cz = next.z.floor_int() / NavGrid::kCellMeters;
+        if (!g_.nav_.ground(cx, cz)) {
+            return false;
+        }
+        a.position = next;
+        return true;
+    }
+
+    [[nodiscard]] Fixed speed_of(const Creature& a) const {
+        return Fixed::from_ratio(stats(a.kind).speed, 100) * Fixed::from_ratio(200 - g_.snow_, 200);
+    }
+
+    // A villager is attacked: it runs to the town center unless it fights.
+    void hurt(Villager& v, EntityId id, std::int32_t damage, CreatureKind by, EntityId attacker) {
+        v.health -= damage;
+        if (v.task == Task::Fight || v.task == Task::GoFight) {
+            v.target = attacker;  // Fights back.
+            v.task = Task::Fight;
+            v.path.clear();
+            v.path_index = 0;
+            return;
+        }
+        if (v.task != Task::Flee) {
+            release(v);
+            v.task = Task::Flee;
+            const Building* tc = g_.buildings_.get(g_.players_[v.owner].town_center);
+            if (tc == nullptr || !walk_to(v, g_.door(*tc))) {
+                v.task = Task::Idle;
+            }
+            g_.events_.push_back({Game::Event::Kind::Attacked, v.owner, id, v.position, static_cast<std::uint16_t>(by), 0});
+        }
+    }
+
+    void animal_think(Creature& a) {
+        const CreatureStats& st = stats(a.kind);
+        const Zone& zone = g_.map_.zones[std::min<std::size_t>(a.zone, g_.map_.zones.size() - 1)];
+        const std::int32_t territory = zone.radius.floor_int() + 20;
+        const std::int32_t threat = threat_percent(g_.rules_.wildlife);
+        if (a.kind == CreatureKind::Deer) {
+            const EntityId near = villager_near(a.position, st.aggro);
+            if (const Villager* v = g_.villagers_.get(near)) {
+                // Away from the villager.
+                const FixedVec2 away = a.position - v->position;
+                const Fixed len = away.length();
+                if (len > Fixed{}) {
+                    a.goal = a.position + away * (Fixed::from_int(16) / len);
+                    a.state = CreatureState::Flee;
+                    return;
+                }
+            }
+        } else if (a.state != CreatureState::Chase && threat > 0) {
+            const std::int32_t reach = a.kind == CreatureKind::Boar ? st.aggro : st.aggro * std::min(threat, 200) / 100;
+            const EntityId near = villager_near(a.position, reach);
+            if (near.valid() && distance2(a.position, a.home) <= meters2(territory) &&
+                (a.kind != CreatureKind::Boar || g_.rng_.below(2) == 0)) {
+                a.state = CreatureState::Chase;
+                a.target = near;
+                return;
+            }
+        }
+        if (a.state == CreatureState::Chase) {
+            const Villager* v = g_.villagers_.get(a.target);
+            if (v == nullptr || distance2(a.position, a.home) > meters2(territory + 20) ||
+                (v->task == Task::Flee && distance2(v->position, a.home) > meters2(territory))) {
+                a.state = CreatureState::Wander;
+                a.target = {};
+                a.goal = a.home;
+            }
+            return;
+        }
+        // Wandering in the zone, now and then.
+        if (a.position == a.goal || g_.rng_.below(8) == 0) {
+            a.state = CreatureState::Wander;
+            a.goal = open_point(a.home, std::max(2, zone.radius.floor_int()));
+        }
+    }
+
+    // Raiders: every 10 ticks, look for someone to fight or give up.
+    void raider_think(Creature& a) {
+        if (a.state == CreatureState::Leave) {
+            return;
+        }
+        if (a.health * 100 < stats(a.kind).health * 35) {
+            leave(a);
+            return;
+        }
+        if (a.state == CreatureState::Chase) {
+            const Villager* v = g_.villagers_.get(a.target);
+            if (v == nullptr || distance2(v->position, a.position) > meters2(14)) {
+                resume_raid(a);
+            }
+            return;
+        }
+        const EntityId near = villager_near(a.position, stats(a.kind).aggro, a.town);
+        if (near.valid() && a.state != CreatureState::Bash) {
+            a.state = CreatureState::Chase;
+            a.target = near;
+        }
+    }
+
+    // Back on the way to the raid's target (or a new one).
+    void resume_raid(Creature& a) {
+        const Building* target = g_.buildings_.get(a.target);
+        if (target == nullptr || target->owner != a.town) {
+            a.target = raid_target(a.town, a.position);
+            target = g_.buildings_.get(a.target);
+        }
+        if (target == nullptr || !g_.nav_.find_path_through(a.position, g_.door(*target), a.path)) {
+            leave(a);
+            return;
+        }
+        a.path_index = 0;
+        a.state = CreatureState::Approach;
+    }
+
+    void leave(Creature& a) {
+        a.state = CreatureState::Leave;
+        a.path_index = 0;
+        if (!g_.nav_.find_path_through(a.position, a.home, a.path)) {
+            a.path.clear();
+        }
+    }
+
+    // What raiders go for: the fullest store, or a house.
+    [[nodiscard]] EntityId raid_target(std::uint8_t town, FixedVec2 from) {
+        EntityId best;
+        std::int64_t best_score = INT64_MIN;
+        const bool burn = g_.rng_.below(3) == 0;
+        const auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            const Building& b = list.data()[i];
+            if (b.owner != town || !complete(b) || def(b).kind == BuildingKind::Defense) {
+                continue;
+            }
+            std::int64_t score = burn ? (def(b).kind == BuildingKind::House ? 1000 : 0) : total(b.stock) * 10;
+            score -= static_cast<std::int64_t>(distance2(from, center_of(b)) >> 36);  // Nearer is better.
+            if (score > best_score) {
+                best_score = score;
+                best = list.entities()[i];
+            }
+        }
+        return best;
+    }
+
+    // The building on a cell, if any (raiders breaking through).
+    [[nodiscard]] EntityId building_at(std::int32_t x, std::int32_t z) const {
+        const auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            const Building& b = list.data()[i];
+            if (x >= b.x && x < b.x + b.width && z >= b.z && z < b.z + b.depth && !def(b).trap) {
+                return list.entities()[i];
+            }
+        }
+        return {};
+    }
+
+    void raider_move(Creature& a, EntityId self) {
+        Fixed budget = speed_of(a);
+        while (budget > Fixed{} && a.path_index < a.path.size()) {
+            const FixedVec2 to = a.path[a.path_index];
+            const FixedVec2 d = to - a.position;
+            const Fixed len = d.length();
+            const FixedVec2 next = len <= budget ? to : a.position + d * (budget / len);
+            // Something built in the way: break it first.
+            const std::int32_t cx = next.x.floor_int();
+            const std::int32_t cz = next.z.floor_int();
+            if (g_.nav_.obstacle(cx / NavGrid::kCellMeters, cz / NavGrid::kCellMeters)) {
+                const EntityId wall = building_at(cx, cz);
+                const Building* b = g_.buildings_.get(wall);
+                if (b != nullptr && (a.state == CreatureState::Leave || wall != a.target)) {
+                    a.state = a.state == CreatureState::Leave ? CreatureState::Leave : CreatureState::Bash;
+                    a.goal = a.path[a.path_index];
+                    bash(a, wall);
+                    return;
+                }
+            }
+            if (len <= budget) {
+                a.position = to;
+                budget -= len;
+                ++a.path_index;
+            } else {
+                a.position = next;
+                budget = Fixed{};
+            }
+        }
+        if (a.path_index >= a.path.size()) {
+            if (a.state == CreatureState::Leave) {
+                gone_.push_back(self);  // Back beyond the edge, with its loot.
+            } else if (a.state == CreatureState::Approach) {
+                raid(a);
+            }
+        }
+    }
+
+    // Blows at a building in the way (every 10 ticks).
+    void bash(Creature& a, EntityId id) {
+        if (++a.timer % 10 != 0) {
+            return;
+        }
+        Building* b = g_.buildings_.get(id);
+        if (b == nullptr) {
+            return;
+        }
+        b->damage += stats(a.kind).damage;
+        if (b->damage >= def(*b).hp) {
+            remove_building(id);
+            if (a.state == CreatureState::Bash) {
+                a.state = CreatureState::Approach;
+            }
+        }
+    }
+
+    // At the target: rob it, or set it on fire, then go.
+    void raid(Creature& a) {
+        Building* b = g_.buildings_.get(a.target);
+        if (b == nullptr || b->owner != a.town) {
+            resume_raid(a);
+            return;
+        }
+        if (total(b->stock) > 0) {
+            // The most of one good it can carry.
+            Stock* most = nullptr;
+            for (Stock& st : b->stock) {
+                most = most == nullptr || st.amount > most->amount ? &st : most;
+            }
+            const std::int32_t take = std::min(most->amount, 30);
+            a.loot = {most->resource, take};
+            most->amount -= take;
+            compact(b->stock);
+        } else if (!def(*b).fireproof) {
+            ignite(*b, a.target);
+        } else {
+            b->damage += stats(a.kind).damage * 5;
+        }
+        leave(a);
+    }
+
+    void update_creatures() {
+        if (g_.creatures_.size() == 0) {
+            return;
+        }
+        build_grid();
+        gone_.clear();
+        auto& cs = g_.creatures_;
+        for (std::size_t i = 0; i < cs.size(); ++i) {
+            Creature& a = cs.data()[i];
+            const EntityId self = cs.entities()[i];
+            a.previous = a.position;
+            const bool think = (g_.tick_ + self.index) % 10 == 0;
+            if (a.kind == CreatureKind::Raider) {
+                if (think) {
+                    raider_think(a);
+                }
+                if (a.state == CreatureState::Chase) {
+                    fight_villager(a, self);
+                } else if (a.state == CreatureState::Bash) {
+                    raider_move(a, self);
+                } else {
+                    raider_move(a, self);
+                }
+                continue;
+            }
+            if (think) {
+                animal_think(a);
+            }
+            if (a.state == CreatureState::Chase) {
+                fight_villager(a, self);
+            } else if (!step_toward(a, a.goal, speed_of(a) * (a.state == CreatureState::Flee ? Fixed::one() : Fixed::from_ratio(1, 3)))) {
+                a.goal = a.position;
+            }
+        }
+        for (const EntityId id : gone_) {
+            if (const Creature* a = g_.creatures_.get(id); a != nullptr) {
+                remove_creature(id);
+            }
+        }
+        // Dead creatures.
+        std::vector<EntityId> dead;
+        for (std::size_t i = 0; i < cs.size(); ++i) {
+            if (cs.data()[i].health <= 0) {
+                dead.push_back(cs.entities()[i]);
+            }
+        }
+        for (const EntityId id : dead) {
+            remove_creature(id);
+        }
+    }
+    std::vector<EntityId> gone_;
+
+    // Chasing and biting (or hitting) a villager.
+    void fight_villager(Creature& a, EntityId self) {
+        Villager* v = g_.villagers_.get(a.target);
+        if (v == nullptr) {
+            if (a.kind == CreatureKind::Raider) {
+                resume_raid(a);
+            } else {
+                a.state = CreatureState::Wander;
+                a.goal = a.home;
+            }
+            return;
+        }
+        if (distance2(a.position, v->position) > meters2(1) + (meters2(1) >> 1)) {
+            (void)step_toward(a, v->position, speed_of(a));
+            return;
+        }
+        if (++a.timer % 10 != 0) {
+            return;
+        }
+        hurt(*v, a.target, stats(a.kind).damage, a.kind, self);
+        if (a.kind == CreatureKind::Boar && v->health > 0) {
+            a.state = CreatureState::Wander;  // Enough: back to the herd.
+            a.target = {};
+            a.goal = a.home;
+            return;
+        }
+        if (v->health <= 0) {
+            kill(a.target);
+            build_grid();  // The villagers moved in their store.
+            a.target = {};
+            if (a.kind == CreatureKind::Raider) {
+                resume_raid(a);
+            } else {
+                a.state = CreatureState::Wander;
+                a.goal = a.home;
+            }
+        }
+    }
+
+    // Towers shoot; traps bite.
+    void defend() {
+        auto& list = g_.buildings_;
+        auto& cs = g_.creatures_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            Building& b = list.data()[i];
+            const BuildingDef& d = def(b);
+            if (!complete(b) || d.attack_damage <= 0) {
+                continue;
+            }
+            if (d.trap) {
+                if (b.rearm > 0) {
+                    --b.rearm;
+                    continue;
+                }
+                for (std::size_t k = 0; k < cs.size(); ++k) {
+                    Creature& a = cs.data()[k];
+                    const std::int32_t ax = a.position.x.floor_int();
+                    const std::int32_t az = a.position.z.floor_int();
+                    if (Game::hostile(a.kind) && ax >= b.x && ax < b.x + b.width && az >= b.z && az < b.z + b.depth) {
+                        a.health -= d.attack_damage;
+                        b.rearm = 300;
+                        break;
+                    }
+                }
+                continue;
+            }
+            if (d.attack_range <= 0 || (g_.tick_ + i) % static_cast<std::uint64_t>(d.attack_every) != 0) {
+                continue;
+            }
+            Creature* aim = nullptr;
+            std::uint64_t aim_d = meters2(d.attack_range);
+            const FixedVec2 c = center_of(b);
+            for (Creature& a : cs.data()) {
+                const bool enemy = a.kind == CreatureKind::Raider ? a.town == b.owner : Game::hostile(a.kind);
+                if (enemy && distance2(a.position, c) < aim_d) {
+                    aim_d = distance2(a.position, c);
+                    aim = &a;
+                }
+            }
+            if (aim != nullptr) {
+                aim->health -= d.attack_damage;
+            }
+        }
+    }
+
+    // Once a day: raids are planned and come.
+    void daily_raids() {
+        const std::int32_t scale = threat_percent(g_.rules_.raiders);
+        if (scale == 0) {
+            return;
+        }
+        const auto interval = static_cast<std::uint64_t>(g_.year_ticks()) * 100u / static_cast<std::uint64_t>(scale);
+        for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+            PlayerState& ps = g_.players_[p];
+            if (g_.town_of(p) != p || !ps.active || !ps.town_center.valid()) {
+                continue;
+            }
+            if (ps.next_raid == 0) {
+                ps.next_raid = g_.tick_ + interval + g_.year_ticks();  // A year of grace.
+            } else if (g_.tick_ >= ps.next_raid) {
+                ps.next_raid = g_.tick_ + interval * 3 / 4 + g_.rng_.below(static_cast<std::uint32_t>(interval / 2 + 1));
+                start_raid(p, scale);
+            }
+        }
+    }
+
+    void start_raid(std::uint8_t town, std::int32_t scale) {
+        const EntityId target = raid_target(town, g_.door(*g_.buildings_.get(g_.players_[town].town_center)));
+        const Building* tb = g_.buildings_.get(target);
+        if (tb == nullptr) {
+            return;
+        }
+        // How rich the town is.
+        std::int64_t wealth = g_.players_[town].coins;
+        const std::vector<std::int32_t> stored = g_.stored(town);
+        for (std::size_t r = 0; r < stored.size(); ++r) {
+            wealth += static_cast<std::int64_t>(stored[r]) * std::max(1, c_.resources[r].value);
+        }
+        const std::int64_t base = 2 + wealth / 400 + g_.population(town) / 15;
+        const auto count = static_cast<std::int32_t>(std::clamp<std::int64_t>(base * scale / 100, 2, 40));
+        // From the edge of the town's map.
+        const Game::Region region = g_.region(town);
+        std::vector<FixedVec2> path;
+        FixedVec2 from;
+        bool found = false;
+        for (int attempt = 0; attempt < 8 && !found; ++attempt) {
+            const std::int32_t along = static_cast<std::int32_t>(g_.rng_.below(static_cast<std::uint32_t>(region.size - 16))) + 8;
+            const std::int32_t side = static_cast<std::int32_t>(g_.rng_.below(4));
+            const std::int32_t x = side == 0 ? 6 : side == 1 ? region.size - 7 : along;
+            const std::int32_t z = side == 2 ? 6 : side == 3 ? region.size - 7 : along;
+            from = {Fixed::from_int(region.x + x), Fixed::from_int(region.z + z)};
+            found = g_.nav_.ground(from.x.floor_int() / NavGrid::kCellMeters, from.z.floor_int() / NavGrid::kCellMeters) &&
+                    g_.nav_.find_path_through(from, g_.door(*tb), path);
+        }
+        if (!found) {
+            return;
+        }
+        for (std::int32_t n = 0; n < count; ++n) {
+            Creature a;
+            a.kind = CreatureKind::Raider;
+            a.state = CreatureState::Approach;
+            a.town = town;
+            a.zone = 0xFFFF;
+            a.home = from;
+            a.position = {from.x + Fixed::from_ratio(static_cast<std::int32_t>(g_.rng_.below(5)) - 2, 1),
+                          from.z + Fixed::from_ratio(static_cast<std::int32_t>(g_.rng_.below(5)) - 2, 1)};
+            a.previous = a.position;
+            a.path = path;
+            a.health = stats(a.kind).health;
+            a.target = target;
+            a.timer = static_cast<std::int32_t>(g_.rng_.below(10));
+            g_.creatures_.add(g_.registry_.create(), a);
+        }
+        ++g_.players_[town].raids;
+        g_.events_.push_back({Game::Event::Kind::RaidStarted, town, target, from, static_cast<std::uint16_t>(count), 0});
+    }
+
+    // The militia: adults go for the nearest enemy near the town.
+    bool start_fight(Villager& v) {
+        const Building* tc = g_.buildings_.get(g_.players_[v.owner].town_center);
+        if (tc == nullptr) {
+            return false;
+        }
+        const FixedVec2 at = center_of(*tc);
+        EntityId best;
+        std::uint64_t best_d = meters2(160);
+        const auto& cs = g_.creatures_;
+        for (std::size_t i = 0; i < cs.size(); ++i) {
+            const Creature& a = cs.data()[i];
+            const bool enemy = a.kind == CreatureKind::Raider ? a.town == v.owner && a.state != CreatureState::Leave
+                                                              : Game::hostile(a.kind);
+            if (!enemy || distance2(a.position, at) > meters2(160)) {
+                continue;
+            }
+            const std::uint64_t d = distance2(a.position, v.position);
+            if (d < best_d) {
+                best_d = d;
+                best = cs.entities()[i];
+            }
+        }
+        if (!best.valid()) {
+            return false;
+        }
+        v.task = Task::GoFight;
+        v.target = best;
+        if (!walk_to(v, g_.creatures_.get(best)->position)) {
+            fail(v);
+        }
+        return true;
+    }
+
+    void fight(Villager& v) {
+        Creature* a = g_.creatures_.get(v.target);
+        if (a == nullptr || a->health <= 0) {
+            v.task = Task::Idle;
+            return;
+        }
+        if (distance2(a->position, v.position) > meters2(3)) {
+            v.task = Task::GoFight;
+            if (!walk_to(v, a->position)) {
+                fail(v);
+            }
+            return;
+        }
+        if (++v.timer % 10 == 0) {
+            a->health -= 35;
+            // An animal that is hit turns on its attacker.
+            if (a->kind != CreatureKind::Raider && a->kind != CreatureKind::Deer && a->state != CreatureState::Chase) {
+                a->state = CreatureState::Chase;
+                a->target = {};
+                for (std::size_t k = 0; k < g_.villagers_.size(); ++k) {
+                    if (&g_.villagers_.data()[k] == &v) {
+                        a->target = g_.villagers_.entities()[k];
+                    }
+                }
+            }
+        }
     }
 
     // --- Trade (phase 14) ----------------------------------------------------------------
@@ -862,7 +1525,7 @@ public:
                         distance2(center_of(o), center_of(b)) > meters2(10 + (b.width + o.width) / 2)) {
                         continue;
                     }
-                    if (g_.rng_.below(1000) < static_cast<std::uint32_t>(b.fire / 2)) {
+                    if (g_.rng_.below(1000) < static_cast<std::uint32_t>(b.fire)) {
                         ignite(o, list.entities()[k]);
                     }
                 }
@@ -1239,12 +1902,16 @@ public:
 
     // --- Hunting and fishing (phase 11) ---------------------------------------------
 
-    static std::int32_t zone_capacity(ZoneType t) {
+    static std::int32_t zone_capacity(ZoneType t, const GameRules& rules) {
+        const bool predators = rules.wildlife != Threat::None;
         switch (t) {
             case ZoneType::Deer: return 16;
             case ZoneType::Boar: return 10;
-            default: return 0;  // Wolves and bears come with the wildlife (phase 15).
+            case ZoneType::Wolves: return predators ? 5 : 0;
+            case ZoneType::Bears: return predators ? 2 : 0;
+            case ZoneType::Count: break;
         }
+        return 0;
     }
 
     bool start_hunting(Villager& v, const Building& lodge) {
@@ -1254,8 +1921,8 @@ public:
         std::uint64_t best_d = UINT64_MAX;
         for (std::size_t z = 0; z < g_.map_.zones.size(); ++z) {
             const Zone& zone = g_.map_.zones[z];
-            if (g_.zone_animals_[z] <= 0 || zone_capacity(zone.type) == 0) {
-                continue;
+            if (g_.zone_animals_[z] <= 0 || (zone.type != ZoneType::Deer && zone.type != ZoneType::Boar)) {
+                continue;  // Hunters go for deer and boar.
             }
             const FixedVec2 c{zone.x, zone.z};
             const std::uint64_t d = distance2(c, door);
@@ -1291,7 +1958,22 @@ public:
         if (v.spot == 0 || z >= g_.zone_animals_.size() || g_.zone_animals_[z] <= 0 || g_.meat_ == kNoDef) {
             return;
         }
-        --g_.zone_animals_[z];
+        // The hunted animal: the nearest one of the zone.
+        EntityId prey;
+        std::uint64_t prey_d = UINT64_MAX;
+        const auto& cs = g_.creatures_;
+        for (std::size_t i = 0; i < cs.size(); ++i) {
+            const Creature& a = cs.data()[i];
+            if (a.kind != CreatureKind::Raider && a.zone == z && distance2(a.position, v.position) < prey_d) {
+                prey_d = distance2(a.position, v.position);
+                prey = cs.entities()[i];
+            }
+        }
+        if (prey.valid()) {
+            remove_creature(prey);
+        } else {
+            --g_.zone_animals_[z];
+        }
         v.carrying = {g_.meat_, carry_capacity(c_, g_.meat_)};
         if (Building* lodge = g_.buildings_.get(v.job); lodge != nullptr && g_.hide_ != kNoDef) {
             add_to(lodge->stock, g_.hide_, 1);  // The hide stays at the lodge.
@@ -1499,6 +2181,13 @@ public:
                 v.task = Task::FightFire;
                 v.timer = 0;
                 break;
+            case Task::GoFight:
+                v.task = Task::Fight;
+                v.timer = 0;
+                break;
+            case Task::Flee:
+                v.task = Task::Idle;
+                break;
             default: v.task = Task::Idle; break;
         }
     }
@@ -1650,6 +2339,7 @@ public:
             case Task::Hunt: hunt_work(v); break;
             case Task::Fish: fish_work(v); break;
             case Task::FightFire: fight_fire(v); break;
+            case Task::Fight: fight(v); break;
             default: v.task = Task::Idle; break;
         }
     }
@@ -1916,8 +2606,12 @@ public:
     void monthly() {
         // Diets: last month's variety; the game comes back to its zones.
         for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
-            const std::int32_t cap = zone_capacity(g_.map_.zones[z].type);
-            g_.zone_animals_[z] = std::min(cap, g_.zone_animals_[z] + std::max(1, cap / 6));
+            const std::int32_t cap = g_.zone_open(z) ? zone_capacity(g_.map_.zones[z].type, g_.rules_) : 0;
+            const std::int32_t before = g_.zone_animals_[z];
+            g_.zone_animals_[z] = std::min(cap, before + std::max(1, cap / 6));
+            for (std::int32_t n = before; n < g_.zone_animals_[z]; ++n) {
+                spawn_animal(z);
+            }
         }
         // Old age.
         std::vector<EntityId> dying;
@@ -2146,6 +2840,7 @@ public:
         update_health();
         start_fires();
         daily_trade();
+        daily_raids();
         const std::int32_t t = g_.temperature_;
         if (t < 0) {
             g_.snow_ = std::min(village::kMaxSnow, g_.snow_ + 1 + std::min(-t, 10) / 2);
@@ -2234,6 +2929,19 @@ public:
             Villager& v = vs.data()[k];
             v_index_ = vs.entities()[k].index;
             v.previous = v.position;
+            // The militia follows its enemy.
+            if (v.task == Task::GoFight && (g_.tick_ + k) % 20 == 0) {
+                const Creature* a = g_.creatures_.get(v.target);
+                if (a != nullptr && distance2(a->position, v.position) <= meters2(3)) {
+                    v.task = Task::Fight;
+                    v.path.clear();
+                    v.path_index = 0;
+                } else if (!start_fight(v)) {
+                    v.task = Task::Idle;
+                    v.path.clear();
+                    v.path_index = 0;
+                }
+            }
             // A full meter lasts four months; children eat half as much.
             if (g_.tick_ % (g_.adult(v) ? village::kTicksPerFoodPoint : 2 * village::kTicksPerFoodPoint) == 0) {
                 --v.food;
@@ -2258,7 +2966,7 @@ public:
                     arrive(v);
                 }
             } else if (v.task == Task::Gather || v.task == Task::Build || v.task == Task::Produce || v.task == Task::Farm ||
-                       v.task == Task::Hunt || v.task == Task::Fish || v.task == Task::FightFire) {
+                       v.task == Task::Hunt || v.task == Task::Fish || v.task == Task::FightFire || v.task == Task::Fight) {
                 work(v);
             } else if (v.idle_ticks > 0) {
                 --v.idle_ticks;
@@ -2269,6 +2977,8 @@ public:
         for (const EntityId id : dying) {
             kill(id);
         }
+        update_creatures();
+        defend();
     }
 
     // --- Setup and commands ---------------------------------------------------------
@@ -2313,7 +3023,7 @@ public:
                 g_.occupied_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(g_.map_.size) + static_cast<std::size_t>(cx)] = 1;
             }
         }
-        g_.nav_.set_building(x, z, x + b.width, z + b.depth, true);
+        block_nav(g_.nav_, d, x, z, b.width, b.depth, true);
         g_.buildings_.add(id, b);
         g_.buildings_changed_ = true;
         return id;
@@ -2404,7 +3114,7 @@ public:
                 g_.occupied_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(g_.map_.size) + static_cast<std::size_t>(cx)] = 0;
             }
         }
-        g_.nav_.set_building(b->x, b->z, b->x + b->width, b->z + b->depth, false);
+        block_nav(g_.nav_, def(*b), b->x, b->z, b->width, b->depth, false);
         g_.buildings_.remove(id);
         g_.registry_.destroy(id);
         g_.buildings_changed_ = true;
@@ -2507,6 +3217,31 @@ public:
                 break;
             }
             case CommandType::Trade: trade_with_merchant(c); break;
+            case CommandType::DevRaid:
+                if (!g_.dev_commands_ || !g_.players_[g_.town_of(c.player)].town_center.valid()) {
+                    ++g_.rejected_;
+                    break;
+                }
+                start_raid(g_.town_of(c.player), std::max(100, threat_percent(g_.rules_.raiders)));
+                break;
+            case CommandType::RingBell: {
+                const std::uint8_t town = g_.town_of(c.player);
+                PlayerState& ps = g_.players_[town];
+                ps.alarm = c.value == 1;
+                // Everybody drops what they do and heeds it.
+                for (Villager& v : g_.villagers_.data()) {
+                    if (v.owner == town && (v.task == Task::Wander || v.task == Task::Gather || v.task == Task::GoGather ||
+                                            v.task == Task::Produce || v.task == Task::GoWorkplace || v.task == Task::Farm ||
+                                            v.task == Task::GoField || v.task == Task::Fight || v.task == Task::GoFight)) {
+                        release(v);
+                        v.task = Task::Idle;
+                        v.path.clear();
+                        v.path_index = 0;
+                        v.idle_ticks = 0;
+                    }
+                }
+                break;
+            }
             case CommandType::OfferTrade: offer_trade(c); break;
             case CommandType::AnswerOffer: answer_offer(c); break;
             case CommandType::DevIgnite: {
@@ -2538,6 +3273,14 @@ public:
         const auto towns = static_cast<std::uint8_t>(g_.map_.starts.size());
         // A common town has room for every seat, so anyone can join later.
         g_.player_count_ = g_.shared_town_ ? kMaxPlayers : std::min<std::uint8_t>(players, towns);
+        for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
+            if (!g_.zone_open(z)) {
+                g_.zone_animals_[z] = 0;
+            }
+            for (std::int32_t n = 0; n < g_.zone_animals_[z]; ++n) {
+                spawn_animal(z);
+            }
+        }
         DefIndex tc_def = kNoDef;
         for (std::size_t i = 0; i < c_.buildings.size(); ++i) {
             if (c_.buildings[i].kind == BuildingKind::TownCenter && tc_def == kNoDef) {
@@ -2621,7 +3364,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     shoes_ = content_->find_resource("core:shoes");
     zone_animals_.resize(map_.zones.size());
     for (std::size_t z = 0; z < map_.zones.size(); ++z) {
-        zone_animals_[z] = VillageRules::zone_capacity(map_.zones[z].type);
+        zone_animals_[z] = VillageRules::zone_capacity(map_.zones[z].type, rules_);
     }
     temperature_ = sim::temperature(rules_.climate, seed_, 0);
     build_indexes();
@@ -2794,6 +3537,31 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
         return PlaceError::TooSteep;
     }
     return PlaceError::None;
+}
+
+bool Game::zone_open(std::size_t z) const {
+    const Zone& zone = map_.zones[z];
+    if (zone.type != ZoneType::Wolves && zone.type != ZoneType::Bears) {
+        return true;
+    }
+    // No dens right by a starting town.
+    for (const StartPosition& s : map_.starts) {
+        const std::int64_t dx = (s.x - zone.x).floor_int();
+        const std::int64_t dz = (s.z - zone.z).floor_int();
+        if (dx * dx + dz * dz < 150 * 150) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::int32_t Game::raiders_near(std::uint8_t player) const {
+    std::int32_t n = 0;
+    const std::uint8_t town = town_of(player);
+    for (const Creature& a : creatures_.data()) {
+        n += a.kind == CreatureKind::Raider && a.town == town && a.state != CreatureState::Leave ? 1 : 0;
+    }
+    return n;
 }
 
 std::int32_t Game::sick(std::uint8_t player) const {
@@ -3132,6 +3900,9 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(ps.coins);
         w.u64(ps.merchant_arrives);
         w.u64(ps.merchant_leaves);
+        w.u8(ps.alarm ? 1 : 0);
+        w.u64(ps.next_raid);
+        w.i32(ps.raids);
         w.u32(static_cast<std::uint32_t>(ps.merchant.size()));
         for (const MerchantGood& good : ps.merchant) {
             w.u16(good.resource);
@@ -3223,6 +3994,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(b.desirability);
         w.i32(b.fire);
         w.i32(b.burned);
+        w.i32(b.damage);
+        w.i32(b.rearm);
         w.u32(static_cast<std::uint32_t>(b.fields.size()));
         for (const Field& f : b.fields) {
             w.i32(f.x);
@@ -3292,6 +4065,33 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         }
         w.u16(v.path_index);
         w.i32(v.idle_ticks);
+    }
+    // Animals and raiders.
+    const auto& cs = g.creatures();
+    w.u32(static_cast<std::uint32_t>(cs.size()));
+    for (std::size_t i = 0; i < cs.size(); ++i) {
+        const Creature& a = cs.data()[i];
+        w.u32(cs.entities()[i].index);
+        w.u32(cs.entities()[i].generation);
+        w.u8(static_cast<std::uint8_t>(a.kind));
+        w.u8(static_cast<std::uint8_t>(a.state));
+        w.u8(a.town);
+        w.u16(a.zone);
+        w.vec2(a.position);
+        w.vec2(a.previous);
+        w.vec2(a.home);
+        w.vec2(a.goal);
+        w.u32(static_cast<std::uint32_t>(a.path.size()));
+        for (const FixedVec2& p : a.path) {
+            w.vec2(p);
+        }
+        w.u16(a.path_index);
+        w.i32(a.health);
+        w.i32(a.timer);
+        w.u32(a.target.index);
+        w.u32(a.target.generation);
+        w.u16(a.loot.resource);
+        w.i32(a.loot.amount);
     }
     if (marks != nullptr) {
         *marks = m;
@@ -3377,6 +4177,12 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             !r.u64(ps.merchant_leaves)) {
             return false;
         }
+        std::uint8_t alarm = 0;
+        if (!r.u8(alarm) || alarm > 1 || !r.u64(ps.next_raid) || !r.i32(ps.raids)) {
+            r.fail();
+            return false;
+        }
+        ps.alarm = alarm != 0;
         ps.active = active != 0;
         std::uint32_t goods = 0;
         if (!r.count(1024, 14, goods)) {
@@ -3503,7 +4309,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         if (!r.u8(b.level) || b.level > c.buildings[b.def].levels.size() || !r.u8(upgrading) || upgrading > 1 ||
             !r.i32(b.limit) || b.limit < 0 || b.limit > 10000 || !r.u8(b.recipe) || !r.u16(b.needs) ||
             !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
-            b.fire < 0 || b.fire > 100 || !r.i32(b.burned) || b.burned < 0 || b.burned > 1000) {
+            b.fire < 0 || b.fire > 100 || !r.i32(b.burned) || b.burned < 0 || b.burned > 1000 || !r.i32(b.damage) ||
+            b.damage < 0 || !r.i32(b.rearm) || b.rearm < 0) {
             r.fail();
             return false;
         }
@@ -3544,7 +4351,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
                 g.occupied_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(g.map_.size) + static_cast<std::size_t>(cx)] = 1;
             }
         }
-        g.nav_.set_building(b.x, b.z, b.x + b.width, b.z + b.depth, true);
+        block_nav(g.nav_, c.buildings[b.def], b.x, b.z, b.width, b.depth, true);
         g.buildings_.add(id, b);
     }
     if (!r.count(village::kMaxVillagersPerPlayer * kMaxPlayers, 60, n)) {
@@ -3585,6 +4392,39 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             return false;
         }
         g.villagers_.add(id, v);
+    }
+    std::uint32_t creatures = 0;
+    if (!r.count(1000000, 60, creatures)) {
+        return false;
+    }
+    for (std::uint32_t k = 0; k < creatures; ++k) {
+        EntityId id;
+        Creature a;
+        std::uint8_t kind = 0, state = 0;
+        std::uint32_t steps = 0;
+        if (!r.u32(id.index) || !r.u32(id.generation) || !g.registry_.alive(id) || !r.u8(kind) ||
+            kind >= static_cast<std::uint8_t>(CreatureKind::Count) || !r.u8(state) ||
+            state >= static_cast<std::uint8_t>(CreatureState::Count) || !r.u8(a.town) || a.town >= pc || !r.u16(a.zone) ||
+            (kind != static_cast<std::uint8_t>(CreatureKind::Raider) && a.zone >= g.map_.zones.size()) ||
+            !r.vec2(a.position) || !r.vec2(a.previous) || !r.vec2(a.home) || !r.vec2(a.goal) || !r.count(100000, 8, steps)) {
+            r.fail();
+            return false;
+        }
+        a.kind = static_cast<CreatureKind>(kind);
+        a.state = static_cast<CreatureState>(state);
+        a.path.resize(steps);
+        for (FixedVec2& p : a.path) {
+            if (!r.vec2(p)) {
+                return false;
+            }
+        }
+        if (!r.u16(a.path_index) || a.path_index > a.path.size() || !r.i32(a.health) || !r.i32(a.timer) ||
+            !r.u32(a.target.index) || !r.u32(a.target.generation) || !r.u16(a.loot.resource) || !r.i32(a.loot.amount) ||
+            a.loot.amount < 0 || (a.loot.amount > 0 && a.loot.resource >= c.resources.size())) {
+            r.fail();
+            return false;
+        }
+        g.creatures_.add(id, a);
     }
     std::uint64_t state = 0, inc = 0;
     if (!r.u64(state) || !r.u64(inc) || !Rng::restore(state, inc, g.rng_)) {

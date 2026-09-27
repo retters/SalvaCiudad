@@ -300,7 +300,10 @@ TEST_SUITE("village") {
 
     TEST_CASE("an hour of play: a tended village grows") {
         const auto start = std::chrono::steady_clock::now();
-        Game g(content(), small_map(19), 1, 77);
+        // The economy alone: no raids (the "wildlife" suite has those).
+        GameSetup setup{1, 77, false, GameRules{}};
+        setup.rules.raiders = Threat::None;
+        Game g(content(), small_map(19), setup);
         opening(g);
         int houses = 2;
         int foragers = 1;

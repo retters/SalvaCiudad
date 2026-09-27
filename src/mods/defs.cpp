@@ -203,7 +203,8 @@ constexpr std::string_view kCategories[] = {"food", "material", "fuel", "good"};
 constexpr std::string_view kWorkKinds[] = {"none", "gather", "produce", "build", "haul", "farm", "hunt", "fish"};
 constexpr std::string_view kBuildingKinds[] = {"house",   "storage", "workplace", "townCenter", "decoration",
                                                "defense", "military", "market"};
-constexpr std::string_view kBuildCategories[] = {"housing", "food", "resources", "industry", "services", "decoration"};
+constexpr std::string_view kBuildCategories[] = {"housing",  "food",       "resources", "industry",
+                                                 "services", "decoration", "defense"};
 constexpr std::string_view kNeeds[] = {"food",   "water",  "clothes", "shoes",  "religion", "entertainment",
                                        "heating", "beauty", "market",  "hygiene", "healer",  "doctor"};
 constexpr std::string_view kFeatureKinds[] = {"tree", "stone", "ironOre", "berryBush", "herbs"};
@@ -492,6 +493,12 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.unique = r.flag("unique");
         def.fireproof = r.flag("fireproof");
         def.trade = r.flag("trade");
+        def.hp = r.integer("hp", 1, 100000, 500);
+        def.gate = r.flag("gate");
+        def.trap = r.flag("trap");
+        def.attack_range = r.integer("attackRange", 0, 200, 0);
+        def.attack_damage = r.integer("attackDamage", 0, 10000, 0);
+        def.attack_every = r.integer("attackEvery", 1, 1000, 20);
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);
@@ -536,6 +543,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             case sim::BuildingKind::Market:
             case sim::BuildingKind::TownCenter: category = sim::BuildCategory::Services; break;
             case sim::BuildingKind::Decoration: category = sim::BuildCategory::Decoration; break;
+            case sim::BuildingKind::Defense: category = sim::BuildCategory::Defense; break;
             default:
                 if (def.work == sim::WorkKind::Gather) {
                     category = sim::BuildCategory::Resources;

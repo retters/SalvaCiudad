@@ -90,6 +90,13 @@ private:
     // Fields: a soil slab and a plant per 2 m, made in code.
     render::ModelId tile_model_ = kNoModel;
     render::ModelId plant_model_ = kNoModel;
+    // Animals: one low-poly body for all kinds (phase 18 brings real ones),
+    // and a red mark under raiders.
+    render::ModelId animal_model_ = kNoModel;
+    render::ModelId mark_model_ = kNoModel;
+    std::vector<render::Instance> animals_;
+    std::vector<render::Instance> marks_;
+    void update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, int speed);
     void rebuild_fields(render::SceneRenderer& renderer, const sim::Game& game);
     sim::Season season_ = sim::Season::Summer;
     bool ghost_changed_ = false;

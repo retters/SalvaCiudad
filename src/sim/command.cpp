@@ -84,6 +84,11 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::AnswerOffer:
             ok = ok && c.value >= 1 && c.count <= 1;
             break;
+        case CommandType::RingBell:
+            ok = ok && (c.value == 0 || c.value == 1);
+            break;
+        case CommandType::DevRaid:
+            break;
         default:
             ok = false;
             break;
