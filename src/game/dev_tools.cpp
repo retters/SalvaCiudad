@@ -298,7 +298,8 @@ void DevTools::update(DevContext& ctx) {
     if (!ctx.clicked) {
         return;
     }
-    if (place_on_click_) {
+    // Clicks only create while the Create tab is the one shown.
+    if (place_on_click_ && active_tab_ == Tab::Create) {
         if (const auto t = ground_hit(ctx)) {
             place(ctx, ctx.ray_origin + ctx.ray_dir * *t);
         }
@@ -417,6 +418,8 @@ void DevTools::draw(DevContext& ctx) {
     ImGui::SetNextWindowPos(ImVec2(12.0f, 200.0f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(440.0f, 560.0f), ImGuiCond_FirstUseEver);
     const std::string title = tr("dev.title") + "###devtools";
+    // Set again below by the tab that is shown; a collapsed window shows none.
+    active_tab_ = Tab::Inspector;
     if (ImGui::Begin(title.c_str(), &visible_)) {
         if (ImGui::BeginTabBar("tabs")) {
             const auto tab = [&](Tab t, const char* key, const char* id) {
@@ -424,14 +427,17 @@ void DevTools::draw(DevContext& ctx) {
                 return ImGui::BeginTabItem(label(key, id).c_str(), nullptr, flags);
             };
             if (tab(Tab::Inspector, "dev.tab.inspector", "inspector")) {
+                active_tab_ = Tab::Inspector;
                 inspector_tab(ctx);
                 ImGui::EndTabItem();
             }
             if (tab(Tab::Create, "dev.tab.create", "create")) {
+                active_tab_ = Tab::Create;
                 create_tab(ctx);
                 ImGui::EndTabItem();
             }
             if (tab(Tab::Explorer, "dev.tab.explorer", "explorer")) {
+                active_tab_ = Tab::Explorer;
                 explorer_tab(ctx);
                 ImGui::EndTabItem();
             }

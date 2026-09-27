@@ -423,6 +423,7 @@ El pasto como cubierta del suelo todavía no existe: el suelo es solo textura.
   - **Inspector:** el objeto bajo el cursor, o el seleccionado con clic, con su nombre y sus propiedades. De un árbol: especie, tamaño, altura, modelo y tamaños posibles. De una persona: actividad, velocidad, vestimenta y accesorios. Siempre incluye el terreno donde está: suelo, bioma, fertilidad, altura, pendiente y agua. Sin objeto, muestra el terreno bajo el cursor. Botones: Ir a, Quitar selección, Eliminar.
   - **Crear:** árboles de cualquier especie, tamaño y altura; arbustos, hierbas, piedra, mineral, casas y personas. Se colocan en el centro de la vista, o con clic en el suelo si se activa esa opción.
   - **Explorador:** todos los objetos, filtrados por categoría y buscados por nombre sin importar mayúsculas ni acentos. Opcionalmente ordena por cercanía. Al elegir uno, la cámara va hacia él y queda seleccionado.
+- "Colocar con clic" solo actúa mientras la pestaña Crear está a la vista. En otra pestaña, o con la ventana colapsada, el clic selecciona como siempre (corrección pedida por el usuario el 2026-09-27).
 - Los cambios modifican el mapa en memoria (solo presentación y pruebas): no hay partida que guardar todavía.
 - Cuando exista el multijugador, estas herramientas solo funcionarán en partidas de un jugador o si el anfitrión las permite. En la fase 8 se agrega la pestaña de recursos.
 

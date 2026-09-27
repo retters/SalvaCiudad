@@ -88,6 +88,7 @@ private:
     DevObject hovered_;
     std::optional<math::Vec3> hovered_ground_;  // Ground under the cursor.
     std::optional<Tab> switch_to_;
+    Tab active_tab_ = Tab::Inspector;  // The tab shown last frame.
 
     // Features by 16 m cell, for picking.
     const sim::MapData* indexed_map_ = nullptr;
