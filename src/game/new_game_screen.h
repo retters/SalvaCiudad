@@ -19,6 +19,8 @@ inline constexpr std::size_t kMaxSeedDigits = 19;
 [[nodiscard]] std::uint64_t parse_seed(std::string_view text);
 // A new random seed (from the clock), 1 .. 999 999 999.
 [[nodiscard]] std::uint64_t random_seed();
+// Text key of a map size's name ("{0} m" takes its side).
+[[nodiscard]] const char* map_size_text_key(sim::MapSize size);
 
 class NewGameScreen {
 public:

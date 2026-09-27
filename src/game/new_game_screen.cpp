@@ -85,6 +85,13 @@ std::uint64_t random_seed() {
     return 1 + z % 999'999'999ull;
 }
 
+const char* map_size_text_key(sim::MapSize size) {
+    static constexpr const char* kKeys[] = {"newGame.size.small", "newGame.size.medium", "newGame.size.large",
+                                            "newGame.size.huge",  "newGame.size.giant",  "newGame.size.colossal"};
+    static_assert(std::size(kKeys) == static_cast<std::size_t>(sim::MapSize::Count));
+    return kKeys[std::min<std::size_t>(static_cast<std::size_t>(size), std::size(kKeys) - 1)];
+}
+
 void NewGameScreen::open(const sim::Content* content, bool multiplayer) {
     multiplayer_ = multiplayer;
     content_ = content;
@@ -290,14 +297,18 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         seed_field(ctx, r.control, modal);
     }
     {
-        const std::vector<std::string> options = {
-            tr("newGame.size.small", sim::map_cells(sim::MapSize::Small)),
-            tr("newGame.size.medium", sim::map_cells(sim::MapSize::Medium)),
-            tr("newGame.size.large", sim::map_cells(sim::MapSize::Large)),
-            tr("newGame.size.huge", sim::map_cells(sim::MapSize::Huge))};
+        std::vector<std::string> options;
+        for (std::uint8_t i = 0; i < static_cast<std::uint8_t>(sim::MapSize::Count); ++i) {
+            const auto size = static_cast<sim::MapSize>(i);
+            options.push_back(tr(map_size_text_key(size), sim::map_cells(size)));
+        }
         int index = static_cast<int>(settings_.size);
-        const Row r = row(ctx, x, y, cw, tr("newGame.size"), tr("newGame.size.tooltip"));
-        if (ctx.selector(ctx.id("size"), r.control, index, options, tr("newGame.size.tooltip"))) {
+        // The biggest sizes warn about time and memory.
+        const std::string tip = settings_.size >= sim::MapSize::Giant
+                                    ? tr(std::string(map_size_text_key(settings_.size)) + ".tooltip")
+                                    : tr("newGame.size.tooltip");
+        const Row r = row(ctx, x, y, cw, tr("newGame.size"), tip);
+        if (ctx.selector(ctx.id("size"), r.control, index, options, tip)) {
             settings_.size = static_cast<sim::MapSize>(index);
         }
     }

@@ -220,7 +220,7 @@ Fondo con una escena 3D del mapa en cámara lenta y el logotipo `- SALVA -` / `C
 
 ### 6.3 Configuración de partida
 
-- **Mapa:** semilla (editable, con botón "aleatoria"), tamaño (Pequeño, Mediano, Grande, Enorme; ver 7.6), cantidad de ríos y lagos, densidad de bosque, abundancia de recursos, relieve (bajo por omisión, siempre suave).
+- **Mapa:** semilla (editable, con botón "aleatoria"), tamaño (Pequeño, Mediano, Grande, Enorme, Gigante, Colosal; ver 7.6), tipo de mapa (con islas por pueblo en el mapa de islas), cantidad de ríos y lagos, densidad de bosque, abundancia de recursos, relieve (bajo por omisión, siempre suave).
 - **Clima:** cuántas y cuáles estaciones (de 1 a 4; por ejemplo "invierno eterno" o "verano eterno"), duración del año (por omisión unos 20 minutos a x1, como en Farthest Frontier), dureza del invierno.
 - **Modo de mundo:** *mapa compartido* o *mapas separados* (ver 7.7).
 - **Relación entre jugadores:** *cooperativo* o *versus*. En cooperativo con mapa compartido se elige además *pueblo común* o *pueblos separados aliados*.
@@ -307,6 +307,11 @@ Se documenta en `docs/DETERMINISMO.md` y se verifica con pruebas:
 | Mediano | 1024 × 1024 | 1 km |
 | Grande | 2048 × 2048 | 2 km |
 | Enorme | 4096 × 4096 | 4 km |
+| Gigante | 8192 × 8192 | 8 km |
+| Colosal | 16384 × 16384 | 16 km |
+
+- Gigante y Colosal se agregaron después de la fase 20 (fase 21); piden mucha más memoria y tiempo de generación (ver `docs/RENDIMIENTO.md`).
+- **Islas** (fase 22): un tipo de mapa en el que el mar rodea islas. Se configura cuántas islas hay por pueblo: con 2 pueblos y 3 islas por pueblo hay 6 islas. Cada pueblo empieza en una isla propia.
 
 - Generación a partir de la semilla, en etapas que a su vez son deterministas: relieve suave (ruido con poca amplitud), ríos que bajan por el relieve hasta lagos o al borde, lagos, humedad, fertilidad del suelo, tipos de suelo, bosques y praderas, piedra, arcilla, mineral de hierro, arbustos de bayas, hierbas, zonas de fauna y posiciones de salida justas para cada jugador.
 - Las etapas y sus parámetros son datos del mod `core` (`mapFeature`), para que un mod pueda agregar rasgos del mapa.
@@ -512,7 +517,15 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
 18. **Arte y sonido.** Todos los edificios, recursos, animales y animaciones con el pipeline de Blender; efectos de sonido; partículas; pulido visual.
 19. **Razas de fantasía.** Gatunos, enanos y elfos como definiciones de `race` con sus modelos, animaciones y rasgos de juego; pueblos mixtos e inmigración de otras razas.
 20. **Rendimiento.** Perfilado y optimización con 12 jugadores de 1000 aldeanos en un mapa enorme; ajuste de los límites y de las advertencias del lobby según lo medido.
-21. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+21. **Mapas más grandes.** Tamaños Gigante (8192) y Colosal (16384) para mapa compartido y mapas separados; límites de guardado, instantáneas de red y paquetes ajustados a lo medido; aviso de tiempo y memoria en la partida nueva.
+   - *Criterios:* los dos tamaños se generan, se juegan, se guardan y se cargan; la misma semilla da el mismo mapa; las mediciones quedan en `docs/RENDIMIENTO.md`.
+22. **Mapa de islas.** Tipo de mapa `core:islands` con islas por pueblo configurables (1 a 8, según quepan en el tamaño del mapa).
+   - *Criterios:* con N pueblos y K islas por pueblo hay N × K islas separadas por mar; cada pueblo empieza en una isla distinta con sus recursos básicos; la misma semilla da el mismo mapa.
+23. **Partida nueva recordada.** La última configuración de partida nueva se guarda en `settings.json` y se vuelve a mostrar; un botón la restablece a los valores por omisión.
+   - *Criterios:* la configuración sobrevive a reiniciar el juego; un valor inválido en el archivo vuelve al de omisión sin perder los demás; restablecer deja todo como en una instalación nueva.
+24. **Minimapa y brújula.** Minimapa del mundo con los cuatro puntos cardinales, los edificios de cada pueblo y lo que ve la cámara; un clic lleva la cámara ahí. Una brújula en pantalla con una flecha que apunta al norte y gira con la cámara.
+   - *Criterios:* el minimapa corresponde al terreno; el clic mueve la cámara al lugar; la flecha apunta al norte con cualquier giro de la cámara.
+25. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 

@@ -28,7 +28,8 @@ inline constexpr std::size_t kMaxMods = 256;
 inline constexpr std::size_t kMaxCommandsPerMessage = 256;
 inline constexpr std::size_t kMaxCommandsPerTurn = 4096;
 inline constexpr std::size_t kMaxMessageBytes = 256u * 1024u;          // Everything but snapshots.
-inline constexpr std::size_t kMaxSnapshotBytes = 512u * 1024u * 1024u;  // Unpacked.
+// Unpacked: a colossal map's game is about 1.9 GiB (phase 21).
+inline constexpr std::size_t kMaxSnapshotBytes = 3u * 1024u * 1024u * 1024u;
 inline constexpr std::uint8_t kColors = 12;
 // Ticks between state checks (5 s at x1).
 inline constexpr std::uint64_t kHashInterval = 50;

@@ -153,9 +153,11 @@ struct GpuMaterial {
     SDL_GPUTexture* texture = nullptr;  // Not owned; points into GpuModel::textures or the white texture.
 };
 
-// Instances of a model grouped by 64 m region, so culling can skip whole
-// regions at once.
+// Instances of a model grouped by 64 m region, and regions by groups of
+// 16 x 16, so culling can skip whole regions and groups at once (a
+// colossal map has 65 536 regions).
 constexpr float kBucketSize = 64.0f;
+constexpr std::int64_t kBucketsPerGroup = 16;
 
 struct Bucket {
     std::uint32_t first = 0;  // Index into the model's instances.
@@ -163,6 +165,17 @@ struct Bucket {
     math::Vec3 center;
     float radius = 0.0f;
 };
+
+struct BucketGroup {
+    std::uint32_t first = 0;  // Index into the model's buckets.
+    std::uint32_t count = 0;
+    math::Vec3 center;
+    float radius = 0.0f;
+};
+
+std::int64_t floor_div(std::int64_t a, std::int64_t b) {
+    return a >= 0 ? a / b : -((-a + b - 1) / b);
+}
 
 struct GpuModel {
     SDL_GPUBuffer* vertices = nullptr;
@@ -176,6 +189,7 @@ struct GpuModel {
     std::vector<std::uint32_t> order;    // Region-sorted position -> index in `instances`.
     std::vector<std::uint32_t> slot_of;  // Index in `instances` -> region-sorted position.
     std::vector<Bucket> buckets;
+    std::vector<BucketGroup> groups;
     std::uint32_t base = 0;              // First slot in the GPU instance buffer.
     std::uint32_t capacity = 0;          // Slots reserved there.
     bool dirty = true;                   // Whole range must be rebuilt.
@@ -722,11 +736,15 @@ struct SceneRenderer::Impl {
     // Orders each model's instances by region and records the regions.
     static void build_buckets(GpuModel& m) {
         m.buckets.clear();
+        m.groups.clear();
+        // Group first, then region, so each group's regions are together.
         const auto key = [&](std::uint32_t idx) {
             const Instance& inst = m.instances[idx];
             const auto bx = static_cast<std::int64_t>(std::floor(inst.position.x / kBucketSize));
             const auto bz = static_cast<std::int64_t>(std::floor(inst.position.z / kBucketSize));
-            return bz * (std::int64_t{1} << 32) + bx;
+            const std::int64_t group =
+                floor_div(bz, kBucketsPerGroup) * (std::int64_t{1} << 32) + floor_div(bx, kBucketsPerGroup);
+            return std::pair{group, bz * (std::int64_t{1} << 32) + bx};
         };
         m.order.resize(m.instances.size());
         for (std::uint32_t k = 0; k < m.order.size(); ++k) {
@@ -738,8 +756,9 @@ struct SceneRenderer::Impl {
             m.slot_of[m.order[k]] = k;
         }
         std::size_t i = 0;
+        std::int64_t last_group = 0;
         while (i < m.order.size()) {
-            const std::int64_t k = key(m.order[i]);
+            const std::pair<std::int64_t, std::int64_t> k = key(m.order[i]);
             std::size_t j = i;
             math::Vec3 lo = m.instances[m.order[i]].position;
             math::Vec3 hi = lo;
@@ -758,8 +777,32 @@ struct SceneRenderer::Impl {
                 // Room for small moves of updated instances.
                 b.radius = std::max(b.radius, math::length(inst.position - b.center) + m.radius * inst.scale + 2.0f);
             }
+            if (m.groups.empty() || k.first != last_group) {
+                BucketGroup g;
+                g.first = static_cast<std::uint32_t>(m.buckets.size());
+                m.groups.push_back(g);
+                last_group = k.first;
+            }
+            ++m.groups.back().count;
             m.buckets.push_back(b);
             i = j;
+        }
+        // Each group's sphere holds its regions' spheres.
+        for (BucketGroup& g : m.groups) {
+            math::Vec3 lo = m.buckets[g.first].center;
+            math::Vec3 hi = lo;
+            for (std::uint32_t n = g.first; n < g.first + g.count; ++n) {
+                const Bucket& b = m.buckets[n];
+                lo = {std::min(lo.x, b.center.x - b.radius), std::min(lo.y, b.center.y - b.radius),
+                      std::min(lo.z, b.center.z - b.radius)};
+                hi = {std::max(hi.x, b.center.x + b.radius), std::max(hi.y, b.center.y + b.radius),
+                      std::max(hi.z, b.center.z + b.radius)};
+            }
+            g.center = (lo + hi) * 0.5f;
+            for (std::uint32_t n = g.first; n < g.first + g.count; ++n) {
+                const Bucket& b = m.buckets[n];
+                g.radius = std::max(g.radius, math::length(b.center - g.center) + b.radius);
+            }
         }
     }
 
@@ -931,20 +974,26 @@ struct SceneRenderer::Impl {
             } else if (m.model_class == ModelClass::Normal && !shadows) {
                 limit = std::min(limit, draw_distance_now);
             }
-            for (const Bucket& b : m.buckets) {
-                if (!frustum.sphere_visible(b.center, b.radius) || math::length(b.center - eye) - b.radius > limit) {
+            for (const BucketGroup& g : m.groups) {
+                if (!frustum.sphere_visible(g.center, g.radius) || math::length(g.center - eye) - g.radius > limit) {
                     continue;
                 }
-                for (std::uint32_t n = b.first; n < b.first + b.count; ++n) {
-                    const Instance& inst = m.instances[m.order[n]];
-                    const float r = m.radius * inst.scale;
-                    if (inst.scale <= 0.0f || !frustum.sphere_visible(inst.position, r)) {
+                for (std::uint32_t bi = g.first; bi < g.first + g.count; ++bi) {
+                    const Bucket& b = m.buckets[bi];
+                    if (!frustum.sphere_visible(b.center, b.radius) || math::length(b.center - eye) - b.radius > limit) {
                         continue;
                     }
-                    const math::Vec3 d = inst.position - eye;
-                    const float reach = limit + r;
-                    if (math::dot(d, d) <= reach * reach) {
-                        visible.push_back(m.base + n);
+                    for (std::uint32_t n = b.first; n < b.first + b.count; ++n) {
+                        const Instance& inst = m.instances[m.order[n]];
+                        const float r = m.radius * inst.scale;
+                        if (inst.scale <= 0.0f || !frustum.sphere_visible(inst.position, r)) {
+                            continue;
+                        }
+                        const math::Vec3 d = inst.position - eye;
+                        const float reach = limit + r;
+                        if (math::dot(d, d) <= reach * reach) {
+                            visible.push_back(m.base + n);
+                        }
                     }
                 }
             }

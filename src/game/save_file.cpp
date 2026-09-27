@@ -18,7 +18,8 @@ namespace {
 
 constexpr char kMagic[8] = {'S', 'C', 'S', 'A', 'V', 'E', '\r', '\n'};
 constexpr int kZstdLevel = 3;  // Fast, and still several times smaller.
-constexpr std::size_t kMaxChunkBytes = 1024u * 1024u * 1024u;  // Unpacked, per chunk.
+// Unpacked, per chunk: a colossal map's game is about 1.9 GiB (phase 21).
+constexpr std::size_t kMaxChunkBytes = 3u * 1024u * 1024u * 1024u;
 
 void put_u32(std::vector<std::uint8_t>& out, std::uint32_t v) {
     for (int i = 0; i < 4; ++i) {

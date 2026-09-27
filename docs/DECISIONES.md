@@ -1130,3 +1130,31 @@ La única diferencia de reglas: dentro de un tick, las decisiones ven lo guardad
 
 **D-2003. Límites y aviso.**
 El tick promedio con 12 × 1000 bajó de 61 a 12,5 ms, así que el límite de 1000 por jugador se mantiene. La sala avisa por encima de 6000 aldeanos posibles en total (la especificación sugería 600 por jugador, 7200 con 12): desde ahí los ticks más pesados pasan de 33 ms en este equipo.
+
+## Fase 21: mapas más grandes (2026-09-27)
+
+Pedido del 2026-09-27: tamaños de 8192 × 8192 y 16384 × 16384, junto con el minimapa, la brújula, recordar la partida nueva y el mapa de islas (fases 22 a 24).
+
+**D-2101. Gigante y Colosal.**
+Dos tamaños nuevos: Gigante (8192 m) y Colosal (16384 m). Se generan igual que los demás. Con mapas separados, el mundo entero puede llegar ahora a 16384 m (antes 4096): cada mapa se achica solo si no cabe. Por ejemplo, 4 jugadores con mapas gigantes llenan un mundo colosal; con mapas enormes y 2 a 4 jugadores, cada uno conserva su mapa enorme (antes bajaba a grande).
+
+**D-2102. El mapa sigue dentro de la partida guardada.**
+Otra opción era guardar solo la semilla y regenerar el mapa al cargar. Se descartó: un mapa colosal tarda unos dos minutos en generarse, y cargar sería igual de lento. Se subieron los límites según lo medido (ver `docs/RENDIMIENTO.md`):
+- cada pedazo de la partida, sin comprimir: de 1 a 3 GiB;
+- la instantánea de red, sin comprimir: de 512 MiB a 3 GiB;
+- un paquete de red: de 128 a 512 MiB (la instantánea colosal comprimida pesa unos 190 MiB);
+- los rasgos del mapa (árboles, piedras…): de 4 a 32 millones.
+
+Los tamaños se leen como números de 32 bits, así que 3 GiB es el máximo que el formato admite con margen.
+
+**D-2103. Zonas conectadas por bloques.**
+La búsqueda de caminos sabe de antemano si dos puntos están en la misma zona transitable, para no buscar en vano. Antes, cada edificio nuevo obligaba a reetiquetar el mapa entero: 470 ms en un mapa gigante (unos 2 s en uno colosal, y 120 ms en uno enorme). Ahora las zonas se etiquetan por bloques de 128 m y se unen por sus bordes, y un cambio solo reetiqueta sus bloques: menos de medio milisegundo. El resultado es el mismo; una prueba lo compara con un relleno completo del mapa.
+
+**D-2104. Descarte en dos niveles.**
+Los objetos se agrupaban en zonas de 64 m para decidir cuáles se ven. En un mapa colosal son 65 536 zonas por modelo y por cascada de sombra: 10 ms por cuadro. Ahora las zonas se agrupan además de 16 × 16 (1 km), y un grupo que no se ve se salta entero.
+
+**D-2105. Aviso de tiempo y memoria.**
+Al elegir Gigante o Colosal, la ayuda del tamaño dice cuánto tarda y cuánta memoria necesita. No se bloquea nada: en este equipo (32 GB, RTX 2080 SUPER) el colosal se juega a unos 60 FPS en Ultra con 7 GB de memoria.
+
+**D-2106. Terreno de hasta 16384 m en la tarjeta gráfica.**
+El límite de las capas del terreno pasó de 8192 a 16384 m. Las alturas de un mapa colosal ocupan 512 MiB en la tarjeta. Si una tarjeta con poca memoria no puede cargarlas, el juego ya muestra "No se pudo mostrar el mapa" y vuelve a la partida nueva.

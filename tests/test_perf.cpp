@@ -177,3 +177,67 @@ TEST_SUITE("sim_perf") {
                                      << " ms, " << snap.packed.size() / 1024 << " KiB packed");
     }
 }
+
+#ifdef _WIN32
+#include <windows.h>
+#include <psapi.h>
+#pragma comment(lib, "psapi.lib")
+#endif
+
+namespace {
+
+// Peak memory of this process so far, MiB (0 where not measured).
+std::size_t peak_mib() {
+#ifdef _WIN32
+    PROCESS_MEMORY_COUNTERS pmc{};
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)) != 0) {
+        return pmc.PeakWorkingSetSize / (1u << 20);
+    }
+#endif
+    return 0;
+}
+
+}  // namespace
+
+TEST_SUITE("sim_perf") {
+    // Phase 21: generation time, memory, save and snapshot of the two
+    // biggest sizes (several minutes; docs/RENDIMIENTO.md).
+    TEST_CASE("giant and colossal maps" * doctest::skip()) {
+        for (const MapSize size : {MapSize::Giant, MapSize::Colossal}) {
+            MapSettings ms;
+            ms.seed = 2026;
+            ms.size = size;
+            ms.players = 12;
+            const auto g0 = std::chrono::steady_clock::now();
+            std::optional<MapData> map = generate_map(ms, sc::test::core_content());
+            REQUIRE(map.has_value());
+            CHECK(map->features.size() <= kMaxMapFeatures);
+            MESSAGE(map_cells(size) << " m: generated in "
+                                    << std::chrono::duration<double>(std::chrono::steady_clock::now() - g0).count()
+                                    << " s, " << map->features.size() << " features, peak " << peak_mib() << " MiB");
+            Game g(core(), *map, rules(12));
+            map.reset();
+            const Timing t = measure(g, 200);
+            MESSAGE("tick " << t.mean_ms << " ms mean, " << t.worst_ms << " ms worst");
+            const auto h0 = std::chrono::steady_clock::now();
+            (void)g.hash();
+            MESSAGE("hash: " << std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - h0).count()
+                             << " ms");
+            BinaryWriter w;
+            const auto s0 = std::chrono::steady_clock::now();
+            g.save(w);
+            MESSAGE("save: " << std::chrono::duration<double>(std::chrono::steady_clock::now() - s0).count() << " s, "
+                             << w.bytes().size() / (1u << 20) << " MiB");
+            CHECK(w.bytes().size() <= sc::net::kMaxSnapshotBytes);
+            const auto z0 = std::chrono::steady_clock::now();
+            const sc::net::Snapshot snap = sc::net::pack_snapshot(g.tick(), w.bytes());
+            MESSAGE("network snapshot: " << std::chrono::duration<double>(std::chrono::steady_clock::now() - z0).count()
+                                         << " s, " << snap.packed.size() / (1u << 20) << " MiB packed");
+            BinaryReader r(w.bytes());
+            const auto l0 = std::chrono::steady_clock::now();
+            CHECK(g.load(r, core()));
+            MESSAGE("load: " << std::chrono::duration<double>(std::chrono::steady_clock::now() - l0).count() << " s, peak "
+                             << peak_mib() << " MiB");
+        }
+    }
+}

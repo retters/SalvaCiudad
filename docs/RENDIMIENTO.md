@@ -45,8 +45,32 @@ Nada de esto se guarda en la partida: son datos derivados que se rehacen.
 - La población máxima por jugador sigue entre 50 y 1000: con 12 × 1000 el tick promedio queda en 12,5 ms, dentro de lo que pide la velocidad triple.
 - La sala avisa cuando el total posible pasa de **6000 aldeanos** (población máxima × jugadores). Entre 6000 y 12 000 los ticks más pesados pasan de 33 ms, y en equipos más lentos la velocidad triple podría no sostenerse; el voto de velocidad ya baja la velocidad si alguien se queda atrás (fase 9).
 
+## Mapas gigante y colosal (fase 21)
+
+`salvaciudad_tests -ts=sim_perf -tc="giant and colossal maps" --no-skip` (unos 5 minutos) genera cada mapa con 12 inicios, crea la partida, la guarda, la empaqueta para la red y la vuelve a cargar:
+
+| Medida | Gigante (8192 m) | Colosal (16 384 m) |
+|---|---|---|
+| Generar el mapa | 28 s | 128 s |
+| Memoria máxima al generar | 1,6 GB | 6,5 GB |
+| Árboles, piedras y demás | 0,9 millones | 3,4 millones |
+| Partida guardada, sin comprimir | 477 MB | 1,9 GB |
+| Instantánea de red, comprimida | 46 MB (0,9 s) | 186 MB (3,5 s) |
+| Cargar la partida | 0,8 s | 3,2 s |
+| Suma de verificación del estado | 47 ms | 175 ms |
+| Tick sin aldeanos, promedio | 1,7 ms | 7 ms |
+
+En el juego, el colosal ocupa unos 7 GB de memoria y corre a unos 60 FPS en Ultra con toda la escena. Los mapas enormes y menores no cambian.
+
+Lo que se cambió para que funcionaran (decisiones D-2101 a D-2106):
+
+- **Zonas conectadas por bloques.** Cada edificio nuevo reetiquetaba las zonas transitables del mapa entero antes de la siguiente búsqueda de camino: 470 ms en el gigante. Ahora solo se reetiquetan sus bloques de 128 m: menos de 0,5 ms. La primera vez, al empezar la partida, tarda 0,2 s en el gigante y 0,8 s en el colosal (es el tick más lento de la tabla).
+- **Descarte en dos niveles.** El renderizador descartaba 65 536 zonas por modelo en el colosal (10 ms por cuadro); ahora descarta primero grupos de 1 km.
+- **Límites** de la partida guardada, la instantánea de red, los paquetes y los rasgos del mapa, ajustados a estas medidas.
+
 ## Pendiente
 
 - El arranque masivo (muchos aldeanos buscando trabajo y camino a la vez) tiene picos de 400 ms. En una partida normal la gente llega de a poco y no ocurre; si hiciera falta, se repartirían las búsquedas de camino entre ticks.
 - La suma de verificación completa (22 ms cada 50 ticks) podría calcularse por partes, a medida que cambia el estado.
-- El guardado incluye el mapa entero; en red se comprime a unos 12 MB para un mapa enorme.
+- El guardado incluye el mapa entero; en red se comprime a unos 12 MB para un mapa enorme y 186 MB para uno colosal.
+- En un mapa colosal, la suma de verificación de la red (cada 50 ticks) toma 175 ms: a x3 puede notarse un tirón cada pocos segundos. Se podría calcular por partes.

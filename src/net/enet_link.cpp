@@ -13,7 +13,8 @@ namespace sc::net {
 
 namespace {
 
-constexpr std::size_t kMaxPacketBytes = 128u * 1024u * 1024u;
+// A colossal map's snapshot packs to about 190 MiB (phase 21).
+constexpr std::size_t kMaxPacketBytes = 512u * 1024u * 1024u;
 constexpr std::uint32_t kConnectTimeoutMs = 8000;
 constexpr std::uint64_t kProbeEveryMs = 1000;
 constexpr std::uint64_t kForgetAfterMs = 5000;

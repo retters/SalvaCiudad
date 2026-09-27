@@ -28,7 +28,7 @@ std::int32_t world_grid(const MapSettings& s) {
 MapSize region_map_size(const MapSettings& s) {
     const std::int32_t k = world_grid(s);
     MapSize size = s.size;
-    while (k * map_cells(size) > map_cells(MapSize::Huge) && size != MapSize::Small) {
+    while (k * map_cells(size) > map_cells(kMaxWorldSize) && size != MapSize::Small) {
         size = static_cast<MapSize>(static_cast<std::uint8_t>(size) - 1);
     }
     return size;

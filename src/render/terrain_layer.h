@@ -16,6 +16,8 @@ namespace sc::render {
 
 // Cells per side of a chunk. Map sizes are multiples of it.
 inline constexpr std::int32_t kTerrainChunk = 64;
+// The biggest map (colossal).
+inline constexpr std::int32_t kMaxTerrainCells = 16384;
 // Levels of detail: vertex step 1, 2, 4, 8 and 16 cells.
 inline constexpr int kTerrainLods = 5;
 

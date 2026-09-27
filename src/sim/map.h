@@ -12,9 +12,16 @@
 
 namespace sc::sim {
 
-enum class MapSize : std::uint8_t { Small, Medium, Large, Huge, Count };
+enum class MapSize : std::uint8_t { Small, Medium, Large, Huge, Giant, Colossal, Count };
 enum class Amount : std::uint8_t { Low, Normal, High, Count };
 enum class Relief : std::uint8_t { Low, Gentle, Mountainous, Count };
+
+// Most natural features a map may have (saves refuse more): a colossal
+// map with thick forests has several million.
+inline constexpr std::uint32_t kMaxMapFeatures = 32'000'000;
+// The biggest world: separate maps shrink to fit in it (Fixed positions
+// reach 32767 m).
+inline constexpr MapSize kMaxWorldSize = MapSize::Colossal;
 
 // Side of the map in cells (1 cell = 1 m).
 [[nodiscard]] constexpr std::int32_t map_cells(MapSize size) {
@@ -23,6 +30,8 @@ enum class Relief : std::uint8_t { Low, Gentle, Mountainous, Count };
         case MapSize::Medium: return 1024;
         case MapSize::Large: return 2048;
         case MapSize::Huge: return 4096;
+        case MapSize::Giant: return 8192;
+        case MapSize::Colossal: return 16384;
         case MapSize::Count: break;
     }
     return 512;
@@ -52,7 +61,7 @@ struct MapSettings {
 // every player (2 x 2 up to four, 3 x 3 up to nine, 4 x 4 up to twelve).
 [[nodiscard]] std::int32_t world_grid(const MapSettings& s);
 // Each player's map size with separate maps: the chosen one, smaller if
-// the whole world would pass 4096 m.
+// the whole world would pass the biggest map size.
 [[nodiscard]] MapSize region_map_size(const MapSettings& s);
 // Cells per side of the whole world.
 [[nodiscard]] std::int32_t world_cells(const MapSettings& s);

@@ -288,6 +288,28 @@ TEST_SUITE("worldgen") {
         CHECK_FALSE(MapSettings::read(bt, back));
     }
 
+    TEST_CASE("map sizes and separate worlds fit in the biggest size") {
+        CHECK(map_cells(MapSize::Giant) == 8192);
+        CHECK(map_cells(MapSize::Colossal) == 16384);
+        MapSettings s = settings(1, MapSize::Colossal, 4);
+        CHECK(world_cells(s) == 16384);
+        s.separate = true;
+        CHECK(region_map_size(s) == MapSize::Giant);
+        CHECK(world_cells(s) == 16384);
+        s.players = 12;
+        CHECK(region_map_size(s) == MapSize::Huge);
+        s.size = MapSize::Huge;
+        s.players = 2;
+        CHECK(region_map_size(s) == MapSize::Huge);
+        for (std::uint8_t size = 0; size < static_cast<std::uint8_t>(MapSize::Count); ++size) {
+            for (std::uint8_t players = 1; players <= 12; ++players) {
+                s.size = static_cast<MapSize>(size);
+                s.players = players;
+                CHECK(world_cells(s) <= map_cells(kMaxWorldSize));
+            }
+        }
+    }
+
     TEST_CASE("generation can be cancelled") {
         int calls = 0;
         const auto m = gen(settings(5, MapSize::Small), [&](GenStage stage, int) {

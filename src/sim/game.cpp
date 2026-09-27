@@ -4567,7 +4567,7 @@ bool read_map(BinaryReader& r, MapData& m, const Content& c) {
         return false;
     }
     std::uint32_t n = 0;
-    if (!r.count(4'000'000, 16, n)) {
+    if (!r.count(kMaxMapFeatures, 16, n)) {
         return false;
     }
     m.features.resize(n);
@@ -5005,7 +5005,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         return false;
     }
     std::uint32_t n = 0;
-    if (!r.count(4'000'000, 16, n) || n != g.map_.features.size()) {
+    if (!r.count(kMaxMapFeatures, 16, n) || n != g.map_.features.size()) {
         r.fail();
         return false;
     }
@@ -5015,7 +5015,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             return false;
         }
     }
-    if (!r.count(4'000'000, 12, n)) {
+    if (!r.count(kMaxMapFeatures, 12, n)) {
         return false;
     }
     g.regrow_.resize(n);

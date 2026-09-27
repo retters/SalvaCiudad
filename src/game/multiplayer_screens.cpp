@@ -4,6 +4,7 @@
 #include <charconv>
 #include <cmath>
 
+#include "game/new_game_screen.h"
 #include "i18n/translator.h"
 
 namespace sc {
@@ -196,12 +197,9 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
         ctx.label({c.x, y, c.w, line}, tr("lobby.connecting"), body, ctx.theme().text);
     } else {
         // The map and the world mode.
-        static constexpr const char* kSizeKeys[] = {"newGame.size.small", "newGame.size.medium", "newGame.size.large",
-                                                    "newGame.size.huge"};
-        const auto size = static_cast<std::size_t>(lobby.config.map.size);
         ctx.label({c.x, y, c.w, line},
                   tr("lobby.map", std::to_string(lobby.config.map.seed),
-                     tr(kSizeKeys[std::min<std::size_t>(size, 3)], sim::map_cells(lobby.config.map.size))),
+                     tr(map_size_text_key(lobby.config.map.size), sim::map_cells(lobby.config.map.size))),
                   body, ctx.theme().text_dim);
         y += line;
         if (heavy) {

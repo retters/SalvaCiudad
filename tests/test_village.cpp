@@ -1,11 +1,14 @@
 #include <doctest.h>
 
+#include <array>
 #include <chrono>
 #include <memory>
 #include <optional>
 #include <ostream>
 
 #include "sim/game.h"
+#include "sim/nav.h"
+#include "sim/rng.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
 
@@ -357,5 +360,85 @@ TEST_SUITE("village") {
         run(g, 36000);
         MESSAGE("untended: population " << g.population(0) << ", deaths " << g.player(0).deaths);
         CHECK(g.population(0) < village::kStartVillagers);
+    }
+}
+
+// Phase 21: the walkable areas are labeled by blocks and joined across
+// their edges; they must match a plain flood over the whole grid, after
+// buildings come and go.
+TEST_SUITE("nav") {
+    TEST_CASE("areas by blocks match a flood of the whole grid") {
+        MapSettings s;
+        s.seed = 91;
+        s.size = MapSize::Medium;
+        s.water = Amount::High;
+        s.relief = Relief::Mountainous;
+        std::optional<MapData> m = generate_map(s, *content());
+        REQUIRE(m.has_value());
+        NavGrid nav;
+        nav.build(*m);
+        const std::int32_t side = nav.side();
+        Rng rng(5, 5);
+        const auto check = [&]() {
+            // The reference: every walkable area flooded from scratch.
+            std::vector<std::int32_t> area(static_cast<std::size_t>(side) * static_cast<std::size_t>(side), -1);
+            std::vector<std::int32_t> queue;
+            std::int32_t next = 0;
+            for (std::int32_t start = 0; start < side * side; ++start) {
+                if (area[static_cast<std::size_t>(start)] >= 0 || !nav.walkable(start % side, start / side)) {
+                    continue;
+                }
+                area[static_cast<std::size_t>(start)] = next;
+                queue.assign(1, start);
+                for (std::size_t q = 0; q < queue.size(); ++q) {
+                    const std::int32_t x = queue[q] % side;
+                    const std::int32_t z = queue[q] / side;
+                    for (const auto& [nx, nz] : {std::pair{x + 1, z}, std::pair{x - 1, z}, std::pair{x, z + 1}, std::pair{x, z - 1}}) {
+                        if (nav.walkable(nx, nz) && area[static_cast<std::size_t>(nz * side + nx)] < 0) {
+                            area[static_cast<std::size_t>(nz * side + nx)] = next;
+                            queue.push_back(nz * side + nx);
+                        }
+                    }
+                }
+                ++next;
+            }
+            int mismatches = 0;
+            for (int i = 0; i < 400; ++i) {
+                const std::int32_t ax = rng.range(0, side - 1), az = rng.range(0, side - 1);
+                const std::int32_t bx = rng.range(0, side - 1), bz = rng.range(0, side - 1);
+                const std::int32_t ra = area[static_cast<std::size_t>(az * side + ax)];
+                const std::int32_t rb = area[static_cast<std::size_t>(bz * side + bx)];
+                if (ra < 0 || rb < 0) {
+                    continue;
+                }
+                const bool same = nav.connected(nav.center(ax, az), nav.center(bx, bz));
+                mismatches += same != (ra == rb) ? 1 : 0;
+                // A neighbor of a, often in the same area across a block edge.
+                const std::int32_t cx = std::min(side - 1, ax + 1);
+                const std::int32_t rc = area[static_cast<std::size_t>(az * side + cx)];
+                if (rc >= 0) {
+                    mismatches += nav.connected(nav.center(ax, az), nav.center(cx, az)) != (ra == rc) ? 1 : 0;
+                }
+            }
+            CHECK(mismatches == 0);
+        };
+        check();
+        // Walls of buildings across block edges (every 128 m), then some go.
+        std::vector<std::array<std::int32_t, 4>> placed;
+        for (int i = 0; i < 60; ++i) {
+            const std::int32_t x = rng.range(0, m->size - 200);
+            const std::int32_t z = rng.range(0, m->size - 200);
+            const bool across = (i % 2) == 0;
+            const std::array<std::int32_t, 4> r{x, z, x + (across ? 200 : 4), z + (across ? 4 : 200)};
+            nav.set_building(r[0], r[1], r[2], r[3], true);
+            placed.push_back(r);
+            if (i % 10 == 9) {
+                check();
+            }
+        }
+        for (std::size_t i = 0; i < placed.size(); i += 2) {
+            nav.set_building(placed[i][0], placed[i][1], placed[i][2], placed[i][3], false);
+        }
+        check();
     }
 }

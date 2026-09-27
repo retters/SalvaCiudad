@@ -295,6 +295,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con Ctrl+F3 → Pueblo → "500 aldeanos más" dos veces y F3, el juego sigue fluido a x3 con 1000 aldeanos a la vista.
 - [ ] En la sala multijugador, con población máxima 1000 y siete jugadores o más, aparece el aviso de rendimiento en rojo.
 
+### Fase 21 (mapas más grandes)
+
+- [ ] La partida nueva ofrece Gigante (8192 m) y Colosal (16 384 m); al elegirlos, la ayuda del tamaño avisa del tiempo y la memoria.
+- [ ] Un mapa gigante se genera en cerca de medio minuto y se juega con fluidez; guardar y volver a cargar la partida funciona.
+- [ ] Un mapa colosal se genera en unos dos minutos y se juega (con F3: unos 60 FPS en Ultra); guardar tarda unos segundos.
+- [ ] En un mapa grande, poner casas seguidas no da tirones (antes cada edificio recalculaba las zonas de todo el mapa).
+- [ ] En la sala multijugador con mapas separados, 4 jugadores y tamaño Gigante, cada jugador tiene un mapa gigante.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

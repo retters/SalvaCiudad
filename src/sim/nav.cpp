@@ -9,7 +9,162 @@ namespace {
 
 constexpr std::uint32_t kNoParent = 0xFFFFFFFFu;
 
+std::uint32_t find_root(std::vector<std::uint32_t>& parent, std::uint32_t i) {
+    while (parent[i] != i) {
+        parent[i] = parent[parent[i]];
+        i = parent[i];
+    }
+    return i;
+}
+
 }  // namespace
+
+void NavGrid::Areas::reset(std::int32_t cells_per_side) {
+    side = cells_per_side;
+    blocks = (side + kBlock - 1) / kBlock;
+    const auto b = static_cast<std::size_t>(blocks) * static_cast<std::size_t>(blocks);
+    local.assign(static_cast<std::size_t>(side) * static_cast<std::size_t>(side), 0);
+    count.assign(b, 0);
+    base.assign(b, 0);
+    dirty.assign(b, 1);
+    any_dirty = true;
+    root.clear();
+    right.assign(b, {});
+    down.assign(b, {});
+}
+
+void NavGrid::Areas::mark(std::int32_t cx0, std::int32_t cz0, std::int32_t cx1, std::int32_t cz1) {
+    if (blocks == 0) {
+        return;
+    }
+    for (std::int32_t bz = std::max(0, cz0 / kBlock); bz <= std::min(blocks - 1, cz1 / kBlock); ++bz) {
+        for (std::int32_t bx = std::max(0, cx0 / kBlock); bx <= std::min(blocks - 1, cx1 / kBlock); ++bx) {
+            dirty[static_cast<std::size_t>(bz * blocks + bx)] = 1;
+            any_dirty = true;
+        }
+    }
+}
+
+template <class Open>
+void NavGrid::Areas::update(const Open& open) {
+    if (!any_dirty) {
+        return;
+    }
+    any_dirty = false;
+    const auto cell = [&](std::int32_t x, std::int32_t z) {
+        return static_cast<std::size_t>(z) * static_cast<std::size_t>(side) + static_cast<std::size_t>(x);
+    };
+    // Relabel the changed blocks on their own.
+    for (std::int32_t bz = 0; bz < blocks; ++bz) {
+        for (std::int32_t bx = 0; bx < blocks; ++bx) {
+            const auto b = static_cast<std::size_t>(bz * blocks + bx);
+            if (dirty[b] == 0) {
+                continue;
+            }
+            const std::int32_t x0 = bx * kBlock;
+            const std::int32_t z0 = bz * kBlock;
+            const std::int32_t w = std::min(kBlock, side - x0);
+            const std::int32_t h = std::min(kBlock, side - z0);
+            for (std::int32_t z = z0; z < z0 + h; ++z) {
+                std::fill_n(local.begin() + static_cast<std::ptrdiff_t>(cell(x0, z)), w, std::uint16_t{0});
+            }
+            std::uint16_t next = 0;
+            for (std::int32_t sz = 0; sz < h; ++sz) {
+                for (std::int32_t sx = 0; sx < w; ++sx) {
+                    if (local[cell(x0 + sx, z0 + sz)] != 0 || !open(x0 + sx, z0 + sz)) {
+                        continue;
+                    }
+                    ++next;
+                    local[cell(x0 + sx, z0 + sz)] = next;
+                    stack.assign(1, static_cast<std::uint16_t>(sz * kBlock + sx));
+                    while (!stack.empty()) {
+                        const std::int32_t lx = stack.back() % kBlock;
+                        const std::int32_t lz = stack.back() / kBlock;
+                        stack.pop_back();
+                        constexpr std::int32_t kDx[4] = {1, -1, 0, 0};
+                        constexpr std::int32_t kDz[4] = {0, 0, 1, -1};
+                        for (int k = 0; k < 4; ++k) {
+                            const std::int32_t nx = lx + kDx[k];
+                            const std::int32_t nz = lz + kDz[k];
+                            if (nx < 0 || nz < 0 || nx >= w || nz >= h) {
+                                continue;
+                            }
+                            std::uint16_t& l = local[cell(x0 + nx, z0 + nz)];
+                            if (l == 0 && open(x0 + nx, z0 + nz)) {
+                                l = next;
+                                stack.push_back(static_cast<std::uint16_t>(nz * kBlock + nx));
+                            }
+                        }
+                    }
+                }
+            }
+            count[b] = next;
+        }
+    }
+    // The pairs along the edges of changed blocks.
+    const auto edge = [&](Pairs& out, std::int32_t ax, std::int32_t az, std::int32_t dx, std::int32_t dz, std::int32_t n,
+                          std::int32_t step_x, std::int32_t step_z) {
+        out.clear();
+        for (std::int32_t k = 0; k < n; ++k) {
+            const std::int32_t x = ax + k * step_x;
+            const std::int32_t z = az + k * step_z;
+            const std::uint16_t a = local[cell(x, z)];
+            const std::uint16_t b = local[cell(x + dx, z + dz)];
+            if (a != 0 && b != 0 && (out.empty() || out.back() != std::pair{a, b})) {
+                out.emplace_back(a, b);
+            }
+        }
+    };
+    for (std::int32_t bz = 0; bz < blocks; ++bz) {
+        for (std::int32_t bx = 0; bx < blocks; ++bx) {
+            const auto b = static_cast<std::size_t>(bz * blocks + bx);
+            const std::int32_t x0 = bx * kBlock;
+            const std::int32_t z0 = bz * kBlock;
+            if (bx + 1 < blocks && (dirty[b] != 0 || dirty[b + 1] != 0)) {
+                edge(right[b], x0 + kBlock - 1, z0, 1, 0, std::min(kBlock, side - z0), 0, 1);
+            }
+            if (bz + 1 < blocks && (dirty[b] != 0 || dirty[b + static_cast<std::size_t>(blocks)] != 0)) {
+                edge(down[b], x0, z0 + kBlock - 1, 0, 1, std::min(kBlock, side - x0), 1, 0);
+            }
+        }
+    }
+    std::fill(dirty.begin(), dirty.end(), std::uint8_t{0});
+    // Join the areas that touch across block edges.
+    std::uint32_t total = 0;
+    for (std::size_t b = 0; b < count.size(); ++b) {
+        base[b] = total;
+        total += count[b];
+    }
+    root.resize(total);
+    for (std::uint32_t i = 0; i < total; ++i) {
+        root[i] = i;
+    }
+    const auto join = [&](std::uint32_t a, std::uint32_t b) {
+        const std::uint32_t ra = find_root(root, a);
+        const std::uint32_t rb = find_root(root, b);
+        // The smaller label wins, so the result is the same whatever the order.
+        root[std::max(ra, rb)] = std::min(ra, rb);
+    };
+    for (std::size_t b = 0; b < count.size(); ++b) {
+        for (const auto& [a, n] : right[b]) {
+            join(base[b] + a - 1, base[b + 1] + n - 1);
+        }
+        for (const auto& [a, n] : down[b]) {
+            join(base[b] + a - 1, base[b + static_cast<std::size_t>(blocks)] + n - 1);
+        }
+    }
+    for (std::uint32_t i = 0; i < total; ++i) {
+        root[i] = find_root(root, i);
+    }
+}
+
+std::uint32_t NavGrid::Areas::at(std::int32_t cx, std::int32_t cz) const {
+    const std::uint16_t l = local[static_cast<std::size_t>(cz) * static_cast<std::size_t>(side) + static_cast<std::size_t>(cx)];
+    if (l == 0) {
+        return 0;
+    }
+    return root[base[static_cast<std::size_t>((cz / kBlock) * blocks + cx / kBlock)] + l - 1] + 1;
+}
 
 void NavGrid::build(const MapData& map) {
     side_ = map.size / kCell;
@@ -17,6 +172,8 @@ void NavGrid::build(const MapData& map) {
     terrain_cost_.assign(cells, 10);
     building_.assign(cells, 0);
     gate_.assign(cells, 0);
+    walk_areas_.reset(side_);
+    land_areas_ = Areas{};
     for (std::int32_t cz = 0; cz < side_; ++cz) {
         for (std::int32_t cx = 0; cx < side_; ++cx) {
             const std::int32_t mx = cx * kCell;
@@ -69,6 +226,7 @@ void NavGrid::set_building(std::int32_t x0, std::int32_t z0, std::int32_t x1, st
     const std::int32_t c0z = std::max(0, z0 / kCell);
     const std::int32_t c1x = std::min(side_ - 1, (x1 - 1) / kCell);
     const std::int32_t c1z = std::min(side_ - 1, (z1 - 1) / kCell);
+    walk_areas_.mark(c0x, c0z, c1x, c1z);
     for (std::int32_t cz = c0z; cz <= c1z; ++cz) {
         for (std::int32_t cx = c0x; cx <= c1x; ++cx) {
             std::uint8_t& b = building_[index(cx, cz)];
@@ -111,43 +269,41 @@ bool NavGrid::nearest_walkable(std::int32_t& cx, std::int32_t& cz) const {
 }
 
 void NavGrid::update_regions() const {
-    if (region_version_ == version_ && region_.size() == terrain_cost_.size()) {
-        return;
+    if (walk_areas_.side != side_) {
+        walk_areas_.reset(side_);
     }
-    region_version_ = version_;
-    region_.assign(terrain_cost_.size(), 0);
-    std::uint32_t next = 1;
-    std::vector<std::uint32_t> stack;
-    for (std::size_t start = 0; start < region_.size(); ++start) {
-        const auto sx = static_cast<std::int32_t>(start % static_cast<std::size_t>(side_));
-        const auto sz = static_cast<std::int32_t>(start / static_cast<std::size_t>(side_));
-        if (region_[start] != 0 || !walkable(sx, sz)) {
-            continue;
-        }
-        // Same moves as the search: straight, and diagonal without cutting corners.
-        region_[start] = next;
-        stack.push_back(static_cast<std::uint32_t>(start));
-        while (!stack.empty()) {
-            const std::uint32_t c = stack.back();
-            stack.pop_back();
-            const auto cx = static_cast<std::int32_t>(c % static_cast<std::uint32_t>(side_));
-            const auto cz = static_cast<std::int32_t>(c / static_cast<std::uint32_t>(side_));
-            constexpr std::int32_t kDx[4] = {1, -1, 0, 0};
-            constexpr std::int32_t kDz[4] = {0, 0, 1, -1};
-            for (int k = 0; k < 4; ++k) {
-                const std::int32_t nx = cx + kDx[k];
-                const std::int32_t nz = cz + kDz[k];
-                if (walkable(nx, nz)) {
-                    std::uint32_t& r = region_[index(nx, nz)];
-                    if (r == 0) {
-                        r = next;
-                        stack.push_back(static_cast<std::uint32_t>(index(nx, nz)));
-                    }
+    walk_areas_.update([this](std::int32_t cx, std::int32_t cz) { return walkable(cx, cz); });
+}
+
+bool NavGrid::nearest_ground(std::int32_t& cx, std::int32_t& cz) const {
+    for (std::int32_t r = 0; r <= 6; ++r) {
+        for (std::int32_t dz = -r; dz <= r; ++dz) {
+            for (std::int32_t dx = -r; dx <= r; ++dx) {
+                if (std::max(std::abs(dx), std::abs(dz)) == r && ground(cx + dx, cz + dz)) {
+                    cx += dx;
+                    cz += dz;
+                    return true;
                 }
             }
         }
-        ++next;
     }
+    return false;
+}
+
+bool NavGrid::same_land(FixedVec2 a, FixedVec2 b) const {
+    if (side_ == 0) {
+        return false;
+    }
+    std::int32_t ax = cell_of(a.x), az = cell_of(a.z), bx = cell_of(b.x), bz = cell_of(b.z);
+    if (!nearest_ground(ax, az) || !nearest_ground(bx, bz)) {
+        return false;
+    }
+    // The ground never changes: labeled once.
+    if (land_areas_.side != side_) {
+        land_areas_.reset(side_);
+    }
+    land_areas_.update([this](std::int32_t cx, std::int32_t cz) { return ground(cx, cz); });
+    return land_areas_.at(ax, az) == land_areas_.at(bx, bz);
 }
 
 bool NavGrid::connected(FixedVec2 a, FixedVec2 b) const {
@@ -159,7 +315,7 @@ bool NavGrid::connected(FixedVec2 a, FixedVec2 b) const {
         return false;
     }
     update_regions();
-    return region_[index(ax, az)] == region_[index(bx, bz)];
+    return walk_areas_.at(ax, az) == walk_areas_.at(bx, bz);
 }
 
 void NavGrid::set_gate(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, bool on) {
@@ -213,7 +369,7 @@ bool NavGrid::search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, 
     }
     // Another island, or the other side of a wall: no need to search.
     update_regions();
-    if (!through && region_[index(sx, sz)] != region_[index(tx, tz)]) {
+    if (!through && walk_areas_.at(sx, sz) != walk_areas_.at(tx, tz)) {
         return false;
     }
     if (sx == tx && sz == tz) {

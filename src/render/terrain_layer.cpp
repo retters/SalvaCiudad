@@ -112,7 +112,7 @@ int log2_int(int v) {
 }  // namespace
 
 bool TerrainData::valid() const {
-    if (cells < kTerrainChunk || cells % kTerrainChunk != 0 || cells > 8192) {
+    if (cells < kTerrainChunk || cells % kTerrainChunk != 0 || cells > kMaxTerrainCells) {
         return false;
     }
     const auto n = static_cast<std::size_t>(cells);
@@ -527,8 +527,12 @@ bool TerrainLayer::set(SDL_GPUDevice* device, const TerrainData& data) {
                            SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
     // The faceted ground: one vertex and one index buffer for every chunk.
     const FacetMeshes& f = data.facets;
+    // Each buffer's size in bytes must fit in 32 bits.
+    constexpr std::size_t kMaxBuffer = 0xFFFFFFFFu;
     const bool facets_ok = f.cells == n && f.chunks.size() == chunks_.size() && !f.positions.empty() &&
-                           !f.indices.empty() && f.positions.size() / 3 < 0xFFFFFFFFu && !f.face_colors.empty();
+                           !f.indices.empty() && !f.face_colors.empty() && f.positions.size() * sizeof(float) <= kMaxBuffer &&
+                           f.indices.size() * sizeof(std::uint16_t) <= kMaxBuffer &&
+                           f.face_colors.size() * sizeof(std::uint32_t) <= kMaxBuffer;
     if (facets_ok) {
         facet_vertices_ = upload(f.positions.data(), static_cast<std::uint32_t>(f.positions.size() * sizeof(float)),
                                  SDL_GPU_BUFFERUSAGE_VERTEX);
@@ -548,7 +552,9 @@ bool TerrainLayer::set(SDL_GPUDevice* device, const TerrainData& data) {
     }
     cells_ = n;
     color_size_ = data.color_size;
-    log::info("terrain: {} x {} m in {} chunks", n, n, chunks_.size());
+    log::info("terrain: {} x {} m in {} chunks; facets {} MiB of vertices, {} MiB of indices, {} MiB of colors", n, n,
+              chunks_.size(), f.positions.size() * sizeof(float) >> 20, f.indices.size() * sizeof(std::uint16_t) >> 20,
+              f.face_colors.size() * sizeof(std::uint32_t) >> 20);
     return true;
 }
 

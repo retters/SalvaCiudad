@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "sim/fixed.h"
@@ -71,6 +72,9 @@ public:
     // Whether two points are in the same walkable area (after snapping each
     // to the nearest walkable cell).
     [[nodiscard]] bool connected(FixedVec2 a, FixedVec2 b) const;
+    // Whether two points are on the same land, whatever is built on it:
+    // false across the sea or a lake (islands, phase 22).
+    [[nodiscard]] bool same_land(FixedVec2 a, FixedVec2 b) const;
 
 private:
     [[nodiscard]] std::size_t index(std::int32_t cx, std::int32_t cz) const {
@@ -79,11 +83,38 @@ private:
     bool search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes, bool through);
     // Nearest walkable cell to (cx, cz) within a few cells; false if none.
     bool nearest_walkable(std::int32_t& cx, std::int32_t& cz) const;
-    // Labels connected walkable areas, so a search to a place that cannot
-    // be reached ends at once (rebuilt when buildings change).
+    // Connected areas, labeled inside blocks of 64 x 64 cells and joined
+    // across the blocks' edges, so a change relabels only its blocks (a
+    // colossal map has 67 million cells). Derived, rebuilt lazily.
+    struct Areas {
+        static constexpr std::int32_t kBlock = 64;
+        std::int32_t side = 0;             // Cells per side.
+        std::int32_t blocks = 0;           // Blocks per side.
+        std::vector<std::uint16_t> local;  // Per cell: 0 = closed, else its area inside the block.
+        std::vector<std::uint16_t> count;  // Per block: areas inside it.
+        std::vector<std::uint32_t> base;   // Per block: its first area among all.
+        std::vector<std::uint8_t> dirty;   // Per block.
+        bool any_dirty = false;
+        // Per block: the pairs of areas that touch across its right and
+        // its bottom edge (this block's area, the neighbor's).
+        using Pairs = std::vector<std::pair<std::uint16_t, std::uint16_t>>;
+        std::vector<Pairs> right;
+        std::vector<Pairs> down;
+        std::vector<std::uint32_t> root;   // Per area among all: the area it joins.
+        std::vector<std::uint16_t> stack;
+
+        void reset(std::int32_t cells_per_side);
+        void mark(std::int32_t cx0, std::int32_t cz0, std::int32_t cx1, std::int32_t cz1);
+        template <class Open>
+        void update(const Open& open);
+        // 0 for a closed cell; equal for cells in the same area.
+        [[nodiscard]] std::uint32_t at(std::int32_t cx, std::int32_t cz) const;
+    };
     void update_regions() const;
-    mutable std::vector<std::uint32_t> region_;  // 0 = not walkable; derived, rebuilt lazily.
-    mutable std::uint32_t region_version_ = 0;
+    // Nearest open ground to (cx, cz) within a few cells; false if none.
+    bool nearest_ground(std::int32_t& cx, std::int32_t& cz) const;
+    mutable Areas walk_areas_;   // Walkable cells.
+    mutable Areas land_areas_;   // Ground, ignoring buildings (built on first use).
 
     std::int32_t side_ = 0;
     std::vector<std::uint8_t> terrain_cost_;  // 0 = blocked, else cost of a straight step (10 = normal).
