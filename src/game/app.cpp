@@ -704,6 +704,10 @@ void App::render_frame(float dt) {
                 village_.set_view(camera_.target().x, camera_.target().z, session_->town());
                 village_.update(scene_, map_scene_, session_->game(), static_cast<float>(clock_.interpolation()), dt,
                                 speed);
+                // People placed with the developer tools walk among them.
+                if (crowd_.size() > 0) {
+                    crowd_.update(scene_, dt, village_.characters());
+                }
             } else {
                 crowd_.update(scene_, dt);
             }
@@ -950,6 +954,7 @@ bool App::enter_generated_map() {
     const float size = static_cast<float>(map->size);
     camera_.set_mode(CameraMode::Aerial);
     camera_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
+    crowd_.set_area({}, [map](float x, float z) { return map_surface_height(*map, x, z); });
     camera_.set_bounds(0.0f, 0.0f, size, size);
     // For now the camera can back off until the whole map fits (D-615).
     camera_.set_max_distance_override(size * 1.6f);
@@ -1498,6 +1503,7 @@ bool App::show_map_of(const sim::MapData& source) {
     const float size = static_cast<float>(map->size);
     camera_.set_mode(CameraMode::Aerial);
     camera_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
+    crowd_.set_area({}, [map](float x, float z) { return map_surface_height(*map, x, z); });
     camera_.set_bounds(0.0f, 0.0f, size, size);
     camera_.set_max_distance_override(size * 1.6f);
     camera_.set_yaw(0.6f);

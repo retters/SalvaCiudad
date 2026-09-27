@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -46,8 +47,8 @@ public:
     // Where the next spawn() puts the crowd, and the ground it walks on
     // (flat at 0 if empty).
     void set_area(math::Vec3 center, std::function<float(float, float)> ground);
-    // Moves everyone and hands the result to the renderer.
-    void update(render::SceneRenderer& renderer, float dt);
+    // Moves everyone and hands the result, after `others`, to the renderer.
+    void update(render::SceneRenderer& renderer, float dt, std::span<const render::CharacterInstance> others = {});
 
     [[nodiscard]] bool loaded() const { return loaded_; }
     [[nodiscard]] std::size_t size() const { return villagers_.size(); }

@@ -421,8 +421,8 @@ std::optional<std::size_t> TestCrowd::pick(math::Vec3 origin, math::Vec3 dir) co
     return best;
 }
 
-void TestCrowd::update(render::SceneRenderer& renderer, float dt) {
-    instances_.clear();
+void TestCrowd::update(render::SceneRenderer& renderer, float dt, std::span<const render::CharacterInstance> others) {
+    instances_.assign(others.begin(), others.end());
     for (std::size_t index = 0; index < villagers_.size(); ++index) {
         Villager& v = villagers_[index];
         const BodyKind& kind = kinds_[v.kind];

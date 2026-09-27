@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -35,6 +36,8 @@ public:
     // draw villagers between their last two positions; `speed` is the
     // game speed (0 when paused).
     void update(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game, float alpha, float dt, int speed);
+    // The villagers drawn by the last update().
+    [[nodiscard]] std::span<const render::CharacterInstance> characters() const { return characters_; }
 
     struct Ghost {
         sim::DefIndex def = sim::kNoDef;
