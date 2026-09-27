@@ -74,6 +74,17 @@ bool is_valid_utf8(std::string_view s) {
     return true;
 }
 
+std::uint32_t next_codepoint(std::string_view s, std::size_t& i) {
+    std::uint32_t cp = 0;
+    const std::size_t len = decode_utf8(s, i, cp);
+    if (len == 0) {
+        ++i;
+        return 0xFFFD;
+    }
+    i += len;
+    return cp;
+}
+
 bool is_safe_display_text(std::string_view s, std::size_t max_bytes) {
     if (s.size() > max_bytes) {
         return false;

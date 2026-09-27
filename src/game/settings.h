@@ -11,6 +11,7 @@
 #include <string_view>
 
 #include "core/json.h"
+#include "game/input_actions.h"
 
 namespace sc {
 
@@ -46,10 +47,62 @@ struct AudioSettings {
     bool operator==(const AudioSettings&) const = default;
 };
 
+enum class QualityPreset : std::uint8_t { Low, Medium, High, Ultra, Custom };
+
+[[nodiscard]] const char* quality_preset_to_string(QualityPreset preset);
+[[nodiscard]] std::optional<QualityPreset> quality_preset_from_string(std::string_view s);
+
+// Levels are 0..3. Stored now; applied by the 3D renderer from phase 3.
+struct GraphicsSettings {
+    QualityPreset preset = QualityPreset::High;
+    int shadows = 2;        // Off, low, medium, high.
+    int draw_distance = 2;  // Short, medium, far, very far.
+    int vegetation = 2;     // Low, medium, high, very high.
+    int antialiasing = 1;   // Off, FXAA, MSAA 2x, MSAA 4x.
+
+    // Sets the levels of a preset (does nothing for Custom).
+    void apply_preset(QualityPreset p);
+    // Custom unless the levels match a preset exactly.
+    [[nodiscard]] QualityPreset matching_preset() const;
+
+    bool operator==(const GraphicsSettings&) const = default;
+};
+
+struct InputSettings {
+    KeyBindings bindings;
+    double camera_pan_speed = 1.0;  // Multipliers, 0.25..4.0.
+    double camera_rotate_speed = 1.0;
+    double camera_zoom_speed = 1.0;
+    bool invert_zoom = false;
+    bool edge_scroll = true;
+
+    bool operator==(const InputSettings&) const = default;
+};
+
+struct UiSettings {
+    std::string font = "alegreya-sans";  // Id from data/fonts/fonts.json.
+    bool show_tooltips = true;
+    int tooltip_delay_ms = 500;  // 0..3000.
+
+    bool operator==(const UiSettings&) const = default;
+};
+
+struct GameplaySettings {
+    int autosave_minutes = 10;  // 0 = off; otherwise 1..120.
+    int autosave_keep = 3;      // 1..20.
+    bool tutorial_seen = false;
+
+    bool operator==(const GameplaySettings&) const = default;
+};
+
 struct Settings {
     std::string language = "auto";  // "auto" or a BCP 47 tag.
     DisplaySettings display;
+    GraphicsSettings graphics;
     AudioSettings audio;
+    InputSettings input;
+    UiSettings ui;
+    GameplaySettings gameplay;
 
     bool operator==(const Settings&) const = default;
 };
@@ -66,6 +119,12 @@ inline constexpr int kMinFpsLimit = 30;
 inline constexpr int kMaxFpsLimit = 500;
 inline constexpr double kMinUiScale = 0.75;
 inline constexpr double kMaxUiScale = 2.0;
+inline constexpr double kMinCameraSpeed = 0.25;
+inline constexpr double kMaxCameraSpeed = 4.0;
+inline constexpr int kMaxTooltipDelayMs = 3000;
+inline constexpr int kMaxAutosaveMinutes = 120;
+inline constexpr int kMaxAutosaveKeep = 20;
+inline constexpr std::size_t kMaxFontIdBytes = 64;
 }  // namespace settings_limits
 
 struct SettingsLoadReport {

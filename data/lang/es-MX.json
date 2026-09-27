@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "language": {
+    "code": "es-MX",
+    "name": "Español (México)",
+    "pluralRule": "one",
+    "decimalSeparator": ".",
+    "groupSeparator": ",",
+    "minimumGroupingDigits": 1
+  },
+  "strings": {}
+}

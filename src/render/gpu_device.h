@@ -1,6 +1,7 @@
 // GPU device on top of the SDL3 GPU API (Direct3D 12, Vulkan or Metal).
-// Phase 1 only clears the screen; the 3D renderer builds on this in phase 3.
 #pragma once
+
+#include <cstdint>
 
 #include <SDL3/SDL_gpu.h>
 #include <SDL3/SDL_video.h>
@@ -11,6 +12,16 @@ struct ClearColor {
     float r = 0.0f;
     float g = 0.0f;
     float b = 0.0f;
+};
+
+// One frame in flight: a command buffer and the swapchain texture to draw
+// into. `target` is null while the window has no drawable surface (for
+// example when minimized); the frame must still be ended.
+struct GpuFrame {
+    SDL_GPUCommandBuffer* cmd = nullptr;
+    SDL_GPUTexture* target = nullptr;
+    std::uint32_t width = 0;
+    std::uint32_t height = 0;
 };
 
 class GpuDevice {
@@ -26,11 +37,12 @@ public:
     // With vsync off, uses mailbox or immediate presentation if available.
     bool set_vsync(bool vsync);
 
-    // Records and submits one frame that only clears the swapchain. Does
-    // nothing (and succeeds) while the window has no drawable surface, for
-    // example when it is minimized.
-    bool clear_frame(ClearColor color);
+    bool begin_frame(GpuFrame& frame);
+    bool end_frame(GpuFrame& frame);
 
+    [[nodiscard]] SDL_GPUDevice* device() const { return device_; }
+    [[nodiscard]] SDL_GPUTextureFormat swapchain_format() const;
+    [[nodiscard]] SDL_GPUShaderFormat shader_format() const;
     [[nodiscard]] const char* driver_name() const;
 
 private:

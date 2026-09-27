@@ -76,3 +76,52 @@ Un error al iniciar SDL o al crear la carpeta de datos se escribe en stderr y en
 
 **D-108. Registro con marca de tiempo en UTC.**
 Así los registros de jugadores en distintas zonas horarias se pueden comparar al diagnosticar el multijugador.
+
+## Fase 2: idiomas, texto e interfaz base (2026-09-26)
+
+**D-201. Por ahora, solo DXIL y Direct3D 12.**
+Los sombreadores se escriben en HLSL y se compilan a DXIL con el `dxc.exe` del Windows SDK que ya está instalado, sin dependencias nuevas. Se incrustan en el ejecutable como arreglos de bytes. El dispositivo de GPU pide solo DXIL, así que SDL elige Direct3D 12.
+- Se descartó `SDL_shadercross` por ahora: compilarlo arrastra DXC y SPIRV-Cross completos, que son enormes, cuando lo único que se prueba es Windows.
+- Consecuencias: una PC sin Direct3D 12 no puede jugar (el juego lo dice con un mensaje claro), y en Linux y macOS CMake se detiene con un mensaje que apunta a esta decisión.
+- Cuando se pruebe Linux se agregará SPIR-V (con el `dxc` del SDK de Vulkan) y MSL.
+
+**D-202. Interfaz propia en modo inmediato.**
+Cada cuadro, las pantallas llaman a funciones de widgets que se dibujan y devuelven la interacción. Es lo más simple para menús y configuración, y no guarda estado duplicado. Las ventanas acoplables de la fase 17 se construirán encima, con su propio estado de posición y tamaño.
+
+**D-203. Las teclas se guardan por scancode y se muestran según el teclado.**
+En `settings.json` se guarda el nombre del scancode de SDL (la posición física), así WASD sigue en su lugar con cualquier distribución de teclado. En pantalla se muestra la letra que la distribución actual pone en esa tecla. Las teclas especiales (flechas, Espacio, Intro…) tienen nombre traducido (`key.*`), porque SDL solo da nombres en inglés.
+
+**D-204. Una tecla asignada a otra acción se le quita a la otra.**
+Al asignar una tecla que ya usa otra acción, la otra acción la pierde y se muestra un aviso con el nombre de las dos. Se descartó rechazar la asignación: obliga a buscar y borrar primero la tecla en la otra acción, que es más pesado. Al cargar `settings.json`, un duplicado se desasigna y cuenta como ajuste inválido.
+
+**D-205. Tipografías solo desde la carpeta de datos del juego.**
+stb_truetype no está preparada para archivos de fuente maliciosos. Por eso las fuentes solo se cargan desde `data/fonts/` (instalado con el juego), con rutas validadas dentro de esa carpeta, y los mods no pueden agregar fuentes. Si en el futuro hace falta, se evaluará un cargador endurecido.
+
+**D-206. Atlas de glifos de 2048 × 2048 que se vacía al llenarse.**
+Con el español, el inglés y pocos tamaños de letra, el atlas no se llena. Si se llenara, se vacía y los glifos se vuelven a rasterizar. El texto de ese cuadro puede verse mal durante un solo cuadro. Se registra en el registro.
+
+**D-207. El tamaño de la interfaz es relativo a la escala de la pantalla.**
+La escala final es la del monitor (la de Windows, por ejemplo 150 %) multiplicada por el ajuste del jugador. "Automático" equivale a 100 %, así que el 100 % no aparece dos veces en la lista. El diseño se hace en unidades pensadas para 1080p al 100 %.
+
+**D-208. Formato de números y variante es-MX.**
+- `es.json` sigue la RAE: coma decimal, espacio duro como separador de miles, y sin separar los números de cuatro cifras (`minimumGroupingDigits` 2).
+- `es-MX.json` solo cambia el formato de números (punto decimal y coma de miles) y hereda todos los textos de `es`.
+- Además, `es-MX.json` demuestra que un idioma nuevo puede ser solo una variante.
+
+**D-209. Inglés incrustado como respaldo.**
+`data/lang/en.json` se incrusta en el ejecutable al compilar. Si falta la carpeta de datos, el juego igual muestra textos y puede explicar el error. Si existe, el archivo reemplaza a la copia incrustada. Los idiomas se cargan antes de iniciar SDL, para mostrar en el idioma del jugador incluso los errores fatales.
+
+**D-210. Los ajustes de gráficos y audio se guardan antes de tener efecto.**
+Las pestañas Gráficos y Audio ya guardan sus valores y lo dicen con una nota. Las notas (`settings.graphics.pendingNote` y `settings.audio.pendingNote`) se quitan cuando el render 3D (fase 3) y el sonido (fase 18) los apliquen. La calidad general se deriva siempre de los niveles individuales, así nunca se contradicen.
+
+**D-211. En ventanas pequeñas, la cabecera de Configuración se desplaza.**
+Si el título y las pestañas dejan menos del 45 % del alto para las opciones, se desplazan junto con ellas. Los botones "Restaurar" y "Volver" quedan siempre fijos. Con poco ancho, cada etiqueta va encima de su control. El menú principal limita el logotipo a un tercio del alto y se desplaza si no cabe.
+
+**D-212. Tipografías elegidas: Cinzel (logotipo) y Alegreya Sans (interfaz).**
+El selector de Configuración lista las familias de `data/fonts/fonts.json`, así que agregar otra es un cambio de datos. Ver D-013.
+
+**D-213. Las pruebas automáticas de la interfaz mueven el cursor real.**
+SDL toma la posición del cursor real para los clics, no la del mensaje de Windows. Las pruebas de humo con capturas de pantalla usan `SetCursorPos` y devuelven el cursor a su posición al terminar. Los cambios de modo de pantalla no se prueban en vivo, porque ocuparían la pantalla; se prueban con servicios simulados (`tests/test_menus.cpp`).
+
+**D-214. Las acciones de pausa, velocidades y guardado rápido ya son reasignables.**
+Se pueden reasignar aunque todavía no hacen nada. Pausa y velocidades se aplican desde la fase 8, y el guardado rápido desde la fase 8 o 9. La captura de pantalla (F12) queda pendiente sin fase asignada.

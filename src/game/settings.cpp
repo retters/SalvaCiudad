@@ -1,5 +1,7 @@
 #include "game/settings.h"
 
+#include <array>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -18,6 +20,66 @@ const char* window_mode_to_string(WindowMode mode) {
         case WindowMode::Borderless: return "borderless";
     }
     return "borderless";
+}
+
+const char* quality_preset_to_string(QualityPreset preset) {
+    switch (preset) {
+        case QualityPreset::Low: return "low";
+        case QualityPreset::Medium: return "medium";
+        case QualityPreset::High: return "high";
+        case QualityPreset::Ultra: return "ultra";
+        case QualityPreset::Custom: return "custom";
+    }
+    return "high";
+}
+
+std::optional<QualityPreset> quality_preset_from_string(std::string_view s) {
+    if (s == "low") return QualityPreset::Low;
+    if (s == "medium") return QualityPreset::Medium;
+    if (s == "high") return QualityPreset::High;
+    if (s == "ultra") return QualityPreset::Ultra;
+    if (s == "custom") return QualityPreset::Custom;
+    return std::nullopt;
+}
+
+namespace {
+struct PresetLevels {
+    QualityPreset preset;
+    int shadows;
+    int draw_distance;
+    int vegetation;
+    int antialiasing;
+};
+constexpr PresetLevels kPresets[] = {
+    {QualityPreset::Low, 0, 0, 0, 0},
+    {QualityPreset::Medium, 1, 1, 1, 1},
+    {QualityPreset::High, 2, 2, 2, 1},
+    {QualityPreset::Ultra, 3, 3, 3, 3},
+};
+}  // namespace
+
+void GraphicsSettings::apply_preset(QualityPreset p) {
+    for (const PresetLevels& levels : kPresets) {
+        if (levels.preset == p) {
+            preset = p;
+            shadows = levels.shadows;
+            draw_distance = levels.draw_distance;
+            vegetation = levels.vegetation;
+            antialiasing = levels.antialiasing;
+            return;
+        }
+    }
+    preset = QualityPreset::Custom;
+}
+
+QualityPreset GraphicsSettings::matching_preset() const {
+    for (const PresetLevels& levels : kPresets) {
+        if (levels.shadows == shadows && levels.draw_distance == draw_distance && levels.vegetation == vegetation &&
+            levels.antialiasing == antialiasing) {
+            return levels.preset;
+        }
+    }
+    return QualityPreset::Custom;
 }
 
 std::optional<WindowMode> window_mode_from_string(std::string_view s) {
@@ -140,6 +202,135 @@ void read_audio(Reader& r, yyjson_mut_val* obj, AudioSettings& a) {
     r.read_int(obj, "ui", "audio.ui", 0, 100, a.ui);
 }
 
+void read_double(Reader& r, yyjson_mut_val* obj, const char* key, std::string_view path, double min, double max,
+                 double& out) {
+    r.count(json::get_double(obj, key, min, max, out), path);
+}
+
+void read_graphics(Reader& r, yyjson_mut_val* obj, GraphicsSettings& g) {
+    r.read_int(obj, "shadows", "graphics.shadows", 0, 3, g.shadows);
+    r.read_int(obj, "drawDistance", "graphics.drawDistance", 0, 3, g.draw_distance);
+    r.read_int(obj, "vegetation", "graphics.vegetation", 0, 3, g.vegetation);
+    r.read_int(obj, "antialiasing", "graphics.antialiasing", 0, 3, g.antialiasing);
+    std::string preset;
+    json::Field f = json::get_string(obj, "preset", 16, preset);
+    if (f == json::Field::Ok) {
+        f = quality_preset_from_string(preset) ? json::Field::Ok : json::Field::Invalid;
+    }
+    r.count(f, "graphics.preset");
+    // The levels are what counts; the preset is derived so the two never
+    // disagree.
+    g.preset = g.matching_preset();
+}
+
+bool is_valid_font_id(std::string_view id) {
+    if (id.empty() || id.size() > lim::kMaxFontIdBytes) {
+        return false;
+    }
+    for (const char c : id) {
+        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-')) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void read_bindings(Reader& r, yyjson_mut_val* obj, KeyBindings& bindings) {
+    for (const ActionInfo& info : action_table()) {
+        const std::string key(info.id);
+        yyjson_mut_val* v = yyjson_mut_obj_get(obj, key.c_str());
+        if (v == nullptr) {
+            continue;
+        }
+        const std::string path = "input.bindings." + key;
+        std::array<SDL_Scancode, kKeysPerAction> keys{};
+        bool ok = yyjson_mut_is_arr(v) && yyjson_mut_arr_size(v) <= kKeysPerAction;
+        for (std::size_t slot = 0; ok && slot < yyjson_mut_arr_size(v); ++slot) {
+            yyjson_mut_val* name = yyjson_mut_arr_get(v, slot);
+            ok = yyjson_mut_is_str(name) &&
+                 scancode_from_name(std::string_view(yyjson_mut_get_str(name), yyjson_mut_get_len(name)), keys[slot]);
+        }
+        if (!ok) {
+            r.count(json::Field::Invalid, path);
+            continue;
+        }
+        for (std::size_t slot = 0; slot < kKeysPerAction; ++slot) {
+            bindings.set_key(info.action, slot, keys[slot]);
+        }
+    }
+    // A key may trigger only one action: later duplicates are unbound.
+    for (const ActionInfo& info : action_table()) {
+        for (std::size_t slot = 0; slot < kKeysPerAction; ++slot) {
+            const SDL_Scancode k = bindings.key(info.action, slot);
+            Action first_action{};
+            std::size_t first_slot = 0;
+            if (bindings.find(k, first_action, first_slot) &&
+                (first_action != info.action || first_slot != slot)) {
+                bindings.set_key(info.action, slot, SDL_SCANCODE_UNKNOWN);
+                r.count(json::Field::Invalid, "input.bindings." + std::string(info.id));
+            }
+        }
+    }
+}
+
+void read_input(Reader& r, yyjson_mut_val* obj, InputSettings& in) {
+    yyjson_mut_val* bindings = nullptr;
+    const json::Field fb = json::get_object(obj, "bindings", bindings);
+    r.count(fb, "input.bindings");
+    if (fb == json::Field::Ok) {
+        read_bindings(r, bindings, in.bindings);
+    }
+    read_double(r, obj, "cameraPanSpeed", "input.cameraPanSpeed", lim::kMinCameraSpeed, lim::kMaxCameraSpeed,
+                in.camera_pan_speed);
+    read_double(r, obj, "cameraRotateSpeed", "input.cameraRotateSpeed", lim::kMinCameraSpeed, lim::kMaxCameraSpeed,
+                in.camera_rotate_speed);
+    read_double(r, obj, "cameraZoomSpeed", "input.cameraZoomSpeed", lim::kMinCameraSpeed, lim::kMaxCameraSpeed,
+                in.camera_zoom_speed);
+    r.read_bool(obj, "invertZoom", "input.invertZoom", in.invert_zoom);
+    r.read_bool(obj, "edgeScroll", "input.edgeScroll", in.edge_scroll);
+}
+
+void read_ui(Reader& r, yyjson_mut_val* obj, UiSettings& ui) {
+    std::string font;
+    json::Field f = json::get_string(obj, "font", lim::kMaxFontIdBytes, font);
+    if (f == json::Field::Ok && !is_valid_font_id(font)) {
+        f = json::Field::Invalid;
+    }
+    if (f == json::Field::Ok) {
+        ui.font = font;
+    }
+    r.count(f, "ui.font");
+    r.read_bool(obj, "showTooltips", "ui.showTooltips", ui.show_tooltips);
+    r.read_int(obj, "tooltipDelayMs", "ui.tooltipDelayMs", 0, lim::kMaxTooltipDelayMs, ui.tooltip_delay_ms);
+}
+
+void read_gameplay(Reader& r, yyjson_mut_val* obj, GameplaySettings& g) {
+    r.read_int(obj, "autosaveMinutes", "gameplay.autosaveMinutes", 0, lim::kMaxAutosaveMinutes, g.autosave_minutes);
+    r.read_int(obj, "autosaveKeep", "gameplay.autosaveKeep", 1, lim::kMaxAutosaveKeep, g.autosave_keep);
+    r.read_bool(obj, "tutorialSeen", "gameplay.tutorialSeen", g.tutorial_seen);
+}
+
+bool write_bindings(yyjson_mut_doc* doc, yyjson_mut_val* obj, const KeyBindings& bindings) {
+    for (const ActionInfo& info : action_table()) {
+        yyjson_mut_val* arr = yyjson_mut_arr(doc);
+        if (arr == nullptr) {
+            return false;
+        }
+        for (std::size_t slot = 0; slot < kKeysPerAction; ++slot) {
+            const std::string name = scancode_to_name(bindings.key(info.action, slot));
+            if (!yyjson_mut_arr_add_strncpy(doc, arr, name.data(), name.size())) {
+                return false;
+            }
+        }
+        const std::string key(info.id);
+        yyjson_mut_val* key_val = yyjson_mut_strncpy(doc, key.data(), key.size());
+        if (key_val == nullptr || !yyjson_mut_obj_put(obj, key_val, arr)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     yyjson_mut_val* root = yyjson_mut_doc_get_root(doc);
     bool ok = json::set_int(doc, root, "schemaVersion", lim::kSchemaVersion);
@@ -173,6 +364,36 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_int(doc, a, "ambient", s.audio.ambient);
     ok = ok && json::set_int(doc, a, "music", s.audio.music);
     ok = ok && json::set_int(doc, a, "ui", s.audio.ui);
+
+    yyjson_mut_val* g = json::ensure_object(doc, root, "graphics");
+    ok = ok && g != nullptr;
+    ok = ok && json::set_string(doc, g, "preset", quality_preset_to_string(s.graphics.preset));
+    ok = ok && json::set_int(doc, g, "shadows", s.graphics.shadows);
+    ok = ok && json::set_int(doc, g, "drawDistance", s.graphics.draw_distance);
+    ok = ok && json::set_int(doc, g, "vegetation", s.graphics.vegetation);
+    ok = ok && json::set_int(doc, g, "antialiasing", s.graphics.antialiasing);
+
+    yyjson_mut_val* in = json::ensure_object(doc, root, "input");
+    ok = ok && in != nullptr;
+    yyjson_mut_val* b = ok ? json::ensure_object(doc, in, "bindings") : nullptr;
+    ok = ok && b != nullptr && write_bindings(doc, b, s.input.bindings);
+    ok = ok && json::set_double(doc, in, "cameraPanSpeed", s.input.camera_pan_speed);
+    ok = ok && json::set_double(doc, in, "cameraRotateSpeed", s.input.camera_rotate_speed);
+    ok = ok && json::set_double(doc, in, "cameraZoomSpeed", s.input.camera_zoom_speed);
+    ok = ok && json::set_bool(doc, in, "invertZoom", s.input.invert_zoom);
+    ok = ok && json::set_bool(doc, in, "edgeScroll", s.input.edge_scroll);
+
+    yyjson_mut_val* u = json::ensure_object(doc, root, "ui");
+    ok = ok && u != nullptr;
+    ok = ok && json::set_string(doc, u, "font", s.ui.font);
+    ok = ok && json::set_bool(doc, u, "showTooltips", s.ui.show_tooltips);
+    ok = ok && json::set_int(doc, u, "tooltipDelayMs", s.ui.tooltip_delay_ms);
+
+    yyjson_mut_val* gp = json::ensure_object(doc, root, "gameplay");
+    ok = ok && gp != nullptr;
+    ok = ok && json::set_int(doc, gp, "autosaveMinutes", s.gameplay.autosave_minutes);
+    ok = ok && json::set_int(doc, gp, "autosaveKeep", s.gameplay.autosave_keep);
+    ok = ok && json::set_bool(doc, gp, "tutorialSeen", s.gameplay.tutorial_seen);
     return ok;
 }
 
@@ -253,6 +474,18 @@ SettingsLoadReport SettingsStore::load() {
     }
     if (yyjson_mut_val* a = r.read_section(root, "audio")) {
         read_audio(r, a, settings_.audio);
+    }
+    if (yyjson_mut_val* g = r.read_section(root, "graphics")) {
+        read_graphics(r, g, settings_.graphics);
+    }
+    if (yyjson_mut_val* in = r.read_section(root, "input")) {
+        read_input(r, in, settings_.input);
+    }
+    if (yyjson_mut_val* u = r.read_section(root, "ui")) {
+        read_ui(r, u, settings_.ui);
+    }
+    if (yyjson_mut_val* gp = r.read_section(root, "gameplay")) {
+        read_gameplay(r, gp, settings_.gameplay);
     }
 
     report.ignored_fields = r.ignored;

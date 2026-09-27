@@ -8,9 +8,9 @@ namespace sc {
 
 namespace {
 
-// Every backend's shader format, compiled from HLSL at build time (D-006).
-constexpr SDL_GPUShaderFormat kShaderFormats =
-    SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL;
+// Shader formats built from HLSL at build time. For now only DXIL, so the
+// device is Direct3D 12 (decision D-201).
+constexpr SDL_GPUShaderFormat kShaderFormats = SDL_GPU_SHADERFORMAT_DXIL;
 
 #ifdef NDEBUG
 constexpr bool kDebugDevice = false;
@@ -74,34 +74,40 @@ bool GpuDevice::set_vsync(bool vsync) {
     return true;
 }
 
-bool GpuDevice::clear_frame(ClearColor color) {
-    SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(device_);
-    if (cmd == nullptr) {
+bool GpuDevice::begin_frame(GpuFrame& frame) {
+    frame = GpuFrame{};
+    frame.cmd = SDL_AcquireGPUCommandBuffer(device_);
+    if (frame.cmd == nullptr) {
         log::error("gpu: SDL_AcquireGPUCommandBuffer failed: {}", SDL_GetError());
         return false;
     }
-    SDL_GPUTexture* swapchain = nullptr;
-    if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmd, window_, &swapchain, nullptr, nullptr)) {
+    if (!SDL_WaitAndAcquireGPUSwapchainTexture(frame.cmd, window_, &frame.target, &frame.width, &frame.height)) {
         log::error("gpu: SDL_WaitAndAcquireGPUSwapchainTexture failed: {}", SDL_GetError());
-        (void)SDL_CancelGPUCommandBuffer(cmd);
-        return false;
-    }
-    if (swapchain != nullptr) {
-        SDL_GPUColorTargetInfo target{};
-        target.texture = swapchain;
-        target.clear_color = SDL_FColor{color.r, color.g, color.b, 1.0f};
-        target.load_op = SDL_GPU_LOADOP_CLEAR;
-        target.store_op = SDL_GPU_STOREOP_STORE;
-        SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(cmd, &target, 1, nullptr);
-        if (pass != nullptr) {
-            SDL_EndGPURenderPass(pass);
-        }
-    }
-    if (!SDL_SubmitGPUCommandBuffer(cmd)) {
-        log::error("gpu: SDL_SubmitGPUCommandBuffer failed: {}", SDL_GetError());
+        (void)SDL_CancelGPUCommandBuffer(frame.cmd);
+        frame = GpuFrame{};
         return false;
     }
     return true;
+}
+
+bool GpuDevice::end_frame(GpuFrame& frame) {
+    if (frame.cmd == nullptr) {
+        return false;
+    }
+    const bool ok = SDL_SubmitGPUCommandBuffer(frame.cmd);
+    if (!ok) {
+        log::error("gpu: SDL_SubmitGPUCommandBuffer failed: {}", SDL_GetError());
+    }
+    frame = GpuFrame{};
+    return ok;
+}
+
+SDL_GPUTextureFormat GpuDevice::swapchain_format() const {
+    return SDL_GetGPUSwapchainTextureFormat(device_, window_);
+}
+
+SDL_GPUShaderFormat GpuDevice::shader_format() const {
+    return device_ != nullptr ? SDL_GetGPUShaderFormats(device_) : SDL_GPU_SHADERFORMAT_INVALID;
 }
 
 const char* GpuDevice::driver_name() const {

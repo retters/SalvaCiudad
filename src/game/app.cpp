@@ -1,31 +1,71 @@
 #include "game/app.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
+#include <string_view>
 
+#include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_keyboard.h>
+#include <SDL3/SDL_locale.h>
+#include <SDL3/SDL_messagebox.h>
+#include <SDL3/SDL_misc.h>
 #include <SDL3/SDL_platform.h>
 #include <SDL3/SDL_timer.h>
 
 #include "core/log.h"
 #include "core/text.h"
+#include "embedded/lang_en.h"
+#include "i18n/translator.h"
 #include "version.h"
 
 namespace sc {
 
+using i18n::tr;
+
 namespace {
 
-// Settings changes (window moved, mode switched) are saved in groups, a
-// little after the last change, and always on exit.
+// Settings changes are saved in groups, a little after the last change, and
+// always on exit.
 constexpr std::uint64_t kSettingsSaveDelayNs = 2'000'000'000;
 
 // While minimized, wake up this often to keep the simulation ticking.
 constexpr std::int32_t kMinimizedWaitMs = 50;
 
-// Placeholder sky color until the 3D renderer exists (phase 3).
-constexpr ClearColor kClearColor{0.36f, 0.52f, 0.66f};
+constexpr int kAtlasSize = 2048;
+
+std::string_view builtin_base_language() {
+    return {reinterpret_cast<const char*>(kLangEn), kLangEn_size};
+}
+
+// The user's preferred interface languages, for example {"es-MX", "en"}.
+std::vector<std::string> preferred_languages() {
+    std::vector<std::string> out;
+    int count = 0;
+    SDL_Locale** locales = SDL_GetPreferredLocales(&count);
+    for (int i = 0; locales != nullptr && i < count; ++i) {
+        if (locales[i] == nullptr || locales[i]->language == nullptr) {
+            continue;
+        }
+        std::string code = locales[i]->language;
+        if (locales[i]->country != nullptr && locales[i]->country[0] != '\0') {
+            code += '-';
+            code += locales[i]->country;
+        }
+        if (text::is_valid_language_setting(code)) {
+            out.push_back(code);
+        }
+    }
+    SDL_free(locales);
+    return out;
+}
 
 }  // namespace
+
+App::App() : text_(atlas_), ui_(text_) {}
+
+App::~App() = default;
 
 int App::run() {
     if (!init()) {
@@ -40,19 +80,41 @@ int App::run() {
     return 0;
 }
 
+void App::load_languages() {
+    const char* base = SDL_GetBasePath();
+    const std::filesystem::path lang_dir =
+        base != nullptr ? text::path_from_utf8(base) / "data" / "lang" : std::filesystem::path{};
+    const int skipped = i18n::translator().load(lang_dir, builtin_base_language());
+    if (skipped > 0) {
+        log::warn("i18n: {} language file(s) skipped", skipped);
+    }
+}
+
+void App::fatal_error(const char* text_key) {
+    const std::string title = tr("error.fatal.title");
+    const std::string body = tr(text_key);
+    log::error("fatal: {}", text_key);
+    if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title.c_str(), body.c_str(), window_.sdl())) {
+        std::fprintf(stderr, "%s\n", body.c_str());
+    }
+}
+
 bool App::init() {
     (void)SDL_SetAppMetadata("SalvaCiudad", SC_VERSION_STRING, "io.github.salva.salvaciudad");
+    // Texts first, so even early errors can be shown in the player's language.
+    load_languages();
+    (void)i18n::translator().set_language(i18n::translator().resolve("auto", preferred_languages()));
+
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
-        // No log folder yet. Fatal error dialogs arrive with the language
-        // files in phase 2.
         std::fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
+        fatal_error("error.fatal.sdl");
         return false;
     }
     sdl_ready_ = true;
 
     paths_ = resolve_data_paths();
     if (!paths_) {
-        std::fprintf(stderr, "Cannot create the user data folder: %s\n", SDL_GetError());
+        fatal_error("error.fatal.dataFolder");
         return false;
     }
 
@@ -66,25 +128,41 @@ bool App::init() {
     }
     log::info("SalvaCiudad {} starting on {}", SC_VERSION_STRING, SDL_GetPlatform());
     log::info("data: {} mode", paths_->portable ? "portable" : "per-user");
+    // Log the language files now that the log is open.
+    load_languages();
 
     settings_.emplace(paths_->settings_file());
     const SettingsLoadReport report = settings_->load();
-    // The report is shown to the player from phase 2 on (it needs the
-    // language files); for now it goes to the log only.
-    if (report.quarantined || report.read_only || report.ignored_fields > 0) {
-        log::warn("settings: quarantined={} read_only={} ignored={}", report.quarantined, report.read_only,
-                  report.ignored_fields);
+    apply_language();
+
+    if (!fonts_.load(paths_->game_data_dir() / "fonts")) {
+        fatal_error("error.fatal.fonts");
+        return false;
     }
+    apply_font();
 
     const DisplaySettings& display = settings_->settings().display;
     if (display.mode != WindowMode::Windowed) {
         last_fullscreen_mode_ = display.mode;
     }
-    if (!window_.create("SalvaCiudad", display)) {
+    if (!window_.create(tr("app.name").c_str(), display)) {
+        fatal_error("error.fatal.window");
         return false;
     }
-    if (!gpu_.create(window_.sdl(), display.vsync)) {
+    if (!gpu_.create(window_.sdl(), display.vsync) || !ui_renderer_.create(gpu_, kAtlasSize)) {
+        fatal_error("error.fatal.gpu");
         return false;
+    }
+
+    host_ = std::make_unique<UiHost>(*this);
+    if (report.quarantined) {
+        host_->add_notice(tr("notice.settings.quarantined", text::path_to_utf8(report.quarantine_path.filename())));
+    }
+    if (report.read_only) {
+        host_->add_notice(tr("notice.settings.readOnly"));
+    }
+    if (report.ignored_fields > 0) {
+        host_->add_notice(i18n::tr_n("notice.settings.ignored", report.ignored_fields));
     }
     return true;
 }
@@ -93,6 +171,8 @@ void App::shutdown() {
     if (settings_) {
         save_settings_if_due(true);
     }
+    host_.reset();
+    ui_renderer_.destroy();
     gpu_.destroy();
     window_.destroy();
     if (sdl_ready_) {
@@ -103,56 +183,161 @@ void App::shutdown() {
     log::close();
 }
 
+// --- Services ------------------------------------------------------------
+
+void App::settings_changed() {
+    if (settings_dirty_since_ns_ == 0) {
+        settings_dirty_since_ns_ = SDL_GetTicksNS();
+    }
+}
+
+bool App::apply_display(const DisplaySettings& display) {
+    if (window_.apply(display)) {
+        if (display.mode != WindowMode::Windowed) {
+            last_fullscreen_mode_ = display.mode;
+        }
+        return true;
+    }
+    (void)window_.apply(settings_->settings().display);
+    return false;
+}
+
+void App::apply_vsync() {
+    (void)gpu_.set_vsync(settings_->settings().display.vsync);
+}
+
+void App::apply_language() {
+    auto& t = i18n::translator();
+    (void)t.set_language(t.resolve(settings_->settings().language, preferred_languages()));
+    if (window_.sdl() != nullptr) {
+        (void)SDL_SetWindowTitle(window_.sdl(), tr("app.name").c_str());
+    }
+}
+
+void App::apply_font() {
+    const ui::FontFamily* family = fonts_.ui_family(settings_->settings().ui.font);
+    const ui::Font* regular = family != nullptr ? family->regular.get() : nullptr;
+    const ui::Font* bold = family != nullptr && family->bold ? family->bold.get() : regular;
+    text_.set_font(ui::FontRole::Regular, regular);
+    text_.set_font(ui::FontRole::Bold, bold);
+    text_.set_font(ui::FontRole::Logo, fonts_.logo());
+}
+
+std::vector<std::string> App::monitor_names() {
+    std::vector<std::string> names;
+    int count = 0;
+    SDL_DisplayID* displays = SDL_GetDisplays(&count);
+    for (int i = 0; displays != nullptr && i < count; ++i) {
+        const char* name = SDL_GetDisplayName(displays[i]);
+        if (name != nullptr && text::is_safe_display_text(name, settings_limits::kMaxMonitorNameBytes)) {
+            names.emplace_back(name);
+        }
+    }
+    SDL_free(displays);
+    return names;
+}
+
+std::vector<Resolution> App::fullscreen_resolutions(const std::string& monitor) {
+    std::vector<Resolution> list;
+    int count = 0;
+    SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(find_display(monitor), &count);
+    for (int i = 0; modes != nullptr && i < count; ++i) {
+        const Resolution r{modes[i]->w, modes[i]->h};
+        if (r.width >= settings_limits::kMinWindowSize && std::find(list.begin(), list.end(), r) == list.end()) {
+            list.push_back(r);
+        }
+    }
+    SDL_free(modes);
+    std::sort(list.begin(), list.end(), [](const Resolution& a, const Resolution& b) {
+        return a.width != b.width ? a.width > b.width : a.height > b.height;
+    });
+    return list;
+}
+
+void App::open_data_folder() {
+    std::string url = "file:///" + text::path_to_utf8(paths_->user_dir);
+    std::replace(url.begin(), url.end(), '\\', '/');
+    if (!SDL_OpenURL(url.c_str())) {
+        log::warn("could not open the data folder: {}", SDL_GetError());
+    }
+}
+
+// --- Loop ----------------------------------------------------------------
+
+float App::ui_scale() const {
+    float dpi = SDL_GetWindowDisplayScale(window_.sdl());
+    if (!(dpi > 0.0f)) {
+        dpi = 1.0f;
+    }
+    const double factor = settings_->settings().display.ui_scale;
+    return dpi * static_cast<float>(factor > 0.0 ? factor : 1.0);
+}
+
+void App::cycle_window_mode() {
+    DisplaySettings d = settings_->settings().display;
+    d.mode = window_.mode() == WindowMode::Windowed     ? WindowMode::Borderless
+             : window_.mode() == WindowMode::Borderless ? WindowMode::Fullscreen
+                                                        : WindowMode::Windowed;
+    if (apply_display(d)) {
+        settings_->settings().display.mode = d.mode;
+        settings_changed();
+    }
+}
+
 void App::handle_event(const SDL_Event& event) {
+    const float density = window_.sdl() != nullptr ? SDL_GetWindowPixelDensity(window_.sdl()) : 1.0f;
     switch (event.type) {
         case SDL_EVENT_QUIT:
             running_ = false;
             return;
-        case SDL_EVENT_KEY_DOWN:
-            if (event.key.repeat) {
-                return;
-            }
-            // Temporary shortcuts until the input bindings arrive in phase 2.
-            if (event.key.key == SDLK_F11) {
-                // Cycle: windowed -> borderless -> fullscreen -> windowed.
-                const WindowMode next = window_.mode() == WindowMode::Windowed     ? WindowMode::Borderless
-                                        : window_.mode() == WindowMode::Borderless ? WindowMode::Fullscreen
-                                                                                   : WindowMode::Windowed;
-                set_window_mode(next);
-            } else if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT) != 0) {
-                set_window_mode(window_.mode() == WindowMode::Windowed ? last_fullscreen_mode_
-                                                                       : WindowMode::Windowed);
+        case SDL_EVENT_MOUSE_MOTION:
+            input_.mouse_x = event.motion.x * density;
+            input_.mouse_y = event.motion.y * density;
+            return;
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                input_.mouse_down = true;
+                input_.mouse_pressed = true;
             }
             return;
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                input_.mouse_down = false;
+                input_.mouse_released = true;
+            }
+            return;
+        case SDL_EVENT_MOUSE_WHEEL:
+            input_.wheel += event.wheel.y;
+            return;
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+            input_.mouse_x = -1.0f;
+            input_.mouse_y = -1.0f;
+            return;
+        case SDL_EVENT_KEY_DOWN: {
+            input_.keys.push_back(event.key.scancode);
+            if (event.key.repeat || (host_ && host_->wants_keyboard())) {
+                return;
+            }
+            // Alt+Enter is a fixed system-style shortcut, not rebindable.
+            if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT) != 0) {
+                DisplaySettings d = settings_->settings().display;
+                d.mode = window_.mode() == WindowMode::Windowed ? last_fullscreen_mode_ : WindowMode::Windowed;
+                if (apply_display(d)) {
+                    settings_->settings().display.mode = d.mode;
+                    settings_changed();
+                }
+            } else if (settings_->settings().input.bindings.matches(Action::UiToggleFullscreen, event.key.scancode)) {
+                cycle_window_mode();
+            }
+            return;
+        }
         default:
             break;
     }
     if (event.type >= SDL_EVENT_WINDOW_FIRST && event.type <= SDL_EVENT_WINDOW_LAST) {
         if (window_.track_event(event, settings_->settings().display)) {
-            mark_settings_dirty();
+            settings_changed();
         }
-    }
-}
-
-void App::set_window_mode(WindowMode mode) {
-    DisplaySettings& display = settings_->settings().display;
-    DisplaySettings wanted = display;
-    wanted.mode = mode;
-    if (!window_.apply(wanted)) {
-        // Put back whatever mode was working.
-        (void)window_.apply(display);
-        return;
-    }
-    display.mode = mode;
-    if (mode != WindowMode::Windowed) {
-        last_fullscreen_mode_ = mode;
-    }
-    mark_settings_dirty();
-}
-
-void App::mark_settings_dirty() {
-    if (settings_dirty_since_ns_ == 0) {
-        settings_dirty_since_ns_ = SDL_GetTicksNS();
     }
 }
 
@@ -167,7 +352,43 @@ void App::save_settings_if_due(bool force) {
     (void)settings_->save();
 }
 
+void App::render_ui() {
+    GpuFrame frame;
+    if (!gpu_.begin_frame(frame)) {
+        return;
+    }
+    if (frame.target != nullptr) {
+        const Settings& s = settings_->settings();
+        ui_.set_tooltips(s.ui.show_tooltips, s.ui.tooltip_delay_ms);
+        ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
+                        SDL_GetTicksNS(), atlas_.white_u(), atlas_.white_v());
+        host_->frame(ui_);
+        ui_.end_frame();
+
+        if (ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_)) {
+            SDL_GPUColorTargetInfo target{};
+            target.texture = frame.target;
+            const ui::Color bg = ui_.theme().background;
+            target.clear_color = SDL_FColor{static_cast<float>(bg.r) / 255.0f, static_cast<float>(bg.g) / 255.0f,
+                                            static_cast<float>(bg.b) / 255.0f, 1.0f};
+            target.load_op = SDL_GPU_LOADOP_CLEAR;
+            target.store_op = SDL_GPU_STOREOP_STORE;
+            SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(frame.cmd, &target, 1, nullptr);
+            if (pass != nullptr) {
+                ui_renderer_.draw(frame.cmd, pass, ui_.draw());
+                SDL_EndGPURenderPass(pass);
+            }
+        }
+    }
+    (void)gpu_.end_frame(frame);
+}
+
 void App::frame() {
+    input_.mouse_pressed = false;
+    input_.mouse_released = false;
+    input_.wheel = 0.0f;
+    input_.keys.clear();
+
     SDL_Event event;
     if (window_.minimized()) {
         if (SDL_WaitEventTimeout(&event, kMinimizedWaitMs)) {
@@ -188,7 +409,7 @@ void App::frame() {
     }
 
     if (!window_.minimized()) {
-        (void)gpu_.clear_frame(kClearColor);
+        render_ui();
     }
     save_settings_if_due(false);
 

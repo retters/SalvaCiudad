@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "fonts": [
+    {
+      "id": "alegreya-sans",
+      "name": "Alegreya Sans",
+      "role": "ui",
+      "regular": "ui/AlegreyaSans-Regular.ttf",
+      "bold": "ui/AlegreyaSans-Bold.ttf"
+    },
+    {
+      "id": "cinzel",
+      "name": "Cinzel",
+      "role": "logo",
+      "regular": "logo/Cinzel.ttf"
+    }
+  ]
+}

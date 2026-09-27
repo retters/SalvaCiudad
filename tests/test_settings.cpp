@@ -204,3 +204,73 @@ TEST_SUITE("settings") {
         CHECK_FALSE(again.settings().display.window_x.has_value());
     }
 }
+
+TEST_SUITE("settings") {
+    TEST_CASE("graphics, input, interface and gameplay round trip") {
+        test::TempDir dir;
+        SettingsStore store(dir / "settings.json");
+        (void)store.load();
+        Settings& s = store.settings();
+        s.graphics.apply_preset(QualityPreset::Ultra);
+        s.graphics.vegetation = 1;
+        s.graphics.preset = s.graphics.matching_preset();
+        CHECK(s.graphics.preset == QualityPreset::Custom);
+        s.input.bindings.set_key(Action::CameraForward, 0, SDL_SCANCODE_I);
+        s.input.bindings.set_key(Action::CameraForward, 1, SDL_SCANCODE_UNKNOWN);
+        s.input.camera_pan_speed = 2.5;
+        s.input.invert_zoom = true;
+        s.ui.font = "some-font";
+        s.ui.tooltip_delay_ms = 1200;
+        s.gameplay.autosave_minutes = 30;
+        s.gameplay.tutorial_seen = true;
+        const Settings expected = s;
+        REQUIRE(store.save());
+        SettingsStore again(dir / "settings.json");
+        CHECK(again.load().ignored_fields == 0);
+        CHECK(again.settings() == expected);
+    }
+
+    TEST_CASE("presets and levels stay consistent") {
+        GraphicsSettings g;
+        g.apply_preset(QualityPreset::Low);
+        CHECK(g.shadows == 0);
+        CHECK(g.matching_preset() == QualityPreset::Low);
+        g.antialiasing = 3;
+        CHECK(g.matching_preset() == QualityPreset::Custom);
+
+        test::TempDir dir;
+        Settings s;
+        // The stored preset is derived from the levels, never trusted.
+        const auto r = load_text(dir, R"({"schemaVersion": 1, "graphics": {"preset": "ultra", "shadows": 0,
+            "drawDistance": 0, "vegetation": 0, "antialiasing": 0}})", s);
+        CHECK(r.ignored_fields == 0);
+        CHECK(s.graphics.preset == QualityPreset::Low);
+    }
+
+    TEST_CASE("invalid and duplicate key bindings are rejected") {
+        test::TempDir dir;
+        Settings s;
+        const auto r = load_text(dir, R"({"schemaVersion": 1, "input": {"bindings": {
+            "camera.forward": ["NotAKey", ""],
+            "camera.back": "S",
+            "camera.left": ["A", "B", "C"],
+            "game.pause": ["W", ""],
+            "unknown.action": ["X"]},
+            "cameraZoomSpeed": 9}})", s);
+        // forward, back, left invalid; pause takes W from forward's default (duplicate); zoom speed out of range.
+        CHECK(r.ignored_fields == 5);
+        CHECK(s.input.bindings.matches(Action::CameraForward, SDL_SCANCODE_W));
+        CHECK_FALSE(s.input.bindings.matches(Action::GamePause, SDL_SCANCODE_W));
+        CHECK(s.input.camera_zoom_speed == 1.0);
+    }
+
+    TEST_CASE("interface and gameplay fields are validated") {
+        test::TempDir dir;
+        Settings s;
+        const auto r = load_text(dir, R"({"schemaVersion": 1,
+            "ui": {"font": "../evil", "showTooltips": 1, "tooltipDelayMs": 99999},
+            "gameplay": {"autosaveMinutes": -5, "autosaveKeep": 0, "tutorialSeen": "no"}})", s);
+        CHECK(r.ignored_fields == 6);
+        CHECK(s == Settings{});
+    }
+}

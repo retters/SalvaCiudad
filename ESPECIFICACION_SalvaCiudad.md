@@ -350,7 +350,7 @@ Todos definidos como datos en `core` y con reglas en C++ o Lua:
 
 ### 7.11 Render
 
-- API de GPU de SDL3 (Direct3D 12 o Vulkan en Windows, Vulkan en Linux, Metal en macOS). Sombreadores en HLSL, compilados al construir con `shadercross` a los tres formatos.
+- API de GPU de SDL3 (Direct3D 12 o Vulkan en Windows, Vulkan en Linux, Metal en macOS). Sombreadores en HLSL, compilados al construir. Por ahora solo a DXIL (Direct3D 12) con el `dxc` del Windows SDK; SPIR-V y MSL llegarán con las pruebas en Linux y macOS (D-201).
 - **Terreno** por regiones con LOD, texturas de suelo que se mezclan (pasto, tierra, arena, roca, nieve, campo arado), deformación estacional (nieve, pasto seco) y surcos en los campos.
 - **Agua** para ríos y lagos, con orillas, flujo y congelación en invierno.
 - **Vegetación e instancias:** todo lo que se repite (árboles, rocas, cultivos, casas, aldeanos) se dibuja por instancias, con LOD y selección por región.

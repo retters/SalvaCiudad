@@ -105,8 +105,63 @@ target_include_directories(yyjson SYSTEM PUBLIC third_party/yyjson)
 # Only the parts we use: no incremental reader, no utilities.
 target_compile_definitions(yyjson PUBLIC YYJSON_DISABLE_INCR_READER=1 YYJSON_DISABLE_UTILS=1)
 
+add_library(stb_truetype STATIC third_party/stb/stb_truetype.c)
+target_include_directories(stb_truetype SYSTEM PUBLIC third_party/stb)
+
 add_library(doctest INTERFACE)
 target_include_directories(doctest SYSTEM INTERFACE third_party/doctest)
+
+# ---------------------------------------------------------------------------
+# Shaders: HLSL compiled to DXIL with the DirectX Shader Compiler from the
+# Windows SDK, then embedded as byte arrays (decision D-201). SPIR-V and MSL
+# for Linux and macOS come later.
+# ---------------------------------------------------------------------------
+if(WIN32)
+    set(SC_SDK_BIN_HINTS)
+    if(DEFINED ENV{WindowsSdkVerBinPath})
+        list(APPEND SC_SDK_BIN_HINTS "$ENV{WindowsSdkVerBinPath}/x64")
+    endif()
+    find_program(SC_DXC dxc HINTS ${SC_SDK_BIN_HINTS} REQUIRED)
+else()
+    message(FATAL_ERROR "Shader compilation for this platform is not set up yet (see docs/DECISIONES.md, D-201).")
+endif()
+message(STATUS "Shader compiler: ${SC_DXC}")
+
+set(SC_SHADER_OUT "${SC_GENERATED_DIR}/shaders")
+set(SC_SHADER_HEADERS)
+function(sc_add_shader source profile symbol)
+    get_filename_component(name "${source}" NAME_WE)
+    get_filename_component(stage_ext "${source}" EXT)
+    string(REPLACE ".hlsl" "" stage_ext "${stage_ext}")
+    string(REPLACE "." "_" stage_ext "${stage_ext}")
+    set(dxil "${SC_SHADER_OUT}/${name}${stage_ext}.dxil")
+    set(header "${SC_SHADER_OUT}/${name}${stage_ext}_dxil.h")
+    add_custom_command(
+        OUTPUT "${header}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SC_SHADER_OUT}"
+        COMMAND "${SC_DXC}" -nologo -T ${profile} -E main -WX -O3 -Fo "${dxil}" "${CMAKE_CURRENT_SOURCE_DIR}/${source}"
+        COMMAND ${CMAKE_COMMAND} -DINPUT=${dxil} -DOUTPUT=${header} -DSYMBOL=${symbol}
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
+        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
+        COMMENT "Compiling shader ${source}"
+        VERBATIM)
+    set(SC_SHADER_HEADERS ${SC_SHADER_HEADERS} "${header}" PARENT_SCOPE)
+endfunction()
+sc_add_shader(shaders/ui.vert.hlsl vs_6_0 kUiVertDxil)
+sc_add_shader(shaders/ui.frag.hlsl ps_6_0 kUiFragDxil)
+
+# The base language is built in, so the game shows text even if data/lang
+# is missing.
+set(SC_LANG_EN_HEADER "${SC_GENERATED_DIR}/embedded/lang_en.h")
+add_custom_command(
+    OUTPUT "${SC_LANG_EN_HEADER}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${SC_GENERATED_DIR}/embedded"
+    COMMAND ${CMAKE_COMMAND} -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/data/lang/en.json -DOUTPUT=${SC_LANG_EN_HEADER}
+            -DSYMBOL=kLangEn -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/lang/en.json" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
+    COMMENT "Embedding the base language"
+    VERBATIM)
+add_custom_target(sc_generated DEPENDS ${SC_SHADER_HEADERS} "${SC_LANG_EN_HEADER}")
 
 # ---------------------------------------------------------------------------
 # Engine library: everything except the program entry point, so the tests can
@@ -119,14 +174,28 @@ set(SC_ENGINE_SOURCES
     src/core/text.cpp
     src/game/app.cpp
     src/game/game_clock.cpp
+    src/game/input_actions.cpp
     src/game/settings.cpp
+    src/game/settings_screen.cpp
+    src/game/ui_host.cpp
+    src/i18n/catalog.cpp
+    src/i18n/plural.cpp
+    src/i18n/translator.cpp
     src/platform/paths.cpp
     src/platform/window.cpp
-    src/render/gpu_device.cpp)
+    src/render/gpu_device.cpp
+    src/render/ui_renderer.cpp
+    src/ui/context.cpp
+    src/ui/draw_list.cpp
+    src/ui/font.cpp
+    src/ui/font_library.cpp
+    src/ui/glyph_atlas.cpp
+    src/ui/text.cpp)
 
 add_library(sc_engine STATIC ${SC_ENGINE_SOURCES})
 target_include_directories(sc_engine PUBLIC src "${SC_GENERATED_DIR}")
-target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson)
+target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype)
+add_dependencies(sc_engine sc_generated)
 sc_harden_target(sc_engine)
 
 # ---------------------------------------------------------------------------
@@ -158,13 +227,18 @@ if(SC_BUILD_TESTS)
         tests/test_log.cpp
         tests/test_paths.cpp
         tests/test_settings.cpp
-        tests/test_text.cpp)
+        tests/test_text.cpp
+        tests/test_i18n.cpp
+        tests/test_input_actions.cpp
+        tests/test_menus.cpp
+        tests/test_ui.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
-        SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+        SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+        SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)
