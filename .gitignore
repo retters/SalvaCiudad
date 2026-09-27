@@ -12,3 +12,7 @@ CMakeUserPresets.json
 *.obj
 *.pdb
 *.ilk
+
+# Python caches (Blender and tool scripts)
+__pycache__/
+*.pyc
