@@ -441,4 +441,25 @@ TEST_SUITE("nav") {
         }
         check();
     }
+
+    TEST_CASE("islands are different land") {
+        MapSettings s;
+        s.seed = 12;
+        s.size = MapSize::Medium;
+        s.players = 2;
+        s.islands = 2;
+        s.map_type = static_cast<std::uint8_t>(content()->flora.find_map_type("core:islands"));
+        std::optional<MapData> m = generate_map(s, *content());
+        REQUIRE(m.has_value());
+        REQUIRE(m->starts.size() == 2);
+        NavGrid nav;
+        nav.build(*m);
+        const FixedVec2 a{m->starts[0].x, m->starts[0].z};
+        const FixedVec2 b{m->starts[1].x, m->starts[1].z};
+        CHECK_FALSE(nav.same_land(a, b));
+        CHECK(nav.same_land(a, {a.x + Fixed::from_int(10), a.z}));
+        // Buildings do not cut the land in two.
+        nav.set_building(a.x.floor_int() - 20, a.z.floor_int() - 1, a.x.floor_int() + 20, a.z.floor_int() + 1, true);
+        CHECK(nav.same_land({a.x, a.z - Fixed::from_int(6)}, {a.x, a.z + Fixed::from_int(6)}));
+    }
 }

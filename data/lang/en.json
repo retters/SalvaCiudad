@@ -277,6 +277,13 @@
     "newGame.relief.low": "Flat",
     "newGame.relief.gentle": "Gentle hills",
     "newGame.relief.mountainous": "Mountainous",
+    "newGame.islands": "Islands per town",
+    "newGame.islands.tooltip": "How many islands there are for each town: with 2 towns and 3 islands per town, the map has 6 islands. Fewer fit on small maps or with many towns.",
+    "newGame.islands.disabledTooltip": "Only for the Islands map type.",
+    "newGame.islands.value": {
+      "one": "{1} per town ({0} island)",
+      "other": "{1} per town ({0} islands)"
+    },
     "newGame.players": "Start positions",
     "newGame.players.tooltip": "How many towns the map has room for, far apart and with similar resources nearby.",
     "newGame.players.value": {

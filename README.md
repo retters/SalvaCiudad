@@ -303,6 +303,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En un mapa grande, poner casas seguidas no da tirones (antes cada edificio recalculaba las zonas de todo el mapa).
 - [ ] En la sala multijugador con mapas separados, 4 jugadores y tamaño Gigante, cada jugador tiene un mapa gigante.
 
+### Fase 22 (mapa de islas)
+
+- [ ] La partida nueva tiene el tipo de mapa "Islas"; "Islas por pueblo" solo se puede cambiar con ese tipo.
+- [ ] Con 2 posiciones de inicio y 3 islas por pueblo, la opción dice "3 por pueblo (6 islas)", y al alejar la cámara se ven 6 islas con playas.
+- [ ] En un mapa pequeño con muchos pueblos solo se ofrece 1 isla por pueblo.
+- [ ] Fuera del mapa se ve mar abierto hasta el horizonte, no montañas.
+- [ ] Con Ctrl+F3 → Pueblo → "Traer asaltantes ahora", llegan desembarcando en la costa de la isla.
+- [ ] En versus de 2 jugadores con islas, al ordenar atacar, el ejército desaparece y aparece después en la costa de la isla rival.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

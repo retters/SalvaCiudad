@@ -277,6 +277,13 @@
     "newGame.relief.low": "Plano",
     "newGame.relief.gentle": "Colinas suaves",
     "newGame.relief.mountainous": "Montañoso",
+    "newGame.islands": "Islas por pueblo",
+    "newGame.islands.tooltip": "Cuántas islas hay por cada pueblo: con 2 pueblos y 3 islas por pueblo, el mapa tiene 6 islas. En mapas chicos o con muchos pueblos caben menos.",
+    "newGame.islands.disabledTooltip": "Solo para el tipo de mapa Islas.",
+    "newGame.islands.value": {
+      "one": "{1} por pueblo ({0} isla)",
+      "other": "{1} por pueblo ({0} islas)"
+    },
     "newGame.players": "Posiciones de inicio",
     "newGame.players.tooltip": "Para cuántos pueblos tiene lugar el mapa, lejos entre sí y con recursos parecidos cerca.",
     "newGame.players.value": {

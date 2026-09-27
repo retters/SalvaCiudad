@@ -357,7 +357,8 @@ std::uint32_t pack(float r, float g, float b) {
 }  // namespace
 
 void add_backdrop(FacetMeshes& meshes, std::int32_t cells, const std::vector<std::uint16_t>& heights_cm,
-                  std::uint32_t seed) {
+                  std::uint32_t seed, float sea_m) {
+    const bool sea = sea_m >= 0.0f;
     constexpr float kStep = 32.0f;       // Meters between backdrop points.
     constexpr int kTileCells = 48;       // Grid cells per tile side.
     constexpr float kReach = 3072.0f;    // How far the mountains go past the edge.
@@ -375,6 +376,9 @@ void add_backdrop(FacetMeshes& meshes, std::int32_t cells, const std::vector<std
         return std::sqrt(dx * dx + dz * dz);
     };
     const auto height = [&](float x, float z) {
+        if (sea) {
+            return sea_m - 0.05f;  // Open sea to the horizon.
+        }
         const float d = outside(x, z);
         const float base = edge_height(x, z) - 1.5f;
         const float t = std::clamp(d / 500.0f, 0.0f, 1.0f);
@@ -433,7 +437,10 @@ void add_backdrop(FacetMeshes& meshes, std::int32_t cells, const std::vector<std
                                               static_cast<std::uint32_t>(cz * 3.0f + 90000.0f), seed ^ 0xC5u);
                 const float shade = 0.9f + 0.2f * static_cast<float>(h & 0xFFu) / 255.0f;
                 std::uint32_t color = 0;
-                if (above > 230.0f) {
+                if (sea) {
+                    const float calm = 0.97f + 0.06f * static_cast<float>(h & 0xFFu) / 255.0f;
+                    color = pack(108 * calm, 158 * calm, 184 * calm);  // Sea, like the water seen from afar.
+                } else if (above > 230.0f) {
                     color = pack(236 * shade, 240 * shade, 244 * shade);  // Snow.
                 } else if (above > 40.0f || steep > 0.9f) {
                     color = pack(140 * shade, 96 * shade, 68 * shade);    // Rock.

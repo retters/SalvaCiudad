@@ -19,6 +19,8 @@ enum class Relief : std::uint8_t { Low, Gentle, Mountainous, Count };
 // Most natural features a map may have (saves refuse more): a colossal
 // map with thick forests has several million.
 inline constexpr std::uint32_t kMaxMapFeatures = 32'000'000;
+// Islands per town on a map type with islands (phase 22).
+inline constexpr std::uint8_t kMaxIslandsPerTown = 8;
 // The biggest world: separate maps shrink to fit in it (Fixed positions
 // reach 32767 m).
 inline constexpr MapSize kMaxWorldSize = MapSize::Colossal;
@@ -51,6 +53,9 @@ struct MapSettings {
     // seed + player number, laid side by side in one world with no way
     // across. Only with more than one player.
     bool separate = false;
+    // Islands per town, for a map type with islands (1..kMaxIslandsPerTown):
+    // 2 towns with 3 islands each make 6 islands.
+    std::uint8_t islands = 2;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);

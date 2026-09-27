@@ -117,7 +117,7 @@ TEST_SUITE("mods") {
         CHECK(c.buildings.size() >= 5);
         CHECK(c.flora.species.size() == 21);
         CHECK(c.flora.biomes.size() == 6);
-        CHECK(c.flora.map_types.size() == 6);
+        CHECK(c.flora.map_types.size() == 7);
         CHECK(c.find_building("core:house") != sim::kNoDef);
         CHECK(c.feature(sim::FeatureKind::Stone) != nullptr);
         CHECK(c.hash != 0);

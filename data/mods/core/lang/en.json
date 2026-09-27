@@ -19,6 +19,8 @@
     "mapType.northern.tooltip": "Mostly pines, with some temperate woods.",
     "mapType.varied": "Varied",
     "mapType.varied.tooltip": "All the biomes in equal parts, in small, mixed patches.",
+    "mapType.islands": "Islands",
+    "mapType.islands.tooltip": "The sea surrounds several islands; each town starts on its own. Choose below how many islands there are per town.",
     "mapType.single": "Single biome",
     "mapType.single.tooltip": "The whole map is one biome, chosen below.",
     "biome.temperate": "Temperate wood",

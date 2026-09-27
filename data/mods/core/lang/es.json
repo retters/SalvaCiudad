@@ -19,6 +19,8 @@
     "mapType.northern.tooltip": "Casi todo pinos, con algo de bosque templado.",
     "mapType.varied": "Variado",
     "mapType.varied.tooltip": "Todos los biomas por igual, en manchas pequeñas y mezcladas.",
+    "mapType.islands": "Islas",
+    "mapType.islands.tooltip": "El mar rodea varias islas; cada pueblo empieza en una propia. Abajo se elige cuántas islas hay por pueblo.",
     "mapType.single": "Bioma único",
     "mapType.single.tooltip": "Todo el mapa es un solo bioma, que se elige abajo.",
     "biome.temperate": "Bosque templado",

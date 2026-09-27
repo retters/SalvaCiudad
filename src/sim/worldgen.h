@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <vector>
 
 #include "sim/content.h"
 #include "sim/map.h"
@@ -42,6 +43,23 @@ inline constexpr std::int32_t kStartMinStones = 2;
 inline constexpr std::int32_t kStartMinBerries = 2;
 inline constexpr std::int32_t kStartMinTrees = 60;
 inline constexpr std::int32_t kStartMaxWaterDistance = 150;  // A start always has water this close.
+
+// Phase 22: the map type with islands.
+inline constexpr std::int32_t kSeaLevelMm = 20000;  // Sea surface, millimeters.
+struct Island {
+    std::int32_t x = 0;       // Center, meters.
+    std::int32_t z = 0;
+    std::int32_t radius = 0;  // Before its shoreline is bent: land reaches up to 1.2 times this.
+    bool operator==(const Island&) const = default;
+};
+// Where the islands of a map of `cells` per side go: one home island per
+// town first (the bigger ones, far from each other), then the others; all
+// apart, with sea between them and around the map.
+[[nodiscard]] std::vector<Island> island_layout(std::uint64_t seed, std::int32_t cells, std::int32_t towns,
+                                                std::int32_t per_town);
+// How many islands per town fit in a map size so that towns still get
+// room (at least 1).
+[[nodiscard]] std::int32_t max_islands_per_town(MapSize size, std::int32_t towns);
 }  // namespace worldgen
 
 }  // namespace sc::sim

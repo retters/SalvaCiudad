@@ -729,6 +729,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
         r.numbers("sizeBias", def.size_bias, sim::kTreeSizes, 0, 1000);
         def.patch_m = r.integer("patchSize", 0, 5000, 350);
+        def.islands = r.flag("islands");
         if (r.ok()) {
             out.flora.map_types.push_back(std::move(def));
         }

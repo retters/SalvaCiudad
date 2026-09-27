@@ -98,7 +98,7 @@ Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`
 
 - `species`: `name`, `model` (prefijo: se buscan `<prefijo>_small.glb`, `_medium`, `_large`, `_huge`), `sizes` y `logs` (madera por tamaño).
 - `biome`: `name`, `species` (`{"core:oak": 35, ...}`), `sizeWeights` (4 números), `density` (porcentaje) y `grass` (0 a 255).
-- `mapType`: `name`, `biomes` (vacío: un solo bioma que elige el jugador), `sizeBias` (4 porcentajes) y `patchSize` (metros).
+- `mapType`: `name`, `biomes` (vacío: un solo bioma que elige el jugador), `sizeBias` (4 porcentajes), `patchSize` (metros) e `islands` (`true`: el mar rodea islas, tantas por pueblo como elija el jugador; por omisión `false`).
 
 ## Textos (`lang/`)
 

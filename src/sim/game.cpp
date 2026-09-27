@@ -1200,6 +1200,17 @@ public:
 
     void arrive_from_travel(Creature& a) {
         const std::uint8_t to = static_cast<std::uint8_t>(a.goal.x.floor_int());
+        // Over the sea to another island (phase 22): ashore near the town.
+        if (g_.map_.region_size() == 0) {
+            const Building* tc = g_.buildings_.get(g_.players_[to].town_center);
+            FixedVec2 at;
+            if (tc != nullptr && coast_landing(g_.door(*tc), at, nullptr)) {
+                a.position = at;
+                a.previous = at;
+                a.state = CreatureState::Wander;
+                return;
+            }
+        }
         const Game::Region r = g_.region(to);
         // A walkable point on the edge nearest the town it came from.
         FixedVec2 at{Fixed::from_int(r.x + r.size / 2), Fixed::from_int(r.z + 8)};
@@ -1299,7 +1310,8 @@ public:
                 if (tc == nullptr || !g_.enemies(a.town, ps.enemy)) {
                     return;  // Nothing left to attack: wait there.
                 }
-                if (!in_region_of(a, ps.enemy)) {
+                // Another map, or across the sea: over the world map.
+                if (!in_region_of(a, ps.enemy) || !g_.nav_.same_land(a.position, g_.door(*tc))) {
                     travel(a, ps.enemy);
                     return;
                 }
@@ -1317,13 +1329,13 @@ public:
             case ArmyOrderKind::Defend:
             case ArmyOrderKind::Retreat:
             case ArmyOrderKind::Count: {
-                if (!in_region_of(a, a.town)) {
+                const FixedVec2 at = rally_of(a.town);
+                if (!in_region_of(a, a.town) || !g_.nav_.same_land(a.position, at)) {
                     travel(a, a.town);
                     return;
                 }
                 a.target_kind = TargetKind::Villager;
                 a.target = {};
-                const FixedVec2 at = rally_of(a.town);
                 if (!moving && distance2(a.position, at) > meters2(8)) {
                     // Around the rally point, not all on one spot.
                     const FixedVec2 spot{at.x + Fixed::from_int(g_.rng_.range(-5, 5)), at.z + Fixed::from_int(g_.rng_.range(-5, 5))};
@@ -1611,6 +1623,40 @@ public:
         }
     }
 
+    // A shore on the same land as `goal`, from where it can be reached:
+    // along a few directions from the goal to where the land meets the
+    // water, at least 40 m away. `path` gets the way there (for raiders).
+    bool coast_landing(FixedVec2 goal, FixedVec2& out, std::vector<FixedVec2>* path) {
+        constexpr int kDirections = 16;
+        const Angle first = g_.rng_.angle();
+        for (int d = 0; d < kDirections; ++d) {
+            const Angle a{static_cast<std::uint16_t>(first.units + d * (65536 / kDirections))};
+            const Fixed dx = cos(a);
+            const Fixed dz = sin(a);
+            FixedVec2 last = goal;
+            bool shore = false;
+            for (std::int32_t r = 4; r <= 3000; r += 4) {
+                const FixedVec2 p{goal.x + dx * Fixed::from_int(r), goal.z + dz * Fixed::from_int(r)};
+                const std::int32_t cx = p.x.floor_int();
+                const std::int32_t cz = p.z.floor_int();
+                if (cx < 0 || cz < 0 || cx >= g_.map_.size || cz >= g_.map_.size) {
+                    break;
+                }
+                if (!g_.nav_.ground(cx / NavGrid::kCellMeters, cz / NavGrid::kCellMeters)) {
+                    shore = g_.map_.water_at(cx, cz) && r >= 40;
+                    break;
+                }
+                last = p;
+            }
+            std::vector<FixedVec2> way;
+            if (shore && g_.nav_.find_path_through(last, goal, path != nullptr ? *path : way)) {
+                out = last;
+                return true;
+            }
+        }
+        return false;
+    }
+
     void start_raid(std::uint8_t town, std::int32_t scale) {
         const EntityId target = raid_target(town, g_.door(*g_.buildings_.get(g_.players_[town].town_center)));
         const Building* tb = g_.buildings_.get(target);
@@ -1638,6 +1684,10 @@ public:
             from = {Fixed::from_int(region.x + x), Fixed::from_int(region.z + z)};
             found = g_.nav_.ground(from.x.floor_int() / NavGrid::kCellMeters, from.z.floor_int() / NavGrid::kCellMeters) &&
                     g_.nav_.find_path_through(from, g_.door(*tb), path);
+        }
+        // Islands (phase 22): no way in from the edge; they land on the coast.
+        if (!found) {
+            found = coast_landing(g_.door(*tb), from, &path);
         }
         if (!found) {
             return;

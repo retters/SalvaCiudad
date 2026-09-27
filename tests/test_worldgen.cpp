@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <ostream>
+#include <tuple>
 #include <vector>
 
 #include "sim/map.h"
@@ -100,9 +101,56 @@ std::vector<WaterArea> water_areas(const MapData& m) {
     return areas;
 }
 
+// Islands: land areas left when the sea (water that reaches the border) is
+// taken away, as the island each cell belongs to (-1 for the sea).
+std::vector<std::int32_t> island_ids(const MapData& m, std::int32_t& count) {
+    const std::int32_t n = m.size;
+    const auto cells = static_cast<std::size_t>(n) * static_cast<std::size_t>(n);
+    std::vector<std::uint8_t> sea(cells, 0);
+    std::vector<std::size_t> queue;
+    const auto idx = [n](std::int32_t x, std::int32_t z) {
+        return static_cast<std::size_t>(z) * static_cast<std::size_t>(n) + static_cast<std::size_t>(x);
+    };
+    for (std::int32_t i = 0; i < n; ++i) {
+        for (const std::size_t c : {idx(i, 0), idx(i, n - 1), idx(0, i), idx(n - 1, i)}) {
+            if (m.water[c] != 0 && sea[c] == 0) {
+                sea[c] = 1;
+                queue.push_back(c);
+            }
+        }
+    }
+    const auto spread = [&](auto&& accept, auto&& mark) {
+        for (std::size_t q = 0; q < queue.size(); ++q) {
+            const auto x = static_cast<std::int32_t>(queue[q] % static_cast<std::size_t>(n));
+            const auto z = static_cast<std::int32_t>(queue[q] / static_cast<std::size_t>(n));
+            const std::int32_t nx[4] = {x - 1, x + 1, x, x};
+            const std::int32_t nz[4] = {z, z, z - 1, z + 1};
+            for (int k = 0; k < 4; ++k) {
+                if (nx[k] >= 0 && nz[k] >= 0 && nx[k] < n && nz[k] < n && accept(idx(nx[k], nz[k]))) {
+                    mark(idx(nx[k], nz[k]));
+                    queue.push_back(idx(nx[k], nz[k]));
+                }
+            }
+        }
+    };
+    spread([&](std::size_t c) { return m.water[c] != 0 && sea[c] == 0; }, [&](std::size_t c) { sea[c] = 1; });
+    std::vector<std::int32_t> id(cells, -1);
+    count = 0;
+    for (std::size_t start = 0; start < cells; ++start) {
+        if (sea[start] != 0 || id[start] >= 0) {
+            continue;
+        }
+        id[start] = count;
+        queue.assign(1, start);
+        spread([&](std::size_t c) { return sea[c] == 0 && id[c] < 0; }, [&](std::size_t c) { id[c] = count; });
+        ++count;
+    }
+    return id;
+}
+
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0x63af48c1451b654full;
+constexpr std::uint64_t kGoldenSmallMap = 0xee1b6d3d04290585ull;
 
 }  // namespace
 
@@ -286,6 +334,12 @@ TEST_SUITE("worldgen") {
         bad[14] = 255;  // Map type out of range.
         BinaryReader bt(bad);
         CHECK_FALSE(MapSettings::read(bt, back));
+        for (const std::uint8_t islands : {std::uint8_t{0}, std::uint8_t{kMaxIslandsPerTown + 1}}) {
+            bad = w.bytes();
+            bad[17] = islands;
+            BinaryReader bi(bad);
+            CHECK_FALSE(MapSettings::read(bi, back));
+        }
     }
 
     TEST_CASE("map sizes and separate worlds fit in the biggest size") {
@@ -307,6 +361,75 @@ TEST_SUITE("worldgen") {
                 s.players = players;
                 CHECK(world_cells(s) <= map_cells(kMaxWorldSize));
             }
+        }
+    }
+
+    TEST_CASE("island layouts: the islands asked for, apart and inside the map") {
+        for (const auto& [cells, towns, per_town] : {std::tuple{1024, 1, 1}, std::tuple{1024, 2, 3}, std::tuple{2048, 4, 4},
+                                                     std::tuple{4096, 12, 8}, std::tuple{512, 1, 1}}) {
+            const std::vector<worldgen::Island> a = worldgen::island_layout(7, cells, towns, per_town);
+            CHECK(a == worldgen::island_layout(7, cells, towns, per_town));
+            REQUIRE(a.size() == static_cast<std::size_t>(towns * per_town));
+            for (std::size_t i = 0; i < a.size(); ++i) {
+                const std::int32_t reach = a[i].radius * 120 / 100;
+                CHECK(a[i].x - reach >= 16);
+                CHECK(a[i].z - reach >= 16);
+                CHECK(a[i].x + reach <= cells - 16);
+                CHECK(a[i].z + reach <= cells - 16);
+                if (i > 0 && static_cast<std::int32_t>(i) < towns) {
+                    CHECK(a[i].radius <= a[0].radius);  // Homes are alike.
+                }
+                for (std::size_t j = 0; j < i; ++j) {
+                    const double d = std::hypot(a[i].x - a[j].x, a[i].z - a[j].z);
+                    CHECK(d >= (a[i].radius + a[j].radius) * 1.2);
+                }
+            }
+        }
+    }
+
+    TEST_CASE("islands per town fit the map size") {
+        for (std::uint8_t size = 0; size < static_cast<std::uint8_t>(MapSize::Count); ++size) {
+            std::int32_t last = kMaxIslandsPerTown;
+            for (std::int32_t towns = 1; towns <= 12; ++towns) {
+                const std::int32_t k = worldgen::max_islands_per_town(static_cast<MapSize>(size), towns);
+                CHECK(k >= 1);
+                CHECK(k <= kMaxIslandsPerTown);
+                CHECK(k <= last);  // More towns, fewer islands each.
+                last = k;
+            }
+        }
+        CHECK(worldgen::max_islands_per_town(MapSize::Huge, 12) == kMaxIslandsPerTown);
+        CHECK(worldgen::max_islands_per_town(MapSize::Small, 12) == 1);
+    }
+
+    TEST_CASE("an island map has towns times islands per town islands, one town on each home island") {
+        for (const auto& [size, towns, per_town] : {std::tuple{MapSize::Medium, 2, 3}, std::tuple{MapSize::Small, 1, 1},
+                                                    std::tuple{MapSize::Large, 4, 2}}) {
+            MapSettings s = settings(404, size, static_cast<std::uint8_t>(towns));
+            s.map_type = map_type("islands");
+            s.islands = static_cast<std::uint8_t>(per_town);
+            REQUIRE(per_town <= worldgen::max_islands_per_town(size, towns));
+            const auto m = gen(s);
+            REQUIRE(m.has_value());
+            CHECK(m->checksum() == gen(s)->checksum());
+            std::int32_t count = 0;
+            const std::vector<std::int32_t> id = island_ids(*m, count);
+            CHECK(count == towns * per_town);
+            REQUIRE(m->starts.size() == static_cast<std::size_t>(towns));
+            std::vector<std::int32_t> homes;
+            for (const StartPosition& st : m->starts) {
+                const std::int32_t cx = st.x.floor_int();
+                const std::int32_t cz = st.z.floor_int();
+                CHECK_FALSE(m->water_at(cx, cz));
+                const std::int32_t home = id[static_cast<std::size_t>(cz) * static_cast<std::size_t>(m->size) +
+                                             static_cast<std::size_t>(cx)];
+                CHECK(home >= 0);
+                CHECK(std::find(homes.begin(), homes.end(), home) == homes.end());
+                homes.push_back(home);
+            }
+            // The sea surrounds the map.
+            CHECK(m->water_at(0, 0));
+            CHECK(m->water_at(m->size - 1, m->size / 2));
         }
     }
 
@@ -340,7 +463,7 @@ TEST_SUITE("flora") {
         const Flora& f = content().flora;
         CHECK(f.species.size() == 21);
         CHECK(f.biomes.size() == 6);
-        CHECK(f.map_types.size() == 6);
+        CHECK(f.map_types.size() == 7);
         CHECK(f.species_has_size(species("sequoia"), TreeSize::Huge));
         CHECK_FALSE(f.species_has_size(species("lemon"), TreeSize::Medium));
         CHECK(f.fit_size(species("lemon"), TreeSize::Huge) == TreeSize::Small);

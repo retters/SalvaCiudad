@@ -7,6 +7,7 @@
 #include <SDL3/SDL_timer.h>
 
 #include "i18n/translator.h"
+#include "sim/worldgen.h"
 
 namespace sc {
 
@@ -275,7 +276,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 20;
+    constexpr int kRows = 21;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;
@@ -329,6 +330,24 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         const Row r = row(ctx, x, y, cw, tr("newGame.mapType"), tip);
         if (ctx.selector(ctx.id("map_type"), r.control, index, options, tip)) {
             settings_.map_type = static_cast<std::uint8_t>(index);
+        }
+    }
+    {
+        // Islands per town (phase 22), for a map type with islands.
+        static const sim::Flora kNoFlora;
+        const sim::Flora& flora = content_ != nullptr ? content_->flora : kNoFlora;
+        const bool islands = settings_.map_type < flora.map_types.size() && flora.map_types[settings_.map_type].islands;
+        const int most = sim::worldgen::max_islands_per_town(settings_.size, settings_.players);
+        settings_.islands = static_cast<std::uint8_t>(std::clamp<int>(settings_.islands, 1, most));
+        std::vector<std::string> options;
+        for (int k = 1; k <= most; ++k) {
+            options.push_back(i18n::tr_n("newGame.islands.value", k * settings_.players, k));
+        }
+        int index = settings_.islands - 1;
+        const std::string tip = tr(islands ? "newGame.islands.tooltip" : "newGame.islands.disabledTooltip");
+        const Row r = row(ctx, x, y, cw, tr("newGame.islands"), tip);
+        if (ctx.selector(ctx.id("islands"), r.control, index, options, tip, islands)) {
+            settings_.islands = static_cast<std::uint8_t>(index + 1);
         }
     }
     {

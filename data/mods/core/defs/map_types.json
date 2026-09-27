@@ -96,6 +96,27 @@
     },
     {
       "type": "mapType",
+      "id": "core:islands",
+      "name": "mapType.islands",
+      "biomes": {
+        "core:temperate": 35,
+        "core:pinewood": 15,
+        "core:flowering": 20,
+        "core:orchard": 10,
+        "core:australian": 15,
+        "core:giants": 5
+      },
+      "sizeBias": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "patchSize": 300,
+      "islands": true
+    },
+    {
+      "type": "mapType",
       "id": "core:single",
       "name": "mapType.single",
       "biomes": {},

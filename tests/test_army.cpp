@@ -46,6 +46,25 @@ const MapData& map_for(std::uint64_t seed, std::uint8_t players = 1, bool separa
     return it->second;
 }
 
+// Phase 22: a medium map of islands, one per town.
+const MapData& islands_for(std::uint64_t seed, std::uint8_t players) {
+    static std::map<std::pair<std::uint64_t, std::uint8_t>, MapData> cache;
+    const auto key = std::make_pair(seed, players);
+    auto it = cache.find(key);
+    if (it == cache.end()) {
+        MapSettings s;
+        s.seed = seed;
+        s.size = MapSize::Medium;
+        s.players = players;
+        s.islands = 1;
+        s.map_type = static_cast<std::uint8_t>(sc::test::core_content().flora.find_map_type("core:islands"));
+        std::optional<MapData> m = generate_map(s, sc::test::core_content());
+        REQUIRE(m.has_value());
+        it = cache.emplace(key, std::move(*m)).first;
+    }
+    return it->second;
+}
+
 GameSetup setup(std::uint8_t players = 1) {
     GameSetup s;
     s.players = players;
@@ -295,6 +314,57 @@ TEST_SUITE("army") {
         REQUIRE(soldier() != nullptr);
         CHECK(soldier()->state != CreatureState::Travel);
         CHECK(g.map().region_at(soldier()->position.x.floor_int(), soldier()->position.z.floor_int()) == 1);
+    }
+
+    TEST_CASE("on islands an army crosses the sea to the rival's island") {
+        Game g(open_content(), islands_for(106, 2), versus(Victory::Elimination));
+        const Building* rival = g.buildings().get(g.player(1).town_center);
+        REQUIRE(rival != nullptr);
+        const FixedVec2 rival_door = g.door(*rival);
+        REQUIRE_FALSE(g.nav().same_land(g.door(*g.buildings().get(g.player(0).town_center)), rival_door));
+        const EntityId barracks = build(g, "core:barracks");
+        grant(g, "core:log", 30);
+        train(g, barracks, "core:levy", 1);
+        for (int t = 0; t < 20 && g.soldiers(0) < 1; ++t) {
+            run(g, 100);
+        }
+        REQUIRE(g.soldiers(0) == 1);
+        g.apply(order(0, ArmyOrderKind::Attack, 1));
+        run(g, 20);
+        const auto soldier = [&]() -> const Creature* {
+            for (const Creature& a : g.creatures().data()) {
+                if (a.kind == CreatureKind::Soldier) {
+                    return &a;
+                }
+            }
+            return nullptr;
+        };
+        REQUIRE(soldier() != nullptr);
+        CHECK(soldier()->state == CreatureState::Travel);
+        run(g, static_cast<std::uint32_t>(g.travel_ticks(0, 1)) + 20);
+        REQUIRE(soldier() != nullptr);
+        CHECK(soldier()->state != CreatureState::Travel);
+        CHECK(g.nav().same_land(soldier()->position, rival_door));
+    }
+
+    TEST_CASE("on islands raiders land on the coast") {
+        GameSetup s = setup();
+        s.rules.raiders = Threat::Medium;
+        Game g(open_content(), islands_for(107, 1), s);
+        grant(g, "core:log", 2000);  // Something worth taking.
+        Command raid;
+        raid.type = CommandType::DevRaid;
+        g.apply(raid);
+        const Building* tc = g.buildings().get(g.player(0).town_center);
+        REQUIRE(tc != nullptr);
+        int raiders = 0;
+        for (const Creature& a : g.creatures().data()) {
+            if (a.kind == CreatureKind::Raider) {
+                ++raiders;
+                CHECK(g.nav().same_land(a.position, g.door(*tc)));
+            }
+        }
+        CHECK(raiders > 0);
     }
 
     TEST_CASE("a single-player town that dies out ends the game") {

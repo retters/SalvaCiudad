@@ -55,6 +55,8 @@ struct MapTypeDef {
     std::vector<Weighted> biomes;  // Empty: a single biome chosen by the player.
     std::uint16_t size_bias[kTreeSizes] = {100, 100, 100, 100};
     std::int32_t patch_m = 350;
+    // Phase 22: the sea surrounds islands, a few per town.
+    bool islands = false;
 };
 
 // Limits so an index fits in the map's bytes.

@@ -1158,3 +1158,37 @@ Al elegir Gigante o Colosal, la ayuda del tamaño dice cuánto tarda y cuánta m
 
 **D-2106. Terreno de hasta 16384 m en la tarjeta gráfica.**
 El límite de las capas del terreno pasó de 8192 a 16384 m. Las alturas de un mapa colosal ocupan 512 MiB en la tarjeta. Si una tarjeta con poca memoria no puede cargarlas, el juego ya muestra "No se pudo mostrar el mapa" y vuelve a la partida nueva.
+
+## Fase 22: mapa de islas (2026-09-27)
+
+**D-2201. Islas como tipo de mapa.**
+Las islas son un tipo de mapa de `core` (`core:islands`) con la marca `"islands": true`, así un mod puede definir otros tipos con islas y su propia mezcla de biomas. La partida nueva agrega "Islas por pueblo" (de 1 a 8), activa solo con ese tipo de mapa. Con 2 pueblos y 3 islas por pueblo hay 6 islas.
+
+El número se guarda en la configuración del mapa (un byte más en la partida y en la sala). Por eso cambiaron la suma de verificación del mapa pequeño de referencia y la versión de las reglas (21). Los demás mapas se generan igual que antes.
+
+**D-2202. Cómo se forman.**
+- Alrededor del 40 % del mapa es tierra. Cada pueblo tiene una isla de origen, más grande (peso 3); las demás pesan de 1 a 2 al azar.
+- Las islas de origen se colocan lo más lejos posible entre sí, y las demás donde quepan, siempre con mar entre ellas y alrededor del mapa. Si alguna no cabe, todas se achican un poco y se vuelven a colocar.
+- La costa se deforma según la dirección desde el centro, así cada isla queda de una sola pieza.
+- La tierra conserva su relieve. Hacia la orilla baja suave hasta una playa, y bajo el agua desciende hasta el fondo del mar.
+- Si un lago parte una isla en la orilla, el pedazo suelto se hunde. Así el mapa tiene exactamente las islas pedidas; una prueba cuenta las islas de varios mapas.
+
+**D-2203. Cuántas islas caben.**
+La partida nueva ofrece solo las islas por pueblo que caben: cada isla de origen necesita unos 110 m de radio y las demás unos 45 m. En un mapa pequeño con muchos pueblos cabe 1 por pueblo. El generador aplica el mismo tope si la configuración viene de otro lado.
+
+**D-2204. El mar.**
+El mar es el agua a 20 m de altura que llega al borde del mapa; los ríos terminan en él como en un lago. Fuera del mapa, el borde decorativo es mar abierto hasta el horizonte, en lugar de las montañas de los otros tipos.
+
+**D-2205. Dónde empieza cada pueblo.**
+Cada pueblo empieza cerca del centro de su isla de origen, en buen suelo, con agua cerca y terreno plano. Después recibe los recursos básicos garantizados como en los otros mapas (D-603).
+
+**D-2206. Cruzar el mar.**
+El juego no tiene barcos. Mientras no los tenga:
+- los aldeanos no pueden llegar a las otras islas: se ven, pero no se usan;
+- los asaltantes que no pueden llegar desde el borde del mapa desembarcan en la costa de la isla del pueblo;
+- los ejércitos que no pueden llegar a pie viajan por mar como entre mapas separados (D-1604): tardan según la distancia y desembarcan en la costa cerca del centro del pueblo enemigo; lo mismo al volver.
+
+Las dos últimas reglas valen en cualquier mapa donde el agua separe las tierras (por ejemplo, un río que cruza el mapa entero). Usar las otras islas necesitaría un muelle y barcas; queda como propuesta para decidir.
+
+**D-2207. Islas y mapas separados.**
+Con mapas separados, cada jugador tiene su propio mapa de islas con sus islas por pueblo.
