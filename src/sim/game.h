@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 22;
+inline constexpr std::uint32_t kGameRulesVersion = 23;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -212,6 +212,25 @@ struct MerchantGood {
     bool operator==(const MerchantGood&) const = default;
 };
 
+// Automatic trade at the trading post (phase 29): while a merchant is
+// here, once a day, sell what the town has over `sell_above` and buy up to
+// `buy_below`, with the gold in the post.
+struct TradeRule {
+    DefIndex resource = 0;
+    std::int32_t sell_above = kNoRule;
+    std::int32_t buy_below = kNoRule;
+    bool operator==(const TradeRule&) const = default;
+};
+
+// What automatic trade did during a merchant's visit.
+struct TradeTally {
+    std::int32_t sold = 0;        // Units.
+    std::int32_t sold_gold = 0;   // Gold received.
+    std::int32_t bought = 0;
+    std::int32_t bought_gold = 0; // Gold paid.
+    bool operator==(const TradeTally&) const = default;
+};
+
 enum class ArmyOrderKind : std::uint8_t { Defend, Attack, Retreat, Count };
 enum class Outcome : std::uint8_t { Playing, Won, Lost, Count };
 
@@ -229,6 +248,9 @@ struct PlayerState {
     std::uint64_t merchant_arrives = 0;  // Tick; 0 = not yet planned.
     std::uint64_t merchant_leaves = 0;   // Tick; past it, no merchant.
     std::vector<MerchantGood> merchant;  // What this merchant sells and buys.
+    // Phase 29: automatic trade, by resource index, and this visit's tally.
+    std::vector<TradeRule> trade_rules;
+    TradeTally tally;
     // Phase 15.
     bool alarm = false;                  // The bell: adults fight, children hide.
     std::uint64_t next_raid = 0;         // Tick; 0 = not yet planned.
@@ -414,6 +436,7 @@ public:
             GameOver,        // `value`: the winner + 1, or 0.
             Born,            // Phase 17: for the notifications.
             Died,
+            AutoTrade,       // Phase 29: the merchant left; `tally` is what automatic trade did.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -421,6 +444,7 @@ public:
         FixedVec2 at;
         std::uint16_t value = 0;  // Disease index, for outbreaks.
         std::uint8_t other = 0;   // The other player, for trade.
+        TradeTally tally;
     };
     [[nodiscard]] std::vector<Event> take_events();
 

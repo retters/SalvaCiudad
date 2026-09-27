@@ -533,3 +533,205 @@ TEST_SUITE("gold") {
         CHECK(gold(back, 0) == 100);
     }
 }
+
+namespace {
+
+Command rule(DefIndex r, std::int32_t sell_above, std::int32_t buy_below) {
+    Command c;
+    c.type = CommandType::SetTradeRule;
+    c.def = r;
+    c.value = sell_above;
+    c.value2 = buy_below;
+    return c;
+}
+
+// A good the merchant has plenty of and cheap enough, other than logs and
+// than what villagers use up by themselves (food, clothes, shoes).
+const MerchantGood* stocked_good(const Game& g) {
+    const Content& c = g.content();
+    const MerchantGood* best = nullptr;
+    for (const MerchantGood& m : g.player(0).merchant) {
+        const ResourceDef& rd = c.resources[m.resource];
+        if (rd.category == ResourceCategory::Food || rd.id == "core:log" || rd.id == "core:clothes" ||
+            rd.id == "core:shoes") {
+            continue;
+        }
+        if (m.stock >= 10 && m.buy <= 12 && (best == nullptr || m.stock > best->stock)) {
+            best = &m;
+        }
+    }
+    return best;
+}
+
+// A town with a trading post (keeping no gold), a vault with the town's
+// gold, and a merchant here.
+Game town_with_merchant(std::uint64_t map) {
+    Game g(core(), map_for(map), setup());
+    const EntityId post = build(g, "core:trading_post");
+    g.apply(set_reserve(post, 0));
+    (void)build(g, "core:vault");
+    REQUIRE(run_until(g, 100, [&] { return g.gold_places(0).vaults == 100; }));
+    wait_for_merchant(g);
+    // One who sells something to buy (see stocked_good), within a few visits.
+    for (int visit = 0; visit < 4 && stocked_good(g) == nullptr; ++visit) {
+        while (g.merchant_here(0)) {
+            run(g, g.day_ticks());
+        }
+        wait_for_merchant(g);
+    }
+    return g;
+}
+
+EntityId post_of(const Game& g) {
+    for (std::size_t i = 0; i < g.buildings().size(); ++i) {
+        if (g.content().buildings[g.buildings().data()[i].def].trade) {
+            return g.buildings().entities()[i];
+        }
+    }
+    return {};
+}
+
+}  // namespace
+
+TEST_SUITE("auto_trade") {
+    TEST_CASE("trade rules are checked") {
+        const Command ok = rule(3, 200, 50);
+        BinaryWriter w;
+        ok.write(w);
+        BinaryReader r(w.bytes());
+        Command back;
+        REQUIRE(Command::read(r, back));
+        CHECK(back == ok);
+        // Buying up to more than what is sold, or out of range: refused when read.
+        for (const Command& bad : {rule(3, 50, 200), rule(3, -2, 10), rule(3, 10, kMaxRule + 1)}) {
+            BinaryWriter wb;
+            bad.write(wb);
+            BinaryReader rb(wb.bytes());
+            CHECK_FALSE(Command::read(rb, back));
+        }
+        Game g(core(), map_for(81), setup());
+        const DefIndex log = g.content().find_resource("core:log");
+        const DefIndex stone = g.content().find_resource("core:stone");
+        g.apply(rule(stone, 100, kNoRule));
+        g.apply(rule(log, kNoRule, 40));
+        REQUIRE(g.player(0).trade_rules.size() == 2);
+        CHECK(g.player(0).trade_rules[0].resource == std::min(log, stone));  // Kept in resource order.
+        // Gold is not a good merchants trade.
+        const auto rejected = g.rejected_commands();
+        g.apply(rule(g.gold(), 10, kNoRule));
+        CHECK(g.rejected_commands() == rejected + 1);
+        // Both off: the rule goes.
+        g.apply(rule(log, kNoRule, kNoRule));
+        REQUIRE(g.player(0).trade_rules.size() == 1);
+        CHECK(g.player(0).trade_rules[0].resource == stone);
+    }
+
+    TEST_CASE("without a merchant nothing is traded") {
+        Game g(core(), map_for(82), setup());
+        (void)build(g, "core:trading_post");
+        REQUIRE_FALSE(g.merchant_here(0));
+        const DefIndex log = g.content().find_resource("core:log");
+        g.apply(rule(log, 0, kNoRule));
+        const std::int32_t logs = amount(g, "core:log");
+        run(g, 5 * g.day_ticks());
+        REQUIRE_FALSE(g.merchant_here(0));
+        CHECK(amount(g, "core:log") == logs);
+        CHECK(gold(g, 0) == 100);
+        CHECK(g.player(0).tally == TradeTally{});
+    }
+
+    TEST_CASE("the post buys only with its own gold, and sells what is over") {
+        Game g = town_with_merchant(83);
+        const EntityId post = post_of(g);
+        const MerchantGood* good = stocked_good(g);
+        REQUIRE(good != nullptr);
+        const DefIndex r = good->resource;
+        const std::int32_t price = good->buy;
+        const std::int32_t have = g.tradeable(0, r);
+        const std::int32_t target = have + std::min(good->stock, 60 / price);
+        REQUIRE(target > have);
+        // No gold in the post: nothing bought, though the vault has 100.
+        g.apply(rule(r, kNoRule, target));
+        run(g, g.day_ticks() + 1);
+        CHECK(g.tradeable(0, r) == have);
+        CHECK(g.player(0).tally.bought == 0);
+        CHECK(g.gold_places(0).vaults == 100);
+        // With gold in the post it buys, never past the rule.
+        g.apply(set_reserve(post, 100));
+        for (int d = 0; d < 8 && g.tradeable(0, r) < target; ++d) {
+            run(g, g.day_ticks());
+            CHECK(g.tradeable(0, r) <= target);
+        }
+        CHECK(g.tradeable(0, r) == target);
+        const TradeTally bought = g.player(0).tally;
+        CHECK(bought.bought == target - have);
+        CHECK(bought.bought_gold == (target - have) * price);
+        CHECK(gold(g, 0) == 100 - bought.bought_gold);
+        // Selling: down to the rule, with the gold in the post.
+        const DefIndex log = g.content().find_resource("core:log");
+        std::int32_t sell = 0;
+        for (const MerchantGood& m : g.player(0).merchant) {
+            sell = m.resource == log ? m.sell : sell;
+        }
+        REQUIRE(sell > 0);
+        const std::int32_t logs = amount(g, "core:log");
+        REQUIRE(logs > 30);
+        g.apply(rule(log, 30, kNoRule));
+        run(g, g.day_ticks());
+        CHECK(amount(g, "core:log") == 30);
+        CHECK(g.player(0).tally.sold == logs - 30);
+        CHECK(gold(g, 0) == 100 - bought.bought_gold + (logs - 30) * sell);
+        // When the merchant leaves, a notice with what was done.
+        std::optional<Game::Event> notice;
+        for (int d = 0; d < 20 && g.merchant_here(0); ++d) {
+            run(g, g.day_ticks());
+            for (const Game::Event& e : g.take_events()) {
+                if (e.kind == Game::Event::Kind::AutoTrade) {
+                    notice = e;
+                }
+            }
+        }
+        REQUIRE_FALSE(g.merchant_here(0));
+        for (const Game::Event& e : g.take_events()) {
+            if (e.kind == Game::Event::Kind::AutoTrade) {
+                notice = e;
+            }
+        }
+        REQUIRE(notice.has_value());
+        CHECK(notice->tally.bought == target - have);
+        CHECK(notice->tally.sold >= logs - 30);
+        CHECK(g.player(0).tally == TradeTally{});
+    }
+
+    TEST_CASE("automatic trade is the same on every machine and survives a save") {
+        Game g = town_with_merchant(81);
+        const MerchantGood* good = stocked_good(g);
+        REQUIRE(good != nullptr);
+        g.apply(set_reserve(post_of(g), 80));
+        BinaryWriter w;
+        g.save(w);
+        Game other(core(), map_for(82), setup());
+        BinaryReader r(w.bytes());
+        REQUIRE(other.load(r, core()));
+        const DefIndex log = g.content().find_resource("core:log");
+        for (Game* game : {&g, &other}) {
+            game->apply(rule(good->resource, kNoRule, game->tradeable(0, good->resource) + 20));
+            game->apply(rule(log, 40, kNoRule));
+        }
+        run(g, 3 * g.day_ticks());
+        run(other, 3 * other.day_ticks());
+        CHECK(g.player(0).tally.sold > 0);
+        CHECK(other.hash() == g.hash());
+        // Saved in the middle of the visit, with its rules and tally.
+        BinaryWriter w2;
+        g.save(w2);
+        Game back(core(), map_for(82), setup());
+        BinaryReader r2(w2.bytes());
+        REQUIRE(back.load(r2, core()));
+        CHECK(back.player(0).trade_rules == g.player(0).trade_rules);
+        CHECK(back.player(0).tally == g.player(0).tally);
+        run(g, 20 * g.day_ticks());
+        run(back, 20 * back.day_ticks());
+        CHECK(back.hash() == g.hash());
+    }
+}

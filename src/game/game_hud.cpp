@@ -623,6 +623,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     if (post) {
         const std::size_t rows = game.merchant_here(s.town()) ? merchant_rows(game, s.town()).size() : 0;
         h += pad * 0.5f + button_h + pad * 0.5f + line + static_cast<float>(rows) * field_row;
+        h += pad * 0.5f + auto_trade_height(ctx, game, s.town(), field_row);
     }
     h += pad;
     ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
@@ -697,6 +698,8 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         }
         y += button_h + pad * 0.5f;
         merchant_section(ctx, s, box, y, field_row);
+        y += pad * 0.5f;
+        auto_trade_section(ctx, s, box, y, field_row);
     }
     if (barracks) {
         y += pad * 0.5f;
@@ -1026,6 +1029,114 @@ void GameHud::merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect&
         }
         ctx.pop_id();
         y += row_h;
+    }
+}
+
+namespace {
+
+// The goods merchants trade, which automatic trade can name.
+std::vector<sim::DefIndex> rule_goods(const sim::Content& content) {
+    std::vector<sim::DefIndex> out;
+    for (std::size_t r = 0; r < content.resources.size(); ++r) {
+        if (content.resources[r].value > 0) {
+            out.push_back(static_cast<sim::DefIndex>(r));
+        }
+    }
+    return out;
+}
+
+}  // namespace
+
+float GameHud::auto_trade_height(ui::Context& ctx, const sim::Game& game, std::uint8_t town, float row_h) const {
+    const float line = ctx.text().line_height(ctx.style(ctx.theme().body));
+    const float small = ctx.text().line_height(ctx.style(ctx.theme().small));
+    const std::size_t rules = std::min<std::size_t>(game.player(town).trade_rules.size(), 8);
+    return 2 * line + 4 * row_h + static_cast<float>(rules) * small;
+}
+
+// "Sell over N, buy under M" for one good at a time, applied with a
+// button; the rules in force listed below.
+void GameHud::auto_trade_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h) {
+    const sim::Game& game = s.game();
+    const sim::Content& content = game.content();
+    const std::uint8_t town = s.town();
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const float line = ctx.text().line_height(body);
+    const float small_line = ctx.text().line_height(small);
+    const float pad = ctx.s(14.0f);
+    const std::vector<sim::DefIndex> goods = rule_goods(content);
+    const std::vector<sim::TradeRule>& rules = game.player(town).trade_rules;
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr("hud.auto.title"), body, ctx.theme().text);
+    ctx.tooltip_area(ctx.id("auto_title"), {box.x + pad, y, box.w - 2 * pad, line}, tr("hud.auto.tooltip"));
+    y += line;
+    if (goods.empty()) {
+        y += line + 4 * row_h;
+        return;
+    }
+    std::vector<std::string> names;
+    for (const sim::DefIndex r : goods) {
+        names.push_back(tr(content.resources[r].name_key));
+    }
+    rule_pick_ = std::clamp(rule_pick_, 0, static_cast<int>(goods.size()) - 1);
+    const sim::DefIndex picked = goods[static_cast<std::size_t>(rule_pick_)];
+    const sim::TradeRule* current = nullptr;
+    for (const sim::TradeRule& rule : rules) {
+        current = rule.resource == picked ? &rule : current;
+    }
+    if (rule_loaded_ != rule_pick_) {
+        // A new good: show its rule, or none.
+        rule_loaded_ = rule_pick_;
+        rule_sell_ = current != nullptr && current->sell_above != sim::kNoRule ? current->sell_above : -10;
+        rule_buy_ = current != nullptr && current->buy_below != sim::kNoRule ? current->buy_below : -10;
+    }
+    const float x = box.x + pad;
+    const float w = box.w - 2 * pad;
+    const float gap = ctx.s(4.0f);
+    ctx.push_id("auto_trade");
+    ctx.selector(ctx.id("good"), {x, y + gap / 2, w, row_h - gap}, rule_pick_, names);
+    y += row_h;
+    const auto shown = [&](const char* key) {
+        return [key](int v) { return v < 0 ? tr("hud.auto.off") : tr(key, v); };
+    };
+    ctx.slider(ctx.id("sell"), {x, y + gap / 2, w, row_h - gap}, rule_sell_, -10, 2000, 10, shown("hud.auto.sell"),
+               tr("hud.auto.sell.tooltip"));
+    y += row_h;
+    ctx.slider(ctx.id("buy"), {x, y + gap / 2, w, row_h - gap}, rule_buy_, -10, 2000, 10, shown("hud.auto.buy"),
+               tr("hud.auto.buy.tooltip"));
+    y += row_h;
+    const std::int32_t sell = rule_sell_ < 0 ? sim::kNoRule : rule_sell_;
+    const std::int32_t buy = rule_buy_ < 0 ? sim::kNoRule : rule_buy_;
+    const bool valid = sell == sim::kNoRule || buy == sim::kNoRule || buy <= sell;
+    const bool same = current != nullptr ? current->sell_above == sell && current->buy_below == buy
+                                         : sell == sim::kNoRule && buy == sim::kNoRule;
+    if (ctx.button(ctx.id("apply"), {x, y + gap / 2, w, row_h - gap}, tr("hud.auto.apply"),
+                   valid ? tr("hud.auto.apply.tooltip") : tr("hud.auto.apply.invalid"), valid && !same)) {
+        sim::Command c;
+        c.type = sim::CommandType::SetTradeRule;
+        c.def = picked;
+        c.value = sell;
+        c.value2 = buy;
+        s.issue(c);
+    }
+    y += row_h;
+    ctx.pop_id();
+    // The rules in force.
+    ctx.label({x, y, w, line}, tr(rules.empty() ? "hud.auto.none" : "hud.auto.rules"), body, ctx.theme().text_dim);
+    y += line;
+    for (std::size_t i = 0; i < rules.size() && i < 8; ++i) {
+        const sim::TradeRule& rule = rules[i];
+        std::string parts;
+        if (rule.sell_above != sim::kNoRule) {
+            parts = tr("hud.auto.sell", rule.sell_above);
+        }
+        if (rule.buy_below != sim::kNoRule) {
+            parts += (parts.empty() ? "" : " · ") + tr("hud.auto.buy", rule.buy_below);
+        }
+        const std::string name = rule.resource < content.resources.size() ? tr(content.resources[rule.resource].name_key)
+                                                                          : std::string();
+        ctx.label({x, y, w, small_line}, tr("hud.auto.rule", name, parts), small, ctx.theme().text);
+        y += small_line;
     }
 }
 

@@ -56,6 +56,9 @@ private:
     // Phase 14: the merchant at a trading post, and trade with other towns.
     [[nodiscard]] std::vector<sim::DefIndex> merchant_rows(const sim::Game& game, std::uint8_t town) const;
     void merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h);
+    // Automatic trade rules of the trading post (phase 29), and its height.
+    [[nodiscard]] float auto_trade_height(ui::Context& ctx, const sim::Game& game, std::uint8_t town, float row_h) const;
+    void auto_trade_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h);
     void trade_window(ui::Context& ctx, GameSession& s);
     // Phase 16: the barracks and the army.
     void barracks_section(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
@@ -68,6 +71,13 @@ private:
     bool trade_open_ = false;
     int offer_to_ = 0;
     int offer_give_ = 0;
+    // The rule being edited in the trading post's window: which good, and
+    // its "sell over" and "buy under" (kNoRule: off); `rule_loaded_` is the
+    // good they were read for.
+    int rule_pick_ = 0;
+    int rule_loaded_ = -1;
+    int rule_sell_ = -10;
+    int rule_buy_ = -10;
     int offer_give_amount_ = 20;
     int offer_want_ = 1;
     int offer_want_amount_ = 20;

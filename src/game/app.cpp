@@ -1781,6 +1781,9 @@ void App::report_game_events() {
                 break;
             case sim::Game::Event::Kind::MerchantArrived: text = tr("event.merchantArrived"); break;
             case sim::Game::Event::Kind::MerchantLeft: text = tr("event.merchantLeft"); break;
+            case sim::Game::Event::Kind::AutoTrade:
+                text = tr("event.autoTrade", e.tally.sold, e.tally.sold_gold, e.tally.bought, e.tally.bought_gold);
+                break;
             case sim::Game::Event::Kind::OfferReceived: text = tr("event.offerReceived", town_name(e.other)); break;
             case sim::Game::Event::Kind::OfferAnswered:
                 text = tr(e.value == 1 ? "event.offerAccepted" : "event.offerDeclined", town_name(e.other));

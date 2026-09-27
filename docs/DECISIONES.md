@@ -1390,3 +1390,24 @@ El oro se muestra solo en la barra superior, debajo de la felicidad. Su tooltip 
 
 **D-2808. El modelo de la bóveda.**
 Un cuarto de piedra con contrafuertes, techo de pizarra, puerta con bandas de hierro y un sello dorado, en `art/blender/buildings.py`. Regenerar los edificios deja los demás archivos idénticos.
+
+## Fase 29: comercio automático en el puesto (2026-09-27)
+
+**D-2901. Reglas por bien, del pueblo.**
+Cada regla dice, para un bien que los mercaderes compran y venden, "vender si hay más de N" y "comprar si hay menos de M"; cualquiera de las dos puede estar apagada. Son del pueblo, no del edificio: si el puesto se quema y se reconstruye, las reglas siguen. Se cambian con el comando `SetTradeRule`; con las dos apagadas, la regla se quita. Se guardan ordenadas por bien, para que el orden de aplicación sea el mismo en todas las máquinas.
+
+**D-2902. M no puede pasar de N.**
+Una regla con M mayor que N compraría hasta M y al otro día vendería lo que pasa de N, una y otra vez, pagando la diferencia de precio. Esa regla se rechaza al leer el comando, y la ventana no deja aplicarla.
+
+**D-2903. Cuándo y cómo.**
+- Una vez al día, mientras hay un mercader, empezando el día en que llega.
+- Primero las ventas de todas las reglas y después las compras, así el oro de lo vendido ya sirve para comprar.
+- Ventas: como la venta a mano, primero del puesto y luego de los demás almacenes. El oro entra al puesto, o al centro del pueblo si no cabe.
+- Compras: solo con el oro que hay en ese momento en el puesto, y sin pasar del stock del mercader. Lo comprado queda en el puesto, o en el centro del pueblo si no cabe.
+- "Lo que hay en el pueblo" es lo mismo que puede vender el comercio: lo de los almacenes, el puesto y el centro del pueblo, sin lo que llevan los aldeanos en la mano.
+
+**D-2904. El aviso.**
+El pueblo lleva la cuenta de la visita: unidades vendidas y compradas, y el oro que entró y salió. Cuando el mercader se va, si se hizo algo, llega el aviso con esas cuentas y suena como el comercio; la cuenta vuelve a cero con cada mercader. Se guarda con la partida, así un guardado a mitad de la visita no la pierde.
+
+**D-2905. En la ventana del puesto.**
+Debajo de lo que trae el mercader: un selector del bien, dos deslizadores de 0 a 2000 de 10 en 10 (el primer paso es "No") y un botón para aplicar la regla. Así mover un deslizador no manda un comando por cada paso en multijugador. Abajo, las reglas en vigor (hasta 8 a la vista). Las reglas pasan a la versión 23.

@@ -77,6 +77,11 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::Trade:
             ok = ok && c.entity.valid() && c.value != 0 && c.value >= -kMaxTrade && c.value <= kMaxTrade;
             break;
+        case CommandType::SetTradeRule:
+            // Buying up to more than one sells over would trade back and forth.
+            ok = ok && c.value >= kNoRule && c.value <= kMaxRule && c.value2 >= kNoRule && c.value2 <= kMaxRule &&
+                 (c.value == kNoRule || c.value2 == kNoRule || c.value2 <= c.value);
+            break;
         case CommandType::OfferTrade:
             ok = ok && c.count < kMaxPlayers && c.count != c.player && c.value >= 1 && c.value <= kMaxTrade &&
                  c.value2 >= 1 && c.value2 <= kMaxTrade && c.def != c.def2;

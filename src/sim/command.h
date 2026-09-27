@@ -37,12 +37,16 @@ enum class CommandType : std::uint8_t {
     DevLevel = 27,        // Developer tools: the town center goes up a level at once.
     DevSpawn = 28,        // Developer tools: `value` adults (couples) arrive at the town center.
     ArmyOrder = 26,       // The army: defend around `position` (`value` 0), attack player `count` (1) or retreat (2).
+    SetTradeRule = 29,    // Automatic trade of `def`: sell over `value`, buy under `value2` (kNoRule: off).
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;
 inline constexpr std::uint16_t kMaxSpawnPerCommand = 64;
 inline constexpr std::int32_t kMaxDevGrant = 10000;
 inline constexpr std::int32_t kMaxTrade = 10000;
+// An automatic trade rule that is off; the largest amount one can name.
+inline constexpr std::int32_t kNoRule = -1;
+inline constexpr std::int32_t kMaxRule = 100000;
 
 struct Command {
     CommandType type = CommandType::SpawnWalkers;

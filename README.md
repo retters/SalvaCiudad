@@ -375,6 +375,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con las herramientas de desarrollo, prender fuego a la bóveda no hace nada; al puesto sí, y su oro se pierde.
 - [ ] En multijugador, una oferta de oro entre jugadores funciona igual que antes, con "Oro" en la lista.
 
+### Fase 29 (comercio automático en el puesto)
+
+- [ ] La ventana del puesto de comercio tiene "Comercio automático": elige un bien, mueve "vender si hay más de" y "comprar si hay menos de" y pulsa "Aplicar regla"; aparece en la lista de reglas.
+- [ ] No deja aplicar una regla que compre hasta más de lo que vende.
+- [ ] Sin mercader, las reglas no hacen nada.
+- [ ] Con mercader y oro en el puesto, cada día vende lo que sobra y compra hasta la cantidad fijada; con el puesto sin oro no compra, aunque haya oro en la bóveda.
+- [ ] Al irse el mercader llega un aviso con lo vendido, lo comprado y el oro.
+- [ ] En multijugador, dos jugadores con reglas no se desincronizan.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

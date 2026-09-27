@@ -82,6 +82,7 @@ void SoundDirector::event(sim::Game::Event::Kind kind) {
         case K::RaidStarted:
         case K::FireStarted: play(Bell, audio::Category::Effects, 0.8f); break;
         case K::MerchantArrived:
+        case K::AutoTrade:
         case K::CaravanArrived:
         case K::OfferAnswered: play(Coins, audio::Category::Effects, 0.7f); break;
         case K::UnitTrained: play(Sword, audio::Category::Effects, 0.6f); break;

@@ -1985,6 +1985,12 @@ public:
                 ps.merchant_leaves = 0;
                 ps.merchant.clear();
                 g_.events_.push_back({Game::Event::Kind::MerchantLeft, p, {}, {}, 0, 0});
+                if (ps.tally != TradeTally{}) {
+                    Game::Event e{Game::Event::Kind::AutoTrade, p, {}, {}, 0, 0};
+                    e.tally = ps.tally;
+                    g_.events_.push_back(e);
+                }
+                ps.tally = {};
             }
             if (ps.merchant_arrives == 0) {
                 // The first one comes a month after there is a trading post.
@@ -1998,6 +2004,9 @@ public:
                 } else {
                     ps.merchant_arrives = 0;
                 }
+            }
+            if (g_.merchant_here(p)) {
+                auto_trade(p);
             }
         }
         // Caravans that got there.
@@ -2024,10 +2033,81 @@ public:
         }
     }
 
+    // Once a day while a merchant is here: the town's rules, sales first
+    // (their gold goes into the post), then purchases with the post's gold
+    // only; the vaults' gold stays out of it (phase 29).
+    void auto_trade(std::uint8_t p) {
+        PlayerState& ps = g_.players_[p];
+        Building* post = trading_post(p);
+        if (post == nullptr || ps.trade_rules.empty() || g_.gold_ == kNoDef) {
+            return;
+        }
+        const auto good_of = [&](DefIndex r) -> MerchantGood* {
+            for (MerchantGood& m : ps.merchant) {
+                if (m.resource == r) {
+                    return &m;
+                }
+            }
+            return nullptr;
+        };
+        for (const TradeRule& rule : ps.trade_rules) {
+            const MerchantGood* good = good_of(rule.resource);
+            if (rule.sell_above == kNoRule || good == nullptr || good->sell <= 0) {
+                continue;
+            }
+            const std::int32_t n = std::min(kMaxTrade, g_.tradeable(p, rule.resource) - rule.sell_above);
+            if (n > 0 && take_from_town(p, rule.resource, n)) {
+                give_to_town(p, g_.gold_, n * good->sell);
+                ps.tally.sold += n;
+                ps.tally.sold_gold += n * good->sell;
+            }
+        }
+        for (const TradeRule& rule : ps.trade_rules) {
+            MerchantGood* good = good_of(rule.resource);
+            if (rule.buy_below == kNoRule || good == nullptr || good->stock <= 0) {
+                continue;
+            }
+            const std::int32_t budget = amount_of(post->stock, g_.gold_);
+            const std::int32_t n = std::min({rule.buy_below - g_.tradeable(p, rule.resource), good->stock, budget / good->buy});
+            if (n <= 0) {
+                continue;
+            }
+            add_to(post->stock, g_.gold_, -n * good->buy);
+            compact(post->stock);
+            good->stock -= n;
+            give_to_town(p, rule.resource, n);
+            ps.tally.bought += n;
+            ps.tally.bought_gold += n * good->buy;
+        }
+    }
+
+    void set_trade_rule(const Command& c) {
+        PlayerState& ps = g_.players_[g_.town_of(c.player)];
+        if (c.def >= c_.resources.size() || c_.resources[c.def].value <= 0) {
+            ++g_.rejected_;
+            return;
+        }
+        auto it = std::lower_bound(ps.trade_rules.begin(), ps.trade_rules.end(), c.def,
+                                   [](const TradeRule& r, DefIndex d) { return r.resource < d; });
+        const bool found = it != ps.trade_rules.end() && it->resource == c.def;
+        if (c.value == kNoRule && c.value2 == kNoRule) {
+            if (found) {
+                ps.trade_rules.erase(it);
+            }
+            return;
+        }
+        if (!found) {
+            it = ps.trade_rules.insert(it, TradeRule{c.def, kNoRule, kNoRule});
+        }
+        it->sell_above = c.value;
+        it->buy_below = c.value2;
+    }
+
     // A merchant with a few goods at prices of the day.
     void merchant_arrives(std::uint8_t p, Building& post) {
         PlayerState& ps = g_.players_[p];
         ps.merchant.clear();
+        ps.tally = {};
         ps.merchant_leaves = g_.tick_ + g_.month_ticks();
         std::vector<DefIndex> goods;
         for (std::size_t r = 0; r < c_.resources.size(); ++r) {
@@ -4064,6 +4144,7 @@ public:
                 break;
             }
             case CommandType::OfferTrade: offer_trade(c); break;
+            case CommandType::SetTradeRule: set_trade_rule(c); break;
             case CommandType::AnswerOffer: answer_offer(c); break;
             case CommandType::DevIgnite: {
                 Building* b = g_.buildings_.get(c.entity);
@@ -4881,6 +4962,16 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
             w.i32(good.buy);
             w.i32(good.sell);
         }
+        w.u32(static_cast<std::uint32_t>(ps.trade_rules.size()));
+        for (const TradeRule& rule : ps.trade_rules) {
+            w.u16(rule.resource);
+            w.i32(rule.sell_above);
+            w.i32(rule.buy_below);
+        }
+        w.i32(ps.tally.sold);
+        w.i32(ps.tally.sold_gold);
+        w.i32(ps.tally.bought);
+        w.i32(ps.tally.bought_gold);
     }
     w.u8(g.game_over() ? 1 : 0);
     w.u32(g.next_offer());
@@ -5179,6 +5270,27 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
                 r.fail();
                 return false;
             }
+        }
+        std::uint32_t trade_rules = 0;
+        if (!r.count(static_cast<std::uint32_t>(c.resources.size()), 10, trade_rules)) {
+            return false;
+        }
+        ps.trade_rules.resize(trade_rules);
+        for (std::size_t k = 0; k < ps.trade_rules.size(); ++k) {
+            TradeRule& rule = ps.trade_rules[k];
+            if (!r.u16(rule.resource) || rule.resource >= c.resources.size() ||
+                (k > 0 && rule.resource <= ps.trade_rules[k - 1].resource) || !r.i32(rule.sell_above) ||
+                rule.sell_above < kNoRule || rule.sell_above > kMaxRule || !r.i32(rule.buy_below) ||
+                rule.buy_below < kNoRule || rule.buy_below > kMaxRule) {
+                r.fail();
+                return false;
+            }
+        }
+        TradeTally& t = ps.tally;
+        if (!r.i32(t.sold) || t.sold < 0 || !r.i32(t.sold_gold) || t.sold_gold < 0 || !r.i32(t.bought) || t.bought < 0 ||
+            !r.i32(t.bought_gold) || t.bought_gold < 0) {
+            r.fail();
+            return false;
         }
     }
     const auto trade_def = [&](DefIndex d) { return d < c.resources.size(); };
