@@ -65,6 +65,9 @@ public:
     // next to buildings until real towns exist. Cleared by hide().
     void show_sample_village(render::SceneRenderer& renderer, const sim::MapData& map, math::Vec3 center);
 
+    // The clouds over a shown map.
+    void show_sky(render::SceneRenderer& renderer, const sim::MapData& map);
+
     // Developer tools: redraw the features after the map's list changed,
     // and edit the houses.
     void refresh_features(render::SceneRenderer& renderer, const sim::MapData& map);
@@ -87,6 +90,8 @@ private:
 
     void apply_features(render::SceneRenderer& renderer, const std::vector<std::vector<render::Instance>>& features);
     render::ModelId house_ = kNoModel;
+    render::ModelId cloud_ = kNoModel;
+    void show_clouds(render::SceneRenderer& renderer, const sim::MapData& map);
     bool models_loaded_ = false;
     bool shown_ = false;
 };

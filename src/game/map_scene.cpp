@@ -78,23 +78,23 @@ Rgb8 ground_color(sim::Terrain terrain, std::uint8_t fertility, std::uint32_t ce
     float b = 0.0f;
     bool grows = false;  // Plant cover that dries out on poor soil.
     switch (terrain) {
-        case sim::Terrain::Grass: r = 112; g = 146; b = 66; grows = true; break;
-        case sim::Terrain::Meadow: r = 140; g = 166; b = 74; grows = true; break;
-        case sim::Terrain::ForestFloor: r = 86; g = 106; b = 54; grows = true; break;
-        case sim::Terrain::Sand: r = 214; g = 198; b = 148; break;
-        case sim::Terrain::Rock: r = 140; g = 136; b = 128; break;
-        case sim::Terrain::Clay: r = 170; g = 120; b = 86; break;
-        // The same tone as the water surface, so rivers still read as water
-        // where distant, coarser ground hides the surface.
-        case sim::Terrain::Water: r = 52; g = 104; b = 110; break;
+        // Bright, saturated low-poly colors (decision D-627).
+        case sim::Terrain::Grass: r = 96; g = 168; b = 58; grows = true; break;
+        case sim::Terrain::Meadow: r = 122; g = 180; b = 66; grows = true; break;
+        case sim::Terrain::ForestFloor: r = 70; g = 128; b = 50; grows = true; break;
+        case sim::Terrain::Sand: r = 226; g = 206; b = 150; break;
+        case sim::Terrain::Rock: r = 138; g = 104; b = 82; break;
+        case sim::Terrain::Clay: r = 164; g = 118; b = 84; break;
+        // Wet sand: the bed shows through shallow water.
+        case sim::Terrain::Water: r = 196; g = 186; b = 138; break;
         case sim::Terrain::Count: break;
     }
     if (grows) {
         // Poor soil looks drier and yellower.
         const float dry = (1.0f - static_cast<float>(fertility) / 255.0f) * 0.55f;
-        r += (170.0f - r) * dry;
-        g += (164.0f - g) * dry;
-        b += (90.0f - b) * dry;
+        r += (196.0f - r) * dry;
+        g += (190.0f - g) * dry;
+        b += (96.0f - b) * dry;
     }
     // A little variation per cell so large areas are not flat.
     const float jitter = 0.96f + static_cast<float>(cell_hash & 0xFFu) / 255.0f * 0.08f;
@@ -163,6 +163,18 @@ MapVisuals build_map_visuals(const sim::MapData& map) {
     t.heights = map.heights;
     t.water = map.water;
 
+    // Every cell's color, for the facets and the color texture.
+    std::vector<std::uint32_t> cell_colors(static_cast<std::size_t>(n) * static_cast<std::size_t>(n));
+    for (std::int32_t cz = 0; cz < n; ++cz) {
+        for (std::int32_t cx = 0; cx < n; ++cx) {
+            const std::size_t cell = static_cast<std::size_t>(cz) * static_cast<std::size_t>(n) + static_cast<std::size_t>(cx);
+            const Rgb8 c = ground_color(static_cast<sim::Terrain>(map.terrain[cell]), map.fertility[cell],
+                                        hash2(static_cast<std::uint32_t>(cx), static_cast<std::uint32_t>(cz)));
+            cell_colors[cell] = 0xFF000000u | (static_cast<std::uint32_t>(c.b) << 16) |
+                                (static_cast<std::uint32_t>(c.g) << 8) | c.r;
+        }
+    }
+
     // Ground colors, averaged down when the map is bigger than the texture.
     t.color_size = std::min(n, kMaxGroundColorSize);
     const std::int32_t shrink = n / t.color_size;
@@ -177,11 +189,10 @@ MapVisuals build_map_visuals(const sim::MapData& map) {
                     const std::int32_t cz = ty * shrink + dz;
                     const std::size_t cell = static_cast<std::size_t>(cz) * static_cast<std::size_t>(n) +
                                              static_cast<std::size_t>(cx);
-                    const Rgb8 c = ground_color(static_cast<sim::Terrain>(map.terrain[cell]), map.fertility[cell],
-                                                hash2(static_cast<std::uint32_t>(cx), static_cast<std::uint32_t>(cz)));
-                    sum[0] += c.r;
-                    sum[1] += c.g;
-                    sum[2] += c.b;
+                    const std::uint32_t c = cell_colors[cell];
+                    sum[0] += c & 0xFFu;
+                    sum[1] += (c >> 8) & 0xFFu;
+                    sum[2] += (c >> 16) & 0xFFu;
                     sum[3] += grass_density(static_cast<sim::Terrain>(map.terrain[cell]), map.fertility[cell],
                                             map.biome.empty() ? sim::Biome::Temperate
                                                               : static_cast<sim::Biome>(map.biome[cell]));
@@ -196,6 +207,21 @@ MapVisuals build_map_visuals(const sim::MapData& map) {
         }
     }
 
+    // The faceted ground, with small facets where the kind of ground changes.
+    std::vector<std::uint8_t> classes(map.terrain.size());
+    for (std::size_t i = 0; i < classes.size(); ++i) {
+        render::GroundClass c = render::GroundClass::Soft;
+        switch (static_cast<sim::Terrain>(map.terrain[i])) {
+            case sim::Terrain::Sand: c = render::GroundClass::Sand; break;
+            case sim::Terrain::Water: c = render::GroundClass::Water; break;
+            case sim::Terrain::Rock: c = render::GroundClass::Rock; break;
+            default: break;
+        }
+        classes[i] = static_cast<std::uint8_t>(c);
+    }
+    t.facets = render::build_facet_meshes(n, map.heights, classes, cell_colors,
+                                          static_cast<std::uint32_t>(map.settings.seed));
+    render::add_backdrop(t.facets, n, map.heights, static_cast<std::uint32_t>(map.settings.seed));
     v.features = build_feature_instances(map);
     return v;
 }
@@ -260,6 +286,11 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const std::filesyste
     const auto house = load_model_file(props_dir / "house_small.glb");
     render::ModelId id = 0;
     house_ = house.has_value() && renderer.add_model(*house, id) ? id : kNoModel;
+    const auto cloud = load_model_file(props_dir / "cloud.glb");
+    cloud_ = cloud.has_value() && renderer.add_model(*cloud, id) ? id : kNoModel;
+    if (cloud_ != kNoModel) {
+        renderer.set_model_class(cloud_, render::ModelClass::Sky);
+    }
     models_loaded_ = any;
     return any;
 }
@@ -272,6 +303,10 @@ bool MapScene::show(render::SceneRenderer& renderer, const MapVisuals& visuals) 
     apply_features(renderer, visuals.features);
     shown_ = true;
     return true;
+}
+
+void MapScene::show_sky(render::SceneRenderer& renderer, const sim::MapData& map) {
+    show_clouds(renderer, map);
 }
 
 void MapScene::refresh_features(render::SceneRenderer& renderer, const sim::MapData& map) {
@@ -350,8 +385,39 @@ void MapScene::remove_house(render::SceneRenderer& renderer, std::size_t index) 
     renderer.set_instances(house_, houses_);
 }
 
+// Low-poly clouds high over the map and the mountains around it; they do
+// not move and cast no shadow (decision D-628).
+void MapScene::show_clouds(render::SceneRenderer& renderer, const sim::MapData& map) {
+    if (cloud_ == kNoModel) {
+        return;
+    }
+    const float side = static_cast<float>(map.size);
+    const float reach = side + 3000.0f;
+    // About one cloud every 600 x 600 m.
+    const auto count = static_cast<std::size_t>(reach * reach / 360000.0f) + 4;
+    std::vector<render::Instance> clouds;
+    std::uint32_t h = static_cast<std::uint32_t>(map.settings.seed) * 2654435761u + 12345u;
+    const auto next = [&h] {
+        h ^= h << 13;
+        h ^= h >> 17;
+        h ^= h << 5;
+        return static_cast<float>(h & 0xFFFFu) / 65535.0f;
+    };
+    for (std::size_t i = 0; i < count; ++i) {
+        render::Instance c;
+        c.position = {-1500.0f + next() * reach, 240.0f + next() * 120.0f, -1500.0f + next() * reach};
+        c.yaw = next() * 6.2831853f;
+        c.scale = 7.0f + next() * 9.0f;
+        clouds.push_back(c);
+    }
+    renderer.set_instances(cloud_, clouds);
+}
+
 void MapScene::hide(render::SceneRenderer& renderer) {
     houses_.clear();
+    if (cloud_ != kNoModel) {
+        renderer.set_instances(cloud_, {});
+    }
     if (house_ != kNoModel) {
         renderer.set_instances(house_, {});
     }

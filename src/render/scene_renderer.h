@@ -49,11 +49,12 @@ struct Palette {
 
 struct Lighting {
     math::Vec3 sun_direction = math::normalize({0.45f, 0.75f, 0.35f});  // Towards the sun.
-    math::Vec3 sun_color{1.9f, 1.8f, 1.6f};
-    math::Vec3 sky_ambient{0.40f, 0.47f, 0.60f};
-    math::Vec3 ground_ambient{0.16f, 0.14f, 0.11f};
-    math::Vec3 zenith_color{0.16f, 0.30f, 0.60f};
-    math::Vec3 horizon_color{0.56f, 0.66f, 0.78f};
+    // A clear, saturated day as in the low-poly reference (decision D-627).
+    math::Vec3 sun_color{2.1f, 1.95f, 1.7f};
+    math::Vec3 sky_ambient{0.42f, 0.55f, 0.72f};
+    math::Vec3 ground_ambient{0.18f, 0.16f, 0.12f};
+    math::Vec3 zenith_color{0.04f, 0.38f, 0.90f};
+    math::Vec3 horizon_color{0.50f, 0.78f, 0.95f};
 };
 
 struct SceneView {
@@ -92,8 +93,9 @@ using ModelId = std::uint32_t;
 using SkinnedId = std::uint32_t;
 
 // How far a model is drawn: normal models up to the draw distance; small
-// vegetation (bushes, herbs) only up to the vegetation distance.
-enum class ModelClass : std::uint8_t { Normal, SmallVegetation };
+// vegetation (bushes, herbs) only up to the vegetation distance. Sky
+// decorations (clouds) cast no shadows.
+enum class ModelClass : std::uint8_t { Normal, SmallVegetation, Sky };
 
 class SceneRenderer {
 public:

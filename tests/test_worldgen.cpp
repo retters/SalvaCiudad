@@ -1,5 +1,6 @@
 #include <doctest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <ostream>
@@ -74,7 +75,7 @@ std::vector<WaterArea> water_areas(const MapData& m) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0x9692d3e6c6c5d81full;
+constexpr std::uint64_t kGoldenSmallMap = 0x02797a3d14672e4bull;
 
 }  // namespace
 
@@ -147,6 +148,50 @@ TEST_SUITE("worldgen") {
                 CHECK_MESSAGE(ends_well, "seed " << seed << ": water area of " << a.cells << " cells");
             }
         }
+    }
+
+    TEST_CASE("water is above the ground it covers") {
+        for (const Relief relief : {Relief::Low, Relief::Mountainous}) {
+            MapSettings s = settings(61, MapSize::Medium);
+            s.water = Amount::High;
+            s.relief = relief;
+            const auto m = generate_map(s);
+            REQUIRE(m.has_value());
+            std::size_t cells = 0;
+            std::size_t dry = 0;
+            for (std::int32_t z = 0; z < m->size; ++z) {
+                for (std::int32_t x = 0; x < m->size; ++x) {
+                    const std::uint16_t w = m->water[static_cast<std::size_t>(z) * static_cast<std::size_t>(m->size) +
+                                                     static_cast<std::size_t>(x)];
+                    if (w == 0) {
+                        continue;
+                    }
+                    ++cells;
+                    const std::uint16_t lowest = std::min({m->height_cm(x, z), m->height_cm(x + 1, z),
+                                                           m->height_cm(x, z + 1), m->height_cm(x + 1, z + 1)});
+                    dry += w <= lowest;
+                }
+            }
+            CHECK(cells > 1000);
+            // Every water cell holds some water over its lowest corner.
+            CHECK(dry == 0);
+        }
+    }
+
+    TEST_CASE("mountainous relief is higher") {
+        MapSettings low = settings(62, MapSize::Medium);
+        MapSettings high = low;
+        high.relief = Relief::Mountainous;
+        const auto a = generate_map(low);
+        const auto b = generate_map(high);
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+        const auto range = [](const MapData& m) {
+            const auto [lo, hi] = std::minmax_element(m.heights.begin(), m.heights.end());
+            return static_cast<int>(*hi) - static_cast<int>(*lo);
+        };
+        CHECK(range(*b) > range(*a) + 3000);  // At least 30 m more, in cm.
+        CHECK(b->starts.size() == 1);
     }
 
     TEST_CASE("start positions are valid, apart and fair") {

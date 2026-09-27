@@ -165,6 +165,7 @@ function(sc_add_shader source profile symbol)
                 "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_common.hlsli"
                 "${CMAKE_CURRENT_SOURCE_DIR}/shaders/skinning.hlsli"
                 "${CMAKE_CURRENT_SOURCE_DIR}/shaders/terrain_common.hlsli"
+                "${CMAKE_CURRENT_SOURCE_DIR}/shaders/lighting.hlsli"
         COMMENT "Compiling shader ${source}"
         VERBATIM)
     set(SC_SHADER_HEADERS ${SC_SHADER_HEADERS} "${header}" PARENT_SCOPE)
@@ -179,7 +180,8 @@ sc_add_shader(shaders/sky.vert.hlsl vs_6_0 kSkyVertDxil)
 sc_add_shader(shaders/sky.frag.hlsl ps_6_0 kSkyFragDxil)
 sc_add_shader(shaders/skinned.vert.hlsl vs_6_0 kSkinnedVertDxil)
 sc_add_shader(shaders/skinned_shadow.vert.hlsl vs_6_0 kSkinnedShadowVertDxil)
-sc_add_shader(shaders/terrain.vert.hlsl vs_6_0 kTerrainVertDxil)
+sc_add_shader(shaders/facet.vert.hlsl vs_6_0 kFacetVertDxil)
+sc_add_shader(shaders/facet.frag.hlsl ps_6_0 kFacetFragDxil)
 sc_add_shader(shaders/water.vert.hlsl vs_6_0 kWaterVertDxil)
 sc_add_shader(shaders/water.frag.hlsl ps_6_0 kWaterFragDxil)
 sc_add_shader(shaders/grass.vert.hlsl vs_6_0 kGrassVertDxil)
@@ -241,6 +243,7 @@ set(SC_ENGINE_SOURCES
     src/render/model.cpp
     src/render/scene_renderer.cpp
     src/render/terrain_layer.cpp
+    src/render/terrain_mesh.cpp
     src/render/ui_renderer.cpp
     src/ui/context.cpp
     src/ui/draw_list.cpp
@@ -297,14 +300,15 @@ if(SC_BUILD_TESTS)
         tests/test_scene.cpp
         tests/test_sim.cpp
         tests/test_worldgen.cpp
-        tests/test_map_view.cpp)
+        tests/test_map_view.cpp
+        tests/test_terrain_mesh.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

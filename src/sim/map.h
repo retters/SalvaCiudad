@@ -14,7 +14,7 @@ namespace sc::sim {
 
 enum class MapSize : std::uint8_t { Small, Medium, Large, Huge, Count };
 enum class Amount : std::uint8_t { Low, Normal, High, Count };
-enum class Relief : std::uint8_t { Low, Gentle, Count };
+enum class Relief : std::uint8_t { Low, Gentle, Mountainous, Count };
 
 // Side of the map in cells (1 cell = 1 m).
 [[nodiscard]] constexpr std::int32_t map_cells(MapSize size) {

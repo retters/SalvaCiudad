@@ -269,9 +269,10 @@
     "newGame.amount.normal": "Normal",
     "newGame.amount.high": "Muchos",
     "newGame.relief": "Relieve",
-    "newGame.relief.tooltip": "Terreno casi plano o con colinas suaves.",
+    "newGame.relief.tooltip": "Terreno casi plano, colinas suaves o cordilleras con valles (en las laderas empinadas no se construye).",
     "newGame.relief.low": "Plano",
     "newGame.relief.gentle": "Colinas suaves",
+    "newGame.relief.mountainous": "Montañoso",
     "newGame.players": "Posiciones de inicio",
     "newGame.players.tooltip": "Para cuántos pueblos tiene lugar el mapa, lejos entre sí y con recursos parecidos cerca.",
     "newGame.players.value": {

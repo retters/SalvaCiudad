@@ -269,9 +269,10 @@
     "newGame.amount.normal": "Normal",
     "newGame.amount.high": "Many",
     "newGame.relief": "Relief",
-    "newGame.relief.tooltip": "Almost flat land, or gentle hills.",
+    "newGame.relief.tooltip": "Almost flat land, gentle hills, or mountain ranges with valleys (steep slopes cannot be built on).",
     "newGame.relief.low": "Flat",
     "newGame.relief.gentle": "Gentle hills",
+    "newGame.relief.mountainous": "Mountainous",
     "newGame.players": "Start positions",
     "newGame.players.tooltip": "How many towns the map has room for, far apart and with similar resources nearby.",
     "newGame.players.value": {

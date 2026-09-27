@@ -26,6 +26,14 @@ float3 srgb_to_linear(float3 c)
     return pow(max(c, 0.0), 2.2);
 }
 
+// Filmic curve (ACES, fitted by K. Narkowicz): bright light rolls off
+// instead of clipping, so sunlit colors keep their hue.
+float3 tonemap(float3 c)
+{
+    c *= 0.68;  // Exposure.
+    return saturate((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14));
+}
+
 float3 linear_to_srgb(float3 c)
 {
     return pow(saturate(c), 1.0 / 2.2);

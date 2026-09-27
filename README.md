@@ -145,6 +145,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Mapa Enorme en Ultra: más de 60 FPS en los tres modos de cámara.
 - [ ] **Tu opinión:** formas y colores de cada especie (las vistas previas se generan con `art/blender/preview_trees.py`), cantidad de pasto y los tipos de mapa.
 
+### Fase 6c (estilo low-poly facetado)
+
+- [ ] El terreno se ve en facetas: grandes en lo llano, pequeñas en orillas, barrancos y crestas. No hay grietas entre parcelas.
+- [ ] El agua es turquesa y facetada, se mueve un poco y se ve el fondo de arena cerca de la orilla. Los ríos tienen agua de verdad (antes algunos quedaban como franjas de arena).
+- [ ] Los lagos tienen formas irregulares, con playas de arena de ancho variable.
+- [ ] "Relieve: Montañoso" crea cordilleras con valles dentro del mapa; los inicios quedan en zonas llanas.
+- [ ] Alrededor del mapa hay una cordillera con nieve en las cumbres, y hay nubes low-poly en el cielo.
+- [ ] Mapa Enorme en Ultra: más de 60 FPS en los tres modos de cámara.
+- [ ] **Tu opinión:** comparado con las imágenes de referencia, ¿qué ajustarías (tamaño de las facetas, colores, agua, montañas)?
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

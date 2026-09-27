@@ -7,8 +7,9 @@
 #include <SDL3/SDL_error.h>
 
 #include "core/log.h"
+#include "shaders/facet_frag_dxil.h"
+#include "shaders/facet_vert_dxil.h"
 #include "shaders/grass_vert_dxil.h"
-#include "shaders/terrain_vert_dxil.h"
 #include "shaders/water_frag_dxil.h"
 #include "shaders/water_vert_dxil.h"
 
@@ -23,14 +24,19 @@ struct GpuChunk {
 };
 static_assert(sizeof(GpuChunk) == 32);
 
-struct TerrainUniforms {
+struct WaterGeometryUniforms {
     math::Mat4 view_proj;
-    std::int32_t map[4];  // Vertices per side, cells per side.
+    std::int32_t map[4];  // Vertices per side, cells per side, vertex step.
+    float params[4];      // Time.
 };
 
-struct LodUniforms {
-    std::int32_t lod[4];  // Vertex step, color mip level.
+struct FacetUniforms {
+    math::Mat4 view_proj;
+    float map[4];  // Cells per side.
 };
+
+// Distances (meters) where each faceted level of detail ends.
+constexpr float kFacetLodDistances[kFacetLods - 1] = {260.0f, 800.0f};
 
 struct MaterialUniforms {
     float base_color[4];
@@ -61,7 +67,10 @@ constexpr float kGrassSpacing = 0.55f;
 
 // Water keeps more detail than the ground far away, so rivers do not break
 // up: at most a step of 2 cells.
-constexpr int kMaxWaterLod = 1;
+// Water facets are 2 m near and 4 m far: big enough to read as facets,
+// small enough for rivers.
+constexpr int kMinWaterLod = 1;
+constexpr int kMaxWaterLod = 2;
 
 // Distances (meters) where each level of detail ends.
 constexpr float kLodDistances[kTerrainLods - 1] = {140.0f, 280.0f, 560.0f, 1120.0f};
@@ -163,8 +172,15 @@ void TerrainLayer::release_map() {
     SDL_ReleaseGPUBuffer(device_, heights_);
     SDL_ReleaseGPUBuffer(device_, water_);
     SDL_ReleaseGPUBuffer(device_, chunk_buffer_);
+    SDL_ReleaseGPUBuffer(device_, facet_vertices_);
+    SDL_ReleaseGPUBuffer(device_, facet_indices_);
+    SDL_ReleaseGPUBuffer(device_, facet_colors_);
     SDL_ReleaseGPUTexture(device_, colors_);
     heights_ = water_ = chunk_buffer_ = nullptr;
+    facet_vertices_ = facet_indices_ = facet_colors_ = nullptr;
+    facet_lods_.clear();
+    backdrop_.clear();
+    backdrop_bounds_.clear();
     colors_ = nullptr;
     chunks_.clear();
     cells_ = 0;
@@ -176,7 +192,7 @@ void TerrainLayer::clear() {
 }
 
 bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat color, SDL_GPUTextureFormat depth,
-                                    SDL_GPUSampleCount samples, SDL_GPUShader* ground_fragment) {
+                                    SDL_GPUSampleCount samples, SDL_GPUShader* mesh_fragment) {
     device_ = device;
     SDL_ReleaseGPUGraphicsPipeline(device_, ground_pipeline_);
     SDL_ReleaseGPUGraphicsPipeline(device_, water_pipeline_);
@@ -198,15 +214,16 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
         log::warn("terrain: cannot upload the grass mesh: {}", SDL_GetError());
     }
 
-    SDL_GPUShader* ground_vs =
-        make_shader(device_, kTerrainVertDxil, kTerrainVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 1, 2, 2);
+    SDL_GPUShader* ground_vs = make_shader(device_, kFacetVertDxil, kFacetVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 1);
+    SDL_GPUShader* ground_fs =
+        make_shader(device_, kFacetFragDxil, kFacetFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 1, 3);
     SDL_GPUShader* water_vs = make_shader(device_, kWaterVertDxil, kWaterVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 3, 1);
     SDL_GPUShader* water_fs =
         make_shader(device_, kWaterFragDxil, kWaterFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 1);
     SDL_GPUShader* grass_vs = make_shader(device_, kGrassVertDxil, kGrassVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 1, 2, 1);
 
-    if (ground_vs != nullptr && water_vs != nullptr && water_fs != nullptr && ground_fragment != nullptr &&
-        color_sampler_ != nullptr) {
+    if (ground_vs != nullptr && ground_fs != nullptr && water_vs != nullptr && water_fs != nullptr &&
+        mesh_fragment != nullptr && color_sampler_ != nullptr) {
         SDL_GPUVertexBufferDescription buffers[2]{};
         buffers[0] = {0, sizeof(GridVertex), SDL_GPU_VERTEXINPUTRATE_VERTEX, 0};
         buffers[1] = {1, sizeof(std::uint32_t), SDL_GPU_VERTEXINPUTRATE_INSTANCE, 0};
@@ -219,8 +236,8 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
 
         SDL_GPUGraphicsPipelineCreateInfo gi{};
         gi.vertex_shader = ground_vs;
-        gi.fragment_shader = ground_fragment;
-        gi.vertex_input_state = {buffers, 2, attrs, 2};
+        gi.fragment_shader = ground_fs;
+        gi.vertex_input_state = {buffers, 1, attrs, 1};
         gi.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
         // Skirts face outwards on every side; drawing both faces is simpler
         // than orienting them, and the ground's back faces are never seen.
@@ -246,6 +263,7 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
         SDL_GPUGraphicsPipelineCreateInfo wi = gi;
         wi.vertex_shader = water_vs;
         wi.fragment_shader = water_fs;
+        wi.vertex_input_state = {buffers, 2, attrs, 2};
         wi.depth_stencil_state.enable_depth_write = false;
         wi.target_info.color_target_descriptions = &blended;
         water_pipeline_ = SDL_CreateGPUGraphicsPipeline(device_, &wi);
@@ -253,13 +271,14 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
         // Grass: one vertex stream, placed by the instance index.
         SDL_GPUGraphicsPipelineCreateInfo gr = gi;
         gr.vertex_shader = grass_vs;
+        gr.fragment_shader = mesh_fragment;
         gr.vertex_input_state = {buffers, 1, attrs, 1};
         grass_pipeline_ = grass_vs != nullptr ? SDL_CreateGPUGraphicsPipeline(device_, &gr) : nullptr;
         if (grass_pipeline_ == nullptr) {
             log::warn("terrain: grass unavailable: {}", SDL_GetError());
         }
     }
-    for (SDL_GPUShader* s : {ground_vs, water_vs, water_fs, grass_vs}) {
+    for (SDL_GPUShader* s : {ground_vs, ground_fs, water_vs, water_fs, grass_vs}) {
         SDL_ReleaseGPUShader(device_, s);
     }
     if (ground_pipeline_ == nullptr || water_pipeline_ == nullptr) {
@@ -506,7 +525,23 @@ bool TerrainLayer::set(SDL_GPUDevice* device, const TerrainData& data) {
     }
     chunk_buffer_ = upload(gpu_chunks.data(), static_cast<std::uint32_t>(gpu_chunks.size() * sizeof(GpuChunk)),
                            SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
-    if (heights_ == nullptr || water_ == nullptr || colors_ == nullptr || chunk_buffer_ == nullptr) {
+    // The faceted ground: one vertex and one index buffer for every chunk.
+    const FacetMeshes& f = data.facets;
+    const bool facets_ok = f.cells == n && f.chunks.size() == chunks_.size() && !f.positions.empty() &&
+                           !f.indices.empty() && f.positions.size() / 3 < 0xFFFFFFFFu && !f.face_colors.empty();
+    if (facets_ok) {
+        facet_vertices_ = upload(f.positions.data(), static_cast<std::uint32_t>(f.positions.size() * sizeof(float)),
+                                 SDL_GPU_BUFFERUSAGE_VERTEX);
+        facet_indices_ = upload(f.indices.data(), static_cast<std::uint32_t>(f.indices.size() * sizeof(std::uint16_t)),
+                                SDL_GPU_BUFFERUSAGE_INDEX);
+        facet_colors_ = upload(f.face_colors.data(), static_cast<std::uint32_t>(f.face_colors.size() * sizeof(std::uint32_t)),
+                               SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
+        facet_lods_ = f.chunks;
+        backdrop_ = f.backdrop;
+        backdrop_bounds_ = f.backdrop_bounds;
+    }
+    if (heights_ == nullptr || water_ == nullptr || colors_ == nullptr || chunk_buffer_ == nullptr ||
+        facet_vertices_ == nullptr || facet_indices_ == nullptr || facet_colors_ == nullptr) {
         log::error("terrain: cannot upload the map: {}", SDL_GetError());
         release_map();
         return false;
@@ -521,12 +556,22 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
                            float draw_distance) {
     stats_ = TerrainStats{};
     lists_.clear();
+    visible_ground_.clear();
+    visible_backdrop_.clear();
     for (int lod = 0; lod < kTerrainLods; ++lod) {
-        ground_ranges_[lod] = {};
         water_ranges_[lod] = {};
     }
     if (cells_ == 0) {
         return true;
+    }
+    // The decorative mountains: whole tiles, within the draw distance.
+    for (std::size_t i = 0; i < backdrop_bounds_.size(); ++i) {
+        const auto& b = backdrop_bounds_[i];
+        const math::Vec3 center{(b[0] + b[3]) * 0.5f, (b[1] + b[4]) * 0.5f, (b[2] + b[5]) * 0.5f};
+        const float radius = math::length(math::Vec3{b[3] - b[0], b[4] - b[1], b[5] - b[2]}) * 0.5f;
+        if (frustum.sphere_visible(center, radius) && math::length(center - eye) - radius < draw_distance) {
+            visible_backdrop_.push_back(static_cast<std::uint32_t>(i));
+        }
     }
     // Level of detail of each visible chunk (-1: not visible).
     std::vector<std::int8_t> chosen(chunks_.size(), -1);
@@ -544,21 +589,18 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
             continue;
         }
         const float dy = std::max(std::abs(eye.y - c.center.y) - (c.radius - half), 0.0f);
-        chosen[i] = static_cast<std::int8_t>(terrain_lod_for_distance(std::sqrt(horizontal * horizontal + dy * dy)));
-    }
-    for (int lod = 0; lod < kTerrainLods; ++lod) {
-        ground_ranges_[lod].first = static_cast<std::uint32_t>(lists_.size());
-        for (std::size_t i = 0; i < chunks_.size(); ++i) {
-            if (chosen[i] == lod) {
-                lists_.push_back(static_cast<std::uint32_t>(i));
-            }
+        const float distance = std::sqrt(horizontal * horizontal + dy * dy);
+        chosen[i] = static_cast<std::int8_t>(terrain_lod_for_distance(distance));
+        int facet_lod = 0;
+        while (facet_lod < kFacetLods - 1 && distance >= kFacetLodDistances[facet_lod]) {
+            ++facet_lod;
         }
-        ground_ranges_[lod].count = static_cast<std::uint32_t>(lists_.size()) - ground_ranges_[lod].first;
+        visible_ground_.push_back({static_cast<std::uint32_t>(i), static_cast<std::uint8_t>(facet_lod)});
     }
-    for (int lod = 0; lod <= kMaxWaterLod; ++lod) {
+    for (int lod = kMinWaterLod; lod <= kMaxWaterLod; ++lod) {
         water_ranges_[lod].first = static_cast<std::uint32_t>(lists_.size());
         for (std::size_t i = 0; i < chunks_.size(); ++i) {
-            if (chosen[i] >= 0 && chunks_[i].water && std::min<int>(chosen[i], kMaxWaterLod) == lod) {
+            if (chosen[i] >= 0 && chunks_[i].water && std::clamp<int>(chosen[i], kMinWaterLod, kMaxWaterLod) == lod) {
                 lists_.push_back(static_cast<std::uint32_t>(i));
             }
         }
@@ -606,40 +648,47 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
 }
 
 void TerrainLayer::draw_ground(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,
-                               SDL_GPUTexture* detail, SDL_GPUSampler* detail_sampler, SDL_GPUTexture* shadow_map,
+                               SDL_GPUTexture* white, SDL_GPUSampler* sampler, SDL_GPUTexture* shadow_map,
                                SDL_GPUSampler* shadow_sampler) {
-    if (cells_ == 0 || lists_.empty() || ground_pipeline_ == nullptr) {
+    if (cells_ == 0 || (visible_ground_.empty() && visible_backdrop_.empty()) || ground_pipeline_ == nullptr ||
+        facet_vertices_ == nullptr) {
         return;
     }
     SDL_BindGPUGraphicsPipeline(pass, ground_pipeline_);
-    const TerrainUniforms tu{view_proj, {cells_ + 1, cells_, 0, 0}};
-    SDL_PushGPUVertexUniformData(cmd, 0, &tu, sizeof(tu));
-    const SDL_GPUTextureSamplerBinding color_binding{colors_, color_sampler_};
-    SDL_BindGPUVertexSamplers(pass, 0, &color_binding, 1);
-    SDL_GPUBuffer* storage[2] = {heights_, chunk_buffer_};
-    SDL_BindGPUVertexStorageBuffers(pass, 0, storage, 2);
-    const SDL_GPUTextureSamplerBinding fragment[2] = {{detail, detail_sampler}, {shadow_map, shadow_sampler}};
+    FacetUniforms fu{};
+    fu.view_proj = view_proj;
+    fu.map[0] = static_cast<float>(cells_);
+    SDL_PushGPUVertexUniformData(cmd, 0, &fu, sizeof(fu));
+    const SDL_GPUTextureSamplerBinding fragment[2] = {{white, sampler}, {shadow_map, shadow_sampler}};
     SDL_BindGPUFragmentSamplers(pass, 0, fragment, 2);
+    SDL_BindGPUFragmentStorageBuffers(pass, 0, &facet_colors_, 1);
     const MaterialUniforms mu{{1.0f, 1.0f, 1.0f, 1.0f}};
     SDL_PushGPUFragmentUniformData(cmd, 1, &mu, sizeof(mu));
-    // The color texture may be smaller than the map: fewer mip levels to skip.
-    const int color_shrink = log2_int(cells_ / color_size_);
-    for (int lod = 0; lod < kTerrainLods; ++lod) {
-        const Range r = ground_ranges_[lod];
-        if (r.count == 0) {
+    const SDL_GPUBufferBinding vb{facet_vertices_, 0};
+    SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+    const SDL_GPUBufferBinding ib{facet_indices_, 0};
+    SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+    for (const std::uint32_t tile : visible_backdrop_) {
+        const ChunkLod& part = backdrop_[tile];
+        const std::uint32_t first_face[4] = {part.first_face, 0, 0, 0};
+        SDL_PushGPUFragmentUniformData(cmd, 2, first_face, sizeof(first_face));
+        SDL_DrawGPUIndexedPrimitives(pass, part.index_count, 1, part.first_index,
+                                     static_cast<std::int32_t>(part.first_vertex), 0);
+        ++stats_.draw_calls;
+        stats_.triangles += part.index_count / 3;
+    }
+    for (const auto& [chunk, lod] : visible_ground_) {
+        const ChunkLod& part = facet_lods_[chunk][lod];
+        if (part.index_count == 0) {
             continue;
         }
-        const LodUniforms lu{{1 << lod, std::max(0, lod - color_shrink), 0, 0}};
-        SDL_PushGPUVertexUniformData(cmd, 1, &lu, sizeof(lu));
-        const Grid& g = grids_[lod];
-        const SDL_GPUBufferBinding vbs[2] = {{g.vertices, 0}, {list_buffer_, r.first * 4u}};
-        SDL_BindGPUVertexBuffers(pass, 0, vbs, 2);
-        const SDL_GPUBufferBinding ib{g.indices, 0};
-        SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_16BIT);
-        SDL_DrawGPUIndexedPrimitives(pass, g.index_count, r.count, 0, 0, 0);
+        const std::uint32_t first_face[4] = {part.first_face, 0, 0, 0};
+        SDL_PushGPUFragmentUniformData(cmd, 2, first_face, sizeof(first_face));
+        SDL_DrawGPUIndexedPrimitives(pass, part.index_count, 1, part.first_index,
+                                     static_cast<std::int32_t>(part.first_vertex), 0);
         ++stats_.draw_calls;
-        stats_.chunks_drawn += r.count;
-        stats_.triangles += static_cast<std::uint64_t>(g.index_count / 3) * r.count;
+        ++stats_.chunks_drawn;
+        stats_.triangles += part.index_count / 3;
     }
 }
 
@@ -704,8 +753,6 @@ void TerrainLayer::draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass
         return;
     }
     SDL_BindGPUGraphicsPipeline(pass, water_pipeline_);
-    const TerrainUniforms tu{view_proj, {cells_ + 1, cells_, 0, 0}};
-    SDL_PushGPUVertexUniformData(cmd, 0, &tu, sizeof(tu));
     SDL_GPUBuffer* storage[3] = {heights_, water_, chunk_buffer_};
     SDL_BindGPUVertexStorageBuffers(pass, 0, storage, 3);
     WaterUniforms wu{};
@@ -713,11 +760,14 @@ void TerrainLayer::draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass
     set4(wu.sun_color, look.sun_color, 1.0f);
     set4(wu.fog_color, look.fog_color, look.fog_density);
     set4(wu.camera_position, look.eye, look.time);
-    set4(wu.shallow_color, {0.10f, 0.32f, 0.34f}, 1.0f);
-    set4(wu.deep_color, {0.02f, 0.10f, 0.16f}, 1.0f);
+    // Turquoise, as in the low-poly reference (linear colors).
+    set4(wu.shallow_color, {0.12f, 0.66f, 0.70f}, 1.0f);
+    set4(wu.deep_color, {0.02f, 0.28f, 0.46f}, 1.0f);
     SDL_PushGPUFragmentUniformData(cmd, 0, &wu, sizeof(wu));
-    for (int lod = 0; lod <= kMaxWaterLod; ++lod) {
+    for (int lod = kMinWaterLod; lod <= kMaxWaterLod; ++lod) {
         const Range r = water_ranges_[lod];
+        const WaterGeometryUniforms gu{view_proj, {cells_ + 1, cells_, 1 << lod, 0}, {look.time, 0.0f, 0.0f, 0.0f}};
+        SDL_PushGPUVertexUniformData(cmd, 0, &gu, sizeof(gu));
         if (r.count == 0) {
             continue;
         }

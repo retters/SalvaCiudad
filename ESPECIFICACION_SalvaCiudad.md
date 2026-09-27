@@ -481,6 +481,19 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
      - un mapa Enorme se sigue generando en menos de 30 s y se recorre a 60 FPS o más en Ultra, con el pasto;
      - regenerar los modelos con sus scripts da archivos idénticos;
      - las tres herramientas funcionan sobre un mapa generado.
+6c. **Estilo visual low-poly facetado** (agregada el 2026-09-27 a pedido del usuario, con imágenes de referencia de "Low-Poly Experiments").
+   - Terreno facetado con triangulación adaptativa: facetas grandes (hasta unos 8 m) en lo llano y más pequeñas donde hace falta detalle (orillas, barrancos, crestas, cambios de suelo). Vértices desplazados para que las facetas sean irregulares, color plano por faceta y la misma triangulación da los niveles de detalle.
+   - Agua facetada que se mueve, turquesa, más clara y transparente en la orilla y con brillos por faceta.
+   - Orillas: playas de arena más anchas y bajadas suaves al agua; barrancos donde el terreno es alto.
+   - Nueva opción de relieve "Montañoso", con montañas y valles dentro del mapa (las laderas empinadas no se construyen), y una cordillera decorativa fuera del borde en todos los mapas.
+   - Lagos de contorno irregular: entrantes, penínsulas y a veces islotes.
+   - Luz, cielo y colores más vivos; nubes low-poly decorativas.
+   - Los árboles de primitivas se conservan.
+   - *Criterios:*
+     - la misma semilla da el mismo mapa;
+     - un mapa Enorme se genera en menos de 30 s y se recorre a 60 FPS o más en Ultra;
+     - no hay grietas visibles entre parcelas del terreno;
+     - los objetos se apoyan en el suelo facetado sin flotar ni hundirse de forma visible.
 7. **Mods y datos.** Cargador de mods, `core` como mod, esquemas y validación de definiciones, parches, Lua en sandbox, hash de mods y menú de mods. `docs/CREAR_MODS.md` y mod de ejemplo.
    - *Criterios:* el mod de ejemplo agrega un edificio y una regla en Lua sin tocar el código; un mod con errores se desactiva con un mensaje claro; el sandbox resiste las pruebas.
 8. **Primer pueblo jugable (un jugador).** Aldeanos con búsqueda de rutas, trabajo, hambre, edad, nacimiento y muerte; recolección de madera, piedra y bayas; almacén, casas, leñador, recolector y centro del pueblo; construcción por etapas; barra de construcción, barra de recursos, ventanas de edificio y de aldeano (aún sin acoplamiento); velocidad y pausa con desenfoque; guardar y cargar.

@@ -30,5 +30,5 @@ float4 main(PixelInput input) : SV_Target0
     {
         color = horizon_color.rgb;  // Below the horizon the fog takes over.
     }
-    return float4(linear_to_srgb(color), 1.0);
+    return float4(linear_to_srgb(tonemap(color)), 1.0);
 }

@@ -26,6 +26,10 @@ constexpr std::uint64_t kPlacementSeed = 0x504c414345000008ull;
 constexpr std::uint64_t kBiomeSeed = 0x42494f4d45000009ull;
 constexpr std::uint64_t kBiomeWarpX = 0x5741525058000010ull;
 constexpr std::uint64_t kBiomeWarpZ = 0x574152505a000011ull;
+constexpr std::uint64_t kMountainSeed = 0x4d4f554e54000012ull;
+constexpr std::uint64_t kMountainMaskSeed = 0x4d41534b00000013ull;
+constexpr std::uint64_t kLakeWarpSeed = 0x4c414b4557000014ull;
+constexpr std::uint64_t kBeachSeed = 0x4245414348000015ull;
 // Biomes are decided per block of this many cells.
 constexpr std::int32_t kBiomeBlock = 4;
 
@@ -105,12 +109,28 @@ private:
 
     bool relief() {
         h_.assign(static_cast<std::size_t>(v_) * static_cast<std::size_t>(v_), 0);
-        const std::int64_t amp = s_.relief == Relief::Low ? 5000 : 10000;  // Millimeters.
+        lake_cut_.assign(h_.size(), 0);
+        const std::int64_t amp = s_.relief == Relief::Low ? 5000 : (s_.relief == Relief::Gentle ? 10000 : 12000);  // mm
+        const bool mountains = s_.relief == Relief::Mountainous;
         for (std::int32_t z = 0; z < v_; ++z) {
             for (std::int32_t x = 0; x < v_; ++x) {
                 const std::int64_t detail = fbm(s_.seed ^ kReliefSeed, x, z, 10, 6);
                 const std::int64_t broad = fbm(s_.seed ^ kBroadSeed, x, z, 11, 1);
-                h_[vi(x, z)] = static_cast<std::int32_t>(20000 + detail * amp / 32768 + broad * amp / 65536);
+                std::int64_t h = 20000 + detail * amp / 32768 + broad * amp / 65536;
+                if (mountains) {
+                    // Ranges in broad regions: sharp ridges where a noise
+                    // field crosses zero, up to about 90 m high.
+                    const std::int64_t mask = fbm(s_.seed ^ kMountainMaskSeed, x, z, 10, 2);
+                    const std::int64_t ramp = std::clamp<std::int64_t>((mask + 2000) * 65536 / 12000, 0, 65536);
+                    if (ramp > 0) {
+                        const std::int64_t n = fbm(s_.seed ^ kMountainSeed, x, z, 9, 5);
+                        const std::int64_t ridge = 32768 - (n < 0 ? -n : n);  // 32768 where n crosses zero.
+                        const std::int64_t crest = std::max<std::int64_t>(0, ridge - 20000) * 32768 / 12768;
+                        const std::int64_t sharp = (crest * crest) >> 15;
+                        h += (ramp * sharp * 90000) >> 31;
+                    }
+                }
+                h_[vi(x, z)] = static_cast<std::int32_t>(h);
             }
             if ((z & 63) == 0 && !report(GenStage::Relief, z * 90 / v_)) {
                 return false;
@@ -124,18 +144,36 @@ private:
             const std::int32_t cz = rng_.range(margin, n_ - margin);
             const std::int32_t r = rng_.range(35, 110);
             const std::int64_t depth = rng_.range(2500, 5000);
-            const std::int64_t r2 = static_cast<std::int64_t>(r) * r;
-            for (std::int32_t z = std::max(0, cz - r); z <= std::min(v_ - 1, cz + r); ++z) {
-                for (std::int32_t x = std::max(0, cx - r); x <= std::min(v_ - 1, cx + r); ++x) {
-                    const std::int64_t d2 = static_cast<std::int64_t>(x - cx) * (x - cx) + static_cast<std::int64_t>(z - cz) * (z - cz);
-                    if (d2 < r2) {
-                        const std::int64_t t = d2 * 65536 / r2;
-                        const std::int64_t w = ((65536 - t) * (65536 - t)) >> 16;
-                        h_[vi(x, z)] -= static_cast<std::int32_t>((depth * w) >> 16);
+            // One to three overlapping lobes, each with a shoreline bent by
+            // noise: irregular lakes with bays and points.
+            const std::int32_t lobes = rng_.range(1, 3);
+            for (std::int32_t lobe = 0; lobe < lobes; ++lobe) {
+                const std::int32_t lx = lobe == 0 ? cx : cx + rng_.range(-r * 7 / 10, r * 7 / 10);
+                const std::int32_t lz = lobe == 0 ? cz : cz + rng_.range(-r * 7 / 10, r * 7 / 10);
+                const std::int32_t lr = lobe == 0 ? r : r * rng_.range(45, 85) / 100;
+                const std::int64_t lr2 = static_cast<std::int64_t>(lr) * lr;
+                const std::int32_t reach = lr * 3 / 2;
+                for (std::int32_t z = std::max(0, lz - reach); z <= std::min(v_ - 1, lz + reach); ++z) {
+                    for (std::int32_t x = std::max(0, lx - reach); x <= std::min(v_ - 1, lx + reach); ++x) {
+                        const std::int64_t d2 = static_cast<std::int64_t>(x - lx) * (x - lx) + static_cast<std::int64_t>(z - lz) * (z - lz);
+                        // The warp stretches or shrinks the distance by up to 45 %.
+                        const std::int64_t warp = fbm(s_.seed ^ kLakeWarpSeed, x, z, 5, 3);
+                        const std::int64_t t = d2 * 65536 / lr2 * (65536 + warp * 29491 / 32768) / 65536;
+                        if (t < 65536) {
+                            const std::int64_t w = ((65536 - t) * (65536 - t)) >> 16;
+                            const std::int64_t cut = (depth * w) >> 16;
+                            // Overlapping lobes deepen to the deepest, not the sum.
+                            lake_cut_[vi(x, z)] = static_cast<std::int32_t>(std::max<std::int64_t>(lake_cut_[vi(x, z)], cut));
+                        }
                     }
                 }
             }
         }
+        for (std::size_t k = 0; k < h_.size(); ++k) {
+            h_[k] -= lake_cut_[k];
+        }
+        lake_cut_.clear();
+        lake_cut_.shrink_to_fit();
         for (std::int32_t& v : h_) {
             v = std::max(v, 1000);
         }
@@ -242,7 +280,8 @@ private:
                     }
                     lowest = std::min(lowest, h_[c]);
                 }
-                if (level > 0 && lowest < level) {
+                // At least 1 cm of water, so it survives rounding to cm.
+                if (level > 0 && lowest + 10 <= level) {
                     water_[ci(x, z)] = level;
                     terrain_[ci(x, z)] = static_cast<std::uint8_t>(Terrain::Water);
                 }
@@ -254,6 +293,7 @@ private:
     // --- Rivers: follow the flow to the border or a lake ---------------------
 
     bool rivers() {
+        bed_.assign(h_.size(), 0);
         const std::int32_t wanted = per_area(5 * amount_factor(s_.water));
         const std::int32_t margin = n_ / 10;
         struct Candidate {
@@ -346,9 +386,13 @@ private:
                     const std::int32_t d = static_cast<std::int32_t>(isqrt(static_cast<std::uint64_t>(d2)));
                     const std::size_t v = vi(x, z);
                     if (d <= radius) {
-                        h_[v] = std::min(h_[v], level - 900 + d * 250);
-                    } else if (d <= reach) {
-                        // Banks slope down toward the water, never below it.
+                        // 90 cm deep in the middle, 15 cm at the edge of the bed.
+                        h_[v] = std::min(h_[v], level - 150 - 750 * (radius - d) / std::max(1, radius));
+                        bed_[v] = 1;
+                    } else if (d <= reach && bed_[v] == 0 && lake_[v] == 0) {
+                        // Banks slope down toward the water, never below it;
+                        // a bed dug by an earlier step of a river, or a lake
+                        // shore, stays as it is.
                         h_[v] = std::max(level + 100, std::min(h_[v], level + 150 * (d - radius) + 100));
                     }
                     if (d <= radius && x < n_ && z < n_) {
@@ -426,7 +470,9 @@ private:
                 if (slope > 450 || (rock_noise > 21000 && slope > 120) || rock_noise > 26000) {
                     t = Terrain::Rock;
                     fert = 0;
-                } else if (d <= 2) {
+                } else if (d <= 2 + std::max<std::int32_t>(0, fbm(s_.seed ^ kBeachSeed, x, z, 6, 2)) * 6 / 32768 &&
+                           slope <= 250) {
+                    // Beaches of 2 to 8 m, where the shore is not steep.
                     t = Terrain::Sand;
                     fert = std::min(fert, 60);
                 } else if (d <= 30 && fbm(s_.seed ^ kClaySeed, x, z, 6, 2) > 17000) {
@@ -925,6 +971,8 @@ private:
     Rng rng_;
     MapData out_;
     std::vector<std::int32_t> h_;       // Vertex heights, millimeters.
+    std::vector<std::int32_t> lake_cut_;  // Depth of the lake basins being dug.
+    std::vector<std::uint8_t> bed_;        // Vertex dug as a river bed.
     std::vector<std::int32_t> filled_;  // Heights with depressions filled.
     std::vector<std::uint8_t> flow_;    // Direction toward the outlet.
     std::vector<std::uint8_t> lake_;    // Vertex belongs to a lake.

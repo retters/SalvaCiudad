@@ -37,7 +37,7 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 |---|---|
 | `common.py` | Utilidades: escena vacía, materiales, `MeshBuilder` (piezas con material y peso de hueso), exportación con opciones fijas |
 | `human.py` | `characters/human_male.glb` y `human_female.glb` (con esqueleto y animaciones `idle` y `walk`); accesorios `hat_straw`, `hat_cap`, `beard`, `apron_male` y `apron_female` |
-| `props.py` | `props/tree_pine.glb`, `tree_oak.glb`, `rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb` y `house_small.glb` |
+| `props.py` | `props/tree_pine.glb`, `tree_oak.glb`, `rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb` |
 | `trees.py` | `props/tree_<especie>_<tamaño>.glb`: 21 especies en sus tamaños (ver `docs/ARBOLES.md`) |
 | `build_all.py` | Ejecuta todo |
 | `preview.py` | Imágenes de revisión |

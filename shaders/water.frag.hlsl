@@ -1,5 +1,6 @@
-// Stylized water: color by depth, gentle moving ripples, sun glints, fresnel
-// and the same fog as the rest of the scene.
+// Faceted low-poly water: flat facets (normal from screen-space
+// derivatives), turquoise getting deeper with depth, see-through at the
+// shore, a glint of sun on facets that face it, and the scene's fog.
 #include "scene_common.hlsli"
 
 cbuffer WaterUniforms : register(b0, space3)
@@ -26,28 +27,29 @@ float4 main(PixelInput input) : SV_Target0
     {
         discard;
     }
-    float t = camera_position.w;
-    float2 p = input.world_pos.xz;
-    // Two layers of slow waves for the surface normal.
-    float2 slope = float2(cos(p.x * 0.35 + t * 0.9) + cos((p.x + p.y) * 0.21 - t * 0.6),
-                          cos(p.y * 0.31 - t * 0.8) + cos((p.x - p.y) * 0.27 + t * 0.7)) * 0.06;
+    float3 n = normalize(cross(ddy(input.world_pos), ddx(input.world_pos)));
+    if (n.y < 0.0)
+    {
+        n = -n;
+    }
     float3 to_camera = camera_position.xyz - input.world_pos;
     float distance = length(to_camera);
-    // Ripples fade with distance, where they would only sparkle.
-    slope *= 1.0 / (1.0 + distance / 250.0);
-    float3 n = normalize(float3(-slope.x, 1.0, -slope.y));
     float3 v = to_camera / max(distance, 0.001);
     float3 l = normalize(sun_direction.xyz);
 
-    float deep = saturate(input.depth / 2.5);
+    float deep = saturate(input.depth / 2.0);
     float3 color = lerp(shallow_color.rgb, deep_color.rgb, deep);
-    float fresnel = pow(1.0 - saturate(dot(n, v)), 4.0);
-    color = lerp(color, fog_color.rgb * 0.9, fresnel * 0.6);
+    // Facets turned to the sun are lighter, the others a little darker.
+    float facing = saturate(dot(n, l));
+    color *= 0.8 + 0.35 * facing;
+    float fresnel = pow(1.0 - saturate(dot(n, v)), 3.0);
+    color = lerp(color, float3(0.85, 0.95, 1.0), fresnel * 0.35);
     float3 h = normalize(l + v);
-    color += sun_color.rgb * pow(saturate(dot(n, h)), 120.0) * 0.6;
+    color += sun_color.rgb * pow(saturate(dot(n, h)), 60.0) * 0.35;
 
     float fog = 1.0 - exp2(-fog_color.a * distance * distance);
     color = lerp(color, fog_color.rgb, saturate(fog));
-    float alpha = saturate(0.45 + deep * 0.45 + fresnel * 0.3);
-    return float4(linear_to_srgb(color), alpha);
+    // Clear at the shore, where the sandy bed shows through.
+    float alpha = saturate(0.62 + deep * 0.33 + fresnel * 0.15);
+    return float4(linear_to_srgb(tonemap(color)), alpha);
 }

@@ -231,7 +231,8 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         }
     }
     {
-        const std::vector<std::string> options = {tr("newGame.relief.low"), tr("newGame.relief.gentle")};
+        const std::vector<std::string> options = {tr("newGame.relief.low"), tr("newGame.relief.gentle"),
+                                                  tr("newGame.relief.mountainous")};
         int index = static_cast<int>(settings_.relief);
         const Row r = row(ctx, x, y, cw, tr("newGame.relief"), tr("newGame.relief.tooltip"));
         if (ctx.selector(ctx.id("relief"), r.control, index, options, tr("newGame.relief.tooltip"))) {

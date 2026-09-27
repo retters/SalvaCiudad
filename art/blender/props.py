@@ -31,6 +31,8 @@ COLORS = {
     "berries": common.rgb(0xA8243A),
     "herb": common.rgb(0x5E8A44),
     "flowers": common.rgb(0x9C6AC8),
+    "cloud": common.rgb(0xF4F6F8),
+    "cloud_shade": common.rgb(0xDDE3EA),
 }
 
 
@@ -224,6 +226,24 @@ def house(folder):
     common.export_glb(os.path.join(folder, "house_small.glb"), [obj])
 
 
+def cloud(folder):
+    """A low-poly cloud: a few lumpy, flattened puffs, about 4 m long (the
+    game scales it up)."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    puffs = ((0.0, 0.0, 0.55, 1.0), (1.1, 0.2, 0.45, 0.8), (-1.1, -0.1, 0.42, 0.75), (0.45, -0.45, 0.75, 0.7),
+             (-0.5, 0.4, 0.7, 0.65), (1.8, -0.1, 0.3, 0.5))
+    for i, (x, y, z, r) in enumerate(puffs):
+        verts = mb.sphere((x, y, z), r, "cloud" if i % 3 else "cloud_shade", segments=7, rings=5,
+                          scale=(1.25, 1.0, 0.7))
+        lumpy(verts, 0.12, i * 1.9)
+        for v in verts:
+            if v.co.z < 0.2:
+                v.co.z = 0.2 + (v.co.z - 0.2) * 0.3  # Flatter underside.
+    obj = mb.to_object("cloud", COLORS)
+    common.export_glb(os.path.join(folder, "cloud.glb"), [obj])
+
+
 def make_all(folder):
     os.makedirs(folder, exist_ok=True)
     pine_tree(folder)
@@ -233,3 +253,4 @@ def make_all(folder):
     berry_bush(folder)
     herb(folder)
     house(folder)
+    cloud(folder)

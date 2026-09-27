@@ -10,6 +10,7 @@
 #include <SDL3/SDL_gpu.h>
 
 #include "math/vec.h"
+#include "render/terrain_mesh.h"
 
 namespace sc::render {
 
@@ -24,6 +25,7 @@ struct TerrainData {
     std::vector<std::uint16_t> water;    // cells^2: water surface in centimeters, 0 = dry.
     std::int32_t color_size = 0;         // Texels per side of the ground colors.
     std::vector<std::uint8_t> colors;    // color_size^2 RGBA, sRGB.
+    FacetMeshes facets;                  // The faceted ground, per chunk and level of detail.
 
     [[nodiscard]] bool valid() const;
 };
@@ -47,9 +49,9 @@ public:
     TerrainLayer& operator=(const TerrainLayer&) = delete;
 
     // Pipelines for the given targets; call again when the sample count
-    // changes. `ground_fragment` is the scene's lit mesh shader.
+    // changes. `mesh_fragment` is the scene's lit mesh shader (for grass).
     bool create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat color, SDL_GPUTextureFormat depth,
-                          SDL_GPUSampleCount samples, SDL_GPUShader* ground_fragment);
+                          SDL_GPUSampleCount samples, SDL_GPUShader* mesh_fragment);
     void release();
 
     // Uploads a map; replaces the previous one. Returns false on invalid
@@ -62,10 +64,10 @@ public:
     // lists in a copy pass of `cmd`.
     bool prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frustum, math::Vec3 eye, float draw_distance);
 
-    // Draws the ground in the current pass. The scene's fragment uniforms
-    // (slot 0) must already be pushed.
+    // Draws the faceted ground in the current pass. The scene's fragment
+    // uniforms (slot 0) must already be pushed.
     void draw_ground(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,
-                     SDL_GPUTexture* detail, SDL_GPUSampler* detail_sampler, SDL_GPUTexture* shadow_map,
+                     SDL_GPUTexture* white, SDL_GPUSampler* sampler, SDL_GPUTexture* shadow_map,
                      SDL_GPUSampler* shadow_sampler);
 
     struct WaterLook {
@@ -124,11 +126,19 @@ private:
     SDL_GPUBuffer* water_ = nullptr;
     SDL_GPUBuffer* chunk_buffer_ = nullptr;
     SDL_GPUTexture* colors_ = nullptr;
+    SDL_GPUBuffer* facet_vertices_ = nullptr;
+    SDL_GPUBuffer* facet_indices_ = nullptr;
+    SDL_GPUBuffer* facet_colors_ = nullptr;
+    std::vector<std::array<ChunkLod, kFacetLods>> facet_lods_;
+    std::vector<ChunkLod> backdrop_;
+    std::vector<std::array<float, 6>> backdrop_bounds_;
+    std::vector<std::uint32_t> visible_backdrop_;
     std::vector<Chunk> chunks_;
+    // Per frame: visible chunks and the level of detail of their ground.
+    std::vector<std::pair<std::uint32_t, std::uint8_t>> visible_ground_;
 
-    // Per frame: visible chunk indices, ground lists then water lists.
+    // Per frame: visible water chunk indices, by level of detail.
     std::vector<std::uint32_t> lists_;
-    Range ground_ranges_[kTerrainLods];
     Range water_ranges_[kTerrainLods];
     SDL_GPUBuffer* list_buffer_ = nullptr;
     std::uint32_t list_capacity_ = 0;

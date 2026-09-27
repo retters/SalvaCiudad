@@ -23,7 +23,7 @@ using GenProgress = std::function<bool(GenStage stage, int percent)>;
 namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
 // the map (decision D-620).
-inline constexpr std::uint16_t kGeneratorVersion = 2;
+inline constexpr std::uint16_t kGeneratorVersion = 3;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 2;

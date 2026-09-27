@@ -439,3 +439,72 @@ El pasto como cubierta del suelo todavía no existe: el suelo es solo textura.
 - Tercera persona: unos 460 FPS.
 - Primera persona mirando al horizonte, el peor caso: unos 125 FPS, con 30 millones de triángulos por los árboles grandes hasta 2500 m.
 - Si hiciera falta más adelante, el paso siguiente sería una versión simplificada de cada árbol para la distancia.
+
+## Fase 6c: estilo visual low-poly facetado (2026-09-27)
+
+A pedido del usuario, con dos imágenes de referencia ("Low-Poly Experiments"). Los árboles de primitivas se conservan: el usuario prefirió no cambiarlos tras ver un prototipo de árboles orgánicos con tarjetas de hojas, que quedó en el historial (commit b0147ec).
+
+**D-625. Generador: relieve montañoso, lagos irregulares, playas y un error de los ríos.**
+- Nueva opción de relieve "Montañoso". En regiones amplias (una máscara de ruido) se suman crestas afiladas de hasta 90 m donde un campo de ruido cruza cero. Los inicios siguen buscando terreno llano, y las laderas empinadas quedan como roca.
+- Lagos irregulares: de uno a tres lóbulos superpuestos, con la orilla deformada por ruido hasta un 45 %. Donde dos lóbulos se cruzan cuenta el más hondo, no la suma.
+- Playas de 2 a 8 m, de ancho variable, solo donde la orilla no es empinada.
+- **Error corregido, venía de la fase 6:**
+  - Al tallar un río paso a paso, las "orillas" de cada paso volvían a levantar el cauce ya excavado de los pasos anteriores, y también el borde de los lagos donde desembocaba. Muchos ríos quedaban como franjas de arena seca.
+  - Ahora el cauce excavado y la orilla de un lago no se levantan.
+  - El cauce baja de 15 cm en el borde a 90 cm en el centro, siempre bajo el agua.
+  - Una celda de lago necesita al menos 1 cm de agua.
+  - La prueba "water is above the ground it covers" lo verifica.
+- Versión del generador: 3. Suma de referencia del mapa Pequeño: `0x02797a3d14672e4b`.
+
+**D-626. Terreno facetado con triangulación adaptativa.**
+- Cada parcela de 64 m se triangula con una red irregular de triángulos rectángulos (RTIN, el método de la biblioteca "Martini" de Mapbox, escrito de nuevo aquí).
+- Un triángulo se divide si:
+  - la diferencia con el relieve pasa del margen del nivel de detalle;
+  - es más grande que el máximo del nivel;
+  - o, en los niveles cercanos, cubre dos clases de suelo (blando, arena, agua, roca).
+- Los tres niveles de detalle:
+
+| Nivel | Margen | Faceta máxima | Hasta |
+|---|---|---|---|
+| Cercano | 0,15 m | 8 m | 260 m |
+| Medio | 0,9 m | 16 m | 800 m |
+| Lejano | 4 m | 64 m | más allá |
+
+- Los vértices interiores se desplazan al azar hasta un 15 % del tamaño de sus facetas vecinas, para que las facetas sean irregulares sin plegarse; los del borde de la parcela no se mueven. Faldones de 2 a 10 m tapan las grietas entre parcelas de distinto nivel.
+- Cada faceta tiene su propio color: el de la celda bajo su centro, con una leve variación. Va en un búfer de almacenamiento que el sombreador de píxeles lee con `SV_PrimitiveID`, así los bordes entre suelos siguen las aristas de las facetas.
+  - La primera prueba tomaba el color del primer vértice de cada triángulo y dejaba bordes en dientes de sierra.
+- La normal de cada faceta sale de las derivadas en pantalla de la posición, así que cada triángulo se ilumina plano.
+- Las mallas se calculan en el hilo de generación. Un mapa Enorme montañoso tarda unos 7,4 s en total y ocupa unos 380 MB de memoria con todo el juego.
+- Se quitaron el sombreador de la cuadrícula anterior y la textura de ruido del suelo.
+
+**D-627. Colores, luz y ajuste de tono.**
+- Paleta más viva:
+  - pasto 96,168,58;
+  - pradera 122,180,66;
+  - suelo de bosque 70,128,50;
+  - arena 226,206,150;
+  - roca 138,104,82;
+  - arcilla 164,118,84.
+- El fondo del agua es arena mojada: se ve a través del agua poco profunda.
+- Cielo azul intenso y sol más fuerte.
+- Todos los sombreadores iluminados, el agua y el cielo pasan por la misma curva de tono tipo cine (ACES, ajuste de K. Narkowicz, exposición 0,68). Así la luz fuerte no satura los colores, y la niebla coincide con el cielo.
+- La primera prueba, sin ese ajuste, se veía lavada y verde lima.
+- No hay oclusión ambiental ni luz rebotada: las imágenes de referencia son renders offline. Se puede agregar oclusión en pantalla en la fase de optimización visual.
+
+**D-628. Cordillera de fondo y nubes (decoración).**
+- Alrededor del mapa, hasta 3 km, hay un anillo de montañas facetadas en baldosas de 48 × 48 puntos cada 32 m:
+  - nacen a la altura del borde del mapa y suben suavemente en los primeros 500 m;
+  - tienen pasto abajo, roca en las laderas y nieve arriba.
+- Se dibujan con el mismo sombreador que el terreno. No son jugables ni forman parte de la simulación.
+- Las nubes low-poly (`props/cloud.glb`) son unas pocas por kilómetro cuadrado, a 240–360 m de altura, sobre el mapa y la cordillera.
+  - Son de la clase de modelo "cielo": no proyectan sombra y llegan tan lejos como el terreno.
+  - Por ahora no se mueven.
+
+**D-629. Agua facetada.**
+- La superficie usa mallas de 2 m de paso cerca y de 4 m lejos. Sus vértices se desplazan igual en todas las parcelas y suben y bajan con dos ondas lentas, más calmadas en la orilla. Cada faceta se ilumina plana.
+- El color va de turquesa claro a azul profundo según la profundidad, con brillo del sol y efecto Fresnel.
+- Es más transparente en la orilla (opacidad desde 0,62), donde se ve la arena.
+
+**D-630. Rendimiento medido (1600 × 900, Ultra, mapa Enorme montañoso).**
+- Tercera persona: unos 347 FPS.
+- Primera persona mirando al bosque, el peor caso: unos 110 FPS, con 31 millones de triángulos (casi todos de árboles).

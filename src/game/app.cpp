@@ -761,6 +761,7 @@ bool App::enter_generated_map() {
     // A sample village at the first start, to judge sizes (until phase 8).
     const math::Vec3 start{sx, map_surface_height(*map, sx, sz), sz};
     map_scene_.show_sample_village(scene_, *map, start);
+    map_scene_.show_sky(scene_, *map);
     crowd_.set_area(start, [map](float x, float z) { return map_surface_height(*map, x, z); });
     crowd_.spawn(kSampleVillagers, 7, kSampleVillageRadius);
     selected_.reset();
