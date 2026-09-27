@@ -6,7 +6,6 @@
 
 #include "core/log.h"
 #include "game/test_scene.h"
-#include "sim/worldgen.h"
 
 namespace sc {
 
@@ -277,11 +276,8 @@ MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& conten
     }
     t.facets = render::build_facet_meshes(n, map.heights, classes, cell_colors,
                                           static_cast<std::uint32_t>(map.settings.seed));
-    // Islands: the sea goes on past the edge.
-    const bool islands = map.settings.map_type < content.flora.map_types.size() &&
-                         content.flora.map_types[map.settings.map_type].islands;
-    render::add_backdrop(t.facets, n, map.heights, static_cast<std::uint32_t>(map.settings.seed),
-                         islands ? static_cast<float>(sim::worldgen::kSeaLevelMm) / 1000.0f : -1.0f);
+    // Where the map's edge is sea, the sea goes on past it.
+    render::add_backdrop(t.facets, n, map.heights, static_cast<std::uint32_t>(map.settings.seed), &map.water);
     v.features = build_feature_instances(map, content);
     return v;
 }

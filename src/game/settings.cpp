@@ -395,6 +395,7 @@ void read_new_game(Reader& r, yyjson_mut_val* obj, NewGameSettings& n) {
     read_def_id(r, obj, "mapType", "newGame.mapType", false, n.map_type);
     read_def_id(r, obj, "biome", "newGame.biome", false, n.biome);
     r.read_int(obj, "islands", "newGame.islands", 1, lim::kMaxIslandsPerTown, n.islands);
+    read_choice(r, obj, "sea", "newGame.sea", names::kSeas, n.sea);
     read_choice(r, obj, "water", "newGame.water", names::kAmounts, n.water);
     read_choice(r, obj, "forests", "newGame.forests", names::kAmounts, n.forests);
     read_choice(r, obj, "resources", "newGame.resources", names::kAmounts, n.resources);
@@ -509,6 +510,7 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_string(doc, ng, "mapType", n.map_type);
     ok = ok && json::set_string(doc, ng, "biome", n.biome);
     ok = ok && json::set_int(doc, ng, "islands", n.islands);
+    ok = ok && json::set_string(doc, ng, "sea", n.sea);
     ok = ok && json::set_string(doc, ng, "water", n.water);
     ok = ok && json::set_string(doc, ng, "forests", n.forests);
     ok = ok && json::set_string(doc, ng, "resources", n.resources);

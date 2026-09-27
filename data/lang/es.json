@@ -284,6 +284,12 @@
       "one": "{1} por pueblo ({0} isla)",
       "other": "{1} por pueblo ({0} islas)"
     },
+    "newGame.sea": "Mar",
+    "newGame.sea.tooltip": "Si el mapa tiene costa en uno o dos lados, con golfos, bahías, penínsulas, cabos e islotes. \"A veces\" lo decide la semilla.",
+    "newGame.sea.disabledTooltip": "El mapa de islas siempre está rodeado de mar.",
+    "newGame.sea.none": "Sin mar",
+    "newGame.sea.sometimes": "A veces",
+    "newGame.sea.always": "Siempre",
     "newGame.players": "Posiciones de inicio",
     "newGame.players.tooltip": "Para cuántos pueblos tiene lugar el mapa, lejos entre sí y con recursos parecidos cerca.",
     "newGame.players.value": {

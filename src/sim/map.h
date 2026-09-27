@@ -15,6 +15,8 @@ namespace sc::sim {
 enum class MapSize : std::uint8_t { Small, Medium, Large, Huge, Giant, Colossal, Count };
 enum class Amount : std::uint8_t { Low, Normal, High, Count };
 enum class Relief : std::uint8_t { Low, Gentle, Mountainous, Count };
+// Phase 26: a coast on the maps without islands.
+enum class Sea : std::uint8_t { None, Sometimes, Always, Count };
 
 // Most natural features a map may have (saves refuse more): a colossal
 // map with thick forests has several million.
@@ -56,6 +58,8 @@ struct MapSettings {
     // Islands per town, for a map type with islands (1..kMaxIslandsPerTown):
     // 2 towns with 3 islands each make 6 islands.
     std::uint8_t islands = 2;
+    // Phase 26: sea along one or two sides, for map types without islands.
+    Sea sea = Sea::Sometimes;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);

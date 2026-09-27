@@ -125,6 +125,7 @@ namespace names = new_game_names;
 static_assert(std::size(names::kSizes) == static_cast<std::size_t>(sim::MapSize::Count));
 static_assert(std::size(names::kAmounts) == static_cast<std::size_t>(sim::Amount::Count));
 static_assert(std::size(names::kReliefs) == static_cast<std::size_t>(sim::Relief::Count));
+static_assert(std::size(names::kSeas) == static_cast<std::size_t>(sim::Sea::Count));
 static_assert(std::size(names::kYears) == static_cast<std::size_t>(sim::YearLength::Count));
 static_assert(std::size(names::kWinters) == static_cast<std::size_t>(sim::Harshness::Count));
 static_assert(std::size(names::kStarts) == static_cast<std::size_t>(sim::StartGoods::Count));
@@ -158,6 +159,7 @@ void NewGameScreen::apply(const NewGameSettings& n) {
     settings_.forests = named(names::kAmounts, n.forests, settings_.forests);
     settings_.resources = named(names::kAmounts, n.resources, settings_.resources);
     settings_.relief = named(names::kReliefs, n.relief, settings_.relief);
+    settings_.sea = named(names::kSeas, n.sea, settings_.sea);
     settings_.players = static_cast<std::uint8_t>(std::clamp(n.players, 1, static_cast<int>(sim::kMaxPlayers)));
     settings_.islands = static_cast<std::uint8_t>(std::clamp(n.islands, 1, static_cast<int>(sim::kMaxIslandsPerTown)));
     if (content_ != nullptr) {
@@ -200,6 +202,7 @@ NewGameSettings NewGameScreen::remembered() const {
     n.forests = name_of(names::kAmounts, settings_.forests);
     n.resources = name_of(names::kAmounts, settings_.resources);
     n.relief = name_of(names::kReliefs, settings_.relief);
+    n.sea = name_of(names::kSeas, settings_.sea);
     n.players = settings_.players;
     n.islands = settings_.islands;
     if (content_ != nullptr) {
@@ -395,7 +398,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 21;
+    constexpr int kRows = 22;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;
@@ -467,6 +470,14 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         const Row r = row(ctx, x, y, cw, tr("newGame.islands"), tip);
         if (ctx.selector(ctx.id("islands"), r.control, index, options, tip, islands)) {
             settings_.islands = static_cast<std::uint8_t>(index + 1);
+        }
+        // The sea (phase 26), for the other map types.
+        const std::vector<std::string> seas = {tr("newGame.sea.none"), tr("newGame.sea.sometimes"), tr("newGame.sea.always")};
+        int sea = static_cast<int>(settings_.sea);
+        const std::string sea_tip = tr(islands ? "newGame.sea.disabledTooltip" : "newGame.sea.tooltip");
+        const Row sr = row(ctx, x, y, cw, tr("newGame.sea"), sea_tip);
+        if (ctx.selector(ctx.id("sea"), sr.control, sea, seas, sea_tip, !islands)) {
+            settings_.sea = static_cast<sim::Sea>(sea);
         }
     }
     {

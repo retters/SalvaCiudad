@@ -57,9 +57,10 @@ struct FacetMeshes {
 
 // Adds a ring of mountains outside the map, rising from the height of the
 // map's edge: grass low, rock on the slopes, snow on the peaks. Decoration
-// only (decision D-628). With `sea_m` (0 or more), a flat open sea at that
-// height instead (the map of islands).
+// only (decision D-628). With `water_cm` (cells^2 water surfaces), where
+// the map's edge is sea the backdrop is a flat open sea at its level
+// instead (coasts and islands, phases 22 and 26).
 void add_backdrop(FacetMeshes& meshes, std::int32_t cells, const std::vector<std::uint16_t>& heights_cm,
-                  std::uint32_t seed, float sea_m = -1.0f);
+                  std::uint32_t seed, const std::vector<std::uint16_t>* water_cm = nullptr);
 
 }  // namespace sc::render

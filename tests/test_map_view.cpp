@@ -241,6 +241,7 @@ TEST_SUITE("new_game") {
         last.map_type = "core:islands";
         last.biome = "core:pinewood";
         last.islands = 3;
+        last.sea = "always";
         last.water = "high";
         last.relief = "gentle";
         last.players = 2;
@@ -257,6 +258,7 @@ TEST_SUITE("new_game") {
         CHECK(content.flora.map_types[m.map_type].id == "core:islands");
         CHECK(content.flora.biomes[m.biome].id == "core:pinewood");
         CHECK(m.islands == 3);
+        CHECK(m.sea == sim::Sea::Always);
         CHECK(m.water == sim::Amount::High);
         CHECK(m.relief == sim::Relief::Gentle);
         CHECK(m.players == 2);

@@ -357,8 +357,30 @@ std::uint32_t pack(float r, float g, float b) {
 }  // namespace
 
 void add_backdrop(FacetMeshes& meshes, std::int32_t cells, const std::vector<std::uint16_t>& heights_cm,
-                  std::uint32_t seed, float sea_m) {
-    const bool sea = sea_m >= 0.0f;
+                  std::uint32_t seed, const std::vector<std::uint16_t>* water_cm) {
+    const bool has_water = water_cm != nullptr && water_cm->size() == static_cast<std::size_t>(cells) * static_cast<std::size_t>(cells);
+    // The sea's level (meters) off the edge nearest (x, z), or below 0 if
+    // the edge is land there: water along 48 m of the edge (not a river
+    // mouth).
+    const auto sea_at = [&](float x, float z) {
+        if (!has_water) {
+            return -1.0f;
+        }
+        const int cx = std::clamp(static_cast<int>(x), 0, cells - 1);
+        const int cz = std::clamp(static_cast<int>(z), 0, cells - 1);
+        const bool along_x = x >= 0.0f && x < static_cast<float>(cells);  // Off the north or south edge.
+        float level = -1.0f;
+        for (int k = -24; k <= 24; k += 8) {
+            const int px = along_x ? std::clamp(cx + k, 0, cells - 1) : cx;
+            const int pz = along_x ? cz : std::clamp(cz + k, 0, cells - 1);
+            const std::uint16_t w = (*water_cm)[static_cast<std::size_t>(pz) * static_cast<std::size_t>(cells) + static_cast<std::size_t>(px)];
+            if (w == 0) {
+                return -1.0f;
+            }
+            level = std::max(level, static_cast<float>(w) * 0.01f);
+        }
+        return level;
+    };
     constexpr float kStep = 32.0f;       // Meters between backdrop points.
     constexpr int kTileCells = 48;       // Grid cells per tile side.
     constexpr float kReach = 3072.0f;    // How far the mountains go past the edge.
@@ -376,8 +398,8 @@ void add_backdrop(FacetMeshes& meshes, std::int32_t cells, const std::vector<std
         return std::sqrt(dx * dx + dz * dz);
     };
     const auto height = [&](float x, float z) {
-        if (sea) {
-            return sea_m - 0.05f;  // Open sea to the horizon.
+        if (const float sea = sea_at(x, z); sea >= 0.0f) {
+            return sea - 0.05f;  // Open sea to the horizon.
         }
         const float d = outside(x, z);
         const float base = edge_height(x, z) - 1.5f;
@@ -437,7 +459,7 @@ void add_backdrop(FacetMeshes& meshes, std::int32_t cells, const std::vector<std
                                               static_cast<std::uint32_t>(cz * 3.0f + 90000.0f), seed ^ 0xC5u);
                 const float shade = 0.9f + 0.2f * static_cast<float>(h & 0xFFu) / 255.0f;
                 std::uint32_t color = 0;
-                if (sea) {
+                if (sea_at(cx, cz) >= 0.0f) {
                     const float calm = 0.97f + 0.06f * static_cast<float>(h & 0xFFu) / 255.0f;
                     color = pack(108 * calm, 158 * calm, 184 * calm);  // Sea, like the water seen from afar.
                 } else if (above > 230.0f) {

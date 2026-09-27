@@ -150,7 +150,7 @@ std::vector<std::int32_t> island_ids(const MapData& m, std::int32_t& count) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0xf8a930e6954b4446ull;
+constexpr std::uint64_t kGoldenSmallMap = 0x4139533c6b83353cull;
 
 }  // namespace
 
@@ -334,6 +334,10 @@ TEST_SUITE("worldgen") {
         bad[14] = 255;  // Map type out of range.
         BinaryReader bt(bad);
         CHECK_FALSE(MapSettings::read(bt, back));
+        bad = w.bytes();
+        bad[18] = 3;  // Sea out of range.
+        BinaryReader bs(bad);
+        CHECK_FALSE(MapSettings::read(bs, back));
         for (const std::uint8_t islands : {std::uint8_t{0}, std::uint8_t{kMaxIslandsPerTown + 1}}) {
             bad = w.bytes();
             bad[17] = islands;
@@ -490,6 +494,118 @@ TEST_SUITE("worldgen") {
                 CHECK(area[static_cast<std::size_t>(home)] >= biggest * 0.35);
             }
         }
+    }
+
+    TEST_CASE("coasts: sea on one or two sides, land still the most") {
+        int with_sea = 0;
+        for (std::uint64_t seed = 60; seed < 70; ++seed) {
+            MapSettings s = settings(seed, MapSize::Medium, 2);
+            std::vector<Landform> landforms;
+            s.sea = Sea::Always;
+            const auto m = generate_map(s, content(), {}, nullptr, &landforms);
+            REQUIRE(m.has_value());
+            const auto kinds = [&](LandformKind k) {
+                return std::count_if(landforms.begin(), landforms.end(), [&](const Landform& l) { return l.kind == k; });
+            };
+            const auto sides = kinds(LandformKind::Coast);
+            CHECK(sides >= 1);
+            CHECK(sides <= 2);
+            // The sea reaches the border along at least a side's worth.
+            const std::int32_t n = m->size;
+            std::int32_t wet = 0;
+            std::size_t land = 0;
+            for (std::int32_t i = 0; i < n; ++i) {
+                wet += (m->water_at(i, 0) ? 1 : 0) + (m->water_at(i, n - 1) ? 1 : 0) + (m->water_at(0, i) ? 1 : 0) +
+                       (m->water_at(n - 1, i) ? 1 : 0);
+            }
+            for (std::size_t c = 0; c < m->water.size(); ++c) {
+                land += m->water[c] == 0 ? 1 : 0;
+            }
+            CHECK(wet >= n / 2);
+            CHECK(land * 2 >= m->water.size());
+            for (const StartPosition& st : m->starts) {
+                CHECK_FALSE(m->water_at(st.x.floor_int(), st.z.floor_int()));
+            }
+            // Without sea, none of it.
+            s.sea = Sea::None;
+            landforms.clear();
+            REQUIRE(generate_map(s, content(), {}, nullptr, &landforms).has_value());
+            CHECK(landforms.empty());
+            // "Sometimes" leaves it to the seed.
+            s.sea = Sea::Sometimes;
+            landforms.clear();
+            REQUIRE(generate_map(s, content(), {}, nullptr, &landforms).has_value());
+            with_sea += kinds(LandformKind::Coast) > 0 ? 1 : 0;
+        }
+        CHECK(with_sea > 0);
+        CHECK(with_sea < 10);
+    }
+
+    TEST_CASE("trenches are deeper and ridges higher than the sea floor, under the water") {
+        int trenches = 0;
+        int ridges = 0;
+        for (std::uint64_t seed = 80; seed < 100 && (trenches == 0 || ridges == 0); ++seed) {
+            MapSettings s = settings(seed, MapSize::Medium, 2);
+            s.map_type = map_type("islands");
+            s.islands = 3;
+            std::vector<Landform> landforms;
+            const auto m = generate_map(s, content(), {}, nullptr, &landforms);
+            REQUIRE(m.has_value());
+            for (const Landform& l : landforms) {
+                const bool trench = l.kind == LandformKind::Trench;
+                if (!trench && l.kind != LandformKind::Ridge) {
+                    continue;
+                }
+                // Along the line, the ground at the middle against the ground
+                // two widths to the side, where both are open sea.
+                int deeper = 0;
+                int higher = 0;
+                int samples = 0;
+                for (std::size_t k = 0; k + 1 < l.points.size(); ++k) {
+                    const double ax = l.points[k][0], az = l.points[k][1];
+                    const double bx = l.points[k + 1][0], bz = l.points[k + 1][1];
+                    const double len = std::hypot(bx - ax, bz - az);
+                    if (len < 1.0) {
+                        continue;
+                    }
+                    for (int step = 1; step < 8; ++step) {
+                        const double t = step / 8.0;
+                        const double cx = ax + (bx - ax) * t;
+                        const double cz = az + (bz - az) * t;
+                        const double ox = cx - (bz - az) / len * l.width * 1.5;
+                        const double oz = cz + (bx - ax) / len * l.width * 1.5;
+                        const auto x0 = static_cast<std::int32_t>(cx), z0 = static_cast<std::int32_t>(cz);
+                        const auto x1 = static_cast<std::int32_t>(ox), z1 = static_cast<std::int32_t>(oz);
+                        if (x0 < 1 || z0 < 1 || x1 < 1 || z1 < 1 || x0 >= m->size - 1 || z0 >= m->size - 1 ||
+                            x1 >= m->size - 1 || z1 >= m->size - 1) {
+                            continue;
+                        }
+                        const auto cell = [&](std::int32_t x, std::int32_t z) { return static_cast<std::size_t>(z) * static_cast<std::size_t>(m->size) + static_cast<std::size_t>(x); };
+                        const std::int32_t w0 = m->water[cell(x0, z0)], w1 = m->water[cell(x1, z1)];
+                        const std::int32_t g0 = m->height_cm(x0, z0), g1 = m->height_cm(x1, z1);
+                        // Open sea: at least 3 m of water at both.
+                        if (w0 == 0 || w1 == 0 || w1 - g1 < 300 || w0 - g0 < 50) {
+                            continue;
+                        }
+                        ++samples;
+                        deeper += g0 + 200 < g1 ? 1 : 0;
+                        higher += g0 > g1 + 100 ? 1 : 0;
+                        CHECK(g0 < w0);  // Never out of the water.
+                    }
+                }
+                if (samples >= 5) {
+                    if (trench) {
+                        CHECK(deeper * 2 > samples);
+                        ++trenches;
+                    } else {
+                        CHECK(higher * 2 > samples);
+                        ++ridges;
+                    }
+                }
+            }
+        }
+        CHECK(trenches > 0);
+        CHECK(ridges > 0);
     }
 
     TEST_CASE("generation can be cancelled") {

@@ -2,6 +2,7 @@
 // same settings give the same map, bit for bit, on every machine.
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -27,16 +28,27 @@ public:
     virtual bool map_generated(MapData& map) = 0;
 };
 
+// The landforms a generation placed (phases 26 and 27), for the tests:
+// each along a line of points (x, z in meters), `width` meters across.
+enum class LandformKind : std::uint8_t { Coast, Gulf, Peninsula, Islet, Trench, Ridge, Plateau, Valley, Range, Canyon, Count };
+struct Landform {
+    LandformKind kind = LandformKind::Coast;
+    std::vector<std::array<std::int32_t, 2>> points;
+    std::int32_t width = 0;
+};
+
 // Empty if cancelled. `content` gives the species, biomes and map types;
 // map type and biome indices out of range fall back to the first ones.
+// `landforms`, if given, gets what was placed (a single map only).
 [[nodiscard]] std::optional<MapData> generate_map(const MapSettings& settings, const Content& content,
-                                                  const GenProgress& progress = {}, MapHooks* hooks = nullptr);
+                                                  const GenProgress& progress = {}, MapHooks* hooks = nullptr,
+                                                  std::vector<Landform>* landforms = nullptr);
 
 // Tuning shared with the tests.
 namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
 // the map (decision D-620).
-inline constexpr std::uint16_t kGeneratorVersion = 4;
+inline constexpr std::uint16_t kGeneratorVersion = 5;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 2;

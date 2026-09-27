@@ -110,6 +110,7 @@ struct NewGameSettings {
     std::string map_type;           // Empty: the first one.
     std::string biome;              // Empty: the first one.
     int islands = 2;                // Per town, with islands.
+    std::string sea = "sometimes";  // new_game_names::kSeas
     std::string water = "normal";   // new_game_names::kAmounts
     std::string forests = "normal";
     std::string resources = "normal";
@@ -136,6 +137,7 @@ namespace new_game_names {
 inline constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge", "giant", "colossal"};
 inline constexpr std::string_view kAmounts[] = {"low", "normal", "high"};
 inline constexpr std::string_view kReliefs[] = {"low", "gentle", "mountainous"};
+inline constexpr std::string_view kSeas[] = {"none", "sometimes", "always"};
 inline constexpr std::string_view kYears[] = {"short", "normal", "long"};
 inline constexpr std::string_view kWinters[] = {"mild", "normal", "harsh"};
 inline constexpr std::string_view kStarts[] = {"scarce", "normal", "plenty"};

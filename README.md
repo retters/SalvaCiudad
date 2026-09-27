@@ -334,6 +334,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Las islas tienen formas irregulares: bahías, penínsulas, cabos y estrechos entre islas cercanas; ninguna parece un círculo.
 - [ ] Sigue habiendo exactamente pueblos × islas por pueblo islas, y ninguna se une a otra.
 
+### Fase 26 (costas y fondo marino)
+
+- [ ] La partida nueva tiene "Mar" (Sin mar, A veces, Siempre), desactivado con el tipo de mapa Islas.
+- [ ] Con "Siempre", el mapa tiene mar en uno o dos lados, con una costa irregular; a veces con golfos, penínsulas, cabos o islotes (se ven en el minimapa).
+- [ ] Fuera del mapa hay mar donde el borde es mar, y montañas donde es tierra.
+- [ ] En el minimapa, bajo el mar a veces se ven franjas más oscuras (fosas) o más claras (dorsales).
+- [ ] Con "Sin mar", el mapa no tiene costa.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

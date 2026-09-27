@@ -284,6 +284,12 @@
       "one": "{1} per town ({0} island)",
       "other": "{1} per town ({0} islands)"
     },
+    "newGame.sea": "Sea",
+    "newGame.sea.tooltip": "Whether the map has a coast on one or two sides, with gulfs, bays, peninsulas, capes and islets. \"Sometimes\" leaves it to the seed.",
+    "newGame.sea.disabledTooltip": "The islands map is always surrounded by sea.",
+    "newGame.sea.none": "No sea",
+    "newGame.sea.sometimes": "Sometimes",
+    "newGame.sea.always": "Always",
     "newGame.players": "Start positions",
     "newGame.players.tooltip": "How many towns the map has room for, far apart and with similar resources nearby.",
     "newGame.players.value": {

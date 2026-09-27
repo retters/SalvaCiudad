@@ -53,6 +53,39 @@ constexpr std::int32_t kIslandWarp = 50;       // Percent of the radius, each ax
 constexpr std::int64_t kIslandLobes = 36045;   // 0.55 of the big shape noise, 16.16.
 constexpr std::int64_t kIslandCoves = 19661;   // 0.3 of the small one.
 constexpr std::uint64_t kIslandCoveSeed = 0x49434f5645000021ull;
+// Coasts and the sea floor (phase 26).
+constexpr std::uint64_t kCoastPlanSeed = 0x434f415354500022ull;
+constexpr std::uint64_t kCoastWarpX = 0x4357415250580023ull;
+constexpr std::uint64_t kCoastWarpZ = 0x43574152505a0024ull;
+constexpr std::uint64_t kCoastLobes = 0x434c4f4245530025ull;
+constexpr std::uint64_t kFloorPlanSeed = 0x464c4f4f52500026ull;
+constexpr std::uint64_t kRidgeCrestSeed = 0x5249444745430027ull;
+// Land is raised this much when a map has a coast, so the sea floor has
+// room below the lowest land (heights are kept above 1 m).
+constexpr std::int32_t kCoastLift = 15000;
+
+// A point along a line, and the distance to a segment, in meters.
+struct Point {
+    std::int32_t x = 0;
+    std::int32_t z = 0;
+};
+
+// Squared distance from (px, pz) to the segment a-b, in 1/256 m squared,
+// and how far along it the nearest point is (0..65536).
+void segment_distance(const Point& a, const Point& b, std::int64_t px, std::int64_t pz, std::int64_t& d2,
+                      std::int64_t& along) {
+    const std::int64_t ax = a.x * 16;
+    const std::int64_t az = a.z * 16;
+    const std::int64_t bx = b.x * 16 - ax;
+    const std::int64_t bz = b.z * 16 - az;
+    const std::int64_t qx = px * 16 - ax;
+    const std::int64_t qz = pz * 16 - az;
+    const std::int64_t len2 = bx * bx + bz * bz;
+    along = len2 == 0 ? 0 : std::clamp<std::int64_t>((qx * bx + qz * bz) * 65536 / len2, 0, 65536);
+    const std::int64_t cx = qx - bx * along / 65536;
+    const std::int64_t cz = qz - bz * along / 65536;
+    d2 = cx * cx + cz * cz;
+}
 constexpr std::uint64_t kIslandWarpX = 0x4957415250580018ull;
 constexpr std::uint64_t kIslandWarpZ = 0x495741525a5a0019ull;
 constexpr std::uint64_t kIslandShape = 0x4953484150450020ull;
@@ -73,8 +106,9 @@ using worldgen::island_gap;
 
 class Generator {
 public:
-    Generator(const MapSettings& s, const Content& content, const GenProgress& progress)
-        : s_(s), flora_(content.flora), progress_(progress), n_(map_cells(s.size)), v_(n_ + 1), rng_(s.seed, 7) {}
+    Generator(const MapSettings& s, const Content& content, const GenProgress& progress, std::vector<Landform>* landforms)
+        : s_(s), flora_(content.flora), progress_(progress), landforms_(landforms), n_(map_cells(s.size)), v_(n_ + 1),
+          rng_(s.seed, 7) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -83,6 +117,9 @@ public:
         if (const MapTypeDef* type = map_type(); type != nullptr && type->islands) {
             islands_ = island_layout(s_.seed, n_, std::clamp<std::int32_t>(s_.players, 1, 12),
                                      std::min<std::int32_t>(s_.islands, max_islands_per_town(s_.size, s_.players)));
+            sea_mm_ = kSeaLevelMm;
+        } else {
+            plan_coast();
         }
         if (!relief() || !lakes() || !rivers() || !soil() || !biomes() || !forests() || !resources() || !starts()) {
             return std::nullopt;
@@ -166,13 +203,17 @@ private:
                 }
                 h_[vi(x, z)] = static_cast<std::int32_t>(h);
             }
-            if ((z & 63) == 0 && !report(GenStage::Relief, z * (islands_.empty() ? 90 : 60) / v_)) {
+            if ((z & 63) == 0 && !report(GenStage::Relief, z * (islands_.empty() && !coast_.on ? 90 : 60) / v_)) {
                 return false;
             }
         }
         if (!islands_.empty() && !shape_islands(amp)) {
             return false;
         }
+        if (coast_.on && !shape_coast(amp)) {
+            return false;
+        }
+        sea_floor();
         // Basins that will hold lakes.
         const std::int32_t lakes = per_area(4 * amount_factor(s_.water));
         const std::int32_t margin = n_ / 10;
@@ -417,7 +458,7 @@ private:
                 return;
             }
             const std::size_t v = vi(x, z);
-            if (sea[v] == 0 && h_[v] < kSeaLevelMm) {
+            if (sea[v] == 0 && h_[v] < sea_mm_) {
                 sea[v] = 1;
                 queue.push_back(static_cast<std::uint32_t>(v));
             }
@@ -450,8 +491,8 @@ private:
                     wet = wet || sea[c] != 0;
                     lowest = std::min(lowest, h_[c]);
                 }
-                if (wet && lowest + 10 <= kSeaLevelMm) {
-                    water_[ci(x, z)] = std::max(water_[ci(x, z)], kSeaLevelMm);
+                if (wet && lowest + 10 <= sea_mm_) {
+                    water_[ci(x, z)] = std::max(water_[ci(x, z)], sea_mm_);
                     terrain_[ci(x, z)] = static_cast<std::uint8_t>(Terrain::Water);
                 }
             }
@@ -565,7 +606,7 @@ private:
                 }
             }
         }
-        if (!islands_.empty()) {
+        if (sea_mm_ > 0) {
             flood_sea();
         }
         return report(GenStage::Lakes, 100);
@@ -1333,7 +1374,316 @@ private:
     std::vector<std::uint8_t> forest_;  // How deep in the forest, 0 = not forest.
     std::vector<std::uint8_t> biome_;   // Cell biome.
     std::vector<std::uint8_t> taken_;   // Cells kept free around trunks.
-    std::vector<Island> islands_;       // Map type with islands: home islands first.
+    std::vector<Island> islands_;       // Map type with islands: main islands first.
+    std::vector<Landform>* landforms_;  // What was placed, for the tests; may be null.
+    std::int32_t sea_mm_ = 0;           // Sea surface, millimeters; 0 without a sea.
+
+    void record(LandformKind kind, std::vector<Point> points, std::int32_t width) {
+        if (landforms_ != nullptr) {
+            Landform l;
+            l.kind = kind;
+            l.width = width;
+            for (const Point& pt : points) {
+                l.points.push_back({pt.x, pt.z});
+            }
+            landforms_->push_back(std::move(l));
+        }
+    }
+
+    // --- Coasts (phase 26) -------------------------------------------------------------
+
+    // A bay, gulf or peninsula: a teardrop from the coastline, `length`
+    // meters along `dir` (a unit vector in 1/256), `half` meters wide at
+    // its base.
+    struct Lobe {
+        Point base;
+        std::int32_t dx = 0;
+        std::int32_t dz = 0;
+        std::int32_t length = 0;
+        std::int32_t half = 0;
+        bool land = false;
+    };
+    struct Coast {
+        bool on = false;
+        std::array<std::int32_t, 4> width{};  // Sea width per side (west, east, north, south); 0 = no sea.
+        std::vector<Lobe> lobes;
+        std::vector<Island> islets;
+    };
+    Coast coast_;
+
+    void plan_coast() {
+        if (s_.sea == Sea::None) {
+            return;
+        }
+        Rng rng(s_.seed ^ kCoastPlanSeed, 13);
+        const bool on = s_.sea == Sea::Always || rng.below(100) < 40;
+        if (!on) {
+            return;
+        }
+        coast_.on = true;
+        // One side, a corner or two opposite sides.
+        const std::uint32_t pattern = rng.below(100);
+        const std::uint32_t first = rng.below(4);
+        std::vector<std::uint32_t> sides{first};
+        if (pattern >= 85) {
+            sides.push_back(first ^ 1u);
+        } else if (pattern >= 55) {
+            sides.push_back(first < 2 ? 2 + rng.below(2) : rng.below(2));
+        }
+        for (const std::uint32_t side : sides) {
+            coast_.width[side] = n_ * rng.range(12, 22) / 100;
+        }
+        // Where along a side, and which way is inland.
+        const auto on_side = [&](std::uint32_t side, std::int32_t along, std::int32_t in, Point& at, std::int32_t& dx,
+                                 std::int32_t& dz) {
+            switch (side) {
+                case 0: at = {in, along}; dx = 256; dz = 0; break;
+                case 1: at = {n_ - in, along}; dx = -256; dz = 0; break;
+                case 2: at = {along, in}; dx = 0; dz = 256; break;
+                default: at = {along, n_ - in}; dx = 0; dz = -256; break;
+            }
+        };
+        // Gulfs and bays reach inland; peninsulas and capes out to sea;
+        // islets lie off the coast, with a strait between.
+        const std::uint32_t gulfs = rng.below(3);
+        const std::uint32_t peninsulas = rng.below(3);
+        const std::uint32_t capes = rng.below(4);
+        const std::uint32_t islets = rng.below(4);
+        for (std::uint32_t i = 0; i < gulfs + peninsulas + capes; ++i) {
+            const std::uint32_t side = sides[rng.below(static_cast<std::uint32_t>(sides.size()))];
+            const std::int32_t w = coast_.width[side];
+            Lobe lobe;
+            lobe.land = i >= gulfs;
+            std::int32_t dx = 0;
+            std::int32_t dz = 0;
+            on_side(side, n_ * rng.range(15, 85) / 100, w, lobe.base, dx, dz);
+            if (i < gulfs) {
+                lobe.length = n_ * rng.range(10, 22) / 100;
+            } else if (i < gulfs + peninsulas) {
+                lobe.length = std::max(20, w * rng.range(55, 85) / 100);
+                dx = -dx;
+                dz = -dz;
+            } else {
+                lobe.length = std::max(15, w * rng.range(20, 40) / 100);
+                dx = -dx;
+                dz = -dz;
+            }
+            lobe.dx = dx;
+            lobe.dz = dz;
+            lobe.half = std::max(12, lobe.length * rng.range(22, 45) / 100);
+            coast_.lobes.push_back(lobe);
+            const LandformKind kind = i < gulfs ? LandformKind::Gulf : LandformKind::Peninsula;
+            record(kind, {lobe.base, {lobe.base.x + dx * lobe.length / 256, lobe.base.z + dz * lobe.length / 256}}, lobe.half * 2);
+        }
+        for (std::uint32_t i = 0; i < islets; ++i) {
+            const std::uint32_t side = sides[rng.below(static_cast<std::uint32_t>(sides.size()))];
+            const std::int32_t w = coast_.width[side];
+            Point at;
+            std::int32_t dx = 0;
+            std::int32_t dz = 0;
+            on_side(side, n_ * rng.range(10, 90) / 100, w * rng.range(25, 65) / 100, at, dx, dz);
+            const std::int32_t radius = std::max(10, std::min(w / 4, rng.range(25, 80)));
+            coast_.islets.push_back({at.x, at.z, radius, 0});
+            record(LandformKind::Islet, {at}, radius * 2);
+        }
+        for (const std::uint32_t side : sides) {
+            Point a;
+            Point b;
+            std::int32_t dx = 0;
+            std::int32_t dz = 0;
+            on_side(side, 0, coast_.width[side], a, dx, dz);
+            on_side(side, n_, coast_.width[side], b, dx, dz);
+            record(LandformKind::Coast, {a, b}, coast_.width[side]);
+        }
+    }
+
+    // Lowers the sides of the map under the sea: a coastline bent by noise,
+    // with its gulfs, peninsulas, capes and islets.
+    bool shape_coast(std::int64_t amp) {
+        const std::int64_t spread = amp * 3 / 2;
+        sea_mm_ = static_cast<std::int32_t>(20000 + kCoastLift - spread - 1000);
+        std::int32_t cell = 5;
+        while (cell < 11 && (1 << (cell + 1)) <= n_ / 8) {
+            ++cell;
+        }
+        const std::int64_t bend = n_ / 12;          // How far the warp moves points, meters.
+        const std::int64_t lobes = n_ / 20;         // How far the coast goes in and out.
+        const std::int64_t shore = std::max(24, n_ / 40);  // Meters from the coastline to open water.
+        const auto smooth = [](std::int64_t u) { return (((u * u) >> 16) * (3 * 65536 - 2 * u)) >> 16; };
+        for (std::int32_t z = 0; z < v_; ++z) {
+            for (std::int32_t x = 0; x < v_; ++x) {
+                const std::int64_t ux = fbm(s_.seed ^ kCoastWarpX, x, z, cell, 3);
+                const std::int64_t uz = fbm(s_.seed ^ kCoastWarpZ, x, z, cell, 3);
+                // In sixteenths of a meter from here on.
+                const std::int64_t wx = x * 16 + ux * bend * 16 / 32768;
+                const std::int64_t wz = z * 16 + uz * bend * 16 / 32768;
+                // How far inland past the coastline, the least over the sides.
+                std::int64_t e = INT64_MAX;
+                const std::int64_t edge[4] = {wx, n_ * 16 - wx, wz, n_ * 16 - wz};
+                for (int side = 0; side < 4; ++side) {
+                    if (coast_.width[static_cast<std::size_t>(side)] > 0) {
+                        e = std::min(e, edge[side] - coast_.width[static_cast<std::size_t>(side)] * 16);
+                    }
+                }
+                // Gulfs, peninsulas and islets on the bent positions too, so
+                // their shores are as ragged as the rest.
+                for (const Lobe& lobe : coast_.lobes) {
+                    // Along the lobe's axis and across it, meters * 16.
+                    const std::int64_t rx = wx - lobe.base.x * 16;
+                    const std::int64_t rz = wz - lobe.base.z * 16;
+                    const std::int64_t a = (rx * lobe.dx + rz * lobe.dz) / 256;
+                    const std::int64_t b = std::abs(-rx * lobe.dz + rz * lobe.dx) / 256;
+                    const std::int64_t len = lobe.length * 16;
+                    if (a < -len / 3 || a >= len) {
+                        continue;
+                    }
+                    // Half an ellipse: a round end, not a point.
+                    const std::int64_t f = std::max<std::int64_t>(0, a);
+                    const std::int64_t half = lobe.half * static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(
+                                                                (len * len - f * f) * 256 / (len * len)))) ;
+                    const std::int64_t inner = half - b;
+                    if (inner > 0) {
+                        e = lobe.land ? std::max(e, inner) : std::min(e, -inner);
+                    }
+                }
+                for (const Island& islet : coast_.islets) {
+                    const std::int64_t dx = wx - islet.x * 16;
+                    const std::int64_t dz = wz - islet.z * 16;
+                    const std::int64_t inside = islet.radius * 16 - static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(dx * dx + dz * dz)));
+                    e = std::max(e, inside);
+                }
+                // Bays and capes big and small all along.
+                e += fbm(s_.seed ^ kCoastLobes, x, z, cell - 1, 4) * lobes * 16 / 32768;
+                // Past the coastline, 16.16: above 0 is land.
+                const std::int64_t c = e == INT64_MAX ? 65536 : e * 65536 / (shore * 16);
+                std::int64_t h = h_[vi(x, z)] + kCoastLift;
+                if (c > 0) {
+                    // A beach, then the land as it was.
+                    const std::int64_t u = std::min<std::int64_t>(65536, c * 2);
+                    const std::int64_t low = sea_mm_ + 100;
+                    h = low + ((std::max<std::int64_t>(0, h - low) * smooth(u)) >> 16);
+                } else {
+                    const std::int64_t rel = h_[vi(x, z)] - 20000;
+                    const std::int64_t floor = std::clamp<std::int64_t>(sea_mm_ - 6000 + rel / 8, sea_mm_ - 9000, sea_mm_ - 2000);
+                    const std::int64_t u = std::min<std::int64_t>(65536, -c * 2);
+                    h = sea_mm_ - 100 - (((sea_mm_ - 100 - floor) * smooth(u)) >> 16);
+                }
+                h_[vi(x, z)] = static_cast<std::int32_t>(h);
+            }
+            if ((z & 63) == 0 && !report(GenStage::Relief, 60 + z * 30 / v_)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // --- Lines across the map (phases 26 and 27) ------------------------------------------
+
+    // A wandering line from a to b: `pieces` segments, each bend moved up to
+    // `wander` meters to either side.
+    [[nodiscard]] static std::vector<Point> wander_line(Rng& rng, Point a, Point b, std::int32_t pieces, std::int32_t wander) {
+        std::vector<Point> out{a};
+        const std::int64_t dx = b.x - a.x;
+        const std::int64_t dz = b.z - a.z;
+        const std::int64_t len = std::max<std::int64_t>(1, static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(dx * dx + dz * dz))));
+        for (std::int32_t i = 1; i < pieces; ++i) {
+            const std::int64_t off = rng.range(-wander, wander);
+            out.push_back({static_cast<std::int32_t>(a.x + dx * i / pieces - dz * off / len),
+                           static_cast<std::int32_t>(a.z + dz * i / pieces + dx * off / len)});
+        }
+        out.push_back(b);
+        return out;
+    }
+
+    // A random point on the map's border (side 0..3), `inset` meters in.
+    [[nodiscard]] Point border_point(Rng& rng, std::uint32_t side, std::int32_t inset) const {
+        const std::int32_t along = rng.range(n_ / 10, n_ - n_ / 10);
+        switch (side) {
+            case 0: return {inset, along};
+            case 1: return {n_ - inset, along};
+            case 2: return {along, inset};
+            default: return {along, n_ - inset};
+        }
+    }
+
+    // Calls fn(vertex index, distance in 1/16 m, how far along the whole
+    // line 0..65536) for the vertices within `reach` meters of the line;
+    // each vertex once, for its nearest segment.
+    template <class Fn>
+    void along_line(const std::vector<Point>& line, std::int32_t reach, const Fn& fn) {
+        if (line.size() < 2) {
+            return;
+        }
+        std::int32_t x0 = INT32_MAX, z0 = INT32_MAX, x1 = INT32_MIN, z1 = INT32_MIN;
+        for (const Point& pt : line) {
+            x0 = std::min(x0, pt.x);
+            z0 = std::min(z0, pt.z);
+            x1 = std::max(x1, pt.x);
+            z1 = std::max(z1, pt.z);
+        }
+        const std::int64_t reach2 = static_cast<std::int64_t>(reach) * reach * 256;
+        const auto pieces = static_cast<std::int64_t>(line.size() - 1);
+        for (std::int32_t z = std::max(0, z0 - reach); z <= std::min(v_ - 1, z1 + reach); ++z) {
+            for (std::int32_t x = std::max(0, x0 - reach); x <= std::min(v_ - 1, x1 + reach); ++x) {
+                std::int64_t best = INT64_MAX;
+                std::int64_t at = 0;
+                for (std::size_t k = 0; k + 1 < line.size(); ++k) {
+                    std::int64_t d2 = 0;
+                    std::int64_t along = 0;
+                    segment_distance(line[k], line[k + 1], x, z, d2, along);
+                    if (d2 < best) {
+                        best = d2;
+                        at = (static_cast<std::int64_t>(k) * 65536 + along) / pieces;
+                    }
+                }
+                if (best <= reach2) {
+                    fn(vi(x, z), static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(best))), at);
+                }
+            }
+        }
+    }
+
+    // --- The sea floor (phase 26) ------------------------------------------------------------
+
+    // Trenches and ridges: long lines across the sea floor, deeper or
+    // higher than around them, never out of the water.
+    void sea_floor() {
+        if (sea_mm_ <= 0) {
+            return;
+        }
+        Rng rng(s_.seed ^ kFloorPlanSeed, 17);
+        const std::int32_t reference = sea_mm_ - 6000;  // A usual sea floor.
+        const std::int32_t trenches = (rng.below(100) < 55 ? 1 : 0) + (rng.below(100) < 20 ? 1 : 0);
+        const std::int32_t ridges = (rng.below(100) < 55 ? 1 : 0) + (rng.below(100) < 20 ? 1 : 0);
+        for (std::int32_t i = 0; i < trenches + ridges; ++i) {
+            const bool trench = i < trenches;
+            const std::uint32_t from = rng.below(4);
+            const std::uint32_t to = (from + 1 + rng.below(3)) % 4;
+            const std::vector<Point> line =
+                wander_line(rng, border_point(rng, from, 0), border_point(rng, to, 0), 8, n_ / 12);
+            const std::int32_t half = trench ? rng.range(15, 30) + n_ / 400 : rng.range(45, 80) + n_ / 150;
+            const std::int64_t depth = trench ? rng.range(5000, 9000) : 0;
+            record(trench ? LandformKind::Trench : LandformKind::Ridge, line, half * 2);
+            along_line(line, half, [&](std::size_t v, std::int64_t d16, std::int64_t) {
+                // Only the open sea floor, not the shore.
+                if (h_[v] >= sea_mm_ - 1500) {
+                    return;
+                }
+                const std::int64_t u = std::max<std::int64_t>(0, 65536 - d16 * 65536 / (half * 16));
+                const std::int64_t shape = (u * u) >> 16;
+                if (trench) {
+                    const std::int64_t target = reference - ((depth * shape) >> 16);
+                    h_[v] = static_cast<std::int32_t>(std::max<std::int64_t>(1500, std::min<std::int64_t>(h_[v], target)));
+                } else {
+                    // A crest with peaks, up to 1.2 m under the surface.
+                    const std::int64_t crest = sea_mm_ - 1200 - (std::abs(fbm(s_.seed ^ kRidgeCrestSeed, static_cast<std::int32_t>(v % static_cast<std::size_t>(v_)),
+                                                                             static_cast<std::int32_t>(v / static_cast<std::size_t>(v_)), 6, 3)) * 3000 / 32768);
+                    const std::int64_t target = reference + (((crest - reference) * shape) >> 16);
+                    h_[v] = static_cast<std::int32_t>(std::max<std::int64_t>(h_[v], std::min<std::int64_t>(target, sea_mm_ - 1200)));
+                }
+            });
+        }
+    }
 };
 
 }  // namespace
@@ -1608,11 +1958,11 @@ std::int32_t max_islands_per_town(MapSize size, std::int32_t towns) {
 }  // namespace worldgen
 
 std::optional<MapData> generate_map(const MapSettings& settings, const Content& content, const GenProgress& progress,
-                                    MapHooks* hooks) {
+                                    MapHooks* hooks, std::vector<Landform>* landforms) {
     if (world_grid(settings) > 1) {
         return generate_world(settings, content, progress, hooks);
     }
-    Generator gen(settings, content, progress);
+    Generator gen(settings, content, progress, landforms);
     std::optional<MapData> map = gen.run();
     if (map.has_value() && hooks != nullptr && !hooks->map_generated(*map)) {
         return std::nullopt;

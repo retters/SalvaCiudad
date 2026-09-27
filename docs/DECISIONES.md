@@ -1254,3 +1254,33 @@ La tierra que se une a su isla solo por una esquina de casilla contaba como otra
 
 **D-2505. Versión del generador.**
 Los mapas de islas cambian con la misma semilla: el generador pasa a la versión 4 y cambió la suma de verificación del mapa pequeño de referencia. Los demás tipos de mapa salen igual.
+
+## Fase 26: costas y fondo marino (2026-09-27)
+
+**D-2601. La opción "Mar".**
+Los tipos de mapa sin islas tienen la opción "Mar": sin mar, a veces (por omisión) o siempre. Con "a veces", la semilla decide (4 de cada 10 mapas). Se guarda en la configuración del mapa (un byte más) y se recuerda con la partida nueva. En el mapa de islas no aplica: siempre hay mar.
+
+**D-2602. Cómo es la costa.**
+- El mar ocupa uno, dos lados en esquina o dos lados opuestos (55, 30 y 15 %), de 12 a 22 % del mapa de ancho cada uno.
+- La línea de costa se deforma con ruido: salen bahías y cabos por todas partes.
+- Además, al azar: de 0 a 2 golfos hacia tierra adentro, de 0 a 2 penínsulas y de 0 a 3 cabos hacia el mar, y de 0 a 3 islotes frente a la costa, que forman estrechos con ella.
+- Golfos, penínsulas e islotes usan la misma deformación y el mismo ruido que la costa, así que tampoco son formas geométricas.
+
+**D-2603. La altura del mar.**
+Con costa, toda la tierra sube 15 m para dejar lugar al fondo del mar bajo la tierra más baja (las alturas se guardan en centímetros sin signo). El mar queda 1 m bajo el punto más bajo que puede tener el relieve. La tierra conserva su relieve, con una playa en la orilla.
+
+**D-2604. Fosas y dorsales.**
+En todo mapa con mar, incluido el de islas, puede haber hasta 2 fosas y 2 dorsales (cada una con 55 % de probabilidad, y 20 % de que haya otra). Son líneas serpenteantes de borde a borde:
+- una fosa baja el fondo de 5 a 9 m en una franja de 30 a 60 m;
+- una dorsal lo sube en una franja de 90 a 160 m, con crestas, hasta 1,2 m bajo la superficie: nunca sale del agua, así que no cambia las islas.
+
+Solo tocan el fondo abierto, no la orilla. Se ven por el color del agua, más oscuro donde es honda.
+
+**D-2605. El borde decorativo.**
+Fuera del mapa hay mar donde el borde del mapa es mar a lo largo de 48 m, y montañas donde es tierra. Reemplaza la regla del mapa de islas (D-2204). La desembocadura de un río no cuenta como mar.
+
+**D-2606. Versión del generador.**
+Pasa a la 5: con "a veces", un mapa clásico puede tener costa con la misma semilla que antes no la tenía.
+
+**D-2607. Formas para las pruebas.**
+`generate_map` puede devolver la lista de formas que colocó (costa, golfo, península, islote, fosa, dorsal), con su línea y su ancho. Solo lo usan las pruebas; no se guarda con la partida.
