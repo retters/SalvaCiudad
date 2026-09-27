@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "disease",
+      "id": "core:flu",
+      "name": "disease.flu",
+      "source": "cold",
+      "chance": 40,
+      "contagion": 30,
+      "severity": 60,
+      "days": 8
+    },
+    {
+      "type": "disease",
+      "id": "core:dysentery",
+      "name": "disease.dysentery",
+      "source": "water",
+      "chance": 20,
+      "contagion": 20,
+      "severity": 80,
+      "days": 10
+    },
+    {
+      "type": "disease",
+      "id": "core:plague",
+      "name": "disease.plague",
+      "source": "rats",
+      "chance": 3,
+      "contagion": 60,
+      "severity": 120,
+      "days": 12
+    }
+  ]
+}

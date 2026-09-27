@@ -120,6 +120,12 @@
     "building.tavern": "Tavern",
     "building.market": "Market",
     "building.garden": "Garden",
-    "building.statue": "Statue"
+    "building.statue": "Statue",
+    "disease.flu": "Flu",
+    "disease.dysentery": "Dysentery",
+    "disease.plague": "Plague",
+    "building.healer": "Healer's hut",
+    "building.physician": "Physician",
+    "building.bathhouse": "Bathhouse"
   }
 }

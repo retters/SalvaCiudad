@@ -27,6 +27,7 @@ enum class CommandType : std::uint8_t {
     RemoveField = 16,     // Farm `entity`, field `value`.
     UpgradeBuilding = 17, // Start upgrading `entity` (the town center) to its next level.
     SetLimit = 18,        // Stock of its product `entity` works up to: `value` (0 = automatic).
+    DevIgnite = 19,       // Developer tools: set `entity` on fire.
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;

@@ -228,6 +228,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Una taberna con cerveza da entretenimiento; sin cerveza, no.
 - [ ] Un mercado se llena de comida y ropa, y los aldeanos cercanos comen ahí.
 
+### Fase 13 (salud e incendios)
+
+- [ ] La pantalla de partida nueva tiene Enfermedades e Incendios (de Ninguno a Brutal).
+- [ ] Con Ctrl+F3 → Pueblo → "Prender fuego al edificio seleccionado", aparece un aviso, la barra superior cuenta el incendio y el edificio se ve rojo; sin pozo cerca se quema y desaparece.
+- [ ] Con un pozo a menos de 50 m, los aldeanos corren a apagarlo ("apagando un incendio" en su ventana).
+- [ ] En invierno, sin casas calientes ni ropa, aparece la gripe: aviso de brote, "Enfermos" en la barra y la enfermedad en la ventana del aldeano.
+- [ ] Un curandero con hierbas cerca de las casas acorta las enfermedades.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

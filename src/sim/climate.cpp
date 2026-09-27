@@ -34,20 +34,34 @@ std::uint64_t mix(std::uint64_t x) {
 
 }  // namespace
 
+std::int32_t threat_percent(Threat t) {
+    static constexpr std::int32_t kPercent[] = {0, 50, 100, 200, 400};
+    return kPercent[static_cast<std::size_t>(t) % std::size(kPercent)];
+}
+
 void GameRules::write(BinaryWriter& w) const {
     w.u8(climate.seasons);
     w.u8(static_cast<std::uint8_t>(climate.year));
     w.u8(static_cast<std::uint8_t>(climate.winter));
     w.u8(static_cast<std::uint8_t>(start));
     w.i32(max_population);
+    w.u8(static_cast<std::uint8_t>(diseases));
+    w.u8(static_cast<std::uint8_t>(fires));
 }
 
 bool GameRules::read(BinaryReader& r, GameRules& out) {
     GameRules g;
-    std::uint8_t year = 0, winter = 0, start = 0;
-    if (!r.u8(g.climate.seasons) || !r.u8(year) || !r.u8(winter) || !r.u8(start) || !r.i32(g.max_population)) {
+    std::uint8_t year = 0, winter = 0, start = 0, diseases = 0, fires = 0;
+    if (!r.u8(g.climate.seasons) || !r.u8(year) || !r.u8(winter) || !r.u8(start) || !r.i32(g.max_population) ||
+        !r.u8(diseases) || !r.u8(fires)) {
         return false;
     }
+    if (diseases >= static_cast<std::uint8_t>(Threat::Count) || fires >= static_cast<std::uint8_t>(Threat::Count)) {
+        r.fail();
+        return false;
+    }
+    g.diseases = static_cast<Threat>(diseases);
+    g.fires = static_cast<Threat>(fires);
     if (g.climate.seasons == 0 || g.climate.seasons > 0b1111 || year >= static_cast<std::uint8_t>(YearLength::Count) ||
         winter >= static_cast<std::uint8_t>(Harshness::Count) || start >= static_cast<std::uint8_t>(StartGoods::Count) ||
         g.max_population < kMinPopulationLimit || g.max_population > kMaxPopulationLimit) {

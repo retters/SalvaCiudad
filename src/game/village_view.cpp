@@ -325,8 +325,14 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         if (b.state == sim::BuildingState::Construction) {
             progress = d.build_work > 0 ? static_cast<float>(b.work_done) / static_cast<float>(d.build_work) : 1.0f;
         }
-        lists[def_models_[b.def].id].push_back(
-            building_instance(game, b.def, b.x, b.z, b.width, b.depth, b.rotation, progress));
+        render::Instance inst = building_instance(game, b.def, b.x, b.z, b.width, b.depth, b.rotation, progress);
+        if (b.fire > 0 || b.burned > 0) {
+            // Glowing while it burns, charred after.
+            const float char_level = 1.0f - 0.7f * static_cast<float>(b.burned) / 1000.0f;
+            inst.tint = b.fire > 0 ? math::Vec3{1.9f * char_level, 0.6f * char_level, 0.3f * char_level}
+                                   : math::Vec3{char_level, char_level, char_level};
+        }
+        lists[def_models_[b.def].id].push_back(inst);
     }
     if (ghost_ && ghost_->def < def_models_.size() && def_models_[ghost_->def].id != kNoModel) {
         std::int32_t w = 0, d = 0;

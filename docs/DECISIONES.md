@@ -817,3 +817,32 @@ Un aldeano sin nada que hacer ya no pasea si el camino mide más de 54 m (tres v
 
 **D-1209. Categorías en la barra de construcción.**
 Seis grupos (vivienda, alimentos, recursos, industria, servicios, decoración) con pestañas. Cada edificio los toma de su `category` o de su tipo y trabajo. Los edificios de un nivel mayor del centro del pueblo aparecen desactivados, con el nivel que necesitan.
+
+## Fase 13: salud e incendios (2026-09-27)
+
+**D-1301. Enfermedades como datos.**
+Cada enfermedad (`type: "disease"`) dice de dónde viene, qué tan contagiosa es, cuánta salud quita por día y cuántos días dura. `core` trae tres:
+- gripe: del frío (menos de 5 °C sin ropa de abrigo o sin casa caliente);
+- disentería: de una casa sin pozo;
+- peste: de las ratas, en casas a menos de 40 m de un almacén con más de 150 de comida y sin higiene.
+
+Cada día, un aldeano sano tiene la probabilidad de la fuente más un contagio por cada tipo de enfermo en su casa o en su trabajo. La higiene la reduce a la mitad.
+
+**D-1302. Gravedad y curación.**
+La salud va de 0 a 1000. Un enfermo no se recupera solo y pierde la gravedad cada día: gripe 60, disentería 80, peste 120. Un curandero cerca la reduce a la mitad y cura el doble de rápido; un médico, a la cuarta parte y el triple de rápido. Al sanar, 60 días de inmunidad. Los enfermos descansan en casa y no trabajan.
+
+La primera versión usaba gravedades de 15 a 60, que la recuperación natural (25 por día) anulaba: nadie moría. Se ajustó al verlo en una partida.
+
+**D-1303. Incendios.**
+- Cada día, cada edificio que no sea a prueba de fuego (`fireproof`: pozo, estatua, jardín, fundición, horno) tiene 4 en 100 000 de prenderse; ×3 una casa habitada con frío, ×4 un taller que gasta combustible. Con más de 30 % de nieve no empieza ninguno.
+- El fuego crece cada 10 ticks, daña el edificio y cada 50 ticks puede saltar a los que estén a menos de unos 10 m. Con 1000 de daño el edificio desaparece; el centro del pueblo nunca desaparece, queda chamuscado.
+- Al terminar lo que hacen, los aldeanos adultos van primero a apagarlo, pero solo si hay un pozo a menos de 50 m del incendio: cada cubo baja 2 puntos cada 10 ticks.
+
+**D-1304. Niveles de amenaza en las reglas.**
+`GameRules` suma enfermedades e incendios, de ninguno a brutal (0, 50, 100, 200 o 400 % de las probabilidades), con medio por omisión. Se eligen en la pantalla de partida nueva.
+
+**D-1305. Avisos.**
+La simulación junta eventos (incendio, edificio quemado, brote de una enfermedad nueva en el pueblo) que la aplicación muestra como avisos solo para el pueblo local. No se guardan: son para la vista y no cambian el estado.
+
+**D-1306. Fuego de prueba.**
+El comando `DevIgnite` prende fuego a un edificio propio; solo funciona con las herramientas de desarrollo permitidas, como `DevGrant`. Las herramientas (Ctrl+F3, pestaña Pueblo) tienen un botón para el edificio seleccionado.

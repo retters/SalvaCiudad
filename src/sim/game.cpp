@@ -95,7 +95,7 @@ const char* task_name(Task t) {
                                              "gathering", "delivering", "fetching",     "carrying to a site",
                                              "going to build", "building", "going to work", "producing",
                                              "going to a field", "farming", "going hunting", "hunting",
-                                             "going fishing", "fishing"};
+                                             "going fishing", "fishing", "running to a fire", "fighting a fire"};
     const auto i = static_cast<std::size_t>(t);
     return i < std::size(kNames) ? kNames[i] : "?";
 }
@@ -318,6 +318,17 @@ public:
                 return;
             }
         }
+        // 1b. The sick rest at home.
+        if (v.disease != 0) {
+            if (const Building* home = g_.buildings_.get(v.home)) {
+                wander(v, g_.door(*home));
+                return;
+            }
+        }
+        // 1c. A fire nearby: to the buckets.
+        if (g_.fires_ > 0 && g_.adult(v) && start_firefighting(v)) {
+            return;
+        }
         // 2. Leftover goods.
         if (v.carrying.amount > 0) {
             if (const Building* job = g_.buildings_.get(v.job);
@@ -521,6 +532,277 @@ public:
         v.timer = 0;
         go(v, Task::GoFetch, from);
         return true;
+    }
+
+    // --- Health and fire (phase 13) ---------------------------------------------------
+
+    [[nodiscard]] static FixedVec2 center_of(const Building& b) {
+        return {Fixed::from_int(b.x) + Fixed::from_ratio(b.width, 2), Fixed::from_int(b.z) + Fixed::from_ratio(b.depth, 2)};
+    }
+    [[nodiscard]] static std::uint64_t meters2(std::int64_t m) { return static_cast<std::uint64_t>(m * m) << 32; }
+
+    // A well within 50 m of `b` (to fight its fire).
+    [[nodiscard]] bool well_near(const Building& b) const {
+        for (const Building& o : g_.buildings_.data()) {
+            if (o.owner == b.owner && complete(o) && def(o).service == static_cast<std::uint8_t>(Need::Water) &&
+                distance2(center_of(o), center_of(b)) <= meters2(50)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool start_firefighting(Villager& v) {
+        EntityId best;
+        std::uint64_t best_d = meters2(80);
+        const auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            const Building& b = list.data()[i];
+            if (b.fire <= 0 || b.owner != v.owner) {
+                continue;
+            }
+            const std::uint64_t d = distance2(v.position, center_of(b));
+            if (d < best_d && well_near(b)) {
+                best_d = d;
+                best = list.entities()[i];
+            }
+        }
+        if (!best.valid()) {
+            return false;
+        }
+        go(v, Task::GoFire, best);
+        return true;
+    }
+
+    void fight_fire(Villager& v) {
+        Building* b = g_.buildings_.get(v.target);
+        if (b == nullptr || b->fire <= 0) {
+            v.task = Task::Idle;
+            return;
+        }
+        if (++v.timer < 10) {
+            return;
+        }
+        v.timer = 0;
+        b->fire = std::max(0, b->fire - 2);  // A bucket.
+        if (b->fire == 0) {
+            --g_.fires_;
+            g_.buildings_changed_ = true;
+            v.task = Task::Idle;
+        }
+    }
+
+    void ignite(Building& b, EntityId id) {
+        if (b.fire > 0 || def(b).fireproof || b.state != BuildingState::Complete) {
+            return;
+        }
+        b.fire = 10;
+        ++g_.fires_;
+        g_.buildings_changed_ = true;
+        g_.events_.push_back({Game::Event::Kind::FireStarted, b.owner, id, center_of(b), 0});
+    }
+
+    // Every tick while something burns: fires grow, spread and destroy.
+    void burn() {
+        std::vector<EntityId> gone;
+        auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            Building& b = list.data()[i];
+            if (b.fire <= 0) {
+                continue;
+            }
+            if (g_.tick_ % 10 == 0) {
+                b.fire = std::min(100, b.fire + 1);
+                b.burned = std::min(1000, b.burned + 1 + b.fire / 10);
+            }
+            if (g_.tick_ % 100 == 0) {
+                g_.buildings_changed_ = true;  // The view shows it charring.
+            }
+            // Sparks reach buildings close by.
+            if (g_.tick_ % 50 == 0) {
+                for (std::size_t k = 0; k < list.size(); ++k) {
+                    Building& o = list.data()[k];
+                    if (k == i || o.fire > 0 || def(o).fireproof ||
+                        distance2(center_of(o), center_of(b)) > meters2(10 + (b.width + o.width) / 2)) {
+                        continue;
+                    }
+                    if (g_.rng_.below(1000) < static_cast<std::uint32_t>(b.fire / 2)) {
+                        ignite(o, list.entities()[k]);
+                    }
+                }
+            }
+            if (b.burned >= 1000) {
+                gone.push_back(list.entities()[i]);
+            }
+        }
+        for (const EntityId id : gone) {
+            Building* b = g_.buildings_.get(id);
+            if (b == nullptr) {
+                continue;
+            }
+            --g_.fires_;
+            b->fire = 0;
+            if (id == g_.players_[b->owner].town_center) {
+                b->burned = 900;  // The town center survives, scorched.
+                continue;
+            }
+            ++g_.players_[b->owner].burned_down;
+            g_.events_.push_back({Game::Event::Kind::BurnedDown, b->owner, id, center_of(*b), 0});
+            remove_building(id);
+        }
+    }
+
+    // Once a day: new fires, with more chances where fires are lit.
+    void start_fires() {
+        const std::int32_t scale = threat_percent(g_.rules_.fires);
+        if (scale == 0 || g_.snow_ > 30) {
+            return;
+        }
+        auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            Building& b = list.data()[i];
+            if (b.fire > 0 || def(b).fireproof || !complete(b)) {
+                continue;
+            }
+            std::int32_t chance = 4;  // Per 100 000 a day.
+            if (def(b).kind == BuildingKind::House && g_.temperature_ < village::kColdBelow && !b.residents.empty()) {
+                chance *= 3;  // A hearth burning.
+            }
+            for (const DefIndex r : def(b).recipes) {
+                for (const ResourceAmount& in : c_.recipes[r].inputs) {
+                    if (in.resource == g_.firewood_ || c_.resources[in.resource].category == ResourceCategory::Fuel) {
+                        chance *= 4;  // An oven or a forge.
+                    }
+                }
+            }
+            if (g_.rng_.below(100000) < static_cast<std::uint32_t>(chance * scale / 100)) {
+                ignite(b, list.entities()[i]);
+            }
+        }
+    }
+
+    // Once a day: sickness comes, spreads, gets better or kills.
+    void update_health() {
+        const std::int32_t scale = threat_percent(g_.rules_.diseases);
+        const std::size_t kinds = std::min<std::size_t>(c_.diseases.size(), 32);
+        // Where the sick are: homes and workplaces, by entity index.
+        std::map<std::uint32_t, std::uint32_t> at_home;
+        std::map<std::uint32_t, std::uint32_t> at_work;
+        for (const Villager& v : g_.villagers_.data()) {
+            if (v.disease != 0 && v.disease <= kinds) {
+                const std::uint32_t bit = 1u << (v.disease - 1u);
+                if (v.home.valid()) {
+                    at_home[v.home.index] |= bit;
+                }
+                if (v.job.valid()) {
+                    at_work[v.job.index] |= bit;
+                }
+            }
+        }
+        // Food stores big enough to draw rats.
+        std::vector<FixedVec2> rat_stores;
+        for (const Building& b : g_.buildings_.data()) {
+            if (!complete(b) || def(b).storage <= 0) {
+                continue;
+            }
+            std::int32_t food = 0;
+            for (const Stock& st : b.stock) {
+                food += c_.resources[st.resource].category == ResourceCategory::Food ? st.amount : 0;
+            }
+            if (food > 150) {
+                rat_stores.push_back(center_of(b));
+            }
+        }
+        std::vector<EntityId> dying;
+        auto& vs = g_.villagers_;
+        for (std::size_t k = 0; k < vs.size(); ++k) {
+            Villager& v = vs.data()[k];
+            const Building* home = g_.buildings_.get(v.home);
+            const auto has = [&](Need n) {
+                return home != nullptr && ((home->needs >> static_cast<unsigned>(n)) & 1u) != 0;
+            };
+            if (v.disease != 0) {
+                const DiseaseDef& d = c_.diseases[std::min<std::size_t>(v.disease - 1u, kinds - 1)];
+                std::int32_t severity = d.severity;
+                std::int32_t recovery = 1;
+                if (has(Need::Doctor)) {
+                    severity /= 4;
+                    recovery = 3;
+                } else if (has(Need::Healer)) {
+                    severity /= 2;
+                    recovery = 2;
+                }
+                v.health -= severity;
+                v.sick_days -= recovery;
+                if (v.health <= 0) {
+                    dying.push_back(vs.entities()[k]);
+                    continue;
+                }
+                if (v.sick_days <= 0) {
+                    v.disease = 0;
+                    v.sick_days = 0;
+                    v.immune_days = 60;
+                }
+                continue;
+            }
+            if (v.immune_days > 0) {
+                --v.immune_days;
+                continue;
+            }
+            if (scale == 0) {
+                continue;
+            }
+            const FixedVec2 here = home != nullptr ? center_of(*home) : v.position;
+            for (std::size_t d = 0; d < kinds; ++d) {
+                const DiseaseDef& def_d = c_.diseases[d];
+                std::int32_t chance = 0;  // Per 10 000.
+                bool source = false;
+                switch (def_d.source) {
+                    case DiseaseSource::Cold:
+                        source = g_.temperature_ < 5 && (v.clothes == 0 || home == nullptr || !home->heated);
+                        break;
+                    case DiseaseSource::Water: source = !has(Need::Water); break;
+                    case DiseaseSource::Rats:
+                        for (const FixedVec2& r : rat_stores) {
+                            source = source || distance2(r, here) <= meters2(40);
+                        }
+                        source = source && !has(Need::Hygiene);
+                        break;
+                    case DiseaseSource::Count: break;
+                }
+                if (source) {
+                    chance += def_d.chance;
+                }
+                const std::uint32_t bit = 1u << d;
+                if (v.home.valid() && (at_home[v.home.index] & bit) != 0) {
+                    chance += def_d.contagion * 10;
+                }
+                if (v.job.valid() && (at_work[v.job.index] & bit) != 0) {
+                    chance += def_d.contagion * 5;
+                }
+                chance = chance * scale / 100;
+                if (has(Need::Hygiene)) {
+                    chance /= 2;
+                }
+                if (chance > 0 && g_.rng_.below(10000) < static_cast<std::uint32_t>(chance)) {
+                    // The first case of a disease in the town is news.
+                    bool first = true;
+                    for (const Villager& o : vs.data()) {
+                        first = first && !(o.owner == v.owner && o.disease == d + 1);
+                    }
+                    v.disease = static_cast<std::uint8_t>(d + 1);
+                    v.sick_days = def_d.days;
+                    if (first) {
+                        g_.events_.push_back({Game::Event::Kind::Outbreak, v.owner, vs.entities()[k], v.position,
+                                              static_cast<std::uint16_t>(d)});
+                    }
+                    break;
+                }
+            }
+        }
+        for (const EntityId id : dying) {
+            kill(id);
+        }
     }
 
     // --- Markets and services (phase 12) ------------------------------------------
@@ -977,6 +1259,10 @@ public:
                 v.timer = 0;
                 v.carrying = {};
                 break;
+            case Task::GoFire:
+                v.task = Task::FightFire;
+                v.timer = 0;
+                break;
             default: v.task = Task::Idle; break;
         }
     }
@@ -1127,6 +1413,7 @@ public:
             case Task::Farm: farm_work(v); break;
             case Task::Hunt: hunt_work(v); break;
             case Task::Fish: fish_work(v); break;
+            case Task::FightFire: fight_fire(v); break;
             default: v.task = Task::Idle; break;
         }
     }
@@ -1620,6 +1907,8 @@ public:
         g_.temperature_ = sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_);
         grow_fields();
         update_homes();
+        update_health();
+        start_fires();
         const std::int32_t t = g_.temperature_;
         if (t < 0) {
             g_.snow_ = std::min(village::kMaxSnow, g_.snow_ + 1 + std::min(-t, 10) / 2);
@@ -1680,6 +1969,9 @@ public:
         if (g_.tick_ % g_.day_ticks() == 0) {
             daily();
         }
+        if (g_.fires_ > 0) {
+            burn();
+        }
         // Bushes that grow back (not while it freezes).
         while (!g_.frozen() && !g_.regrow_.empty() && g_.regrow_.front().first <= g_.tick_) {
             const std::uint32_t i = g_.regrow_.front().second;
@@ -1716,7 +2008,7 @@ public:
                     dying.push_back(vs.entities()[k]);
                     continue;
                 }
-            } else if (v.health < village::kHealthMax && v.warmth > 0 && g_.tick_ % (v.variety >= 3 ? 2 : 4) == 0) {
+            } else if (v.health < village::kHealthMax && v.warmth > 0 && v.disease == 0 && g_.tick_ % (v.variety >= 3 ? 2 : 4) == 0) {
                 ++v.health;  // Faster with a varied diet.
             }
             if (!weather(v)) {
@@ -1729,7 +2021,7 @@ public:
                     arrive(v);
                 }
             } else if (v.task == Task::Gather || v.task == Task::Build || v.task == Task::Produce || v.task == Task::Farm ||
-                       v.task == Task::Hunt || v.task == Task::Fish) {
+                       v.task == Task::Hunt || v.task == Task::Fish || v.task == Task::FightFire) {
                 work(v);
             } else if (v.idle_ticks > 0) {
                 --v.idle_ticks;
@@ -1846,6 +2138,10 @@ public:
         Building* b = g_.buildings_.get(id);
         if (b == nullptr) {
             return;
+        }
+        if (b->fire > 0) {
+            --g_.fires_;
+            b->fire = 0;
         }
         for (const Field& f : b->fields) {
             mark_field(f, 0);
@@ -1971,6 +2267,15 @@ public:
                     break;
                 }
                 b->limit = c.value;
+                break;
+            }
+            case CommandType::DevIgnite: {
+                Building* b = g_.buildings_.get(c.entity);
+                if (!g_.dev_commands_ || b == nullptr || b->owner != c.player) {
+                    ++g_.rejected_;
+                    break;
+                }
+                ignite(*b, c.entity);
                 break;
             }
             case CommandType::DevGrant: {
@@ -2244,6 +2549,21 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
     return PlaceError::None;
 }
 
+std::int32_t Game::sick(std::uint8_t player) const {
+    std::int32_t n = 0;
+    const std::uint8_t town = town_of(player);
+    for (const Villager& v : villagers_.data()) {
+        n += v.owner == town && v.disease != 0 ? 1 : 0;
+    }
+    return n;
+}
+
+std::vector<Game::Event> Game::take_events() {
+    std::vector<Event> out;
+    out.swap(events_);
+    return out;
+}
+
 std::int32_t Game::tier(std::uint8_t player) const {
     const Building* tc = buildings_.get(players_[town_of(player)].town_center);
     return tc == nullptr ? 1 : tc->level + 1;
@@ -2514,6 +2834,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(ps.deaths);
         w.i32(ps.arrivals);
         w.i32(ps.departures);
+        w.i32(ps.burned_down);
     }
     m.registry = w.bytes().size();
     const EntityRegistry& reg = g.registry();
@@ -2575,6 +2896,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u16(b.needs);
         w.i32(b.happiness);
         w.i32(b.desirability);
+        w.i32(b.fire);
+        w.i32(b.burned);
         w.u32(static_cast<std::uint32_t>(b.fields.size()));
         for (const Field& f : b.fields) {
             w.i32(f.x);
@@ -2622,6 +2945,9 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(v.variety);
         w.u16(v.spot);
         w.i32(v.shoes);
+        w.u8(v.disease);
+        w.i32(v.sick_days);
+        w.i32(v.immune_days);
         w.u32(v.home.index);
         w.u32(v.home.generation);
         w.u32(v.job.index);
@@ -2721,7 +3047,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         PlayerState& ps = g.players_[p];
         std::uint8_t active = 0;
         if (!r.u8(active) || !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
-            !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures)) {
+            !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures) ||
+            !r.i32(ps.burned_down)) {
             return false;
         }
         ps.active = active != 0;
@@ -2811,11 +3138,13 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t upgrading = 0;
         if (!r.u8(b.level) || b.level > c.buildings[b.def].levels.size() || !r.u8(upgrading) || upgrading > 1 ||
             !r.i32(b.limit) || b.limit < 0 || b.limit > 10000 || !r.u8(b.recipe) || !r.u16(b.needs) ||
-            !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability)) {
+            !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
+            b.fire < 0 || b.fire > 100 || !r.i32(b.burned) || b.burned < 0 || b.burned > 1000) {
             r.fail();
             return false;
         }
         b.upgrading = upgrading != 0;
+        g.fires_ += b.fire > 0 ? 1 : 0;
         std::uint32_t nf = 0;
         if (!r.count(16, 40, nf)) {
             return false;
@@ -2865,7 +3194,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             !r.u32(v.appearance) || !r.u32(v.family) || !r.i64(v.born_tick) || !r.vec2(v.position) || !r.vec2(v.previous) ||
             !r.i32(v.food) || !r.i32(v.health) || !r.i32(v.warmth) || !r.i32(v.clothes) || !r.u16(v.meals[0]) || !r.u16(v.meals[1]) ||
             !r.u16(v.meals[2]) || !r.u16(v.meals[3]) || !r.u8(v.meal_index) || v.meal_index >= 4 ||
-            !r.u8(v.variety) || !r.u16(v.spot) || !r.i32(v.shoes) || !r.u32(v.home.index) || !r.u32(v.home.generation) ||
+            !r.u8(v.variety) || !r.u16(v.spot) || !r.i32(v.shoes) || !r.u8(v.disease) || v.disease > c.diseases.size() ||
+            !r.i32(v.sick_days) || !r.i32(v.immune_days) || !r.u32(v.home.index) || !r.u32(v.home.generation) ||
             !r.u32(v.job.index) || !r.u32(v.job.generation) || !r.u8(task) || !r.u32(v.target.index) ||
             !r.u32(v.target.generation) || !r.u32(v.site.index) || !r.u32(v.site.generation) || !r.u32(v.node) ||
             !r.i32(v.timer) || !r.u16(v.carrying.resource) || !r.i32(v.carrying.amount) || v.owner >= pc || sex > 1 ||

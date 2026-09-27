@@ -46,7 +46,7 @@ void meter(ui::Context& ctx, const ui::Rect& r, float fraction, ui::Color fill) 
 const char* need_text_key(std::uint8_t need) {
     static constexpr const char* kKeys[] = {"need.food",   "need.water",   "need.clothes", "need.shoes",
                                             "need.religion", "need.entertainment", "need.heating", "need.beauty",
-                                            "need.market", "need.hygiene"};
+                                            "need.market", "need.hygiene", "need.healer", "need.doctor"};
     return need < std::size(kKeys) ? kKeys[need] : "need.food";
 }
 
@@ -70,6 +70,8 @@ const char* task_text_key(sim::Task task) {
         case sim::Task::Hunt: return "task.hunt";
         case sim::Task::GoFish: return "task.goFish";
         case sim::Task::Fish: return "task.fish";
+        case sim::Task::GoFire: return "task.goFire";
+        case sim::Task::FightFire: return "task.fightFire";
         case sim::Task::Count: break;
     }
     return "task.idle";
@@ -246,6 +248,19 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     right -= jw;
     ctx.label({right, bar.y, jw, bar.h}, joy_text, st, joy < 35 ? ctx.theme().danger : ctx.theme().text);
     ctx.tooltip_area(ctx.id("hud_happiness"), {right, bar.y, jw, bar.h}, tr("hud.happiness.tooltip"));
+    // Troubles: the sick and the fires, only when there are some.
+    const std::int32_t sick = game.sick(s.town());
+    std::int32_t fires = 0;
+    for (const sim::Building& b : game.buildings().data()) {
+        fires += b.fire > 0 && b.owner == s.town() ? 1 : 0;
+    }
+    if (sick > 0 || fires > 0) {
+        const std::string text = tr("hud.troubles", sick, fires);
+        const float tw = ctx.text().measure(st, text) + ctx.s(24.0f);
+        right -= tw;
+        ctx.label({right, bar.y, tw, bar.h}, text, st, fires > 0 ? ctx.theme().danger : ctx.theme().text);
+        ctx.tooltip_area(ctx.id("hud_troubles"), {right, bar.y, tw, bar.h}, tr("hud.troubles.tooltip"));
+    }
     const std::string pop_text = tr("hud.population", pop, adults);
     const float pw = ctx.text().measure(st, pop_text) + ctx.s(24.0f);
     right -= pw;
@@ -422,6 +437,11 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
 
     // Lines first, to size the window.
     std::vector<std::string> lines;
+    if (b->fire > 0) {
+        lines.push_back(tr("hud.building.fire", b->fire, b->burned / 10));
+    } else if (b->burned > 0) {
+        lines.push_back(tr("hud.building.burned", b->burned / 10));
+    }
     float progress = -1.0f;
     if (b->state == sim::BuildingState::Construction) {
         progress = d.build_work > 0 ? static_cast<float>(b->work_done) / static_cast<float>(d.build_work) : 1.0f;
@@ -715,6 +735,9 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
                                    : tr(game.adult(*v) ? "hud.villager.laborer" : "hud.villager.child"));
     lines.push_back(tr(game.buildings().get(v->home) != nullptr ? "hud.villager.housed" : "hud.villager.homeless"));
     lines.push_back(tr(v->clothes > 0 ? "hud.villager.clothes" : "hud.villager.noClothes"));
+    if (v->disease != 0 && v->disease <= content.diseases.size()) {
+        lines.push_back(tr("hud.villager.sick", tr(content.diseases[v->disease - 1u].name_key), v->sick_days));
+    }
     if (v->carrying.amount > 0 && v->carrying.resource < content.resources.size()) {
         lines.push_back(tr("hud.villager.carrying", tr("hud.amount", tr(content.resources[v->carrying.resource].name_key),
                                                        v->carrying.amount)));

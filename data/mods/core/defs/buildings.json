@@ -82,7 +82,8 @@
             "shoes",
             "religion",
             "entertainment",
-            "beauty"
+            "beauty",
+            "hygiene"
           ],
           "tier": 2,
           "cost": {
@@ -655,7 +656,8 @@
         "good"
       ],
       "tier": 2,
-      "desirability": -8
+      "desirability": -8,
+      "fireproof": true
     },
     {
       "type": "building",
@@ -744,7 +746,8 @@
         "good"
       ],
       "tier": 3,
-      "desirability": -15
+      "desirability": -15,
+      "fireproof": true
     },
     {
       "type": "building",
@@ -823,7 +826,8 @@
       "service": "water",
       "serviceRadius": 45,
       "desirability": 4,
-      "category": "housing"
+      "category": "housing",
+      "fireproof": true
     },
     {
       "type": "building",
@@ -915,7 +919,8 @@
         "core:stone": 4
       },
       "buildWork": 80,
-      "desirability": 12
+      "desirability": 12,
+      "fireproof": true
     },
     {
       "type": "building",
@@ -932,7 +937,91 @@
       },
       "buildWork": 200,
       "desirability": 25,
-      "tier": 2
+      "tier": 2,
+      "fireproof": true
+    },
+    {
+      "type": "building",
+      "id": "core:healer",
+      "name": "building.healer",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 14
+      },
+      "buildWork": 250,
+      "workers": 1,
+      "service": "healer",
+      "serviceRadius": 80,
+      "serviceUses": {
+        "core:herbs": 1
+      },
+      "storage": 30,
+      "stores": [
+        "good"
+      ],
+      "category": "services"
+    },
+    {
+      "type": "building",
+      "id": "core:physician",
+      "name": "building.physician",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        6,
+        6
+      ],
+      "cost": {
+        "core:log": 20,
+        "core:bricks": 16
+      },
+      "buildWork": 500,
+      "workers": 2,
+      "service": "doctor",
+      "serviceRadius": 100,
+      "serviceUses": {
+        "core:herbs": 1
+      },
+      "storage": 30,
+      "stores": [
+        "good"
+      ],
+      "tier": 2,
+      "category": "services"
+    },
+    {
+      "type": "building",
+      "id": "core:bathhouse",
+      "name": "building.bathhouse",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        6,
+        5
+      ],
+      "cost": {
+        "core:log": 16,
+        "core:stone": 16
+      },
+      "buildWork": 400,
+      "workers": 1,
+      "service": "hygiene",
+      "serviceRadius": 80,
+      "serviceUses": {
+        "core:firewood": 1
+      },
+      "storage": 30,
+      "stores": [
+        "fuel"
+      ],
+      "tier": 2,
+      "desirability": 4,
+      "category": "services"
     }
   ]
 }

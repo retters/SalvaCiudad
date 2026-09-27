@@ -476,6 +476,15 @@ void DevTools::village_tab(DevContext& ctx) {
             ctx.session->issue(c);
         }
     }
+    const sim::EntityId selected = ctx.session->ui().selected_building;
+    ImGui::BeginDisabled(game.buildings().get(selected) == nullptr);
+    if (ImGui::Button((tr("dev.village.ignite") + "###ignite").c_str())) {
+        sim::Command c;
+        c.type = sim::CommandType::DevIgnite;
+        c.entity = selected;
+        ctx.session->issue(c);
+    }
+    ImGui::EndDisabled();
     ImGui::Separator();
     ImGui::Text("tick %llu", static_cast<unsigned long long>(game.tick()));
     ImGui::Text("villagers %zu, buildings %zu", game.villagers().size(), game.buildings().size());

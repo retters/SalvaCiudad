@@ -14,6 +14,10 @@ enum class Season : std::uint8_t { Spring, Summer, Autumn, Winter, Count };
 enum class YearLength : std::uint8_t { Short, Normal, Long, Count };
 enum class Harshness : std::uint8_t { Mild, Normal, Harsh, Count };
 enum class StartGoods : std::uint8_t { Scarce, Normal, Plenty, Count };
+// How much of a threat the surroundings are (section 6.3).
+enum class Threat : std::uint8_t { None, Low, Medium, High, Brutal, Count };
+// Chances scale with the threat: 0, 50, 100, 200 or 400 %.
+[[nodiscard]] std::int32_t threat_percent(Threat t);
 
 struct ClimateSettings {
     std::uint8_t seasons = 0b1111;  // Bit per Season; at least one.
@@ -27,6 +31,8 @@ struct GameRules {
     ClimateSettings climate;
     StartGoods start = StartGoods::Normal;
     std::int32_t max_population = 1000;  // Per player, 50..1000.
+    Threat diseases = Threat::Medium;
+    Threat fires = Threat::Medium;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, GameRules& out);

@@ -62,7 +62,9 @@ enum class Need : std::uint8_t {
     Heating,        // Firewood in the hearth.
     Beauty,         // A pleasant neighborhood.
     Market,         // A market nearby.
-    Hygiene,        // Phase 13.
+    Hygiene,        // A bathhouse nearby (phase 13).
+    Healer,         // A healer's hut nearby: sickness is milder.
+    Doctor,         // A physician nearby: milder still.
     Count
 };
 inline constexpr std::uint8_t kNoNeed = 0xFF;
@@ -110,6 +112,19 @@ struct BuildingDef {
     std::int32_t service_radius = 0;
     std::vector<ResourceAmount> service_uses;  // Used up each day to provide it (a tavern's beer).
     std::uint8_t category = 0;      // BuildCategory, for the build bar.
+    bool fireproof = false;         // Stone: does not catch fire (phase 13).
+};
+
+// A disease (phase 13): where it comes from, how it spreads, how bad it is.
+enum class DiseaseSource : std::uint8_t { Cold, Water, Rats, Count };
+struct DiseaseDef {
+    std::string id;
+    std::string name_key;
+    DiseaseSource source = DiseaseSource::Cold;
+    std::int32_t chance = 20;     // Per 10 000 villagers and day, when the source is there.
+    std::int32_t contagion = 20;  // Per 1000 and day, for each sick person at home or at work.
+    std::int32_t severity = 60;   // Health lost per day, of 1000 (the sick do not heal).
+    std::int32_t days = 8;        // How long it lasts.
 };
 
 // Groups of the build bar.
@@ -153,6 +168,7 @@ struct Content {
     std::vector<RecipeDef> recipes;
     std::vector<FeatureDef> features;
     std::vector<CropDef> crops;
+    std::vector<DiseaseDef> diseases;
     Flora flora;
 
     // Hash of the mods that affect the simulation (section 7.4), for

@@ -68,6 +68,9 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::SetLimit:
             ok = ok && c.entity.valid() && c.value >= 0 && c.value <= 10000;
             break;
+        case CommandType::DevIgnite:
+            ok = ok && c.entity.valid();
+            break;
         default:
             ok = false;
             break;

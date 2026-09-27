@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 12;
+inline constexpr std::uint32_t kGameRulesVersion = 13;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -126,6 +126,9 @@ struct Building {
     std::uint16_t needs = 0;         // Houses: Need bits met today.
     std::int32_t happiness = 50;     // Houses: 0..100.
     std::int32_t desirability = 0;   // Houses: how pleasant the place is.
+    // Phase 13.
+    std::int32_t fire = 0;           // 0 = not burning; else 1..100.
+    std::int32_t burned = 0;         // Damage from fire, 0..1000 (then it is gone).
     bool operator==(const Building&) const = default;
 };
 
@@ -148,6 +151,8 @@ enum class Task : std::uint8_t {
     Hunt,
     GoFish,        // Walking to the water's edge.
     Fish,
+    GoFire,        // Running to a burning building.
+    FightFire,     // Throwing buckets from a well.
     Count
 };
 
@@ -167,6 +172,9 @@ struct Villager {
     std::int32_t warmth = village::kWarmthMax;
     std::int32_t clothes = 0;         // Ticks left of the clothes worn; 0 = none.
     std::int32_t shoes = 0;           // Ticks left of the shoes worn.
+    std::uint8_t disease = 0;         // DiseaseDef index + 1; 0 = healthy.
+    std::int32_t sick_days = 0;
+    std::int32_t immune_days = 0;     // After an illness.
     std::array<DefIndex, 4> meals{kNoDef, kNoDef, kNoDef, kNoDef};  // The last helpings eaten.
     std::uint8_t meal_index = 0;
     std::uint8_t variety = 0;         // Kinds of food among those helpings.
@@ -193,6 +201,7 @@ struct PlayerState {
     std::int32_t deaths = 0;
     std::int32_t arrivals = 0;
     std::int32_t departures = 0;      // Unhappy villagers who left.
+    std::int32_t burned_down = 0;     // Buildings lost to fire.
     bool operator==(const PlayerState&) const = default;
 };
 
@@ -294,6 +303,21 @@ public:
     [[nodiscard]] std::int32_t happiness(std::uint8_t player) const;
     // Room in a house at its level.
     [[nodiscard]] std::int32_t capacity(const Building& b) const;
+    // Villagers of a player's town who are sick; buildings on fire.
+    [[nodiscard]] std::int32_t sick(std::uint8_t player) const;
+    [[nodiscard]] std::int32_t fires() const { return fires_; }
+
+    // What happened that the player should hear about (for the view).
+    struct Event {
+        enum class Kind : std::uint8_t { FireStarted, BurnedDown, Outbreak };
+        Kind kind = Kind::FireStarted;
+        std::uint8_t owner = 0;
+        EntityId entity;
+        FixedVec2 at;
+        std::uint16_t value = 0;  // Disease index, for outbreaks.
+    };
+    [[nodiscard]] std::vector<Event> take_events();
+
     // Animals left in each of the map's zones (hunting).
     [[nodiscard]] const std::vector<std::int32_t>& zone_animals() const { return zone_animals_; }
     // Point in front of a building's door, where villagers go.
@@ -344,6 +368,8 @@ private:
     DefIndex fish_ = kNoDef;
     DefIndex shoes_ = kNoDef;
     std::vector<std::int32_t> zone_animals_;
+    std::int32_t fires_ = 0;          // Buildings burning (follows from them).
+    std::vector<Event> events_;
 
     std::vector<std::pair<std::uint64_t, std::uint32_t>> regrow_;  // (tick, node), sorted.
     std::vector<std::uint32_t> changed_nodes_;

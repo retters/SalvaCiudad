@@ -200,6 +200,21 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
         }
     }
     {
+        const std::vector<std::string> options = {tr("newGame.threat.none"), tr("newGame.threat.low"),
+                                                  tr("newGame.threat.medium"), tr("newGame.threat.high"),
+                                                  tr("newGame.threat.brutal")};
+        int index = static_cast<int>(rules_.diseases);
+        const Row r = row(ctx, x, y, cw, tr("newGame.diseases"), tr("newGame.diseases.tooltip"));
+        if (ctx.selector(ctx.id("diseases"), r.control, index, options, tr("newGame.diseases.tooltip"))) {
+            rules_.diseases = static_cast<sim::Threat>(index);
+        }
+        index = static_cast<int>(rules_.fires);
+        const Row f = row(ctx, x, y, cw, tr("newGame.fires"), tr("newGame.fires.tooltip"));
+        if (ctx.selector(ctx.id("fires"), f.control, index, options, tr("newGame.fires.tooltip"))) {
+            rules_.fires = static_cast<sim::Threat>(index);
+        }
+    }
+    {
         int limit = rules_.max_population;
         const Row r = row(ctx, x, y, cw, tr("newGame.maxPopulation"), tr("newGame.maxPopulation.tooltip"));
         if (ctx.slider(ctx.id("max_population"), r.control, limit, sim::kMinPopulationLimit, sim::kMaxPopulationLimit, 50,
@@ -218,7 +233,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 14;
+    constexpr int kRows = 16;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;

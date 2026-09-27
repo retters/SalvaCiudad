@@ -854,6 +854,9 @@ void App::frame() {
         }
     }
 
+    if (session_ && host_) {
+        report_game_events();
+    }
     const float dt = static_cast<float>(elapsed) * 1e-9f;
     update_frame_stats(dt);
     if (!window_.minimized()) {
@@ -1604,6 +1607,28 @@ void App::apply_snapshot(std::vector<std::uint8_t> state) {
         start_session(std::move(session));
     }
     net_->snapshot_loaded(&session_->game());
+}
+
+void App::report_game_events() {
+    sim::Game& game = session_->game();
+    const sim::Content& content = game.content();
+    for (const sim::Game::Event& e : game.take_events()) {
+        if (e.owner != session_->town()) {
+            continue;
+        }
+        const std::string place = e.entity.valid() && game.buildings().get(e.entity) != nullptr
+                                      ? tr(content.buildings[game.buildings().get(e.entity)->def].name_key)
+                                      : std::string();
+        switch (e.kind) {
+            case sim::Game::Event::Kind::FireStarted: host_->toast(tr("event.fire", place)); break;
+            case sim::Game::Event::Kind::BurnedDown: host_->toast(tr("event.burnedDown", place)); break;
+            case sim::Game::Event::Kind::Outbreak:
+                if (e.value < content.diseases.size()) {
+                    host_->toast(tr("event.outbreak", tr(content.diseases[e.value].name_key)));
+                }
+                break;
+        }
+    }
 }
 
 void App::handle_net_event(const net::NetEvent& e) {

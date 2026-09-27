@@ -24,7 +24,8 @@ bool valid_name_part(std::string_view s) {
 }
 
 constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome", "mapType",
-                                        "crop"};
+                                        "crop",     "disease"};
+constexpr std::string_view kDiseaseSources[] = {"cold", "water", "rats"};
 constexpr std::string_view kSeasons[] = {"spring", "summer", "autumn", "winter"};
 
 bool known_type(std::string_view t) {
@@ -203,8 +204,8 @@ constexpr std::string_view kWorkKinds[] = {"none", "gather", "produce", "build",
 constexpr std::string_view kBuildingKinds[] = {"house",   "storage", "workplace", "townCenter", "decoration",
                                                "defense", "military", "market"};
 constexpr std::string_view kBuildCategories[] = {"housing", "food", "resources", "industry", "services", "decoration"};
-constexpr std::string_view kNeeds[] = {"food",   "water", "clothes", "shoes",  "religion",
-                                       "entertainment", "heating", "beauty", "market", "hygiene"};
+constexpr std::string_view kNeeds[] = {"food",   "water",  "clothes", "shoes",  "religion", "entertainment",
+                                       "heating", "beauty", "market",  "hygiene", "healer",  "doctor"};
 constexpr std::string_view kFeatureKinds[] = {"tree", "stone", "ironOre", "berryBush", "herbs"};
 constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge"};
 
@@ -346,7 +347,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                    sim::Content& out, std::vector<DefError>& errors) {
     out = sim::Content{};
     // Ids first, so definitions can refer to each other in any order.
-    std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops;
+    std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops, diseases;
     for (const RawDef& d : set.defs()) {
         if (d.type == "resource") resources.push_back(&d);
         else if (d.type == "mapFeature") features.push_back(&d);
@@ -356,6 +357,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         else if (d.type == "biome") biomes.push_back(&d);
         else if (d.type == "mapType") map_types.push_back(&d);
         else if (d.type == "crop") crops.push_back(&d);
+        else if (d.type == "disease") diseases.push_back(&d);
     }
     if (species.size() > sim::kMaxSpecies || biomes.size() > sim::kMaxBiomes || map_types.size() > sim::kMaxMapTypes ||
         resources.size() > 1000 || buildings.size() > 1000 || recipes.size() > 2000) {
@@ -392,6 +394,21 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
     }
     const auto find_recipe = [&](std::string_view id) { return index_of(out.recipes, id); };
+    // Diseases.
+    for (const RawDef* d : diseases) {
+        Reader r(*d, errors);
+        sim::DiseaseDef def;
+        def.id = d->id;
+        def.name_key = r.text("name", true);
+        def.source = static_cast<sim::DiseaseSource>(r.choice("source", kDiseaseSources, 0, true));
+        def.chance = r.integer("chance", 0, 10000, 20);
+        def.contagion = r.integer("contagion", 0, 1000, 20);
+        def.severity = r.integer("severity", 0, 1000, 60);
+        def.days = r.integer("days", 1, 365, 8);
+        if (r.ok() && out.diseases.size() < 32) {
+            out.diseases.push_back(std::move(def));
+        }
+    }
     // Crops.
     for (const RawDef* d : crops) {
         Reader r(*d, errors);
@@ -472,6 +489,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.tier = r.integer("tier", 0, 10, 0);
         def.desirability = r.integer("desirability", -100, 100, 0);
         def.unique = r.flag("unique");
+        def.fireproof = r.flag("fireproof");
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);

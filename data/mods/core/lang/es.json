@@ -120,6 +120,12 @@
     "building.tavern": "Taberna",
     "building.market": "Mercado",
     "building.garden": "Jardín",
-    "building.statue": "Estatua"
+    "building.statue": "Estatua",
+    "disease.flu": "Gripe",
+    "disease.dysentery": "Disentería",
+    "disease.plague": "Peste",
+    "building.healer": "Curandero",
+    "building.physician": "Médico",
+    "building.bathhouse": "Casa de baños"
   }
 }
