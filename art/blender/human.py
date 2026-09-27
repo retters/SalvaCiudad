@@ -1,6 +1,10 @@
-"""Humans: male and female bodies with a shared bone layout, idle and walk
-animations, and rigid accessories (hats, beard, aprons) that the game pins
-to a bone.
+"""Villagers: male and female bodies for each race (humans, dwarves, elves
+and catfolk, phase 19) with a shared bone layout, idle and walk animations,
+and rigid accessories (hats, beard, aprons) that the game pins to a bone.
+
+The races differ in proportions (dwarves short and broad, elves tall and
+slender) and in a few parts: long pointed ears for elves, cat ears and a
+tail for catfolk. The head keeps the same size so the hats fit all.
 
 Bodies are built from overlapping low-poly parts, each bound to one bone.
 The materials named in common.PALETTE_SLOTS are recolored per villager.
@@ -33,14 +37,26 @@ COLORS = {
 }
 
 
+# Height factor below the head and width factor, by race.
+RACES = {
+    "human": (1.0, 1.0),
+    "dwarf": (0.74, 1.28),
+    "elf": (1.07, 0.9),
+    "catfolk": (0.97, 0.95),
+}
+
+
 class Body:
     """Proportions of one body type, in meters."""
 
-    def __init__(self, female):
+    def __init__(self, female, race="human"):
         self.female = female
-        self.k = 0.95 if female else 1.0         # Height factor below the head.
-        self.shoulder = 0.17 if female else 0.20  # Half width at the shoulders.
-        self.hip = 0.11 if female else 0.10       # Half width between the legs.
+        self.race = race
+        height, width = RACES[race]
+        self.k = (0.95 if female else 1.0) * height        # Height factor below the head.
+        self.shoulder = (0.17 if female else 0.20) * width  # Half width at the shoulders.
+        self.hip = (0.11 if female else 0.10) * width       # Half width between the legs.
+        self.width = width
 
     def z(self, v):
         return v * self.k
@@ -92,13 +108,22 @@ def build_armature(body, name):
     return arm
 
 
-def head_parts(mb, base):
+def head_parts(mb, base, race="human"):
     """Head, face and hair around the head bone base (neck top)."""
     w = {"head": 1.0}
     mb.sphere((0, -0.005, base + 0.12), 0.13, "skin", w, segments=12, rings=8, scale=(0.95, 1.0, 1.1))
     for x in (-1, 1):
         mb.sphere((x * 0.047, -0.118, base + 0.135), 0.017, "eyes", w, segments=6, rings=4)
-        mb.sphere((x * 0.128, 0.0, base + 0.115), 0.03, "skin", w, segments=6, rings=4, scale=(0.5, 1.0, 1.3))
+        if race == "elf":
+            # Long ears pointing up and back.
+            mb.cylinder((x * 0.12, 0.0, base + 0.1), (x * 0.2, 0.06, base + 0.24), 0.028, 0.004, "skin", w, segments=5)
+        elif race == "catfolk":
+            # Cat ears on top of the head, in the hair's color.
+            mb.cylinder((x * 0.08, 0.02, base + 0.21), (x * 0.1, 0.03, base + 0.33), 0.05, 0.004, "hair", w, segments=4)
+            mb.cylinder((x * 0.08, 0.005, base + 0.215), (x * 0.098, 0.015, base + 0.3), 0.03, 0.003, "skin", w,
+                        segments=4)
+        else:
+            mb.sphere((x * 0.128, 0.0, base + 0.115), 0.03, "skin", w, segments=6, rings=4, scale=(0.5, 1.0, 1.3))
     mb.box((0, -0.132, base + 0.1), (0.032, 0.04, 0.055), "skin", w)
     mb.box((0, -0.121, base + 0.055), (0.05, 0.012, 0.012), "mouth", w)
 
@@ -107,7 +132,7 @@ def build_body(body):
     mb = MeshBuilder()
     z, s, h = body.z, body.shoulder, body.hip
     base = z(1.53)
-    head_parts(mb, base)
+    head_parts(mb, base, body.race)
     if body.female:
         # Longer hair: a cap plus a fall down the back, and a bun.
         mb.sphere((0, 0.018, base + 0.15), 0.138, "hair", {"head": 1.0}, segments=12, rings=8, scale=(1.0, 1.0, 0.86))
@@ -119,18 +144,21 @@ def build_body(body):
     mb.cylinder((0, 0, z(1.44)), (0, 0, base + 0.03), 0.055, 0.052, "skin", {"neck": 1.0})
 
     # Torso.
-    mb.cylinder((0, 0, z(1.18)), (0, 0, z(1.46)), 0.165, s + 0.005, "top", {"chest": 1.0}, segments=10)
-    mb.cylinder((0, 0, z(0.99)), (0, 0, z(1.2)), 0.16 if not body.female else 0.15, 0.165, "top", {"spine": 1.0}, segments=10)
-    mb.cylinder((0, 0, z(0.97)), (0, 0, z(1.03)), 0.172 if not body.female else 0.16, 0.172 if not body.female else 0.16,
+    bw = body.width
+    mb.cylinder((0, 0, z(1.18)), (0, 0, z(1.46)), 0.165 * bw, s + 0.005, "top", {"chest": 1.0}, segments=10)
+    mb.cylinder((0, 0, z(0.99)), (0, 0, z(1.2)), (0.16 if not body.female else 0.15) * bw, 0.165 * bw, "top", {"spine": 1.0},
+                segments=10)
+    mb.cylinder((0, 0, z(0.97)), (0, 0, z(1.03)), (0.172 if not body.female else 0.16) * bw,
+                (0.172 if not body.female else 0.16) * bw,
                 "belt", {"hips": 1.0}, segments=10)
     for x in (-1, 1):
         mb.sphere((x * s, 0, z(1.42)), 0.068, "top", {"chest": 1.0}, segments=8, rings=6)
 
     if body.female:
         # A long skirt bound to the hips; the legs move underneath it.
-        mb.cylinder((0, 0, z(1.0)), (0, 0, z(0.4)), 0.16, 0.3, "bottom", {"hips": 1.0}, segments=12)
+        mb.cylinder((0, 0, z(1.0)), (0, 0, z(0.4)), 0.16 * bw, 0.3 * bw, "bottom", {"hips": 1.0}, segments=12)
     else:
-        mb.cylinder((0, 0, z(0.84)), (0, 0, z(1.0)), 0.165, 0.17, "bottom", {"hips": 1.0}, segments=10)
+        mb.cylinder((0, 0, z(0.84)), (0, 0, z(1.0)), 0.165 * bw, 0.17 * bw, "bottom", {"hips": 1.0}, segments=10)
 
     # Arms: sleeves, forearms and hands.
     specs = body.bones()
@@ -138,19 +166,27 @@ def build_body(body):
         shoulder, elbow, _ = specs[f"upper_arm.{side}"]
         _, wrist, _ = specs[f"lower_arm.{side}"]
         _, hand_tip, _ = specs[f"hand.{side}"]
-        r = 0.05 if body.female else 0.057
+        r = (0.05 if body.female else 0.057) * bw
         mb.cylinder(shoulder, elbow, r, r * 0.85, "top", {f"upper_arm.{side}": 1.0})
         mb.sphere(elbow, r * 0.85, "top", {f"lower_arm.{side}": 1.0}, segments=8, rings=5)
         mb.cylinder(elbow, wrist, r * 0.8, r * 0.64, "skin", {f"lower_arm.{side}": 1.0})
         center = (Vector(wrist) + Vector(hand_tip)) * 0.5
         mb.sphere(center, 0.045, "skin", {f"hand.{side}": 1.0}, segments=8, rings=5, scale=(0.7, 0.95, 1.25))
 
+    if body.race == "catfolk":
+        # A tail from the small of the back, curving up.
+        points = [(0, 0.14, z(0.98)), (0, 0.3, z(0.9)), (0, 0.44, z(0.95)), (0, 0.52, z(1.1)), (0, 0.55, z(1.25))]
+        for i, (a, b) in enumerate(zip(points, points[1:])):
+            r = 0.045 - i * 0.007
+            mb.cylinder(a, b, r, r - 0.006, "hair", {"hips": 1.0}, segments=6)
+        mb.sphere(points[-1], 0.03, "hair", {"hips": 1.0}, segments=6, rings=4)
+
     # Legs: trousers (or stockings under the skirt), boots.
     for side, x in (("L", 1.0), ("R", -1.0)):
         hip_joint, knee, _ = specs[f"thigh.{side}"]
         _, ankle, _ = specs[f"shin.{side}"]
         leg_mat = "bottom" if not body.female else "skin"
-        r = 0.068 if not body.female else 0.06
+        r = (0.068 if not body.female else 0.06) * bw
         mb.cylinder(hip_joint, knee, r + 0.008, r - 0.006, leg_mat, {f"thigh.{side}": 1.0})
         mb.sphere(knee, r - 0.006, leg_mat, {f"shin.{side}": 1.0}, segments=8, rings=5)
         mb.cylinder(knee, (ankle[0], ankle[1], ankle[2] + 0.08), r - 0.008, r - 0.018, leg_mat, {f"shin.{side}": 1.0})
@@ -232,10 +268,10 @@ def add_action(arm, name, frames, pose_fn):
     return action
 
 
-def make_body_file(folder, female):
+def make_body_file(folder, female, race="human"):
     common.reset_scene()
-    body = Body(female)
-    name = "human_female" if female else "human_male"
+    body = Body(female, race)
+    name = race + ("_female" if female else "_male")
     arm = build_armature(body, name + "_rig")
     mesh = build_body(body).to_object(name, COLORS)
     mesh.parent = arm
@@ -296,8 +332,9 @@ def apron(width, depth, length, flare, band):
 
 def make_all(folder):
     os.makedirs(folder, exist_ok=True)
-    make_body_file(folder, female=False)
-    make_body_file(folder, female=True)
+    for race in RACES:
+        make_body_file(folder, female=False, race=race)
+        make_body_file(folder, female=True, race=race)
     make_accessory(folder, "hat_straw", straw_hat)
     make_accessory(folder, "hat_cap", felt_cap)
     make_accessory(folder, "beard", beard)

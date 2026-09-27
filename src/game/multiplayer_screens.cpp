@@ -184,7 +184,7 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
     const float gap = ctx.s(8.0f);
     const float button_h = ctx.s(44.0f);
     const float list_h = static_cast<float>(sim::kMaxPlayers / 2) * (row_h + gap);
-    const float content_h = line * 2 + gap + row_h * 3 + gap * 3 + list_h + gap + button_h;
+    const float content_h = line * 2 + gap + row_h * 4 + gap * 4 + list_h + gap + button_h;
     float y = 0.0f;
     const ui::Rect c = frame_panel(ctx, 760.0f, content_h, tr(host ? "lobby.title.host" : "lobby.title.client"), y);
     Result result = Result::None;
@@ -226,6 +226,27 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
                        : rules.victory == sim::Victory::Score       ? 3
                        : rules.victory == sim::Victory::Objective   ? 4
                                                                     : 5;
+            }
+            // The people of every town (phase 19), chosen by the host.
+            if (const sim::Content* content = services_.content(); content != nullptr && !content->races.empty()) {
+                std::vector<std::string> peoples;
+                for (const sim::RaceDef& r : content->races) {
+                    peoples.push_back(tr(r.name_key));
+                }
+                peoples.push_back(tr("newGame.race.mixed"));
+                const std::uint8_t current = lobby.config.rules.races[0];
+                int people = current == sim::kMixedRace || current >= content->races.size()
+                                 ? static_cast<int>(content->races.size())
+                                 : current;
+                ctx.label({c.x, y, label_w, row_h}, tr("newGame.race"), body, ctx.theme().text);
+                if (ctx.selector(ctx.id("lobby_race"), {c.x + label_w, y, c.w - label_w, row_h}, people, peoples,
+                                 tr("lobby.race.tooltip"), host)) {
+                    net::GameConfig cfg = lobby.config;
+                    cfg.rules.races.fill(people >= static_cast<int>(content->races.size()) ? sim::kMixedRace
+                                                                                           : static_cast<std::uint8_t>(people));
+                    static_cast<net::NetHost*>(net)->set_config(cfg);
+                }
+                y += row_h + gap;
             }
             ctx.label({c.x, y, label_w, row_h}, tr("lobby.versus"), body, ctx.theme().text);
             if (ctx.selector(ctx.id("lobby_versus"), {c.x + label_w, y, c.w - label_w, row_h}, kind, kinds,

@@ -867,14 +867,20 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
                                   : 1.0f;
         look.time += dt * rate;
 
-        // The body by sex, a palette and accessories from the appearance bits.
+        // The body by race and sex, a palette and accessories from the
+        // appearance bits.
         const bool female = v.sex == sim::Sex::Female;
+        const std::string_view race_body =
+            v.race < game.content().races.size() ? std::string_view(game.content().races[v.race].body) : "human";
         const TestCrowd::BodyKind* kind = &bodies_->front();
+        bool exact = false;
         for (const TestCrowd::BodyKind& b : *bodies_) {
-            if (b.female == female) {
+            if (b.female == female && (!exact || b.body == race_body)) {
+                exact = b.body == race_body;
                 kind = &b;
             }
         }
+        const bool dwarf = race_body == "dwarf";
         render::CharacterInstance c;
         c.body = kind->id;
         c.clip = moving ? kind->walk : kind->idle;
@@ -899,7 +905,7 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
         if (hat > 0 && hat <= kind->hats.size()) {
             mask |= 1u << kind->hats[hat - 1];
         }
-        if (kind->beard != ~0u && age >= sim::village::kAdultAgeYears && (bits >> 2) % 3u == 0) {
+        if (kind->beard != ~0u && age >= sim::village::kAdultAgeYears && (dwarf || (bits >> 2) % 3u == 0)) {
             mask |= 1u << kind->beard;
         }
         if (kind->apron != ~0u && (bits >> 4) % 4u == 0) {

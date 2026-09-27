@@ -53,6 +53,10 @@ void GameRules::write(BinaryWriter& w) const {
     w.u8(pvp ? 1 : 0);
     w.u8(static_cast<std::uint8_t>(victory));
     w.i32(score_years);
+    for (const std::uint8_t r : races) {
+        w.u8(r);
+    }
+    w.u8(other_races);
 }
 
 bool GameRules::read(BinaryReader& r, GameRules& out) {
@@ -83,6 +87,16 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
     g.versus = versus != 0;
     g.pvp = pvp != 0;
     g.victory = static_cast<Victory>(victory);
+    for (std::uint8_t& race : g.races) {
+        if (!r.u8(race) || (race >= 16 && race != kMixedRace)) {
+            r.fail();
+            return false;
+        }
+    }
+    if (!r.u8(g.other_races) || g.other_races > 100) {
+        r.fail();
+        return false;
+    }
     if (g.climate.seasons == 0 || g.climate.seasons > 0b1111 || year >= static_cast<std::uint8_t>(YearLength::Count) ||
         winter >= static_cast<std::uint8_t>(Harshness::Count) || start >= static_cast<std::uint8_t>(StartGoods::Count) ||
         g.max_population < kMinPopulationLimit || g.max_population > kMaxPopulationLimit) {

@@ -4,6 +4,7 @@
 // keeps as state.
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 #include "sim/serialize.h"
@@ -16,6 +17,8 @@ enum class Harshness : std::uint8_t { Mild, Normal, Harsh, Count };
 enum class StartGoods : std::uint8_t { Scarce, Normal, Plenty, Count };
 // How much of a threat the surroundings are (section 6.3).
 enum class Threat : std::uint8_t { None, Low, Medium, High, Brutal, Count };
+inline constexpr std::uint8_t kMixedRace = 0xFF;
+
 // How a versus game is won (section 6.3).
 enum class Victory : std::uint8_t { None, Elimination, Score, Objective, Count };
 // Chances scale with the threat: 0, 50, 100, 200 or 400 %.
@@ -43,6 +46,10 @@ struct GameRules {
     bool pvp = true;
     Victory victory = Victory::Elimination;
     std::int32_t score_years = 5;  // Score victory: the best score after this many years.
+    // Phase 19: each player's people (a race index; kMixedRace: a mix) and
+    // how many newcomers are of another race, percent.
+    std::array<std::uint8_t, 12> races{};
+    std::uint8_t other_races = 20;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, GameRules& out);

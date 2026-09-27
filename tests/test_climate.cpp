@@ -30,6 +30,10 @@ GameSetup setup(ClimateSettings climate, StartGoods start = StartGoods::Normal) 
     s.seed = 42;
     s.rules.climate = climate;
     s.rules.start = start;
+    // Only what this suite tests: no fires, raiders or wild animals.
+    s.rules.fires = Threat::None;
+    s.rules.raiders = Threat::None;
+    s.rules.wildlife = Threat::None;
     return s;
 }
 

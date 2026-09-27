@@ -224,7 +224,14 @@ bool App::init() {
     if (scene_.create(gpu_, settings_->settings().graphics)) {
         const std::filesystem::path models = pack_->dir(mods::kCoreModId) / "models";
         scene_ok_ = test_scene_.load(scene_, models / "props", kTestSceneInstances);
-        if (scene_ok_ && crowd_.load(scene_, models / "characters")) {
+        // Every race's bodies (phase 19), humans first.
+        std::vector<std::string> bodies{"human"};
+        for (const sim::RaceDef& r : pack_->content.races) {
+            if (std::find(bodies.begin(), bodies.end(), r.body) == bodies.end()) {
+                bodies.push_back(r.body);
+            }
+        }
+        if (scene_ok_ && crowd_.load(scene_, models / "characters", bodies)) {
             crowd_.spawn(kTestCrowd, 2026, kTestCrowdRadius);
         }
     }

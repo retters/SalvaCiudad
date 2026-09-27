@@ -24,7 +24,9 @@ bool valid_name_part(std::string_view s) {
 }
 
 constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome", "mapType",
-                                        "crop",     "disease",    "unit",    "tutorial"};
+                                        "crop",     "disease",    "unit",    "tutorial", "race"};
+constexpr std::string_view kSkillNames[] = {"wood", "stone", "forage", "farm",  "orchard",
+                                            "hunt", "fish",  "build",  "craft", "metal"};
 constexpr std::string_view kTutorialGoals[] = {"none",  "camera", "place",      "build", "workers",
                                                "speed", "stock",  "population", "lua"};
 constexpr std::string_view kTutorialSizes[] = {"small", "medium"};
@@ -352,7 +354,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
     out = sim::Content{};
     // Ids first, so definitions can refer to each other in any order.
     std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops, diseases,
-        units, tutorials;
+        units, tutorials, races;
     for (const RawDef& d : set.defs()) {
         if (d.type == "resource") resources.push_back(&d);
         else if (d.type == "mapFeature") features.push_back(&d);
@@ -365,6 +367,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         else if (d.type == "disease") diseases.push_back(&d);
         else if (d.type == "unit") units.push_back(&d);
         else if (d.type == "tutorial") tutorials.push_back(&d);
+        else if (d.type == "race") races.push_back(&d);
     }
     if (species.size() > sim::kMaxSpecies || biomes.size() > sim::kMaxBiomes || map_types.size() > sim::kMaxMapTypes ||
         resources.size() > 1000 || buildings.size() > 1000 || recipes.size() > 2000) {
@@ -402,6 +405,39 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
     }
     const auto find_recipe = [&](std::string_view id) { return index_of(out.recipes, id); };
+    // Races.
+    for (const RawDef* d : races) {
+        Reader r(*d, errors);
+        sim::RaceDef def;
+        def.id = d->id;
+        def.name_key = r.text("name", true);
+        def.body = r.text("body", true, 32);
+        if (!def.body.empty() && !std::all_of(def.body.begin(), def.body.end(), [](char c) {
+                return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
+            })) {
+            r.fail("\"body\" must be a plain file name ([a-z0-9_])");
+        }
+        def.move = r.integer("move", 50, 200, 100);
+        def.cold = r.integer("cold", -100, 90, 0);
+        def.disease = r.integer("disease", -100, 90, 0);
+        def.night_vision = r.flag("nightVision");
+        if (yyjson_mut_val* work = yyjson_mut_obj_get(d->obj, "work"); work != nullptr) {
+            if (!yyjson_mut_is_obj(work)) {
+                r.fail("\"work\" must be an object of skill: percent");
+            } else {
+                Reader wr(*d, work, errors);
+                for (std::size_t k = 0; k < std::size(kSkillNames); ++k) {
+                    def.work[k] = wr.integer(std::string(kSkillNames[k]).c_str(), 25, 300, 100);
+                }
+                if (!wr.ok()) {
+                    r.fail("a work speed has errors");
+                }
+            }
+        }
+        if (r.ok() && out.races.size() < 16) {
+            out.races.push_back(std::move(def));
+        }
+    }
     // Tutorials.
     for (const RawDef* d : tutorials) {
         Reader r(*d, errors);

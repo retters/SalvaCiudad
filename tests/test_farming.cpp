@@ -34,6 +34,10 @@ GameSetup setup(std::uint8_t seasons = 0b1111) {
     GameSetup s;
     s.seed = 9;
     s.rules.climate.seasons = seasons;
+    // Only what this suite tests: no fires, raiders or wild animals.
+    s.rules.fires = Threat::None;
+    s.rules.raiders = Threat::None;
+    s.rules.wildlife = Threat::None;
     return s;
 }
 

@@ -907,6 +907,17 @@
     "tutorial.finish.tooltip": "Cerrar el tutorial y seguir jugando.",
     "menu.main.tutorial": "Tutorial",
     "menu.main.tutorial.tooltip": "Un primer pueblo guiado, paso a paso.",
-    "hud.goods.none": "Todavía no hay nada guardado."
+    "hud.goods.none": "Todavía no hay nada guardado.",
+    "newGame.race": "Pueblo",
+    "newGame.race.tooltip": "Quiénes fundan tu pueblo. Cada raza es mejor en algunos oficios: enanos con la piedra y el metal, elfos en el bosque y los huertos, gatunos cazando, pescando y moviéndose; humanos un poco en todo.",
+    "newGame.race.mixed": "Mixto",
+    "newGame.otherRaces": "Otras razas",
+    "newGame.otherRaces.tooltip": "Cuántos recién llegados son de otra raza.",
+    "newGame.otherRaces.none": "Ninguna",
+    "newGame.otherRaces.few": "Pocas (20 %)",
+    "newGame.otherRaces.many": "Muchas (50 %)",
+    "lobby.race.tooltip": "La raza de todos los pueblos (la elige el anfitrión).",
+    "hud.villager.race": "Raza: {0:race}",
+    "hud.stats.races": "Razas: {0:list}"
   }
 }

@@ -205,6 +205,71 @@ public:
         return best;
     }
 
+    // --- Races (phase 19) ---------------------------------------------------------------
+
+    [[nodiscard]] const RaceDef* race_of(const Villager& v) const {
+        return v.race < c_.races.size() ? &c_.races[v.race] : nullptr;
+    }
+
+    // Whole work steps this tick: one at 100 %, with the rest carried over.
+    std::int32_t steps(Villager& v, Skill skill) {
+        const RaceDef* r = race_of(v);
+        const std::int32_t rate = r != nullptr ? r->work[static_cast<std::size_t>(skill)] : 100;
+        v.work_carry += rate;
+        const std::int32_t n = v.work_carry / 100;
+        v.work_carry -= n * 100;
+        return n;
+    }
+
+    [[nodiscard]] Skill gather_skill(FeatureType t) const {
+        switch (t) {
+            case FeatureType::Tree: return Skill::Wood;
+            case FeatureType::Stone:
+            case FeatureType::IronOre: return Skill::Stone;
+            default: return Skill::Forage;
+        }
+    }
+
+    [[nodiscard]] Skill produce_skill(const Building& job, const RecipeDef& recipe) const {
+        if (def(job).mature_years > 0) {
+            return Skill::Orchard;
+        }
+        for (const ResourceAmount& in : recipe.inputs) {
+            const std::string& id = c_.resources[in.resource].id;
+            if (id == "core:iron_ore" || id == "core:iron" || id == "core:coal") {
+                return Skill::Metal;
+            }
+            if (id == "core:stone" || id == "core:clay") {
+                return Skill::Stone;
+            }
+        }
+        if (recipe.inputs.empty()) {
+            // Gathering in a workshop (clay pit, iron mine, herbs): stone for the pits.
+            for (const ResourceAmount& out : recipe.outputs) {
+                const std::string& id = c_.resources[out.resource].id;
+                if (id == "core:clay" || id == "core:iron_ore" || id == "core:stone") {
+                    return Skill::Stone;
+                }
+            }
+            return Skill::Forage;
+        }
+        return Skill::Craft;
+    }
+
+    // The race of a newborn or a newcomer.
+    [[nodiscard]] std::uint8_t newcomer_race(std::uint8_t town) {
+        const std::size_t races = c_.races.size();
+        if (races == 0) {
+            return 0;
+        }
+        const std::uint8_t home = g_.rules_.races[town % g_.rules_.races.size()];
+        const bool mixed = home == kMixedRace || home >= races;
+        if (mixed || g_.rng_.below(100) < g_.rules_.other_races) {
+            return static_cast<std::uint8_t>(g_.rng_.below(static_cast<std::uint32_t>(races)));
+        }
+        return home;
+    }
+
     // --- Movement ------------------------------------------------------------
 
     bool walk_to(Villager& v, FixedVec2 to) {
@@ -221,6 +286,9 @@ public:
     void move(Villager& v) {
         // Deep snow slows everybody down, to about half.
         Fixed budget = walk_speed(g_.adult(v)) * Fixed::from_ratio(200 - g_.snow_, 200);
+        if (const RaceDef* r = race_of(v)) {
+            budget = budget * Fixed::from_ratio(r->move, 100);
+        }
         while (budget > Fixed{} && moving(v)) {
             const FixedVec2 target = v.path[v.path_index];
             const FixedVec2 d = target - v.position;
@@ -2144,6 +2212,10 @@ public:
                     chance += def_d.contagion * 5;
                 }
                 chance = chance * scale / 100;
+                if (const RaceDef* r = race_of(v)) {
+                    const std::int32_t resist = r->disease + (def_d.source == DiseaseSource::Cold ? r->cold : 0);
+                    chance = chance * std::max(0, 100 - resist) / 100;
+                }
                 if (has(Need::Hygiene)) {
                     chance /= 2;
                 }
@@ -2273,7 +2345,7 @@ public:
         Field& f = farm->fields[v.spot - 1u];
         if (f.state == FieldState::Ripe) {
             // One unit at a time into the basket.
-            if (++v.timer < 20) {
+            if ((v.timer += steps(v, Skill::Farm)) < 20) {
                 return;
             }
             v.timer = 0;
@@ -2300,7 +2372,7 @@ public:
             return;
         }
         if (wants_compost(f) && g_.fertilizer_ != kNoDef && amount_of(farm->stock, g_.fertilizer_) > 0) {
-            if (++v.timer < 40) {
+            if ((v.timer += steps(v, Skill::Farm)) < 40) {
                 return;
             }
             v.timer = 0;
@@ -2413,7 +2485,7 @@ public:
     }
 
     void hunt_work(Villager& v) {
-        if (++v.timer < 120) {
+        if ((v.timer += steps(v, Skill::Hunt)) < 120) {
             return;
         }
         v.timer = 0;
@@ -2478,7 +2550,7 @@ public:
             v.task = Task::Idle;
             return;
         }
-        if (++v.timer < 45) {
+        if ((v.timer += steps(v, Skill::Fish)) < 45) {
             return;
         }
         v.timer = 0;
@@ -2821,7 +2893,7 @@ public:
             v.task = Task::Idle;
             return;
         }
-        if (++v.timer < fd->work) {
+        if ((v.timer += steps(v, gather_skill(f.type))) < fd->work) {
             return;
         }
         v.timer = 0;
@@ -2849,8 +2921,9 @@ public:
             v.task = Task::Idle;
             return;
         }
-        ++site->work_done;
-        if (site->work_done % 25 == 0) {
+        const std::int32_t before = site->work_done;
+        site->work_done += steps(v, Skill::Build);
+        if (site->work_done / 25 != before / 25) {
             g_.buildings_changed_ = true;  // The view shows the rising building.
         }
         if (site->work_done >= site_work(*site)) {
@@ -2893,7 +2966,7 @@ public:
                 return;
             }
         }
-        if (++v.timer < recipe.work) {
+        if ((v.timer += steps(v, produce_skill(*job, recipe))) < recipe.work) {
             return;
         }
         // Another worker may have reached the year's limit meanwhile.
@@ -2925,7 +2998,8 @@ public:
         return food;
     }
 
-    EntityId spawn_villager(std::uint8_t owner, FixedVec2 at, Sex sex, std::int32_t age_years, std::uint32_t family) {
+    EntityId spawn_villager(std::uint8_t owner, FixedVec2 at, Sex sex, std::int32_t age_years, std::uint32_t family,
+                            std::uint8_t race = 0) {
         if (g_.population(owner) >= std::min(village::kMaxVillagersPerPlayer, g_.rules_.max_population)) {
             return {};
         }
@@ -2936,6 +3010,7 @@ public:
         Villager v;
         v.owner = owner;
         v.sex = sex;
+        v.race = race < c_.races.size() ? race : 0;
         v.appearance = g_.rng_.next_u32();
         v.family = family;
         v.born_tick = static_cast<std::int64_t>(g_.tick_) - static_cast<std::int64_t>(age_years) * g_.year_ticks() -
@@ -3105,7 +3180,7 @@ public:
                 continue;
             }
             const Villager* mother = nullptr;
-            bool father = false;
+            const Villager* dad = nullptr;
             for (const EntityId r : b.residents) {
                 const Villager* v = g_.villagers_.get(r);
                 if (v == nullptr || !g_.adult(*v) || g_.age_years(*v) > 40 || v->food < 500) {
@@ -3114,9 +3189,10 @@ public:
                 if (v->sex == Sex::Female) {
                     mother = v;
                 } else {
-                    father = true;
+                    dad = v;
                 }
             }
+            const bool father = dad != nullptr;
             // Happier homes have more children (12 % a month at 60).
             if (mother == nullptr || !father || food_stored(b.owner) < 3 * g_.population(b.owner) || b.happiness < 25 ||
                 g_.rng_.below(1000) >= static_cast<std::uint32_t>(2 * b.happiness)) {
@@ -3126,7 +3202,9 @@ public:
             const std::uint8_t owner = b.owner;
             const FixedVec2 at = g_.door(b);
             const Sex sex = g_.rng_.below(2) == 0 ? Sex::Male : Sex::Female;
-            const EntityId baby = spawn_villager(owner, at, sex, 0, family);
+            // The child takes the race of one of the parents.
+            const std::uint8_t race = mother->race == dad->race || g_.rng_.below(2) == 0 ? mother->race : dad->race;
+            const EntityId baby = spawn_villager(owner, at, sex, 0, family, race);
             if (baby.valid()) {
                 Villager* bv = g_.villagers_.get(baby);
                 bv->born_tick = static_cast<std::int64_t>(g_.tick_);
@@ -3160,11 +3238,12 @@ public:
             }
             const std::int32_t count = std::min(room, 2 + static_cast<std::int32_t>(g_.rng_.below(3)));
             const std::uint32_t family = g_.players_[p].next_family++;
+            const std::uint8_t race = newcomer_race(p);
             for (std::int32_t n = 0; n < count; ++n) {
                 const Sex sex = n == 0 ? Sex::Male : (n == 1 ? Sex::Female : (g_.rng_.below(2) == 0 ? Sex::Male : Sex::Female));
                 const std::int32_t age = n < 2 ? 18 + static_cast<std::int32_t>(g_.rng_.below(15))
                                                : static_cast<std::int32_t>(g_.rng_.below(4));
-                if (spawn_villager(p, g_.door(*tc), sex, age, family).valid()) {
+                if (spawn_villager(p, g_.door(*tc), sex, age, family, race).valid()) {
                     ++g_.players_[p].arrivals;
                 }
             }
@@ -3329,7 +3408,12 @@ public:
         const Building* home = g_.buildings_.get(v.home);
         const bool warm_home = home != nullptr && home->heated;
         if (g_.temperature_ < 5 && !warm_home) {
-            v.warmth = std::max(0, v.warmth - (v.clothes > 0 ? 1 : 2) - (g_.temperature_ < -8 ? 1 : 0));
+            std::int32_t loss = (v.clothes > 0 ? 1 : 2) + (g_.temperature_ < -8 ? 1 : 0);
+            if (const RaceDef* r = race_of(v); r != nullptr && r->cold != 0) {
+                // Hardy peoples lose less; a negative resistance loses more.
+                loss = std::max(0, (loss * (100 - r->cold) + 50) / 100);
+            }
+            v.warmth = std::max(0, v.warmth - loss);
         } else {
             v.warmth = std::min(village::kWarmthMax, v.warmth + 3);
         }
@@ -3825,14 +3909,19 @@ public:
             ps.coins = 100 * percent / 100;
             // Five couples and two children.
             const FixedVec2 at = g_.door(*tc);
+            const std::uint8_t start_race = g_.rules_.races[p % g_.rules_.races.size()];
+            const auto races = static_cast<std::uint8_t>(std::max<std::size_t>(1, c_.races.size()));
             for (std::int32_t n = 0; n < 5; ++n) {
                 const std::uint32_t family = ps.next_family++;
+                const std::uint8_t race = start_race == kMixedRace || start_race >= races
+                                              ? static_cast<std::uint8_t>(n % races)
+                                              : start_race;
                 const FixedVec2 spot{at.x + Fixed::from_int(n * 2 - 4), at.z - Fixed::from_int(2)};  // Outside, past the door.
-                (void)spawn_villager(p, spot, Sex::Male, 20 + static_cast<std::int32_t>(g_.rng_.below(12)), family);
-                (void)spawn_villager(p, spot, Sex::Female, 19 + static_cast<std::int32_t>(g_.rng_.below(12)), family);
+                (void)spawn_villager(p, spot, Sex::Male, 20 + static_cast<std::int32_t>(g_.rng_.below(12)), family, race);
+                (void)spawn_villager(p, spot, Sex::Female, 19 + static_cast<std::int32_t>(g_.rng_.below(12)), family, race);
                 if (n < 2) {
                     (void)spawn_villager(p, spot, g_.rng_.below(2) == 0 ? Sex::Male : Sex::Female,
-                                         1 + static_cast<std::int32_t>(g_.rng_.below(3)), family);
+                                         1 + static_cast<std::int32_t>(g_.rng_.below(3)), family, race);
                 }
             }
         }
@@ -4645,6 +4734,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         }
         w.u16(v.path_index);
         w.i32(v.idle_ticks);
+        w.i32(v.work_carry);
     }
     // Animals and raiders.
     const auto& cs = g.creatures();
@@ -4991,7 +5081,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
                 return false;
             }
         }
-        if (!r.u16(v.path_index) || !r.i32(v.idle_ticks) || v.path_index > v.path.size()) {
+        if (!r.u16(v.path_index) || !r.i32(v.idle_ticks) || v.path_index > v.path.size() || !r.i32(v.work_carry) ||
+            v.work_carry < 0 || v.work_carry >= 100 || (!c.races.empty() && v.race >= c.races.size())) {
             r.fail();
             return false;
         }

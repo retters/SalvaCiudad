@@ -151,6 +151,10 @@
     "tutorial.basics.workers": "Haz clic en el leñador y usa + para darle un trabajador.",
     "tutorial.basics.firewood": "Viene el invierno: las casas queman leña. Coloca un Leñero.",
     "tutorial.basics.winter": "Guarda 60 de leña antes del frío. La ventana Bienes, a la izquierda, muestra lo que tienes.",
-    "tutorial.basics.done": "Tu pueblo está en marcha. Mantenlo alimentado, con techo y abrigado. ¡Suerte!"
+    "tutorial.basics.done": "Tu pueblo está en marcha. Mantenlo alimentado, con techo y abrigado. ¡Suerte!",
+    "race.human": "Humanos",
+    "race.catfolk": "Gatunos",
+    "race.dwarf": "Enanos",
+    "race.elf": "Elfos"
   }
 }

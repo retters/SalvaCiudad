@@ -124,7 +124,7 @@ TEST_SUITE("health") {
         CHECK(threat_percent(Threat::Brutal) == 400);
         // An unknown level is refused.
         std::vector<std::uint8_t> bytes = w.bytes();
-        bytes[bytes.size() - 2] = 9;
+        bytes[8] = 9;  // The diseases level: after the climate (3), the start goods (1) and the limit (4).
         BinaryReader bad(bytes);
         CHECK_FALSE(GameRules::read(bad, back));
     }

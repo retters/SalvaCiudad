@@ -281,6 +281,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Las nubes se mueven despacio; en invierno duro el agua se ve blanca y quieta.
 - [ ] Suena un clic al usar la interfaz, hachas y martillos al acercar la cámara al trabajo, la campana con un incendio o un asalto, pájaros de fondo (viento en invierno); los volúmenes de Configuración → Sonido los controlan.
 
+### Fase 19 (razas de fantasía)
+
+- [ ] La partida nueva tiene "Pueblo" (Humanos, Gatunos, Enanos, Elfos o Mixto) y "Otras razas" (Ninguna, Pocas, Muchas).
+- [ ] Con un pueblo mixto se ven enanos bajos y anchos con barba, elfos altos con orejas largas, gatunos con orejas y cola, y humanos.
+- [ ] La ventana del aldeano dice su raza, y Estadísticas cuántos hay de cada una.
+- [ ] Los enanos cortan piedra más rápido y los gatunos caminan más rápido (se nota al mirarlos).
+- [ ] En multijugador, el anfitrión elige la raza de todos en la sala.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

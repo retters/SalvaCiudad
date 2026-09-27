@@ -907,6 +907,17 @@
     "tutorial.finish.tooltip": "Close the tutorial and keep playing.",
     "menu.main.tutorial": "Tutorial",
     "menu.main.tutorial.tooltip": "A guided first village, step by step.",
-    "hud.goods.none": "Nothing stored yet."
+    "hud.goods.none": "Nothing stored yet.",
+    "newGame.race": "People",
+    "newGame.race.tooltip": "Who founds your town. Each people is better at some trades: dwarves with stone and metal, elves in the woods and orchards, catfolk hunting, fishing and on the move; humans a little at everything.",
+    "newGame.race.mixed": "Mixed",
+    "newGame.otherRaces": "Other peoples",
+    "newGame.otherRaces.tooltip": "How many newcomers are of another people.",
+    "newGame.otherRaces.none": "None",
+    "newGame.otherRaces.few": "A few (20 %)",
+    "newGame.otherRaces.many": "Many (50 %)",
+    "lobby.race.tooltip": "Everyone's people (the host chooses).",
+    "hud.villager.race": "People: {0:race}",
+    "hud.stats.races": "Peoples: {0:list}"
   }
 }

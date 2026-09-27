@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "render/model.h"
@@ -37,7 +38,10 @@ inline constexpr float kTestSceneHalfSize = 1000.0f;  // Meters from the center 
 class TestCrowd {
 public:
     // Loads the bodies and accessories from data/models/characters.
-    bool load(render::SceneRenderer& renderer, const std::filesystem::path& characters_dir);
+    // Bodies of each race in `bodies` (file prefixes: <body>_male.glb and
+    // <body>_female.glb); missing races are skipped.
+    bool load(render::SceneRenderer& renderer, const std::filesystem::path& characters_dir,
+              const std::vector<std::string>& bodies = {"human"});
     void spawn(std::size_t count, std::uint32_t seed, float radius);
     // Where the next spawn() puts the crowd, and the ground it walks on
     // (flat at 0 if empty).
@@ -82,6 +86,7 @@ public:
     // villagers use the same ones.
     struct BodyKind {
         bool female = false;
+        std::string body = "human";  // The race's body files (phase 19).
         render::SkinnedId id = 0;
         std::uint32_t idle = 0;
         std::uint32_t walk = 0;

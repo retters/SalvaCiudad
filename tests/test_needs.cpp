@@ -47,6 +47,11 @@ GameSetup setup() {
     GameSetup s;
     s.seed = 11;
     s.rules.climate.seasons = 0b0010;  // Summer: no cold to worry about.
+    // The economy alone: nothing burns, falls ill or attacks.
+    s.rules.fires = Threat::None;
+    s.rules.diseases = Threat::None;
+    s.rules.raiders = Threat::None;
+    s.rules.wildlife = Threat::None;
     return s;
 }
 

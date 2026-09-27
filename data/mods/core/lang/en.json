@@ -151,6 +151,10 @@
     "tutorial.basics.workers": "Click the woodcutter and use + to give it a worker.",
     "tutorial.basics.firewood": "Winter comes: houses burn firewood. Place a Firewood splitter.",
     "tutorial.basics.winter": "Store 60 firewood before the cold. The Goods window on the left shows what you have.",
-    "tutorial.basics.done": "Your village is on its way. Keep it fed, housed and warm. Good luck!"
+    "tutorial.basics.done": "Your village is on its way. Keep it fed, housed and warm. Good luck!",
+    "race.human": "Humans",
+    "race.catfolk": "Catfolk",
+    "race.dwarf": "Dwarves",
+    "race.elf": "Elves"
   }
 }

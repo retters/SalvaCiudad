@@ -1065,3 +1065,49 @@ De `docs/IDEAS_VISUALES.md`:
 - las chimeneas echan humo.
 
 Quedan para más adelante la oclusión ambiental, el balanceo de los árboles, los árboles sin hojas en invierno y las huellas en la nieve.
+
+## Fase 19: razas de fantasía (2026-09-27)
+
+**D-1901. Razas como datos.**
+Cada `race` declara:
+- su cuerpo (los archivos `characters/<body>_male.glb` y `_female.glb`);
+- su velocidad al caminar;
+- su velocidad en diez oficios: madera, piedra, recolección, cultivo, huerto, caza, pesca, construcción, oficios y metal;
+- su resistencia al frío (pierde menos abrigo y enferma menos de gripe; puede ser negativa) y a las enfermedades;
+- si ve de noche.
+
+**D-1902. Rasgos de `core`, para equilibrar jugando.**
+- **Humanos:** 105 % en todo.
+- **Gatunos:** caminan al 125 %; caza 120, pesca 125, recolección 110, construcción 90; sienten más el frío (−20).
+- **Enanos:** caminan al 90 %; piedra y metal 145, construcción 115, cultivo y recolección 85, huerto 80; resisten el frío (30).
+- **Elfos:** caminan al 105 %; recolección y caza 130, huerto 145, piedra y metal 80; resisten las enfermedades (25).
+
+**D-1903. Trabajo por pasos.**
+La velocidad de la raza se aplica acumulando centésimos de trabajo por aldeano (`work_carry`, guardado en la partida): al 125 % hace 5 pasos cada 4 ticks. Así sigue siendo entero y determinista.
+
+El oficio sale de lo que hace:
+- lo que recolecta: árbol, piedra o mineral, arbustos y hierbas;
+- en un taller: metal si usa mineral, hierro o carbón; piedra si usa piedra o arcilla o si la saca del suelo; huerto en los que tardan años en dar fruto; oficios el resto;
+- las tareas de la granja, la caza, la pesca y la construcción.
+
+**D-1904. Visión nocturna sin noche.**
+El juego no tiene ciclo de día y noche; la especificación no lo pide y agregarlo cambiaría la luz y el trabajo. El rasgo queda declarado en los datos y en la simulación para cuando exista. Por ahora los gatunos se distinguen por su rapidez.
+
+**D-1905. Pueblos mixtos e inmigración.**
+- Cada jugador empieza con una raza o con una mezcla: en la mezcla, las cinco familias iniciales se reparten entre las razas.
+- Los hijos toman la raza de la madre o del padre, al azar.
+- Los recién llegados llegan en familias de una sola raza. Con "otras razas" en 20 % o 50 % (se elige en la partida nueva), esa parte de las familias es de una raza al azar.
+
+**D-1906. Raza en multijugador.**
+El anfitrión elige en la sala la raza de todos los pueblos (o mixta), como el resto de la configuración. Así el protocolo de la sala no cambia. Que cada jugador elija la suya queda para después.
+
+**D-1907. Cuerpos por raza.**
+`human.py` genera los cuerpos de las cuatro razas con el mismo esqueleto y animaciones:
+- **enanos:** 74 % de alto y 128 % de ancho, y los hombres siempre con barba;
+- **elfos:** 107 % de alto, más delgados, con orejas largas en punta;
+- **gatunos:** orejas de gato y cola del color del pelo.
+
+La cabeza mide lo mismo en todas las razas, así los sombreros les sirven a todos. Los asaltantes y soldados siguen con el cuerpo humano.
+
+**D-1908. Pruebas de economía sin amenazas.**
+Las pruebas de necesidades, cultivos y clima ahora apagan incendios, asaltantes y fauna. Al cambiar las velocidades, un incendio al azar quemaba la panadería de la prueba. Las amenazas tienen sus propias pruebas.

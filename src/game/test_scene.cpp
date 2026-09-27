@@ -271,19 +271,22 @@ void TestCrowd::set_area(math::Vec3 center, std::function<float(float, float)> g
     ground_ = std::move(ground);
 }
 
-bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::path& dir) {
+bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::path& dir,
+                     const std::vector<std::string>& bodies) {
     kinds_.clear();
     const auto accessory = [&](const char* file, render::SkinnedId body, const char* bone, std::uint32_t& bit) {
         const auto model = load_model_file(dir / file);
         return model.has_value() && renderer.add_accessory(*model, body, bone, bit);
     };
+    for (const std::string& prefix : bodies) {
     for (const bool female : {false, true}) {
-        const auto body = load_model_file(dir / (female ? "human_female.glb" : "human_male.glb"));
+        const auto body = load_model_file(dir / (prefix + (female ? "_female.glb" : "_male.glb")));
         BodyKind kind;
         kind.female = female;
+        kind.body = prefix;
         if (!body || body->clip_index("idle") < 0 || body->clip_index("walk") < 0 ||
             !renderer.add_skinned_model(*body, kind.id)) {
-            log::warn("test crowd: body model unavailable");
+            log::warn("test crowd: body model unavailable: {}", prefix);
             continue;
         }
         kind.idle = static_cast<std::uint32_t>(body->clip_index("idle"));
@@ -301,6 +304,7 @@ bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::pat
             kind.apron = bit;
         }
         kinds_.push_back(kind);
+    }
     }
     renderer.set_palettes(make_villager_palettes());
     loaded_ = !kinds_.empty();

@@ -467,7 +467,21 @@ void GameHud::stats_window(ui::Context& ctx, GameSession& s) {
     const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
     const std::int32_t pop = game.population(town);
     const std::int32_t adults = game.population(town, true);
-    const std::vector<std::string> lines = {
+    // How many of each people.
+    std::string peoples;
+    const auto& races = game.content().races;
+    std::vector<std::int32_t> per_race(races.size(), 0);
+    for (const sim::Villager& v : game.villagers().data()) {
+        if (v.owner == town && v.race < per_race.size()) {
+            ++per_race[v.race];
+        }
+    }
+    for (std::size_t r = 0; r < races.size(); ++r) {
+        if (per_race[r] > 0) {
+            peoples += (peoples.empty() ? "" : ", ") + tr("hud.amount", tr(races[r].name_key), per_race[r]);
+        }
+    }
+    std::vector<std::string> lines = {
         tr("hud.stats.population", pop, adults, pop - adults),
         tr("hud.stats.births", ps.births, ps.arrivals),
         tr("hud.stats.deaths", ps.deaths, ps.departures),
@@ -480,6 +494,9 @@ void GameHud::stats_window(ui::Context& ctx, GameSession& s) {
         tr("hud.stats.score", game.score(town)),
         tr("hud.stats.level", game.tier(town)),
     };
+    if (!peoples.empty()) {
+        lines.push_back(tr("hud.stats.races", peoples));
+    }
     ui::Rect box{left_x(ctx), std::round(ctx.s(kTopBarH) + pad), std::round(std::min(ctx.s(380.0f), ctx.width() - 2 * pad)),
                  std::round(pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line + pad)};
     bool open = true;

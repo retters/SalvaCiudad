@@ -153,6 +153,22 @@ struct UnitDef {
     std::uint8_t tier = 0;
 };
 
+// What a villager's work is, for the races' speeds (phase 19).
+enum class Skill : std::uint8_t { Wood, Stone, Forage, Farm, Orchard, Hunt, Fish, Build, Craft, Metal, Count };
+inline constexpr std::size_t kSkills = static_cast<std::size_t>(Skill::Count);
+
+// A people (section 7.12): its bodies and its traits, all in data.
+struct RaceDef {
+    std::string id;
+    std::string name_key;
+    std::string body;            // Character files: characters/<body>_male.glb and _female.glb.
+    std::int32_t move = 100;     // Walking speed, percent.
+    std::array<std::int32_t, kSkills> work{100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
+    std::int32_t cold = 0;       // Resistance to cold, percent (less warmth lost, less flu); may be negative.
+    std::int32_t disease = 0;    // Resistance to every disease, percent.
+    bool night_vision = false;   // Declared for a day and night cycle (not in the game yet).
+};
+
 // A tutorial (section 6.5): a map and steps, each with a text, a goal that
 // ends it and the part of the interface to point at.
 enum class TutorialGoal : std::uint8_t { None, Camera, Place, Build, Workers, Speed, Stock, Population, Lua, Count };
@@ -216,6 +232,7 @@ struct Content {
     std::vector<DiseaseDef> diseases;
     std::vector<UnitDef> units;
     std::vector<TutorialDef> tutorials;
+    std::vector<RaceDef> races;
     Flora flora;
 
     // Hash of the mods that affect the simulation (section 7.4), for

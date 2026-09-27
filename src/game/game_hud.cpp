@@ -1310,6 +1310,9 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
 
     std::vector<std::string> lines;
     lines.push_back(tr("hud.villager.age", age));
+    if (v->race < content.races.size()) {
+        lines.push_back(tr("hud.villager.race", tr(content.races[v->race].name_key)));
+    }
     lines.push_back(tr("hud.villager.task", tr(task_text_key(v->task))));
     const sim::Building* job = game.buildings().get(v->job);
     lines.push_back(job != nullptr ? tr("hud.villager.job", tr(content.buildings[job->def].name_key))

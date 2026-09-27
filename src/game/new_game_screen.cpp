@@ -224,6 +224,31 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
             rules_.wildlife = static_cast<sim::Threat>(index);
         }
     }
+    // The people (phase 19).
+    if (content_ != nullptr && !content_->races.empty()) {
+        std::vector<std::string> options;
+        for (const sim::RaceDef& r : content_->races) {
+            options.push_back(tr(r.name_key));
+        }
+        options.push_back(tr("newGame.race.mixed"));
+        const std::uint8_t current = rules_.races[0];
+        int index = current == sim::kMixedRace || current >= content_->races.size() ? static_cast<int>(content_->races.size())
+                                                                                     : current;
+        const Row r = row(ctx, x, y, cw, tr("newGame.race"), tr("newGame.race.tooltip"));
+        if (ctx.selector(ctx.id("race"), r.control, index, options, tr("newGame.race.tooltip"))) {
+            const auto race = index >= static_cast<int>(content_->races.size()) ? sim::kMixedRace
+                                                                                 : static_cast<std::uint8_t>(index);
+            rules_.races.fill(race);
+        }
+        const std::vector<std::string> others = {tr("newGame.otherRaces.none"), tr("newGame.otherRaces.few"),
+                                                 tr("newGame.otherRaces.many")};
+        int o = rules_.other_races == 0 ? 0 : rules_.other_races < 40 ? 1 : 2;
+        const Row orow = row(ctx, x, y, cw, tr("newGame.otherRaces"), tr("newGame.otherRaces.tooltip"));
+        if (ctx.selector(ctx.id("other_races"), orow.control, o, others, tr("newGame.otherRaces.tooltip"))) {
+            static constexpr std::uint8_t kShare[] = {0, 20, 50};
+            rules_.other_races = kShare[o];
+        }
+    }
     {
         int limit = rules_.max_population;
         const Row r = row(ctx, x, y, cw, tr("newGame.maxPopulation"), tr("newGame.maxPopulation.tooltip"));
@@ -243,7 +268,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 18;
+    constexpr int kRows = 20;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;

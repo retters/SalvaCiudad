@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 18;
+inline constexpr std::uint32_t kGameRulesVersion = 19;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -170,7 +170,8 @@ enum class Sex : std::uint8_t { Male, Female };
 struct Villager {
     std::uint8_t owner = 0;
     Sex sex = Sex::Male;
-    std::uint8_t race = 0;
+    std::uint8_t race = 0;            // RaceDef index (phase 19).
+    std::int32_t work_carry = 0;      // Work beyond whole steps, in hundredths (race speeds).
     std::uint32_t appearance = 0;     // Random bits for the look (palette, accessories).
     std::uint32_t family = 0;
     std::int64_t born_tick = 0;       // Can be negative: born before the game.

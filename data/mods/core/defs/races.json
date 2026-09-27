@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "race",
+      "id": "core:human",
+      "name": "race.human",
+      "body": "human",
+      "move": 100,
+      "work": {
+        "wood": 105,
+        "stone": 105,
+        "forage": 105,
+        "farm": 105,
+        "orchard": 105,
+        "hunt": 105,
+        "fish": 105,
+        "build": 105,
+        "craft": 105,
+        "metal": 105
+      }
+    },
+    {
+      "type": "race",
+      "id": "core:catfolk",
+      "name": "race.catfolk",
+      "body": "catfolk",
+      "move": 125,
+      "work": {
+        "hunt": 120,
+        "fish": 125,
+        "build": 90,
+        "forage": 110
+      },
+      "cold": -20,
+      "nightVision": true
+    },
+    {
+      "type": "race",
+      "id": "core:dwarf",
+      "name": "race.dwarf",
+      "body": "dwarf",
+      "move": 90,
+      "work": {
+        "stone": 145,
+        "metal": 145,
+        "build": 115,
+        "farm": 85,
+        "forage": 85,
+        "orchard": 80
+      },
+      "cold": 30
+    },
+    {
+      "type": "race",
+      "id": "core:elf",
+      "name": "race.elf",
+      "body": "elf",
+      "move": 105,
+      "work": {
+        "forage": 130,
+        "hunt": 130,
+        "orchard": 145,
+        "stone": 80,
+        "metal": 80
+      },
+      "disease": 25
+    }
+  ]
+}
