@@ -240,9 +240,9 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 14 (comercio)
 
-- [ ] La barra superior muestra las monedas (100 al empezar) y, en una ventana de 1024 px, no se encima.
+- [ ] La barra superior muestra el oro (100 al empezar; hasta la fase 27 eran monedas) y, en una ventana de 1024 px, no se encima.
 - [ ] Construye un puesto de comercio (Servicios): al mes llega un mercader con aviso; la ventana del puesto lista lo que trae y lo que puedes venderle.
-- [ ] Comprar gasta monedas y deja los bienes en el puesto; vender da monedas y saca los bienes de los almacenes.
+- [ ] Comprar gasta oro y deja los bienes en el puesto; vender da oro y saca los bienes de los almacenes.
 - [ ] En multijugador con "un pueblo por jugador" o "mapas separados", el botón Comercio abre la ventana: envía una oferta, el otro jugador recibe el aviso y la acepta; las caravanas llegan a los días indicados.
 - [ ] Con "Mapas separados", cada jugador ve su propio mapa, la cámara no sale de él y la ventana de comercio muestra el mapa del mundo con las caravanas.
 - [ ] Una oferta rechazada o sin respuesta en un mes devuelve lo apartado.
@@ -363,6 +363,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Al escribir en el buscador, W A S D escriben letras y no mueven la lista.
 - [ ] Con el visor abierto en un modelo, volver a correr su script de Blender (o guardar otra vez el archivo) lo actualiza solo y abajo aparece "Recargado".
 - [ ] El juego sigue viéndose igual (nubes, casas de muestra, animales y sombreros de los aldeanos).
+
+### Fase 28 (oro que se carga y bóveda)
+
+- [ ] La barra superior dice "Oro 100" al empezar; su tooltip dice cuánto hay en el puesto, en bóvedas y en el centro del pueblo.
+- [ ] El oro no aparece repetido entre los recursos de la barra, y la ventana del centro del pueblo lo muestra entre lo que guarda.
+- [ ] Construye un puesto de comercio: los peones llevan oro del centro del pueblo al puesto hasta tener 100 (se ve con bolsas en la mano).
+- [ ] En la ventana del puesto, "Oro que guarda" con − y + cambia la reserva de 50 en 50; al bajarla, los peones se llevan lo que sobra.
+- [ ] Construye una bóveda (Servicios): el oro del centro del pueblo y el que sobra en el puesto se va a la bóveda.
+- [ ] Comprar a un mercader gasta el oro del pueblo (primero el del puesto); vender pone el oro en el puesto. Sin oro suficiente, el botón Comprar no se activa.
+- [ ] Con las herramientas de desarrollo, prender fuego a la bóveda no hace nada; al puesto sí, y su oro se pierde.
+- [ ] En multijugador, una oferta de oro entre jugadores funciona igual que antes, con "Oro" en la lista.
 
 ## Licencia
 

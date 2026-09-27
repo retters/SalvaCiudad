@@ -587,6 +587,32 @@ def trading_post(folder):
     export(folder, "trading_post", mb)
 
 
+def vault(folder):
+    """A squat stone strongroom with an iron-bound door and a gold seal (phase 28)."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    mb.box((0, 0.3, 0.2), (4.4, 3.8, 0.4), "stone_dark")
+    mb.box((0, 0.3, 1.6), (4.0, 3.4, 2.8), "stone")
+    for z in (0.9, 1.6, 2.3):  # Courses of the masonry.
+        mb.box((0, -1.42, z), (4.02, 0.04, 0.06), "stone_dark")
+    for x in (-2.0, 2.0):  # Buttresses at the corners.
+        for y in (-1.4, 2.0):
+            mb.box((x, y, 1.4), (0.5, 0.5, 2.8), "stone_dark")
+    mb.box((0, 0.3, 3.1), (4.3, 3.7, 0.2), "stone_dark")
+    gable_roof(mb, 0, 0.3, 4.0, 3.4, 3.2, 1.0, 0.25, ["slate", "slate_dark"], rows=3)
+    # The door: planks under iron bands, with a round seal.
+    mb.box((0, -1.46, 1.05), (1.1, 0.08, 1.7), "door")
+    for z in (0.5, 1.05, 1.6):
+        mb.box((0, -1.52, z), (1.14, 0.04, 0.1), "iron")
+    mb.cylinder((0, -1.56, 1.9), (0, -1.5, 1.9), 0.16, 0.16, "gold", segments=10)
+    for x in (-1.3, 1.3):  # Barred slits.
+        mb.box((x, -1.46, 2.1), (0.2, 0.06, 0.5), "window")
+        mb.box((x, -1.5, 2.1), (0.04, 0.04, 0.5), "iron")
+    for x, y in ((1.5, -2.0), (1.9, -1.9)):  # Chests by the door.
+        crate(mb, x, y, s=0.4, mat="wood", top="gold")
+    export(folder, "vault", mb)
+
+
 def palisade(folder):
     common.reset_scene()
     mb = MeshBuilder()
@@ -723,6 +749,7 @@ def make_all(folder):
     healer(folder, "physician", 6, 6, tier2=True)
     bathhouse(folder)
     trading_post(folder)
+    vault(folder)
     palisade(folder)
     stone_wall(folder)
     gate(folder)

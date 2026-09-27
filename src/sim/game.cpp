@@ -13,6 +13,9 @@ constexpr std::int32_t kNodeCell = 16;           // Meters per node lookup cell.
 constexpr std::int32_t kMaxSlopeCm = 180;        // Height range allowed under a building.
 constexpr std::uint32_t kJobEvery = 20;          // Ticks between job assignments.
 constexpr std::int32_t kWanderRadius = 18;
+constexpr std::int32_t kStartGold = 100;         // In the town center, at 100 % starting goods (D-2803).
+constexpr std::int32_t kPostReserve = 100;       // Gold a new trading post keeps (D-2804).
+constexpr std::int32_t kGoldMovers = 2;          // Laborers moving gold at once, per town.
 
 Fixed walk_speed(bool adult) {
     return Fixed::from_ratio(adult ? 20 : 16, 100);  // Meters per tick: 2 m/s for adults.
@@ -21,6 +24,9 @@ Fixed walk_speed(bool adult) {
 std::int32_t carry_capacity(const Content& c, DefIndex resource) {
     if (resource >= c.resources.size()) {
         return village::kCarry;
+    }
+    if (c.resources[resource].carry > 0) {
+        return c.resources[resource].carry;  // Gold goes in bags (phase 28).
     }
     return std::max(1, village::kCarry / std::max(1, c.resources[resource].weight));
 }
@@ -434,7 +440,8 @@ public:
                 go(v, Task::GoDeliver, s);
                 return;
             }
-            v.carrying = {};  // Nowhere to put it: dropped.
+            keep_gold(v);
+            v.carrying = {};  // Nowhere to put it: dropped (gold goes to the town center).
         }
         if (!g_.adult(v)) {
             wander(v, home_point(v));
@@ -471,8 +478,8 @@ public:
             wander(v, g_.door(*job));
             return;
         }
-        // 4. Laborer: construction, then hauling.
-        if (start_construction(v) || start_hauling(v)) {
+        // 4. Laborer: construction, then hauling, then the town's gold.
+        if (start_construction(v) || start_hauling(v) || start_moving_gold(v)) {
             return;
         }
         wander(v, home_point(v));
@@ -602,6 +609,139 @@ public:
         v.timer = 0;
         go(v, Task::GoFetch, best);
         return true;
+    }
+
+    // --- Gold (phase 28) ---------------------------------------------------------------
+
+    // Gold a villager holds goes to the town center when it would be lost
+    // (nowhere to put it, or the villager is gone): gold only changes hands
+    // by trade, theft or fire.
+    void keep_gold(const Villager& v) {
+        if (v.carrying.resource != g_.gold_ || v.carrying.amount <= 0 || g_.gold_ == kNoDef) {
+            return;
+        }
+        if (Building* tc = g_.buildings_.get(g_.players_[v.owner].town_center)) {
+            add_to(tc->stock, g_.gold_, v.carrying.amount);
+        }
+    }
+
+    // A storage that keeps gold other than the trading post and the town
+    // center: a vault.
+    [[nodiscard]] bool is_vault(const Building& b) const {
+        return def(b).kind == BuildingKind::Storage && !def(b).trade && accepts(b, g_.gold_);
+    }
+
+    // Villagers of `town` fetching or carrying gold (counted once per step).
+    std::int32_t gold_movers(std::uint8_t town) {
+        if (!movers_counted_) {
+            movers_counted_ = true;
+            movers_.fill(0);
+            for (const Villager& o : g_.villagers_.data()) {
+                if (o.carrying.resource == g_.gold_ && (o.task == Task::GoFetch || o.task == Task::GoDeliver)) {
+                    ++movers_[o.owner];
+                }
+            }
+        }
+        return movers_[town];
+    }
+
+    // Gold on its way into `to`: carried there, and the loads of those
+    // still fetching it.
+    [[nodiscard]] std::int32_t gold_coming(std::uint8_t town, EntityId to, bool with_fetching) const {
+        std::int32_t n = 0;
+        for (const Villager& o : g_.villagers_.data()) {
+            if (o.owner != town || o.carrying.resource != g_.gold_) {
+                continue;
+            }
+            if (o.task == Task::GoDeliver && o.target == to) {
+                n += o.carrying.amount;
+            } else if (with_fetching && o.task == Task::GoFetch && o.site == to) {
+                n += carry_capacity(c_, g_.gold_);
+            }
+        }
+        return n;
+    }
+
+    // The nearest vault of `town` with room for gold, or with gold.
+    [[nodiscard]] EntityId vault_near(std::uint8_t town, FixedVec2 from, bool with_gold) const {
+        EntityId best;
+        std::uint64_t best_d = UINT64_MAX;
+        for (const EntityId id : g_.owned(town)) {
+            const Building& b = *g_.buildings_.get(id);
+            if (!complete(b) || !is_vault(b) ||
+                (with_gold ? amount_of(b.stock, g_.gold_) <= 0 : free_space(b) <= 0)) {
+                continue;
+            }
+            const std::uint64_t d = distance2(from, g_.door(b));
+            if (d < best_d) {
+                best_d = d;
+                best = id;
+            }
+        }
+        return best;
+    }
+
+    // The trading post keeps the gold its player set (its `limit`): laborers
+    // take what is over to a vault (or the town center) and bring what is
+    // missing from one (or from the town center). Gold in the town center
+    // goes to a vault when there is one.
+    bool start_moving_gold(Villager& v) {
+        const DefIndex gold = g_.gold_;
+        const std::uint8_t town = v.owner;
+        if (gold == kNoDef || (no_gold_work_ >> town & 1u) != 0 || gold_movers(town) >= kGoldMovers) {
+            return false;
+        }
+        Building* tc = g_.buildings_.get(g_.players_[town].town_center);
+        const EntityId tc_id = g_.players_[town].town_center;
+        EntityId from, to;
+        if (Building* post = trading_post(town)) {
+            const EntityId post_id = id_of(*post);
+            const std::int32_t in_post = amount_of(post->stock, gold);
+            if (in_post > post->limit) {
+                from = post_id;
+                to = vault_near(town, g_.door(*post), false);
+                if (!to.valid() && tc != nullptr) {
+                    to = tc_id;
+                }
+            } else if (in_post < post->limit && free_space(*post) > 0) {
+                from = vault_near(town, g_.door(*post), true);
+                if (!from.valid() && tc != nullptr && amount_of(tc->stock, gold) > 0) {
+                    from = tc_id;
+                }
+                // Not if what is on its way fills it.
+                if (from.valid() && in_post + gold_coming(town, post_id, true) < post->limit) {
+                    to = post_id;
+                } else {
+                    from = {};
+                }
+            }
+        }
+        if ((!from.valid() || !to.valid()) && tc != nullptr && amount_of(tc->stock, gold) > 0) {
+            from = tc_id;
+            to = vault_near(town, g_.door(*tc), false);
+        }
+        if (!from.valid() || !to.valid() || from == to) {
+            no_gold_work_ |= 1u << town;  // Nothing to move this step: the others need not look.
+            return false;
+        }
+        v.site = to;
+        v.carrying = {gold, 0};
+        v.timer = 0;
+        go(v, Task::GoFetch, from);
+        ++movers_[town];
+        return true;
+    }
+
+    // How much gold a mover may take from `from` for `to`: a trading post
+    // keeps its reserve, and one is filled no further than it.
+    [[nodiscard]] std::int32_t gold_to_move(const Building& from, EntityId to, std::uint8_t town) const {
+        if (def(from).trade) {
+            return std::max(0, amount_of(from.stock, g_.gold_) - from.limit);
+        }
+        if (const Building* post = g_.buildings_.get(to); post != nullptr && def(*post).trade) {
+            return std::max(0, post->limit - amount_of(post->stock, g_.gold_) - gold_coming(town, to, false));
+        }
+        return INT32_MAX;
     }
 
     bool start_home_firewood(Villager& v) {
@@ -1664,7 +1804,7 @@ public:
             return;
         }
         // How rich the town is.
-        std::int64_t wealth = g_.players_[town].coins;
+        std::int64_t wealth = 0;
         const std::vector<std::int32_t> stored = g_.stored(town);
         for (std::size_t r = 0; r < stored.size(); ++r) {
             wealth += static_cast<std::int64_t>(stored[r]) * std::max(1, c_.resources[r].value);
@@ -1788,16 +1928,9 @@ public:
         return nullptr;
     }
 
-    // Takes goods (or coins) from a town: the trading post first, then its
+    // Takes goods (gold too) from a town: the trading post first, then its
     // other storages. False, and nothing taken, if it has not enough.
     bool take_from_town(std::uint8_t town, DefIndex r, std::int32_t n) {
-        if (r == kCoins) {
-            if (g_.players_[town].coins < n) {
-                return false;
-            }
-            g_.players_[town].coins -= n;
-            return true;
-        }
         if (r >= c_.resources.size() || g_.tradeable(town, r) < n) {
             return false;
         }
@@ -1827,10 +1960,6 @@ public:
     // Gives goods to a town: into its trading post while there is room,
     // the rest to the town center (which may overflow).
     void give_to_town(std::uint8_t town, DefIndex r, std::int32_t n) {
-        if (r == kCoins) {
-            g_.players_[town].coins += n;
-            return;
-        }
         if (Building* post = trading_post(town)) {
             const std::int32_t put = std::min(n, free_space(*post));
             if (put > 0) {
@@ -1943,18 +2072,18 @@ public:
             good = m.resource == c.def ? &m : good;
         }
         if (post == nullptr || post->owner != town || !def(*post).trade || !complete(*post) || !g_.merchant_here(town) ||
-            good == nullptr) {
+            good == nullptr || g_.gold_ == kNoDef) {
             ++g_.rejected_;
             return;
         }
         if (c.value > 0) {
+            // The gold goes first, which makes room in the post.
             const std::int32_t n = c.value;
-            if (good->stock < n || ps.coins < n * good->buy) {
+            if (good->stock < n || !take_from_town(town, g_.gold_, n * good->buy)) {
                 ++g_.rejected_;
                 return;
             }
             good->stock -= n;
-            ps.coins -= n * good->buy;
             give_to_town(town, c.def, n);
         } else {
             const std::int32_t n = -c.value;
@@ -1962,14 +2091,16 @@ public:
                 ++g_.rejected_;
                 return;
             }
-            ps.coins += n * good->sell;
+            give_to_town(town, g_.gold_, n * good->sell);
         }
     }
 
     void offer_trade(const Command& c) {
         const std::uint8_t from = g_.town_of(c.player);
         const auto to = static_cast<std::uint8_t>(c.count);  // Checked when read.
-        const auto valid = [&](DefIndex r) { return r == kCoins || (r < c_.resources.size() && c_.resources[r].value > 0); };
+        const auto valid = [&](DefIndex r) {
+            return r < c_.resources.size() && (c_.resources[r].value > 0 || r == g_.gold_);
+        };
         if (to >= g_.player_count_ || !g_.players_[to].active || g_.town_of(to) != to || to == from || !valid(c.def) ||
             !valid(c.def2) || g_.offers_.size() >= 64 || !take_from_town(from, c.def, c.value)) {
             ++g_.rejected_;
@@ -2125,7 +2256,7 @@ public:
             }
             ++g_.players_[b->owner].burned_down;
             g_.events_.push_back({Game::Event::Kind::BurnedDown, b->owner, id, center_of(*b), 0});
-            remove_building(id);
+            remove_building(id, true);
         }
     }
 
@@ -2839,6 +2970,10 @@ public:
         if (hearth) {
             put = std::min(v.carrying.amount, village::kHouseFirewood - amount_of(b->stock, g_.firewood_));
         }
+        // The town center always takes gold, full or not (like goods from trade).
+        if (v.carrying.resource == g_.gold_ && def(*b).kind == BuildingKind::TownCenter) {
+            put = v.carrying.amount;
+        }
         if (put > 0 && (own || hearth || accepts(*b, v.carrying.resource))) {
             add_to(b->stock, v.carrying.resource, put);
             v.carrying.amount -= put;
@@ -2867,6 +3002,9 @@ public:
         }
         std::int32_t want = for_site ? promised : carry_capacity(c_, res);
         want = std::min(want, amount_of(from->stock, res));
+        if (res == g_.gold_ && !for_site) {
+            want = std::min(want, gold_to_move(*from, v.site, v.owner));
+        }
         if (for_site && want < promised) {
             add_to(site->incoming, res, want - promised);
         }
@@ -2994,6 +3132,9 @@ public:
         b.incoming.clear();
         b.work_done = 0;
         b.wanted_workers = def(b).workers;
+        if (def(b).trade) {
+            b.limit = kPostReserve;
+        }
         g_.buildings_changed_ = true;
     }
 
@@ -3081,6 +3222,7 @@ public:
         }
         v_index_ = id.index;
         release(*v);
+        keep_gold(*v);
         if (Building* job = g_.buildings_.get(v->job)) {
             std::erase(job->workers, id);
         }
@@ -3678,7 +3820,9 @@ public:
         g_.buildings_changed_ = true;
     }
 
-    void remove_building(EntityId id) {
+    // A building is gone. Its gold goes to the town center unless it burned
+    // (phase 28); the rest of what it stored is lost.
+    void remove_building(EntityId id, bool burned = false) {
         Building* b = g_.buildings_.get(id);
         if (b == nullptr) {
             return;
@@ -3704,6 +3848,10 @@ public:
         if (Building* tc = g_.buildings_.get(g_.players_[b->owner].town_center); tc != nullptr && tc != b) {
             for (const Stock& s : b->delivered) {
                 add_to(tc->stock, s.resource, s.amount);
+            }
+            if (!burned && g_.gold_ != kNoDef) {
+                add_to(tc->stock, g_.gold_, amount_of(b->stock, g_.gold_));
+                compact(tc->stock);
             }
         }
         for (std::int32_t cz = b->z; cz < b->z + b->depth; ++cz) {
@@ -3991,7 +4139,9 @@ public:
                     add_to(tc->stock, r, item.amount * percent / 100);
                 }
             }
-            ps.coins = 100 * percent / 100;
+            if (g_.gold_ != kNoDef) {
+                add_to(tc->stock, g_.gold_, kStartGold * percent / 100);
+            }
             // Five couples and two children.
             const FixedVec2 at = g_.door(*tc);
             const std::uint8_t start_race = g_.rules_.races[p % g_.rules_.races.size()];
@@ -4013,6 +4163,9 @@ public:
     }
 
     std::uint32_t v_index_ = 0;   // Entity index of the villager being updated.
+    bool movers_counted_ = false;
+    std::uint32_t no_gold_work_ = 0;  // Bit per town.
+    std::array<std::int32_t, kMaxPlayers> movers_{};
 
 private:
     Game& g_;
@@ -4040,6 +4193,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     hide_ = content_->find_resource("core:hide");
     fish_ = content_->find_resource("core:fish");
     shoes_ = content_->find_resource("core:shoes");
+    gold_ = content_->find_resource("core:gold");
     zone_animals_.resize(map_.zones.size());
     for (std::size_t z = 0; z < map_.zones.size(); ++z) {
         zone_animals_[z] = VillageRules::zone_capacity(map_.zones[z].type, rules_);
@@ -4309,7 +4463,7 @@ std::int32_t Game::military_power(std::uint8_t player) const {
 std::int32_t Game::score(std::uint8_t player) const {
     const std::uint8_t town = town_of(player);
     std::int64_t s = static_cast<std::int64_t>(population(town)) * 10 + static_cast<std::int64_t>(tier(town)) * 100 +
-                     players_[town].coins / 10 + static_cast<std::int64_t>(military_power(town)) * 10;
+                     gold(town) / 10 + static_cast<std::int64_t>(military_power(town)) * 10;
     for (const Building& b : buildings_.data()) {
         s += b.owner == town && b.state == BuildingState::Complete ? 5 : 0;
     }
@@ -4373,6 +4527,34 @@ std::int32_t Game::tradeable(std::uint8_t player, DefIndex resource) const {
         }
     }
     return n;
+}
+
+std::int32_t Game::gold(std::uint8_t player) const {
+    return gold_ == kNoDef ? 0 : tradeable(player, gold_);
+}
+
+Game::GoldPlaces Game::gold_places(std::uint8_t player) const {
+    GoldPlaces out;
+    const std::uint8_t town = town_of(player);
+    if (gold_ == kNoDef) {
+        return out;
+    }
+    for (const Building& b : buildings_.data()) {
+        const BuildingDef& d = content_->buildings[b.def];
+        if (b.owner != town || b.state != BuildingState::Complete || d.storage <= 0) {
+            continue;
+        }
+        const std::int32_t n = amount_of(b.stock, gold_);
+        const bool keeps_gold = ((d.stores >> static_cast<unsigned>(ResourceCategory::Gold)) & 1u) != 0;
+        if (d.trade) {
+            out.post += n;
+        } else if (d.kind == BuildingKind::Storage && keeps_gold) {
+            out.vaults += n;
+        } else {
+            out.others += n;
+        }
+    }
+    return out;
 }
 
 Game::Region Game::region(std::uint8_t player) const {
@@ -4683,7 +4865,6 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(ps.arrivals);
         w.i32(ps.departures);
         w.i32(ps.burned_down);
-        w.i32(ps.coins);
         w.u64(ps.merchant_arrives);
         w.u64(ps.merchant_leaves);
         w.u8(ps.alarm ? 1 : 0);
@@ -4972,7 +5153,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t active = 0;
         if (!r.u8(active) || !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
             !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures) ||
-            !r.i32(ps.burned_down) || !r.i32(ps.coins) || ps.coins < 0 || !r.u64(ps.merchant_arrives) ||
+            !r.i32(ps.burned_down) || !r.u64(ps.merchant_arrives) ||
             !r.u64(ps.merchant_leaves)) {
             return false;
         }
@@ -5000,7 +5181,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             }
         }
     }
-    const auto trade_def = [&](DefIndex d) { return d == kCoins || d < c.resources.size(); };
+    const auto trade_def = [&](DefIndex d) { return d < c.resources.size(); };
     std::uint8_t over = 0;
     std::uint32_t offers = 0;
     if (!r.u8(over) || over > 1 || !r.u32(g.next_offer_) || !r.count(64, 28, offers)) {

@@ -490,7 +490,7 @@ void GameHud::stats_window(ui::Context& ctx, GameSession& s) {
         tr("hud.stats.burned", ps.burned_down),
         tr("hud.stats.raids", ps.raids),
         tr("hud.stats.army", game.soldiers(town), game.military_power(town)),
-        tr("hud.stats.coins", ps.coins),
+        tr("hud.stats.gold", game.gold(town)),
         tr("hud.stats.score", game.score(town)),
         tr("hud.stats.level", game.tier(town)),
     };

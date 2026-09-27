@@ -157,6 +157,8 @@
     "race.human": "Humans",
     "race.catfolk": "Catfolk",
     "race.dwarf": "Dwarves",
-    "race.elf": "Elves"
+    "race.elf": "Elves",
+    "resource.gold": "Gold",
+    "building.vault": "Vault"
   }
 }

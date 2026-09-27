@@ -209,7 +209,7 @@ private:
     bool ok_ = true;
 };
 
-constexpr std::string_view kCategories[] = {"food", "material", "fuel", "good"};
+constexpr std::string_view kCategories[] = {"food", "material", "fuel", "good", "gold"};
 constexpr std::string_view kWorkKinds[] = {"none", "gather", "produce", "build", "haul", "farm", "hunt", "fish"};
 constexpr std::string_view kBuildingKinds[] = {"house",   "storage", "workplace", "townCenter", "decoration",
                                                "defense", "military", "market"};
@@ -389,6 +389,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.nutrition = r.integer("nutrition", 0, 1000, 0);
         def.value = r.integer("value", 0, 10000, 0);
         def.weight = r.integer("weight", 1, 12, 1);
+        def.carry = r.integer("carry", 0, 1000, 0);
         if (r.ok()) {
             out.resources.push_back(std::move(def));
         }

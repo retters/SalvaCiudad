@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 21;
+inline constexpr std::uint32_t kGameRulesVersion = 22;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -203,7 +203,7 @@ struct Villager {
     bool operator==(const Villager&) const = default;
 };
 
-// A good a merchant has: how many and at what prices (coins per unit).
+// A good a merchant has: how many and at what prices (gold per unit).
 struct MerchantGood {
     DefIndex resource = 0;
     std::int32_t stock = 0;  // Units to sell; buying from the town has no limit.
@@ -224,8 +224,8 @@ struct PlayerState {
     std::int32_t arrivals = 0;
     std::int32_t departures = 0;      // Unhappy villagers who left.
     std::int32_t burned_down = 0;     // Buildings lost to fire.
-    // Phase 14: the treasury and the merchant from the surroundings.
-    std::int32_t coins = 0;
+    // Phase 14: the merchant from the surroundings. The town's gold is a
+    // resource kept in its buildings (phase 28).
     std::uint64_t merchant_arrives = 0;  // Tick; 0 = not yet planned.
     std::uint64_t merchant_leaves = 0;   // Tick; past it, no merchant.
     std::vector<MerchantGood> merchant;  // What this merchant sells and buys.
@@ -275,7 +275,7 @@ struct TradeOffer {
     std::uint32_t id = 0;
     std::uint8_t from = 0;
     std::uint8_t to = 0;
-    DefIndex give = 0;  // A resource or kCoins.
+    DefIndex give = 0;  // A resource (gold too).
     std::int32_t give_amount = 0;
     DefIndex want = 0;
     std::int32_t want_amount = 0;
@@ -287,7 +287,7 @@ struct TradeOffer {
 struct Caravan {
     std::uint8_t from = 0;
     std::uint8_t to = 0;
-    DefIndex resource = 0;  // Or kCoins.
+    DefIndex resource = 0;
     std::int32_t amount = 0;
     std::uint64_t departs = 0;
     std::uint64_t arrives = 0;
@@ -433,6 +433,16 @@ public:
     [[nodiscard]] std::uint64_t travel_ticks(std::uint8_t from, std::uint8_t to) const;
     // Goods of a town in its storages that trade can take.
     [[nodiscard]] std::int32_t tradeable(std::uint8_t player, DefIndex resource) const;
+    // Gold (phase 28): the resource, kNoDef if the mods have none; a town's
+    // gold in its buildings, and the part of it in its trading post and vaults.
+    [[nodiscard]] DefIndex gold() const { return gold_; }
+    [[nodiscard]] std::int32_t gold(std::uint8_t player) const;
+    struct GoldPlaces {
+        std::int32_t post = 0;
+        std::int32_t vaults = 0;
+        std::int32_t others = 0;
+    };
+    [[nodiscard]] GoldPlaces gold_places(std::uint8_t player) const;
     // Separate maps: the region of a player's town, in cells (x, z, side).
     struct Region {
         std::int32_t x = 0;
@@ -510,6 +520,7 @@ private:
     DefIndex hide_ = kNoDef;
     DefIndex fish_ = kNoDef;
     DefIndex shoes_ = kNoDef;
+    DefIndex gold_ = kNoDef;
     std::vector<std::int32_t> zone_animals_;
     std::int32_t fires_ = 0;          // Buildings burning (follows from them).
     std::vector<TradeOffer> offers_;

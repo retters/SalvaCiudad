@@ -20,7 +20,7 @@ namespace sc::sim {
 using DefIndex = std::uint16_t;
 inline constexpr DefIndex kNoDef = 0xFFFF;
 
-enum class ResourceCategory : std::uint8_t { Food, Material, Fuel, Good, Count };
+enum class ResourceCategory : std::uint8_t { Food, Material, Fuel, Good, Gold, Count };
 
 struct ResourceDef {
     std::string id;           // "core:log"
@@ -28,7 +28,8 @@ struct ResourceDef {
     ResourceCategory category = ResourceCategory::Material;
     std::int32_t nutrition = 0;  // Food points per unit (Food only).
     std::int32_t weight = 1;     // Units a villager carries per trip: 12 / weight.
-    std::int32_t value = 0;      // Base price in coins; 0 = merchants do not trade it (phase 14).
+    std::int32_t carry = 0;      // Units per trip in place of 12 / weight; 0 = from the weight (phase 28).
+    std::int32_t value = 0;      // Base price in gold; 0 = merchants do not trade it (phase 14).
 };
 
 struct ResourceAmount {

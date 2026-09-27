@@ -111,6 +111,15 @@ std::int32_t amount(const Game& g, const char* resource, std::uint8_t player = 0
     return g.tradeable(player, g.content().find_resource(resource));
 }
 
+// A town's gold: in its buildings and in its villagers' hands.
+std::int32_t gold(const Game& g, std::uint8_t player) {
+    std::int32_t n = g.gold(player);
+    for (const Villager& v : g.villagers().data()) {
+        n += v.owner == player && v.carrying.resource == g.gold() ? v.carrying.amount : 0;
+    }
+    return n;
+}
+
 Command offer(std::uint8_t from, std::uint8_t to, DefIndex give, std::int32_t n, DefIndex want, std::int32_t m) {
     Command c;
     c.type = CommandType::OfferTrade;
@@ -136,7 +145,7 @@ Command answer(std::uint8_t player, std::uint32_t id, bool yes) {
 
 TEST_SUITE("trade") {
     TEST_CASE("trade commands round-trip") {
-        const Command c = offer(1, 2, 3, 40, kCoins, 25);
+        const Command c = offer(1, 2, 3, 40, 5, 25);
         BinaryWriter w;
         c.write(w);
         BinaryReader r(w.bytes());
@@ -154,7 +163,7 @@ TEST_SUITE("trade") {
 
     TEST_CASE("a merchant comes to the trading post and trades") {
         Game g(core(), map_for(81), setup());
-        CHECK(g.player(0).coins == 100);
+        CHECK(gold(g, 0) == 100);
         CHECK_FALSE(g.merchant_here(0));
         const EntityId post = build(g, "core:trading_post");
         bool arrived = false;
@@ -187,7 +196,7 @@ TEST_SUITE("trade") {
         c.value = -10;
         g.apply(c);
         CHECK(amount(g, "core:log") == logs - 10);
-        CHECK(g.player(0).coins == 100 + 10 * sell);
+        CHECK(gold(g, 0) == 100 + 10 * sell);
         // Buy something he has.
         const MerchantGood* stocked = nullptr;
         for (const MerchantGood& m : goods) {
@@ -196,14 +205,14 @@ TEST_SUITE("trade") {
         REQUIRE(stocked != nullptr);
         const DefIndex r = stocked->resource;
         const std::int32_t price = stocked->buy;
-        const std::int32_t coins = g.player(0).coins;
+        const std::int32_t coins = gold(g, 0);
         const std::int32_t before = g.tradeable(0, r);
-        const std::int32_t n = std::min(stocked->stock, coins / price);
+        const std::int32_t n = std::min(stocked->stock, g.gold(0) / price);
         REQUIRE(n > 0);
         c.def = r;
         c.value = n;
         g.apply(c);
-        CHECK(g.player(0).coins == coins - n * price);
+        CHECK(gold(g, 0) == coins - n * price);
         CHECK(g.tradeable(0, r) == before + n);
         // More than he has, or more than the town can pay: refused.
         const auto rejected = g.rejected_commands();
@@ -223,7 +232,7 @@ TEST_SUITE("trade") {
         const auto rejected = g.rejected_commands();
         g.apply(c);
         CHECK(g.rejected_commands() == rejected + 1);
-        CHECK(g.player(0).coins == 100);
+        CHECK(gold(g, 0) == 100);
     }
 
     TEST_CASE("two towns trade by caravan") {
@@ -232,7 +241,7 @@ TEST_SUITE("trade") {
         const DefIndex log = g.content().find_resource("core:log");
         const DefIndex stone = g.content().find_resource("core:stone");
         const std::int32_t logs0 = amount(g, "core:log", 0);
-        g.apply(offer(0, 1, log, 30, kCoins, 20));
+        g.apply(offer(0, 1, log, 30, g.gold(), 20));
         REQUIRE(g.offers().size() == 1);
         CHECK(amount(g, "core:log", 0) == logs0 - 30);  // Set aside.
         const std::uint32_t id = g.offers()[0].id;
@@ -244,12 +253,12 @@ TEST_SUITE("trade") {
         g.apply(answer(1, id, true));
         CHECK(g.offers().empty());
         CHECK(g.caravans().size() == 2);
-        CHECK(g.player(1).coins == 80);
+        CHECK(gold(g, 1) == 80);
         const std::uint64_t travel = g.travel_ticks(0, 1);
         CHECK(travel >= g.day_ticks());
         run(g, static_cast<std::uint32_t>(travel + g.day_ticks()));
         CHECK(g.caravans().empty());
-        CHECK(g.player(0).coins == 120);
+        CHECK(gold(g, 0) == 120);
         CHECK(amount(g, "core:log", 1) >= logs1 + 30 - 5);  // Villagers may use a few meanwhile.
 
         // Declined: the goods go back.
@@ -260,14 +269,14 @@ TEST_SUITE("trade") {
         CHECK(g.offers().empty());
         CHECK(amount(g, "core:stone", 0) == stone0);
         // Unanswered: back after a month.
-        g.apply(offer(0, 1, kCoins, 50, log, 10));
-        CHECK(g.player(0).coins == 70);
+        g.apply(offer(0, 1, g.gold(), 50, log, 10));
+        CHECK(gold(g, 0) == 70);
         run(g, g.month_ticks() + g.day_ticks());
         CHECK(g.offers().empty());
-        CHECK(g.player(0).coins == 120);
+        CHECK(gold(g, 0) == 120);
         // More than the town has: refused.
         rejected = g.rejected_commands();
-        g.apply(offer(0, 1, kCoins, 5000, log, 10));
+        g.apply(offer(0, 1, g.gold(), 5000, log, 10));
         CHECK(g.rejected_commands() == rejected + 1);
     }
 
@@ -276,7 +285,7 @@ TEST_SUITE("trade") {
         s.shared_town = true;
         Game g(core(), map_for(84), s);
         const auto rejected = g.rejected_commands();
-        g.apply(offer(0, 1, kCoins, 10, g.content().find_resource("core:log"), 10));
+        g.apply(offer(0, 1, g.gold(), 10, g.content().find_resource("core:log"), 10));
         CHECK(g.rejected_commands() == rejected + 1);
         CHECK(g.offers().empty());
     }
@@ -331,8 +340,8 @@ TEST_SUITE("trade") {
         (void)build(g, "core:trading_post");
         wait_for_merchant(g);
         const DefIndex log = g.content().find_resource("core:log");
-        g.apply(offer(0, 1, log, 20, kCoins, 10));
-        g.apply(offer(1, 0, kCoins, 30, log, 10));
+        g.apply(offer(0, 1, log, 20, g.gold(), 10));
+        g.apply(offer(1, 0, g.gold(), 30, log, 10));
         g.apply(answer(0, g.offers()[1].id, true));
         REQUIRE(g.offers().size() == 1);
         REQUIRE(g.caravans().size() == 2);
@@ -348,5 +357,179 @@ TEST_SUITE("trade") {
         run(g, 1500);
         run(back, 1500);
         CHECK(back.hash() == g.hash());
+    }
+}
+
+namespace {
+
+Command set_reserve(EntityId post, std::int32_t n) {
+    Command c;
+    c.type = CommandType::SetLimit;
+    c.entity = post;
+    c.value = n;
+    return c;
+}
+
+// Runs until `done` holds (checked each day), checking on the way that the
+// town's gold stays `total`.
+template <typename F>
+bool run_until(Game& g, std::int32_t total, F done, int days = 120) {
+    for (int d = 0; d < days; ++d) {
+        if (done()) {
+            return true;
+        }
+        run(g, 100);
+        if (gold(g, 0) != total) {
+            FAIL_CHECK("the town's gold changed to " << gold(g, 0) << " from " << total);
+            return false;
+        }
+    }
+    return done();
+}
+
+}  // namespace
+
+TEST_SUITE("gold") {
+    TEST_CASE("gold is a resource that starts in the town center") {
+        const DefIndex gold_def = sc::test::core_content().find_resource("core:gold");
+        REQUIRE(gold_def != kNoDef);
+        CHECK(sc::test::core_content().resources[gold_def].value == 0);  // Merchants do not trade it.
+        CHECK(sc::test::core_content().resources[gold_def].category == ResourceCategory::Gold);
+        for (const auto& [start, expected] : {std::pair{StartGoods::Scarce, 50}, std::pair{StartGoods::Normal, 100},
+                                              std::pair{StartGoods::Plenty, 200}}) {
+            GameSetup s = setup();
+            s.rules.start = start;
+            Game g(core(), map_for(81), s);
+            REQUIRE(g.gold() == gold_def);
+            CHECK(g.gold(0) == expected);
+            const Game::GoldPlaces places = g.gold_places(0);
+            CHECK(places.others == expected);  // The town center.
+            CHECK(places.post == 0);
+            CHECK(places.vaults == 0);
+        }
+        // Common storehouses do not take it.
+        const BuildingDef& store = sc::test::core_content().buildings[sc::test::core_content().find_building("core:storehouse")];
+        CHECK(((store.stores >> static_cast<unsigned>(ResourceCategory::Gold)) & 1u) == 0);
+    }
+
+    TEST_CASE("laborers keep the trading post's gold, and the rest goes to the vault") {
+        Game g(core(), map_for(81), setup());
+        const EntityId post = build(g, "core:trading_post");
+        CHECK(g.buildings().get(post)->limit == 100);  // A new post keeps 100.
+        // The town's 100 go from the town center to the post.
+        CHECK(run_until(g, 100, [&] { return g.gold_places(0).post == 100; }));
+        // Less: what is over goes back to the town center (there is no vault).
+        g.apply(set_reserve(post, 40));
+        CHECK(run_until(g, 100, [&] { return g.gold_places(0).post == 40 && g.gold_places(0).others == 60; }));
+        // A vault: the town center's gold goes there.
+        const EntityId vault = build(g, "core:vault");
+        CHECK(gold(g, 0) == 100);
+        CHECK(run_until(g, 100, [&] { return g.gold_places(0).vaults == 60; }));
+        CHECK(g.gold_places(0).others == 0);
+        // More than the town has: the post takes it all from the vault.
+        g.apply(set_reserve(post, 300));
+        CHECK(run_until(g, 100, [&] { return g.gold_places(0).post == 100; }));
+        CHECK(g.gold_places(0).vaults == 0);
+        // None: all of it to the vault, and it stays there.
+        g.apply(set_reserve(post, 0));
+        CHECK(run_until(g, 100, [&] { return g.gold_places(0).vaults == 100; }));
+        CHECK(run_until(g, 100, [] { return false; }, 30) == false);  // A month: still 100 (checked daily).
+        CHECK(g.gold_places(0).vaults == 100);
+        // Demolished, the vault's gold goes to the town center.
+        Command rm;
+        rm.type = CommandType::RemoveBuilding;
+        rm.entity = vault;
+        g.apply(rm);
+        CHECK(g.buildings().get(vault) == nullptr);
+        CHECK(g.gold_places(0).others == 100);
+        CHECK(gold(g, 0) == 100);
+    }
+
+    TEST_CASE("a vault does not burn; a trading post burns with its gold") {
+        Game g(core(), map_for(82), setup());
+        const EntityId vault = build(g, "core:vault");
+        const EntityId post = build(g, "core:trading_post");
+        g.apply(set_reserve(post, 60));
+        CHECK(run_until(g, 100, [&] { return g.gold_places(0).post == 60 && g.gold_places(0).vaults == 40; }));
+        Command fire;
+        fire.type = CommandType::DevIgnite;
+        fire.entity = vault;
+        g.apply(fire);
+        CHECK(g.buildings().get(vault)->fire == 0);
+        fire.entity = post;
+        g.apply(fire);
+        REQUIRE(g.buildings().get(post)->fire > 0);
+        for (int t = 0; t < 200 && g.buildings().get(post) != nullptr; ++t) {
+            run(g, 100);
+        }
+        REQUIRE(g.buildings().get(post) == nullptr);
+        // Gold on its way to the post while it burned goes to the town center.
+        CHECK(gold(g, 0) <= 40);
+        CHECK(gold(g, 0) >= 40 - 50);
+        CHECK(g.gold_places(0).vaults <= 40);
+    }
+
+    TEST_CASE("buying takes the town's gold, the post's first") {
+        Game g(core(), map_for(81), setup());
+        const EntityId post = build(g, "core:trading_post");
+        g.apply(set_reserve(post, 0));
+        const EntityId vault = build(g, "core:vault");
+        (void)vault;
+        CHECK(run_until(g, 100, [&] { return g.gold_places(0).vaults == 100; }));
+        wait_for_merchant(g);
+        const MerchantGood* stocked = nullptr;
+        for (const MerchantGood& m : g.player(0).merchant) {
+            stocked = m.stock > 0 && m.buy <= 100 && stocked == nullptr ? &m : stocked;
+        }
+        REQUIRE(stocked != nullptr);
+        const std::int32_t price = stocked->buy;
+        const DefIndex r = stocked->resource;
+        const std::int32_t have = gold(g, 0);
+        const std::int32_t n = std::min(stocked->stock, g.gold(0) / price);
+        REQUIRE(n > 0);
+        Command c;
+        c.type = CommandType::Trade;
+        c.entity = post;
+        c.def = r;
+        c.value = n;
+        g.apply(c);
+        CHECK(gold(g, 0) == have - n * price);  // From the vault: the post had none.
+        // All of the town's gold is not enough for one more.
+        const auto rejected = g.rejected_commands();
+        c.value = g.gold(0) / price + 1;
+        g.apply(c);
+        CHECK(g.rejected_commands() == rejected + 1);
+        // Selling puts the gold in the post.
+        std::int32_t sell = 0;
+        const DefIndex log = g.content().find_resource("core:log");
+        for (const MerchantGood& m : g.player(0).merchant) {
+            sell = m.resource == log ? m.sell : sell;
+        }
+        REQUIRE(sell > 0);
+        const std::int32_t in_post = g.gold_places(0).post;
+        c.def = log;
+        c.value = -10;
+        g.apply(c);
+        CHECK(g.gold_places(0).post == in_post + 10 * sell);
+    }
+
+    TEST_CASE("gold in buildings survives a save") {
+        Game g(core(), map_for(81), setup());
+        const EntityId post = build(g, "core:trading_post");
+        (void)build(g, "core:vault");
+        g.apply(set_reserve(post, 30));
+        run(g, 700);  // Some of it on the way.
+        BinaryWriter w;
+        g.save(w);
+        Game back(core(), map_for(82), setup());
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, core()));
+        CHECK(back.hash() == g.hash());
+        CHECK(back.gold_places(0).post == g.gold_places(0).post);
+        CHECK(back.gold_places(0).vaults == g.gold_places(0).vaults);
+        run(g, 2000);
+        run(back, 2000);
+        CHECK(back.hash() == g.hash());
+        CHECK(gold(back, 0) == 100);
     }
 }

@@ -1352,3 +1352,41 @@ Cada medio segundo compara la fecha y el tamaño de los archivos mostrados; si c
 - Derecha abre lo que está cerrado y, si ya está abierto, entra en su primer elemento. Izquierda cierra lo abierto o, si no, sube a lo que lo contiene. Es la conducta habitual de los árboles de archivos.
 - Solo en la pestaña Modelos y nunca mientras se escribe en el buscador. El visor recuerda qué está abierto; el ratón y el teclado comparten ese estado y el cursor.
 - La lógica de las teclas es una función pura (`navigate`) con sus pruebas; al abrir, el cursor empieza en el primer tipo de la lista tal como se ve.
+
+## Fase 28: oro que se carga y bóveda (2026-09-27)
+
+**D-2801. El oro es un recurso (reemplaza D-1401).**
+Las monedas pasan a ser `core:gold`, de una categoría nueva, `gold`, y con `value` 0: los mercaderes no lo compran ni lo venden como mercancía. Desaparecen el número `coins` del pueblo y el valor especial `kCoins` de los comandos: una oferta entre jugadores usa el índice del oro como cualquier otro bien. Las reglas pasan a la versión 22, así que las partidas guardadas antes no se abren (D-631).
+
+**D-2802. Bolsas de 50.**
+Con la regla de siempre (12 unidades por viaje), llenar una reserva de 500 pedía más de 40 viajes. Un recurso puede tener ahora `carry`, las unidades por viaje, en lugar de 12 / peso; el oro usa 50. Así el oro se mueve con pocos peones sin dejar de ocupar un lugar en el almacén por unidad.
+
+**D-2803. Dónde se guarda.**
+- Solo en el centro del pueblo, el puesto de comercio y las bóvedas (`gold` en `stores`); los almacenes comunes no.
+- El pueblo empieza con su oro en el centro del pueblo: 100, o 50 y 200 con recursos escasos y abundantes.
+- **Bóveda** (`core:vault`, Servicios, sin nivel): 5 × 5 m, 10 troncos y 40 piedras, 5000 de capacidad, a prueba de fuego y con 1500 de resistencia a los asaltantes.
+- El puesto de comercio pasa de 200 a 400 de capacidad, para que quepan la reserva y lo comprado.
+
+**D-2804. La reserva del puesto.**
+- Es el `limit` del edificio (el mismo comando que el tope de un taller): 100 al terminarlo, de 50 en 50 en su ventana, hasta su capacidad.
+- Los peones sin trabajo, después de construir y acarrear, mueven el oro:
+  - lo que sobra en el puesto va a la bóveda más cercana, o al centro del pueblo si no hay;
+  - lo que falta lo traen de una bóveda, o del centro del pueblo;
+  - si nada de eso hace falta, el oro del centro del pueblo va a una bóveda.
+- A lo más dos peones por pueblo a la vez. Cada uno toma, al llegar, solo lo que sobra o lo que falta contando lo que ya va en camino, para no pasarse.
+
+**D-2805. El oro no desaparece.**
+Solo cambia por comercio, robo o incendio:
+- el centro del pueblo acepta oro aunque esté lleno, como ya pasaba con lo que llega por comercio;
+- si un peón muere con oro en la mano, o no tiene dónde dejarlo, el oro va al centro del pueblo;
+- el oro de un edificio que se demuele, o que derriban asaltantes o soldados, va al centro del pueblo. Si se quema, se pierde con lo demás;
+- los asaltantes roban oro como cualquier bien: se llevan hasta 30 de lo que más hay en el edificio que atacan.
+
+**D-2806. Comprar y vender.**
+Al comprar sale primero el oro y luego entran los bienes, así el oro deja lugar en el puesto. Las dos cosas usan las reglas de D-1403: se toma primero del puesto y luego de los demás edificios, y se deja en el puesto o, si no cabe, en el centro del pueblo. La puntuación sigue contando una por cada 10 de oro. La riqueza que atrae asaltantes lo cuenta a 1 por unidad, como antes las monedas.
+
+**D-2807. En la interfaz.**
+El oro se muestra solo en la barra superior, debajo de la felicidad. Su tooltip lo separa en puesto, bóvedas y centro del pueblo. No se repite en la lista de recursos. La ventana del puesto tiene "Oro que guarda" con − y +.
+
+**D-2808. El modelo de la bóveda.**
+Un cuarto de piedra con contrafuertes, techo de pizarra, puerta con bandas de hierro y un sello dorado, en `art/blender/buildings.py`. Regenerar los edificios deja los demás archivos idénticos.

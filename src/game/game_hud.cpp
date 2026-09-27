@@ -274,11 +274,12 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
         ctx.label({right, bar.y + half2, w, half2 - ctx.s(3.0f)}, bottom, small2, bottom_color);
         ctx.tooltip_area(ctx.id(id), {right, bar.y, w, bar.h}, tooltip);
     };
-    // Happiness over the treasury.
+    // Happiness over the town's gold, and where the gold is.
     const std::int32_t joy = game.happiness(s.town());
+    const sim::Game::GoldPlaces places = game.gold_places(s.town());
     stacked(tr("hud.happiness", joy), joy < 35 ? ctx.theme().danger : ctx.theme().text,
-            tr("hud.coins", game.player(s.town()).coins), ui::Color::rgb(0xE8C45A), "hud_happiness",
-            tr("hud.happiness.tooltip") + "\n" + tr("hud.coins.tooltip"));
+            tr("hud.gold", game.gold(s.town())), ui::Color::rgb(0xE8C45A), "hud_happiness",
+            tr("hud.happiness.tooltip") + "\n" + tr("hud.gold.tooltip", places.post, places.vaults, places.others));
     // Troubles: the sick over the fires, only when there are some.
     const std::int32_t sick = game.sick(s.town());
     std::int32_t fires = 0;
@@ -340,7 +341,8 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     item(tr("hud.food", food), food_detail.empty() ? tr("hud.food.tooltip") : food_detail, "hud_food");
     for (std::size_t r = 0; r < stored.size(); ++r) {
         const sim::ResourceDef& def = content.resources[r];
-        if (def.category == sim::ResourceCategory::Food || (stored[r] == 0 && def.id != "core:log" && def.id != "core:stone")) {
+        if (def.category == sim::ResourceCategory::Food || def.category == sim::ResourceCategory::Gold ||
+            (stored[r] == 0 && def.id != "core:log" && def.id != "core:stone")) {
             continue;
         }
         item(tr("hud.amount", tr(def.name_key), stored[r]), tr(def.name_key), def.id.c_str());
@@ -620,7 +622,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     }
     if (post) {
         const std::size_t rows = game.merchant_here(s.town()) ? merchant_rows(game, s.town()).size() : 0;
-        h += pad * 0.5f + line + static_cast<float>(rows) * field_row;
+        h += pad * 0.5f + button_h + pad * 0.5f + line + static_cast<float>(rows) * field_row;
     }
     h += pad;
     ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
@@ -674,7 +676,26 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         farm_fields(ctx, s, *b, box, y, field_row);
     }
     if (post) {
+        // How much gold to keep here, for buying (phase 28).
         y += pad * 0.5f;
+        ctx.label({box.x + pad, y, box.w - 2 * pad - 2 * button_h - ctx.s(8.0f), button_h}, tr("hud.post.reserve", b->limit),
+                  body, ctx.theme().text);
+        const auto set_reserve = [&](std::int32_t n) {
+            sim::Command c;
+            c.type = sim::CommandType::SetLimit;
+            c.entity = ui.selected_building;
+            c.value = std::clamp(n, 0, 10000);
+            s.issue(c);
+        };
+        if (ctx.button(ctx.id("reserve_less"), {box.right() - pad - 2 * button_h - ctx.s(4.0f), y, button_h, button_h},
+                       tr("hud.building.fewer"), tr("hud.post.reserve.tooltip"), b->limit > 0)) {
+            set_reserve(b->limit - 50);
+        }
+        if (ctx.button(ctx.id("reserve_more"), {box.right() - pad - button_h, y, button_h, button_h}, tr("hud.building.more"),
+                       tr("hud.post.reserve.tooltip"), b->limit < d.storage)) {
+            set_reserve(std::min(b->limit + 50, d.storage));
+        }
+        y += button_h + pad * 0.5f;
         merchant_section(ctx, s, box, y, field_row);
     }
     if (barracks) {
@@ -934,9 +955,6 @@ std::string GameHud::town_name(std::uint8_t player) const {
 }
 
 std::string GameHud::goods_name(const sim::Game& game, sim::DefIndex r) const {
-    if (r == sim::kCoins) {
-        return tr("hud.trade.coins");
-    }
     return r < game.content().resources.size() ? tr(game.content().resources[r].name_key) : std::string();
 }
 
@@ -999,7 +1017,7 @@ void GameHud::merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect&
         const ui::Rect buy_r{box.right() - pad - 2 * bw - ctx.s(4.0f), y + ctx.s(2.0f), bw, row_h - ctx.s(4.0f)};
         const ui::Rect sell_r{box.right() - pad - bw, y + ctx.s(2.0f), bw, row_h - ctx.s(4.0f)};
         if (ctx.button(ctx.id("buy"), buy_r, tr("hud.merchant.buy"), tr("hud.merchant.buy.tooltip", buy, buy * m->buy),
-                       buy > 0 && ps.coins >= buy * m->buy)) {
+                       buy > 0 && game.gold(town) >= buy * m->buy)) {
             trade(buy);
         }
         if (ctx.button(ctx.id("sell"), sell_r, tr("hud.merchant.sell"),
@@ -1036,8 +1054,13 @@ void GameHud::trade_window(ui::Context& ctx, GameSession& s) {
         trade_open_ = false;
         return;
     }
-    std::vector<sim::DefIndex> goods{sim::kCoins};
-    std::vector<std::string> goods_names{tr("hud.trade.coins")};
+    // Gold first, then the goods merchants trade.
+    std::vector<sim::DefIndex> goods;
+    std::vector<std::string> goods_names;
+    if (game.gold() != sim::kNoDef) {
+        goods.push_back(game.gold());
+        goods_names.push_back(tr(game.content().resources[game.gold()].name_key));
+    }
     for (std::size_t r = 0; r < game.content().resources.size(); ++r) {
         if (game.content().resources[r].value > 0) {
             goods.push_back(static_cast<sim::DefIndex>(r));
@@ -1133,7 +1156,7 @@ void GameHud::trade_window(ui::Context& ctx, GameSession& s) {
     y += row + gap;
     const sim::DefIndex give = goods[static_cast<std::size_t>(offer_give_)];
     const sim::DefIndex want = goods[static_cast<std::size_t>(offer_want_)];
-    const std::int32_t have = give == sim::kCoins ? game.player(town).coins : game.tradeable(town, give);
+    const std::int32_t have = game.tradeable(town, give);
     const bool can = give != want && have >= offer_give_amount_;
     if (ctx.button(ctx.id("send"), {box.x + pad, y, box.w - 2 * pad, row}, tr("hud.trade.send"),
                    can ? tr("hud.trade.send.tooltip") : tr("hud.trade.send.cannot", have), can)) {
@@ -1174,7 +1197,7 @@ void GameHud::trade_window(ui::Context& ctx, GameSession& s) {
                 answer(0);
             }
         } else {
-            const std::int32_t mine_have = o->want == sim::kCoins ? game.player(town).coins : game.tradeable(town, o->want);
+            const std::int32_t mine_have = game.tradeable(town, o->want);
             if (ctx.button(ctx.id("accept"), {box.right() - pad - 2 * bw - gap, y, bw, row}, tr("hud.trade.accept"),
                            tr("hud.trade.accept.tooltip", static_cast<int>(game.travel_ticks(o->from, o->to) / game.day_ticks())),
                            mine_have >= o->want_amount)) {

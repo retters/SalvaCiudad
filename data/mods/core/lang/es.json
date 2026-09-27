@@ -157,6 +157,8 @@
     "race.human": "Humanos",
     "race.catfolk": "Gatunos",
     "race.dwarf": "Enanos",
-    "race.elf": "Elfos"
+    "race.elf": "Elfos",
+    "resource.gold": "Oro",
+    "building.vault": "Bóveda"
   }
 }

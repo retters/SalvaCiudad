@@ -18,7 +18,8 @@
         "food",
         "material",
         "fuel",
-        "good"
+        "good",
+        "gold"
       ],
       "unique": true,
       "levels": [
@@ -1038,15 +1039,39 @@
         "core:stone": 10
       },
       "buildWork": 450,
-      "storage": 200,
+      "storage": 400,
       "stores": [
         "food",
         "material",
         "fuel",
-        "good"
+        "good",
+        "gold"
       ],
       "unique": true,
       "trade": true,
+      "category": "services"
+    },
+    {
+      "type": "building",
+      "id": "core:vault",
+      "name": "building.vault",
+      "kind": "storage",
+      "model": "models/buildings/vault.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 10,
+        "core:stone": 40
+      },
+      "buildWork": 600,
+      "storage": 5000,
+      "stores": [
+        "gold"
+      ],
+      "fireproof": true,
+      "hp": 1500,
       "category": "services"
     },
     {

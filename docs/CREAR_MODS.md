@@ -64,9 +64,11 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | Campo | Valores |
 |---|---|
 | `name` | Clave de texto. |
-| `category` | `food`, `material`, `fuel` o `good`. |
+| `category` | `food`, `material`, `fuel`, `good` o `gold`. `gold` es el oro del pueblo (`core:gold`): solo lo guardan los edificios que tienen `gold` en `stores`. |
 | `nutrition` | Puntos de comida por unidad (0 a 1000), para `food`. |
 | `weight` | 1 a 12: un aldeano carga 12 / peso unidades por viaje. |
+| `carry` | 0 a 1000: unidades por viaje en lugar de 12 / peso (el oro va en bolsas de 50). 0, o sin escribir: según el peso. |
+| `value` | Precio base en oro para los mercaderes (0 a 10000). Con 0 no lo compran ni lo venden. |
 
 ### building
 
@@ -81,7 +83,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `gathers`, `radius` | Para `gather`: `tree`, `stone`, `ironOre`, `berryBush`, `herbs`, y el radio en metros. |
 | `recipes` | Para `produce`: lista de recetas. |
 | `residents` | Para casas. |
-| `storage`, `stores` | Capacidad y categorías que guarda. |
+| `storage`, `stores` | Capacidad y categorías que guarda. Un `storage` que guarda `gold` y no es el puesto de comercio es una bóveda: ahí van los peones a dejar el oro que sobra. |
 | `tier`, `desirability`, `unique` | Nivel del centro del pueblo necesario, efecto en la deseabilidad y si solo puede haber uno. |
 
 ### recipe

@@ -26,10 +26,10 @@ enum class CommandType : std::uint8_t {
     SetCrop = 15,         // Farm `entity`, field `value & 0xFF`, year `value >> 8`: crop `def` (kNoDef = fallow).
     RemoveField = 16,     // Farm `entity`, field `value`.
     UpgradeBuilding = 17, // Start upgrading `entity` (the town center) to its next level.
-    SetLimit = 18,        // Stock of its product `entity` works up to: `value` (0 = automatic).
+    SetLimit = 18,        // Stock of its product `entity` works up to: `value` (0 = automatic); gold a trading post keeps.
     DevIgnite = 19,       // Developer tools: set `entity` on fire.
     Trade = 20,           // With the merchant at trading post `entity`: buy (`value` > 0) or sell `def`.
-    OfferTrade = 21,      // To player `count`: give `value` of `def`, want `value2` of `def2` (kCoins: coins).
+    OfferTrade = 21,      // To player `count`: give `value` of `def`, want `value2` of `def2`.
     AnswerOffer = 22,     // Offer `value`: accept (`count` 1) or decline / withdraw (0).
     RingBell = 23,        // The town's alarm on (`value` 1) or off (0): adults take up arms.
     DevRaid = 24,         // Developer tools: raiders come now.
@@ -43,8 +43,6 @@ inline constexpr std::uint8_t kMaxPlayers = 12;
 inline constexpr std::uint16_t kMaxSpawnPerCommand = 64;
 inline constexpr std::int32_t kMaxDevGrant = 10000;
 inline constexpr std::int32_t kMaxTrade = 10000;
-// Coins in a trade offer, in place of a resource.
-inline constexpr std::uint16_t kCoins = 0xFFFE;
 
 struct Command {
     CommandType type = CommandType::SpawnWalkers;

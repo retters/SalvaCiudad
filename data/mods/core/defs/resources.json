@@ -283,6 +283,15 @@
       "category": "good",
       "weight": 3,
       "value": 16
+    },
+    {
+      "type": "resource",
+      "id": "core:gold",
+      "name": "resource.gold",
+      "category": "gold",
+      "weight": 1,
+      "carry": 50,
+      "value": 0
     }
   ]
 }
