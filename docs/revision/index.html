@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revisión de SalvaCiudad</title>
+<style>
+:root {
+  --bg: #f6f3ec; --panel: #fffdf8; --panel-2: #f0ebe0; --text: #2b2620; --dim: #6f665a; --line: #d9cfbd;
+  --accent: #b07b1c; --accent-soft: #f3e3bf;
+  --good: #2f7a3e; --good-soft: #dcefdc; --warn: #9a6a00; --warn-soft: #f8ebc8; --bad: #a8412f; --bad-soft: #f6dcd5;
+  --info: #2d5f9a; --info-soft: #dbe7f6; --muted: #857d70; --muted-soft: #ebe6dc;
+  --shadow: 0 1px 2px rgba(60, 45, 20, .08);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1c1a17; --panel: #25221e; --panel-2: #2e2a25; --text: #efe7d8; --dim: #a99f8e; --line: #423c33;
+    --accent: #e0ac4c; --accent-soft: #4a3a1c;
+    --good: #7cc98a; --good-soft: #20382a; --warn: #e3b75a; --warn-soft: #3d321a; --bad: #ec8a76; --bad-soft: #43251f;
+    --info: #8ab6ec; --info-soft: #1e2d42; --muted: #a39a8b; --muted-soft: #34302a;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1c1a17; --panel: #25221e; --panel-2: #2e2a25; --text: #efe7d8; --dim: #a99f8e; --line: #423c33;
+  --accent: #e0ac4c; --accent-soft: #4a3a1c;
+  --good: #7cc98a; --good-soft: #20382a; --warn: #e3b75a; --warn-soft: #3d321a; --bad: #ec8a76; --bad-soft: #43251f;
+  --info: #8ab6ec; --info-soft: #1e2d42; --muted: #a39a8b; --muted-soft: #34302a;
+  --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font: 15px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+button, select, input, textarea { font: inherit; color: inherit; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.bar { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+h1 { font-size: 18px; margin: 0; font-weight: 650; }
+.file { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.status { font-size: 13px; color: var(--dim); }
+.status.warn { color: var(--warn); } .status.bad { color: var(--bad); } .status.good { color: var(--good); }
+.btn { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 5px 11px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:disabled { opacity: .5; cursor: default; }
+nav.tabs { max-width: 1100px; margin: 0 auto; padding: 0 16px; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs button { background: none; border: none; border-bottom: 3px solid transparent; padding: 8px 12px; cursor: pointer; color: var(--dim); white-space: nowrap; }
+nav.tabs button.on { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+nav.tabs .n { font-size: 12px; background: var(--panel-2); border-radius: 9px; padding: 0 6px; margin-left: 4px; }
+nav.tabs .n.hot { background: var(--accent); color: #fff; }
+main { max-width: 1100px; margin: 0 auto; padding: 14px 16px 60px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.filters input[type=search] { flex: 1 1 220px; min-width: 0; }
+.filters input, .filters select { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; }
+.bulk { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; background: var(--panel-2); border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+.intro { color: var(--dim); margin: 0 0 12px; }
+h2.group { font-size: 14px; color: var(--dim); text-transform: none; margin: 20px 0 6px; font-weight: 600; letter-spacing: .01em; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; box-shadow: var(--shadow); }
+.card.retired { opacity: .6; }
+.head { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; padding: 10px 12px; }
+.head input[type=checkbox] { margin-top: 4px; }
+.title { cursor: pointer; }
+.title .t { font-weight: 560; }
+.meta { font-size: 12px; color: var(--dim); display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.chip { font-size: 12px; border-radius: 10px; padding: 0 7px; background: var(--panel-2); }
+.flag { font-size: 12px; border-radius: 10px; padding: 0 7px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+select.state { border-radius: 14px; padding: 3px 8px; border: 1px solid transparent; font-size: 13px; font-weight: 600; cursor: pointer; }
+.s-neutral { background: var(--panel-2); color: var(--dim); } .s-good { background: var(--good-soft); color: var(--good); }
+.s-warn { background: var(--warn-soft); color: var(--warn); } .s-bad { background: var(--bad-soft); color: var(--bad); }
+.s-info { background: var(--info-soft); color: var(--info); } .s-muted { background: var(--muted-soft); color: var(--muted); }
+.body { padding: 0 12px 12px 40px; display: none; }
+.card.open .body { display: block; }
+.detail { color: var(--text); font-size: 14px; }
+.detail p { margin: 6px 0; } .detail ul { margin: 4px 0 4px 18px; padding: 0; }
+.detail code { background: var(--panel-2); border-radius: 4px; padding: 0 4px; font-size: 13px; }
+.answer { margin-top: 8px; border-left: 3px solid var(--info); background: var(--info-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; font-size: 14px; }
+.answer b { color: var(--info); }
+label.note { display: block; margin-top: 10px; font-size: 13px; color: var(--dim); }
+textarea { width: 100%; min-height: 58px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; margin-top: 3px; }
+details.hist { margin-top: 8px; font-size: 13px; color: var(--dim); }
+details.hist li { margin: 2px 0; }
+.empty { color: var(--dim); padding: 30px 0; text-align: center; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.box h3 { margin: 0 0 8px; font-size: 15px; }
+.stack { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--panel-2); margin: 6px 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; }
+table.phases { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.phases th, table.phases td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+table.phases .num { text-align: right; font-variant-numeric: tabular-nums; }
+.welcome { max-width: 640px; margin: 50px auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+.welcome h2 { margin-top: 0; }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.on { opacity: .95; }
+@media (max-width: 640px) {
+  .head { grid-template-columns: auto 1fr; } .head select.state { grid-column: 2; justify-self: start; }
+  .body { padding-left: 12px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Revisión de SalvaCiudad</h1>
+    <div class="file">
+      <span class="status" id="status">Sin archivo abierto</span>
+      <button class="btn primary" id="open">Abrir revision.json</button>
+      <button class="btn" id="reconnect" hidden>Reconectar</button>
+      <button class="btn" id="save" hidden>Guardar</button>
+      <button class="btn" id="download" hidden title="Para navegadores que no pueden escribir en el archivo">Descargar</button>
+      <button class="btn" id="theme" title="Tema claro u oscuro">◐</button>
+      <input type="file" id="picker" accept=".json,application/json" hidden>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main id="main"></main>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+
+// ---- Kinds, states and how they look -------------------------------------------------------
+const TABS = [
+  {id: 'atencion', label: 'Requiere tu atención'},
+  {id: 'cambio', label: 'Cambios', intro: 'Qué se implementó en cada fase. Márcalo revisado o aprobado; si algo está mal, "con problemas" y escribe qué.'},
+  {id: 'prueba', label: 'Pruebas manuales', intro: 'La lista de verificación del README, por fase. Si algo falla, márcalo y describe qué viste.'},
+  {id: 'decision', label: 'Decisiones', intro: 'Todas las decisiones de docs/DECISIONES.md. Apruébalas, pide un cambio o pide que se definan mejor.'},
+  {id: 'confirmar', label: 'Por confirmar', intro: 'Decisiones que tomé por mi cuenta y conviene que confirmes o rechaces.'},
+  {id: 'sugerencia', label: 'Sugerencias', intro: 'Ideas mías. "Autorizada" significa que la implemento; "requiere definición", que te pregunto más.'},
+  {id: 'pendiente', label: 'Pendientes', intro: 'Trabajo abierto o pospuesto de la especificación.'},
+  {id: 'resumen', label: 'Resumen'},
+];
+const KIND_LABEL = {cambio: 'Cambio', prueba: 'Prueba', decision: 'Decisión', confirmar: 'Por confirmar', sugerencia: 'Sugerencia', pendiente: 'Pendiente'};
+const TONE = {
+  'sin revisar': 'neutral', 'sin probar': 'neutral', 'pendiente': 'neutral', 'abierto': 'neutral',
+  'revisado': 'good', 'aprobado': 'good', 'aprobada': 'good', 'funciona': 'good', 'confirmado': 'good', 'implementada': 'good', 'hecho': 'good',
+  'autorizada': 'info', 'autorizado': 'info', 'en curso': 'info',
+  'requiere definición': 'warn', 'requiere cambio': 'warn', 'con problemas': 'warn', 'pospuesta': 'muted', 'pospuesto': 'muted',
+  'falla': 'bad', 'rechazado': 'bad', 'descartada': 'bad', 'descartado': 'bad', 'no aplica': 'muted',
+};
+const TONE_COLOR = {neutral: '--dim', good: '--good', info: '--info', warn: '--warn', bad: '--bad', muted: '--muted'};
+// States that ask Claude to act (same list as tools/revision/revision.py).
+const FOR_CLAUDE = new Set(['con problemas', 'falla', 'requiere cambio', 'confirmado', 'rechazado', 'autorizada', 'autorizado', 'requiere definición']);
+const USER = 'Salvador';
+
+// ---- State -----------------------------------------------------------------------------------
+let doc = null;             // The loaded revision.json.
+let handle = null;          // FileSystemFileHandle, when the browser can write the file.
+let lastModified = 0;       // Of the file as last read or written.
+const dirty = new Map();    // id -> the item's user fields changed since the last save.
+let saveTimer = 0;
+let tab = 'atencion';
+const filters = {q: '', fase: '', estado: '', nota: false};
+const open = new Set();     // Cards expanded.
+const selected = new Set();
+const canWrite = 'showOpenFilePicker' in window;
+
+// ---- Small helpers ---------------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k instanceof Node ? k : String(k));
+  return e;
+}
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('on');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('on'), 2600);
+}
+function now() {
+  const d = new Date(), p = (n) => String(n).padStart(2, '0');
+  const off = -d.getTimezoneOffset(), sign = off >= 0 ? '+' : '-';
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` +
+    `${sign}${p(Math.floor(Math.abs(off) / 60))}:${p(Math.abs(off) % 60)}`;
+}
+function fmtDate(iso) { return iso ? iso.replace('T', ' ').slice(0, 16) : ''; }
+function faseKey(f) {
+  const m = /^(\d+)([a-z]?)$/.exec(f || '');
+  return m ? Number(m[1]) * 10 + (m[2] ? m[2].charCodeAt(0) - 96 : 0) : 100000;
+}
+// Writing a note: redrawing now would take the cursor away.
+function typing() { const a = document.activeElement; return !!a && a.tagName === 'TEXTAREA'; }
+function refresh() { if (typing()) renderTabs(); else render(); }
+function setStatus(text, tone) { const s = $('status'); s.textContent = text; s.className = 'status' + (tone ? ' ' + tone : ''); }
+
+// A small, safe subset of Markdown: paragraphs, lists, **bold** and `code`.
+function markdown(text) {
+  const box = el('div', {class: 'detail'});
+  let list = null;
+  const inline = (line) => {
+    const frag = document.createDocumentFragment();
+    const re = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+    let at = 0, m;
+    while ((m = re.exec(line))) {
+      frag.append(line.slice(at, m.index));
+      frag.append(m[0][0] === '*' ? el('b', {}, m[0].slice(2, -2)) : el('code', {}, m[0].slice(1, -1)));
+      at = m.index + m[0].length;
+    }
+    frag.append(line.slice(at));
+    return frag;
+  };
+  for (const raw of (text || '').split('\n')) {
+    const line = raw.trimEnd();
+    const item = /^\s*[-*] (.*)$/.exec(line);
+    if (item) {
+      if (!list) { list = el('ul'); box.append(list); }
+      list.append(el('li', {}, inline(item[1])));
+    } else if (line.trim() === '') {
+      list = null;
+    } else {
+      list = null;
+      box.append(el('p', {}, inline(line)));
+    }
+  }
+  return box;
+}
+
+// ---- What waits for whom ---------------------------------------------------------------------
+function lastBy(it, who) {
+  let last = '';
+  for (const h of it.historial || []) if ((h.quien === 'Claude') === (who === 'Claude') && h.fecha > last) last = h.fecha;
+  return last;
+}
+// Claude answered after Salvador's last word.
+function claudeAnswered(it) { const c = lastBy(it, 'Claude'); return c !== '' && c > lastBy(it, USER); }
+// Salvador asked Claude to act and Claude has not answered yet.
+function forClaude(it) { const u = lastBy(it, USER); return u !== '' && u > lastBy(it, 'Claude') && (FOR_CLAUDE.has(it.estado) || !!it.nota); }
+function needsUser(it) {
+  if (it.retirado) return false;
+  if (claudeAnswered(it)) return true;
+  return it.tipo === 'confirmar' && it.estado === 'pendiente';
+}
+
+// ---- Loading and saving ----------------------------------------------------------------------
+function validate(data) {
+  if (!data || typeof data !== 'object' || data.schemaVersion !== 1 || !Array.isArray(data.items) || typeof data.estados !== 'object') {
+    throw new Error('No es un revision.json de esta versión.');
+  }
+  let bad = 0;
+  data.items = data.items.filter((it) => {
+    const ok = it && typeof it.id === 'string' && Array.isArray(data.estados[it.tipo]) && typeof it.titulo === 'string' &&
+      data.estados[it.tipo].includes(it.estado);
+    if (!ok) bad++;
+    else { it.nota = typeof it.nota === 'string' ? it.nota : ''; it.historial = Array.isArray(it.historial) ? it.historial : []; }
+    return ok;
+  });
+  if (bad) toast(`${bad} elemento(s) dañado(s) se ignoraron.`);
+  return data;
+}
+function useDoc(data) {
+  doc = validate(data);
+  // Edits not yet written (a closed tab, a failed save) come back.
+  try {
+    const kept = JSON.parse(localStorage.getItem('revision.unsaved') || '{}');
+    let restored = 0;
+    for (const it of doc.items) {
+      const k = kept[it.id];
+      if (k && k.actualizado && (!it.actualizado || k.actualizado > it.actualizado)) {
+        Object.assign(it, k); dirty.set(it.id, k); restored++;
+      }
+    }
+    if (restored) { toast(`${restored} cambio(s) sin guardar recuperados.`); scheduleSave(); }
+  } catch (e) { /* No local storage: nothing to restore. */ }
+  render();
+}
+async function readHandle() {
+  const file = await handle.getFile();
+  lastModified = file.lastModified;
+  return JSON.parse(await file.text());
+}
+async function openFile() {
+  if (!canWrite) { $('picker').click(); return; }
+  try {
+    [handle] = await window.showOpenFilePicker({types: [{description: 'revision.json', accept: {'application/json': ['.json']}}]});
+  } catch (e) { return; }
+  try {
+    useDoc(await readHandle());
+    await remember(handle);
+    setStatus('Guardado automático en ' + handle.name, 'good');
+    showButtons();
+  } catch (e) { setStatus('No se pudo leer: ' + e.message, 'bad'); }
+}
+function keepUnsaved() {
+  try {
+    const out = {};
+    for (const [id, v] of dirty) out[id] = v;
+    localStorage.setItem('revision.unsaved', JSON.stringify(out));
+  } catch (e) { /* Private window: only in memory. */ }
+}
+function scheduleSave() {
+  keepUnsaved();
+  setStatus(`${dirty.size} cambio(s) sin guardar`, 'warn');
+  clearTimeout(saveTimer);
+  if (handle) saveTimer = setTimeout(save, 900);
+}
+// Writes Salvador's edits into the file as it is now on disk, so what Claude
+// wrote meanwhile (answers, new items) is kept.
+async function save() {
+  if (!handle || dirty.size === 0) return;
+  try {
+    if ((await handle.queryPermission({mode: 'readwrite'})) !== 'granted' &&
+        (await handle.requestPermission({mode: 'readwrite'})) !== 'granted') {
+      setStatus('Sin permiso para escribir: pulsa Guardar', 'bad'); return;
+    }
+    const disk = validate(await readHandle());
+    const byId = new Map(disk.items.map((it) => [it.id, it]));
+    const writing = new Map(dirty);  // Edits made while writing stay for the next save.
+    for (const [id, mine] of writing) {
+      const it = byId.get(id);
+      if (!it) continue;
+      it.estado = mine.estado; it.nota = mine.nota; it.actualizado = mine.actualizado;
+      const seen = new Set(it.historial.map((h) => h.fecha + '|' + h.quien));
+      for (const h of mine.historial) if (!seen.has(h.fecha + '|' + h.quien)) it.historial.push(h);
+      it.historial.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+    }
+    const text = JSON.stringify(disk, null, 1) + '\n';
+    JSON.parse(text);
+    const w = await handle.createWritable();   // Written to a temporary copy, swapped in on close.
+    await w.write(text);
+    await w.close();
+    lastModified = (await handle.getFile()).lastModified;
+    for (const [id, mine] of writing) if (dirty.get(id) === mine) dirty.delete(id);
+    for (const [id, mine] of dirty) { const it = byId.get(id); if (it) Object.assign(it, mine); }
+    keepUnsaved();
+    if (!dirty.size) { try { localStorage.removeItem('revision.unsaved'); } catch (e) { /* Nothing kept. */ } }
+    doc = disk;
+    setStatus(dirty.size ? `${dirty.size} cambio(s) sin guardar` : 'Guardado ' + fmtDate(now()).slice(11), dirty.size ? 'warn' : 'good');
+    if (dirty.size) scheduleSave();
+    refresh();
+  } catch (e) {
+    setStatus('No se pudo guardar: ' + e.message, 'bad');
+  }
+}
+// Claude may update the file while the page is open: read it again when idle.
+async function watch() {
+  if (!handle || dirty.size || typing()) return;
+  try {
+    const file = await handle.getFile();
+    if (file.lastModified > lastModified) {
+      doc = validate(JSON.parse(await file.text()));
+      lastModified = file.lastModified;
+      render();
+      toast('El archivo cambió en el disco: se volvió a leer.');
+    }
+  } catch (e) { /* Permission lapsed; the next save asks again. */ }
+}
+function download() {
+  const blob = new Blob([JSON.stringify(doc, null, 1) + '\n'], {type: 'application/json'});
+  const a = el('a', {href: URL.createObjectURL(blob), download: 'revision.json'});
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  dirty.clear();
+  try { localStorage.removeItem('revision.unsaved'); } catch (e) { /* Nothing kept. */ }
+  setStatus('Descargado: reemplaza docs/revision/revision.json con él', 'warn');
+}
+
+// The file handle survives a reload (IndexedDB); permission is asked again.
+function idb() {
+  return new Promise((ok, fail) => {
+    const r = indexedDB.open('revision', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('h');
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => fail(r.error);
+  });
+}
+async function remember(h) {
+  try { const db = await idb(); db.transaction('h', 'readwrite').objectStore('h').put(h, 'file'); } catch (e) { /* Not kept. */ }
+}
+async function recall() {
+  try {
+    const db = await idb();
+    return await new Promise((ok) => {
+      const r = db.transaction('h').objectStore('h').get('file');
+      r.onsuccess = () => ok(r.result || null);
+      r.onerror = () => ok(null);
+    });
+  } catch (e) { return null; }
+}
+async function reconnect() {
+  try {
+    if ((await handle.requestPermission({mode: 'readwrite'})) !== 'granted') return;
+    useDoc(await readHandle());
+    setStatus('Guardado automático en ' + handle.name, 'good');
+    showButtons();
+  } catch (e) { setStatus('No se pudo abrir: ' + e.message, 'bad'); }
+}
+function showButtons() {
+  $('reconnect').hidden = true;
+  $('save').hidden = !handle;
+  $('download').hidden = !doc || !!handle;
+  $('open').textContent = doc ? 'Abrir otro' : 'Abrir revision.json';
+  $('open').classList.toggle('primary', !doc);
+}
+
+// ---- Editing ---------------------------------------------------------------------------------
+function edit(it, changes) {
+  Object.assign(it, changes);
+  it.actualizado = now();
+  // One history line per state change; a note edit updates Salvador's
+  // latest line when nothing came after it.
+  const h = it.historial;
+  const last = h[h.length - 1];
+  if (changes.estado !== undefined || !last || last.quien !== USER) {
+    h.push({fecha: it.actualizado, quien: USER, estado: it.estado, texto: it.nota});
+  } else {
+    last.fecha = it.actualizado; last.estado = it.estado; last.texto = it.nota;
+  }
+  dirty.set(it.id, {estado: it.estado, nota: it.nota, actualizado: it.actualizado, historial: h.filter((x) => x.quien === USER)});
+  scheduleSave();
+}
+
+// ---- Rendering -------------------------------------------------------------------------------
+function itemsOf(t) {
+  if (!doc) return [];
+  if (t === 'atencion') return doc.items.filter(needsUser);
+  return doc.items.filter((it) => it.tipo === t);
+}
+function applyFilters(list) {
+  const q = filters.q.trim().toLowerCase();
+  return list.filter((it) =>
+    (!filters.fase || it.fase === filters.fase) &&
+    (!filters.estado || it.estado === filters.estado) &&
+    (!filters.nota || it.nota) &&
+    (!q || (it.id + ' ' + it.titulo + ' ' + (it.detalle || '') + ' ' + (it.nota || '') + ' ' + (it.respuesta || '')).toLowerCase().includes(q)));
+}
+function renderTabs() {
+  const nav = $('tabs');
+  nav.replaceChildren();
+  for (const t of TABS) {
+    const n = t.id === 'resumen' ? null : itemsOf(t.id).length;
+    const hot = t.id === 'atencion' && n > 0;
+    nav.append(el('button', {class: tab === t.id ? 'on' : '', onclick: () => { tab = t.id; filters.fase = ''; filters.estado = ''; selected.clear(); render(); }},
+      t.label, n == null ? null : el('span', {class: 'n' + (hot ? ' hot' : '')}, n)));
+  }
+}
+function stateSelect(it) {
+  const s = el('select', {class: 'state s-' + (TONE[it.estado] || 'neutral'), 'aria-label': 'Estado',
+    onchange: (e) => { edit(it, {estado: e.target.value}); render(); }});
+  for (const st of doc.estados[it.tipo]) s.append(el('option', {value: st, selected: st === it.estado}, st));
+  return s;
+}
+function card(it, showKind) {
+  const isOpen = open.has(it.id);
+  const flags = [];
+  if (claudeAnswered(it)) flags.push(el('span', {class: 'flag'}, 'Claude respondió'));
+  if (forClaude(it)) flags.push(el('span', {class: 'flag'}, 'Para Claude'));
+  if (it.retirado) flags.push(el('span', {class: 'chip'}, 'ya no está en los documentos'));
+  const c = el('div', {class: 'card' + (isOpen ? ' open' : '') + (it.retirado ? ' retired' : '')});
+  const check = el('input', {type: 'checkbox', 'aria-label': 'Seleccionar', checked: selected.has(it.id),
+    onchange: (e) => { e.target.checked ? selected.add(it.id) : selected.delete(it.id); renderBulk(); }});
+  const title = el('div', {class: 'title', onclick: () => { isOpen ? open.delete(it.id) : open.add(it.id); c.classList.toggle('open'); }},
+    el('div', {class: 't'}, it.titulo),
+    el('div', {class: 'meta'},
+      el('span', {class: 'chip'}, it.id),
+      showKind ? el('span', {class: 'chip'}, KIND_LABEL[it.tipo]) : null,
+      it.fase && !/^\d+[a-z]?$/.test(it.fase) ? null : (it.fase ? el('span', {class: 'chip'}, 'Fase ' + it.fase) : null),
+      it.nota ? el('span', {}, '✎ tu nota') : null,
+      ...flags));
+  c.append(el('div', {class: 'head'}, check, title, stateSelect(it)));
+  const body = el('div', {class: 'body'});
+  if (it.detalle) body.append(markdown(it.detalle));
+  if (it.respuesta) body.append(el('div', {class: 'answer'}, el('b', {}, 'Claude: '), it.respuesta));
+  const area = el('textarea', {placeholder: 'Tu nota: qué ves, qué autorizas, qué falta definir…'});
+  area.value = it.nota || '';
+  let t = 0;
+  area.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => edit(it, {nota: area.value}), 700); });
+  area.addEventListener('blur', () => { clearTimeout(t); if (area.value !== (it.nota || '')) edit(it, {nota: area.value}); });
+  body.append(el('label', {class: 'note'}, 'Tu nota', area));
+  if (it.historial.length) {
+    body.append(el('details', {class: 'hist'}, el('summary', {}, `Historial (${it.historial.length})`),
+      el('ul', {}, it.historial.map((h) => el('li', {}, `${fmtDate(h.fecha)} · ${h.quien === 'Claude' ? 'Claude' : 'Tú'} · ${h.estado}${h.texto ? ' — ' + h.texto : ''}`)))));
+  }
+  if (it.fuente) body.append(el('div', {class: 'meta'}, 'Fuente: ' + it.fuente));
+  c.append(body);
+  return c;
+}
+function renderBulk() {
+  const box = $('bulk');
+  if (!box) return;
+  box.replaceChildren();
+  const visible = applyFilters(itemsOf(tab));
+  box.append(el('button', {class: 'btn', onclick: () => { visible.forEach((it) => selected.add(it.id)); render(); }}, 'Seleccionar visibles'));
+  if (selected.size) {
+    box.append(el('button', {class: 'btn', onclick: () => { selected.clear(); render(); }}, 'Quitar selección'));
+    const kinds = new Set(doc.items.filter((it) => selected.has(it.id)).map((it) => it.tipo));
+    const sel = el('select', {'aria-label': 'Nuevo estado'});
+    sel.append(el('option', {value: ''}, `Cambiar ${selected.size} seleccionado(s) a…`));
+    if (kinds.size === 1) for (const st of doc.estados[[...kinds][0]]) sel.append(el('option', {value: st}, st));
+    else sel.append(el('option', {value: '', disabled: true}, 'Selecciona un solo tipo'));
+    sel.addEventListener('change', () => {
+      if (!sel.value) return;
+      for (const it of doc.items) if (selected.has(it.id)) edit(it, {estado: sel.value});
+      selected.clear();
+      render();
+    });
+    box.append(sel);
+  }
+}
+function renderList() {
+  const t = TABS.find((x) => x.id === tab);
+  const all = itemsOf(tab);
+  const list = applyFilters(all);
+  const main = $('main');
+  if (tab === 'atencion') {
+    main.append(el('p', {class: 'intro'}, all.length
+      ? 'Respuestas mías que esperan tu lectura y decisiones que esperan tu confirmación. Al cambiar un estado o escribir una nota, sale de aquí.'
+      : 'Nada espera por ti ahora mismo.'));
+    const mine = doc.items.filter(forClaude);
+    if (mine.length) main.append(el('p', {class: 'intro'}, `${mine.length} elemento(s) esperan que yo los lea (autorizados, a cambiar, con fallas o con tu nota).`));
+  } else if (t.intro) {
+    main.append(el('p', {class: 'intro'}, t.intro));
+  }
+  // Filters.
+  const f = el('div', {class: 'filters'});
+  const search = el('input', {type: 'search', placeholder: 'Buscar…', value: filters.q});
+  search.addEventListener('input', () => { filters.q = search.value; renderBody(); });
+  const fases = [...new Set(all.map((it) => it.fase).filter(Boolean))].sort((a, b) => faseKey(a) - faseKey(b) || a.localeCompare(b));
+  const fsel = el('select', {'aria-label': 'Fase', onchange: (e) => { filters.fase = e.target.value; render(); }},
+    el('option', {value: ''}, 'Todas las fases'), fases.map((x) => el('option', {value: x, selected: x === filters.fase}, /^\d/.test(x) ? 'Fase ' + x : x)));
+  const states = tab === 'atencion' ? [...new Set(all.map((it) => it.estado))] : (doc.estados[tab] || []);
+  const ssel = el('select', {'aria-label': 'Estado', onchange: (e) => { filters.estado = e.target.value; render(); }},
+    el('option', {value: ''}, 'Todos los estados'), states.map((x) => el('option', {value: x, selected: x === filters.estado}, x)));
+  const nota = el('label', {}, el('input', {type: 'checkbox', checked: filters.nota, onchange: (e) => { filters.nota = e.target.checked; render(); }}), ' con nota');
+  f.append(search, fsel, ssel, nota, el('button', {class: 'btn', onclick: () => { for (const it of list) open.add(it.id); render(); }}, 'Abrir todos'),
+    el('button', {class: 'btn', onclick: () => { open.clear(); render(); }}, 'Cerrar todos'));
+  main.append(f, el('div', {class: 'bulk', id: 'bulk'}), el('div', {id: 'list'}));
+  renderBulk();
+  renderBody();
+}
+function renderBody() {
+  const box = $('list');
+  box.replaceChildren();
+  const list = applyFilters(itemsOf(tab));
+  if (!list.length) { box.append(el('div', {class: 'empty'}, 'No hay elementos con estos filtros.')); return; }
+  // Grouped by phase, newest first for changes, in order for the rest.
+  const groups = new Map();
+  for (const it of list) {
+    const key = it.grupo || (it.fase ? 'Fase ' + it.fase : 'General');
+    if (!groups.has(key)) groups.set(key, {fase: it.fase, items: []});
+    groups.get(key).items.push(it);
+  }
+  let keys = [...groups.keys()];
+  keys.sort((a, b) => faseKey(groups.get(a).fase) - faseKey(groups.get(b).fase));
+  if (tab === 'cambio') keys.reverse();
+  for (const k of keys) {
+    box.append(el('h2', {class: 'group'}, k));
+    for (const it of groups.get(k).items) box.append(card(it, tab === 'atencion'));
+  }
+}
+function renderSummary() {
+  const main = $('main');
+  const wrap = el('div', {class: 'summary'});
+  for (const t of TABS.filter((x) => doc.estados[x.id])) {
+    const list = doc.items.filter((it) => it.tipo === t.id && !it.retirado);
+    const counts = {};
+    for (const it of list) counts[it.estado] = (counts[it.estado] || 0) + 1;
+    const bar = el('div', {class: 'stack'});
+    const legend = el('div', {class: 'legend'});
+    for (const st of doc.estados[t.id]) {
+      if (!counts[st]) continue;
+      const color = `var(${TONE_COLOR[TONE[st] || 'neutral']})`;
+      bar.append(el('div', {style: `width:${(100 * counts[st] / list.length).toFixed(2)}%;background:${color}`, title: `${st}: ${counts[st]}`}));
+      legend.append(el('span', {}, el('span', {style: `color:${color}`}, '■ '), `${st} ${counts[st]}`));
+    }
+    wrap.append(el('div', {class: 'box'}, el('h3', {}, `${t.label} (${list.length})`), bar, legend));
+  }
+  main.append(wrap);
+  // Per phase: changes and manual checks.
+  const fases = [...new Set(doc.items.filter((it) => /^\d/.test(it.fase || '')).map((it) => it.fase))].sort((a, b) => faseKey(a) - faseKey(b));
+  const table = el('table', {class: 'phases'},
+    el('tr', {}, ['Fase', 'Cambio', 'Pruebas', 'Funcionan', 'Fallan', 'Decisiones aprobadas'].map((h, i) => el('th', {class: i > 1 ? 'num' : ''}, h))));
+  for (const f of fases) {
+    const of = (k) => doc.items.filter((it) => it.fase === f && it.tipo === k && !it.retirado);
+    const change = of('cambio')[0];
+    const tests = of('prueba');
+    const decisions = of('decision');
+    table.append(el('tr', {},
+      el('td', {}, f), el('td', {}, change ? change.titulo + ' · ' + change.estado : '—'),
+      el('td', {class: 'num'}, tests.length), el('td', {class: 'num'}, tests.filter((x) => x.estado === 'funciona').length),
+      el('td', {class: 'num'}, tests.filter((x) => x.estado === 'falla').length),
+      el('td', {class: 'num'}, `${decisions.filter((x) => x.estado === 'aprobada').length} / ${decisions.length}`)));
+  }
+  main.append(el('div', {class: 'box', style: 'margin-top:12px'}, el('h3', {}, 'Por fase'), table));
+  if (doc.generado) main.append(el('p', {class: 'intro', style: 'margin-top:12px'}, 'Archivo actualizado por Claude: ' + fmtDate(doc.generado)));
+}
+function renderWelcome() {
+  const main = $('main');
+  main.append(el('div', {class: 'welcome'},
+    el('h2', {}, 'Abre el registro de revisión'),
+    el('p', {}, 'Pulsa "Abrir revision.json" y elige ', el('code', {}, 'docs/revision/revision.json'), ' en la carpeta del proyecto.'),
+    canWrite
+      ? el('p', {}, 'Tus cambios se guardan solos en ese mismo archivo, que yo leo después. El navegador recuerda el archivo; la próxima vez basta con "Reconectar".')
+      : el('p', {}, 'Este navegador no puede escribir en archivos locales: usa "Descargar" y reemplaza el archivo, o ábrelo en Edge o Chrome para que se guarde solo.'),
+    el('p', {}, 'Nada sale de tu equipo: la página no usa internet.')));
+}
+function render() {
+  renderTabs();
+  const main = $('main');
+  main.replaceChildren();
+  if (!doc) { renderWelcome(); return; }
+  if (tab === 'resumen') renderSummary();
+  else renderList();
+  showButtons();
+}
+
+// ---- Start -----------------------------------------------------------------------------------
+$('open').addEventListener('click', openFile);
+$('reconnect').addEventListener('click', reconnect);
+$('save').addEventListener('click', save);
+$('download').addEventListener('click', download);
+$('picker').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try { useDoc(JSON.parse(await file.text())); setStatus('Solo lectura en este navegador: usa Descargar', 'warn'); showButtons(); }
+  catch (err) { setStatus('No se pudo leer: ' + err.message, 'bad'); }
+});
+$('theme').addEventListener('click', () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('revision.theme', root.dataset.theme); } catch (e) { /* Not kept. */ }
+});
+try { const th = localStorage.getItem('revision.theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) { /* Default theme. */ }
+window.addEventListener('beforeunload', (e) => { if (dirty.size) { keepUnsaved(); e.preventDefault(); } });
+setInterval(watch, 4000);
+render();
+(async () => {
+  if (!canWrite) return;
+  const h = await recall();
+  if (!h) return;
+  handle = h;
+  if ((await h.queryPermission({mode: 'readwrite'})) === 'granted') { await reconnect(); return; }
+  $('reconnect').hidden = false;
+  setStatus('Pulsa Reconectar para volver a ' + h.name);
+})();
+</script>
+</body>
+</html>
