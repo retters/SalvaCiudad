@@ -70,6 +70,7 @@ public:
     // While blocked (a modal is open over the widgets being drawn), widgets
     // are drawn but ignore the mouse.
     void set_input_blocked(bool blocked) { blocked_ = blocked; }
+    [[nodiscard]] bool input_blocked() const { return blocked_; }
 
     [[nodiscard]] float s(float design_units) const { return design_units * scale_; }
     [[nodiscard]] TextStyle style(int design_px, FontRole role = FontRole::Regular) const;

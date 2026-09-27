@@ -689,6 +689,7 @@ void App::render_frame(float dt) {
                 lighting_ = seasonal_lighting(season);
                 update_placement(frame.width, frame.height);
                 const int speed = host_->game_paused() ? 0 : clock_.speed();
+                village_.set_view(camera_.target().x, camera_.target().z, session_->town());
                 village_.update(scene_, map_scene_, session_->game(), static_cast<float>(clock_.interpolation()), dt,
                                 speed);
             } else {
@@ -1679,6 +1680,20 @@ std::string App::town_name(std::uint8_t player) const {
     return tr("hud.trade.town", static_cast<int>(player) + 1);
 }
 
+void App::focus_camera(float x, float z) {
+    if (!map_) {
+        return;
+    }
+    const sim::MapData& m = map_->map;
+    camera_.set_target({x, map_surface_height(m, x, z), z});
+    following_ = false;
+}
+
+void App::set_overlay(int layer) {
+    overlay_ = std::clamp(layer, 0, 8);
+    village_.set_overlay(overlay_);
+}
+
 void App::report_game_events() {
     sim::Game& game = session_->game();
     const sim::Content& content = game.content();
@@ -1690,35 +1705,43 @@ void App::report_game_events() {
         const std::string place = e.entity.valid() && game.buildings().get(e.entity) != nullptr
                                       ? tr(content.buildings[game.buildings().get(e.entity)->def].name_key)
                                       : std::string();
+        std::string text;
         switch (e.kind) {
-            case sim::Game::Event::Kind::FireStarted: host_->toast(tr("event.fire", place)); break;
-            case sim::Game::Event::Kind::BurnedDown: host_->toast(tr("event.burnedDown", place)); break;
+            case sim::Game::Event::Kind::FireStarted: text = tr("event.fire", place); break;
+            case sim::Game::Event::Kind::BurnedDown: text = tr("event.burnedDown", place); break;
             case sim::Game::Event::Kind::Outbreak:
                 if (e.value < content.diseases.size()) {
-                    host_->toast(tr("event.outbreak", tr(content.diseases[e.value].name_key)));
+                    text = tr("event.outbreak", tr(content.diseases[e.value].name_key));
                 }
                 break;
-            case sim::Game::Event::Kind::MerchantArrived: host_->toast(tr("event.merchantArrived")); break;
-            case sim::Game::Event::Kind::MerchantLeft: host_->toast(tr("event.merchantLeft")); break;
-            case sim::Game::Event::Kind::OfferReceived: host_->toast(tr("event.offerReceived", town_name(e.other))); break;
+            case sim::Game::Event::Kind::MerchantArrived: text = tr("event.merchantArrived"); break;
+            case sim::Game::Event::Kind::MerchantLeft: text = tr("event.merchantLeft"); break;
+            case sim::Game::Event::Kind::OfferReceived: text = tr("event.offerReceived", town_name(e.other)); break;
             case sim::Game::Event::Kind::OfferAnswered:
-                host_->toast(tr(e.value == 1 ? "event.offerAccepted" : "event.offerDeclined", town_name(e.other)));
+                text = tr(e.value == 1 ? "event.offerAccepted" : "event.offerDeclined", town_name(e.other));
                 break;
-            case sim::Game::Event::Kind::CaravanArrived: host_->toast(tr("event.caravanArrived", town_name(e.other))); break;
-            case sim::Game::Event::Kind::RaidStarted: host_->toast(tr("event.raid", static_cast<int>(e.value))); break;
+            case sim::Game::Event::Kind::CaravanArrived: text = tr("event.caravanArrived", town_name(e.other)); break;
+            case sim::Game::Event::Kind::RaidStarted: text = tr("event.raid", static_cast<int>(e.value)); break;
             case sim::Game::Event::Kind::UnitTrained:
                 if (e.value < content.units.size()) {
-                    host_->toast(tr("event.unitTrained", tr(content.units[e.value].name_key)));
+                    text = tr("event.unitTrained", tr(content.units[e.value].name_key));
                 }
                 break;
-            case sim::Game::Event::Kind::TownLost: host_->toast(tr("event.townLost", town_name(e.owner))); break;
+            case sim::Game::Event::Kind::TownLost: text = tr("event.townLost", town_name(e.owner)); break;
             case sim::Game::Event::Kind::GameOver: break;  // The end panel shows it.
             case sim::Game::Event::Kind::Attacked: {
                 static constexpr const char* kKeys[] = {"event.attacked.deer", "event.attacked.boar", "event.attacked.wolf",
                                                         "event.attacked.bear", "event.attacked.raider"};
-                host_->toast(tr(kKeys[e.value % std::size(kKeys)]));
+                text = tr(kKeys[e.value % std::size(kKeys)]);
                 break;
             }
+            case sim::Game::Event::Kind::Born: text = tr("event.born"); break;
+            case sim::Game::Event::Kind::Died: text = tr("event.died"); break;
+        }
+        if (!text.empty()) {
+            const bool has_pos = e.at.x != sim::Fixed{} || e.at.z != sim::Fixed{};
+            host_->notify(std::move(text), has_pos, static_cast<float>(e.at.x.raw()) / 65536.0f,
+                          static_cast<float>(e.at.z.raw()) / 65536.0f, game.calendar(), SDL_GetTicksNS());
         }
     }
 }

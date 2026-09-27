@@ -1,5 +1,6 @@
 #include "game/settings.h"
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <string_view>
@@ -315,6 +316,18 @@ void read_ui(Reader& r, yyjson_mut_val* obj, UiSettings& ui) {
     r.count(f, "ui.font");
     r.read_bool(obj, "showTooltips", "ui.showTooltips", ui.show_tooltips);
     r.read_int(obj, "tooltipDelayMs", "ui.tooltipDelayMs", 0, lim::kMaxTooltipDelayMs, ui.tooltip_delay_ms);
+    std::string windows;
+    json::Field w = json::get_string(obj, "windows", 2048, windows);
+    if (w == json::Field::Ok && !std::all_of(windows.begin(), windows.end(), [](char c) {
+            return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ':' || c == ',' || c == ';' || c == '-' ||
+                   c == '_';
+        })) {
+        w = json::Field::Invalid;
+    }
+    if (w == json::Field::Ok) {
+        ui.windows = windows;
+    }
+    r.count(w, "ui.windows");
 }
 
 void read_gameplay(Reader& r, yyjson_mut_val* obj, GameplaySettings& g) {
@@ -416,6 +429,7 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_string(doc, u, "font", s.ui.font);
     ok = ok && json::set_bool(doc, u, "showTooltips", s.ui.show_tooltips);
     ok = ok && json::set_int(doc, u, "tooltipDelayMs", s.ui.tooltip_delay_ms);
+    ok = ok && json::set_string(doc, u, "windows", s.ui.windows);
 
     yyjson_mut_val* gp = json::ensure_object(doc, root, "gameplay");
     ok = ok && gp != nullptr;

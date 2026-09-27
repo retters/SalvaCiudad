@@ -98,6 +98,15 @@ bool GameHud::pressed(const ui::Context& ctx, Action action) const {
     return false;
 }
 
+void GameHud::mark(ui::Context& ctx, const ui::Rect& r) const {
+    // A gold outline that pulses about once a second.
+    const double t = static_cast<double>(ctx.now_ns() % 1'000'000'000ull) / 1e9;
+    const auto alpha = static_cast<std::uint8_t>(140 + 115 * std::abs(std::sin(t * 3.14159)));
+    const float th = std::max(2.0f, std::round(ctx.s(3.0f)));
+    const ui::Rect o{r.x - th, r.y - th, r.w + 2 * th, r.h + 2 * th};
+    ctx.draw().rect_outline(o, ctx.theme().accent.with_alpha(alpha / 255.0f), th);
+}
+
 void GameHud::block(GameSession& s, const ui::Rect& r) {
     s.ui().hud_rects.push_back({r.x, r.y, r.w, r.h});
 }
@@ -158,6 +167,17 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     if (ui.placing != sim::kNoDef || ui.field_farm.valid()) {
         placement_hint(ctx, *s);
     }
+    windows_begin(ctx);
+    dock(ctx, *s);
+    // A newly selected building or villager: its window comes forward.
+    if (ui.selected_building != last_building_ && ui.selected_building.valid()) {
+        open_window("building");
+    }
+    if (ui.selected_villager != last_villager_ && ui.selected_villager.valid()) {
+        open_window("villager");
+    }
+    last_building_ = ui.selected_building;
+    last_villager_ = ui.selected_villager;
     if (ui.selected_building.valid()) {
         building_window(ctx, *s);
     } else if (ui.selected_villager.valid()) {
@@ -169,6 +189,20 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     if (army_open_) {
         army_window(ctx, *s);
     }
+    if (goods_open_) {
+        goods_window(ctx, *s);
+    }
+    if (stats_open_) {
+        stats_window(ctx, *s);
+    }
+    if (log_open_) {
+        log_window(ctx, *s);
+    }
+    if (layers_open_) {
+        layers_window(ctx, *s);
+    }
+    notifications(ctx, *s, build_bar_top_);
+    windows_end(ctx);
     return open_menu;
 }
 
@@ -201,6 +235,9 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
                                         {3, "hud.speed.3", "hud.speed.3.tooltip"}};
     for (std::size_t i = 0; i < std::size(kSpeeds); ++i) {
         const ui::Rect r{right + static_cast<float>(i) * (button + gap), std::round((bar.h - button) * 0.5f), button, button};
+        if (highlight_ == "speed" && i > 1) {
+            mark(ctx, r);
+        }
         if (ctx.button(ctx.id(kSpeeds[i].label), r, tr(kSpeeds[i].label), tr(kSpeeds[i].tooltip), true,
                        services_.game_speed() == kSpeeds[i].value)) {
             services_.set_game_speed(kSpeeds[i].value);
@@ -260,31 +297,6 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     bool others = false;
     for (std::uint8_t p = 0; p < game.player_count(); ++p) {
         others = others || (game.town_of(p) == p && p != s.town() && game.player(p).active);
-    }
-    // The army.
-    bool barracks = false;
-    for (const sim::Building& b : game.buildings().data()) {
-        barracks = barracks || (b.owner == s.town() && game.content().buildings[b.def].trains);
-    }
-    if (barracks || game.soldiers(s.town()) > 0) {
-        const std::string label = tr("hud.army", game.soldiers(s.town()));
-        const float aw = ctx.text().measure(st, label) + ctx.s(28.0f);
-        right -= aw + ctx.s(6.0f);
-        const ui::Rect r{right, bar.y + ctx.s(5.0f), aw, bar.h - ctx.s(10.0f)};
-        if (ctx.button(ctx.id("hud_army"), r, label, tr("hud.army.tooltip"), true, army_open_)) {
-            army_open_ = !army_open_;
-            trade_open_ = trade_open_ && !army_open_;
-        }
-    }
-    if (others) {
-        const std::string label = tr("hud.trade");
-        const float tw = ctx.text().measure(st, label) + ctx.s(28.0f);
-        right -= tw + ctx.s(6.0f);
-        const ui::Rect r{right, bar.y + ctx.s(5.0f), tw, bar.h - ctx.s(10.0f)};
-        if (ctx.button(ctx.id("hud_trade"), r, label, tr("hud.trade.tooltip"), true, trade_open_)) {
-            trade_open_ = !trade_open_;
-            army_open_ = army_open_ && !trade_open_;
-        }
     }
     const std::string pop_text = tr("hud.population", pop);
     const float pw = ctx.text().measure(st, pop_text) + ctx.s(24.0f);
@@ -430,12 +442,21 @@ void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
     const ui::Rect panel{std::round((ctx.width() - w) * 0.5f), std::round(ctx.height() - h), std::round(w), std::round(h)};
     ctx.panel(panel);
     block(s, panel);
+    build_bar_top_ = panel.y;
     ctx.push_id("build_bar");
     const float tab_w = std::min(bw, (w - 2 * pad - gap * static_cast<float>(kCategories - 1)) / static_cast<float>(kCategories));
+    // The tutorial may point at a building: its tab first, then its button.
+    sim::DefIndex pointed = sim::kNoDef;
+    if (highlight_.starts_with("build:")) {
+        pointed = content.find_building(std::string_view(highlight_).substr(6));
+    }
     for (std::size_t c = 0; c < kCategories; ++c) {
         const ui::Rect tr_rect{panel.x + pad + static_cast<float>(c) * (tab_w + gap), panel.y + pad, tab_w, tab_h};
         if (ctx.button(ctx.id(kCategoryKeys[c]), tr_rect, tr(kCategoryKeys[c]), {}, true, category_ == c)) {
             category_ = static_cast<std::uint8_t>(c);
+        }
+        if (pointed != sim::kNoDef && content.buildings[pointed].category % kCategories == c && category_ != c) {
+            mark(ctx, tr_rect);
         }
     }
     const std::int32_t tier = s.game().tier(s.town());
@@ -460,6 +481,9 @@ void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
         }
         if (d.service != sim::kNoNeed) {
             tooltip += "\n" + tr("hud.build.service", tr(need_text_key(d.service)), d.service_radius);
+        }
+        if (defs[i] == pointed) {
+            mark(ctx, {bx, by, bw, bh});
         }
         if (ctx.button(ctx.id(d.id), {bx, by, bw, bh}, tr(d.name_key), tooltip, !locked, ui.placing == defs[i])) {
             ui.placing = ui.placing == defs[i] ? sim::kNoDef : defs[i];
@@ -597,16 +621,16 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         h += pad * 0.5f + line + static_cast<float>(rows) * field_row;
     }
     h += pad;
-    const ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
-    ctx.panel(box);
-    block(s, box);
+    ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
+    bool open = true;
+    if (!window(ctx, s, "building", tr(d.name_key), box, open)) {
+        if (!open) {
+            ui.selected_building = {};
+        }
+        return;
+    }
     ctx.push_id("building_window");
     float y = box.y + pad;
-    ctx.label({box.x + pad, y, box.w - 2 * pad - button_h, title_h}, tr(d.name_key), title, ctx.theme().accent);
-    if (ctx.button(ctx.id("close"), {box.right() - pad - button_h, y, button_h, button_h}, tr("hud.close"),
-                   tr("hud.close.tooltip"))) {
-        ui.selected_building = {};
-    }
     y += title_h + pad * 0.5f;
     if (progress >= 0.0f) {
         meter(ctx, {box.x + pad, y, box.w - 2 * pad, ctx.s(8.0f)}, progress, ctx.theme().accent);
@@ -632,6 +656,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         if (ctx.button(ctx.id("fewer"), minus, tr("hud.building.fewer"), tr("hud.building.fewer.tooltip"),
                        b->wanted_workers > 0)) {
             set_workers(b->wanted_workers - 1);
+        }
+        if (highlight_ == "workers") {
+            mark(ctx, plus);
         }
         if (ctx.button(ctx.id("more"), plus, tr("hud.building.more"), tr("hud.building.more.tooltip"),
                        b->wanted_workers < d.workers)) {
@@ -819,15 +846,15 @@ void GameHud::army_window(ui::Context& ctx, GameSession& s) {
     h += 3 * (row + gap);  // Defend, defend here, retreat.
     h += enemies.empty() ? line : row + gap + row;
     h += pad + line + static_cast<float>(towns.size()) * line + pad;
-    const ui::Rect box{pad, std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
-    ctx.panel(box);
-    block(s, box);
+    ui::Rect box{left_x(ctx), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
+    bool open = true;
+    if (!window(ctx, s, "army", tr("hud.army.title"), box, open)) {
+        army_open_ = open;
+        return;
+    }
+    army_open_ = open;
     ctx.push_id("army_window");
     float y = box.y + pad;
-    ctx.label({box.x + pad, y, box.w - 2 * pad - row, title_h}, tr("hud.army.title"), title, ctx.theme().accent);
-    if (ctx.button(ctx.id("close"), {box.right() - pad - row, y, row, row}, tr("hud.close"), tr("hud.close.tooltip"))) {
-        army_open_ = false;
-    }
     y += title_h + pad * 0.5f;
     ctx.label({box.x + pad, y, box.w - 2 * pad, line},
               tr("hud.army.strength", game.soldiers(town), game.military_power(town)), body, ctx.theme().text);
@@ -1037,15 +1064,15 @@ void GameHud::trade_window(ui::Context& ctx, GameSession& s) {
     h += line + 3 * (row + gap) + row + pad;  // The new offer.
     h += line + static_cast<float>(offers.size()) * (row + gap) + pad * 0.5f;
     h += line + static_cast<float>(caravans.size()) * line + pad;
-    const ui::Rect box{pad, std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
-    ctx.panel(box);
-    block(s, box);
+    ui::Rect box{left_x(ctx), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
+    bool open = true;
+    if (!window(ctx, s, "trade", tr("hud.trade.title"), box, open)) {
+        trade_open_ = open;
+        return;
+    }
+    trade_open_ = open;
     ctx.push_id("trade_window");
     float y = box.y + pad;
-    ctx.label({box.x + pad, y, box.w - 2 * pad - row, title_h}, tr("hud.trade.title"), title, ctx.theme().accent);
-    if (ctx.button(ctx.id("close"), {box.right() - pad - row, y, row, row}, tr("hud.close"), tr("hud.close.tooltip"))) {
-        trade_open_ = false;
-    }
     y += title_h + pad * 0.5f;
 
     // The world map: one square per player's map, caravans on the way.
@@ -1298,21 +1325,20 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
     }
     const float bar_block = 3 * (line + ctx.s(10.0f));
     const float title_h = ctx.text().line_height(title);
-    const float button_h = std::round(ctx.s(34.0f));
     const float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line + bar_block + pad;
-    const ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
-    ctx.panel(box);
-    block(s, box);
-    ctx.push_id("villager_window");
-    float y = box.y + pad;
+    ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
     const bool female = v->sex == sim::Sex::Female;
     const char* name_key = !game.adult(*v) ? (female ? "hud.villager.girl" : "hud.villager.boy")
                                            : (female ? "hud.villager.woman" : "hud.villager.man");
-    ctx.label({box.x + pad, y, box.w - 2 * pad - button_h, title_h}, tr(name_key), title, ctx.theme().accent);
-    if (ctx.button(ctx.id("close"), {box.right() - pad - button_h, y, button_h, button_h}, tr("hud.close"),
-                   tr("hud.close.tooltip"))) {
-        ui.selected_villager = {};
+    bool open = true;
+    if (!window(ctx, s, "villager", tr(name_key), box, open)) {
+        if (!open) {
+            ui.selected_villager = {};
+        }
+        return;
     }
+    ctx.push_id("villager_window");
+    float y = box.y + pad;
     y += title_h + pad * 0.5f;
     for (const std::string& l : lines) {
         ctx.label({box.x + pad, y, box.w - 2 * pad, line}, l, body, ctx.theme().text);

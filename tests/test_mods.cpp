@@ -11,6 +11,7 @@
 #include "mods/mod_settings.h"
 #include "script/lua_sandbox.h"
 #include "script/map_script.h"
+#include "script/tutorial_script.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
 
@@ -311,6 +312,35 @@ TEST_SUITE("lua") {
         CHECK_FALSE(script::is_valid_module_name("a..b"));
     }
 
+    TEST_CASE("the core tutorial loads and its Lua goal works") {
+        const sim::Content& c = test::core_content();
+        REQUIRE(c.tutorials.size() >= 1);
+        const sim::TutorialDef& t = c.tutorials.front();
+        CHECK(t.mod == "core");
+        CHECK(t.steps.size() >= 5);
+        const sim::TutorialStep* lua = nullptr;
+        for (const sim::TutorialStep& step : t.steps) {
+            lua = step.goal == sim::TutorialGoal::Lua ? &step : lua;
+        }
+        REQUIRE(lua != nullptr);
+        mods::ModLibrary lib = library_with(test::TempDir{}, {});
+        const mods::BuildResult pack = lib.build();
+        script::TutorialScript script;
+        std::string error;
+        REQUIRE(script.open(pack.scripts, "core", error));
+        script::TutorialState st;
+        st.stored["core:firewood"] = 59;
+        bool done = true;
+        REQUIRE(script.check(lua->target, st, done, error));
+        CHECK_FALSE(done);
+        st.stored["core:firewood"] = 60;
+        REQUIRE(script.check(lua->target, st, done, error));
+        CHECK(done);
+        // Only plain function names, and only existing ones.
+        CHECK_FALSE(script.check("os.exit", st, done, error));
+        CHECK_FALSE(script.check("no_such_goal", st, done, error));
+    }
+
     TEST_CASE("a map rule adds features the same way every time") {
         test::TempDir user;
         make_mod(user, "circle", "", {{"scripts/main.lua", R"(
@@ -326,7 +356,9 @@ TEST_SUITE("lua") {
             end)"}});
         mods::ModLibrary lib = library_with(user, {"circle"});
         const mods::BuildResult pack = lib.build();
-        REQUIRE(pack.scripts.size() == 1);
+        // Core has its own main.lua (the tutorial's goals); the mod's is there too.
+        REQUIRE(std::count_if(pack.scripts.begin(), pack.scripts.end(),
+                              [](const mods::ModScript& m) { return m.mod == "circle"; }) == 1);
         sim::MapSettings s;
         s.seed = 99;
         s.size = sim::MapSize::Small;

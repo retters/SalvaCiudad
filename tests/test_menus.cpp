@@ -73,6 +73,17 @@ public:
     void set_lan_search(bool) override {}
     std::vector<net::LanGame> lan_games() override { return {}; }
     std::string player_name() const override { return "Tester"; }
+    void focus_camera(float x, float z) override {
+        focused_x = x;
+        focused_z = z;
+    }
+    int overlay() const override { return layer; }
+    std::array<float, 3> camera_view() const override { return {0.0f, 0.0f, 60.0f}; }
+    const std::vector<mods::ModScript>* mod_scripts() const override { return nullptr; }
+    void set_overlay(int l) override { layer = l; }
+    float focused_x = -1.0f;
+    float focused_z = -1.0f;
+    int layer = 0;
 
     bool generation_started = false;
     sim::MapSettings last_map_settings;

@@ -110,6 +110,29 @@ render::ModelData make_animal_model() {
     return m;
 }
 
+// A thin colored square for the map layers, 2 x 2 m.
+render::ModelData make_overlay_model() {
+    render::ModelData m;
+    const float s = 1.0f;
+    const float h = 0.04f;
+    for (const math::Vec3& p : {math::Vec3{-s, h, -s}, math::Vec3{-s, h, s}, math::Vec3{s, h, s}, math::Vec3{s, h, -s}}) {
+        m.vertices.push_back({p.x, p.y, p.z, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f});
+    }
+    m.indices = {0, 1, 2, 0, 2, 3};
+    m.materials.push_back({});
+    m.primitives.push_back({0, 6, 0});
+    m.bounds_min = {-s, 0, -s};
+    m.bounds_max = {s, h, s};
+    m.radius = 1.5f;
+    return m;
+}
+
+// Red (0) through yellow to green (1).
+math::Vec3 ramp(float v) {
+    v = std::clamp(v, 0.0f, 1.0f);
+    return v < 0.5f ? math::Vec3{1.0f, v * 2.0f, 0.1f} : math::Vec3{2.0f - v * 2.0f, 1.0f, 0.1f};
+}
+
 float wrap_angle(float a) {
     while (a > std::numbers::pi_v<float>) {
         a -= 2.0f * std::numbers::pi_v<float>;
@@ -171,6 +194,10 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
         }
         if (renderer.add_model(make_tile_model(), id)) {
             mark_model_ = id;
+            used_.push_back(id);
+        }
+        if (renderer.add_model(make_overlay_model(), id)) {
+            overlay_model_ = id;
             used_.push_back(id);
         }
     }
@@ -324,7 +351,146 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
     }
     update_characters(renderer, game, alpha, dt, speed);
     update_creatures(renderer, game, alpha, dt, speed);
+    update_overlay(renderer, game, dt);
 }
+
+void VillageView::update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt) {
+    if (overlay_model_ == kNoModel) {
+        return;
+    }
+    overlay_timer_ -= dt;
+    if (overlay_timer_ > 0.0f) {
+        return;
+    }
+    overlay_timer_ = 0.5f;  // Twice a second is enough.
+    overlay_tiles_.clear();
+    const sim::MapData& map = game.map();
+    const sim::Content& content = game.content();
+    const auto tile = [&](float x, float z, float size, math::Vec3 color) {
+        render::Instance t;
+        t.position = {x, map_surface_height(map, x, z) + 0.05f, z};
+        t.scale = size * 0.5f * 0.9f;
+        t.tint = color;
+        overlay_tiles_.push_back(t);
+    };
+    constexpr float kCell = 4.0f;
+    constexpr int kReach = 25;  // Cells each way: 100 m around the view.
+    const int cx0 = static_cast<int>(std::floor(view_x_ / kCell));
+    const int cz0 = static_cast<int>(std::floor(view_z_ / kCell));
+    const int cells = map.size / static_cast<int>(kCell);
+    const auto each_cell = [&](auto&& fn) {
+        for (int cz = std::max(0, cz0 - kReach); cz <= std::min(cells - 1, cz0 + kReach); ++cz) {
+            for (int cx = std::max(0, cx0 - kReach); cx <= std::min(cells - 1, cx0 + kReach); ++cx) {
+                const float x = (static_cast<float>(cx) + 0.5f) * kCell;
+                const float z = (static_cast<float>(cz) + 0.5f) * kCell;
+                if (!map.water_at(static_cast<int>(x), static_cast<int>(z))) {
+                    fn(x, z);
+                }
+            }
+        }
+    };
+    // Which need a coverage layer shows.
+    int need = -1;
+    switch (overlay_) {
+        case 3: need = static_cast<int>(sim::Need::Water); break;
+        case 4: need = static_cast<int>(sim::Need::Market); break;
+        case 5: need = static_cast<int>(sim::Need::Religion); break;
+        case 6: need = static_cast<int>(sim::Need::Healer); break;
+        default: break;
+    }
+    switch (overlay_) {
+        case 1:  // Fertility.
+            each_cell([&](float x, float z) {
+                const auto i = static_cast<std::size_t>(static_cast<int>(z)) * static_cast<std::size_t>(map.size) +
+                               static_cast<std::size_t>(static_cast<int>(x));
+                tile(x, z, kCell, ramp(static_cast<float>(map.fertility[i]) / 255.0f));
+            });
+            break;
+        case 2:  // Beauty, in 8 m cells: it costs more to work out.
+            each_cell([&](float x, float z) {
+                if (static_cast<int>(x / kCell) % 2 != 0 || static_cast<int>(z / kCell) % 2 != 0) {
+                    return;
+                }
+                const sim::FixedVec2 at{sim::Fixed::from_int(static_cast<int>(x) + 2),
+                                        sim::Fixed::from_int(static_cast<int>(z) + 2)};
+                const float v = static_cast<float>(game.desirability_at(at) + 10) / 30.0f;
+                tile(x + 2.0f, z + 2.0f, kCell * 2.0f, ramp(v));
+            });
+            break;
+        case 3:
+        case 4:
+        case 5:
+        case 6: {
+            // Covered cells, in green.
+            struct Reach {
+                float x;
+                float z;
+                float r2;
+            };
+            std::vector<Reach> reach;
+            for (const sim::Building& b : game.buildings().data()) {
+                const sim::BuildingDef& d = content.buildings[b.def];
+                const bool gives = d.service == need || (need == static_cast<int>(sim::Need::Healer) &&
+                                                         d.service == static_cast<int>(sim::Need::Doctor));
+                if (b.owner == town_ && b.state == sim::BuildingState::Complete && d.service_radius > 0 && gives) {
+                    const auto r = static_cast<float>(d.service_radius);
+                    reach.push_back({static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f,
+                                     static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f, r * r});
+                }
+            }
+            each_cell([&](float x, float z) {
+                for (const Reach& r : reach) {
+                    if ((x - r.x) * (x - r.x) + (z - r.z) * (z - r.z) <= r.r2) {
+                        tile(x, z, kCell, {0.2f, 1.2f, 0.4f});
+                        return;
+                    }
+                }
+            });
+            break;
+        }
+        case 7: {  // Fire risk: wooden buildings, and whether a well is near.
+            std::vector<std::pair<float, float>> wells;
+            for (const sim::Building& b : game.buildings().data()) {
+                if (b.owner == town_ && content.buildings[b.def].service == static_cast<int>(sim::Need::Water)) {
+                    wells.emplace_back(static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f,
+                                       static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f);
+                }
+            }
+            for (const sim::Building& b : game.buildings().data()) {
+                const sim::BuildingDef& d = content.buildings[b.def];
+                if (b.owner != town_ || d.fireproof) {
+                    continue;
+                }
+                const float bx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
+                const float bz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
+                bool well = false;
+                for (const auto& [wx, wz] : wells) {
+                    well = well || (wx - bx) * (wx - bx) + (wz - bz) * (wz - bz) <= 50.0f * 50.0f;
+                }
+                const math::Vec3 color = well ? math::Vec3{1.2f, 1.0f, 0.1f} : math::Vec3{1.4f, 0.15f, 0.1f};
+                for (int z = b.z - 1; z < b.z + b.depth + 1; z += 2) {
+                    for (int x = b.x - 1; x < b.x + b.width + 1; x += 2) {
+                        tile(static_cast<float>(x) + 1.0f, static_cast<float>(z) + 1.0f, 2.0f, color);
+                    }
+                }
+            }
+            break;
+        }
+        case 8:  // Routes: where the villagers are going.
+            for (const sim::Villager& v : game.villagers().data()) {
+                if (v.owner != town_) {
+                    continue;
+                }
+                for (std::size_t k = v.path_index; k < v.path.size() && overlay_tiles_.size() < 4000; ++k) {
+                    tile(to_float(v.path[k].x), to_float(v.path[k].z), 1.0f, {1.4f, 1.2f, 0.2f});
+                }
+            }
+            break;
+        default: break;
+    }
+    renderer.set_instances(overlay_model_, overlay_tiles_);
+}
+
 
 void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,
                                    int speed) {
@@ -440,7 +606,7 @@ render::Instance VillageView::building_instance(const sim::Game& game, sim::DefI
 void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::Game& game) {
     std::map<render::ModelId, std::vector<render::Instance>> lists;
     for (const render::ModelId id : used_) {
-        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_) {
+        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_) {
             lists[id];
         }
     }
@@ -471,7 +637,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         lists[def_models_[ghost_->def].id].push_back(g);
     }
     for (auto& [id, list] : lists) {
-        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_) {
+        if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_) {
             renderer.set_instances(id, list);
         }
     }

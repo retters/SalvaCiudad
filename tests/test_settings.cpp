@@ -273,4 +273,21 @@ TEST_SUITE("settings") {
         CHECK(r.ignored_fields == 6);
         CHECK(s == Settings{});
     }
+
+    TEST_CASE("the game windows' places round-trip and are validated") {
+        test::TempDir dir;
+        {
+            SettingsStore store(dir / "settings.json");
+            (void)store.load();
+            store.settings().ui.windows = "goods:150,60,440,1,0;stats:150,300,380,0,2;";
+            REQUIRE(store.save());
+        }
+        SettingsStore again(dir / "settings.json");
+        CHECK(again.load().ignored_fields == 0);
+        CHECK(again.settings().ui.windows == "goods:150,60,440,1,0;stats:150,300,380,0,2;");
+        Settings s;
+        const auto r = load_text(dir, R"({"schemaVersion": 1, "ui": {"windows": "goods:1,2,3,0,0;\"x\"=rm"}})", s);
+        CHECK(r.ignored_fields == 1);
+        CHECK(s.ui.windows.empty());
+    }
 }

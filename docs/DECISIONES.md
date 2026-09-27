@@ -985,3 +985,45 @@ Reglas del resultado:
 
 **D-1607. Subir de nivel para probar.**
 `DevLevel` sube un nivel el centro del pueblo sin costo, solo con las herramientas de desarrollo. Sirve para revisar a mano lo que pide nivel 2 o 3 sin juntar 30 o 70 aldeanos.
+
+## Fase 17: interfaz completa (2026-09-27)
+
+**D-1701. Ventanas del juego.**
+Todas las ventanas (edificio, aldeano, bienes, estadísticas, eventos, capas, comercio y ejército) usan un mismo marco (`GameHud::window`, en `hud_windows.cpp`):
+- **Mover:** se arrastran por el título. A menos de 12 px se pegan a los bordes de la pantalla y a los bordes de otras ventanas.
+- **Anclar:** al soltarla tocando otra, forman un grupo que se mueve junto. Ctrl+arrastrar la saca del grupo.
+- **Ancho:** la esquina inferior derecha lo cambia.
+- **Plegar:** sin foco (un clic fuera) y sin el cursor encima, a los 0,7 s se pliega en una pestaña con su título. El cursor sobre la pestaña la abre de nuevo.
+- **Fijar:** "Fijar" la deja siempre abierta.
+
+La posición, el ancho, si está fijada y el grupo se guardan en `settings.json` (`ui.windows`), en un texto compacto que se valida carácter por carácter; una entrada dañada solo devuelve esa ventana a su lugar. Al abrirse por primera vez, una ventana se coloca debajo de las que ya ocupan su lugar por omisión.
+
+**D-1702. Columna de ventanas.**
+A la izquierda, botones para Bienes, Estadísticas, Eventos y Capas, más Comercio y Ejército cuando corresponden. Comercio y Ejército salen de la barra superior, que queda para los números.
+
+**D-1703. Notificaciones.**
+- **Cuáles:** los eventos del pueblo propio (incendios, brotes, mercaderes, ofertas, caravanas, asaltos, ataques, soldados nuevos, nacimientos y muertes). Los pueblos que quedan fuera se avisan a todos.
+- **Dónde:** aparecen sobre la barra de construcción a la derecha, hasta cuatro, durante 12 s. Si una se repite en menos de 10 s se cuenta ("×3") en vez de apilarse.
+- **Registro:** se guardan las últimas 100 en la ventana Eventos, con la fecha del juego.
+- Un clic en una notificación con lugar lleva la cámara ahí.
+
+Los avisos de la red, guardar y cargar siguen siendo mensajes breves arriba.
+
+**D-1704. Capas del mapa.**
+Se dibujan con cuadros de color sobre el suelo en unos 100 m alrededor de donde mira la cámara, y se recalculan dos veces por segundo para no pesar:
+- **Fertilidad:** del suelo.
+- **Belleza:** el mismo cálculo que usan las casas (`Game::desirability_at`), en cuadros de 8 m.
+- **Alcance de servicios:** agua, mercado, religión y salud (curandero o médico).
+- **Riesgo de incendio:** rojo si el edificio de madera no tiene pozo a 50 m, amarillo si lo tiene.
+- **Rutas:** los caminos que siguen los aldeanos.
+
+**D-1705. Tutorial.**
+Un tutorial es un tipo de definición (`tutorial`) con un mapa (semilla y tamaño) y pasos. Cada paso tiene:
+- un texto;
+- una meta: mover la cámara, colocar o terminar un edificio, asignar trabajadores, cambiar la velocidad, juntar un bien, llegar a una población, o una función de Lua del `main.lua` del mod que recibe una copia del estado y devuelve si se cumplió;
+- el elemento a señalar: un edificio de la barra (primero su pestaña), el + de trabajadores, la velocidad o un botón de la columna.
+
+`core` trae "Primeros pasos", de diez pasos. La meta de guardar leña es una función de Lua, como ejemplo para los mods. Se abre desde el menú principal, sin asaltantes y con amenazas bajas. El panel de pasos va sobre la barra de construcción para no tapar las ventanas, y permite saltar un paso o salir. Al terminar se marca `tutorialSeen`.
+
+**D-1706. Tooltips.**
+Las ventanas nuevas tienen tooltips en cada elemento: los bienes con su valor y alimento, las capas con qué muestran, y las notificaciones con "clic para ir".

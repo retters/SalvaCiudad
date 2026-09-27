@@ -2,12 +2,15 @@
 // "keep these display settings?" countdown and notices.
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "game/game_hud.h"
+#include "script/tutorial_script.h"
 #include "game/mods_screen.h"
 #include "game/multiplayer_screens.h"
 #include "game/new_game_screen.h"
@@ -29,6 +32,10 @@ public:
     void add_notice(std::string text);
     // A short line at the top of the screen that goes away by itself.
     void toast(std::string text);
+    // A game event for the notifications and the event log.
+    void notify(std::string text, bool has_pos, float x, float z, const sim::Calendar& when, std::uint64_t now_ns) {
+        hud_.notify(std::move(text), has_pos, x, z, when, now_ns);
+    }
 
     // Applies a display change and, if it worked, asks the player to keep it
     // within 15 seconds or reverts it.
@@ -68,6 +75,21 @@ private:
     void game_menu(ui::Context& ctx);
     void pause_panel(ui::Context& ctx);
     void end_panel(ui::Context& ctx);  // The game is over: who won, the scores.
+    // The tutorial (section 6.5).
+    struct TutorialRun {
+        std::size_t def = 0;
+        std::size_t step = 0;
+        std::array<float, 3> camera{};  // Where the camera was when the step began.
+        int speed = 1;
+        bool step_started = false;
+        std::uint64_t next_lua_ns = 0;
+        std::string error;
+    };
+    std::optional<TutorialRun> tutorial_;
+    std::unique_ptr<script::TutorialScript> tutorial_lua_;
+    void start_tutorial(std::size_t index);
+    void tutorial_panel(ui::Context& ctx);
+    [[nodiscard]] bool tutorial_step_done(const sim::TutorialStep& step, std::uint64_t now_ns);
     bool end_seen_ = false;
     void load_screen(ui::Context& ctx, bool modal);
     void game_keys(ui::Context& ctx);

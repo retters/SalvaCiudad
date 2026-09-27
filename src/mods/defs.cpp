@@ -24,7 +24,10 @@ bool valid_name_part(std::string_view s) {
 }
 
 constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome", "mapType",
-                                        "crop",     "disease",    "unit"};
+                                        "crop",     "disease",    "unit",    "tutorial"};
+constexpr std::string_view kTutorialGoals[] = {"none",  "camera", "place",      "build", "workers",
+                                               "speed", "stock",  "population", "lua"};
+constexpr std::string_view kTutorialSizes[] = {"small", "medium"};
 constexpr std::string_view kDiseaseSources[] = {"cold", "water", "rats"};
 constexpr std::string_view kSeasons[] = {"spring", "summer", "autumn", "winter"};
 
@@ -349,7 +352,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
     out = sim::Content{};
     // Ids first, so definitions can refer to each other in any order.
     std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops, diseases,
-        units;
+        units, tutorials;
     for (const RawDef& d : set.defs()) {
         if (d.type == "resource") resources.push_back(&d);
         else if (d.type == "mapFeature") features.push_back(&d);
@@ -361,6 +364,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         else if (d.type == "crop") crops.push_back(&d);
         else if (d.type == "disease") diseases.push_back(&d);
         else if (d.type == "unit") units.push_back(&d);
+        else if (d.type == "tutorial") tutorials.push_back(&d);
     }
     if (species.size() > sim::kMaxSpecies || biomes.size() > sim::kMaxBiomes || map_types.size() > sim::kMaxMapTypes ||
         resources.size() > 1000 || buildings.size() > 1000 || recipes.size() > 2000) {
@@ -398,6 +402,44 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
     }
     const auto find_recipe = [&](std::string_view id) { return index_of(out.recipes, id); };
+    // Tutorials.
+    for (const RawDef* d : tutorials) {
+        Reader r(*d, errors);
+        sim::TutorialDef def;
+        def.id = d->id;
+        def.mod = d->mod;
+        def.name_key = r.text("name", true);
+        def.seed = r.integer("seed", 1, 2000000000, 1);
+        def.size = static_cast<std::uint8_t>(r.choice("size", kTutorialSizes, 0));
+        if (yyjson_mut_val* steps = yyjson_mut_obj_get(d->obj, "steps");
+            steps == nullptr || !yyjson_mut_is_arr(steps) || yyjson_mut_arr_size(steps) == 0 ||
+            yyjson_mut_arr_size(steps) > 40) {
+            r.fail("\"steps\" must be a list of 1 to 40 objects");
+        } else {
+            std::size_t si = 0, smax = 0;
+            yyjson_mut_val* item = nullptr;
+            yyjson_mut_arr_foreach(steps, si, smax, item) {
+                if (!yyjson_mut_is_obj(item)) {
+                    r.fail("\"steps\" entries must be objects");
+                    continue;
+                }
+                Reader sr(*d, item, errors);
+                sim::TutorialStep step;
+                step.text_key = sr.text("text", true);
+                step.goal = static_cast<sim::TutorialGoal>(sr.choice("goal", kTutorialGoals, 0));
+                step.target = sr.text("target", false, 64);
+                step.amount = sr.integer("amount", 1, 100000, 1);
+                step.highlight = sr.text("highlight", false, 64);
+                if (!sr.ok()) {
+                    r.fail("a step has errors");
+                }
+                def.steps.push_back(std::move(step));
+            }
+        }
+        if (r.ok() && out.tutorials.size() < 16) {
+            out.tutorials.push_back(std::move(def));
+        }
+    }
     // Units.
     for (const RawDef* d : units) {
         Reader r(*d, errors);

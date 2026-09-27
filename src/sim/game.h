@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 16;
+inline constexpr std::uint32_t kGameRulesVersion = 17;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -411,6 +411,8 @@ public:
             UnitTrained,     // `value`: the unit.
             TownLost,        // `owner` is out of the game.
             GameOver,        // `value`: the winner + 1, or 0.
+            Born,            // Phase 17: for the notifications.
+            Died,
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -446,6 +448,9 @@ public:
     [[nodiscard]] std::int32_t raiders_near(std::uint8_t player) const;
     // Whether animals of a zone live there (no predators by a starting town).
     [[nodiscard]] bool zone_open(std::size_t zone) const;
+    // How pleasant a place is for homes: buildings around (gardens add,
+    // workshops take away) and trees (phase 12; the map layer, phase 17).
+    [[nodiscard]] std::int32_t desirability_at(FixedVec2 here, const Building* self = nullptr) const;
 
     // Armies and the end of the game (phase 16).
     [[nodiscard]] std::int32_t soldiers(std::uint8_t player) const;

@@ -83,6 +83,8 @@ struct UiSettings {
     std::string font = "alegreya-sans";  // Id from data/fonts/fonts.json.
     bool show_tooltips = true;
     int tooltip_delay_ms = 500;  // 0..3000.
+    // Where the player left the game windows (GameHud's own compact format).
+    std::string windows;
 
     bool operator==(const UiSettings&) const = default;
 };

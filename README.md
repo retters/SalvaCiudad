@@ -263,6 +263,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En la sala multijugador, "Partida" ofrece cooperativa y los modos versus; en "Versus: el último pueblo en pie", "Atacar" manda al ejército al centro del pueblo rival y, si cae, aparece el panel de victoria o derrota.
 - [ ] Una partida de un jugador en la que muere todo el pueblo muestra el panel de fin de partida.
 
+### Fase 17 (interfaz completa)
+
+- [ ] El menú principal tiene "Tutorial": abre un mapa con un panel de pasos; cada paso señala en dorado qué usar y avanza solo al hacerlo.
+- [ ] La columna de la izquierda abre Bienes, Estadísticas, Eventos y Capas.
+- [ ] Una ventana se arrastra por el título, se pega a los bordes y a otras ventanas, y al soltarla junto a otra se mueven juntas; Ctrl+arrastrar la separa; la esquina cambia su ancho.
+- [ ] Al hacer clic en el mapa, las ventanas sin fijar se pliegan en pestañas y el cursor encima las abre; "Fijar" las deja abiertas.
+- [ ] Al salir y volver a entrar al juego, las ventanas aparecen donde se dejaron.
+- [ ] Capas: fertilidad, belleza, agua, mercado, religión, salud, riesgo de incendio y rutas se ven sobre el mapa.
+- [ ] Las notificaciones aparecen abajo a la derecha; un clic lleva la cámara al lugar y la ventana Eventos guarda las últimas.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

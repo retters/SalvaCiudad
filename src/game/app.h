@@ -114,6 +114,16 @@ private:
     void handle_net_event(const net::NetEvent& e);
     void report_game_events();  // Toasts for fires and outbreaks in the local town.
     [[nodiscard]] std::string town_name(std::uint8_t player) const;
+    void focus_camera(float x, float z) override;
+    [[nodiscard]] std::array<float, 3> camera_view() const override {
+        return {camera_.target().x, camera_.target().z, camera_.distance()};
+    }
+    [[nodiscard]] const std::vector<mods::ModScript>* mod_scripts() const override {
+        return pack_ ? &pack_->scripts : nullptr;
+    }
+    [[nodiscard]] int overlay() const override { return overlay_; }
+    void set_overlay(int layer) override;
+    int overlay_ = 0;
     void apply_snapshot(std::vector<std::uint8_t> state);
     void close_network();
     [[nodiscard]] net::LocalInfo local_info() const;

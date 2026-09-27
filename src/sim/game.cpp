@@ -1342,7 +1342,7 @@ public:
             for (const ResourceAmount& c : unit.cost) {
                 (void)take_from_town(b.owner, c.resource, c.amount);
             }
-            kill(recruit);
+            kill(recruit, true);
             --g_.players_[b.owner].deaths;  // Not a death: a soldier now.
             Creature s;
             s.kind = CreatureKind::Soldier;
@@ -2948,10 +2948,15 @@ public:
         return id;
     }
 
-    void kill(EntityId id) {
+    // A villager is gone: `silent` for those who left or became soldiers
+    // (not deaths).
+    void kill(EntityId id, bool silent = false) {
         Villager* v = g_.villagers_.get(id);
         if (v == nullptr) {
             return;
+        }
+        if (!silent) {
+            g_.events_.push_back({Game::Event::Kind::Died, v->owner, {}, v->position, 0, 0});
         }
         v_index_ = id.index;
         release(*v);
@@ -3128,6 +3133,7 @@ public:
                 bv->home = list.entities()[i];
                 g_.buildings_.get(list.entities()[i])->residents.push_back(baby);
                 ++g_.players_[owner].births;
+                g_.events_.push_back({Game::Event::Kind::Born, owner, baby, at, 0, 0});
             }
         }
         // Newcomers, when there is room and food to spare.
@@ -3176,7 +3182,7 @@ public:
                 ++g_.players_[v->owner].departures;
                 --g_.players_[v->owner].deaths;  // kill() counts a death; this was a departure.
             }
-            kill(id);
+            kill(id, true);
         }
     }
 
@@ -3215,7 +3221,6 @@ public:
             compact(b.stock);
             services.push_back({d.service, b.owner, center(b), meters2(d.service_radius)});
         }
-        const auto& all = g_.buildings_.data();
         for (Building& b : g_.buildings_.data()) {
             const BuildingDef& d = def(b);
             if (d.kind != BuildingKind::House || !complete(b)) {
@@ -3252,34 +3257,7 @@ public:
                 }
             }
             // Beauty: pleasant and unpleasant buildings nearby, and trees.
-            std::int32_t beauty = 0;
-            for (const Building& o : all) {
-                const std::int32_t des = def(o).desirability;
-                if (des == 0 || &o == &b) {
-                    continue;
-                }
-                const std::uint64_t d2 = distance2(here, center(o));
-                if (d2 < meters2(30)) {
-                    const auto dist = static_cast<std::int32_t>(isqrt(d2 >> 32));
-                    beauty += des * (30 - dist) / 30;
-                }
-            }
-            std::int32_t trees = 0;
-            const std::int32_t side = g_.node_cells_side_;
-            const std::int32_t cx = here.x.floor_int() / kNodeCell;
-            const std::int32_t cz = here.z.floor_int() / kNodeCell;
-            for (std::int32_t z = std::max(0, cz - 1); z <= std::min(side - 1, cz + 1); ++z) {
-                for (std::int32_t x = std::max(0, cx - 1); x <= std::min(side - 1, cx + 1); ++x) {
-                    for (const std::uint32_t i : g_.node_cells_[static_cast<std::size_t>(z * side + x)]) {
-                        const MapFeature& f = g_.map_.features[i];
-                        if (f.type == FeatureType::Tree && g_.nodes_[i].amount > 0 &&
-                            distance2(here, {f.x, f.z}) < meters2(16)) {
-                            ++trees;
-                        }
-                    }
-                }
-            }
-            beauty += std::min(trees, 8);
+            const std::int32_t beauty = g_.desirability_at(here, &b);
             b.desirability = beauty;
             if (beauty >= 10) {
                 set(Need::Beauty);
@@ -4063,6 +4041,38 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
         return PlaceError::TooSteep;
     }
     return PlaceError::None;
+}
+
+std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
+    std::int32_t beauty = 0;
+    for (const Building& o : buildings_.data()) {
+        const std::int32_t des = content_->buildings[o.def].desirability;
+        if (des == 0 || &o == self) {
+            continue;
+        }
+        const FixedVec2 c{Fixed::from_int(o.x) + Fixed::from_ratio(o.width, 2), Fixed::from_int(o.z) + Fixed::from_ratio(o.depth, 2)};
+        const std::uint64_t d2 = distance2(here, c);
+        if (d2 < (static_cast<std::uint64_t>(30 * 30) << 32)) {
+            const auto dist = static_cast<std::int32_t>(isqrt(d2 >> 32));
+            beauty += des * (30 - dist) / 30;
+        }
+    }
+    std::int32_t trees = 0;
+    const std::int32_t side = node_cells_side_;
+    const std::int32_t cx = here.x.floor_int() / kNodeCell;
+    const std::int32_t cz = here.z.floor_int() / kNodeCell;
+    for (std::int32_t z = std::max(0, cz - 1); z <= std::min(side - 1, cz + 1); ++z) {
+        for (std::int32_t x = std::max(0, cx - 1); x <= std::min(side - 1, cx + 1); ++x) {
+            for (const std::uint32_t i : node_cells_[static_cast<std::size_t>(z * side + x)]) {
+                const MapFeature& f = map_.features[i];
+                if (f.type == FeatureType::Tree && nodes_[i].amount > 0 &&
+                    distance2(here, {f.x, f.z}) < (static_cast<std::uint64_t>(16 * 16) << 32)) {
+                    ++trees;
+                }
+            }
+        }
+    }
+    return beauty + std::min(trees, 8);
 }
 
 bool Game::zone_open(std::size_t z) const {

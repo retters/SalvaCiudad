@@ -140,6 +140,17 @@
     "building.barracks": "Cuartel",
     "unit.levy": "Leva",
     "unit.archer": "Arquero",
-    "unit.spearman": "Lancero"
+    "unit.spearman": "Lancero",
+    "tutorial.basics": "Primeros pasos",
+    "tutorial.basics.welcome": "¡Bienvenido! Mueve la cámara con WASD o las flechas, gírala con Q y E y acerca o aleja con la rueda.",
+    "tutorial.basics.house": "Tus aldeanos necesitan hogar. Abre la pestaña Vivienda de la barra de construcción, elige Casa y colócala cerca del centro del pueblo.",
+    "tutorial.basics.woodcutter": "Con troncos se construye todo. Coloca un Leñador cerca de los árboles (pestaña Recursos).",
+    "tutorial.basics.forager": "Ahora comida: un Recolector cerca de arbustos junta bayas y raíces.",
+    "tutorial.basics.speed": "Construir lleva tiempo. Acelera el juego con 2× o 3× arriba a la derecha.",
+    "tutorial.basics.built": "Los peones cargan materiales y construyen. Espera a que el leñador esté terminado.",
+    "tutorial.basics.workers": "Haz clic en el leñador y usa + para darle un trabajador.",
+    "tutorial.basics.firewood": "Viene el invierno: las casas queman leña. Coloca un Leñero.",
+    "tutorial.basics.winter": "Guarda 60 de leña antes del frío. La ventana Bienes, a la izquierda, muestra lo que tienes.",
+    "tutorial.basics.done": "Tu pueblo está en marcha. Mantenlo alimentado, con techo y abrigado. ¡Suerte!"
   }
 }

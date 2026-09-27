@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(SalvaCiudad
-    VERSION 0.16.0
+    VERSION 0.17.0
     DESCRIPTION "Multiplayer medieval town-building survival game"
     LANGUAGES C CXX)
 
@@ -252,6 +252,7 @@ set(SC_ENGINE_SOURCES
     src/game/camera.cpp
     src/game/game_clock.cpp
     src/game/game_hud.cpp
+    src/game/hud_windows.cpp
     src/game/game_session.cpp
     src/game/replay_file.cpp
     src/game/save_file.cpp
@@ -277,6 +278,7 @@ set(SC_ENGINE_SOURCES
     src/mods/mod_settings.cpp
     src/script/lua_sandbox.cpp
     src/script/map_script.cpp
+    src/script/tutorial_script.cpp
     src/i18n/plural.cpp
     src/i18n/translator.cpp
     src/math/vec.cpp

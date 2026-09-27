@@ -2,6 +2,8 @@
 // not depend on the window, the GPU or SDL directly.
 #pragma once
 
+#include <array>
+
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -94,6 +96,16 @@ public:
     [[nodiscard]] virtual std::vector<net::LanGame> lan_games() = 0;
     // The player's name: from the settings, or a default one.
     [[nodiscard]] virtual std::string player_name() const = 0;
+
+    // Phase 17: the camera goes to a place on the map (x, z in meters);
+    // the map layer shown (0 = none; see GameHud's layers window).
+    virtual void focus_camera(float x, float z) = 0;
+    // Where the camera looks (x, z) and how far it is, for the tutorial.
+    [[nodiscard]] virtual std::array<float, 3> camera_view() const = 0;
+    // The mods' Lua scripts (for the tutorial's goals); null without mods.
+    [[nodiscard]] virtual const std::vector<mods::ModScript>* mod_scripts() const = 0;
+    [[nodiscard]] virtual int overlay() const = 0;
+    virtual void set_overlay(int layer) = 0;
 };
 
 }  // namespace sc

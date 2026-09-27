@@ -211,6 +211,9 @@ void UiHost::frame(ui::Context& ctx) {
     } else if (screen_ == Screen::MapView) {
         ctx.set_input_blocked(modal);
         map_hud(ctx);
+        if (screen_ != Screen::MapView) {
+            tutorial_.reset();
+        }
     } else if (screen_ == Screen::Load) {
         ctx.set_input_blocked(modal);
         load_screen(ctx, modal);
@@ -299,6 +302,8 @@ void UiHost::main_menu(ui::Context& ctx) {
     };
     const Entry entries[] = {
         {"single", tr("menu.main.singlePlayer"), tr("menu.main.singlePlayer.tooltip"), true},
+        {"tutorial", tr("menu.main.tutorial"), tr("menu.main.tutorial.tooltip"),
+         services_.content() != nullptr && !services_.content()->tutorials.empty()},
         {"host", tr("menu.main.hostGame"), tr("menu.main.hostGame.tooltip"), true},
         {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), true},
         {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), true},
@@ -366,6 +371,8 @@ void UiHost::main_menu(ui::Context& ctx) {
             } else if (std::string_view(e.id) == "mods") {
                 mods_screen_.open();
                 screen_ = Screen::Mods;
+            } else if (std::string_view(e.id) == "tutorial") {
+                start_tutorial(0);
             } else if (std::string_view(e.id) == "single") {
                 new_game_.open(services_.content());
                 host_new_game_ = false;
@@ -529,7 +536,16 @@ void UiHost::map_hud(ui::Context& ctx) {
             game_keys(ctx);
         }
         ctx.set_input_blocked(modal_open() || game_menu_open_ || paused);
+        if (tutorial_ && services_.content() != nullptr && tutorial_->def < services_.content()->tutorials.size()) {
+            const sim::TutorialDef& t = services_.content()->tutorials[tutorial_->def];
+            hud_.set_highlight(tutorial_->step < t.steps.size() ? t.steps[tutorial_->step].highlight : std::string());
+        } else {
+            hud_.set_highlight({});
+        }
         const bool wants_menu = hud_.frame(ctx, modal_open() || game_menu_open_ || paused);
+        if (tutorial_ && !game_menu_open_) {
+            tutorial_panel(ctx);
+        }
         ctx.set_input_blocked(modal_open());
         if (!services_.session()->game().game_over()) {
             end_seen_ = false;
@@ -571,6 +587,181 @@ void UiHost::map_hud(ui::Context& ctx) {
 
 // Esc during a game: continue, settings, or leave. In phase 8 it will also
 // pause a single-player game (decision D-616).
+void UiHost::start_tutorial(std::size_t index) {
+    const sim::Content* content = services_.content();
+    if (content == nullptr || index >= content->tutorials.size()) {
+        return;
+    }
+    const sim::TutorialDef& t = content->tutorials[index];
+    sim::MapSettings map;
+    map.seed = static_cast<std::uint64_t>(t.seed);
+    map.size = static_cast<sim::MapSize>(t.size);
+    map.players = 1;
+    // A gentle start: no raiders, little danger.
+    sim::GameRules rules;
+    rules.raiders = sim::Threat::None;
+    rules.wildlife = sim::Threat::Low;
+    rules.diseases = sim::Threat::Low;
+    rules.fires = sim::Threat::Low;
+    tutorial_ = TutorialRun{};
+    tutorial_->def = index;
+    tutorial_lua_.reset();
+    for (const sim::TutorialStep& step : t.steps) {
+        if (step.goal == sim::TutorialGoal::Lua && !tutorial_lua_ && services_.mod_scripts() != nullptr) {
+            tutorial_lua_ = std::make_unique<script::TutorialScript>();
+            std::string error;
+            if (!tutorial_lua_->open(*services_.mod_scripts(), t.mod, error)) {
+                tutorial_->error = error;
+                tutorial_lua_.reset();
+            }
+        }
+    }
+    services_.start_map_generation(map, rules);
+    screen_ = Screen::Generating;
+}
+
+bool UiHost::tutorial_step_done(const sim::TutorialStep& step, std::uint64_t now_ns) {
+    GameSession* s = services_.session();
+    if (s == nullptr) {
+        return false;
+    }
+    const sim::Game& game = s->game();
+    const sim::Content& content = game.content();
+    const std::uint8_t town = s->town();
+    const auto count = [&](bool complete_only) {
+        const sim::DefIndex d = content.find_building(step.target);
+        std::int32_t n = 0;
+        for (const sim::Building& b : game.buildings().data()) {
+            n += b.owner == town && b.def == d && (!complete_only || b.state == sim::BuildingState::Complete) ? 1 : 0;
+        }
+        return n;
+    };
+    switch (step.goal) {
+        case sim::TutorialGoal::None: return false;
+        case sim::TutorialGoal::Camera: {
+            const std::array<float, 3> now = services_.camera_view();
+            const std::array<float, 3>& was = tutorial_->camera;
+            return std::abs(now[0] - was[0]) + std::abs(now[1] - was[1]) > 15.0f || std::abs(now[2] - was[2]) > 10.0f;
+        }
+        case sim::TutorialGoal::Place: return count(false) >= step.amount;
+        case sim::TutorialGoal::Build: return count(true) >= step.amount;
+        case sim::TutorialGoal::Workers:
+            for (const sim::Building& b : game.buildings().data()) {
+                if (b.owner == town && !b.workers.empty()) {
+                    return true;
+                }
+            }
+            return false;
+        case sim::TutorialGoal::Speed: return services_.game_speed() != tutorial_->speed;
+        case sim::TutorialGoal::Stock: {
+            const sim::DefIndex r = content.find_resource(step.target);
+            return r != sim::kNoDef && game.stored(town)[r] >= step.amount;
+        }
+        case sim::TutorialGoal::Population: return game.population(town) >= step.amount;
+        case sim::TutorialGoal::Lua: {
+            if (!tutorial_lua_ || now_ns < tutorial_->next_lua_ns) {
+                return false;
+            }
+            tutorial_->next_lua_ns = now_ns + 500'000'000ull;  // Twice a second.
+            script::TutorialState st;
+            st.population = game.population(town);
+            const sim::Calendar cal = game.calendar();
+            st.year = static_cast<std::int32_t>(cal.year);
+            st.month = static_cast<std::int32_t>(cal.month);
+            st.day = static_cast<std::int32_t>(cal.day);
+            const std::vector<std::int32_t> stored = game.stored(town);
+            for (std::size_t r = 0; r < stored.size(); ++r) {
+                st.stored[content.resources[r].id] = stored[r];
+            }
+            for (const sim::Building& b : game.buildings().data()) {
+                if (b.owner == town && b.state == sim::BuildingState::Complete) {
+                    ++st.built[content.buildings[b.def].id];
+                }
+            }
+            bool done = false;
+            std::string error;
+            if (!tutorial_lua_->check(step.target, st, done, error)) {
+                tutorial_->error = error;
+                return false;
+            }
+            return done;
+        }
+        case sim::TutorialGoal::Count: break;
+    }
+    return false;
+}
+
+void UiHost::tutorial_panel(ui::Context& ctx) {
+    const sim::Content* content = services_.content();
+    if (content == nullptr || tutorial_->def >= content->tutorials.size()) {
+        tutorial_.reset();
+        return;
+    }
+    const sim::TutorialDef& t = content->tutorials[tutorial_->def];
+    if (tutorial_->step >= t.steps.size()) {
+        tutorial_.reset();
+        return;
+    }
+    const sim::TutorialStep& step = t.steps[tutorial_->step];
+    if (!tutorial_->step_started) {
+        tutorial_->step_started = true;
+        tutorial_->camera = services_.camera_view();
+        tutorial_->speed = services_.game_speed();
+    }
+    const bool last = tutorial_->step + 1 == t.steps.size();
+    if (!last && tutorial_step_done(step, ctx.now_ns())) {
+        ++tutorial_->step;
+        tutorial_->step_started = false;
+        return;
+    }
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const float pad = ctx.s(14.0f);
+    const float w = std::round(std::min(ctx.s(560.0f), ctx.width() - ctx.s(300.0f)));
+    const float button_h = std::round(ctx.s(34.0f));
+    const std::string text = tr(step.text_key);
+    const float text_h = ctx.paragraph_height(w - 2 * pad, text, body);
+    const float line = ctx.text().line_height(small);
+    const float error_h = tutorial_->error.empty() ? 0.0f : line;
+    const float h = pad + line + ctx.s(4.0f) + text_h + error_h + pad + button_h + pad;
+    // Above the build bar, in the middle: the windows keep the top.
+    const float bottom = hud_.build_bar_top() > 0.0f ? hud_.build_bar_top() : ctx.height() - ctx.s(110.0f);
+    const ui::Rect box{std::round((ctx.width() - w) * 0.5f), std::round(bottom - h - ctx.s(12.0f)), w, std::round(h)};
+    ctx.panel(box);
+    if (GameSession* s = services_.session()) {
+        s->ui().hud_rects.push_back({box.x, box.y, box.w, box.h});
+    }
+    float y = box.y + pad;
+    ctx.label({box.x + pad, y, box.w - 2 * pad, line},
+              tr("tutorial.step", tr(t.name_key), static_cast<int>(tutorial_->step) + 1, static_cast<int>(t.steps.size())),
+              small, ctx.theme().accent);
+    y += line + ctx.s(4.0f);
+    y += ctx.paragraph({box.x + pad, y, box.w - 2 * pad, text_h}, text, body, ctx.theme().text);
+    if (!tutorial_->error.empty()) {
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr("tutorial.scriptError"), small, ctx.theme().danger);
+        y += line;
+    }
+    y += pad;
+    const float bw = (box.w - 3 * pad) * 0.5f;
+    if (last) {
+        if (ctx.button(ctx.id("tutorial_finish"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr("tutorial.finish"),
+                       tr("tutorial.finish.tooltip"), true, true)) {
+            services_.settings().gameplay.tutorial_seen = true;
+            services_.settings_changed();
+            tutorial_.reset();
+        }
+        return;
+    }
+    if (ctx.button(ctx.id("tutorial_skip"), {box.x + pad, y, bw, button_h}, tr("tutorial.skip"), tr("tutorial.skip.tooltip"))) {
+        ++tutorial_->step;
+        tutorial_->step_started = false;
+    }
+    if (ctx.button(ctx.id("tutorial_quit"), {box.x + 2 * pad + bw, y, bw, button_h}, tr("tutorial.quit"),
+                   tr("tutorial.quit.tooltip"))) {
+        tutorial_.reset();
+    }
+}
+
 void UiHost::end_panel(ui::Context& ctx) {
     GameSession* s = services_.session();
     const sim::Game& game = s->game();

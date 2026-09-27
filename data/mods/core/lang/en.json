@@ -140,6 +140,17 @@
     "building.barracks": "Barracks",
     "unit.levy": "Levy",
     "unit.archer": "Archer",
-    "unit.spearman": "Spearman"
+    "unit.spearman": "Spearman",
+    "tutorial.basics": "First steps",
+    "tutorial.basics.welcome": "Welcome! Move the camera with WASD or the arrow keys, turn it with Q and E and zoom with the wheel.",
+    "tutorial.basics.house": "Your villagers need homes. Open the Housing tab of the build bar, pick a House and place it near the town center.",
+    "tutorial.basics.woodcutter": "Logs build everything. Place a Woodcutter near the trees (Resources tab).",
+    "tutorial.basics.forager": "Food next: a Forager near berry bushes gathers berries and roots.",
+    "tutorial.basics.speed": "Building takes time. Speed the game up with the 2x or 3x buttons at the top right.",
+    "tutorial.basics.built": "Laborers carry materials and build. Wait for the woodcutter to be finished.",
+    "tutorial.basics.workers": "Click the woodcutter and use + to give it a worker.",
+    "tutorial.basics.firewood": "Winter comes: houses burn firewood. Place a Firewood splitter.",
+    "tutorial.basics.winter": "Store 60 firewood before the cold. The Goods window on the left shows what you have.",
+    "tutorial.basics.done": "Your village is on its way. Keep it fed, housed and warm. Good luck!"
   }
 }

@@ -44,6 +44,17 @@ public:
         bool operator==(const Ghost&) const = default;
     };
     void set_ghost(std::optional<Ghost> ghost);
+    // Phase 17: a map layer (GameHud's list; 0 = none) for a town, drawn
+    // around (x, z), where the camera looks.
+    void set_overlay(int layer) {
+        overlay_ = layer;
+        overlay_timer_ = 0.0f;
+    }
+    void set_view(float x, float z, std::uint8_t town) {
+        view_x_ = x;
+        view_z_ = z;
+        town_ = town;
+    }
     // A field being marked out (x, z, w, d in cells), green if it fits.
     struct FieldGhost {
         std::int32_t x = 0, z = 0, w = 0, d = 0;
@@ -94,6 +105,14 @@ private:
     // and a red mark under raiders.
     render::ModelId animal_model_ = kNoModel;
     render::ModelId mark_model_ = kNoModel;
+    render::ModelId overlay_model_ = kNoModel;
+    int overlay_ = 0;
+    float overlay_timer_ = 0.0f;
+    float view_x_ = 0.0f;
+    float view_z_ = 0.0f;
+    std::uint8_t town_ = 0;
+    std::vector<render::Instance> overlay_tiles_;
+    void update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt);
     std::vector<render::Instance> animals_;
     std::vector<render::Instance> marks_;
     void update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, int speed);

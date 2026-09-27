@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "tutorial",
+      "id": "core:basics",
+      "name": "tutorial.basics",
+      "seed": 55940286,
+      "size": "small",
+      "steps": [
+        {
+          "text": "tutorial.basics.welcome",
+          "goal": "camera"
+        },
+        {
+          "text": "tutorial.basics.house",
+          "goal": "place",
+          "target": "core:house",
+          "highlight": "build:core:house"
+        },
+        {
+          "text": "tutorial.basics.woodcutter",
+          "goal": "place",
+          "target": "core:woodcutter",
+          "highlight": "build:core:woodcutter"
+        },
+        {
+          "text": "tutorial.basics.forager",
+          "goal": "place",
+          "target": "core:forager",
+          "highlight": "build:core:forager"
+        },
+        {
+          "text": "tutorial.basics.speed",
+          "goal": "speed",
+          "highlight": "speed"
+        },
+        {
+          "text": "tutorial.basics.built",
+          "goal": "build",
+          "target": "core:woodcutter"
+        },
+        {
+          "text": "tutorial.basics.workers",
+          "goal": "workers",
+          "highlight": "workers"
+        },
+        {
+          "text": "tutorial.basics.firewood",
+          "goal": "place",
+          "target": "core:firewood_splitter",
+          "highlight": "build:core:firewood_splitter"
+        },
+        {
+          "text": "tutorial.basics.winter",
+          "goal": "lua",
+          "target": "tutorial_winter_ready",
+          "highlight": "dock:goods"
+        },
+        {
+          "text": "tutorial.basics.done",
+          "goal": "none"
+        }
+      ]
+    }
+  ]
+}

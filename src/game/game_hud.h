@@ -1,11 +1,14 @@
-// The interface of a village game (section 6.4, phase 8 part): the top bar
-// with goods, population, date and speed; the build bar; and the windows
-// of the selected building or villager (docking and snapping come in
-// phase 17).
+// The interface of a village game (section 6.4): the top bar with goods,
+// population, date and speed; the build bar; the launcher on the left; the
+// game windows, which move, snap, dock, collapse to tabs and are remembered
+// (hud_windows.cpp); and the notifications.
 #pragma once
 
 #include <cstdint>
+#include <map>
+#include <set>
 #include <string>
+#include <vector>
 
 #include "game/services.h"
 #include "ui/context.h"
@@ -32,6 +35,15 @@ public:
     // Returns true when Esc should open the game menu (nothing else
     // wanted it: no building being placed, nothing selected).
     bool frame(ui::Context& ctx, bool blocked);
+
+    // A notification: shown for a while above the build bar and kept in the
+    // event log; with a place, a click takes the camera there.
+    void notify(std::string text, bool has_pos, float x, float z, const sim::Calendar& when, std::uint64_t now_ns);
+    // The tutorial: the element to point at ("build:<id>", "tab:<n>",
+    // "workers", "speed", "dock:<id>"; empty for none).
+    void set_highlight(std::string key) { highlight_ = std::move(key); }
+    // Top of the build bar last frame (for panels that sit above it).
+    [[nodiscard]] float build_bar_top() const { return build_bar_top_; }
 
 private:
     void top_bar(ui::Context& ctx, GameSession& s);
@@ -67,6 +79,68 @@ private:
     [[nodiscard]] bool pressed(const ui::Context& ctx, Action action) const;
     void block(GameSession& s, const ui::Rect& r);
     [[nodiscard]] std::string cost_text(const sim::BuildingDef& def) const;
+
+    // Phase 17: the windows (hud_windows.cpp).
+    struct WindowPlace {
+        float x = 0.0f;  // Design units.
+        float y = 0.0f;
+        float w = 0.0f;  // 0: the window's own width.
+        bool placed = false;
+        bool pinned = false;
+        int group = 0;   // Docked windows share a group; 0 = alone.
+    };
+    static constexpr std::size_t kMaxLayoutBytes = 2048;
+    std::map<std::string, WindowPlace> places_;
+    bool places_loaded_ = false;
+    std::string focus_;
+    std::string dragging_;
+    bool resizing_ = false;
+    float grab_x_ = 0.0f;
+    float grab_y_ = 0.0f;
+    int next_group_ = 1;
+    std::map<std::string, ui::Rect> shown_;       // Drawn this frame.
+    std::map<std::string, ui::Rect> shown_last_;  // Drawn last frame (for the magnets).
+    std::map<std::string, std::uint64_t> seen_ns_;
+    std::set<std::string> opened_;                // Opened by the player this frame: they take the focus.
+    void load_places();
+    void save_places();
+    void windows_begin(ui::Context& ctx);
+    void windows_end(ui::Context& ctx);
+    // Draws a window's frame, title, pin and close; `box` comes in with the
+    // default place and size and goes out where the player put it. False
+    // when it is collapsed to a tab or was closed (`open` becomes false).
+    bool window(ui::Context& ctx, GameSession& s, const std::string& id, const std::string& title, ui::Rect& box,
+                bool& open);
+    void open_window(const std::string& id);
+    [[nodiscard]] float left_x(ui::Context& ctx) const;
+    void dock(ui::Context& ctx, GameSession& s);
+    void goods_window(ui::Context& ctx, GameSession& s);
+    void stats_window(ui::Context& ctx, GameSession& s);
+    void log_window(ui::Context& ctx, GameSession& s);
+    void layers_window(ui::Context& ctx, GameSession& s);
+    bool goods_open_ = false;
+    bool stats_open_ = false;
+    bool log_open_ = false;
+    bool layers_open_ = false;
+    sim::EntityId last_building_;
+    sim::EntityId last_villager_;
+    struct Note {
+        std::string text;
+        bool has_pos = false;
+        float x = 0.0f;
+        float z = 0.0f;
+        std::uint64_t at_ns = 0;
+        int count = 1;
+        int year = 1;
+        int month = 1;
+        int day = 1;
+    };
+    std::vector<Note> notes_;
+    void notifications(ui::Context& ctx, GameSession& s, float bottom);
+    float build_bar_top_ = 0.0f;
+    std::string highlight_;
+    // A pulsing outline around a highlighted element.
+    void mark(ui::Context& ctx, const ui::Rect& r) const;
 
     Services& services_;
 };

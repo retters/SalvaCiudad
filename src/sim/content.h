@@ -153,6 +153,25 @@ struct UnitDef {
     std::uint8_t tier = 0;
 };
 
+// A tutorial (section 6.5): a map and steps, each with a text, a goal that
+// ends it and the part of the interface to point at.
+enum class TutorialGoal : std::uint8_t { None, Camera, Place, Build, Workers, Speed, Stock, Population, Lua, Count };
+struct TutorialStep {
+    std::string text_key;
+    TutorialGoal goal = TutorialGoal::None;
+    std::string target;     // A building or resource id, or a Lua function.
+    std::int32_t amount = 1;
+    std::string highlight;  // "build:<id>", "workers", "speed", "dock:<id>".
+};
+struct TutorialDef {
+    std::string id;
+    std::string name_key;
+    std::string mod;        // Whose main.lua has its Lua goals.
+    std::int32_t seed = 1;
+    std::uint8_t size = 0;  // MapSize.
+    std::vector<TutorialStep> steps;
+};
+
 // Groups of the build bar.
 enum class BuildCategory : std::uint8_t { Housing, Food, Resources, Industry, Services, Decoration, Defense, Count };
 
@@ -196,6 +215,7 @@ struct Content {
     std::vector<CropDef> crops;
     std::vector<DiseaseDef> diseases;
     std::vector<UnitDef> units;
+    std::vector<TutorialDef> tutorials;
     Flora flora;
 
     // Hash of the mods that affect the simulation (section 7.4), for
