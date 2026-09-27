@@ -14,5 +14,6 @@ float4 main(PixelInput input) : SV_Target0
 {
     float4 texel = base_color_tex.Sample(base_sampler, input.uv);
     float3 albedo = srgb_to_linear(texel.rgb) * base_color.rgb * input.tint.rgb;
-    return shade(albedo, normalize(input.normal), input.world_pos);
+    float3 n = normalize(input.normal);
+    return shade(apply_snow(albedo, n, 0.55), n, input.world_pos);
 }

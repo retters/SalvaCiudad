@@ -252,7 +252,14 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
         c.palette = v.appearance % palette_count_;
         std::uint32_t mask = 0;
         const std::uint32_t bits = v.appearance >> 16;
-        const std::uint32_t hat = bits % 3u;
+        std::uint32_t hat = bits % 3u;
+        // The season decides the hat: a cap for everybody in winter, a straw
+        // hat in summer for those who wear one.
+        if (season_ == sim::Season::Winter && kind->hats.size() >= 2) {
+            hat = 2;
+        } else if (season_ == sim::Season::Summer && hat == 2) {
+            hat = 1;
+        }
         if (hat > 0 && hat <= kind->hats.size()) {
             mask |= 1u << kind->hats[hat - 1];
         }

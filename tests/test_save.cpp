@@ -137,7 +137,9 @@ TEST_SUITE("save") {
     }
 
     TEST_CASE("a game session saves and loads to the same hash") {
-        GameSession session(content(), small_map(31), 5);
+        sim::GameSetup setup;
+        setup.seed = 5;
+        GameSession session(content(), small_map(31), setup);
         sim::Command c;
         c.type = sim::CommandType::DevGrant;
         c.def = content()->find_resource("core:log");

@@ -87,8 +87,9 @@ public:
             }
             x.session->poll(now);
             if (std::optional<Start> s = x.session->take_start()) {
-                x.game = std::make_unique<sim::Game>(content(), map_for(s->config.map), s->players, s->config.seed,
-                                                     s->config.shared_town);
+                x.game = std::make_unique<sim::Game>(content(), map_for(s->config.map),
+                                                     sim::GameSetup{s->players, s->config.seed, s->config.shared_town,
+                                                                    s->config.rules});
                 x.session->game_built(x.game.get(), map_hash(x.game->map()));
             }
             if (std::optional<std::vector<std::uint8_t>> snap = x.session->take_snapshot()) {

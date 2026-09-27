@@ -18,8 +18,20 @@ cbuffer SceneUniforms : register(b0, space3)
     float4 ground_ambient;      // rgb for normals facing down.
     float4 fog_color;           // rgb; a = density.
     float4 camera_position;     // xyz; w = number of cascades (0 = no shadows).
-    float4 shadow_params;       // x = texel size, y = depth bias.
+    float4 shadow_params;       // x = texel size, y = depth bias, z = snow cover (0..1).
 };
+
+// Snow settles on what faces up, more the deeper it is.
+float3 apply_snow(float3 albedo, float3 n, float settle_from)
+{
+    float snow = shadow_params.z;
+    if (snow <= 0.0)
+    {
+        return albedo;
+    }
+    float cover = saturate((n.y - settle_from) / (1.0 - settle_from) * 1.6) * saturate(snow * 1.4);
+    return lerp(albedo, float3(0.86, 0.9, 0.96), cover);
+}
 
 cbuffer MaterialUniforms : register(b1, space3)
 {

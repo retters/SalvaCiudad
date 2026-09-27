@@ -54,6 +54,30 @@ constexpr std::uint64_t kTicksPerMinute = 600;
 // Blur behind the pause, in pixels at 1080p.
 constexpr float kPauseBlur = 3.0f;
 
+// The light of each season (presentation only).
+render::Lighting seasonal_lighting(sim::Season season) {
+    render::Lighting l;
+    switch (season) {
+        case sim::Season::Spring: break;
+        case sim::Season::Summer:
+            l.sun_color = {2.2f, 2.02f, 1.72f};
+            break;
+        case sim::Season::Autumn:
+            l.sun_color = {2.1f, 1.78f, 1.38f};
+            l.horizon_color = {0.62f, 0.72f, 0.82f};
+            l.sky_ambient = {0.44f, 0.5f, 0.6f};
+            break;
+        case sim::Season::Winter:
+            l.sun_color = {1.65f, 1.72f, 1.85f};
+            l.sky_ambient = {0.5f, 0.58f, 0.72f};
+            l.zenith_color = {0.22f, 0.42f, 0.72f};
+            l.horizon_color = {0.74f, 0.82f, 0.9f};
+            break;
+        case sim::Season::Count: break;
+    }
+    return l;
+}
+
 // Pixels from the window edge where edge scrolling starts.
 constexpr float kEdgeScrollPx = 3.0f;
 
@@ -657,6 +681,12 @@ void App::render_frame(float dt) {
             handle_scene_click(frame.width, frame.height);
             update_camera(dt);
             if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
+                // The season: trees, hats and light.
+                const sim::Game& g = session_->game();
+                const sim::Season season = g.calendar().season;
+                map_scene_.set_season(scene_, g.map(), g.content(), season, g.snow() > 25);
+                village_.set_season(season);
+                lighting_ = seasonal_lighting(season);
                 update_placement(frame.width, frame.height);
                 const int speed = host_->game_paused() ? 0 : clock_.speed();
                 village_.update(scene_, map_scene_, session_->game(), static_cast<float>(clock_.interpolation()), dt,
@@ -679,6 +709,9 @@ void App::render_frame(float dt) {
             view.time = static_cast<float>(static_cast<double>(SDL_GetTicksNS() % 3'600'000'000'000ull) * 1e-9);
             if (session_ && host_->game_paused() && host_->scene_mode() == UiHost::SceneMode::Map) {
                 view.blur = kPauseBlur;
+            }
+            if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
+                view.snow = static_cast<float>(session_->game().snow()) / static_cast<float>(sim::village::kMaxSnow);
             }
             scene_drawn = scene_.render(frame, view, lighting_);
         }
@@ -862,7 +895,8 @@ void App::reset_camera_to_test_scene() {
     camera_.snap();
 }
 
-void App::start_map_generation(const sim::MapSettings& settings) {
+void App::start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules) {
+    pending_rules_ = rules;
     log::info("map: generating seed {} size {} with {} start(s)", settings.seed, sim::map_cells(settings.size),
               settings.players);
     map_job_.start(settings, pack_);
@@ -911,15 +945,17 @@ bool App::enter_generated_map() {
     if (net_start_ && net_) {
         const net::Start st = *net_start_;
         net_start_.reset();
-        auto session = std::make_unique<GameSession>(content, *map, st.config.seed, st.players, st.config.shared_town,
-                                                     net_->local_slot());
+        auto session = std::make_unique<GameSession>(
+            content, *map, sim::GameSetup{st.players, st.config.seed, st.config.shared_town, st.config.rules},
+            net_->local_slot());
         session->attach(net_.get());
         session->game().set_dev_commands(false);  // Not in network games (decision D-910).
         start_session(std::move(session));
         net_->game_built(&session_->game(), net::map_hash(*map));
         return true;
     }
-    start_session(std::make_unique<GameSession>(content, *map, map->settings.seed ^ 0x5A17C1DAull));
+    start_session(std::make_unique<GameSession>(
+        content, *map, sim::GameSetup{1, map->settings.seed ^ 0x5A17C1DAull, false, pending_rules_}));
     return true;
 }
 
@@ -930,6 +966,7 @@ void App::leave_map() {
     dev_tools_.reset();
     village_.end(scene_);
     session_.reset();
+    lighting_ = render::Lighting{};
     clock_.set_speed(1);
     map_scene_.hide(scene_);
     test_scene_.set_visible(scene_, true);
@@ -1235,8 +1272,7 @@ void App::save_game() {
         return;
     }
     const sim::Game& game = session_->game();
-    const std::uint64_t t = game.tick();
-    const std::string name = tr("save.name", static_cast<int>(t / sim::kTicksPerYear) + 1,
+    const std::string name = tr("save.name", static_cast<int>(game.calendar().year),
                                 game.population(session_->town()));
     // One file per save, named by the real time.
     const std::time_t now = std::time(nullptr);
@@ -1257,7 +1293,7 @@ void App::autosave_if_due() {
     autosave_slot_ = autosave_slot_ % std::max(1, g.autosave_keep) + 1;
     const sim::Game& game = session_->game();
     write_save("autosave-" + std::to_string(autosave_slot_),
-               tr("save.autoName", static_cast<int>(game.tick() / sim::kTicksPerYear) + 1,
+               tr("save.autoName", static_cast<int>(game.calendar().year),
                   game.population(session_->town())),
                true);
 }
@@ -1364,7 +1400,7 @@ bool App::ensure_enet() {
     return enet_->ok();
 }
 
-bool App::host_game(const sim::MapSettings& map) {
+bool App::host_game(const sim::MapSettings& map, const sim::GameRules& rules) {
     close_network();
     if (!ensure_enet()) {
         return false;
@@ -1379,6 +1415,7 @@ bool App::host_game(const sim::MapSettings& map) {
     config.map = map;
     config.shared_town = true;
     config.seed = map.seed * 0x9E3779B97F4A7C15ull ^ 0x5A17C1DAull;
+    config.rules = rules;
     host->set_config(config);
     net_ = std::move(host);
     if (!loopback_) {
@@ -1464,7 +1501,7 @@ void App::update_network(std::uint64_t now_ms) {
     if (std::optional<net::Start> st = net_->take_start()) {
         net_start_ = *st;
         leave_map();
-        start_map_generation(st->config.map);
+        start_map_generation(st->config.map, st->config.rules);
     }
     if (std::optional<std::vector<std::uint8_t>> snap = net_->take_snapshot()) {
         apply_snapshot(std::move(*snap));

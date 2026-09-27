@@ -70,6 +70,9 @@ struct SceneView {
     float terrain_distance = 0.0f;
     // Blur over the whole scene (the pause), in pixels at 1080p; 0 = sharp.
     float blur = 0.0f;
+    // Snow on the ground and on what faces up, 0..1 (phase 10); the grass
+    // hides under it.
+    float snow = 0.0f;
 };
 
 struct RenderStats {

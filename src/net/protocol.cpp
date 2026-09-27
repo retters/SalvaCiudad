@@ -329,10 +329,12 @@ void write_config(BinaryWriter& w, const GameConfig& c) {
     c.map.write(w);
     w.u8(c.shared_town ? 1 : 0);
     w.u64(c.seed);
+    c.rules.write(w);
 }
 
 bool read_config(BinaryReader& r, GameConfig& c) {
-    return sim::MapSettings::read(r, c.map) && read_bool(r, c.shared_town) && r.u64(c.seed);
+    return sim::MapSettings::read(r, c.map) && read_bool(r, c.shared_town) && r.u64(c.seed) &&
+           sim::GameRules::read(r, c.rules);
 }
 
 std::vector<std::uint8_t> encode(const Message& message) {

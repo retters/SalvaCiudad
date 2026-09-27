@@ -150,6 +150,65 @@ void NewGameScreen::seed_field(ui::Context& ctx, const ui::Rect& r, bool modal) 
     }
 }
 
+// Seasons presets: which seasons the year has.
+namespace {
+constexpr std::uint8_t kSeasonPresets[] = {0b1111, 0b0111, 0b0010, 0b1000, 0b1010, 0b0001};
+constexpr const char* kSeasonPresetKeys[] = {"newGame.seasons.four",   "newGame.seasons.noWinter",
+                                             "newGame.seasons.summer", "newGame.seasons.winter",
+                                             "newGame.seasons.summerWinter", "newGame.seasons.spring"};
+}  // namespace
+
+void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
+    {
+        std::vector<std::string> options;
+        int index = 0;
+        for (std::size_t i = 0; i < std::size(kSeasonPresets); ++i) {
+            options.push_back(tr(kSeasonPresetKeys[i]));
+            index = kSeasonPresets[i] == rules_.climate.seasons ? static_cast<int>(i) : index;
+        }
+        const Row r = row(ctx, x, y, cw, tr("newGame.seasons"), tr("newGame.seasons.tooltip"));
+        if (ctx.selector(ctx.id("seasons"), r.control, index, options, tr("newGame.seasons.tooltip"))) {
+            rules_.climate.seasons = kSeasonPresets[index];
+        }
+    }
+    {
+        const std::vector<std::string> options = {tr("newGame.year.short"), tr("newGame.year.normal"),
+                                                  tr("newGame.year.long")};
+        int index = static_cast<int>(rules_.climate.year);
+        const Row r = row(ctx, x, y, cw, tr("newGame.year"), tr("newGame.year.tooltip"));
+        if (ctx.selector(ctx.id("year"), r.control, index, options, tr("newGame.year.tooltip"))) {
+            rules_.climate.year = static_cast<sim::YearLength>(index);
+        }
+    }
+    {
+        const std::vector<std::string> options = {tr("newGame.winter.mild"), tr("newGame.winter.normal"),
+                                                  tr("newGame.winter.harsh")};
+        int index = static_cast<int>(rules_.climate.winter);
+        const bool has_winter = (rules_.climate.seasons & 0b1000) != 0;
+        const Row r = row(ctx, x, y, cw, tr("newGame.winter"), tr("newGame.winter.tooltip"));
+        if (ctx.selector(ctx.id("winter"), r.control, index, options, tr("newGame.winter.tooltip"), has_winter)) {
+            rules_.climate.winter = static_cast<sim::Harshness>(index);
+        }
+    }
+    {
+        const std::vector<std::string> options = {tr("newGame.start.scarce"), tr("newGame.start.normal"),
+                                                  tr("newGame.start.plenty")};
+        int index = static_cast<int>(rules_.start);
+        const Row r = row(ctx, x, y, cw, tr("newGame.start"), tr("newGame.start.tooltip"));
+        if (ctx.selector(ctx.id("start_goods"), r.control, index, options, tr("newGame.start.tooltip"))) {
+            rules_.start = static_cast<sim::StartGoods>(index);
+        }
+    }
+    {
+        int limit = rules_.max_population;
+        const Row r = row(ctx, x, y, cw, tr("newGame.maxPopulation"), tr("newGame.maxPopulation.tooltip"));
+        if (ctx.slider(ctx.id("max_population"), r.control, limit, sim::kMinPopulationLimit, sim::kMaxPopulationLimit, 50,
+                       [](int v) { return tr("newGame.maxPopulation.value", v); }, tr("newGame.maxPopulation.tooltip"))) {
+            rules_.max_population = std::clamp(limit, sim::kMinPopulationLimit, sim::kMaxPopulationLimit);
+        }
+    }
+}
+
 NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const float margin = ctx.s(16.0f);
     const float pad = ctx.s(24.0f);
@@ -159,7 +218,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 9;
+    constexpr int kRows = 14;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;
@@ -262,6 +321,8 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
             settings_.players = static_cast<std::uint8_t>(std::clamp(players, 1, 12));
         }
     }
+
+    rules_rows(ctx, x, y, cw);
 
     y += pad - ctx.s(kRowGap);
     const float gap = ctx.s(12.0f);

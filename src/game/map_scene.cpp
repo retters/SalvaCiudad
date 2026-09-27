@@ -124,7 +124,8 @@ float map_surface_height(const sim::MapData& map, float x, float z) {
     return std::max(ground, static_cast<float>(water) * 0.01f);
 }
 
-render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f) {
+render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f, const sim::Content* content,
+                                  sim::Season season, bool snowy) {
     const float x = to_float(f.x);
     const float z = to_float(f.z);
     render::Instance inst;
@@ -136,6 +137,25 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
     const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
     inst.tint = {shade, shade, shade};
+    // The season's colors.
+    const bool tree = f.type == sim::FeatureType::Tree;
+    const bool evergreen = tree && content != nullptr && f.species < content->flora.species.size() &&
+                           content->flora.species[f.species].evergreen;
+    if (!evergreen) {
+        if (season == sim::Season::Spring && tree) {
+            inst.tint = inst.tint * 1.0f + math::Vec3{0.02f, 0.08f, -0.02f};
+        } else if (season == sim::Season::Autumn) {
+            // Each tree turns its own way: gold, orange or red.
+            static constexpr math::Vec3 kAutumn[3] = {{1.45f, 1.15f, 0.4f}, {1.5f, 0.9f, 0.35f}, {1.35f, 0.6f, 0.35f}};
+            const math::Vec3 c = tree ? kAutumn[(h >> 8) % 3] : math::Vec3{1.2f, 0.95f, 0.6f};
+            inst.tint = {inst.tint.x * c.x, inst.tint.y * c.y, inst.tint.z * c.z};
+        } else if (season == sim::Season::Winter) {
+            inst.tint = {inst.tint.x * 0.85f, inst.tint.y * 0.72f, inst.tint.z * 0.55f};
+        }
+    }
+    if (snowy) {
+        inst.tint = inst.tint * 0.6f + math::Vec3{0.5f, 0.52f, 0.56f};
+    }
     return inst;
 }
 
@@ -177,13 +197,14 @@ std::optional<math::Vec3> ground_hit(const sim::MapData& map, math::Vec3 origin,
 }
 
 std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map,
-                                                                  const sim::Content& content) {
+                                                                  const sim::Content& content, sim::Season season,
+                                                                  bool snowy) {
     std::vector<std::vector<render::Instance>> features(visual_slot_count(content));
     // One instance per natural feature, standing on the ground.
     for (const sim::MapFeature& f : map.features) {
         const std::size_t slot = visual_slot(content, f);
         if (slot < features.size()) {
-            features[slot].push_back(feature_instance(map, f));
+            features[slot].push_back(feature_instance(map, f, &content, season, snowy));
         }
     }
     return features;
@@ -322,6 +343,9 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
 
 bool MapScene::show(render::SceneRenderer& renderer, const MapVisuals& visuals) {
     hide(renderer);
+    looks_.clear();
+    season_ = sim::Season::Summer;
+    snowy_ = false;
     if (!renderer.set_terrain(visuals.terrain)) {
         return false;
     }
@@ -406,7 +430,11 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
     if (ref.model == kNoModel || slot >= slots_.size()) {
         return;
     }
-    render::Instance inst = feature_instance(map, f);
+    if (looks_.size() != map.features.size()) {
+        looks_.assign(map.features.size(), FeatureLook::Normal);
+    }
+    looks_[feature] = look;
+    render::Instance inst = feature_instance(map, f, &content, season_, snowy_);
     if (slot < tree_slots_) {
         inst.scale /= slots_[slot].height;
     }
@@ -418,6 +446,23 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
         inst.tint = inst.tint * 0.55f;
     }
     renderer.update_instance(ref.model, ref.index, inst);
+}
+
+void MapScene::set_season(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
+                          sim::Season season, bool snowy) {
+    if (season == season_ && snowy == snowy_) {
+        return;
+    }
+    season_ = season;
+    snowy_ = snowy;
+    // Every instance again, then the felled and the picked as they were.
+    const std::vector<FeatureLook> looks = looks_;
+    apply_features(renderer, build_feature_instances(map, content, season, snowy));
+    for (std::size_t i = 0; i < looks.size() && i < map.features.size(); ++i) {
+        if (looks[i] != FeatureLook::Normal) {
+            set_feature_look(renderer, map, content, i, looks[i]);
+        }
+    }
 }
 
 void MapScene::hide_sample_village(render::SceneRenderer& renderer) {

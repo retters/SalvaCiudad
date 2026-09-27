@@ -463,6 +463,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("\"sizes\" needs at least one size");
         }
         r.numbers("logs", def.logs, sim::kTreeSizes, 0, 1000);
+        def.evergreen = r.flag("evergreen");
         const std::string prefix = r.text("model", true, 200);
         for (std::size_t s = 0; s < sim::kTreeSizes && r.ok(); ++s) {
             if (((def.sizes >> s) & 1u) == 0) {

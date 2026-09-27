@@ -24,8 +24,8 @@ class GameSession {
 public:
     // A new game. In multiplayer `players` seats share the map (one common
     // town when `shared_town`) and this machine plays `local_player`.
-    GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, std::uint64_t seed,
-                std::uint8_t players = 1, bool shared_town = false, std::uint8_t local_player = 0);
+    GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, const sim::GameSetup& setup,
+                std::uint8_t local_player = 0);
     // A game that already exists (loaded, or received from the host).
     GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_player);
 

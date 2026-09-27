@@ -14,6 +14,7 @@
 
 #include "mods/mod_library.h"
 #include "render/scene_renderer.h"
+#include "sim/climate.h"
 #include "sim/content.h"
 #include "sim/map.h"
 
@@ -44,10 +45,14 @@ inline constexpr std::int32_t kMaxGroundColorSize = 2048;
 
 [[nodiscard]] MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& content);
 // Only the feature instances, by visual slot.
-[[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map,
-                                                                                 const sim::Content& content);
-// One feature's instance (for trees, scale is the height in meters).
-[[nodiscard]] render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f);
+[[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(
+    const sim::MapData& map, const sim::Content& content, sim::Season season = sim::Season::Summer, bool snowy = false);
+// One feature's instance (for trees, scale is the height in meters),
+// colored for the season (leaves turn in autumn and fall in winter,
+// except on evergreens; snow whitens them).
+[[nodiscard]] render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f,
+                                                const sim::Content* content = nullptr,
+                                                sim::Season season = sim::Season::Summer, bool snowy = false);
 
 // Ground color of a cell, sRGB (presentation only).
 struct Rgb8 {
@@ -102,6 +107,10 @@ public:
                           std::size_t feature, FeatureLook look);
     // Takes out the sample village (a real game has its own town).
     void hide_sample_village(render::SceneRenderer& renderer);
+    // Colors the trees and bushes for the season; felled trees and picked
+    // bushes stay as they are.
+    void set_season(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
+                    sim::Season season, bool snowy);
 
 private:
     static constexpr std::uint32_t kNoModel = ~0u;
@@ -122,6 +131,9 @@ private:
         std::uint32_t index = 0;
     };
     std::vector<FeatureRef> feature_refs_;
+    std::vector<FeatureLook> looks_;  // By feature, as last set.
+    sim::Season season_ = sim::Season::Summer;
+    bool snowy_ = false;
     std::vector<std::size_t> slot_counts_;  // Features per visual slot, as last shown.
     void build_feature_refs(const sim::MapData& map, const sim::Content& content);
     std::vector<render::Instance> houses_;

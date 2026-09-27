@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 
+#include "sim/climate.h"
 #include "sim/content.h"
 #include "sim/map.h"
 #include "ui/context.h"
@@ -31,12 +32,16 @@ public:
 
     // Valid once frame() returned Generate.
     [[nodiscard]] const sim::MapSettings& settings() const { return settings_; }
+    // The rules chosen with the map: climate, starting goods, population.
+    [[nodiscard]] const sim::GameRules& rules() const { return rules_; }
 
 private:
     void seed_field(ui::Context& ctx, const ui::Rect& r, bool modal);
 
     const sim::Content* content_ = nullptr;
     sim::MapSettings settings_;
+    sim::GameRules rules_;
+    void rules_rows(ui::Context& ctx, float x, float& y, float cw);
     std::string seed_text_;
     bool multiplayer_ = false;
     bool seed_focused_ = false;

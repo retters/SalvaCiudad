@@ -51,6 +51,13 @@
       "category": "food",
       "nutrition": 2,
       "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:clothes",
+      "name": "resource.clothes",
+      "category": "good",
+      "weight": 1
     }
   ]
 }

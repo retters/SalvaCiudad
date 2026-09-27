@@ -105,6 +105,58 @@ bool NavGrid::nearest_walkable(std::int32_t& cx, std::int32_t& cz) const {
     return false;
 }
 
+void NavGrid::update_regions() const {
+    if (region_version_ == version_ && region_.size() == terrain_cost_.size()) {
+        return;
+    }
+    region_version_ = version_;
+    region_.assign(terrain_cost_.size(), 0);
+    std::uint32_t next = 1;
+    std::vector<std::uint32_t> stack;
+    for (std::size_t start = 0; start < region_.size(); ++start) {
+        const auto sx = static_cast<std::int32_t>(start % static_cast<std::size_t>(side_));
+        const auto sz = static_cast<std::int32_t>(start / static_cast<std::size_t>(side_));
+        if (region_[start] != 0 || !walkable(sx, sz)) {
+            continue;
+        }
+        // Same moves as the search: straight, and diagonal without cutting corners.
+        region_[start] = next;
+        stack.push_back(static_cast<std::uint32_t>(start));
+        while (!stack.empty()) {
+            const std::uint32_t c = stack.back();
+            stack.pop_back();
+            const auto cx = static_cast<std::int32_t>(c % static_cast<std::uint32_t>(side_));
+            const auto cz = static_cast<std::int32_t>(c / static_cast<std::uint32_t>(side_));
+            constexpr std::int32_t kDx[4] = {1, -1, 0, 0};
+            constexpr std::int32_t kDz[4] = {0, 0, 1, -1};
+            for (int k = 0; k < 4; ++k) {
+                const std::int32_t nx = cx + kDx[k];
+                const std::int32_t nz = cz + kDz[k];
+                if (walkable(nx, nz)) {
+                    std::uint32_t& r = region_[index(nx, nz)];
+                    if (r == 0) {
+                        r = next;
+                        stack.push_back(static_cast<std::uint32_t>(index(nx, nz)));
+                    }
+                }
+            }
+        }
+        ++next;
+    }
+}
+
+bool NavGrid::connected(FixedVec2 a, FixedVec2 b) const {
+    if (side_ == 0) {
+        return false;
+    }
+    std::int32_t ax = cell_of(a.x), az = cell_of(a.z), bx = cell_of(b.x), bz = cell_of(b.z);
+    if (!nearest_walkable(ax, az) || !nearest_walkable(bx, bz)) {
+        return false;
+    }
+    update_regions();
+    return region_[index(ax, az)] == region_[index(bx, bz)];
+}
+
 bool NavGrid::find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes) {
     out.clear();
     ++searches_;
@@ -119,6 +171,11 @@ bool NavGrid::find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& ou
     // Someone standing on a blocked cell (a building just placed on them)
     // walks out from the nearest free one.
     if (!nearest_walkable(sx, sz) || !nearest_walkable(tx, tz)) {
+        return false;
+    }
+    // Another island, or the other side of a wall: no need to search.
+    update_regions();
+    if (region_[index(sx, sz)] != region_[index(tx, tz)]) {
         return false;
     }
     if (sx == tx && sz == tz) {

@@ -44,6 +44,8 @@ public:
         bool operator==(const Ghost&) const = default;
     };
     void set_ghost(std::optional<Ghost> ghost);
+    // Winter brings caps; summer, straw hats.
+    void set_season(sim::Season season) { season_ = season; }
 
     [[nodiscard]] std::optional<sim::EntityId> pick_villager(const sim::Game& game, math::Vec3 origin, math::Vec3 dir,
                                                              float alpha) const;
@@ -77,6 +79,7 @@ private:
     std::uint32_t palette_count_ = 1;
 
     std::optional<Ghost> ghost_;
+    sim::Season season_ = sim::Season::Summer;
     bool ghost_changed_ = false;
     bool shown_ = false;
 

@@ -37,6 +37,7 @@ struct SpeciesDef {
     std::string model;    // Model file prefix inside the mod: "models/trees/oak".
     std::uint8_t sizes = 0;  // Bit per TreeSize the species can have.
     std::int32_t logs[kTreeSizes] = {2, 5, 10, 20};  // Wood per tree of each size.
+    bool evergreen = false;  // Keeps its leaves in autumn and winter (the look only).
 };
 
 struct BiomeDef {

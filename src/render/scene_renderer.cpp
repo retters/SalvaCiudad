@@ -1599,11 +1599,15 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     set4(su.camera_position, view.eye, static_cast<float>(d.cascades));
     su.shadow_params[0] = d.shadow_size > 0 ? 1.0f / static_cast<float>(d.shadow_size) : 0.0f;
     su.shadow_params[1] = 0.0002f;
+    su.shadow_params[2] = std::clamp(view.snow, 0.0f, 1.0f);
     SDL_PushGPUFragmentUniformData(frame.cmd, 0, &su, sizeof(su));
     d.terrain.draw_ground(frame.cmd, pass, view_proj, d.white, d.base_sampler, d.shadow_map, d.shadow_sampler);
-    d.terrain.draw_grass(frame.cmd, pass, view_proj, view.eye, view.time,
-                         grass_distance_for_level(d.graphics.vegetation), d.white, d.base_sampler, d.shadow_map,
-                         d.shadow_sampler);
+    // Grass thins out as snow covers it, and is gone under deep snow.
+    const float grass_distance = grass_distance_for_level(d.graphics.vegetation) * std::max(0.0f, 1.0f - view.snow * 2.5f);
+    if (grass_distance > 1.0f) {
+        d.terrain.draw_grass(frame.cmd, pass, view_proj, view.eye, view.time, grass_distance, d.white, d.base_sampler,
+                             d.shadow_map, d.shadow_sampler);
+    }
     SDL_BindGPUGraphicsPipeline(pass, d.mesh_pipeline);
     const MeshVertexUniforms mv{view_proj};
     SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));

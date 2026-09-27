@@ -63,6 +63,7 @@
     "building.woodcutter": "Leñador",
     "building.forager": "Recolector",
     "building.stonecutter": "Cantero",
-    "building.firewoodSplitter": "Leñera"
+    "building.firewoodSplitter": "Leñera",
+    "resource.clothes": "Ropa"
   }
 }

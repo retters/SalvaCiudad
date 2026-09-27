@@ -180,7 +180,8 @@ public:
     [[nodiscard]] static bool moving(const Villager& v) { return v.path_index < v.path.size(); }
 
     void move(Villager& v) {
-        Fixed budget = walk_speed(g_.adult(v));
+        // Deep snow slows everybody down, to about half.
+        Fixed budget = walk_speed(g_.adult(v)) * Fixed::from_ratio(200 - g_.snow_, 200);
         while (budget > Fixed{} && moving(v)) {
             const FixedVec2 target = v.path[v.path_index];
             const FixedVec2 d = target - v.position;
@@ -298,6 +299,10 @@ public:
             wander(v, home_point(v));
             return;
         }
+        // 2b. Firewood for the home before it gets cold.
+        if (start_home_firewood(v)) {
+            return;
+        }
         // 3. Job.
         if (Building* job = g_.buildings_.get(v.job); job != nullptr && complete(*job)) {
             const BuildingDef& d = def(*job);
@@ -360,6 +365,9 @@ public:
                     if (n.amount <= 0 || n.reserved != 0 || ((d.gathers >> static_cast<unsigned>(f.type)) & 1u) == 0) {
                         continue;
                     }
+                    if (g_.frozen() && regrows(f)) {
+                        continue;  // Frozen bushes and herbs.
+                    }
                     // The cheapest cell next to the node (rocks may sit on steep ones).
                     const std::int32_t nx = g_.nav_.cell_of(f.x);
                     const std::int32_t nz = g_.nav_.cell_of(f.z);
@@ -390,6 +398,11 @@ public:
             fail(v);
         }
         return true;
+    }
+
+    [[nodiscard]] bool regrows(const MapFeature& f) const {
+        const FeatureDef* fd = c_.feature(f.type);
+        return fd != nullptr && fd->regrow_days > 0;
     }
 
     // Laborers carry what workplaces gathered or made to a storage.
@@ -436,12 +449,41 @@ public:
         return true;
     }
 
+    bool start_home_firewood(Villager& v) {
+        if (g_.firewood_ == kNoDef) {
+            return false;
+        }
+        const Building* home = g_.buildings_.get(v.home);
+        const Season season = g_.calendar().season;
+        const bool cold_ahead = g_.temperature_ < village::kColdBelow || season == Season::Autumn || season == Season::Winter;
+        if (home == nullptr || !cold_ahead || amount_of(home->stock, g_.firewood_) + amount_of(home->incoming, g_.firewood_) >=
+                                                    village::kHouseFirewood / 2) {
+            return false;
+        }
+        const EntityId from = storage_with(v.owner, v.position, g_.firewood_);
+        if (!from.valid()) {
+            return false;
+        }
+        v.site = v.home;  // The goods go home.
+        v.carrying = {g_.firewood_, 0};
+        v.timer = 0;
+        go(v, Task::GoFetch, from);
+        return true;
+    }
+
     bool start_producing(Villager& v, Building& job) {
         const BuildingDef& d = def(job);
         if (d.recipes.empty()) {
             return false;
         }
         const RecipeDef& recipe = c_.recipes[d.recipes.front()];
+        // Enough in store: the inputs are kept for other uses.
+        if (!recipe.outputs.empty()) {
+            const std::int32_t target = 30 + 3 * g_.population(v.owner);
+            if (g_.stored(v.owner)[recipe.outputs.front().resource] >= target) {
+                return false;
+            }
+        }
         // Inputs at the workplace: work there.
         bool ready = true;
         for (const ResourceAmount& in : recipe.inputs) {
@@ -580,6 +622,12 @@ public:
             --best->amount;
             v.food = std::min(village::kFoodMax, v.food + c_.resources[best->resource].nutrition * village::kFoodPerNutrition);
         }
+        // New clothes when the old ones are worn out; they last a year.
+        if (v.clothes <= 0 && g_.clothes_ != kNoDef && gives_out(c_, *b, g_.clothes_) &&
+            amount_of(b->stock, g_.clothes_) > 0) {
+            add_to(b->stock, g_.clothes_, -1);
+            v.clothes = static_cast<std::int32_t>(g_.year_ticks());
+        }
         compact(b->stock);
     }
 
@@ -589,9 +637,15 @@ public:
         if (b == nullptr || v.carrying.amount <= 0) {
             return;
         }
-        const std::int32_t put = std::min(v.carrying.amount, free_space(*b));
+        std::int32_t put = std::min(v.carrying.amount, free_space(*b));
         const bool own = v.target == v.job && def(*b).kind == BuildingKind::Workplace;
-        if (put > 0 && (own || accepts(*b, v.carrying.resource))) {
+        // A house takes firewood for its hearth.
+        const bool hearth = def(*b).kind == BuildingKind::House && v.carrying.resource == g_.firewood_ &&
+                            g_.firewood_ != kNoDef;
+        if (hearth) {
+            put = std::min(v.carrying.amount, village::kHouseFirewood - amount_of(b->stock, g_.firewood_));
+        }
+        if (put > 0 && (own || hearth || accepts(*b, v.carrying.resource))) {
             add_to(b->stock, v.carrying.resource, put);
             v.carrying.amount -= put;
         }
@@ -695,7 +749,7 @@ public:
         if (n.amount <= 0) {
             g_.changed_nodes_.push_back(v.node - 1);
             if (fd->regrow_days > 0) {
-                const std::uint64_t at = g_.tick_ + static_cast<std::uint64_t>(fd->regrow_days) * kTicksPerDay;
+                const std::uint64_t at = g_.tick_ + static_cast<std::uint64_t>(fd->regrow_days) * g_.day_ticks();
                 n.regrow_tick = at;
                 const std::pair<std::uint64_t, std::uint32_t> item{at, v.node - 1};
                 g_.regrow_.insert(std::upper_bound(g_.regrow_.begin(), g_.regrow_.end(), item), item);
@@ -771,7 +825,7 @@ public:
     }
 
     EntityId spawn_villager(std::uint8_t owner, FixedVec2 at, Sex sex, std::int32_t age_years, std::uint32_t family) {
-        if (g_.population(owner) >= village::kMaxVillagersPerPlayer) {
+        if (g_.population(owner) >= std::min(village::kMaxVillagersPerPlayer, g_.rules_.max_population)) {
             return {};
         }
         const EntityId id = g_.registry_.create();
@@ -783,8 +837,8 @@ public:
         v.sex = sex;
         v.appearance = g_.rng_.next_u32();
         v.family = family;
-        v.born_tick = static_cast<std::int64_t>(g_.tick_) - static_cast<std::int64_t>(age_years) * kTicksPerYear -
-                      static_cast<std::int64_t>(g_.rng_.below(kTicksPerYear));
+        v.born_tick = static_cast<std::int64_t>(g_.tick_) - static_cast<std::int64_t>(age_years) * g_.year_ticks() -
+                      static_cast<std::int64_t>(g_.rng_.below(g_.year_ticks()));
         v.position = at;
         v.previous = at;
         v.food = 700 + static_cast<std::int32_t>(g_.rng_.below(300));
@@ -813,6 +867,24 @@ public:
 
     void assign_jobs() {
         auto& list = g_.buildings_;
+        // Per town: adults without a job, and how many must stay laborers
+        // (to build and carry) when something is being built.
+        std::array<std::int32_t, kMaxPlayers> free{};
+        std::array<std::int32_t, kMaxPlayers> reserve{};
+        std::array<bool, kMaxPlayers> building{};
+        for (const Building& b : list.data()) {
+            building[b.owner] = building[b.owner] || b.state == BuildingState::Construction;
+        }
+        std::array<std::int32_t, kMaxPlayers> adults{};
+        for (const Villager& v : g_.villagers_.data()) {
+            if (g_.adult(v)) {
+                ++adults[v.owner];
+                free[v.owner] += g_.buildings_.get(v.job) == nullptr ? 1 : 0;
+            }
+        }
+        for (std::size_t p = 0; p < kMaxPlayers; ++p) {
+            reserve[p] = building[p] ? std::max(2, adults[p] / 5) : 1;
+        }
         for (std::size_t i = 0; i < list.size(); ++i) {
             Building& b = list.data()[i];
             std::erase_if(b.workers, [&](EntityId w) { return g_.villagers_.get(w) == nullptr; });
@@ -823,10 +895,11 @@ public:
             while (static_cast<std::int32_t>(b.workers.size()) > b.wanted_workers) {
                 if (Villager* w = g_.villagers_.get(b.workers.back())) {
                     w->job = {};
+                    ++free[b.owner];
                 }
                 b.workers.pop_back();
             }
-            while (static_cast<std::int32_t>(b.workers.size()) < b.wanted_workers) {
+            while (static_cast<std::int32_t>(b.workers.size()) < b.wanted_workers && free[b.owner] > reserve[b.owner]) {
                 // The nearest free adult of the owner.
                 EntityId best;
                 std::uint64_t best_d = UINT64_MAX;
@@ -848,6 +921,7 @@ public:
                 Villager& v = *g_.villagers_.get(best);
                 v.job = list.entities()[i];
                 b.workers.push_back(best);
+                --free[b.owner];
             }
         }
     }
@@ -981,10 +1055,68 @@ public:
 
     // --- The tick -------------------------------------------------------------
 
+    // Once a day: the weather, the snow and the houses' fires.
+    void daily() {
+        g_.temperature_ = sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_);
+        const std::int32_t t = g_.temperature_;
+        if (t < 0) {
+            g_.snow_ = std::min(village::kMaxSnow, g_.snow_ + 1 + std::min(-t, 10) / 2);
+        } else if (t > 2) {
+            g_.snow_ = std::max(0, g_.snow_ - (t - 1));
+        }
+        auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            Building& b = list.data()[i];
+            if (def(b).kind != BuildingKind::House || !complete(b)) {
+                continue;
+            }
+            // One log's worth of firewood (3) lasts three freezing days, or
+            // six cool ones.
+            const std::uint64_t day = g_.tick_ / g_.day_ticks();
+            const std::int32_t need = t < 0 ? 1 : (t < village::kColdBelow && day % 2 == 0 ? 1 : 0);
+            if (need == 0 || b.residents.empty()) {
+                b.heated = true;
+                continue;
+            }
+            const std::int32_t have = g_.firewood_ == kNoDef ? 0 : amount_of(b.stock, g_.firewood_);
+            b.heated = have >= need;
+            if (have > 0) {
+                add_to(b.stock, g_.firewood_, -std::min(have, need));
+                compact(b.stock);
+            }
+        }
+        g_.buildings_changed_ = true;
+    }
+
+    // Cold: a villager out of a warm home loses warmth when it is cold
+    // (half as fast with clothes); at zero, health. Returns false if dead.
+    bool weather(Villager& v) {
+        if (v.clothes > 0) {
+            --v.clothes;
+        }
+        if (g_.tick_ % 4 != 0) {
+            return true;
+        }
+        const Building* home = g_.buildings_.get(v.home);
+        const bool warm_home = home != nullptr && home->heated;
+        if (g_.temperature_ < 5 && !warm_home) {
+            v.warmth = std::max(0, v.warmth - (v.clothes > 0 ? 1 : 2) - (g_.temperature_ < -8 ? 1 : 0));
+        } else {
+            v.warmth = std::min(village::kWarmthMax, v.warmth + 3);
+        }
+        if (v.warmth == 0) {
+            v.health -= 1;
+        }
+        return v.health > 0;
+    }
+
     void step() {
         ++g_.tick_;
-        // Bushes that grow back.
-        while (!g_.regrow_.empty() && g_.regrow_.front().first <= g_.tick_) {
+        if (g_.tick_ % g_.day_ticks() == 0) {
+            daily();
+        }
+        // Bushes that grow back (not while it freezes).
+        while (!g_.frozen() && !g_.regrow_.empty() && g_.regrow_.front().first <= g_.tick_) {
             const std::uint32_t i = g_.regrow_.front().second;
             g_.regrow_.erase(g_.regrow_.begin());
             Node& n = g_.nodes_[i];
@@ -999,7 +1131,7 @@ public:
             assign_jobs();
             assign_homes();
         }
-        if (g_.tick_ % kTicksPerMonth == 0) {
+        if (g_.tick_ % g_.month_ticks() == 0) {
             monthly();
         }
         std::vector<EntityId> dying;
@@ -1019,8 +1151,12 @@ public:
                     dying.push_back(vs.entities()[k]);
                     continue;
                 }
-            } else if (v.health < village::kHealthMax && g_.tick_ % 4 == 0) {
+            } else if (v.health < village::kHealthMax && v.warmth > 0 && g_.tick_ % 4 == 0) {
                 ++v.health;
+            }
+            if (!weather(v)) {
+                dying.push_back(vs.entities()[k]);
+                continue;
             }
             if (moving(v)) {
                 move(v);
@@ -1203,11 +1339,15 @@ public:
             const struct {
                 const char* id;
                 std::int32_t amount;
-            } kStart[] = {{"core:log", 60}, {"core:stone", 20}, {"core:berries", 150}, {"core:roots", 40}};
+            } kStart[] = {{"core:log", 60},   {"core:stone", 20},    {"core:berries", 150},
+                          {"core:roots", 40}, {"core:firewood", 40}, {"core:clothes", 12}};
+            const std::int32_t percent = g_.rules_.start == StartGoods::Scarce   ? 50
+                                         : g_.rules_.start == StartGoods::Plenty ? 200
+                                                                                 : 100;
             for (const auto& item : kStart) {
                 const DefIndex r = c_.find_resource(item.id);
                 if (r != kNoDef) {
-                    add_to(tc->stock, r, item.amount);
+                    add_to(tc->stock, r, item.amount * percent / 100);
                 }
             }
             // Five couples and two children.
@@ -1236,7 +1376,19 @@ private:
 
 Game::Game(std::shared_ptr<const Content> content, MapData map, std::uint8_t players, std::uint64_t seed,
            bool shared_town)
-    : content_(std::move(content)), map_(std::move(map)), seed_(seed), rng_(seed, 21), shared_town_(shared_town) {
+    : Game(std::move(content), std::move(map), GameSetup{players, seed, shared_town, GameRules{}}) {}
+
+Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup& setup)
+    : content_(std::move(content)),
+      map_(std::move(map)),
+      seed_(setup.seed),
+      rng_(setup.seed, 21),
+      shared_town_(setup.shared_town),
+      rules_(setup.rules) {
+    const std::uint8_t players = setup.players;
+    firewood_ = content_->find_resource("core:firewood");
+    clothes_ = content_->find_resource("core:clothes");
+    temperature_ = sim::temperature(rules_.climate, seed_, 0);
     build_indexes();
     nodes_.assign(map_.features.size(), Node{});
     for (std::size_t i = 0; i < map_.features.size(); ++i) {
@@ -1383,7 +1535,7 @@ std::int32_t Game::population(std::uint8_t player, bool adults_only) const {
 
 std::int32_t Game::age_years(const Villager& v) const {
     const std::int64_t age = static_cast<std::int64_t>(tick_) - v.born_tick;
-    return static_cast<std::int32_t>(std::max<std::int64_t>(0, age) / kTicksPerYear);
+    return static_cast<std::int32_t>(std::max<std::int64_t>(0, age) / year_ticks());
 }
 
 bool Game::adult(const Villager& v) const {
@@ -1581,6 +1733,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
     w.u32(rejected);
     w.u8(g.dev_commands() ? 1 : 0);
     w.u8(g.shared_town() ? 1 : 0);
+    g.rules().write(w);
+    w.i32(g.snow());
     m.players = w.bytes().size();
     w.u8(g.player_count());
     for (std::uint8_t p = 0; p < g.player_count(); ++p) {
@@ -1631,6 +1785,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(b.x);
         w.i32(b.z);
         w.u8(static_cast<std::uint8_t>(b.state));
+        w.u8(b.heated ? 1 : 0);
         write_stocks(w, b.delivered);
         write_stocks(w, b.incoming);
         w.i32(b.work_done);
@@ -1657,6 +1812,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.vec2(v.previous);
         w.i32(v.food);
         w.i32(v.health);
+        w.i32(v.warmth);
+        w.i32(v.clothes);
         w.u32(v.home.index);
         w.u32(v.home.generation);
         w.u32(v.job.index);
@@ -1741,13 +1898,16 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
     std::uint8_t dev = 0;
     std::uint8_t shared = 0;
     if (!r.u64(g.tick_) || !r.u64(g.seed_) || !r.u32(rejected) || !r.u8(dev) || dev > 1 || !r.u8(shared) ||
-        shared > 1 || !r.u8(pc) || pc > kMaxPlayers) {
+        shared > 1 || !GameRules::read(r, g.rules_) || !r.i32(g.snow_) || g.snow_ < 0 || g.snow_ > village::kMaxSnow ||
+        !r.u8(pc) || pc > kMaxPlayers) {
         r.fail();
         return false;
     }
     g.rejected_ = rejected;
     g.dev_commands_ = dev != 0;
     g.shared_town_ = shared != 0;
+    // Today's temperature follows from the tick (as on the day it began).
+    g.temperature_ = sim::temperature(g.rules_.climate, g.seed_, g.tick_ - g.tick_ % g.day_ticks());
     g.player_count_ = pc;
     for (std::uint8_t p = 0; p < pc; ++p) {
         PlayerState& ps = g.players_[p];
@@ -1811,13 +1971,15 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         EntityId id;
         Building b;
         std::uint8_t state = 0;
+        std::uint8_t heated = 0;
         if (!r.u32(id.index) || !r.u32(id.generation) || !r.u16(b.def) || !r.u8(b.owner) || !r.u8(b.rotation) ||
-            !r.i32(b.x) || !r.i32(b.z) || !r.u8(state) || b.def >= c.buildings.size() || b.owner >= pc || state > 1 ||
+            !r.i32(b.x) || !r.i32(b.z) || !r.u8(state) || !r.u8(heated) || heated > 1 || b.def >= c.buildings.size() || b.owner >= pc || state > 1 ||
             b.rotation > 3 || !g.registry_.alive(id)) {
             r.fail();
             return false;
         }
         b.state = static_cast<BuildingState>(state);
+        b.heated = heated != 0;
         footprint(c.buildings[b.def], b.rotation, b.width, b.depth);
         if (b.x < 0 || b.z < 0 || b.x + b.width > g.map_.size || b.z + b.depth > g.map_.size ||
             !read_stocks(r, b.delivered, c.resources.size()) || !read_stocks(r, b.incoming, c.resources.size()) ||
@@ -1843,7 +2005,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t sex = 0, task = 0;
         if (!r.u32(id.index) || !r.u32(id.generation) || !r.u8(v.owner) || !r.u8(sex) || !r.u8(v.race) ||
             !r.u32(v.appearance) || !r.u32(v.family) || !r.i64(v.born_tick) || !r.vec2(v.position) || !r.vec2(v.previous) ||
-            !r.i32(v.food) || !r.i32(v.health) || !r.u32(v.home.index) || !r.u32(v.home.generation) ||
+            !r.i32(v.food) || !r.i32(v.health) || !r.i32(v.warmth) || !r.i32(v.clothes) || !r.u32(v.home.index) || !r.u32(v.home.generation) ||
             !r.u32(v.job.index) || !r.u32(v.job.generation) || !r.u8(task) || !r.u32(v.target.index) ||
             !r.u32(v.target.generation) || !r.u32(v.site.index) || !r.u32(v.site.generation) || !r.u32(v.node) ||
             !r.i32(v.timer) || !r.u16(v.carrying.resource) || !r.i32(v.carrying.amount) || v.owner >= pc || sex > 1 ||

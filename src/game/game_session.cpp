@@ -30,10 +30,9 @@ std::string now_iso() {
 
 }  // namespace
 
-GameSession::GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, std::uint64_t seed,
-                         std::uint8_t players, bool shared_town, std::uint8_t local_player)
-    : game_(std::make_unique<sim::Game>(std::move(content), std::move(map), players, seed, shared_town)),
-      local_player_(local_player) {}
+GameSession::GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, const sim::GameSetup& setup,
+                         std::uint8_t local_player)
+    : game_(std::make_unique<sim::Game>(std::move(content), std::move(map), setup)), local_player_(local_player) {}
 
 GameSession::GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_player)
     : game_(std::move(game)), local_player_(local_player) {}

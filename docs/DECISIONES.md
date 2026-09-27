@@ -675,3 +675,45 @@ La interfaz propia tiene ahora un campo de texto de una línea con entrada de SD
 
 **D-913. Autoguardado según la configuración.**
 El autoguardado usa los minutos y la cantidad de archivos de Configuración → Juego (antes eran constantes).
+
+## Fase 10: estaciones y clima (2026-09-27)
+
+**D-1001. Reglas de partida aparte del mapa.**
+El clima, los recursos iniciales y la población máxima son `GameRules`, que viajan con la partida (`GameSetup`, la configuración de red y el guardado) y no dentro de `MapSettings`. Así el mapa y su hash no cambian, y la prueba del mapa de referencia sigue igual.
+
+**D-1002. Calendario.**
+- El año tiene 12 meses de 10 días. Su duración es corta (10 min a x1), normal (20 min) o larga (40 min); cambia cuánto dura un día.
+- Las estaciones elegidas se reparten el año en partes iguales y en orden. Con una sola estación, dura todo el año.
+- La edad de los aldeanos y los meses de nacimientos y llegadas siguen el año de la partida.
+
+**D-1003. Temperatura.**
+- Cada estación tiene una temperatura base: primavera 12 °C, verano 24 °C, otoño 11 °C (7 °C con invierno duro), invierno 3 °C (suave), −4 °C (normal) o −14 °C (duro).
+- El primer cuarto de cada estación pasa gradualmente desde la anterior.
+- Cada día varía entre −3 y +3 °C según la semilla y el número de día. Es una función pura del tick y es igual en todas las máquinas.
+
+**D-1004. Nieve y heladas.**
+- Con temperatura bajo cero cae nieve (0 a 100) y con más de 2 °C se derrite.
+- La nieve frena al caminar hasta la mitad y tapa el pasto.
+- Con helada (0 °C o menos), los arbustos y las hierbas ni se recolectan ni rebrotan.
+
+**D-1005. Calefacción y ropa.**
+- Cada casa guarda hasta 20 de leña, que llevan sus habitantes cuando se acerca el frío.
+- La casa quema 1 de leña por día con helada, y 1 cada dos días por debajo de 10 °C.
+- Un aldeano sin casa caliente pierde calor cuando hace menos de 5 °C; con ropa de abrigo, la mitad. Sin calor pierde salud y no se recupera hasta abrigarse.
+- La ropa se toma del almacén al comer y dura un año. La hará el sastre en la fase 12; por ahora el pueblo empieza con 12.
+- El consumo inicial (2 de leña por día) resultó imposible de sostener: la leñera se comía todos los troncos y no quedaban para casas.
+
+**D-1006. Límite de producción.**
+Un taller de producción (por ejemplo la leñera) trabaja solo mientras el pueblo tenga menos de 30 + 3 por habitante de su producto. Así no se gasta toda la materia prima; en la fase 12 cada edificio tendrá su propio límite configurable.
+
+**D-1007. Peones de reserva.**
+Mientras haya obras, al asignar trabajos quedan libres al menos 2 adultos, o un quinto de ellos. Sin esto, todos terminaban en talleres y nada se construía. En la fase 12 esto podrá ajustarse, como en Farthest Frontier.
+
+**D-1008. Zonas caminables.**
+La rejilla de caminos numera sus zonas conectadas y la búsqueda termina al instante si el destino está en otra zona (una isla, la otra orilla). Antes, pasear hacia un lugar inalcanzable recorría hasta 150 000 celdas y una hora de juego pasó de 0.2 s a 8 s.
+
+**D-1009. La vista de las estaciones.**
+- La nieve se dibuja en los sombreadores: cubre lo que mira hacia arriba (suelo, copas, techos) según la nieve acumulada, y el pasto desaparece.
+- Los árboles de hoja caduca cambian de tinte en otoño (dorado, naranja o rojo) y en invierno; los de hoja perenne (`"evergreen"` en las especies) no.
+- La luz cambia por estación, y los aldeanos usan gorra en invierno y sombrero de paja en verano.
+- El tinte afecta a todo el modelo, tronco incluido. En la fase 18 se agregarán árboles sin hojas y colores por material (anotado en `docs/IDEAS_VISUALES.md`).

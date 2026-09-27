@@ -56,6 +56,9 @@ public:
         }
     };
     [[nodiscard]] Area flood(FixedVec2 from, std::uint16_t max_cost) const;
+    // Whether two points are in the same walkable area (after snapping each
+    // to the nearest walkable cell).
+    [[nodiscard]] bool connected(FixedVec2 a, FixedVec2 b) const;
 
 private:
     [[nodiscard]] std::size_t index(std::int32_t cx, std::int32_t cz) const {
@@ -63,6 +66,11 @@ private:
     }
     // Nearest walkable cell to (cx, cz) within a few cells; false if none.
     bool nearest_walkable(std::int32_t& cx, std::int32_t& cz) const;
+    // Labels connected walkable areas, so a search to a place that cannot
+    // be reached ends at once (rebuilt when buildings change).
+    void update_regions() const;
+    mutable std::vector<std::uint32_t> region_;  // 0 = not walkable; derived, rebuilt lazily.
+    mutable std::uint32_t region_version_ = 0;
 
     std::int32_t side_ = 0;
     std::vector<std::uint8_t> terrain_cost_;  // 0 = blocked, else cost of a straight step (10 = normal).

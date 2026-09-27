@@ -46,7 +46,7 @@ public:
     const sim::Content* content() const override { return &sc::test::core_content(); }
     mods::ModLibrary library;
     std::vector<std::string> applied_mods;
-    void start_map_generation(const sim::MapSettings& settings) override {
+    void start_map_generation(const sim::MapSettings& settings, const sim::GameRules&) override {
         generation_started = true;
         last_map_settings = settings;
     }
@@ -66,7 +66,7 @@ public:
         return false;
     }
 
-    bool host_game(const sim::MapSettings&) override { return false; }
+    bool host_game(const sim::MapSettings&, const sim::GameRules&) override { return false; }
     bool join_game(const std::string&, std::uint16_t) override { return false; }
     void leave_network() override {}
     net::NetSession* net() override { return nullptr; }
@@ -185,7 +185,9 @@ TEST_SUITE("menus") {
         std::optional<sim::MapData> map = sim::generate_map(ms, sc::test::core_content());
         REQUIRE(map.has_value());
         const std::shared_ptr<const sim::Content> content(std::shared_ptr<const sim::Content>{}, &sc::test::core_content());
-        h.services.game = std::make_unique<GameSession>(content, std::move(*map), 1);
+        sim::GameSetup setup;
+        setup.seed = 1;
+        h.services.game = std::make_unique<GameSession>(content, std::move(*map), setup);
         GameSession::Interaction& ui = h.services.game->ui();
         h.host.show_game();
         h.frame(0);

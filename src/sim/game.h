@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "sim/climate.h"
 #include "sim/command.h"
 #include "sim/content.h"
 #include "sim/entity.h"
@@ -24,7 +25,9 @@
 
 namespace sc::sim {
 
-// Game time. A year lasts about 20 minutes at x1 (decision D-801).
+// Game time of a normal year: about 20 minutes at x1 (decision D-801).
+// A game's own year may be shorter or longer (GameRules, phase 10); use
+// Game::year_ticks() and friends for anything inside a game.
 inline constexpr std::uint32_t kTicksPerSecond = 10;
 inline constexpr std::uint32_t kTicksPerDay = 100;
 inline constexpr std::uint32_t kDaysPerMonth = 10;
@@ -34,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 8;
+inline constexpr std::uint32_t kGameRulesVersion = 10;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -47,6 +50,10 @@ inline constexpr std::int32_t kOldAgeYears = 45;
 inline constexpr std::int32_t kCarry = 12;               // Units carried of weight 1.
 inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
+inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
+inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+inline constexpr std::int32_t kColdBelow = 10;        // Houses burn firewood below this (°C).
+inline constexpr std::int32_t kMaxSnow = 100;
 }  // namespace village
 
 // A natural resource of the map (one per map feature, same index).
@@ -81,6 +88,7 @@ struct Building {
     std::vector<EntityId> workers;
     std::int32_t wanted_workers = 0;
     std::vector<EntityId> residents;
+    bool heated = true;              // Houses: warm today (firewood, or no need).
     bool operator==(const Building&) const = default;
 };
 
@@ -113,6 +121,8 @@ struct Villager {
     FixedVec2 previous;               // Position one tick ago (for smooth drawing).
     std::int32_t food = village::kFoodMax;
     std::int32_t health = village::kHealthMax;
+    std::int32_t warmth = village::kWarmthMax;
+    std::int32_t clothes = 0;         // Ticks left of the clothes worn; 0 = none.
     EntityId home;
     EntityId job;                     // Workplace.
     Task task = Task::Idle;
@@ -140,6 +150,14 @@ struct PlayerState {
 // Why a building cannot go somewhere.
 enum class PlaceError : std::uint8_t { None, UnknownBuilding, OutsideMap, Water, TooSteep, Blocked, Unique, NotYours };
 
+// How a game is set up besides its map.
+struct GameSetup {
+    std::uint8_t players = 1;
+    std::uint64_t seed = 0;
+    bool shared_town = false;  // All the players run one town (section 7.7).
+    GameRules rules;
+};
+
 class Game {
 public:
     // Sets up a new game on `map`: a town center, villagers and starting
@@ -147,6 +165,7 @@ public:
     // `shared_town`, all the players run one town (section 7.7).
     Game(std::shared_ptr<const Content> content, MapData map, std::uint8_t players, std::uint64_t seed,
          bool shared_town = false);
+    Game(std::shared_ptr<const Content> content, MapData map, const GameSetup& setup);
 
     // Applies a command at the current tick. Invalid ones are ignored and
     // counted, the same on every machine.
@@ -165,6 +184,7 @@ public:
     [[nodiscard]] const ComponentStore<Villager>& villagers() const { return villagers_; }
     [[nodiscard]] const ComponentStore<Building>& buildings() const { return buildings_; }
     [[nodiscard]] const PlayerState& player(std::uint8_t p) const { return players_[p]; }
+    [[nodiscard]] const NavGrid& nav() const { return nav_; }
     [[nodiscard]] std::uint8_t player_count() const { return player_count_; }
     // Whether the developer tools' commands are accepted (single player,
     // or a multiplayer game that allows them). Part of the state.
@@ -172,6 +192,17 @@ public:
     // The town a player runs: their own, or the common one.
     [[nodiscard]] std::uint8_t town_of(std::uint8_t player) const { return shared_town_ ? 0 : player; }
     [[nodiscard]] bool shared_town() const { return shared_town_; }
+
+    // Time and weather (phase 10).
+    [[nodiscard]] const GameRules& rules() const { return rules_; }
+    [[nodiscard]] std::uint32_t year_ticks() const { return sim::year_ticks(rules_.climate.year); }
+    [[nodiscard]] std::uint32_t month_ticks() const { return year_ticks() / 12; }
+    [[nodiscard]] std::uint32_t day_ticks() const { return month_ticks() / 10; }
+    [[nodiscard]] Calendar calendar() const { return sim::calendar(rules_.climate, tick_); }
+    [[nodiscard]] std::int32_t temperature() const { return temperature_; }
+    [[nodiscard]] std::int32_t snow() const { return snow_; }
+    // Freezing: bushes and herbs neither grow back nor can be picked.
+    [[nodiscard]] bool frozen() const { return temperature_ <= 0; }
 
     // Hashes of the parts of the state, to find where two games differ
     // after a desynchronization.
@@ -229,6 +260,11 @@ private:
     std::uint32_t rejected_ = 0;
     bool dev_commands_ = true;
     bool shared_town_ = false;
+    GameRules rules_;
+    std::int32_t temperature_ = 12;  // Today's; follows from the tick.
+    std::int32_t snow_ = 0;          // 0..kMaxSnow.
+    DefIndex firewood_ = kNoDef;     // Resources the rules use, looked up once.
+    DefIndex clothes_ = kNoDef;
 
     std::vector<std::pair<std::uint64_t, std::uint32_t>> regrow_;  // (tick, node), sorted.
     std::vector<std::uint32_t> changed_nodes_;

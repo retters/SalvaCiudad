@@ -83,6 +83,49 @@ bool place(Game& g, DefIndex def, std::int32_t skip = 0) {
     return g.buildings().size() == before + 1;
 }
 
+// Places a gathering building where the most of `type` stand within its
+// radius (as a player would), up to 200 m from the town center.
+bool place_for(Game& g, DefIndex def, FeatureType type) {
+    const Building& tc = town_center(g);
+    const std::int32_t radius = content()->buildings[def].work_radius * 3 / 4;
+    std::optional<std::pair<std::int32_t, std::int32_t>> best;
+    int best_count = 0;
+    for (std::int32_t dz = -200; dz <= 200; dz += 12) {
+        for (std::int32_t dx = -200; dx <= 200; dx += 12) {
+            const std::int32_t x = tc.x + dx;
+            const std::int32_t z = tc.z + dz;
+            if (g.can_place(0, def, x, z, 0) != PlaceError::None ||
+                !g.nav().connected({Fixed::from_int(x), Fixed::from_int(z)},
+                                   {Fixed::from_int(tc.x), Fixed::from_int(tc.z - 2)})) {
+                continue;
+            }
+            int count = 0;
+            for (std::size_t i = 0; i < g.nodes().size(); ++i) {
+                const MapFeature& f = g.map().features[i];
+                const std::int32_t fx = f.x.floor_int() - x;
+                const std::int32_t fz = f.z.floor_int() - z;
+                count += f.type == type && g.nodes()[i].amount > 0 && fx * fx + fz * fz < radius * radius ? 1 : 0;
+            }
+            // Closer to town is better when the count is similar.
+            count = count * 400 / (400 + std::abs(dx) + std::abs(dz));
+            if (count > best_count) {
+                best_count = count;
+                best = std::pair{x, z};
+            }
+        }
+    }
+    if (!best) {
+        return false;
+    }
+    Command c;
+    c.type = CommandType::PlaceBuilding;
+    c.def = def;
+    c.position = {Fixed::from_int(best->first), Fixed::from_int(best->second)};
+    const std::size_t before = g.buildings().size();
+    g.apply(c);
+    return g.buildings().size() == before + 1;
+}
+
 void run(Game& g, std::uint32_t ticks) {
     for (std::uint32_t i = 0; i < ticks; ++i) {
         g.step();
@@ -99,8 +142,8 @@ std::int32_t complete_count(const Game& g, DefIndex def) {
 
 // A sensible opening: food, wood, homes and storage.
 void opening(Game& g) {
-    CHECK(place(g, building("forager")));
-    CHECK(place(g, building("woodcutter")));
+    CHECK(place_for(g, building("forager"), FeatureType::BerryBush));
+    CHECK(place_for(g, building("woodcutter"), FeatureType::Tree));
     CHECK(place(g, building("house")));
     CHECK(place(g, building("house")));
 }
@@ -265,7 +308,7 @@ TEST_SUITE("village") {
         for (int minute = 0; minute < 60; ++minute) {
             run(g, 600);
             const auto stored = g.stored(0);
-            if (stored[resource("log")] >= 20 && houses < 8 && g.population(0) + 4 > houses * 5 - 5) {
+            if (stored[resource("log")] >= 20 && houses < 10 && g.population(0) + 4 > houses * 5 - 5) {
                 if (place(g, building("house"))) {
                     ++houses;
                 }
@@ -274,15 +317,20 @@ TEST_SUITE("village") {
             for (std::size_t r = 0; r < stored.size(); ++r) {
                 food += content()->resources[r].category == ResourceCategory::Food ? stored[r] : 0;
             }
-            if (food < g.population(0) * 6 && foragers < 5 && place(g, building("forager"))) {
+            if (food < g.population(0) * 6 && foragers < 5 && place_for(g, building("forager"), FeatureType::BerryBush)) {
                 ++foragers;
+            }
+            if (minute == 3) {
+                CHECK(place(g, building("firewood_splitter")));  // Firewood for the winter.
             }
             if (minute == 10) {
                 CHECK(place(g, building("storehouse")));
             }
+            if (minute == 15 || minute == 35) {
+                CHECK(place_for(g, building("woodcutter"), FeatureType::Tree));
+            }
             if (minute == 20) {
-                CHECK(place(g, building("woodcutter")));
-                CHECK(place(g, building("stonecutter")));
+                CHECK(place_for(g, building("stonecutter"), FeatureType::Stone));
             }
         }
         const Game& end = g;

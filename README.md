@@ -196,6 +196,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Jugar 30 minutos con 2 a 4 ventanas sin avisos de desincronización (si aparece uno, el informe queda en `userdata/instance-1/logs/`).
 - [ ] En dos computadoras de la misma red: la partida aparece sola en "Partidas en tu red local" (Windows pedirá permiso del firewall la primera vez).
 
+### Fase 10 (estaciones y clima)
+
+- [ ] La pantalla de partida nueva tiene Estaciones, Duración del año, Invierno, Recursos iniciales y Población máxima.
+- [ ] En partida, la barra superior muestra la estación y la temperatura (en azul bajo cero), y la leña y la ropa entre los bienes.
+- [ ] "Invierno eterno": el suelo, las copas y los techos se cubren de nieve, el pasto desaparece, los aldeanos usan gorra y caminan más lento.
+- [ ] En otoño los árboles de hoja caduca se ponen dorados, naranjas o rojos; los pinos y demás perennes no.
+- [ ] Una casa muestra su leña ("Leña: n de 20") y avisa "Sin fuego" cuando se queda sin ella; sus habitantes pierden calor (barra "Calor" del aldeano).
+- [ ] Con una leñera y leñadores, el pueblo pasa los inviernos sin muertes; sin leña, un invierno duro mata.
+- [ ] Con helada, los recolectores no recogen bayas.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

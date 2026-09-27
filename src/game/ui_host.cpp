@@ -180,14 +180,14 @@ void UiHost::frame(ui::Context& ctx) {
             host_new_game_ = false;
         } else if (r == NewGameScreen::Result::Generate && host_new_game_) {
             host_new_game_ = false;
-            if (services_.host_game(new_game_.settings())) {
+            if (services_.host_game(new_game_.settings(), new_game_.rules())) {
                 lobby_screen_.open();
                 screen_ = Screen::Lobby;
             } else {
                 show_message(tr("lobby.hostFailed.title"), tr("lobby.hostFailed.body"));
             }
         } else if (r == NewGameScreen::Result::Generate) {
-            services_.start_map_generation(new_game_.settings());
+            services_.start_map_generation(new_game_.settings(), new_game_.rules());
             screen_ = Screen::Generating;
         }
     } else if (screen_ == Screen::Join) {

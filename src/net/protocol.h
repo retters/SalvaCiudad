@@ -13,6 +13,7 @@
 #include <variant>
 #include <vector>
 
+#include "sim/climate.h"
 #include "sim/command.h"
 #include "sim/map.h"
 #include "sim/serialize.h"
@@ -44,6 +45,7 @@ struct GameConfig {
     sim::MapSettings map;
     bool shared_town = false;  // Cooperative: one town for everybody (section 7.7).
     std::uint64_t seed = 1;    // The game's own random numbers.
+    sim::GameRules rules;      // Climate, starting goods, population limit.
     bool operator==(const GameConfig&) const = default;
 };
 

@@ -184,7 +184,7 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     // Population and date in the middle-right; speed on the right.
     const std::int32_t pop = game.population(s.town());
     const std::int32_t adults = game.population(s.town(), true);
-    const GameDate date = game_date(game.tick());
+    const sim::Calendar cal = game.calendar();
     const float button = std::round(ctx.s(36.0f));
     const float gap = ctx.s(4.0f);
     float right = bar.right() - pad - 4 * button - 3 * gap;
@@ -205,7 +205,18 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
         }
     }
     network(ctx, s, right);
-    const std::string date_text = tr("hud.date", date.year, date.month, date.day);
+    // Season and weather, then the date.
+    static constexpr const char* kSeasonKeys[] = {"hud.season.spring", "hud.season.summer", "hud.season.autumn",
+                                                  "hud.season.winter"};
+    const std::string weather = tr("hud.weather", tr(kSeasonKeys[static_cast<std::size_t>(cal.season) % 4]),
+                                   game.temperature());
+    const float ww = ctx.text().measure(st, weather) + ctx.s(24.0f);
+    right -= ww;
+    ctx.label({right, bar.y, ww, bar.h}, weather, st, game.temperature() < 0 ? ui::Color::rgb(0x9CC7F0) : ctx.theme().text);
+    ctx.tooltip_area(ctx.id("hud_weather"), {right, bar.y, ww, bar.h},
+                     tr(game.frozen() ? "hud.weather.frozen" : "hud.weather.tooltip", game.snow()));
+    const std::string date_text = tr("hud.date", static_cast<int>(cal.year), static_cast<int>(cal.month),
+                                     static_cast<int>(cal.day));
     const float dw = ctx.text().measure(st, date_text) + ctx.s(24.0f);
     right -= dw;
     ctx.label({right, bar.y, dw, bar.h}, date_text, st, ctx.theme().text_dim);
@@ -380,6 +391,17 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     } else {
         if (d.residents > 0) {
             lines.push_back(tr("hud.building.residents", static_cast<int>(b->residents.size()), d.residents));
+            if (d.kind == sim::BuildingKind::House) {
+                const sim::DefIndex fw = content.find_resource("core:firewood");
+                std::int32_t wood = 0;
+                for (const sim::Stock& st : b->stock) {
+                    wood += st.resource == fw ? st.amount : 0;
+                }
+                lines.push_back(tr("hud.building.firewood", wood, sim::village::kHouseFirewood));
+                if (!b->heated) {
+                    lines.push_back(tr("hud.building.cold"));
+                }
+            }
         }
         if (d.storage > 0) {
             std::int32_t total = 0;
@@ -489,11 +511,12 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
     lines.push_back(job != nullptr ? tr("hud.villager.job", tr(content.buildings[job->def].name_key))
                                    : tr(game.adult(*v) ? "hud.villager.laborer" : "hud.villager.child"));
     lines.push_back(tr(game.buildings().get(v->home) != nullptr ? "hud.villager.housed" : "hud.villager.homeless"));
+    lines.push_back(tr(v->clothes > 0 ? "hud.villager.clothes" : "hud.villager.noClothes"));
     if (v->carrying.amount > 0 && v->carrying.resource < content.resources.size()) {
         lines.push_back(tr("hud.villager.carrying", tr("hud.amount", tr(content.resources[v->carrying.resource].name_key),
                                                        v->carrying.amount)));
     }
-    const float bar_block = 2 * (line + ctx.s(10.0f));
+    const float bar_block = 3 * (line + ctx.s(10.0f));
     const float title_h = ctx.text().line_height(title);
     const float button_h = std::round(ctx.s(34.0f));
     const float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line + bar_block + pad;
@@ -523,6 +546,8 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
     };
     bar(tr("hud.villager.food"), static_cast<float>(v->food) / static_cast<float>(sim::village::kFoodMax),
         v->food < sim::village::kEatBelow / 2 ? ctx.theme().danger : ctx.theme().accent);
+    bar(tr("hud.villager.warmth"), static_cast<float>(v->warmth) / static_cast<float>(sim::village::kWarmthMax),
+        v->warmth < sim::village::kWarmthMax / 3 ? ctx.theme().danger : ui::Color::rgb(0xE08A3C));
     bar(tr("hud.villager.health"), static_cast<float>(v->health) / static_cast<float>(sim::village::kHealthMax),
         v->health < sim::village::kHealthMax / 2 ? ctx.theme().danger : ui::Color::rgb(0x6FAF5A));
     ctx.pop_id();

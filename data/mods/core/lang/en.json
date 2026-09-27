@@ -63,6 +63,7 @@
     "building.woodcutter": "Woodcutter",
     "building.forager": "Forager",
     "building.stonecutter": "Stonecutter",
-    "building.firewoodSplitter": "Firewood splitter"
+    "building.firewoodSplitter": "Firewood splitter",
+    "resource.clothes": "Clothes"
   }
 }

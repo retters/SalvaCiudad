@@ -25,5 +25,5 @@ float4 main(PixelInput input, uint primitive : SV_PrimitiveID) : SV_Target0
     }
     uint rgba = face_colors[draw.x + primitive];
     float3 srgb = float3(rgba & 0xFFu, (rgba >> 8) & 0xFFu, (rgba >> 16) & 0xFFu) / 255.0;
-    return shade(srgb_to_linear(srgb), n, input.world_pos);
+    return shade(apply_snow(srgb_to_linear(srgb), n, 0.72), n, input.world_pos);
 }

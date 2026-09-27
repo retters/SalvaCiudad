@@ -21,3 +21,10 @@ Se separan en dos grupos, porque se implementan distinto:
 ## Referencias
 
 - Fase 6c: dos imágenes de "Low-Poly Experiments" (río entre montañas y cañón de arena con agua turquesa) que el usuario compartió el 2026-09-27.
+
+## Estaciones (anotado en la fase 10)
+
+- Árboles de hoja caduca sin hojas en invierno (modelos aparte), y el color de otoño solo en la copa, no en el tronco (colores por material en lugar del tinte de la instancia).
+- Lagos y ríos helados en invierno duro.
+- Huellas o caminos marcados en la nieve.
+- Humo de chimenea en las casas con fuego.

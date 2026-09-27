@@ -51,7 +51,7 @@ public:
     [[nodiscard]] virtual CameraMode camera_mode() const = 0;
 
     // A new map is generated in the background; the screens poll its state.
-    virtual void start_map_generation(const sim::MapSettings& settings) = 0;
+    virtual void start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules) = 0;
     [[nodiscard]] virtual MapGenStatus map_generation_status() const = 0;
     virtual void cancel_map_generation() = 0;
     // Shows the generated map in the 3D view; false if it could not.
@@ -85,7 +85,7 @@ public:
 
     // Multiplayer (phase 9).
     // Opens a lobby as host with this map; false if the port is busy.
-    virtual bool host_game(const sim::MapSettings& map) = 0;
+    virtual bool host_game(const sim::MapSettings& map, const sim::GameRules& rules) = 0;
     // Connects to a host; the lobby shows once it answers.
     virtual bool join_game(const std::string& address, std::uint16_t port) = 0;
     virtual void leave_network() = 0;
