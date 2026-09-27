@@ -192,6 +192,7 @@ Formato binario propio, porque una partida con 12 000 aldeanos y un mapa enorme 
 - Límites en cada cantidad leída: se valida todo al cargar, igual que una entrada de red.
 - Guardado atómico. El autoguardado rota N archivos.
 - La **misma serialización** se usa para las instantáneas de red: entrar a una partida empezada y reconectarse.
+- **Compatibilidad entre versiones:** no se requiere hasta la versión candidata a entrega, e incluso después no es obligatoria: una partida guardada con otra versión del juego se rechaza con un mensaje claro y se empieza una nueva (decisión del usuario del 2026-09-27, D-631).
 
 ### 5.6 Configuración de partida (lobby)
 

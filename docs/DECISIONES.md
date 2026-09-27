@@ -508,3 +508,14 @@ A pedido del usuario, con dos imágenes de referencia ("Low-Poly Experiments"). 
 **D-630. Rendimiento medido (1600 × 900, Ultra, mapa Enorme montañoso).**
 - Tercera persona: unos 347 FPS.
 - Primera persona mirando al bosque, el peor caso: unos 110 FPS, con 31 millones de triángulos (casi todos de árboles).
+
+## Plan de trabajo desde la fase 7 (2026-09-27)
+
+**D-631. Sin compatibilidad entre versiones de partidas guardadas.**
+El usuario no quiere compatibilidad de partidas guardadas entre versiones del juego, ni siquiera después de la entrega: cada versión empieza partidas nuevas. Una partida de otra versión se rechaza con un mensaje claro. Así el generador de mapas y las reglas pueden cambiar en cualquier fase; solo hay que actualizar las sumas de referencia de las pruebas.
+
+**D-632. Cambios visuales al final.**
+Los cambios de aspecto que el usuario quiere en el terreno y el agua se hacen en la fase 18 (Arte y sonido). Las ideas se anotan en `docs/IDEAS_VISUALES.md`. Si algo del terreno estorba al juego antes, se corrige en esa fase.
+
+**D-633. Fases 7 a 20 seguidas.**
+El usuario pidió avanzar de la fase 7 a la 20 sin detenerse, tomando en cada duda la opción recomendada, y un resumen al final con lo que debe revisar por fase. Cada fase termina igual que las anteriores: todas las configuraciones compiladas sin advertencias, pruebas en verde, una prueba en vivo, documentación y un commit. Cada decisión que la especificación no cubre se anota aquí.
