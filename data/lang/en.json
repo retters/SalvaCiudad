@@ -957,6 +957,7 @@
     "viewer.tab.models": "Models",
     "viewer.tab.review": "Review",
     "viewer.search": "Search by name or file",
+    "viewer.keys": "Keyboard: W S or arrows to move; A D or arrows to open and close.",
     "viewer.filter.unused": "Only with unused models",
     "viewer.filter.single": "Only types with a single variant",
     "viewer.count": "{0} types, {1} models",

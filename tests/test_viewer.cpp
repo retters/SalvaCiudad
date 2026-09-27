@@ -158,4 +158,58 @@ TEST_SUITE("viewer") {
         CHECK(s.joints == 17);
         CHECK(std::find(s.clips.begin(), s.clips.end(), "walk") != s.clips.end());
     }
+
+    TEST_CASE("the keyboard moves through the catalog list and opens and closes it") {
+        using viewer::CatalogRow;
+        using viewer::NavKey;
+        using viewer::NavResult;
+        using viewer::RowKind;
+        constexpr auto kTrees = viewer::Category::Trees;
+        // A category, a single model, an open group with two models, a
+        // closed group, and a closed category.
+        const std::vector<CatalogRow> rows = {
+            {RowKind::Category, viewer::Category::Buildings, 0, 0, true, true},
+            {RowKind::Group, viewer::Category::Buildings, 0, 0, false, false},
+            {RowKind::Group, viewer::Category::Buildings, 1, 0, true, true},
+            {RowKind::Model, viewer::Category::Buildings, 1, 7, false, false},
+            {RowKind::Model, viewer::Category::Buildings, 1, 8, false, false},
+            {RowKind::Group, viewer::Category::Buildings, 2, 0, true, false},
+            {RowKind::Category, kTrees, 0, 0, true, false},
+        };
+        // Up and down, stopping at the ends.
+        CHECK(viewer::navigate(rows, 0, NavKey::Up).cursor == 0);
+        CHECK(viewer::navigate(rows, 0, NavKey::Down).cursor == 1);
+        CHECK(viewer::navigate(rows, 6, NavKey::Down).cursor == 6);
+        CHECK(viewer::navigate(rows, 3, NavKey::Down).cursor == 4);
+        // Right opens a closed line and enters an open one.
+        const NavResult open_group = viewer::navigate(rows, 5, NavKey::Right);
+        CHECK(open_group.cursor == 5);
+        CHECK(open_group.toggle == NavResult::Toggle::Open);
+        CHECK(viewer::navigate(rows, 6, NavKey::Right).toggle == NavResult::Toggle::Open);
+        CHECK(viewer::navigate(rows, 2, NavKey::Right).cursor == 3);
+        CHECK(viewer::navigate(rows, 0, NavKey::Right).cursor == 1);
+        // Right on a single model does nothing.
+        const NavResult single = viewer::navigate(rows, 1, NavKey::Right);
+        CHECK(single.cursor == 1);
+        CHECK(single.toggle == NavResult::Toggle::None);
+        // Left closes an open line, or goes up to its container.
+        CHECK(viewer::navigate(rows, 2, NavKey::Left).toggle == NavResult::Toggle::Close);
+        CHECK(viewer::navigate(rows, 0, NavKey::Left).toggle == NavResult::Toggle::Close);
+        CHECK(viewer::navigate(rows, 4, NavKey::Left).cursor == 2);
+        CHECK(viewer::navigate(rows, 5, NavKey::Left).cursor == 0);
+        CHECK(viewer::navigate(rows, 1, NavKey::Left).cursor == 0);
+        // A closed category stays where it is.
+        const NavResult closed = viewer::navigate(rows, 6, NavKey::Left);
+        CHECK(closed.cursor == 6);
+        CHECK(closed.toggle == NavResult::Toggle::None);
+        // An empty list and a cursor past the end are safe.
+        CHECK(viewer::navigate({}, 3, NavKey::Down).cursor == 0);
+        CHECK(viewer::navigate(rows, 99, NavKey::Up).cursor == 5);
+        // The same line, open or not.
+        CatalogRow closed_copy = rows[2];
+        closed_copy.open = false;
+        CHECK(closed_copy.same(rows[2]));
+        CHECK_FALSE(rows[3].same(rows[4]));
+        CHECK_FALSE(rows[0].same(rows[6]));
+    }
 }

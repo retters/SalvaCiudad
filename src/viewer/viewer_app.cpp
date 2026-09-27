@@ -6,6 +6,7 @@
 #include <cstdio>
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlgpu3.h>
 
@@ -394,14 +395,16 @@ void ViewerApp::load_catalog() {
         }
     }
     catalog_ = build_catalog(folders, pack_->model_refs);
+    open_groups_.clear();  // Group numbers changed.
     log::info("viewer: {} models in {} groups for '{}' from {}, {} unused, {} missing", catalog_.models.size(),
               catalog_.groups.size(), mod_, text::path_to_utf8(mods_dir_), catalog_.unused_count(),
               catalog_.missing.size());
-    // Keep showing the same files if they are still there.
+    // The first type of the list, as it is shown.
     std::optional<std::size_t> first;
-    for (std::size_t g = 0; g < catalog_.groups.size() && !first; ++g) {
-        if (catalog_.models[catalog_.groups[g].models.front()].mod == mod_) {
-            first = g;
+    for (const CatalogRow& row : catalog_rows()) {
+        if (row.kind == RowKind::Group) {
+            first = row.group;
+            break;
         }
     }
     select(first ? Selection{first, std::nullopt} : Selection{});
@@ -468,7 +471,29 @@ void ViewerApp::handle_event(const SDL_Event& event) {
             }
             break;
         case SDL_EVENT_KEY_DOWN:
-            if (!ui_keys && !event.key.repeat) {
+            if (ui_keys) {
+                break;
+            }
+            // The catalog list: W A S D or the arrows (also the keypad's),
+            // held down to repeat.
+            if (catalog_tab_) {
+                switch (event.key.key) {
+                    case SDLK_UP:
+                    case SDLK_KP_8:
+                    case SDLK_W: navigate_catalog(NavKey::Up); break;
+                    case SDLK_DOWN:
+                    case SDLK_KP_2:
+                    case SDLK_S: navigate_catalog(NavKey::Down); break;
+                    case SDLK_LEFT:
+                    case SDLK_KP_4:
+                    case SDLK_A: navigate_catalog(NavKey::Left); break;
+                    case SDLK_RIGHT:
+                    case SDLK_KP_6:
+                    case SDLK_D: navigate_catalog(NavKey::Right); break;
+                    default: break;
+                }
+            }
+            if (!event.key.repeat) {
                 if (event.key.key == SDLK_F) {
                     frame_camera();
                 } else if (event.key.key == SDLK_F5) {
@@ -594,6 +619,17 @@ std::vector<std::size_t> ViewerApp::shown_models() const {
 void ViewerApp::select(Selection selection) {
     selection_ = selection;
     clip_ = -1;
+    if (selection.group && *selection.group < catalog_.groups.size()) {
+        const CatalogGroup& g = catalog_.groups[*selection.group];
+        cursor_ = {RowKind::Group, g.category, *selection.group, 0, g.models.size() > 1, false};
+        category_open_[static_cast<std::size_t>(g.category)] = true;
+        if (selection.model && g.models.size() > 1) {
+            cursor_.kind = RowKind::Model;
+            cursor_.model = *selection.model;
+            open_groups_.insert(*selection.group);
+        }
+        scroll_to_cursor_ = true;
+    }
     layout_scene();
 }
 
@@ -849,7 +885,9 @@ void ViewerApp::draw_ui(float width, float height) {
             ImGui::EndCombo();
         }
         if (ImGui::BeginTabBar("##tabs")) {
+            catalog_tab_ = false;
             if (ImGui::BeginTabItem(tr("viewer.tab.models").c_str())) {
+                catalog_tab_ = true;
                 draw_catalog_tab();
                 ImGui::EndTabItem();
             }
@@ -866,23 +904,16 @@ void ViewerApp::draw_ui(float width, float height) {
     draw_status(width, height);
 }
 
-void ViewerApp::draw_catalog_tab() {
-    ImGui::SetNextItemWidth(-FLT_MIN);
-    const std::string hint = tr("viewer.search");
-    ImGui::InputTextWithHint("##search", hint.c_str(), search_, sizeof(search_));
-    ImGui::Checkbox(tr("viewer.filter.unused").c_str(), &only_unused_);
-    ImGui::Checkbox(tr("viewer.filter.single").c_str(), &only_single_);
-    ImGui::Separator();
-    ImGui::BeginChild("##list");
+std::vector<CatalogRow> ViewerApp::catalog_rows() const {
+    std::vector<CatalogRow> rows;
     for (std::size_t c = 0; c < static_cast<std::size_t>(Category::Count); ++c) {
+        const auto category = static_cast<Category>(c);
         std::vector<std::size_t> groups;
-        std::size_t models = 0;
         for (std::size_t g = 0; g < catalog_.groups.size(); ++g) {
             const CatalogGroup& group = catalog_.groups[g];
-            const bool this_mod = catalog_.models[group.models.front()].mod == mod_;
-            if (static_cast<std::size_t>(group.category) == c && this_mod && group_passes_filter(group)) {
+            if (group.category == category && catalog_.models[group.models.front()].mod == mod_ &&
+                group_passes_filter(group)) {
                 groups.push_back(g);
-                models += group.models.size();
             }
         }
         if (groups.empty()) {
@@ -894,25 +925,125 @@ void ViewerApp::draw_catalog_tab() {
             labels[g] = group_label(catalog_.groups[g]);
         }
         std::stable_sort(groups.begin(), groups.end(), [&](std::size_t a, std::size_t b) { return labels[a] < labels[b]; });
-        const std::string header = tr(category_key(static_cast<Category>(c))) + "  " +
-                                   tr("viewer.count", groups.size(), models) + "###cat" + std::to_string(c);
-        if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+        const bool open = category_open_[c];
+        rows.push_back({RowKind::Category, category, 0, 0, true, open});
+        if (!open) {
             continue;
         }
         for (const std::size_t g : groups) {
             const CatalogGroup& group = catalog_.groups[g];
+            const bool several = group.models.size() > 1;
+            const bool group_open = several && open_groups_.contains(g);
+            rows.push_back({RowKind::Group, category, g, 0, several, group_open});
+            for (std::size_t i = 0; group_open && i < group.models.size(); ++i) {
+                rows.push_back({RowKind::Model, category, g, group.models[i], false, false});
+            }
+        }
+    }
+    return rows;
+}
+
+void ViewerApp::set_open(const CatalogRow& row, bool open) {
+    if (row.kind == RowKind::Category) {
+        category_open_[static_cast<std::size_t>(row.category)] = open;
+    } else if (row.kind == RowKind::Group && open) {
+        open_groups_.insert(row.group);
+    } else if (row.kind == RowKind::Group) {
+        open_groups_.erase(row.group);
+    }
+}
+
+void ViewerApp::navigate_catalog(NavKey key) {
+    const std::vector<CatalogRow> rows = catalog_rows();
+    if (rows.empty()) {
+        return;
+    }
+    // Where the cursor is; if its line is hidden now, start at the top.
+    std::size_t at = 0;
+    bool found = false;
+    for (std::size_t i = 0; i < rows.size() && !found; ++i) {
+        if (rows[i].same(cursor_)) {
+            at = i;
+            found = true;
+        }
+    }
+    const NavResult r = navigate(rows, at, key);
+    if (r.toggle != NavResult::Toggle::None) {
+        set_open(rows[at], r.toggle == NavResult::Toggle::Open);
+        cursor_ = rows[at];
+        scroll_to_cursor_ = true;
+        return;
+    }
+    const CatalogRow& row = found ? rows[r.cursor] : rows.front();
+    cursor_ = row;
+    scroll_to_cursor_ = true;
+    // A group or a model is shown at once.
+    if (row.kind == RowKind::Group && (selection_.group != row.group || selection_.model)) {
+        select({row.group, std::nullopt});
+        frame_camera();
+    } else if (row.kind == RowKind::Model && selection_.model != row.model) {
+        select({row.group, row.model});
+        frame_camera();
+    }
+}
+
+void ViewerApp::draw_catalog_tab() {
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    const std::string hint = tr("viewer.search");
+    ImGui::InputTextWithHint("##search", hint.c_str(), search_, sizeof(search_));
+    ImGui::Checkbox(tr("viewer.filter.unused").c_str(), &only_unused_);
+    ImGui::Checkbox(tr("viewer.filter.single").c_str(), &only_single_);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+    ImGui::TextWrapped("%s", tr("viewer.keys").c_str());
+    ImGui::PopStyleColor();
+    ImGui::Separator();
+    // How many types and models each category shows.
+    std::array<std::size_t, static_cast<std::size_t>(Category::Count)> type_count{};
+    std::array<std::size_t, static_cast<std::size_t>(Category::Count)> model_count{};
+    for (const CatalogGroup& group : catalog_.groups) {
+        if (catalog_.models[group.models.front()].mod == mod_ && group_passes_filter(group)) {
+            ++type_count[static_cast<std::size_t>(group.category)];
+            model_count[static_cast<std::size_t>(group.category)] += group.models.size();
+        }
+    }
+    ImGui::BeginChild("##list");
+    const std::vector<CatalogRow> rows = catalog_rows();
+    for (const CatalogRow& row : rows) {
+        const bool at_cursor = row.same(cursor_);
+        const std::size_t c = static_cast<std::size_t>(row.category);
+        if (row.kind == RowKind::Category) {
+            const std::string header = tr(category_key(row.category)) + "  " +
+                                       tr("viewer.count", type_count[c], model_count[c]) + "###cat" + std::to_string(c);
+            ImGui::SetNextItemOpen(row.open);
+            // The cursor on a header: a lighter bar with a frame.
+            if (at_cursor) {
+                ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive));
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 0.8f));
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, std::max(1.0f, ui_scale_));
+            }
+            const bool open = ImGui::CollapsingHeader(header.c_str());
+            if (at_cursor) {
+                ImGui::PopStyleVar();
+                ImGui::PopStyleColor(2);
+            }
+            if (open != row.open) {
+                set_open(row, open);
+                cursor_ = row;
+            }
+        } else if (row.kind == RowKind::Group) {
+            const CatalogGroup& group = catalog_.groups[row.group];
             bool unused = false;
             for (const std::size_t m : group.models) {
                 unused = unused || !catalog_.models[m].used();
             }
-            ImGui::PushID(static_cast<int>(g));
-            const bool selected = selection_.group == g && !selection_.model;
-            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-            if (selected) {
+            ImGui::PushID(static_cast<int>(row.group));
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth |
+                                       ImGuiTreeNodeFlags_NoTreePushOnOpen;
+            if (at_cursor) {
                 flags |= ImGuiTreeNodeFlags_Selected;
             }
-            if (group.models.size() == 1) {
-                flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+            if (!row.expandable) {
+                flags |= ImGuiTreeNodeFlags_Leaf;
             }
             std::string label = group_label(group);
             if (group.models.size() > 1) {
@@ -920,35 +1051,40 @@ void ViewerApp::draw_catalog_tab() {
             }
             if (unused) {
                 label += "  " + tr("viewer.unusedMark");
-            }
-            if (unused) {
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.72f, 0.3f, 1.0f));
+            }
+            if (row.expandable) {
+                ImGui::SetNextItemOpen(row.open);
             }
             const bool open = ImGui::TreeNodeEx("##group", flags, "%s", label.c_str());
             if (unused) {
                 ImGui::PopStyleColor();
             }
-            if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-                select({g, std::nullopt});
+            if (row.expandable && open != row.open) {
+                set_open(row, open);
+            } else if (ImGui::IsItemClicked()) {
+                select({row.group, std::nullopt});
                 frame_camera();
             }
-            if (open && group.models.size() > 1) {
-                for (const std::size_t m : group.models) {
-                    const CatalogModel& cm = catalog_.models[m];
-                    std::string name = file_name(cm.path);
-                    if (!cm.used()) {
-                        name += "  " + tr("viewer.unusedMark");
-                    }
-                    ImGui::PushID(static_cast<int>(m));
-                    if (ImGui::Selectable(name.c_str(), selection_.model == m)) {
-                        select({g, m});
-                        frame_camera();
-                    }
-                    ImGui::PopID();
-                }
-                ImGui::TreePop();
-            }
             ImGui::PopID();
+        } else {
+            const CatalogModel& cm = catalog_.models[row.model];
+            std::string name = file_name(cm.path);
+            if (!cm.used()) {
+                name += "  " + tr("viewer.unusedMark");
+            }
+            ImGui::PushID(static_cast<int>(row.model));
+            ImGui::Indent();
+            if (ImGui::Selectable(name.c_str(), at_cursor)) {
+                select({row.group, row.model});
+                frame_camera();
+            }
+            ImGui::Unindent();
+            ImGui::PopID();
+        }
+        if (at_cursor && scroll_to_cursor_) {
+            ImGui::ScrollToItem(ImGuiScrollFlags_KeepVisibleEdgeY);
+            scroll_to_cursor_ = false;
         }
     }
     ImGui::EndChild();

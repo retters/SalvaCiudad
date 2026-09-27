@@ -1345,3 +1345,10 @@ Cada medio segundo compara la fecha y el tamaño de los archivos mostrados; si c
 - Calidad Ultra y la luz por omisión del juego (verano). Los árboles y objetos del mapa toman el color de la estación elegida con la misma función que el mapa (`season_tint`, que se separó de `feature_instance`).
 - Los sombreros, la barba y los delantales se muestran puestos en un cuerpo humano, cada uno en su propia copia del cuerpo, porque son accesorios rígidos fijados a un hueso.
 - En la ficha, "llamadas de dibujo" son las primitivas del modelo (una por material), que se dibujan en la vista y en cada cascada de sombras. "Materiales" cuenta solo los que usan sus primitivas.
+
+**D-3006. Recorrer la lista con el teclado.**
+- W A S D, las flechas y las del teclado numérico (llegan así con Bloq Num apagado) mueven un cursor por la lista tal como se ve: categorías, tipos y, dentro de un tipo abierto, sus archivos. Mantener la tecla repite.
+- Arriba y abajo pasan de un elemento a otro; un tipo o un archivo se carga y se encuadra al llegar a él, sin Enter. Una categoría solo mueve el cursor.
+- Derecha abre lo que está cerrado y, si ya está abierto, entra en su primer elemento. Izquierda cierra lo abierto o, si no, sube a lo que lo contiene. Es la conducta habitual de los árboles de archivos.
+- Solo en la pestaña Modelos y nunca mientras se escribe en el buscador. El visor recuerda qué está abierto; el ratón y el teclado comparten ese estado y el cursor.
+- La lógica de las teclas es una función pura (`navigate`) con sus pruebas; al abrir, el cursor empieza en el primer tipo de la lista tal como se ve.

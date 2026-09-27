@@ -225,6 +225,43 @@ Catalog build_catalog(std::span<const ModFolder> mods, std::span<const mods::Mod
     return out;
 }
 
+NavResult navigate(std::span<const CatalogRow> rows, std::size_t cursor, NavKey key) {
+    NavResult out;
+    if (rows.empty()) {
+        return out;
+    }
+    cursor = std::min(cursor, rows.size() - 1);
+    out.cursor = cursor;
+    const CatalogRow& row = rows[cursor];
+    switch (key) {
+        case NavKey::Up: out.cursor = cursor > 0 ? cursor - 1 : 0; break;
+        case NavKey::Down: out.cursor = std::min(cursor + 1, rows.size() - 1); break;
+        case NavKey::Right:
+            if (row.expandable && !row.open) {
+                out.toggle = NavResult::Toggle::Open;
+            } else if (row.expandable && cursor + 1 < rows.size() && rows[cursor + 1].kind != RowKind::Category &&
+                       rows[cursor + 1].kind != row.kind) {
+                out.cursor = cursor + 1;  // Into its first line.
+            }
+            break;
+        case NavKey::Left:
+            if (row.expandable && row.open) {
+                out.toggle = NavResult::Toggle::Close;
+            } else if (row.kind != RowKind::Category) {
+                // Up to the line that holds it.
+                const RowKind parent = row.kind == RowKind::Model ? RowKind::Group : RowKind::Category;
+                for (std::size_t i = cursor; i-- > 0;) {
+                    if (rows[i].kind == parent) {
+                        out.cursor = i;
+                        break;
+                    }
+                }
+            }
+            break;
+    }
+    return out;
+}
+
 ModelStats model_stats(const render::ModelData& model) {
     ModelStats s;
     s.vertices = model.vertices.size();

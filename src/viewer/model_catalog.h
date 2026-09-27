@@ -79,6 +79,38 @@ struct Catalog {
                                     std::span<const builtin_models::Use> builtin = builtin_models::kAll,
                                     std::string_view builtin_mod = mods::kCoreModId);
 
+// A line of the catalog list as shown: a category header, a group, or a
+// model inside an open group.
+enum class RowKind : std::uint8_t { Category, Group, Model };
+
+struct CatalogRow {
+    RowKind kind = RowKind::Category;
+    Category category = Category::Other;
+    std::size_t group = 0;  // Groups and models.
+    std::size_t model = 0;  // Models.
+    bool expandable = false;
+    bool open = false;
+
+    // The same line, whether it is open or not.
+    [[nodiscard]] bool same(const CatalogRow& o) const {
+        return kind == o.kind && category == o.category && (kind == RowKind::Category || group == o.group) &&
+               (kind != RowKind::Model || model == o.model);
+    }
+};
+
+enum class NavKey : std::uint8_t { Up, Down, Left, Right };
+
+// What a key does on the list: where the cursor goes and whether the line
+// under it opens or closes.
+struct NavResult {
+    std::size_t cursor = 0;
+    enum class Toggle : std::uint8_t { None, Open, Close } toggle = Toggle::None;
+};
+
+// Up and down move one line. Right opens a closed line, or enters an open
+// one. Left closes an open line, or goes up to the line that contains it.
+[[nodiscard]] NavResult navigate(std::span<const CatalogRow> rows, std::size_t cursor, NavKey key);
+
 // What a model costs to draw.
 struct ModelStats {
     std::size_t vertices = 0;

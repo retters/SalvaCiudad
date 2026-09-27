@@ -4,11 +4,13 @@
 // model is missing. It never changes a file.
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -95,6 +97,11 @@ private:
     [[nodiscard]] std::string group_label(const CatalogGroup& g) const;
     [[nodiscard]] std::string use_label(const Use& u) const;
     [[nodiscard]] bool group_passes_filter(const CatalogGroup& g) const;
+    // The catalog list as shown now: filtered, sorted and opened.
+    [[nodiscard]] std::vector<CatalogRow> catalog_rows() const;
+    // Moves the cursor with a key; a group or model under it is shown at once.
+    void navigate_catalog(NavKey key);
+    void set_open(const CatalogRow& row, bool open);
 
     // Scene.
     void select(Selection selection);
@@ -143,6 +150,13 @@ private:
     float reload_timer_ = 0.0f;
     std::string status_;  // Last reload or error.
     float status_time_ = 0.0f;
+
+    // The catalog list: what is open and the keyboard cursor.
+    std::array<bool, static_cast<std::size_t>(Category::Count)> category_open_{true, true, true, true, true, true};
+    std::set<std::size_t> open_groups_;
+    CatalogRow cursor_;
+    bool scroll_to_cursor_ = false;
+    bool catalog_tab_ = true;  // The Models tab is the one shown.
 
     // Options.
     char search_[64] = {};

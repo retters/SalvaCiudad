@@ -107,6 +107,8 @@ Un accesorio es un **modelo rígido cuyo origen es el punto donde se fija**: el 
 
 Controles: arrastrar con el botón izquierdo gira la cámara, con el derecho la mueve; la rueda acerca. F encuadra lo que se ve y F5 vuelve a leer los mods.
 
+La lista se recorre con el teclado (W A S D, las flechas o las del teclado numérico): arriba y abajo pasan de un elemento a otro y lo muestran al momento; derecha abre una categoría o un tipo con variantes (o entra en él si ya está abierto), e izquierda lo cierra (o sube a la categoría o tipo que lo contiene). Mientras se escribe en el buscador, las teclas escriben.
+
 ## Sonidos
 
 Los efectos de sonido también salen de un script versionado, en Python puro (sin Blender ni bibliotecas):
