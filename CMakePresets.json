@@ -1,0 +1,83 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "debug",
+      "displayName": "Windows Debug",
+      "inherits": "windows-base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "release",
+      "displayName": "Windows Release",
+      "inherits": "windows-base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "debug-asan",
+      "displayName": "Windows Debug with AddressSanitizer",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "SC_ENABLE_ASAN": "ON"
+      }
+    },
+    {
+      "name": "unix-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": { "type": "notEquals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "unix-debug",
+      "displayName": "Linux/macOS Debug",
+      "inherits": "unix-base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "unix-release",
+      "displayName": "Linux/macOS Release",
+      "inherits": "unix-base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "unix-debug-asan",
+      "displayName": "Linux/macOS Debug with sanitizers",
+      "inherits": "unix-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "SC_ENABLE_ASAN": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "debug", "configurePreset": "debug" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "debug-asan", "configurePreset": "debug-asan" },
+    { "name": "unix-debug", "configurePreset": "unix-debug" },
+    { "name": "unix-release", "configurePreset": "unix-release" },
+    { "name": "unix-debug-asan", "configurePreset": "unix-debug-asan" }
+  ],
+  "testPresets": [
+    { "name": "debug", "configurePreset": "debug", "output": { "outputOnFailure": true } },
+    { "name": "release", "configurePreset": "release", "output": { "outputOnFailure": true } },
+    { "name": "debug-asan", "configurePreset": "debug-asan", "output": { "outputOnFailure": true } },
+    { "name": "unix-debug", "configurePreset": "unix-debug", "output": { "outputOnFailure": true } },
+    { "name": "unix-release", "configurePreset": "unix-release", "output": { "outputOnFailure": true } },
+    { "name": "unix-debug-asan", "configurePreset": "unix-debug-asan", "output": { "outputOnFailure": true } }
+  ]
+}

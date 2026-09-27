@@ -1,0 +1,13 @@
+* text=auto eol=lf
+
+# Vendored code and test fixtures must keep their exact bytes.
+third_party/** -text
+tests/fixtures/** -text
+
+*.png binary
+*.glb binary
+*.ogg binary
+*.wav binary
+*.ttf binary
+*.otf binary
+*.blend binary

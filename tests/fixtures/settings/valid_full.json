@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "language": "es",
+  "display": {
+    "mode": "windowed",
+    "monitor": "",
+    "fullscreenWidth": 2560,
+    "fullscreenHeight": 1440,
+    "windowWidth": 1280,
+    "windowHeight": 720,
+    "windowX": 100,
+    "windowY": 80,
+    "windowMaximized": false,
+    "vsync": true,
+    "fpsLimit": 0,
+    "uiScale": 1.0
+  },
+  "audio": {
+    "master": 80,
+    "effects": 55,
+    "ambient": 100,
+    "music": 70,
+    "ui": 100
+  }
+}

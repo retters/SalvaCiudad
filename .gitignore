@@ -1,0 +1,14 @@
+# Build output
+/build/
+/out/
+
+# IDE state
+/.vs/
+/.vscode/
+*.user
+CMakeUserPresets.json
+
+# Local artifacts
+*.obj
+*.pdb
+*.ilk
