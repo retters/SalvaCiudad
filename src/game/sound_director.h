@@ -29,6 +29,8 @@ public:
     void update(const sim::Game& game, float x, float z, float height, bool paused, float dt);
     // Leaving a game: everything stops.
     void stop();
+    // Closes the audio device; before SDL_Quit, which frees it.
+    void shutdown();
 
     [[nodiscard]] audio::Mixer& mixer() { return mixer_; }
 

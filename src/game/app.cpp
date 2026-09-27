@@ -278,6 +278,9 @@ void App::shutdown() {
     ui_renderer_.destroy();
     gpu_.destroy();
     window_.destroy();
+    // The audio stream too: SDL_Quit frees it, and the sound director
+    // would destroy it again when the app goes.
+    sound_.shutdown();
     if (sdl_ready_) {
         SDL_Quit();
         sdl_ready_ = false;

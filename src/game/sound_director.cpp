@@ -145,4 +145,8 @@ void SoundDirector::stop() {
     mixer_.stop_all();
 }
 
+void SoundDirector::shutdown() {
+    output_.close();
+}
+
 }  // namespace sc
