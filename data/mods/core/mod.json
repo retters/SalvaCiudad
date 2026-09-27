@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "core",
+  "name": "mod.core.name",
+  "description": "mod.core.description",
+  "version": "0.7.0",
+  "gameVersion": ">=0.7.0",
+  "authors": ["Salva"],
+  "affectsSimulation": true,
+  "dependencies": [],
+  "loadAfter": []
+}

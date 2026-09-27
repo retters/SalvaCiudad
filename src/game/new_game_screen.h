@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 
+#include "sim/content.h"
 #include "sim/map.h"
 #include "ui/context.h"
 
@@ -22,8 +23,9 @@ class NewGameScreen {
 public:
     enum class Result : std::uint8_t { None, Back, Generate };
 
-    // Resets the form with a fresh random seed.
-    void open();
+    // Resets the form with a fresh random seed; map types and biomes come
+    // from `content`, which must outlive the screen's use.
+    void open(const sim::Content* content);
     Result frame(ui::Context& ctx, bool modal);
 
     // Valid once frame() returned Generate.
@@ -32,6 +34,7 @@ public:
 private:
     void seed_field(ui::Context& ctx, const ui::Rect& r, bool modal);
 
+    const sim::Content* content_ = nullptr;
     sim::MapSettings settings_;
     std::string seed_text_;
     bool seed_focused_ = false;

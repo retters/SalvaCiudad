@@ -519,3 +519,45 @@ Los cambios de aspecto que el usuario quiere en el terreno y el agua se hacen en
 
 **D-633. Fases 7 a 20 seguidas.**
 El usuario pidió avanzar de la fase 7 a la 20 sin detenerse, tomando en cada duda la opción recomendada, y un resumen al final con lo que debe revisar por fase. Cada fase termina igual que las anteriores: todas las configuraciones compiladas sin advertencias, pruebas en verde, una prueba en vivo, documentación y un commit. Cada decisión que la especificación no cubre se anota aquí.
+
+## Fase 7: mods y datos (2026-09-27)
+
+**D-701. Contenido como datos del mod `core`.**
+- Recursos, edificios, recetas, rasgos del mapa, especies, biomas y tipos de mapa son definiciones JSON en `data/mods/core/defs/`.
+- Los modelos pasaron de `data/models` a `data/mods/core/models`. Los modelos de prueba del cargador pasaron a `tests/data_models_test`.
+- Los nombres de especies, biomas y tipos de mapa pasaron a los textos del mod (`data/mods/core/lang`).
+- El juego arma una estructura `sim::Content` con todo validado, y la simulación y el generador solo la leen. Las especies, biomas y tipos de mapa son índices en listas; ya no son enumeraciones del código.
+- Los tamaños de árbol siguen en el código: son reglas del motor, no contenido.
+- El generador da el mismo mapa que antes para la misma semilla (la suma de referencia no cambió).
+
+**D-702. Lua 5.4 aislado y determinista.**
+- Se vendorizó Lua 5.4.7 (aprobado en la especificación).
+- La semilla de los hashes de texto de Lua se fija en 0 (`luai_makeseed`); si no, el orden de `pairs` variaría entre máquinas.
+- `math` se reemplaza por funciones enteras. Los números con decimales de Lua siguen existiendo, pero los valores que vuelven al juego se leen como enteros (`luaL_checkinteger` los rechaza si no lo son).
+- Límites: 50 millones de instrucciones por llamada (gancho de conteo) y 64 MB por estado (asignador propio).
+- `require` solo carga `scripts/*.lua` del propio mod, con nombres `[a-z0-9_.]`.
+- Lua informa errores con `longjmp`, que no ejecuta destructores de C++. Las funciones que Lua llama leen y validan sus argumentos antes de crear objetos de C++. Está anotado en `lua_sandbox.cpp`.
+
+**D-703. Primer gancho de reglas: `on_map_generated`.**
+- Es el único punto de la simulación que existe antes de la fase 8, y cubre el criterio de "una regla en Lua sin tocar el código".
+- Se ejecuta en el hilo de generación con un estado de Lua nuevo por mod y por mapa, y un generador aleatorio derivado de la semilla y del id del mod.
+- Si una regla falla, el mapa se genera igual y se avisa.
+- Los ganchos de la simulación (nace un aldeano, termina una estación…) se agregan cuando existan esos sistemas.
+
+**D-704. Ids únicos por tipo; parches y quitas indican el tipo.**
+- `core:stone` es a la vez un recurso y un rasgo del mapa, y `core:giants` un bioma y un tipo de mapa, así que los ids se distinguen por tipo.
+- Un parche o una quita llevan `"type"`.
+- El campo de tamaño de mancha de los tipos de mapa se llama `patchSize`, para no confundirse con `"patch"`.
+
+**D-705. Orden de carga y errores.**
+- Primero `core`, luego los mods activados en el orden del jugador, movidos después de sus `dependencies` y `loadAfter` (orden topológico estable).
+- Un mod con errores en sus definiciones se quita y el contenido se reconstruye sin él (hasta 16 veces), junto con los mods que dependían de él.
+- Un mod de usuario con el id de uno incluido se rechaza.
+- Los errores se ven en la pantalla de Mods.
+
+**D-706. Hash del contenido.**
+- Cada mod tiene un hash FNV-1a de 64 bits de sus archivos (ruta, tamaño y contenido, en orden).
+- El contenido tiene un hash que combina id, versión y hash de los mods que afectan a la simulación. Sirve para comparar mods en multijugador y en las partidas guardadas; no es una firma de seguridad.
+
+**D-707. Elección de mods en `mods.json`.**
+Separado de `settings.json`, con escritura atómica y cuarentena si está dañado. Aplicar los mods reconstruye el contenido, recarga los textos y carga solo los modelos nuevos (los ya cargados se reutilizan por ruta). Si había un mapa abierto, se cierra.

@@ -8,6 +8,7 @@
 
 #include "sim/map.h"
 #include "sim/worldgen.h"
+#include "test_util.h"
 
 using namespace sc::sim;
 
@@ -19,6 +20,32 @@ MapSettings settings(std::uint64_t seed, MapSize size, std::uint8_t players = 1)
     s.size = size;
     s.players = players;
     return s;
+}
+
+const Content& content() {
+    return sc::test::core_content();
+}
+
+std::optional<MapData> gen(const MapSettings& s, const GenProgress& progress = {}) {
+    return generate_map(s, content(), progress);
+}
+
+std::uint8_t species(std::string_view id) {
+    const int i = content().flora.find_species(std::string("core:") + std::string(id));
+    REQUIRE(i >= 0);
+    return static_cast<std::uint8_t>(i);
+}
+
+std::uint8_t biome(std::string_view id) {
+    const int i = content().flora.find_biome(std::string("core:") + std::string(id));
+    REQUIRE(i >= 0);
+    return static_cast<std::uint8_t>(i);
+}
+
+std::uint8_t map_type(std::string_view id) {
+    const int i = content().flora.find_map_type(std::string("core:") + std::string(id));
+    REQUIRE(i >= 0);
+    return static_cast<std::uint8_t>(i);
 }
 
 double meters(Fixed f) {
@@ -81,27 +108,27 @@ constexpr std::uint64_t kGoldenSmallMap = 0x02797a3d14672e4bull;
 
 TEST_SUITE("worldgen") {
     TEST_CASE("the same settings give the same map") {
-        const auto a = generate_map(settings(12345, MapSize::Small));
-        const auto b = generate_map(settings(12345, MapSize::Small));
+        const auto a = gen(settings(12345, MapSize::Small));
+        const auto b = gen(settings(12345, MapSize::Small));
         REQUIRE(a.has_value());
         REQUIRE(b.has_value());
         CHECK(a->checksum() == b->checksum());
         CHECK(a->heights == b->heights);
         CHECK(a->features == b->features);
-        const auto c = generate_map(settings(12346, MapSize::Small));
+        const auto c = gen(settings(12346, MapSize::Small));
         REQUIRE(c.has_value());
         CHECK(c->checksum() != a->checksum());
     }
 
     TEST_CASE("the small map checksum is the same on every build") {
-        const auto m = generate_map(settings(12345, MapSize::Small));
+        const auto m = gen(settings(12345, MapSize::Small));
         REQUIRE(m.has_value());
         MESSAGE("small map checksum: " << m->checksum());
         CHECK(m->checksum() == kGoldenSmallMap);
     }
 
     TEST_CASE("layout and contents of a medium map") {
-        const auto m = generate_map(settings(777, MapSize::Medium, 4));
+        const auto m = gen(settings(777, MapSize::Medium, 4));
         REQUIRE(m.has_value());
         CHECK(m->size == 1024);
         CHECK(m->heights.size() == 1025u * 1025u);
@@ -139,7 +166,7 @@ TEST_SUITE("worldgen") {
         for (const std::uint64_t seed : {1ull, 2ull, 3ull, 4ull}) {
             MapSettings s = settings(seed, MapSize::Medium);
             s.water = Amount::High;
-            const auto m = generate_map(s);
+            const auto m = gen(s);
             REQUIRE(m.has_value());
             for (const WaterArea& a : water_areas(*m)) {
                 // A water area inside the map is a lake (large) or part of
@@ -155,7 +182,7 @@ TEST_SUITE("worldgen") {
             MapSettings s = settings(61, MapSize::Medium);
             s.water = Amount::High;
             s.relief = relief;
-            const auto m = generate_map(s);
+            const auto m = gen(s);
             REQUIRE(m.has_value());
             std::size_t cells = 0;
             std::size_t dry = 0;
@@ -182,8 +209,8 @@ TEST_SUITE("worldgen") {
         MapSettings low = settings(62, MapSize::Medium);
         MapSettings high = low;
         high.relief = Relief::Mountainous;
-        const auto a = generate_map(low);
-        const auto b = generate_map(high);
+        const auto a = gen(low);
+        const auto b = gen(high);
         REQUIRE(a.has_value());
         REQUIRE(b.has_value());
         const auto range = [](const MapData& m) {
@@ -196,7 +223,7 @@ TEST_SUITE("worldgen") {
 
     TEST_CASE("start positions are valid, apart and fair") {
         for (const std::uint8_t players : {std::uint8_t{1}, std::uint8_t{4}, std::uint8_t{8}}) {
-            const auto m = generate_map(settings(4242, MapSize::Medium, players));
+            const auto m = gen(settings(4242, MapSize::Medium, players));
             REQUIRE(m.has_value());
             REQUIRE(m->starts.size() == players);
             for (std::size_t i = 0; i < m->starts.size(); ++i) {
@@ -239,8 +266,8 @@ TEST_SUITE("worldgen") {
         MapSettings s = settings(99, MapSize::Large, 6);
         s.water = Amount::High;
         s.relief = Relief::Gentle;
-        s.map_type = MapType::Single;
-        s.biome = Biome::Giants;
+        s.map_type = map_type("single");
+        s.biome = biome("giants");
         BinaryWriter w;
         s.write(w);
         BinaryReader r(w.bytes());
@@ -256,14 +283,14 @@ TEST_SUITE("worldgen") {
         BinaryReader bp(bad);
         CHECK_FALSE(MapSettings::read(bp, back));
         bad = w.bytes();
-        bad[14] = 99;  // Unknown map type.
+        bad[14] = 255;  // Map type out of range.
         BinaryReader bt(bad);
         CHECK_FALSE(MapSettings::read(bt, back));
     }
 
     TEST_CASE("generation can be cancelled") {
         int calls = 0;
-        const auto m = generate_map(settings(5, MapSize::Small), [&](GenStage stage, int) {
+        const auto m = gen(settings(5, MapSize::Small), [&](GenStage stage, int) {
             ++calls;
             return stage != GenStage::Rivers;
         });
@@ -272,7 +299,7 @@ TEST_SUITE("worldgen") {
     }
 
     TEST_CASE("heights interpolate between vertices") {
-        const auto m = generate_map(settings(8, MapSize::Small));
+        const auto m = gen(settings(8, MapSize::Small));
         REQUIRE(m.has_value());
         const Fixed at_vertex = m->height_at(Fixed::from_int(100), Fixed::from_int(200));
         CHECK(at_vertex == Fixed::from_ratio(m->height_cm(100, 200), 100));
@@ -288,23 +315,27 @@ TEST_SUITE("worldgen") {
 
 TEST_SUITE("flora") {
     TEST_CASE("species sizes and fitting") {
-        CHECK(species_has_size(Species::Sequoia, TreeSize::Huge));
-        CHECK_FALSE(species_has_size(Species::Lemon, TreeSize::Medium));
-        CHECK(fit_size(Species::Lemon, TreeSize::Huge) == TreeSize::Small);
-        CHECK(fit_size(Species::MountainAsh, TreeSize::Small) == TreeSize::Large);
-        CHECK(fit_size(Species::Toog, TreeSize::Small) == TreeSize::Medium);
-        for (std::size_t i = 0; i < kSpeciesCount; ++i) {
-            CHECK(species_info(static_cast<Species>(i)).sizes != 0);
+        const Flora& f = content().flora;
+        CHECK(f.species.size() == 21);
+        CHECK(f.biomes.size() == 6);
+        CHECK(f.map_types.size() == 6);
+        CHECK(f.species_has_size(species("sequoia"), TreeSize::Huge));
+        CHECK_FALSE(f.species_has_size(species("lemon"), TreeSize::Medium));
+        CHECK(f.fit_size(species("lemon"), TreeSize::Huge) == TreeSize::Small);
+        CHECK(f.fit_size(species("mountain_ash"), TreeSize::Small) == TreeSize::Large);
+        CHECK(f.fit_size(species("toog"), TreeSize::Small) == TreeSize::Medium);
+        for (const SpeciesDef& sp : f.species) {
+            CHECK(sp.sizes != 0);
         }
         // Every biome's species exist, and every map type's biomes too.
-        for (std::size_t b = 0; b < kBiomeCount; ++b) {
-            for (const Weighted& w : biome_info(static_cast<Biome>(b)).species) {
-                CHECK(w.id < kSpeciesCount);
+        for (const BiomeDef& b : f.biomes) {
+            for (const Weighted& w : b.species) {
+                CHECK(w.id < f.species.size());
             }
         }
-        for (std::size_t t = 0; t < kMapTypeCount; ++t) {
-            for (const Weighted& w : map_type_info(static_cast<MapType>(t)).biomes) {
-                CHECK(w.id < kBiomeCount);
+        for (const MapTypeDef& t : f.map_types) {
+            for (const Weighted& w : t.biomes) {
+                CHECK(w.id < f.biomes.size());
             }
         }
         const Weighted items[] = {{3, 1}, {7, 3}};
@@ -315,7 +346,7 @@ TEST_SUITE("flora") {
     }
 
     TEST_CASE("trees have allowed sizes, heights in range and room") {
-        const auto m = generate_map(settings(21, MapSize::Medium, 2));
+        const auto m = gen(settings(21, MapSize::Medium, 2));
         REQUIRE(m.has_value());
         CHECK(m->generator_version == worldgen::kGeneratorVersion);
         CHECK(m->biome.size() == m->terrain.size());
@@ -325,10 +356,10 @@ TEST_SUITE("flora") {
             if (f.type != FeatureType::Tree) {
                 continue;
             }
-            REQUIRE(f.species < kSpeciesCount);
+            REQUIRE(f.species < content().flora.species.size());
             REQUIRE(f.size < kTreeSizes);
             const auto size = static_cast<TreeSize>(f.size);
-            CHECK(species_has_size(static_cast<Species>(f.species), size));
+            CHECK(content().flora.species_has_size(f.species, size));
             const std::int32_t h = MapData::tree_height_cm(f);
             CHECK(h >= size_info(size).min_cm - 1);
             CHECK(h <= size_info(size).max_cm + 1);
@@ -356,15 +387,15 @@ TEST_SUITE("flora") {
 
     TEST_CASE("map types change the forests") {
         MapSettings young = settings(33, MapSize::Small);
-        young.map_type = MapType::Young;
+        young.map_type = map_type("young");
         MapSettings giants = young;
-        giants.map_type = MapType::Giants;
+        giants.map_type = map_type("giants");
         MapSettings single = young;
-        single.map_type = MapType::Single;
-        single.biome = Biome::Orchard;
-        const auto a = generate_map(young);
-        const auto b = generate_map(giants);
-        const auto c = generate_map(single);
+        single.map_type = map_type("single");
+        single.biome = biome("orchard");
+        const auto a = gen(young);
+        const auto b = gen(giants);
+        const auto c = gen(single);
         REQUIRE(a.has_value());
         REQUIRE(b.has_value());
         REQUIRE(c.has_value());
@@ -382,15 +413,15 @@ TEST_SUITE("flora") {
         CHECK(young_big * 20 < giant_big);
         std::size_t other_biome = 0;
         for (const std::uint8_t cell : c->biome) {
-            other_biome += cell != static_cast<std::uint8_t>(Biome::Orchard);
+            other_biome += cell != biome("orchard");
         }
         CHECK(other_biome == 0);
         for (const MapFeature& f : c->features) {
             if (f.type == FeatureType::Tree) {
-                const auto sp = static_cast<Species>(f.species);
-                const bool orchard_species = sp == Species::Apple || sp == Species::Pear || sp == Species::Peach ||
-                                             sp == Species::Orange || sp == Species::Lemon ||
-                                             sp == Species::Avocado || sp == Species::Cherry;
+                const std::uint8_t sp = f.species;
+                const bool orchard_species = sp == species("apple") || sp == species("pear") || sp == species("peach") ||
+                                             sp == species("orange") || sp == species("lemon") ||
+                                             sp == species("avocado") || sp == species("cherry");
                 CHECK(orchard_species);
             }
         }
@@ -401,7 +432,7 @@ TEST_SUITE("worldgen_perf") {
     TEST_CASE("a huge map generates in under 30 seconds (release)") {
 #ifdef NDEBUG
         const auto t0 = std::chrono::steady_clock::now();
-        const auto m = generate_map(settings(2026, MapSize::Huge, 8));
+        const auto m = gen(settings(2026, MapSize::Huge, 8));
         const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
         REQUIRE(m.has_value());
         MESSAGE("huge map: " << seconds << " s, " << m->features.size() << " features");

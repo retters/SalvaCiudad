@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "mapFeature",
+      "id": "core:tree",
+      "kind": "tree",
+      "resource": "core:log",
+      "amount": 1,
+      "work": 25
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:stone",
+      "kind": "stone",
+      "resource": "core:stone",
+      "amount": 40,
+      "work": 30,
+      "model": "models/props/rock.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:iron_ore",
+      "kind": "ironOre",
+      "resource": "core:iron_ore",
+      "amount": 40,
+      "work": 40,
+      "model": "models/props/ore_rock.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:berry_bush",
+      "kind": "berryBush",
+      "resource": "core:berries",
+      "amount": 12,
+      "work": 15,
+      "regrowDays": 60,
+      "model": "models/props/berry_bush.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:herbs",
+      "kind": "herbs",
+      "resource": "core:herbs",
+      "amount": 6,
+      "work": 20,
+      "regrowDays": 90,
+      "model": "models/props/herb.glb"
+    }
+  ]
+}

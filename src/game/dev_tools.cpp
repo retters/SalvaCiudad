@@ -65,8 +65,11 @@ float feature_base_height(sim::FeatureType t) {
     }
 }
 
-std::string species_name(std::size_t s) {
-    return tr(std::string("species.") + sim::species_info(static_cast<sim::Species>(s)).id);
+std::string species_name(const sim::Content* content, std::size_t s) {
+    if (content == nullptr || s >= content->flora.species.size()) {
+        return "?";
+    }
+    return tr(content->flora.species[s].name_key);
 }
 
 std::string size_name(std::size_t s) {
@@ -157,7 +160,7 @@ std::string DevTools::name(const DevContext& ctx, DevObject o) const {
         case DevObject::Kind::Feature: {
             const sim::MapFeature& f = ctx.map->features[o.index];
             if (f.type == sim::FeatureType::Tree) {
-                return tr("dev.treeName", species_name(f.species), size_name(f.size));
+                return tr("dev.treeName", species_name(ctx.content, f.species), size_name(f.size));
             }
             return tr(feature_key(f.type));
         }
@@ -359,8 +362,11 @@ void DevTools::place(DevContext& ctx, math::Vec3 at) {
     f.rotation = rotation;
     switch (create_kind_) {
         case CreateKind::Tree: {
-            const auto species = static_cast<sim::Species>(species_);
-            const auto tsize = sim::fit_size(species, static_cast<sim::TreeSize>(size_));
+            if (ctx.content == nullptr || ctx.content->flora.species.empty()) {
+                return;
+            }
+            const auto species = std::min<std::size_t>(static_cast<std::size_t>(species_), ctx.content->flora.species.size() - 1);
+            const auto tsize = ctx.content->flora.fit_size(species, static_cast<sim::TreeSize>(size_));
             const sim::SizeInfo& si = sim::size_info(tsize);
             const auto cm = std::clamp(static_cast<std::int32_t>(height_m_ * 100.0f), si.min_cm, si.max_cm);
             f.type = sim::FeatureType::Tree;
@@ -376,7 +382,7 @@ void DevTools::place(DevContext& ctx, math::Vec3 at) {
         default: return;
     }
     ctx.map->features.push_back(f);
-    ctx.scene->refresh_features(*ctx.renderer, *ctx.map);
+    ctx.scene->refresh_features(*ctx.renderer, *ctx.map, *ctx.content);
     selected_ = {DevObject::Kind::Feature, ctx.map->features.size() - 1};
     last_message_ = tr("dev.create.added", name(ctx, selected_));
     list_dirty_ = true;
@@ -389,7 +395,7 @@ void DevTools::remove(DevContext& ctx, DevObject o) {
     switch (o.kind) {
         case DevObject::Kind::Feature:
             ctx.map->features.erase(ctx.map->features.begin() + static_cast<std::ptrdiff_t>(o.index));
-            ctx.scene->refresh_features(*ctx.renderer, *ctx.map);
+            ctx.scene->refresh_features(*ctx.renderer, *ctx.map, *ctx.content);
             break;
         case DevObject::Kind::House: ctx.scene->remove_house(*ctx.renderer, o.index); break;
         case DevObject::Kind::Villager: ctx.crowd->remove_villager(o.index); break;
@@ -467,7 +473,9 @@ void DevTools::terrain_info(const DevContext& ctx, math::Vec3 at) {
     ImGui::Text("%s: %d, %d", tr("dev.terrain.cell").c_str(), cx, cz);
     ImGui::Text("%s: %s", tr("dev.terrain.type").c_str(), tr(terrain_key(m.terrain_at(cx, cz))).c_str());
     ImGui::Text("%s: %s", tr("dev.terrain.biome").c_str(),
-                tr(std::string("biome.") + sim::biome_info(m.biome_at(cx, cz)).id).c_str());
+                ctx.content != nullptr && m.biome_at(cx, cz) < ctx.content->flora.biomes.size()
+                    ? tr(ctx.content->flora.biomes[m.biome_at(cx, cz)].name_key).c_str()
+                    : "?");
     ImGui::Text("%s: %d %%", tr("dev.terrain.fertility").c_str(), m.fertility[cell] * 100 / 255);
     ImGui::Text("%s: %.2f m", tr("dev.terrain.height").c_str(), static_cast<double>(h00) / 100.0);
     ImGui::Text("%s: %d %%", tr("dev.terrain.slope").c_str(), slope);
@@ -506,21 +514,24 @@ void DevTools::inspector_tab(DevContext& ctx) {
         const sim::MapFeature& f = ctx.map->features[o.index];
         ImGui::Text("%s: %.1f°", tr("dev.inspector.rotation").c_str(), static_cast<double>(f.rotation) * 360.0 / 65536.0);
         if (f.type == sim::FeatureType::Tree) {
-            const auto species = static_cast<sim::Species>(f.species);
+            const sim::Flora& flora = ctx.content->flora;
+            const std::size_t species = f.species;
             ImGui::SeparatorText(tr("dev.inspector.tree").c_str());
-            ImGui::Text("%s: %s", tr("dev.inspector.species").c_str(), species_name(f.species).c_str());
+            ImGui::Text("%s: %s", tr("dev.inspector.species").c_str(), species_name(ctx.content, f.species).c_str());
             const sim::SizeInfo& si = sim::size_info(static_cast<sim::TreeSize>(f.size));
             ImGui::Text("%s: %s (%.0f-%.0f m)", tr("dev.inspector.size").c_str(), size_name(f.size).c_str(),
                         static_cast<double>(si.min_cm) / 100.0, static_cast<double>(si.max_cm) / 100.0);
             std::string sizes;
             for (std::size_t s = 0; s < sim::kTreeSizes; ++s) {
-                if (sim::species_has_size(species, static_cast<sim::TreeSize>(s))) {
+                if (flora.species_has_size(species, static_cast<sim::TreeSize>(s))) {
                     sizes += (sizes.empty() ? "" : ", ") + size_name(s);
                 }
             }
             ImGui::Text("%s: %s", tr("dev.inspector.sizes").c_str(), sizes.c_str());
-            ImGui::Text("%s: %s", tr("dev.inspector.model").c_str(),
-                        tree_model_file(species, static_cast<sim::TreeSize>(f.size)).c_str());
+            if (species < flora.species.size()) {
+                ImGui::Text("%s: %s", tr("dev.inspector.model").c_str(),
+                            tree_model_file(flora.species[species], static_cast<sim::TreeSize>(f.size)).c_str());
+            }
         } else {
             ImGui::Text("%s: %.2f", tr("dev.inspector.scale").c_str(), static_cast<double>(to_float(f.scale)));
         }
@@ -574,20 +585,23 @@ void DevTools::create_tab(DevContext& ctx) {
     }
     if (create_kind_ == CreateKind::Tree) {
         if (ImGui::BeginCombo(label("dev.inspector.species", "species").c_str(),
-                              species_name(static_cast<std::size_t>(species_)).c_str())) {
-            for (std::size_t s = 0; s < sim::kSpeciesCount; ++s) {
-                if (ImGui::Selectable((species_name(s) + "###s" + std::to_string(s)).c_str(),
+                              species_name(ctx.content, static_cast<std::size_t>(species_)).c_str())) {
+            const std::size_t count = ctx.content != nullptr ? ctx.content->flora.species.size() : 0;
+            for (std::size_t s = 0; s < count; ++s) {
+                if (ImGui::Selectable((species_name(ctx.content, s) + "###s" + std::to_string(s)).c_str(),
                                       static_cast<int>(s) == species_)) {
                     species_ = static_cast<int>(s);
                 }
             }
             ImGui::EndCombo();
         }
-        const auto species = static_cast<sim::Species>(species_);
-        size_ = static_cast<int>(sim::fit_size(species, static_cast<sim::TreeSize>(size_)));
+        static const sim::Flora kNoFlora;
+        const sim::Flora& flora = ctx.content != nullptr ? ctx.content->flora : kNoFlora;
+        const auto species = static_cast<std::size_t>(species_);
+        size_ = static_cast<int>(flora.fit_size(species, static_cast<sim::TreeSize>(size_)));
         if (ImGui::BeginCombo(label("dev.inspector.size", "size").c_str(), size_name(static_cast<std::size_t>(size_)).c_str())) {
             for (std::size_t s = 0; s < sim::kTreeSizes; ++s) {
-                if (!sim::species_has_size(species, static_cast<sim::TreeSize>(s))) {
+                if (!flora.species_has_size(species, static_cast<sim::TreeSize>(s))) {
                     continue;
                 }
                 if (ImGui::Selectable((size_name(s) + "###z" + std::to_string(s)).c_str(), static_cast<int>(s) == size_)) {
@@ -673,7 +687,7 @@ void DevTools::rebuild_list(const DevContext& ctx) {
     list_.clear();
     const std::string needle = fold_for_search(applied_search_);
     // Features share few distinct names: fold each name once per slot.
-    std::vector<std::int8_t> slot_match(kVisualSlots, -1);
+    std::vector<std::int8_t> slot_match(ctx.content != nullptr ? visual_slot_count(*ctx.content) : 0, -1);
     const auto matches = [&](DevObject o) {
         if (!passes(ctx, o)) {
             return false;
@@ -682,7 +696,11 @@ void DevTools::rebuild_list(const DevContext& ctx) {
             return true;
         }
         if (o.kind == DevObject::Kind::Feature) {
-            std::int8_t& m = slot_match[visual_slot(ctx.map->features[o.index])];
+            const std::size_t slot = visual_slot(*ctx.content, ctx.map->features[o.index]);
+            if (slot >= slot_match.size()) {
+                return false;
+            }
+            std::int8_t& m = slot_match[slot];
             if (m < 0) {
                 m = fold_for_search(name(ctx, o)).find(needle) != std::string::npos ? 1 : 0;
             }

@@ -85,7 +85,8 @@ std::uint64_t random_seed() {
     return 1 + z % 999'999'999ull;
 }
 
-void NewGameScreen::open() {
+void NewGameScreen::open(const sim::Content* content) {
+    content_ = content;
     settings_ = sim::MapSettings{};
     settings_.seed = random_seed();
     seed_text_ = std::to_string(settings_.seed);
@@ -192,27 +193,40 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     }
     {
         std::vector<std::string> options;
-        for (std::size_t i = 0; i < sim::kMapTypeCount; ++i) {
-            options.push_back(tr(std::string("mapType.") + sim::map_type_info(static_cast<sim::MapType>(i)).id));
+        static const sim::Flora kNoFlora;
+        const sim::Flora& flora = content_ != nullptr ? content_->flora : kNoFlora;
+        for (const sim::MapTypeDef& t : flora.map_types) {
+            options.push_back(tr(t.name_key));
+        }
+        if (options.empty()) {
+            options.push_back("-");
         }
         int index = static_cast<int>(settings_.map_type);
-        const std::string tip = tr(std::string("mapType.") + sim::map_type_info(settings_.map_type).id + ".tooltip");
+        const std::string tip = settings_.map_type < flora.map_types.size()
+                                    ? tr(flora.map_types[settings_.map_type].name_key + ".tooltip")
+                                    : std::string{};
         const Row r = row(ctx, x, y, cw, tr("newGame.mapType"), tip);
         if (ctx.selector(ctx.id("map_type"), r.control, index, options, tip)) {
-            settings_.map_type = static_cast<sim::MapType>(index);
+            settings_.map_type = static_cast<std::uint8_t>(index);
         }
     }
     {
         std::vector<std::string> options;
-        for (std::size_t i = 0; i < sim::kBiomeCount; ++i) {
-            options.push_back(tr(std::string("biome.") + sim::biome_info(static_cast<sim::Biome>(i)).id));
+        static const sim::Flora kNoFlora;
+        const sim::Flora& flora = content_ != nullptr ? content_->flora : kNoFlora;
+        for (const sim::BiomeDef& b : flora.biomes) {
+            options.push_back(tr(b.name_key));
+        }
+        if (options.empty()) {
+            options.push_back("-");
         }
         int index = static_cast<int>(settings_.biome);
-        const bool single = settings_.map_type == sim::MapType::Single;
+        // The biome matters for map types without their own mix of biomes.
+        const bool single = settings_.map_type < flora.map_types.size() && flora.map_types[settings_.map_type].biomes.empty();
         const std::string tip = tr(single ? "newGame.biome.tooltip" : "newGame.biome.disabledTooltip");
         const Row r = row(ctx, x, y, cw, tr("newGame.biome"), tip);
         if (ctx.selector(ctx.id("biome"), r.control, index, options, tip, single)) {
-            settings_.biome = static_cast<sim::Biome>(index);
+            settings_.biome = static_cast<std::uint8_t>(index);
         }
     }
     struct AmountRow {

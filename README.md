@@ -2,7 +2,7 @@
 
 Juego 3D de construcción y supervivencia de pueblos medievales con multijugador de 1 a 12 jugadores. Motor propio en C++20 sobre SDL3. El diseño completo está en [ESPECIFICACION_SalvaCiudad.md](ESPECIFICACION_SalvaCiudad.md) y las decisiones en [docs/DECISIONES.md](docs/DECISIONES.md).
 
-**Estado:** fase 6 de 21 (mapa procedural). "Un jugador" abre la pantalla de partida nueva: semilla, tamaño (hasta 4 km de lado), ríos y lagos, bosques, recursos, relieve y posiciones de inicio. El mapa se genera en segundo plano y se puede recorrer con la cámara; todavía no hay pueblo (fase 8). La simulación es determinista ([docs/DETERMINISMO.md](docs/DETERMINISMO.md)) y los modelos salen de scripts de Blender ([docs/ARTE.md](docs/ARTE.md)). La "Escena de prueba 3D" sigue disponible.
+**Estado:** fase 7 de 21 (mods y datos). El contenido (recursos, edificios, árboles, biomas y tipos de mapa) es un mod, `core`, y se pueden agregar mods con datos, modelos, textos y reglas en Lua; ver [docs/CREAR_MODS.md](docs/CREAR_MODS.md). "Un jugador" genera un mapa y se puede recorrer; el pueblo jugable llega en la fase 8.
 
 Requisito para jugar: una tarjeta gráfica compatible con Direct3D 12 (ver D-201).
 
@@ -23,7 +23,7 @@ ctest --preset release
 
 ## Modelos
 
-Los modelos de `data/models` se generan con Blender desde los scripts de `art/blender`. Ver [docs/ARTE.md](docs/ARTE.md). Compilar el juego no requiere Blender.
+Los modelos de `data/mods/core/models` se generan con Blender desde los scripts de `art/blender`. Ver [docs/ARTE.md](docs/ARTE.md). Compilar el juego no requiere Blender.
 
 ## Dónde guarda sus datos
 
@@ -154,6 +154,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Alrededor del mapa hay una cordillera con nieve en las cumbres, y hay nubes low-poly en el cielo.
 - [ ] Mapa Enorme en Ultra: más de 60 FPS en los tres modos de cámara.
 - [ ] **Tu opinión:** comparado con las imágenes de referencia, ¿qué ajustarías (tamaño de las facetas, colores, agua, montañas)?
+
+### Fase 7 (mods y datos)
+
+- [ ] El menú principal tiene "Mods": muestra el juego base (siempre activo) y los mods de la carpeta de mods, con versión, autor, origen y hash.
+- [ ] Copiar `tools/example_mod` a la carpeta de mods (botón "Abrir carpeta de mods"), activarlo y pulsar Aplicar: aparece como "Mod de ejemplo" y "Cargado".
+- [ ] Con el mod de ejemplo, un mapa nuevo tiene un círculo de 12 piedras alrededor de cada inicio y una secuoya enorme cerca.
+- [ ] Romper a propósito el mod (por ejemplo, `"category": "nada"` en `defs/example.json`) y aplicar: el mod queda desactivado con el error explicado, y el juego sigue funcionando.
+- [ ] Un error en `scripts/main.lua` (por ejemplo `error("x")` dentro de `on_map_generated`) genera el mapa igual y muestra un aviso.
+- [ ] La guía `docs/CREAR_MODS.md` se entiende sin mirar el código.
 
 ## Licencia
 

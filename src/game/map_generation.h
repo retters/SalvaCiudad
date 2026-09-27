@@ -9,6 +9,7 @@
 #include <thread>
 
 #include "game/map_scene.h"
+#include "mods/mod_library.h"
 #include "sim/map.h"
 #include "sim/worldgen.h"
 
@@ -18,6 +19,7 @@ struct GeneratedMap {
     sim::MapData map;
     MapVisuals visuals;
     double seconds = 0.0;
+    std::vector<std::string> script_errors;  // From the mods' map rules.
 };
 
 // Steps shown to the player: the generator's stages, then preparing the
@@ -41,8 +43,9 @@ public:
     MapGenerationJob(const MapGenerationJob&) = delete;
     MapGenerationJob& operator=(const MapGenerationJob&) = delete;
 
-    // Starts a new generation, cancelling any running one.
-    void start(const sim::MapSettings& settings);
+    // Starts a new generation with the mods' content and rules, cancelling
+    // any running one. `pack` is kept alive while generating.
+    void start(const sim::MapSettings& settings, std::shared_ptr<const mods::BuildResult> pack);
     // Asks the worker to stop and waits for it.
     void cancel();
 
@@ -51,7 +54,7 @@ public:
     [[nodiscard]] std::unique_ptr<GeneratedMap> take();
 
 private:
-    void run(sim::MapSettings settings);
+    void run(sim::MapSettings settings, std::shared_ptr<const mods::BuildResult> pack);
     void join();
 
     std::thread worker_;

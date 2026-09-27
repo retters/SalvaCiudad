@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "language": {
+    "code": "en",
+    "name": "English",
+    "pluralRule": "one",
+    "decimalSeparator": ".",
+    "groupSeparator": ",",
+    "minimumGroupingDigits": 1
+  },
+  "strings": {
+    "mod.example.name": "Example mod",
+    "mod.example.description": "Shows how to add a building, a resource and a map rule.",
+    "resource.amber": "Amber",
+    "building.shrine": "Shrine"
+  }
+}

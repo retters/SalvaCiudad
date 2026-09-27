@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "language": {
+    "code": "es",
+    "name": "Español",
+    "pluralRule": "one",
+    "decimalSeparator": ",",
+    "groupSeparator": " ",
+    "minimumGroupingDigits": 2
+  },
+  "strings": {
+    "mod.example.name": "Mod de ejemplo",
+    "mod.example.description": "Muestra cómo agregar un edificio, un recurso y una regla del mapa.",
+    "resource.amber": "Ámbar",
+    "building.shrine": "Santuario"
+  }
+}

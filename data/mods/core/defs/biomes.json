@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "biome",
+      "id": "core:temperate",
+      "name": "biome.temperate",
+      "species": {
+        "core:oak": 35,
+        "core:pine": 25,
+        "core:elm": 20,
+        "core:magnolia": 5,
+        "core:apple": 5,
+        "core:pear": 5,
+        "core:cherry": 5
+      },
+      "sizeWeights": [
+        30,
+        35,
+        30,
+        5
+      ],
+      "density": 100,
+      "grass": 200
+    },
+    {
+      "type": "biome",
+      "id": "core:pinewood",
+      "name": "biome.pinewood",
+      "species": {
+        "core:pine": 75,
+        "core:stone_pine": 20,
+        "core:oak": 5
+      },
+      "sizeWeights": [
+        25,
+        35,
+        30,
+        10
+      ],
+      "density": 115,
+      "grass": 120
+    },
+    {
+      "type": "biome",
+      "id": "core:giants",
+      "name": "biome.giants",
+      "species": {
+        "core:sequoia": 40,
+        "core:mountain_ash": 25,
+        "core:toog": 20,
+        "core:eucalyptus": 15
+      },
+      "sizeWeights": [
+        15,
+        20,
+        30,
+        35
+      ],
+      "density": 70,
+      "grass": 170
+    },
+    {
+      "type": "biome",
+      "id": "core:australian",
+      "name": "biome.australian",
+      "species": {
+        "core:eucalyptus": 45,
+        "core:bottlebrush": 30,
+        "core:mountain_ash": 25
+      },
+      "sizeWeights": [
+        25,
+        30,
+        30,
+        15
+      ],
+      "density": 75,
+      "grass": 110
+    },
+    {
+      "type": "biome",
+      "id": "core:flowering",
+      "name": "biome.flowering",
+      "species": {
+        "core:jacaranda": 25,
+        "core:flamboyant": 20,
+        "core:tulip_tree": 20,
+        "core:silk_floss": 15,
+        "core:magnolia": 10,
+        "core:cherry": 10
+      },
+      "sizeWeights": [
+        35,
+        40,
+        25,
+        0
+      ],
+      "density": 90,
+      "grass": 210
+    },
+    {
+      "type": "biome",
+      "id": "core:orchard",
+      "name": "biome.orchard",
+      "species": {
+        "core:apple": 20,
+        "core:pear": 15,
+        "core:peach": 15,
+        "core:orange": 15,
+        "core:lemon": 15,
+        "core:avocado": 10,
+        "core:cherry": 10
+      },
+      "sizeWeights": [
+        60,
+        40,
+        0,
+        0
+      ],
+      "density": 55,
+      "grass": 230
+    }
+  ]
+}

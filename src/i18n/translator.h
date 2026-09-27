@@ -37,6 +37,12 @@ public:
     // Adds one language from memory (used by `load` and by the tests).
     bool add_language(std::string_view json_text, std::string_view origin_for_log);
 
+    // Texts of a mod for one language (same file format). They are looked
+    // up before the game's own texts of that language; later mods win.
+    // Languages only a mod has are not offered in the language list.
+    bool add_mod_texts(std::string_view json_text, std::string_view origin_for_log);
+    void clear_mod_texts();
+
     // Chooses a language code for a setting ("auto" or a code) and the
     // user's preferred UI languages (for example {"es-MX", "en-US"}).
     [[nodiscard]] std::string resolve(std::string_view setting, std::span<const std::string> preferred) const;
@@ -61,7 +67,10 @@ private:
     [[nodiscard]] const Catalog* find_catalog(std::string_view code) const;
     [[nodiscard]] const Entry* lookup(std::string_view key) const;
 
+    [[nodiscard]] const Entry* find_in(const Catalog* c, std::string_view key) const;
+
     std::vector<std::unique_ptr<Catalog>> catalogs_;
+    std::vector<std::unique_ptr<Catalog>> mod_catalogs_;  // In load order.
     std::vector<const Catalog*> chain_;  // Active language first, base last.
     std::uint64_t generation_ = 0;
     mutable std::unordered_set<std::string> reported_missing_;

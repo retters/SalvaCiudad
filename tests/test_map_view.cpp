@@ -17,6 +17,7 @@
 #include "ui/font.h"
 #include "ui/glyph_atlas.h"
 #include "ui/text.h"
+#include "test_util.h"
 
 using namespace sc;
 
@@ -27,7 +28,7 @@ sim::MapData small_map(std::uint64_t seed) {
     s.seed = seed;
     s.size = sim::MapSize::Small;
     s.players = 2;
-    auto m = sim::generate_map(s);
+    auto m = sim::generate_map(s, sc::test::core_content());
     REQUIRE(m.has_value());
     return std::move(*m);
 }
@@ -37,7 +38,7 @@ sim::MapData small_map(std::uint64_t seed) {
 TEST_SUITE("map_view") {
     TEST_CASE("map visuals match the map") {
         const sim::MapData map = small_map(31);
-        const MapVisuals v = build_map_visuals(map);
+        const MapVisuals v = build_map_visuals(map, sc::test::core_content());
         CHECK(v.terrain.valid());
         CHECK(v.terrain.cells == 512);
         CHECK(v.terrain.color_size == 512);
@@ -54,7 +55,7 @@ TEST_SUITE("map_view") {
             }
         }
         // Same map, same colors.
-        const MapVisuals again = build_map_visuals(map);
+        const MapVisuals again = build_map_visuals(map, sc::test::core_content());
         CHECK(again.terrain.colors == v.terrain.colors);
     }
 
@@ -130,7 +131,7 @@ TEST_SUITE("map_view") {
         sim::MapSettings s;
         s.seed = 77;
         s.size = sim::MapSize::Small;
-        job.start(s);
+        job.start(s, std::shared_ptr<const mods::BuildResult>(&sc::test::core_pack(), [](const mods::BuildResult*) {}));
         // Wait for it (small maps take well under a second in release).
         for (int i = 0; i < 6000 && job.status().state == MapGenStatus::State::Running; ++i) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -139,12 +140,12 @@ TEST_SUITE("map_view") {
         CHECK(job.status().overall() == doctest::Approx(1.0f));
         const std::unique_ptr<GeneratedMap> result = job.take();
         REQUIRE(result != nullptr);
-        CHECK(result->map.checksum() == sim::generate_map(s)->checksum());
+        CHECK(result->map.checksum() == sim::generate_map(s, sc::test::core_content())->checksum());
         CHECK(job.status().state == MapGenStatus::State::Idle);
         CHECK(job.take() == nullptr);
 
         s.size = sim::MapSize::Large;
-        job.start(s);
+        job.start(s, std::shared_ptr<const mods::BuildResult>(&sc::test::core_pack(), [](const mods::BuildResult*) {}));
         job.cancel();
         CHECK(job.status().state != MapGenStatus::State::Running);
         CHECK(job.take() == nullptr);
@@ -161,26 +162,26 @@ TEST_SUITE("dev_tools") {
     }
 
     TEST_CASE("every tree slot has a model file name") {
-        for (std::size_t s = 0; s < sim::kSpeciesCount; ++s) {
+        const mods::BuildResult& pack = sc::test::core_pack();
+        const sim::Flora& flora = pack.content.flora;
+        for (std::size_t s = 0; s < flora.species.size(); ++s) {
             for (std::size_t z = 0; z < sim::kTreeSizes; ++z) {
-                const auto species = static_cast<sim::Species>(s);
                 const auto size = static_cast<sim::TreeSize>(z);
-                if (!sim::species_has_size(species, size)) {
+                if (!flora.species_has_size(s, size)) {
                     continue;
                 }
                 const std::filesystem::path file =
-                    std::filesystem::path(SC_SOURCE_DIR) / "data/models/props" / tree_model_file(species, size);
+                    mods::mod_file(pack.dir(flora.species[s].mod), tree_model_file(flora.species[s], size));
                 CHECK_MESSAGE(std::filesystem::exists(file), file.string());
             }
         }
     }
 
     TEST_CASE("grass grows on grass, not on sand") {
-        CHECK(grass_density(sim::Terrain::Grass, 255, sim::Biome::Temperate) > 100);
-        CHECK(grass_density(sim::Terrain::Sand, 255, sim::Biome::Temperate) == 0);
-        CHECK(grass_density(sim::Terrain::Water, 255, sim::Biome::Temperate) == 0);
-        CHECK(grass_density(sim::Terrain::Grass, 0, sim::Biome::Temperate) <
-              grass_density(sim::Terrain::Grass, 255, sim::Biome::Temperate));
+        CHECK(grass_density(sim::Terrain::Grass, 255, 200) > 100);
+        CHECK(grass_density(sim::Terrain::Sand, 255, 200) == 0);
+        CHECK(grass_density(sim::Terrain::Water, 255, 200) == 0);
+        CHECK(grass_density(sim::Terrain::Grass, 0, 200) < grass_density(sim::Terrain::Grass, 255, 200));
     }
 }
 
@@ -213,7 +214,7 @@ TEST_SUITE("new_game") {
         ui::Context ctx{text};
 
         NewGameScreen screen;
-        screen.open();
+        screen.open(&sc::test::core_content());
         const auto frame = [&](SDL_Scancode key) {
             ui::Input in;
             if (key != SDL_SCANCODE_UNKNOWN) {

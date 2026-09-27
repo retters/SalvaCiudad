@@ -6,6 +6,7 @@
 #include <functional>
 #include <optional>
 
+#include "sim/content.h"
 #include "sim/map.h"
 
 namespace sc::sim {
@@ -16,8 +17,19 @@ enum class GenStage : std::uint8_t { Relief, Lakes, Rivers, Soil, Biomes, Forest
 // false cancels the generation.
 using GenProgress = std::function<bool(GenStage stage, int percent)>;
 
-// Empty if cancelled.
-[[nodiscard]] std::optional<MapData> generate_map(const MapSettings& settings, const GenProgress& progress = {});
+// Rules from the mods that change a generated map (section 7.13). Called
+// once, on the generation thread, after everything else; the rules must be
+// deterministic. Returning false cancels the generation.
+class MapHooks {
+public:
+    virtual ~MapHooks() = default;
+    virtual bool map_generated(MapData& map) = 0;
+};
+
+// Empty if cancelled. `content` gives the species, biomes and map types;
+// map type and biome indices out of range fall back to the first ones.
+[[nodiscard]] std::optional<MapData> generate_map(const MapSettings& settings, const Content& content,
+                                                  const GenProgress& progress = {}, MapHooks* hooks = nullptr);
 
 // Tuning shared with the tests.
 namespace worldgen {

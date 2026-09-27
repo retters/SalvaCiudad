@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "recipe",
+      "id": "core:split_firewood",
+      "inputs": {
+        "core:log": 1
+      },
+      "outputs": {
+        "core:firewood": 3
+      },
+      "work": 60
+    }
+  ]
+}

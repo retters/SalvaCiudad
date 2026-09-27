@@ -9,6 +9,8 @@
 #include "game/camera.h"
 #include "game/map_generation.h"
 #include "game/settings.h"
+#include "mods/mod_library.h"
+#include "sim/content.h"
 #include "ui/font_library.h"
 
 namespace sc {
@@ -55,6 +57,14 @@ public:
     [[nodiscard]] virtual const sim::MapData* current_map() const = 0;
 
     virtual void open_data_folder() = 0;
+
+    // Mods (section 7.13).
+    [[nodiscard]] virtual mods::ModLibrary& mod_library() = 0;
+    // Saves the choice of mods and rebuilds the game's content with them.
+    virtual void apply_mods(const std::vector<std::string>& enabled) = 0;
+    virtual void open_mods_folder() = 0;
+    // The content of the loaded mods; never null after start-up.
+    [[nodiscard]] virtual const sim::Content* content() const = 0;
     virtual void request_quit() = 0;
 };
 

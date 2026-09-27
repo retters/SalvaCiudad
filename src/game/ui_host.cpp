@@ -33,7 +33,7 @@ ui::Rect dialog_frame(ui::Context& ctx, float content_height, std::string_view t
 
 }  // namespace
 
-UiHost::UiHost(Services& services) : services_(services), settings_screen_(services) {}
+UiHost::UiHost(Services& services) : services_(services), settings_screen_(services), mods_screen_(services) {}
 
 void UiHost::show_message(std::string title, std::string body) {
     messages_.push_back({std::move(title), std::move(body)});
@@ -118,6 +118,10 @@ void UiHost::frame(ui::Context& ctx) {
     } else if (screen_ == Screen::MapView) {
         ctx.set_input_blocked(modal);
         map_hud(ctx);
+    } else if (screen_ == Screen::Mods) {
+        if (!mods_screen_.frame(ctx, modal)) {
+            screen_ = Screen::MainMenu;
+        }
     } else if (screen_ == Screen::Settings) {
         if (!settings_screen_.frame(ctx, *this, modal)) {
             screen_ = settings_return_ == Screen::MapView && services_.current_map() != nullptr ? Screen::MapView
@@ -201,7 +205,7 @@ void UiHost::main_menu(ui::Context& ctx) {
         {"host", tr("menu.main.hostGame"), tr("menu.main.hostGame.tooltip"), false},
         {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), false},
         {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), false},
-        {"mods", tr("menu.main.mods"), tr("menu.main.mods.tooltip"), false},
+        {"mods", tr("menu.main.mods"), tr("menu.main.mods.tooltip"), true},
         {"testScene", tr("menu.main.testScene"), tr("menu.main.testScene.tooltip"), services_.scene_available()},
         {"settings", tr("menu.main.settings"), tr("menu.main.settings.tooltip"), true},
         {"quit", tr("menu.main.quit"), tr("menu.main.quit.tooltip"), true},
@@ -258,8 +262,11 @@ void UiHost::main_menu(ui::Context& ctx) {
         if (ctx.button(ctx.id(e.id), r, e.label, e.tooltip)) {
             if (!e.available) {
                 show_message(tr("dialog.comingSoon.title"), tr("dialog.comingSoon.body", e.label));
+            } else if (std::string_view(e.id) == "mods") {
+                mods_screen_.open();
+                screen_ = Screen::Mods;
             } else if (std::string_view(e.id) == "single") {
-                new_game_.open();
+                new_game_.open(services_.content());
                 screen_ = Screen::NewGame;
             } else if (std::string_view(e.id) == "testScene") {
                 screen_ = Screen::TestScene;

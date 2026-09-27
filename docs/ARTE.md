@@ -7,13 +7,13 @@ Todos los modelos del juego salen de **scripts de Blender versionados** en `art/
 Con Blender 5.2 instalado, desde la raíz del repositorio:
 
 ```
-blender --background --factory-startup --python art/blender/build_all.py -- data/models
+blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models
 ```
 
 - `--background` no abre la interfaz ni toca tus escenas abiertas.
 - `--factory-startup` ignora tus preferencias y complementos, para que el resultado no dependa del equipo.
-- Se puede limitar a un grupo: `... -- data/models characters`, `... -- data/models props` o `... -- data/models trees` (y después de `trees`, las especies: `trees oak elm`).
-- Vista previa de los árboles, cada especie en sus tamaños junto a un aldeano: `blender --background --factory-startup --python art/blender/preview_trees.py -- data/models tmp/arboles`.
+- Se puede limitar a un grupo: `... -- data/mods/core/models characters`, `... -- data/mods/core/models props` o `... -- data/mods/core/models trees` (y después de `trees`, las especies: `trees oak elm`).
+- Vista previa de los árboles, cada especie en sus tamaños junto a un aldeano: `blender --background --factory-startup --python art/blender/preview_trees.py -- data/mods/core/models tmp/arboles`.
 - Los `.glb` generados se guardan en el repositorio, así compilar el juego no requiere Blender.
 
 **Reproducible:** generar dos veces da archivos idénticos byte a byte. El exportador de Blender cambia el orden de los triángulos entre ejecuciones, así que `common.export_glb` los ordena después de exportar (D-402). Para comprobarlo, genera en dos carpetas y compáralas:
@@ -26,7 +26,7 @@ blender --background --factory-startup --python art/blender/build_all.py -- tmp/
 **Vistas previas** (imágenes PNG, sin abrir Blender):
 
 ```
-blender --background --factory-startup --python art/blender/preview.py -- data/models tmp/preview
+blender --background --factory-startup --python art/blender/preview.py -- data/mods/core/models tmp/preview
 ```
 
 Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las poses animadas en estas vistas. La referencia es cómo se ven en el juego.

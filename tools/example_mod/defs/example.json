@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {"type": "resource", "id": "example:amber", "name": "resource.amber", "category": "good", "weight": 1},
+    {"type": "building", "id": "example:shrine", "name": "building.shrine", "kind": "decoration",
+     "model": "models/shrine.glb", "size": [4, 4], "cost": {"core:stone": 10, "core:log": 4}, "buildWork": 200,
+     "desirability": 10},
+    {"type": "building", "patch": "core:storehouse", "storage": 800}
+  ]
+}

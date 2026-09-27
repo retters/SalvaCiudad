@@ -1,6 +1,6 @@
 """Builds every SalvaCiudad model.
 
-    blender --background --factory-startup --python art/blender/build_all.py -- data/models [only]
+    blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models [only]
 
 `only` limits the build to one group: characters, props or trees. After
 "trees", species ids limit it further (for example: trees oak elm).
@@ -18,7 +18,7 @@ import trees  # noqa: E402
 
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    out = os.path.abspath(args[0] if args else "data/models")
+    out = os.path.abspath(args[0] if args else "data/mods/core/models")
     only = args[1] if len(args) > 1 else None
     if only in (None, "characters"):
         human.make_all(os.path.join(out, "characters"))

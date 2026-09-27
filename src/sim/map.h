@@ -36,8 +36,8 @@ struct MapSettings {
     Amount resources = Amount::Normal;
     Relief relief = Relief::Low;
     std::uint8_t players = 1;           // Start positions to place (1..12).
-    MapType map_type = MapType::Classic;
-    Biome biome = Biome::Temperate;     // The only biome with MapType::Single.
+    std::uint8_t map_type = 0;          // Index into the content's map types.
+    std::uint8_t biome = 0;             // The only biome, for a map type without biomes.
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);
@@ -91,7 +91,7 @@ struct MapData {
     std::vector<std::uint16_t> water;      // size^2 cells: water surface in cm, 0 = dry.
     std::vector<std::uint8_t> terrain;     // size^2 cells, Terrain.
     std::vector<std::uint8_t> fertility;   // size^2 cells, 0..255.
-    std::vector<std::uint8_t> biome;       // size^2 cells, Biome.
+    std::vector<std::uint8_t> biome;       // size^2 cells, index into the content's biomes.
     std::vector<MapFeature> features;
     std::vector<Zone> zones;
     std::vector<StartPosition> starts;
@@ -102,7 +102,7 @@ struct MapData {
     [[nodiscard]] Fixed height_at(Fixed x, Fixed z) const;
     [[nodiscard]] Terrain terrain_at(std::int32_t cx, std::int32_t cz) const;
     [[nodiscard]] bool water_at(std::int32_t cx, std::int32_t cz) const;
-    [[nodiscard]] Biome biome_at(std::int32_t cx, std::int32_t cz) const;
+    [[nodiscard]] std::uint8_t biome_at(std::int32_t cx, std::int32_t cz) const;
     // A tree's height in centimeters (0 for other features).
     [[nodiscard]] static std::int32_t tree_height_cm(const MapFeature& f);
 

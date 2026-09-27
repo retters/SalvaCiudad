@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "core/log.h"
+#include "script/map_script.h"
 
 namespace sc {
 
@@ -22,7 +23,7 @@ void MapGenerationJob::join() {
     }
 }
 
-void MapGenerationJob::start(const sim::MapSettings& settings) {
+void MapGenerationJob::start(const sim::MapSettings& settings, std::shared_ptr<const mods::BuildResult> pack) {
     cancel();
     {
         const std::lock_guard lock(result_mutex_);
@@ -32,7 +33,7 @@ void MapGenerationJob::start(const sim::MapSettings& settings) {
     step_ = 0;
     percent_ = 0;
     state_ = static_cast<int>(MapGenStatus::State::Running);
-    worker_ = std::thread([this, settings] { run(settings); });
+    worker_ = std::thread([this, settings, pack = std::move(pack)] { run(settings, pack); });
 }
 
 void MapGenerationJob::cancel() {
@@ -61,15 +62,16 @@ std::unique_ptr<GeneratedMap> MapGenerationJob::take() {
     return std::move(result_);
 }
 
-void MapGenerationJob::run(sim::MapSettings settings) {
+void MapGenerationJob::run(sim::MapSettings settings, std::shared_ptr<const mods::BuildResult> pack) {
     using State = MapGenStatus::State;
     const auto t0 = std::chrono::steady_clock::now();
     auto result = std::make_unique<GeneratedMap>();
-    std::optional<sim::MapData> map = sim::generate_map(settings, [this](sim::GenStage stage, int percent) {
+    script::MapScripts scripts(pack->scripts, pack->content);
+    std::optional<sim::MapData> map = sim::generate_map(settings, pack->content, [this](sim::GenStage stage, int percent) {
         step_ = static_cast<int>(stage);
         percent_ = percent;
         return !cancel_.load();
-    });
+    }, &scripts);
     if (!map.has_value() || cancel_) {
         state_ = static_cast<int>(State::Cancelled);
         return;
@@ -77,7 +79,8 @@ void MapGenerationJob::run(sim::MapSettings settings) {
     step_ = kMapGenSteps - 1;
     percent_ = 0;
     result->map = std::move(*map);
-    result->visuals = build_map_visuals(result->map);
+    result->visuals = build_map_visuals(result->map, pack->content);
+    result->script_errors = scripts.errors();
     if (cancel_) {
         state_ = static_cast<int>(State::Cancelled);
         return;

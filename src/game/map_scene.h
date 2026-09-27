@@ -9,36 +9,42 @@
 #include <string>
 #include <vector>
 
+#include <map>
+
+#include "mods/mod_library.h"
 #include "render/scene_renderer.h"
+#include "sim/content.h"
 #include "sim/map.h"
 
 namespace sc {
 
 // Instances are grouped by "visual slot": one per tree species and size,
 // then one per other feature type.
-inline constexpr std::size_t kTreeSlots = sim::kSpeciesCount * sim::kTreeSizes;
-inline constexpr std::size_t kVisualSlots = kTreeSlots + static_cast<std::size_t>(sim::FeatureType::Count);
-[[nodiscard]] std::size_t visual_slot(const sim::MapFeature& f);
-[[nodiscard]] std::size_t tree_slot(sim::Species species, sim::TreeSize size);
+[[nodiscard]] std::size_t tree_slot(std::size_t species, sim::TreeSize size);
+[[nodiscard]] std::size_t tree_slot_count(const sim::Content& content);
+[[nodiscard]] std::size_t visual_slot_count(const sim::Content& content);
+[[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f);
 
 // Everything the renderer needs for a map, built off the main thread. For
 // trees, an instance's scale is the tree's height in meters; MapScene turns
 // it into the model's scale.
 struct MapVisuals {
     render::TerrainData terrain;
-    std::vector<std::vector<render::Instance>> features = std::vector<std::vector<render::Instance>>(kVisualSlots);
+    std::vector<std::vector<render::Instance>> features;
     [[nodiscard]] std::size_t feature_count() const;
 };
 
-// File name of a tree model, for example "tree_oak_large.glb".
-[[nodiscard]] std::string tree_model_file(sim::Species species, sim::TreeSize size);
+// Path of a tree model inside its mod, for example
+// "models/props/tree_oak_large.glb".
+[[nodiscard]] std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeSize size);
 
 // Largest ground color texture, texels per side; bigger maps share texels.
 inline constexpr std::int32_t kMaxGroundColorSize = 2048;
 
-[[nodiscard]] MapVisuals build_map_visuals(const sim::MapData& map);
+[[nodiscard]] MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& content);
 // Only the feature instances, by visual slot.
-[[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map);
+[[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map,
+                                                                                 const sim::Content& content);
 
 // Ground color of a cell, sRGB (presentation only).
 struct Rgb8 {
@@ -46,7 +52,8 @@ struct Rgb8 {
 };
 [[nodiscard]] Rgb8 ground_color(sim::Terrain terrain, std::uint8_t fertility, std::uint32_t cell_hash);
 // How much decorative grass grows on a cell, 0..255.
-[[nodiscard]] std::uint8_t grass_density(sim::Terrain terrain, std::uint8_t fertility, sim::Biome biome);
+// `biome_grass` is the biome's amount of grass (0..255).
+[[nodiscard]] std::uint8_t grass_density(sim::Terrain terrain, std::uint8_t fertility, std::uint8_t biome_grass);
 
 // Height in meters at a point, for the camera: the ground, or the water
 // surface where there is water. Outside the map it takes the nearest edge.
@@ -54,9 +61,11 @@ struct Rgb8 {
 
 class MapScene {
 public:
-    // Loads the feature models from data/models/props. Models that fail are
-    // skipped (and logged); returns false only if none loaded.
-    bool load_models(render::SceneRenderer& renderer, const std::filesystem::path& props_dir);
+    // Loads the models of the content's trees and features from their mods.
+    // Files already loaded are reused, so switching mods only loads new
+    // ones. Missing models are skipped (and logged); returns false only if
+    // none loaded.
+    bool load_models(render::SceneRenderer& renderer, const mods::BuildResult& pack);
 
     // Puts a map in the renderer, or takes it out.
     bool show(render::SceneRenderer& renderer, const MapVisuals& visuals);
@@ -70,7 +79,7 @@ public:
 
     // Developer tools: redraw the features after the map's list changed,
     // and edit the houses.
-    void refresh_features(render::SceneRenderer& renderer, const sim::MapData& map);
+    void refresh_features(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content);
     [[nodiscard]] const std::vector<render::Instance>& houses() const { return houses_; }
     void add_house(render::SceneRenderer& renderer, const render::Instance& house);
     void remove_house(render::SceneRenderer& renderer, std::size_t index);
@@ -83,8 +92,11 @@ private:
         render::ModelId model = kNoModel;
         float height = 1.0f;  // Model height in meters (trees).
     };
-    std::vector<Slot> slots_ = std::vector<Slot>(kVisualSlots);
+    std::vector<Slot> slots_;
+    std::size_t tree_slots_ = 0;
     std::vector<render::ModelId> used_models_;
+    std::map<std::string, Slot> files_;  // Loaded model files by path.
+    Slot load_file(render::SceneRenderer& renderer, const std::filesystem::path& file, render::ModelClass model_class);
     std::vector<render::Instance> scratch_;
     std::vector<render::Instance> houses_;
 

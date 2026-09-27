@@ -43,8 +43,8 @@ std::int64_t amount_factor(Amount a) {
 
 class Generator {
 public:
-    Generator(const MapSettings& s, const GenProgress& progress)
-        : s_(s), progress_(progress), n_(map_cells(s.size)), v_(n_ + 1), rng_(s.seed, 7) {}
+    Generator(const MapSettings& s, const Content& content, const GenProgress& progress)
+        : s_(s), flora_(content.flora), progress_(progress), n_(map_cells(s.size)), v_(n_ + 1), rng_(s.seed, 7) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -505,12 +505,14 @@ private:
     // Regions around jittered points, one every `patch_m` meters, with
     // edges bent by noise; each region takes a biome from the map type.
     bool biomes() {
-        const MapTypeInfo& type = map_type_info(s_.map_type);
         const std::size_t cells = terrain_.size();
-        biome_.assign(cells, static_cast<std::uint8_t>(s_.biome));
-        if (type.biomes.empty() || type.patch_m <= 0) {
+        const std::uint8_t only = s_.biome < flora_.biomes.size() ? s_.biome : 0;
+        biome_.assign(cells, only);
+        const MapTypeDef* type_ptr = map_type();
+        if (type_ptr == nullptr || type_ptr->biomes.empty() || type_ptr->patch_m <= 0) {
             return report(GenStage::Biomes, 100);
         }
+        const MapTypeDef& type = *type_ptr;
         const std::int32_t p = type.patch_m;
         const std::int32_t warp = p / 3;
         for (std::int32_t bz = 0; bz < n_; bz += kBiomeBlock) {
@@ -576,7 +578,14 @@ private:
     }
 
     // Places a tree if there is room; `hash` gives its height and rotation.
-    bool plant(Fixed x, Fixed z, Species species, TreeSize size, std::uint64_t hash) {
+    [[nodiscard]] const MapTypeDef* map_type() const {
+        if (flora_.map_types.empty()) {
+            return nullptr;
+        }
+        return &flora_.map_types[s_.map_type < flora_.map_types.size() ? s_.map_type : 0];
+    }
+
+    bool plant(Fixed x, Fixed z, std::uint8_t species, TreeSize size, std::uint64_t hash) {
         const std::int32_t cx = x.floor_int();
         const std::int32_t cz = z.floor_int();
         if (!land(cx, cz) || !room_for(cx, cz, tree_radius(size))) {
@@ -587,7 +596,7 @@ private:
         const std::int64_t height = si.min_cm + static_cast<std::int64_t>((hash >> 44) % static_cast<std::uint64_t>(si.max_cm - si.min_cm + 1));
         MapFeature f;
         f.type = FeatureType::Tree;
-        f.species = static_cast<std::uint8_t>(species);
+        f.species = species;
         f.size = static_cast<std::uint8_t>(size);
         f.x = x;
         f.z = z;
@@ -598,8 +607,12 @@ private:
     }
 
     bool forests() {
-        const MapTypeInfo& type = map_type_info(s_.map_type);
         taken_.assign(terrain_.size(), 0);
+        const MapTypeDef* type_ptr = map_type();
+        if (type_ptr == nullptr || flora_.biomes.empty() || flora_.species.empty()) {
+            return report(GenStage::Forests, 100);
+        }
+        const MapTypeDef& type = *type_ptr;
         // Biggest first; smaller trees fill the gaps.
         for (int pass = static_cast<int>(kTreeSizes) - 1; pass >= 0; --pass) {
             const auto size = static_cast<TreeSize>(pass);
@@ -627,7 +640,10 @@ private:
                     if (chance == 0) {
                         continue;
                     }
-                    const BiomeInfo& biome = biome_info(static_cast<Biome>(biome_[ci(cx, cz)]));
+                    const BiomeDef& biome = flora_.biomes[std::min<std::size_t>(biome_[ci(cx, cz)], flora_.biomes.size() - 1)];
+                    if (biome.species.empty()) {
+                        continue;
+                    }
                     std::int64_t total = 0;
                     for (std::size_t k = 0; k < kTreeSizes; ++k) {
                         total += static_cast<std::int64_t>(biome.size_weights[k]) * type.size_bias[k];
@@ -645,8 +661,8 @@ private:
                     if (roll >= std::min<std::int64_t>(950, chance)) {
                         continue;
                     }
-                    const auto species = static_cast<Species>(pick_weighted(biome.species, static_cast<std::uint32_t>(hash >> 8)));
-                    (void)plant(x, z, species, fit_size(species, size), hash);
+                    const std::uint8_t species = pick_weighted(biome.species, static_cast<std::uint32_t>(hash >> 8));
+                    (void)plant(x, z, species, flora_.fit_size(species, size), hash);
                 }
                 if ((gz & 63) == 0 && !report(GenStage::Forests, ((kTreeSizes - 1 - static_cast<std::size_t>(pass)) * 100 +
                                                                   static_cast<std::size_t>(gz) * 100 / static_cast<std::size_t>(n_)) /
@@ -667,10 +683,16 @@ private:
             const Fixed z = cell_center(cz) + sin(a) * r;
             const std::int32_t px = std::clamp(x.floor_int(), 0, n_ - 1);
             const std::int32_t pz = std::clamp(z.floor_int(), 0, n_ - 1);
-            const BiomeInfo& biome = biome_info(static_cast<Biome>(biome_[ci(px, pz)]));
+            if (flora_.biomes.empty()) {
+                return;
+            }
+            const BiomeDef& biome = flora_.biomes[std::min<std::size_t>(biome_[ci(px, pz)], flora_.biomes.size() - 1)];
+            if (biome.species.empty()) {
+                continue;
+            }
             const std::uint64_t hash = (static_cast<std::uint64_t>(rng_.next_u32()) << 32) | rng_.next_u32();
-            const auto species = static_cast<Species>(pick_weighted(biome.species, static_cast<std::uint32_t>(hash >> 8)));
-            const TreeSize size = fit_size(species, (hash & 1) != 0 ? TreeSize::Small : TreeSize::Medium);
+            const std::uint8_t species = pick_weighted(biome.species, static_cast<std::uint32_t>(hash >> 8));
+            const TreeSize size = flora_.fit_size(species, (hash & 1) != 0 ? TreeSize::Small : TreeSize::Medium);
             if (plant(x, z, species, size, hash)) {
                 ++i;
             }
@@ -965,6 +987,7 @@ private:
     }
 
     const MapSettings& s_;
+    const Flora& flora_;
     const GenProgress& progress_;
     std::int32_t n_;
     std::int32_t v_;
@@ -987,9 +1010,14 @@ private:
 
 }  // namespace
 
-std::optional<MapData> generate_map(const MapSettings& settings, const GenProgress& progress) {
-    Generator gen(settings, progress);
-    return gen.run();
+std::optional<MapData> generate_map(const MapSettings& settings, const Content& content, const GenProgress& progress,
+                                    MapHooks* hooks) {
+    Generator gen(settings, content, progress);
+    std::optional<MapData> map = gen.run();
+    if (map.has_value() && hooks != nullptr && !hooks->map_generated(*map)) {
+        return std::nullopt;
+    }
+    return map;
 }
 
 }  // namespace sc::sim

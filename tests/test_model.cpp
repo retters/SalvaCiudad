@@ -12,7 +12,7 @@ using namespace sc::render;
 
 namespace {
 
-const std::filesystem::path kModels = std::filesystem::path(SC_SOURCE_DIR) / "data" / "models" / "test";
+const std::filesystem::path kModels = std::filesystem::path(SC_SOURCE_DIR) / "tests" / "data_models_test";
 
 ModelLoadResult load_file(std::string_view name) {
     const auto r = fs::read_file(kModels / name, model_limits::kMaxFileBytes);
@@ -130,7 +130,7 @@ TEST_SUITE("model") {
 
 namespace {
 
-const std::filesystem::path kData = std::filesystem::path(SC_SOURCE_DIR) / "data" / "models";
+const std::filesystem::path kData = std::filesystem::path(SC_SOURCE_DIR) / "data" / "mods" / "core" / "models";
 
 ModelLoadResult load_data(std::string_view name) {
     const auto r = fs::read_file(kData / name, model_limits::kMaxFileBytes);

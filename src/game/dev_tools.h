@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "math/vec.h"
+#include "sim/content.h"
 #include "sim/map.h"
 
 namespace sc {
@@ -25,6 +26,7 @@ class SceneRenderer;
 // What the tools can see and change this frame.
 struct DevContext {
     sim::MapData* map = nullptr;  // Null when no map is shown.
+    const sim::Content* content = nullptr;
     MapScene* scene = nullptr;
     render::SceneRenderer* renderer = nullptr;
     TestCrowd* crowd = nullptr;

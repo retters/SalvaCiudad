@@ -1,0 +1,351 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "species",
+      "id": "core:oak",
+      "name": "species.oak",
+      "model": "models/props/tree_oak",
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:pine",
+      "name": "species.pine",
+      "model": "models/props/tree_pine",
+      "sizes": [
+        "small",
+        "medium",
+        "large",
+        "huge"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:toog",
+      "name": "species.toog",
+      "model": "models/props/tree_toog",
+      "sizes": [
+        "medium",
+        "large",
+        "huge"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:eucalyptus",
+      "name": "species.eucalyptus",
+      "model": "models/props/tree_eucalyptus",
+      "sizes": [
+        "small",
+        "medium",
+        "large",
+        "huge"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:sequoia",
+      "name": "species.sequoia",
+      "model": "models/props/tree_sequoia",
+      "sizes": [
+        "small",
+        "medium",
+        "large",
+        "huge"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:mountain_ash",
+      "name": "species.mountain_ash",
+      "model": "models/props/tree_mountain_ash",
+      "sizes": [
+        "large",
+        "huge"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:cherry",
+      "name": "species.cherry",
+      "model": "models/props/tree_cherry",
+      "sizes": [
+        "small",
+        "medium"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:jacaranda",
+      "name": "species.jacaranda",
+      "model": "models/props/tree_jacaranda",
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:tulip_tree",
+      "name": "species.tulip_tree",
+      "model": "models/props/tree_tulip_tree",
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:silk_floss",
+      "name": "species.silk_floss",
+      "model": "models/props/tree_silk_floss",
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:magnolia",
+      "name": "species.magnolia",
+      "model": "models/props/tree_magnolia",
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:flamboyant",
+      "name": "species.flamboyant",
+      "model": "models/props/tree_flamboyant",
+      "sizes": [
+        "small",
+        "medium"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:bottlebrush",
+      "name": "species.bottlebrush",
+      "model": "models/props/tree_bottlebrush",
+      "sizes": [
+        "small"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:stone_pine",
+      "name": "species.stone_pine",
+      "model": "models/props/tree_stone_pine",
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:elm",
+      "name": "species.elm",
+      "model": "models/props/tree_elm",
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:lemon",
+      "name": "species.lemon",
+      "model": "models/props/tree_lemon",
+      "sizes": [
+        "small"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:apple",
+      "name": "species.apple",
+      "model": "models/props/tree_apple",
+      "sizes": [
+        "small",
+        "medium"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:orange",
+      "name": "species.orange",
+      "model": "models/props/tree_orange",
+      "sizes": [
+        "small"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:pear",
+      "name": "species.pear",
+      "model": "models/props/tree_pear",
+      "sizes": [
+        "small",
+        "medium"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:peach",
+      "name": "species.peach",
+      "model": "models/props/tree_peach",
+      "sizes": [
+        "small"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:avocado",
+      "name": "species.avocado",
+      "model": "models/props/tree_avocado",
+      "sizes": [
+        "small",
+        "medium"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    }
+  ]
+}

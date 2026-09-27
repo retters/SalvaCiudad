@@ -151,6 +151,41 @@ bool Translator::add_language(std::string_view json_text, std::string_view origi
     return true;
 }
 
+bool Translator::add_mod_texts(std::string_view json_text, std::string_view origin_for_log) {
+    auto catalog = std::make_unique<Catalog>();
+    const CatalogLoadResult r = catalog->load(json_text);
+    if (!r.ok) {
+        log::warn("i18n: skipped mod language file '{}' ({})", origin_for_log, r.error);
+        return false;
+    }
+    if (r.ignored_entries > 0) {
+        log::warn("i18n: '{}' has {} invalid entr(y/ies), ignored", origin_for_log, r.ignored_entries);
+    }
+    mod_catalogs_.push_back(std::move(catalog));
+    reported_missing_.clear();
+    ++generation_;
+    return true;
+}
+
+void Translator::clear_mod_texts() {
+    mod_catalogs_.clear();
+    reported_missing_.clear();
+    ++generation_;
+}
+
+// A text of one language: the mods' texts first (the last loaded mod
+// wins), then the game's own.
+const Entry* Translator::find_in(const Catalog* c, std::string_view key) const {
+    for (auto it = mod_catalogs_.rbegin(); it != mod_catalogs_.rend(); ++it) {
+        if (iequals((*it)->info().code, c->info().code)) {
+            if (const Entry* e = (*it)->find(key)) {
+                return e;
+            }
+        }
+    }
+    return c->find(key);
+}
+
 const Catalog* Translator::find_catalog(std::string_view code) const {
     for (const auto& c : catalogs_) {
         if (iequals(c->info().code, code)) {
@@ -198,7 +233,7 @@ bool Translator::set_language(std::string_view code) {
 
 const Entry* Translator::lookup(std::string_view key) const {
     for (const Catalog* c : chain_) {
-        if (const Entry* e = c->find(key)) {
+        if (const Entry* e = find_in(c, key)) {
             if (c != chain_.front() && reported_missing_.insert(std::string(key)).second) {
                 log::debug("i18n: '{}' missing in '{}', using '{}'", key, active().code, c->info().code);
             }
@@ -226,7 +261,7 @@ std::string Translator::plural(std::string_view key, std::int64_t n, std::span<c
 }
 
 bool Translator::has(std::string_view key) const {
-    return std::any_of(chain_.begin(), chain_.end(), [&](const Catalog* c) { return c->find(key) != nullptr; });
+    return std::any_of(chain_.begin(), chain_.end(), [&](const Catalog* c) { return find_in(c, key) != nullptr; });
 }
 
 std::string Translator::format_int(std::int64_t value) const {

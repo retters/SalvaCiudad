@@ -1,0 +1,142 @@
+# Crear mods
+
+Un mod es una carpeta con un `mod.json`. Puede agregar o cambiar contenido (recursos, edificios, árboles, biomas, tipos de mapa), traer sus modelos y textos, y reglas en Lua. El juego base es también un mod: `data/mods/core`, y sirve de referencia para todos los campos.
+
+El mod de ejemplo está en `tools/example_mod`. Para probarlo, copia esa carpeta a tu carpeta de mods (menú Mods > Abrir carpeta de mods), actívalo y pulsa Aplicar.
+
+## Estructura
+
+```
+mi_mod/
+  mod.json              obligatorio
+  defs/*.json           definiciones (se leen en orden alfabético)
+  lang/en.json, es.json textos (mismo formato que data/lang)
+  models/*.glb          modelos (glTF binario)
+  scripts/main.lua      reglas (opcional)
+  scripts/*.lua         módulos para require
+```
+
+## mod.json
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "mi_mod",
+  "name": "mod.mi_mod.name",
+  "description": "mod.mi_mod.description",
+  "version": "1.0.0",
+  "gameVersion": ">=0.7.0",
+  "authors": ["Tu nombre"],
+  "affectsSimulation": true,
+  "dependencies": ["core"],
+  "loadAfter": []
+}
+```
+
+| Campo | Descripción |
+|---|---|
+| `id` | De 1 a 32 caracteres: `a-z`, `0-9` y `_`. Único. |
+| `name`, `description` | Claves de texto de los archivos `lang/` del propio mod. |
+| `version` | Versión del mod, `1.0.0`. |
+| `gameVersion` | Versiones del juego compatibles: `">=0.7.0"` o `">=0.7.0 <1.0.0"`. |
+| `affectsSimulation` | `true` si cambia algo del juego (contenido, reglas). En multijugador, esos mods deben coincidir en todos los jugadores. `false` para mods solo visuales. |
+| `dependencies` | Mods que deben estar activos; se cargan antes. |
+| `loadAfter` | Mods que, si están activos, se cargan antes que este. |
+
+Un mod con errores (manifiesto inválido, versión incompatible, dependencia ausente, definiciones con errores, ciclos en el orden) se desactiva, y la pantalla de Mods muestra la lista de errores. El juego sigue con los demás.
+
+## Definiciones (`defs/*.json`)
+
+Cada archivo:
+
+```json
+{ "schemaVersion": 1, "defs": [ { "type": "resource", "id": "mi_mod:oro", ... } ] }
+```
+
+- **Agregar:** `"type"` e `"id"`. El `id` empieza con el id del mod: `mi_mod:oro`. Los ids son únicos dentro de cada tipo.
+- **Cambiar campos de otra definición:** `{"type": "building", "patch": "core:house", "residents": 8}`. Solo se reemplazan los campos que escribas. Gana el mod que se carga después.
+- **Quitar:** `{"type": "building", "remove": "core:firewood_splitter"}`.
+
+Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y rutas de modelos (relativas, dentro del propio mod, sin `..`).
+
+### resource
+
+| Campo | Valores |
+|---|---|
+| `name` | Clave de texto. |
+| `category` | `food`, `material`, `fuel` o `good`. |
+| `nutrition` | Puntos de comida por unidad (0 a 1000), para `food`. |
+| `weight` | 1 a 12: un aldeano carga 12 / peso unidades por viaje. |
+
+### building
+
+| Campo | Valores |
+|---|---|
+| `name`, `model` | Clave de texto y modelo `.glb` del mod. |
+| `kind` | `house`, `storage`, `workplace`, `townCenter`, `decoration`, `defense`, `military`. |
+| `size` | `[ancho, fondo]` en celdas de 1 m (1 a 32). |
+| `cost` | `{"core:log": 12, ...}`. |
+| `buildWork` | Trabajo para construirlo (ticks de trabajador; 10 por segundo a x1). |
+| `workers`, `work` | Trabajadores y tipo de trabajo: `gather`, `produce`, `haul`, `farm`, `hunt`, `fish`. |
+| `gathers`, `radius` | Para `gather`: `tree`, `stone`, `ironOre`, `berryBush`, `herbs`, y el radio en metros. |
+| `recipes` | Para `produce`: lista de recetas. |
+| `residents` | Para casas. |
+| `storage`, `stores` | Capacidad y categorías que guarda. |
+| `tier`, `desirability`, `unique` | Nivel del centro del pueblo necesario, efecto en la deseabilidad y si solo puede haber uno. |
+
+### recipe
+
+`inputs` y `outputs` (`{"recurso": cantidad}`) y `work` (ticks de trabajador por tanda).
+
+### mapFeature
+
+Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`), `resource`, `amount`, `work`, `regrowDays` y `model` (los árboles usan el modelo de su especie).
+
+### species, biome, mapType
+
+Árboles, biomas y tipos de mapa, como en `docs/ARBOLES.md`:
+
+- `species`: `name`, `model` (prefijo: se buscan `<prefijo>_small.glb`, `_medium`, `_large`, `_huge`), `sizes` y `logs` (madera por tamaño).
+- `biome`: `name`, `species` (`{"core:oak": 35, ...}`), `sizeWeights` (4 números), `density` (porcentaje) y `grass` (0 a 255).
+- `mapType`: `name`, `biomes` (vacío: un solo bioma que elige el jugador), `sizeBias` (4 porcentajes) y `patchSize` (metros).
+
+## Textos (`lang/`)
+
+El mismo formato que `data/lang/en.json`, con la cabecera `language` del idioma. Los textos del mod se buscan antes que los del juego; así un mod también puede traducir. Para un idioma nuevo, agrega su archivo aquí (ver `docs/AGREGAR_IDIOMA.md`).
+
+## Reglas en Lua (`scripts/main.lua`)
+
+Lua 5.4 en un entorno aislado:
+
+- **Disponible:** funciones básicas sin carga de código, `string`, `table`, `utf8` y un `math` de enteros (`abs`, `min`, `max`, `isqrt`, `sin_deg` y `cos_deg`, que devuelven el valor por 10000, `maxinteger` y `mininteger`).
+- **No disponible:** `io`, `os`, `debug`, `package`, `load`, `loadfile`, `dofile` ni `collectgarbage`.
+- `require("nombre")` carga `scripts/nombre.lua` del propio mod. `print` escribe en el registro del juego.
+- **Límites:** 50 millones de instrucciones por llamada y 64 MB de memoria.
+
+**Todo debe ser determinista**, para que el multijugador funcione:
+
+- Usa solo números enteros.
+- Usa `map.random` en lugar de azar propio.
+- No recorras con `pairs` tablas cuyas claves sean tablas o funciones.
+
+### on_map_generated(map)
+
+Se llama una vez al generar cada mapa, después del generador. Las coordenadas son **centímetros enteros**.
+
+| Función | Resultado |
+|---|---|
+| `map.size` | Lado del mapa en centímetros. |
+| `map.starts` | Lista de `{x, z}` de las posiciones de inicio. |
+| `map.height(x, z)` | Altura del suelo en centímetros. |
+| `map.terrain(x, z)` | `grass`, `meadow`, `forest`, `sand`, `rock`, `clay` o `water`. |
+| `map.is_water(x, z)`, `map.biome(x, z)` | Si hay agua, y el id del bioma. |
+| `map.random(n)` | Entero de 1 a n, igual en todas las máquinas. |
+| `map.add_feature(tipo, x, z [, escala%])` | Agrega `stone`, `ironOre`, `berryBush` o `herbs`. Devuelve `false` en el agua, fuera del mapa o a menos de 25 m de un inicio. |
+| `map.add_tree(especie, tamaño, x, z [, altura_cm])` | Agrega un árbol. |
+| `map.count(tipo)` | Cuántos hay de ese tipo. |
+
+Si la regla falla, el mapa se genera igual, sin sus cambios posteriores al error, y el juego avisa qué mod falló.
+
+## Modelos
+
+Formato glTF binario (`.glb`), en metros, con Y hacia arriba y la base en Y = 0. Ver `docs/ARTE.md`. El mod de ejemplo genera su santuario con Blender desde `tools/example_mod/art/shrine.py`.

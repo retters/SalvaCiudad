@@ -12,8 +12,8 @@ void MapSettings::write(BinaryWriter& w) const {
     w.u8(static_cast<std::uint8_t>(resources));
     w.u8(static_cast<std::uint8_t>(relief));
     w.u8(players);
-    w.u8(static_cast<std::uint8_t>(map_type));
-    w.u8(static_cast<std::uint8_t>(biome));
+    w.u8(map_type);
+    w.u8(biome);
 }
 
 bool MapSettings::read(BinaryReader& r, MapSettings& out) {
@@ -26,7 +26,7 @@ bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     if (size >= static_cast<std::uint8_t>(MapSize::Count) || water >= static_cast<std::uint8_t>(Amount::Count) ||
         forests >= static_cast<std::uint8_t>(Amount::Count) || resources >= static_cast<std::uint8_t>(Amount::Count) ||
         relief >= static_cast<std::uint8_t>(Relief::Count) || s.players < 1 || s.players > 12 ||
-        map_type >= static_cast<std::uint8_t>(MapType::Count) || biome >= static_cast<std::uint8_t>(Biome::Count)) {
+        map_type >= kMaxMapTypes || biome >= kMaxBiomes) {
         r.fail();
         return false;
     }
@@ -35,8 +35,8 @@ bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     s.forests = static_cast<Amount>(forests);
     s.resources = static_cast<Amount>(resources);
     s.relief = static_cast<Relief>(relief);
-    s.map_type = static_cast<MapType>(map_type);
-    s.biome = static_cast<Biome>(biome);
+    s.map_type = map_type;
+    s.biome = biome;
     out = s;
     return true;
 }
@@ -78,11 +78,11 @@ bool MapData::water_at(std::int32_t cx, std::int32_t cz) const {
     return water[static_cast<std::size_t>(cz) * static_cast<std::size_t>(size) + static_cast<std::size_t>(cx)] != 0;
 }
 
-Biome MapData::biome_at(std::int32_t cx, std::int32_t cz) const {
+std::uint8_t MapData::biome_at(std::int32_t cx, std::int32_t cz) const {
     if (cx < 0 || cz < 0 || cx >= size || cz >= size || biome.empty()) {
-        return Biome::Temperate;
+        return 0;
     }
-    return static_cast<Biome>(biome[static_cast<std::size_t>(cz) * static_cast<std::size_t>(size) + static_cast<std::size_t>(cx)]);
+    return biome[static_cast<std::size_t>(cz) * static_cast<std::size_t>(size) + static_cast<std::size_t>(cx)];
 }
 
 std::int32_t MapData::tree_height_cm(const MapFeature& f) {

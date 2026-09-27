@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "game/mods_screen.h"
 #include "game/new_game_screen.h"
 #include "game/services.h"
 #include "game/settings_screen.h"
@@ -47,7 +48,7 @@ public:
     [[nodiscard]] SceneMode scene_mode() const;
 
 private:
-    enum class Screen : std::uint8_t { MainMenu, Settings, TestScene, NewGame, Generating, MapView };
+    enum class Screen : std::uint8_t { MainMenu, Settings, TestScene, NewGame, Generating, MapView, Mods };
 
     void test_scene_hud(ui::Context& ctx);
     void generating_screen(ui::Context& ctx, bool modal);
@@ -65,6 +66,7 @@ private:
     Services& services_;
     SettingsScreen settings_screen_;
     NewGameScreen new_game_;
+    ModsScreen mods_screen_;
     Screen screen_ = Screen::MainMenu;
     Screen settings_return_ = Screen::MainMenu;  // Where closing settings goes.
     bool game_menu_open_ = false;

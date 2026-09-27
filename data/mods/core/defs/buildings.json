@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "building",
+      "id": "core:town_center",
+      "name": "building.townCenter",
+      "kind": "townCenter",
+      "model": "models/props/house_small.glb",
+      "size": [
+        8,
+        8
+      ],
+      "cost": {},
+      "buildWork": 0,
+      "storage": 400,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ],
+      "unique": true
+    },
+    {
+      "type": "building",
+      "id": "core:house",
+      "name": "building.house",
+      "kind": "house",
+      "model": "models/props/house_small.glb",
+      "size": [
+        6,
+        5
+      ],
+      "cost": {
+        "core:log": 12
+      },
+      "buildWork": 300,
+      "residents": 5
+    },
+    {
+      "type": "building",
+      "id": "core:storehouse",
+      "name": "building.storehouse",
+      "kind": "storage",
+      "model": "models/props/house_small.glb",
+      "size": [
+        7,
+        6
+      ],
+      "cost": {
+        "core:log": 20,
+        "core:stone": 6
+      },
+      "buildWork": 450,
+      "storage": 600,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:woodcutter",
+      "name": "building.woodcutter",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 8
+      },
+      "buildWork": 250,
+      "workers": 2,
+      "work": "gather",
+      "gathers": [
+        "tree"
+      ],
+      "radius": 55,
+      "storage": 40,
+      "stores": [
+        "material"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:forager",
+      "name": "building.forager",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 250,
+      "workers": 2,
+      "work": "gather",
+      "gathers": [
+        "berryBush",
+        "herbs"
+      ],
+      "radius": 65,
+      "storage": 40,
+      "stores": [
+        "food",
+        "good"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:stonecutter",
+      "name": "building.stonecutter",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 12
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "gather",
+      "gathers": [
+        "stone"
+      ],
+      "radius": 60,
+      "storage": 40,
+      "stores": [
+        "material"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:firewood_splitter",
+      "name": "building.firewoodSplitter",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        4
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 250,
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:split_firewood"
+      ],
+      "storage": 30,
+      "stores": [
+        "material",
+        "fuel"
+      ]
+    }
+  ]
+}

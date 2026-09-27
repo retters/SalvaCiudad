@@ -11,6 +11,7 @@
 #include <system_error>
 
 #include "core/file_io.h"
+#include "mods/mod_library.h"
 
 namespace sc::test {
 
@@ -59,6 +60,21 @@ inline std::string read_text(const std::filesystem::path& path) {
 
 inline std::filesystem::path fixture(std::string_view name) {
     return std::filesystem::path(SC_TEST_FIXTURES_DIR) / name;
+}
+
+// The base game's content, built from data/mods/core once per run.
+inline const mods::BuildResult& core_pack() {
+    static const mods::BuildResult pack = [] {
+        mods::ModLibrary library;
+        library.scan(std::filesystem::path(SC_SOURCE_DIR) / "data" / "mods", {}, mods::Version{99, 0, 0});
+        library.select({});
+        return library.build();
+    }();
+    return pack;
+}
+
+inline const sim::Content& core_content() {
+    return core_pack().content;
 }
 
 }  // namespace sc::test

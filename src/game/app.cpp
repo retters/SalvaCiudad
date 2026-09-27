@@ -18,6 +18,8 @@
 #include "core/text.h"
 #include "embedded/lang_en.h"
 #include "i18n/translator.h"
+#include "mods/mod_settings.h"
+#include "core/file_io.h"
 #include "version.h"
 
 namespace sc {
@@ -148,6 +150,7 @@ bool App::init() {
 
     settings_.emplace(paths_->settings_file());
     const SettingsLoadReport report = settings_->load();
+    load_mods();
     apply_language();
 
     if (!fonts_.load(paths_->game_data_dir() / "fonts")) {
@@ -171,12 +174,13 @@ bool App::init() {
 
     // The 3D scene is optional: without it the menus still work.
     if (scene_.create(gpu_, settings_->settings().graphics)) {
-        scene_ok_ = test_scene_.load(scene_, paths_->game_data_dir() / "models" / "props", kTestSceneInstances);
-        if (scene_ok_ && crowd_.load(scene_, paths_->game_data_dir() / "models" / "characters")) {
+        const std::filesystem::path models = pack_->dir(mods::kCoreModId) / "models";
+        scene_ok_ = test_scene_.load(scene_, models / "props", kTestSceneInstances);
+        if (scene_ok_ && crowd_.load(scene_, models / "characters")) {
             crowd_.spawn(kTestCrowd, 2026, kTestCrowdRadius);
         }
     }
-    if (scene_ok_ && !map_scene_.load_models(scene_, paths_->game_data_dir() / "models" / "props")) {
+    if (scene_ok_ && !map_scene_.load_models(scene_, *pack_)) {
         log::warn("map: no feature models; maps will show bare ground");
     }
     if (!scene_ok_) {
@@ -314,11 +318,45 @@ std::vector<Resolution> App::fullscreen_resolutions(const std::string& monitor) 
     return list;
 }
 
-void App::open_data_folder() {
-    std::string url = "file:///" + text::path_to_utf8(paths_->user_dir);
+void App::open_folder(const std::filesystem::path& dir) {
+    std::string url = "file:///" + text::path_to_utf8(dir);
     std::replace(url.begin(), url.end(), '\\', '/');
     if (!SDL_OpenURL(url.c_str())) {
-        log::warn("could not open the data folder: {}", SDL_GetError());
+        log::warn("could not open a folder: {}", SDL_GetError());
+    }
+}
+
+void App::open_data_folder() {
+    open_folder(paths_->user_dir);
+}
+
+void App::open_mods_folder() {
+    open_folder(paths_->user_mods_dir());
+}
+
+void App::load_mods() {
+    const mods::Version game{SC_VERSION_MAJOR, SC_VERSION_MINOR, SC_VERSION_PATCH};
+    mod_library_.scan(paths_->game_data_dir() / "mods", paths_->user_mods_dir(), game);
+    mod_library_.select(mods::load_selection(paths_->user_dir / "mods.json").enabled);
+    auto pack = std::make_shared<mods::BuildResult>(mod_library_.build());
+    auto& t = i18n::translator();
+    t.clear_mod_texts();
+    for (const std::filesystem::path& file : pack->language_files) {
+        const fs::ReadResult r = fs::read_file(file, i18n::catalog_limits::kMaxFileBytes);
+        if (r.error == fs::IoError::None) {
+            (void)t.add_mod_texts(r.data, text::path_to_utf8(file));
+        }
+    }
+    pack_ = std::move(pack);
+}
+
+void App::apply_mods(const std::vector<std::string>& enabled) {
+    (void)mods::save_selection(paths_->user_dir / "mods.json", mods::ModSelection{enabled});
+    leave_map();
+    load_mods();
+    apply_language();
+    if (scene_ok_) {
+        (void)map_scene_.load_models(scene_, *pack_);
     }
 }
 
@@ -727,7 +765,7 @@ void App::reset_camera_to_test_scene() {
 void App::start_map_generation(const sim::MapSettings& settings) {
     log::info("map: generating seed {} size {} with {} start(s)", settings.seed, sim::map_cells(settings.size),
               settings.players);
-    map_job_.start(settings);
+    map_job_.start(settings, pack_);
 }
 
 bool App::enter_generated_map() {
@@ -741,6 +779,13 @@ bool App::enter_generated_map() {
     if (!map_scene_.show(scene_, generated->visuals)) {
         test_scene_.set_visible(scene_, true);
         return false;
+    }
+    if (!generated->script_errors.empty() && host_) {
+        std::string body = tr("mods.scriptErrors.body");
+        for (const std::string& e : generated->script_errors) {
+            body += "\n- " + e.substr(0, 300);
+        }
+        host_->show_message(tr("mods.scriptErrors.title"), body);
     }
     // The renderer keeps its own copy; free this one.
     generated->visuals = MapVisuals{};
@@ -791,6 +836,7 @@ DevContext App::dev_context(std::uint32_t width, std::uint32_t height) {
     }
     const bool on_map = host_->scene_mode() == UiHost::SceneMode::Map && map_;
     ctx.map = on_map ? &map_->map : nullptr;
+    ctx.content = pack_ ? &pack_->content : nullptr;
     ctx.scene = on_map ? &map_scene_ : nullptr;
     ctx.renderer = &scene_;
     ctx.crowd = &crowd_;

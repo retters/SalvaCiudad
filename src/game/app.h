@@ -56,6 +56,10 @@ public:
     std::vector<Resolution> fullscreen_resolutions(const std::string& monitor) override;
     const ui::FontLibrary& fonts() const override { return fonts_; }
     void open_data_folder() override;
+    mods::ModLibrary& mod_library() override { return mod_library_; }
+    void apply_mods(const std::vector<std::string>& enabled) override;
+    void open_mods_folder() override;
+    const sim::Content* content() const override { return pack_ ? &pack_->content : nullptr; }
     void request_quit() override { running_ = false; }
     void start_map_generation(const sim::MapSettings& settings) override;
     MapGenStatus map_generation_status() const override { return map_job_.status(); }
@@ -68,6 +72,10 @@ private:
     bool init();
     void shutdown();
     void load_languages();
+    // Finds the mods, builds the content with the chosen ones and loads
+    // their texts and models.
+    void load_mods();
+    void open_folder(const std::filesystem::path& dir);
     void fatal_error(const char* text_key);
     void handle_event(const SDL_Event& event);
     void frame();
@@ -105,6 +113,8 @@ private:
     TestScene test_scene_;
     TestCrowd crowd_;
     MapScene map_scene_;
+    mods::ModLibrary mod_library_;
+    std::shared_ptr<const mods::BuildResult> pack_;
     DevTools dev_tools_;
     MapGenerationJob map_job_;
     std::unique_ptr<GeneratedMap> map_;  // The map being shown.

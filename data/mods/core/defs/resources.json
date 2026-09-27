@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "resource",
+      "id": "core:log",
+      "name": "resource.log",
+      "category": "material",
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:stone",
+      "name": "resource.stone",
+      "category": "material",
+      "weight": 3
+    },
+    {
+      "type": "resource",
+      "id": "core:iron_ore",
+      "name": "resource.ironOre",
+      "category": "material",
+      "weight": 3
+    },
+    {
+      "type": "resource",
+      "id": "core:firewood",
+      "name": "resource.firewood",
+      "category": "fuel",
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:berries",
+      "name": "resource.berries",
+      "category": "food",
+      "nutrition": 3,
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:herbs",
+      "name": "resource.herbs",
+      "category": "good",
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:roots",
+      "name": "resource.roots",
+      "category": "food",
+      "nutrition": 2,
+      "weight": 1
+    }
+  ]
+}

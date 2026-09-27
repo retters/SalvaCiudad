@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(SalvaCiudad
-    VERSION 0.1.0
+    VERSION 0.7.0
     DESCRIPTION "Multiplayer medieval town-building survival game"
     LANGUAGES C CXX)
 
@@ -127,6 +127,20 @@ target_link_libraries(imgui PUBLIC SDL3::SDL3-static)
 # No imgui.ini or log files, and no obsolete API.
 target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
+# Lua 5.4 for mod scripts (section 7.13). Only the core and the libraries the
+# sandbox opens; no io, os, package or debug. String hashes use a fixed seed
+# so tables behave the same on every machine (decision D-702).
+add_library(lua STATIC
+    third_party/lua/lapi.c third_party/lua/lauxlib.c third_party/lua/lbaselib.c third_party/lua/lcode.c
+    third_party/lua/lctype.c third_party/lua/ldebug.c third_party/lua/ldo.c third_party/lua/ldump.c
+    third_party/lua/lfunc.c third_party/lua/lgc.c third_party/lua/llex.c third_party/lua/lmem.c
+    third_party/lua/lobject.c third_party/lua/lopcodes.c third_party/lua/lparser.c third_party/lua/lstate.c
+    third_party/lua/lstring.c third_party/lua/lstrlib.c third_party/lua/ltable.c third_party/lua/ltablib.c
+    third_party/lua/ltm.c third_party/lua/lundump.c third_party/lua/lutf8lib.c third_party/lua/lvm.c
+    third_party/lua/lzio.c)
+target_include_directories(lua SYSTEM PUBLIC third_party/lua)
+target_compile_definitions(lua PRIVATE "luai_makeseed(L)=0u")
+
 add_library(doctest INTERFACE)
 target_include_directories(doctest SYSTEM INTERFACE third_party/doctest)
 
@@ -216,17 +230,25 @@ set(SC_ENGINE_SOURCES
     src/game/input_actions.cpp
     src/game/map_generation.cpp
     src/game/map_scene.cpp
+    src/game/mods_screen.cpp
     src/game/new_game_screen.cpp
     src/game/settings.cpp
     src/game/settings_screen.cpp
     src/game/test_scene.cpp
     src/game/ui_host.cpp
     src/i18n/catalog.cpp
+    src/mods/defs.cpp
+    src/mods/mod_library.cpp
+    src/mods/mod_manifest.cpp
+    src/mods/mod_settings.cpp
+    src/script/lua_sandbox.cpp
+    src/script/map_script.cpp
     src/i18n/plural.cpp
     src/i18n/translator.cpp
     src/math/vec.cpp
     src/platform/paths.cpp
     src/sim/command.cpp
+    src/sim/content.cpp
     src/sim/entity.cpp
     src/sim/fixed.cpp
     src/sim/flora.cpp
@@ -256,7 +278,7 @@ add_library(sc_engine STATIC ${SC_ENGINE_SOURCES})
 target_include_directories(sc_engine PUBLIC src "${SC_GENERATED_DIR}")
 # Map generation runs on a worker thread.
 find_package(Threads REQUIRED)
-target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui Threads::Threads)
+target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui lua Threads::Threads)
 add_dependencies(sc_engine sc_generated)
 sc_harden_target(sc_engine)
 
@@ -301,14 +323,15 @@ if(SC_BUILD_TESTS)
         tests/test_sim.cpp
         tests/test_worldgen.cpp
         tests/test_map_view.cpp
-        tests/test_terrain_mesh.cpp)
+        tests/test_terrain_mesh.cpp
+        tests/test_mods.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

@@ -39,6 +39,12 @@ public:
     const ui::FontLibrary& fonts() const override { return font_library; }
     void open_data_folder() override {}
     void request_quit() override {}
+    mods::ModLibrary& mod_library() override { return library; }
+    void apply_mods(const std::vector<std::string>& enabled) override { applied_mods = enabled; }
+    void open_mods_folder() override {}
+    const sim::Content* content() const override { return &sc::test::core_content(); }
+    mods::ModLibrary library;
+    std::vector<std::string> applied_mods;
     void start_map_generation(const sim::MapSettings& settings) override {
         generation_started = true;
         last_map_settings = settings;
