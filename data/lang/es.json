@@ -237,6 +237,7 @@
     "debug.shadows": "Cascadas de sombra",
     "debug.drawDistance": "Distancia de dibujo",
     "debug.camera": "Distancia de la cámara",
-    "debug.stressView": "Vista de estrés (toda la escena)"
+    "debug.stressView": "Vista de estrés (toda la escena)",
+    "debug.characters": "Personajes dibujados"
   }
 }

@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 #include <span>
+#include <string_view>
 #include <vector>
 
 #include <SDL3/SDL_gpu.h>
@@ -23,6 +24,26 @@ struct Instance {
     float yaw = 0.0f;
     float scale = 1.0f;
     math::Vec3 tint{1.0f, 1.0f, 1.0f};
+};
+
+// An animated character. Accessories (hats, aprons...) are chosen with a
+// bit mask over the accessories registered for its body.
+struct CharacterInstance {
+    math::Vec3 position;
+    float yaw = 0.0f;
+    float scale = 1.0f;
+    std::uint32_t body = 0;         // SkinnedId of the body.
+    std::uint32_t clip = 0;         // Clip index of the body.
+    float time = 0.0f;              // Seconds into the clip; loops.
+    std::uint32_t palette = 0;
+    std::uint32_t accessories = 0;  // Bit i: accessory i of the body.
+};
+
+// Colors for the palette slots (skin, hair, top, bottom, shoes, belt, hat,
+// apron), linear RGB.
+inline constexpr std::size_t kPaletteSlots = 8;
+struct Palette {
+    math::Vec3 colors[kPaletteSlots];
 };
 
 struct Lighting {
@@ -49,6 +70,8 @@ struct RenderStats {
     std::uint32_t shadow_instances = 0;
     std::uint64_t triangles = 0;
     std::uint32_t instances_total = 0;
+    std::uint32_t characters_drawn = 0;
+    std::uint32_t characters_total = 0;
     float cull_ms = 0.0f;
     int msaa_samples = 1;
     int shadow_cascades = 0;
@@ -57,6 +80,7 @@ struct RenderStats {
 };
 
 using ModelId = std::uint32_t;
+using SkinnedId = std::uint32_t;
 
 class SceneRenderer {
 public:
@@ -75,6 +99,17 @@ public:
     bool add_model(const ModelData& data, ModelId& id);
     void set_instances(ModelId model, std::span<const Instance> instances);
     void clear_instances();
+
+    // Animated bodies. Returns false if the model has no skeleton or clips.
+    bool add_skinned_model(const ModelData& data, SkinnedId& id);
+    // A rigid model pinned to a bone of `body`, in the body's bind pose: its
+    // origin goes to the start of the bone. Returns the accessory bit.
+    bool add_accessory(const ModelData& data, SkinnedId body, std::string_view bone, std::uint32_t& bit);
+    [[nodiscard]] int clip_index(SkinnedId body, std::string_view name) const;
+    [[nodiscard]] float clip_duration(SkinnedId body, std::uint32_t clip) const;
+    void set_palettes(std::span<const Palette> palettes);
+    // Replaces the characters to draw; call every frame they move.
+    void set_characters(std::span<const CharacterInstance> characters);
 
     // Records the shadow passes and the main pass into the frame. The
     // swapchain ends up holding the (resolved) scene.

@@ -81,6 +81,7 @@ private:
     render::SceneRenderer scene_;
     render::Lighting lighting_;
     TestScene test_scene_;
+    TestCrowd crowd_;
     bool scene_ok_ = false;
     Camera camera_;
     DebugOverlay debug_;

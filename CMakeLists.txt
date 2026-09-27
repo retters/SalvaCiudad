@@ -163,6 +163,7 @@ function(sc_add_shader source profile symbol)
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
                 "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_common.hlsli"
+                "${CMAKE_CURRENT_SOURCE_DIR}/shaders/skinning.hlsli"
         COMMENT "Compiling shader ${source}"
         VERBATIM)
     set(SC_SHADER_HEADERS ${SC_SHADER_HEADERS} "${header}" PARENT_SCOPE)
@@ -175,6 +176,8 @@ sc_add_shader(shaders/shadow.vert.hlsl vs_6_0 kShadowVertDxil)
 sc_add_shader(shaders/shadow.frag.hlsl ps_6_0 kShadowFragDxil)
 sc_add_shader(shaders/sky.vert.hlsl vs_6_0 kSkyVertDxil)
 sc_add_shader(shaders/sky.frag.hlsl ps_6_0 kSkyFragDxil)
+sc_add_shader(shaders/skinned.vert.hlsl vs_6_0 kSkinnedVertDxil)
+sc_add_shader(shaders/skinned_shadow.vert.hlsl vs_6_0 kSkinnedShadowVertDxil)
 
 # The base language is built in, so the game shows text even if data/lang
 # is missing.

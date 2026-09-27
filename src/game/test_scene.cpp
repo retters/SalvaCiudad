@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 #include "core/file_io.h"
 #include "core/log.h"
@@ -139,20 +140,26 @@ render::ModelData make_ground_model(float half_size) {
     return m;
 }
 
+std::optional<render::ModelData> load_model_file(const std::filesystem::path& file) {
+    const std::string name = text::path_to_utf8(file.filename());
+    const fs::ReadResult r = fs::read_file(file, render::model_limits::kMaxFileBytes);
+    if (r.error != fs::IoError::None) {
+        log::warn("models: cannot read {} ({})", name, fs::io_error_name(r.error));
+        return std::nullopt;
+    }
+    render::ModelLoadResult model =
+        render::load_glb({reinterpret_cast<const std::uint8_t*>(r.data.data()), r.data.size()});
+    if (!model.ok) {
+        log::warn("models: {} rejected: {}", name, model.error);
+        return std::nullopt;
+    }
+    return std::move(model.model);
+}
+
 bool TestScene::load(render::SceneRenderer& renderer, const std::filesystem::path& models_dir, std::size_t count) {
     const auto load_model = [&](const char* file, render::ModelId& id) {
-        const fs::ReadResult r = fs::read_file(models_dir / file, render::model_limits::kMaxFileBytes);
-        if (r.error != fs::IoError::None) {
-            log::warn("test scene: cannot read {} ({})", file, fs::io_error_name(r.error));
-            return false;
-        }
-        const render::ModelLoadResult model = render::load_glb(
-            {reinterpret_cast<const std::uint8_t*>(r.data.data()), r.data.size()});
-        if (!model.ok) {
-            log::warn("test scene: {} rejected: {}", file, model.error);
-            return false;
-        }
-        return renderer.add_model(model.model, id);
+        const auto model = load_model_file(models_dir / file);
+        return model.has_value() && renderer.add_model(*model, id);
     };
 
     render::ModelId ground = 0;
@@ -165,21 +172,187 @@ bool TestScene::load(render::SceneRenderer& renderer, const std::filesystem::pat
     const TestSceneLayout layout = make_test_scene_layout(count, 2026);
     render::ModelId id = 0;
     instances_ = 0;
-    if (load_model("test_tree.glb", id)) {
+    if (load_model("tree_pine.glb", id)) {
         renderer.set_instances(id, layout.trees);
         instances_ += layout.trees.size();
     }
-    if (load_model("test_house.glb", id)) {
+    if (load_model("house_small.glb", id)) {
         renderer.set_instances(id, layout.houses);
         instances_ += layout.houses.size();
     }
-    if (load_model("test_rock.glb", id)) {
+    if (load_model("rock.glb", id)) {
         renderer.set_instances(id, layout.rocks);
         instances_ += layout.rocks.size();
     }
     loaded_ = true;
     log::info("test scene: {} instances", instances_);
     return true;
+}
+
+}  // namespace sc
+
+// --- Test crowd --------------------------------------------------------------
+
+namespace sc {
+
+namespace {
+
+// sRGB 0xRRGGBB to linear, as the shaders light in linear space.
+math::Vec3 linear_rgb(std::uint32_t hex) {
+    const auto lin = [](std::uint32_t c) {
+        const float v = static_cast<float>(c) / 255.0f;
+        return v <= 0.04045f ? v / 12.92f : std::pow((v + 0.055f) / 1.055f, 2.4f);
+    };
+    return {lin((hex >> 16) & 255u), lin((hex >> 8) & 255u), lin(hex & 255u)};
+}
+
+}  // namespace
+
+std::vector<render::Palette> make_villager_palettes() {
+    // Slots: skin, hair, top, bottom, shoes, belt, hat, apron.
+    constexpr std::uint32_t kOutfits[][6] = {
+        {0x8C6A3F, 0x4E5A3A, 0x3B2A1E, 0x2E2016, 0xC9A860, 0xD8CFB8},  // Peasant: browns and greens.
+        {0x3F5A7A, 0x5A5048, 0x2E241C, 0x4A3524, 0x6E4A2E, 0xB8A88A},  // Worker: blue and grey.
+        {0x8A2E2E, 0x3A3A46, 0x241C16, 0x1E1612, 0x3A5A3A, 0xE0D8C8},  // Townsfolk: red and dark.
+    };
+    constexpr std::uint32_t kSkins[] = {0xF1C8A4, 0xE0B08A, 0xC68E62, 0x9A6440, 0x6E4428};
+    constexpr std::uint32_t kHair[] = {0x2A1E16, 0x5A3A22, 0x8A5A2E, 0xC89A5A, 0x8C8C88};
+    std::vector<render::Palette> out;
+    for (const auto& outfit : kOutfits) {
+        for (const std::uint32_t skin : kSkins) {
+            for (const std::uint32_t hair : kHair) {
+                render::Palette p;
+                p.colors[0] = linear_rgb(skin);
+                p.colors[1] = linear_rgb(hair);
+                for (std::size_t i = 0; i < 6; ++i) {
+                    p.colors[2 + i] = linear_rgb(outfit[i]);
+                }
+                out.push_back(p);
+            }
+        }
+    }
+    return out;
+}
+
+std::uint32_t TestCrowd::next_random() {
+    // xorshift32; presentation only.
+    random_state_ ^= random_state_ << 13;
+    random_state_ ^= random_state_ >> 17;
+    random_state_ ^= random_state_ << 5;
+    return random_state_;
+}
+
+math::Vec3 TestCrowd::random_point() {
+    const float a = static_cast<float>(next_random() % 10000) / 10000.0f * 2.0f * math::kPi;
+    const float r = std::sqrt(static_cast<float>(next_random() % 10000) / 10000.0f) * radius_;
+    return {std::cos(a) * r, 0.0f, std::sin(a) * r};
+}
+
+bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::path& dir) {
+    kinds_.clear();
+    const auto accessory = [&](const char* file, render::SkinnedId body, const char* bone, std::uint32_t& bit) {
+        const auto model = load_model_file(dir / file);
+        return model.has_value() && renderer.add_accessory(*model, body, bone, bit);
+    };
+    for (const bool female : {false, true}) {
+        const auto body = load_model_file(dir / (female ? "human_female.glb" : "human_male.glb"));
+        BodyKind kind;
+        if (!body || body->clip_index("idle") < 0 || body->clip_index("walk") < 0 ||
+            !renderer.add_skinned_model(*body, kind.id)) {
+            log::warn("test crowd: body model unavailable");
+            continue;
+        }
+        kind.idle = static_cast<std::uint32_t>(body->clip_index("idle"));
+        kind.walk = static_cast<std::uint32_t>(body->clip_index("walk"));
+        std::uint32_t bit = 0;
+        for (const char* hat : {"hat_straw.glb", "hat_cap.glb"}) {
+            if (accessory(hat, kind.id, "head", bit)) {
+                kind.hats.push_back(bit);
+            }
+        }
+        if (!female && accessory("beard.glb", kind.id, "head", bit)) {
+            kind.beard = bit;
+        }
+        if (accessory(female ? "apron_female.glb" : "apron_male.glb", kind.id, "hips", bit)) {
+            kind.apron = bit;
+        }
+        kinds_.push_back(kind);
+    }
+    renderer.set_palettes(make_villager_palettes());
+    loaded_ = !kinds_.empty();
+    return loaded_;
+}
+
+void TestCrowd::spawn(std::size_t count, std::uint32_t seed, float radius) {
+    villagers_.clear();
+    if (kinds_.empty()) {
+        return;
+    }
+    random_state_ = seed == 0 ? 1u : seed;
+    radius_ = radius;
+    const auto palettes = static_cast<std::uint32_t>(make_villager_palettes().size());
+    for (std::size_t i = 0; i < count; ++i) {
+        Villager v;
+        v.kind = next_random() % kinds_.size();
+        const BodyKind& kind = kinds_[v.kind];
+        v.look.body = kind.id;
+        v.look.clip = kind.walk;
+        v.look.position = random_point();
+        v.look.yaw = static_cast<float>(next_random() % 628) / 100.0f;
+        v.look.scale = 0.94f + static_cast<float>(next_random() % 12) / 100.0f;
+        v.look.palette = next_random() % palettes;
+        v.look.time = static_cast<float>(next_random() % 1000) / 1000.0f;
+        std::uint32_t mask = 0;
+        const std::uint32_t hat = next_random() % 3;  // None, or one of the hats.
+        if (hat > 0 && hat <= kind.hats.size()) {
+            mask |= 1u << kind.hats[hat - 1];
+        }
+        if (kind.beard != ~0u && next_random() % 3 == 0) {
+            mask |= 1u << kind.beard;
+        }
+        if (kind.apron != ~0u && next_random() % 4 == 0) {
+            mask |= 1u << kind.apron;
+        }
+        v.look.accessories = mask;
+        v.target = random_point();
+        v.speed = 1.2f + static_cast<float>(next_random() % 40) / 100.0f;
+        v.rest_time = next_random() % 5 == 0 ? static_cast<float>(next_random() % 400) / 100.0f : 0.0f;
+        villagers_.push_back(v);
+    }
+}
+
+void TestCrowd::update(render::SceneRenderer& renderer, float dt) {
+    instances_.clear();
+    for (Villager& v : villagers_) {
+        const BodyKind& kind = kinds_[v.kind];
+        const math::Vec3 to = v.target - v.look.position;
+        const float distance = math::length(to);
+        if (v.rest_time > 0.0f) {
+            v.rest_time -= dt;
+            v.look.clip = kind.idle;
+            v.look.time += dt;
+        } else if (distance < 0.5f) {
+            // Arrived: sometimes stop for a while, then pick a new goal.
+            v.target = random_point();
+            if (next_random() % 4 == 0) {
+                v.rest_time = 1.5f + static_cast<float>(next_random() % 400) / 100.0f;
+            }
+        } else {
+            const float step = std::min(distance, v.speed * dt);
+            v.look.position += to * (step / distance);
+            // Turn smoothly toward the goal; the model's front is +Z.
+            const float want = std::atan2(to.x, to.z);
+            float diff = want - v.look.yaw;
+            while (diff > math::kPi) diff -= 2.0f * math::kPi;
+            while (diff < -math::kPi) diff += 2.0f * math::kPi;
+            v.look.yaw += diff * std::min(1.0f, dt * 6.0f);
+            v.look.clip = kind.walk;
+            // Play the walk faster or slower so the feet match the ground.
+            v.look.time += dt * (v.speed / kWalkReferenceSpeed);
+        }
+        instances_.push_back(v.look);
+    }
+    renderer.set_characters(instances_);
 }
 
 }  // namespace sc

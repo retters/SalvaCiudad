@@ -237,6 +237,7 @@
     "debug.shadows": "Shadow cascades",
     "debug.drawDistance": "Draw distance",
     "debug.camera": "Camera distance",
-    "debug.stressView": "Stress view (whole scene)"
+    "debug.stressView": "Stress view (whole scene)",
+    "debug.characters": "Characters drawn"
   }
 }

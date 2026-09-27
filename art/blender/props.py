@@ -1,0 +1,148 @@
+"""Props: a pine tree, a boulder and a small half-timbered house with
+architectural details (beams, window frames, shutters, door, chimney,
+roof tiles in rows)."""
+
+import math
+import os
+
+import common
+from common import MeshBuilder
+
+COLORS = {
+    "bark": common.rgb(0x5C3F28),
+    "needles": common.rgb(0x3F6B35),
+    "needles_dark": common.rgb(0x2F5429),
+    "rock": common.rgb(0x8A8580),
+    "rock_dark": common.rgb(0x6E6A66),
+    "moss": common.rgb(0x5E7440),
+    "plaster": common.rgb(0xE6DCC4),
+    "timber": common.rgb(0x5A3B24),
+    "roof": common.rgb(0x9A4A2E),
+    "roof_dark": common.rgb(0x7E3A24),
+    "stone": common.rgb(0x9A938A),
+    "door": common.rgb(0x6B4A2E),
+    "window": common.rgb(0x2B3440),
+    "shutter": common.rgb(0x4F6B4A),
+}
+
+
+def pine_tree(folder):
+    common.reset_scene()
+    mb = MeshBuilder()
+    mb.cylinder((0, 0, 0), (0, 0, 1.9), 0.2, 0.12, "bark", segments=7)
+    # Four stacked tiers, alternating two greens, each turned a little.
+    tiers = ((1.1, 3.4, 1.45), (2.1, 4.3, 1.15), (3.0, 5.1, 0.85), (3.9, 5.8, 0.55))
+    for i, (z0, z1, r) in enumerate(tiers):
+        mat = "needles" if i % 2 == 0 else "needles_dark"
+        verts = mb.cylinder((0, 0, z0), (0, 0, z1), r, 0.0, mat, segments=8)
+        angle = i * 0.35
+        c, s = math.cos(angle), math.sin(angle)
+        for v in verts:
+            x, y = v.co.x, v.co.y
+            v.co.x, v.co.y = x * c - y * s, x * s + y * c
+    obj = mb.to_object("tree_pine", COLORS)
+    common.export_glb(os.path.join(folder, "tree_pine.glb"), [obj])
+
+
+def rock(folder):
+    common.reset_scene()
+    mb = MeshBuilder()
+    verts = mb.sphere((0, 0, 0.45), 0.75, "rock", segments=9, rings=6, scale=(1.2, 1.0, 0.7))
+    # Deterministic lumps: push vertices in and out by a fixed pattern.
+    for i, v in enumerate(sorted(verts, key=lambda v: (round(v.co.z, 4), round(v.co.x, 4), round(v.co.y, 4)))):
+        k = 1.0 + 0.12 * math.sin(i * 2.3) + 0.06 * math.cos(i * 5.1)
+        v.co.x *= k
+        v.co.y *= k
+        if v.co.z < 0.05:
+            v.co.z = 0.0
+    top = mb.sphere((0.25, -0.1, 0.78), 0.32, "moss", segments=7, rings=4, scale=(1.3, 1.0, 0.35))
+    del top
+    mb.sphere((-0.7, 0.35, 0.2), 0.32, "rock_dark", segments=7, rings=5, scale=(1.0, 0.9, 0.7))
+    obj = mb.to_object("rock", COLORS)
+    common.export_glb(os.path.join(folder, "rock.glb"), [obj])
+
+
+def house(folder):
+    """A 5 x 4 m house facing -Y (the door side)."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    w, d, h = 2.5, 2.0, 2.6   # Half width, half depth, wall height.
+    # Stone footing and plaster walls.
+    mb.box((0, 0, 0.2), (2 * w + 0.12, 2 * d + 0.12, 0.4), "stone")
+    mb.box((0, 0, 0.4 + (h - 0.4) / 2), (2 * w, 2 * d, h - 0.4), "plaster")
+    # Timber frame: corner posts, sill, top plate, a middle beam and braces.
+    t = 0.14
+    for x in (-w, w):
+        for y in (-d, d):
+            mb.box((x, y, 0.4 + (h - 0.4) / 2), (t, t, h - 0.4), "timber")
+    for y in (-d, d):
+        mb.box((0, y, 0.45), (2 * w, t, t), "timber")
+        mb.box((0, y, h - 0.05), (2 * w, t, t), "timber")
+        mb.box((0, y, 1.55), (2 * w, t * 0.8, t * 0.8), "timber")
+        for x in (-w / 2, w / 2):
+            mb.box((x, y, 0.4 + (h - 0.4) / 2), (t * 0.9, t, h - 0.4), "timber")
+    for x in (-w, w):
+        mb.box((x, 0, 0.45), (t, 2 * d, t), "timber")
+        mb.box((x, 0, h - 0.05), (t, 2 * d, t), "timber")
+    # Diagonal braces on the long walls.
+    for y in (-d - 0.01, d + 0.01):
+        for x0, sign in ((-w, 1), (w, -1)):
+            length = math.hypot(w / 2, 1.1)
+            angle = math.atan2(1.1, w / 2)
+            cx = x0 + sign * w / 4
+            verts = mb.box((cx, y, 1.0), (length, t * 0.7, t * 0.7), "timber")
+            c, s = math.cos(angle * sign), math.sin(angle * sign)
+            for v in verts:
+                dx, dz = v.co.x - cx, v.co.z - 1.0
+                v.co.x, v.co.z = cx + dx * c - dz * s, 1.0 + dx * s + dz * c
+
+    # Door with a frame on the front (-Y); windows with shutters.
+    mb.box((0, -d - 0.04, 1.2), (1.0, 0.06, 1.7), "timber")
+    mb.box((0, -d - 0.06, 1.15), (0.82, 0.06, 1.55), "door")
+    for x in (-1.6, 1.6):
+        for y, face in ((-d, -1), (d, 1)):
+            mb.box((x, y + face * 0.04, 1.75), (0.8, 0.06, 0.7), "timber")
+            mb.box((x, y + face * 0.06, 1.75), (0.62, 0.06, 0.52), "window")
+            for side in (-1, 1):
+                mb.box((x + side * 0.52, y + face * 0.06, 1.75), (0.28, 0.05, 0.6), "shutter")
+            mb.box((x, y + face * 0.12, 1.35), (0.9, 0.18, 0.06), "timber")  # Sill.
+
+    # Roof: two slopes of overlapping tile rows, gables and a chimney.
+    ridge = h + 1.9
+    eave = 0.45
+    rows = 6
+    for side in (-1, 1):
+        for r in range(rows):
+            t0 = r / rows
+            t1 = (r + 1) / rows + 0.04
+            y0 = side * (d + eave) * (1 - t0)
+            y1 = side * (d + eave) * (1 - min(t1, 1.0))
+            z0 = h - 0.15 + (ridge - (h - 0.15)) * t0
+            z1 = h - 0.15 + (ridge - (h - 0.15)) * min(t1, 1.0)
+            mat = "roof" if r % 2 == 0 else "roof_dark"
+            ys = sorted((y0, y1))
+            pts = [(-w - eave, ys[0]), (w + eave, ys[0]), (w + eave, ys[1]), (-w - eave, ys[1])]
+            verts = mb.prism(pts, 0.0, 0.08, mat)
+            # Shear the slab to follow the slope.
+            for v in verts:
+                frac = (abs(v.co.y) - abs(y1)) / max(1e-6, abs(y0) - abs(y1)) if side > 0 else \
+                       (abs(v.co.y) - abs(y1)) / max(1e-6, abs(y0) - abs(y1))
+                v.co.z += z1 + (z0 - z1) * frac
+    for x in (-w, w):
+        gable = mb.prism([(-d, h), (d, h), (0, ridge - 0.05)], x - 0.05, x + 0.05, "plaster")
+        for v in gable:
+            v.co.x, v.co.y, v.co.z = v.co.z, v.co.x, v.co.y
+        mb.box((x * 1.0, 0, h + 0.8), (0.12, 0.12, 1.6), "timber")
+    mb.box((0, 0, ridge + 0.04), (2 * w + 2 * eave, 0.22, 0.14), "roof_dark")
+    mb.box((1.4, 0.8, ridge - 0.3), (0.55, 0.55, 1.8), "stone")
+    mb.box((1.4, 0.8, ridge + 0.62), (0.68, 0.68, 0.1), "stone")
+
+    obj = mb.to_object("house_small", COLORS)
+    common.export_glb(os.path.join(folder, "house_small.glb"), [obj])
+
+
+def make_all(folder):
+    os.makedirs(folder, exist_ok=True)
+    pine_tree(folder)
+    rock(folder)
+    house(folder)

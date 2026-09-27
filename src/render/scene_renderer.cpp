@@ -12,6 +12,8 @@
 #include "shaders/mesh_vert_dxil.h"
 #include "shaders/shadow_frag_dxil.h"
 #include "shaders/shadow_vert_dxil.h"
+#include "shaders/skinned_shadow_vert_dxil.h"
+#include "shaders/skinned_vert_dxil.h"
 #include "shaders/sky_frag_dxil.h"
 #include "shaders/sky_vert_dxil.h"
 
@@ -29,6 +31,59 @@ struct GpuInstance {
     float tint[4];
 };
 static_assert(sizeof(GpuInstance) == 64);
+
+// Vertex of an animated model; matches the skinned shaders' input.
+struct SkinnedVertex {
+    float px, py, pz;
+    float nx, ny, nz;
+    float u, v;
+    std::uint8_t joints[4];
+    std::uint8_t weights[4];
+};
+static_assert(sizeof(SkinnedVertex) == 40);
+
+// Matches CharacterData in skinning.hlsli.
+struct GpuCharacter {
+    float row0[4];
+    float row1[4];
+    float row2[4];
+    std::uint32_t anim[4];  // First bone matrix of the clip, frames, joints, palette.
+    float extra[4];         // Frame position.
+};
+static_assert(sizeof(GpuCharacter) == 80);
+
+struct DrawUniforms {
+    std::int32_t draw[4];  // Palette slot, or -1.
+};
+
+// Material names recolored per character, in palette slot order.
+constexpr const char* kPaletteSlotNames[kPaletteSlots] = {"skin", "hair", "top", "bottom", "shoes", "belt", "hat", "apron"};
+
+int palette_slot(const std::string& material) {
+    for (std::size_t i = 0; i < kPaletteSlots; ++i) {
+        if (material == kPaletteSlotNames[i]) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+void affine_rows(math::Vec3 p, float yaw, float scale, float row0[4], float row1[4], float row2[4]) {
+    const float c = std::cos(yaw) * scale;
+    const float s = std::sin(yaw) * scale;
+    row0[0] = c;
+    row0[1] = 0.0f;
+    row0[2] = s;
+    row0[3] = p.x;
+    row1[0] = 0.0f;
+    row1[1] = scale;
+    row1[2] = 0.0f;
+    row1[3] = p.y;
+    row2[0] = -s;
+    row2[1] = 0.0f;
+    row2[2] = c;
+    row2[3] = p.z;
+}
 
 struct MeshVertexUniforms {
     math::Mat4 view_proj;
@@ -113,6 +168,33 @@ struct Range {
     std::uint32_t count = 0;
 };
 
+struct ClipInfo {
+    std::uint32_t first = 0;  // Matrix index relative to the model's base.
+    std::uint32_t frames = 1;
+    float fps = 30.0f;
+};
+
+// A body or an accessory; accessories borrow the body's bones and clips.
+struct GpuSkinned {
+    SDL_GPUBuffer* vertices = nullptr;
+    SDL_GPUBuffer* indices = nullptr;
+    std::vector<ModelPrimitive> primitives;
+    std::vector<GpuMaterial> materials;
+    std::vector<int> slots;  // Palette slot per material, or -1.
+    float radius = 1.0f;
+    std::uint64_t triangles = 0;
+    std::uint32_t body = 0;              // Itself for a body.
+    std::uint32_t accessory_bit = ~0u;   // ~0 for a body.
+    // Body only:
+    std::uint32_t joint_count = 0;
+    std::uint32_t bone_base = 0;
+    std::vector<ClipInfo> clips;
+    std::vector<std::string> clip_names;
+    std::vector<std::string> joint_names;
+    std::vector<math::Vec3> joint_rest_positions;
+    std::uint32_t accessory_count = 0;
+};
+
 }  // namespace
 
 float draw_distance_for_level(int level) {
@@ -181,6 +263,23 @@ struct SceneRenderer::Impl {
     std::vector<std::uint32_t> visible;  // Global instance indices.
     std::vector<GpuInstance> gpu_instances;
 
+    // Characters.
+    SDL_GPUGraphicsPipeline* skinned_pipeline = nullptr;
+    SDL_GPUGraphicsPipeline* skinned_shadow_pipeline = nullptr;
+    std::vector<GpuSkinned> skinned;
+    std::vector<float> bone_rows;  // Three float4 rows per matrix.
+    bool bones_dirty = false;
+    SDL_GPUBuffer* bone_buffer = nullptr;
+    std::uint32_t bone_capacity = 0;
+    std::vector<float> palette_data = std::vector<float>(kPaletteSlots * 4, 1.0f);
+    bool palettes_dirty = true;
+    SDL_GPUBuffer* palette_buffer = nullptr;
+    std::uint32_t palette_capacity = 0;
+    std::vector<CharacterInstance> characters;
+    std::vector<GpuCharacter> gpu_characters;
+    SDL_GPUBuffer* character_buffer = nullptr;
+    std::uint32_t character_capacity = 0;
+
     GraphicsSettings graphics;
     int samples = 1;
     int cascades = 0;
@@ -201,7 +300,10 @@ struct SceneRenderer::Impl {
         SDL_ReleaseGPUGraphicsPipeline(device, mesh_pipeline);
         SDL_ReleaseGPUGraphicsPipeline(device, sky_pipeline);
         SDL_ReleaseGPUGraphicsPipeline(device, shadow_pipeline);
+        SDL_ReleaseGPUGraphicsPipeline(device, skinned_pipeline);
+        SDL_ReleaseGPUGraphicsPipeline(device, skinned_shadow_pipeline);
         mesh_pipeline = sky_pipeline = shadow_pipeline = nullptr;
+        skinned_pipeline = skinned_shadow_pipeline = nullptr;
     }
 
     void release_all() {
@@ -218,6 +320,16 @@ struct SceneRenderer::Impl {
             }
         }
         models.clear();
+        for (GpuSkinned& m : skinned) {
+            SDL_ReleaseGPUBuffer(device, m.vertices);
+            SDL_ReleaseGPUBuffer(device, m.indices);
+        }
+        skinned.clear();
+        SDL_ReleaseGPUBuffer(device, bone_buffer);
+        SDL_ReleaseGPUBuffer(device, palette_buffer);
+        SDL_ReleaseGPUBuffer(device, character_buffer);
+        bone_buffer = palette_buffer = character_buffer = nullptr;
+        bone_capacity = palette_capacity = character_capacity = 0;
         SDL_ReleaseGPUSampler(device, base_sampler);
         SDL_ReleaseGPUSampler(device, shadow_sampler);
         SDL_ReleaseGPUTexture(device, white);
@@ -382,7 +494,11 @@ struct SceneRenderer::Impl {
         SDL_GPUShader* sky_fs = make_shader(device, kSkyFragDxil, kSkyFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 1);
         SDL_GPUShader* shadow_vs = make_shader(device, kShadowVertDxil, kShadowVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 1);
         SDL_GPUShader* shadow_fs = make_shader(device, kShadowFragDxil, kShadowFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0);
-        const bool shaders_ok = mesh_vs && mesh_fs && sky_vs && sky_fs && shadow_vs && shadow_fs;
+        SDL_GPUShader* skinned_vs = make_shader(device, kSkinnedVertDxil, kSkinnedVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 3, 2);
+        SDL_GPUShader* skinned_shadow_vs =
+            make_shader(device, kSkinnedShadowVertDxil, kSkinnedShadowVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 2, 1);
+        const bool shaders_ok =
+            mesh_vs && mesh_fs && sky_vs && sky_fs && shadow_vs && shadow_fs && skinned_vs && skinned_shadow_vs;
 
         SDL_GPUVertexBufferDescription buffers[2]{};
         buffers[0] = {0, sizeof(ModelVertex), SDL_GPU_VERTEXINPUTRATE_VERTEX, 0};
@@ -438,11 +554,34 @@ struct SceneRenderer::Impl {
             sh.target_info.depth_stencil_format = depth_format;
             sh.target_info.has_depth_stencil_target = true;
             shadow_pipeline = SDL_CreateGPUGraphicsPipeline(device, &sh);
+
+            // Characters: the skinned vertex layout, same lighting.
+            SDL_GPUVertexBufferDescription sbuffers[2]{};
+            sbuffers[0] = {0, sizeof(SkinnedVertex), SDL_GPU_VERTEXINPUTRATE_VERTEX, 0};
+            sbuffers[1] = {1, sizeof(std::uint32_t), SDL_GPU_VERTEXINPUTRATE_INSTANCE, 0};
+            SDL_GPUVertexAttribute sattrs[6]{};
+            sattrs[0] = {0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(SkinnedVertex, px)};
+            sattrs[1] = {1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(SkinnedVertex, nx)};
+            sattrs[2] = {2, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, offsetof(SkinnedVertex, u)};
+            sattrs[3] = {3, 0, SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4, offsetof(SkinnedVertex, joints)};
+            sattrs[4] = {4, 0, SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM, offsetof(SkinnedVertex, weights)};
+            sattrs[5] = {5, 1, SDL_GPU_VERTEXELEMENTFORMAT_UINT, 0};
+
+            SDL_GPUGraphicsPipelineCreateInfo ci = pi;
+            ci.vertex_shader = skinned_vs;
+            ci.vertex_input_state = {sbuffers, 2, sattrs, 6};
+            skinned_pipeline = SDL_CreateGPUGraphicsPipeline(device, &ci);
+
+            SDL_GPUGraphicsPipelineCreateInfo cs = sh;
+            cs.vertex_shader = skinned_shadow_vs;
+            cs.vertex_input_state = {sbuffers, 2, sattrs, 6};
+            skinned_shadow_pipeline = SDL_CreateGPUGraphicsPipeline(device, &cs);
         }
-        for (SDL_GPUShader* s : {mesh_vs, mesh_fs, sky_vs, sky_fs, shadow_vs, shadow_fs}) {
+        for (SDL_GPUShader* s : {mesh_vs, mesh_fs, sky_vs, sky_fs, shadow_vs, shadow_fs, skinned_vs, skinned_shadow_vs}) {
             SDL_ReleaseGPUShader(device, s);
         }
-        if (mesh_pipeline == nullptr || sky_pipeline == nullptr || shadow_pipeline == nullptr) {
+        if (mesh_pipeline == nullptr || sky_pipeline == nullptr || shadow_pipeline == nullptr ||
+            skinned_pipeline == nullptr || skinned_shadow_pipeline == nullptr) {
             log::error("scene: pipeline creation failed: {}", SDL_GetError());
             return false;
         }
@@ -500,6 +639,93 @@ struct SceneRenderer::Impl {
                 gpu_instances.push_back(g);
             }
         }
+    }
+
+    void rebuild_character_data() {
+        gpu_characters.clear();
+        for (const CharacterInstance& c : characters) {
+            GpuCharacter g{};
+            affine_rows(c.position, c.yaw, c.scale, g.row0, g.row1, g.row2);
+            const GpuSkinned& body = skinned[c.body];
+            const ClipInfo clip = body.clips.empty() ? ClipInfo{} : body.clips[std::min<std::size_t>(c.clip, body.clips.size() - 1)];
+            g.anim[0] = body.bone_base + clip.first;
+            g.anim[1] = clip.frames;
+            g.anim[2] = body.joint_count;
+            g.anim[3] = std::min<std::uint32_t>(c.palette, static_cast<std::uint32_t>(palette_data.size() / (kPaletteSlots * 4)) - 1);
+            const float frames = static_cast<float>(clip.frames);
+            float pos = std::fmod(std::max(0.0f, c.time) * clip.fps, frames);
+            if (!std::isfinite(pos)) {
+                pos = 0.0f;
+            }
+            g.extra[0] = pos;
+            gpu_characters.push_back(g);
+        }
+    }
+
+    // Visible characters, then one range per skinned model (a body or an
+    // accessory) listing the characters that draw it.
+    std::vector<Range> cull_characters(const math::Frustum& frustum, const math::Vec3* eye, float max_distance) {
+        std::vector<std::uint32_t> seen;
+        const float max_d2 = max_distance * max_distance;
+        for (std::size_t i = 0; i < characters.size(); ++i) {
+            const CharacterInstance& c = characters[i];
+            const float r = skinned[c.body].radius * c.scale;
+            bool keep = frustum.sphere_visible(c.position, r);
+            if (keep && eye != nullptr) {
+                const math::Vec3 d = c.position - *eye;
+                keep = math::dot(d, d) <= max_d2;
+            }
+            if (keep) {
+                seen.push_back(static_cast<std::uint32_t>(i));
+            }
+        }
+        std::vector<Range> ranges(skinned.size());
+        for (std::size_t mi = 0; mi < skinned.size(); ++mi) {
+            const GpuSkinned& m = skinned[mi];
+            ranges[mi].first = static_cast<std::uint32_t>(visible.size());
+            for (const std::uint32_t i : seen) {
+                const CharacterInstance& c = characters[i];
+                const bool draws = m.accessory_bit == ~0u ? c.body == mi
+                                                          : c.body == m.body && ((c.accessories >> m.accessory_bit) & 1u) != 0;
+                if (draws) {
+                    visible.push_back(i);
+                }
+            }
+            ranges[mi].count = static_cast<std::uint32_t>(visible.size()) - ranges[mi].first;
+        }
+        return ranges;
+    }
+
+    SDL_GPUBuffer* upload_skinned_vertices(const std::vector<SkinnedVertex>& v) {
+        return upload_static_buffer(v.data(), static_cast<std::uint32_t>(v.size() * sizeof(SkinnedVertex)),
+                                    SDL_GPU_BUFFERUSAGE_VERTEX);
+    }
+
+    bool add_skinned(const ModelData& data, const std::vector<SkinnedVertex>& verts, GpuSkinned& m) {
+        m.vertices = upload_skinned_vertices(verts);
+        m.indices = upload_static_buffer(data.indices.data(),
+                                         static_cast<std::uint32_t>(data.indices.size() * sizeof(std::uint32_t)),
+                                         SDL_GPU_BUFFERUSAGE_INDEX);
+        if (m.vertices == nullptr || m.indices == nullptr) {
+            SDL_ReleaseGPUBuffer(device, m.vertices);
+            SDL_ReleaseGPUBuffer(device, m.indices);
+            log::error("scene: cannot upload a character model: {}", SDL_GetError());
+            return false;
+        }
+        for (const ModelMaterial& mat : data.materials) {
+            GpuMaterial g;
+            const int slot = palette_slot(mat.name);
+            // A recolored material takes its color from the palette only.
+            for (int c = 0; c < 4; ++c) {
+                g.base_color[c] = slot >= 0 ? 1.0f : mat.base_color[c];
+            }
+            g.texture = white;
+            m.materials.push_back(g);
+            m.slots.push_back(slot);
+        }
+        m.primitives = data.primitives;
+        m.triangles = data.indices.size() / 3;
+        return true;
     }
 
     // Appends the visible instances of each model to `visible` and returns
@@ -656,6 +882,138 @@ void SceneRenderer::set_instances(ModelId model, std::span<const Instance> insta
     }
 }
 
+bool SceneRenderer::add_skinned_model(const ModelData& data, SkinnedId& id) {
+    Impl& d = *impl_;
+    if (!data.skinned() || data.clips.empty() || data.skin.size() != data.vertices.size()) {
+        log::error("scene: a character model needs a skeleton and animations");
+        return false;
+    }
+    std::vector<SkinnedVertex> verts;
+    verts.reserve(data.vertices.size());
+    for (std::size_t i = 0; i < data.vertices.size(); ++i) {
+        const ModelVertex& v = data.vertices[i];
+        SkinnedVertex sv{v.px, v.py, v.pz, v.nx, v.ny, v.nz, v.u, v.v, {}, {}};
+        std::copy(std::begin(data.skin[i].joints), std::end(data.skin[i].joints), sv.joints);
+        std::copy(std::begin(data.skin[i].weights), std::end(data.skin[i].weights), sv.weights);
+        verts.push_back(sv);
+    }
+    GpuSkinned m;
+    if (!d.add_skinned(data, verts, m)) {
+        return false;
+    }
+    m.joint_count = static_cast<std::uint32_t>(data.joint_names.size());
+    m.bone_base = static_cast<std::uint32_t>(d.bone_rows.size() / 12);
+    std::uint32_t first = 0;
+    for (const ModelClip& clip : data.clips) {
+        m.clips.push_back({first, static_cast<std::uint32_t>(clip.frame_count), clip.fps});
+        m.clip_names.push_back(clip.name);
+        for (const math::Mat4& mat : clip.skin) {
+            for (int r = 0; r < 3; ++r) {
+                for (int c = 0; c < 4; ++c) {
+                    d.bone_rows.push_back(mat.m[c][r]);
+                }
+            }
+        }
+        first += static_cast<std::uint32_t>(clip.skin.size());
+    }
+    d.bones_dirty = true;
+    m.joint_names = data.joint_names;
+    for (const math::Mat4& rest : data.joint_rest) {
+        m.joint_rest_positions.push_back({rest.m[3][0], rest.m[3][1], rest.m[3][2]});
+    }
+    // Room for the model to bend and swing its arms.
+    m.radius = std::max(0.5f, data.radius * 1.15f);
+    id = static_cast<SkinnedId>(d.skinned.size());
+    m.body = id;
+    d.skinned.push_back(std::move(m));
+    return true;
+}
+
+bool SceneRenderer::add_accessory(const ModelData& data, SkinnedId body, std::string_view bone, std::uint32_t& bit) {
+    Impl& d = *impl_;
+    if (body >= d.skinned.size() || d.skinned[body].accessory_bit != ~0u || data.skinned()) {
+        log::error("scene: an accessory must be a rigid model pinned to a body");
+        return false;
+    }
+    GpuSkinned& owner = d.skinned[body];
+    int joint = -1;
+    for (std::size_t j = 0; j < owner.joint_names.size(); ++j) {
+        if (owner.joint_names[j] == bone) {
+            joint = static_cast<int>(j);
+        }
+    }
+    if (joint < 0 || owner.accessory_count >= 32) {
+        log::error("scene: no bone '{}' for an accessory, or too many accessories", bone);
+        return false;
+    }
+    // Move the accessory to the bone in the bind pose; the bone's skin
+    // matrix then carries it along with the animation.
+    const math::Vec3 at = owner.joint_rest_positions[static_cast<std::size_t>(joint)];
+    std::vector<SkinnedVertex> verts;
+    for (const ModelVertex& v : data.vertices) {
+        verts.push_back({v.px + at.x, v.py + at.y, v.pz + at.z, v.nx, v.ny, v.nz, v.u, v.v,
+                         {static_cast<std::uint8_t>(joint), 0, 0, 0}, {255, 0, 0, 0}});
+    }
+    GpuSkinned m;
+    if (!d.add_skinned(data, verts, m)) {
+        return false;
+    }
+    m.radius = owner.radius;
+    m.body = body;
+    m.accessory_bit = owner.accessory_count++;
+    bit = m.accessory_bit;
+    d.skinned.push_back(std::move(m));
+    return true;
+}
+
+int SceneRenderer::clip_index(SkinnedId body, std::string_view name) const {
+    const Impl& d = *impl_;
+    if (body >= d.skinned.size()) {
+        return -1;
+    }
+    const std::vector<std::string>& names = d.skinned[body].clip_names;
+    for (std::size_t i = 0; i < names.size(); ++i) {
+        if (names[i] == name) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+float SceneRenderer::clip_duration(SkinnedId body, std::uint32_t clip) const {
+    const Impl& d = *impl_;
+    if (body >= d.skinned.size() || clip >= d.skinned[body].clips.size()) {
+        return 0.0f;
+    }
+    const ClipInfo& c = d.skinned[body].clips[clip];
+    return static_cast<float>(c.frames) / c.fps;
+}
+
+void SceneRenderer::set_palettes(std::span<const Palette> palettes) {
+    Impl& d = *impl_;
+    d.palette_data.clear();
+    for (const Palette& p : palettes) {
+        for (const math::Vec3& c : p.colors) {
+            d.palette_data.insert(d.palette_data.end(), {c.x, c.y, c.z, 1.0f});
+        }
+    }
+    if (d.palette_data.empty()) {
+        d.palette_data.assign(kPaletteSlots * 4, 1.0f);
+    }
+    d.palettes_dirty = true;
+}
+
+void SceneRenderer::set_characters(std::span<const CharacterInstance> characters) {
+    Impl& d = *impl_;
+    d.characters.clear();
+    for (const CharacterInstance& c : characters) {
+        // Only bodies can be characters; anything else is dropped.
+        if (c.body < d.skinned.size() && d.skinned[c.body].accessory_bit == ~0u) {
+            d.characters.push_back(c);
+        }
+    }
+}
+
 void SceneRenderer::clear_instances() {
     for (GpuModel& m : impl_->models) {
         m.instances.clear();
@@ -665,7 +1023,10 @@ void SceneRenderer::clear_instances() {
 
 bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lighting& lighting) {
     Impl& d = *impl_;
-    stats_ = RenderStats{0, 0, 0, 0, 0, 0.0f, d.samples, d.cascades, d.shadow_size, d.draw_distance};
+    stats_ = RenderStats{};
+    stats_.msaa_samples = d.samples;
+    stats_.shadow_cascades = d.cascades;
+    stats_.shadow_map_size = d.shadow_size;
     if (frame.target == nullptr || d.mesh_pipeline == nullptr || !d.ensure_targets(frame.width, frame.height)) {
         return false;
     }
@@ -724,49 +1085,99 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     // Culling.
     d.visible.clear();
     const std::vector<Range> main_ranges = d.cull(frustum, &view.eye, draw_distance);
+    const std::vector<Range> main_characters = d.cull_characters(frustum, &view.eye, draw_distance);
     std::vector<Range> shadow_ranges[kMaxCascades];
+    std::vector<Range> shadow_characters[kMaxCascades];
     for (int c = 0; c < d.cascades; ++c) {
-        shadow_ranges[c] = d.cull(math::Frustum::from_matrix(cascade_vp[c]), nullptr, 0.0f);
+        const math::Frustum light = math::Frustum::from_matrix(cascade_vp[c]);
+        shadow_ranges[c] = d.cull(light, nullptr, 0.0f);
+        shadow_characters[c] = d.cull_characters(light, nullptr, 0.0f);
     }
     stats_.cull_ms = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
 
-    // Uploads: instances when the scene changed, visible indices always.
+    // Uploads, in one transfer: visible indices and characters every frame;
+    // instances, bones and palettes when they changed.
     if (d.instances_dirty) {
         d.rebuild_instance_data();
     }
+    d.rebuild_character_data();
     stats_.instances_total = static_cast<std::uint32_t>(d.gpu_instances.size());
+    stats_.characters_total = static_cast<std::uint32_t>(d.gpu_characters.size());
     const auto instance_bytes = static_cast<std::uint32_t>(d.gpu_instances.size() * sizeof(GpuInstance));
     const auto visible_bytes = static_cast<std::uint32_t>(d.visible.size() * sizeof(std::uint32_t));
+    const auto character_bytes = static_cast<std::uint32_t>(d.gpu_characters.size() * sizeof(GpuCharacter));
+    const auto bone_bytes = static_cast<std::uint32_t>(d.bone_rows.size() * sizeof(float));
+    const auto palette_bytes = static_cast<std::uint32_t>(d.palette_data.size() * sizeof(float));
     const std::uint32_t upload_instances = d.instances_dirty ? instance_bytes : 0;
-    if (!d.ensure_transfer(upload_instances + visible_bytes + 16) ||
-        !d.ensure_buffer(d.visible_buffer, d.visible_capacity, visible_bytes + 16, SDL_GPU_BUFFERUSAGE_VERTEX) ||
-        !d.ensure_buffer(d.instance_buffer, d.instance_capacity, instance_bytes + 64,
-                         SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ)) {
+    const std::uint32_t upload_bones = d.bones_dirty ? bone_bytes : 0;
+    const std::uint32_t upload_palettes = d.palettes_dirty ? palette_bytes : 0;
+    constexpr SDL_GPUBufferUsageFlags kStorage = SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ;
+    if (!d.ensure_buffer(d.visible_buffer, d.visible_capacity, visible_bytes + 16, SDL_GPU_BUFFERUSAGE_VERTEX) ||
+        !d.ensure_buffer(d.instance_buffer, d.instance_capacity, instance_bytes + 64, kStorage) ||
+        !d.ensure_buffer(d.character_buffer, d.character_capacity, character_bytes + 80, kStorage) ||
+        !d.ensure_buffer(d.palette_buffer, d.palette_capacity, palette_bytes + 16, kStorage)) {
         return false;
     }
-    if (upload_instances + visible_bytes > 0) {
+    // Bones are only ever added, so a larger buffer means a full upload.
+    const std::uint32_t old_bone_capacity = d.bone_capacity;
+    if (!d.ensure_buffer(d.bone_buffer, d.bone_capacity, bone_bytes + 48, kStorage)) {
+        return false;
+    }
+    const std::uint32_t bones_to_upload =
+        (d.bone_capacity != old_bone_capacity || upload_bones > 0) ? bone_bytes : 0;
+    const std::uint32_t palettes_to_upload = upload_palettes;
+    const std::uint32_t to_send = visible_bytes + upload_instances + character_bytes + bones_to_upload + palettes_to_upload;
+    if (to_send > 0) {
+        if (!d.ensure_transfer(to_send + 16)) {
+            return false;
+        }
         auto* mapped = static_cast<std::uint8_t*>(SDL_MapGPUTransferBuffer(d.device, d.transfer, true));
         if (mapped == nullptr) {
             return false;
         }
-        std::memcpy(mapped, d.visible.data(), visible_bytes);
-        if (upload_instances > 0) {
-            std::memcpy(mapped + visible_bytes, d.gpu_instances.data(), upload_instances);
+        std::uint32_t offset = 0;
+        // Copy everything into the mapped memory first, then record uploads.
+        struct Item {
+            const void* data;
+            std::uint32_t bytes;
+            SDL_GPUBuffer* dst;
+            bool cycle;
+        };
+        const Item items[] = {
+            {d.visible.data(), visible_bytes, d.visible_buffer, true},
+            {d.gpu_instances.data(), upload_instances, d.instance_buffer, false},
+            {d.gpu_characters.data(), character_bytes, d.character_buffer, true},
+            {d.bone_rows.data(), bones_to_upload, d.bone_buffer, false},
+            {d.palette_data.data(), palettes_to_upload, d.palette_buffer, false},
+        };
+        std::uint32_t offsets[std::size(items)] = {};
+        for (std::size_t i = 0; i < std::size(items); ++i) {
+            offsets[i] = offset;
+            if (items[i].bytes > 0) {
+                std::memcpy(mapped + offset, items[i].data, items[i].bytes);
+                offset += items[i].bytes;
+            }
         }
         SDL_UnmapGPUTransferBuffer(d.device, d.transfer);
         SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(frame.cmd);
-        if (visible_bytes > 0) {
-            const SDL_GPUTransferBufferLocation src{d.transfer, 0};
-            const SDL_GPUBufferRegion dst{d.visible_buffer, 0, visible_bytes};
-            SDL_UploadToGPUBuffer(copy, &src, &dst, true);
-        }
-        if (upload_instances > 0) {
-            const SDL_GPUTransferBufferLocation src{d.transfer, visible_bytes};
-            const SDL_GPUBufferRegion dst{d.instance_buffer, 0, upload_instances};
-            SDL_UploadToGPUBuffer(copy, &src, &dst, false);
-            d.instances_dirty = false;
+        for (std::size_t i = 0; i < std::size(items); ++i) {
+            if (items[i].bytes == 0) {
+                continue;
+            }
+            const SDL_GPUTransferBufferLocation src{d.transfer, offsets[i]};
+            const SDL_GPUBufferRegion dst{items[i].dst, 0, items[i].bytes};
+            SDL_UploadToGPUBuffer(copy, &src, &dst, items[i].cycle);
         }
         SDL_EndGPUCopyPass(copy);
+        if (upload_instances > 0) {
+            d.instances_dirty = false;
+        }
+        if (bones_to_upload > 0) {
+            d.bones_dirty = false;
+        }
+        if (palettes_to_upload > 0) {
+            d.palettes_dirty = false;
+        }
     }
 
     // Draws every model's visible instances; `with_materials` binds colors.
@@ -799,6 +1210,42 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         }
     };
 
+    // Draws the visible characters of every body and accessory.
+    const auto draw_characters = [&](SDL_GPURenderPass* pass, const std::vector<Range>& ranges, bool with_materials) {
+        SDL_GPUBuffer* storage[3] = {d.character_buffer, d.bone_buffer, d.palette_buffer};
+        SDL_BindGPUVertexStorageBuffers(pass, 0, storage, with_materials ? 3u : 2u);
+        for (std::size_t mi = 0; mi < d.skinned.size(); ++mi) {
+            const Range r = ranges[mi];
+            if (r.count == 0) {
+                continue;
+            }
+            const GpuSkinned& m = d.skinned[mi];
+            const SDL_GPUBufferBinding vbs[2] = {{m.vertices, 0}, {d.visible_buffer, r.first * 4u}};
+            SDL_BindGPUVertexBuffers(pass, 0, vbs, 2);
+            const SDL_GPUBufferBinding ib{m.indices, 0};
+            SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+            for (const ModelPrimitive& p : m.primitives) {
+                if (with_materials) {
+                    const std::size_t mat_index = std::min<std::size_t>(p.material, m.materials.size() - 1);
+                    const GpuMaterial& mat = m.materials[mat_index];
+                    const DrawUniforms du{{m.slots[mat_index], 0, 0, 0}};
+                    SDL_PushGPUVertexUniformData(frame.cmd, 1, &du, sizeof(du));
+                    MaterialUniforms mu{};
+                    std::copy(std::begin(mat.base_color), std::end(mat.base_color), mu.base_color);
+                    SDL_PushGPUFragmentUniformData(frame.cmd, 1, &mu, sizeof(mu));
+                    const SDL_GPUTextureSamplerBinding bindings[2] = {{mat.texture, d.base_sampler},
+                                                                      {d.shadow_map, d.shadow_sampler}};
+                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 2);
+                }
+                SDL_DrawGPUIndexedPrimitives(pass, p.index_count, r.count, p.first_index, 0, 0);
+                ++stats_.draw_calls;
+                if (with_materials) {
+                    stats_.triangles += static_cast<std::uint64_t>(p.index_count / 3) * r.count;
+                }
+            }
+        }
+    };
+
     // Shadow passes.
     for (int c = 0; c < d.cascades; ++c) {
         SDL_GPUDepthStencilTargetInfo dt{};
@@ -821,6 +1268,11 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         stats_.triangles = triangles_before;  // Count only what the player sees.
         for (const Range& r : shadow_ranges[c]) {
             stats_.shadow_instances += r.count;
+        }
+        if (!d.characters.empty()) {
+            SDL_BindGPUGraphicsPipeline(pass, d.skinned_shadow_pipeline);
+            SDL_PushGPUVertexUniformData(frame.cmd, 0, &su, sizeof(su));
+            draw_characters(pass, shadow_characters[c], false);
         }
         SDL_EndGPURenderPass(pass);
     }
@@ -882,6 +1334,16 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     draw_models(pass, main_ranges, true);
     for (const Range& r : main_ranges) {
         stats_.instances_drawn += r.count;
+    }
+    if (!d.characters.empty()) {
+        SDL_BindGPUGraphicsPipeline(pass, d.skinned_pipeline);
+        SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
+        draw_characters(pass, main_characters, true);
+        for (std::size_t mi = 0; mi < d.skinned.size(); ++mi) {
+            if (d.skinned[mi].accessory_bit == ~0u) {
+                stats_.characters_drawn += main_characters[mi].count;
+            }
+        }
     }
     SDL_EndGPURenderPass(pass);
     return true;

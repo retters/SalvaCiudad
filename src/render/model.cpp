@@ -61,12 +61,102 @@ bool load_texture(const cgltf_texture& tex, ModelTexture& out, std::string& erro
     return true;
 }
 
+// --- Skeletons and animations --------------------------------------------
+
+struct Trs {
+    math::Vec3 t{0, 0, 0};
+    float q[4] = {0, 0, 0, 1};  // x, y, z, w
+    math::Vec3 s{1, 1, 1};
+};
+
+Trs node_rest(const cgltf_node& n) {
+    Trs r;
+    if (n.has_translation) r.t = {n.translation[0], n.translation[1], n.translation[2]};
+    if (n.has_rotation) std::copy(n.rotation, n.rotation + 4, r.q);
+    if (n.has_scale) r.s = {n.scale[0], n.scale[1], n.scale[2]};
+    return r;
+}
+
+math::Mat4 trs_matrix(const Trs& trs) {
+    float len = std::sqrt(trs.q[0] * trs.q[0] + trs.q[1] * trs.q[1] + trs.q[2] * trs.q[2] + trs.q[3] * trs.q[3]);
+    if (!(len > 0.0f)) {
+        len = 1.0f;
+    }
+    return math::translation(trs.t) *
+           math::rotation_quat(trs.q[0] / len, trs.q[1] / len, trs.q[2] / len, trs.q[3] / len) * math::scaling(trs.s);
+}
+
+// Reads a channel's value at time t. Returns false for malformed data.
+bool sample_channel(const cgltf_animation_sampler& s, float t, int comps, float out[4]) {
+    const cgltf_accessor* in = s.input;
+    const cgltf_accessor* val = s.output;
+    const bool cubic = s.interpolation == cgltf_interpolation_type_cubic_spline;
+    if (in == nullptr || val == nullptr || in->count == 0 || in->type != cgltf_type_scalar ||
+        val->count != in->count * (cubic ? 3 : 1) || cgltf_num_components(val->type) != static_cast<cgltf_size>(comps)) {
+        return false;
+    }
+    // Find the key interval (keys are few; a linear scan is fine).
+    cgltf_size i = 0;
+    float t0 = 0.0f;
+    float t1 = 0.0f;
+    if (!cgltf_accessor_read_float(in, 0, &t0, 1)) {
+        return false;
+    }
+    while (i + 1 < in->count) {
+        if (!cgltf_accessor_read_float(in, i + 1, &t1, 1)) {
+            return false;
+        }
+        if (t1 > t) {
+            break;
+        }
+        t0 = t1;
+        ++i;
+    }
+    const auto read = [&](cgltf_size key, float* v) {
+        return cgltf_accessor_read_float(val, cubic ? key * 3 + 1 : key, v, static_cast<cgltf_size>(comps));
+    };
+    float a[4] = {0, 0, 0, 0};
+    if (!read(i, a)) {
+        return false;
+    }
+    std::copy(a, a + comps, out);
+    if (i + 1 >= in->count || s.interpolation == cgltf_interpolation_type_step || t <= t0) {
+        return true;
+    }
+    float b[4] = {0, 0, 0, 0};
+    if (!read(i + 1, b)) {
+        return false;
+    }
+    const float span = t1 - t0;
+    const float f = span > 0.0f ? std::clamp((t - t0) / span, 0.0f, 1.0f) : 0.0f;
+    if (comps == 4) {
+        // Normalized linear blend along the shortest arc; fine for keys a
+        // frame apart.
+        const float d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+        const float sign = d < 0.0f ? -1.0f : 1.0f;
+        float len = 0.0f;
+        for (int c = 0; c < 4; ++c) {
+            out[c] = a[c] + (b[c] * sign - a[c]) * f;
+            len += out[c] * out[c];
+        }
+        len = std::sqrt(len);
+        for (int c = 0; c < 4 && len > 0.0f; ++c) {
+            out[c] /= len;
+        }
+    } else {
+        for (int c = 0; c < comps; ++c) {
+            out[c] = a[c] + (b[c] - a[c]) * f;
+        }
+    }
+    return true;
+}
+
 class Builder {
 public:
     Builder(const cgltf_data& data, ModelData& model) : data_(data), model_(model) {}
 
     bool build(std::string& error) {
-        if (!load_materials(error)) {
+        if (!load_materials(error) || !load_skin(error)) {
             return false;
         }
         const cgltf_scene* scene = data_.scene != nullptr ? data_.scene : (data_.scenes_count > 0 ? data_.scenes : nullptr);
@@ -83,10 +173,157 @@ public:
             error = "the scene has no triangles";
             return false;
         }
-        return true;
+        return skin_ == nullptr || bake_clips(error);
     }
 
 private:
+    bool load_skin(std::string& error) {
+        if (data_.skins_count == 0) {
+            return true;
+        }
+        if (data_.skins_count > 1) {
+            error = "only one skeleton per model is supported";
+            return false;
+        }
+        skin_ = &data_.skins[0];
+        const cgltf_size count = skin_->joints_count;
+        if (count == 0 || count > lim::kMaxJoints) {
+            error = "the skeleton has no joints or more than 64";
+            return false;
+        }
+        for (cgltf_size j = 0; j < count; ++j) {
+            const cgltf_node* n = skin_->joints[j];
+            const std::string name = n->name != nullptr ? n->name : std::format("joint{}", j);
+            if (name.size() > 64 || model_.joint_index(name) >= 0) {
+                error = "joint names must be unique and short";
+                return false;
+            }
+            model_.joint_names.push_back(name);
+            math::Mat4 inverse_bind = math::Mat4::identity();
+            if (skin_->inverse_bind_matrices != nullptr) {
+                float m[16];
+                if (skin_->inverse_bind_matrices->count != count ||
+                    !cgltf_accessor_read_float(skin_->inverse_bind_matrices, j, m, 16)) {
+                    error = "invalid inverse bind matrices";
+                    return false;
+                }
+                inverse_bind = to_mat4(m);
+            }
+            inverse_bind_.push_back(inverse_bind);
+            model_.joint_rest.push_back(math::inverse(inverse_bind));
+        }
+        return true;
+    }
+
+    [[nodiscard]] int joint_of(const cgltf_node* n) const {
+        for (cgltf_size j = 0; skin_ != nullptr && j < skin_->joints_count; ++j) {
+            if (skin_->joints[j] == n) {
+                return static_cast<int>(j);
+            }
+        }
+        return -1;
+    }
+
+    // Global transform of joint `j` for this frame's local transforms.
+    math::Mat4 global_of(int j, const std::vector<math::Mat4>& local, std::vector<math::Mat4>& global,
+                         std::vector<char>& done, int depth) const {
+        if (done[static_cast<std::size_t>(j)] != 0) {
+            return global[static_cast<std::size_t>(j)];
+        }
+        const cgltf_node* parent = skin_->joints[j]->parent;
+        math::Mat4 parent_m = math::Mat4::identity();
+        const int pj = joint_of(parent);
+        if (pj >= 0 && depth < 64) {
+            parent_m = global_of(pj, local, global, done, depth + 1);
+        } else if (parent != nullptr) {
+            float w[16];
+            cgltf_node_transform_world(parent, w);
+            parent_m = to_mat4(w);
+        }
+        global[static_cast<std::size_t>(j)] = parent_m * local[static_cast<std::size_t>(j)];
+        done[static_cast<std::size_t>(j)] = 1;
+        return global[static_cast<std::size_t>(j)];
+    }
+
+    bool bake_clips(std::string& error) {
+        const cgltf_size joints = skin_->joints_count;
+        if (data_.animations_count > lim::kMaxClips) {
+            error = "too many animations";
+            return false;
+        }
+        for (cgltf_size a = 0; a < data_.animations_count; ++a) {
+            const cgltf_animation& anim = data_.animations[a];
+            float duration = 0.0f;
+            for (cgltf_size c = 0; c < anim.samplers_count; ++c) {
+                const cgltf_accessor* in = anim.samplers[c].input;
+                if (in != nullptr && in->has_max) {
+                    duration = std::max(duration, in->max[0]);
+                }
+            }
+            if (!std::isfinite(duration) || duration < 0.0f ||
+                duration * lim::kClipFps > static_cast<float>(lim::kMaxClipFrames)) {
+                error = "animation too long or with invalid times";
+                return false;
+            }
+            ModelClip clip;
+            clip.name = anim.name != nullptr ? anim.name : std::format("clip{}", a);
+            clip.fps = lim::kClipFps;
+            // A loop's last key repeats the first, so it is not a frame of its own.
+            clip.frame_count = std::max(1, static_cast<int>(std::lround(duration * lim::kClipFps)));
+            clip.skin.reserve(static_cast<std::size_t>(clip.frame_count) * joints);
+
+            std::vector<math::Mat4> local(joints);
+            std::vector<math::Mat4> global(joints);
+            std::vector<char> done(joints);
+            for (int f = 0; f < clip.frame_count; ++f) {
+                const float t = static_cast<float>(f) / lim::kClipFps;
+                for (cgltf_size j = 0; j < joints; ++j) {
+                    const cgltf_node* n = skin_->joints[j];
+                    if (n->has_matrix) {
+                        local[j] = to_mat4(n->matrix);
+                        continue;
+                    }
+                    Trs trs = node_rest(*n);
+                    for (cgltf_size c = 0; c < anim.channels_count; ++c) {
+                        const cgltf_animation_channel& ch = anim.channels[c];
+                        if (ch.target_node != n || ch.sampler == nullptr) {
+                            continue;
+                        }
+                        float v[4] = {0, 0, 0, 0};
+                        bool ok = true;
+                        switch (ch.target_path) {
+                            case cgltf_animation_path_type_translation:
+                                ok = sample_channel(*ch.sampler, t, 3, v);
+                                trs.t = {v[0], v[1], v[2]};
+                                break;
+                            case cgltf_animation_path_type_rotation:
+                                ok = sample_channel(*ch.sampler, t, 4, v);
+                                std::copy(v, v + 4, trs.q);
+                                break;
+                            case cgltf_animation_path_type_scale:
+                                ok = sample_channel(*ch.sampler, t, 3, v);
+                                trs.s = {v[0], v[1], v[2]};
+                                break;
+                            default:
+                                break;
+                        }
+                        if (!ok) {
+                            error = "malformed animation channel";
+                            return false;
+                        }
+                    }
+                    local[j] = trs_matrix(trs);
+                }
+                std::fill(done.begin(), done.end(), 0);
+                for (cgltf_size j = 0; j < joints; ++j) {
+                    clip.skin.push_back(global_of(static_cast<int>(j), local, global, done, 0) * inverse_bind_[j]);
+                }
+            }
+            model_.clips.push_back(std::move(clip));
+        }
+        return true;
+    }
+
     bool load_materials(std::string& error) {
         if (data_.textures_count > lim::kMaxTextures) {
             error = "too many textures";
@@ -110,6 +347,9 @@ private:
 
     ModelMaterial convert_material(const cgltf_material& m) const {
         ModelMaterial out;
+        if (m.name != nullptr) {
+            out.name = std::string(m.name).substr(0, 64);
+        }
         if (m.has_pbr_metallic_roughness) {
             for (int c = 0; c < 4; ++c) {
                 out.base_color[c] = std::clamp(m.pbr_metallic_roughness.base_color_factor[c], 0.0f, 1.0f);
@@ -127,9 +367,19 @@ private:
             return false;
         }
         if (node.mesh != nullptr) {
-            cgltf_float world[16];
-            cgltf_node_transform_world(&node, world);
-            const math::Mat4 m = to_mat4(world);
+            math::Mat4 m = math::Mat4::identity();
+            if (skin_ != nullptr) {
+                // Skinned vertices are placed by the joints alone; the mesh
+                // node's own transform does not apply (glTF 2.0, 3.7.3).
+                if (node.skin != skin_) {
+                    error = "a model cannot mix skinned and rigid meshes";
+                    return false;
+                }
+            } else {
+                cgltf_float world[16];
+                cgltf_node_transform_world(&node, world);
+                m = to_mat4(world);
+            }
             if (!add_mesh(*node.mesh, m, error)) {
                 return false;
             }
@@ -172,11 +422,15 @@ private:
         const cgltf_accessor* pos = nullptr;
         const cgltf_accessor* nrm = nullptr;
         const cgltf_accessor* uv = nullptr;
+        const cgltf_accessor* joints = nullptr;
+        const cgltf_accessor* weights = nullptr;
         for (cgltf_size a = 0; a < prim.attributes_count; ++a) {
             const cgltf_attribute& attr = prim.attributes[a];
             if (attr.type == cgltf_attribute_type_position && attr.index == 0) pos = attr.data;
             if (attr.type == cgltf_attribute_type_normal && attr.index == 0) nrm = attr.data;
             if (attr.type == cgltf_attribute_type_texcoord && attr.index == 0) uv = attr.data;
+            if (attr.type == cgltf_attribute_type_joints && attr.index == 0) joints = attr.data;
+            if (attr.type == cgltf_attribute_type_weights && attr.index == 0) weights = attr.data;
         }
         if (pos == nullptr || pos->type != cgltf_type_vec3 || pos->count == 0) {
             error = "a primitive has no positions";
@@ -190,6 +444,14 @@ private:
         }
         if (model_.vertices.size() + count > lim::kMaxVertices) {
             error = "too many vertices";
+            return false;
+        }
+        if (skin_ != nullptr && (joints == nullptr || weights == nullptr || joints->type != cgltf_type_vec4 ||
+                                 weights->type != cgltf_type_vec4 || joints->count != count || weights->count != count)) {
+            error = "a skinned primitive needs four joints and weights per vertex";
+            return false;
+        }
+        if (skin_ != nullptr && !read_skin(joints, weights, count, error)) {
             return false;
         }
 
@@ -248,6 +510,45 @@ private:
         return true;
     }
 
+    bool read_skin(const cgltf_accessor* joints, const cgltf_accessor* weights, cgltf_size count, std::string& error) {
+        for (cgltf_size i = 0; i < count; ++i) {
+            cgltf_uint j[4] = {0, 0, 0, 0};
+            float w[4] = {0, 0, 0, 0};
+            if (!cgltf_accessor_read_uint(joints, i, j, 4) || !cgltf_accessor_read_float(weights, i, w, 4)) {
+                error = "unreadable joints or weights";
+                return false;
+            }
+            float sum = 0.0f;
+            for (int k = 0; k < 4; ++k) {
+                if (j[k] >= skin_->joints_count || !std::isfinite(w[k]) || w[k] < 0.0f) {
+                    error = "joint index out of range or invalid weight";
+                    return false;
+                }
+                sum += w[k];
+            }
+            JointWeights jw;
+            if (sum <= 0.0f) {
+                model_.skin.push_back(jw);  // Unweighted: follows joint 0.
+                continue;
+            }
+            // Quantize to 1/255 so the four weights still add up to 255.
+            int total = 0;
+            int largest = 0;
+            for (int k = 0; k < 4; ++k) {
+                jw.joints[k] = static_cast<std::uint8_t>(j[k]);
+                const int q = static_cast<int>(std::lround(w[k] / sum * 255.0f));
+                jw.weights[k] = static_cast<std::uint8_t>(q);
+                total += q;
+                if (w[k] > w[largest]) {
+                    largest = k;
+                }
+            }
+            jw.weights[largest] = static_cast<std::uint8_t>(jw.weights[largest] + (255 - total));
+            model_.skin.push_back(jw);
+        }
+        return true;
+    }
+
     // Without normals in the file, each triangle gets its face normal.
     void compute_flat_normals(const ModelPrimitive& prim) {
         for (std::uint32_t i = 0; i + 2 < prim.index_count; i += 3) {
@@ -267,6 +568,8 @@ private:
     const cgltf_data& data_;
     ModelData& model_;
     std::uint32_t default_material_ = 0;
+    const cgltf_skin* skin_ = nullptr;
+    std::vector<math::Mat4> inverse_bind_;
 };
 
 void compute_bounds(ModelData& model) {
@@ -284,6 +587,24 @@ void compute_bounds(ModelData& model) {
 }
 
 }  // namespace
+
+int ModelData::joint_index(std::string_view name) const {
+    for (std::size_t i = 0; i < joint_names.size(); ++i) {
+        if (joint_names[i] == name) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+int ModelData::clip_index(std::string_view name) const {
+    for (std::size_t i = 0; i < clips.size(); ++i) {
+        if (clips[i].name == name) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
 
 ModelLoadResult load_glb(std::span<const std::uint8_t> file) {
     ModelLoadResult result;

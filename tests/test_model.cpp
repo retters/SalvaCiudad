@@ -1,6 +1,7 @@
 #include <doctest.h>
 
 #include <cstring>
+#include <ostream>
 
 #include "core/file_io.h"
 #include "render/model.h"
@@ -124,5 +125,102 @@ TEST_SUITE("model") {
 
         // No binary chunk at all.
         CHECK_FALSE(load_glb(make_glb(triangle_json(), {})).ok);
+    }
+}
+
+namespace {
+
+const std::filesystem::path kData = std::filesystem::path(SC_SOURCE_DIR) / "data" / "models";
+
+ModelLoadResult load_data(std::string_view name) {
+    const auto r = fs::read_file(kData / name, model_limits::kMaxFileBytes);
+    REQUIRE(r.error == fs::IoError::None);
+    return load_glb({reinterpret_cast<const std::uint8_t*>(r.data.data()), r.data.size()});
+}
+
+// A triangle skinned to a one-joint skeleton, with one joint index `bad`.
+std::vector<std::uint8_t> skinned_triangle(std::uint8_t bad) {
+    std::vector<std::uint8_t> bin = triangle_bin(0, 1, 2);  // 36 bytes of positions, 6 of indices.
+    bin.push_back(0);
+    bin.push_back(0);  // Align to 44.
+    for (int v = 0; v < 3; ++v) {
+        bin.insert(bin.end(), {static_cast<std::uint8_t>(v == 2 ? bad : 0), 0, 0, 0});
+    }
+    const float w[4] = {1, 0, 0, 0};
+    for (int v = 0; v < 3; ++v) {
+        const auto* b = reinterpret_cast<const std::uint8_t*>(w);
+        bin.insert(bin.end(), b, b + sizeof(w));
+    }
+    return bin;
+}
+
+const char* kSkinnedJson = R"({"asset":{"version":"2.0"},"scene":0,"scenes":[{"nodes":[0,1]}],
+    "nodes":[{"mesh":0,"skin":0},{"name":"root"}],
+    "skins":[{"joints":[1]}],
+    "meshes":[{"primitives":[{"attributes":{"POSITION":0,"JOINTS_0":2,"WEIGHTS_0":3},"indices":1}]}],
+    "accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3","min":[0,0,0],"max":[1,0,1]},
+                 {"bufferView":1,"componentType":5123,"count":3,"type":"SCALAR"},
+                 {"bufferView":2,"componentType":5121,"count":3,"type":"VEC4"},
+                 {"bufferView":3,"componentType":5126,"count":3,"type":"VEC4"}],
+    "bufferViews":[{"buffer":0,"byteOffset":0,"byteLength":36},{"buffer":0,"byteOffset":36,"byteLength":6},
+                   {"buffer":0,"byteOffset":44,"byteLength":12},{"buffer":0,"byteOffset":56,"byteLength":48}],
+    "buffers":[{"byteLength":104}]})";
+
+}  // namespace
+
+TEST_SUITE("model") {
+    TEST_CASE("the character bodies have a skeleton and baked animations") {
+        for (const char* file : {"characters/human_male.glb", "characters/human_female.glb"}) {
+            const ModelLoadResult r = load_data(file);
+            REQUIRE_MESSAGE(r.ok, file << ": " << r.error);
+            const ModelData& m = r.model;
+            CHECK(m.skinned());
+            CHECK(m.joint_names.size() == 17);
+            CHECK(m.skin.size() == m.vertices.size());
+            for (const JointWeights& jw : m.skin) {
+                CHECK(jw.weights[0] + jw.weights[1] + jw.weights[2] + jw.weights[3] == 255);
+                for (const std::uint8_t j : jw.joints) {
+                    CHECK(j < m.joint_names.size());
+                }
+            }
+            const int idle = m.clip_index("idle");
+            const int walk = m.clip_index("walk");
+            REQUIRE(idle >= 0);
+            REQUIRE(walk >= 0);
+            CHECK(m.clips[static_cast<std::size_t>(idle)].frame_count == 60);
+            CHECK(m.clips[static_cast<std::size_t>(walk)].frame_count == 30);
+            for (const ModelClip& c : m.clips) {
+                CHECK(c.skin.size() == static_cast<std::size_t>(c.frame_count) * m.joint_names.size());
+            }
+            // Hats sit on the head bone, which starts at the top of the neck.
+            const int head = m.joint_index("head");
+            REQUIRE(head >= 0);
+            const math::Mat4& rest = m.joint_rest[static_cast<std::size_t>(head)];
+            const float expected = std::string_view(file).find("female") != std::string_view::npos ? 1.53f * 0.95f : 1.53f;
+            CHECK(rest.m[3][1] == doctest::Approx(expected).epsilon(0.001));
+            CHECK(std::abs(rest.m[3][0]) < 1e-4f);
+        }
+    }
+
+    TEST_CASE("accessories and props are rigid models") {
+        for (const char* file : {"characters/hat_straw.glb", "characters/hat_cap.glb", "characters/beard.glb",
+                                 "characters/apron_male.glb", "characters/apron_female.glb", "props/tree_pine.glb",
+                                 "props/rock.glb", "props/house_small.glb"}) {
+            const ModelLoadResult r = load_data(file);
+            REQUIRE_MESSAGE(r.ok, file << ": " << r.error);
+            CHECK_FALSE(r.model.skinned());
+            CHECK_FALSE(r.model.primitives.empty());
+        }
+        // The straw hat's brim rests on the head, 0.2 m above the neck.
+        const ModelLoadResult hat = load_data("characters/hat_straw.glb");
+        CHECK(hat.model.bounds_min.y == doctest::Approx(0.2f).epsilon(0.01));
+    }
+
+    TEST_CASE("a skinned model with a joint index past the skeleton is rejected") {
+        const ModelLoadResult ok = load_glb(make_glb(kSkinnedJson, skinned_triangle(0)));
+        REQUIRE_MESSAGE(ok.ok, ok.error);
+        CHECK(ok.model.joint_names.size() == 1);
+        CHECK(ok.model.joint_names[0] == "root");
+        CHECK_FALSE(load_glb(make_glb(kSkinnedJson, skinned_triangle(3))).ok);
     }
 }

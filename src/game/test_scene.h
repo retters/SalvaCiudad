@@ -28,9 +28,56 @@ inline constexpr float kTestSceneHalfSize = 1000.0f;  // Meters from the center 
 // A flat ground model with a tiling grass texture.
 [[nodiscard]] render::ModelData make_ground_model(float half_size);
 
+// The palettes used by the test crowd: outfits x skin tones x hair colors.
+[[nodiscard]] std::vector<render::Palette> make_villager_palettes();
+
+// Villagers wandering around the center of the test scene, to check the
+// animated character path (phase 4 acceptance: 2000 on screen).
+class TestCrowd {
+public:
+    // Loads the bodies and accessories from data/models/characters.
+    bool load(render::SceneRenderer& renderer, const std::filesystem::path& characters_dir);
+    void spawn(std::size_t count, std::uint32_t seed, float radius);
+    // Moves everyone and hands the result to the renderer.
+    void update(render::SceneRenderer& renderer, float dt);
+
+    [[nodiscard]] bool loaded() const { return loaded_; }
+    [[nodiscard]] std::size_t size() const { return villagers_.size(); }
+
+    // Walking speed at which the walk clip plays at its authored rate.
+    static constexpr float kWalkReferenceSpeed = 1.45f;
+
+private:
+    struct BodyKind {
+        render::SkinnedId id = 0;
+        std::uint32_t idle = 0;
+        std::uint32_t walk = 0;
+        std::vector<std::uint32_t> hats;  // Accessory bits.
+        std::uint32_t beard = ~0u;
+        std::uint32_t apron = ~0u;
+    };
+    struct Villager {
+        render::CharacterInstance look;
+        std::size_t kind = 0;
+        math::Vec3 target;
+        float speed = 1.4f;
+        float rest_time = 0.0f;  // Seconds left standing still.
+    };
+
+    std::uint32_t next_random();
+    math::Vec3 random_point();
+
+    bool loaded_ = false;
+    std::vector<BodyKind> kinds_;
+    std::vector<Villager> villagers_;
+    std::vector<render::CharacterInstance> instances_;
+    std::uint32_t random_state_ = 1;
+    float radius_ = 60.0f;
+};
+
 class TestScene {
 public:
-    // Loads the models from data/models/test and fills the renderer.
+    // Loads the props from data/models/props and fills the renderer.
     // Models that fail to load are skipped (and logged).
     bool load(render::SceneRenderer& renderer, const std::filesystem::path& models_dir, std::size_t count);
 
@@ -41,5 +88,9 @@ private:
     bool loaded_ = false;
     std::size_t instances_ = 0;
 };
+
+// Reads and validates one .glb from disk (models only come from the game's
+// data folder, decision D-302).
+[[nodiscard]] std::optional<render::ModelData> load_model_file(const std::filesystem::path& file);
 
 }  // namespace sc

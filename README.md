@@ -2,7 +2,7 @@
 
 Juego 3D de construcción y supervivencia de pueblos medievales con multijugador de 1 a 12 jugadores. Motor propio en C++20 sobre SDL3. El diseño completo está en [ESPECIFICACION_SalvaCiudad.md](ESPECIFICACION_SalvaCiudad.md) y las decisiones en [docs/DECISIONES.md](docs/DECISIONES.md).
 
-**Estado:** fase 3 de 21 (render 3D base). El menú principal tiene de fondo una escena 3D, y la "Escena de prueba 3D" permite recorrer 50 000 objetos con la cámara del juego. Las opciones de partida todavía muestran "Próximamente".
+**Estado:** fase 4 de 21 (pipeline de arte). Los modelos salen de scripts de Blender (humanos animados con variantes de ropa, sombreros, casa, pino y roca). La "Escena de prueba 3D" muestra 2000 aldeanos caminando entre 50 000 objetos. Las opciones de partida todavía muestran "Próximamente".
 
 Requisito para jugar: una tarjeta gráfica compatible con Direct3D 12 (ver D-201).
 
@@ -20,6 +20,10 @@ ctest --preset release
 - Presets de Windows: `debug`, `release` y `debug-asan` (con AddressSanitizer).
 - Los sombreadores se compilan con el `dxc.exe` del Windows SDK, que viene con Visual Studio.
 - Presets de Linux y macOS: `unix-debug`, `unix-release` y `unix-debug-asan`. Todavía no compilan, porque falta preparar los sombreadores para esas plataformas (D-201).
+
+## Modelos
+
+Los modelos de `data/models` se generan con Blender desde los scripts de `art/blender`. Ver [docs/ARTE.md](docs/ARTE.md). Compilar el juego no requiere Blender.
 
 ## Dónde guarda sus datos
 
@@ -86,6 +90,17 @@ Se completa en cada fase.
 - [ ] F3 muestra las estadísticas. Con la sincronización vertical desactivada, los FPS pasan de 60. Activar "Vista de estrés" (casi los 50 000 objetos en pantalla) y comprobar que siguen por encima de 60.
 - [ ] Configuración → Gráficos: cambiar la calidad de Baja a Ultra; las sombras, la distancia de dibujo y el suavizado cambian al instante.
 - [ ] Redimensionar la ventana y cambiar a pantalla completa con la escena abierta: no se deforma ni queda en negro.
+
+### Fase 4
+
+- [ ] En la escena de prueba, los aldeanos caminan con las piernas y los brazos coordinados y los pies no patinan. Algunos se detienen y respiran (animación de reposo).
+- [ ] Hay hombres y mujeres con ropa de colores distintos, tonos de piel y de pelo variados, sombrero de paja o gorro, barba y delantal en algunos.
+- [ ] Los sombreros, la barba y el delantal siguen la cabeza y la cadera al caminar, sin separarse del cuerpo.
+- [ ] Los aldeanos proyectan sombra.
+- [ ] Con F3, "Personajes dibujados" llega a unos 2000 al alejar la cámara, y los FPS siguen por encima de 60.
+- [ ] La casa tiene entramado de madera, ventanas con contraventanas, puerta, chimenea y tejas; el pino y la roca se ven bien de cerca.
+- [ ] Con Blender instalado, generar dos veces con `build_all.py` (ver docs/ARTE.md) da archivos idénticos.
+- [ ] **Tu opinión del estilo:** ¿te gusta este low-poly para los personajes y la casa? Qué cambiarías (proporciones, nivel de detalle, colores).
 
 ## Licencia
 

@@ -372,7 +372,7 @@ Todos definidos como datos en `core` y con reglas en C++ o Lua:
   - Por ahora no hay edificios exclusivos por raza; el sistema de definiciones lo permitiría más adelante (D-011).
 - **Paquetes de assets libres** (por ejemplo Kenney o Quaternius, con licencia CC0) se pueden usar como reemplazo provisional. Cada descarga se te pide aparte, indicando archivo, origen, tamaño y licencia. La licencia de cada asset se registra en `data/mods/core/CREDITS.md`.
 - **Efectos de sonido básicos:** generados con una herramienta propia de síntesis en `tools/sfxgen/` (estilo sfxr, con parámetros guardados en JSON) o con paquetes CC0 aprobados. La música queda para después.
-- Convenciones de escala, orientación, nombres de huesos y materiales en `docs/ARTE.md`.
+- Convenciones de escala, orientación, nombres de huesos y materiales en `docs/ARTE.md`. Las variantes de ropa usan paletas por personaje (materiales con nombre de "espacio de paleta") y los accesorios son modelos rígidos fijados a un hueso (D-404, D-405).
 
 ### 7.13 Mods y Lua
 

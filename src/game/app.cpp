@@ -38,6 +38,10 @@ constexpr int kAtlasSize = 2048;
 // Objects in the renderer test scene (phase 3 acceptance: 50 000).
 constexpr std::size_t kTestSceneInstances = 50'000;
 
+// Animated villagers around the scene center (phase 4 acceptance: 2000).
+constexpr std::size_t kTestCrowd = 2'000;
+constexpr float kTestCrowdRadius = 70.0f;
+
 // Pixels from the window edge where edge scrolling starts.
 constexpr float kEdgeScrollPx = 3.0f;
 
@@ -162,7 +166,10 @@ bool App::init() {
 
     // The 3D scene is optional: without it the menus still work.
     if (scene_.create(gpu_, settings_->settings().graphics)) {
-        scene_ok_ = test_scene_.load(scene_, paths_->game_data_dir() / "models" / "test", kTestSceneInstances);
+        scene_ok_ = test_scene_.load(scene_, paths_->game_data_dir() / "models" / "props", kTestSceneInstances);
+        if (scene_ok_ && crowd_.load(scene_, paths_->game_data_dir() / "models" / "characters")) {
+            crowd_.spawn(kTestCrowd, 2026, kTestCrowdRadius);
+        }
     }
     if (!scene_ok_) {
         log::warn("scene: 3D view unavailable, menus only");
@@ -492,6 +499,7 @@ void App::render_frame(float dt) {
         bool scene_drawn = false;
         if (scene_ok_ && host_->scene_mode() != UiHost::SceneMode::None) {
             update_camera(dt);
+            crowd_.update(scene_, dt);
             render::SceneView view;
             view.view = camera_.view();
             view.eye = camera_.eye();

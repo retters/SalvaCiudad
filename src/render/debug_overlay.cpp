@@ -88,6 +88,7 @@ void DebugOverlay::build(const DebugInfo& info) {
             ImGui::Text("%s: %u", tr("debug.drawCalls").c_str(), s.draw_calls);
             ImGui::Text("%s: %u / %u", tr("debug.instances").c_str(), s.instances_drawn, s.instances_total);
             ImGui::Text("%s: %u", tr("debug.shadowInstances").c_str(), s.shadow_instances);
+            ImGui::Text("%s: %u / %u", tr("debug.characters").c_str(), s.characters_drawn, s.characters_total);
             ImGui::Text("%s: %.2f M", tr("debug.triangles").c_str(), static_cast<double>(s.triangles) / 1e6);
             ImGui::Text("%s: %.2f ms", tr("debug.cull").c_str(), static_cast<double>(s.cull_ms));
             ImGui::Text("MSAA: %dx", s.msaa_samples);
