@@ -258,11 +258,11 @@ std::uint32_t TestCrowd::next_random() {
     return random_state_;
 }
 
-math::Vec3 TestCrowd::random_point() {
+math::Vec3 TestCrowd::random_point(math::Vec3 center, float radius) {
     const float a = static_cast<float>(next_random() % 10000) / 10000.0f * 2.0f * math::kPi;
-    const float r = std::sqrt(static_cast<float>(next_random() % 10000) / 10000.0f) * radius_;
-    const float x = center_.x + std::cos(a) * r;
-    const float z = center_.z + std::sin(a) * r;
+    const float r = std::sqrt(static_cast<float>(next_random() % 10000) / 10000.0f) * radius;
+    const float x = center.x + std::cos(a) * r;
+    const float z = center.z + std::sin(a) * r;
     return {x, ground_ ? ground_(x, z) : 0.0f, z};
 }
 
@@ -280,6 +280,7 @@ bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::pat
     for (const bool female : {false, true}) {
         const auto body = load_model_file(dir / (female ? "human_female.glb" : "human_male.glb"));
         BodyKind kind;
+        kind.female = female;
         if (!body || body->clip_index("idle") < 0 || body->clip_index("walk") < 0 ||
             !renderer.add_skinned_model(*body, kind.id)) {
             log::warn("test crowd: body model unavailable");
@@ -306,42 +307,98 @@ bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::pat
     return loaded_;
 }
 
+TestCrowd::Villager TestCrowd::make_villager(std::size_t kind_index, math::Vec3 home, float roam) {
+    const auto palettes = static_cast<std::uint32_t>(make_villager_palettes().size());
+    Villager v;
+    v.kind = kind_index;
+    v.home = home;
+    v.roam = roam;
+    const BodyKind& kind = kinds_[v.kind];
+    v.look.body = kind.id;
+    v.look.clip = kind.walk;
+    v.look.position = random_point(home, roam);
+    v.look.yaw = static_cast<float>(next_random() % 628) / 100.0f;
+    v.look.scale = 0.94f + static_cast<float>(next_random() % 12) / 100.0f;
+    v.look.palette = next_random() % palettes;
+    v.look.time = static_cast<float>(next_random() % 1000) / 1000.0f;
+    std::uint32_t mask = 0;
+    const std::uint32_t hat = next_random() % 3;  // None, or one of the hats.
+    if (hat > 0 && hat <= kind.hats.size()) {
+        mask |= 1u << kind.hats[hat - 1];
+    }
+    if (kind.beard != ~0u && next_random() % 3 == 0) {
+        mask |= 1u << kind.beard;
+    }
+    if (kind.apron != ~0u && next_random() % 4 == 0) {
+        mask |= 1u << kind.apron;
+    }
+    v.look.accessories = mask;
+    v.target = random_point(home, roam);
+    v.speed = 1.2f + static_cast<float>(next_random() % 40) / 100.0f;
+    v.rest_time = next_random() % 5 == 0 ? static_cast<float>(next_random() % 400) / 100.0f : 0.0f;
+    return v;
+}
+
 void TestCrowd::spawn(std::size_t count, std::uint32_t seed, float radius) {
     villagers_.clear();
+    hidden_.reset();
     if (kinds_.empty()) {
         return;
     }
     random_state_ = seed == 0 ? 1u : seed;
     radius_ = radius;
-    const auto palettes = static_cast<std::uint32_t>(make_villager_palettes().size());
     for (std::size_t i = 0; i < count; ++i) {
-        Villager v;
-        v.kind = next_random() % kinds_.size();
-        const BodyKind& kind = kinds_[v.kind];
-        v.look.body = kind.id;
-        v.look.clip = kind.walk;
-        v.look.position = random_point();
-        v.look.yaw = static_cast<float>(next_random() % 628) / 100.0f;
-        v.look.scale = 0.94f + static_cast<float>(next_random() % 12) / 100.0f;
-        v.look.palette = next_random() % palettes;
-        v.look.time = static_cast<float>(next_random() % 1000) / 1000.0f;
-        std::uint32_t mask = 0;
-        const std::uint32_t hat = next_random() % 3;  // None, or one of the hats.
-        if (hat > 0 && hat <= kind.hats.size()) {
-            mask |= 1u << kind.hats[hat - 1];
-        }
-        if (kind.beard != ~0u && next_random() % 3 == 0) {
-            mask |= 1u << kind.beard;
-        }
-        if (kind.apron != ~0u && next_random() % 4 == 0) {
-            mask |= 1u << kind.apron;
-        }
-        v.look.accessories = mask;
-        v.target = random_point();
-        v.speed = 1.2f + static_cast<float>(next_random() % 40) / 100.0f;
-        v.rest_time = next_random() % 5 == 0 ? static_cast<float>(next_random() % 400) / 100.0f : 0.0f;
-        villagers_.push_back(v);
+        const std::size_t kind = next_random() % kinds_.size();
+        villagers_.push_back(make_villager(kind, center_, radius));
     }
+}
+
+std::size_t TestCrowd::add_villager(math::Vec3 at, std::optional<bool> female) {
+    if (kinds_.empty()) {
+        return 0;
+    }
+    std::size_t kind = next_random() % kinds_.size();
+    if (female.has_value()) {
+        for (std::size_t k = 0; k < kinds_.size(); ++k) {
+            if (kinds_[k].female == *female) {
+                kind = k;
+            }
+        }
+    }
+    Villager v = make_villager(kind, at, 6.0f);
+    v.look.position = {at.x, ground_ ? ground_(at.x, at.z) : at.y, at.z};
+    villagers_.push_back(v);
+    return villagers_.size() - 1;
+}
+
+void TestCrowd::remove_villager(std::size_t i) {
+    if (i < villagers_.size()) {
+        villagers_.erase(villagers_.begin() + static_cast<std::ptrdiff_t>(i));
+        hidden_.reset();
+    }
+}
+
+TestCrowd::VillagerInfo TestCrowd::info(std::size_t i) const {
+    VillagerInfo out;
+    if (i >= villagers_.size()) {
+        return out;
+    }
+    const Villager& v = villagers_[i];
+    const BodyKind& kind = kinds_[v.kind];
+    out.female = kind.female;
+    out.palette = v.look.palette;
+    out.walking = v.rest_time <= 0.0f && v.look.clip == kind.walk;
+    out.speed = v.speed;
+    out.scale = v.look.scale;
+    out.yaw = v.look.yaw;
+    out.target = v.target;
+    out.home = v.home;
+    for (const std::uint32_t bit : kind.hats) {
+        out.hat = out.hat || ((v.look.accessories >> bit) & 1u) != 0;
+    }
+    out.beard = kind.beard != ~0u && ((v.look.accessories >> kind.beard) & 1u) != 0;
+    out.apron = kind.apron != ~0u && ((v.look.accessories >> kind.apron) & 1u) != 0;
+    return out;
 }
 
 std::optional<std::size_t> TestCrowd::pick(math::Vec3 origin, math::Vec3 dir) const {
@@ -373,7 +430,7 @@ void TestCrowd::update(render::SceneRenderer& renderer, float dt) {
             v.look.time += dt;
         } else if (distance < 0.5f) {
             // Arrived: sometimes stop for a while, then pick a new goal.
-            v.target = random_point();
+            v.target = random_point(v.home, v.roam);
             if (next_random() % 4 == 0) {
                 v.rest_time = 1.5f + static_cast<float>(next_random() % 400) / 100.0f;
             }

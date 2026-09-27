@@ -414,6 +414,9 @@ void App::handle_event(const SDL_Event& event) {
                 }
             } else if (settings_->settings().input.bindings.matches(Action::UiToggleFullscreen, event.key.scancode)) {
                 cycle_window_mode();
+            } else if (event.key.scancode == SDL_SCANCODE_F3 && (event.key.mod & SDL_KMOD_CTRL) != 0) {
+                // Developer tools: a fixed shortcut, like Alt+Enter.
+                dev_tools_.toggle();
             } else if (settings_->settings().input.bindings.matches(Action::UiDebugOverlay, event.key.scancode)) {
                 debug_.toggle();
             } else if (settings_->settings().input.bindings.matches(Action::CameraCycleMode, event.key.scancode) &&
@@ -458,7 +461,9 @@ void App::update_camera(float dt) {
             }
             return false;
         };
-        const bool focused = (SDL_GetWindowFlags(window_.sdl()) & SDL_WINDOW_INPUT_FOCUS) != 0;
+        // Keys typed into a developer tool's text field do not move the camera.
+        const bool focused = (SDL_GetWindowFlags(window_.sdl()) & SDL_WINDOW_INPUT_FOCUS) != 0 &&
+                             !debug_.wants_keyboard();
         if (focused) {
             in.move_forward = (held(Action::CameraForward) ? 1.0f : 0.0f) - (held(Action::CameraBack) ? 1.0f : 0.0f);
             in.move_right = (held(Action::CameraRight) ? 1.0f : 0.0f) - (held(Action::CameraLeft) ? 1.0f : 0.0f);
@@ -593,6 +598,12 @@ void App::render_frame(float dt) {
         ui_.set_tooltips(s.ui.show_tooltips, s.ui.tooltip_delay_ms);
         ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
                         SDL_GetTicksNS(), atlas_.white_u(), atlas_.white_v());
+        // The developer tools pick and place in the world before drawing.
+        DevContext dev = dev_context(frame.width, frame.height);
+        dev_tools_.update(dev);
+        if (debug_.wants_keyboard()) {
+            input_.keys.clear();  // Typing in a tool, not in the game.
+        }
         // Markers belong to the 3D view, under the interface.
         if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
             draw_start_markers(frame.width, frame.height);
@@ -600,6 +611,14 @@ void App::render_frame(float dt) {
         if (scene_drawn && (host_->scene_mode() == UiHost::SceneMode::TestScene ||
                             host_->scene_mode() == UiHost::SceneMode::Map)) {
             draw_scene_markers(frame.width, frame.height);
+        }
+        if (scene_drawn) {
+            if (const auto m = dev_tools_.hovered_marker(dev)) {
+                draw_marker(frame.width, frame.height, *m, ui_.theme().text);
+            }
+            if (const auto m = dev_tools_.selected_marker(dev)) {
+                draw_marker(frame.width, frame.height, *m, ui_.theme().danger);
+            }
         }
         host_->frame(ui_);
         ui_.end_frame();
@@ -616,7 +635,7 @@ void App::render_frame(float dt) {
         debug_info_.sim_tick = sim_.tick();
         debug_info_.sim_hash = sim_.last_hash();
         debug_info_.sim_entities = sim_.world().registry().alive_count();
-        debug_.build(debug_info_);
+        debug_.build(debug_info_, [&] { dev_tools_.draw(dev); }, dev_tools_.visible());
 
         const bool uploaded = ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_);
         debug_.prepare(frame.cmd);
@@ -717,6 +736,7 @@ bool App::enter_generated_map() {
         return false;
     }
     leave_map();
+    dev_tools_.reset();
     test_scene_.set_visible(scene_, false);
     if (!map_scene_.show(scene_, generated->visuals)) {
         test_scene_.set_visible(scene_, true);
@@ -752,6 +772,7 @@ void App::leave_map() {
     if (!map_) {
         return;
     }
+    dev_tools_.reset();
     map_scene_.hide(scene_);
     test_scene_.set_visible(scene_, true);
     crowd_.set_area({}, {});
@@ -760,6 +781,47 @@ void App::leave_map() {
     following_ = false;
     reset_camera_to_test_scene();
     map_.reset();
+}
+
+DevContext App::dev_context(std::uint32_t width, std::uint32_t height) {
+    DevContext ctx;
+    if (!dev_tools_.visible() || !scene_ok_ || !host_ || !interactive_scene()) {
+        return ctx;
+    }
+    const bool on_map = host_->scene_mode() == UiHost::SceneMode::Map && map_;
+    ctx.map = on_map ? &map_->map : nullptr;
+    ctx.scene = on_map ? &map_scene_ : nullptr;
+    ctx.renderer = &scene_;
+    ctx.crowd = &crowd_;
+    ctx.camera = &camera_;
+    const float x = input_.mouse_x;
+    const float y = input_.mouse_y;
+    if (x >= 0.0f && y >= 0.0f && !debug_.wants_mouse() && !mouse_captured_) {
+        const math::Mat4 inv = math::inverse(camera_view_proj(width, height));
+        const float nx = x / static_cast<float>(width) * 2.0f - 1.0f;
+        const float ny = 1.0f - y / static_cast<float>(height) * 2.0f;
+        const math::Vec3 near_point = inv.transform_point({nx, ny, 1.0f});
+        const math::Vec3 far_point = inv.transform_point({nx, ny, 0.01f});
+        ctx.ray_valid = true;
+        ctx.ray_origin = near_point;
+        ctx.ray_dir = math::normalize(far_point - near_point);
+        // A click, not the end of a drag.
+        ctx.clicked = input_.mouse_released && std::abs(x - press_x_) <= 6.0f && std::abs(y - press_y_) <= 6.0f;
+    }
+    return ctx;
+}
+
+void App::draw_marker(std::uint32_t width, std::uint32_t height, math::Vec3 at, ui::Color color) {
+    const math::Vec4 clip = camera_view_proj(width, height) * math::Vec4{at.x, at.y, at.z, 1.0f};
+    if (clip.w <= 0.01f) {
+        return;
+    }
+    const float sx = (clip.x / clip.w * 0.5f + 0.5f) * static_cast<float>(width);
+    const float sy = (0.5f - clip.y / clip.w * 0.5f) * static_cast<float>(height);
+    const float r = ui_.s(10.0f);
+    ui::DrawList& dl = ui_.draw();
+    dl.triangle(sx - r - 2, sy - r * 1.6f - 2, sx + r + 2, sy - r * 1.6f - 2, sx, sy + 2, ui::Color::rgb(0x000000, 150));
+    dl.triangle(sx - r, sy - r * 1.6f, sx + r, sy - r * 1.6f, sx, sy, color);
 }
 
 void App::draw_start_markers(std::uint32_t width, std::uint32_t height) {
@@ -807,7 +869,7 @@ void App::update_mouse_capture() {
     // unless the statistics window needs it.
     const bool focused = window_.sdl() != nullptr && (SDL_GetWindowFlags(window_.sdl()) & SDL_WINDOW_INPUT_FOCUS) != 0;
     const bool want = scene_ok_ && host_ && interactive_scene() && camera_.mode() == CameraMode::FirstPerson &&
-                      focused && !debug_.visible();
+                      focused && !debug_.visible() && !dev_tools_.visible();
     if (want != mouse_captured_) {
         if (SDL_SetWindowRelativeMouseMode(window_.sdl(), want)) {
             mouse_captured_ = want;
@@ -820,7 +882,7 @@ void App::update_mouse_capture() {
 }
 
 void App::handle_scene_click(std::uint32_t width, std::uint32_t height) {
-    if (!interactive_scene() || !input_.mouse_released || debug_.wants_mouse()) {
+    if (!interactive_scene() || !input_.mouse_released || debug_.wants_mouse() || dev_tools_.visible()) {
         return;
     }
     // A click, not the end of a drag.

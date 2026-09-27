@@ -32,6 +32,7 @@ struct TerrainData {
 [[nodiscard]] int terrain_lod_for_distance(float distance);
 
 struct TerrainStats {
+    std::uint32_t grass_tufts = 0;  // Tufts in the grass grid (some are empty).
     std::uint32_t chunks_drawn = 0;
     std::uint32_t water_chunks_drawn = 0;
     std::uint64_t triangles = 0;
@@ -79,6 +80,12 @@ public:
     void draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,
                     const WaterLook& look);
 
+    // Decorative grass up to `distance` meters from the eye. Uses the scene's
+    // fragment uniforms like the ground.
+    void draw_grass(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj, math::Vec3 eye,
+                    float time, float distance, SDL_GPUTexture* white, SDL_GPUSampler* sampler,
+                    SDL_GPUTexture* shadow_map, SDL_GPUSampler* shadow_sampler);
+
     [[nodiscard]] const TerrainStats& stats() const { return stats_; }
 
 private:
@@ -98,6 +105,7 @@ private:
     };
 
     bool create_grids();
+    bool create_grass_mesh();
     void release_map();
     SDL_GPUBuffer* upload(const void* data, std::uint32_t size, SDL_GPUBufferUsageFlags usage);
     SDL_GPUTexture* upload_colors(const TerrainData& data);
@@ -105,6 +113,8 @@ private:
     SDL_GPUDevice* device_ = nullptr;
     SDL_GPUGraphicsPipeline* ground_pipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* water_pipeline_ = nullptr;
+    SDL_GPUGraphicsPipeline* grass_pipeline_ = nullptr;
+    Grid grass_mesh_;
     SDL_GPUSampler* color_sampler_ = nullptr;
     Grid grids_[kTerrainLods];
 

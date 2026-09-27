@@ -55,7 +55,11 @@ void DebugOverlay::destroy() {
 }
 
 bool DebugOverlay::wants_mouse() const {
-    return ready_ && visible_ && ImGui::GetIO().WantCaptureMouse;
+    return ready_ && active_ && ImGui::GetIO().WantCaptureMouse;
+}
+
+bool DebugOverlay::wants_keyboard() const {
+    return ready_ && active_ && ImGui::GetIO().WantTextInput;
 }
 
 void DebugOverlay::process_event(const SDL_Event& event) {
@@ -64,16 +68,25 @@ void DebugOverlay::process_event(const SDL_Event& event) {
     }
 }
 
-void DebugOverlay::build(const DebugInfo& info) {
+void DebugOverlay::build(const DebugInfo& info, const std::function<void()>& extra, bool extra_active) {
     frame_history_[history_pos_] = info.frame_ms;
     history_pos_ = (history_pos_ + 1) % frame_history_.size();
     built_ = false;
-    if (!ready_ || !visible_) {
+    active_ = ready_ && (visible_ || extra_active);
+    if (!active_) {
         return;
     }
     ImGui_ImplSDLGPU3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
+    if (extra_active && extra) {
+        extra();
+    }
+    if (!visible_) {
+        ImGui::Render();
+        built_ = true;
+        return;
+    }
 
     // Top-right corner, clear of the game's own hints on the left.
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 10.0f, 10.0f), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
@@ -103,6 +116,7 @@ void DebugOverlay::build(const DebugInfo& info) {
             ImGui::Text("%s: %.0f m", tr("debug.drawDistance").c_str(), static_cast<double>(s.draw_distance));
             ImGui::Text("%s: %.0f m", tr("debug.vegetation").c_str(), static_cast<double>(s.vegetation_distance));
             ImGui::Text("%s: %u  (%u)", tr("debug.terrain").c_str(), s.terrain_chunks, s.water_chunks);
+            ImGui::Text("%s: %u", tr("debug.grass").c_str(), s.grass_tufts);
             ImGui::Text("%s: %.0f m  (%.0f, %.0f)", tr("debug.camera").c_str(), static_cast<double>(info.camera_distance),
                         static_cast<double>(info.camera_x), static_cast<double>(info.camera_z));
             ImGui::Checkbox(tr("debug.stressView").c_str(), &stress_view_);

@@ -12,7 +12,8 @@ blender --background --factory-startup --python art/blender/build_all.py -- data
 
 - `--background` no abre la interfaz ni toca tus escenas abiertas.
 - `--factory-startup` ignora tus preferencias y complementos, para que el resultado no dependa del equipo.
-- Se puede limitar a un grupo: `... -- data/models characters` o `... -- data/models props`.
+- Se puede limitar a un grupo: `... -- data/models characters`, `... -- data/models props` o `... -- data/models trees` (y después de `trees`, las especies: `trees oak elm`).
+- Vista previa de los árboles, cada especie en sus tamaños junto a un aldeano: `blender --background --factory-startup --python art/blender/preview_trees.py -- data/models tmp/arboles`.
 - Los `.glb` generados se guardan en el repositorio, así compilar el juego no requiere Blender.
 
 **Reproducible:** generar dos veces da archivos idénticos byte a byte. El exportador de Blender cambia el orden de los triángulos entre ejecuciones, así que `common.export_glb` los ordena después de exportar (D-402). Para comprobarlo, genera en dos carpetas y compáralas:
@@ -37,6 +38,7 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `common.py` | Utilidades: escena vacía, materiales, `MeshBuilder` (piezas con material y peso de hueso), exportación con opciones fijas |
 | `human.py` | `characters/human_male.glb` y `human_female.glb` (con esqueleto y animaciones `idle` y `walk`); accesorios `hat_straw`, `hat_cap`, `beard`, `apron_male` y `apron_female` |
 | `props.py` | `props/tree_pine.glb`, `tree_oak.glb`, `rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb` y `house_small.glb` |
+| `trees.py` | `props/tree_<especie>_<tamaño>.glb`: 21 especies en sus tamaños (ver `docs/ARBOLES.md`) |
 | `build_all.py` | Ejecuta todo |
 | `preview.py` | Imágenes de revisión |
 

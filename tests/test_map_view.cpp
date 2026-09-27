@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "core/file_io.h"
+#include "game/dev_tools.h"
 #include "game/map_generation.h"
 #include "game/map_scene.h"
 #include "game/new_game_screen.h"
@@ -147,6 +148,39 @@ TEST_SUITE("map_view") {
         job.cancel();
         CHECK(job.status().state != MapGenStatus::State::Running);
         CHECK(job.take() == nullptr);
+    }
+}
+
+TEST_SUITE("dev_tools") {
+    TEST_CASE("search folds case and accents") {
+        CHECK(fold_for_search("Árbol") == "arbol");
+        CHECK(fold_for_search("Fresno de MONTAÑA") == "fresno de montana");
+        CHECK(fold_for_search("Pequeño ÉÍÓÚü") == "pequeno eiouu");
+        CHECK(fold_for_search("") == "");
+        CHECK(fold_for_search("plain 123") == "plain 123");
+    }
+
+    TEST_CASE("every tree slot has a model file name") {
+        for (std::size_t s = 0; s < sim::kSpeciesCount; ++s) {
+            for (std::size_t z = 0; z < sim::kTreeSizes; ++z) {
+                const auto species = static_cast<sim::Species>(s);
+                const auto size = static_cast<sim::TreeSize>(z);
+                if (!sim::species_has_size(species, size)) {
+                    continue;
+                }
+                const std::filesystem::path file =
+                    std::filesystem::path(SC_SOURCE_DIR) / "data/models/props" / tree_model_file(species, size);
+                CHECK_MESSAGE(std::filesystem::exists(file), file.string());
+            }
+        }
+    }
+
+    TEST_CASE("grass grows on grass, not on sand") {
+        CHECK(grass_density(sim::Terrain::Grass, 255, sim::Biome::Temperate) > 100);
+        CHECK(grass_density(sim::Terrain::Sand, 255, sim::Biome::Temperate) == 0);
+        CHECK(grass_density(sim::Terrain::Water, 255, sim::Biome::Temperate) == 0);
+        CHECK(grass_density(sim::Terrain::Grass, 0, sim::Biome::Temperate) <
+              grass_density(sim::Terrain::Grass, 255, sim::Biome::Temperate));
     }
 }
 

@@ -11,6 +11,7 @@
 #include <SDL3/SDL_events.h>
 
 #include "game/camera.h"
+#include "game/dev_tools.h"
 #include "game/game_clock.h"
 #include "game/map_generation.h"
 #include "game/map_scene.h"
@@ -76,6 +77,8 @@ private:
     void handle_scene_click(std::uint32_t width, std::uint32_t height);
     void draw_scene_markers(std::uint32_t width, std::uint32_t height);
     void draw_start_markers(std::uint32_t width, std::uint32_t height);
+    void draw_marker(std::uint32_t width, std::uint32_t height, math::Vec3 at, ui::Color color);
+    [[nodiscard]] DevContext dev_context(std::uint32_t width, std::uint32_t height);
     void reset_camera_to_test_scene();
     // True in the views the player moves the camera in.
     [[nodiscard]] bool interactive_scene() const;
@@ -102,6 +105,7 @@ private:
     TestScene test_scene_;
     TestCrowd crowd_;
     MapScene map_scene_;
+    DevTools dev_tools_;
     MapGenerationJob map_job_;
     std::unique_ptr<GeneratedMap> map_;  // The map being shown.
     bool scene_ok_ = false;

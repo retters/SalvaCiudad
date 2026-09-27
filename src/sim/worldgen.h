@@ -10,7 +10,7 @@
 
 namespace sc::sim {
 
-enum class GenStage : std::uint8_t { Relief, Lakes, Rivers, Soil, Forests, Resources, Starts, Count };
+enum class GenStage : std::uint8_t { Relief, Lakes, Rivers, Soil, Biomes, Forests, Resources, Starts, Count };
 
 // Called now and then with the stage and its progress (0..100). Returning
 // false cancels the generation.
@@ -21,6 +21,9 @@ using GenProgress = std::function<bool(GenStage stage, int percent)>;
 
 // Tuning shared with the tests.
 namespace worldgen {
+// Changes whenever the same settings would give a different map. Saved with
+// the map (decision D-620).
+inline constexpr std::uint16_t kGeneratorVersion = 2;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 2;

@@ -51,6 +51,26 @@ public:
     // The villager nearest to the ray origin whose body the ray touches.
     [[nodiscard]] std::optional<std::size_t> pick(math::Vec3 origin, math::Vec3 dir) const;
     [[nodiscard]] math::Vec3 position(std::size_t i) const { return villagers_[i].look.position; }
+
+    // For the developer tools.
+    struct VillagerInfo {
+        bool female = false;
+        std::uint32_t palette = 0;
+        bool walking = false;
+        float speed = 0.0f;
+        float scale = 1.0f;
+        float yaw = 0.0f;
+        math::Vec3 target;
+        math::Vec3 home;
+        bool hat = false;
+        bool beard = false;
+        bool apron = false;
+    };
+    [[nodiscard]] VillagerInfo info(std::size_t i) const;
+    // Adds a villager that wanders around `at`; `female` picks the body
+    // (random when empty). Returns its index.
+    std::size_t add_villager(math::Vec3 at, std::optional<bool> female);
+    void remove_villager(std::size_t i);
     [[nodiscard]] float scale(std::size_t i) const { return villagers_[i].look.scale; }
     // A villager not drawn (the one seen through in first person).
     void set_hidden(std::optional<std::size_t> i) { hidden_ = i; }
@@ -60,6 +80,7 @@ public:
 
 private:
     struct BodyKind {
+        bool female = false;
         render::SkinnedId id = 0;
         std::uint32_t idle = 0;
         std::uint32_t walk = 0;
@@ -71,12 +92,15 @@ private:
         render::CharacterInstance look;
         std::size_t kind = 0;
         math::Vec3 target;
+        math::Vec3 home;       // Wanders around this point.
+        float roam = 10.0f;    // ... this far.
         float speed = 1.4f;
         float rest_time = 0.0f;  // Seconds left standing still.
     };
 
     std::uint32_t next_random();
-    math::Vec3 random_point();
+    math::Vec3 random_point(math::Vec3 center, float radius);
+    Villager make_villager(std::size_t kind, math::Vec3 home, float roam);
 
     bool loaded_ = false;
     std::vector<BodyKind> kinds_;

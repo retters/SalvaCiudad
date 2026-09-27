@@ -270,6 +270,11 @@ float vegetation_distance_for_level(int level) {
     return kDistances[std::clamp(level, 0, 3)];
 }
 
+float grass_distance_for_level(int level) {
+    constexpr float kDistances[] = {20.0f, 35.0f, 50.0f, 70.0f};
+    return kDistances[std::clamp(level, 0, 3)];
+}
+
 int shadow_cascades_for_level(int level) {
     return std::clamp(level, 0, 3);
 }
@@ -1477,6 +1482,9 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     su.shadow_params[1] = 0.0002f;
     SDL_PushGPUFragmentUniformData(frame.cmd, 0, &su, sizeof(su));
     d.terrain.draw_ground(frame.cmd, pass, view_proj, d.ground_detail, d.base_sampler, d.shadow_map, d.shadow_sampler);
+    d.terrain.draw_grass(frame.cmd, pass, view_proj, view.eye, view.time,
+                         grass_distance_for_level(d.graphics.vegetation), d.white, d.base_sampler, d.shadow_map,
+                         d.shadow_sampler);
     SDL_BindGPUGraphicsPipeline(pass, d.mesh_pipeline);
     const MeshVertexUniforms mv{view_proj};
     SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
@@ -1505,6 +1513,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     d.terrain.draw_water(frame.cmd, pass, view_proj, water);
     const TerrainStats& ts = d.terrain.stats();
     stats_.terrain_chunks = ts.chunks_drawn;
+    stats_.grass_tufts = ts.grass_tufts;
     stats_.water_chunks = ts.water_chunks_drawn;
     stats_.draw_calls += ts.draw_calls;
     stats_.triangles += ts.triangles;

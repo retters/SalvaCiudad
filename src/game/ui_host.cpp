@@ -314,8 +314,9 @@ void UiHost::generating_screen(ui::Context& ctx, bool modal) {
     }
 
     static constexpr const char* kStepKeys[kMapGenSteps] = {
-        "generating.step.relief",  "generating.step.lakes",     "generating.step.rivers", "generating.step.soil",
-        "generating.step.forests", "generating.step.resources", "generating.step.starts", "generating.step.view"};
+        "generating.step.relief",  "generating.step.lakes",     "generating.step.rivers",
+        "generating.step.soil",    "generating.step.biomes",    "generating.step.forests",
+        "generating.step.resources", "generating.step.starts",  "generating.step.view"};
     const ui::TextStyle body = ctx.style(ctx.theme().body);
     const float bar_h = ctx.s(18.0f);
     const float button_h = ctx.s(44.0f);

@@ -389,3 +389,52 @@ Tamaños actuales, para comparar:
 | Hierbas medicinales | 0,45–0,8 m, solo en el interior de los bosques |
 
 El pasto como cubierta del suelo todavía no existe: el suelo es solo textura.
+
+## Fase 6b: biomas, especies de árboles y herramientas de desarrollo (2026-09-27)
+
+**D-618. Especies y tamaños.**
+- Hay 21 especies, con las que pidió el usuario más naranjo, peral, durazno y aguacate como "otros frutales" (catálogo en `docs/ARBOLES.md`).
+- "Tulipán" se interpretó como el tulipán africano (*Spathodea campanulata*), común en México. Si se quería el tulipero (*Liriodendron*), basta cambiar sus colores en `art/blender/trees.py`.
+- Cada árbol del mapa guarda especie, tamaño y altura exacta. `scale` es la altura dividida entre la altura del modelo del tamaño, así que el mismo árbol mide lo mismo con cualquier modelo.
+- Especies y tamaños ya permiten que en la fase 8 la madera dependa del tamaño y que los árboles crezcan.
+
+**D-619. Modelos de árboles paramétricos.**
+- `art/blender/trees.py` arma todos los árboles con un solo constructor. La especie define tronco, forma de copa, colores, flores y frutos. Las formas son: redonda, ovalada, cónica, aguja (secuoya), sombrilla, alta, jarrón y colgante.
+- El tamaño cambia las proporciones: los chicos son más delgados y con menos masas de hojas.
+- Salen 52 modelos, de 150 a 2000 triángulos, 1100 en promedio. Dos generaciones seguidas dan archivos idénticos.
+- Los frutos se hacen un poco más grandes que en la realidad para que se vean de lejos.
+- `art/blender/preview_trees.py` dibuja cada especie en sus tamaños junto a un aldeano.
+
+**D-620. Versión del generador.**
+- `worldgen::kGeneratorVersion` (ahora 2) se guarda en el mapa y entra en su suma de verificación.
+- Cambia cada vez que la misma configuración daría otro mapa. Así una semilla compartida o una partida guardada puede avisar si viene de otra versión.
+- Recomendación para la fase 8: las partidas guardadas incluyen el mapa entero y no dependen de regenerarlo.
+
+**D-621. Biomas y colocación de árboles.**
+- Los biomas son regiones alrededor de puntos al azar, uno cada 180–450 m según el tipo de mapa. Sus bordes se tuercen con ruido, y se deciden en bloques de 4 m.
+- Los árboles se colocan de mayor a menor. Cada tamaño recorre su propia cuadrícula (12, 8, 5 y 3 m) y cada tronco reserva un disco de media separación, así los grandes nunca se amontonan.
+- Los pesos por tamaño de cada bioma reparten el suelo del bosque entre mediano, grande y enorme. Los chicos llenan el espacio que queda.
+  - Primero se probó repartir por número de árboles. Los grandes no cabían en su parte y el bosque quedó ralo (4500 árboles en un mapa Mediano, contra unos 17 000 ahora).
+- Los árboles guardan del inicio una distancia de 25 m más su separación, así las copas enormes no tapan el pueblo.
+- La suma de referencia del mapa Pequeño pasó a `0x9692d3e6c6c5d81f`.
+
+**D-622. Herramientas de desarrollo.**
+- Se abren con Ctrl+F3, un atajo fijo como Alt+Enter. Usan ImGui como la ventana de estadísticas y tienen tres pestañas:
+  - **Inspector:** el objeto bajo el cursor, o el seleccionado con clic, con su nombre y sus propiedades. De un árbol: especie, tamaño, altura, modelo y tamaños posibles. De una persona: actividad, velocidad, vestimenta y accesorios. Siempre incluye el terreno donde está: suelo, bioma, fertilidad, altura, pendiente y agua. Sin objeto, muestra el terreno bajo el cursor. Botones: Ir a, Quitar selección, Eliminar.
+  - **Crear:** árboles de cualquier especie, tamaño y altura; arbustos, hierbas, piedra, mineral, casas y personas. Se colocan en el centro de la vista, o con clic en el suelo si se activa esa opción.
+  - **Explorador:** todos los objetos, filtrados por categoría y buscados por nombre sin importar mayúsculas ni acentos. Opcionalmente ordena por cercanía. Al elegir uno, la cámara va hacia él y queda seleccionado.
+- Los cambios modifican el mapa en memoria (solo presentación y pruebas): no hay partida que guardar todavía.
+- Cuando exista el multijugador, estas herramientas solo funcionarán en partidas de un jugador o si el anfitrión las permite. En la fase 8 se agrega la pestaña de recursos.
+
+**D-623. Pasto decorativo en la GPU.**
+- Una cuadrícula de matas cada 0,55 m alrededor de la cámara, colocada solo por el sombreador de vértices: posición al azar por celda, altura del terreno y densidad desde el canal alfa de la textura de colores del suelo.
+- La densidad depende del suelo, la fertilidad y el bioma. No hay pasto sobre agua, arena ni roca.
+- Llega hasta 20, 35, 50 o 70 m según la opción Vegetación, y se encoge al acercarse al borde para que no se vea el corte.
+- No guarda nada por mata, así que cuesta lo mismo en cualquier tamaño de mapa: unas 65 000 matas de 7 triángulos en Ultra.
+- Recibe las sombras de los árboles pero no proyecta sombra.
+
+**D-624. Rendimiento con los árboles nuevos (1600 × 900, Ultra, mapa Enorme "Tierra de gigantes").**
+- La generación tarda unos 6 s.
+- Tercera persona: unos 460 FPS.
+- Primera persona mirando al horizonte, el peor caso: unos 125 FPS, con 30 millones de triángulos por los árboles grandes hasta 2500 m.
+- Si hiciera falta más adelante, el paso siguiente sería una versión simplificada de cada árbol para la distancia.

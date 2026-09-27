@@ -22,8 +22,12 @@ constexpr std::uint64_t kFertilitySeed = 0x4645525400000003ull;
 constexpr std::uint64_t kRockSeed = 0x524f434b00000004ull;
 constexpr std::uint64_t kClaySeed = 0x434c415900000005ull;
 constexpr std::uint64_t kForestSeed = 0x464f524553540006ull;
-constexpr std::uint64_t kOakSeed = 0x4f414b0000000007ull;
 constexpr std::uint64_t kPlacementSeed = 0x504c414345000008ull;
+constexpr std::uint64_t kBiomeSeed = 0x42494f4d45000009ull;
+constexpr std::uint64_t kBiomeWarpX = 0x5741525058000010ull;
+constexpr std::uint64_t kBiomeWarpZ = 0x574152505a000011ull;
+// Biomes are decided per block of this many cells.
+constexpr std::int32_t kBiomeBlock = 4;
 
 constexpr std::uint8_t kFlowBorder = 255;
 constexpr std::uint8_t kUnvisited = 254;
@@ -41,7 +45,8 @@ public:
     std::optional<MapData> run() {
         out_.settings = s_;
         out_.size = n_;
-        if (!relief() || !lakes() || !rivers() || !soil() || !forests() || !resources() || !starts()) {
+        out_.generator_version = kGeneratorVersion;
+        if (!relief() || !lakes() || !rivers() || !soil() || !biomes() || !forests() || !resources() || !starts()) {
             return std::nullopt;
         }
         finish();
@@ -449,45 +454,181 @@ private:
         return report(GenStage::Soil, 100);
     }
 
-    // --- Forests -------------------------------------------------------------
+    // --- Biomes ----------------------------------------------------------------
 
-    bool forests() {
-        constexpr std::int32_t kStep = 3;
-        for (std::int32_t gz = 0; gz < n_; gz += kStep) {
-            for (std::int32_t gx = 0; gx < n_; gx += kStep) {
-                const std::uint64_t hash = point_hash(kPlacementSeed, gx, gz);
-                // A jittered point inside the 3 x 3 m square.
-                const auto jx = static_cast<std::int32_t>((hash & 0xFFFFFF) % (kStep * 65536));
-                const auto jz = static_cast<std::int32_t>(((hash >> 24) & 0xFFFFFF) % (kStep * 65536));
-                const Fixed x = Fixed::from_raw(gx * 65536 + jx);
-                const Fixed z = Fixed::from_raw(gz * 65536 + jz);
-                const std::int32_t cx = x.floor_int();
-                const std::int32_t cz = z.floor_int();
-                if (cx >= n_ || cz >= n_ || !land(cx, cz)) {
-                    continue;
+    // Regions around jittered points, one every `patch_m` meters, with
+    // edges bent by noise; each region takes a biome from the map type.
+    bool biomes() {
+        const MapTypeInfo& type = map_type_info(s_.map_type);
+        const std::size_t cells = terrain_.size();
+        biome_.assign(cells, static_cast<std::uint8_t>(s_.biome));
+        if (type.biomes.empty() || type.patch_m <= 0) {
+            return report(GenStage::Biomes, 100);
+        }
+        const std::int32_t p = type.patch_m;
+        const std::int32_t warp = p / 3;
+        for (std::int32_t bz = 0; bz < n_; bz += kBiomeBlock) {
+            for (std::int32_t bx = 0; bx < n_; bx += kBiomeBlock) {
+                const std::int32_t wx = bx + static_cast<std::int32_t>(fbm(s_.seed ^ kBiomeWarpX, bx, bz, 8, 3) * warp / 32768);
+                const std::int32_t wz = bz + static_cast<std::int32_t>(fbm(s_.seed ^ kBiomeWarpZ, bx, bz, 8, 3) * warp / 32768);
+                const std::int32_t gx = (wx < 0 ? wx - p + 1 : wx) / p;
+                const std::int32_t gz = (wz < 0 ? wz - p + 1 : wz) / p;
+                std::int64_t best = INT64_MAX;
+                std::uint64_t best_hash = 0;
+                for (std::int32_t oz = -1; oz <= 1; ++oz) {
+                    for (std::int32_t ox = -1; ox <= 1; ++ox) {
+                        const std::uint64_t h = point_hash(kBiomeSeed, gx + ox, gz + oz);
+                        const std::int64_t px = static_cast<std::int64_t>(gx + ox) * p + static_cast<std::int64_t>(h % static_cast<std::uint64_t>(p));
+                        const std::int64_t pz = static_cast<std::int64_t>(gz + oz) * p +
+                                                static_cast<std::int64_t>((h >> 20) % static_cast<std::uint64_t>(p));
+                        const std::int64_t d = (px - wx) * (px - wx) + (pz - wz) * (pz - wz);
+                        if (d < best) {
+                            best = d;
+                            best_hash = h;
+                        }
+                    }
                 }
-                const Terrain t = cell_terrain(cx, cz);
-                const std::uint32_t roll = static_cast<std::uint32_t>((hash >> 36) % 1000);
-                std::uint32_t chance = 0;
-                if (t == Terrain::ForestFloor) {
-                    chance = std::min<std::uint32_t>(900, 250 + forest_[ci(cx, cz)] * 3u);
-                } else if (t == Terrain::Grass || t == Terrain::Meadow) {
-                    chance = 8;  // A lone tree now and then.
+                const std::uint8_t b = pick_weighted(type.biomes, static_cast<std::uint32_t>(best_hash >> 40));
+                for (std::int32_t z = bz; z < std::min(n_, bz + kBiomeBlock); ++z) {
+                    for (std::int32_t x = bx; x < std::min(n_, bx + kBiomeBlock); ++x) {
+                        biome_[ci(x, z)] = b;
+                    }
                 }
-                if (roll >= chance) {
-                    continue;
-                }
-                const bool wet = dist_[ci(cx, cz)] < 30;
-                const bool oak = wet ? ((hash >> 46) % 10) < 7 : fbm(s_.seed ^ kOakSeed, cx, cz, 8, 2) > 4000;
-                const Fixed scale = Fixed::from_ratio(80 + static_cast<std::int64_t>((hash >> 50) % 55), 100);
-                add_feature(oak ? FeatureType::OakTree : FeatureType::PineTree, x, z, scale,
-                            static_cast<std::uint16_t>(hash >> 48));
             }
-            if ((gz & 63) == 0 && !report(GenStage::Forests, gz * 100 / n_)) {
+            if ((bz & 127) == 0 && !report(GenStage::Biomes, bz * 100 / n_)) {
                 return false;
             }
         }
+        return report(GenStage::Biomes, 100);
+    }
+
+    // --- Forests -------------------------------------------------------------
+
+    // Trunks keep apart by their size: each tree reserves a disc of half its
+    // spacing, and a new tree needs its own disc free.
+    [[nodiscard]] bool room_for(std::int32_t cx, std::int32_t cz, std::int32_t radius) const {
+        for (std::int32_t z = std::max(0, cz - radius); z <= std::min(n_ - 1, cz + radius); ++z) {
+            for (std::int32_t x = std::max(0, cx - radius); x <= std::min(n_ - 1, cx + radius); ++x) {
+                if ((x - cx) * (x - cx) + (z - cz) * (z - cz) <= radius * radius && taken_[ci(x, z)] != 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    void reserve(std::int32_t cx, std::int32_t cz, std::int32_t radius) {
+        for (std::int32_t z = std::max(0, cz - radius); z <= std::min(n_ - 1, cz + radius); ++z) {
+            for (std::int32_t x = std::max(0, cx - radius); x <= std::min(n_ - 1, cx + radius); ++x) {
+                if ((x - cx) * (x - cx) + (z - cz) * (z - cz) <= radius * radius) {
+                    taken_[ci(x, z)] = 1;
+                }
+            }
+        }
+    }
+    [[nodiscard]] static std::int32_t tree_radius(TreeSize size) {
+        return std::max<std::int32_t>(1, size_info(size).spacing_m / 2);
+    }
+
+    // Places a tree if there is room; `hash` gives its height and rotation.
+    bool plant(Fixed x, Fixed z, Species species, TreeSize size, std::uint64_t hash) {
+        const std::int32_t cx = x.floor_int();
+        const std::int32_t cz = z.floor_int();
+        if (!land(cx, cz) || !room_for(cx, cz, tree_radius(size))) {
+            return false;
+        }
+        reserve(cx, cz, tree_radius(size));
+        const SizeInfo& si = size_info(size);
+        const std::int64_t height = si.min_cm + static_cast<std::int64_t>((hash >> 44) % static_cast<std::uint64_t>(si.max_cm - si.min_cm + 1));
+        MapFeature f;
+        f.type = FeatureType::Tree;
+        f.species = static_cast<std::uint8_t>(species);
+        f.size = static_cast<std::uint8_t>(size);
+        f.x = x;
+        f.z = z;
+        f.scale = Fixed::from_ratio(height, si.model_cm);
+        f.rotation = static_cast<std::uint16_t>(hash >> 28);
+        out_.features.push_back(f);
+        return true;
+    }
+
+    bool forests() {
+        const MapTypeInfo& type = map_type_info(s_.map_type);
+        taken_.assign(terrain_.size(), 0);
+        // Biggest first; smaller trees fill the gaps.
+        for (int pass = static_cast<int>(kTreeSizes) - 1; pass >= 0; --pass) {
+            const auto size = static_cast<TreeSize>(pass);
+            const std::int32_t step = size_info(size).spacing_m;
+            for (std::int32_t gz = 0; gz < n_; gz += step) {
+                for (std::int32_t gx = 0; gx < n_; gx += step) {
+                    const std::uint64_t hash = point_hash(kPlacementSeed + static_cast<std::uint64_t>(pass), gx, gz);
+                    // A jittered point inside the step x step square.
+                    const auto jx = static_cast<std::int32_t>((hash & 0xFFFFFF) % static_cast<std::uint64_t>(step * 65536));
+                    const auto jz = static_cast<std::int32_t>(((hash >> 24) & 0xFFFFFF) % static_cast<std::uint64_t>(step * 65536));
+                    const Fixed x = Fixed::from_raw(gx * 65536 + jx);
+                    const Fixed z = Fixed::from_raw(gz * 65536 + jz);
+                    const std::int32_t cx = x.floor_int();
+                    const std::int32_t cz = z.floor_int();
+                    if (cx >= n_ || cz >= n_ || !land(cx, cz)) {
+                        continue;
+                    }
+                    const Terrain t = cell_terrain(cx, cz);
+                    std::int64_t chance = 0;  // Per mille, before the size share.
+                    if (t == Terrain::ForestFloor) {
+                        chance = std::min<std::int64_t>(900, 250 + forest_[ci(cx, cz)] * 3);
+                    } else if ((t == Terrain::Grass || t == Terrain::Meadow) && size <= TreeSize::Medium) {
+                        chance = 8;  // A lone tree now and then.
+                    }
+                    if (chance == 0) {
+                        continue;
+                    }
+                    const BiomeInfo& biome = biome_info(static_cast<Biome>(biome_[ci(cx, cz)]));
+                    std::int64_t total = 0;
+                    for (std::size_t k = 0; k < kTreeSizes; ++k) {
+                        total += static_cast<std::int64_t>(biome.size_weights[k]) * type.size_bias[k];
+                    }
+                    const std::int64_t share = static_cast<std::int64_t>(biome.size_weights[pass]) * type.size_bias[pass];
+                    if (total == 0 || share == 0) {
+                        continue;
+                    }
+                    // The size weights share out the forest's ground: each
+                    // bigger size fills its share of its own grid squares,
+                    // and small trees fill whatever room is left.
+                    chance = size == TreeSize::Small ? chance * biome.density / 100
+                                                     : chance * biome.density * share / (100 * total);
+                    const auto roll = static_cast<std::int64_t>((hash >> 36) % 1000);
+                    if (roll >= std::min<std::int64_t>(950, chance)) {
+                        continue;
+                    }
+                    const auto species = static_cast<Species>(pick_weighted(biome.species, static_cast<std::uint32_t>(hash >> 8)));
+                    (void)plant(x, z, species, fit_size(species, size), hash);
+                }
+                if ((gz & 63) == 0 && !report(GenStage::Forests, ((kTreeSizes - 1 - static_cast<std::size_t>(pass)) * 100 +
+                                                                  static_cast<std::size_t>(gz) * 100 / static_cast<std::size_t>(n_)) /
+                                                                     kTreeSizes)) {
+                    return false;
+                }
+            }
+        }
         return report(GenStage::Forests, 100);
+    }
+
+    // Young trees of the local biome around a point (start fairness).
+    void grove(std::int32_t cx, std::int32_t cz, std::int32_t count, std::int32_t spread) {
+        for (std::int32_t i = 0, tries = 0; i < count && tries < count * 6; ++tries) {
+            const Angle a = rng_.angle();
+            const Fixed r = Fixed::from_int(rng_.range(0, spread));
+            const Fixed x = cell_center(cx) + cos(a) * r;
+            const Fixed z = cell_center(cz) + sin(a) * r;
+            const std::int32_t px = std::clamp(x.floor_int(), 0, n_ - 1);
+            const std::int32_t pz = std::clamp(z.floor_int(), 0, n_ - 1);
+            const BiomeInfo& biome = biome_info(static_cast<Biome>(biome_[ci(px, pz)]));
+            const std::uint64_t hash = (static_cast<std::uint64_t>(rng_.next_u32()) << 32) | rng_.next_u32();
+            const auto species = static_cast<Species>(pick_weighted(biome.species, static_cast<std::uint32_t>(hash >> 8)));
+            const TreeSize size = fit_size(species, (hash & 1) != 0 ? TreeSize::Small : TreeSize::Medium);
+            if (plant(x, z, species, size, hash)) {
+                ++i;
+            }
+        }
     }
 
     // --- Resources and animal zones ------------------------------------------
@@ -733,18 +874,24 @@ private:
                     cluster(FeatureType::BerryBush, x, z, 3, 5, 90, 120);
                 }
             }
-            const std::int32_t trees = count_near(FeatureType::PineTree, s.x, s.z, kStartResourceRadius) +
-                                       count_near(FeatureType::OakTree, s.x, s.z, kStartResourceRadius);
-            if (trees < kStartMinTrees && ring_cell(s.x, s.z, 70, 150, x, z)) {
-                cluster(FeatureType::PineTree, x, z, kStartMinTrees - trees + 10, 22, 80, 130);
+            for (int attempt = 0; attempt < 4; ++attempt) {
+                const std::int32_t trees = count_near(FeatureType::Tree, s.x, s.z, kStartResourceRadius);
+                if (trees >= kStartMinTrees || !ring_cell(s.x, s.z, 70, 150, x, z)) {
+                    break;
+                }
+                grove(x, z, kStartMinTrees - trees + 10, 25);
             }
         }
         // Room for the town center, and no predators on the doorstep.
         const std::int64_t clear = meters2(kStartClearRadius);
         const std::int64_t safe = meters2(250);
         std::erase_if(out_.features, [&](const MapFeature& f) {
+            // Big trees keep farther away, so their crowns stay outside.
+            const std::int64_t reach = f.type == FeatureType::Tree
+                                           ? meters2(kStartClearRadius + size_info(static_cast<TreeSize>(f.size)).spacing_m)
+                                           : clear;
             return std::any_of(out_.starts.begin(), out_.starts.end(),
-                               [&](const StartPosition& s) { return d2(f.x, f.z, s.x, s.z) <= clear; });
+                               [&](const StartPosition& s) { return d2(f.x, f.z, s.x, s.z) <= reach; });
         });
         std::erase_if(out_.zones, [&](const Zone& zone) {
             const bool predator = zone.type == ZoneType::Wolves || zone.type == ZoneType::Bears;
@@ -768,6 +915,7 @@ private:
         }
         out_.terrain = std::move(terrain_);
         out_.fertility = std::move(fertility_);
+        out_.biome = std::move(biome_);
     }
 
     const MapSettings& s_;
@@ -785,6 +933,8 @@ private:
     std::vector<std::uint8_t> dist_;    // Cell distance to water, meters.
     std::vector<std::uint8_t> fertility_;
     std::vector<std::uint8_t> forest_;  // How deep in the forest, 0 = not forest.
+    std::vector<std::uint8_t> biome_;   // Cell biome.
+    std::vector<std::uint8_t> taken_;   // Cells kept free around trunks.
 };
 
 }  // namespace

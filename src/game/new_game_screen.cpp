@@ -157,7 +157,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 7;
+    constexpr int kRows = 9;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;
@@ -188,6 +188,31 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         const Row r = row(ctx, x, y, cw, tr("newGame.size"), tr("newGame.size.tooltip"));
         if (ctx.selector(ctx.id("size"), r.control, index, options, tr("newGame.size.tooltip"))) {
             settings_.size = static_cast<sim::MapSize>(index);
+        }
+    }
+    {
+        std::vector<std::string> options;
+        for (std::size_t i = 0; i < sim::kMapTypeCount; ++i) {
+            options.push_back(tr(std::string("mapType.") + sim::map_type_info(static_cast<sim::MapType>(i)).id));
+        }
+        int index = static_cast<int>(settings_.map_type);
+        const std::string tip = tr(std::string("mapType.") + sim::map_type_info(settings_.map_type).id + ".tooltip");
+        const Row r = row(ctx, x, y, cw, tr("newGame.mapType"), tip);
+        if (ctx.selector(ctx.id("map_type"), r.control, index, options, tip)) {
+            settings_.map_type = static_cast<sim::MapType>(index);
+        }
+    }
+    {
+        std::vector<std::string> options;
+        for (std::size_t i = 0; i < sim::kBiomeCount; ++i) {
+            options.push_back(tr(std::string("biome.") + sim::biome_info(static_cast<sim::Biome>(i)).id));
+        }
+        int index = static_cast<int>(settings_.biome);
+        const bool single = settings_.map_type == sim::MapType::Single;
+        const std::string tip = tr(single ? "newGame.biome.tooltip" : "newGame.biome.disabledTooltip");
+        const Row r = row(ctx, x, y, cw, tr("newGame.biome"), tip);
+        if (ctx.selector(ctx.id("biome"), r.control, index, options, tip, single)) {
+            settings_.biome = static_cast<sim::Biome>(index);
         }
     }
     struct AmountRow {

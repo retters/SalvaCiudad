@@ -74,7 +74,7 @@ std::vector<WaterArea> water_areas(const MapData& m) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0x9171cd08375d6a63ull;
+constexpr std::uint64_t kGoldenSmallMap = 0x9692d3e6c6c5d81full;
 
 }  // namespace
 
@@ -126,7 +126,7 @@ TEST_SUITE("worldgen") {
             CHECK(f.x < Fixed::from_int(m->size));
             CHECK(f.z < Fixed::from_int(m->size));
             CHECK_FALSE(m->water_at(f.x.floor_int(), f.z.floor_int()));
-            trees += f.type == FeatureType::PineTree || f.type == FeatureType::OakTree;
+            trees += f.type == FeatureType::Tree;
             stones += f.type == FeatureType::Stone;
         }
         CHECK(trees > 10000);
@@ -168,7 +168,7 @@ TEST_SUITE("worldgen") {
                     if (d <= worldgen::kStartResourceRadius) {
                         stones += f.type == FeatureType::Stone;
                         berries += f.type == FeatureType::BerryBush;
-                        trees += f.type == FeatureType::PineTree || f.type == FeatureType::OakTree;
+                        trees += f.type == FeatureType::Tree;
                     }
                 }
                 CHECK(stones >= worldgen::kStartMinStones);
@@ -194,6 +194,8 @@ TEST_SUITE("worldgen") {
         MapSettings s = settings(99, MapSize::Large, 6);
         s.water = Amount::High;
         s.relief = Relief::Gentle;
+        s.map_type = MapType::Single;
+        s.biome = Biome::Giants;
         BinaryWriter w;
         s.write(w);
         BinaryReader r(w.bytes());
@@ -208,6 +210,10 @@ TEST_SUITE("worldgen") {
         bad[13] = 13;  // Too many players.
         BinaryReader bp(bad);
         CHECK_FALSE(MapSettings::read(bp, back));
+        bad = w.bytes();
+        bad[14] = 99;  // Unknown map type.
+        BinaryReader bt(bad);
+        CHECK_FALSE(MapSettings::read(bt, back));
     }
 
     TEST_CASE("generation can be cancelled") {
@@ -232,6 +238,117 @@ TEST_SUITE("worldgen") {
                                   m->height_at(Fixed::from_int(101), Fixed::from_int(200)));
         CHECK(mid >= lo);
         CHECK(mid <= hi);
+    }
+}
+
+TEST_SUITE("flora") {
+    TEST_CASE("species sizes and fitting") {
+        CHECK(species_has_size(Species::Sequoia, TreeSize::Huge));
+        CHECK_FALSE(species_has_size(Species::Lemon, TreeSize::Medium));
+        CHECK(fit_size(Species::Lemon, TreeSize::Huge) == TreeSize::Small);
+        CHECK(fit_size(Species::MountainAsh, TreeSize::Small) == TreeSize::Large);
+        CHECK(fit_size(Species::Toog, TreeSize::Small) == TreeSize::Medium);
+        for (std::size_t i = 0; i < kSpeciesCount; ++i) {
+            CHECK(species_info(static_cast<Species>(i)).sizes != 0);
+        }
+        // Every biome's species exist, and every map type's biomes too.
+        for (std::size_t b = 0; b < kBiomeCount; ++b) {
+            for (const Weighted& w : biome_info(static_cast<Biome>(b)).species) {
+                CHECK(w.id < kSpeciesCount);
+            }
+        }
+        for (std::size_t t = 0; t < kMapTypeCount; ++t) {
+            for (const Weighted& w : map_type_info(static_cast<MapType>(t)).biomes) {
+                CHECK(w.id < kBiomeCount);
+            }
+        }
+        const Weighted items[] = {{3, 1}, {7, 3}};
+        CHECK(pick_weighted(items, 0) == 3);
+        CHECK(pick_weighted(items, 0x3FFF) == 3);
+        CHECK(pick_weighted(items, 0x4000) == 7);
+        CHECK(pick_weighted(items, 0xFFFF) == 7);
+    }
+
+    TEST_CASE("trees have allowed sizes, heights in range and room") {
+        const auto m = generate_map(settings(21, MapSize::Medium, 2));
+        REQUIRE(m.has_value());
+        CHECK(m->generator_version == worldgen::kGeneratorVersion);
+        CHECK(m->biome.size() == m->terrain.size());
+        std::vector<const MapFeature*> trees;
+        std::size_t per_size[kTreeSizes] = {};
+        for (const MapFeature& f : m->features) {
+            if (f.type != FeatureType::Tree) {
+                continue;
+            }
+            REQUIRE(f.species < kSpeciesCount);
+            REQUIRE(f.size < kTreeSizes);
+            const auto size = static_cast<TreeSize>(f.size);
+            CHECK(species_has_size(static_cast<Species>(f.species), size));
+            const std::int32_t h = MapData::tree_height_cm(f);
+            CHECK(h >= size_info(size).min_cm - 1);
+            CHECK(h <= size_info(size).max_cm + 1);
+            ++per_size[f.size];
+            trees.push_back(&f);
+        }
+        for (const std::size_t n : per_size) {
+            CHECK(n > 0);
+        }
+        // Neighbors keep apart by their sizes (half spacings, less a cell).
+        std::size_t close = 0;
+        for (std::size_t i = 0; i < trees.size(); i += 7) {
+            for (std::size_t j = 0; j < trees.size(); ++j) {
+                if (i == j) {
+                    continue;
+                }
+                const double d = distance(trees[i]->x, trees[i]->z, trees[j]->x, trees[j]->z);
+                const double need = (size_info(static_cast<TreeSize>(trees[i]->size)).spacing_m / 2 +
+                                     size_info(static_cast<TreeSize>(trees[j]->size)).spacing_m / 2) - 2.0;
+                close += d < need;
+            }
+        }
+        CHECK(close == 0);
+    }
+
+    TEST_CASE("map types change the forests") {
+        MapSettings young = settings(33, MapSize::Small);
+        young.map_type = MapType::Young;
+        MapSettings giants = young;
+        giants.map_type = MapType::Giants;
+        MapSettings single = young;
+        single.map_type = MapType::Single;
+        single.biome = Biome::Orchard;
+        const auto a = generate_map(young);
+        const auto b = generate_map(giants);
+        const auto c = generate_map(single);
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+        REQUIRE(c.has_value());
+        CHECK(a->checksum() != b->checksum());
+        std::size_t young_big = 0;
+        std::size_t giant_big = 0;
+        for (const MapFeature& f : a->features) {
+            young_big += f.type == FeatureType::Tree && f.size >= static_cast<std::uint8_t>(TreeSize::Large);
+        }
+        for (const MapFeature& f : b->features) {
+            giant_big += f.type == FeatureType::Tree && f.size >= static_cast<std::uint8_t>(TreeSize::Large);
+        }
+        CHECK(giant_big > 100);
+        // Young forests only grow big trees of species that cannot be small.
+        CHECK(young_big * 20 < giant_big);
+        std::size_t other_biome = 0;
+        for (const std::uint8_t cell : c->biome) {
+            other_biome += cell != static_cast<std::uint8_t>(Biome::Orchard);
+        }
+        CHECK(other_biome == 0);
+        for (const MapFeature& f : c->features) {
+            if (f.type == FeatureType::Tree) {
+                const auto sp = static_cast<Species>(f.species);
+                const bool orchard_species = sp == Species::Apple || sp == Species::Pear || sp == Species::Peach ||
+                                             sp == Species::Orange || sp == Species::Lemon ||
+                                             sp == Species::Avocado || sp == Species::Cherry;
+                CHECK(orchard_species);
+            }
+        }
     }
 }
 

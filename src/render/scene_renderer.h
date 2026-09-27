@@ -83,6 +83,7 @@ struct RenderStats {
     int shadow_map_size = 0;
     float draw_distance = 0.0f;
     float vegetation_distance = 0.0f;
+    std::uint32_t grass_tufts = 0;
     std::uint32_t terrain_chunks = 0;
     std::uint32_t water_chunks = 0;
 };
@@ -144,6 +145,7 @@ private:
 // Levels from GraphicsSettings, in the units the renderer uses.
 [[nodiscard]] float draw_distance_for_level(int level);
 [[nodiscard]] float vegetation_distance_for_level(int level);
+[[nodiscard]] float grass_distance_for_level(int level);
 [[nodiscard]] int shadow_cascades_for_level(int level);
 [[nodiscard]] int shadow_map_size_for_level(int level);
 [[nodiscard]] float shadow_distance_for_level(int level);

@@ -134,6 +134,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En Configuración > Pantalla, activar y desactivar varias veces la sincronización vertical: el juego no se cierra.
 - [ ] **Tu opinión:** ¿te gustan los colores del suelo y del agua, el ancho de los ríos y la cantidad de bosque?
 
+### Fase 6b (biomas, árboles y herramientas)
+
+- [ ] En Partida nueva, "Tipo de mapa" cambia los bosques: Arboleda joven sin árboles grandes, Tierra de gigantes con árboles de hasta 43 m, Bioma único con el bioma elegido.
+- [ ] Los árboles tienen cuatro tamaños y 21 especies (cerezos y jacarandas en flor, frutales con fruta, secuoyas, eucaliptos...). La misma semilla y el mismo tipo de mapa dan el mismo bosque.
+- [ ] Hay matas de pasto cerca de la cámara, que se mueven un poco y no crecen en arena ni agua; con "Vegetación" en bajo llegan menos lejos.
+- [ ] Ctrl+F3 abre las herramientas de desarrollo. Inspector: al pasar el cursor sobre un árbol, casa o persona se ven sus datos y el terreno; clic lo selecciona.
+- [ ] Crear: poner un árbol, una casa y varias personas en el centro de la vista y con clic en el suelo; aparecen al instante.
+- [ ] Explorador: buscar "secuoya" o "arbol" (sin acento), elegir uno de la lista: la cámara va hacia él y el inspector lo muestra; "Eliminar" lo quita.
+- [ ] Mapa Enorme en Ultra: más de 60 FPS en los tres modos de cámara.
+- [ ] **Tu opinión:** formas y colores de cada especie (las vistas previas se generan con `art/blender/preview_trees.py`), cantidad de pasto y los tipos de mapa.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

@@ -182,6 +182,7 @@ sc_add_shader(shaders/skinned_shadow.vert.hlsl vs_6_0 kSkinnedShadowVertDxil)
 sc_add_shader(shaders/terrain.vert.hlsl vs_6_0 kTerrainVertDxil)
 sc_add_shader(shaders/water.vert.hlsl vs_6_0 kWaterVertDxil)
 sc_add_shader(shaders/water.frag.hlsl ps_6_0 kWaterFragDxil)
+sc_add_shader(shaders/grass.vert.hlsl vs_6_0 kGrassVertDxil)
 
 # The base language is built in, so the game shows text even if data/lang
 # is missing.
@@ -206,6 +207,7 @@ set(SC_ENGINE_SOURCES
     src/core/log.cpp
     src/core/text.cpp
     src/game/app.cpp
+    src/game/dev_tools.cpp
     src/game/camera.cpp
     src/game/game_clock.cpp
     src/game/replay_file.cpp
@@ -225,6 +227,7 @@ set(SC_ENGINE_SOURCES
     src/sim/command.cpp
     src/sim/entity.cpp
     src/sim/fixed.cpp
+    src/sim/flora.cpp
     src/sim/map.cpp
     src/sim/noise.cpp
     src/sim/rng.cpp
@@ -301,7 +304,7 @@ if(SC_BUILD_TESTS)
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen worldgen_perf map_view new_game)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

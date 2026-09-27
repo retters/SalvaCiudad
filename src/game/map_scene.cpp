@@ -28,18 +28,41 @@ struct FeatureLook {
     render::ModelClass model_class;
 };
 
-// Model per feature type, in FeatureType order.
+// Model per non-tree feature type, in FeatureType order after Tree.
 constexpr FeatureLook kFeatureLooks[] = {
-    {"tree_pine.glb", render::ModelClass::Normal},
-    {"tree_oak.glb", render::ModelClass::Normal},
     {"rock.glb", render::ModelClass::Normal},
     {"ore_rock.glb", render::ModelClass::Normal},
     {"berry_bush.glb", render::ModelClass::SmallVegetation},
     {"herb.glb", render::ModelClass::SmallVegetation},
 };
-static_assert(std::size(kFeatureLooks) == static_cast<std::size_t>(sim::FeatureType::Count));
+static_assert(std::size(kFeatureLooks) + 1 == static_cast<std::size_t>(sim::FeatureType::Count));
+
+// Stand-ins while a species has no model of its own: cone-shaped conifers
+// use the old pine, everything else the old oak.
+const char* fallback_tree_file(sim::Species species) {
+    switch (species) {
+        case sim::Species::Pine:
+        case sim::Species::Sequoia: return "tree_pine.glb";
+        default: return "tree_oak.glb";
+    }
+}
 
 }  // namespace
+
+std::size_t tree_slot(sim::Species species, sim::TreeSize size) {
+    return static_cast<std::size_t>(species) * sim::kTreeSizes + static_cast<std::size_t>(size);
+}
+
+std::size_t visual_slot(const sim::MapFeature& f) {
+    if (f.type == sim::FeatureType::Tree) {
+        return tree_slot(static_cast<sim::Species>(f.species), static_cast<sim::TreeSize>(f.size));
+    }
+    return kTreeSlots + static_cast<std::size_t>(f.type);
+}
+
+std::string tree_model_file(sim::Species species, sim::TreeSize size) {
+    return std::string("tree_") + sim::species_info(species).id + "_" + sim::size_info(size).id + ".glb";
+}
 
 std::size_t MapVisuals::feature_count() const {
     std::size_t n = 0;
@@ -79,6 +102,20 @@ Rgb8 ground_color(sim::Terrain terrain, std::uint8_t fertility, std::uint32_t ce
     return {channel(r), channel(g), channel(b)};
 }
 
+std::uint8_t grass_density(sim::Terrain terrain, std::uint8_t fertility, sim::Biome biome) {
+    int base = 0;
+    switch (terrain) {
+        case sim::Terrain::Grass: base = 255; break;
+        case sim::Terrain::Meadow: base = 235; break;
+        case sim::Terrain::ForestFloor: base = 110; break;  // Shade keeps it thin.
+        case sim::Terrain::Clay: base = 40; break;
+        default: base = 0; break;
+    }
+    // Poor soil grows less; the biome sets the overall amount.
+    const int soil = 110 + fertility * 145 / 255;
+    return static_cast<std::uint8_t>(base * soil / 255 * sim::biome_info(biome).grass / 255);
+}
+
 float map_surface_height(const sim::MapData& map, float x, float z) {
     if (map.size <= 0) {
         return 0.0f;
@@ -98,6 +135,26 @@ float map_surface_height(const sim::MapData& map, float x, float z) {
     return std::max(ground, static_cast<float>(water) * 0.01f);
 }
 
+std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map) {
+    MapVisuals v;
+    // One instance per natural feature, standing on the ground.
+    for (const sim::MapFeature& f : map.features) {
+        const float x = to_float(f.x);
+        const float z = to_float(f.z);
+        render::Instance inst;
+        inst.position = {x, to_float(map.height_at(f.x, f.z)), z};
+        inst.yaw = static_cast<float>(f.rotation) / 65536.0f * 2.0f * std::numbers::pi_v<float>;
+        inst.scale = f.type == sim::FeatureType::Tree ? static_cast<float>(sim::MapData::tree_height_cm(f)) / 100.0f
+                                                      : to_float(f.scale);
+        // Slightly different shades so forests do not look copied.
+        const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
+        const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
+        inst.tint = {shade, shade, shade};
+        v.features[visual_slot(f)].push_back(inst);
+    }
+    return std::move(v.features);
+}
+
 MapVisuals build_map_visuals(const sim::MapData& map) {
     MapVisuals v;
     render::TerrainData& t = v.terrain;
@@ -113,7 +170,7 @@ MapVisuals build_map_visuals(const sim::MapData& map) {
     t.colors.resize(texels * texels * 4);
     for (std::int32_t ty = 0; ty < t.color_size; ++ty) {
         for (std::int32_t tx = 0; tx < t.color_size; ++tx) {
-            std::uint32_t sum[3] = {0, 0, 0};
+            std::uint32_t sum[4] = {0, 0, 0, 0};
             for (std::int32_t dz = 0; dz < shrink; ++dz) {
                 for (std::int32_t dx = 0; dx < shrink; ++dx) {
                     const std::int32_t cx = tx * shrink + dx;
@@ -125,6 +182,9 @@ MapVisuals build_map_visuals(const sim::MapData& map) {
                     sum[0] += c.r;
                     sum[1] += c.g;
                     sum[2] += c.b;
+                    sum[3] += grass_density(static_cast<sim::Terrain>(map.terrain[cell]), map.fertility[cell],
+                                            map.biome.empty() ? sim::Biome::Temperate
+                                                              : static_cast<sim::Biome>(map.biome[cell]));
                 }
             }
             const auto count = static_cast<std::uint32_t>(shrink * shrink);
@@ -132,36 +192,66 @@ MapVisuals build_map_visuals(const sim::MapData& map) {
             px[0] = static_cast<std::uint8_t>(sum[0] / count);
             px[1] = static_cast<std::uint8_t>(sum[1] / count);
             px[2] = static_cast<std::uint8_t>(sum[2] / count);
-            px[3] = 255;
+            px[3] = static_cast<std::uint8_t>(sum[3] / count);
         }
     }
 
-    // One instance per natural feature, standing on the ground.
-    for (const sim::MapFeature& f : map.features) {
-        const float x = to_float(f.x);
-        const float z = to_float(f.z);
-        render::Instance inst;
-        inst.position = {x, to_float(map.height_at(f.x, f.z)), z};
-        inst.yaw = static_cast<float>(f.rotation) / 65536.0f * 2.0f * std::numbers::pi_v<float>;
-        inst.scale = to_float(f.scale);
-        // Slightly different shades so forests do not look copied.
-        const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
-        const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
-        inst.tint = {shade, shade, shade};
-        v.features[static_cast<std::size_t>(f.type)].push_back(inst);
-    }
+    v.features = build_feature_instances(map);
     return v;
 }
 
 bool MapScene::load_models(render::SceneRenderer& renderer, const std::filesystem::path& props_dir) {
-    bool any = false;
-    for (std::size_t i = 0; i < std::size(kFeatureLooks); ++i) {
-        models_[i] = kNoModel;
-        const auto model = load_model_file(props_dir / kFeatureLooks[i].file);
+    // Each file is uploaded once, even if several slots use it.
+    struct Loaded {
+        std::string file;
+        Slot slot;
+    };
+    std::vector<Loaded> loaded;
+    const auto load = [&](const std::string& file, render::ModelClass model_class, Slot& out) {
+        for (const Loaded& l : loaded) {
+            if (l.file == file) {
+                out = l.slot;
+                return out.model != kNoModel;
+            }
+        }
+        Slot slot;
+        const auto model = load_model_file(props_dir / file);
         render::ModelId id = 0;
         if (model.has_value() && renderer.add_model(*model, id)) {
-            renderer.set_model_class(id, kFeatureLooks[i].model_class);
-            models_[i] = id;
+            renderer.set_model_class(id, model_class);
+            slot.model = id;
+            slot.height = std::max(0.1f, model->bounds_max.y - model->bounds_min.y);
+            used_models_.push_back(id);
+        }
+        loaded.push_back({file, slot});
+        out = slot;
+        return slot.model != kNoModel;
+    };
+    std::size_t missing = 0;
+    std::size_t trees = 0;
+    for (std::size_t s = 0; s < sim::kSpeciesCount; ++s) {
+        const auto species = static_cast<sim::Species>(s);
+        for (std::size_t z = 0; z < sim::kTreeSizes; ++z) {
+            const auto size = static_cast<sim::TreeSize>(z);
+            if (!sim::species_has_size(species, size)) {
+                continue;
+            }
+            Slot& slot = slots_[tree_slot(species, size)];
+            if (load(tree_model_file(species, size), render::ModelClass::Normal, slot)) {
+                ++trees;
+                continue;
+            }
+            ++missing;
+            (void)load(fallback_tree_file(species), render::ModelClass::Normal, slot);
+        }
+    }
+    if (missing > 0) {
+        log::warn("map: {} tree model(s) missing; using stand-ins", missing);
+    }
+    bool any = trees > 0;
+    for (std::size_t i = 0; i < std::size(kFeatureLooks); ++i) {
+        Slot& slot = slots_[kTreeSlots + 1 + i];
+        if (load(kFeatureLooks[i].file, kFeatureLooks[i].model_class, slot)) {
             any = true;
         } else {
             log::warn("map: model {} unavailable; that feature will not be drawn", kFeatureLooks[i].file);
@@ -179,13 +269,38 @@ bool MapScene::show(render::SceneRenderer& renderer, const MapVisuals& visuals) 
     if (!renderer.set_terrain(visuals.terrain)) {
         return false;
     }
-    for (std::size_t i = 0; i < models_.size(); ++i) {
-        if (models_loaded_ && models_[i] != kNoModel) {
-            renderer.set_instances(models_[i], visuals.features[i]);
-        }
-    }
+    apply_features(renderer, visuals.features);
     shown_ = true;
     return true;
+}
+
+void MapScene::refresh_features(render::SceneRenderer& renderer, const sim::MapData& map) {
+    apply_features(renderer, build_feature_instances(map));
+}
+
+void MapScene::apply_features(render::SceneRenderer& renderer,
+                              const std::vector<std::vector<render::Instance>>& features) {
+    if (models_loaded_) {
+        // Slots that share a model (stand-ins) go into one list.
+        for (const render::ModelId model : used_models_) {
+            scratch_.clear();
+            for (std::size_t i = 0; i < kVisualSlots && i < features.size(); ++i) {
+                if (slots_[i].model != model) {
+                    continue;
+                }
+                const bool tree = i < kTreeSlots;
+                for (render::Instance inst : features[i]) {
+                    if (tree) {
+                        inst.scale /= slots_[i].height;
+                    }
+                    scratch_.push_back(inst);
+                }
+            }
+            renderer.set_instances(model, scratch_);
+        }
+        scratch_.clear();
+        scratch_.shrink_to_fit();
+    }
 }
 
 void MapScene::show_sample_village(render::SceneRenderer& renderer, const sim::MapData& map, math::Vec3 center) {
@@ -195,7 +310,8 @@ void MapScene::show_sample_village(render::SceneRenderer& renderer, const sim::M
     constexpr int kHouses = 6;
     constexpr float kRing = 18.0f;    // Meters from the center.
     constexpr float kHalfSize = 3.0f;  // About half the house's footprint.
-    std::vector<render::Instance> houses;
+    std::vector<render::Instance>& houses = houses_;
+    houses.clear();
     for (int i = 0; i < kHouses; ++i) {
         const float a = static_cast<float>(i) / kHouses * 2.0f * std::numbers::pi_v<float> + 0.3f;
         const float x = center.x + std::cos(a) * kRing;
@@ -218,16 +334,29 @@ void MapScene::show_sample_village(render::SceneRenderer& renderer, const sim::M
     renderer.set_instances(house_, houses);
 }
 
+void MapScene::add_house(render::SceneRenderer& renderer, const render::Instance& house) {
+    if (house_ == kNoModel) {
+        return;
+    }
+    houses_.push_back(house);
+    renderer.set_instances(house_, houses_);
+}
+
+void MapScene::remove_house(render::SceneRenderer& renderer, std::size_t index) {
+    if (house_ == kNoModel || index >= houses_.size()) {
+        return;
+    }
+    houses_.erase(houses_.begin() + static_cast<std::ptrdiff_t>(index));
+    renderer.set_instances(house_, houses_);
+}
+
 void MapScene::hide(render::SceneRenderer& renderer) {
+    houses_.clear();
     if (house_ != kNoModel) {
         renderer.set_instances(house_, {});
     }
-    if (models_loaded_) {
-        for (const render::ModelId id : models_) {
-            if (id != kNoModel) {
-                renderer.set_instances(id, {});
-            }
-        }
+    for (const render::ModelId id : used_models_) {
+        renderer.set_instances(id, {});
     }
     renderer.clear_terrain();
     shown_ = false;

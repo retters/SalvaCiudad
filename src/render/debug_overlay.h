@@ -3,6 +3,7 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <cstdint>
 #include <string>
 
@@ -48,11 +49,14 @@ public:
     // Debug option: pull the camera far back so the whole test scene is on
     // screen at once, to measure the worst case.
     [[nodiscard]] bool stress_view() const { return visible_ && stress_view_; }
-    // True while the pointer is over the statistics window.
+    // True while the pointer is over an ImGui window (statistics or tools).
     [[nodiscard]] bool wants_mouse() const;
+    // True while an ImGui text field has the keyboard.
+    [[nodiscard]] bool wants_keyboard() const;
 
-    // Builds the window for this frame. Call before prepare().
-    void build(const DebugInfo& info);
+    // Builds the windows for this frame: the statistics if visible, and
+    // `extra` (more ImGui windows) if `extra_active`. Call before prepare().
+    void build(const DebugInfo& info, const std::function<void()>& extra = {}, bool extra_active = false);
     // Uploads the draw data; must run before the render pass.
     void prepare(SDL_GPUCommandBuffer* cmd);
     void render(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass);
@@ -61,6 +65,7 @@ private:
     bool ready_ = false;
     bool visible_ = false;
     bool built_ = false;
+    bool active_ = false;  // A frame was built last time (for input).
     bool stress_view_ = false;
     std::array<float, 120> frame_history_{};
     std::size_t history_pos_ = 0;

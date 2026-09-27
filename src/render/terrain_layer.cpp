@@ -7,6 +7,7 @@
 #include <SDL3/SDL_error.h>
 
 #include "core/log.h"
+#include "shaders/grass_vert_dxil.h"
 #include "shaders/terrain_vert_dxil.h"
 #include "shaders/water_frag_dxil.h"
 #include "shaders/water_vert_dxil.h"
@@ -47,6 +48,16 @@ struct WaterUniforms {
 struct GridVertex {
     float x, skirt, z;
 };
+
+struct GrassUniforms {
+    math::Mat4 view_proj;
+    std::int32_t map[4];  // Vertices per side, cells per side, tufts per grid side.
+    float grid[4];        // First cell (x, z), spacing, far distance.
+    float camera[4];      // Eye and time.
+};
+
+// Meters between grass tufts.
+constexpr float kGrassSpacing = 0.55f;
 
 // Water keeps more detail than the ground far away, so rivers do not break
 // up: at most a step of 2 cells.
@@ -125,7 +136,11 @@ void TerrainLayer::release() {
     release_map();
     SDL_ReleaseGPUGraphicsPipeline(device_, ground_pipeline_);
     SDL_ReleaseGPUGraphicsPipeline(device_, water_pipeline_);
-    ground_pipeline_ = water_pipeline_ = nullptr;
+    SDL_ReleaseGPUGraphicsPipeline(device_, grass_pipeline_);
+    ground_pipeline_ = water_pipeline_ = grass_pipeline_ = nullptr;
+    SDL_ReleaseGPUBuffer(device_, grass_mesh_.vertices);
+    SDL_ReleaseGPUBuffer(device_, grass_mesh_.indices);
+    grass_mesh_ = Grid{};
     SDL_ReleaseGPUSampler(device_, color_sampler_);
     color_sampler_ = nullptr;
     for (Grid& g : grids_) {
@@ -165,7 +180,8 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
     device_ = device;
     SDL_ReleaseGPUGraphicsPipeline(device_, ground_pipeline_);
     SDL_ReleaseGPUGraphicsPipeline(device_, water_pipeline_);
-    ground_pipeline_ = water_pipeline_ = nullptr;
+    SDL_ReleaseGPUGraphicsPipeline(device_, grass_pipeline_);
+    ground_pipeline_ = water_pipeline_ = grass_pipeline_ = nullptr;
     if (color_sampler_ == nullptr) {
         SDL_GPUSamplerCreateInfo si{};
         si.min_filter = SDL_GPU_FILTER_LINEAR;
@@ -178,12 +194,16 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
     if (grids_[0].vertices == nullptr && !create_grids()) {
         return false;
     }
+    if (grass_mesh_.vertices == nullptr && !create_grass_mesh()) {
+        log::warn("terrain: cannot upload the grass mesh: {}", SDL_GetError());
+    }
 
     SDL_GPUShader* ground_vs =
         make_shader(device_, kTerrainVertDxil, kTerrainVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 1, 2, 2);
     SDL_GPUShader* water_vs = make_shader(device_, kWaterVertDxil, kWaterVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 3, 1);
     SDL_GPUShader* water_fs =
         make_shader(device_, kWaterFragDxil, kWaterFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 1);
+    SDL_GPUShader* grass_vs = make_shader(device_, kGrassVertDxil, kGrassVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 1, 2, 1);
 
     if (ground_vs != nullptr && water_vs != nullptr && water_fs != nullptr && ground_fragment != nullptr &&
         color_sampler_ != nullptr) {
@@ -229,8 +249,17 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
         wi.depth_stencil_state.enable_depth_write = false;
         wi.target_info.color_target_descriptions = &blended;
         water_pipeline_ = SDL_CreateGPUGraphicsPipeline(device_, &wi);
+
+        // Grass: one vertex stream, placed by the instance index.
+        SDL_GPUGraphicsPipelineCreateInfo gr = gi;
+        gr.vertex_shader = grass_vs;
+        gr.vertex_input_state = {buffers, 1, attrs, 1};
+        grass_pipeline_ = grass_vs != nullptr ? SDL_CreateGPUGraphicsPipeline(device_, &gr) : nullptr;
+        if (grass_pipeline_ == nullptr) {
+            log::warn("terrain: grass unavailable: {}", SDL_GetError());
+        }
     }
-    for (SDL_GPUShader* s : {ground_vs, water_vs, water_fs}) {
+    for (SDL_GPUShader* s : {ground_vs, water_vs, water_fs, grass_vs}) {
         SDL_ReleaseGPUShader(device_, s);
     }
     if (ground_pipeline_ == nullptr || water_pipeline_ == nullptr) {
@@ -238,6 +267,35 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
         return false;
     }
     return true;
+}
+
+// A tuft of seven blades, each a thin triangle leaning outward; y goes from
+// 0 at the root to 1 at the tip before scaling.
+bool TerrainLayer::create_grass_mesh() {
+    std::vector<GridVertex> verts;
+    std::vector<std::uint16_t> indices;
+    constexpr int kBlades = 7;
+    for (int b = 0; b < kBlades; ++b) {
+        const float a = static_cast<float>(b) * 2.399963f;
+        const float c = std::cos(a);
+        const float s = std::sin(a);
+        const float out = 0.06f + 0.03f * static_cast<float>(b % 3);
+        const float height = 0.32f + 0.07f * static_cast<float>((b * 5) % 4);
+        const float half = 0.035f;
+        const auto base = static_cast<std::uint16_t>(verts.size());
+        verts.push_back({c * out - s * half, 0.0f, s * out + c * half});
+        verts.push_back({c * out + s * half, 0.0f, s * out - c * half});
+        verts.push_back({c * (out + 0.12f), height, s * (out + 0.12f)});
+        indices.insert(indices.end(), {base, static_cast<std::uint16_t>(base + 1), static_cast<std::uint16_t>(base + 2)});
+    }
+    // The tip's y is the blade height; the shader reads it as 0..1 for
+    // shading, which stays close enough.
+    grass_mesh_.vertices = upload(verts.data(), static_cast<std::uint32_t>(verts.size() * sizeof(GridVertex)),
+                                  SDL_GPU_BUFFERUSAGE_VERTEX);
+    grass_mesh_.indices = upload(indices.data(), static_cast<std::uint32_t>(indices.size() * sizeof(std::uint16_t)),
+                                 SDL_GPU_BUFFERUSAGE_INDEX);
+    grass_mesh_.index_count = static_cast<std::uint32_t>(indices.size());
+    return grass_mesh_.vertices != nullptr && grass_mesh_.indices != nullptr;
 }
 
 bool TerrainLayer::create_grids() {
@@ -583,6 +641,54 @@ void TerrainLayer::draw_ground(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pas
         stats_.chunks_drawn += r.count;
         stats_.triangles += static_cast<std::uint64_t>(g.index_count / 3) * r.count;
     }
+}
+
+void TerrainLayer::draw_grass(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,
+                              math::Vec3 eye, float time, float distance, SDL_GPUTexture* white,
+                              SDL_GPUSampler* sampler, SDL_GPUTexture* shadow_map, SDL_GPUSampler* shadow_sampler) {
+    if (cells_ == 0 || grass_pipeline_ == nullptr || grass_mesh_.vertices == nullptr || distance <= 0.0f) {
+        return;
+    }
+    // Nothing to see when the eye is far above the ground below it.
+    const std::int32_t per_side = cells_ / kTerrainChunk;
+    const std::int32_t cx = std::clamp(static_cast<std::int32_t>(eye.x) / kTerrainChunk, 0, per_side - 1);
+    const std::int32_t cz = std::clamp(static_cast<std::int32_t>(eye.z) / kTerrainChunk, 0, per_side - 1);
+    const Chunk& below = chunks_[static_cast<std::size_t>(cz * per_side + cx)];
+    if (eye.y - (below.center.y + below.radius) > distance) {
+        return;
+    }
+    const auto side = static_cast<std::int32_t>(std::ceil(2.0f * distance / kGrassSpacing));
+    const float first_x = std::floor((eye.x - distance) / kGrassSpacing) * kGrassSpacing;
+    const float first_z = std::floor((eye.z - distance) / kGrassSpacing) * kGrassSpacing;
+    GrassUniforms gu{};
+    gu.view_proj = view_proj;
+    gu.map[0] = cells_ + 1;
+    gu.map[1] = cells_;
+    gu.map[2] = side;
+    gu.grid[0] = first_x;
+    gu.grid[1] = first_z;
+    gu.grid[2] = kGrassSpacing;
+    gu.grid[3] = distance;
+    set4(gu.camera, eye, time);
+    SDL_BindGPUGraphicsPipeline(pass, grass_pipeline_);
+    SDL_PushGPUVertexUniformData(cmd, 0, &gu, sizeof(gu));
+    const SDL_GPUTextureSamplerBinding color_binding{colors_, color_sampler_};
+    SDL_BindGPUVertexSamplers(pass, 0, &color_binding, 1);
+    SDL_GPUBuffer* storage[2] = {heights_, water_};
+    SDL_BindGPUVertexStorageBuffers(pass, 0, storage, 2);
+    const SDL_GPUTextureSamplerBinding fragment[2] = {{white, sampler}, {shadow_map, shadow_sampler}};
+    SDL_BindGPUFragmentSamplers(pass, 0, fragment, 2);
+    const MaterialUniforms mu{{1.0f, 1.0f, 1.0f, 1.0f}};
+    SDL_PushGPUFragmentUniformData(cmd, 1, &mu, sizeof(mu));
+    const SDL_GPUBufferBinding vb{grass_mesh_.vertices, 0};
+    SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+    const SDL_GPUBufferBinding ib{grass_mesh_.indices, 0};
+    SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+    const auto count = static_cast<std::uint32_t>(side * side);
+    SDL_DrawGPUIndexedPrimitives(pass, grass_mesh_.index_count, count, 0, 0, 0);
+    ++stats_.draw_calls;
+    stats_.grass_tufts = count;
+    stats_.triangles += static_cast<std::uint64_t>(grass_mesh_.index_count / 3) * count;
 }
 
 void TerrainLayer::draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,

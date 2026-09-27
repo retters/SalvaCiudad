@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "sim/fixed.h"
+#include "sim/flora.h"
 #include "sim/serialize.h"
 
 namespace sc::sim {
@@ -35,6 +36,8 @@ struct MapSettings {
     Amount resources = Amount::Normal;
     Relief relief = Relief::Low;
     std::uint8_t players = 1;           // Start positions to place (1..12).
+    MapType map_type = MapType::Classic;
+    Biome biome = Biome::Temperate;     // The only biome with MapType::Single.
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);
@@ -43,12 +46,15 @@ struct MapSettings {
 
 enum class Terrain : std::uint8_t { Grass, Meadow, ForestFloor, Sand, Rock, Clay, Water, Count };
 
-enum class FeatureType : std::uint8_t { PineTree, OakTree, Stone, IronOre, BerryBush, Herbs, Count };
+enum class FeatureType : std::uint8_t { Tree, Stone, IronOre, BerryBush, Herbs, Count };
 
 // A natural object on the map. Positions are in meters from the map's
-// corner (0, 0); rotation is a binary angle.
+// corner (0, 0); rotation is a binary angle. For trees, `scale` is the
+// height over the size's model height (see flora.h).
 struct MapFeature {
-    FeatureType type = FeatureType::PineTree;
+    FeatureType type = FeatureType::Tree;
+    std::uint8_t species = 0;  // Species, for trees.
+    std::uint8_t size = 0;     // TreeSize, for trees.
     std::uint16_t rotation = 0;
     Fixed x;
     Fixed z;
@@ -78,12 +84,14 @@ struct StartPosition {
 
 struct MapData {
     MapSettings settings;
+    std::uint16_t generator_version = 0;  // worldgen::kGeneratorVersion when made.
     std::int32_t size = 0;  // Cells per side.
 
     std::vector<std::uint16_t> heights;    // (size + 1)^2 vertices, centimeters.
     std::vector<std::uint16_t> water;      // size^2 cells: water surface in cm, 0 = dry.
     std::vector<std::uint8_t> terrain;     // size^2 cells, Terrain.
     std::vector<std::uint8_t> fertility;   // size^2 cells, 0..255.
+    std::vector<std::uint8_t> biome;       // size^2 cells, Biome.
     std::vector<MapFeature> features;
     std::vector<Zone> zones;
     std::vector<StartPosition> starts;
@@ -94,6 +102,9 @@ struct MapData {
     [[nodiscard]] Fixed height_at(Fixed x, Fixed z) const;
     [[nodiscard]] Terrain terrain_at(std::int32_t cx, std::int32_t cz) const;
     [[nodiscard]] bool water_at(std::int32_t cx, std::int32_t cz) const;
+    [[nodiscard]] Biome biome_at(std::int32_t cx, std::int32_t cz) const;
+    // A tree's height in centimeters (0 for other features).
+    [[nodiscard]] static std::int32_t tree_height_cm(const MapFeature& f);
 
     // Hash of everything generated: two machines with the same settings
     // must get the same value.

@@ -12,18 +12,21 @@ void MapSettings::write(BinaryWriter& w) const {
     w.u8(static_cast<std::uint8_t>(resources));
     w.u8(static_cast<std::uint8_t>(relief));
     w.u8(players);
+    w.u8(static_cast<std::uint8_t>(map_type));
+    w.u8(static_cast<std::uint8_t>(biome));
 }
 
 bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     MapSettings s;
-    std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0;
+    std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, map_type = 0, biome = 0;
     if (!r.u64(s.seed) || !r.u8(size) || !r.u8(water) || !r.u8(forests) || !r.u8(resources) || !r.u8(relief) ||
-        !r.u8(s.players)) {
+        !r.u8(s.players) || !r.u8(map_type) || !r.u8(biome)) {
         return false;
     }
     if (size >= static_cast<std::uint8_t>(MapSize::Count) || water >= static_cast<std::uint8_t>(Amount::Count) ||
         forests >= static_cast<std::uint8_t>(Amount::Count) || resources >= static_cast<std::uint8_t>(Amount::Count) ||
-        relief >= static_cast<std::uint8_t>(Relief::Count) || s.players < 1 || s.players > 12) {
+        relief >= static_cast<std::uint8_t>(Relief::Count) || s.players < 1 || s.players > 12 ||
+        map_type >= static_cast<std::uint8_t>(MapType::Count) || biome >= static_cast<std::uint8_t>(Biome::Count)) {
         r.fail();
         return false;
     }
@@ -32,6 +35,8 @@ bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     s.forests = static_cast<Amount>(forests);
     s.resources = static_cast<Amount>(resources);
     s.relief = static_cast<Relief>(relief);
+    s.map_type = static_cast<MapType>(map_type);
+    s.biome = static_cast<Biome>(biome);
     out = s;
     return true;
 }
@@ -73,9 +78,25 @@ bool MapData::water_at(std::int32_t cx, std::int32_t cz) const {
     return water[static_cast<std::size_t>(cz) * static_cast<std::size_t>(size) + static_cast<std::size_t>(cx)] != 0;
 }
 
+Biome MapData::biome_at(std::int32_t cx, std::int32_t cz) const {
+    if (cx < 0 || cz < 0 || cx >= size || cz >= size || biome.empty()) {
+        return Biome::Temperate;
+    }
+    return static_cast<Biome>(biome[static_cast<std::size_t>(cz) * static_cast<std::size_t>(size) + static_cast<std::size_t>(cx)]);
+}
+
+std::int32_t MapData::tree_height_cm(const MapFeature& f) {
+    if (f.type != FeatureType::Tree) {
+        return 0;
+    }
+    const std::int64_t model = size_info(static_cast<TreeSize>(f.size)).model_cm;
+    return static_cast<std::int32_t>((model * f.scale.raw()) >> 16);
+}
+
 std::uint64_t MapData::checksum() const {
     BinaryWriter w;
     settings.write(w);
+    w.u16(generator_version);
     w.i32(size);
     std::uint64_t h = fnv1a64(w.bytes());
     const auto bytes = [](const auto& v) {
@@ -87,9 +108,12 @@ std::uint64_t MapData::checksum() const {
     h = fnv1a64(bytes(water), h);
     h = fnv1a64(terrain, h);
     h = fnv1a64(fertility, h);
+    h = fnv1a64(biome, h);
     BinaryWriter tail;
     for (const MapFeature& f : features) {
         tail.u8(static_cast<std::uint8_t>(f.type));
+        tail.u8(f.species);
+        tail.u8(f.size);
         tail.u16(f.rotation);
         tail.fixed(f.x);
         tail.fixed(f.z);

@@ -464,6 +464,23 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - *Criterios:* todas las pruebas de determinismo de 11.1 pasan en debug y release.
 6. **Mapa procedural.** Generador con semilla (relieve suave, ríos, lagos, bosques, recursos, fertilidad), los cuatro tamaños, terreno por regiones con LOD, agua y vegetación por instancias. Configuración de mapa en la pantalla de nueva partida.
    - *Criterios:* la misma semilla da el mismo mapa; un mapa Enorme se genera en menos de 30 s y se recorre a 60 FPS o más.
+6b. **Biomas, especies de árboles y herramientas de desarrollo** (agregada el 2026-09-27 a pedido del usuario).
+   - Árboles en cuatro tamaños: chico (1–7 m), mediano (7–12 m), grande (12–24 m) y enorme (24–43 m). Cada especie tiene los tamaños que le corresponden.
+   - Especies, cada una con un modelo por tamaño hecho con scripts de Blender: roble, pino, toog, eucalipto (*E. viminalis*), secuoya gigante, fresno de montaña australiano (*E. regnans*), cerezo japonés (*Prunus serrulata*), jacaranda, tulipán africano (*Spathodea*), palo borracho (*Ceiba speciosa*), magnolia, tabachín, calistemo, pino piñonero, olmo, limonero, manzano, naranjo, peral, durazno y aguacate. El catálogo está en `docs/ARBOLES.md`.
+   - Biomas: regiones del mapa con su mezcla de especies y tamaños, su densidad y su pasto.
+   - Tipos de mapa: combinaciones de biomas que se eligen en la pantalla de partida nueva (Clásico, Arboleda joven, Tierra de gigantes, Pinar del norte, Variado y Bioma único). Por ahora son tablas en el código con la forma que tendrán como datos; en la fase 7 pasan a JSON dentro del mod base.
+   - El mapa guarda la versión del generador con la que se hizo.
+   - Matas de pasto decorativas cerca de la cámara, sin efecto en la simulación.
+   - Herramientas de desarrollo (Ctrl+F3), en ImGui y con pestañas:
+     - un inspector con el nombre y todas las propiedades del objeto seleccionado o bajo el cursor, incluidos el terreno y el bioma donde está;
+     - una pestaña para crear árboles, vegetación, casas y personas;
+     - un explorador que lista los objetos con búsqueda por nombre y categoría, lleva la cámara a uno y lo muestra en el inspector.
+     Más adelante se agregan pestañas por cada mecánica, por ejemplo asignar recursos en la fase 8. Solo funcionan en partidas de un jugador, o si la partida las permite.
+   - *Criterios:*
+     - la misma semilla y el mismo tipo de mapa dan el mismo mapa, y cada tipo de mapa se ve distinto;
+     - un mapa Enorme se sigue generando en menos de 30 s y se recorre a 60 FPS o más en Ultra, con el pasto;
+     - regenerar los modelos con sus scripts da archivos idénticos;
+     - las tres herramientas funcionan sobre un mapa generado.
 7. **Mods y datos.** Cargador de mods, `core` como mod, esquemas y validación de definiciones, parches, Lua en sandbox, hash de mods y menú de mods. `docs/CREAR_MODS.md` y mod de ejemplo.
    - *Criterios:* el mod de ejemplo agrega un edificio y una regla en Lua sin tocar el código; un mod con errores se desactiva con un mensaje claro; el sandbox resiste las pruebas.
 8. **Primer pueblo jugable (un jugador).** Aldeanos con búsqueda de rutas, trabajo, hambre, edad, nacimiento y muerte; recolección de madera, piedra y bayas; almacén, casas, leñador, recolector y centro del pueblo; construcción por etapas; barra de construcción, barra de recursos, ventanas de edificio y de aldeano (aún sin acoplamiento); velocidad y pausa con desenfoque; guardar y cargar.
