@@ -352,18 +352,6 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Los ríos serpentean en lugar de ir en línea recta.
 - [ ] En costas e islas, un valle o cañón que llega al mar termina en él.
 
-### Fase 30 (visor de modelos)
-
-- [ ] `SalvaCiudadModelos.exe` abre sin el juego, en una ventana, con los textos en tu idioma.
-- [ ] A la izquierda están los modelos de "SalvaCiudad (juego base)" por categoría; al elegir un tipo con varias variantes (por ejemplo, Roble o Sombreros) se ven todas lado a lado, con el aldeano de referencia a la izquierda.
-- [ ] Al elegir un archivo, la ficha muestra sus triángulos, llamadas de dibujo, tamaño y quién lo usa.
-- [ ] En un árbol, cambiar la estación a Otoño o marcar "Con nieve" cambia su color como en el juego; en un personaje, "Otra paleta" cambia su ropa y el menú de animación lo pone a caminar.
-- [ ] La pestaña Revisión lista `tree_oak.glb` como modelo sin usar.
-- [ ] Con W / S o las flechas arriba y abajo se recorre la lista y cada tipo o archivo se ve al instante; con D o → se abre una categoría o un tipo con variantes, y con A o ← se cierra o se sube al que lo contiene. Mantener la tecla repite.
-- [ ] Al escribir en el buscador, W A S D escriben letras y no mueven la lista.
-- [ ] Con el visor abierto en un modelo, volver a correr su script de Blender (o guardar otra vez el archivo) lo actualiza solo y abajo aparece "Recargado".
-- [ ] El juego sigue viéndose igual (nubes, casas de muestra, animales y sombreros de los aldeanos).
-
 ### Fase 28 (oro que se carga y bóveda)
 
 - [ ] La barra superior dice "Oro 100" al empezar; su tooltip dice cuánto hay en el puesto, en bóvedas y en el centro del pueblo.
@@ -383,6 +371,18 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con mercader y oro en el puesto, cada día vende lo que sobra y compra hasta la cantidad fijada; con el puesto sin oro no compra, aunque haya oro en la bóveda.
 - [ ] Al irse el mercader llega un aviso con lo vendido, lo comprado y el oro.
 - [ ] En multijugador, dos jugadores con reglas no se desincronizan.
+
+### Fase 30 (visor de modelos)
+
+- [ ] `SalvaCiudadModelos.exe` abre sin el juego, en una ventana, con los textos en tu idioma.
+- [ ] A la izquierda están los modelos de "SalvaCiudad (juego base)" por categoría; al elegir un tipo con varias variantes (por ejemplo, Roble o Sombreros) se ven todas lado a lado, con el aldeano de referencia a la izquierda.
+- [ ] Al elegir un archivo, la ficha muestra sus triángulos, llamadas de dibujo, tamaño y quién lo usa.
+- [ ] En un árbol, cambiar la estación a Otoño o marcar "Con nieve" cambia su color como en el juego; en un personaje, "Otra paleta" cambia su ropa y el menú de animación lo pone a caminar.
+- [ ] La pestaña Revisión lista `tree_oak.glb` como modelo sin usar.
+- [ ] Con W / S o las flechas arriba y abajo se recorre la lista y cada tipo o archivo se ve al instante; con D o → se abre una categoría o un tipo con variantes, y con A o ← se cierra o se sube al que lo contiene. Mantener la tecla repite.
+- [ ] Al escribir en el buscador, W A S D escriben letras y no mueven la lista.
+- [ ] Con el visor abierto en un modelo, volver a correr su script de Blender (o guardar otra vez el archivo) lo actualiza solo y abajo aparece "Recargado".
+- [ ] El juego sigue viéndose igual (nubes, casas de muestra, animales y sombreros de los aldeanos).
 
 ## Licencia
 
