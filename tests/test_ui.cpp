@@ -51,6 +51,28 @@ TEST_SUITE("ui") {
         CHECK(list.indices().size() == 12);
     }
 
+    TEST_CASE("pictures get their own draw commands; lines are two triangles") {
+        DrawList list;
+        list.reset(800, 600, 0.001f, 0.001f);
+        list.rect({10, 10, 100, 50}, Color::rgb(0xFF0000));
+        list.picture({200, 200, 64, 64}, 1, 0.0f, 0.0f, 1.0f, 1.0f, Color::rgb(0xFFFFFF));
+        list.rect({10, 100, 10, 10}, Color::rgb(0x00FF00));
+        list.picture({0, 0, 10, 10}, 0, 0.0f, 0.0f, 1.0f, 1.0f, Color::rgb(0xFFFFFF));  // No image: nothing.
+        REQUIRE(list.commands().size() == 3);
+        CHECK(list.commands()[0].image == 0);
+        CHECK(list.commands()[1].image == 1);
+        CHECK(list.commands()[1].index_count == 6);
+        CHECK(list.commands()[2].image == 0);
+        CHECK(list.vertices()[4].u == 0.0f);
+        CHECK(list.vertices()[6].v == 1.0f);
+        const std::size_t before = list.indices().size();
+        list.line(0, 0, 100, 0, 4.0f, Color::rgb(0xFFFFFF));
+        CHECK(list.indices().size() == before + 6);
+        CHECK(list.vertices().back().y == doctest::Approx(-2.0f));
+        list.line(5, 5, 5, 5, 4.0f, Color::rgb(0xFFFFFF));  // No length: nothing.
+        CHECK(list.indices().size() == before + 6);
+    }
+
     TEST_CASE("glyph atlas packs, fills up and clears") {
         GlyphAtlas atlas(64);
         const auto first_dirty = atlas.take_dirty();

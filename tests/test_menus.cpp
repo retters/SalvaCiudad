@@ -81,6 +81,18 @@ public:
     std::array<float, 3> camera_view() const override { return {0.0f, 0.0f, 60.0f}; }
     const std::vector<mods::ModScript>* mod_scripts() const override { return nullptr; }
     void set_overlay(int l) override { layer = l; }
+    CameraGround camera_ground() const override { return ground; }
+    void set_ui_image(std::uint32_t id, int width, int height, std::vector<std::uint8_t> rgba) override {
+        image_id = id;
+        image_width = width;
+        image_height = height;
+        image_bytes = rgba.size();
+    }
+    CameraGround ground;
+    std::uint32_t image_id = 0;
+    int image_width = 0;
+    int image_height = 0;
+    std::size_t image_bytes = 0;
     float focused_x = -1.0f;
     float focused_z = -1.0f;
     int layer = 0;
@@ -204,6 +216,26 @@ TEST_SUITE("menus") {
         h.frame(0);
         REQUIRE(ui.hud_rects.size() >= 2);
         CHECK_FALSE(h.host.game_paused());
+        // Phase 24: the minimap's picture, and a click on it moves the camera.
+        CHECK(h.services.image_id == 1u);
+        CHECK(h.services.image_width == 256);
+        CHECK(h.services.image_bytes == 256u * 256u * 4u);
+        {
+            // At 1280 x 720: 200 wide, 28 from the right, 72 from the top.
+            ui::Input click;
+            click.mouse_x = 1280.0f - 28.0f - 150.0f;
+            click.mouse_y = 72.0f + 150.0f;
+            click.mouse_down = true;
+            click.mouse_pressed = true;
+            h.frame(8, click);
+            const float map_side = static_cast<float>(h.services.game->game().map().size);
+            CHECK(h.services.focused_x == doctest::Approx(map_side * 0.25f).epsilon(0.02));
+            CHECK(h.services.focused_z == doctest::Approx(map_side * 0.75f).epsilon(0.02));
+            CHECK(ui.over_hud(click.mouse_x, click.mouse_y));
+            ui::Input up;
+            up.mouse_released = true;
+            h.frame(12, up);
+        }
 
         // The first button of the build bar starts placing a building.
         const auto bar = ui.hud_rects[1];

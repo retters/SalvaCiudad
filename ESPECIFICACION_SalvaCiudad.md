@@ -244,6 +244,7 @@ Fondo con una escena 3D del mapa en cámara lenta y el logotipo `- SALVA -` / `C
   - **Se anclan** unas junto a otras en grupos que se mueven juntos.
   - **Se contraen a una pestaña al perder el foco** y se despliegan al acercar el cursor, como en SalvaRecortes y SalvaWinProfiles. Cada ventana tiene un pin para quedarse abierta.
   - Su disposición se recuerda en `settings.json`.
+- **Minimapa y brújula** (fase 24): el mundo entero con el norte arriba, los cuatro puntos cardinales, los edificios de cada pueblo y lo que ve la cámara; un clic lleva la cámara ahí. Una brújula con una flecha que apunta al norte y gira con la cámara.
 - **Superposiciones del mapa:** fertilidad, deseabilidad, cobertura de servicios (agua, mercado, religión, salud), riesgo de incendio y rutas de los aldeanos.
 - **Velocidad:** pausa, x1, x2 y x3. Ver 7.5 para el voto en multijugador.
 - **Pausa:** la pantalla se desenfoca y se muestra el menú de pausa. No se puede hacer nada en el juego mientras dure.

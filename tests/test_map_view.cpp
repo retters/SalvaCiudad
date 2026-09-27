@@ -10,6 +10,7 @@
 #include "game/dev_tools.h"
 #include "game/map_generation.h"
 #include "game/map_scene.h"
+#include "game/minimap.h"
 #include "game/new_game_screen.h"
 #include "render/terrain_layer.h"
 #include "sim/worldgen.h"
@@ -303,3 +304,41 @@ TEST_SUITE("new_game") {
         CHECK(fallback.remembered().race == "mixed");
     }
 }
+
+TEST_SUITE("minimap") {
+    TEST_CASE("the compass arrow points north whichever way the camera turns") {
+        const auto near = [](std::array<float, 2> v, float x, float y) {
+            return std::abs(v[0] - x) < 1e-5f && std::abs(v[1] - y) < 1e-5f;
+        };
+        const float quarter = 1.5707963f;
+        CHECK(near(minimap::north_on_screen(0.0f), 0.0f, -1.0f));        // Looking north: up.
+        CHECK(near(minimap::north_on_screen(quarter), -1.0f, 0.0f));     // Looking east: to the left.
+        CHECK(near(minimap::north_on_screen(2 * quarter), 0.0f, 1.0f));  // Looking south: down.
+        CHECK(near(minimap::north_on_screen(-quarter), 1.0f, 0.0f));     // Looking west: to the right.
+    }
+
+    TEST_CASE("the minimap shows the map from above, north up") {
+        sim::MapSettings s;
+        s.seed = 4;
+        s.size = sim::MapSize::Small;
+        s.map_type = static_cast<std::uint8_t>(sc::test::core_content().flora.find_map_type("core:islands"));
+        s.islands = 1;
+        const std::optional<sim::MapData> m = sim::generate_map(s, sc::test::core_content());
+        REQUIRE(m.has_value());
+        const std::vector<std::uint8_t> img = minimap::render(*m);
+        REQUIRE(img.size() == static_cast<std::size_t>(minimap::kImageSize) * minimap::kImageSize * 4);
+        const auto texel = [&](int x, int y) { return &img[(static_cast<std::size_t>(y) * minimap::kImageSize + x) * 4]; };
+        // The corner is sea: blue. The start is land: green.
+        const std::uint8_t* sea = texel(1, 1);
+        CHECK(sea[2] > sea[0]);
+        CHECK(sea[3] == 255);
+        const double per_texel = static_cast<double>(m->size) / minimap::kImageSize;
+        const std::uint8_t* home = texel(static_cast<int>(m->starts[0].x.floor_int() / per_texel),
+                                         static_cast<int>(m->starts[0].z.floor_int() / per_texel));
+        CHECK(home[1] > home[2]);
+        CHECK(home[1] > home[0]);
+        // The same map, the same picture.
+        CHECK(minimap::render(*m) == img);
+    }
+}
+

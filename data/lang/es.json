@@ -290,6 +290,12 @@
       "one": "{0} pueblo",
       "other": "{0} pueblos"
     },
+    "hud.minimap.north": "N",
+    "hud.minimap.south": "S",
+    "hud.minimap.east": "E",
+    "hud.minimap.west": "O",
+    "hud.minimap.tooltip": "Mapa del mundo, con el norte arriba. Haz clic o arrastra para llevar la cámara ahí.",
+    "hud.compass.tooltip": "Brújula: la flecha roja apunta al norte.",
     "newGame.defaults": "Restablecer",
     "newGame.defaults.tooltip": "Volver todas las opciones a sus valores por omisión (la semilla se queda).",
     "newGame.back": "Volver",

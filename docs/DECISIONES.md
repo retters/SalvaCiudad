@@ -1209,3 +1209,24 @@ El botón "Restablecer", a la izquierda de "Volver", devuelve todas las opciones
 
 **D-2305. Arreglo: cierre del juego.**
 Al probar esta fase, el juego terminaba con un error de memoria al cerrarse (Windows lo informaba como 0xC0000374 o 0xC0000005 desde la fase 18). La compilación con AddressSanitizer mostró la causa: `SDL_Quit` liberaba el sonido y el director de sonido lo volvía a liberar después. Ahora el sonido se cierra antes de `SDL_Quit` (commit aparte).
+
+## Fase 24: minimapa y brújula (2026-09-27)
+
+**D-2401. El norte.**
+El norte es −z: la parte de arriba del mapa y hacia donde mira la cámara al empezar. El minimapa no gira; siempre tiene el norte arriba, y alrededor muestra N, E, S y O (W en inglés). El norte va en rojo.
+
+**D-2402. Qué muestra el minimapa.**
+- El terreno con los colores del suelo del juego, los bosques más oscuros, sombras del relieve (luz del noroeste) y el agua más oscura donde es honda. Es una imagen de 256 × 256 hecha una vez por mapa; en un mapa colosal cada punto resume 64 × 64 m.
+- Los edificios de cada pueblo, en el color de su jugador (el de la sala multijugador), con un mínimo de un punto para que se vean en mapas grandes.
+- Lo que ve la cámara: el contorno del suelo que cae en las esquinas de la pantalla.
+
+Un clic, o arrastrar, lleva la cámara a ese lugar; no reacciona si una ventana del juego está encima.
+
+**D-2403. Dónde va.**
+Arriba a la derecha, bajo la barra superior, de 200 unidades de lado (menos en pantallas bajas: a lo sumo el 30 % del alto). La brújula va a su izquierda. Las ventanas de edificio y de aldeano, que por omisión se abrían en esa esquina, ahora se abren debajo del minimapa; si el jugador las movió, se respeta su lugar.
+
+**D-2404. La brújula.**
+Un disco con una flecha: la mitad roja y la letra N apuntan al norte, y giran con la cámara. Funciona igual en los tres modos de cámara.
+
+**D-2405. Imágenes en la interfaz.**
+El dibujo de la interfaz solo tenía el atlas de letras. Ahora un comando de dibujo puede usar una imagen a color que el renderizador guarda por número (la del minimapa es la 1). El sombreador de la interfaz tiene un modo para eso; lo demás se dibuja igual que antes.

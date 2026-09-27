@@ -45,6 +45,7 @@ struct DrawCommand {
     std::uint32_t first_index = 0;
     std::uint32_t index_count = 0;
     Rect clip;
+    std::uint32_t image = 0;  // 0: the glyph atlas; else an RGBA image the renderer holds (phase 24).
 };
 
 class DrawList {
@@ -61,6 +62,10 @@ public:
     void triangle(float x0, float y0, float x1, float y1, float x2, float y2, Color c);
     // A textured quad; uv are atlas coordinates in [0, 1].
     void image(const Rect& r, float u0, float v0, float u1, float v1, Color c);
+    // A quad of an RGBA image (by id, not 0) tinted by `c`; uv in [0, 1].
+    void picture(const Rect& r, std::uint32_t image, float u0, float v0, float u1, float v1, Color c);
+    // A straight line `thickness` wide.
+    void line(float x0, float y0, float x1, float y1, float thickness, Color c);
 
     [[nodiscard]] const std::vector<Vertex>& vertices() const { return vertices_; }
     [[nodiscard]] const std::vector<std::uint32_t>& indices() const { return indices_; }
@@ -71,11 +76,13 @@ public:
 private:
     void quad(const Rect& r, float u0, float v0, float u1, float v1, Color c);
     void start_command();
+    void use_image(std::uint32_t image);
 
     std::vector<Vertex> vertices_;
     std::vector<std::uint32_t> indices_;
     std::vector<DrawCommand> commands_;
     std::vector<Rect> clip_stack_;
+    std::uint32_t image_ = 0;
     float width_ = 0.0f;
     float height_ = 0.0f;
     float white_u_ = 0.0f;

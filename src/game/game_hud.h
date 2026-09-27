@@ -142,6 +142,16 @@ private:
     // A pulsing outline around a highlighted element.
     void mark(ui::Context& ctx, const ui::Rect& r) const;
 
+    // Phase 24: the minimap, with the four cardinal points, and the compass
+    // (hud_minimap.cpp).
+    void minimap(ui::Context& ctx, GameSession& s, bool blocked);
+    void compass(ui::Context& ctx, const ui::Rect& box, float yaw);
+    const GameSession* minimap_session_ = nullptr;  // Whose map the image shows.
+    sim::MapSettings minimap_settings_;
+    bool minimap_dragging_ = false;
+    float top_bar_bottom_ = 0.0f;
+    float right_top_ = 0.0f;  // Below the minimap: where windows on the right start.
+
     Services& services_;
 };
 

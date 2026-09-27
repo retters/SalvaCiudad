@@ -1,6 +1,7 @@
 #include "ui/draw_list.h"
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 
 namespace sc::ui {
@@ -23,6 +24,7 @@ void DrawList::reset(float width, float height, float white_u, float white_v) {
     indices_.clear();
     commands_.clear();
     clip_stack_.clear();
+    image_ = 0;
     width_ = width;
     height_ = height;
     white_u_ = white_u;
@@ -35,6 +37,7 @@ void DrawList::start_command() {
     DrawCommand cmd;
     cmd.first_index = static_cast<std::uint32_t>(indices_.size());
     cmd.clip = clip_stack_.back();
+    cmd.image = image_;
     // Reuse the last command if it has no triangles yet.
     if (!commands_.empty() && commands_.back().index_count == 0) {
         commands_.back() = cmd;
@@ -102,6 +105,36 @@ void DrawList::triangle(float x0, float y0, float x1, float y1, float x2, float 
 
 void DrawList::image(const Rect& r, float u0, float v0, float u1, float v1, Color c) {
     quad(r, u0, v0, u1, v1, c);
+}
+
+void DrawList::use_image(std::uint32_t image) {
+    if (image != image_) {
+        image_ = image;
+        start_command();
+    }
+}
+
+void DrawList::picture(const Rect& r, std::uint32_t image, float u0, float v0, float u1, float v1, Color c) {
+    if (image == 0) {
+        return;
+    }
+    use_image(image);
+    quad(r, u0, v0, u1, v1, c);
+    use_image(0);
+}
+
+void DrawList::line(float x0, float y0, float x1, float y1, float thickness, Color c) {
+    const float dx = x1 - x0;
+    const float dy = y1 - y0;
+    const float len = std::sqrt(dx * dx + dy * dy);
+    if (len <= 0.0f) {
+        return;
+    }
+    // Half the thickness across the line.
+    const float nx = -dy / len * thickness * 0.5f;
+    const float ny = dx / len * thickness * 0.5f;
+    triangle(x0 + nx, y0 + ny, x1 + nx, y1 + ny, x1 - nx, y1 - ny, c);
+    triangle(x0 + nx, y0 + ny, x1 - nx, y1 - ny, x0 - nx, y0 - ny, c);
 }
 
 }  // namespace sc::ui

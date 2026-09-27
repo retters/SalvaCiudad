@@ -106,6 +106,18 @@ public:
     [[nodiscard]] virtual const std::vector<mods::ModScript>* mod_scripts() const = 0;
     [[nodiscard]] virtual int overlay() const = 0;
     virtual void set_overlay(int layer) = 0;
+
+    // Phase 24: the minimap and the compass. What the camera sees on the
+    // ground: the points (x, z) under the screen's corners (top left, top
+    // right, bottom right, bottom left), and its yaw (0 looks north, to
+    // -z; turning right is positive).
+    struct CameraGround {
+        std::array<float, 8> corners{};
+        float yaw = 0.0f;
+    };
+    [[nodiscard]] virtual CameraGround camera_ground() const = 0;
+    // An RGBA image the interface can draw by id (DrawList::picture).
+    virtual void set_ui_image(std::uint32_t id, int width, int height, std::vector<std::uint8_t> rgba) = 0;
 };
 
 }  // namespace sc

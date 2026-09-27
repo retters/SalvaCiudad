@@ -125,6 +125,12 @@ private:
     }
     [[nodiscard]] int overlay() const override { return overlay_; }
     void set_overlay(int layer) override;
+    [[nodiscard]] CameraGround camera_ground() const override;
+    void set_ui_image(std::uint32_t id, int width, int height, std::vector<std::uint8_t> rgba) override {
+        (void)ui_renderer_.set_image(id, width, height, std::move(rgba));
+    }
+    std::uint32_t view_width_ = 1;   // The last frame's size, for camera_ground().
+    std::uint32_t view_height_ = 1;
     int overlay_ = 0;
     SoundDirector sound_;  // Phase 18.
     bool sound_started_ = false;

@@ -713,6 +713,8 @@ void App::render_frame(float dt) {
             view.fov_y = math::radians(Camera::kFovY);
             view.near_z = camera_.near_z();
             view.aspect = static_cast<float>(frame.width) / static_cast<float>(std::max(1u, frame.height));
+            view_width_ = frame.width;
+            view_height_ = std::max(1u, frame.height);
             view.draw_distance_override = stress_view_active_ ? 5000.0f : 0.0f;
             // Zoomed out past the normal limit over a map: the whole ground
             // stays visible (temporary, decision D-615).
@@ -1720,6 +1722,30 @@ void App::focus_camera(float x, float z) {
     const sim::MapData& m = map_->map;
     camera_.set_target({x, map_surface_height(m, x, z), z});
     following_ = false;
+}
+
+Services::CameraGround App::camera_ground() const {
+    CameraGround out;
+    out.yaw = camera_.yaw();
+    const math::Mat4 inv = math::inverse(camera_view_proj(view_width_, view_height_));
+    const float ground = camera_.target().y;
+    // Corner rays onto the ground at the camera's target height; one that
+    // misses it (toward the sky) stops a few times the distance away.
+    const float reach = std::max(50.0f, camera_.distance() * 4.0f);
+    constexpr float kCorners[4][2] = {{-1.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, -1.0f}, {-1.0f, -1.0f}};
+    for (int i = 0; i < 4; ++i) {
+        const math::Vec3 near_point = inv.transform_point({kCorners[i][0], kCorners[i][1], 1.0f});
+        const math::Vec3 far_point = inv.transform_point({kCorners[i][0], kCorners[i][1], 0.01f});
+        const math::Vec3 dir = math::normalize(far_point - near_point);
+        float t = reach;
+        if (dir.y < -1e-4f) {
+            t = std::min(reach, (ground - near_point.y) / dir.y);
+        }
+        const math::Vec3 at = near_point + dir * std::max(0.0f, t);
+        out.corners[static_cast<std::size_t>(i) * 2] = at.x;
+        out.corners[static_cast<std::size_t>(i) * 2 + 1] = at.z;
+    }
+    return out;
 }
 
 void App::set_overlay(int layer) {

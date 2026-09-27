@@ -164,6 +164,7 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
 
     top_bar(ctx, *s);
     build_bar(ctx, *s);
+    minimap(ctx, *s, blocked);
     if (ui.placing != sim::kNoDef || ui.field_farm.valid()) {
         placement_hint(ctx, *s);
     }
@@ -210,6 +211,7 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     const sim::Game& game = s.game();
     const sim::Content& content = game.content();
     const ui::Rect bar{0, 0, ctx.width(), std::round(ctx.s(kTopBarH))};
+    top_bar_bottom_ = bar.bottom();
     ctx.draw().rect(bar, ctx.theme().panel);
     ctx.draw().rect({0, bar.bottom() - 1, bar.w, 1}, ctx.theme().panel_border);
     block(s, bar);
@@ -621,7 +623,8 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         h += pad * 0.5f + line + static_cast<float>(rows) * field_row;
     }
     h += pad;
-    ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
+    ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
+                 std::round(h)};
     bool open = true;
     if (!window(ctx, s, "building", tr(d.name_key), box, open)) {
         if (!open) {
@@ -1329,7 +1332,8 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
     const float bar_block = 3 * (line + ctx.s(10.0f));
     const float title_h = ctx.text().line_height(title);
     const float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line + bar_block + pad;
-    ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
+    ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
+                 std::round(h)};
     const bool female = v->sex == sim::Sex::Female;
     const char* name_key = !game.adult(*v) ? (female ? "hud.villager.girl" : "hud.villager.boy")
                                            : (female ? "hud.villager.woman" : "hud.villager.man");

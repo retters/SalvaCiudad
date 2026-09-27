@@ -290,6 +290,12 @@
       "one": "{0} town",
       "other": "{0} towns"
     },
+    "hud.minimap.north": "N",
+    "hud.minimap.south": "S",
+    "hud.minimap.east": "E",
+    "hud.minimap.west": "W",
+    "hud.minimap.tooltip": "Map of the world, north up. Click or drag to take the camera there.",
+    "hud.compass.tooltip": "Compass: the red arrow points north.",
     "newGame.defaults": "Reset",
     "newGame.defaults.tooltip": "Set every option back to its default (the seed stays).",
     "newGame.back": "Back",

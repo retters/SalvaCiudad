@@ -1,8 +1,11 @@
 // Draws a ui::DrawList with the SDL GPU API: one pipeline, the glyph atlas
-// as the only texture, and one draw call per clip rectangle.
+// and a few RGBA images (the minimap) as textures, and one draw call per
+// clip rectangle and texture.
 #pragma once
 
 #include <cstdint>
+#include <map>
+#include <vector>
 
 #include <SDL3/SDL_gpu.h>
 
@@ -28,6 +31,12 @@ public:
 
     void draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const ui::DrawList& list);
 
+    // An RGBA image (width x height x 4 bytes) that draw commands can use
+    // by `id` (not 0); replaces the previous one with that id. Goes up to
+    // the GPU with the next upload(). False for a bad size.
+    bool set_image(std::uint32_t id, int width, int height, std::vector<std::uint8_t> rgba);
+    static constexpr int kMaxImageSize = 2048;
+
 private:
     bool ensure_buffer(SDL_GPUBuffer*& buffer, std::uint32_t& capacity, std::uint32_t needed,
                        SDL_GPUBufferUsageFlags usage);
@@ -45,6 +54,15 @@ private:
     std::uint32_t transfer_capacity_ = 0;
     int atlas_size_ = 0;
     bool geometry_ready_ = false;
+
+    struct Image {
+        SDL_GPUTexture* texture = nullptr;
+        int width = 0;
+        int height = 0;
+        std::vector<std::uint8_t> pending;  // Pixels waiting for the next upload.
+    };
+    std::map<std::uint32_t, Image> images_;
+    bool upload_images(SDL_GPUCommandBuffer* cmd);
 };
 
 }  // namespace sc

@@ -61,7 +61,7 @@ bool UiRenderer::create(GpuDevice& gpu, int atlas_size) {
     }
 
     SDL_GPUShader* vs = create_shader(device_, kUiVertDxil, kUiVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1);
-    SDL_GPUShader* fs = create_shader(device_, kUiFragDxil, kUiFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+    SDL_GPUShader* fs = create_shader(device_, kUiFragDxil, kUiFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
     if (vs == nullptr || fs == nullptr) {
         SDL_ReleaseGPUShader(device_, vs);
         SDL_ReleaseGPUShader(device_, fs);
@@ -143,6 +143,10 @@ void UiRenderer::destroy() {
     }
     SDL_ReleaseGPUGraphicsPipeline(device_, pipeline_);
     SDL_ReleaseGPUTexture(device_, atlas_);
+    for (auto& [id, image] : images_) {
+        SDL_ReleaseGPUTexture(device_, image.texture);
+    }
+    images_.clear();
     SDL_ReleaseGPUSampler(device_, sampler_);
     SDL_ReleaseGPUBuffer(device_, vertex_buffer_);
     SDL_ReleaseGPUBuffer(device_, index_buffer_);
@@ -190,8 +194,80 @@ bool UiRenderer::ensure_transfer(std::uint32_t needed) {
     return transfer_ != nullptr;
 }
 
+bool UiRenderer::set_image(std::uint32_t id, int width, int height, std::vector<std::uint8_t> rgba) {
+    if (id == 0 || width < 1 || height < 1 || width > kMaxImageSize || height > kMaxImageSize ||
+        rgba.size() != static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4) {
+        return false;
+    }
+    Image& image = images_[id];
+    if (image.texture != nullptr && (image.width != width || image.height != height)) {
+        SDL_ReleaseGPUTexture(device_, image.texture);
+        image.texture = nullptr;
+    }
+    image.width = width;
+    image.height = height;
+    image.pending = std::move(rgba);
+    return true;
+}
+
+bool UiRenderer::upload_images(SDL_GPUCommandBuffer* cmd) {
+    for (auto& [id, image] : images_) {
+        if (image.pending.empty() || device_ == nullptr) {
+            continue;
+        }
+        if (image.texture == nullptr) {
+            SDL_GPUTextureCreateInfo ti{};
+            ti.type = SDL_GPU_TEXTURETYPE_2D;
+            ti.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+            ti.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+            ti.width = static_cast<std::uint32_t>(image.width);
+            ti.height = static_cast<std::uint32_t>(image.height);
+            ti.layer_count_or_depth = 1;
+            ti.num_levels = 1;
+            image.texture = SDL_CreateGPUTexture(device_, &ti);
+            if (image.texture == nullptr) {
+                log::error("ui renderer: cannot create an image: {}", SDL_GetError());
+                image.pending.clear();
+                continue;
+            }
+        }
+        SDL_GPUTransferBufferCreateInfo tb{};
+        tb.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+        tb.size = static_cast<std::uint32_t>(image.pending.size());
+        SDL_GPUTransferBuffer* transfer = SDL_CreateGPUTransferBuffer(device_, &tb);
+        void* mapped = transfer != nullptr ? SDL_MapGPUTransferBuffer(device_, transfer, false) : nullptr;
+        if (mapped == nullptr) {
+            log::error("ui renderer: cannot upload an image: {}", SDL_GetError());
+            SDL_ReleaseGPUTransferBuffer(device_, transfer);
+            return false;
+        }
+        std::memcpy(mapped, image.pending.data(), image.pending.size());
+        SDL_UnmapGPUTransferBuffer(device_, transfer);
+        SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(cmd);
+        SDL_GPUTextureTransferInfo src{};
+        src.transfer_buffer = transfer;
+        src.pixels_per_row = static_cast<std::uint32_t>(image.width);
+        src.rows_per_layer = static_cast<std::uint32_t>(image.height);
+        SDL_GPUTextureRegion dst{};
+        dst.texture = image.texture;
+        dst.w = static_cast<std::uint32_t>(image.width);
+        dst.h = static_cast<std::uint32_t>(image.height);
+        dst.d = 1;
+        SDL_UploadToGPUTexture(copy, &src, &dst, false);
+        SDL_EndGPUCopyPass(copy);
+        // Released now, freed by SDL once the copy is done.
+        SDL_ReleaseGPUTransferBuffer(device_, transfer);
+        image.pending.clear();
+        image.pending.shrink_to_fit();
+    }
+    return true;
+}
+
 bool UiRenderer::upload(SDL_GPUCommandBuffer* cmd, const ui::DrawList& list, ui::GlyphAtlas& atlas) {
     geometry_ready_ = false;
+    if (!upload_images(cmd)) {
+        return false;
+    }
     const ui::AtlasRegion dirty = atlas.take_dirty();
     const auto vertex_bytes = static_cast<std::uint32_t>(list.vertices().size() * sizeof(ui::Vertex));
     const auto index_bytes = static_cast<std::uint32_t>(list.indices().size() * sizeof(std::uint32_t));
@@ -263,12 +339,26 @@ void UiRenderer::draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const 
     SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
     const SDL_GPUBufferBinding ib{index_buffer_, 0};
     SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_32BIT);
-    const SDL_GPUTextureSamplerBinding tex{atlas_, sampler_};
-    SDL_BindGPUFragmentSamplers(pass, 0, &tex, 1);
-
+    // The texture of each command: the atlas, or one of the images.
+    std::uint32_t bound = ~0u;
     for (const ui::DrawCommand& dc : list.commands()) {
         if (dc.index_count == 0 || dc.clip.w <= 0.0f || dc.clip.h <= 0.0f) {
             continue;
+        }
+        if (dc.image != bound) {
+            SDL_GPUTexture* texture = atlas_;
+            if (dc.image != 0) {
+                const auto it = images_.find(dc.image);
+                if (it == images_.end() || it->second.texture == nullptr) {
+                    continue;  // Not uploaded (yet).
+                }
+                texture = it->second.texture;
+            }
+            const SDL_GPUTextureSamplerBinding tex{texture, sampler_};
+            SDL_BindGPUFragmentSamplers(pass, 0, &tex, 1);
+            const UiUniforms mode{dc.image != 0 ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f};
+            SDL_PushGPUFragmentUniformData(cmd, 0, &mode, sizeof(mode));
+            bound = dc.image;
         }
         const SDL_Rect scissor{static_cast<int>(std::floor(dc.clip.x)), static_cast<int>(std::floor(dc.clip.y)),
                                static_cast<int>(std::ceil(dc.clip.w)), static_cast<int>(std::ceil(dc.clip.h))};

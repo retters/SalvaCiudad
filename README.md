@@ -320,6 +320,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con un tipo de mapa de un mod que después se desactiva, la partida nueva vuelve a "Clásico" sin perder el resto.
 - [ ] El juego se cierra sin error (antes, a veces Windows registraba un fallo al cerrar).
 
+### Fase 24 (minimapa y brújula)
+
+- [ ] En partida, arriba a la derecha hay un minimapa con N (en rojo), E, S y O alrededor; lo que se ve en él coincide con el terreno (ríos, lagos, bosques, islas).
+- [ ] Los edificios aparecen en el minimapa con el color de su pueblo, y un contorno blanco marca lo que ve la cámara.
+- [ ] Un clic en el minimapa lleva la cámara ahí; arrastrar la va moviendo.
+- [ ] A la izquierda del minimapa, la brújula: al girar la cámara con Q y E, la flecha roja sigue apuntando al norte del minimapa.
+- [ ] Al seleccionar un edificio o un aldeano, su ventana se abre debajo del minimapa.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).
