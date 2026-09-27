@@ -18,6 +18,7 @@ void MapSettings::write(BinaryWriter& w) const {
     w.u8(separate ? 1 : 0);
     w.u8(islands);
     w.u8(static_cast<std::uint8_t>(sea));
+    w.u8(static_cast<std::uint8_t>(landforms));
 }
 
 std::int32_t world_grid(const MapSettings& s) {
@@ -57,12 +58,14 @@ std::int32_t MapData::region_at(std::int32_t cx, std::int32_t cz) const {
 bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     MapSettings s;
     std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, map_type = 0, biome = 0, separate = 0,
-                 sea = 0;
+                 sea = 0, landforms = 0;
     if (!r.u64(s.seed) || !r.u8(size) || !r.u8(water) || !r.u8(forests) || !r.u8(resources) || !r.u8(relief) ||
-        !r.u8(s.players) || !r.u8(map_type) || !r.u8(biome) || !r.u8(separate) || !r.u8(s.islands) || !r.u8(sea)) {
+        !r.u8(s.players) || !r.u8(map_type) || !r.u8(biome) || !r.u8(separate) || !r.u8(s.islands) || !r.u8(sea) ||
+        !r.u8(landforms)) {
         return false;
     }
-    if (separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown || sea >= static_cast<std::uint8_t>(Sea::Count)) {
+    if (separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown || sea >= static_cast<std::uint8_t>(Sea::Count) ||
+        landforms >= static_cast<std::uint8_t>(Amount::Count)) {
         r.fail();
         return false;
     }
@@ -80,6 +83,7 @@ bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     s.resources = static_cast<Amount>(resources);
     s.relief = static_cast<Relief>(relief);
     s.sea = static_cast<Sea>(sea);
+    s.landforms = static_cast<Amount>(landforms);
     s.map_type = map_type;
     s.biome = biome;
     out = s;

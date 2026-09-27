@@ -242,6 +242,7 @@ TEST_SUITE("new_game") {
         last.biome = "core:pinewood";
         last.islands = 3;
         last.sea = "always";
+        last.landforms = "low";
         last.water = "high";
         last.relief = "gentle";
         last.players = 2;
@@ -259,6 +260,7 @@ TEST_SUITE("new_game") {
         CHECK(content.flora.biomes[m.biome].id == "core:pinewood");
         CHECK(m.islands == 3);
         CHECK(m.sea == sim::Sea::Always);
+        CHECK(m.landforms == sim::Amount::Low);
         CHECK(m.water == sim::Amount::High);
         CHECK(m.relief == sim::Relief::Gentle);
         CHECK(m.players == 2);

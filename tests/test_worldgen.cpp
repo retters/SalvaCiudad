@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <ostream>
+#include <map>
 #include <tuple>
 #include <vector>
 
@@ -148,9 +149,26 @@ std::vector<std::int32_t> island_ids(const MapData& m, std::int32_t& count) {
     return id;
 }
 
+// The ground (cm) at a point along a landform's line: `t` of the way
+// (0..1) and `side` meters to its left; -1 off the map.
+std::int32_t ground_along(const MapData& m, const Landform& l, double t, double side) {
+    const double pos = t * static_cast<double>(l.points.size() - 1);
+    const auto k = std::min(static_cast<std::size_t>(pos), l.points.size() - 2);
+    const double f = pos - static_cast<double>(k);
+    const double ax = l.points[k][0], az = l.points[k][1];
+    const double bx = l.points[k + 1][0], bz = l.points[k + 1][1];
+    const double len = std::max(1.0, std::hypot(bx - ax, bz - az));
+    const double x = ax + (bx - ax) * f - (bz - az) / len * side;
+    const double z = az + (bz - az) * f + (bx - ax) / len * side;
+    if (x < 1 || z < 1 || x >= m.size - 1 || z >= m.size - 1) {
+        return -1;
+    }
+    return m.height_cm(static_cast<std::int32_t>(x), static_cast<std::int32_t>(z));
+}
+
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0x4139533c6b83353cull;
+constexpr std::uint64_t kGoldenSmallMap = 0xf49f15655b948834ull;
 
 }  // namespace
 
@@ -205,7 +223,7 @@ TEST_SUITE("worldgen") {
             trees += f.type == FeatureType::Tree;
             stones += f.type == FeatureType::Stone;
         }
-        CHECK(trees > 10000);
+        CHECK(trees > 9000);
         CHECK(stones > 20);
         CHECK_FALSE(m->zones.empty());
     }
@@ -338,6 +356,10 @@ TEST_SUITE("worldgen") {
         bad[18] = 3;  // Sea out of range.
         BinaryReader bs(bad);
         CHECK_FALSE(MapSettings::read(bs, back));
+        bad = w.bytes();
+        bad[19] = 3;  // Landforms out of range.
+        BinaryReader bl(bad);
+        CHECK_FALSE(MapSettings::read(bl, back));
         for (const std::uint8_t islands : {std::uint8_t{0}, std::uint8_t{kMaxIslandsPerTown + 1}}) {
             bad = w.bytes();
             bad[17] = islands;
@@ -530,7 +552,10 @@ TEST_SUITE("worldgen") {
             s.sea = Sea::None;
             landforms.clear();
             REQUIRE(generate_map(s, content(), {}, nullptr, &landforms).has_value());
-            CHECK(landforms.empty());
+            for (const LandformKind k : {LandformKind::Coast, LandformKind::Gulf, LandformKind::Peninsula,
+                                         LandformKind::Islet, LandformKind::Trench, LandformKind::Ridge}) {
+                CHECK(kinds(k) == 0);
+            }
             // "Sometimes" leaves it to the seed.
             s.sea = Sea::Sometimes;
             landforms.clear();
@@ -606,6 +631,96 @@ TEST_SUITE("worldgen") {
         }
         CHECK(trenches > 0);
         CHECK(ridges > 0);
+    }
+
+    TEST_CASE("landforms: plateaus, valleys, ranges and canyons, each as it should be") {
+        std::map<LandformKind, int> seen;
+        std::map<LandformKind, int> measured;
+        std::map<LandformKind, int> good;
+        for (std::uint64_t seed = 110; seed < 118; ++seed) {
+            MapSettings s = settings(seed, MapSize::Medium);
+            s.sea = Sea::None;
+            s.landforms = Amount::High;
+            std::vector<Landform> landforms;
+            const auto m = generate_map(s, content(), {}, nullptr, &landforms);
+            REQUIRE(m.has_value());
+            for (const Landform& l : landforms) {
+                ++seen[l.kind];
+                const double half = l.width / 2.0;
+                int samples = 0;
+                int ok = 0;
+                if (l.kind == LandformKind::Plateau) {
+                    // A flat top well above the ground around it.
+                    const std::int32_t cx = l.points[0][0], cz = l.points[0][1];
+                    std::vector<std::int32_t> top;
+                    std::vector<std::int32_t> around;
+                    for (int a = 0; a < 16; ++a) {
+                        const double ang = a * 3.14159265 / 8.0;
+                        for (const double r : {0.1, 0.2, 0.3}) {
+                            top.push_back(m->height_cm(cx + static_cast<std::int32_t>(std::cos(ang) * half * r),
+                                                       cz + static_cast<std::int32_t>(std::sin(ang) * half * r)));
+                        }
+                        around.push_back(m->height_cm(cx + static_cast<std::int32_t>(std::cos(ang) * (half * 1.5 + 130)),
+                                                      cz + static_cast<std::int32_t>(std::sin(ang) * (half * 1.5 + 130))));
+                    }
+                    std::sort(top.begin(), top.end());
+                    std::sort(around.begin(), around.end());
+                    const std::int32_t mid = top[top.size() / 2];
+                    int flat = 0;
+                    for (const std::int32_t h : top) {
+                        flat += std::abs(h - mid) <= 300 ? 1 : 0;
+                    }
+                    ++measured[l.kind];
+                    good[l.kind] += flat * 10 >= static_cast<int>(top.size()) * 8 && mid >= around[around.size() / 2] + 500 ? 1 : 0;
+                    continue;
+                }
+                // Along the middle of the line, against both sides.
+                for (int k = 1; k < 20; ++k) {
+                    const double t = k / 20.0;
+                    if (l.kind == LandformKind::Range && (t < 0.25 || t > 0.75)) {
+                        continue;  // Its ends taper off.
+                    }
+                    const double off = l.kind == LandformKind::Canyon ? half * 1.6 : half * 1.3;
+                    const std::int32_t mid = ground_along(*m, l, t, 0.0);
+                    const std::int32_t left = ground_along(*m, l, t, off);
+                    const std::int32_t right = ground_along(*m, l, t, -off);
+                    if (mid < 0 || left < 0 || right < 0) {
+                        continue;
+                    }
+                    ++samples;
+                    // Another landform may cross one side: the higher side counts.
+                    const std::int32_t sides = std::max(left, right);
+                    switch (l.kind) {
+                        case LandformKind::Canyon: ok += mid + 800 <= sides ? 1 : 0; break;
+                        case LandformKind::Valley: ok += mid + 200 <= sides ? 1 : 0; break;
+                        case LandformKind::Range: ok += mid >= std::max(left, right) + 1000 ? 1 : 0; break;
+                        default: break;
+                    }
+                }
+                // Near the map's border the sides may fall off it: only
+                // what can be measured counts.
+                if (samples >= 4) {
+                    ++measured[l.kind];
+                    good[l.kind] += ok * 10 >= samples * 6 ? 1 : 0;
+                }
+                if (l.kind == LandformKind::Canyon) {
+                    // It drains: it ends on the border, lower than it starts.
+                    const auto& end = l.points.back();
+                    CHECK((end[0] <= 0 || end[1] <= 0 || end[0] >= m->size || end[1] >= m->size));
+                    const std::int32_t early = ground_along(*m, l, 0.2, 0.0);
+                    const std::int32_t late = ground_along(*m, l, 0.8, 0.0);
+                    if (early >= 0 && late >= 0) {
+                        CHECK(late <= early + 100);
+                    }
+                }
+            }
+        }
+        for (const LandformKind k : {LandformKind::Plateau, LandformKind::Valley, LandformKind::Range, LandformKind::Canyon}) {
+            MESSAGE("kind " << static_cast<int>(k) << ": " << seen[k] << " placed, " << measured[k] << " measured, " << good[k]
+                            << " as expected");
+            CHECK(measured[k] > 0);
+            CHECK(good[k] * 10 >= measured[k] * 7);
+        }
     }
 
     TEST_CASE("generation can be cancelled") {

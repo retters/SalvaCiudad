@@ -342,6 +342,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En el minimapa, bajo el mar a veces se ven franjas más oscuras (fosas) o más claras (dorsales).
 - [ ] Con "Sin mar", el mapa no tiene costa.
 
+### Fase 27 (accidentes del terreno)
+
+- [ ] La partida nueva tiene "Accidentes del terreno" (Pocos, Normales, Muchos).
+- [ ] Con "Muchos" en un mapa grande se ven cordilleras (crestas con picos), mesetas (cimas planas con acantilado y una rampa), valles anchos y cañones de paredes a pique con un río en el fondo.
+- [ ] Se puede subir a una meseta por su rampa; las paredes de un cañón no se pueden cruzar.
+- [ ] Los ríos serpentean en lugar de ir en línea recta.
+- [ ] En costas e islas, un valle o cañón que llega al mar termina en él.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

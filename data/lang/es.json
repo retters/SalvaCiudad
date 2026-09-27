@@ -274,6 +274,8 @@
     "newGame.amount.high": "Muchos",
     "newGame.relief": "Relieve",
     "newGame.relief.tooltip": "Terreno casi plano, colinas suaves o cordilleras con valles (en las laderas empinadas no se construye).",
+    "newGame.landforms": "Accidentes del terreno",
+    "newGame.landforms.tooltip": "Qué tan seguido aparecen mesetas, valles, cordilleras y cañones. Ninguno aparece siempre; en mapas chicos, pocas veces.",
     "newGame.relief.low": "Plano",
     "newGame.relief.gentle": "Colinas suaves",
     "newGame.relief.mountainous": "Montañoso",

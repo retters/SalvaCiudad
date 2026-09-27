@@ -1284,3 +1284,34 @@ Pasa a la 5: con "a veces", un mapa clásico puede tener costa con la misma semi
 
 **D-2607. Formas para las pruebas.**
 `generate_map` puede devolver la lista de formas que colocó (costa, golfo, península, islote, fosa, dorsal), con su línea y su ancho. Solo lo usan las pruebas; no se guarda con la partida.
+
+## Fase 27: accidentes del terreno (2026-09-27)
+
+**D-2701. La opción "Accidentes del terreno".**
+Pocos, normales (por omisión) o muchos. Da cuántos hay por km² en promedio: mesetas 0,35, valles 0,30, cordilleras 0,20 y cañones 0,25 con "normales"; la mitad con "pocos" y el doble con "muchos". Sale la parte entera y una más al azar por el resto. Así, en un mapa pequeño muchas veces no hay ninguno, y en uno enorme hay varios. Se guarda en la configuración del mapa y se recuerda con la partida nueva.
+
+**D-2702. Cómo son.**
+- **Cordillera:** una cresta a lo largo de una línea curva de 35 a 70 % del mapa, de 100 a 220 m de ancho y de 35 a 70 m de alto, con picos y estribaciones por ruido, y más baja en los extremos. Se suma al relieve (también a las cordilleras de "Montañoso").
+- **Meseta:** una cima plana de 110 a 260 m de radio, de 10 a 22 m sobre el suelo, con un borde irregular. Casi toda rodeada de acantilado (10 m), con una rampa suave de hasta 100 m hacia un lado para poder subir. La cima conserva un poco de la forma del suelo.
+- **Valle:** en U, de 160 a 320 m de ancho y de 6 a 14 m de hondo, de un borde del mapa a otro; se funde con el terreno en sus orillas.
+- **Cañón:** de 36 a 70 m de ancho y de 12 a 25 m de hondo, con fondo plano y paredes a pique. Va de un borde a otro y su fondo baja 4 m hacia el final, así que desagua. Un río nace en su cabecera.
+
+Todos siguen líneas curvas: dobleces al azar suavizados, cuatro tramos por doblez.
+
+**D-2703. Sobre la tierra, después del mar.**
+Se aplican después de formar la costa o las islas y solo sobre tierra. Así no quedan bajíos raros en el mar, y un valle o cañón que llega a la costa termina en ella. El fondo de un valle o cañón nunca baja del nivel del mar (30 cm por encima), para no partir una isla.
+
+**D-2704. Ríos que serpentean.**
+Los ríos bajaban en línea recta por las pendientes suaves: el terreno no tenía detalle de menos de 32 m y el agua sigue la cuadrícula. Arreglos:
+- un micro-relieve de hasta 40 cm en manchas de 8 a 16 m;
+- en las hondonadas rellenas (planas), el agua se reparte en un orden revuelto en vez del de la cuadrícula.
+
+El micro-relieve dejaba orillas de lago de 1 cm cortadas en charcos sueltos. Por eso:
+- un lago necesita 150 puntos con 10 cm de agua o más (no basta un pozo en una hondonada ancha);
+- los charcos de menos de 64 casillas lejos del borde se secan.
+
+**D-2705. Versión del generador y pruebas de juego.**
+El generador pasa a la versión 6: todos los mapas cambian. Algunas pruebas de juego dependían de la forma de un mapa en particular:
+- las de salud, ejército y aldea usan ahora mapas sin mar, porque no son sobre costas;
+- "una hora de juego" usa el mapa 29. Con 16 semillas, el jugador de prueba (que construye siempre lo mismo) prospera en 7 tanto antes como después de esta fase: los cambios no empeoraron la economía;
+- "el fuego se propaga" se comprueba en 5 pueblos y pide que se propague en 3. Es por azar: se propaga en 16 de 20 mapas probados.

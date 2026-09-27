@@ -160,6 +160,7 @@ void NewGameScreen::apply(const NewGameSettings& n) {
     settings_.resources = named(names::kAmounts, n.resources, settings_.resources);
     settings_.relief = named(names::kReliefs, n.relief, settings_.relief);
     settings_.sea = named(names::kSeas, n.sea, settings_.sea);
+    settings_.landforms = named(names::kAmounts, n.landforms, settings_.landforms);
     settings_.players = static_cast<std::uint8_t>(std::clamp(n.players, 1, static_cast<int>(sim::kMaxPlayers)));
     settings_.islands = static_cast<std::uint8_t>(std::clamp(n.islands, 1, static_cast<int>(sim::kMaxIslandsPerTown)));
     if (content_ != nullptr) {
@@ -203,6 +204,7 @@ NewGameSettings NewGameScreen::remembered() const {
     n.resources = name_of(names::kAmounts, settings_.resources);
     n.relief = name_of(names::kReliefs, settings_.relief);
     n.sea = name_of(names::kSeas, settings_.sea);
+    n.landforms = name_of(names::kAmounts, settings_.landforms);
     n.players = settings_.players;
     n.islands = settings_.islands;
     if (content_ != nullptr) {
@@ -398,7 +400,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 22;
+    constexpr int kRows = 23;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;
@@ -521,6 +523,14 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         const Row r = row(ctx, x, y, cw, tr("newGame.relief"), tr("newGame.relief.tooltip"));
         if (ctx.selector(ctx.id("relief"), r.control, index, options, tr("newGame.relief.tooltip"))) {
             settings_.relief = static_cast<sim::Relief>(index);
+        }
+    }
+    {
+        // Plateaus, valleys, ranges and canyons (phase 27).
+        int index = static_cast<int>(settings_.landforms);
+        const Row r = row(ctx, x, y, cw, tr("newGame.landforms"), tr("newGame.landforms.tooltip"));
+        if (ctx.selector(ctx.id("landforms"), r.control, index, amount_names, tr("newGame.landforms.tooltip"))) {
+            settings_.landforms = static_cast<sim::Amount>(index);
         }
     }
     {

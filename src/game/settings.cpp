@@ -400,6 +400,7 @@ void read_new_game(Reader& r, yyjson_mut_val* obj, NewGameSettings& n) {
     read_choice(r, obj, "forests", "newGame.forests", names::kAmounts, n.forests);
     read_choice(r, obj, "resources", "newGame.resources", names::kAmounts, n.resources);
     read_choice(r, obj, "relief", "newGame.relief", names::kReliefs, n.relief);
+    read_choice(r, obj, "landforms", "newGame.landforms", names::kAmounts, n.landforms);
     r.read_int(obj, "players", "newGame.players", 1, lim::kMaxPlayers, n.players);
     r.read_int(obj, "seasons", "newGame.seasons", 1, 0b1111, n.seasons);
     read_choice(r, obj, "year", "newGame.year", names::kYears, n.year);
@@ -515,6 +516,7 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_string(doc, ng, "forests", n.forests);
     ok = ok && json::set_string(doc, ng, "resources", n.resources);
     ok = ok && json::set_string(doc, ng, "relief", n.relief);
+    ok = ok && json::set_string(doc, ng, "landforms", n.landforms);
     ok = ok && json::set_int(doc, ng, "players", n.players);
     ok = ok && json::set_int(doc, ng, "seasons", n.seasons);
     ok = ok && json::set_string(doc, ng, "year", n.year);

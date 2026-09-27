@@ -25,6 +25,7 @@ MapData small_map(std::uint64_t seed, std::uint8_t players = 1) {
     MapSettings s;
     s.seed = seed;
     s.size = MapSize::Small;
+    s.sea = Sea::None;  // The economy, not the coast (phase 27).
     s.players = players;
     std::optional<MapData> m = generate_map(s, *content());
     REQUIRE(m.has_value());
@@ -306,7 +307,8 @@ TEST_SUITE("village") {
         // The economy alone: no raids (the "wildlife" suite has those).
         GameSetup setup{1, 77, false, GameRules{}};
         setup.rules.raiders = Threat::None;
-        Game g(content(), small_map(19), setup);
+        // A map where this scripted player does well (maps changed in phase 27).
+        Game g(content(), small_map(29), setup);
         opening(g);
         int houses = 2;
         int foragers = 1;

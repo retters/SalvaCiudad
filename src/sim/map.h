@@ -60,6 +60,8 @@ struct MapSettings {
     std::uint8_t islands = 2;
     // Phase 26: sea along one or two sides, for map types without islands.
     Sea sea = Sea::Sometimes;
+    // Phase 27: how often plateaus, valleys, mountain ranges and canyons appear.
+    Amount landforms = Amount::Normal;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);

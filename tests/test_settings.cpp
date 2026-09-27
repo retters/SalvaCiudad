@@ -299,6 +299,7 @@ TEST_SUITE("settings") {
         n.biome = "core:pinewood";
         n.islands = 5;
         n.sea = "always";
+        n.landforms = "high";
         n.water = "high";
         n.forests = "low";
         n.resources = "high";
@@ -333,8 +334,8 @@ TEST_SUITE("settings") {
             "size": "enormous", "mapType": "../x", "biome": "Core:Pine", "islands": 9, "water": "lots",
             "forests": 3, "relief": "cliffs", "players": 13, "seasons": 16, "year": "", "winter": "cold",
             "startGoods": "none", "diseases": "extreme", "race": "mixed!", "otherRaces": 101,
-            "maxPopulation": 20, "resources": "high", "fires": "low", "sea": "ocean"}})", s);
-        CHECK(r.ignored_fields == 17);
+            "maxPopulation": 20, "resources": "high", "fires": "low", "sea": "ocean", "landforms": "all"}})", s);
+        CHECK(r.ignored_fields == 18);
         NewGameSettings expected;
         expected.resources = "high";
         expected.fires = "low";

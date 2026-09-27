@@ -115,6 +115,7 @@ struct NewGameSettings {
     std::string forests = "normal";
     std::string resources = "normal";
     std::string relief = "low";     // new_game_names::kReliefs
+    std::string landforms = "normal";  // new_game_names::kAmounts
     int players = 1;
     int seasons = 0b1111;           // Bit per season: spring, summer, autumn, winter.
     std::string year = "normal";    // new_game_names::kYears

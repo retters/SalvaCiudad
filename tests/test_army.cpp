@@ -37,6 +37,7 @@ const MapData& map_for(std::uint64_t seed, std::uint8_t players = 1, bool separa
         MapSettings s;
         s.seed = seed;
         s.size = MapSize::Small;
+        s.sea = Sea::None;  // Armies on land (islands have their own maps).
         s.players = players;
         s.separate = separate;
         std::optional<MapData> m = generate_map(s, sc::test::core_content());

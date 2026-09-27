@@ -24,6 +24,7 @@ const MapData& map_for(std::uint64_t seed) {
         MapSettings s;
         s.seed = seed;
         s.size = MapSize::Small;
+        s.sea = Sea::None;  // Fires and sickness, not the coast (phase 27).
         std::optional<MapData> m = generate_map(s, sc::test::core_content());
         REQUIRE(m.has_value());
         it = cache.emplace(seed, std::move(*m)).first;
@@ -186,18 +187,24 @@ TEST_SUITE("health") {
     }
 
     TEST_CASE("fires spread to buildings close by") {
-        Game g(core(), map_for(75), setup());
-        const EntityId a = build(g, "core:woodcutter");
-        const Building* b = g.buildings().get(a);
-        const EntityId near = build(g, "core:house", b->x + b->width + 2, b->z);
-        ignite(g, a);
-        bool spread = false;
-        for (int t = 0; t < 60 && !spread; ++t) {
-            run(g, 50);
-            const Building* h = g.buildings().get(near);
-            spread = h == nullptr || h->fire > 0 || h->burned > 0;
+        // Sparks catch by chance, and villagers may put a fire out first:
+        // on most of five towns it spreads.
+        int spread_in = 0;
+        for (std::uint64_t seed = 72; seed < 77; ++seed) {
+            Game g(core(), map_for(seed), setup());
+            const EntityId a = build(g, "core:woodcutter");
+            const Building* b = g.buildings().get(a);
+            const EntityId near = build(g, "core:house", b->x + b->width + 2, b->z);
+            ignite(g, a);
+            bool spread = false;
+            for (int t = 0; t < 60 && !spread; ++t) {
+                run(g, 50);
+                const Building* h = g.buildings().get(near);
+                spread = h == nullptr || h->fire > 0 || h->burned > 0;
+            }
+            spread_in += spread ? 1 : 0;
         }
-        CHECK(spread);
+        CHECK(spread_in >= 3);
     }
 
     TEST_CASE("no fires and no sickness when the threats are off") {

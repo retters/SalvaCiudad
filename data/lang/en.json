@@ -274,6 +274,8 @@
     "newGame.amount.high": "Many",
     "newGame.relief": "Relief",
     "newGame.relief.tooltip": "Almost flat land, gentle hills, or mountain ranges with valleys (steep slopes cannot be built on).",
+    "newGame.landforms": "Landforms",
+    "newGame.landforms.tooltip": "How often plateaus, valleys, mountain ranges and canyons appear. None is certain; on small maps they are rare.",
     "newGame.relief.low": "Flat",
     "newGame.relief.gentle": "Gentle hills",
     "newGame.relief.mountainous": "Mountainous",
