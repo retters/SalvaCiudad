@@ -42,6 +42,11 @@ constexpr std::size_t kTestSceneInstances = 50'000;
 constexpr std::size_t kTestCrowd = 2'000;
 constexpr float kTestCrowdRadius = 70.0f;
 
+// The sample village on a generated map: villagers in the square in the
+// middle of a ring of houses (decision D-617).
+constexpr std::size_t kSampleVillagers = 40;
+constexpr float kSampleVillageRadius = 11.0f;
+
 // Pixels from the window edge where edge scrolling starts.
 constexpr float kEdgeScrollPx = 3.0f;
 
@@ -498,8 +503,9 @@ void App::update_camera(float dt) {
     camera_drag_py_ = 0.0f;
     camera_look_dx_ = 0.0f;
     camera_look_dy_ = 0.0f;
-    const bool follow = following_ && selected_ && mode == UiHost::SceneMode::TestScene;
-    if (mode != UiHost::SceneMode::TestScene) {
+    const bool walkers = mode == UiHost::SceneMode::TestScene || mode == UiHost::SceneMode::Map;
+    const bool follow = following_ && selected_ && walkers;
+    if (!walkers) {
         following_ = false;
         selected_.reset();
     }
@@ -565,11 +571,7 @@ void App::render_frame(float dt) {
         if (scene_ok_ && host_->scene_mode() != UiHost::SceneMode::None) {
             handle_scene_click(frame.width, frame.height);
             update_camera(dt);
-            if (host_->scene_mode() == UiHost::SceneMode::Map) {
-                scene_.set_characters({});
-            } else {
-                crowd_.update(scene_, dt);
-            }
+            crowd_.update(scene_, dt);
             render::SceneView view;
             view.view = camera_.view();
             view.eye = camera_.eye();
@@ -592,10 +594,12 @@ void App::render_frame(float dt) {
         ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
                         SDL_GetTicksNS(), atlas_.white_u(), atlas_.white_v());
         // Markers belong to the 3D view, under the interface.
-        if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::TestScene) {
-            draw_scene_markers(frame.width, frame.height);
-        } else if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
+        if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
             draw_start_markers(frame.width, frame.height);
+        }
+        if (scene_drawn && (host_->scene_mode() == UiHost::SceneMode::TestScene ||
+                            host_->scene_mode() == UiHost::SceneMode::Map)) {
+            draw_scene_markers(frame.width, frame.height);
         }
         host_->frame(ui_);
         ui_.end_frame();
@@ -734,6 +738,13 @@ bool App::enter_generated_map() {
     camera_.set_yaw(0.6f);
     camera_.set_distance(110.0f);
     camera_.snap();
+    // A sample village at the first start, to judge sizes (until phase 8).
+    const math::Vec3 start{sx, map_surface_height(*map, sx, sz), sz};
+    map_scene_.show_sample_village(scene_, *map, start);
+    crowd_.set_area(start, [map](float x, float z) { return map_surface_height(*map, x, z); });
+    crowd_.spawn(kSampleVillagers, 7, kSampleVillageRadius);
+    selected_.reset();
+    following_ = false;
     return true;
 }
 
@@ -743,6 +754,10 @@ void App::leave_map() {
     }
     map_scene_.hide(scene_);
     test_scene_.set_visible(scene_, true);
+    crowd_.set_area({}, {});
+    crowd_.spawn(kTestCrowd, 2026, kTestCrowdRadius);
+    selected_.reset();
+    following_ = false;
     reset_camera_to_test_scene();
     map_.reset();
 }
@@ -805,7 +820,7 @@ void App::update_mouse_capture() {
 }
 
 void App::handle_scene_click(std::uint32_t width, std::uint32_t height) {
-    if (host_->scene_mode() != UiHost::SceneMode::TestScene || !input_.mouse_released || debug_.wants_mouse()) {
+    if (!interactive_scene() || !input_.mouse_released || debug_.wants_mouse()) {
         return;
     }
     // A click, not the end of a drag.

@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <vector>
 
@@ -38,6 +39,9 @@ public:
     // Loads the bodies and accessories from data/models/characters.
     bool load(render::SceneRenderer& renderer, const std::filesystem::path& characters_dir);
     void spawn(std::size_t count, std::uint32_t seed, float radius);
+    // Where the next spawn() puts the crowd, and the ground it walks on
+    // (flat at 0 if empty).
+    void set_area(math::Vec3 center, std::function<float(float, float)> ground);
     // Moves everyone and hands the result to the renderer.
     void update(render::SceneRenderer& renderer, float dt);
 
@@ -80,6 +84,8 @@ private:
     std::vector<render::CharacterInstance> instances_;
     std::uint32_t random_state_ = 1;
     float radius_ = 60.0f;
+    math::Vec3 center_{};
+    std::function<float(float, float)> ground_;
     std::optional<std::size_t> hidden_;
 };
 

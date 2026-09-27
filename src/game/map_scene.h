@@ -44,12 +44,16 @@ public:
     // Puts a map in the renderer, or takes it out.
     bool show(render::SceneRenderer& renderer, const MapVisuals& visuals);
     void hide(render::SceneRenderer& renderer);
+    // A ring of houses around `center` (a start position), to see the map
+    // next to buildings until real towns exist. Cleared by hide().
+    void show_sample_village(render::SceneRenderer& renderer, const sim::MapData& map, math::Vec3 center);
 
     [[nodiscard]] bool shown() const { return shown_; }
 
 private:
     static constexpr std::uint32_t kNoModel = ~0u;
     std::array<render::ModelId, static_cast<std::size_t>(sim::FeatureType::Count)> models_{};
+    render::ModelId house_ = kNoModel;
     bool models_loaded_ = false;
     bool shown_ = false;
 };

@@ -261,7 +261,14 @@ std::uint32_t TestCrowd::next_random() {
 math::Vec3 TestCrowd::random_point() {
     const float a = static_cast<float>(next_random() % 10000) / 10000.0f * 2.0f * math::kPi;
     const float r = std::sqrt(static_cast<float>(next_random() % 10000) / 10000.0f) * radius_;
-    return {std::cos(a) * r, 0.0f, std::sin(a) * r};
+    const float x = center_.x + std::cos(a) * r;
+    const float z = center_.z + std::sin(a) * r;
+    return {x, ground_ ? ground_(x, z) : 0.0f, z};
+}
+
+void TestCrowd::set_area(math::Vec3 center, std::function<float(float, float)> ground) {
+    center_ = center;
+    ground_ = std::move(ground);
 }
 
 bool TestCrowd::load(render::SceneRenderer& renderer, const std::filesystem::path& dir) {
@@ -373,6 +380,9 @@ void TestCrowd::update(render::SceneRenderer& renderer, float dt) {
         } else {
             const float step = std::min(distance, v.speed * dt);
             v.look.position += to * (step / distance);
+            if (ground_) {
+                v.look.position.y = ground_(v.look.position.x, v.look.position.z);
+            }
             // Turn smoothly toward the goal; the model's front is +Z.
             const float want = std::atan2(to.x, to.z);
             float diff = want - v.look.yaw;

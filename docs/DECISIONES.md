@@ -370,3 +370,22 @@ Con la calidad Alta por omisión, la vista aérea supera los 500 FPS.
 - Cerrar la configuración vuelve al mapa con el menú abierto.
 - En la fase 8, este menú también pausará la partida de un jugador y avisará antes de salir sin guardar.
 - La escena de prueba sigue volviendo directo al menú principal con Esc.
+
+**D-617. Aldea de muestra en el mapa (provisional, 2026-09-27).**
+- A pedido del usuario, para juzgar tamaños: al abrir un mapa se ponen hasta 6 casas en un anillo de 18 m alrededor del inicio 1. Las casas que caerían en el agua se omiten.
+- 40 aldeanos caminan en la plaza del medio, sobre el relieve.
+- Se puede hacer clic en un aldeano para seguirlo, igual que en la escena de prueba.
+- Al salir del mapa, la multitud de 2000 vuelve a la escena de prueba.
+- Es solo presentación: desaparece cuando exista el pueblo de verdad (fase 8).
+
+Tamaños actuales, para comparar:
+
+| Modelo | Altura |
+|---|---|
+| Aldeano | 1,7–1,8 m |
+| Casa | 5,2 m |
+| Pino y roble | 4,6–7,8 m (modelo de 5,8 m con escala de 0,8 a 1,34) |
+| Arbusto de bayas | 0,7–1,1 m |
+| Hierbas medicinales | 0,45–0,8 m, solo en el interior de los bosques |
+
+El pasto como cubierta del suelo todavía no existe: el suelo es solo textura.

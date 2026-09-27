@@ -167,6 +167,9 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const std::filesyste
             log::warn("map: model {} unavailable; that feature will not be drawn", kFeatureLooks[i].file);
         }
     }
+    const auto house = load_model_file(props_dir / "house_small.glb");
+    render::ModelId id = 0;
+    house_ = house.has_value() && renderer.add_model(*house, id) ? id : kNoModel;
     models_loaded_ = any;
     return any;
 }
@@ -185,7 +188,40 @@ bool MapScene::show(render::SceneRenderer& renderer, const MapVisuals& visuals) 
     return true;
 }
 
+void MapScene::show_sample_village(render::SceneRenderer& renderer, const sim::MapData& map, math::Vec3 center) {
+    if (house_ == kNoModel) {
+        return;
+    }
+    constexpr int kHouses = 6;
+    constexpr float kRing = 18.0f;    // Meters from the center.
+    constexpr float kHalfSize = 3.0f;  // About half the house's footprint.
+    std::vector<render::Instance> houses;
+    for (int i = 0; i < kHouses; ++i) {
+        const float a = static_cast<float>(i) / kHouses * 2.0f * std::numbers::pi_v<float> + 0.3f;
+        const float x = center.x + std::cos(a) * kRing;
+        const float z = center.z + std::sin(a) * kRing;
+        if (map.water_at(static_cast<std::int32_t>(x), static_cast<std::int32_t>(z))) {
+            continue;
+        }
+        // Sit on the lowest corner so no corner floats on a slope.
+        float y = map_surface_height(map, x, z);
+        for (const float dx : {-kHalfSize, kHalfSize}) {
+            for (const float dz : {-kHalfSize, kHalfSize}) {
+                y = std::min(y, map_surface_height(map, x + dx, z + dz));
+            }
+        }
+        render::Instance h;
+        h.position = {x, y - 0.1f, z};
+        h.yaw = std::atan2(center.x - x, center.z - z);  // Front (+Z) toward the square.
+        houses.push_back(h);
+    }
+    renderer.set_instances(house_, houses);
+}
+
 void MapScene::hide(render::SceneRenderer& renderer) {
+    if (house_ != kNoModel) {
+        renderer.set_instances(house_, {});
+    }
     if (models_loaded_) {
         for (const render::ModelId id : models_) {
             if (id != kNoModel) {
