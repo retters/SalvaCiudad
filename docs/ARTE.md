@@ -69,6 +69,19 @@ Si un material de un personaje o accesorio se llama como uno de estos espacios, 
 
 Cualquier otro nombre (`eyes`, `mouth`…) conserva su color.
 
+### Materiales recoloreados en los edificios
+
+Lo mismo para los edificios (fase 31): si un material se llama como uno de estos espacios, cada edificio lo pinta con su **paleta**, elegida por su lugar en el mapa entre 150 combinaciones (5 techos, 6 paredes y 5 postigos):
+
+| Espacio | Nombre del material | Uso |
+|---|---|---|
+| 0 | `var_roof` | Techo |
+| 1 | `var_roof_dark` | Hileras oscuras del techo, cobertizos |
+| 2 | `var_walls` | Paredes y hastiales |
+| 3 | `var_shutter` | Postigos |
+
+Hoy las usan las casas. El color que tenga el material en Blender es solo para la vista previa y para el visor, que puede recorrer las paletas con "Otros colores".
+
 ### Esqueleto humano
 
 17 huesos, con los mismos nombres para los dos cuerpos: `hips`, `spine`, `chest`, `neck`, `head`, `upper_arm.L/R`, `lower_arm.L/R`, `hand.L/R`, `thigh.L/R`, `shin.L/R` y `foot.L/R`. `.L` es el lado izquierdo del personaje (+X en Blender).
@@ -87,6 +100,16 @@ Cualquier otro nombre (`eyes`, `mouth`…) conserva su color.
 ### Accesorios
 
 Un accesorio es un **modelo rígido cuyo origen es el punto donde se fija**: el comienzo de un hueso (`head` es la parte alta del cuello; `hips` es la pelvis). El juego lo lleva a la posición de ese hueso en la pose de reposo del cuerpo y lo mueve con la animación de ese hueso (D-404). Qué accesorio va en qué hueso está en `src/game/builtin_models.h`.
+
+## Variantes
+
+Varias formas de lo mismo, para que el pueblo no se vea copiado (fase 31). Se declaran en los JSON con `"models"` (ver `docs/CREAR_MODS.md`) y el juego elige una por lugar:
+
+- **Casas:** tres por nivel. `house`, `house_2` y `house_3` (planta baja); `house_l2*` (media planta bajo el techo, un ala o un porche); `house_l3*` (dos plantas). Salen de `house_variant` en `buildings.py`, con los materiales `var_*`.
+- **Rocas, rocas con mineral y arbustos de bayas:** tres de cada uno (`rock_2`, `ore_rock_3`, `berry_bush_2`…), en `props.py` (`variants`).
+- **Nubes:** cuatro formas (`cloud` a `cloud_4`), que el código reparte entre las nubes del cielo (`kClouds` en `src/game/builtin_models.h`).
+
+Cada variante es un modelo más: se dibuja con sus propias llamadas de dibujo. Por eso pocas variantes de lo que más se repite, y la paleta de colores (que no cuesta nada) para el resto. Ver D-3101 y `docs/RENDIMIENTO.md`.
 
 ## Cómo agregar un modelo
 

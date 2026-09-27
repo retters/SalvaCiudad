@@ -74,3 +74,20 @@ Lo que se cambió para que funcionaran (decisiones D-2101 a D-2106):
 - La suma de verificación completa (22 ms cada 50 ticks) podría calcularse por partes, a medida que cambia el estado.
 - El guardado incluye el mapa entero; en red se comprime a unos 12 MB para un mapa enorme y 186 MB para uno colosal.
 - En un mapa colosal, la suma de verificación de la red (cada 50 ticks) toma 175 ms: a x3 puede notarse un tirón cada pocos segundos. Se podría calcular por partes.
+
+## Fase 31: variantes de modelos
+
+Medido en el equipo de desarrollo, compilación `release`, ventana de 1600 × 900, Ultra, sin vsync ni límite de FPS. La misma partida en las dos versiones: mapa colosal con semilla 12345, 1000 aldeanos (herramientas de desarrollo), 6 o 7 casas terminadas junto al centro del pueblo, a velocidad x1, con la cámara donde empieza la partida, justo después de cargarla. Cinco lecturas de F3, cada 3 segundos.
+
+| | Fase 30 | Fase 31 |
+|---|---|---|
+| FPS (lecturas) | 75, 81, 73, 75, 77 | 70, 75, 79, 75, 64 |
+| FPS, promedio | 76 | 73 (−4 %) |
+| Último cuadro | 10 a 16 ms | 10,4 a 11,3 ms |
+| Llamadas de dibujo | 639 | 721 (+82) |
+| Triángulos | 2,15 M | 2,15 M |
+| Descarte | 5,7 ms | 5,9 ms |
+
+- La diferencia está dentro del ruido: las lecturas de cada versión varían más que la diferencia entre promedios, por los tics de 1000 aldeanos. El criterio (perder como mucho un 5 %) se cumple.
+- Las 82 llamadas de dibujo de más son las variantes a la vista: formas distintas de casa, roca, arbusto y nube, cada una con sus materiales, en la vista y en las dos cascadas de sombra. La paleta de colores no agrega ninguna.
+- Generar el mapa colosal tomó unos 13 minutos en las dos versiones, mucho más que los 2 minutos de la fase 21. Viene de antes (fases 26 y 27) y queda anotado como tarea aparte.

@@ -1020,6 +1020,8 @@
     "viewer.view.season": "Season",
     "viewer.view.snow": "With snow",
     "viewer.view.palette": "Another palette ({0} of {1})",
+    "viewer.view.colors": "Other colors ({0} of {1})",
+    "viewer.view.colorsHelp": "Roof, walls and shutters of the var_* materials (phase 31); the game picks a set per place.",
     "viewer.view.frame": "Frame (F)",
     "viewer.view.reload": "Read the mods again (F5)",
     "viewer.controls": "Drag with the left button to turn, with the right one to move; wheel to zoom.",

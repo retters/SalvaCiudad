@@ -57,12 +57,31 @@ struct DrawUniforms {
     std::int32_t draw[4];  // Palette slot, or -1.
 };
 
+// Matches MeshDrawUniforms in mesh.vert.hlsl.
+struct MeshDrawUniforms {
+    std::int32_t draw[4];   // Building palette slot of this primitive, or -1.
+    float base_color[4];    // Its material color, which the palette replaces.
+};
+
 // Material names recolored per character, in palette slot order.
 constexpr const char* kPaletteSlotNames[kPaletteSlots] = {"skin", "hair", "top", "bottom", "shoes", "belt", "hat", "apron"};
 
 int palette_slot(const std::string& material) {
     for (std::size_t i = 0; i < kPaletteSlots; ++i) {
         if (material == kPaletteSlotNames[i]) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+// Material names recolored per building, in slot order.
+constexpr const char* kBuildingSlotNames[kBuildingPaletteSlots] = {"var_roof", "var_roof_dark", "var_walls",
+                                                                   "var_shutter"};
+
+int building_slot(const std::string& material) {
+    for (std::size_t i = 0; i < kBuildingPaletteSlots; ++i) {
+        if (material == kBuildingSlotNames[i]) {
             return static_cast<int>(i);
         }
     }
@@ -182,6 +201,7 @@ struct GpuModel {
     SDL_GPUBuffer* indices = nullptr;
     std::vector<ModelPrimitive> primitives;
     std::vector<GpuMaterial> materials;
+    std::vector<int> slots;  // Building palette slot of each material, or -1.
     std::vector<SDL_GPUTexture*> textures;
     float radius = 1.0f;
     std::uint64_t triangles = 0;
@@ -328,6 +348,13 @@ struct SceneRenderer::Impl {
     bool palettes_dirty = true;
     SDL_GPUBuffer* palette_buffer = nullptr;
     std::uint32_t palette_capacity = 0;
+    // Always room for every palette an instance can name, so the shader
+    // never reads past the end.
+    std::vector<float> building_palette_data =
+        std::vector<float>(std::size_t{kMaxBuildingPalettes} * kBuildingPaletteSlots * 4, 1.0f);
+    bool building_palettes_dirty = true;
+    SDL_GPUBuffer* building_palette_buffer = nullptr;
+    std::uint32_t building_palette_capacity = 0;
     std::vector<CharacterInstance> characters;
     std::vector<GpuCharacter> gpu_characters;
     SDL_GPUBuffer* character_buffer = nullptr;
@@ -422,8 +449,10 @@ struct SceneRenderer::Impl {
         SDL_ReleaseGPUBuffer(device, bone_buffer);
         SDL_ReleaseGPUBuffer(device, palette_buffer);
         SDL_ReleaseGPUBuffer(device, character_buffer);
-        bone_buffer = palette_buffer = character_buffer = nullptr;
-        bone_capacity = palette_capacity = character_capacity = 0;
+        SDL_ReleaseGPUBuffer(device, building_palette_buffer);
+        bone_buffer = palette_buffer = character_buffer = building_palette_buffer = nullptr;
+        bone_capacity = palette_capacity = character_capacity = building_palette_capacity = 0;
+        building_palettes_dirty = true;
         SDL_ReleaseGPUSampler(device, base_sampler);
         SDL_ReleaseGPUSampler(device, shadow_sampler);
         SDL_ReleaseGPUSampler(device, clamp_sampler);
@@ -584,7 +613,7 @@ struct SceneRenderer::Impl {
 
     bool create_pipelines() {
         release_pipelines();
-        SDL_GPUShader* mesh_vs = make_shader(device, kMeshVertDxil, kMeshVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 1);
+        SDL_GPUShader* mesh_vs = make_shader(device, kMeshVertDxil, kMeshVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 2, 2);
         SDL_GPUShader* mesh_fs = make_shader(device, kMeshFragDxil, kMeshFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 2);
         SDL_GPUShader* sky_vs = make_shader(device, kSkyVertDxil, kSkyVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0);
         SDL_GPUShader* sky_fs = make_shader(device, kSkyFragDxil, kSkyFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 1);
@@ -818,7 +847,8 @@ struct SceneRenderer::Impl {
         g.row2[0] = -s;
         g.row2[2] = c;
         g.row2[3] = inst.position.z;
-        set4(g.tint, inst.tint, 1.0f);
+        // The palette number rides in the tint's unused fourth channel.
+        set4(g.tint, inst.tint, static_cast<float>(std::min(inst.palette, kMaxBuildingPalettes)));
         return g;
     }
 
@@ -1121,6 +1151,7 @@ bool SceneRenderer::add_model(const ModelData& data, ModelId& id) {
                         ? m.textures[static_cast<std::size_t>(mat.texture)]
                         : d.white;
         m.materials.push_back(g);
+        m.slots.push_back(building_slot(mat.name));
     }
     m.primitives = data.primitives;
     m.radius = std::max(0.01f, data.radius);
@@ -1291,6 +1322,21 @@ void SceneRenderer::set_palettes(std::span<const Palette> palettes) {
     d.palettes_dirty = true;
 }
 
+void SceneRenderer::set_building_palettes(std::span<const BuildingPalette> palettes) {
+    Impl& d = *impl_;
+    d.building_palette_data.assign(std::size_t{kMaxBuildingPalettes} * kBuildingPaletteSlots * 4, 1.0f);
+    for (std::size_t i = 0; i < palettes.size() && i < kMaxBuildingPalettes; ++i) {
+        for (std::size_t s = 0; s < kBuildingPaletteSlots; ++s) {
+            const math::Vec3& c = palettes[i].colors[s];
+            float* out = &d.building_palette_data[(i * kBuildingPaletteSlots + s) * 4];
+            out[0] = c.x;
+            out[1] = c.y;
+            out[2] = c.z;
+        }
+    }
+    d.building_palettes_dirty = true;
+}
+
 void SceneRenderer::set_characters(std::span<const CharacterInstance> characters) {
     Impl& d = *impl_;
     d.characters.clear();
@@ -1400,6 +1446,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const auto character_bytes = static_cast<std::uint32_t>(d.gpu_characters.size() * sizeof(GpuCharacter));
     const auto bone_bytes = static_cast<std::uint32_t>(d.bone_rows.size() * sizeof(float));
     const auto palette_bytes = static_cast<std::uint32_t>(d.palette_data.size() * sizeof(float));
+    const auto building_palette_bytes = static_cast<std::uint32_t>(d.building_palette_data.size() * sizeof(float));
     std::uint32_t upload_instances = 0;
     for (const auto& [first, count] : instance_ranges) {
         upload_instances += count * static_cast<std::uint32_t>(sizeof(GpuInstance));
@@ -1422,6 +1469,16 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         !d.ensure_buffer(d.palette_buffer, d.palette_capacity, palette_bytes + 16, kStorage)) {
         return false;
     }
+    // A new (bigger) building palette buffer starts empty.
+    const std::uint32_t old_building_palette_capacity = d.building_palette_capacity;
+    if (!d.ensure_buffer(d.building_palette_buffer, d.building_palette_capacity, building_palette_bytes + 16,
+                         kStorage)) {
+        return false;
+    }
+    const std::uint32_t building_palettes_to_upload =
+        (d.building_palettes_dirty || d.building_palette_capacity != old_building_palette_capacity)
+            ? building_palette_bytes
+            : 0;
     // Bones are only ever added, so a larger buffer means a full upload.
     const std::uint32_t old_bone_capacity = d.bone_capacity;
     if (!d.ensure_buffer(d.bone_buffer, d.bone_capacity, bone_bytes + 48, kStorage)) {
@@ -1430,7 +1487,8 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const std::uint32_t bones_to_upload =
         (d.bone_capacity != old_bone_capacity || upload_bones > 0) ? bone_bytes : 0;
     const std::uint32_t palettes_to_upload = upload_palettes;
-    const std::uint32_t to_send = visible_bytes + upload_instances + character_bytes + bones_to_upload + palettes_to_upload;
+    const std::uint32_t to_send = visible_bytes + upload_instances + character_bytes + bones_to_upload +
+                                  palettes_to_upload + building_palettes_to_upload;
     if (to_send > 0) {
         if (!d.ensure_transfer(to_send + 16)) {
             return false;
@@ -1460,6 +1518,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             {d.gpu_characters.data(), character_bytes, d.character_buffer, true},
             {d.bone_rows.data(), bones_to_upload, d.bone_buffer, false},
             {d.palette_data.data(), palettes_to_upload, d.palette_buffer, false},
+            {d.building_palette_data.data(), building_palettes_to_upload, d.building_palette_buffer, false},
         };
         std::uint32_t offsets[std::size(items)] = {};
         for (std::size_t i = 0; i < std::size(items); ++i) {
@@ -1496,11 +1555,15 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         if (palettes_to_upload > 0) {
             d.palettes_dirty = false;
         }
+        if (building_palettes_to_upload > 0) {
+            d.building_palettes_dirty = false;
+        }
     }
 
     // Draws every model's visible instances; `with_materials` binds colors.
     const auto draw_models = [&](SDL_GPURenderPass* pass, const std::vector<Range>& ranges, bool with_materials) {
-        SDL_BindGPUVertexStorageBuffers(pass, 0, &d.instance_buffer, 1);
+        SDL_GPUBuffer* storage[2] = {d.instance_buffer, d.building_palette_buffer};
+        SDL_BindGPUVertexStorageBuffers(pass, 0, storage, with_materials ? 2u : 1u);
         for (std::size_t mi = 0; mi < d.models.size(); ++mi) {
             const Range r = ranges[mi];
             if (r.count == 0) {
@@ -1513,7 +1576,12 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_32BIT);
             for (const ModelPrimitive& p : m.primitives) {
                 if (with_materials) {
-                    const GpuMaterial& mat = m.materials[std::min<std::size_t>(p.material, m.materials.size() - 1)];
+                    const std::size_t mat_index = std::min<std::size_t>(p.material, m.materials.size() - 1);
+                    const GpuMaterial& mat = m.materials[mat_index];
+                    MeshDrawUniforms du{};
+                    du.draw[0] = m.slots[mat_index];
+                    std::copy(std::begin(mat.base_color), std::end(mat.base_color), du.base_color);
+                    SDL_PushGPUVertexUniformData(frame.cmd, 1, &du, sizeof(du));
                     MaterialUniforms mu{};
                     std::copy(std::begin(mat.base_color), std::end(mat.base_color), mu.base_color);
                     SDL_PushGPUFragmentUniformData(frame.cmd, 1, &mu, sizeof(mu));

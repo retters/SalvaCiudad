@@ -87,7 +87,18 @@ private:
         float depth = 1.0f;
     };
     std::map<std::string, Model> files_;
-    std::vector<Model> def_models_;  // By building definition.
+    // The looks of each building definition (phase 31): variants of its own
+    // look and of each level that has one. Missing files are left out.
+    struct DefLook {
+        std::vector<Model> base;
+        std::vector<std::vector<Model>> levels;  // Level n + 1; empty: the one below.
+    };
+    std::vector<DefLook> def_looks_;  // By building definition.
+    std::uint32_t palette_count_buildings_ = 0;
+    // The model a building shows at `level`, for its place `key`; null if
+    // its definition has none.
+    [[nodiscard]] const Model* model_for(sim::DefIndex def, std::uint8_t level, std::uint32_t key) const;
+    Model load_building_file(render::SceneRenderer& renderer, const std::filesystem::path& file);
     std::vector<render::ModelId> used_;
 
     struct Look {
@@ -147,7 +158,8 @@ private:
     bool shown_ = false;
 
     void rebuild_buildings(render::SceneRenderer& renderer, const sim::Game& game);
-    [[nodiscard]] render::Instance building_instance(const sim::Game& game, sim::DefIndex def, std::int32_t x,
+    [[nodiscard]] render::Instance building_instance(const sim::Game& game, sim::DefIndex def, const Model& m,
+                                                     std::int32_t x,
                                                      std::int32_t z, std::int32_t w, std::int32_t d,
                                                      std::uint8_t rotation, float progress) const;
     void update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, int speed);

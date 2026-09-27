@@ -16,7 +16,7 @@
       "resource": "core:stone",
       "amount": 40,
       "work": 30,
-      "model": "models/props/rock.glb"
+      "models": ["models/props/rock.glb", "models/props/rock_2.glb", "models/props/rock_3.glb"]
     },
     {
       "type": "mapFeature",
@@ -25,7 +25,7 @@
       "resource": "core:iron_ore",
       "amount": 40,
       "work": 40,
-      "model": "models/props/ore_rock.glb"
+      "models": ["models/props/ore_rock.glb", "models/props/ore_rock_2.glb", "models/props/ore_rock_3.glb"]
     },
     {
       "type": "mapFeature",
@@ -35,7 +35,7 @@
       "amount": 12,
       "work": 15,
       "regrowDays": 30,
-      "model": "models/props/berry_bush.glb"
+      "models": ["models/props/berry_bush.glb", "models/props/berry_bush_2.glb", "models/props/berry_bush_3.glb"]
     },
     {
       "type": "mapFeature",

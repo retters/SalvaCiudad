@@ -270,6 +270,7 @@ set(SC_ENGINE_SOURCES
     src/game/settings_screen.cpp
     src/game/test_scene.cpp
     src/game/ui_host.cpp
+    src/game/variants.cpp
     src/game/village_view.cpp
     src/i18n/catalog.cpp
     src/mods/defs.cpp
@@ -355,7 +356,9 @@ target_compile_definitions(SalvaCiudadModelos PRIVATE SC_VIEWER_SOURCE_DATA="${C
 sc_harden_target(SalvaCiudadModelos)
 set_target_properties(SalvaCiudadModelos PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-# It reads the game's data/ next to it, like the game.
+# It reads the game's data/ next to it, like the game. After the game, so the
+# two copies of data/ never run at the same time.
+add_dependencies(SalvaCiudadModelos SalvaCiudad)
 add_custom_command(TARGET SalvaCiudadModelos POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:SalvaCiudadModelos>/data"
@@ -402,14 +405,15 @@ if(SC_BUILD_TESTS)
         tests/test_audio.cpp
         tests/test_races.cpp
         tests/test_perf.cpp
-        tests/test_viewer.cpp)
+        tests/test_viewer.cpp
+        tests/test_variants.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine sc_viewer doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer variants)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

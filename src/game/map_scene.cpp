@@ -6,6 +6,7 @@
 
 #include "core/log.h"
 #include "game/builtin_models.h"
+#include "game/variants.h"
 #include "game/test_scene.h"
 
 namespace sc {
@@ -40,14 +41,23 @@ std::size_t tree_slot_count(const sim::Content& content) {
 }
 
 std::size_t visual_slot_count(const sim::Content& content) {
-    return tree_slot_count(content) + static_cast<std::size_t>(sim::FeatureType::Count);
+    return tree_slot_count(content) + static_cast<std::size_t>(sim::FeatureType::Count) * sim::kMaxModelVariants;
+}
+
+std::size_t feature_slot(const sim::Content& content, sim::FeatureType type, std::size_t variant) {
+    return tree_slot_count(content) + static_cast<std::size_t>(type) * sim::kMaxModelVariants + variant;
 }
 
 std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
     if (f.type == sim::FeatureType::Tree) {
         return tree_slot(f.species, static_cast<sim::TreeSize>(f.size));
     }
-    return tree_slot_count(content) + static_cast<std::size_t>(f.type);
+    // Each other kind has room for its variants; the place picks one.
+    const sim::FeatureDef* def = content.feature(f.type);
+    const std::size_t variants = def != nullptr ? def->models.size() : 1;
+    return feature_slot(content, f.type,
+                        pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
+                                     std::min(variants, sim::kMaxModelVariants)));
 }
 
 std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeSize size) {
@@ -327,22 +337,29 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
         }
     }
     for (const sim::FeatureDef& f : content.features) {
-        if (f.kind == sim::FeatureKind::Tree || f.model.empty()) {
+        if (f.kind == sim::FeatureKind::Tree) {
             continue;
         }
-        const sim::FeatureType type = f.kind;
-        const std::filesystem::path file = mods::mod_file(pack.dir(f.mod), f.model);
-        Slot& slot = slots_[tree_slots_ + static_cast<std::size_t>(type)];
-        slot = file.empty() ? Slot{} : load_file(renderer, file, feature_class(type));
-        missing += slot.model == kNoModel ? 1 : 0;
-        any = any || slot.model != kNoModel;
+        for (std::size_t v = 0; v < f.models.size() && v < sim::kMaxModelVariants; ++v) {
+            const std::filesystem::path file = mods::mod_file(pack.dir(f.mod), f.models[v]);
+            Slot& slot = slots_[feature_slot(content, f.kind, v)];
+            slot = file.empty() ? Slot{} : load_file(renderer, file, feature_class(f.kind));
+            missing += slot.model == kNoModel ? 1 : 0;
+            any = any || slot.model != kNoModel;
+        }
     }
     if (missing > 0) {
         log::warn("map: {} model(s) missing; those objects will not be drawn", missing);
     }
     const std::filesystem::path core = pack.dir(mods::kCoreModId);
     house_ = load_file(renderer, core / builtin_models::kSampleHouse, render::ModelClass::Normal).model;
-    cloud_ = load_file(renderer, core / builtin_models::kCloud, render::ModelClass::Sky).model;
+    cloud_models_.clear();
+    for (const std::string_view cloud : builtin_models::kClouds) {
+        const render::ModelId id = load_file(renderer, core / cloud, render::ModelClass::Sky).model;
+        if (id != kNoModel) {
+            cloud_models_.push_back(id);
+        }
+    }
     models_loaded_ = any;
     return any;
 }
@@ -528,15 +545,14 @@ void MapScene::remove_house(render::SceneRenderer& renderer, std::size_t index) 
 // Low-poly clouds high over the map and the mountains around it; they cast
 // no shadow (decision D-628) and drift with the wind (phase 18).
 void MapScene::show_clouds(render::SceneRenderer& renderer, const sim::MapData& map) {
-    if (cloud_ == kNoModel) {
+    if (cloud_models_.empty()) {
         return;
     }
     const float side = static_cast<float>(map.size);
     const float reach = side + 3000.0f;
     // About one cloud every 600 x 600 m.
     const auto count = static_cast<std::size_t>(reach * reach / 360000.0f) + 4;
-    std::vector<render::Instance>& clouds = clouds_;
-    clouds.clear();
+    clouds_.assign(cloud_models_.size(), {});
     cloud_min_ = -1500.0f;
     cloud_max_ = -1500.0f + reach;
     std::uint32_t h = static_cast<std::uint32_t>(map.settings.seed) * 2654435761u + 12345u;
@@ -551,30 +567,35 @@ void MapScene::show_clouds(render::SceneRenderer& renderer, const sim::MapData& 
         c.position = {-1500.0f + next() * reach, 240.0f + next() * 120.0f, -1500.0f + next() * reach};
         c.yaw = next() * 6.2831853f;
         c.scale = 7.0f + next() * 9.0f;
-        clouds.push_back(c);
+        // Each cloud one of the shapes, the same for the same map.
+        clouds_[pick_variant(h, clouds_.size())].push_back(c);
     }
-    renderer.set_instances(cloud_, clouds);
+    for (std::size_t v = 0; v < cloud_models_.size(); ++v) {
+        renderer.set_instances(cloud_models_[v], clouds_[v]);
+    }
 }
 
 void MapScene::update_sky(render::SceneRenderer& renderer, float dt) {
-    if (cloud_ == kNoModel || clouds_.empty()) {
+    if (cloud_models_.empty() || clouds_.size() != cloud_models_.size()) {
         return;
     }
     constexpr float kWind = 5.0f;  // Meters per second, west to east.
     const float span = cloud_max_ - cloud_min_;
-    for (render::Instance& c : clouds_) {
-        c.position.x += kWind * dt * (0.8f + 0.1f * c.scale / 8.0f);
-        if (c.position.x > cloud_max_) {
-            c.position.x -= span;
+    for (std::size_t v = 0; v < clouds_.size(); ++v) {
+        for (render::Instance& c : clouds_[v]) {
+            c.position.x += kWind * dt * (0.8f + 0.1f * c.scale / 8.0f);
+            if (c.position.x > cloud_max_) {
+                c.position.x -= span;
+            }
         }
+        renderer.set_instances(cloud_models_[v], clouds_[v]);
     }
-    renderer.set_instances(cloud_, clouds_);
 }
 
 void MapScene::hide(render::SceneRenderer& renderer) {
     houses_.clear();
-    if (cloud_ != kNoModel) {
-        renderer.set_instances(cloud_, {});
+    for (const render::ModelId id : cloud_models_) {
+        renderer.set_instances(id, {});
     }
     if (house_ != kNoModel) {
         renderer.set_instances(house_, {});

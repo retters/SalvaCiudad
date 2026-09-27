@@ -16,6 +16,10 @@
 
 namespace sc::sim {
 
+// Most model files a definition (or a building level) can list as
+// variants of its look (phase 31).
+inline constexpr std::size_t kMaxModelVariants = 8;
+
 // Index of a definition in its list; stable for a given set of mods.
 using DefIndex = std::uint16_t;
 inline constexpr DefIndex kNoDef = 0xFFFF;
@@ -80,12 +84,14 @@ struct LevelDef {
     std::uint16_t needs = 0;        // Need bits that must be met.
     std::int32_t tier = 0;          // Town center level needed.
     std::int32_t population = 0;    // Town center: villagers needed.
+    std::vector<std::string> models;  // Its variants; empty: the building's (presentation only).
+    std::string models_mod;           // Mod whose folder holds them.
 };
 
 struct BuildingDef {
     std::string id;
     std::string name_key;
-    std::string model;          // Path inside the mod, "models/house.glb".
+    std::vector<std::string> models;  // Variants, paths inside the mod: "models/house.glb" (presentation only).
     std::string mod;            // Id of the mod that defines it (for the model path).
     BuildingKind kind = BuildingKind::Workplace;
     std::int32_t width = 4;     // Footprint in cells, before rotation.
@@ -224,7 +230,7 @@ struct FeatureDef {
     std::int32_t amount = 10;      // Units per feature (trees: per size, see below).
     std::int32_t work = 20;        // Worker-ticks per unit.
     std::int32_t regrow_days = 0;  // Berries and herbs grow back; 0 = never.
-    std::string model;             // Path inside the mod (trees use their species).
+    std::vector<std::string> models;  // Variants, paths inside the mod (trees use their species).
     std::string mod;
 };
 

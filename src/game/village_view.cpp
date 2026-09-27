@@ -9,6 +9,7 @@
 #include "core/log.h"
 #include "game/builtin_models.h"
 #include "game/camera.h"
+#include "game/variants.h"
 
 namespace sc {
 
@@ -190,32 +191,30 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
             used_.push_back(id);
         }
     }
-    def_models_.assign(content.buildings.size(), Model{});
+    const std::vector<render::BuildingPalette> palettes = make_building_palettes();
+    renderer.set_building_palettes(palettes);
+    palette_count_buildings_ = static_cast<std::uint32_t>(palettes.size());
+    def_looks_.assign(content.buildings.size(), DefLook{});
     std::size_t missing = 0;
+    const auto load_list = [&](const std::string& mod, const std::vector<std::string>& files) {
+        std::vector<Model> out;
+        for (const std::string& rel : files) {
+            const std::filesystem::path file = mods::mod_file(pack.dir(mod), rel);
+            const Model m = file.empty() ? Model{} : load_building_file(renderer, file);
+            if (m.id == kNoModel) {
+                ++missing;
+            } else {
+                out.push_back(m);
+            }
+        }
+        return out;
+    };
     for (std::size_t i = 0; i < content.buildings.size(); ++i) {
         const sim::BuildingDef& d = content.buildings[i];
-        const std::filesystem::path file = mods::mod_file(pack.dir(d.mod), d.model);
-        if (file.empty()) {
-            ++missing;
-            continue;
+        def_looks_[i].base = load_list(d.mod, d.models);
+        for (const sim::LevelDef& level : d.levels) {
+            def_looks_[i].levels.push_back(load_list(level.models_mod, level.models));
         }
-        const std::string key = file.generic_string();
-        auto it = files_.find(key);
-        if (it == files_.end()) {
-            Model m;
-            const auto data = load_model_file(file);
-            render::ModelId id = 0;
-            if (data.has_value() && renderer.add_model(*data, id)) {
-                m.id = id;
-                m.height = std::max(0.1f, data->bounds_max.y - data->bounds_min.y);
-                m.width = std::max(0.1f, data->bounds_max.x - data->bounds_min.x);
-                m.depth = std::max(0.1f, data->bounds_max.z - data->bounds_min.z);
-                used_.push_back(id);
-            }
-            it = files_.emplace(key, m).first;
-        }
-        def_models_[i] = it->second;
-        missing += it->second.id == kNoModel ? 1 : 0;
     }
     if (missing > 0) {
         log::warn("village: {} building model(s) missing; those buildings will not be drawn", missing);
@@ -748,12 +747,47 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
     renderer.set_characters(characters_);
 }
 
-render::Instance VillageView::building_instance(const sim::Game& game, sim::DefIndex def, std::int32_t x,
-                                                std::int32_t z, std::int32_t w, std::int32_t d, std::uint8_t rotation,
-                                                float progress) const {
+VillageView::Model VillageView::load_building_file(render::SceneRenderer& renderer, const std::filesystem::path& file) {
+    const std::string key = file.generic_string();
+    auto it = files_.find(key);
+    if (it == files_.end()) {
+        Model m;
+        const auto data = load_model_file(file);
+        render::ModelId id = 0;
+        if (data.has_value() && renderer.add_model(*data, id)) {
+            m.id = id;
+            m.height = std::max(0.1f, data->bounds_max.y - data->bounds_min.y);
+            m.width = std::max(0.1f, data->bounds_max.x - data->bounds_min.x);
+            m.depth = std::max(0.1f, data->bounds_max.z - data->bounds_min.z);
+            used_.push_back(id);
+        }
+        it = files_.emplace(key, m).first;
+    }
+    return it->second;
+}
+
+const VillageView::Model* VillageView::model_for(sim::DefIndex def, std::uint8_t level, std::uint32_t key) const {
+    if (def >= def_looks_.size()) {
+        return nullptr;
+    }
+    const DefLook& look = def_looks_[def];
+    // The highest level reached that has a look of its own.
+    const std::vector<Model>* list = &look.base;
+    for (std::size_t l = 0; l < look.levels.size() && l < level; ++l) {
+        if (!look.levels[l].empty()) {
+            list = &look.levels[l];
+        }
+    }
+    return list->empty() ? nullptr : &(*list)[pick_variant(key, list->size())];
+}
+
+render::Instance VillageView::building_instance(const sim::Game& game, sim::DefIndex def, const Model& m,
+                                                std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d,
+                                                std::uint8_t rotation, float progress) const {
     const sim::BuildingDef& bd = game.content().buildings[def];
-    const Model& m = def_models_[def];
     render::Instance inst;
+    // Roof, wall and shutter colors by its place (materials named var_*).
+    inst.palette = pick_building_palette(place_key(x, z), palette_count_buildings_);
     // Sit on the lowest corner so no corner floats on a slope.
     std::int32_t low = 65535;
     for (const std::int32_t vz : {z, z + d}) {
@@ -785,7 +819,8 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     }
     const sim::Content& content = game.content();
     for (const sim::Building& b : game.buildings().data()) {
-        if (b.def >= def_models_.size() || def_models_[b.def].id == kNoModel) {
+        const Model* m = model_for(b.def, b.level, place_key(b.x, b.z));
+        if (m == nullptr) {
             continue;
         }
         const sim::BuildingDef& d = content.buildings[b.def];
@@ -793,21 +828,24 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         if (b.state == sim::BuildingState::Construction) {
             progress = d.build_work > 0 ? static_cast<float>(b.work_done) / static_cast<float>(d.build_work) : 1.0f;
         }
-        render::Instance inst = building_instance(game, b.def, b.x, b.z, b.width, b.depth, b.rotation, progress);
+        render::Instance inst = building_instance(game, b.def, *m, b.x, b.z, b.width, b.depth, b.rotation, progress);
         if (b.fire > 0 || b.burned > 0) {
             // Glowing while it burns, charred after.
             const float char_level = 1.0f - 0.7f * static_cast<float>(b.burned) / 1000.0f;
             inst.tint = b.fire > 0 ? math::Vec3{1.9f * char_level, 0.6f * char_level, 0.3f * char_level}
                                    : math::Vec3{char_level, char_level, char_level};
         }
-        lists[def_models_[b.def].id].push_back(inst);
+        lists[m->id].push_back(inst);
     }
-    if (ghost_ && ghost_->def < def_models_.size() && def_models_[ghost_->def].id != kNoModel) {
+    // The ghost shows the variant the building will have there.
+    if (const Model* m = ghost_ ? model_for(ghost_->def, 0, place_key(ghost_->x, ghost_->z)) : nullptr) {
         std::int32_t w = 0, d = 0;
         sim::Game::footprint(content.buildings[ghost_->def], ghost_->rotation, w, d);
-        render::Instance g = building_instance(game, ghost_->def, ghost_->x, ghost_->z, w, d, ghost_->rotation, 1.0f);
+        render::Instance g =
+            building_instance(game, ghost_->def, *m, ghost_->x, ghost_->z, w, d, ghost_->rotation, 1.0f);
         g.tint = ghost_->allowed ? math::Vec3{0.55f, 1.6f, 0.6f} : math::Vec3{1.8f, 0.45f, 0.4f};
-        lists[def_models_[ghost_->def].id].push_back(g);
+        g.palette = 0;  // Its own colors under the green or red.
+        lists[m->id].push_back(g);
     }
     for (auto& [id, list] : lists) {
         if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
@@ -828,10 +866,10 @@ math::Vec3 VillageView::building_top(const sim::Game& game, const sim::Building&
     const math::Vec3 base{static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f, 0.0f,
                           static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f};
     float h = 5.0f;
-    if (b.def < def_models_.size() && def_models_[b.def].id != kNoModel) {
+    if (const Model* m = model_for(b.def, b.level, place_key(b.x, b.z)); m != nullptr) {
         const sim::BuildingDef& d = game.content().buildings[b.def];
-        const Model& m = def_models_[b.def];
-        h = m.height * std::min(static_cast<float>(d.width) / m.width, static_cast<float>(d.depth) / m.depth) * 0.95f;
+        h = m->height * std::min(static_cast<float>(d.width) / m->width, static_cast<float>(d.depth) / m->depth) *
+            0.95f;
     }
     return {base.x, map_surface_height(game.map(), base.x, base.z) + h + 1.0f, base.z};
 }

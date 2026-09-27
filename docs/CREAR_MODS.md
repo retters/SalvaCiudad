@@ -74,7 +74,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 
 | Campo | Valores |
 |---|---|
-| `name`, `model` | Clave de texto y modelo `.glb` del mod. |
+| `name`, `model` o `models` | Clave de texto y modelo `.glb` del mod, o una lista de 1 a 8 variantes (ver abajo). |
 | `kind` | `house`, `storage`, `workplace`, `townCenter`, `decoration`, `defense`, `military`. |
 | `size` | `[ancho, fondo]` en celdas de 1 m (1 a 32). |
 | `cost` | `{"core:log": 12, ...}`. |
@@ -85,6 +85,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `residents` | Para casas. |
 | `storage`, `stores` | Capacidad y categorías que guarda. Un `storage` que guarda `gold` y no es el puesto de comercio es una bóveda: ahí van los peones a dejar el oro que sobra. |
 | `tier`, `desirability`, `unique` | Nivel del centro del pueblo necesario, efecto en la deseabilidad y si solo puede haber uno. |
+| `levels` | Mejoras (casas y centro del pueblo): `residents`, `cost`, `work`, `needs`, `tier`, `population` y, si se ve distinto, `models`. |
 
 ### recipe
 
@@ -92,7 +93,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 
 ### mapFeature
 
-Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`), `resource`, `amount`, `work`, `regrowDays` y `model` (los árboles usan el modelo de su especie).
+Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`), `resource`, `amount`, `work`, `regrowDays` y `model` o `models` (los árboles usan el modelo de su especie).
 
 ### species, biome, mapType
 
@@ -142,3 +143,13 @@ Si la regla falla, el mapa se genera igual, sin sus cambios posteriores al error
 ## Modelos
 
 Formato glTF binario (`.glb`), en metros, con Y hacia arriba y la base en Y = 0. Ver `docs/ARTE.md`. El mod de ejemplo genera su santuario con Blender desde `tools/example_mod/art/shrine.py`.
+
+### Variantes
+
+Un edificio, un nivel de un edificio o un recurso natural puede tener varias formas: `"models": ["models/casa_a.glb", "models/casa_b.glb"]` en lugar de `"model"`. Cada casa o roca del mapa muestra una, elegida por su lugar: la misma en todas las computadoras y al cargar la partida. Es solo aspecto: no cambia la partida ni rompe el multijugador.
+
+- De 1 a 8 archivos, sin repetir. No se pueden usar `model` y `models` a la vez.
+- Un nivel sin `models` se ve como el nivel anterior que sí tenga.
+- Para agregar variantes a un edificio de otro mod, parchea su `models` con la lista completa: `{"type": "building", "patch": "core:well", "models": ["models/pozo_a.glb", "models/pozo_b.glb"]}`. Los archivos de una lista parcheada se buscan en el mod del parche; los de los niveles, en el mod que escribió `levels`.
+- Los materiales llamados `var_roof`, `var_roof_dark`, `var_walls` y `var_shutter` cambian de color en cada edificio (ver `docs/ARTE.md`).
+- El visor de modelos muestra todas las variantes de cada definición juntas.

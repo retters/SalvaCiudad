@@ -6,7 +6,9 @@
 
 namespace sc::builtin_models {
 
-inline constexpr std::string_view kCloud = "models/props/cloud.glb";
+// The cloud shapes (phase 31); each cloud takes one.
+inline constexpr std::string_view kClouds[] = {"models/props/cloud.glb", "models/props/cloud_2.glb",
+                                               "models/props/cloud_3.glb", "models/props/cloud_4.glb"};
 inline constexpr std::string_view kSampleHouse = "models/props/house_small.glb";  // Map preview and test scene.
 inline constexpr std::string_view kTestTree = "models/props/tree_pine.glb";
 inline constexpr std::string_view kTestRock = "models/props/rock.glb";
@@ -27,7 +29,8 @@ struct Use {
     std::string_view group;
 };
 inline constexpr Use kAll[] = {
-    {kCloud, "cloud"},         {kSampleHouse, "sample_house"}, {kTestTree, "test_scene"}, {kTestRock, "test_scene"},
+    {kClouds[0], "cloud"},     {kClouds[1], "cloud"},          {kClouds[2], "cloud"},     {kClouds[3], "cloud"},
+    {kSampleHouse, "sample_house"}, {kTestTree, "test_scene"}, {kTestRock, "test_scene"},
     {kAnimals[0], "deer"},     {kAnimals[1], "boar"},          {kAnimals[2], "wolf"},     {kAnimals[3], "bear"},
     {kHats[0], "hat"},         {kHats[1], "hat"},              {kBeard, "beard"},         {kApronMale, "apron"},
     {kApronFemale, "apron"},

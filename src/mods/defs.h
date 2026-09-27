@@ -29,6 +29,7 @@ struct RawDef {
     yyjson_mut_val* obj = nullptr;
     std::string mod;          // Last mod that added or patched it.
     std::string model_mod;    // Mod whose folder holds its model files.
+    std::string levels_model_mod;  // The same for its levels' models (who last set "levels").
 };
 
 class DefSet {

@@ -182,24 +182,57 @@ public:
         return out;
     }
 
-    // A file inside the model's mod folder that must exist.
-    // With `refs`, records the file (found or not) under `name_key`.
-    std::string model(const std::function<std::filesystem::path(const std::string&)>& mod_dir, bool required,
-                      std::vector<ModelRef>* refs, const std::string& name_key = {}) {
-        const std::string rel = text("model", required, 200);
-        if (rel.empty()) {
-            return rel;
+    // The model files: "models", a list of variants (phase 31), or
+    // "model", one file. Each must exist inside the model's mod folder.
+    // With `refs`, records every file (found or not) under `name_key`.
+    // `in_mod`: the mod whose folder holds them, if not the definition's
+    // model mod (a building's levels).
+    std::vector<std::string> models(const std::function<std::filesystem::path(const std::string&)>& mod_dir,
+                                    bool required, std::vector<ModelRef>* refs, const std::string& name_key = {},
+                                    const std::string& in_mod = {}) {
+        const std::string& mod = in_mod.empty() ? def_.model_mod : in_mod;
+        std::vector<std::string> out;
+        yyjson_mut_val* list = yyjson_mut_obj_get(obj_, "models");
+        if (list != nullptr && yyjson_mut_obj_get(obj_, "model") != nullptr) {
+            fail("use \"model\" or \"models\", not both");
+            return out;
         }
-        const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), rel);
-        std::error_code ec;
-        const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
-        if (!exists) {
-            fail(std::format("model '{}' not found in mod '{}'", rel, def_.model_mod));
+        if (list == nullptr) {
+            const std::string rel = text("model", required, 200);
+            if (!rel.empty()) {
+                out.push_back(rel);
+            }
+        } else if (!yyjson_mut_is_arr(list) || yyjson_mut_arr_size(list) == 0 ||
+                   yyjson_mut_arr_size(list) > sim::kMaxModelVariants) {
+            fail(std::format("\"models\" must be a list of 1 to {} files", sim::kMaxModelVariants));
+            return out;
+        } else {
+            std::size_t idx = 0, max = 0;
+            yyjson_mut_val* item = nullptr;
+            yyjson_mut_arr_foreach(list, idx, max, item) {
+                const char* v = yyjson_mut_get_str(item);
+                const std::string rel = v != nullptr ? v : "";
+                if (rel.empty() || rel.size() > 200) {
+                    fail("\"models\" entries must be file paths of up to 200 characters");
+                } else if (std::find(out.begin(), out.end(), rel) != out.end()) {
+                    fail(std::format("\"models\" lists '{}' twice", rel));
+                } else {
+                    out.push_back(rel);
+                }
+            }
         }
-        if (refs != nullptr) {
-            refs->push_back({def_.type, def_.id, name_key, def_.model_mod, rel, exists});
+        for (const std::string& rel : out) {
+            const std::filesystem::path path = mod_file(mod_dir(mod), rel);
+            std::error_code ec;
+            const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
+            if (!exists) {
+                fail(std::format("model '{}' not found in mod '{}'", rel, mod));
+            }
+            if (refs != nullptr) {
+                refs->push_back({def_.type, def_.id, name_key, mod, rel, exists});
+            }
         }
-        return rel;
+        return out;
     }
 
 private:
@@ -310,13 +343,20 @@ void DefSet::add_file(std::string_view json_text, const std::string& mod, const 
                     continue;
                 }
                 (void)yyjson_mut_obj_remove_key(target->obj, key);
+                // "model" and "models" are two forms of one field.
+                if (std::string_view(key) == "model" || std::string_view(key) == "models") {
+                    (void)yyjson_mut_obj_remove_key(target->obj, std::string_view(key) == "model" ? "models" : "model");
+                }
                 yyjson_mut_val* copy = yyjson_mut_val_mut_copy(target->doc.get(), v);
                 yyjson_mut_val* kc = yyjson_mut_strcpy(target->doc.get(), key);
                 if (copy != nullptr && kc != nullptr) {
                     (void)yyjson_mut_obj_add(target->obj, kc, copy);
                 }
-                if (std::string_view(key) == "model") {
+                if (std::string_view(key) == "model" || std::string_view(key) == "models") {
                     target->model_mod = mod;
+                }
+                if (std::string_view(key) == "levels") {
+                    target->levels_model_mod = mod;
                 }
             }
             target->mod = mod;
@@ -350,6 +390,7 @@ void DefSet::add_file(std::string_view json_text, const std::string& mod, const 
         yyjson_mut_doc_set_root(def.doc.get(), def.obj);
         def.mod = mod;
         def.model_mod = mod;
+        def.levels_model_mod = mod;
         defs_.push_back(std::move(def));
     }
 }
@@ -562,8 +603,8 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.work = r.integer("work", 1, 10000, 20);
         def.regrow_days = r.integer("regrowDays", 0, 3650, 0);
         // Features have no name of their own: the viewer shows the resource's.
-        def.model = r.model(mod_dir, false, refs,
-                            ri < 0 ? std::string{} : out.resources[static_cast<std::size_t>(ri)].name_key);
+        def.models = r.models(mod_dir, false, refs,
+                              ri < 0 ? std::string{} : out.resources[static_cast<std::size_t>(ri)].name_key);
         def.mod = d->model_mod;
         if (r.ok()) {
             out.features.push_back(std::move(def));
@@ -576,7 +617,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.id = d->id;
         def.name_key = r.text("name", true);
         def.mod = d->model_mod;
-        def.model = r.model(mod_dir, true, refs, def.name_key);
+        def.models = r.models(mod_dir, true, refs, def.name_key);
         def.kind = static_cast<sim::BuildingKind>(r.choice("kind", kBuildingKinds, 2, true));
         std::int32_t size[2] = {4, 4};
         r.numbers("size", size, 2, 1, 32);
@@ -641,6 +682,9 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                     level.needs = lr.choices<std::uint16_t>("needs", kNeeds);
                     level.tier = lr.integer("tier", 0, 10, 0);
                     level.population = lr.integer("population", 0, 100000, 0);
+                    // Its own look (phase 31); none: the building's.
+                    level.models = lr.models(mod_dir, false, refs, def.name_key, d->levels_model_mod);
+                    level.models_mod = d->levels_model_mod;
                     if (!lr.ok()) {
                         r.fail("a level has errors");
                     }

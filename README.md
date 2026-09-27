@@ -384,6 +384,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con el visor abierto en un modelo, volver a correr su script de Blender (o guardar otra vez el archivo) lo actualiza solo y abajo aparece "Recargado".
 - [ ] El juego sigue viéndose igual (nubes, casas de muestra, animales y sombreros de los aldeanos).
 
+### Fase 31 (variantes de modelos)
+
+- [ ] En una partida, las casas no son todas iguales: hay tres formas por nivel y cada una tiene su techo (teja, paja, pizarra, tablillas), sus paredes y sus postigos.
+- [ ] Al colocar una casa, la vista previa ya muestra la forma que tendrá en ese lugar; al construirla queda igual.
+- [ ] Al subir de nivel, una casa cambia a una forma más grande (media planta, ala o porche; luego dos plantas).
+- [ ] Las rocas, las rocas con mineral y los arbustos de bayas tienen tres formas cada uno, y el cielo tiene nubes de cuatro formas.
+- [ ] Guardar y cargar deja cada casa, roca y arbusto con la misma forma y los mismos colores.
+- [ ] En multijugador, las dos ventanas ven la misma forma y los mismos colores en cada casa.
+- [ ] En el visor de modelos, "Casa (9)" muestra las nueve casas, y "Otros colores" cambia sus techos, paredes y postigos.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

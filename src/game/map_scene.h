@@ -26,6 +26,8 @@ namespace sc {
 [[nodiscard]] std::size_t tree_slot_count(const sim::Content& content);
 [[nodiscard]] std::size_t visual_slot_count(const sim::Content& content);
 [[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f);
+// The slot of a variant of a natural feature other than trees (phase 31).
+[[nodiscard]] std::size_t feature_slot(const sim::Content& content, sim::FeatureType type, std::size_t variant);
 
 // Everything the renderer needs for a map, built off the main thread. For
 // trees, an instance's scale is the tree's height in meters; MapScene turns
@@ -147,8 +149,8 @@ private:
 
     void apply_features(render::SceneRenderer& renderer, const std::vector<std::vector<render::Instance>>& features);
     render::ModelId house_ = kNoModel;
-    render::ModelId cloud_ = kNoModel;
-    std::vector<render::Instance> clouds_;
+    std::vector<render::ModelId> cloud_models_;         // The cloud shapes (phase 31).
+    std::vector<std::vector<render::Instance>> clouds_;  // By shape.
     float cloud_min_ = 0.0f;  // The x range the clouds wrap around.
     float cloud_max_ = 0.0f;
     void show_clouds(render::SceneRenderer& renderer, const sim::MapData& map);

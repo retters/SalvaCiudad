@@ -169,6 +169,8 @@ private:
     bool snowy_ = false;
     std::uint32_t palette_ = 0;
     std::uint32_t palette_count_ = 1;
+    std::uint32_t building_palette_ = 0;
+    std::uint32_t building_palette_count_ = 0;
     int clip_ = -1;  // -1: each body's idle.
 
     OrbitCamera camera_;

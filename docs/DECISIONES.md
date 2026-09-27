@@ -1411,3 +1411,32 @@ Cada medio segundo compara la fecha y el tamaño de los archivos mostrados; si c
 - Derecha abre lo que está cerrado y, si ya está abierto, entra en su primer elemento. Izquierda cierra lo abierto o, si no, sube a lo que lo contiene. Es la conducta habitual de los árboles de archivos.
 - Solo en la pestaña Modelos y nunca mientras se escribe en el buscador. El visor recuerda qué está abierto; el ratón y el teclado comparten ese estado y el cursor.
 - La lógica de las teclas es una función pura (`navigate`) con sus pruebas; al abrir, el cursor empieza en el primer tipo de la lista tal como se ve.
+
+## Fase 31: variantes de modelos (2026-09-27)
+
+**D-3101. Variantes declaradas en los JSON.**
+- `"models": [...]` (1 a 8 archivos) en edificios, niveles de edificio y recursos naturales; `"model"` sigue valiendo y equivale a una lista de uno. Usar los dos a la vez es un error, igual que una lista vacía, repetida o con un archivo que falta.
+- Un parche de `model` o `models` reemplaza la otra forma, y sus archivos se buscan en el mod del parche. Los de los niveles se buscan en el mod que escribió `levels` (`levels_model_mod`), para que un mod que solo cambia las casas de la planta baja no rompa las de los niveles de `core`.
+- Los árboles no cambian: ya tienen cuatro tamaños por especie, que son sus variantes.
+
+**D-3102. La variante sale del lugar, no de la simulación.**
+- Edificios: de la celda de su esquina (`place_key(x, z)`), así la vista previa al colocarlo ya muestra la casa que quedará, y es la misma en todas las computadoras y al cargar. Recursos naturales: de su posición en punto fijo. Nubes: del mismo generador que las reparte, con la semilla del mapa.
+- La elección (`pick_variant`) está en `src/game/variants.cpp` y solo la usa la vista. La prueba "the looks never change the simulation" corre la misma partida con y sin variantes y compara el hash.
+- Cada nivel de una casa usa las variantes del nivel más alto alcanzado que tenga `models`; si ninguno tiene, las de la planta baja.
+
+**D-3103. Paleta de colores en los edificios.**
+- Como la de los aldeanos (D-405): los materiales `var_roof`, `var_roof_dark`, `var_walls` y `var_shutter` toman el color de la paleta de cada instancia. 150 paletas: 5 techos × 6 paredes × 5 postigos. Solo las casas usan esos materiales por ahora; los talleres conservan su techo característico (pizarra en la herrería, paja en el leñador...).
+- El número de paleta viaja en el cuarto canal del tinte de la instancia (sin agrandar la instancia de 64 bytes) y el color en un búfer de 256 paletas, siempre del mismo tamaño para que el sombreador nunca lea fuera. Como el sombreador de píxeles multiplica por el color del material, el de vértices divide por él: un material recoloreado sin paleta (el visor, la vista previa al colocar) conserva el color que tiene en Blender.
+- La vista previa al colocar un edificio no usa paleta, para que el verde o el rojo se lean bien.
+
+**D-3104. Qué se agregó.**
+- Casas: tres por nivel, nueve en total, dentro del terreno de 6 × 5 m (`house_variant` en `buildings.py`). Nivel 1: cabaña; nivel 2: media planta bajo el techo, un ala o un porche; nivel 3: dos plantas.
+- Rocas, rocas con mineral y arbustos de bayas: tres de cada uno. Nubes: cuatro formas.
+- Sombreros: siguen los dos de antes; la especificación permitía hasta tres, pero los accesorios se dibujan en cada aldeano y la paleta ya los varía.
+- Los parámetros nuevos de los scripts de Blender tienen por omisión el comportamiento de antes: regenerar da los mismos archivos para todo lo demás, salvo `house.glb`, que ahora usa los materiales `var_*`.
+
+**D-3105. El visor y las variantes.**
+Las variantes de una definición, niveles incluidos, forman un grupo. "Otros colores" recorre las 150 paletas en los edificios.
+
+**D-3106. La compilación del visor espera a la del juego.**
+Los dos copian `data/` junto al ejecutable al terminar de enlazar; en paralelo, una copia podía fallar. Ahora el visor se enlaza después del juego.

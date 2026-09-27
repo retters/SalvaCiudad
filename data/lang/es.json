@@ -1020,6 +1020,8 @@
     "viewer.view.season": "Estación",
     "viewer.view.snow": "Con nieve",
     "viewer.view.palette": "Otra paleta ({0} de {1})",
+    "viewer.view.colors": "Otros colores ({0} de {1})",
+    "viewer.view.colorsHelp": "Techo, paredes y postigos de los materiales var_* (fase 31); el juego elige una combinación por lugar.",
     "viewer.view.frame": "Encuadrar (F)",
     "viewer.view.reload": "Volver a leer los mods (F5)",
     "viewer.controls": "Arrastra con el botón izquierdo para girar, con el derecho para mover; rueda para acercar.",

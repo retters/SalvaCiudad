@@ -23,6 +23,7 @@
 #include "game/builtin_models.h"
 #include "game/map_scene.h"
 #include "game/test_scene.h"
+#include "game/variants.h"
 #include "i18n/translator.h"
 #include "version.h"
 
@@ -267,6 +268,9 @@ bool ViewerApp::init() {
     const std::vector<render::Palette> palettes = make_villager_palettes();
     palette_count_ = static_cast<std::uint32_t>(palettes.size());
     scene_.set_palettes(palettes);
+    const std::vector<render::BuildingPalette> building_palettes = make_building_palettes();
+    building_palette_count_ = static_cast<std::uint32_t>(building_palettes.size());
+    scene_.set_building_palettes(building_palettes);
     if (!scene_.add_model(make_grid_ground(kGroundHalfSize), ground_)) {
         ground_ = kNone;
     }
@@ -738,6 +742,10 @@ void ViewerApp::update_scene(float dt) {
             inst.position = p.position;
             inst.yaw = spin_;
             inst.tint = tint_for(cm, i);
+            // Buildings with their roof, wall and shutter colors (phase 31).
+            inst.palette = cm.category == Category::Buildings && building_palette_count_ > 0
+                               ? building_palette_ % building_palette_count_ + 1
+                               : 0;
             scene_.set_instances(l.model, {&inst, 1});
             shown_rigid_.push_back(l.model);
         } else if (l.body != kNone) {
@@ -1229,10 +1237,20 @@ void ViewerApp::draw_card(float width, float height) {
     ImGui::Checkbox(tr("viewer.view.turntable").c_str(), &turntable_);
     bool trees = false;
     bool bodies = false;
+    bool buildings = false;
     for (const std::size_t m : shown) {
         trees = trees || catalog_.models[m].category == Category::Trees ||
                 catalog_.models[m].category == Category::Props;
         bodies = bodies || catalog_.models[m].category == Category::Characters;
+        buildings = buildings || catalog_.models[m].category == Category::Buildings;
+    }
+    if (buildings && building_palette_count_ > 0) {
+        const std::string colors =
+            tr("viewer.view.colors", building_palette_ % building_palette_count_ + 1, building_palette_count_);
+        if (ImGui::Button(colors.c_str())) {
+            building_palette_ = (building_palette_ * 37u + 11u) % building_palette_count_;
+        }
+        ImGui::SetItemTooltip("%s", tr("viewer.view.colorsHelp").c_str());
     }
     if (trees) {
         const std::string seasons[] = {tr("hud.season.spring"), tr("hud.season.summer"), tr("hud.season.autumn"),

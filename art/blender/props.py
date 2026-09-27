@@ -64,38 +64,40 @@ def oak_tree(folder):
     common.export_glb(os.path.join(folder, "tree_oak.glb"), [obj])
 
 
-def ore_rock(folder):
+def ore_rock(folder, name="ore_rock", seed=1.7, scale=(1.15, 1.0, 0.75),
+             veins=((0.45, -0.45, 0.75, 0.28), (-0.5, -0.3, 0.55, 0.24), (0.1, 0.55, 0.85, 0.22),
+                    (-0.15, -0.65, 0.35, 0.2)), knob=(0.75, 0.3, 0.3)):
     common.reset_scene()
     mb = MeshBuilder()
-    verts = mb.sphere((0, 0, 0.5), 0.8, "rock_dark", segments=9, rings=6, scale=(1.15, 1.0, 0.75))
-    lumpy(verts, 0.12, 1.7)
+    verts = mb.sphere((0, 0, 0.5), 0.8, "rock_dark", segments=9, rings=6, scale=scale)
+    lumpy(verts, 0.12, seed)
     for v in verts:
         if v.co.z < 0.05:
             v.co.z = 0.0
     # Rusty veins of iron ore breaking the surface.
-    for x, y, z, r in ((0.45, -0.45, 0.75, 0.28), (-0.5, -0.3, 0.55, 0.24), (0.1, 0.55, 0.85, 0.22),
-                       (-0.15, -0.65, 0.35, 0.2)):
+    for x, y, z, r in veins:
         mb.sphere((x, y, z), r, "ore", segments=6, rings=4, scale=(1.2, 0.9, 0.8))
-    mb.sphere((0.75, 0.3, 0.3), 0.3, "ore_dark", segments=7, rings=5)
-    obj = mb.to_object("ore_rock", COLORS)
-    common.export_glb(os.path.join(folder, "ore_rock.glb"), [obj])
+    mb.sphere(knob, 0.3, "ore_dark", segments=7, rings=5)
+    obj = mb.to_object(name, COLORS)
+    common.export_glb(os.path.join(folder, name + ".glb"), [obj])
 
 
-def berry_bush(folder):
+def berry_bush(folder, name="berry_bush",
+               puffs=((0, 0, 0.45, 0.55), (0.4, 0.2, 0.35, 0.4), (-0.35, 0.25, 0.35, 0.42), (0.05, -0.35, 0.33, 0.38)),
+               berries=14, reach=(0.6, 0.47), height=(0.3, 0.35)):
     common.reset_scene()
     mb = MeshBuilder()
-    for i, (x, y, z, r) in enumerate(((0, 0, 0.45, 0.55), (0.4, 0.2, 0.35, 0.4), (-0.35, 0.25, 0.35, 0.42),
-                                      (0.05, -0.35, 0.33, 0.38))):
+    for i, (x, y, z, r) in enumerate(puffs):
         verts = mb.sphere((x, y, z), r, "bush", segments=8, rings=5, scale=(1.0, 1.0, 0.8))
         lumpy(verts, 0.1, i)
     # Berries in small groups on the outside.
-    for i in range(14):
+    for i in range(berries):
         a = i * 2.399963
-        h = 0.3 + 0.35 * ((i * 7) % 5) / 5.0
-        r = 0.6 if h < 0.5 else 0.47
+        h = height[0] + height[1] * ((i * 7) % 5) / 5.0
+        r = reach[0] if h < height[0] + height[1] * 0.55 else reach[1]
         mb.sphere((math.cos(a) * r, math.sin(a) * r, h), 0.06, "berries", segments=5, rings=3)
-    obj = mb.to_object("berry_bush", COLORS)
-    common.export_glb(os.path.join(folder, "berry_bush.glb"), [obj])
+    obj = mb.to_object(name, COLORS)
+    common.export_glb(os.path.join(folder, name + ".glb"), [obj])
 
 
 def herb(folder):
@@ -127,6 +129,20 @@ def pine_tree(folder):
             v.co.x, v.co.y = x * c - y * s, x * s + y * c
     obj = mb.to_object("tree_pine", COLORS)
     common.export_glb(os.path.join(folder, "tree_pine.glb"), [obj])
+
+
+def rock_variant(folder, name, parts, seed):
+    """A boulder made of several lumpy stones: (x, y, z, r, sx, sy, sz, mat)."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    for n, (x, y, z, r, sx, sy, sz, mat) in enumerate(parts):
+        verts = mb.sphere((x, y, z), r, mat, segments=8, rings=6, scale=(sx, sy, sz))
+        lumpy(verts, 0.13, seed + n * 1.3)
+        for v in verts:
+            if v.co.z < 0.03:
+                v.co.z = 0.0
+    obj = mb.to_object(name, COLORS)
+    common.export_glb(os.path.join(folder, name + ".glb"), [obj])
 
 
 def rock(folder):
@@ -226,13 +242,15 @@ def house(folder):
     common.export_glb(os.path.join(folder, "house_small.glb"), [obj])
 
 
-def cloud(folder):
+CLOUD_PUFFS = ((0.0, 0.0, 0.55, 1.0), (1.1, 0.2, 0.45, 0.8), (-1.1, -0.1, 0.42, 0.75), (0.45, -0.45, 0.75, 0.7),
+               (-0.5, 0.4, 0.7, 0.65), (1.8, -0.1, 0.3, 0.5))
+
+
+def cloud(folder, name="cloud", puffs=CLOUD_PUFFS):
     """A low-poly cloud: a few lumpy, flattened puffs, about 4 m long (the
     game scales it up)."""
     common.reset_scene()
     mb = MeshBuilder()
-    puffs = ((0.0, 0.0, 0.55, 1.0), (1.1, 0.2, 0.45, 0.8), (-1.1, -0.1, 0.42, 0.75), (0.45, -0.45, 0.75, 0.7),
-             (-0.5, 0.4, 0.7, 0.65), (1.8, -0.1, 0.3, 0.5))
     for i, (x, y, z, r) in enumerate(puffs):
         verts = mb.sphere((x, y, z), r, "cloud" if i % 3 else "cloud_shade", segments=7, rings=5,
                           scale=(1.25, 1.0, 0.7))
@@ -240,8 +258,8 @@ def cloud(folder):
         for v in verts:
             if v.co.z < 0.2:
                 v.co.z = 0.2 + (v.co.z - 0.2) * 0.3  # Flatter underside.
-    obj = mb.to_object("cloud", COLORS)
-    common.export_glb(os.path.join(folder, "cloud.glb"), [obj])
+    obj = mb.to_object(name, COLORS)
+    common.export_glb(os.path.join(folder, name + ".glb"), [obj])
 
 
 def make_all(folder):
@@ -254,3 +272,34 @@ def make_all(folder):
     herb(folder)
     house(folder)
     cloud(folder)
+    variants(folder)
+
+
+def variants(folder):
+    """More looks of the same things (phase 31)."""
+    # Boulders: a tall stone leaning on a small one, and a low flat group.
+    rock_variant(folder, "rock_2", ((0.0, 0.0, 0.6, 0.6, 0.9, 0.8, 1.35, "rock"),
+                                    (0.55, 0.3, 0.2, 0.35, 1.1, 1.0, 0.7, "rock_dark"),
+                                    (-0.1, -0.2, 1.05, 0.22, 1.2, 1.0, 0.4, "moss")), 0.7)
+    rock_variant(folder, "rock_3", ((-0.35, 0.1, 0.25, 0.55, 1.4, 1.0, 0.55, "rock"),
+                                    (0.5, -0.25, 0.2, 0.45, 1.2, 1.1, 0.5, "rock_dark"),
+                                    (0.1, 0.5, 0.15, 0.3, 1.0, 1.0, 0.6, "rock"),
+                                    (-0.4, 0.05, 0.5, 0.25, 1.5, 1.1, 0.3, "moss")), 2.9)
+    ore_rock(folder, "ore_rock_2", seed=3.1, scale=(0.9, 1.05, 1.05),
+             veins=((0.3, -0.55, 0.9, 0.26), (-0.45, 0.1, 1.0, 0.22), (0.5, 0.35, 0.5, 0.24)), knob=(-0.6, -0.4, 0.3))
+    ore_rock(folder, "ore_rock_3", seed=5.3, scale=(1.35, 1.1, 0.6),
+             veins=((0.7, -0.3, 0.55, 0.25), (-0.6, -0.45, 0.45, 0.24), (-0.1, 0.6, 0.6, 0.2),
+                    (0.2, -0.1, 0.8, 0.22), (-0.9, 0.3, 0.3, 0.2)), knob=(0.9, 0.45, 0.25))
+    # Bushes: taller and narrow, and low and wide.
+    berry_bush(folder, "berry_bush_2", puffs=((0, 0, 0.6, 0.45), (0.15, 0.1, 0.95, 0.35), (-0.2, 0.15, 0.35, 0.38)),
+               berries=12, reach=(0.48, 0.4), height=(0.35, 0.6))
+    berry_bush(folder, "berry_bush_3", puffs=((-0.45, 0, 0.3, 0.45), (0.1, 0.15, 0.32, 0.5), (0.6, -0.1, 0.28, 0.42),
+                                              (0.0, -0.4, 0.25, 0.38), (0.3, 0.5, 0.25, 0.35)),
+               berries=18, reach=(0.75, 0.6), height=(0.2, 0.3))
+    # Clouds: a long flat one, a tall heap and a small pair.
+    cloud(folder, "cloud_2", ((-2.4, 0.0, 0.35, 0.7), (-1.3, 0.2, 0.4, 0.85), (0.0, -0.1, 0.45, 0.9),
+                              (1.3, 0.15, 0.4, 0.8), (2.4, -0.05, 0.35, 0.65), (0.6, -0.4, 0.3, 0.55)))
+    cloud(folder, "cloud_3", ((0.0, 0.0, 0.6, 1.1), (0.9, 0.2, 0.55, 0.85), (-0.9, -0.1, 0.5, 0.8),
+                              (0.2, 0.0, 1.4, 0.85), (-0.4, 0.2, 2.0, 0.6), (0.5, -0.2, 1.1, 0.7)))
+    cloud(folder, "cloud_4", ((0.0, 0.0, 0.4, 0.7), (0.8, 0.1, 0.35, 0.55), (-2.0, 0.6, 0.35, 0.5),
+                              (-2.6, 0.4, 0.3, 0.4)))

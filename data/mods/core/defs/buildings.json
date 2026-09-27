@@ -47,7 +47,11 @@
       "id": "core:house",
       "name": "building.house",
       "kind": "house",
-      "model": "models/buildings/house.glb",
+      "models": [
+        "models/buildings/house.glb",
+        "models/buildings/house_2.glb",
+        "models/buildings/house_3.glb"
+      ],
       "size": [
         6,
         5
@@ -70,7 +74,12 @@
             "core:log": 8,
             "core:stone": 8
           },
-          "work": 200
+          "work": 200,
+          "models": [
+            "models/buildings/house_l2.glb",
+            "models/buildings/house_l2_2.glb",
+            "models/buildings/house_l2_3.glb"
+          ]
         },
         {
           "residents": 9,
@@ -92,7 +101,12 @@
             "core:roof_tiles": 12,
             "core:tools": 2
           },
-          "work": 300
+          "work": 300,
+          "models": [
+            "models/buildings/house_l3.glb",
+            "models/buildings/house_l3_2.glb",
+            "models/buildings/house_l3_3.glb"
+          ]
         }
       ]
     },

@@ -52,6 +52,11 @@ COLORS = {
     "berries": common.rgb(0xA8243A),
     "bread": common.rgb(0xC08A48),
     "bell": common.rgb(0xB8923A),
+    # Recolored per house by the game (phase 31); these are the preview colors.
+    "var_roof": common.rgb(0x9A4A2E),
+    "var_roof_dark": common.rgb(0x7E3A24),
+    "var_walls": common.rgb(0xE6DCC4),
+    "var_shutter": common.rgb(0x4F6B4A),
 }
 
 
@@ -69,7 +74,7 @@ def sloped_slab(mb, x0, x1, y_outer, y_inner, z_outer, z_inner, thick, mat):
     return verts
 
 
-def gable_roof(mb, cx, cy, w, d, wall_h, rise, overhang, mats, rows=5):
+def gable_roof(mb, cx, cy, w, d, wall_h, rise, overhang, mats, rows=5, gable="plaster"):
     """A two-slope roof along X over a w x d block, in alternating rows."""
     ridge = wall_h + rise
     for side in (-1, 1):
@@ -83,16 +88,15 @@ def gable_roof(mb, cx, cy, w, d, wall_h, rise, overhang, mats, rows=5):
             sloped_slab(mb, cx - w / 2 - overhang, cx + w / 2 + overhang, y_out, y_in, z_out, z_in, 0.08,
                         mats[r % len(mats)])
     for x in (cx - w / 2, cx + w / 2):
-        gable = mb.prism([(cy - d / 2, wall_h), (cy + d / 2, wall_h), (cy, ridge - 0.05)], x - 0.05, x + 0.05,
-                         "plaster")
-        for v in gable:
+        end = mb.prism([(cy - d / 2, wall_h), (cy + d / 2, wall_h), (cy, ridge - 0.05)], x - 0.05, x + 0.05, gable)
+        for v in end:
             v.co.x, v.co.y, v.co.z = v.co.z, v.co.x, v.co.y
     mb.box((cx, cy, ridge + 0.03), (w + 2 * overhang, 0.2, 0.12), mats[-1])
     return ridge
 
 
 def cottage(mb, cx, cy, w, d, h, roof=("roof", "roof_dark"), walls="plaster", chimney=True, door=True,
-            windows=True, rise=None):
+            windows=True, rise=None, shutter="shutter", gable="plaster", chimney_x=0.28):
     """A timber-framed house block of w x d x h with its door on -Y. Returns the ridge height."""
     t = 0.14
     mb.box((cx, cy, 0.18), (w + 0.1, d + 0.1, 0.36), "stone")
@@ -117,11 +121,12 @@ def cottage(mb, cx, cy, w, d, h, roof=("roof", "roof_dark"), walls="plaster", ch
                 mb.box((x, y + face * 0.04, h * 0.62), (0.7, 0.06, 0.6), "timber")
                 mb.box((x, y + face * 0.06, h * 0.62), (0.54, 0.06, 0.44), "window")
                 for side in (-1, 1):
-                    mb.box((x + side * 0.45, y + face * 0.06, h * 0.62), (0.24, 0.05, 0.52), "shutter")
-    ridge = gable_roof(mb, cx, cy, w, d, h, rise if rise is not None else max(1.2, d * 0.42), 0.35, list(roof))
+                    mb.box((x + side * 0.45, y + face * 0.06, h * 0.62), (0.24, 0.05, 0.52), shutter)
+    ridge = gable_roof(mb, cx, cy, w, d, h, rise if rise is not None else max(1.2, d * 0.42), 0.35, list(roof),
+                       gable=gable)
     if chimney:
-        mb.box((cx + w * 0.28, cy + d * 0.18, ridge - 0.2), (0.5, 0.5, 1.6), "stone")
-        mb.box((cx + w * 0.28, cy + d * 0.18, ridge + 0.62), (0.62, 0.62, 0.1), "stone_dark")
+        mb.box((cx + w * chimney_x, cy + d * 0.18, ridge - 0.2), (0.5, 0.5, 1.6), "stone")
+        mb.box((cx + w * chimney_x, cy + d * 0.18, ridge + 0.62), (0.62, 0.62, 0.1), "stone_dark")
     return ridge
 
 
@@ -203,6 +208,111 @@ def house(folder, name, w, d, h, roof, walls="plaster"):
     mb.box((-(w - 0.8) / 2 + 0.5, -d / 2 + 0.3, 0.1), (0.9, 0.5, 0.2), "soil")
     for i in range(3):
         mb.sphere((-(w - 0.8) / 2 + 0.2 + i * 0.3, -d / 2 + 0.3, 0.3), 0.14, "leaves", segments=6, rings=4)
+    export(folder, name, mb)
+
+
+VAR = {"roof": ("var_roof", "var_roof_dark"), "walls": "var_walls", "shutter": "var_shutter", "gable": "var_walls"}
+
+
+def upper_windows(mb, cx, cy, w, d, z):
+    """A row of small windows with shutters on the front and back, at height z."""
+    for x in (cx - w * 0.3, cx, cx + w * 0.3):
+        for y, face in ((cy - d / 2, -1), (cy + d / 2, 1)):
+            mb.box((x, y + face * 0.04, z), (0.6, 0.06, 0.52), "timber")
+            mb.box((x, y + face * 0.06, z), (0.46, 0.06, 0.38), "window")
+            for side in (-1, 1):
+                mb.box((x + side * 0.38, y + face * 0.06, z), (0.2, 0.05, 0.44), "var_shutter")
+
+
+def garden_patch(mb, x, y):
+    mb.box((x, y, 0.1), (0.9, 0.5, 0.2), "soil")
+    for i in range(3):
+        mb.sphere((x - 0.3 + i * 0.3, y, 0.3), 0.14, "leaves", segments=6, rings=4)
+
+
+def rain_barrel(mb, x, y):
+    mb.cylinder((x, y, 0), (x, y, 0.8), 0.32, 0.3, "wood", segments=8)
+    for z in (0.15, 0.65):
+        mb.cylinder((x, y, z), (x, y, z + 0.06), 0.33, 0.33, "iron", segments=8)
+
+
+def lean_to(mb, x0, x1, y0, y1, h_low, h_high):
+    """A shed against a wall: posts, a board wall and a one-slope roof."""
+    mb.box(((x0 + x1) / 2, (y0 + y1) / 2, h_low / 2), (x1 - x0, y1 - y0, h_low), "wood")
+    for x in (x0, x1):
+        for y in (y0, y1):
+            mb.box((x, y, h_low / 2), (0.12, 0.12, h_low), "timber")
+    sloped_slab(mb, x0 - 0.15, x1 + 0.15, y0 - 0.2, y1, h_low, h_high, 0.08, "var_roof_dark")
+
+
+def house_variant(folder, name, level, style):
+    """A home at `level` (0 to 2) in one of three styles (0 to 2), made to
+    fill the house footprint like house.glb. Roof, walls and shutters use the
+    var_* materials, which the game recolors per house."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    w, d = 5.2, 4.0  # The main block, inside the 6 x 5 m lot.
+    if level == 0:
+        # A one-floor cottage.
+        if style == 0:
+            cottage(mb, 0, 0.2, w, d, 2.6, chimney_x=0.28, **VAR)
+            garden_patch(mb, -w / 2 + 0.5, -2.2)
+        elif style == 1:
+            cottage(mb, 0.45, 0.2, w - 0.9, d, 2.5, chimney_x=-0.3, **VAR)
+            lean_to(mb, -2.6, -1.72, -1.2, 1.4, 1.5, 2.1)
+            log_pile(mb, -2.2, -1.9, length=1.2, rows=2)
+        else:
+            cottage(mb, 0, 0.35, w - 0.4, d - 0.3, 2.4, rise=1.9, chimney=False, **VAR)
+            rain_barrel(mb, 2.3, -1.6)
+            garden_patch(mb, -1.6, -2.2)
+    elif level == 1:
+        # Bigger: a half floor under the roof, a wing or a porch.
+        if style == 0:
+            cottage(mb, 0, 0.2, w, d, 3.3, chimney_x=0.3, **VAR)
+            upper_windows(mb, 0, 0.2, w, d, 2.75)
+            garden_patch(mb, -w / 2 + 0.5, -2.2)
+        elif style == 1:
+            cottage(mb, 0.6, 0.55, w - 1.2, d - 0.7, 3.0, chimney_x=0.25, **VAR)
+            cottage(mb, -1.95, -0.45, 1.8, 2.8, 2.4, door=False, windows=False, chimney=False, rise=1.0,
+                    **VAR)
+            rain_barrel(mb, 2.5, -1.7)
+        else:
+            cottage(mb, 0, 0.5, w, d - 0.6, 3.1, chimney_x=-0.3, **VAR)
+            # A porch roof over the door, on two posts, with a bench.
+            for x in (-1.0, 1.0):
+                mb.box((x, -2.1, 1.1), (0.14, 0.14, 2.2), "timber")
+            sloped_slab(mb, -1.3, 1.3, -2.35, -1.45, 2.15, 2.55, 0.08, "var_roof_dark")
+            mb.box((1.6, -1.8, 0.25), (1.0, 0.35, 0.08), "wood")
+            for x in (1.2, 2.0):
+                mb.box((x, -1.8, 0.12), (0.08, 0.3, 0.24), "wood")
+    else:
+        # Two floors.
+        if style == 0:
+            # Stone below, plaster above.
+            mb.box((0, 0.2, 1.1), (w + 0.1, d + 0.1, 2.2), "stone")
+            mb.box((0, -d / 2 + 0.16, 0.95), (0.95, 0.06, 1.7), "timber")
+            mb.box((0, -d / 2 + 0.14, 0.9), (0.78, 0.06, 1.55), "door")
+            for x in (-1.6, 1.6):
+                mb.box((x, -d / 2 + 0.14, 1.3), (0.6, 0.06, 0.6), "window")
+            # The upper floor on the stone one: a cottage block raised 2.2 m.
+            before = set(mb.bm.verts)
+            cottage(mb, 0, 0.2, w + 0.3, d + 0.3, 2.3, door=False, windows=False, chimney=False, **VAR)
+            for v in mb.bm.verts:
+                if v not in before:
+                    v.co.z += 2.2
+            upper_windows(mb, 0, 0.2, w + 0.3, d + 0.3, 3.4)
+            mb.box((w * 0.3, 0.9, 5.3), (0.55, 0.55, 3.2), "stone")
+        elif style == 1:
+            cottage(mb, -0.35, 0.2, w - 0.7, d, 4.2, chimney_x=-0.3, **VAR)
+            upper_windows(mb, -0.35, 0.2, w - 0.7, d, 3.2)
+            # A stone chimney stack on the right end.
+            mb.box((2.55, 0.2, 3.0), (0.8, 1.2, 6.0), "stone")
+            mb.box((2.55, 0.2, 6.05), (0.95, 1.35, 0.12), "stone_dark")
+        else:
+            cottage(mb, 0.5, 0.6, w - 1.0, d - 0.8, 4.0, chimney_x=0.25, **VAR)
+            upper_windows(mb, 0.5, 0.6, w - 1.0, d - 0.8, 3.0)
+            cottage(mb, -1.9, -0.35, 2.0, 3.0, 2.6, door=True, windows=False, chimney=False, rise=1.1, **VAR)
+            garden_patch(mb, 1.8, -2.2)
     export(folder, name, mb)
 
 
@@ -706,7 +816,11 @@ def barracks(folder):
 def make_all(folder):
     os.makedirs(folder, exist_ok=True)
     town_center(folder)
-    house(folder, "house", 6, 5, 2.6, ("roof", "roof_dark"))
+    # Homes: three looks for each level (phase 31).
+    for level, names in enumerate((("house", "house_2", "house_3"), ("house_l2", "house_l2_2", "house_l2_3"),
+                                   ("house_l3", "house_l3_2", "house_l3_3"))):
+        for style, name in enumerate(names):
+            house_variant(folder, name, level, style)
     storehouse(folder, "storehouse", 7, 6)
     storehouse(folder, "granary", 8, 7, food=True)
     shops = (

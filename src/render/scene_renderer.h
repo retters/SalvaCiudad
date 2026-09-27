@@ -25,6 +25,9 @@ struct Instance {
     float yaw = 0.0f;
     float scale = 1.0f;
     math::Vec3 tint{1.0f, 1.0f, 1.0f};
+    // Building palette (phase 31): 0 keeps the model's own colors; n takes
+    // palette n - 1 for the materials named after its slots.
+    std::uint32_t palette = 0;
 };
 
 // An animated character. Accessories (hats, aprons...) are chosen with a
@@ -45,6 +48,15 @@ struct CharacterInstance {
 inline constexpr std::size_t kPaletteSlots = 8;
 struct Palette {
     math::Vec3 colors[kPaletteSlots];
+};
+
+// Colors for the building palette slots (var_roof, var_roof_dark,
+// var_walls, var_shutter), linear RGB. Models name a material after a slot
+// to have it recolored per instance.
+inline constexpr std::size_t kBuildingPaletteSlots = 4;
+inline constexpr std::uint32_t kMaxBuildingPalettes = 256;
+struct BuildingPalette {
+    math::Vec3 colors[kBuildingPaletteSlots];
 };
 
 struct Lighting {
@@ -143,6 +155,8 @@ public:
     [[nodiscard]] int clip_index(SkinnedId body, std::string_view name) const;
     [[nodiscard]] float clip_duration(SkinnedId body, std::uint32_t clip) const;
     void set_palettes(std::span<const Palette> palettes);
+    // The palettes an Instance's `palette` picks (at most kMaxBuildingPalettes).
+    void set_building_palettes(std::span<const BuildingPalette> palettes);
     // Replaces the characters to draw; call every frame they move.
     void set_characters(std::span<const CharacterInstance> characters);
 

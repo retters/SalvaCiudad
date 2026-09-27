@@ -105,7 +105,11 @@ TEST_SUITE("viewer") {
         CHECK(hats->models.size() == std::size(builtin_models::kHats));
         const viewer::CatalogGroup* cloud = group(c, "code:cloud");
         REQUIRE(cloud != nullptr);
-        CHECK(cloud->models.size() == 1);
+        CHECK(cloud->models.size() == std::size(builtin_models::kClouds));
+        // A house's variants for every level are one group.
+        const viewer::CatalogGroup* house = group(c, "core:house");
+        REQUIRE(house != nullptr);
+        CHECK(house->models.size() == 9);
         for (const builtin_models::Use& use : builtin_models::kAll) {
             const viewer::CatalogModel* m = c.find("core", use.path);
             REQUIRE_MESSAGE(m != nullptr, use.path);
