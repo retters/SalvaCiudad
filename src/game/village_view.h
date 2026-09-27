@@ -44,6 +44,13 @@ public:
         bool operator==(const Ghost&) const = default;
     };
     void set_ghost(std::optional<Ghost> ghost);
+    // A field being marked out (x, z, w, d in cells), green if it fits.
+    struct FieldGhost {
+        std::int32_t x = 0, z = 0, w = 0, d = 0;
+        bool allowed = false;
+        bool operator==(const FieldGhost&) const = default;
+    };
+    void set_field_ghost(std::optional<FieldGhost> ghost);
     // Winter brings caps; summer, straw hats.
     void set_season(sim::Season season) { season_ = season; }
 
@@ -79,6 +86,11 @@ private:
     std::uint32_t palette_count_ = 1;
 
     std::optional<Ghost> ghost_;
+    std::optional<FieldGhost> field_ghost_;
+    // Fields: a soil slab and a plant per 2 m, made in code.
+    render::ModelId tile_model_ = kNoModel;
+    render::ModelId plant_model_ = kNoModel;
+    void rebuild_fields(render::SceneRenderer& renderer, const sim::Game& game);
     sim::Season season_ = sim::Season::Summer;
     bool ghost_changed_ = false;
     bool shown_ = false;

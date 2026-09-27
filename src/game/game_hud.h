@@ -36,6 +36,8 @@ private:
     void build_bar(ui::Context& ctx, GameSession& s);
     void building_window(ui::Context& ctx, GameSession& s);
     void villager_window(ui::Context& ctx, GameSession& s);
+    void farm_fields(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
+                     float row_h);
     void placement_hint(ui::Context& ctx, GameSession& s);
     // Multiplayer: who plays, whom the game waits for, speed votes.
     void network(ui::Context& ctx, GameSession& s, float& right);

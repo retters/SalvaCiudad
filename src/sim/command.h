@@ -21,8 +21,10 @@ enum class CommandType : std::uint8_t {
     PlaceBuilding = 10,   // Building `def` with its corner cell at `position`, rotation `value` (0..3).
     RemoveBuilding = 11,  // Cancel a construction or demolish `entity`.
     SetWorkers = 12,      // Wanted workers of `entity`: `value`.
-    PlaceField = 13,      // Reserved for fields (phase 11).
+    PlaceField = 13,      // A field of farm `entity`: corner at `position`, size `value` (w | d << 8).
     DevGrant = 14,        // Developer tools: `value` units of resource `def` to the town center.
+    SetCrop = 15,         // Farm `entity`, field `value & 0xFF`, year `value >> 8`: crop `def` (kNoDef = fallow).
+    RemoveField = 16,     // Farm `entity`, field `value`.
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;

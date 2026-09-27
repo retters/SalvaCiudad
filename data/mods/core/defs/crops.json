@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "crop",
+      "id": "core:wheat",
+      "name": "crop.wheat",
+      "resource": "core:wheat",
+      "yield": 16,
+      "growDays": 45,
+      "fertility": -12
+    },
+    {
+      "type": "crop",
+      "id": "core:vegetables",
+      "name": "crop.vegetables",
+      "resource": "core:vegetables",
+      "yield": 12,
+      "growDays": 35,
+      "fertility": -8
+    },
+    {
+      "type": "crop",
+      "id": "core:beans",
+      "name": "crop.beans",
+      "resource": "core:beans",
+      "yield": 10,
+      "growDays": 35,
+      "fertility": 12
+    }
+  ]
+}

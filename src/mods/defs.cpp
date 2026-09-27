@@ -23,7 +23,9 @@ bool valid_name_part(std::string_view s) {
     return std::all_of(s.begin(), s.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'; });
 }
 
-constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome", "mapType"};
+constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome", "mapType",
+                                        "crop"};
+constexpr std::string_view kSeasons[] = {"spring", "summer", "autumn", "winter"};
 
 bool known_type(std::string_view t) {
     return std::find(std::begin(kTypes), std::end(kTypes), t) != std::end(kTypes);
@@ -336,7 +338,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                    sim::Content& out, std::vector<DefError>& errors) {
     out = sim::Content{};
     // Ids first, so definitions can refer to each other in any order.
-    std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types;
+    std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops;
     for (const RawDef& d : set.defs()) {
         if (d.type == "resource") resources.push_back(&d);
         else if (d.type == "mapFeature") features.push_back(&d);
@@ -345,6 +347,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         else if (d.type == "species") species.push_back(&d);
         else if (d.type == "biome") biomes.push_back(&d);
         else if (d.type == "mapType") map_types.push_back(&d);
+        else if (d.type == "crop") crops.push_back(&d);
     }
     if (species.size() > sim::kMaxSpecies || biomes.size() > sim::kMaxBiomes || map_types.size() > sim::kMaxMapTypes ||
         resources.size() > 1000 || buildings.size() > 1000 || recipes.size() > 2000) {
@@ -381,6 +384,26 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
     }
     const auto find_recipe = [&](std::string_view id) { return index_of(out.recipes, id); };
+    // Crops.
+    for (const RawDef* d : crops) {
+        Reader r(*d, errors);
+        sim::CropDef def;
+        def.id = d->id;
+        def.name_key = r.text("name", true);
+        const std::string res = r.text("resource", true);
+        const int ri = find_resource(res);
+        if (ri < 0) {
+            r.fail(std::format("\"resource\" '{}' does not exist", res));
+        }
+        def.resource = static_cast<sim::DefIndex>(ri < 0 ? 0 : ri);
+        def.yield = r.integer("yield", 1, 1000, 10);
+        def.grow_days = r.integer("growDays", 1, 1000, 40);
+        def.fertility = r.integer("fertility", -100, 100, -10);
+        def.hardy = r.flag("hardy");
+        if (r.ok() && out.crops.size() < 250) {
+            out.crops.push_back(std::move(def));
+        }
+    }
     // Map features.
     for (const RawDef* d : features) {
         Reader r(*d, errors);
@@ -441,6 +464,13 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.tier = r.integer("tier", 0, 10, 0);
         def.desirability = r.integer("desirability", -100, 100, 0);
         def.unique = r.flag("unique");
+        def.seasons = r.choices("seasons", kSeasons);
+        def.mature_years = r.integer("matureYears", 0, 50, 0);
+        def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);
+        def.fields = r.integer("fields", 0, 16, 0);
+        if (def.work == sim::WorkKind::Farm && def.fields == 0) {
+            r.fail("a farm needs \"fields\"");
+        }
         if (def.work == sim::WorkKind::Gather && def.gathers == 0) {
             r.fail("gathering needs \"gathers\"");
         }

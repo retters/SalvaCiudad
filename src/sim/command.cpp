@@ -52,6 +52,16 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::DevGrant:
             ok = ok && c.value >= 1 && c.value <= kMaxDevGrant;
             break;
+        case CommandType::PlaceField:
+            ok = ok && c.entity.valid() && c.value >= 0 && c.value <= 0xFFFF && c.position.x >= Fixed{} &&
+                 c.position.z >= Fixed{};
+            break;
+        case CommandType::SetCrop:
+            ok = ok && c.entity.valid() && (c.value & 0xFF) < 16 && (c.value >> 8) < 3 && c.value >= 0;
+            break;
+        case CommandType::RemoveField:
+            ok = ok && c.entity.valid() && c.value >= 0 && c.value < 16;
+            break;
         default:
             ok = false;
             break;

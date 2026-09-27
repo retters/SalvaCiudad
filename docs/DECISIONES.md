@@ -717,3 +717,49 @@ La rejilla de caminos numera sus zonas conectadas y la búsqueda termina al inst
 - Los árboles de hoja caduca cambian de tinte en otoño (dorado, naranja o rojo) y en invierno; los de hoja perenne (`"evergreen"` en las especies) no.
 - La luz cambia por estación, y los aldeanos usan gorra en invierno y sombrero de paja en verano.
 - El tinte afecta a todo el modelo, tronco incluido. En la fase 18 se agregarán árboles sin hojas y colores por material (anotado en `docs/IDEAS_VISUALES.md`).
+
+## Fase 11: agricultura y alimentos (2026-09-27)
+
+**D-1101. Cultivos como datos.**
+El tipo de definición `crop` tiene recurso, rendimiento (unidades por 10 celdas con fertilidad plena), días de crecimiento, efecto en la fertilidad al cosechar y si resiste la helada. El juego base trae trigo (−12), verduras (−8) y frijoles (+12, la leguminosa que devuelve nitrógeno).
+
+**D-1102. Campos de una granja.**
+- Una granja tiene hasta 4 campos rectangulares de 4 a 20 m por lado, con su centro dentro de su alcance.
+- Se marcan arrastrando sobre el suelo. Despejan lo que crece ahí, no dejan construir encima y se pueden caminar.
+- La fertilidad inicial es el promedio de la del mapa en sus celdas.
+
+**D-1103. El año de un campo.**
+- Cada campo tiene un plan de tres años: un cultivo o barbecho por año, que se cambia en la ventana de la granja.
+- En el primer día del año pasa al siguiente año del plan. Un barbecho descansa y suma 15 de fertilidad.
+- Se siembra con al menos 6 °C y fuera del invierno, a 2 trabajos por celda.
+- Crece los días de 5 °C o más, más rápido con buena fertilidad. Una helada mata el cultivo que no resiste.
+- Al madurar se cosecha una unidad cada 20 ticks: se lleva a la granja y de ahí a un almacén o granero.
+- Rinde celdas × rendimiento × fertilidad / 1000. Al terminar la cosecha se aplica el efecto del cultivo en la fertilidad.
+
+**D-1104. Abono.**
+La compostera produce abono sin insumos. Antes de sembrar, los granjeros lo llevan a la granja y lo esparcen: cada unidad suma 3 de fertilidad, hasta 10 unidades por campo y año.
+
+**D-1105. Huertos por datos.**
+Los edificios tienen tres campos nuevos:
+- `seasons`: estaciones en que trabaja;
+- `matureYears`: años hasta que produce;
+- `yearlyLimit`: tope por año.
+
+El huerto los usa: da fruta en verano y otoño desde su tercer año, hasta 120 por año. No hizo falta código nuevo de trabajo.
+
+**D-1106. Caza y pesca sin animales todavía.**
+- Las zonas de ciervos y jabalíes del mapa guardan cuántos animales quedan (16 y 10), y se recuperan cada mes.
+- Un cazador va a la zona con animales más cercana dentro de su alcance y a la que se pueda llegar. Cada presa da una carga de carne, y la piel queda en el refugio.
+- El pescador pesca en el agua más cercana: un pescado cada 45 ticks, hasta 8 por viaje. Con −3 °C o menos el agua está helada.
+- Los animales con comportamiento llegan en la fase 15.
+
+**D-1107. Dieta variada.**
+- Al comer, un aldeano prefiere los alimentos que no comió en el mes y después los más nutritivos.
+- Con tres o más tipos de comida en el mes anterior recupera la salud el doble de rápido. En la fase 12 la variedad también cuenta para la felicidad.
+- El trigo se come crudo con poca nutrición (1) hasta que la fase 12 traiga harina y pan.
+
+**D-1108. Vista de los campos.**
+Los campos se dibujan con dos modelos hechos en código: una losa de tierra de 2 × 2 m y un grupo de plantas. Las plantas crecen con el cultivo y pasan de verde a su color maduro: dorado el trigo, naranja las verduras, verde los frijoles. Tras la cosecha queda rastrojo, y en barbecho la tierra se cubre de pasto. Los colores del tinte están en espacio lineal.
+
+**D-1109. Qué no entra.**
+Las malas hierbas, las piedras en los campos y las plagas (7.9) quedan para después de la fase 12; no están en los criterios de esta fase.

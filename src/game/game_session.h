@@ -51,6 +51,11 @@ public:
         sim::PlaceError hover_error = sim::PlaceError::None;
         sim::EntityId selected_building;
         sim::EntityId selected_villager;
+        // Marking out a field for this farm: dragged from one corner cell.
+        sim::EntityId field_farm;
+        bool field_dragging = false;
+        std::int32_t drag_x = 0;
+        std::int32_t drag_z = 0;
         // Screen rectangles of the interface this frame (x, y, w, h):
         // clicks there are not for the world.
         std::vector<std::array<float, 4>> hud_rects;

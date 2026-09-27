@@ -162,6 +162,174 @@
         "material",
         "fuel"
       ]
+    },
+    {
+      "type": "building",
+      "id": "core:farm",
+      "name": "building.farm",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        6,
+        5
+      ],
+      "cost": {
+        "core:log": 16,
+        "core:stone": 4
+      },
+      "buildWork": 350,
+      "workers": 3,
+      "work": "farm",
+      "radius": 45,
+      "fields": 4,
+      "storage": 80,
+      "stores": [
+        "food"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:orchard",
+      "name": "building.orchard",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 250,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:pick_fruit"
+      ],
+      "seasons": [
+        "summer",
+        "autumn"
+      ],
+      "matureYears": 2,
+      "yearlyLimit": 120,
+      "storage": 60,
+      "stores": [
+        "food"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:hunter",
+      "name": "building.hunter",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        4
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 220,
+      "workers": 2,
+      "work": "hunt",
+      "radius": 110,
+      "storage": 40,
+      "stores": [
+        "food",
+        "good"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:fisher",
+      "name": "building.fisher",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        4
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 220,
+      "workers": 2,
+      "work": "fish",
+      "radius": 40,
+      "storage": 40,
+      "stores": [
+        "food"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:herbalist",
+      "name": "building.herbalist",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 8
+      },
+      "buildWork": 200,
+      "workers": 1,
+      "work": "gather",
+      "gathers": [
+        "herbs"
+      ],
+      "radius": 60,
+      "storage": 30,
+      "stores": [
+        "good"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:granary",
+      "name": "building.granary",
+      "kind": "storage",
+      "model": "models/props/house_small.glb",
+      "size": [
+        8,
+        7
+      ],
+      "cost": {
+        "core:log": 24,
+        "core:stone": 10
+      },
+      "buildWork": 500,
+      "storage": 900,
+      "stores": [
+        "food"
+      ]
+    },
+    {
+      "type": "building",
+      "id": "core:compost_yard",
+      "name": "building.compostYard",
+      "kind": "workplace",
+      "model": "models/props/house_small.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:log": 8
+      },
+      "buildWork": 200,
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:make_compost"
+      ],
+      "storage": 40,
+      "stores": [
+        "material"
+      ]
     }
   ]
 }

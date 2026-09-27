@@ -64,6 +64,24 @@
     "building.forager": "Forager",
     "building.stonecutter": "Stonecutter",
     "building.firewoodSplitter": "Firewood splitter",
-    "resource.clothes": "Clothes"
+    "resource.clothes": "Clothes",
+    "resource.wheat": "Wheat",
+    "resource.vegetables": "Vegetables",
+    "resource.beans": "Beans",
+    "resource.fruit": "Fruit",
+    "resource.meat": "Meat",
+    "resource.fish": "Fish",
+    "resource.hide": "Hides",
+    "resource.fertilizer": "Compost",
+    "building.farm": "Farm",
+    "building.orchard": "Orchard",
+    "building.hunter": "Hunter's lodge",
+    "building.fisher": "Fisher's hut",
+    "building.herbalist": "Herbalist",
+    "building.granary": "Granary",
+    "building.compostYard": "Compost yard",
+    "crop.wheat": "Wheat",
+    "crop.vegetables": "Vegetables",
+    "crop.beans": "Beans"
   }
 }

@@ -206,6 +206,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con una leñera y leñadores, el pueblo pasa los inviernos sin muertes; sin leña, un invierno duro mata.
 - [ ] Con helada, los recolectores no recogen bayas.
 
+### Fase 11 (agricultura y alimentos)
+
+- [ ] La barra de construcción tiene Granja, Huerto, Cazador, Pescador, Herborista, Granero y Compostera.
+- [ ] En la ventana de una granja, "Nuevo campo" y arrastrar sobre el suelo marca un campo (verde si cabe, rojo con el motivo si no).
+- [ ] Cada campo muestra su fertilidad, su estado y el plan de tres años; un clic cambia el cultivo de ese año (trigo, verduras, frijoles, barbecho).
+- [ ] En primavera los granjeros siembran (la tierra se oscurece), las plantas crecen y cambian de color, y en verano u otoño se cosechan.
+- [ ] Los frijoles y el barbecho suben la fertilidad; el trigo y las verduras la bajan; la compostera da abono que la sube.
+- [ ] Un huerto empieza a dar fruta en su tercer año.
+- [ ] El cazador trae carne y pieles; el pescador, pescado (no con el agua helada).
+- [ ] Con varias comidas, la ventana de los aldeanos muestra buena salud.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

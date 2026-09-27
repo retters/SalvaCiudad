@@ -28,6 +28,10 @@ DefIndex Content::find_recipe(std::string_view id) const {
     return find_def(recipes, id);
 }
 
+DefIndex Content::find_crop(std::string_view id) const {
+    return find_def(crops, id);
+}
+
 const FeatureDef* Content::feature(FeatureKind kind) const {
     for (const FeatureDef& f : features) {
         if (f.kind == kind) {

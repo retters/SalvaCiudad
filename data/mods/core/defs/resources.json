@@ -58,6 +58,68 @@
       "name": "resource.clothes",
       "category": "good",
       "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:wheat",
+      "name": "resource.wheat",
+      "category": "food",
+      "nutrition": 1,
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:vegetables",
+      "name": "resource.vegetables",
+      "category": "food",
+      "nutrition": 2,
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:beans",
+      "name": "resource.beans",
+      "category": "food",
+      "nutrition": 2,
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:fruit",
+      "name": "resource.fruit",
+      "category": "food",
+      "nutrition": 3,
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:meat",
+      "name": "resource.meat",
+      "category": "food",
+      "nutrition": 4,
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:fish",
+      "name": "resource.fish",
+      "category": "food",
+      "nutrition": 3,
+      "weight": 1
+    },
+    {
+      "type": "resource",
+      "id": "core:hide",
+      "name": "resource.hide",
+      "category": "good",
+      "weight": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:fertilizer",
+      "name": "resource.fertilizer",
+      "category": "material",
+      "weight": 2
     }
   ]
 }

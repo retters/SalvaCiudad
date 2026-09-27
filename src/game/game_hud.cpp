@@ -26,6 +26,9 @@ const char* place_error_key(sim::PlaceError e) {
         case sim::PlaceError::Blocked: return "hud.place.error.blocked";
         case sim::PlaceError::Unique: return "hud.place.error.unique";
         case sim::PlaceError::NotYours: return "hud.place.error.notYours";
+        case sim::PlaceError::TooFar: return "hud.place.error.tooFar";
+        case sim::PlaceError::TooMany: return "hud.place.error.tooMany";
+        case sim::PlaceError::BadSize: return "hud.place.error.badSize";
     }
     return "hud.place.error.unknown";
 }
@@ -53,6 +56,12 @@ const char* task_text_key(sim::Task task) {
         case sim::Task::Build: return "task.build";
         case sim::Task::GoWorkplace: return "task.goWorkplace";
         case sim::Task::Produce: return "task.produce";
+        case sim::Task::GoField: return "task.goField";
+        case sim::Task::Farm: return "task.farm";
+        case sim::Task::GoHunt: return "task.goHunt";
+        case sim::Task::Hunt: return "task.hunt";
+        case sim::Task::GoFish: return "task.goFish";
+        case sim::Task::Fish: return "task.fish";
         case sim::Task::Count: break;
     }
     return "task.idle";
@@ -117,7 +126,10 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
             ui.rotation = static_cast<std::uint8_t>((ui.rotation + 1) & 3u);
         }
         if (ctx.input().key(SDL_SCANCODE_ESCAPE)) {
-            if (ui.placing != sim::kNoDef) {
+            if (ui.field_farm.valid()) {
+                ui.field_farm = {};
+                ui.field_dragging = false;
+            } else if (ui.placing != sim::kNoDef) {
                 ui.placing = sim::kNoDef;
             } else if (ui.selected_building.valid() || ui.selected_villager.valid()) {
                 ui.selected_building = {};
@@ -130,7 +142,7 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
 
     top_bar(ctx, *s);
     build_bar(ctx, *s);
-    if (ui.placing != sim::kNoDef) {
+    if (ui.placing != sim::kNoDef || ui.field_farm.valid()) {
         placement_hint(ctx, *s);
     }
     if (ui.selected_building.valid()) {
@@ -346,7 +358,8 @@ void GameHud::placement_hint(ui::Context& ctx, GameSession& s) {
     const GameSession::Interaction& ui = s.ui();
     const ui::TextStyle st = ctx.style(ctx.theme().body);
     const KeyBindings& b = services_.settings().input.bindings;
-    std::string text = tr("hud.place.hint", key_display_name(b.key(Action::GameRotateBuilding, 0)));
+    std::string text = ui.field_farm.valid() ? tr("hud.place.field.hint")
+                                             : tr("hud.place.hint", key_display_name(b.key(Action::GameRotateBuilding, 0)));
     ui::Color color = ctx.theme().text;
     if (ui.hover_valid && ui.hover_error != sim::PlaceError::None) {
         text = tr(place_error_key(ui.hover_error));
@@ -417,6 +430,8 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         }
     }
     const bool has_workers = d.workers > 0 && b->state == sim::BuildingState::Complete;
+    const bool farm = d.work == sim::WorkKind::Farm && b->state == sim::BuildingState::Complete;
+    const float field_row = std::round(ctx.s(30.0f));
     const float button_h = std::round(ctx.s(34.0f));
     const float title_h = ctx.text().line_height(title);
     float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line;
@@ -429,6 +444,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     const bool removable = ui.selected_building != game.player(s.town()).town_center;
     if (removable) {
         h += button_h + pad * 0.5f;
+    }
+    if (farm) {
+        h += static_cast<float>(b->fields.size()) * (line + field_row + pad * 0.5f) + button_h + pad;
     }
     h += pad;
     const ui::Rect box{std::round(ctx.width() - w - pad), std::round(ctx.s(kTopBarH) + pad), std::round(w), std::round(h)};
@@ -473,6 +491,10 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         }
         y += button_h;
     }
+    if (farm) {
+        y += pad * 0.5f;
+        farm_fields(ctx, s, *b, box, y, field_row);
+    }
     if (removable) {
         y += pad * 0.5f;
         const bool building = b->state == sim::BuildingState::Construction;
@@ -487,6 +509,73 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         }
     }
     ctx.pop_id();
+}
+
+void GameHud::farm_fields(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
+                          float row_h) {
+    const sim::Content& content = s.game().content();
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const float pad = ctx.s(14.0f);
+    const float line = ctx.text().line_height(body);
+    const float gap = ctx.s(4.0f);
+    GameSession::Interaction& ui = s.ui();
+    static constexpr const char* kStateKeys[] = {"hud.farm.waiting", "hud.farm.growing", "hud.farm.ripe", "hud.farm.done"};
+    const auto crop_name = [&](sim::DefIndex c) {
+        return c < content.crops.size() ? tr(content.crops[c].name_key) : tr("hud.farm.fallow");
+    };
+    for (std::size_t i = 0; i < b.fields.size(); ++i) {
+        const sim::Field& f = b.fields[i];
+        std::string state = tr(kStateKeys[static_cast<std::size_t>(f.state) % 4]);
+        if (f.state == sim::FieldState::Growing) {
+            state = tr("hud.farm.growingPercent", f.growth / 10);
+        } else if (f.state == sim::FieldState::Done && f.plan[f.slot] == sim::kNoDef) {
+            state = tr("hud.farm.resting");
+        }
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line},
+                  tr("hud.farm.field", static_cast<int>(i + 1), f.w, f.d, f.fertility, state), small, ctx.theme().text);
+        y += line;
+        // The three years of the plan; this year's is highlighted. A click
+        // moves to the next crop (fallow last).
+        const float slot_w = (box.w - 2 * pad - row_h - 3 * gap) / 3.0f;
+        ctx.push_id("field" + std::to_string(i));
+        for (std::size_t year = 0; year < sim::kPlanYears; ++year) {
+            const ui::Rect r{box.x + pad + static_cast<float>(year) * (slot_w + gap), y, slot_w, row_h};
+            if (ctx.button(ctx.id("year" + std::to_string(year)), r, crop_name(f.plan[year]), tr("hud.farm.plan.tooltip"),
+                           true, year == f.slot)) {
+                sim::DefIndex next = sim::kNoDef;
+                if (f.plan[year] == sim::kNoDef) {
+                    next = content.crops.empty() ? sim::kNoDef : 0;
+                } else if (f.plan[year] + 1u < content.crops.size()) {
+                    next = static_cast<sim::DefIndex>(f.plan[year] + 1);
+                }
+                sim::Command c;
+                c.type = sim::CommandType::SetCrop;
+                c.entity = ui.selected_building;
+                c.def = next;
+                c.value = static_cast<std::int32_t>(i) | static_cast<std::int32_t>(year << 8);
+                s.issue(c);
+            }
+        }
+        if (ctx.button(ctx.id("remove"), {box.right() - pad - row_h, y, row_h, row_h}, tr("hud.close"),
+                       tr("hud.farm.remove.tooltip"))) {
+            sim::Command c;
+            c.type = sim::CommandType::RemoveField;
+            c.entity = ui.selected_building;
+            c.value = static_cast<std::int32_t>(i);
+            s.issue(c);
+        }
+        ctx.pop_id();
+        y += row_h + pad * 0.5f;
+    }
+    const bool room = static_cast<std::int32_t>(b.fields.size()) < content.buildings[b.def].fields;
+    const float button_h = std::round(ctx.s(34.0f));
+    if (ctx.button(ctx.id("new_field"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr("hud.farm.newField"),
+                   tr(room ? "hud.farm.newField.tooltip" : "hud.farm.full"), room, ui.field_farm == ui.selected_building)) {
+        ui.field_farm = ui.selected_building;
+        ui.placing = sim::kNoDef;
+    }
+    y += button_h;
 }
 
 void GameHud::villager_window(ui::Context& ctx, GameSession& s) {

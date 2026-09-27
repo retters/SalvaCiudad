@@ -1,6 +1,8 @@
 #include "sim/game.h"
 
 #include <algorithm>
+#include <bit>
+#include <optional>
 
 namespace sc::sim {
 
@@ -85,7 +87,9 @@ bool gives_out(const Content& c, const Building& b, DefIndex r) {
 const char* task_name(Task t) {
     static constexpr const char* kNames[] = {"idle",    "wander",       "going to eat", "going to gather",
                                              "gathering", "delivering", "fetching",     "carrying to a site",
-                                             "going to build", "building", "going to work", "producing"};
+                                             "going to build", "building", "going to work", "producing",
+                                             "going to a field", "farming", "going hunting", "hunting",
+                                             "going fishing", "fishing"};
     const auto i = static_cast<std::size_t>(t);
     return i < std::size(kNames) ? kNames[i] : "?";
 }
@@ -312,6 +316,15 @@ public:
             if (d.work == WorkKind::Produce && start_producing(v, *job)) {
                 return;
             }
+            if (d.work == WorkKind::Farm && start_farming(v, *job)) {
+                return;
+            }
+            if (d.work == WorkKind::Hunt && start_hunting(v, *job)) {
+                return;
+            }
+            if (d.work == WorkKind::Fish && start_fishing(v, *job)) {
+                return;
+            }
             wander(v, g_.door(*job));
             return;
         }
@@ -471,10 +484,288 @@ public:
         return true;
     }
 
+    // --- Farming (phase 11) -----------------------------------------------------
+
+    [[nodiscard]] bool can_sow(const Field& f) const {
+        const Season season = g_.calendar().season;
+        return f.state == FieldState::Waiting && f.plan[f.slot] != kNoDef && g_.temperature_ >= 6 &&
+               season != Season::Winter;
+    }
+
+    [[nodiscard]] bool wants_compost(const Field& f) const {
+        return can_sow(f) && f.work == 0 && f.fertility < 85 && f.fertilized < 10;
+    }
+
+    void go_field(Villager& v, EntityId farm, std::size_t index) {
+        const Field& f = g_.buildings_.get(farm)->fields[index];
+        v.task = Task::GoField;
+        v.target = farm;
+        v.spot = static_cast<std::uint16_t>(index + 1);
+        const FixedVec2 to{Fixed::from_int(f.x) + Fixed::from_ratio(1 + 2 * g_.rng_.range(0, f.w - 1), 2),
+                           Fixed::from_int(f.z) + Fixed::from_ratio(1 + 2 * g_.rng_.range(0, f.d - 1), 2)};
+        if (!walk_to(v, to)) {
+            fail(v);
+        }
+    }
+
+    bool start_farming(Villager& v, Building& farm) {
+        // Harvest first, then compost and sowing.
+        for (std::size_t i = 0; i < farm.fields.size(); ++i) {
+            if (farm.fields[i].state == FieldState::Ripe && farm.fields[i].pending > 0) {
+                go_field(v, v.job, i);
+                return true;
+            }
+        }
+        for (std::size_t i = 0; i < farm.fields.size(); ++i) {
+            const Field& f = farm.fields[i];
+            if (!can_sow(f)) {
+                continue;
+            }
+            if (wants_compost(f) && g_.fertilizer_ != kNoDef && amount_of(farm.stock, g_.fertilizer_) == 0) {
+                // Compost from the storage to the farm, if there is any.
+                const EntityId from = storage_with(v.owner, v.position, g_.fertilizer_);
+                if (from.valid()) {
+                    v.site = v.job;
+                    v.carrying = {g_.fertilizer_, 0};
+                    v.timer = 0;
+                    go(v, Task::GoFetch, from);
+                    return true;
+                }
+            }
+            go_field(v, v.job, i);
+            return true;
+        }
+        return false;
+    }
+
+    void farm_work(Villager& v) {
+        Building* farm = g_.buildings_.get(v.target);
+        if (farm == nullptr || v.spot == 0 || v.spot > farm->fields.size()) {
+            v.task = Task::Idle;
+            return;
+        }
+        Field& f = farm->fields[v.spot - 1u];
+        if (f.state == FieldState::Ripe) {
+            // One unit at a time into the basket.
+            if (++v.timer < 20) {
+                return;
+            }
+            v.timer = 0;
+            const DefIndex res = f.crop < c_.crops.size() ? c_.crops[f.crop].resource : kNoDef;
+            if (res == kNoDef || f.pending <= 0) {
+                v.task = Task::Idle;
+                return;
+            }
+            v.carrying.resource = res;
+            ++v.carrying.amount;
+            --f.pending;
+            if (f.pending <= 0) {
+                f.state = FieldState::Done;
+                f.fertility = std::clamp(f.fertility + c_.crops[f.crop].fertility, 0, 100);
+                g_.buildings_changed_ = true;
+            }
+            if (f.pending <= 0 || v.carrying.amount >= carry_capacity(c_, res)) {
+                v.task = Task::Idle;  // To the farm with it.
+            }
+            return;
+        }
+        if (!can_sow(f)) {
+            v.task = Task::Idle;
+            return;
+        }
+        if (wants_compost(f) && g_.fertilizer_ != kNoDef && amount_of(farm->stock, g_.fertilizer_) > 0) {
+            if (++v.timer < 40) {
+                return;
+            }
+            v.timer = 0;
+            add_to(farm->stock, g_.fertilizer_, -1);
+            compact(farm->stock);
+            f.fertility = std::min(100, f.fertility + 3);
+            ++f.fertilized;
+            return;
+        }
+        // Sowing: two worker-ticks a cell.
+        if (++f.work >= f.w * f.d * 2) {
+            f.state = FieldState::Growing;
+            f.crop = f.plan[f.slot];
+            f.growth = 0;
+            f.work = 0;
+            g_.buildings_changed_ = true;
+            v.task = Task::Idle;
+        }
+    }
+
+    // Once a day: a new year's plans, growth, frost and ripening.
+    void grow_fields() {
+        const Calendar cal = g_.calendar();
+        const std::int32_t t = g_.temperature_;
+        for (Building& b : g_.buildings_.data()) {
+            for (Field& f : b.fields) {
+                if (f.year != cal.year) {
+                    if (f.year != 0) {
+                        f.slot = static_cast<std::uint8_t>((f.slot + 1) % kPlanYears);
+                    }
+                    f.year = cal.year;
+                    f.state = FieldState::Waiting;
+                    f.crop = kNoDef;
+                    f.work = f.growth = f.pending = f.fertilized = 0;
+                    if (f.plan[f.slot] == kNoDef) {
+                        f.state = FieldState::Done;  // A fallow year rests the soil.
+                        f.fertility = std::min(100, f.fertility + 15);
+                    }
+                    g_.buildings_changed_ = true;
+                }
+                if (f.state != FieldState::Growing || f.crop >= c_.crops.size()) {
+                    continue;
+                }
+                const CropDef& crop = c_.crops[f.crop];
+                if (t <= 0 && !crop.hardy) {
+                    f.state = FieldState::Done;  // Frost killed it.
+                    f.growth = 0;
+                    g_.buildings_changed_ = true;
+                    continue;
+                }
+                if (t >= 5) {
+                    f.growth += 1000 * (50 + f.fertility) / (150 * std::max(1, crop.grow_days));
+                }
+                if (f.growth >= 1000) {
+                    f.growth = 1000;
+                    f.state = FieldState::Ripe;
+                    f.pending = std::max(1, f.w * f.d * crop.yield * f.fertility / 1000);
+                    g_.buildings_changed_ = true;
+                }
+            }
+        }
+    }
+
+    // --- Hunting and fishing (phase 11) ---------------------------------------------
+
+    static std::int32_t zone_capacity(ZoneType t) {
+        switch (t) {
+            case ZoneType::Deer: return 16;
+            case ZoneType::Boar: return 10;
+            default: return 0;  // Wolves and bears come with the wildlife (phase 15).
+        }
+    }
+
+    bool start_hunting(Villager& v, const Building& lodge) {
+        const FixedVec2 door = g_.door(lodge);
+        const std::int32_t reach = def(lodge).work_radius;
+        std::optional<std::size_t> best;
+        std::uint64_t best_d = UINT64_MAX;
+        for (std::size_t z = 0; z < g_.map_.zones.size(); ++z) {
+            const Zone& zone = g_.map_.zones[z];
+            if (g_.zone_animals_[z] <= 0 || zone_capacity(zone.type) == 0) {
+                continue;
+            }
+            const FixedVec2 c{zone.x, zone.z};
+            const std::uint64_t d = distance2(c, door);
+            const std::int64_t r = static_cast<std::int64_t>(reach) + zone.radius.floor_int();
+            if (d > static_cast<std::uint64_t>(r * r) * (1ull << 32) || d >= best_d || !g_.nav_.connected(door, c)) {
+                continue;
+            }
+            best_d = d;
+            best = z;
+        }
+        if (!best) {
+            return false;
+        }
+        const Zone& zone = g_.map_.zones[*best];
+        const std::int32_t spread = std::max(2, zone.radius.floor_int() / 2);
+        const FixedVec2 to{zone.x + Fixed::from_int(g_.rng_.range(-spread, spread)),
+                           zone.z + Fixed::from_int(g_.rng_.range(-spread, spread))};
+        v.task = Task::GoHunt;
+        v.spot = static_cast<std::uint16_t>(*best + 1);
+        if (!walk_to(v, to)) {
+            fail(v);
+        }
+        return true;
+    }
+
+    void hunt_work(Villager& v) {
+        if (++v.timer < 120) {
+            return;
+        }
+        v.timer = 0;
+        v.task = Task::Idle;
+        const std::size_t z = v.spot - 1u;
+        if (v.spot == 0 || z >= g_.zone_animals_.size() || g_.zone_animals_[z] <= 0 || g_.meat_ == kNoDef) {
+            return;
+        }
+        --g_.zone_animals_[z];
+        v.carrying = {g_.meat_, carry_capacity(c_, g_.meat_)};
+        if (Building* lodge = g_.buildings_.get(v.job); lodge != nullptr && g_.hide_ != kNoDef) {
+            add_to(lodge->stock, g_.hide_, 1);  // The hide stays at the lodge.
+        }
+    }
+
+    bool start_fishing(Villager& v, const Building& hut) {
+        if (g_.temperature_ <= -3 || g_.fish_ == kNoDef) {
+            return false;  // Frozen over.
+        }
+        // The nearest water within reach.
+        const std::int32_t reach = def(hut).work_radius;
+        const std::int32_t cx = hut.x + hut.width / 2;
+        const std::int32_t cz = hut.z + hut.depth / 2;
+        std::optional<std::pair<std::int32_t, std::int32_t>> best;
+        std::int64_t best_d = INT64_MAX;
+        for (std::int32_t z = std::max(0, cz - reach); z < std::min(g_.map_.size, cz + reach); z += 2) {
+            for (std::int32_t x = std::max(0, cx - reach); x < std::min(g_.map_.size, cx + reach); x += 2) {
+                const std::int64_t d = static_cast<std::int64_t>(x - cx) * (x - cx) + static_cast<std::int64_t>(z - cz) * (z - cz);
+                if (d < best_d && d <= static_cast<std::int64_t>(reach) * reach && g_.map_.water_at(x, z)) {
+                    best_d = d;
+                    best = std::pair{x, z};
+                }
+            }
+        }
+        if (!best) {
+            return false;
+        }
+        v.task = Task::GoFish;
+        if (!walk_to(v, {Fixed::from_int(best->first), Fixed::from_int(best->second)})) {
+            fail(v);
+        }
+        return true;
+    }
+
+    void fish_work(Villager& v) {
+        if (g_.temperature_ <= -3) {
+            v.task = Task::Idle;
+            return;
+        }
+        if (++v.timer < 45) {
+            return;
+        }
+        v.timer = 0;
+        v.carrying.resource = g_.fish_;
+        ++v.carrying.amount;
+        if (v.carrying.amount >= 8) {
+            v.task = Task::Idle;
+        }
+    }
+
     bool start_producing(Villager& v, Building& job) {
         const BuildingDef& d = def(job);
         if (d.recipes.empty()) {
             return false;
+        }
+        // Seasons, years to mature and a yearly limit (orchards).
+        const Calendar cal = g_.calendar();
+        if (d.seasons != 0 && ((d.seasons >> static_cast<unsigned>(cal.season)) & 1u) == 0) {
+            return false;
+        }
+        if (d.mature_years > 0 &&
+            static_cast<std::int64_t>(g_.tick_) - job.built_tick < static_cast<std::int64_t>(d.mature_years) * g_.year_ticks()) {
+            return false;
+        }
+        if (d.yearly_limit > 0) {
+            if (job.produced_year != cal.year) {
+                job.produced_year = cal.year;
+                job.produced = 0;
+            }
+            if (job.produced >= d.yearly_limit) {
+                return false;
+            }
         }
         const RecipeDef& recipe = c_.recipes[d.recipes.front()];
         // Enough in store: the inputs are kept for other uses.
@@ -596,6 +887,19 @@ public:
                 v.task = Task::Build;
                 break;
             case Task::GoWorkplace: at_workplace(v); break;
+            case Task::GoField:
+                v.task = Task::Farm;
+                v.timer = 0;
+                break;
+            case Task::GoHunt:
+                v.task = Task::Hunt;
+                v.timer = 0;
+                break;
+            case Task::GoFish:
+                v.task = Task::Fish;
+                v.timer = 0;
+                v.carrying = {};
+                break;
             default: v.task = Task::Idle; break;
         }
     }
@@ -606,13 +910,18 @@ public:
         if (b == nullptr) {
             return;
         }
-        // Several helpings, from the most nutritious food first.
+        // Several helpings: kinds not eaten this month first (a varied diet
+        // keeps villagers healthy), then the most nutritious.
         while (v.food < village::kFoodMax - 100) {
             Stock* best = nullptr;
+            const auto score = [&](const Stock& s) {
+                const bool fresh = ((v.diet >> (s.resource % 32u)) & 1u) == 0;
+                return (fresh ? 1000 : 0) + c_.resources[s.resource].nutrition;
+            };
             for (Stock& s : b->stock) {
                 const ResourceDef& r = c_.resources[s.resource];
                 if (s.amount > 0 && r.category == ResourceCategory::Food && r.nutrition > 0 && gives_out(c_, *b, s.resource) &&
-                    (best == nullptr || r.nutrition > c_.resources[best->resource].nutrition)) {
+                    (best == nullptr || score(s) > score(*best))) {
                     best = &s;
                 }
             }
@@ -620,6 +929,7 @@ public:
                 break;
             }
             --best->amount;
+            v.diet |= 1u << (best->resource % 32u);
             v.food = std::min(village::kFoodMax, v.food + c_.resources[best->resource].nutrition * village::kFoodPerNutrition);
         }
         // New clothes when the old ones are worn out; they last a year.
@@ -722,6 +1032,9 @@ public:
             case Task::Gather: gather(v); break;
             case Task::Build: build(v); break;
             case Task::Produce: produce(v); break;
+            case Task::Farm: farm_work(v); break;
+            case Task::Hunt: hunt_work(v); break;
+            case Task::Fish: fish_work(v); break;
             default: v.task = Task::Idle; break;
         }
     }
@@ -779,6 +1092,7 @@ public:
 
     void finish(Building& b) {
         b.state = BuildingState::Complete;
+        b.built_tick = static_cast<std::int64_t>(g_.tick_);
         b.delivered.clear();
         b.incoming.clear();
         b.work_done = 0;
@@ -802,12 +1116,19 @@ public:
         if (++v.timer < recipe.work) {
             return;
         }
+        // Another worker may have reached the year's limit meanwhile.
+        const std::int32_t limit = def(*job).yearly_limit;
+        if (limit > 0 && job->produced_year == g_.calendar().year && job->produced >= limit) {
+            v.task = Task::Idle;
+            return;
+        }
         for (const ResourceAmount& in : recipe.inputs) {
             add_to(job->stock, in.resource, -in.amount);
         }
         compact(job->stock);
         const ResourceAmount& out = recipe.outputs.front();
         v.carrying = {out.resource, out.amount};
+        job->produced += out.amount;
         v.task = Task::Idle;  // Delivers next.
     }
 
@@ -967,6 +1288,15 @@ public:
     }
 
     void monthly() {
+        // Diets: last month's variety; the game comes back to its zones.
+        for (Villager& v : g_.villagers_.data()) {
+            v.variety = static_cast<std::uint8_t>(std::popcount(v.diet));
+            v.diet = 0;
+        }
+        for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
+            const std::int32_t cap = zone_capacity(g_.map_.zones[z].type);
+            g_.zone_animals_[z] = std::min(cap, g_.zone_animals_[z] + std::max(1, cap / 6));
+        }
         // Old age.
         std::vector<EntityId> dying;
         const auto& vs = g_.villagers_;
@@ -1058,6 +1388,7 @@ public:
     // Once a day: the weather, the snow and the houses' fires.
     void daily() {
         g_.temperature_ = sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_);
+        grow_fields();
         const std::int32_t t = g_.temperature_;
         if (t < 0) {
             g_.snow_ = std::min(village::kMaxSnow, g_.snow_ + 1 + std::min(-t, 10) / 2);
@@ -1151,8 +1482,8 @@ public:
                     dying.push_back(vs.entities()[k]);
                     continue;
                 }
-            } else if (v.health < village::kHealthMax && v.warmth > 0 && g_.tick_ % 4 == 0) {
-                ++v.health;
+            } else if (v.health < village::kHealthMax && v.warmth > 0 && g_.tick_ % (v.variety >= 3 ? 2 : 4) == 0) {
+                ++v.health;  // Faster with a varied diet.
             }
             if (!weather(v)) {
                 dying.push_back(vs.entities()[k]);
@@ -1163,7 +1494,8 @@ public:
                 if (!moving(v)) {
                     arrive(v);
                 }
-            } else if (v.task == Task::Gather || v.task == Task::Build || v.task == Task::Produce) {
+            } else if (v.task == Task::Gather || v.task == Task::Build || v.task == Task::Produce || v.task == Task::Farm ||
+                       v.task == Task::Hunt || v.task == Task::Fish) {
                 work(v);
             } else if (v.idle_ticks > 0) {
                 --v.idle_ticks;
@@ -1189,6 +1521,7 @@ public:
         b.z = z;
         Game::footprint(d, rotation, b.width, b.depth);
         b.state = complete_now || d.build_work <= 0 ? BuildingState::Complete : BuildingState::Construction;
+        b.built_tick = static_cast<std::int64_t>(g_.tick_);
         b.wanted_workers = b.state == BuildingState::Complete ? d.workers : 0;
         const EntityId id = g_.registry_.create();
         if (!id.valid()) {
@@ -1223,10 +1556,65 @@ public:
         return id;
     }
 
+    void mark_field(const Field& f, std::uint8_t value) {
+        for (std::int32_t cz = f.z; cz < f.z + f.d; ++cz) {
+            for (std::int32_t cx = f.x; cx < f.x + f.w; ++cx) {
+                g_.occupied_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(g_.map_.size) + static_cast<std::size_t>(cx)] =
+                    value;
+            }
+        }
+    }
+
+    void add_field(Building& farm, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) {
+        Field f;
+        f.x = x;
+        f.z = z;
+        f.w = w;
+        f.d = d;
+        // The soil's own fertility, averaged.
+        std::int64_t sum = 0;
+        for (std::int32_t cz = z; cz < z + d; ++cz) {
+            for (std::int32_t cx = x; cx < x + w; ++cx) {
+                sum += g_.map_.fertility[static_cast<std::size_t>(cz) * static_cast<std::size_t>(g_.map_.size) +
+                                         static_cast<std::size_t>(cx)];
+            }
+        }
+        f.fertility = static_cast<std::int32_t>(sum * 100 / (255 * static_cast<std::int64_t>(w) * d));
+        // A first plan: the content's crops in turn.
+        for (std::size_t y = 0; y < kPlanYears && !c_.crops.empty(); ++y) {
+            f.plan[y] = static_cast<DefIndex>(y % c_.crops.size());
+        }
+        f.year = g_.calendar().year;
+        // Whatever grows there is cleared.
+        for (std::int32_t cz = z / kNodeCell - 1; cz <= (z + d) / kNodeCell + 1; ++cz) {
+            for (std::int32_t cx = x / kNodeCell - 1; cx <= (x + w) / kNodeCell + 1; ++cx) {
+                if (cx < 0 || cz < 0 || cx >= g_.node_cells_side_ || cz >= g_.node_cells_side_) {
+                    continue;
+                }
+                for (const std::uint32_t i : g_.node_cells_[static_cast<std::size_t>(cz * g_.node_cells_side_ + cx)]) {
+                    const MapFeature& mf = g_.map_.features[i];
+                    const std::int32_t fx = mf.x.floor_int();
+                    const std::int32_t fz = mf.z.floor_int();
+                    if (fx >= x && fx < x + w && fz >= z && fz < z + d && g_.nodes_[i].amount > 0) {
+                        g_.nodes_[i].amount = 0;
+                        g_.nodes_[i].regrow_tick = 0;
+                        g_.changed_nodes_.push_back(i);
+                    }
+                }
+            }
+        }
+        mark_field(f, 2);
+        farm.fields.push_back(f);
+        g_.buildings_changed_ = true;
+    }
+
     void remove_building(EntityId id) {
         Building* b = g_.buildings_.get(id);
         if (b == nullptr) {
             return;
+        }
+        for (const Field& f : b->fields) {
+            mark_field(f, 0);
         }
         for (const EntityId w : b->workers) {
             if (Villager* v = g_.villagers_.get(w)) {
@@ -1290,6 +1678,43 @@ public:
                     break;
                 }
                 b->wanted_workers = std::clamp(c.value, 0, def(*b).workers);
+                g_.buildings_changed_ = true;
+                break;
+            }
+            case CommandType::PlaceField: {
+                const std::int32_t w = c.value & 0xFF;
+                const std::int32_t d = (c.value >> 8) & 0xFF;
+                const std::int32_t x = c.position.x.floor_int();
+                const std::int32_t z = c.position.z.floor_int();
+                if (g_.can_place_field(c.player, c.entity, x, z, w, d) != PlaceError::None) {
+                    ++g_.rejected_;
+                    break;
+                }
+                add_field(*g_.buildings_.get(c.entity), x, z, w, d);
+                break;
+            }
+            case CommandType::SetCrop: {
+                Building* farm = g_.buildings_.get(c.entity);
+                const std::size_t index = static_cast<std::size_t>(c.value & 0xFF);
+                const std::size_t year = static_cast<std::size_t>(c.value >> 8);
+                if (farm == nullptr || farm->owner != c.player || index >= farm->fields.size() || year >= kPlanYears ||
+                    (c.def != kNoDef && c.def >= c_.crops.size())) {
+                    ++g_.rejected_;
+                    break;
+                }
+                farm->fields[index].plan[year] = c.def;
+                g_.buildings_changed_ = true;
+                break;
+            }
+            case CommandType::RemoveField: {
+                Building* farm = g_.buildings_.get(c.entity);
+                const auto index = static_cast<std::size_t>(c.value);
+                if (farm == nullptr || farm->owner != c.player || index >= farm->fields.size()) {
+                    ++g_.rejected_;
+                    break;
+                }
+                mark_field(farm->fields[index], 0);
+                farm->fields.erase(farm->fields.begin() + static_cast<std::ptrdiff_t>(index));
                 g_.buildings_changed_ = true;
                 break;
             }
@@ -1388,6 +1813,14 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     const std::uint8_t players = setup.players;
     firewood_ = content_->find_resource("core:firewood");
     clothes_ = content_->find_resource("core:clothes");
+    fertilizer_ = content_->find_resource("core:fertilizer");
+    meat_ = content_->find_resource("core:meat");
+    hide_ = content_->find_resource("core:hide");
+    fish_ = content_->find_resource("core:fish");
+    zone_animals_.resize(map_.zones.size());
+    for (std::size_t z = 0; z < map_.zones.size(); ++z) {
+        zone_animals_[z] = VillageRules::zone_capacity(map_.zones[z].type);
+    }
     temperature_ = sim::temperature(rules_.climate, seed_, 0);
     build_indexes();
     nodes_.assign(map_.features.size(), Node{});
@@ -1501,6 +1934,52 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
         }
     }
     if (hi - lo > kMaxSlopeCm) {
+        return PlaceError::TooSteep;
+    }
+    return PlaceError::None;
+}
+
+PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int32_t x, std::int32_t z, std::int32_t w,
+                                 std::int32_t d) const {
+    const Building* farm = buildings_.get(farm_id);
+    if (farm == nullptr || farm->owner != town_of(player)) {
+        return PlaceError::NotYours;
+    }
+    const BuildingDef& fd = content_->buildings[farm->def];
+    if (fd.work != WorkKind::Farm) {
+        return PlaceError::UnknownBuilding;
+    }
+    if (static_cast<std::int32_t>(farm->fields.size()) >= fd.fields) {
+        return PlaceError::TooMany;
+    }
+    if (w < kMinFieldSide || d < kMinFieldSide || w > kMaxFieldSide || d > kMaxFieldSide) {
+        return PlaceError::BadSize;
+    }
+    constexpr std::int32_t kMargin = 4;
+    if (x < kMargin || z < kMargin || x + w > map_.size - kMargin || z + d > map_.size - kMargin) {
+        return PlaceError::OutsideMap;
+    }
+    // Its center within the farm's reach.
+    const std::int64_t dx = (x + w / 2) - (farm->x + farm->width / 2);
+    const std::int64_t dz = (z + d / 2) - (farm->z + farm->depth / 2);
+    if (dx * dx + dz * dz > static_cast<std::int64_t>(fd.work_radius) * fd.work_radius) {
+        return PlaceError::TooFar;
+    }
+    std::int32_t lo = 65535, hi = 0;
+    for (std::int32_t cz = z; cz < z + d; ++cz) {
+        for (std::int32_t cx = x; cx < x + w; ++cx) {
+            if (occupied_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(map_.size) + static_cast<std::size_t>(cx)] != 0) {
+                return PlaceError::Blocked;
+            }
+            if (map_.water_at(cx, cz)) {
+                return PlaceError::Water;
+            }
+            const std::int32_t h = map_.height_cm(cx, cz);
+            lo = std::min(lo, h);
+            hi = std::max(hi, h);
+        }
+    }
+    if (hi - lo > 300) {
         return PlaceError::TooSteep;
     }
     return PlaceError::None;
@@ -1771,6 +2250,10 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u64(t);
         w.u32(i);
     }
+    w.u32(static_cast<std::uint32_t>(g.zone_animals().size()));
+    for (const std::int32_t a : g.zone_animals()) {
+        w.i32(a);
+    }
     m.buildings = w.bytes().size();
     const auto& bs = g.buildings();
     w.u32(static_cast<std::uint32_t>(bs.size()));
@@ -1793,6 +2276,28 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         write_ids(w, b.workers);
         w.i32(b.wanted_workers);
         write_ids(w, b.residents);
+        w.i64(b.built_tick);
+        w.u32(b.produced_year);
+        w.i32(b.produced);
+        w.u32(static_cast<std::uint32_t>(b.fields.size()));
+        for (const Field& f : b.fields) {
+            w.i32(f.x);
+            w.i32(f.z);
+            w.i32(f.w);
+            w.i32(f.d);
+            for (const DefIndex p : f.plan) {
+                w.u16(p);
+            }
+            w.u8(f.slot);
+            w.u8(static_cast<std::uint8_t>(f.state));
+            w.u16(f.crop);
+            w.i32(f.work);
+            w.i32(f.growth);
+            w.i32(f.fertility);
+            w.i32(f.pending);
+            w.u32(f.year);
+            w.i32(f.fertilized);
+        }
     }
     m.villagers = w.bytes().size();
     const auto& vs = g.villagers();
@@ -1814,6 +2319,9 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(v.health);
         w.i32(v.warmth);
         w.i32(v.clothes);
+        w.u32(v.diet);
+        w.u8(v.variety);
+        w.u16(v.spot);
         w.u32(v.home.index);
         w.u32(v.home.generation);
         w.u32(v.job.index);
@@ -1964,6 +2472,17 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             return false;
         }
     }
+    if (!r.count(100000, 4, n) || n != g.map_.zones.size()) {
+        r.fail();
+        return false;
+    }
+    g.zone_animals_.resize(n);
+    for (std::int32_t& a : g.zone_animals_) {
+        if (!r.i32(a) || a < 0 || a > 1000) {
+            r.fail();
+            return false;
+        }
+    }
     if (!r.count(100000, 30, n)) {
         return false;
     }
@@ -1984,9 +2503,40 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         if (b.x < 0 || b.z < 0 || b.x + b.width > g.map_.size || b.z + b.depth > g.map_.size ||
             !read_stocks(r, b.delivered, c.resources.size()) || !read_stocks(r, b.incoming, c.resources.size()) ||
             !r.i32(b.work_done) || !read_stocks(r, b.stock, c.resources.size()) || !read_ids(r, b.workers) ||
-            !r.i32(b.wanted_workers) || !read_ids(r, b.residents)) {
+            !r.i32(b.wanted_workers) || !read_ids(r, b.residents) || !r.i64(b.built_tick) || !r.u32(b.produced_year) ||
+            !r.i32(b.produced)) {
             r.fail();
             return false;
+        }
+        std::uint32_t nf = 0;
+        if (!r.count(16, 40, nf)) {
+            return false;
+        }
+        b.fields.resize(nf);
+        for (Field& f : b.fields) {
+            std::uint8_t field_state = 0;
+            bool ok = r.i32(f.x) && r.i32(f.z) && r.i32(f.w) && r.i32(f.d);
+            for (DefIndex& p : f.plan) {
+                ok = ok && r.u16(p) && (p == kNoDef || p < c.crops.size());
+            }
+            ok = ok && r.u8(f.slot) && f.slot < kPlanYears && r.u8(field_state) &&
+                 field_state < static_cast<std::uint8_t>(FieldState::Count) &&
+                 r.u16(f.crop) && (f.crop == kNoDef || f.crop < c.crops.size()) && r.i32(f.work) && r.i32(f.growth) &&
+                 r.i32(f.fertility) && f.fertility >= 0 && f.fertility <= 100 && r.i32(f.pending) && r.u32(f.year) &&
+                 r.i32(f.fertilized);
+            ok = ok && f.w >= kMinFieldSide && f.d >= kMinFieldSide && f.w <= kMaxFieldSide && f.d <= kMaxFieldSide &&
+                 f.x >= 0 && f.z >= 0 && f.x + f.w <= g.map_.size && f.z + f.d <= g.map_.size;
+            if (!ok) {
+                r.fail();
+                return false;
+            }
+            f.state = static_cast<FieldState>(field_state);
+            for (std::int32_t cz = f.z; cz < f.z + f.d; ++cz) {
+                for (std::int32_t cx = f.x; cx < f.x + f.w; ++cx) {
+                    g.occupied_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(g.map_.size) +
+                                static_cast<std::size_t>(cx)] = 2;
+                }
+            }
         }
         for (std::int32_t cz = b.z; cz < b.z + b.depth; ++cz) {
             for (std::int32_t cx = b.x; cx < b.x + b.width; ++cx) {
@@ -2005,7 +2555,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t sex = 0, task = 0;
         if (!r.u32(id.index) || !r.u32(id.generation) || !r.u8(v.owner) || !r.u8(sex) || !r.u8(v.race) ||
             !r.u32(v.appearance) || !r.u32(v.family) || !r.i64(v.born_tick) || !r.vec2(v.position) || !r.vec2(v.previous) ||
-            !r.i32(v.food) || !r.i32(v.health) || !r.i32(v.warmth) || !r.i32(v.clothes) || !r.u32(v.home.index) || !r.u32(v.home.generation) ||
+            !r.i32(v.food) || !r.i32(v.health) || !r.i32(v.warmth) || !r.i32(v.clothes) || !r.u32(v.diet) ||
+            !r.u8(v.variety) || !r.u16(v.spot) || !r.u32(v.home.index) || !r.u32(v.home.generation) ||
             !r.u32(v.job.index) || !r.u32(v.job.generation) || !r.u8(task) || !r.u32(v.target.index) ||
             !r.u32(v.target.generation) || !r.u32(v.site.index) || !r.u32(v.site.generation) || !r.u32(v.node) ||
             !r.i32(v.timer) || !r.u16(v.carrying.resource) || !r.i32(v.carrying.amount) || v.owner >= pc || sex > 1 ||

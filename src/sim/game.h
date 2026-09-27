@@ -37,7 +37,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 10;
+inline constexpr std::uint32_t kGameRulesVersion = 11;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -66,6 +66,31 @@ struct Node {
 
 enum class BuildingState : std::uint8_t { Construction, Complete };
 
+// A farm's field (phase 11): a rectangle of cells, a plan of three years
+// (a crop or fallow each), and this year's progress.
+enum class FieldState : std::uint8_t { Waiting, Growing, Ripe, Done, Count };
+inline constexpr std::int32_t kMinFieldSide = 4;
+inline constexpr std::int32_t kMaxFieldSide = 20;
+inline constexpr std::size_t kPlanYears = 3;
+
+struct Field {
+    std::int32_t x = 0;
+    std::int32_t z = 0;
+    std::int32_t w = 0;
+    std::int32_t d = 0;
+    std::array<DefIndex, kPlanYears> plan{kNoDef, kNoDef, kNoDef};  // Crop per year; kNoDef = fallow.
+    std::uint8_t slot = 0;          // This year's place in the plan.
+    FieldState state = FieldState::Waiting;
+    DefIndex crop = kNoDef;         // What was sown this year.
+    std::int32_t work = 0;          // Sowing progress.
+    std::int32_t growth = 0;        // 0..1000.
+    std::int32_t fertility = 60;    // 0..100.
+    std::int32_t pending = 0;       // Harvest left to bring in.
+    std::uint32_t year = 0;         // The calendar year this cycle belongs to.
+    std::int32_t fertilized = 0;    // Compost spread this year.
+    bool operator==(const Field&) const = default;
+};
+
 struct Stock {
     DefIndex resource = kNoDef;
     std::int32_t amount = 0;
@@ -89,6 +114,10 @@ struct Building {
     std::int32_t wanted_workers = 0;
     std::vector<EntityId> residents;
     bool heated = true;              // Houses: warm today (firewood, or no need).
+    std::vector<Field> fields;       // Farms.
+    std::int64_t built_tick = 0;     // When it was finished (orchards mature).
+    std::uint32_t produced_year = 0; // Workplaces with a yearly limit.
+    std::int32_t produced = 0;
     bool operator==(const Building&) const = default;
 };
 
@@ -105,6 +134,12 @@ enum class Task : std::uint8_t {
     Build,         // Building.
     GoWorkplace,   // Walking to the workplace (with recipe inputs).
     Produce,       // Working a recipe.
+    GoField,       // Walking to a field.
+    Farm,          // Sowing, spreading compost or harvesting.
+    GoHunt,        // Walking to where game lives.
+    Hunt,
+    GoFish,        // Walking to the water's edge.
+    Fish,
     Count
 };
 
@@ -123,6 +158,9 @@ struct Villager {
     std::int32_t health = village::kHealthMax;
     std::int32_t warmth = village::kWarmthMax;
     std::int32_t clothes = 0;         // Ticks left of the clothes worn; 0 = none.
+    std::uint32_t diet = 0;           // Bit per kind of food eaten this month.
+    std::uint8_t variety = 0;         // Kinds of food eaten last month.
+    std::uint16_t spot = 0;           // Field or animal zone being worked (index + 1).
     EntityId home;
     EntityId job;                     // Workplace.
     Task task = Task::Idle;
@@ -148,7 +186,19 @@ struct PlayerState {
 };
 
 // Why a building cannot go somewhere.
-enum class PlaceError : std::uint8_t { None, UnknownBuilding, OutsideMap, Water, TooSteep, Blocked, Unique, NotYours };
+enum class PlaceError : std::uint8_t {
+    None,
+    UnknownBuilding,
+    OutsideMap,
+    Water,
+    TooSteep,
+    Blocked,
+    Unique,
+    NotYours,
+    TooFar,      // A field beyond its farm's reach.
+    TooMany,     // A farm with all its fields.
+    BadSize,
+};
 
 // How a game is set up besides its map.
 struct GameSetup {
@@ -223,6 +273,11 @@ public:
     // Whether `player` may place `def` with its corner at (x, z).
     [[nodiscard]] PlaceError can_place(std::uint8_t player, DefIndex def, std::int32_t x, std::int32_t z,
                                        std::uint8_t rotation) const;
+    // Whether `player` may add a field of `w` x `d` at (x, z) to `farm`.
+    [[nodiscard]] PlaceError can_place_field(std::uint8_t player, EntityId farm, std::int32_t x, std::int32_t z,
+                                             std::int32_t w, std::int32_t d) const;
+    // Animals left in each of the map's zones (hunting).
+    [[nodiscard]] const std::vector<std::int32_t>& zone_animals() const { return zone_animals_; }
     // Point in front of a building's door, where villagers go.
     [[nodiscard]] FixedVec2 door(const Building& b) const;
     // Where someone coming from `from` stands to use a building.
@@ -265,6 +320,11 @@ private:
     std::int32_t snow_ = 0;          // 0..kMaxSnow.
     DefIndex firewood_ = kNoDef;     // Resources the rules use, looked up once.
     DefIndex clothes_ = kNoDef;
+    DefIndex fertilizer_ = kNoDef;
+    DefIndex meat_ = kNoDef;
+    DefIndex hide_ = kNoDef;
+    DefIndex fish_ = kNoDef;
+    std::vector<std::int32_t> zone_animals_;
 
     std::vector<std::pair<std::uint64_t, std::uint32_t>> regrow_;  // (tick, node), sorted.
     std::vector<std::uint32_t> changed_nodes_;

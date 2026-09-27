@@ -1169,6 +1169,67 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
     }
     math::Vec3 origin;
     math::Vec3 dir;
+    // Marking out a field: press on a corner, drag, release.
+    if (ui.field_farm.valid()) {
+        village_.set_ghost(std::nullopt);
+        if (right_clicked_ || game.buildings().get(ui.field_farm) == nullptr) {
+            ui.field_farm = {};
+            ui.field_dragging = false;
+            village_.set_field_ghost(std::nullopt);
+            return;
+        }
+        std::optional<math::Vec3> hit;
+        if (interactive_scene() && mouse_ray(width, height, origin, dir) && !ui.over_hud(input_.mouse_x, input_.mouse_y)) {
+            hit = ground_hit(game.map(), origin, dir);
+        }
+        if (!hit) {
+            if (!ui.field_dragging) {
+                village_.set_field_ghost(std::nullopt);
+            }
+            return;
+        }
+        const auto cx = static_cast<std::int32_t>(std::floor(hit->x));
+        const auto cz = static_cast<std::int32_t>(std::floor(hit->z));
+        if (input_.mouse_pressed) {
+            ui.field_dragging = true;
+            ui.drag_x = cx;
+            ui.drag_z = cz;
+        }
+        // The rectangle between the corner and the cursor (a small square
+        // before dragging), limited to the allowed sizes.
+        std::int32_t x0 = ui.field_dragging ? std::min(ui.drag_x, cx) : cx;
+        std::int32_t z0 = ui.field_dragging ? std::min(ui.drag_z, cz) : cz;
+        std::int32_t w = ui.field_dragging ? std::abs(cx - ui.drag_x) + 1 : sim::kMinFieldSide;
+        std::int32_t d = ui.field_dragging ? std::abs(cz - ui.drag_z) + 1 : sim::kMinFieldSide;
+        w = std::clamp(w, sim::kMinFieldSide, sim::kMaxFieldSide);
+        d = std::clamp(d, sim::kMinFieldSide, sim::kMaxFieldSide);
+        if (ui.field_dragging && cx < ui.drag_x) {
+            x0 = ui.drag_x - w + 1;
+        }
+        if (ui.field_dragging && cz < ui.drag_z) {
+            z0 = ui.drag_z - d + 1;
+        }
+        ui.hover_valid = true;
+        ui.hover_error = game.can_place_field(session_->local_player(), ui.field_farm, x0, z0, w, d);
+        village_.set_field_ghost(VillageView::FieldGhost{x0, z0, w, d, ui.hover_error == sim::PlaceError::None});
+        if (ui.field_dragging && input_.mouse_released) {
+            ui.field_dragging = false;
+            if (ui.hover_error == sim::PlaceError::None) {
+                sim::Command c;
+                c.type = sim::CommandType::PlaceField;
+                c.entity = ui.field_farm;
+                c.position = {sim::Fixed::from_int(x0), sim::Fixed::from_int(z0)};
+                c.value = w | (d << 8);
+                session_->issue(c);
+                if ((SDL_GetModState() & SDL_KMOD_SHIFT) == 0) {
+                    ui.field_farm = {};
+                    village_.set_field_ghost(std::nullopt);
+                }
+            }
+        }
+        return;
+    }
+    village_.set_field_ghost(std::nullopt);
     if (ui.placing == sim::kNoDef || ui.placing >= game.content().buildings.size() || !interactive_scene() ||
         !mouse_ray(width, height, origin, dir) || ui.over_hud(input_.mouse_x, input_.mouse_y)) {
         village_.set_ghost(std::nullopt);
@@ -1199,8 +1260,8 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
     (void)width;
     (void)height;
     GameSession::Interaction& ui = session_->ui();
-    if (ui.over_hud(input_.mouse_x, input_.mouse_y)) {
-        return;
+    if (ui.over_hud(input_.mouse_x, input_.mouse_y) || ui.field_farm.valid()) {
+        return;  // Fields are marked by dragging (update_placement).
     }
     const sim::Game& game = session_->game();
     if (ui.placing != sim::kNoDef) {

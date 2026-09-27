@@ -64,6 +64,24 @@
     "building.forager": "Recolector",
     "building.stonecutter": "Cantero",
     "building.firewoodSplitter": "Leñera",
-    "resource.clothes": "Ropa"
+    "resource.clothes": "Ropa",
+    "resource.wheat": "Trigo",
+    "resource.vegetables": "Verduras",
+    "resource.beans": "Frijoles",
+    "resource.fruit": "Fruta",
+    "resource.meat": "Carne",
+    "resource.fish": "Pescado",
+    "resource.hide": "Pieles",
+    "resource.fertilizer": "Abono",
+    "building.farm": "Granja",
+    "building.orchard": "Huerto",
+    "building.hunter": "Cazador",
+    "building.fisher": "Pescador",
+    "building.herbalist": "Herborista",
+    "building.granary": "Granero",
+    "building.compostYard": "Compostera",
+    "crop.wheat": "Trigo",
+    "crop.vegetables": "Verduras",
+    "crop.beans": "Frijoles"
   }
 }

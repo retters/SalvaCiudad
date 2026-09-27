@@ -43,8 +43,8 @@ enum class WorkKind : std::uint8_t {
     Build,    // Construct and demolish (the builder's hut).
     Haul,     // Carry goods between buildings.
     Farm,     // Fields (phase 11).
-    Hunt,
-    Fish,
+    Hunt,     // Game in the map's animal zones.
+    Fish,     // Fish from water nearby.
     Count
 };
 
@@ -71,6 +71,22 @@ struct BuildingDef {
     std::int32_t tier = 0;          // Town center tier needed.
     std::int32_t desirability = 0;  // Effect on nearby homes (phase 12).
     bool unique = false;            // Only one per player (town center).
+    // Phase 11: when and how much a workplace produces.
+    std::uint8_t seasons = 0;       // Season bits it works in (0 = all).
+    std::int32_t mature_years = 0;  // Years after it is built before it produces (orchards).
+    std::int32_t yearly_limit = 0;  // Most units produced per year (0 = no limit).
+    std::int32_t fields = 0;        // Farms: how many fields it can have.
+};
+
+// A crop for the fields (phase 11).
+struct CropDef {
+    std::string id;
+    std::string name_key;
+    DefIndex resource = kNoDef;
+    std::int32_t yield = 10;       // Units per 10 cells at full fertility.
+    std::int32_t grow_days = 40;   // Days of growing weather (5 °C or more) to ripen.
+    std::int32_t fertility = -10;  // Change to the field's fertility after a harvest.
+    bool hardy = false;            // Survives frost.
 };
 
 struct RecipeDef {
@@ -99,6 +115,7 @@ struct Content {
     std::vector<BuildingDef> buildings;
     std::vector<RecipeDef> recipes;
     std::vector<FeatureDef> features;
+    std::vector<CropDef> crops;
     Flora flora;
 
     // Hash of the mods that affect the simulation (section 7.4), for
@@ -108,6 +125,7 @@ struct Content {
     [[nodiscard]] DefIndex find_resource(std::string_view id) const;
     [[nodiscard]] DefIndex find_building(std::string_view id) const;
     [[nodiscard]] DefIndex find_recipe(std::string_view id) const;
+    [[nodiscard]] DefIndex find_crop(std::string_view id) const;
     [[nodiscard]] const FeatureDef* feature(FeatureKind kind) const;
 };
 

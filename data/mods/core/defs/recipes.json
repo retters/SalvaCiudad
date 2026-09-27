@@ -11,6 +11,22 @@
         "core:firewood": 3
       },
       "work": 60
+    },
+    {
+      "type": "recipe",
+      "id": "core:pick_fruit",
+      "outputs": {
+        "core:fruit": 2
+      },
+      "work": 40
+    },
+    {
+      "type": "recipe",
+      "id": "core:make_compost",
+      "outputs": {
+        "core:fertilizer": 2
+      },
+      "work": 150
     }
   ]
 }

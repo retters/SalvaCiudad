@@ -18,6 +18,62 @@ float to_float(sim::Fixed f) {
 // Villagers walk 0.2 m per tick (sim/game.cpp), ten ticks a second at x1.
 constexpr float kWalkMetersPerSecond = 2.0f;
 
+// A slab of soil, 2 x 2 m, white so the instance tint colors it.
+render::ModelData make_tile_model() {
+    render::ModelData m;
+    const float h = 0.25f;
+    const float s = 1.0f;
+    // Top and four sides (counter-clockwise seen from outside).
+    const auto quad = [&](math::Vec3 a, math::Vec3 b, math::Vec3 c, math::Vec3 d, math::Vec3 n) {
+        const auto base = static_cast<std::uint32_t>(m.vertices.size());
+        for (const math::Vec3& p : {a, b, c, d}) {
+            m.vertices.push_back({p.x, p.y, p.z, n.x, n.y, n.z, 0.0f, 0.0f});
+        }
+        for (const std::uint32_t i : {0u, 1u, 2u, 0u, 2u, 3u}) {
+            m.indices.push_back(base + i);
+        }
+    };
+    quad({-s, h, -s}, {-s, h, s}, {s, h, s}, {s, h, -s}, {0, 1, 0});
+    quad({-s, 0, s}, {s, 0, s}, {s, h, s}, {-s, h, s}, {0, 0, 1});
+    quad({s, 0, -s}, {-s, 0, -s}, {-s, h, -s}, {s, h, -s}, {0, 0, -1});
+    quad({s, 0, s}, {s, 0, -s}, {s, h, -s}, {s, h, s}, {1, 0, 0});
+    quad({-s, 0, -s}, {-s, 0, s}, {-s, h, s}, {-s, h, -s}, {-1, 0, 0});
+    m.materials.push_back({});
+    m.primitives.push_back({0, static_cast<std::uint32_t>(m.indices.size()), 0});
+    m.bounds_min = {-s, 0, -s};
+    m.bounds_max = {s, h, s};
+    m.radius = 1.5f;
+    return m;
+}
+
+// Four small low-poly plants on a 2 x 2 m patch, 0.7 m high at scale 1.
+render::ModelData make_plant_model() {
+    render::ModelData m;
+    const float kSpots[4][2] = {{-0.5f, -0.5f}, {0.5f, -0.4f}, {-0.45f, 0.5f}, {0.5f, 0.45f}};
+    for (const auto& spot : kSpots) {
+        const math::Vec3 top{spot[0], 0.7f, spot[1]};
+        const float r = 0.28f;
+        const math::Vec3 base[4] = {{spot[0] - r, 0.2f, spot[1]}, {spot[0], 0.2f, spot[1] + r},
+                                    {spot[0] + r, 0.2f, spot[1]}, {spot[0], 0.2f, spot[1] - r}};
+        for (int k = 0; k < 4; ++k) {
+            const math::Vec3 a = base[k];
+            const math::Vec3 b = base[(k + 1) % 4];
+            const math::Vec3 n = math::normalize(math::cross(b - a, top - a));
+            const auto i = static_cast<std::uint32_t>(m.vertices.size());
+            for (const math::Vec3& p : {a, b, top}) {
+                m.vertices.push_back({p.x, p.y, p.z, n.x, n.y, n.z, 0.0f, 0.0f});
+            }
+            m.indices.insert(m.indices.end(), {i, i + 1, i + 2});
+        }
+    }
+    m.materials.push_back({});
+    m.primitives.push_back({0, static_cast<std::uint32_t>(m.indices.size()), 0});
+    m.bounds_min = {-1, 0, -1};
+    m.bounds_max = {1, 0.7f, 1};
+    m.radius = 1.5f;
+    return m;
+}
+
 float wrap_angle(float a) {
     while (a > std::numbers::pi_v<float>) {
         a -= 2.0f * std::numbers::pi_v<float>;
@@ -62,6 +118,18 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
     if (missing > 0) {
         log::warn("village: {} building model(s) missing; those buildings will not be drawn", missing);
     }
+    if (tile_model_ == kNoModel) {
+        render::ModelId id = 0;
+        if (renderer.add_model(make_tile_model(), id)) {
+            tile_model_ = id;
+            used_.push_back(id);
+        }
+        if (renderer.add_model(make_plant_model(), id)) {
+            renderer.set_model_class(id, render::ModelClass::SmallVegetation);
+            plant_model_ = id;
+            used_.push_back(id);
+        }
+    }
 }
 
 void VillageView::set_bodies(const std::vector<TestCrowd::BodyKind>* bodies, std::uint32_t palette_count) {
@@ -97,6 +165,93 @@ void VillageView::end(render::SceneRenderer& renderer) {
     looks_.clear();
     ghost_.reset();
     shown_ = false;
+}
+
+void VillageView::set_field_ghost(std::optional<FieldGhost> ghost) {
+    if (ghost != field_ghost_) {
+        field_ghost_ = ghost;
+        ghost_changed_ = true;
+    }
+}
+
+void VillageView::rebuild_fields(render::SceneRenderer& renderer, const sim::Game& game) {
+    if (tile_model_ == kNoModel) {
+        return;
+    }
+    std::vector<render::Instance> tiles;
+    std::vector<render::Instance> plants;
+    const auto patch = [&](std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d, math::Vec3 soil,
+                           float plant_scale, math::Vec3 plant) {
+        for (std::int32_t cz = z; cz + 1 < z + d + 1; cz += 2) {
+            for (std::int32_t cx = x; cx + 1 < x + w + 1; cx += 2) {
+                const float px = static_cast<float>(cx) + 1.0f;
+                const float pz = static_cast<float>(cz) + 1.0f;
+                const float y = map_surface_height(game.map(), px, pz) - 0.15f;
+                render::Instance t;
+                t.position = {px, y, pz};
+                t.tint = soil;
+                tiles.push_back(t);
+                if (plant_scale > 0.0f && plant_model_ != kNoModel) {
+                    render::Instance p = t;
+                    p.position.y = y + 0.05f;
+                    p.scale = plant_scale;
+                    p.yaw = static_cast<float>((cx * 7 + cz * 13) % 6);
+                    p.tint = plant;
+                    plants.push_back(p);
+                }
+            }
+        }
+    };
+    const sim::Content& content = game.content();
+    for (const sim::Building& b : game.buildings().data()) {
+        for (const sim::Field& f : b.fields) {
+            math::Vec3 soil{0.16f, 0.09f, 0.05f};  // Linear colors.
+            float scale = 0.0f;
+            math::Vec3 plant{0.1f, 0.32f, 0.06f};
+            const bool fallow = f.plan[f.slot] == sim::kNoDef;
+            const std::string_view crop = f.crop < content.crops.size() ? std::string_view(content.crops[f.crop].id) : "";
+            // Ripe colors: golden wheat, orange vegetables, green beans.
+            math::Vec3 ripe{0.75f, 0.52f, 0.12f};
+            if (crop == "core:vegetables") {
+                ripe = {0.6f, 0.22f, 0.05f};
+            } else if (crop == "core:beans") {
+                ripe = {0.12f, 0.42f, 0.08f};
+            }
+            switch (f.state) {
+                case sim::FieldState::Waiting:
+                    soil = f.work > 0 ? math::Vec3{0.11f, 0.06f, 0.035f} : soil;
+                    break;
+                case sim::FieldState::Growing: {
+                    const float g = static_cast<float>(f.growth) / 1000.0f;
+                    scale = 0.35f + 0.85f * g;
+                    plant = plant * (1.0f - g * 0.5f) + ripe * (g * 0.5f);
+                    break;
+                }
+                case sim::FieldState::Ripe:
+                    scale = 1.2f;
+                    plant = ripe;
+                    break;
+                case sim::FieldState::Done:
+                    if (fallow) {
+                        soil = {0.12f, 0.26f, 0.06f};  // Resting under grass.
+                    } else {
+                        scale = 0.12f;  // Stubble.
+                        plant = {0.5f, 0.38f, 0.14f};
+                    }
+                    break;
+                case sim::FieldState::Count: break;
+            }
+            patch(f.x, f.z, f.w, f.d, soil, scale, plant);
+        }
+    }
+    if (field_ghost_) {
+        const math::Vec3 tint = field_ghost_->allowed ? math::Vec3{0.2f, 0.9f, 0.25f} : math::Vec3{0.9f, 0.15f, 0.1f};
+        patch(field_ghost_->x, field_ghost_->z, field_ghost_->w, field_ghost_->d, tint, 0.0f, {});
+    }
+    renderer.set_instances(tile_model_, tiles);
+    if (plant_model_ != kNoModel) {
+        renderer.set_instances(plant_model_, plants);
+    }
 }
 
 void VillageView::set_ghost(std::optional<Ghost> ghost) {
@@ -156,7 +311,9 @@ render::Instance VillageView::building_instance(const sim::Game& game, sim::DefI
 void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::Game& game) {
     std::map<render::ModelId, std::vector<render::Instance>> lists;
     for (const render::ModelId id : used_) {
-        lists[id];
+        if (id != tile_model_ && id != plant_model_) {
+            lists[id];
+        }
     }
     const sim::Content& content = game.content();
     for (const sim::Building& b : game.buildings().data()) {
@@ -179,8 +336,11 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         lists[def_models_[ghost_->def].id].push_back(g);
     }
     for (auto& [id, list] : lists) {
-        renderer.set_instances(id, list);
+        if (id != tile_model_ && id != plant_model_) {
+            renderer.set_instances(id, list);
+        }
     }
+    rebuild_fields(renderer, game);
 }
 
 math::Vec3 VillageView::villager_position(const sim::Game& game, const sim::Villager& v, float alpha) const {
