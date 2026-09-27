@@ -1,6 +1,6 @@
-"""Props: a pine tree, a boulder and a small half-timbered house with
-architectural details (beams, window frames, shutters, door, chimney,
-roof tiles in rows)."""
+"""Props: trees (pine, oak), a boulder, an iron ore outcrop, a berry bush,
+an herb plant and a small half-timbered house with architectural details
+(beams, window frames, shutters, door, chimney, roof tiles in rows)."""
 
 import math
 import os
@@ -23,7 +23,90 @@ COLORS = {
     "door": common.rgb(0x6B4A2E),
     "window": common.rgb(0x2B3440),
     "shutter": common.rgb(0x4F6B4A),
+    "leaves": common.rgb(0x4E7A34),
+    "leaves_dark": common.rgb(0x3D6629),
+    "ore": common.rgb(0x8A4E34),
+    "ore_dark": common.rgb(0x5E3526),
+    "bush": common.rgb(0x3F6B32),
+    "berries": common.rgb(0xA8243A),
+    "herb": common.rgb(0x5E8A44),
+    "flowers": common.rgb(0x9C6AC8),
 }
+
+
+def lumpy(verts, amount, seed):
+    """Deterministic lumps on a sphere: push vertices by a fixed pattern."""
+    ordered = sorted(verts, key=lambda v: (round(v.co.z, 4), round(v.co.x, 4), round(v.co.y, 4)))
+    cx = sum(v.co.x for v in verts) / len(verts)
+    cy = sum(v.co.y for v in verts) / len(verts)
+    for i, v in enumerate(ordered):
+        k = 1.0 + amount * math.sin(i * 2.3 + seed) + amount * 0.5 * math.cos(i * 5.1 + seed)
+        v.co.x = cx + (v.co.x - cx) * k
+        v.co.y = cy + (v.co.y - cy) * k
+
+
+def oak_tree(folder):
+    common.reset_scene()
+    mb = MeshBuilder()
+    mb.cylinder((0, 0, 0), (0, 0, 2.6), 0.28, 0.2, "bark", segments=8)
+    mb.cylinder((0, 0, 2.2), (0.9, 0.3, 3.4), 0.12, 0.07, "bark", segments=6)
+    mb.cylinder((0, 0, 2.4), (-0.7, -0.5, 3.5), 0.12, 0.07, "bark", segments=6)
+    # A rounded crown of overlapping leaf clumps.
+    clumps = ((0, 0, 4.1, 1.6), (1.0, 0.4, 3.6, 1.1), (-0.9, -0.5, 3.7, 1.15), (0.2, -1.0, 3.5, 1.0),
+              (-0.3, 1.0, 3.8, 1.05), (0.1, 0.1, 5.0, 1.0))
+    for i, (x, y, z, r) in enumerate(clumps):
+        verts = mb.sphere((x, y, z), r, "leaves" if i % 2 == 0 else "leaves_dark", segments=9, rings=6,
+                          scale=(1.0, 1.0, 0.85))
+        lumpy(verts, 0.08, i)
+    obj = mb.to_object("tree_oak", COLORS)
+    common.export_glb(os.path.join(folder, "tree_oak.glb"), [obj])
+
+
+def ore_rock(folder):
+    common.reset_scene()
+    mb = MeshBuilder()
+    verts = mb.sphere((0, 0, 0.5), 0.8, "rock_dark", segments=9, rings=6, scale=(1.15, 1.0, 0.75))
+    lumpy(verts, 0.12, 1.7)
+    for v in verts:
+        if v.co.z < 0.05:
+            v.co.z = 0.0
+    # Rusty veins of iron ore breaking the surface.
+    for x, y, z, r in ((0.45, -0.45, 0.75, 0.28), (-0.5, -0.3, 0.55, 0.24), (0.1, 0.55, 0.85, 0.22),
+                       (-0.15, -0.65, 0.35, 0.2)):
+        mb.sphere((x, y, z), r, "ore", segments=6, rings=4, scale=(1.2, 0.9, 0.8))
+    mb.sphere((0.75, 0.3, 0.3), 0.3, "ore_dark", segments=7, rings=5)
+    obj = mb.to_object("ore_rock", COLORS)
+    common.export_glb(os.path.join(folder, "ore_rock.glb"), [obj])
+
+
+def berry_bush(folder):
+    common.reset_scene()
+    mb = MeshBuilder()
+    for i, (x, y, z, r) in enumerate(((0, 0, 0.45, 0.55), (0.4, 0.2, 0.35, 0.4), (-0.35, 0.25, 0.35, 0.42),
+                                      (0.05, -0.35, 0.33, 0.38))):
+        verts = mb.sphere((x, y, z), r, "bush", segments=8, rings=5, scale=(1.0, 1.0, 0.8))
+        lumpy(verts, 0.1, i)
+    # Berries in small groups on the outside.
+    for i in range(14):
+        a = i * 2.399963
+        h = 0.3 + 0.35 * ((i * 7) % 5) / 5.0
+        r = 0.6 if h < 0.5 else 0.47
+        mb.sphere((math.cos(a) * r, math.sin(a) * r, h), 0.06, "berries", segments=5, rings=3)
+    obj = mb.to_object("berry_bush", COLORS)
+    common.export_glb(os.path.join(folder, "berry_bush.glb"), [obj])
+
+
+def herb(folder):
+    common.reset_scene()
+    mb = MeshBuilder()
+    for i in range(7):
+        a = i * 2.399963
+        tip = (math.cos(a) * 0.18, math.sin(a) * 0.18, 0.35 + 0.08 * (i % 3))
+        mb.cylinder((0, 0, 0), tip, 0.03, 0.012, "herb", segments=4)
+        mb.sphere(tip, 0.045, "flowers", segments=5, rings=3)
+    mb.sphere((0, 0, 0.06), 0.14, "herb", segments=7, rings=4, scale=(1.0, 1.0, 0.5))
+    obj = mb.to_object("herb", COLORS)
+    common.export_glb(os.path.join(folder, "herb.glb"), [obj])
 
 
 def pine_tree(folder):
@@ -144,5 +227,9 @@ def house(folder):
 def make_all(folder):
     os.makedirs(folder, exist_ok=True)
     pine_tree(folder)
+    oak_tree(folder)
     rock(folder)
+    ore_rock(folder)
+    berry_bush(folder)
+    herb(folder)
     house(folder)

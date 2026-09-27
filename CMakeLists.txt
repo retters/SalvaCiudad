@@ -164,6 +164,7 @@ function(sc_add_shader source profile symbol)
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
                 "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_common.hlsli"
                 "${CMAKE_CURRENT_SOURCE_DIR}/shaders/skinning.hlsli"
+                "${CMAKE_CURRENT_SOURCE_DIR}/shaders/terrain_common.hlsli"
         COMMENT "Compiling shader ${source}"
         VERBATIM)
     set(SC_SHADER_HEADERS ${SC_SHADER_HEADERS} "${header}" PARENT_SCOPE)
@@ -178,6 +179,9 @@ sc_add_shader(shaders/sky.vert.hlsl vs_6_0 kSkyVertDxil)
 sc_add_shader(shaders/sky.frag.hlsl ps_6_0 kSkyFragDxil)
 sc_add_shader(shaders/skinned.vert.hlsl vs_6_0 kSkinnedVertDxil)
 sc_add_shader(shaders/skinned_shadow.vert.hlsl vs_6_0 kSkinnedShadowVertDxil)
+sc_add_shader(shaders/terrain.vert.hlsl vs_6_0 kTerrainVertDxil)
+sc_add_shader(shaders/water.vert.hlsl vs_6_0 kWaterVertDxil)
+sc_add_shader(shaders/water.frag.hlsl ps_6_0 kWaterFragDxil)
 
 # The base language is built in, so the game shows text even if data/lang
 # is missing.
@@ -206,6 +210,9 @@ set(SC_ENGINE_SOURCES
     src/game/game_clock.cpp
     src/game/replay_file.cpp
     src/game/input_actions.cpp
+    src/game/map_generation.cpp
+    src/game/map_scene.cpp
+    src/game/new_game_screen.cpp
     src/game/settings.cpp
     src/game/settings_screen.cpp
     src/game/test_scene.cpp
@@ -218,15 +225,19 @@ set(SC_ENGINE_SOURCES
     src/sim/command.cpp
     src/sim/entity.cpp
     src/sim/fixed.cpp
+    src/sim/map.cpp
+    src/sim/noise.cpp
     src/sim/rng.cpp
     src/sim/serialize.cpp
     src/sim/simulation.cpp
     src/sim/world.cpp
+    src/sim/worldgen.cpp
     src/platform/window.cpp
     src/render/debug_overlay.cpp
     src/render/gpu_device.cpp
     src/render/model.cpp
     src/render/scene_renderer.cpp
+    src/render/terrain_layer.cpp
     src/render/ui_renderer.cpp
     src/ui/context.cpp
     src/ui/draw_list.cpp
@@ -237,7 +248,9 @@ set(SC_ENGINE_SOURCES
 
 add_library(sc_engine STATIC ${SC_ENGINE_SOURCES})
 target_include_directories(sc_engine PUBLIC src "${SC_GENERATED_DIR}")
-target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui)
+# Map generation runs on a worker thread.
+find_package(Threads REQUIRED)
+target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui Threads::Threads)
 add_dependencies(sc_engine sc_generated)
 sc_harden_target(sc_engine)
 
@@ -279,14 +292,16 @@ if(SC_BUILD_TESTS)
         tests/test_model.cpp
         tests/test_camera.cpp
         tests/test_scene.cpp
-        tests/test_sim.cpp)
+        tests/test_sim.cpp
+        tests/test_worldgen.cpp
+        tests/test_map_view.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen worldgen_perf map_view new_game)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

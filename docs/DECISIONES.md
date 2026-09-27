@@ -247,3 +247,100 @@ Esto resuelve D-104. A 10 ticks por segundo, el mundo actual cuesta microsegundo
 
 **D-507. Repeticiones y archivos fuera de `src/sim`.**
 La simulación no toca archivos. `game/replay_file` guarda y lee las repeticiones con escritura atómica, un límite de 256 MB y validación completa (firma, versiones, orden de los ticks y suma de verificación). Una prueba estática impide usar en `src/sim` coma flotante, contenedores desordenados, relojes, archivos, hilos o números aleatorios estándar.
+
+## Fase 6: mapa procedural (2026-09-27)
+
+**D-601. El generador es parte de la simulación.**
+`sim/worldgen` usa solo enteros, `Fixed` y su propio ruido (`sim/noise`: ruido de valor sobre una retícula con hash y fBm). Así el mapa sale idéntico en todas las máquinas y la prueba estática de `src/sim` también lo cubre.
+- El mapa (`sim::MapData`) guarda:
+  - alturas de los vértices en centímetros;
+  - la superficie del agua por celda;
+  - tipo de suelo y fertilidad;
+  - objetos naturales, zonas de animales y posiciones de inicio.
+- Una celda mide 1 m. Pequeño, Mediano, Grande y Enorme miden 512, 1024, 2048 y 4096 m de lado.
+- La prueba `worldgen` fija la suma de verificación de un mapa Pequeño (semilla 12345): `0x9171cd08375d6a63`. Si el generador cambia a propósito, se actualiza.
+
+**D-602. Etapas del generador.**
+1. Relieve: fBm, más cuencas para lagos. La amplitud es de 5 m con relieve bajo y de 10 m con colinas suaves.
+2. Lagos: relleno de depresiones por prioridad ("priority flood").
+   - Una depresión de al menos 0,7 m de hondo y 150 vértices se vuelve lago.
+   - Las demás se rellenan, así ningún río se queda atascado.
+3. Ríos: nacen en puntos altos separados entre sí y siguen la pendiente hasta el borde o un lago.
+   - El nivel del agua nunca sube río abajo.
+   - El ancho crece de unos 5 m a 11 m. Al principio medían de 3 a 5 m y en la prueba en vivo desaparecían bajo el terreno lejano; ver D-606.
+4. Suelos: distancia al agua, fertilidad, roca en pendientes, arena en orillas, arcilla, pradera y bosque.
+5. Árboles en una retícula de 3 m con desplazamiento aleatorio.
+6. Recursos: piedra, hierro, bayas, hierbas y zonas de ciervos, jabalíes, lobos y osos.
+7. Posiciones de inicio.
+
+Cada etapa informa su avance y se puede cancelar.
+
+**D-603. Posiciones de inicio justas.**
+- Los candidatos salen de una retícula de 32 m y se eligen lo más separados posible.
+- Cada inicio recibe lo que le falte hasta tener, a menos de 180 m, al menos 2 piedras, 2 arbustos de bayas y 60 árboles, y agua a menos de 150 m.
+- Se despejan 25 m alrededor del inicio para el centro del pueblo y se quitan las zonas de depredadores a menos de 250 m.
+- Las pruebas lo verifican con 1, 4 y 8 jugadores.
+
+**D-604. Tiempos.**
+Un mapa Enorme se genera en unos 6 s en `release`, con unos 410 000 objetos; el criterio pide menos de 30 s. La prueba `worldgen_perf` lo mide y solo corre en `release`.
+
+**D-605. Terreno en la GPU por parcelas con niveles de detalle.**
+- Las alturas y el agua suben tal cual a la GPU, en búferes de almacenamiento (dos valores de 16 bits por palabra). Un mapa Enorme ocupa unos 67 MB entre los dos.
+- El suelo se dibuja en parcelas de 64 m con 5 mallas compartidas: pasos de 1, 2, 4, 8 y 16 celdas.
+  - Cada malla tiene faldones que cuelgan para tapar las grietas entre niveles.
+  - El sombreador de vértices lee la altura y calcula la normal.
+- Cada cuadro, la CPU elige las parcelas visibles y su nivel según la distancia: hasta 140, 280, 560, 1120 m y más allá. Luego hace una llamada de dibujo por nivel.
+- El suelo usa el mismo sombreador de píxeles que los modelos, así que recibe las sombras de los árboles y tiene la misma luz y niebla.
+- El suelo no proyecta sombras: el relieve es suave y así se ahorra una pasada.
+
+**D-606. Colores del suelo.**
+- Una textura sRGB con mipmaps da el color de cada celda según el tipo de suelo y la fertilidad (la tierra pobre se ve más seca), con una leve variación.
+- Tiene un texel por celda hasta 2048; en el mapa Enorme, cada texel promedia 2 × 2 celdas.
+- Encima se repite una textura de ruido suave, generada al arrancar, para que el suelo no se vea plano de cerca.
+- El lecho de los ríos y lagos se pinta del color del agua. Así el agua se sigue viendo donde el terreno lejano, más simplificado, tapa su superficie.
+
+**D-607. Agua.**
+- Es una pasada transparente al final, sobre las parcelas que tienen agua, con un paso de malla de 1 o 2 celdas.
+- Cada vértice toma el agua más alta de sus cuatro celdas. Los vértices secos se hunden 2 m bajo el suelo, así la orilla queda donde el terreno corta la superficie.
+- El color depende de la profundidad; tiene ondas lentas, reflejo del sol, efecto Fresnel y la misma niebla que el resto.
+
+**D-608. Instancias por regiones y distancia de la vegetación.**
+- Cuando cambian las instancias, se ordenan por regiones de 64 m, y el descarte prueba primero la esfera de cada región.
+- En el mapa Enorme, el descarte de las ~410 000 instancias cuesta menos de 0,7 ms por cuadro, con las sombras incluidas.
+- Los modelos se clasifican como "normal" o "vegetación pequeña" (arbustos y hierbas).
+  - La vegetación pequeña se dibuja solo hasta la distancia de la opción Vegetación: 70, 130, 220 o 350 m, también en las sombras.
+  - Lo demás llega hasta la distancia de dibujo.
+- Con esto se quitó la nota "tendrá efecto cuando se agregue el mapa" de Configuración.
+
+**D-609. La generación corre en un hilo aparte.**
+- `game/map_generation` lanza un `std::thread`, informa el avance con variables atómicas y cancela con la respuesta de la función de avance.
+- El resultado se toma en el hilo principal, que es el único que sube datos a la GPU. La simulación sigue sin hilos (D-506).
+- Además del mapa, el hilo prepara lo visual: colores del suelo e instancias.
+- Como el juego se compila sin excepciones (D-103), quedarse sin memoria cierra el programa, igual que en el resto del juego. Por eso no hay un estado de "falló".
+- Se agregó `Threads::Threads` a CMake para Linux y macOS.
+
+**D-610. La semilla se escribe con dígitos.**
+- La semilla es un número de 1 a 19 cifras que cabe en 64 bits.
+- Se escribe con las teclas numéricas, las de arriba o las del teclado numérico. No hace falta la entrada de texto del sistema ni un editor de métodos de entrada.
+- Retroceso borra una cifra y Supr borra todo.
+- El botón "Al azar" da números de hasta 9 cifras, fáciles de compartir.
+- Semillas con palabras (el hash de un texto) se pueden agregar después sin romper las numéricas.
+
+**D-611. Vista de mapa provisional.**
+- "Un jugador" ya lleva a Partida nueva → Generando (barra de avance y Cancelar) → vista del mapa.
+- La vista del mapa tiene cámara libre, los tres modos de F4 y marcadores numerados en las posiciones de inicio. Esc vuelve al menú y libera el mapa.
+- Mientras se ve un mapa, la escena de prueba se retira del render, y vuelve al salir. El fondo del menú sigue siendo la escena de prueba.
+- En la fase 8, esta vista se convierte en la partida.
+
+**D-612. Cámara sobre el mapa.**
+- La cámara no sale del mapa y se apoya en el suelo o en la superficie del agua, lo que esté más alto.
+- Empieza sobre la posición de inicio 1.
+- Más allá del borde del mapa solo se ve cielo. Un borde con niebla o montañas se puede agregar más adelante.
+
+**D-613. Rendimiento medido (1600 × 900, en tu PC).**
+Mapa Enorme, semilla 2026, calidad Ultra (MSAA 8x, 3 cascadas de sombra, 2500 m de distancia de dibujo):
+- vista aérea: unos 400 FPS;
+- tercera persona: unos 360 FPS;
+- primera persona mirando al bosque, el peor caso: unos 220 FPS con 8,5 millones de triángulos.
+
+Con la calidad Alta por omisión, la vista aérea supera los 500 FPS.

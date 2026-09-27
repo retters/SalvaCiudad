@@ -152,6 +152,17 @@ struct GpuMaterial {
     SDL_GPUTexture* texture = nullptr;  // Not owned; points into GpuModel::textures or the white texture.
 };
 
+// Instances of a model grouped by 64 m region, so culling can skip whole
+// regions at once.
+constexpr float kBucketSize = 64.0f;
+
+struct Bucket {
+    std::uint32_t first = 0;  // Index into the model's instances.
+    std::uint32_t count = 0;
+    math::Vec3 center;
+    float radius = 0.0f;
+};
+
 struct GpuModel {
     SDL_GPUBuffer* vertices = nullptr;
     SDL_GPUBuffer* indices = nullptr;
@@ -160,7 +171,9 @@ struct GpuModel {
     std::vector<SDL_GPUTexture*> textures;
     float radius = 1.0f;
     std::uint64_t triangles = 0;
-    std::vector<Instance> instances;
+    std::vector<Instance> instances;  // Sorted by region once uploaded.
+    std::vector<Bucket> buckets;
+    ModelClass model_class = ModelClass::Normal;
 };
 
 struct Range {
@@ -195,10 +208,65 @@ struct GpuSkinned {
     std::uint32_t accessory_count = 0;
 };
 
+// A seamless tile of soft brightness variation that breaks up the flat
+// colors of the ground up close.
+ModelTexture make_ground_detail() {
+    constexpr int kSize = 256;
+    constexpr int kCells = 16;  // Lattice cells per side at the coarsest octave.
+    const auto lattice = [](int x, int z, int period, std::uint32_t salt) {
+        x = ((x % period) + period) % period;
+        z = ((z % period) + period) % period;
+        std::uint32_t h = (static_cast<std::uint32_t>(x) * 0x8DA6B343u) ^ (static_cast<std::uint32_t>(z) * 0xD8163841u) ^ salt;
+        h ^= h >> 13;
+        h *= 0x5BD1E995u;
+        h ^= h >> 15;
+        return static_cast<float>(h & 0xFFFFu) / 65535.0f;
+    };
+    ModelTexture t;
+    t.width = t.height = kSize;
+    t.rgba.resize(static_cast<std::size_t>(kSize) * kSize * 4);
+    for (int y = 0; y < kSize; ++y) {
+        for (int x = 0; x < kSize; ++x) {
+            float value = 0.0f;
+            float amplitude = 0.5f;
+            int period = kCells;
+            for (int octave = 0; octave < 3; ++octave) {
+                const float fx = static_cast<float>(x * period) / static_cast<float>(kSize);
+                const float fz = static_cast<float>(y * period) / static_cast<float>(kSize);
+                const int ix = static_cast<int>(fx);
+                const int iz = static_cast<int>(fz);
+                float tx = fx - static_cast<float>(ix);
+                float tz = fz - static_cast<float>(iz);
+                tx = tx * tx * (3.0f - 2.0f * tx);
+                tz = tz * tz * (3.0f - 2.0f * tz);
+                const auto salt = static_cast<std::uint32_t>(octave) * 0x9E3779B9u;
+                const float a = lattice(ix, iz, period, salt);
+                const float b = lattice(ix + 1, iz, period, salt);
+                const float c = lattice(ix, iz + 1, period, salt);
+                const float e = lattice(ix + 1, iz + 1, period, salt);
+                value += amplitude * math::lerp(math::lerp(a, b, tx), math::lerp(c, e, tx), tz);
+                amplitude *= 0.5f;
+                period *= 2;
+            }
+            // value is in 0..0.875; the texels span 205..255.
+            const auto v = static_cast<std::uint8_t>(std::clamp(205.0f + value / 0.875f * 50.0f, 0.0f, 255.0f));
+            std::uint8_t* px = &t.rgba[(static_cast<std::size_t>(y) * kSize + static_cast<std::size_t>(x)) * 4];
+            px[0] = px[1] = px[2] = v;
+            px[3] = 255;
+        }
+    }
+    return t;
+}
+
 }  // namespace
 
 float draw_distance_for_level(int level) {
     constexpr float kDistances[] = {300.0f, 600.0f, 1200.0f, 2500.0f};
+    return kDistances[std::clamp(level, 0, 3)];
+}
+
+float vegetation_distance_for_level(int level) {
+    constexpr float kDistances[] = {70.0f, 130.0f, 220.0f, 350.0f};
     return kDistances[std::clamp(level, 0, 3)];
 }
 
@@ -245,6 +313,7 @@ struct SceneRenderer::Impl {
     SDL_GPUSampler* base_sampler = nullptr;
     SDL_GPUSampler* shadow_sampler = nullptr;
     SDL_GPUTexture* white = nullptr;
+    SDL_GPUTexture* ground_detail = nullptr;  // Tiling brightness noise for the ground.
     SDL_GPUTexture* shadow_map = nullptr;
     SDL_GPUTexture* color_msaa = nullptr;
     SDL_GPUTexture* depth = nullptr;
@@ -285,6 +354,9 @@ struct SceneRenderer::Impl {
     int cascades = 0;
     int shadow_size = 0;
     float draw_distance = 1200.0f;
+    float vegetation_distance = 220.0f;
+
+    TerrainLayer terrain;
 
     ~Impl() { release_all(); }
 
@@ -312,6 +384,7 @@ struct SceneRenderer::Impl {
         }
         release_targets();
         release_pipelines();
+        terrain.release();
         for (GpuModel& m : models) {
             SDL_ReleaseGPUBuffer(device, m.vertices);
             SDL_ReleaseGPUBuffer(device, m.indices);
@@ -333,12 +406,13 @@ struct SceneRenderer::Impl {
         SDL_ReleaseGPUSampler(device, base_sampler);
         SDL_ReleaseGPUSampler(device, shadow_sampler);
         SDL_ReleaseGPUTexture(device, white);
+        SDL_ReleaseGPUTexture(device, ground_detail);
         SDL_ReleaseGPUTexture(device, shadow_map);
         SDL_ReleaseGPUBuffer(device, instance_buffer);
         SDL_ReleaseGPUBuffer(device, visible_buffer);
         SDL_ReleaseGPUTransferBuffer(device, transfer);
         base_sampler = shadow_sampler = nullptr;
-        white = shadow_map = nullptr;
+        white = ground_detail = shadow_map = nullptr;
         instance_buffer = visible_buffer = nullptr;
         transfer = nullptr;
         instance_capacity = visible_capacity = transfer_capacity = 0;
@@ -576,6 +650,11 @@ struct SceneRenderer::Impl {
             cs.vertex_shader = skinned_shadow_vs;
             cs.vertex_input_state = {sbuffers, 2, sattrs, 6};
             skinned_shadow_pipeline = SDL_CreateGPUGraphicsPipeline(device, &cs);
+
+            // The ground shares the lit fragment shader.
+            if (!terrain.create_pipelines(device, swapchain_format, depth_format, to_sample_count(samples), mesh_fs)) {
+                log::warn("scene: terrain unavailable");
+            }
         }
         for (SDL_GPUShader* s : {mesh_vs, mesh_fs, sky_vs, sky_fs, shadow_vs, shadow_fs, skinned_vs, skinned_shadow_vs}) {
             SDL_ReleaseGPUShader(device, s);
@@ -620,9 +699,45 @@ struct SceneRenderer::Impl {
 
     // --- Per frame ---------------------------------------------------------
 
+    // Sorts each model's instances by region and records the regions.
+    static void build_buckets(GpuModel& m) {
+        m.buckets.clear();
+        const auto key = [](const Instance& inst) {
+            const auto bx = static_cast<std::int64_t>(std::floor(inst.position.x / kBucketSize));
+            const auto bz = static_cast<std::int64_t>(std::floor(inst.position.z / kBucketSize));
+            return bz * (std::int64_t{1} << 32) + bx;
+        };
+        std::stable_sort(m.instances.begin(), m.instances.end(),
+                         [&](const Instance& a, const Instance& b) { return key(a) < key(b); });
+        std::size_t i = 0;
+        while (i < m.instances.size()) {
+            const std::int64_t k = key(m.instances[i]);
+            std::size_t j = i;
+            math::Vec3 lo = m.instances[i].position;
+            math::Vec3 hi = lo;
+            while (j < m.instances.size() && key(m.instances[j]) == k) {
+                const math::Vec3 p = m.instances[j].position;
+                lo = {std::min(lo.x, p.x), std::min(lo.y, p.y), std::min(lo.z, p.z)};
+                hi = {std::max(hi.x, p.x), std::max(hi.y, p.y), std::max(hi.z, p.z)};
+                ++j;
+            }
+            Bucket b;
+            b.first = static_cast<std::uint32_t>(i);
+            b.count = static_cast<std::uint32_t>(j - i);
+            b.center = (lo + hi) * 0.5f;
+            for (std::size_t n = i; n < j; ++n) {
+                const Instance& inst = m.instances[n];
+                b.radius = std::max(b.radius, math::length(inst.position - b.center) + m.radius * inst.scale);
+            }
+            m.buckets.push_back(b);
+            i = j;
+        }
+    }
+
     void rebuild_instance_data() {
         gpu_instances.clear();
-        for (const GpuModel& m : models) {
+        for (GpuModel& m : models) {
+            build_buckets(m);
             for (const Instance& inst : m.instances) {
                 const float c = std::cos(inst.yaw) * inst.scale;
                 const float s = std::sin(inst.yaw) * inst.scale;
@@ -729,27 +844,37 @@ struct SceneRenderer::Impl {
     }
 
     // Appends the visible instances of each model to `visible` and returns
-    // one range per model.
-    std::vector<Range> cull(const math::Frustum& frustum, const math::Vec3* eye, float max_distance) {
+    // one range per model. Instances farther than `max_distance` from the
+    // eye are skipped (0: no limit), and small vegetation stops at the
+    // vegetation distance. Whole regions are tested first.
+    std::vector<Range> cull(const math::Frustum& frustum, math::Vec3 eye, float max_distance) {
         std::vector<Range> ranges(models.size());
         std::uint32_t global = 0;
-        const float max_d2 = max_distance * max_distance;
         for (std::size_t mi = 0; mi < models.size(); ++mi) {
             const GpuModel& m = models[mi];
             ranges[mi].first = static_cast<std::uint32_t>(visible.size());
-            for (const Instance& inst : m.instances) {
-                const float r = m.radius * inst.scale;
-                bool keep = frustum.sphere_visible(inst.position, r);
-                if (keep && eye != nullptr) {
-                    const math::Vec3 d = inst.position - *eye;
-                    const float reach = std::sqrt(max_d2) + r;
-                    keep = math::dot(d, d) <= reach * reach;
-                }
-                if (keep) {
-                    visible.push_back(global);
-                }
-                ++global;
+            float limit = max_distance > 0.0f ? max_distance : 1e30f;
+            if (m.model_class == ModelClass::SmallVegetation) {
+                limit = std::min(limit, vegetation_distance);
             }
+            for (const Bucket& b : m.buckets) {
+                if (!frustum.sphere_visible(b.center, b.radius) || math::length(b.center - eye) - b.radius > limit) {
+                    continue;
+                }
+                for (std::uint32_t n = b.first; n < b.first + b.count; ++n) {
+                    const Instance& inst = m.instances[n];
+                    const float r = m.radius * inst.scale;
+                    if (!frustum.sphere_visible(inst.position, r)) {
+                        continue;
+                    }
+                    const math::Vec3 d = inst.position - eye;
+                    const float reach = limit + r;
+                    if (math::dot(d, d) <= reach * reach) {
+                        visible.push_back(global + n);
+                    }
+                }
+            }
+            global += static_cast<std::uint32_t>(m.instances.size());
             ranges[mi].count = static_cast<std::uint32_t>(visible.size()) - ranges[mi].first;
         }
         return ranges;
@@ -792,7 +917,8 @@ bool SceneRenderer::create(GpuDevice& gpu, const GraphicsSettings& graphics) {
     white.width = white.height = 1;
     white.rgba = {255, 255, 255, 255};
     d.white = d.upload_texture(white);
-    if (d.base_sampler == nullptr || d.shadow_sampler == nullptr || d.white == nullptr) {
+    d.ground_detail = d.upload_texture(make_ground_detail());
+    if (d.base_sampler == nullptr || d.shadow_sampler == nullptr || d.white == nullptr || d.ground_detail == nullptr) {
         log::error("scene: cannot create samplers: {}", SDL_GetError());
         return false;
     }
@@ -819,6 +945,7 @@ bool SceneRenderer::apply_settings(const GraphicsSettings& graphics) {
     const bool shadows_changed = cascades != d.cascades || shadow_size != d.shadow_size || d.shadow_map == nullptr;
     d.graphics = graphics;
     d.draw_distance = draw_distance_for_level(graphics.draw_distance);
+    d.vegetation_distance = vegetation_distance_for_level(graphics.vegetation);
     d.samples = samples;
     d.cascades = cascades;
     d.shadow_size = shadow_size;
@@ -826,6 +953,7 @@ bool SceneRenderer::apply_settings(const GraphicsSettings& graphics) {
     stats_.shadow_cascades = cascades;
     stats_.shadow_map_size = shadow_size;
     stats_.draw_distance = d.draw_distance;
+    stats_.vegetation_distance = d.vegetation_distance;
 
     bool ok = true;
     if (shadows_changed) {
@@ -835,8 +963,8 @@ bool SceneRenderer::apply_settings(const GraphicsSettings& graphics) {
         d.release_targets();
         ok = d.create_pipelines() && ok;
     }
-    log::info("scene: msaa {}x, shadows {} cascade(s) at {} px, draw distance {} m", samples, cascades, shadow_size,
-              d.draw_distance);
+    log::info("scene: msaa {}x, shadows {} cascade(s) at {} px, draw distance {} m, vegetation {} m", samples,
+              cascades, shadow_size, d.draw_distance, d.vegetation_distance);
     return ok;
 }
 
@@ -873,6 +1001,21 @@ bool SceneRenderer::add_model(const ModelData& data, ModelId& id) {
     id = static_cast<ModelId>(d.models.size());
     d.models.push_back(std::move(m));
     return true;
+}
+
+void SceneRenderer::set_model_class(ModelId model, ModelClass model_class) {
+    if (model < impl_->models.size()) {
+        impl_->models[model].model_class = model_class;
+    }
+}
+
+bool SceneRenderer::set_terrain(const TerrainData& data) {
+    Impl& d = *impl_;
+    return d.device != nullptr && d.terrain.set(d.device, data);
+}
+
+void SceneRenderer::clear_terrain() {
+    impl_->terrain.clear();
 }
 
 void SceneRenderer::set_instances(ModelId model, std::span<const Instance> instances) {
@@ -1027,6 +1170,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     stats_.msaa_samples = d.samples;
     stats_.shadow_cascades = d.cascades;
     stats_.shadow_map_size = d.shadow_size;
+    stats_.vegetation_distance = d.vegetation_distance;
     if (frame.target == nullptr || d.mesh_pipeline == nullptr || !d.ensure_targets(frame.width, frame.height)) {
         return false;
     }
@@ -1082,24 +1226,27 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         slice_near = slice_far;
     }
 
-    // Culling.
+    // Culling (instances are grouped by region first, when they changed).
+    if (d.instances_dirty) {
+        d.rebuild_instance_data();
+    }
     d.visible.clear();
-    const std::vector<Range> main_ranges = d.cull(frustum, &view.eye, draw_distance);
+    const std::vector<Range> main_ranges = d.cull(frustum, view.eye, draw_distance);
     const std::vector<Range> main_characters = d.cull_characters(frustum, &view.eye, draw_distance);
     std::vector<Range> shadow_ranges[kMaxCascades];
     std::vector<Range> shadow_characters[kMaxCascades];
     for (int c = 0; c < d.cascades; ++c) {
         const math::Frustum light = math::Frustum::from_matrix(cascade_vp[c]);
-        shadow_ranges[c] = d.cull(light, nullptr, 0.0f);
+        shadow_ranges[c] = d.cull(light, view.eye, 0.0f);
         shadow_characters[c] = d.cull_characters(light, nullptr, 0.0f);
+    }
+    if (!d.terrain.prepare(frame.cmd, frustum, view.eye, draw_distance)) {
+        log::warn("scene: terrain lists not uploaded this frame");
     }
     stats_.cull_ms = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
 
     // Uploads, in one transfer: visible indices and characters every frame;
     // instances, bones and palettes when they changed.
-    if (d.instances_dirty) {
-        d.rebuild_instance_data();
-    }
     d.rebuild_character_data();
     stats_.instances_total = static_cast<std::uint32_t>(d.gpu_instances.size());
     stats_.characters_total = static_cast<std::uint32_t>(d.gpu_characters.size());
@@ -1327,10 +1474,11 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     set4(su.camera_position, view.eye, static_cast<float>(d.cascades));
     su.shadow_params[0] = d.shadow_size > 0 ? 1.0f / static_cast<float>(d.shadow_size) : 0.0f;
     su.shadow_params[1] = 0.0002f;
+    SDL_PushGPUFragmentUniformData(frame.cmd, 0, &su, sizeof(su));
+    d.terrain.draw_ground(frame.cmd, pass, view_proj, d.ground_detail, d.base_sampler, d.shadow_map, d.shadow_sampler);
     SDL_BindGPUGraphicsPipeline(pass, d.mesh_pipeline);
     const MeshVertexUniforms mv{view_proj};
     SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
-    SDL_PushGPUFragmentUniformData(frame.cmd, 0, &su, sizeof(su));
     draw_models(pass, main_ranges, true);
     for (const Range& r : main_ranges) {
         stats_.instances_drawn += r.count;
@@ -1345,6 +1493,20 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             }
         }
     }
+    // Water last: it is see-through.
+    TerrainLayer::WaterLook water;
+    water.sun_direction = sun;
+    water.sun_color = lighting.sun_color;
+    water.fog_color = lighting.horizon_color;
+    water.fog_density = su.fog_color[3];
+    water.eye = view.eye;
+    water.time = view.time;
+    d.terrain.draw_water(frame.cmd, pass, view_proj, water);
+    const TerrainStats& ts = d.terrain.stats();
+    stats_.terrain_chunks = ts.chunks_drawn;
+    stats_.water_chunks = ts.water_chunks_drawn;
+    stats_.draw_calls += ts.draw_calls;
+    stats_.triangles += ts.triangles;
     SDL_EndGPURenderPass(pass);
     return true;
 }

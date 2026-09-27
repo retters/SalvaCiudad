@@ -167,27 +167,42 @@ bool TestScene::load(render::SceneRenderer& renderer, const std::filesystem::pat
     if (!renderer.add_model(make_ground_model(kTestSceneHalfSize), ground)) {
         return false;
     }
-    const render::Instance ground_instance{};
-    renderer.set_instances(ground, {&ground_instance, 1});
+    placed_.clear();
+    placed_.push_back({ground, {render::Instance{}}});
 
-    const TestSceneLayout layout = make_test_scene_layout(count, 2026);
+    TestSceneLayout layout = make_test_scene_layout(count, 2026);
     render::ModelId id = 0;
     instances_ = 0;
     if (load_model("tree_pine.glb", id)) {
-        renderer.set_instances(id, layout.trees);
         instances_ += layout.trees.size();
+        placed_.push_back({id, std::move(layout.trees)});
     }
     if (load_model("house_small.glb", id)) {
-        renderer.set_instances(id, layout.houses);
         instances_ += layout.houses.size();
+        placed_.push_back({id, std::move(layout.houses)});
     }
     if (load_model("rock.glb", id)) {
-        renderer.set_instances(id, layout.rocks);
         instances_ += layout.rocks.size();
+        placed_.push_back({id, std::move(layout.rocks)});
     }
+    for (const Placed& p : placed_) {
+        renderer.set_instances(p.model, p.instances);
+    }
+    visible_ = true;
     loaded_ = true;
     log::info("test scene: {} instances", instances_);
     return true;
+}
+
+void TestScene::set_visible(render::SceneRenderer& renderer, bool visible) {
+    if (!loaded_ || visible == visible_) {
+        return;
+    }
+    for (const Placed& p : placed_) {
+        renderer.set_instances(p.model, visible ? std::span<const render::Instance>(p.instances)
+                                                : std::span<const render::Instance>());
+    }
+    visible_ = visible;
 }
 
 }  // namespace sc

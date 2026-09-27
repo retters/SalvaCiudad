@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "game/new_game_screen.h"
 #include "game/services.h"
 #include "game/settings_screen.h"
 #include "ui/context.h"
@@ -35,13 +36,16 @@ public:
     void open_settings() { screen_ = Screen::Settings; }
 
     // What the 3D view behind the interface should show.
-    enum class SceneMode : std::uint8_t { None, MenuBackground, TestScene };
+    enum class SceneMode : std::uint8_t { None, MenuBackground, TestScene, Map };
     [[nodiscard]] SceneMode scene_mode() const;
 
 private:
-    enum class Screen : std::uint8_t { MainMenu, Settings, TestScene };
+    enum class Screen : std::uint8_t { MainMenu, Settings, TestScene, NewGame, Generating, MapView };
 
     void test_scene_hud(ui::Context& ctx);
+    void generating_screen(ui::Context& ctx, bool modal);
+    void map_hud(ui::Context& ctx);
+    [[nodiscard]] std::string camera_line() const;
 
     void main_menu(ui::Context& ctx);
     void draw_logo(ui::Context& ctx, float center_x, float y, float max_width, float max_height, float& height_out,
@@ -52,6 +56,7 @@ private:
 
     Services& services_;
     SettingsScreen settings_screen_;
+    NewGameScreen new_game_;
     Screen screen_ = Screen::MainMenu;
 
     struct Message {

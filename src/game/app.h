@@ -12,6 +12,8 @@
 
 #include "game/camera.h"
 #include "game/game_clock.h"
+#include "game/map_generation.h"
+#include "game/map_scene.h"
 #include "game/services.h"
 #include "game/settings.h"
 #include "game/test_scene.h"
@@ -54,6 +56,12 @@ public:
     const ui::FontLibrary& fonts() const override { return fonts_; }
     void open_data_folder() override;
     void request_quit() override { running_ = false; }
+    void start_map_generation(const sim::MapSettings& settings) override;
+    MapGenStatus map_generation_status() const override { return map_job_.status(); }
+    void cancel_map_generation() override { map_job_.cancel(); }
+    bool enter_generated_map() override;
+    void leave_map() override;
+    const sim::MapData* current_map() const override { return map_ ? &map_->map : nullptr; }
 
 private:
     bool init();
@@ -67,6 +75,10 @@ private:
     void update_frame_stats(float dt);
     void handle_scene_click(std::uint32_t width, std::uint32_t height);
     void draw_scene_markers(std::uint32_t width, std::uint32_t height);
+    void draw_start_markers(std::uint32_t width, std::uint32_t height);
+    void reset_camera_to_test_scene();
+    // True in the views the player moves the camera in.
+    [[nodiscard]] bool interactive_scene() const;
     void update_mouse_capture();
     [[nodiscard]] math::Mat4 camera_view_proj(std::uint32_t width, std::uint32_t height) const;
     void cycle_window_mode();
@@ -88,6 +100,9 @@ private:
     render::Lighting lighting_;
     TestScene test_scene_;
     TestCrowd crowd_;
+    MapScene map_scene_;
+    MapGenerationJob map_job_;
+    std::unique_ptr<GeneratedMap> map_;  // The map being shown.
     bool scene_ok_ = false;
     Camera camera_;
     DebugOverlay debug_;

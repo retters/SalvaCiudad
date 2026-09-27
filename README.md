@@ -2,7 +2,7 @@
 
 Juego 3D de construcción y supervivencia de pueblos medievales con multijugador de 1 a 12 jugadores. Motor propio en C++20 sobre SDL3. El diseño completo está en [ESPECIFICACION_SalvaCiudad.md](ESPECIFICACION_SalvaCiudad.md) y las decisiones en [docs/DECISIONES.md](docs/DECISIONES.md).
 
-**Estado:** fase 5 de 21 (núcleo determinista). La simulación ya corre con aritmética entera, números aleatorios propios, comandos y hashes de estado, verificada por pruebas automáticas; ver [docs/DETERMINISMO.md](docs/DETERMINISMO.md). Fase 4: Los modelos salen de scripts de Blender (humanos animados con variantes de ropa, sombreros, casa, pino y roca). La "Escena de prueba 3D" muestra 2000 aldeanos caminando entre 50 000 objetos. Las opciones de partida todavía muestran "Próximamente".
+**Estado:** fase 6 de 21 (mapa procedural). "Un jugador" abre la pantalla de partida nueva: semilla, tamaño (hasta 4 km de lado), ríos y lagos, bosques, recursos, relieve y posiciones de inicio. El mapa se genera en segundo plano y se puede recorrer con la cámara; todavía no hay pueblo (fase 8). La simulación es determinista ([docs/DETERMINISMO.md](docs/DETERMINISMO.md)) y los modelos salen de scripts de Blender ([docs/ARTE.md](docs/ARTE.md)). La "Escena de prueba 3D" sigue disponible.
 
 Requisito para jugar: una tarjeta gráfica compatible con Direct3D 12 (ver D-201).
 
@@ -118,6 +118,18 @@ Se completa en cada fase.
 Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] `ctest --preset release` y `ctest --preset debug` pasan, incluido el hash de referencia de la simulación (`sim_core`).
 - [ ] F3 muestra "Tick de simulación" avanzando unas 10 veces por segundo, y el "Hash del estado" cambia cada segundo.
+
+### Fase 6
+
+- [ ] "Un jugador" abre "Partida nueva" con una semilla al azar. "Al azar" cambia la semilla; al hacer clic en la casilla se puede borrar con Retroceso y escribir otra.
+- [ ] Generar un mapa Mediano con una semilla, volver al menú y generarlo otra vez con la misma semilla y los mismos ajustes: se ve igual (mismo lago, mismo río, mismo inicio).
+- [ ] Un mapa Enorme muestra la barra de avance con sus etapas y tarda menos de 30 s. "Cancelar" (o Esc) vuelve a los ajustes.
+- [ ] En el mapa hay ríos que llegan a un lago o al borde, lagos con orillas de arena, bosques de pinos y robles, claros, piedras, bayas y hierbas.
+- [ ] El número 1 marca el inicio; con varias posiciones de inicio aparecen todos los números, lejos entre sí.
+- [ ] Con F3 en un mapa Enorme, los FPS siguen por encima de 60 en los tres modos de cámara (F4), también en calidad Ultra.
+- [ ] En Configuración, bajar "Vegetación" acorta la distancia a la que se ven los arbustos y las hierbas.
+- [ ] Esc en el mapa vuelve al menú, y la escena de prueba sigue funcionando.
+- [ ] **Tu opinión:** ¿te gustan los colores del suelo y del agua, el ancho de los ríos y la cantidad de bosque?
 
 ## Licencia
 

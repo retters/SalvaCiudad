@@ -101,6 +101,8 @@ void DebugOverlay::build(const DebugInfo& info) {
             ImGui::Text("MSAA: %dx", s.msaa_samples);
             ImGui::Text("%s: %d x %d px", tr("debug.shadows").c_str(), s.shadow_cascades, s.shadow_map_size);
             ImGui::Text("%s: %.0f m", tr("debug.drawDistance").c_str(), static_cast<double>(s.draw_distance));
+            ImGui::Text("%s: %.0f m", tr("debug.vegetation").c_str(), static_cast<double>(s.vegetation_distance));
+            ImGui::Text("%s: %u  (%u)", tr("debug.terrain").c_str(), s.terrain_chunks, s.water_chunks);
             ImGui::Text("%s: %.0f m  (%.0f, %.0f)", tr("debug.camera").c_str(), static_cast<double>(info.camera_distance),
                         static_cast<double>(info.camera_x), static_cast<double>(info.camera_z));
             ImGui::Checkbox(tr("debug.stressView").c_str(), &stress_view_);

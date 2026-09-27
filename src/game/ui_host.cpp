@@ -51,6 +51,9 @@ UiHost::SceneMode UiHost::scene_mode() const {
     if (!services_.scene_available()) {
         return SceneMode::None;
     }
+    if (screen_ == Screen::MapView && services_.current_map() != nullptr) {
+        return SceneMode::Map;
+    }
     return screen_ == Screen::TestScene ? SceneMode::TestScene : SceneMode::MenuBackground;
 }
 
@@ -91,6 +94,21 @@ void UiHost::frame(ui::Context& ctx) {
     if (screen_ == Screen::TestScene) {
         ctx.set_input_blocked(modal);
         test_scene_hud(ctx);
+    } else if (screen_ == Screen::NewGame) {
+        ctx.set_input_blocked(modal);
+        const NewGameScreen::Result r = new_game_.frame(ctx, modal);
+        if (r == NewGameScreen::Result::Back) {
+            screen_ = Screen::MainMenu;
+        } else if (r == NewGameScreen::Result::Generate) {
+            services_.start_map_generation(new_game_.settings());
+            screen_ = Screen::Generating;
+        }
+    } else if (screen_ == Screen::Generating) {
+        ctx.set_input_blocked(modal);
+        generating_screen(ctx, modal);
+    } else if (screen_ == Screen::MapView) {
+        ctx.set_input_blocked(modal);
+        map_hud(ctx);
     } else if (screen_ == Screen::Settings) {
         if (!settings_screen_.frame(ctx, *this, modal)) {
             screen_ = Screen::MainMenu;
@@ -169,7 +187,7 @@ void UiHost::main_menu(ui::Context& ctx) {
         bool available;
     };
     const Entry entries[] = {
-        {"single", tr("menu.main.singlePlayer"), tr("menu.main.singlePlayer.tooltip"), false},
+        {"single", tr("menu.main.singlePlayer"), tr("menu.main.singlePlayer.tooltip"), true},
         {"host", tr("menu.main.hostGame"), tr("menu.main.hostGame.tooltip"), false},
         {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), false},
         {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), false},
@@ -230,6 +248,9 @@ void UiHost::main_menu(ui::Context& ctx) {
         if (ctx.button(ctx.id(e.id), r, e.label, e.tooltip)) {
             if (!e.available) {
                 show_message(tr("dialog.comingSoon.title"), tr("dialog.comingSoon.body", e.label));
+            } else if (std::string_view(e.id) == "single") {
+                new_game_.open();
+                screen_ = Screen::NewGame;
             } else if (std::string_view(e.id) == "testScene") {
                 screen_ = Screen::TestScene;
             } else if (std::string_view(e.id) == "settings") {
@@ -253,11 +274,8 @@ void UiHost::main_menu(ui::Context& ctx) {
     }
 }
 
-void UiHost::test_scene_hud(ui::Context& ctx) {
-    const float pad = ctx.s(12.0f);
-    const ui::TextStyle st = ctx.style(ctx.theme().body);
-    const float w = std::min(ctx.s(560.0f), ctx.width() - 2 * pad);
-    // The camera line names the current mode and the key that changes it.
+// The camera line names the current mode and the key that changes it.
+std::string UiHost::camera_line() const {
     const char* mode_key = "camera.mode.aerial";
     if (services_.camera_mode() == CameraMode::ThirdPerson) {
         mode_key = "camera.mode.thirdPerson";
@@ -265,7 +283,84 @@ void UiHost::test_scene_hud(ui::Context& ctx) {
         mode_key = "camera.mode.firstPerson";
     }
     const std::string key = key_display_name(services_.settings().input.bindings.key(Action::CameraCycleMode, 0));
-    const std::string text = tr("testScene.hint") + "\n" + tr("testScene.camera", tr(mode_key), key) + "\n" +
+    return tr("testScene.camera", tr(mode_key), key);
+}
+
+void UiHost::generating_screen(ui::Context& ctx, bool modal) {
+    const MapGenStatus status = services_.map_generation_status();
+    if (status.state == MapGenStatus::State::Done) {
+        if (services_.enter_generated_map()) {
+            screen_ = Screen::MapView;
+        } else {
+            show_message(tr("generating.showFailed.title"), tr("generating.showFailed.body"));
+            screen_ = Screen::NewGame;
+        }
+        return;
+    }
+    if (status.state != MapGenStatus::State::Running) {
+        screen_ = Screen::NewGame;
+        return;
+    }
+
+    static constexpr const char* kStepKeys[kMapGenSteps] = {
+        "generating.step.relief",  "generating.step.lakes",     "generating.step.rivers", "generating.step.soil",
+        "generating.step.forests", "generating.step.resources", "generating.step.starts", "generating.step.view"};
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const float bar_h = ctx.s(18.0f);
+    const float button_h = ctx.s(44.0f);
+    const float line_h = ctx.text().line_height(body);
+    float y = 0.0f;
+    const ui::Rect content =
+        dialog_frame(ctx, line_h + ctx.s(12.0f) + bar_h + ctx.s(24.0f) + button_h, tr("generating.title"), y);
+    const int step = std::clamp(status.step, 0, kMapGenSteps - 1);
+    const float overall = status.overall();
+    const std::string percent = tr("generating.percent", static_cast<int>(std::lround(overall * 100.0f)));
+    ctx.label({content.x, y, content.w, line_h}, tr(kStepKeys[step]), body, ctx.theme().text);
+    ctx.label({content.x, y, content.w, line_h}, percent, body, ctx.theme().text_dim, ui::Align::Right);
+    y += line_h + ctx.s(12.0f);
+    const ui::Rect bar{content.x, std::round(y), content.w, std::round(bar_h)};
+    ctx.draw().rect(bar, ctx.theme().button_active);
+    ctx.draw().rect({bar.x, bar.y, std::round(bar.w * overall), bar.h}, ctx.theme().accent);
+    ctx.draw().rect_outline(bar, ctx.theme().panel_border, std::max(1.0f, std::round(ctx.s(1.0f))));
+    const float bw = std::min(ctx.s(180.0f), content.w);
+    const ui::Rect cancel{content.right() - bw, content.bottom() - button_h, bw, button_h};
+    if (ctx.button(ctx.id("generating_cancel"), cancel, tr("generating.cancel"), tr("generating.cancel.tooltip")) ||
+        (!modal && ctx.input().key(SDL_SCANCODE_ESCAPE))) {
+        services_.cancel_map_generation();
+        screen_ = Screen::NewGame;
+    }
+}
+
+void UiHost::map_hud(ui::Context& ctx) {
+    const sim::MapData* map = services_.current_map();
+    if (map == nullptr) {
+        screen_ = Screen::MainMenu;
+        return;
+    }
+    const float pad = ctx.s(12.0f);
+    const ui::TextStyle st = ctx.style(ctx.theme().body);
+    const float w = std::min(ctx.s(600.0f), ctx.width() - 2 * pad);
+    static constexpr const char* kSizeKeys[] = {"newGame.size.small", "newGame.size.medium", "newGame.size.large",
+                                                "newGame.size.huge"};
+    const auto size_index = static_cast<std::size_t>(map->settings.size);
+    const std::string size = tr(kSizeKeys[std::min<std::size_t>(size_index, 3)], map->size);
+    const std::string text = tr("map.info", std::to_string(map->settings.seed), size) + "\n" + tr("map.hint") + "\n" +
+                             camera_line();
+    const float h = ctx.paragraph_height(w - 2 * pad, text, st);
+    const ui::Rect box{pad, pad, w, h + 2 * pad};
+    ctx.draw().rect(box, ctx.theme().tooltip.with_alpha(0.8f));
+    ctx.paragraph(box.inset(pad), text, st, ctx.theme().text);
+    if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
+        services_.leave_map();
+        screen_ = Screen::MainMenu;
+    }
+}
+
+void UiHost::test_scene_hud(ui::Context& ctx) {
+    const float pad = ctx.s(12.0f);
+    const ui::TextStyle st = ctx.style(ctx.theme().body);
+    const float w = std::min(ctx.s(560.0f), ctx.width() - 2 * pad);
+    const std::string text = tr("testScene.hint") + "\n" + camera_line() + "\n" +
                              tr(services_.camera_mode() == CameraMode::FirstPerson ? "testScene.follow.firstPerson"
                                                                                    : "testScene.follow");
     const float h = ctx.paragraph_height(w - 2 * pad, text, st);

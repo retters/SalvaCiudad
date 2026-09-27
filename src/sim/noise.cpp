@@ -1,0 +1,56 @@
+#include "sim/noise.h"
+
+namespace sc::sim {
+
+namespace {
+
+// Smoothstep 3t^2 - 2t^3 on t in [0, 65536] (16 fractional bits).
+std::int64_t smooth(std::int64_t t) {
+    const std::int64_t t2 = (t * t) >> 16;
+    return (t2 * (3 * 65536 - 2 * t)) >> 16;
+}
+
+}  // namespace
+
+std::int32_t lattice_value(std::uint64_t seed, std::int32_t ix, std::int32_t iz) {
+    const std::uint64_t key = mix64(seed ^ (static_cast<std::uint64_t>(static_cast<std::uint32_t>(ix)) << 32) ^
+                                    static_cast<std::uint32_t>(iz));
+    return static_cast<std::int32_t>(key >> 48) - 32768;
+}
+
+std::int32_t value_noise(std::uint64_t seed, std::int32_t x, std::int32_t z, int log2_cell) {
+    const std::int32_t ix = x >> log2_cell;
+    const std::int32_t iz = z >> log2_cell;
+    const std::int32_t mask = (1 << log2_cell) - 1;
+    // Position inside the cell with 16 fractional bits.
+    const std::int64_t fx = smooth((static_cast<std::int64_t>(x & mask) << 16) >> log2_cell);
+    const std::int64_t fz = smooth((static_cast<std::int64_t>(z & mask) << 16) >> log2_cell);
+    const std::int64_t v00 = lattice_value(seed, ix, iz);
+    const std::int64_t v10 = lattice_value(seed, ix + 1, iz);
+    const std::int64_t v01 = lattice_value(seed, ix, iz + 1);
+    const std::int64_t v11 = lattice_value(seed, ix + 1, iz + 1);
+    const std::int64_t a = v00 + (((v10 - v00) * fx) >> 16);
+    const std::int64_t b = v01 + (((v11 - v01) * fx) >> 16);
+    return static_cast<std::int32_t>(a + (((b - a) * fz) >> 16));
+}
+
+std::int32_t fbm(std::uint64_t seed, std::int32_t x, std::int32_t z, int log2_largest, int octaves) {
+    std::int64_t sum = 0;
+    std::int64_t weight_total = 0;
+    std::int64_t weight = 1 << 16;
+    for (int o = 0; o < octaves && log2_largest - o >= 0; ++o) {
+        sum += value_noise(mix64(seed + static_cast<std::uint64_t>(o) * 0x9E3779B97F4A7C15ull), x, z,
+                           log2_largest - o) * weight;
+        weight_total += weight;
+        weight >>= 1;
+    }
+    if (weight_total == 0) {
+        return 0;
+    }
+    // Sums of independent layers rarely reach the extremes; stretch by 3/2
+    // and clamp so the range is used well.
+    const std::int64_t v = sum / weight_total * 3 / 2;
+    return static_cast<std::int32_t>(v > 32767 ? 32767 : (v < -32768 ? -32768 : v));
+}
+
+}  // namespace sc::sim

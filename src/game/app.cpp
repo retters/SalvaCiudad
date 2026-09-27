@@ -171,14 +171,13 @@ bool App::init() {
             crowd_.spawn(kTestCrowd, 2026, kTestCrowdRadius);
         }
     }
+    if (scene_ok_ && !map_scene_.load_models(scene_, paths_->game_data_dir() / "models" / "props")) {
+        log::warn("map: no feature models; maps will show bare ground");
+    }
     if (!scene_ok_) {
         log::warn("scene: 3D view unavailable, menus only");
     }
-    camera_.set_bounds(-kTestSceneHalfSize, -kTestSceneHalfSize, kTestSceneHalfSize, kTestSceneHalfSize);
-    camera_.set_target({0.0f, 0.0f, 0.0f});
-    camera_.set_yaw(0.6f);
-    camera_.set_distance(80.0f);
-    camera_.snap();
+    reset_camera_to_test_scene();
     if (!debug_.create(window_.sdl(), gpu_)) {
         log::warn("debug overlay unavailable");
     }
@@ -197,6 +196,7 @@ bool App::init() {
 }
 
 void App::shutdown() {
+    map_job_.cancel();
     if (settings_) {
         save_settings_if_due(true);
     }
@@ -397,7 +397,7 @@ void App::handle_event(const SDL_Event& event) {
             } else if (settings_->settings().input.bindings.matches(Action::UiDebugOverlay, event.key.scancode)) {
                 debug_.toggle();
             } else if (settings_->settings().input.bindings.matches(Action::CameraCycleMode, event.key.scancode) &&
-                       host_ && host_->scene_mode() == UiHost::SceneMode::TestScene) {
+                       host_ && interactive_scene()) {
                 camera_.set_mode(next_camera_mode(camera_.mode()));
             }
             return;
@@ -426,7 +426,7 @@ void App::save_settings_if_due(bool force) {
 void App::update_camera(float dt) {
     const UiHost::SceneMode mode = host_->scene_mode();
     CameraInput in;
-    if (mode == UiHost::SceneMode::TestScene) {
+    if (interactive_scene()) {
         const InputSettings& s = settings_->settings().input;
         const bool* keys = SDL_GetKeyboardState(nullptr);
         const auto held = [&](Action a) {
@@ -484,6 +484,10 @@ void App::update_camera(float dt) {
     camera_look_dx_ = 0.0f;
     camera_look_dy_ = 0.0f;
     const bool follow = following_ && selected_ && mode == UiHost::SceneMode::TestScene;
+    if (mode != UiHost::SceneMode::TestScene) {
+        following_ = false;
+        selected_.reset();
+    }
     if (follow) {
         camera_.set_follow(crowd_.position(*selected_), crowd_.scale(*selected_));
     } else {
@@ -501,7 +505,7 @@ void App::update_camera(float dt) {
     const InputSettings& s = settings_->settings().input;
     const CameraSpeeds speeds{static_cast<float>(s.camera_pan_speed), static_cast<float>(s.camera_rotate_speed),
                               static_cast<float>(s.camera_zoom_speed)};
-    camera_.update(in, mode == UiHost::SceneMode::MenuBackground ? CameraSpeeds{} : speeds, dt);
+    camera_.update(in, interactive_scene() ? speeds : CameraSpeeds{}, dt);
 }
 
 void App::update_frame_stats(float dt) {
@@ -515,14 +519,16 @@ void App::update_frame_stats(float dt) {
     }
     // In the test scene, log the average every few seconds so performance
     // can be checked without watching the screen.
-    if (host_->scene_mode() == UiHost::SceneMode::TestScene) {
+    if (interactive_scene()) {
         perf_log_s_ += dt;
         ++perf_log_frames_;
         if (perf_log_s_ >= 5.0f) {
             const render::RenderStats& st = scene_.stats();
-            log::info("perf: {:.1f} FPS average, {} of {} instances drawn, {} draw calls, {:.2f} M triangles, cull {:.2f} ms",
+            log::info("perf: {:.1f} FPS average, {} of {} instances drawn, {} draw calls, {:.2f} M triangles, "
+                      "cull {:.2f} ms, {} terrain chunks, {} water chunks",
                       static_cast<float>(perf_log_frames_) / perf_log_s_, st.instances_drawn, st.instances_total,
-                      st.draw_calls, static_cast<double>(st.triangles) / 1e6, st.cull_ms);
+                      st.draw_calls, static_cast<double>(st.triangles) / 1e6, st.cull_ms, st.terrain_chunks,
+                      st.water_chunks);
             perf_log_s_ = 0.0f;
             perf_log_frames_ = 0;
         }
@@ -544,7 +550,11 @@ void App::render_frame(float dt) {
         if (scene_ok_ && host_->scene_mode() != UiHost::SceneMode::None) {
             handle_scene_click(frame.width, frame.height);
             update_camera(dt);
-            crowd_.update(scene_, dt);
+            if (host_->scene_mode() == UiHost::SceneMode::Map) {
+                scene_.set_characters({});
+            } else {
+                crowd_.update(scene_, dt);
+            }
             render::SceneView view;
             view.view = camera_.view();
             view.eye = camera_.eye();
@@ -552,6 +562,7 @@ void App::render_frame(float dt) {
             view.near_z = camera_.near_z();
             view.aspect = static_cast<float>(frame.width) / static_cast<float>(std::max(1u, frame.height));
             view.draw_distance_override = stress_view_active_ ? 5000.0f : 0.0f;
+            view.time = static_cast<float>(static_cast<double>(SDL_GetTicksNS() % 3'600'000'000'000ull) * 1e-9);
             scene_drawn = scene_.render(frame, view, lighting_);
         }
 
@@ -563,6 +574,8 @@ void App::render_frame(float dt) {
         host_->frame(ui_);
         if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::TestScene) {
             draw_scene_markers(frame.width, frame.height);
+        } else if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
+            draw_start_markers(frame.width, frame.height);
         }
         ui_.end_frame();
 
@@ -647,6 +660,102 @@ void App::frame() {
 
 namespace sc {
 
+bool App::interactive_scene() const {
+    if (!host_) {
+        return false;
+    }
+    const UiHost::SceneMode mode = host_->scene_mode();
+    return mode == UiHost::SceneMode::TestScene || mode == UiHost::SceneMode::Map;
+}
+
+void App::reset_camera_to_test_scene() {
+    camera_.set_ground({});
+    camera_.set_mode(CameraMode::Aerial);
+    camera_.set_bounds(-kTestSceneHalfSize, -kTestSceneHalfSize, kTestSceneHalfSize, kTestSceneHalfSize);
+    camera_.set_target({0.0f, 0.0f, 0.0f});
+    camera_.set_yaw(0.6f);
+    camera_.set_distance(80.0f);
+    camera_.snap();
+}
+
+void App::start_map_generation(const sim::MapSettings& settings) {
+    log::info("map: generating seed {} size {} with {} start(s)", settings.seed, sim::map_cells(settings.size),
+              settings.players);
+    map_job_.start(settings);
+}
+
+bool App::enter_generated_map() {
+    std::unique_ptr<GeneratedMap> generated = map_job_.take();
+    if (!generated || !scene_ok_) {
+        return false;
+    }
+    leave_map();
+    test_scene_.set_visible(scene_, false);
+    if (!map_scene_.show(scene_, generated->visuals)) {
+        test_scene_.set_visible(scene_, true);
+        return false;
+    }
+    // The renderer keeps its own copy; free this one.
+    generated->visuals = MapVisuals{};
+    map_ = std::move(generated);
+    const sim::MapData* map = &map_->map;
+    const float size = static_cast<float>(map->size);
+    camera_.set_mode(CameraMode::Aerial);
+    camera_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
+    camera_.set_bounds(0.0f, 0.0f, size, size);
+    const float sx = map->starts.empty() ? size * 0.5f : static_cast<float>(map->starts[0].x.raw()) / 65536.0f;
+    const float sz = map->starts.empty() ? size * 0.5f : static_cast<float>(map->starts[0].z.raw()) / 65536.0f;
+    camera_.set_target({sx, map_surface_height(*map, sx, sz), sz});
+    camera_.set_yaw(0.6f);
+    camera_.set_distance(110.0f);
+    camera_.snap();
+    return true;
+}
+
+void App::leave_map() {
+    if (!map_) {
+        return;
+    }
+    map_scene_.hide(scene_);
+    test_scene_.set_visible(scene_, true);
+    reset_camera_to_test_scene();
+    map_.reset();
+}
+
+void App::draw_start_markers(std::uint32_t width, std::uint32_t height) {
+    if (!map_) {
+        return;
+    }
+    ui::DrawList& dl = ui_.draw();
+    const math::Mat4 view_proj = camera_view_proj(width, height);
+    const ui::TextStyle st = ui_.style(ui_.theme().body, ui::FontRole::Bold);
+    const float r = ui_.s(13.0f);
+    for (std::size_t i = 0; i < map_->map.starts.size(); ++i) {
+        const sim::StartPosition& s = map_->map.starts[i];
+        const float x = static_cast<float>(s.x.raw()) / 65536.0f;
+        const float z = static_cast<float>(s.z.raw()) / 65536.0f;
+        const math::Vec3 p{x, map_surface_height(map_->map, x, z) + 6.0f, z};
+        const math::Vec4 clip = view_proj * math::Vec4{p.x, p.y, p.z, 1.0f};
+        if (clip.w <= 0.01f) {
+            continue;
+        }
+        const float sx = std::round((clip.x / clip.w * 0.5f + 0.5f) * static_cast<float>(width));
+        const float sy = std::round((0.5f - clip.y / clip.w * 0.5f) * static_cast<float>(height));
+        if (sx < -r || sy < -r || sx > static_cast<float>(width) + r || sy > static_cast<float>(height) + r) {
+            continue;
+        }
+        // A numbered banner with a pointer down to the spot.
+        dl.triangle(sx - r * 0.6f, sy + r - 1, sx + r * 0.6f, sy + r - 1, sx, sy + r * 1.8f, ui_.theme().accent);
+        dl.rect({sx - r - 2, sy - r - 2, 2 * r + 4, 2 * r + 4}, ui::Color::rgb(0x000000, 150));
+        dl.rect({sx - r, sy - r, 2 * r, 2 * r}, ui_.theme().accent);
+        const std::string number = std::to_string(i + 1);
+        const float tw = ui_.text().measure(st, number);
+        const float th = ui_.text().line_height(st);
+        ui_.text().draw(dl, st, std::round(sx - tw * 0.5f), std::round(sy - th * 0.5f), number,
+                        ui::Color::rgb(0x1E1A14));
+    }
+}
+
 math::Mat4 App::camera_view_proj(std::uint32_t width, std::uint32_t height) const {
     const float aspect = static_cast<float>(width) / static_cast<float>(std::max(1u, height));
     // The far plane does not change where things land on screen.
@@ -657,8 +766,8 @@ void App::update_mouse_capture() {
     // First person in the test scene looks around with a captured pointer,
     // unless the statistics window needs it.
     const bool focused = window_.sdl() != nullptr && (SDL_GetWindowFlags(window_.sdl()) & SDL_WINDOW_INPUT_FOCUS) != 0;
-    const bool want = scene_ok_ && host_ && host_->scene_mode() == UiHost::SceneMode::TestScene &&
-                      camera_.mode() == CameraMode::FirstPerson && focused && !debug_.visible();
+    const bool want = scene_ok_ && host_ && interactive_scene() && camera_.mode() == CameraMode::FirstPerson &&
+                      focused && !debug_.visible();
     if (want != mouse_captured_) {
         if (SDL_SetWindowRelativeMouseMode(window_.sdl(), want)) {
             mouse_captured_ = want;

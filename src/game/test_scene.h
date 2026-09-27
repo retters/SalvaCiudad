@@ -92,9 +92,19 @@ public:
     [[nodiscard]] bool loaded() const { return loaded_; }
     [[nodiscard]] std::size_t instance_count() const { return instances_; }
 
+    // Takes the scene out of the renderer (while a map is shown) or puts it
+    // back.
+    void set_visible(render::SceneRenderer& renderer, bool visible);
+
 private:
+    struct Placed {
+        render::ModelId model = 0;
+        std::vector<render::Instance> instances;
+    };
     bool loaded_ = false;
+    bool visible_ = true;
     std::size_t instances_ = 0;
+    std::vector<Placed> placed_;
 };
 
 // Reads and validates one .glb from disk (models only come from the game's

@@ -1,0 +1,252 @@
+#include <doctest.h>
+
+#include <chrono>
+#include <cmath>
+#include <ostream>
+#include <vector>
+
+#include "sim/map.h"
+#include "sim/worldgen.h"
+
+using namespace sc::sim;
+
+namespace {
+
+MapSettings settings(std::uint64_t seed, MapSize size, std::uint8_t players = 1) {
+    MapSettings s;
+    s.seed = seed;
+    s.size = size;
+    s.players = players;
+    return s;
+}
+
+double meters(Fixed f) {
+    return static_cast<double>(f.raw()) / 65536.0;
+}
+
+double distance(Fixed ax, Fixed az, Fixed bx, Fixed bz) {
+    return std::hypot(meters(ax) - meters(bx), meters(az) - meters(bz));
+}
+
+// Sizes of the connected water areas, and whether each touches the border.
+struct WaterArea {
+    std::size_t cells = 0;
+    bool border = false;
+};
+
+std::vector<WaterArea> water_areas(const MapData& m) {
+    std::vector<WaterArea> areas;
+    std::vector<std::uint8_t> seen(m.water.size(), 0);
+    std::vector<std::size_t> queue;
+    const std::int32_t n = m.size;
+    for (std::size_t start = 0; start < m.water.size(); ++start) {
+        if (m.water[start] == 0 || seen[start] != 0) {
+            continue;
+        }
+        WaterArea area;
+        queue.assign(1, start);
+        seen[start] = 1;
+        for (std::size_t q = 0; q < queue.size(); ++q) {
+            const std::size_t c = queue[q];
+            ++area.cells;
+            const auto x = static_cast<std::int32_t>(c % static_cast<std::size_t>(n));
+            const auto z = static_cast<std::int32_t>(c / static_cast<std::size_t>(n));
+            if (x == 0 || z == 0 || x == n - 1 || z == n - 1) {
+                area.border = true;
+            }
+            const std::int32_t nx[4] = {x - 1, x + 1, x, x};
+            const std::int32_t nz[4] = {z, z, z - 1, z + 1};
+            for (int k = 0; k < 4; ++k) {
+                if (nx[k] < 0 || nz[k] < 0 || nx[k] >= n || nz[k] >= n) {
+                    continue;
+                }
+                const std::size_t nc = static_cast<std::size_t>(nz[k]) * static_cast<std::size_t>(n) + static_cast<std::size_t>(nx[k]);
+                if (m.water[nc] != 0 && seen[nc] == 0) {
+                    seen[nc] = 1;
+                    queue.push_back(nc);
+                }
+            }
+        }
+        areas.push_back(area);
+    }
+    return areas;
+}
+
+// The golden checksum of a small map. If the generator changes on purpose,
+// update it (and the simulation rules version).
+constexpr std::uint64_t kGoldenSmallMap = 0x9171cd08375d6a63ull;
+
+}  // namespace
+
+TEST_SUITE("worldgen") {
+    TEST_CASE("the same settings give the same map") {
+        const auto a = generate_map(settings(12345, MapSize::Small));
+        const auto b = generate_map(settings(12345, MapSize::Small));
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+        CHECK(a->checksum() == b->checksum());
+        CHECK(a->heights == b->heights);
+        CHECK(a->features == b->features);
+        const auto c = generate_map(settings(12346, MapSize::Small));
+        REQUIRE(c.has_value());
+        CHECK(c->checksum() != a->checksum());
+    }
+
+    TEST_CASE("the small map checksum is the same on every build") {
+        const auto m = generate_map(settings(12345, MapSize::Small));
+        REQUIRE(m.has_value());
+        MESSAGE("small map checksum: " << m->checksum());
+        CHECK(m->checksum() == kGoldenSmallMap);
+    }
+
+    TEST_CASE("layout and contents of a medium map") {
+        const auto m = generate_map(settings(777, MapSize::Medium, 4));
+        REQUIRE(m.has_value());
+        CHECK(m->size == 1024);
+        CHECK(m->heights.size() == 1025u * 1025u);
+        CHECK(m->water.size() == 1024u * 1024u);
+        std::size_t water = 0;
+        std::size_t forest = 0;
+        std::size_t disagree = 0;
+        for (std::size_t i = 0; i < m->terrain.size(); ++i) {
+            const bool wet = m->water[i] != 0;
+            water += wet;
+            forest += m->terrain[i] == static_cast<std::uint8_t>(Terrain::ForestFloor);
+            // Water and the Water terrain type always agree.
+            disagree += wet != (m->terrain[i] == static_cast<std::uint8_t>(Terrain::Water));
+        }
+        CHECK(disagree == 0);
+        CHECK(water > 1000);
+        CHECK(forest > m->terrain.size() / 10);
+        std::size_t trees = 0;
+        std::size_t stones = 0;
+        for (const MapFeature& f : m->features) {
+            CHECK(f.x >= Fixed{});
+            CHECK(f.z >= Fixed{});
+            CHECK(f.x < Fixed::from_int(m->size));
+            CHECK(f.z < Fixed::from_int(m->size));
+            CHECK_FALSE(m->water_at(f.x.floor_int(), f.z.floor_int()));
+            trees += f.type == FeatureType::PineTree || f.type == FeatureType::OakTree;
+            stones += f.type == FeatureType::Stone;
+        }
+        CHECK(trees > 10000);
+        CHECK(stones > 20);
+        CHECK_FALSE(m->zones.empty());
+    }
+
+    TEST_CASE("rivers end in a lake or at the border") {
+        for (const std::uint64_t seed : {1ull, 2ull, 3ull, 4ull}) {
+            MapSettings s = settings(seed, MapSize::Medium);
+            s.water = Amount::High;
+            const auto m = generate_map(s);
+            REQUIRE(m.has_value());
+            for (const WaterArea& a : water_areas(*m)) {
+                // A water area inside the map is a lake (large) or part of
+                // a river that reached one; never a dead-end stream.
+                const bool ends_well = a.border || a.cells >= 150;
+                CHECK_MESSAGE(ends_well, "seed " << seed << ": water area of " << a.cells << " cells");
+            }
+        }
+    }
+
+    TEST_CASE("start positions are valid, apart and fair") {
+        for (const std::uint8_t players : {std::uint8_t{1}, std::uint8_t{4}, std::uint8_t{8}}) {
+            const auto m = generate_map(settings(4242, MapSize::Medium, players));
+            REQUIRE(m.has_value());
+            REQUIRE(m->starts.size() == players);
+            for (std::size_t i = 0; i < m->starts.size(); ++i) {
+                const StartPosition& s = m->starts[i];
+                const Terrain t = m->terrain_at(s.x.floor_int(), s.z.floor_int());
+                CHECK(t != Terrain::Water);
+                CHECK(t != Terrain::Rock);
+                int stones = 0;
+                int berries = 0;
+                int trees = 0;
+                for (const MapFeature& f : m->features) {
+                    const double d = distance(f.x, f.z, s.x, s.z);
+                    CHECK(d > worldgen::kStartClearRadius);
+                    if (d <= worldgen::kStartResourceRadius) {
+                        stones += f.type == FeatureType::Stone;
+                        berries += f.type == FeatureType::BerryBush;
+                        trees += f.type == FeatureType::PineTree || f.type == FeatureType::OakTree;
+                    }
+                }
+                CHECK(stones >= worldgen::kStartMinStones);
+                CHECK(berries >= worldgen::kStartMinBerries);
+                CHECK(trees >= worldgen::kStartMinTrees);
+                // Water within reach.
+                bool water = false;
+                const std::int32_t r = worldgen::kStartMaxWaterDistance;
+                for (std::int32_t dz = -r; dz <= r && !water; dz += 2) {
+                    for (std::int32_t dx = -r; dx <= r && !water; dx += 2) {
+                        water = m->water_at(s.x.floor_int() + dx, s.z.floor_int() + dz);
+                    }
+                }
+                CHECK(water);
+                for (std::size_t j = i + 1; j < m->starts.size(); ++j) {
+                    CHECK(distance(s.x, s.z, m->starts[j].x, m->starts[j].z) >= 100.0);
+                }
+            }
+        }
+    }
+
+    TEST_CASE("settings round-trip and bad ones are rejected") {
+        MapSettings s = settings(99, MapSize::Large, 6);
+        s.water = Amount::High;
+        s.relief = Relief::Gentle;
+        BinaryWriter w;
+        s.write(w);
+        BinaryReader r(w.bytes());
+        MapSettings back;
+        REQUIRE(MapSettings::read(r, back));
+        CHECK(back == s);
+        std::vector<std::uint8_t> bad = w.bytes();
+        bad[8] = 9;  // Size out of range.
+        BinaryReader br(bad);
+        CHECK_FALSE(MapSettings::read(br, back));
+        bad = w.bytes();
+        bad[13] = 13;  // Too many players.
+        BinaryReader bp(bad);
+        CHECK_FALSE(MapSettings::read(bp, back));
+    }
+
+    TEST_CASE("generation can be cancelled") {
+        int calls = 0;
+        const auto m = generate_map(settings(5, MapSize::Small), [&](GenStage stage, int) {
+            ++calls;
+            return stage != GenStage::Rivers;
+        });
+        CHECK_FALSE(m.has_value());
+        CHECK(calls > 0);
+    }
+
+    TEST_CASE("heights interpolate between vertices") {
+        const auto m = generate_map(settings(8, MapSize::Small));
+        REQUIRE(m.has_value());
+        const Fixed at_vertex = m->height_at(Fixed::from_int(100), Fixed::from_int(200));
+        CHECK(at_vertex == Fixed::from_ratio(m->height_cm(100, 200), 100));
+        const Fixed mid = m->height_at(Fixed::from_ratio(201, 2), Fixed::from_int(200));
+        const Fixed lo = std::min(m->height_at(Fixed::from_int(100), Fixed::from_int(200)),
+                                  m->height_at(Fixed::from_int(101), Fixed::from_int(200)));
+        const Fixed hi = std::max(m->height_at(Fixed::from_int(100), Fixed::from_int(200)),
+                                  m->height_at(Fixed::from_int(101), Fixed::from_int(200)));
+        CHECK(mid >= lo);
+        CHECK(mid <= hi);
+    }
+}
+
+TEST_SUITE("worldgen_perf") {
+    TEST_CASE("a huge map generates in under 30 seconds (release)") {
+#ifdef NDEBUG
+        const auto t0 = std::chrono::steady_clock::now();
+        const auto m = generate_map(settings(2026, MapSize::Huge, 8));
+        const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        REQUIRE(m.has_value());
+        MESSAGE("huge map: " << seconds << " s, " << m->features.size() << " features");
+        CHECK(seconds < 30.0);
+        CHECK(m->starts.size() == 8);
+#else
+        MESSAGE("skipped: timing is only meaningful in release builds");
+#endif
+    }
+}

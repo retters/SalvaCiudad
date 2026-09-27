@@ -268,9 +268,6 @@ void SettingsScreen::tab_display(ui::Context& ctx, UiHost& host, float x, float&
 
 void SettingsScreen::tab_graphics(ui::Context& ctx, float x, float& y, float w) {
     GraphicsSettings& g = services_.settings().graphics;
-    const float note_h = ctx.paragraph({x, y, w, 0}, tr("settings.graphics.pendingNote"), ctx.style(ctx.theme().small),
-                                       ctx.theme().text_dim);
-    y += note_h + ctx.s(12.0f);
 
     bool changed = false;
     {

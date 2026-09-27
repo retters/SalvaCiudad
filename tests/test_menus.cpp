@@ -39,6 +39,19 @@ public:
     const ui::FontLibrary& fonts() const override { return font_library; }
     void open_data_folder() override {}
     void request_quit() override {}
+    void start_map_generation(const sim::MapSettings& settings) override {
+        generation_started = true;
+        last_map_settings = settings;
+    }
+    MapGenStatus map_generation_status() const override { return generation_status; }
+    void cancel_map_generation() override { generation_status.state = MapGenStatus::State::Cancelled; }
+    bool enter_generated_map() override { return false; }
+    void leave_map() override {}
+    const sim::MapData* current_map() const override { return nullptr; }
+
+    bool generation_started = false;
+    sim::MapSettings last_map_settings;
+    MapGenStatus generation_status;
 };
 
 struct Harness {

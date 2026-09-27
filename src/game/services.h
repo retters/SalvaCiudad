@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "game/camera.h"
+#include "game/map_generation.h"
 #include "game/settings.h"
 #include "ui/font_library.h"
 
@@ -42,6 +43,16 @@ public:
     // True when the 3D test scene loaded and can be shown.
     [[nodiscard]] virtual bool scene_available() const = 0;
     [[nodiscard]] virtual CameraMode camera_mode() const = 0;
+
+    // A new map is generated in the background; the screens poll its state.
+    virtual void start_map_generation(const sim::MapSettings& settings) = 0;
+    [[nodiscard]] virtual MapGenStatus map_generation_status() const = 0;
+    virtual void cancel_map_generation() = 0;
+    // Shows the generated map in the 3D view; false if it could not.
+    virtual bool enter_generated_map() = 0;
+    virtual void leave_map() = 0;
+    // The map being shown, if any.
+    [[nodiscard]] virtual const sim::MapData* current_map() const = 0;
 
     virtual void open_data_folder() = 0;
     virtual void request_quit() = 0;

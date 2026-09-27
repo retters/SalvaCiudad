@@ -16,6 +16,7 @@
 #include "math/vec.h"
 #include "render/gpu_device.h"
 #include "render/model.h"
+#include "render/terrain_layer.h"
 
 namespace sc::render {
 
@@ -62,6 +63,7 @@ struct SceneView {
     float near_z = 0.1f;
     float aspect = 1.0f;
     float draw_distance_override = 0.0f;  // Debug stress view; 0 uses the settings.
+    float time = 0.0f;                    // Seconds, for moving water.
 };
 
 struct RenderStats {
@@ -77,10 +79,17 @@ struct RenderStats {
     int shadow_cascades = 0;
     int shadow_map_size = 0;
     float draw_distance = 0.0f;
+    float vegetation_distance = 0.0f;
+    std::uint32_t terrain_chunks = 0;
+    std::uint32_t water_chunks = 0;
 };
 
 using ModelId = std::uint32_t;
 using SkinnedId = std::uint32_t;
+
+// How far a model is drawn: normal models up to the draw distance; small
+// vegetation (bushes, herbs) only up to the vegetation distance.
+enum class ModelClass : std::uint8_t { Normal, SmallVegetation };
 
 class SceneRenderer {
 public:
@@ -97,8 +106,14 @@ public:
 
     // Uploads a model; returns false on GPU errors.
     bool add_model(const ModelData& data, ModelId& id);
+    void set_model_class(ModelId model, ModelClass model_class);
     void set_instances(ModelId model, std::span<const Instance> instances);
     void clear_instances();
+
+    // The map's ground and water. Returns false on invalid data or GPU
+    // errors; the scene then has no terrain.
+    bool set_terrain(const TerrainData& data);
+    void clear_terrain();
 
     // Animated bodies. Returns false if the model has no skeleton or clips.
     bool add_skinned_model(const ModelData& data, SkinnedId& id);
@@ -125,6 +140,7 @@ private:
 
 // Levels from GraphicsSettings, in the units the renderer uses.
 [[nodiscard]] float draw_distance_for_level(int level);
+[[nodiscard]] float vegetation_distance_for_level(int level);
 [[nodiscard]] int shadow_cascades_for_level(int level);
 [[nodiscard]] int shadow_map_size_for_level(int level);
 [[nodiscard]] float shadow_distance_for_level(int level);
