@@ -27,6 +27,9 @@ struct DebugInfo {
     float camera_distance = 0.0f;
     float camera_x = 0.0f;
     float camera_z = 0.0f;
+    std::uint64_t sim_tick = 0;
+    std::uint64_t sim_hash = 0;
+    std::uint32_t sim_entities = 0;
 };
 
 class DebugOverlay {

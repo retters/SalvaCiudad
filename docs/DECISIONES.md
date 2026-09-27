@@ -222,3 +222,28 @@ Esta selección vive por ahora en la escena de prueba. Es la misma mecánica que
 
 **D-412. Con el panel de estadísticas abierto no se captura el ratón.**
 Así la ventana de Dear ImGui se puede usar también en primera persona.
+
+## Fase 5: núcleo determinista (2026-09-26)
+
+**D-501. Punto fijo 16.16 con saturación.**
+`Fixed` guarda 32 bits: rango de ±32 767 m con 1/65 536 de precisión, suficiente para mapas de 4 km. Las operaciones se calculan en 64 bits y **saturan** en vez de desbordar, así que nunca hay comportamiento indefinido. Las divisiones redondean hacia cero, las multiplicaciones hacia abajo (desplazamiento aritmético, definido en C++20) y dividir por cero da el extremo del signo. Las distancias al cuadrado se calculan exactas en 64 bits sin signo.
+- Se descartó un tipo de 64 bits para todo: duplica la memoria de cada entidad sin necesidad.
+
+**D-502. Trigonometría por tablas generadas.**
+- `tools/sim/make_trig_tables.py` genera `src/sim/fixed_tables.inc`: un cuarto de onda de seno con 1024 pasos y los ángulos de CORDIC. Es código generado y guardado en el repositorio: el juego no calcula esos números en tiempo de ejecución.
+- El error del seno es menor de 2·10⁻⁵ y el de `atan2`, de pocas unidades de las 65 536 de una vuelta.
+
+**D-503. PCG32 con flujos separados.**
+Cada sistema tiene su propio flujo de números aleatorios, así agregar o quitar un sistema no cambia la secuencia de los demás. `below` usa el método de Lemire con rechazo: es exactamente uniforme y siempre consume la misma cantidad de números. La prueba compara con la secuencia de referencia de PCG (semilla 42, flujo 54).
+
+**D-504. Mundo de prueba de caminantes.**
+Hasta la fase 8, la simulación es un mundo de "caminantes" que ejercita todo el núcleo: números aleatorios, raíces, trigonometría, entidades que aparecen y desaparecen, y comandos válidos e inválidos. Los comandos de prueba (`SpawnWalkers`, `SendWalker`, `RemoveWalker`) se reemplazarán por los del juego. El formato de los comandos (20 bytes) y las reglas de validación se mantienen.
+
+**D-505. Hash de referencia en las pruebas.**
+Un escenario fijo de 1500 ticks debe dar `0xed6fa5148c47bb17`. La prueba corre en `debug`, `release` y `debug-asan`, así que verifica que las optimizaciones del compilador no cambian nada. Cuando se compile en Linux y macOS, la misma prueba verificará las otras plataformas. Si cambian las reglas a propósito, se actualiza el número y se sube `kRulesVersion`.
+
+**D-506. La simulación corre en el hilo principal.**
+Esto resuelve D-104. A 10 ticks por segundo, el mundo actual cuesta microsegundos, y un hilo aparte agregaría sincronización sin beneficio. `App` avanza la simulación con `GameClock` y el panel F3 muestra el tick y el último hash. Cuando la aldea pese de verdad (fase 8, medido en la fase 20), se evaluará moverla a un hilo propio. Las reglas de determinismo ya lo permiten: la simulación no comparte estado con el render salvo lo que se le lee.
+
+**D-507. Repeticiones y archivos fuera de `src/sim`.**
+La simulación no toca archivos. `game/replay_file` guarda y lee las repeticiones con escritura atómica, un límite de 256 MB y validación completa (firma, versiones, orden de los ticks y suma de verificación). Una prueba estática impide usar en `src/sim` coma flotante, contenedores desordenados, relojes, archivos, hilos o números aleatorios estándar.

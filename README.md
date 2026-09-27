@@ -2,7 +2,7 @@
 
 Juego 3D de construcción y supervivencia de pueblos medievales con multijugador de 1 a 12 jugadores. Motor propio en C++20 sobre SDL3. El diseño completo está en [ESPECIFICACION_SalvaCiudad.md](ESPECIFICACION_SalvaCiudad.md) y las decisiones en [docs/DECISIONES.md](docs/DECISIONES.md).
 
-**Estado:** fase 4 de 21 (pipeline de arte). Los modelos salen de scripts de Blender (humanos animados con variantes de ropa, sombreros, casa, pino y roca). La "Escena de prueba 3D" muestra 2000 aldeanos caminando entre 50 000 objetos. Las opciones de partida todavía muestran "Próximamente".
+**Estado:** fase 5 de 21 (núcleo determinista). La simulación ya corre con aritmética entera, números aleatorios propios, comandos y hashes de estado, verificada por pruebas automáticas; ver [docs/DETERMINISMO.md](docs/DETERMINISMO.md). Fase 4: Los modelos salen de scripts de Blender (humanos animados con variantes de ropa, sombreros, casa, pino y roca). La "Escena de prueba 3D" muestra 2000 aldeanos caminando entre 50 000 objetos. Las opciones de partida todavía muestran "Próximamente".
 
 Requisito para jugar: una tarjeta gráfica compatible con Direct3D 12 (ver D-201).
 
@@ -112,6 +112,12 @@ Se completa en cada fase.
 - [ ] Primera persona: el ratón mira alrededor sin cursor visible, W A S D camina, Esc vuelve al menú y suelta el ratón.
 - [ ] Clic en un aldeano: aparece el marcador y la cámara lo sigue en los tres modos. Girar sigue funcionando; W A S D deja de seguirlo.
 - [ ] Primera persona siguiendo a un aldeano: se ve con sus ojos, y el aldeano no tapa la vista.
+
+### Fase 5
+
+Casi todo se verifica con pruebas automáticas (`ctest`).
+- [ ] `ctest --preset release` y `ctest --preset debug` pasan, incluido el hash de referencia de la simulación (`sim_core`).
+- [ ] F3 muestra "Tick de simulación" avanzando unas 10 veces por segundo, y el "Hash del estado" cambia cada segundo.
 
 ## Licencia
 

@@ -263,7 +263,7 @@ Hay dos mundos que no se mezclan:
 ### 7.2 Hilos
 
 - **Hilo principal:** eventos de SDL, interfaz y envío del cuadro a la GPU.
-- **Hilo de simulación:** avanza los ticks, con un tamaño de paso fijo de 100 ms de juego (10 ticks por segundo a x1 y 30 a x3). Publica una "vista" de solo lectura del estado por tick para el render. Ver D-003.
+- **Hilo de simulación:** avanza los ticks, con un tamaño de paso fijo de 100 ms de juego (10 ticks por segundo a x1 y 30 a x3). Publica una "vista" de solo lectura del estado por tick para el render. Ver D-003. Por ahora la simulación corre en el hilo principal; se moverá a un hilo propio si la medición lo pide (D-506).
 - **Trabajadores** (un grupo de hilos): búsqueda de rutas, preparación del render (selección de visibles, animación), carga de recursos y compresión. Los trabajos de la simulación que corren en paralelo producen resultados que se aplican **en un orden fijo**, para no romper el determinismo.
 - **Hilo de red:** ENet, empaquetado y desempaquetado.
 

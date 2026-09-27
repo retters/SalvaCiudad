@@ -575,6 +575,9 @@ void App::render_frame(float dt) {
         debug_info_.camera_distance = camera_.distance();
         debug_info_.camera_x = camera_.target().x;
         debug_info_.camera_z = camera_.target().z;
+        debug_info_.sim_tick = sim_.tick();
+        debug_info_.sim_hash = sim_.last_hash();
+        debug_info_.sim_entities = sim_.world().registry().alive_count();
         debug_.build(debug_info_);
 
         const bool uploaded = ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_);
@@ -620,7 +623,7 @@ void App::frame() {
 
     const int ticks = clock_.advance(static_cast<std::int64_t>(elapsed));
     for (int i = 0; i < ticks; ++i) {
-        // The deterministic simulation plugs in here (phase 5).
+        sim_.step();
     }
 
     const float dt = static_cast<float>(elapsed) * 1e-9f;

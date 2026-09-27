@@ -204,6 +204,7 @@ set(SC_ENGINE_SOURCES
     src/game/app.cpp
     src/game/camera.cpp
     src/game/game_clock.cpp
+    src/game/replay_file.cpp
     src/game/input_actions.cpp
     src/game/settings.cpp
     src/game/settings_screen.cpp
@@ -214,6 +215,13 @@ set(SC_ENGINE_SOURCES
     src/i18n/translator.cpp
     src/math/vec.cpp
     src/platform/paths.cpp
+    src/sim/command.cpp
+    src/sim/entity.cpp
+    src/sim/fixed.cpp
+    src/sim/rng.cpp
+    src/sim/serialize.cpp
+    src/sim/simulation.cpp
+    src/sim/world.cpp
     src/platform/window.cpp
     src/render/debug_overlay.cpp
     src/render/gpu_device.cpp
@@ -270,14 +278,15 @@ if(SC_BUILD_TESTS)
         tests/test_math.cpp
         tests/test_model.cpp
         tests/test_camera.cpp
-        tests/test_scene.cpp)
+        tests/test_scene.cpp
+        tests/test_sim.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules)
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

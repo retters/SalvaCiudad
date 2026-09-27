@@ -86,6 +86,9 @@ void DebugOverlay::build(const DebugInfo& info) {
                          static_cast<int>(history_pos_), nullptr, 0.0f, 33.3f, ImVec2(260, 50));
         ImGui::Text("%s: %s  %ux%u", tr("debug.gpu").c_str(), info.backend, info.width, info.height);
         ImGui::Text("%s: %.2f", tr("debug.uiScale").c_str(), static_cast<double>(info.ui_scale));
+        ImGui::Text("%s: %llu  (%u)", tr("debug.simTick").c_str(), static_cast<unsigned long long>(info.sim_tick),
+                    info.sim_entities);
+        ImGui::Text("%s: %016llx", tr("debug.simHash").c_str(), static_cast<unsigned long long>(info.sim_hash));
         if (info.scene_drawn) {
             const render::RenderStats& s = info.scene;
             ImGui::Separator();

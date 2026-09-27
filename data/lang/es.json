@@ -245,6 +245,8 @@
     "camera.mode.firstPerson": "Primera persona",
     "testScene.camera": "Cámara: {0:mode}. {1:key}: cambiar de cámara. Botón derecho o central del ratón: girar.",
     "testScene.follow": "Clic en un aldeano para seguirlo; W A S D deja de seguirlo. Clic en el suelo para quitar la selección.",
-    "testScene.follow.firstPerson": "El ratón mira alrededor; clic en un aldeano (con la cruz) para ver con sus ojos. Esc: volver."
+    "testScene.follow.firstPerson": "El ratón mira alrededor; clic en un aldeano (con la cruz) para ver con sus ojos. Esc: volver.",
+    "debug.simTick": "Tick de simulación (entidades)",
+    "debug.simHash": "Hash del estado"
   }
 }

@@ -245,6 +245,8 @@
     "camera.mode.firstPerson": "First person",
     "testScene.camera": "Camera: {0:mode}. {1:key}: change camera. Right or middle mouse button: turn.",
     "testScene.follow": "Click a villager to follow them; W A S D stops following. Click the ground to deselect.",
-    "testScene.follow.firstPerson": "The mouse looks around; click a villager (at the cross) to see through their eyes. Esc: back."
+    "testScene.follow.firstPerson": "The mouse looks around; click a villager (at the cross) to see through their eyes. Esc: back.",
+    "debug.simTick": "Simulation tick (entities)",
+    "debug.simHash": "State hash"
   }
 }

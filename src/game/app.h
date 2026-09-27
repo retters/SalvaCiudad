@@ -22,6 +22,7 @@
 #include "render/gpu_device.h"
 #include "render/scene_renderer.h"
 #include "render/ui_renderer.h"
+#include "sim/simulation.h"
 #include "ui/context.h"
 #include "ui/font_library.h"
 #include "ui/glyph_atlas.h"
@@ -109,6 +110,9 @@ private:
     float perf_log_s_ = 0.0f;
     int perf_log_frames_ = 0;
     GameClock clock_;
+    // The deterministic simulation, stepped by the clock on the main thread
+    // (decision D-506). For now it runs the phase 5 test world.
+    sim::Simulation sim_{0};
     bool running_ = true;
     bool sdl_ready_ = false;
     std::uint64_t last_frame_ns_ = 0;
