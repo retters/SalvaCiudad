@@ -43,6 +43,20 @@
    "descartado",
    "en curso",
    "hecho"
+  ],
+  "idea": [
+   "nueva",
+   "analizada",
+   "para el plan",
+   "ajustar",
+   "para después",
+   "descartada",
+   "planeada"
+  ],
+  "pregunta": [
+   "sin responder",
+   "respondida",
+   "requiere definición"
   ]
  },
  "items": [
@@ -6091,7 +6105,8 @@
     }
    ],
    "actualizado": "2026-09-27T18:33:06-06:00",
-   "respuesta": ""
+   "respuesta": "",
+   "retirado": true
   },
   {
    "id": "prueba-8-9707cac3",
@@ -10408,8 +10423,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3402",
@@ -10422,8 +10437,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3403",
@@ -10436,8 +10451,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3404",
@@ -10450,8 +10465,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-34-580f2292",
@@ -10464,8 +10479,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-34-cd3a37f1",
@@ -10478,8 +10493,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-34-df6f4c9e",
@@ -10492,8 +10507,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-34-b0acf495",
@@ -10506,8 +10521,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-34-dc085815",
@@ -10520,8 +10535,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-34-20b12d1b",
@@ -10534,8 +10549,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "cambio-34",
@@ -10564,7 +10579,147 @@
    "nota": "",
    "respuesta": "",
    "historial": []
+  },
+  {
+   "id": "D-3320",
+   "tipo": "decision",
+   "fase": "Ajuste: la pausa es solo velocidad 0",
+   "grupo": "Ajuste: la pausa es solo velocidad 0",
+   "titulo": "La pausa ya no desenfoca ni bloquea (reemplaza parte de D-810)",
+   "detalle": "Pedido de Salvador tras probar en red: al pausar se bloqueaba toda la interfaz, incluido el aviso para aceptar un cambio de velocidad, y la partida no se podía reanudar. Ahora pausar es solo poner la velocidad en 0: no hay desenfoque ni panel de pausa, la cámara se mueve libre y se pueden dar órdenes, que se aplican cuando la partida vuelve a avanzar. El desenfoque y el velo oscuro quedan solo para el menú del juego (y la configuración o la carga abiertas desde él), que en una partida de un jugador sigue deteniendo el juego. La votación de D-009 no cambia.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3321",
+   "tipo": "decision",
+   "fase": "Ajuste: la pausa es solo velocidad 0",
+   "grupo": "Ajuste: la pausa es solo velocidad 0",
+   "titulo": "Identificador de compilación en la sala",
+   "detalle": "El número de versión (`0.20.0`) no cambia entre fases, así que dos compilaciones distintas se aceptaban y se desincronizaban (pasó con la niebla de guerra). Ahora cada compilación lleva un identificador: los primeros 12 dígitos hexadecimales de un SHA-256 de todos los archivos de `src/` (ruta y contenido), calculado en cada compilación por `cmake/BuildId.cmake`. No depende de git, así que también distingue compilaciones con cambios sin confirmar, y dos equipos que compilan el mismo código obtienen el mismo. La sala compara la versión completa (`0.20.0+1a2b3c4d5e6f`) y, si solo cambia el identificador, explica que hay que copiar la misma compilación a todos los equipos. El menú principal y el registro muestran la versión completa para compararla a simple vista. Se hashea todo `src/`, no solo la simulación, por ser lo más simple y seguro: cualquier cambio de código obliga a usar la misma compilación. Las partidas guardadas siguen comparando solo el número de versión.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9001",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Las ideas viven en `revision.json`, no en un archivo aparte",
+   "detalle": "Se había propuesto un `ideas.json` separado para no hacer más grande `revision.json` (410 KB). Se descartó porque la página tendría que abrir y guardar dos archivos, con dos permisos y el doble de lugares donde perder cambios. Unos cientos de ideas agregan pocos kilobytes. Las ideas son el tipo `idea` y las preguntas del análisis el tipo `pregunta`, con los mismos campos de estado, nota, respuesta e historial que el resto. El `docs/IDEAS_POR_REFINAR.md` de la primera propuesta ya no se usa.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9002",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "El texto de una idea no se cambia nunca",
+   "detalle": "`revision.py agregar` no toca `detalle`, `area` ni `capturada` de una idea que ya existe. El análisis va en un campo aparte (`analisis`), y la página muestra el texto original tal cual, sin interpretar Markdown.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9003",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "`agregar` actualiza solo los campos que recibe, y puede cambiar el estado",
+   "detalle": "Antes reemplazaba el elemento entero. Ahora los campos que no se envían se conservan, así que poner el análisis en una idea no obliga a repetir su texto. El estado se cambia solo si se envía de forma explícita, como al marcar una idea \"analizada\" o \"planeada\", y queda en el historial como acción de Claude, igual que con `responder`. Las notas y elecciones de Salvador nunca se tocan.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9004",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Números de idea sin choques",
+   "detalle": "Las ideas se numeran I-001, I-002… con el siguiente número libre, contando también las archivadas. Si Salvador escribe una idea en la página mientras Claude agrega otra con el mismo número, al guardar la de la página toma el siguiente número libre. Ninguna de las dos se pierde.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9005",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Cerrar una ronda archiva, no borra",
+   "detalle": "`revision.py archivar` marca con `archivado` las ideas planeadas o descartadas y las preguntas respondidas. La página las oculta salvo que se active la casilla \"archivadas\". Las ideas \"para después\" siguen abiertas. Así la limpieza no destruye nada y el historial de por qué se decidió cada cosa queda disponible.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9006",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "La página del registro sigue solo en español",
+   "detalle": "La regla de textos en español e inglés es para las aplicaciones. El registro es una herramienta interna que solo usa Salvador, así que se deja en español. Si algún día la usa alguien más, se traduce.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-8-031e9706",
+   "tipo": "prueba",
+   "fase": "8",
+   "grupo": "Fase 8 (primer pueblo jugable)",
+   "titulo": "Espacio pausa sin desenfoque ni panel: la cámara se mueve y se pueden dar órdenes, que se cumplen al reanudar.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-9-f55bae0f",
+   "tipo": "prueba",
+   "fase": "9",
+   "grupo": "Fase 9 (multijugador)",
+   "titulo": "El menú principal muestra la versión con su compilación (`0.20.0+…`); un equipo con otra compilación no entra a la sala y ve un aviso que pide copiar la misma.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
   }
  ],
- "generado": "2026-09-27T22:35:11-06:00"
+ "generado": "2026-09-28T16:46:35-06:00"
 }

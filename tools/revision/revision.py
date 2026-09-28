@@ -17,9 +17,24 @@ docs/revision/index.html.
         Turns history written by the first version of the page (one entry per
         pause while typing a note) into one entry per state change and one
         for the note as it was finally left.
+    python tools/revision/revision.py ideas
+        Everything in the ideas cycle that is not archived: each idea with its
+        original text, state, analysis and note; each analysis question with
+        the options Salvador chose.
+    python tools/revision/revision.py archivar
+        Closes a refinement round: archives the ideas already planned or
+        discarded and the questions already answered. Ideas kept for later
+        stay visible.
+
+Ideas ("idea") keep Salvador's text as he wrote it: "agregar" numbers new
+ones (I-001, I-002...) and never changes the text of one already there.
+Analysis questions ("pregunta") carry "opciones" (a list of {"etiqueta",
+"descripcion", "recomendada"}) and "multiple"; Salvador's choice is kept in
+"eleccion".
 
 History entries have an "accion": "estado" (a state chosen), "nota" (a note
-saved with its button) or "respuesta" (Claude's answer).
+saved with its button), "eleccion" (options chosen in a question) or
+"respuesta" (Claude's answer).
 
 Standard library only. The file is written atomically (temporary file, then
 replace) and read with strict checks.
@@ -47,11 +62,17 @@ STATES = {
     'sugerencia': ['sin revisar', 'autorizada', 'requiere definición', 'pospuesta', 'descartada', 'en curso',
                    'implementada'],
     'pendiente': ['abierto', 'autorizado', 'requiere definición', 'pospuesto', 'descartado', 'en curso', 'hecho'],
+    'idea': ['nueva', 'analizada', 'para el plan', 'ajustar', 'para después', 'descartada', 'planeada'],
+    'pregunta': ['sin responder', 'respondida', 'requiere definición'],
 }
 # States that ask Claude to act.
 FOR_CLAUDE = {'con problemas', 'falla', 'requiere cambio', 'confirmado', 'rechazado', 'autorizada', 'autorizado',
-              'requiere definición'}
-FIELDS_USER = ('estado', 'nota', 'historial', 'actualizado')
+              'requiere definición', 'para el plan', 'ajustar', 'respondida'}
+FIELDS_USER = ('estado', 'nota', 'eleccion', 'historial', 'actualizado')
+# What Claude may never rewrite in an idea: Salvador's own words.
+IDEA_FIXED = ('detalle', 'area', 'capturada')
+AREAS = ['Juego', 'Interfaz', 'Red', 'Arte', 'Rendimiento', 'Mods', 'Herramientas', 'Otro']
+MAX_TEXT = 20000
 
 
 def now():
@@ -74,16 +95,58 @@ def load():
     good = []
     for it in doc['items']:
         if (isinstance(it, dict) and isinstance(it.get('id'), str) and it.get('tipo') in STATES
-                and isinstance(it.get('titulo'), str) and it.get('estado') in STATES[it['tipo']]):
+                and isinstance(it.get('titulo'), str) and it.get('estado') in STATES[it['tipo']]
+                and (it['tipo'] != 'pregunta' or valid_options(it.get('opciones')))):
             it.setdefault('nota', '')
             it.setdefault('respuesta', '')
             it.setdefault('historial', [])
+            if it['tipo'] == 'pregunta':
+                clean_choice(it)
             good.append(it)
         else:
             print('ignored a damaged item:', str(it)[:80])
     doc['items'] = good
     doc['estados'] = STATES
     return doc
+
+
+def valid_options(opts):
+    """A question needs at least two options, each with its own label."""
+    if not isinstance(opts, list) or len(opts) < 2:
+        return False
+    labels = [o.get('etiqueta') if isinstance(o, dict) else None for o in opts]
+    return (all(isinstance(x, str) and x.strip() for x in labels) and len(set(labels)) == len(labels)
+            and all(isinstance(o.get('descripcion', ''), str) and isinstance(o.get('recomendada', False), bool)
+                    for o in opts))
+
+
+def clean_choice(it):
+    """Only labels the question offers, and one of them unless it is multiple."""
+    it['multiple'] = it.get('multiple') is True
+    labels = [o['etiqueta'] for o in it['opciones']]
+    chosen = it.get('eleccion')
+    if not isinstance(chosen, list):
+        chosen = []
+    kept = [x for x in labels if x in chosen]
+    if not it['multiple']:
+        kept = kept[:1]
+    if len(kept) != len(chosen):
+        print('ignored a damaged choice in', it['id'])
+    it['eleccion'] = kept
+
+
+def next_idea_id(items):
+    top = 0
+    for it in items:
+        m = re.match(r'^I-(\d+)$', it['id'])
+        if m:
+            top = max(top, int(m.group(1)))
+    return 'I-%03d' % (top + 1)
+
+
+def idea_title(text):
+    line = text.strip().splitlines()[0].strip() if text.strip() else ''
+    return line if len(line) <= 90 else line[:87].rstrip() + '…'
 
 
 def save(doc):
@@ -202,32 +265,77 @@ def cmd_sync():
     print('revision.json:', ', '.join('%s %d' % kv for kv in sorted(count.items())))
 
 
+def check_new(n, prev):
+    """Strict checks on an item Claude adds; exits on the first problem."""
+    if not isinstance(n, dict) or n.get('tipo') not in STATES:
+        sys.exit('bad item: %r' % n)
+    for k, v in n.items():
+        if isinstance(v, str) and len(v) > MAX_TEXT:
+            sys.exit('%s: field %s is too long' % (n.get('id', 'new idea'), k))
+    if 'estado' in n and n['estado'] not in STATES[n['tipo']]:
+        sys.exit('%s: state %r is not one of %s' % (n.get('id'), n['estado'], STATES[n['tipo']]))
+    if prev and prev['tipo'] != n['tipo']:
+        sys.exit('%s is a %s, not a %s' % (n['id'], prev['tipo'], n['tipo']))
+    if n['tipo'] == 'idea' and not prev:
+        if not isinstance(n.get('detalle'), str) or not n['detalle'].strip():
+            sys.exit('a new idea needs its text in "detalle": %r' % n)
+        if n.get('area') not in AREAS:
+            sys.exit('idea area %r is not one of %s' % (n.get('area'), AREAS))
+    elif not isinstance(n.get('id'), str) or not n['id'] or not isinstance(n.get('titulo', prev and prev['titulo']), str):
+        sys.exit('bad item: %r' % n)
+    if n['tipo'] == 'pregunta' and ('opciones' in n or not prev):
+        if not valid_options(n.get('opciones')):
+            sys.exit('%s: a question needs two or more options with distinct labels' % n['id'])
+        if 'multiple' in n and not isinstance(n['multiple'], bool):
+            sys.exit('%s: "multiple" must be true or false' % n['id'])
+
+
 def cmd_add(path):
+    """New items are added; for items already there only the fields given
+    change, and never Salvador's notes and choices, nor the text of an idea.
+    A state changes only when given, and goes on the history as Claude's."""
     with open(path, encoding='utf-8') as f:
         new = json.load(f)
+    if not isinstance(new, list):
+        sys.exit('%s must hold a JSON list of items' % path)
     doc = load()
     by_id = {it['id']: it for it in doc['items']}
     for n in new:
-        if n.get('tipo') not in STATES or not n.get('id') or not n.get('titulo'):
-            sys.exit('bad item: %r' % n)
-        prev = by_id.get(n['id'])
+        prev = by_id.get(n.get('id')) if isinstance(n, dict) else None
+        check_new(n, prev)
+        keep = FIELDS_USER + ('respuesta',) + (IDEA_FIXED if n['tipo'] == 'idea' else ())
+        if prev:
+            for k, v in n.items():
+                if k not in keep and k != 'id':
+                    prev[k] = v
+            if 'estado' in n and n['estado'] != prev['estado']:
+                # Only when asked for (an idea analyzed or planned), and on record as Claude's.
+                prev['estado'] = n['estado']
+                prev['actualizado'] = now()
+                prev['historial'].append({'fecha': prev['actualizado'], 'quien': 'Claude', 'accion': 'estado',
+                                          'estado': n['estado'], 'texto': ''})
+            if n['tipo'] == 'pregunta':
+                clean_choice(prev)
+            continue
+        if n['tipo'] == 'idea':
+            n['id'] = n.get('id') or next_idea_id(doc['items'])
+            n.setdefault('titulo', idea_title(n['detalle']))
+            n.setdefault('capturada', now()[:10])
+            n.setdefault('grupo', n['area'])
         n.setdefault('detalle', '')
         n.setdefault('fase', '')
         n.setdefault('grupo', '')
         n['origen'] = 'curado'
-        if prev:
-            for k in FIELDS_USER + ('respuesta',):
-                if k in prev:
-                    n[k] = prev[k]
-            prev.clear()
-            prev.update(n)
-        else:
-            n.setdefault('estado', STATES[n['tipo']][0])
-            n.setdefault('nota', '')
-            n.setdefault('respuesta', '')
-            n.setdefault('historial', [])
-            doc['items'].append(n)
-            by_id[n['id']] = n
+        n.setdefault('estado', STATES[n['tipo']][0])
+        n.setdefault('nota', '')
+        n.setdefault('respuesta', '')
+        n.setdefault('historial', [])
+        if n['tipo'] == 'pregunta':
+            clean_choice(n)
+        doc['items'].append(n)
+        by_id[n['id']] = n
+        if n['tipo'] == 'idea':
+            print('new idea', n['id'], '—', n['titulo'])
     save(doc)
     print('added or updated', len(new), 'items')
 
@@ -246,10 +354,56 @@ def waiting(it):
 def cmd_pending():
     doc = load()
     todo = [it for it in doc['items'] if waiting(it)]
+    fresh = [it['id'] for it in doc['items'] if it['tipo'] == 'idea' and it['estado'] == 'nueva' and not it.get('archivado')]
+    if fresh:
+        print('Ideas not yet analyzed (see "ideas"):', ', '.join(fresh))
     if not todo:
         print('Nothing waits for Claude.')
     for it in todo:
-        print('- %s [%s] %s — %s' % (it['id'], it['estado'], it['titulo'][:90], (it.get('nota') or '').replace('\n', ' ')[:300]))
+        chosen = ' | eligió: ' + ', '.join(it['eleccion']) if it.get('eleccion') else ''
+        print('- %s [%s] %s — %s%s' % (it['id'], it['estado'], it['titulo'][:90],
+                                       (it.get('nota') or '').replace('\n', ' ')[:300], chosen))
+
+
+def cmd_ideas():
+    doc = load()
+    ideas = [it for it in doc['items'] if it['tipo'] == 'idea' and not it.get('archivado')]
+    questions = [it for it in doc['items'] if it['tipo'] == 'pregunta' and not it.get('archivado')]
+    if not ideas and not questions:
+        print('No open ideas.')
+    for it in ideas:
+        print('== %s [%s] %s (%s, %s)%s' % (it['id'], it['estado'], it['titulo'], it.get('area', ''),
+                                           it.get('capturada', ''), ' -> fase ' + it['fasePlan'] if it.get('fasePlan') else ''))
+        print(it['detalle'].strip())
+        if it.get('analisis'):
+            print('-- análisis:', it['analisis'].strip())
+        if it.get('nota'):
+            print('-- nota de Salvador:', it['nota'].strip())
+        print()
+    for it in questions:
+        print('?? %s [%s] %s%s' % (it['id'], it['estado'], it['titulo'],
+                                  ' (ideas ' + ', '.join(it['ideas']) + ')' if it.get('ideas') else ''))
+        for o in it['opciones']:
+            mark = 'x' if o['etiqueta'] in it['eleccion'] else ' '
+            print('   [%s] %s%s' % (mark, o['etiqueta'], ' (recomendada)' if o.get('recomendada') else ''))
+        if it.get('nota'):
+            print('   nota de Salvador:', it['nota'].strip())
+        print()
+
+
+def cmd_archive():
+    doc = load()
+    done = []
+    for it in doc['items']:
+        closed = ((it['tipo'] == 'idea' and it['estado'] in ('planeada', 'descartada'))
+                  or (it['tipo'] == 'pregunta' and it['estado'] == 'respondida'))
+        if closed and not it.get('archivado'):
+            it['archivado'] = True
+            done.append(it['id'])
+    save(doc)
+    kept = [it['id'] for it in doc['items'] if it['tipo'] in ('idea', 'pregunta') and not it.get('archivado')]
+    print('archived:', ', '.join(done) if done else 'nothing')
+    print('still open:', ', '.join(kept) if kept else 'nothing')
 
 
 def cmd_answer(item_id, state, text):
@@ -327,9 +481,14 @@ def main():
         cmd_pending()
     elif args[:1] == ['responder'] and len(args) == 4:
         cmd_answer(args[1], args[2], args[3])
+    elif args == ['ideas']:
+        cmd_ideas()
+    elif args == ['archivar']:
+        cmd_archive()
     else:
         print(__doc__)
         sys.exit(2)
 
 
-main()
+if __name__ == '__main__':
+    main()

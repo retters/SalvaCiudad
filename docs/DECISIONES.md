@@ -1580,3 +1580,23 @@ Pedido de Salvador tras probar en red: al pausar se bloqueaba toda la interfaz, 
 
 **D-3321. Identificador de compilación en la sala.**
 El número de versión (`0.20.0`) no cambia entre fases, así que dos compilaciones distintas se aceptaban y se desincronizaban (pasó con la niebla de guerra). Ahora cada compilación lleva un identificador: los primeros 12 dígitos hexadecimales de un SHA-256 de todos los archivos de `src/` (ruta y contenido), calculado en cada compilación por `cmake/BuildId.cmake`. No depende de git, así que también distingue compilaciones con cambios sin confirmar, y dos equipos que compilan el mismo código obtienen el mismo. La sala compara la versión completa (`0.20.0+1a2b3c4d5e6f`) y, si solo cambia el identificador, explica que hay que copiar la misma compilación a todos los equipos. El menú principal y el registro muestran la versión completa para compararla a simple vista. Se hashea todo `src/`, no solo la simulación, por ser lo más simple y seguro: cualquier cambio de código obliga a usar la misma compilación. Las partidas guardadas siguen comparando solo el número de versión.
+
+## Herramienta: ideas y análisis en el registro de revisión (2026-09-28)
+
+**D-9001. Las ideas viven en `revision.json`, no en un archivo aparte.**
+Se había propuesto un `ideas.json` separado para no hacer más grande `revision.json` (410 KB). Se descartó porque la página tendría que abrir y guardar dos archivos, con dos permisos y el doble de lugares donde perder cambios. Unos cientos de ideas agregan pocos kilobytes. Las ideas son el tipo `idea` y las preguntas del análisis el tipo `pregunta`, con los mismos campos de estado, nota, respuesta e historial que el resto. El `docs/IDEAS_POR_REFINAR.md` de la primera propuesta ya no se usa.
+
+**D-9002. El texto de una idea no se cambia nunca.**
+`revision.py agregar` no toca `detalle`, `area` ni `capturada` de una idea que ya existe. El análisis va en un campo aparte (`analisis`), y la página muestra el texto original tal cual, sin interpretar Markdown.
+
+**D-9003. `agregar` actualiza solo los campos que recibe, y puede cambiar el estado.**
+Antes reemplazaba el elemento entero. Ahora los campos que no se envían se conservan, así que poner el análisis en una idea no obliga a repetir su texto. El estado se cambia solo si se envía de forma explícita, como al marcar una idea "analizada" o "planeada", y queda en el historial como acción de Claude, igual que con `responder`. Las notas y elecciones de Salvador nunca se tocan.
+
+**D-9004. Números de idea sin choques.**
+Las ideas se numeran I-001, I-002… con el siguiente número libre, contando también las archivadas. Si Salvador escribe una idea en la página mientras Claude agrega otra con el mismo número, al guardar la de la página toma el siguiente número libre. Ninguna de las dos se pierde.
+
+**D-9005. Cerrar una ronda archiva, no borra.**
+`revision.py archivar` marca con `archivado` las ideas planeadas o descartadas y las preguntas respondidas. La página las oculta salvo que se active la casilla "archivadas". Las ideas "para después" siguen abiertas. Así la limpieza no destruye nada y el historial de por qué se decidió cada cosa queda disponible.
+
+**D-9006. La página del registro sigue solo en español.**
+La regla de textos en español e inglés es para las aplicaciones. El registro es una herramienta interna que solo usa Salvador, así que se deja en español. Si algún día la usa alguien más, se traduce.

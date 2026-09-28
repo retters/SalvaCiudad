@@ -84,6 +84,19 @@ textarea.draft { border-color: var(--warn); }
 textarea { width: 100%; min-height: 58px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; margin-top: 3px; }
 details.hist { margin-top: 8px; font-size: 13px; color: var(--dim); }
 details.hist li { margin: 2px 0; }
+.original { white-space: pre-wrap; font-size: 14px; background: var(--panel-2); border-radius: 7px; padding: 8px 10px; margin: 4px 0; }
+.analysis { border-left: 3px solid var(--accent); padding: 2px 10px; margin: 4px 0; }
+.analysis > b { color: var(--accent); font-size: 13px; }
+.options { display: grid; gap: 6px; margin: 10px 0 4px; }
+.option { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.option:hover { border-color: var(--accent); }
+.option.on { border-color: var(--good); background: var(--good-soft); }
+.option input { margin-top: 4px; }
+.option .flag { margin-left: 6px; }
+.option .desc { display: block; font-size: 13px; color: var(--dim); }
+.newidea { margin-bottom: 14px; }
+.newidea textarea { min-height: 80px; }
+.newidea select { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; }
 .empty { color: var(--dim); padding: 30px 0; text-align: center; }
 .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
@@ -133,19 +146,26 @@ const TABS = [
   {id: 'confirmar', label: 'Por confirmar', intro: 'Decisiones que tomé por mi cuenta y conviene que confirmes o rechaces.'},
   {id: 'sugerencia', label: 'Sugerencias', intro: 'Ideas mías. "Autorizada" significa que la implemento; "requiere definición", que te pregunto más.'},
   {id: 'pendiente', label: 'Pendientes', intro: 'Trabajo abierto o pospuesto de la especificación.'},
+  {id: 'idea', label: 'Ideas', intro: 'Tus ideas tal como las escribiste, por área. Agrega las nuevas aquí o en el chat; cuando quieras, pídeme refinarlas.'},
+  {id: 'analisis', label: 'Análisis', intro: 'Mi análisis de cada idea y las preguntas que necesito. Elige "para el plan", "ajustar", "para después" o "descartada", y responde las preguntas; luego dime "revisa el registro".'},
   {id: 'resumen', label: 'Resumen'},
 ];
-const KIND_LABEL = {cambio: 'Cambio', prueba: 'Prueba', decision: 'Decisión', confirmar: 'Por confirmar', sugerencia: 'Sugerencia', pendiente: 'Pendiente'};
+const KIND_LABEL = {cambio: 'Cambio', prueba: 'Prueba', decision: 'Decisión', confirmar: 'Por confirmar', sugerencia: 'Sugerencia', pendiente: 'Pendiente',
+  idea: 'Idea', pregunta: 'Pregunta'};
 const TONE = {
-  'sin revisar': 'neutral', 'sin probar': 'neutral', 'pendiente': 'neutral', 'abierto': 'neutral',
+  'sin revisar': 'neutral', 'sin probar': 'neutral', 'pendiente': 'neutral', 'abierto': 'neutral', 'nueva': 'neutral', 'sin responder': 'neutral',
   'revisado': 'good', 'aprobado': 'good', 'aprobada': 'good', 'funciona': 'good', 'confirmado': 'good', 'implementada': 'good', 'hecho': 'good',
-  'autorizada': 'info', 'autorizado': 'info', 'en curso': 'info',
-  'requiere definición': 'warn', 'requiere cambio': 'warn', 'con problemas': 'warn', 'pospuesta': 'muted', 'pospuesto': 'muted',
+  'para el plan': 'good', 'planeada': 'good', 'respondida': 'good',
+  'autorizada': 'info', 'autorizado': 'info', 'en curso': 'info', 'analizada': 'info',
+  'requiere definición': 'warn', 'requiere cambio': 'warn', 'con problemas': 'warn', 'ajustar': 'warn',
+  'pospuesta': 'muted', 'pospuesto': 'muted', 'para después': 'muted',
   'falla': 'bad', 'rechazado': 'bad', 'descartada': 'bad', 'descartado': 'bad', 'no aplica': 'muted',
 };
 const TONE_COLOR = {neutral: '--dim', good: '--good', info: '--info', warn: '--warn', bad: '--bad', muted: '--muted'};
 // States that ask Claude to act (same list as tools/revision/revision.py).
-const FOR_CLAUDE = new Set(['con problemas', 'falla', 'requiere cambio', 'confirmado', 'rechazado', 'autorizada', 'autorizado', 'requiere definición']);
+const FOR_CLAUDE = new Set(['con problemas', 'falla', 'requiere cambio', 'confirmado', 'rechazado', 'autorizada', 'autorizado', 'requiere definición',
+  'para el plan', 'ajustar', 'respondida']);
+const AREAS = ['Juego', 'Interfaz', 'Red', 'Arte', 'Rendimiento', 'Mods', 'Herramientas', 'Otro'];
 const USER = 'Salvador';
 
 // ---- State -----------------------------------------------------------------------------------
@@ -155,7 +175,7 @@ let lastModified = 0;       // Of the file as last read or written.
 const dirty = new Map();    // id -> the item's user fields changed since the last save.
 let saveTimer = 0;
 let tab = 'atencion';
-const filters = {q: '', fase: '', estado: '', nota: false};
+const filters = {q: '', fase: '', estado: '', nota: false, archivados: false};
 const open = new Set();     // Cards expanded.
 const selected = new Set();
 const canWrite = 'showOpenFilePicker' in window;
@@ -238,9 +258,10 @@ function claudeAnswered(it) { const c = lastBy(it, 'Claude'); return c !== '' &&
 // Salvador asked Claude to act and Claude has not answered yet.
 function forClaude(it) { const u = lastBy(it, USER); return u !== '' && u > lastBy(it, 'Claude') && (FOR_CLAUDE.has(it.estado) || !!it.nota); }
 function needsUser(it) {
-  if (it.retirado) return false;
+  if (it.retirado || it.archivado) return false;
   if (claudeAnswered(it)) return true;
-  return it.tipo === 'confirmar' && it.estado === 'pendiente';
+  return (it.tipo === 'confirmar' && it.estado === 'pendiente') || (it.tipo === 'idea' && it.estado === 'analizada') ||
+    (it.tipo === 'pregunta' && it.estado === 'sin responder');
 }
 
 // ---- Loading and saving ----------------------------------------------------------------------
@@ -251,13 +272,51 @@ function validate(data) {
   let bad = 0;
   data.items = data.items.filter((it) => {
     const ok = it && typeof it.id === 'string' && Array.isArray(data.estados[it.tipo]) && typeof it.titulo === 'string' &&
-      data.estados[it.tipo].includes(it.estado);
+      data.estados[it.tipo].includes(it.estado) && (it.tipo !== 'pregunta' || validOptions(it.opciones));
     if (!ok) bad++;
-    else { it.nota = typeof it.nota === 'string' ? it.nota : ''; it.historial = Array.isArray(it.historial) ? it.historial : []; }
+    else {
+      it.nota = typeof it.nota === 'string' ? it.nota : '';
+      it.historial = Array.isArray(it.historial) ? it.historial : [];
+      if (it.tipo === 'pregunta') it.eleccion = cleanChoice(it, it.eleccion);
+    }
     return ok;
   });
   if (bad) toast(`${bad} elemento(s) dañado(s) se ignoraron.`);
   return data;
+}
+// Same rules as tools/revision/revision.py: two or more options, distinct labels.
+function validOptions(opts) {
+  if (!Array.isArray(opts) || opts.length < 2) return false;
+  const labels = opts.map((o) => (o && typeof o === 'object' ? o.etiqueta : null));
+  return labels.every((x) => typeof x === 'string' && x.trim()) && new Set(labels).size === labels.length &&
+    opts.every((o) => (o.descripcion === undefined || typeof o.descripcion === 'string') && (o.recomendada === undefined || typeof o.recomendada === 'boolean'));
+}
+function cleanChoice(q, chosen) {
+  const list = Array.isArray(chosen) ? chosen : [];
+  const kept = q.opciones.map((o) => o.etiqueta).filter((x) => list.includes(x));
+  return q.multiple === true ? kept : kept.slice(0, 1);
+}
+// Salvador's fields of an item, as kept in `dirty` and written by save().
+function userFields(it) {
+  const out = {estado: it.estado, nota: it.nota, actualizado: it.actualizado};
+  if (it.tipo === 'pregunta') out.eleccion = it.eleccion;
+  return out;
+}
+function applyMine(it, mine) {
+  if (doc.estados[it.tipo].includes(mine.estado)) it.estado = mine.estado;
+  it.nota = typeof mine.nota === 'string' ? mine.nota : it.nota;
+  it.actualizado = mine.actualizado;
+  if (it.tipo === 'pregunta' && mine.eleccion) it.eleccion = cleanChoice(it, mine.eleccion);
+}
+// An idea written on this page, as kept in local storage until it is saved.
+function isIdea(it) {
+  return !!it && it.tipo === 'idea' && /^I-\d+$/.test(it.id) && typeof it.titulo === 'string' && typeof it.detalle === 'string' &&
+    it.detalle.trim() !== '' && AREAS.includes(it.area) && it.estado === 'nueva' && Array.isArray(it.historial);
+}
+function nextIdeaId(items) {
+  let top = 0;
+  for (const it of items) { const m = /^I-(\d+)$/.exec(it.id); if (m) top = Math.max(top, Number(m[1])); }
+  return 'I-' + String(top + 1).padStart(3, '0');
 }
 function useDoc(data) {
   doc = validate(data);
@@ -265,10 +324,15 @@ function useDoc(data) {
   try {
     const kept = JSON.parse(localStorage.getItem('revision.unsaved') || '{}');
     let restored = 0;
+    const known = new Set(doc.items.map((it) => it.id));
+    for (const [id, k] of Object.entries(kept)) {
+      // An idea written here that never reached the file.
+      if (k && k.nueva && !known.has(id) && isIdea(k.nueva)) { doc.items.push(k.nueva); known.add(id); }
+    }
     for (const it of doc.items) {
       const k = kept[it.id];
       if (k && k.actualizado && (!it.actualizado || k.actualizado > it.actualizado)) {
-        it.estado = k.estado; it.nota = k.nota; it.actualizado = k.actualizado;
+        applyMine(it, k);
         const seen = new Set(it.historial.map(entryKey));
         for (const h of k.historial || []) if (!seen.has(entryKey(h))) it.historial.push(h);
         dirty.set(it.id, k); restored++;
@@ -328,9 +392,15 @@ async function save() {
     const byId = new Map(disk.items.map((it) => [it.id, it]));
     const writing = new Map(dirty);  // Edits made while writing stay for the next save.
     for (const [id, mine] of writing) {
-      const it = byId.get(id);
+      let it = byId.get(id);
+      if (mine.nueva && (!it || it.detalle !== mine.nueva.detalle)) {
+        // An idea written here. If Claude took its number meanwhile, it gets the next one.
+        it = Object.assign({}, mine.nueva, {id: it ? nextIdeaId(disk.items) : id, historial: []});
+        disk.items.push(it);
+        byId.set(it.id, it);
+      }
       if (!it) continue;
-      it.estado = mine.estado; it.nota = mine.nota; it.actualizado = mine.actualizado;
+      applyMine(it, mine);
       const seen = new Set(it.historial.map(entryKey));
       for (const h of mine.historial) if (!seen.has(entryKey(h))) it.historial.push(h);
       it.historial.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
@@ -342,7 +412,7 @@ async function save() {
     await w.close();
     lastModified = (await handle.getFile()).lastModified;
     for (const [id, mine] of writing) if (dirty.get(id) === mine) dirty.delete(id);
-    for (const [id, mine] of dirty) { const it = byId.get(id); if (it) Object.assign(it, mine); }
+    for (const [id, mine] of dirty) { const it = byId.get(id); if (it) applyMine(it, mine); }
     keepUnsaved();
     if (!dirty.size) { try { localStorage.removeItem('revision.unsaved'); } catch (e) { /* Nothing kept. */ } }
     doc = disk;
@@ -418,29 +488,58 @@ function showButtons() {
 // One history entry per deliberate action: a state chosen, or a note saved
 // with its button (never the note while it is being typed).
 function edit(it, changes) {
-  const accion = changes.estado !== undefined ? 'estado' : 'nota';
+  const accion = changes.eleccion !== undefined ? 'eleccion' : changes.estado !== undefined ? 'estado' : 'nota';
   Object.assign(it, changes);
   it.actualizado = now();
+  const texto = accion === 'nota' ? it.nota : accion === 'eleccion' ? it.eleccion.join(', ') : '';
   const entry = {id: it.actualizado + '-' + Math.random().toString(36).slice(2, 8), fecha: it.actualizado, quien: USER, accion,
-    estado: it.estado, texto: accion === 'nota' ? it.nota : ''};
+    estado: it.estado, texto};
   it.historial.push(entry);
   const prev = dirty.get(it.id);
-  dirty.set(it.id, {estado: it.estado, nota: it.nota, actualizado: it.actualizado,
-    historial: [...(prev ? prev.historial : []), entry]});
+  dirty.set(it.id, Object.assign(userFields(it), {historial: [...(prev ? prev.historial : []), entry]},
+    prev && prev.nueva ? {nueva: prev.nueva} : {}));
   scheduleSave();
+}
+// An idea written on this page. It goes to the file on the next save, with
+// the next free number.
+function addIdea(area, text) {
+  const fecha = now();
+  const it = {id: nextIdeaId(doc.items), tipo: 'idea', area, grupo: area, capturada: fecha.slice(0, 10), fase: '', origen: 'pagina',
+    titulo: ideaTitle(text), detalle: text, estado: 'nueva', nota: '', respuesta: '', historial: [], actualizado: fecha};
+  const entry = {id: fecha + '-' + Math.random().toString(36).slice(2, 8), fecha, quien: USER, accion: 'idea', estado: 'nueva', texto: ''};
+  dirty.set(it.id, Object.assign(userFields(it), {historial: [entry], nueva: JSON.parse(JSON.stringify(it))}));
+  it.historial.push(entry);
+  doc.items.push(it);
+  scheduleSave();
+  return it;
+}
+function ideaTitle(text) {
+  const line = text.trim().split('\n')[0].trim();
+  return line.length <= 90 ? line : line.slice(0, 87).trimEnd() + '…';
 }
 function saveNote(it) {
   if (!drafts.has(it.id)) return;
   const text = drafts.get(it.id).trim();
   drafts.delete(it.id);
   keepDrafts();
-  if (text !== (it.nota || '')) edit(it, {nota: text});
+  if (text !== (it.nota || '')) {
+    edit(it, {nota: text});
+    // "Otra" answer: a note alone answers a question.
+    if (it.tipo === 'pregunta' && it.estado === 'sin responder' && text) edit(it, {estado: 'respondida'});
+  }
+  render();
+}
+function choose(q, label, on) {
+  const picked = q.multiple ? q.opciones.map((o) => o.etiqueta).filter((x) => (x === label ? on : q.eleccion.includes(x))) : [label];
+  edit(q, {eleccion: picked, estado: picked.length || q.nota ? 'respondida' : 'sin responder'});
   render();
 }
 function historyLine(h) {
   const who = h.quien === 'Claude' ? 'Claude' : 'Tú';
   if (h.accion === 'estado') return `${fmtDate(h.fecha)} · ${who} · estado: ${h.estado}`;
   if (h.accion === 'nota') return `${fmtDate(h.fecha)} · ${who} · nota: ${h.texto || '(borrada)'}`;
+  if (h.accion === 'eleccion') return `${fmtDate(h.fecha)} · ${who} · eligió: ${h.texto || '(nada)'}`;
+  if (h.accion === 'idea') return `${fmtDate(h.fecha)} · ${who} · escribió la idea`;
   return `${fmtDate(h.fecha)} · ${who} · ${h.estado}${h.texto ? ' — ' + h.texto : ''}`;
 }
 
@@ -448,7 +547,13 @@ function historyLine(h) {
 function itemsOf(t) {
   if (!doc) return [];
   if (t === 'atencion') return doc.items.filter(needsUser);
-  return doc.items.filter((it) => it.tipo === t);
+  const shown = (it) => filters.archivados || !it.archivado;
+  // The analysis: its questions first, then each idea already analyzed.
+  if (t === 'analisis') {
+    return [...doc.items.filter((it) => it.tipo === 'pregunta' && shown(it)),
+      ...doc.items.filter((it) => it.tipo === 'idea' && it.analisis && shown(it))];
+  }
+  return doc.items.filter((it) => it.tipo === t && shown(it));
 }
 function applyFilters(list) {
   const q = filters.q.trim().toLowerCase();
@@ -456,7 +561,7 @@ function applyFilters(list) {
     (!filters.fase || it.fase === filters.fase) &&
     (!filters.estado || it.estado === filters.estado) &&
     (!filters.nota || it.nota) &&
-    (!q || (it.id + ' ' + it.titulo + ' ' + (it.detalle || '') + ' ' + (it.nota || '') + ' ' + (it.respuesta || '')).toLowerCase().includes(q)));
+    (!q || (it.id + ' ' + it.titulo + ' ' + (it.detalle || '') + ' ' + (it.nota || '') + ' ' + (it.respuesta || '') + ' ' + (it.analisis || '')).toLowerCase().includes(q)));
 }
 function renderTabs() {
   const nav = $('tabs');
@@ -464,7 +569,11 @@ function renderTabs() {
   for (const t of TABS) {
     const n = t.id === 'resumen' ? null : itemsOf(t.id).length;
     const hot = t.id === 'atencion' && n > 0;
-    nav.append(el('button', {class: tab === t.id ? 'on' : '', onclick: () => { tab = t.id; filters.fase = ''; filters.estado = ''; selected.clear(); render(); }},
+    nav.append(el('button', {class: tab === t.id ? 'on' : '', onclick: () => {
+      tab = t.id; filters.fase = ''; filters.estado = ''; selected.clear();
+      if (tab === 'analisis') for (const it of itemsOf(tab)) open.add(it.id);  // Meant to be read, so it opens expanded.
+      render();
+    }},
       t.label, n == null ? null : el('span', {class: 'n' + (hot ? ' hot' : '')}, n)));
   }
 }
@@ -489,14 +598,23 @@ function card(it, showKind) {
       el('span', {class: 'chip'}, it.id),
       showKind ? el('span', {class: 'chip'}, KIND_LABEL[it.tipo]) : null,
       it.fase && !/^\d+[a-z]?$/.test(it.fase) ? null : (it.fase ? el('span', {class: 'chip'}, 'Fase ' + it.fase) : null),
+      it.area ? el('span', {class: 'chip'}, it.area) : null,
+      it.capturada ? el('span', {}, it.capturada) : null,
+      it.fasePlan ? el('span', {class: 'chip'}, '→ Fase ' + it.fasePlan) : null,
+      Array.isArray(it.ideas) && it.ideas.length ? el('span', {}, 'Ideas: ' + it.ideas.join(', ')) : null,
+      it.tipo === 'pregunta' && it.eleccion.length ? el('span', {}, 'Elegiste: ' + it.eleccion.join(', ')) : null,
+      it.archivado ? el('span', {class: 'chip'}, 'archivada') : null,
       it.nota ? el('span', {}, '✎ tu nota') : null,
       drafts.has(it.id) ? el('span', {class: 'flag'}, 'nota sin guardar') : null,
       ...flags));
   c.append(el('div', {class: 'head'}, check, title, stateSelect(it)));
   const body = el('div', {class: 'body'});
-  if (it.detalle) body.append(markdown(it.detalle));
+  if (it.tipo === 'idea') body.append(ideaBody(it));
+  else if (it.detalle) body.append(markdown(it.detalle));
+  if (it.tipo === 'pregunta') body.append(optionsOf(it));
   if (it.respuesta) body.append(el('div', {class: 'answer'}, el('b', {}, 'Claude: '), it.respuesta));
-  const area = el('textarea', {placeholder: 'Tu nota: qué ves, qué autorizas, qué falta definir…'});
+  const area = el('textarea', {placeholder: it.tipo === 'pregunta' ? 'Otra respuesta, o un comentario sobre tu elección…'
+    : 'Tu nota: qué ves, qué autorizas, qué falta definir…'});
   area.value = drafts.has(it.id) ? drafts.get(it.id) : (it.nota || '');
   const saveBtn = el('button', {class: 'btn primary', title: 'Guarda la nota (Ctrl+Enter)', onclick: () => saveNote(it)}, '✓ Guardar nota');
   const discardBtn = el('button', {class: 'btn', onclick: () => { drafts.delete(it.id); keepDrafts(); render(); }}, 'Descartar cambios');
@@ -516,7 +634,7 @@ function card(it, showKind) {
   });
   area.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveNote(it); } });
   sync();
-  body.append(el('label', {class: 'note'}, 'Tu nota', area), el('div', {class: 'note-actions'}, saveBtn, discardBtn, hint));
+  body.append(el('label', {class: 'note'}, it.tipo === 'pregunta' ? 'Otra respuesta o comentario' : 'Tu nota', area), el('div', {class: 'note-actions'}, saveBtn, discardBtn, hint));
   if (it.historial.length) {
     body.append(el('details', {class: 'hist'}, el('summary', {}, `Historial (${it.historial.length})`),
       el('ul', {}, it.historial.map((h) => el('li', {}, historyLine(h))))));
@@ -524,6 +642,50 @@ function card(it, showKind) {
   if (it.fuente) body.append(el('div', {class: 'meta'}, 'Fuente: ' + it.fuente));
   c.append(body);
   return c;
+}
+// Salvador's words as he wrote them; Claude's analysis first where it is what to read.
+function ideaBody(it) {
+  const original = el('div', {class: 'original'}, it.detalle);
+  const box = el('div');
+  if (!it.analisis) { box.append(original); return box; }
+  const analysis = el('div', {class: 'analysis'}, el('b', {}, 'Análisis de Claude'), markdown(it.analisis));
+  if (tab === 'analisis') box.append(analysis, el('details', {class: 'hist'}, el('summary', {}, 'Tu idea tal como la escribiste'), original));
+  else box.append(original, el('details', {class: 'hist'}, el('summary', {}, 'Análisis de Claude'), markdown(it.analisis)));
+  return box;
+}
+function optionsOf(q) {
+  const box = el('div', {class: 'options', role: q.multiple ? 'group' : 'radiogroup'});
+  if (q.multiple) box.append(el('div', {class: 'meta'}, 'Puedes elegir varias.'));
+  for (const o of q.opciones) {
+    const input = el('input', {type: q.multiple ? 'checkbox' : 'radio', name: 'q-' + q.id, checked: q.eleccion.includes(o.etiqueta),
+      onchange: (e) => choose(q, o.etiqueta, e.target.checked)});
+    box.append(el('label', {class: 'option' + (q.eleccion.includes(o.etiqueta) ? ' on' : '')}, input,
+      el('span', {}, el('b', {}, o.etiqueta), o.recomendada ? el('span', {class: 'flag'}, 'recomendada') : null,
+        o.descripcion ? el('span', {class: 'desc'}, o.descripcion) : null)));
+  }
+  return box;
+}
+function newIdeaForm() {
+  const KEY = '__nueva-idea';
+  const area = el('select', {'aria-label': 'Área'}, AREAS.map((a) => el('option', {value: a}, a)));
+  try { area.value = localStorage.getItem('revision.area') || 'Juego'; } catch (e) { /* Default area. */ }
+  const text = el('textarea', {placeholder: 'Escribe la idea como te salga; yo no la cambio.'});
+  text.value = drafts.get(KEY) || '';
+  const add = () => {
+    const t = text.value.trim();
+    if (!t) { text.focus(); return; }
+    const it = addIdea(area.value, t);
+    try { localStorage.setItem('revision.area', area.value); } catch (e) { /* Not kept. */ }
+    drafts.delete(KEY);
+    keepDrafts();
+    toast(`Idea ${it.id} agregada.`);
+    render();
+  };
+  text.addEventListener('input', () => { if (text.value) drafts.set(KEY, text.value); else drafts.delete(KEY); keepDrafts(); });
+  text.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); add(); } });
+  return el('div', {class: 'box newidea'}, el('h3', {}, 'Nueva idea'), text,
+    el('div', {class: 'note-actions'}, area, el('button', {class: 'btn primary', title: 'Ctrl+Enter', onclick: add}, '+ Agregar idea'),
+      el('span', {class: 'hint'}, handle ? '' : 'Solo lectura en este navegador: usa Descargar para no perderla.')));
 }
 function renderBulk() {
   const box = $('bulk');
@@ -561,6 +723,7 @@ function renderList() {
   } else if (t.intro) {
     main.append(el('p', {class: 'intro'}, t.intro));
   }
+  if (tab === 'idea') main.append(newIdeaForm());
   // Filters.
   const f = el('div', {class: 'filters'});
   const search = el('input', {type: 'search', placeholder: 'Buscar…', value: filters.q});
@@ -572,7 +735,10 @@ function renderList() {
   const ssel = el('select', {'aria-label': 'Estado', onchange: (e) => { filters.estado = e.target.value; render(); }},
     el('option', {value: ''}, 'Todos los estados'), states.map((x) => el('option', {value: x, selected: x === filters.estado}, x)));
   const nota = el('label', {}, el('input', {type: 'checkbox', checked: filters.nota, onchange: (e) => { filters.nota = e.target.checked; render(); }}), ' con nota');
-  f.append(search, fsel, ssel, nota, el('button', {class: 'btn', onclick: () => { for (const it of list) open.add(it.id); render(); }}, 'Abrir todos'),
+  const archived = tab === 'idea' || tab === 'analisis'
+    ? el('label', {}, el('input', {type: 'checkbox', checked: filters.archivados, onchange: (e) => { filters.archivados = e.target.checked; render(); }}), ' archivadas')
+    : null;
+  f.append(...[search, fases.length ? fsel : null, ssel, nota, archived].filter(Boolean), el('button', {class: 'btn', onclick: () => { for (const it of list) open.add(it.id); render(); }}, 'Abrir todos'),
     el('button', {class: 'btn', onclick: () => { open.clear(); render(); }}, 'Cerrar todos'));
   main.append(f, el('div', {class: 'bulk', id: 'bulk'}), el('div', {id: 'list'}));
   renderBulk();
@@ -586,7 +752,8 @@ function renderBody() {
   // Grouped by phase, newest first for changes, in order for the rest.
   const groups = new Map();
   for (const it of list) {
-    const key = it.grupo || (it.fase ? 'Fase ' + it.fase : 'General');
+    const key = tab === 'analisis' ? (it.tipo === 'pregunta' ? 'Preguntas' : 'Ideas · ' + it.area)
+      : it.grupo || (it.fase ? 'Fase ' + it.fase : 'General');
     if (!groups.has(key)) groups.set(key, {fase: it.fase, items: []});
     groups.get(key).items.push(it);
   }
