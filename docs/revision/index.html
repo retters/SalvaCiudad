@@ -97,6 +97,7 @@ details.hist li { margin: 2px 0; }
 .newidea { margin-bottom: 14px; }
 .newidea textarea { min-height: 80px; }
 .newidea select { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; }
+h2.group .count { font-weight: 400; }
 .empty { color: var(--dim); padding: 30px 0; text-align: center; }
 .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
@@ -175,7 +176,8 @@ let lastModified = 0;       // Of the file as last read or written.
 const dirty = new Map();    // id -> the item's user fields changed since the last save.
 let saveTimer = 0;
 let tab = 'atencion';
-const filters = {q: '', fase: '', estado: '', nota: false, archivados: false};
+const filters = {q: '', fase: '', estado: '', nota: false, archivados: false, ocultarAtendidos: false};
+try { filters.ocultarAtendidos = localStorage.getItem('revision.ocultarAtendidos') === '1'; } catch (e) { /* Shown by default. */ }
 const open = new Set();     // Cards expanded.
 const selected = new Set();
 const canWrite = 'showOpenFilePicker' in window;
@@ -257,6 +259,11 @@ function lastBy(it, who) {
 function claudeAnswered(it) { const c = lastBy(it, 'Claude'); return c !== '' && c > lastBy(it, USER); }
 // Salvador asked Claude to act and Claude has not answered yet.
 function forClaude(it) { const u = lastBy(it, USER); return u !== '' && u > lastBy(it, 'Claude') && (FOR_CLAUDE.has(it.estado) || !!it.nota); }
+// Still waits for Salvador: in its first state, or with something new to read.
+// Everything else counts as attended to (tab counters, and last in the lists).
+function pending(it) {
+  return !it.retirado && !it.archivado && (it.estado === doc.estados[it.tipo][0] || needsUser(it));
+}
 function needsUser(it) {
   if (it.retirado || it.archivado) return false;
   if (claudeAnswered(it)) return true;
@@ -567,14 +574,18 @@ function renderTabs() {
   const nav = $('tabs');
   nav.replaceChildren();
   for (const t of TABS) {
-    const n = t.id === 'resumen' ? null : itemsOf(t.id).length;
+    const items = t.id === 'resumen' ? null : itemsOf(t.id);
+    const n = items && items.length;
     const hot = t.id === 'atencion' && n > 0;
+    const done = items && items.filter((it) => !pending(it)).length;
+    const count = items == null ? null : t.id === 'atencion' ? String(n) : `${done}/${n}`;
+    const tip = items == null || t.id === 'atencion' ? null : `${done} atendidos de ${n}; faltan ${n - done}`;
     nav.append(el('button', {class: tab === t.id ? 'on' : '', onclick: () => {
       tab = t.id; filters.fase = ''; filters.estado = ''; selected.clear();
       if (tab === 'analisis') for (const it of itemsOf(tab)) open.add(it.id);  // Meant to be read, so it opens expanded.
       render();
     }},
-      t.label, n == null ? null : el('span', {class: 'n' + (hot ? ' hot' : '')}, n)));
+      t.label, count == null ? null : el('span', {class: 'n' + (hot ? ' hot' : ''), title: tip}, count)));
   }
 }
 function stateSelect(it) {
@@ -738,7 +749,13 @@ function renderList() {
   const archived = tab === 'idea' || tab === 'analisis'
     ? el('label', {}, el('input', {type: 'checkbox', checked: filters.archivados, onchange: (e) => { filters.archivados = e.target.checked; render(); }}), ' archivadas')
     : null;
-  f.append(...[search, fases.length ? fsel : null, ssel, nota, archived].filter(Boolean), el('button', {class: 'btn', onclick: () => { for (const it of list) open.add(it.id); render(); }}, 'Abrir todos'),
+  const hide = tab === 'atencion' ? null : el('label', {title: 'Lo que ya no está en su primer estado ni espera tu lectura'},
+    el('input', {type: 'checkbox', checked: filters.ocultarAtendidos, onchange: (e) => {
+      filters.ocultarAtendidos = e.target.checked;
+      try { localStorage.setItem('revision.ocultarAtendidos', e.target.checked ? '1' : '0'); } catch (err) { /* Not kept. */ }
+      render();
+    }}), ' ocultar atendidos');
+  f.append(...[search, fases.length ? fsel : null, ssel, nota, archived, hide].filter(Boolean), el('button', {class: 'btn', onclick: () => { for (const it of list) open.add(it.id); render(); }}, 'Abrir todos'),
     el('button', {class: 'btn', onclick: () => { open.clear(); render(); }}, 'Cerrar todos'));
   main.append(f, el('div', {class: 'bulk', id: 'bulk'}), el('div', {id: 'list'}));
   renderBulk();
@@ -747,9 +764,14 @@ function renderList() {
 function renderBody() {
   const box = $('list');
   box.replaceChildren();
-  const list = applyFilters(itemsOf(tab));
-  if (!list.length) { box.append(el('div', {class: 'empty'}, 'No hay elementos con estos filtros.')); return; }
-  // Grouped by phase, newest first for changes, in order for the rest.
+  const all = applyFilters(itemsOf(tab));
+  const list = filters.ocultarAtendidos && tab !== 'atencion' ? all.filter(pending) : all;
+  if (!list.length) {
+    box.append(el('div', {class: 'empty'}, all.length ? 'Todo lo de aquí ya está atendido.' : 'No hay elementos con estos filtros.'));
+    return;
+  }
+  // Grouped by phase, newest first for changes, in order for the rest; what
+  // still waits for Salvador goes first, in each group and among the groups.
   const groups = new Map();
   for (const it of list) {
     const key = tab === 'analisis' ? (it.tipo === 'pregunta' ? 'Preguntas' : 'Ideas · ' + it.area)
@@ -760,9 +782,13 @@ function renderBody() {
   let keys = [...groups.keys()];
   keys.sort((a, b) => faseKey(groups.get(a).fase) - faseKey(groups.get(b).fase));
   if (tab === 'cambio') keys.reverse();
+  const left = (k) => groups.get(k).items.filter(pending).length;
+  keys = [...keys.filter((k) => left(k) > 0), ...keys.filter((k) => left(k) === 0)];
   for (const k of keys) {
-    box.append(el('h2', {class: 'group'}, k));
-    for (const it of groups.get(k).items) box.append(card(it, tab === 'atencion'));
+    const items = groups.get(k).items;
+    const done = items.length - left(k);
+    box.append(el('h2', {class: 'group'}, k, tab === 'atencion' ? null : el('span', {class: 'count'}, ` · ${done}/${items.length}`)));
+    for (const it of [...items.filter(pending), ...items.filter((x) => !pending(x))]) box.append(card(it, tab === 'atencion'));
   }
 }
 function renderSummary() {

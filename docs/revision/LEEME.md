@@ -27,6 +27,8 @@ En Firefox la página no puede escribir en el archivo: usa **Descargar** y reemp
 | Análisis | Mis preguntas con opciones y mi análisis de cada idea | preguntas: sin responder, respondida, requiere definición |
 | Resumen | Cuántos hay en cada estado, y un cuadro por fase | — |
 
+Cada pestaña muestra **atendidos/total**. Atendido es lo que ya no está en su primer estado y no tiene una respuesta mía sin leer. Lo pendiente aparece primero, lo atendido al final, y la casilla **ocultar atendidos** lo esconde.
+
 Cada elemento tiene tu **nota** (lo que ves, lo que autorizas, lo que falta definir), mi **respuesta** y el **historial** de quién cambió qué y cuándo.
 
 - **La nota se guarda con ✓ Guardar nota** (o Ctrl+Enter). Mientras escribes es un borrador: se marca "nota sin guardar", no llega al archivo y sobrevive si cierras la pestaña. "Descartar cambios" vuelve a la nota guardada.

@@ -1600,3 +1600,9 @@ Las ideas se numeran I-001, I-002… con el siguiente número libre, contando ta
 
 **D-9006. La página del registro sigue solo en español.**
 La regla de textos en español e inglés es para las aplicaciones. El registro es una herramienta interna que solo usa Salvador, así que se deja en español. Si algún día la usa alguien más, se traduce.
+
+**D-9007. Contador "atendidos/total" en las pestañas, y lo atendido al final.**
+Pedido de Salvador. Un elemento está atendido cuando ya no está en su primer estado (sin revisar, sin probar, pendiente, abierto, nueva, sin responder) y no tiene una respuesta mía que él no haya leído. Cada pestaña muestra atendidos/total, por ejemplo 5/400, y cada grupo lleva su propio contador. En las listas, lo pendiente va primero dentro de cada grupo, y los grupos ya completos van al final. La casilla "ocultar atendidos" los esconde, y el navegador la recuerda. "Requiere tu atención" sigue mostrando un solo número.
+
+**D-9008. No se separa un archivo histórico por ahora.**
+Salvador preguntó si el tamaño de `revision.json` gasta tokens. No los gasta: Claude no lee el archivo entero, sino que usa `revision.py pendientes` e `ideas`, que imprimen solo lo que espera acción, y los commits se revisan con `--stat`. Para la página, 400 KB o unos pocos MB no pesan. Separar un archivo histórico obligaría a la página a manejar dos archivos (ver D-9001). Se reconsidera si el archivo pasa de unos 5 MB o si la página se vuelve lenta; en ese caso, lo más simple sería un comando que mueva lo atendido y archivado a un `revision-historico.json` de solo lectura.

@@ -10591,8 +10591,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3321",
@@ -10605,8 +10605,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9001",
@@ -10619,8 +10619,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9002",
@@ -10633,8 +10633,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9003",
@@ -10647,8 +10647,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9004",
@@ -10661,8 +10661,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9005",
@@ -10675,8 +10675,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9006",
@@ -10689,8 +10689,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-8-031e9706",
@@ -10703,8 +10703,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-9-f55bae0f",
@@ -10717,9 +10717,37 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
+   "historial": [],
+   "respuesta": ""
+  },
+  {
+   "id": "D-9007",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Contador \"atendidos/total\" en las pestañas, y lo atendido al final",
+   "detalle": "Pedido de Salvador. Un elemento está atendido cuando ya no está en su primer estado (sin revisar, sin probar, pendiente, abierto, nueva, sin responder) y no tiene una respuesta mía que él no haya leído. Cada pestaña muestra atendidos/total, por ejemplo 5/400, y cada grupo lleva su propio contador. En las listas, lo pendiente va primero dentro de cada grupo, y los grupos ya completos van al final. La casilla \"ocultar atendidos\" los esconde, y el navegador la recuerda. \"Requiere tu atención\" sigue mostrando un solo número.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9008",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "No se separa un archivo histórico por ahora",
+   "detalle": "Salvador preguntó si el tamaño de `revision.json` gasta tokens. No los gasta: Claude no lee el archivo entero, sino que usa `revision.py pendientes` e `ideas`, que imprimen solo lo que espera acción, y los commits se revisan con `--stat`. Para la página, 400 KB o unos pocos MB no pesan. Separar un archivo histórico obligaría a la página a manejar dos archivos (ver D-9001). Se reconsidera si el archivo pasa de unos 5 MB o si la página se vuelve lenta; en ese caso, lo más simple sería un comando que mueva lo atendido y archivado a un `revision-historico.json` de solo lectura.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
    "respuesta": "",
    "historial": []
   }
  ],
- "generado": "2026-09-28T16:46:35-06:00"
+ "generado": "2026-09-28T16:56:07-06:00"
 }
