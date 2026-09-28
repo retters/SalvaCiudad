@@ -4370,15 +4370,65 @@ void Game::update_vision() {
     if (!vision_.active()) {
         return;
     }
+    // Dynamic fog also notes what is in sight now, for the ghosts.
+    const bool dynamic = rules_.fog == FogMode::Dynamic;
+    if (dynamic) {
+        vision_.begin_sight();
+    }
     for (const Building& b : buildings_.data()) {
-        vision_.reveal(town_group(b.owner), b.x + b.width / 2, b.z + b.depth / 2, sight(b));
+        vision_.reveal(town_group(b.owner), b.x + b.width / 2, b.z + b.depth / 2, sight(b), dynamic);
     }
     for (const Villager& v : villagers_.data()) {
-        vision_.reveal(town_group(v.owner), v.position.x.floor_int(), v.position.z.floor_int(), sight(v));
+        vision_.reveal(town_group(v.owner), v.position.x.floor_int(), v.position.z.floor_int(), sight(v), dynamic);
     }
     for (const Creature& a : creatures_.data()) {
         if (const std::int32_t r = sight(a); r > 0) {
-            vision_.reveal(town_group(a.town), a.position.x.floor_int(), a.position.z.floor_int(), r);
+            vision_.reveal(town_group(a.town), a.position.x.floor_int(), a.position.z.floor_int(), r, dynamic);
+        }
+    }
+    if (dynamic) {
+        update_ghosts();
+    }
+}
+
+void Game::update_ghosts() {
+    // Each group remembers the buildings of others it sees now, and forgets
+    // those whose place it sees empty (phase 33).
+    for (std::uint8_t g = 0; g < kVisionGroups; ++g) {
+        if (!vision_.used(g)) {
+            continue;
+        }
+        for (std::size_t k = 0; k < buildings_.size(); ++k) {
+            const Building& b = buildings_.data()[k];
+            if (town_group(b.owner) == g || !vision_.sees(g, b.x, b.z, b.width, b.depth)) {
+                continue;
+            }
+            const BuildingDef& d = content_->buildings[b.def];
+            BuildingGhost h;
+            h.id = buildings_.entities()[k];
+            h.def = b.def;
+            h.owner = b.owner;
+            h.rotation = b.rotation;
+            h.level = b.level;
+            h.burning = b.fire > 0;
+            h.x = b.x;
+            h.z = b.z;
+            h.progress = b.state == BuildingState::Complete || d.build_work <= 0
+                             ? std::int16_t{1000}
+                             : static_cast<std::int16_t>(std::clamp(b.work_done * 1000 / d.build_work, 0, 1000));
+            h.burned = static_cast<std::int16_t>(std::clamp(b.burned, 0, 1000));
+            vision_.remember(g, h);
+        }
+        const std::vector<BuildingGhost> ghosts = vision_.ghosts(g);
+        for (const BuildingGhost& h : ghosts) {
+            if (buildings_.get(h.id) != nullptr || h.def >= content_->buildings.size()) {
+                continue;
+            }
+            std::int32_t w = 0, d = 0;
+            footprint(content_->buildings[h.def], h.rotation, w, d);
+            if (vision_.sees(g, h.x, h.z, w, d)) {
+                vision_.forget(g, h.id);
+            }
         }
     }
 }
@@ -5621,31 +5671,16 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         g.creatures_.add(id, a);
     }
     // The fog's summary, checked against the cells after the random numbers.
-    BinaryWriter summary;
-    {
-        std::uint16_t groups = 0;
-        if (!r.u16(groups)) {
-            return false;
-        }
-        summary.u16(groups);
-        for (std::uint8_t k = 0; k < kVisionGroups; ++k) {
-            std::uint32_t count = 0;
-            std::uint64_t sum = 0;
-            if (((groups >> k) & 1u) != 0) {
-                if (!r.u32(count) || !r.u64(sum)) {
-                    return false;
-                }
-                summary.u32(count);
-                summary.u64(sum);
-            }
-        }
+    VisionSummary summary;
+    if (!Vision::read_summary(r, c.buildings.size(), pc, g.map_.size, summary)) {
+        return false;
     }
     std::uint64_t state = 0, inc = 0;
     if (!r.u64(state) || !r.u64(inc) || !Rng::restore(state, inc, g.rng_)) {
         r.fail();
         return false;
     }
-    if (!Vision::read(r, g.map_.size, g.fog(), summary.bytes(), g.vision_) ||
+    if (!Vision::read(r, g.map_.size, g.fog(), summary, g.vision_) ||
         (g.fog() && g.vision_.groups() != g.vision_groups())) {
         r.fail();
         return false;

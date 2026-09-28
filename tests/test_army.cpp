@@ -278,6 +278,68 @@ TEST_SUITE("army") {
         CHECK(g.buildings().get(g.player(1).town_center) == nullptr);
     }
 
+    TEST_CASE("dynamic fog: an army remembers the rival town as it last saw it") {
+        // Phase 33: soldiers going to the rival town see its town center and
+        // their town keeps a ghost of it; back home, the ghost stays as seen
+        // while the real one changes; seen again, it follows.
+        GameSetup s = versus(Victory::Elimination);
+        s.rules.fog = FogMode::Dynamic;
+        Game g(open_content(), map_for(103, 2), s);
+        const std::uint8_t mine = g.vision_group(0);
+        REQUIRE(mine != g.vision_group(1));
+        const EntityId rival = g.player(1).town_center;
+        const auto ghost_of_rival = [&]() -> const BuildingGhost* {
+            for (const BuildingGhost& h : g.vision().ghosts(mine)) {
+                if (h.id == rival) {
+                    return &h;
+                }
+            }
+            return nullptr;
+        };
+        CHECK(ghost_of_rival() == nullptr);  // Never seen yet.
+        const EntityId barracks = build(g, "core:barracks");
+        grant(g, "core:log", 100);
+        train(g, barracks, "core:levy", 2);
+        for (int t = 0; t < 40 && g.soldiers(0) < 2; ++t) {
+            run(g, 100);
+        }
+        REQUIRE(g.soldiers(0) == 2);
+        g.apply(order(0, ArmyOrderKind::Attack, 1));
+        for (int t = 0; t < 60 && ghost_of_rival() == nullptr; ++t) {
+            run(g, 50);
+        }
+        REQUIRE(ghost_of_rival() != nullptr);
+        const std::uint8_t seen_level = ghost_of_rival()->level;
+        // Home again, out of sight.
+        g.apply(order(0, ArmyOrderKind::Retreat));
+        const Building* tc = g.buildings().get(rival);
+        REQUIRE(tc != nullptr);
+        for (int t = 0; t < 60 && g.vision().sees(mine, tc->x, tc->z, tc->width, tc->depth); ++t) {
+            run(g, 100);
+        }
+        REQUIRE_FALSE(g.vision().sees(mine, tc->x, tc->z, tc->width, tc->depth));
+        // The rival's town center grows; the ghost does not.
+        Command up;
+        up.type = CommandType::DevLevel;
+        up.player = 1;
+        g.apply(up);
+        run(g, 30);
+        REQUIRE(g.buildings().get(rival)->level == seen_level + 1);
+        REQUIRE(ghost_of_rival() != nullptr);
+        CHECK(ghost_of_rival()->level == seen_level);
+        // Seen again: the ghost follows.
+        g.apply(order(0, ArmyOrderKind::Attack, 1));
+        for (int t = 0; t < 60 && ghost_of_rival() != nullptr && ghost_of_rival()->level == seen_level; ++t) {
+            run(g, 50);
+        }
+        REQUIRE(ghost_of_rival() != nullptr);
+        CHECK(ghost_of_rival()->level == seen_level + 1);
+        // The rival never keeps a ghost of what is its own.
+        for (const BuildingGhost& h : g.vision().ghosts(g.vision_group(1))) {
+            CHECK(h.owner != 1);
+        }
+    }
+
     TEST_CASE("versus without war: the best score after the years wins") {
         GameSetup s = versus(Victory::Score, false);
         s.rules.score_years = 1;

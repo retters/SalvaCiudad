@@ -47,16 +47,22 @@ float3 linear_to_srgb(float3 c)
 // over the ceiling where the fog thins out (0: no ceiling), w = unused.
 static const float kWarCeilingScale = 655.35;
 
+// One tap; beyond the map's edge nothing was ever explored.
+float war_fog_tap(Texture2D<float> fog, SamplerState s, float2 uv)
+{
+    return all(uv >= 0.0) && all(uv <= 1.0) ? fog.SampleLevel(s, uv, 0.0) : 0.0;
+}
+
 float war_fog_value(Texture2D<float> fog, SamplerState s, float2 xz, float4 war)
 {
     // A few taps for soft edges instead of 4 m squares.
     float2 uv = xz * war.x;
     float o = 1.6 * war.x;
-    float v = fog.Sample(s, uv) * 0.36;
-    v += fog.Sample(s, uv + float2(o, o)) * 0.16;
-    v += fog.Sample(s, uv + float2(-o, o)) * 0.16;
-    v += fog.Sample(s, uv + float2(o, -o)) * 0.16;
-    v += fog.Sample(s, uv + float2(-o, -o)) * 0.16;
+    float v = war_fog_tap(fog, s, uv) * 0.36;
+    v += war_fog_tap(fog, s, uv + float2(o, o)) * 0.16;
+    v += war_fog_tap(fog, s, uv + float2(-o, o)) * 0.16;
+    v += war_fog_tap(fog, s, uv + float2(o, -o)) * 0.16;
+    v += war_fog_tap(fog, s, uv + float2(-o, -o)) * 0.16;
     return v;
 }
 
@@ -67,7 +73,7 @@ float war_lift(Texture2D<float> ceiling, SamplerState s, float3 world_pos, float
     {
         return 0.0;
     }
-    float top = ceiling.Sample(s, world_pos.xz * war.x) * kWarCeilingScale;
+    float top = ceiling.SampleLevel(s, world_pos.xz * war.x, 0.0) * kWarCeilingScale;
     return saturate((world_pos.y - top) / war.z);
 }
 

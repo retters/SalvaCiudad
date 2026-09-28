@@ -1542,3 +1542,19 @@ La sala tiene una fila "Niebla de guerra" que cambia el anfitrión; la visión c
 
 **D-3216. Rendimiento.**
 `Game::update_vision()` es pública para poder medirla sola. Medido en `docs/RENDIMIENTO.md`.
+
+## Fase 33: niebla de guerra dinámica (2026-09-27)
+
+**D-3301. Qué ve cada grupo, en la simulación.**
+Con niebla dinámica, la actualización de cada segundo anota también qué celdas ve cada grupo en ese momento. Es un dato derivado: no se guarda y se rehace en la siguiente actualización, igual en todas las máquinas (también en la que acaba de cargar o de unirse). La vista sigue calculando lo suyo en cada tick para que lo que se mueve aparezca y desaparezca sin esperar un segundo.
+
+**D-3302. Fantasmas.**
+- En cada actualización, cada grupo recuerda los edificios de otros grupos que ve (tipo, dueño, giro, nivel, avance de obra, si arde y cuánto se quemó) y olvida los recordados cuyo lugar ve y ya no existen. No guarda campos, bienes ni trabajadores.
+- Se guardan con la partida y entran en la suma de verificación, en la parte "vision", ordenados por entidad.
+- Con niebla estática no hay fantasmas: todo lo explorado se ve en vivo.
+
+**D-3303. Cómo se ven.**
+Fuera de la vista, un edificio ajeno se dibuja como su fantasma: la variante de su lugar, a medio levantar si estaba en obra, rojizo si ardía o chamuscado. No echa humo ni suena y no se puede seleccionar. En el minimapa sale un poco más tenue. Los campos de las granjas ajenas solo se ven a la vista. Si el edificio real está a la vista, se dibuja el real.
+
+**D-3304. El gris.**
+Lo explorado fuera de vista se desatura un 75 % y queda al 45 % de brillo, con un tinte frío, después de la bruma de distancia. El minimapa usa la misma idea.

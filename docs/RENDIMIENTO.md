@@ -138,4 +138,6 @@ El mapa enorme (4096 m, la prueba "a huge map generates in under 30 seconds") ta
 | Lo que la vista calcula cada tick para un pueblo | 0,28 ms | 0,28 ms |
 | Partida guardada | +0,7 MB (125,6 MB) | igual |
 
+Con la fase 33, la niebla dinámica también anota qué ve cada grupo y sus fantasmas: 1,83 ms por actualización (0,18 ms por tick); la estática, sin eso, 1,2 ms. La vista, 0,2 ms por tick en las dos. Como los pueblos de la prueba no se ven entre sí, casi no hay fantasmas: cada uno ocupa 26 bytes en la partida y en la suma de verificación.
+
 La suma de verificación del estado no cambia de forma medible (19 a 22 ms en las tres corridas). El tick completo sin niebla sale más lento en esta prueba (29 ms contra 19 ms) solo porque los pueblos quedan distintos: con niebla, las casas de `grow()` no se pueden poner en lo no explorado y quedan más juntas.

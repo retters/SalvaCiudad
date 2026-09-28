@@ -588,6 +588,7 @@ private:
     Vision vision_;
     // The vision groups the players make up (fixed for a game).
     [[nodiscard]] std::uint16_t vision_groups() const;
+    void update_ghosts();
 
     std::vector<std::pair<std::uint64_t, std::uint32_t>> regrow_;  // (tick, node), sorted.
     std::vector<std::uint32_t> changed_nodes_;

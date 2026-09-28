@@ -61,11 +61,12 @@ bool Vision::explored_rect(std::uint8_t group, std::int32_t x, std::int32_t z, s
     return true;
 }
 
-void Vision::reveal(std::uint8_t group, std::int32_t x, std::int32_t z, std::int32_t radius) {
+void Vision::reveal(std::uint8_t group, std::int32_t x, std::int32_t z, std::int32_t radius, bool sight) {
     if (!used(group)) {
         return;
     }
     FogGrid& grid = explored_[group];
+    FogGrid* seen = sight && !sight_[group].empty() ? &sight_[group] : nullptr;
     std::uint32_t& count = count_[group];
     std::uint64_t& sum = sum_[group];
     for_each_disc_row(side_, x, z, radius, [&](std::int32_t cz, std::int32_t cx0, std::int32_t cx1) {
@@ -73,17 +74,132 @@ void Vision::reveal(std::uint8_t group, std::int32_t x, std::int32_t z, std::int
             ++count;
             sum += fog_cell_mix(index);
         });
+        if (seen != nullptr) {
+            seen->set_span(cz, cx0, cx1);
+        }
     });
+}
+
+void Vision::begin_sight() {
+    for (std::uint8_t g = 0; g < kVisionGroups; ++g) {
+        if (!used(g)) {
+            continue;
+        }
+        if (sight_[g].side() != side_) {
+            sight_[g].reset(side_);
+        } else {
+            sight_[g].clear_all();
+        }
+    }
+}
+
+bool Vision::sees(std::uint8_t group, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const {
+    if (!used(group) || w <= 0 || d <= 0) {
+        return false;
+    }
+    const FogGrid& grid = sight_[group];
+    for (std::int32_t cz = std::max(0, z) / kFogCell; cz <= std::max(0, z + d - 1) / kFogCell; ++cz) {
+        for (std::int32_t cx = std::max(0, x) / kFogCell; cx <= std::max(0, x + w - 1) / kFogCell; ++cx) {
+            if (grid.get(cx, cz)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void Vision::remember(std::uint8_t group, const BuildingGhost& ghost) {
+    if (!used(group)) {
+        return;
+    }
+    std::vector<BuildingGhost>& list = ghosts_[group];
+    const auto it = std::lower_bound(list.begin(), list.end(), ghost.id.index,
+                                     [](const BuildingGhost& g, std::uint32_t index) { return g.id.index < index; });
+    if (it != list.end() && it->id.index == ghost.id.index) {
+        if (*it != ghost) {
+            *it = ghost;
+            ++ghost_revision_;
+        }
+        return;
+    }
+    list.insert(it, ghost);
+    ++ghost_revision_;
+}
+
+void Vision::forget(std::uint8_t group, EntityId id) {
+    if (!used(group)) {
+        return;
+    }
+    std::vector<BuildingGhost>& list = ghosts_[group];
+    const auto it = std::lower_bound(list.begin(), list.end(), id.index,
+                                     [](const BuildingGhost& g, std::uint32_t index) { return g.id.index < index; });
+    if (it != list.end() && it->id == id) {
+        list.erase(it);
+        ++ghost_revision_;
+    }
 }
 
 void Vision::write_summary(BinaryWriter& w) const {
     w.u16(groups_);
     for (std::uint8_t g = 0; g < kVisionGroups; ++g) {
-        if (used(g)) {
-            w.u32(count_[g]);
-            w.u64(sum_[g]);
+        if (!used(g)) {
+            continue;
+        }
+        w.u32(count_[g]);
+        w.u64(sum_[g]);
+        w.u32(static_cast<std::uint32_t>(ghosts_[g].size()));
+        for (const BuildingGhost& h : ghosts_[g]) {
+            w.u32(h.id.index);
+            w.u32(h.id.generation);
+            w.u16(h.def);
+            w.u8(h.owner);
+            w.u8(h.rotation);
+            w.u8(h.level);
+            w.u8(h.burning ? 1 : 0);
+            w.i32(h.x);
+            w.i32(h.z);
+            w.u16(static_cast<std::uint16_t>(h.progress));
+            w.u16(static_cast<std::uint16_t>(h.burned));
         }
     }
+}
+
+bool Vision::read_summary(BinaryReader& r, std::size_t buildings, std::uint8_t players, std::int32_t map_size,
+                          VisionSummary& out) {
+    VisionSummary s;
+    if (!r.u16(s.groups) || (s.groups >> kVisionGroups) != 0) {
+        r.fail();
+        return false;
+    }
+    for (std::uint8_t g = 0; g < kVisionGroups; ++g) {
+        if (((s.groups >> g) & 1u) == 0) {
+            continue;
+        }
+        std::uint32_t n = 0;
+        if (!r.u32(s.counts[g]) || !r.u64(s.sums[g]) || !r.count(1u << 20, 26, n)) {
+            r.fail();
+            return false;
+        }
+        s.ghosts[g].resize(n);
+        for (std::size_t k = 0; k < n; ++k) {
+            BuildingGhost& h = s.ghosts[g][k];
+            std::uint8_t burning = 0;
+            std::uint16_t progress = 0, burned = 0;
+            if (!r.u32(h.id.index) || !r.u32(h.id.generation) || !r.u16(h.def) || !r.u8(h.owner) || !r.u8(h.rotation) ||
+                !r.u8(h.level) || !r.u8(burning) || !r.i32(h.x) || !r.i32(h.z) || !r.u16(progress) || !r.u16(burned) ||
+                h.def >= buildings || h.owner >= players || h.rotation > 3 || burning > 1 || h.x < 0 || h.z < 0 ||
+                h.x >= map_size || h.z >= map_size || progress > 1000 || burned > 1000 ||
+                (k > 0 && h.id.index <= s.ghosts[g][k - 1].id.index)) {
+                r.fail();
+                return false;
+            }
+            h.burning = burning != 0;
+            h.progress = static_cast<std::int16_t>(progress);
+            h.burned = static_cast<std::int16_t>(burned);
+        }
+    }
+    out = std::move(s);
+    return true;
 }
 
 void Vision::write(BinaryWriter& w) const {
@@ -99,7 +215,7 @@ void Vision::write(BinaryWriter& w) const {
     }
 }
 
-bool Vision::read(BinaryReader& r, std::int32_t map_size, bool expect_active, std::span<const std::uint8_t> summary,
+bool Vision::read(BinaryReader& r, std::int32_t map_size, bool expect_active, const VisionSummary& summary,
                   Vision& out) {
     std::int32_t side = 0;
     std::uint16_t groups = 0;
@@ -154,13 +270,22 @@ bool Vision::read(BinaryReader& r, std::int32_t map_size, bool expect_active, st
         }
     }
     // The saved summary must say the same.
-    BinaryWriter mine;
-    v.write_summary(mine);
-    if (!std::equal(mine.bytes().begin(), mine.bytes().end(), summary.begin(), summary.end())) {
+    if (summary.groups != v.groups_) {
         r.fail();
         return false;
     }
+    for (std::uint8_t g = 0; g < kVisionGroups; ++g) {
+        if (!v.used(g)) {
+            continue;
+        }
+        if (summary.counts[g] != v.count_[g] || summary.sums[g] != v.sum_[g]) {
+            r.fail();
+            return false;
+        }
+        v.ghosts_[g] = summary.ghosts[g];
+    }
     out = std::move(v);
+    ++out.ghost_revision_;
     return true;
 }
 

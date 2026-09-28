@@ -148,28 +148,151 @@ TEST_SUITE("fog") {
         CHECK(v.explored_rect(0, 96, 96, 8, 8));
         CHECK_FALSE(v.explored_rect(0, 96, 96, 80, 8));
 
-        BinaryWriter summary;
-        v.write_summary(summary);
+        BuildingGhost ghost;
+        ghost.id = {7, 2};
+        ghost.def = 3;
+        ghost.owner = 1;
+        ghost.x = 200;
+        ghost.z = 40;
+        ghost.progress = 400;
+        v.remember(2, ghost);
+
+        BinaryWriter summary_bytes;
+        v.write_summary(summary_bytes);
+        VisionSummary summary;
+        {
+            BinaryReader sr(summary_bytes.bytes());
+            REQUIRE(Vision::read_summary(sr, 10, 2, 512, summary));
+            CHECK(sr.at_end());
+        }
         BinaryWriter w;
         v.write(w);
         Vision back;
         BinaryReader r(w.bytes());
-        REQUIRE(Vision::read(r, 512, true, summary.bytes(), back));
+        REQUIRE(Vision::read(r, 512, true, summary, back));
         CHECK(r.at_end());
         CHECK(back == v);
+        CHECK(back.ghosts(2).size() == 1);
 
         // A checksum that does not match the cells is refused.
-        std::vector<std::uint8_t> bad = summary.bytes();
-        bad.back() ^= 1;
+        VisionSummary bad = summary;
+        bad.sums[0] ^= 1;
         BinaryReader r2(w.bytes());
         Vision untouched;
         CHECK_FALSE(Vision::read(r2, 512, true, bad, untouched));
         CHECK_FALSE(untouched.active());
         // Nor cells for another map size, nor cells where there is no fog.
         BinaryReader r3(w.bytes());
-        CHECK_FALSE(Vision::read(r3, 1024, true, summary.bytes(), untouched));
+        CHECK_FALSE(Vision::read(r3, 1024, true, summary, untouched));
         BinaryReader r4(w.bytes());
-        CHECK_FALSE(Vision::read(r4, 512, false, summary.bytes(), untouched));
+        CHECK_FALSE(Vision::read(r4, 512, false, summary, untouched));
+        // Ghosts of an unknown building or owner are refused.
+        BinaryReader sr2(summary_bytes.bytes());
+        CHECK_FALSE(Vision::read_summary(sr2, 3, 2, 512, summary));
+        BinaryReader sr3(summary_bytes.bytes());
+        CHECK_FALSE(Vision::read_summary(sr3, 10, 1, 512, summary));
+    }
+
+    TEST_CASE("a ghost stays as last seen until its place is seen again") {
+        Vision v;
+        v.reset(512, 0b1);
+        BuildingGhost seen;
+        seen.id = {5, 1};
+        seen.def = 2;
+        seen.owner = 1;
+        seen.x = 300;
+        seen.z = 300;
+        seen.level = 1;
+        // Someone stands by it: it is in sight and remembered.
+        v.begin_sight();
+        v.reveal(0, 302, 302, 12, true);
+        REQUIRE(v.sees(0, 300, 300, 4, 4));
+        v.remember(0, seen);
+        const std::uint32_t revision = v.ghost_revision();
+        v.remember(0, seen);  // The same: nothing changes.
+        CHECK(v.ghost_revision() == revision);
+        // They walk away: out of sight, still remembered as it was.
+        v.begin_sight();
+        v.reveal(0, 100, 100, 12, true);
+        CHECK_FALSE(v.sees(0, 300, 300, 4, 4));
+        CHECK(v.explored_at(0, 302, 302));
+        REQUIRE(v.ghosts(0).size() == 1);
+        CHECK(v.ghosts(0)[0] == seen);
+        // A newer look replaces the old one; forgetting takes it away.
+        BuildingGhost burning = seen;
+        burning.burning = true;
+        v.remember(0, burning);
+        CHECK(v.ghosts(0)[0].burning);
+        CHECK(v.ghost_revision() != revision);
+        v.forget(0, {5, 9});  // Another generation: not this one.
+        CHECK(v.ghosts(0).size() == 1);
+        v.forget(0, seen.id);
+        CHECK(v.ghosts(0).empty());
+        // Kept sorted by entity index.
+        for (const std::uint32_t index : {9u, 3u, 6u}) {
+            BuildingGhost g = seen;
+            g.id = {index, 0};
+            v.remember(0, g);
+        }
+        REQUIRE(v.ghosts(0).size() == 3);
+        CHECK(v.ghosts(0)[0].id.index == 3);
+        CHECK(v.ghosts(0)[2].id.index == 9);
+    }
+
+    TEST_CASE("with dynamic fog each town remembers the other's buildings it saw") {
+        // Two towns in versus; each sees its own buildings, never keeps a
+        // ghost of its own, and the ghosts are the same on every machine and
+        // after a save.
+        const MapData map = small_map(12, 2);
+        Game a(content(), map, setup(2, FogMode::Dynamic, true));
+        Game b(content(), map, setup(2, FogMode::Dynamic, true));
+        run(a, 2000);
+        run(b, 2000);
+        CHECK(a.vision() == b.vision());
+        for (std::uint8_t p = 0; p < 2; ++p) {
+            for (const BuildingGhost& h : a.vision().ghosts(a.vision_group(p))) {
+                CHECK(a.town_group(h.owner) != a.vision_group(p));
+            }
+        }
+        BinaryWriter w;
+        a.save(w);
+        Game back(content(), MapData{}, 0, 0);
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.vision() == a.vision());
+        CHECK(back.hash() == a.hash());
+        run(a, 500);
+        run(back, 500);
+        CHECK(back.hash() == a.hash());
+    }
+
+    TEST_CASE("with dynamic fog what moves shows only in sight") {
+        Game g(content(), small_map(3), setup(1, FogMode::Dynamic));
+        FogView view;
+        view.begin(g, g.vision_group(0));
+        send_out(g);
+        run(g, 3000);
+        view.update(g);
+        std::size_t hidden = 0;
+        std::size_t shown = 0;
+        for (const Creature& a : g.creatures().data()) {
+            const float x = static_cast<float>(a.position.x.raw()) / 65536.0f;
+            const float z = static_cast<float>(a.position.z.raw()) / 65536.0f;
+            CHECK(view.shows(x, z) == view.in_sight(x, z));
+            (view.shows(x, z) ? shown : hidden) += 1;
+            if (view.explored(x, z) && !view.in_sight(x, z)) {
+                CHECK_FALSE(view.shows(x, z));  // Explored but out of sight.
+            }
+        }
+        CHECK(hidden > 0);  // The animals far away.
+        // With static fog, explored is enough.
+        Game s(content(), small_map(3), setup(1, FogMode::Static));
+        FogView still;
+        still.begin(s, s.vision_group(0));
+        const Building& tc = town_center(s);
+        const float cx = static_cast<float>(tc.x) + 30.0f;
+        CHECK(still.shows(cx, static_cast<float>(tc.z)));
+        CHECK(still.shows(cx, static_cast<float>(tc.z)) == still.explored(cx, static_cast<float>(tc.z)));
     }
 
     TEST_CASE("without fog nothing is kept and everything may be built as before") {

@@ -83,6 +83,22 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
         const float h = std::max(dot, static_cast<float>(b.depth) * scale);
         ctx.draw().rect({std::floor(x), std::floor(y), w, h}, player_color(b.owner));
     }
+    // Dynamic fog: others' buildings out of sight as last seen (phase 33).
+    if (fog.mode() == sim::FogMode::Dynamic) {
+        for (const sim::BuildingGhost& g : game.vision().ghosts(fog.group())) {
+            const sim::Building* real = game.buildings().get(g.id);
+            if ((real != nullptr && fog.rect_in_sight(real->x, real->z, real->width, real->depth)) ||
+                g.def >= game.content().buildings.size()) {
+                continue;
+            }
+            std::int32_t gw = 0, gd = 0;
+            sim::Game::footprint(game.content().buildings[g.def], g.rotation, gw, gd);
+            const auto [x, y] = to_screen(static_cast<float>(g.x), static_cast<float>(g.z));
+            ctx.draw().rect({std::floor(x), std::floor(y), std::max(dot, static_cast<float>(gw) * scale),
+                             std::max(dot, static_cast<float>(gd) * scale)},
+                            player_color(g.owner).with_alpha(0.7f));
+        }
+    }
     // What the camera sees.
     const Services::CameraGround view = services_.camera_ground();
     const float thick = std::max(1.0f, std::round(ctx.s(1.5f)));

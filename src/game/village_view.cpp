@@ -424,7 +424,7 @@ std::uint64_t VillageView::shown_signature(const sim::Game& game) const {
     if (fog_ == nullptr || fog_->mode() == sim::FogMode::None) {
         return 0;
     }
-    std::uint64_t h = 0xcbf29ce484222325ull;
+    std::uint64_t h = 0xcbf29ce484222325ull ^ game.vision().ghost_revision();
     const auto& store = game.buildings();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const sim::Building& b = store.data()[k];
@@ -877,6 +877,29 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
                                    : math::Vec3{char_level, char_level, char_level};
         }
         lists[m->id].push_back(inst);
+    }
+    // Dynamic fog (phase 33): others' buildings out of sight, as last seen.
+    if (fog_ != nullptr && fog_->mode() == sim::FogMode::Dynamic) {
+        for (const sim::BuildingGhost& h : game.vision().ghosts(fog_->group())) {
+            const sim::Building* real = game.buildings().get(h.id);
+            if ((real != nullptr && building_shown(game, *real)) || h.def >= content.buildings.size()) {
+                continue;  // The real one is in sight.
+            }
+            const Model* m = model_for(h.def, h.level, place_key(h.x, h.z));
+            if (m == nullptr) {
+                continue;
+            }
+            std::int32_t w = 0, d = 0;
+            sim::Game::footprint(content.buildings[h.def], h.rotation, w, d);
+            render::Instance inst = building_instance(game, h.def, *m, h.x, h.z, w, d, h.rotation,
+                                                      static_cast<float>(h.progress) / 1000.0f);
+            if (h.burning || h.burned > 0) {
+                const float char_level = 1.0f - 0.7f * static_cast<float>(h.burned) / 1000.0f;
+                inst.tint = h.burning ? math::Vec3{1.9f * char_level, 0.6f * char_level, 0.3f * char_level}
+                                      : math::Vec3{char_level, char_level, char_level};
+            }
+            lists[m->id].push_back(inst);
+        }
     }
     // The ghost shows the variant the building will have there.
     if (const Model* m = ghost_ ? model_for(ghost_->def, 0, place_key(ghost_->x, ghost_->z)) : nullptr) {

@@ -414,6 +414,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con "Sin niebla" el juego se ve y se juega como antes.
 - [ ] En multijugador (`--instance 1 --loopback` y `--instance 2 --loopback`) la sala muestra la fila "Niebla de guerra"; en cooperativo con visión compartida, lo que explora un jugador lo ve el otro; en versus, cada uno ve solo lo suyo. No hay desincronizaciones.
 
+### Fase 33 (niebla de guerra dinámica)
+
+- [ ] Con niebla dinámica, lo que tu gente exploró y ya no ve queda apagado y gris (terreno, árboles, rocas, agua), también en el minimapa; lo que nunca se vio sigue negro.
+- [ ] Un ciervo o un lobo que sale del alcance de tu gente desaparece; al volver a verlo, aparece donde esté.
+- [ ] En multijugador versus (`--instance 1 --loopback` y `--instance 2 --loopback`, niebla dinámica): al mandar el ejército al pueblo rival se ven sus edificios; al volver, siguen dibujados tal como se vieron (y en el minimapa, un poco más tenues), aunque el rival construya, mejore o pierda edificios. Al volver a verlos, se ponen al día; los que ya no existen desaparecen.
+- [ ] Guardar y cargar conserva lo explorado y los edificios recordados.
+- [ ] Con niebla estática, los animales y los edificios de otros se siguen viendo en todo lo explorado.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

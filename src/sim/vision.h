@@ -10,6 +10,7 @@
 #include <span>
 #include <vector>
 
+#include "sim/entity.h"
 #include "sim/fixed.h"
 #include "sim/serialize.h"
 
@@ -67,8 +68,35 @@ void for_each_disc_row(std::int32_t side, std::int32_t x, std::int32_t z, std::i
 // a cheap check that two machines explored the same cells.
 [[nodiscard]] std::uint64_t fog_cell_mix(std::size_t index);
 
+// A building of another side as a vision group last saw it (phase 33,
+// dynamic fog): out of sight it is drawn like this, even if it changed or
+// is gone, until the group sees the place again.
+struct BuildingGhost {
+    EntityId id;
+    std::uint16_t def = 0;
+    std::uint8_t owner = 0;
+    std::uint8_t rotation = 0;
+    std::uint8_t level = 0;
+    bool burning = false;
+    std::int32_t x = 0;           // Corner cell, as the building's.
+    std::int32_t z = 0;
+    std::int16_t progress = 1000; // Built, per mille (1000: complete).
+    std::int16_t burned = 0;      // Fire damage, 0..1000.
+    bool operator==(const BuildingGhost&) const = default;
+};
+
+// The part of the vision that goes in the state hash, read back from a
+// save before the cells (see Vision::read_summary).
+struct VisionSummary {
+    std::uint16_t groups = 0;
+    std::array<std::uint32_t, 12> counts{};
+    std::array<std::uint64_t, 12> sums{};
+    std::array<std::vector<BuildingGhost>, 12> ghosts;
+};
+
 // What each vision group has explored, with a count and a checksum kept up
-// to date as cells are revealed.
+// to date as cells are revealed; with dynamic fog, also what each group
+// sees at the last update and its ghosts of others' buildings.
 class Vision {
 public:
     // No fog: nothing is kept.
@@ -85,22 +113,47 @@ public:
     // Whether every fog cell under the cells x..x+w-1, z..z+d-1 is explored.
     [[nodiscard]] bool explored_rect(std::uint8_t group, std::int32_t x, std::int32_t z, std::int32_t w,
                                      std::int32_t d) const;
-    // Explores what can be seen from (x, z) meters, `radius` meters around.
-    void reveal(std::uint8_t group, std::int32_t x, std::int32_t z, std::int32_t radius);
+    // Explores what can be seen from (x, z) meters, `radius` meters around;
+    // with `sight`, marks it as in sight too (after begin_sight()).
+    void reveal(std::uint8_t group, std::int32_t x, std::int32_t z, std::int32_t radius, bool sight = false);
+
+    // Phase 33. Forgets what was in sight, before revealing again.
+    void begin_sight();
+    // Whether some fog cell under the cells x..x+w-1, z..z+d-1 was in sight
+    // at the last update.
+    [[nodiscard]] bool sees(std::uint8_t group, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const;
+    // Remembers a building as seen now (replaces what was remembered of it).
+    void remember(std::uint8_t group, const BuildingGhost& ghost);
+    // Forgets a building (its place was seen and it is gone).
+    void forget(std::uint8_t group, EntityId id);
+    // A group's ghosts, by entity index.
+    [[nodiscard]] const std::vector<BuildingGhost>& ghosts(std::uint8_t group) const { return ghosts_[group % kVisionGroups]; }
+    // Counts every change of any ghost (derived; for the view).
+    [[nodiscard]] std::uint32_t ghost_revision() const { return ghost_revision_; }
     [[nodiscard]] std::uint32_t count(std::uint8_t group) const { return count_[group % kVisionGroups]; }
     [[nodiscard]] std::uint64_t sum(std::uint8_t group) const { return sum_[group % kVisionGroups]; }
 
-    // The count and checksum of each group (for the state hash).
+    // The count and checksum of each group, and its ghosts (for the state
+    // hash; saves carry it too).
     void write_summary(BinaryWriter& w) const;
+    // Reads what write_summary() wrote. Ghosts must name a building
+    // definition below `buildings`, an owner below `players` and a corner
+    // inside a map of `map_size` cells.
+    [[nodiscard]] static bool read_summary(BinaryReader& r, std::size_t buildings, std::uint8_t players,
+                                           std::int32_t map_size, VisionSummary& out);
     // The explored cells (for saves and network snapshots).
     void write(BinaryWriter& w) const;
     // Reads what write() wrote, for a map of `map_size` cells; with
     // `expect_active` false there must be no grids. The counts must match
-    // `summary` (as write_summary() wrote it). On failure `out` is unchanged.
+    // `summary`, whose ghosts it takes. On failure `out` is unchanged.
     [[nodiscard]] static bool read(BinaryReader& r, std::int32_t map_size, bool expect_active,
-                                   std::span<const std::uint8_t> summary, Vision& out);
+                                   const VisionSummary& summary, Vision& out);
 
-    bool operator==(const Vision&) const = default;
+    // Compares what is kept (not what was in sight, which follows from it).
+    [[nodiscard]] bool operator==(const Vision& o) const {
+        return side_ == o.side_ && groups_ == o.groups_ && explored_ == o.explored_ && count_ == o.count_ &&
+               sum_ == o.sum_ && ghosts_ == o.ghosts_;
+    }
 
 private:
     std::int32_t side_ = 0;
@@ -108,6 +161,10 @@ private:
     std::array<FogGrid, kVisionGroups> explored_;
     std::array<std::uint32_t, kVisionGroups> count_{};
     std::array<std::uint64_t, kVisionGroups> sum_{};
+    std::array<std::vector<BuildingGhost>, kVisionGroups> ghosts_;
+    // Derived, never saved.
+    std::array<FogGrid, kVisionGroups> sight_;
+    std::uint32_t ghost_revision_ = 0;
 };
 
 // --- Templates -------------------------------------------------------------------
