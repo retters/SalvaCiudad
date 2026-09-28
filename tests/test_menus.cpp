@@ -273,6 +273,16 @@ TEST_SUITE("menus") {
         h.frame(112, key);
         CHECK(h.services.speed == 0);
         CHECK(h.host.game_paused());
+        // A pause is only speed 0: no veil, and the interface still works.
+        CHECK_FALSE(h.host.scene_paused());
+        h.frame(114, press);
+        h.frame(116, release);
+        CHECK(ui.placing != sim::kNoDef);
+        ui::Input esc;
+        esc.keys = {SDL_SCANCODE_ESCAPE};
+        h.frame(118, esc);
+        CHECK(ui.placing == sim::kNoDef);
+        CHECK(h.services.speed == 0);
         h.frame(128, key);
         CHECK(h.services.speed == 1);
         key.keys = {SDL_SCANCODE_3};

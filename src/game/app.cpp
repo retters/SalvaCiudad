@@ -51,8 +51,8 @@ constexpr float kTestCrowdRadius = 70.0f;
 // Game ticks in a minute at x1 (autosave interval is set in minutes).
 constexpr std::uint64_t kTicksPerMinute = 600;
 
-// Blur behind the pause, in pixels at 1080p.
-constexpr float kPauseBlur = 3.0f;
+// Blur behind a menu over the game, in pixels at 1080p.
+constexpr float kMenuBlur = 3.0f;
 
 // The light of each season (presentation only).
 render::Lighting seasonal_lighting(sim::Season season) {
@@ -728,8 +728,8 @@ void App::render_frame(float dt) {
                 view.terrain_distance = camera_.distance() * 2.5f + static_cast<float>(map_->map.size);
             }
             view.time = static_cast<float>(static_cast<double>(SDL_GetTicksNS() % 3'600'000'000'000ull) * 1e-9);
-            if (session_ && host_->game_paused() && host_->scene_mode() == UiHost::SceneMode::Map) {
-                view.blur = kPauseBlur;
+            if (session_ && host_->scene_paused()) {
+                view.blur = kMenuBlur;
             }
             if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
                 view.snow = static_cast<float>(session_->game().snow()) / static_cast<float>(sim::village::kMaxSnow);

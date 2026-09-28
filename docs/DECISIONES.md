@@ -1572,3 +1572,8 @@ Una marca en especies de árbol, recursos del mapa y edificios (`"landmark": tru
 
 **D-3404. Edificios de otros en lo no explorado.**
 Se dibujan solo si todo su terreno está sin explorar y su punta sobresale del techo (o son `landmark`), para que se vea su silueta, como la de una atalaya a lo lejos. No se pueden seleccionar ni aparecen en el minimapa. Los bajos no se dibujan, así tampoco echan una sombra que los delate.
+
+## Ajuste: la pausa es solo velocidad 0 (2026-09-27)
+
+**D-3320. La pausa ya no desenfoca ni bloquea (reemplaza parte de D-810).**
+Pedido de Salvador tras probar en red: al pausar se bloqueaba toda la interfaz, incluido el aviso para aceptar un cambio de velocidad, y la partida no se podía reanudar. Ahora pausar es solo poner la velocidad en 0: no hay desenfoque ni panel de pausa, la cámara se mueve libre y se pueden dar órdenes, que se aplican cuando la partida vuelve a avanzar. El desenfoque y el velo oscuro quedan solo para el menú del juego (y la configuración o la carga abiertas desde él), que en una partida de un jugador sigue deteniendo el juego. La votación de D-009 no cambia.

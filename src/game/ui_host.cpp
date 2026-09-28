@@ -97,8 +97,8 @@ bool UiHost::scene_paused() const {
     if (scene_mode() != SceneMode::Map) {
         return false;
     }
-    const bool menu = game_menu_open_ || screen_ == Screen::Settings || screen_ == Screen::Load;
-    return menu || (services_.session() != nullptr && services_.game_speed() == 0);
+    // Only a menu over the game; a pause is just speed 0 (decision D-3320).
+    return game_menu_open_ || screen_ == Screen::Settings || screen_ == Screen::Load;
 }
 
 bool UiHost::game_paused() const {
@@ -513,22 +513,6 @@ void UiHost::game_keys(ui::Context& ctx) {
     }
 }
 
-void UiHost::pause_panel(ui::Context& ctx) {
-    const float button_h = ctx.s(48.0f);
-    const float gap = ctx.s(10.0f);
-    float y = 0.0f;
-    const ui::Rect content = dialog_frame(ctx, 2 * button_h + gap, tr("pause.title"), y);
-    if (ctx.button(ctx.id("pause_resume"), {content.x, std::round(y), content.w, std::round(button_h)},
-                   tr("pause.resume"), tr("pause.resume.tooltip"), true, true)) {
-        services_.set_game_speed(last_speed_);
-    }
-    y += button_h + gap;
-    if (ctx.button(ctx.id("pause_menu"), {content.x, std::round(y), content.w, std::round(button_h)},
-                   tr("gameMenu.title"), tr("pause.menu.tooltip"))) {
-        game_menu_open_ = true;
-    }
-}
-
 void UiHost::map_hud(ui::Context& ctx) {
     const sim::MapData* map = services_.current_map();
     if (map == nullptr) {
@@ -536,18 +520,19 @@ void UiHost::map_hud(ui::Context& ctx) {
         return;
     }
     if (services_.session() != nullptr) {
-        const bool paused = services_.game_speed() == 0;
+        // Paused (speed 0) the interface still works: orders wait for the
+        // game to move on and the camera goes anywhere (decision D-3320).
         if (!game_menu_open_ && !modal_open()) {
             game_keys(ctx);
         }
-        ctx.set_input_blocked(modal_open() || game_menu_open_ || paused);
+        ctx.set_input_blocked(modal_open() || game_menu_open_);
         if (tutorial_ && services_.content() != nullptr && tutorial_->def < services_.content()->tutorials.size()) {
             const sim::TutorialDef& t = services_.content()->tutorials[tutorial_->def];
             hud_.set_highlight(tutorial_->step < t.steps.size() ? t.steps[tutorial_->step].highlight : std::string());
         } else {
             hud_.set_highlight({});
         }
-        const bool wants_menu = hud_.frame(ctx, modal_open() || game_menu_open_ || paused);
+        const bool wants_menu = hud_.frame(ctx, modal_open() || game_menu_open_);
         if (tutorial_ && !game_menu_open_) {
             tutorial_panel(ctx);
         }
@@ -560,11 +545,6 @@ void UiHost::map_hud(ui::Context& ctx) {
         }
         if (game_menu_open_) {
             game_menu(ctx);
-        } else if (paused) {
-            pause_panel(ctx);
-            if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
-                game_menu_open_ = true;
-            }
         } else if (wants_menu && !modal_open()) {
             game_menu_open_ = true;
         }

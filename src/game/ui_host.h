@@ -73,7 +73,6 @@ private:
     void generating_screen(ui::Context& ctx, bool modal);
     void map_hud(ui::Context& ctx);
     void game_menu(ui::Context& ctx);
-    void pause_panel(ui::Context& ctx);
     void end_panel(ui::Context& ctx);  // The game is over: who won, the scores.
     // The tutorial (section 6.5).
     struct TutorialRun {

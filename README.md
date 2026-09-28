@@ -183,7 +183,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Un leñador y un recolector terminados tienen 2 trabajadores; los árboles desaparecen al talarlos y los arbustos se ven vacíos y rebrotan.
 - [ ] La ventana de un edificio muestra progreso, materiales, trabajadores (con − y +), bienes guardados, y permite cancelar o demoler.
 - [ ] La ventana de un aldeano muestra edad, qué hace, trabajo, hogar, comida y salud.
-- [ ] Espacio pausa con la escena desenfocada y el menú de pausa; nada del juego se puede tocar hasta continuar.
+- [ ] Espacio pausa sin desenfoque ni panel: la cámara se mueve y se pueden dar órdenes, que se cumplen al reanudar.
 - [ ] F5 guarda ("Partida guardada."), F9 carga; "Cargar partida" en el menú principal y en el menú del juego lista las partidas.
 - [ ] Jugar una hora: el pueblo crece si hay comida, y muere de hambre si no se construyen recolectores.
 
