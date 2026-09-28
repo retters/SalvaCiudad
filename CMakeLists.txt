@@ -419,14 +419,16 @@ if(SC_BUILD_TESTS)
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer variants)
-    # worldgen takes minutes without optimizations; it runs only in release.
-    if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-        list(REMOVE_ITEM SC_TEST_SUITES worldgen)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen worldgen_sea worldgen_coasts worldgen_landforms worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer variants)
+    # AddressSanitizer runs about twice as slow, and its times vary up to
+    # twice between runs (D-3110).
+    set(SC_TEST_TIMEOUT 120)
+    if(SC_ENABLE_ASAN)
+        set(SC_TEST_TIMEOUT 240)
     endif()
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
-        set_tests_properties(${suite} PROPERTIES TIMEOUT 120)
+        set_tests_properties(${suite} PROPERTIES TIMEOUT ${SC_TEST_TIMEOUT})
         if(MSVC AND SC_ENABLE_ASAN)
             set_tests_properties(${suite} PROPERTIES
                 ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${SC_MSVC_BIN_DIR}")

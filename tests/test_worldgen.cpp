@@ -166,6 +166,37 @@ std::int32_t ground_along(const MapData& m, const Landform& l, double t, double 
     return m.height_cm(static_cast<std::int32_t>(x), static_cast<std::int32_t>(z));
 }
 
+// An island map has towns times islands per town islands, one town on each
+// home island, and it is the same when generated again.
+void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town) {
+    CAPTURE(static_cast<int>(size));
+    MapSettings s = settings(404, size, static_cast<std::uint8_t>(towns));
+    s.map_type = map_type("islands");
+    s.islands = static_cast<std::uint8_t>(per_town);
+    REQUIRE(per_town <= worldgen::max_islands_per_town(size, towns));
+    const auto m = gen(s);
+    REQUIRE(m.has_value());
+    CHECK(m->checksum() == gen(s)->checksum());
+    std::int32_t count = 0;
+    const std::vector<std::int32_t> id = island_ids(*m, count);
+    CHECK(count == towns * per_town);
+    REQUIRE(m->starts.size() == static_cast<std::size_t>(towns));
+    std::vector<std::int32_t> homes;
+    for (const StartPosition& st : m->starts) {
+        const std::int32_t cx = st.x.floor_int();
+        const std::int32_t cz = st.z.floor_int();
+        CHECK_FALSE(m->water_at(cx, cz));
+        const std::int32_t home = id[static_cast<std::size_t>(cz) * static_cast<std::size_t>(m->size) +
+                                     static_cast<std::size_t>(cx)];
+        CHECK(home >= 0);
+        CHECK(std::find(homes.begin(), homes.end(), home) == homes.end());
+        homes.push_back(home);
+    }
+    // The sea surrounds the map.
+    CHECK(m->water_at(0, 0));
+    CHECK(m->water_at(m->size - 1, m->size / 2));
+}
+
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
 constexpr std::uint64_t kGoldenSmallMap = 0xf49f15655b948834ull;
@@ -438,35 +469,37 @@ TEST_SUITE("worldgen") {
         CHECK(worldgen::max_islands_per_town(MapSize::Small, 12) == 1);
     }
 
+    TEST_CASE("generation can be cancelled") {
+        int calls = 0;
+        const auto m = gen(settings(5, MapSize::Small), [&](GenStage stage, int) {
+            ++calls;
+            return stage != GenStage::Rivers;
+        });
+        CHECK_FALSE(m.has_value());
+        CHECK(calls > 0);
+    }
+
+    TEST_CASE("heights interpolate between vertices") {
+        const auto m = gen(settings(8, MapSize::Small));
+        REQUIRE(m.has_value());
+        const Fixed at_vertex = m->height_at(Fixed::from_int(100), Fixed::from_int(200));
+        CHECK(at_vertex == Fixed::from_ratio(m->height_cm(100, 200), 100));
+        const Fixed mid = m->height_at(Fixed::from_ratio(201, 2), Fixed::from_int(200));
+        const Fixed lo = std::min(m->height_at(Fixed::from_int(100), Fixed::from_int(200)),
+                                  m->height_at(Fixed::from_int(101), Fixed::from_int(200)));
+        const Fixed hi = std::max(m->height_at(Fixed::from_int(100), Fixed::from_int(200)),
+                                  m->height_at(Fixed::from_int(101), Fixed::from_int(200)));
+        CHECK(mid >= lo);
+        CHECK(mid <= hi);
+    }
+}
+
+// The slower checks on whole maps are split into suites of their own so that
+// each stays well inside the ctest timeout in debug-asan (D-3110).
+TEST_SUITE("worldgen_sea") {
     TEST_CASE("an island map has towns times islands per town islands, one town on each home island") {
-        for (const auto& [size, towns, per_town] : {std::tuple{MapSize::Medium, 2, 3}, std::tuple{MapSize::Small, 1, 1},
-                                                    std::tuple{MapSize::Large, 4, 2}}) {
-            MapSettings s = settings(404, size, static_cast<std::uint8_t>(towns));
-            s.map_type = map_type("islands");
-            s.islands = static_cast<std::uint8_t>(per_town);
-            REQUIRE(per_town <= worldgen::max_islands_per_town(size, towns));
-            const auto m = gen(s);
-            REQUIRE(m.has_value());
-            CHECK(m->checksum() == gen(s)->checksum());
-            std::int32_t count = 0;
-            const std::vector<std::int32_t> id = island_ids(*m, count);
-            CHECK(count == towns * per_town);
-            REQUIRE(m->starts.size() == static_cast<std::size_t>(towns));
-            std::vector<std::int32_t> homes;
-            for (const StartPosition& st : m->starts) {
-                const std::int32_t cx = st.x.floor_int();
-                const std::int32_t cz = st.z.floor_int();
-                CHECK_FALSE(m->water_at(cx, cz));
-                const std::int32_t home = id[static_cast<std::size_t>(cz) * static_cast<std::size_t>(m->size) +
-                                             static_cast<std::size_t>(cx)];
-                CHECK(home >= 0);
-                CHECK(std::find(homes.begin(), homes.end(), home) == homes.end());
-                homes.push_back(home);
-            }
-            // The sea surrounds the map.
-            CHECK(m->water_at(0, 0));
-            CHECK(m->water_at(m->size - 1, m->size / 2));
-        }
+        check_island_map(MapSize::Medium, 2, 3);
+        check_island_map(MapSize::Small, 1, 1);
     }
 
     TEST_CASE("islands are irregular, the main ones bigger") {
@@ -518,45 +551,22 @@ TEST_SUITE("worldgen") {
         }
     }
 
-    TEST_CASE("coasts: sea on one or two sides, land still the most") {
+    TEST_CASE("coasts: none without sea, and sometimes by the seed") {
+        // Whether there is a sea does not depend on the map's size, so small
+        // maps are enough.
         int with_sea = 0;
         for (std::uint64_t seed = 60; seed < 70; ++seed) {
-            MapSettings s = settings(seed, MapSize::Medium, 2);
+            MapSettings s = settings(seed, MapSize::Small, 2);
             std::vector<Landform> landforms;
-            s.sea = Sea::Always;
-            const auto m = generate_map(s, content(), {}, nullptr, &landforms);
-            REQUIRE(m.has_value());
             const auto kinds = [&](LandformKind k) {
                 return std::count_if(landforms.begin(), landforms.end(), [&](const Landform& l) { return l.kind == k; });
             };
-            const auto sides = kinds(LandformKind::Coast);
-            CHECK(sides >= 1);
-            CHECK(sides <= 2);
-            // The sea reaches the border along at least a side's worth.
-            const std::int32_t n = m->size;
-            std::int32_t wet = 0;
-            std::size_t land = 0;
-            for (std::int32_t i = 0; i < n; ++i) {
-                wet += (m->water_at(i, 0) ? 1 : 0) + (m->water_at(i, n - 1) ? 1 : 0) + (m->water_at(0, i) ? 1 : 0) +
-                       (m->water_at(n - 1, i) ? 1 : 0);
-            }
-            for (std::size_t c = 0; c < m->water.size(); ++c) {
-                land += m->water[c] == 0 ? 1 : 0;
-            }
-            CHECK(wet >= n / 2);
-            CHECK(land * 2 >= m->water.size());
-            for (const StartPosition& st : m->starts) {
-                CHECK_FALSE(m->water_at(st.x.floor_int(), st.z.floor_int()));
-            }
-            // Without sea, none of it.
             s.sea = Sea::None;
-            landforms.clear();
             REQUIRE(generate_map(s, content(), {}, nullptr, &landforms).has_value());
             for (const LandformKind k : {LandformKind::Coast, LandformKind::Gulf, LandformKind::Peninsula,
                                          LandformKind::Islet, LandformKind::Trench, LandformKind::Ridge}) {
                 CHECK(kinds(k) == 0);
             }
-            // "Sometimes" leaves it to the seed.
             s.sea = Sea::Sometimes;
             landforms.clear();
             REQUIRE(generate_map(s, content(), {}, nullptr, &landforms).has_value());
@@ -632,7 +642,43 @@ TEST_SUITE("worldgen") {
         CHECK(trenches > 0);
         CHECK(ridges > 0);
     }
+}
 
+TEST_SUITE("worldgen_coasts") {
+    TEST_CASE("coasts: sea on one or two sides, land still the most") {
+        for (std::uint64_t seed = 60; seed < 70; ++seed) {
+            MapSettings s = settings(seed, MapSize::Medium, 2);
+            std::vector<Landform> landforms;
+            s.sea = Sea::Always;
+            const auto m = generate_map(s, content(), {}, nullptr, &landforms);
+            REQUIRE(m.has_value());
+            const auto kinds = [&](LandformKind k) {
+                return std::count_if(landforms.begin(), landforms.end(), [&](const Landform& l) { return l.kind == k; });
+            };
+            const auto sides = kinds(LandformKind::Coast);
+            CHECK(sides >= 1);
+            CHECK(sides <= 2);
+            // The sea reaches the border along at least a side's worth.
+            const std::int32_t n = m->size;
+            std::int32_t wet = 0;
+            std::size_t land = 0;
+            for (std::int32_t i = 0; i < n; ++i) {
+                wet += (m->water_at(i, 0) ? 1 : 0) + (m->water_at(i, n - 1) ? 1 : 0) + (m->water_at(0, i) ? 1 : 0) +
+                       (m->water_at(n - 1, i) ? 1 : 0);
+            }
+            for (std::size_t c = 0; c < m->water.size(); ++c) {
+                land += m->water[c] == 0 ? 1 : 0;
+            }
+            CHECK(wet >= n / 2);
+            CHECK(land * 2 >= m->water.size());
+            for (const StartPosition& st : m->starts) {
+                CHECK_FALSE(m->water_at(st.x.floor_int(), st.z.floor_int()));
+            }
+        }
+    }
+}
+
+TEST_SUITE("worldgen_landforms") {
     TEST_CASE("landforms: plateaus, valleys, ranges and canyons, each as it should be") {
         std::map<LandformKind, int> seen;
         std::map<LandformKind, int> measured;
@@ -722,29 +768,12 @@ TEST_SUITE("worldgen") {
             CHECK(good[k] * 10 >= measured[k] * 7);
         }
     }
+}
 
-    TEST_CASE("generation can be cancelled") {
-        int calls = 0;
-        const auto m = gen(settings(5, MapSize::Small), [&](GenStage stage, int) {
-            ++calls;
-            return stage != GenStage::Rivers;
-        });
-        CHECK_FALSE(m.has_value());
-        CHECK(calls > 0);
-    }
-
-    TEST_CASE("heights interpolate between vertices") {
-        const auto m = gen(settings(8, MapSize::Small));
-        REQUIRE(m.has_value());
-        const Fixed at_vertex = m->height_at(Fixed::from_int(100), Fixed::from_int(200));
-        CHECK(at_vertex == Fixed::from_ratio(m->height_cm(100, 200), 100));
-        const Fixed mid = m->height_at(Fixed::from_ratio(201, 2), Fixed::from_int(200));
-        const Fixed lo = std::min(m->height_at(Fixed::from_int(100), Fixed::from_int(200)),
-                                  m->height_at(Fixed::from_int(101), Fixed::from_int(200)));
-        const Fixed hi = std::max(m->height_at(Fixed::from_int(100), Fixed::from_int(200)),
-                                  m->height_at(Fixed::from_int(101), Fixed::from_int(200)));
-        CHECK(mid >= lo);
-        CHECK(mid <= hi);
+// A large map of islands, generated twice: the slowest of these tests.
+TEST_SUITE("worldgen_large") {
+    TEST_CASE("a large island map has towns times islands per town islands, one town on each home island") {
+        check_island_map(MapSize::Large, 4, 2);
     }
 }
 

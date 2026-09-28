@@ -1449,3 +1449,10 @@ Sin optimizaciones tarda casi 4 minutos (en `release`, unos 50 s) y pasaba el l�
 
 **D-3109. La semilla fija de Lua ahora sí se aplica.**
 Corrige D-702: CMake descartaba la definición `luai_makeseed(L)=0u` porque no pasa macros con parámetros por la línea de comandos (solo avisaba al configurar), así que Lua usaba una semilla al azar y el orden de `pairs` sobre claves de texto cambiaba entre estados y entre máquinas. La macro está ahora en `src/script/lua_user.h`, que Lua incluye por su mecanismo oficial `LUA_USER_H`, sin tocar el código vendorizado. La prueba "pairs walks string keys in the same order in every state" fallaba antes del cambio y ahora pasa.
+
+**D-3110. Las pruebas del generador, repartidas en varias suites.**
+Reemplaza a D-3108: `worldgen` vuelve a correr en los tres presets. Desde la fase 27 la suite `worldgen` tardaba unos 232 s en `debug` y 392 s en `debug-asan` (48 s en `release`), y ctest la cortaba a los 120 s aunque todo pasara. Sin quitar ninguna comprobación:
+- "Sin mar" y "a veces mar" se comprueban en mapas pequeños y en un caso aparte: si hay mar lo decide la semilla, no el tamaño (`plan_coast`). Las costas con mar siguen en 10 mapas medianos. El caso de costas bajaba así de 100 s a unos 45 s en `debug`.
+- Los casos que generan muchos mapas enteros pasaron a suites propias, en el mismo archivo: `worldgen_sea` (islas, fondo marino, costas sin mar), `worldgen_coasts`, `worldgen_landforms` y `worldgen_large` (el mapa Grande de islas, generado dos veces). `worldgen` conserva el resto.
+- En `debug` cada una tarda entre 25 y 60 s según la carga de la máquina: cabe en los 120 s de siempre.
+- En `debug-asan` cada una tarda de 45 a 65 s, pero en esta máquina el mismo binario varía casi al doble entre corridas (`worldgen`: 61, 66 y 115 s; `worldgen_sea`: 74 y 116 s). Costas y el mapa Grande no se pueden partir más sin artificios. Por eso, solo cuando se compila con AddressSanitizer, el límite de cada suite es de 240 s en vez de 120 s (`SC_TEST_TIMEOUT` en `CMakeLists.txt`); sigue sirviendo para detectar una prueba colgada.
