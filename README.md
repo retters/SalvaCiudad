@@ -394,6 +394,12 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En multijugador, las dos ventanas ven la misma forma y los mismos colores en cada casa.
 - [ ] En el visor de modelos, "Casa (9)" muestra las nueve casas, y "Otros colores" cambia sus techos, paredes y postigos.
 
+### Generación más rápida de mapas grandes (tras la fase 31)
+
+- [ ] Un mapa Colosal con semilla 12345 (Clásico, mar "A veces", lo demás por omisión) se genera en unos 4 minutos, no en 13, y la barra ya no se queda casi todo el tiempo en 10 % "Dando forma al terreno".
+- [ ] Ese mapa es el mismo de antes: el registro (`map: seed 12345 size 16384 ...`) muestra la suma de verificación `eb8174aa7a3641ce`.
+- [ ] Un mapa Gigante con la misma semilla tarda menos de un minuto y su suma es `a62012064264c43a`.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

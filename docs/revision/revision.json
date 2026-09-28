@@ -8499,10 +8499,19 @@
    "detalle": "Las fases 25 a 27 agregaron trabajo al generador. El enorme tarda 14 s (antes 6,5 s); el gigante y el colosal no se midieron de nuevo (docs/RENDIMIENTO.md tiene los tiempos de la fase 21).",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "abierto",
+   "estado": "hecho",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "respuesta": "Medido y acelerado: gigante 83 s → 31 s, colosal 550 s → 190 s, enorme 8,4 s, con los mismos mapas. Detalle por etapa en docs/RENDIMIENTO.md (D-3111 a D-3115).",
+   "historial": [
+    {
+     "fecha": "2026-09-27T20:01:32-06:00",
+     "quien": "Claude",
+     "accion": "respuesta",
+     "estado": "hecho",
+     "texto": "Medido y acelerado: gigante 83 s → 31 s, colosal 550 s → 190 s, enorme 8,4 s, con los mismos mapas. Detalle por etapa en docs/RENDIMIENTO.md (D-3111 a D-3115)."
+    }
+   ],
+   "actualizado": "2026-09-27T20:01:32-06:00"
   },
   {
    "id": "sug-vista-previa-mapa",
@@ -9448,8 +9457,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3102",
@@ -9462,8 +9471,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3103",
@@ -9476,8 +9485,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3104",
@@ -9490,8 +9499,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3105",
@@ -9504,8 +9513,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3106",
@@ -9518,8 +9527,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3107",
@@ -9532,8 +9541,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3108",
@@ -9546,8 +9555,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3109",
@@ -9560,8 +9569,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3110",
@@ -9574,8 +9583,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3201",
@@ -9588,8 +9597,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3202",
@@ -9602,7 +9611,6 @@
    "origen": "DECISIONES",
    "estado": "aprobada",
    "nota": "",
-   "respuesta": "Aprobada por Salvador en el chat (2026-09-27).",
    "historial": [
     {
      "fecha": "2026-09-27T19:56:16-06:00",
@@ -9612,7 +9620,8 @@
      "texto": "Aprobada por Salvador en el chat (2026-09-27)."
     }
    ],
-   "actualizado": "2026-09-27T19:56:16-06:00"
+   "actualizado": "2026-09-27T19:56:16-06:00",
+   "respuesta": "Aprobada por Salvador en el chat (2026-09-27)."
   },
   {
    "id": "D-3203",
@@ -9625,8 +9634,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3204",
@@ -9639,8 +9648,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3205",
@@ -9653,8 +9662,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3206",
@@ -9667,7 +9676,6 @@
    "origen": "DECISIONES",
    "estado": "aprobada",
    "nota": "",
-   "respuesta": "Aprobada por Salvador en el chat (2026-09-27).",
    "historial": [
     {
      "fecha": "2026-09-27T19:56:16-06:00",
@@ -9677,7 +9685,8 @@
      "texto": "Aprobada por Salvador en el chat (2026-09-27)."
     }
    ],
-   "actualizado": "2026-09-27T19:56:16-06:00"
+   "actualizado": "2026-09-27T19:56:16-06:00",
+   "respuesta": "Aprobada por Salvador en el chat (2026-09-27)."
   },
   {
    "id": "prueba-31-1ef7853d",
@@ -9690,8 +9699,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-31-6b0b91f2",
@@ -9704,8 +9713,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-31-ff8647d4",
@@ -9718,8 +9727,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-31-4b4a3ab3",
@@ -9732,8 +9741,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-31-bd02f74e",
@@ -9746,8 +9755,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-31-6a359a78",
@@ -9760,8 +9769,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-31-8329e8c3",
@@ -9774,9 +9783,149 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
+   "historial": [],
+   "respuesta": ""
+  },
+  {
+   "id": "D-3111",
+   "tipo": "decision",
+   "fase": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "grupo": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "titulo": "Los mapas no cambian",
+   "detalle": "Todos los cambios dan exactamente el mismo resultado: la versión del generador sigue en 6 y las sumas de verificación no cambian (la del mapa pequeño de las pruebas, y la de los mapas gigante y colosal con semilla 12345, comparadas antes y después). Así las partidas y las semillas conocidas siguen valiendo.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3112",
+   "tipo": "decision",
+   "fase": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "grupo": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "titulo": "Las formas del relieve, por bloques",
+   "detalle": "- Para cada punto cerca de un valle, cañón, cordillera, fosa o dorsal, `along_line` comparaba su distancia con todos los tramos de la línea: el trabajo crecía con la superficie de la línea por su número de tramos. Ahora cada bloque de 64 × 64 vértices lista los tramos que pueden alcanzarlo, y cada fila del bloque los que pueden alcanzarla. El tramo elegido es el mismo: el más cercano, y en un empate el primero.\n- Los márgenes (48 m desde el centro del bloque, 34 m desde el de la fila) cubren media diagonal más el redondeo de la distancia, que no llega a medio metro.\n- Se recorre por franjas de bloques, fila por fila, para leer la memoria en orden. El orden en que se tocan los puntos cambia, pero cada forma solo cambia el punto que toca, así que el resultado es el mismo.\n- Las mesetas recorrían un cuadrado de 1,5 radios más 110 m; ahora el de su borde más lejano posible (el radio más un tercio, más 100 m de rampa).",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3113",
+   "tipo": "decision",
+   "fase": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "grupo": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "titulo": "Los lagos, con un montículo por milímetro de altura",
+   "detalle": "La inundación desde el borde (D-2704) usaba un solo montículo con todo el frente: en el colosal, con millones de puntos en orden revuelto, cada paso buscaba en memoria lejana. Ahora hay un montículo por milímetro de altura y se vacían de menor a mayor. Nada entra por debajo de la altura que se está vaciando, así que sale el mismo orden. Además se pide al procesador que cargue de antemano los datos del siguiente punto (solo es una pista: no cambia el resultado).",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3114",
+   "tipo": "decision",
+   "fase": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "grupo": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "titulo": "Ruido por filas y raíz cuadrada sin saltos",
+   "detalle": "- `FbmRow` da los mismos valores que `fbm` a lo largo de una fila, pero guarda las esquinas de la retícula de cada capa mientras el punto no cambia de celda. Se usa en el relieve, la costa, las islas, los lagos, el suelo, las mesetas y las cordilleras. Una prueba lo compara con `fbm` punto por punto.\n- `isqrt` empieza en el bit más alto del valor y elige sin saltos. Da el mismo resultado; una prueba lo comprueba alrededor de cuadrados perfectos y con valores al azar.\n- La distancia a un tramo no divide cuando el punto cae antes o después del tramo, y la posición a lo largo de la línea se divide en 32 bits.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3115",
+   "tipo": "decision",
+   "fase": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "grupo": "Petición del usuario tras la fase 31: mapas grandes más rápidos",
+   "titulo": "Lo que queda",
+   "detalle": "- Sin hilos ni coma flotante: la simulación los prohíbe (prueba \"the simulation code avoids what breaks determinism\").\n- Los valles y cordilleras siguen costando más de lo que crece el mapa. Su cantidad va por km² (D-2701) y cada uno cruza el mapa entero, así que su superficie total crece con el cubo del lado: en el colosal, valles y cañones pasan por 2,8 veces la superficie del mapa. Bajarlo cambiaría los mapas, así que queda como propuesta para que decida el usuario (ver `docs/RENDIMIENTO.md`).",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-generaciónmá-2b5b76c6",
+   "tipo": "prueba",
+   "fase": "Generación más rápida de mapas grandes (tras la fase 31)",
+   "grupo": "Generación más rápida de mapas grandes (tras la fase 31)",
+   "titulo": "Un mapa Colosal con semilla 12345 (Clásico, mar \"A veces\", lo demás por omisión) se genera en unos 4 minutos, no en 13, y la barra ya no se queda casi todo el tiempo en 10 % \"Dando forma al terreno\".",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-generaciónmá-386bb9d0",
+   "tipo": "prueba",
+   "fase": "Generación más rápida de mapas grandes (tras la fase 31)",
+   "grupo": "Generación más rápida de mapas grandes (tras la fase 31)",
+   "titulo": "Ese mapa es el mismo de antes: el registro (`map: seed 12345 size 16384 ...`) muestra la suma de verificación `eb8174aa7a3641ce`.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-generaciónmá-346cc7a4",
+   "tipo": "prueba",
+   "fase": "Generación más rápida de mapas grandes (tras la fase 31)",
+   "grupo": "Generación más rápida de mapas grandes (tras la fase 31)",
+   "titulo": "Un mapa Gigante con la misma semilla tarda menos de un minuto y su suma es `a62012064264c43a`.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "cambio-mapas-rapidos",
+   "tipo": "cambio",
+   "fase": "31",
+   "grupo": "Tras la fase 31",
+   "titulo": "Mapas gigante y colosal más rápidos, iguales que antes",
+   "detalle": "- Colosal (semilla 12345, Clásico, mar \"A veces\"): 550 s → 190 s en la prueba; gigante: 83 s → 31 s; enorme: 8,4 s.\n- Los mapas no cambian: mismas sumas de verificación, generador versión 6 (D-3111).\n- Valles, cañones y cordilleras por bloques de 64 × 64 (D-3112); lagos con un montículo por milímetro de altura (D-3113); ruido por filas y raíz cuadrada sin saltos (D-3114).\n- Tiempos por etapa en docs/RENDIMIENTO.md.",
+   "fuente": "Claude",
+   "origen": "curado",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "sug-formas-por-borde",
+   "tipo": "sugerencia",
+   "fase": "31",
+   "grupo": "Tras la fase 31",
+   "titulo": "Menos valles y cordilleras en los mapas más grandes",
+   "detalle": "Hoy su cantidad va por km² y cada uno cruza el mapa entero: en el colosal, valles y cañones pasan por 2,8 veces la superficie del mapa, y siguen siendo lo que más tarda (unos 70 s). Si la cantidad fuera por kilómetro de borde, o las líneas no cruzaran siempre el mapa entero, el colosal tendría la misma proporción que un mapa enorme y se generaría en unos 2 minutos. Cambia todos los mapas grandes (generador versión 7).",
+   "fuente": "Claude",
+   "origen": "curado",
+   "estado": "sin revisar",
+   "nota": "",
    "respuesta": "",
    "historial": []
   }
  ],
- "generado": "2026-09-27T19:56:16-06:00"
+ "generado": "2026-09-27T20:01:32-06:00"
 }

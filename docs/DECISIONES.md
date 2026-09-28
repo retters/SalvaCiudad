@@ -1457,6 +1457,31 @@ Reemplaza a D-3108: `worldgen` vuelve a correr en los tres presets. Desde la fas
 - En `debug` cada una tarda entre 25 y 60 s según la carga de la máquina: cabe en los 120 s de siempre.
 - En `debug-asan` cada una tarda de 45 a 65 s, pero en esta máquina el mismo binario varía casi al doble entre corridas (`worldgen`: 61, 66 y 115 s; `worldgen_sea`: 74 y 116 s). Costas y el mapa Grande no se pueden partir más sin artificios. Por eso, solo cuando se compila con AddressSanitizer, el límite de cada suite es de 240 s en vez de 120 s (`SC_TEST_TIMEOUT` en `CMakeLists.txt`); sigue sirviendo para detectar una prueba colgada.
 
+## Petición del usuario tras la fase 31: mapas grandes más rápidos (2026-09-27)
+
+Generar un mapa colosal tardaba unos 13 minutos en el juego (9 en la prueba). Las mediciones están en `docs/RENDIMIENTO.md`.
+
+**D-3111. Los mapas no cambian.**
+Todos los cambios dan exactamente el mismo resultado: la versión del generador sigue en 6 y las sumas de verificación no cambian (la del mapa pequeño de las pruebas, y la de los mapas gigante y colosal con semilla 12345, comparadas antes y después). Así las partidas y las semillas conocidas siguen valiendo.
+
+**D-3112. Las formas del relieve, por bloques.**
+- Para cada punto cerca de un valle, cañón, cordillera, fosa o dorsal, `along_line` comparaba su distancia con todos los tramos de la línea: el trabajo crecía con la superficie de la línea por su número de tramos. Ahora cada bloque de 64 × 64 vértices lista los tramos que pueden alcanzarlo, y cada fila del bloque los que pueden alcanzarla. El tramo elegido es el mismo: el más cercano, y en un empate el primero.
+- Los márgenes (48 m desde el centro del bloque, 34 m desde el de la fila) cubren media diagonal más el redondeo de la distancia, que no llega a medio metro.
+- Se recorre por franjas de bloques, fila por fila, para leer la memoria en orden. El orden en que se tocan los puntos cambia, pero cada forma solo cambia el punto que toca, así que el resultado es el mismo.
+- Las mesetas recorrían un cuadrado de 1,5 radios más 110 m; ahora el de su borde más lejano posible (el radio más un tercio, más 100 m de rampa).
+
+**D-3113. Los lagos, con un montículo por milímetro de altura.**
+La inundación desde el borde (D-2704) usaba un solo montículo con todo el frente: en el colosal, con millones de puntos en orden revuelto, cada paso buscaba en memoria lejana. Ahora hay un montículo por milímetro de altura y se vacían de menor a mayor. Nada entra por debajo de la altura que se está vaciando, así que sale el mismo orden. Además se pide al procesador que cargue de antemano los datos del siguiente punto (solo es una pista: no cambia el resultado).
+
+**D-3114. Ruido por filas y raíz cuadrada sin saltos.**
+- `FbmRow` da los mismos valores que `fbm` a lo largo de una fila, pero guarda las esquinas de la retícula de cada capa mientras el punto no cambia de celda. Se usa en el relieve, la costa, las islas, los lagos, el suelo, las mesetas y las cordilleras. Una prueba lo compara con `fbm` punto por punto.
+- `isqrt` empieza en el bit más alto del valor y elige sin saltos. Da el mismo resultado; una prueba lo comprueba alrededor de cuadrados perfectos y con valores al azar.
+- La distancia a un tramo no divide cuando el punto cae antes o después del tramo, y la posición a lo largo de la línea se divide en 32 bits.
+
+**D-3115. Lo que queda.**
+- Sin hilos ni coma flotante: la simulación los prohíbe (prueba "the simulation code avoids what breaks determinism").
+- Los valles y cordilleras siguen costando más de lo que crece el mapa. Su cantidad va por km² (D-2701) y cada uno cruza el mapa entero, así que su superficie total crece con el cubo del lado: en el colosal, valles y cañones pasan por 2,8 veces la superficie del mapa. Bajarlo cambiaría los mapas, así que queda como propuesta para que decida el usuario (ver `docs/RENDIMIENTO.md`).
+
 ## Plan de la niebla de guerra, fases 32 a 34 (2026-09-27)
 
 A pedido del usuario, antes del pulido (que pasa a ser la fase 35). El usuario eligió el esquema mixto, fantasmas para los edificios ajenos, techo relativo al terreno y visión compartida activada.

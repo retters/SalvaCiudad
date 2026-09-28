@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "sim/map.h"
+#include "sim/noise.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
 
@@ -201,6 +202,28 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town) {
 // update it (and the simulation rules version).
 constexpr std::uint64_t kGoldenSmallMap = 0xf49f15655b948834ull;
 
+// Generates a map with the defaults and prints the time of each stage.
+void time_stages(MapSize size) {
+    std::vector<double> stage(static_cast<std::size_t>(GenStage::Count), 0.0);
+    auto last = std::chrono::steady_clock::now();
+    const auto t0 = last;
+    std::size_t at = 0;
+    const auto m = gen(settings(12345, size), [&](GenStage s, int) {
+        const auto now = std::chrono::steady_clock::now();
+        stage[at] += std::chrono::duration<double>(now - last).count();
+        last = now;
+        at = static_cast<std::size_t>(s);
+        return true;
+    });
+    stage[at] += std::chrono::duration<double>(std::chrono::steady_clock::now() - last).count();
+    REQUIRE(m.has_value());
+    MESSAGE(map_cells(size) << " m: " << std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count()
+                            << " s, checksum " << m->checksum());
+    for (std::size_t i = 0; i < stage.size(); ++i) {
+        MESSAGE("  stage " << i << ": " << stage[i] << " s");
+    }
+}
+
 }  // namespace
 
 TEST_SUITE("worldgen") {
@@ -215,6 +238,23 @@ TEST_SUITE("worldgen") {
         const auto c = gen(settings(12346, MapSize::Small));
         REQUIRE(c.has_value());
         CHECK(c->checksum() != a->checksum());
+    }
+
+    TEST_CASE("noise along a row is the same as at each point") {
+        bool same = true;
+        for (const int log2 : {0, 2, 5, 11}) {
+            for (const int octaves : {1, 3, 6, 14}) {
+                for (const std::int32_t z : {-37, 0, 5, 1000, 16384}) {
+                    FbmRow row(99 + static_cast<std::uint64_t>(log2), z, log2, octaves);
+                    // Forward in steps of 1 to 7, with a jump back.
+                    for (std::int32_t x = -300, step = 1; x < 3000; x += step, step = step % 7 + 1) {
+                        same = same && row.at(x) == fbm(99 + static_cast<std::uint64_t>(log2), x, z, log2, octaves);
+                    }
+                    same = same && row.at(-5) == fbm(99 + static_cast<std::uint64_t>(log2), -5, z, log2, octaves);
+                }
+            }
+        }
+        CHECK(same);
     }
 
     TEST_CASE("the small map checksum is the same on every build") {
@@ -905,5 +945,14 @@ TEST_SUITE("worldgen_perf") {
 #else
         MESSAGE("skipped: timing is only meaningful in release builds");
 #endif
+    }
+
+    // The new game form's defaults at seed 12345: time per stage and the
+    // checksum, to compare builds. Run with --no-skip.
+    TEST_CASE("giant map, time per stage" * doctest::skip()) {
+        time_stages(MapSize::Giant);
+    }
+    TEST_CASE("colossal map, time per stage" * doctest::skip()) {
+        time_stages(MapSize::Colossal);
     }
 }

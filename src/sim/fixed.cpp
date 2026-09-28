@@ -1,5 +1,7 @@
 #include "sim/fixed.h"
 
+#include <bit>
+
 namespace sc::sim {
 
 namespace {
@@ -25,20 +27,18 @@ std::int32_t sin_quarter(std::int32_t units) {
 }  // namespace
 
 std::uint64_t isqrt(std::uint64_t v) {
-    // Bit-by-bit method: exact and branch-predictable.
-    std::uint64_t result = 0;
-    std::uint64_t bit = 1ull << 62;
-    while (bit > v) {
-        bit >>= 2;
+    // Bit-by-bit method, exact. It starts at the highest power of four not
+    // above v and chooses without branches: map generation calls it for
+    // hundreds of millions of points.
+    if (v == 0) {
+        return 0;
     }
-    while (bit != 0) {
-        if (v >= result + bit) {
-            v -= result + bit;
-            result = (result >> 1) + bit;
-        } else {
-            result >>= 1;
-        }
-        bit >>= 2;
+    std::uint64_t result = 0;
+    for (std::uint64_t bit = 1ull << ((std::bit_width(v) - 1) & ~1); bit != 0; bit >>= 2) {
+        const std::uint64_t trial = result + bit;
+        const std::uint64_t fits = v >= trial ? ~0ull : 0ull;
+        v -= trial & fits;
+        result = (result >> 1) + (bit & fits);
     }
     return result;
 }

@@ -2,6 +2,7 @@
 // a seed, computed only with integers so every machine gets the same map.
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 namespace sc::sim {
@@ -27,5 +28,30 @@ namespace sc::sim {
 // each half the size and half the weight of the previous. The result is
 // normalized to [-32768, 32767].
 [[nodiscard]] std::int32_t fbm(std::uint64_t seed, std::int32_t x, std::int32_t z, int log2_largest, int octaves);
+
+// fbm along a row of fixed z: at(x) gives exactly fbm(seed, x, z,
+// log2_largest, octaves), but keeps each layer's lattice corners while x
+// stays in the same cell, so walking a row costs a fraction of the hashing.
+class FbmRow {
+public:
+    FbmRow(std::uint64_t seed, std::int32_t z, int log2_largest, int octaves);
+    [[nodiscard]] std::int32_t at(std::int32_t x);
+
+private:
+    struct Octave {
+        std::uint64_t seed = 0;
+        int log2 = 0;
+        std::int32_t iz = 0;
+        std::int64_t fz = 0;
+        std::int64_t weight = 0;
+        bool ready = false;
+        std::int32_t ix = 0;
+        std::int64_t v00 = 0, v10 = 0, v01 = 0, v11 = 0;
+    };
+    // Enough for any cell size a shift allows.
+    std::array<Octave, 32> octaves_{};
+    int count_ = 0;
+    std::int64_t weight_total_ = 0;
+};
 
 }  // namespace sc::sim

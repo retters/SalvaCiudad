@@ -90,4 +90,39 @@ Medido en el equipo de desarrollo, compilación `release`, ventana de 1600 × 90
 
 - La diferencia está dentro del ruido: las lecturas de cada versión varían más que la diferencia entre promedios, por los tics de 1000 aldeanos. El criterio (perder como mucho un 5 %) se cumple.
 - Las 82 llamadas de dibujo de más son las variantes a la vista: formas distintas de casa, roca, arbusto y nube, cada una con sus materiales, en la vista y en las dos cascadas de sombra. La paleta de colores no agrega ninguna.
-- Generar el mapa colosal tomó unos 13 minutos en las dos versiones, mucho más que los 2 minutos de la fase 21. Viene de antes (fases 26 y 27) y queda anotado como tarea aparte.
+- Generar el mapa colosal tomó unos 13 minutos en las dos versiones, mucho más que los 2 minutos de la fase 21. Viene de antes (fases 26 y 27); se resolvió después (ver la sección siguiente).
+
+## Generación de mapas gigante y colosal (tras la fase 31)
+
+```
+build\release\bin\salvaciudad_tests.exe -ts=worldgen_perf -tc="*time per stage" --no-skip
+```
+
+"giant map, time per stage" y "colossal map, time per stage" se saltan por omisión. Generan el mapa con los valores por omisión de la partida nueva (Clásico, mar "A veces", un jugador) y la semilla 12345, y muestran el tiempo de cada etapa y la suma de verificación, para comparar versiones.
+
+Compilación `release`, en el equipo de desarrollo (i9-9900K, 32 GB). Mismo mapa antes y después: las sumas de verificación son iguales (gigante `a62012064264c43a`, colosal `eb8174aa7a3641ce`), y la versión del generador sigue en 6 (D-3111).
+
+| Etapa | Gigante antes | Gigante después | Colosal antes | Colosal después |
+|---|---|---|---|---|
+| Relieve ("Dando forma al terreno") | 46 s | 12 s | 260 s | 92 s |
+| &nbsp;&nbsp;ruido base | 18 s | 5 s | 44 s | 18 s |
+| &nbsp;&nbsp;valles, cañones, cordilleras y mesetas | 27 s | 7 s | 213 s | 72 s |
+| Lagos | 21 s | 9 s | 226 s | 58 s |
+| Ríos | 2 s | 2 s | 11 s | 8 s |
+| Suelo | 11 s | 7 s | 46 s | 25 s |
+| Biomas, bosques, recursos e inicios | 2 s | 2 s | 7 s | 7 s |
+| **Total** | **83 s** | **31 s** | **550 s** | **190 s** |
+
+El mapa enorme (4096 m, la prueba "a huge map generates in under 30 seconds") tarda ahora 8,4 s. En el juego se suma, después de generar, armar la vista del mapa.
+
+### Qué crecía más que el mapa
+
+- **Valles, cañones, cordilleras, fosas y dorsales** (fase 27, D-2702). Por cada punto cercano a una de esas líneas se medía la distancia a todos sus tramos (de 24 a 48). Además, hay más líneas cuanto más grande es el mapa (van por km²), y cada una lo cruza entero y es más ancha. En el colosal, valles y cañones pasan por 747 millones de puntos: 2,8 veces el mapa. Ahora cada bloque de 64 × 64 vértices, y cada fila del bloque, mira solo los tramos que pueden alcanzarlo (D-3112).
+- **Lagos** (D-2704). En el terreno plano, el agua se reparte en un orden revuelto: un único montículo con millones de puntos saltaba por toda la memoria. Ahora hay un montículo por milímetro de altura y se cargan de antemano los datos del siguiente punto (D-3113).
+- **Ruido**: el relieve, la costa, el suelo y las formas lo calculaban punto por punto, con cinco mezclas de hash por capa. Ahora se calcula por filas y se reutilizan las esquinas de cada celda (D-3114).
+
+### Lo que queda
+
+- Valles y cordilleras siguen creciendo con el cubo del lado: el colosal tiene 4 veces más, el doble de largos y más anchos. Valles y cañones pasan por 67 millones de puntos en el gigante y por 747 millones en el colosal (11 veces más, con un mapa 4 veces mayor). Sin cambiar los mapas, solo se puede bajar el costo por punto. Una propuesta: que la cantidad vaya por kilómetro de borde en vez de por km², o que las líneas no crucen siempre el mapa entero. Así el colosal tendría la misma proporción de valles que un mapa enorme. Cambiaría todos los mapas grandes (versión 7 del generador) y queda para que la decida el usuario.
+- Los lagos del colosal (58 s) están limitados por la memoria: el orden revuelto en lo plano es parte del mapa.
+- Sin hilos: la simulación no los permite, para que el resultado sea el mismo en todas las máquinas.

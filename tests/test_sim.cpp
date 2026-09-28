@@ -10,6 +10,7 @@
 #include "sim/command.h"
 #include "sim/entity.h"
 #include "sim/fixed.h"
+#include "sim/noise.h"
 #include "sim/rng.h"
 #include "sim/serialize.h"
 #include "sim/simulation.h"
@@ -121,6 +122,21 @@ TEST_SUITE("sim_fixed") {
         CHECK(isqrt(0) == 0);
         CHECK(isqrt(99) == 9);
         CHECK(isqrt(UINT64_MAX) == 4294967295ull);
+        // The floor around every kind of square, and at random.
+        const auto exact = [](std::uint64_t v) {
+            const std::uint64_t r = isqrt(v);
+            return r * r <= v && (r == 4294967295ull || (r + 1) * (r + 1) > v);
+        };
+        bool all = true;
+        for (std::uint64_t r = 1; r < (1ull << 32); r = r * 3 / 2 + 1) {
+            all = all && exact(r * r - 1) && exact(r * r) && (r == 4294967295ull || exact(r * r + 1));
+        }
+        std::uint64_t x = 12345;
+        for (int i = 0; i < 100000; ++i) {
+            x = mix64(x);
+            all = all && exact(x) && exact(x >> (i % 64));
+        }
+        CHECK(all);
         CHECK((FixedVec2{f(3), f(4)}.length()) == f(5));
         CHECK((FixedVec2{f(20000), f(20000)}.length()).floor_int() == 28284);
         CHECK((FixedVec2{f(30000), f(30000)}.length()) == Fixed::max());  // Saturates.

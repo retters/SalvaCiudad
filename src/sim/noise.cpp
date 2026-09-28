@@ -53,4 +53,45 @@ std::int32_t fbm(std::uint64_t seed, std::int32_t x, std::int32_t z, int log2_la
     return static_cast<std::int32_t>(v > 32767 ? 32767 : (v < -32768 ? -32768 : v));
 }
 
+FbmRow::FbmRow(std::uint64_t seed, std::int32_t z, int log2_largest, int octaves) {
+    std::int64_t weight = 1 << 16;
+    for (int o = 0; o < octaves && log2_largest - o >= 0 && count_ < static_cast<int>(octaves_.size()); ++o) {
+        Octave& oc = octaves_[static_cast<std::size_t>(count_++)];
+        oc.seed = mix64(seed + static_cast<std::uint64_t>(o) * 0x9E3779B97F4A7C15ull);
+        oc.log2 = log2_largest - o;
+        oc.iz = z >> oc.log2;
+        const std::int32_t mask = (1 << oc.log2) - 1;
+        oc.fz = smooth((static_cast<std::int64_t>(z & mask) << 16) >> oc.log2);
+        oc.weight = weight;
+        weight_total_ += weight;
+        weight >>= 1;
+    }
+}
+
+std::int32_t FbmRow::at(std::int32_t x) {
+    if (weight_total_ == 0) {
+        return 0;
+    }
+    std::int64_t sum = 0;
+    for (int k = 0; k < count_; ++k) {
+        Octave& oc = octaves_[static_cast<std::size_t>(k)];
+        const std::int32_t ix = x >> oc.log2;
+        if (!oc.ready || ix != oc.ix) {
+            oc.ready = true;
+            oc.ix = ix;
+            oc.v00 = lattice_value(oc.seed, ix, oc.iz);
+            oc.v10 = lattice_value(oc.seed, ix + 1, oc.iz);
+            oc.v01 = lattice_value(oc.seed, ix, oc.iz + 1);
+            oc.v11 = lattice_value(oc.seed, ix + 1, oc.iz + 1);
+        }
+        const std::int32_t mask = (1 << oc.log2) - 1;
+        const std::int64_t fx = smooth((static_cast<std::int64_t>(x & mask) << 16) >> oc.log2);
+        const std::int64_t a = oc.v00 + (((oc.v10 - oc.v00) * fx) >> 16);
+        const std::int64_t b = oc.v01 + (((oc.v11 - oc.v01) * fx) >> 16);
+        sum += static_cast<std::int64_t>(static_cast<std::int32_t>(a + (((b - a) * oc.fz) >> 16))) * oc.weight;
+    }
+    const std::int64_t v = sum / weight_total_ * 3 / 2;
+    return static_cast<std::int32_t>(v > 32767 ? 32767 : (v < -32768 ? -32768 : v));
+}
+
 }  // namespace sc::sim

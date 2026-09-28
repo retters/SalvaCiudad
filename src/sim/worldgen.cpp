@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <functional>
-#include <queue>
 #include <utility>
 #include <vector>
+#if defined(_MSC_VER) && !defined(__clang__) && (defined(_M_X64) || defined(_M_IX86))
+#include <xmmintrin.h>
+#endif
 
 #include "sim/noise.h"
 #include "sim/rng.h"
@@ -37,6 +39,17 @@ constexpr std::int32_t kBiomeBlock = 4;
 
 constexpr std::uint8_t kFlowBorder = 255;
 constexpr std::uint8_t kUnvisited = 254;
+
+// A hint to the processor to load memory that is needed soon.
+inline void prefetch(const void* p) {
+#if defined(__GNUC__) || defined(__clang__)
+    __builtin_prefetch(p);
+#elif defined(_M_X64) || defined(_M_IX86)
+    _mm_prefetch(static_cast<const char*>(p), _MM_HINT_T0);
+#else
+    (void)p;
+#endif
+}
 
 // Per-amount multiplier in halves: Low 1x, Normal 2x, High 4x.
 std::int64_t amount_factor(Amount a) {
@@ -87,7 +100,9 @@ void segment_distance(const Point& a, const Point& b, std::int64_t px, std::int6
     const std::int64_t qx = px * 16 - ax;
     const std::int64_t qz = pz * 16 - az;
     const std::int64_t len2 = bx * bx + bz * bz;
-    along = len2 == 0 ? 0 : std::clamp<std::int64_t>((qx * bx + qz * bz) * 65536 / len2, 0, 65536);
+    // Past either end no division is needed: it would clamp to that end.
+    const std::int64_t dot = qx * bx + qz * bz;
+    along = len2 == 0 || dot <= 0 ? 0 : (dot >= len2 ? 65536 : dot * 65536 / len2);
     const std::int64_t cx = qx - bx * along / 65536;
     const std::int64_t cz = qz - bz * along / 65536;
     d2 = cx * cx + cz * cz;
@@ -190,20 +205,25 @@ private:
         const std::int64_t amp = s_.relief == Relief::Low ? 5000 : (s_.relief == Relief::Gentle ? 10000 : 12000);  // mm
         const bool mountains = s_.relief == Relief::Mountainous;
         for (std::int32_t z = 0; z < v_; ++z) {
+            FbmRow detail_row(s_.seed ^ kReliefSeed, z, 10, 6);
+            FbmRow broad_row(s_.seed ^ kBroadSeed, z, 11, 1);
+            FbmRow micro_row(s_.seed ^ kMicroReliefSeed, z, 4, 2);
+            FbmRow mask_row(s_.seed ^ kMountainMaskSeed, z, 10, 2);
+            FbmRow mountain_row(s_.seed ^ kMountainSeed, z, 9, 5);
             for (std::int32_t x = 0; x < v_; ++x) {
-                const std::int64_t detail = fbm(s_.seed ^ kReliefSeed, x, z, 10, 6);
-                const std::int64_t broad = fbm(s_.seed ^ kBroadSeed, x, z, 11, 1);
+                const std::int64_t detail = detail_row.at(x);
+                const std::int64_t broad = broad_row.at(x);
                 // Up to 40 cm of bumps 8 to 16 m across: without them water
                 // runs down smooth slopes in straight lines along the grid.
-                const std::int64_t micro = fbm(s_.seed ^ kMicroReliefSeed, x, z, 4, 2);
+                const std::int64_t micro = micro_row.at(x);
                 std::int64_t h = 20000 + detail * amp / 32768 + broad * amp / 65536 + micro * 400 / 32768;
                 if (mountains) {
                     // Ranges in broad regions: sharp ridges where a noise
                     // field crosses zero, up to about 90 m high.
-                    const std::int64_t mask = fbm(s_.seed ^ kMountainMaskSeed, x, z, 10, 2);
+                    const std::int64_t mask = mask_row.at(x);
                     const std::int64_t ramp = std::clamp<std::int64_t>((mask + 2000) * 65536 / 12000, 0, 65536);
                     if (ramp > 0) {
-                        const std::int64_t n = fbm(s_.seed ^ kMountainSeed, x, z, 9, 5);
+                        const std::int64_t n = mountain_row.at(x);
                         const std::int64_t ridge = 32768 - (n < 0 ? -n : n);  // 32768 where n crosses zero.
                         const std::int64_t crest = std::max<std::int64_t>(0, ridge - 20000) * 32768 / 12768;
                         const std::int64_t sharp = (crest * crest) >> 15;
@@ -245,10 +265,11 @@ private:
                 const std::int64_t lr2 = static_cast<std::int64_t>(lr) * lr;
                 const std::int32_t reach = lr * 3 / 2;
                 for (std::int32_t z = std::max(0, lz - reach); z <= std::min(v_ - 1, lz + reach); ++z) {
+                    FbmRow warp_row(s_.seed ^ kLakeWarpSeed, z, 5, 3);
                     for (std::int32_t x = std::max(0, lx - reach); x <= std::min(v_ - 1, lx + reach); ++x) {
                         const std::int64_t d2 = static_cast<std::int64_t>(x - lx) * (x - lx) + static_cast<std::int64_t>(z - lz) * (z - lz);
                         // The warp stretches or shrinks the distance by up to 45 %.
-                        const std::int64_t warp = fbm(s_.seed ^ kLakeWarpSeed, x, z, 5, 3);
+                        const std::int64_t warp = warp_row.at(x);
                         const std::int64_t t = d2 * 65536 / lr2 * (65536 + warp * 29491 / 32768) / 65536;
                         if (t < 65536) {
                             const std::int64_t w = ((65536 - t) * (65536 - t)) >> 16;
@@ -305,15 +326,18 @@ private:
         const std::int32_t gap = island_gap(n_);
         const std::int32_t edge = island_edge(n_);
         for (std::int32_t z = 0; z < v_; ++z) {
+            FbmRow warp_x(s_.seed ^ kIslandWarpX, z, cell, 3);
+            FbmRow warp_z(s_.seed ^ kIslandWarpZ, z, cell, 3);
+            FbmRow lobes(s_.seed ^ kIslandShape, z, cell, 3);
+            FbmRow coves(s_.seed ^ kIslandCoveSeed, z, cell - 2, 3);
             for (std::int32_t x = 0; x < v_; ++x) {
                 const std::vector<std::uint16_t>& here = near[static_cast<std::size_t>((z / kBlock) * blocks + x / kBlock)];
                 // How far inland, 16.16: above 0 is land, 0 the shore.
                 std::int64_t c = INT64_MIN;
                 if (!here.empty()) {
-                    const std::int64_t ux = fbm(s_.seed ^ kIslandWarpX, x, z, cell, 3);
-                    const std::int64_t uz = fbm(s_.seed ^ kIslandWarpZ, x, z, cell, 3);
-                    const std::int64_t shape = fbm(s_.seed ^ kIslandShape, x, z, cell, 3) * kIslandLobes / 32768 +
-                                               fbm(s_.seed ^ kIslandCoveSeed, x, z, cell - 2, 3) * kIslandCoves / 32768;
+                    const std::int64_t ux = warp_x.at(x);
+                    const std::int64_t uz = warp_z.at(x);
+                    const std::int64_t shape = lobes.at(x) * kIslandLobes / 32768 + coves.at(x) * kIslandCoves / 32768;
                     // Each point belongs to the island it is nearest to,
                     // measured in radii along the bent positions; between
                     // two islands a channel of sea always runs.
@@ -515,15 +539,30 @@ private:
         const std::size_t count = h_.size();
         filled_ = h_;
         flow_.assign(count, kUnvisited);
-        // Min-heap on (height, index): the index breaks ties deterministically.
-        // Height, then a scrambled order, then the vertex: on flat ground
-        // (filled hollows) the flow spreads unevenly instead of in straight
-        // lines along the grid. Heights fit in 20 bits of millimeters (up to
-        // 1048 m) and vertices in 29 (a colossal map has 268 million).
-        std::priority_queue<std::uint64_t, std::vector<std::uint64_t>, std::greater<>> open;
+        // Lowest first by height, then a scrambled order, then the vertex:
+        // on flat ground (filled hollows) the flow spreads unevenly instead
+        // of in straight lines along the grid. Heights fit in 20 bits of
+        // millimeters (up to 1048 m) and vertices in 29 (a colossal map has
+        // 268 million).
+        // A heap per millimeter of height: nothing is ever pushed below the
+        // height being drained (a vertex is filled at least to the one that
+        // reaches it), so draining the heights in order pops the same order
+        // as a single heap, but each heap stays small on big maps.
+        // Only the heights the map has: nothing is filled above its highest
+        // point.
+        const auto [low, high] = std::minmax_element(h_.begin(), h_.end());
+        const auto base = static_cast<std::size_t>(std::clamp(*low, 0, 0xFFFFF));
+        const std::size_t heights = static_cast<std::size_t>(std::clamp(*high, 0, 0xFFFFF)) + 1 - base;
+        std::vector<std::vector<std::uint64_t>> open(heights);
+        std::size_t draining = heights;
         const auto push = [&](std::size_t i) {
             const std::uint64_t scramble = mix64(s_.seed ^ kFlatOrderSeed ^ i) & 0x7FFFu;
-            open.push((static_cast<std::uint64_t>(std::clamp(filled_[i], 0, 0xFFFFF)) << 44) | (scramble << 29) | i);
+            const auto height = static_cast<std::size_t>(std::clamp(filled_[i], 0, 0xFFFFF)) - base;
+            std::vector<std::uint64_t>& heap = open[height];
+            heap.push_back((scramble << 29) | i);
+            if (height == draining) {
+                std::push_heap(heap.begin(), heap.end(), std::greater<>());
+            }
         };
         for (std::int32_t i = 0; i < v_; ++i) {
             for (const std::size_t b : {vi(i, 0), vi(i, v_ - 1), vi(0, i), vi(v_ - 1, i)}) {
@@ -534,31 +573,53 @@ private:
             }
         }
         std::size_t done = 0;
-        while (!open.empty()) {
-            const std::uint64_t key = open.top();
-            open.pop();
-            const std::size_t idx = static_cast<std::size_t>(key & 0x1FFFFFFFu);
-            const std::int32_t x = static_cast<std::int32_t>(idx % static_cast<std::size_t>(v_));
-            const std::int32_t z = static_cast<std::int32_t>(idx / static_cast<std::size_t>(v_));
-            // Neighbor offset and the flow code that points back to idx.
-            const std::int32_t nx[4] = {x - 1, x + 1, x, x};
-            const std::int32_t nz[4] = {z, z, z - 1, z + 1};
-            const std::uint8_t back[4] = {1, 0, 3, 2};
-            for (int k = 0; k < 4; ++k) {
-                if (nx[k] < 0 || nz[k] < 0 || nx[k] >= v_ || nz[k] >= v_) {
-                    continue;
+        for (draining = 0; draining < heights; ++draining) {
+            std::vector<std::uint64_t>& heap = open[draining];
+            std::make_heap(heap.begin(), heap.end(), std::greater<>());
+            while (!heap.empty()) {
+                std::pop_heap(heap.begin(), heap.end(), std::greater<>());
+                const std::uint64_t key = heap.back();
+                heap.pop_back();
+                // The next vertex out is most likely the top: its memory is
+                // loaded meanwhile (the order is random on flat ground).
+                if (!heap.empty()) {
+                    const std::size_t next = static_cast<std::size_t>(heap.front() & 0x1FFFFFFFu);
+                    prefetch(&filled_[next]);
+                    prefetch(&flow_[next]);
+                    prefetch(&h_[next]);
+                    if (next >= static_cast<std::size_t>(v_) && next + static_cast<std::size_t>(v_) < filled_.size()) {
+                        for (const std::size_t n : {next - static_cast<std::size_t>(v_), next + static_cast<std::size_t>(v_)}) {
+                            prefetch(&flow_[n]);
+                            prefetch(&h_[n]);
+                            prefetch(&filled_[n]);
+                        }
+                    }
                 }
-                const std::size_t n = vi(nx[k], nz[k]);
-                if (flow_[n] != kUnvisited) {
-                    continue;
+                const auto idx32 = static_cast<std::uint32_t>(key & 0x1FFFFFFFu);
+                const std::size_t idx = idx32;
+                const auto z = static_cast<std::int32_t>(idx32 / static_cast<std::uint32_t>(v_));
+                const std::int32_t x = static_cast<std::int32_t>(idx32) - z * v_;
+                // Neighbor offset and the flow code that points back to idx.
+                const std::int32_t nx[4] = {x - 1, x + 1, x, x};
+                const std::int32_t nz[4] = {z, z, z - 1, z + 1};
+                const std::uint8_t back[4] = {1, 0, 3, 2};
+                for (int k = 0; k < 4; ++k) {
+                    if (nx[k] < 0 || nz[k] < 0 || nx[k] >= v_ || nz[k] >= v_) {
+                        continue;
+                    }
+                    const std::size_t n = vi(nx[k], nz[k]);
+                    if (flow_[n] != kUnvisited) {
+                        continue;
+                    }
+                    filled_[n] = std::max(h_[n], filled_[idx]);
+                    flow_[n] = back[k];
+                    push(n);
                 }
-                filled_[n] = std::max(h_[n], filled_[idx]);
-                flow_[n] = back[k];
-                push(n);
+                if ((++done & 0xFFFFF) == 0 && !report(GenStage::Lakes, static_cast<int>(done * 70 / count))) {
+                    return false;
+                }
             }
-            if ((++done & 0xFFFFF) == 0 && !report(GenStage::Lakes, static_cast<int>(done * 70 / count))) {
-                return false;
-            }
+            std::vector<std::uint64_t>().swap(heap);
         }
 
         // Deep, wide depressions become lakes; small puddles are filled in.
@@ -837,6 +898,11 @@ private:
         forest_.assign(cells, 0);
         const std::int32_t forest_threshold = s_.forests == Amount::Low ? 9000 : (s_.forests == Amount::Normal ? 3500 : -2000);
         for (std::int32_t z = 0; z < n_; ++z) {
+            FbmRow fertility_row(s_.seed ^ kFertilitySeed, z, 8, 4);
+            FbmRow rock_row(s_.seed ^ kRockSeed, z, 7, 3);
+            FbmRow beach_row(s_.seed ^ kBeachSeed, z, 6, 2);
+            FbmRow clay_row(s_.seed ^ kClaySeed, z, 6, 2);
+            FbmRow forest_row(s_.seed ^ kForestSeed, z, 8, 4);
             for (std::int32_t x = 0; x < n_; ++x) {
                 const std::size_t c = ci(x, z);
                 if (terrain_[c] == static_cast<std::uint8_t>(Terrain::Water)) {
@@ -844,7 +910,7 @@ private:
                 }
                 const std::int32_t d = dist_[c];
                 const std::int32_t slope = cell_slope(x, z);
-                std::int32_t fert = 110 + fbm(s_.seed ^ kFertilitySeed, x, z, 8, 4) * 60 / 32768;
+                std::int32_t fert = 110 + fertility_row.at(x) * 60 / 32768;
                 if (d <= 40) {
                     fert += (40 - d) * 2;
                 }
@@ -852,20 +918,20 @@ private:
                     fert -= (slope - 150) / 4;
                 }
                 Terrain t = Terrain::Grass;
-                const std::int32_t rock_noise = fbm(s_.seed ^ kRockSeed, x, z, 7, 3);
+                const std::int32_t rock_noise = rock_row.at(x);
                 if (slope > 450 || (rock_noise > 21000 && slope > 120) || rock_noise > 26000) {
                     t = Terrain::Rock;
                     fert = 0;
-                } else if (d <= 2 + std::max<std::int32_t>(0, fbm(s_.seed ^ kBeachSeed, x, z, 6, 2)) * 6 / 32768 &&
+                } else if (d <= 2 + std::max<std::int32_t>(0, beach_row.at(x)) * 6 / 32768 &&
                            slope <= 250) {
                     // Beaches of 2 to 8 m, where the shore is not steep.
                     t = Terrain::Sand;
                     fert = std::min(fert, 60);
-                } else if (d <= 30 && fbm(s_.seed ^ kClaySeed, x, z, 6, 2) > 17000) {
+                } else if (d <= 30 && clay_row.at(x) > 17000) {
                     t = Terrain::Clay;
                     fert = std::min(fert, 90);
                 } else {
-                    std::int32_t mask = fbm(s_.seed ^ kForestSeed, x, z, 8, 4);
+                    std::int32_t mask = forest_row.at(x);
                     if (d < 60) {
                         mask += (60 - d) * 100;
                     }
@@ -1575,9 +1641,12 @@ private:
         const std::int64_t shore = std::max(24, n_ / 40);  // Meters from the coastline to open water.
         const auto smooth = [](std::int64_t u) { return (((u * u) >> 16) * (3 * 65536 - 2 * u)) >> 16; };
         for (std::int32_t z = 0; z < v_; ++z) {
+            FbmRow warp_x(s_.seed ^ kCoastWarpX, z, cell, 3);
+            FbmRow warp_z(s_.seed ^ kCoastWarpZ, z, cell, 3);
+            FbmRow bays(s_.seed ^ kCoastLobes, z, cell - 1, 4);
             for (std::int32_t x = 0; x < v_; ++x) {
-                const std::int64_t ux = fbm(s_.seed ^ kCoastWarpX, x, z, cell, 3);
-                const std::int64_t uz = fbm(s_.seed ^ kCoastWarpZ, x, z, cell, 3);
+                const std::int64_t ux = warp_x.at(x);
+                const std::int64_t uz = warp_z.at(x);
                 // In sixteenths of a meter from here on.
                 const std::int64_t wx = x * 16 + ux * bend * 16 / 32768;
                 const std::int64_t wz = z * 16 + uz * bend * 16 / 32768;
@@ -1617,7 +1686,7 @@ private:
                     e = std::max(e, inside);
                 }
                 // Bays and capes big and small all along.
-                e += fbm(s_.seed ^ kCoastLobes, x, z, cell - 1, 4) * lobes * 16 / 32768;
+                e += bays.at(x) * lobes * 16 / 32768;
                 // Past the coastline, 16.16: above 0 is land.
                 const std::int64_t c = e == INT64_MAX ? 65536 : e * 65536 / (shore * 16);
                 std::int64_t h = h_[vi(x, z)] + kCoastLift;
@@ -1681,7 +1750,8 @@ private:
 
     // Calls fn(vertex index, distance in 1/16 m, how far along the whole
     // line 0..65536) for the vertices within `reach` meters of the line;
-    // each vertex once, for its nearest segment.
+    // each vertex once, for its nearest segment. The order of the calls is
+    // not along the line: fn may only change its own vertex.
     template <class Fn>
     void along_line(const std::vector<Point>& line, std::int32_t reach, const Fn& fn) {
         if (line.size() < 2) {
@@ -1697,34 +1767,104 @@ private:
                              std::max(line[k].x, line[k + 1].x) + reach, std::max(line[k].z, line[k + 1].z) + reach});
         }
         const std::int64_t reach2 = static_cast<std::int64_t>(reach) * reach * 256;
+        // By blocks of the map, each with the segments that can reach it
+        // (sorted by block, then segment): the work grows with the area the
+        // line covers, not with its area times its segments.
+        constexpr std::int32_t kBlock = 64;
+        const std::int32_t blocks = (v_ + kBlock - 1) / kBlock;
+        // A segment farther than this from a block's middle (1/16 m) reaches
+        // none of its vertices: half its diagonal is 45.3 m, and 2.7 m more
+        // covers the rounding of segment_distance (under half a meter).
+        const std::int64_t far = (static_cast<std::int64_t>(reach) + 48) * 16;
+        // The same for the middle of a row of a block, 32 m from its ends.
+        const std::int64_t row_far = (static_cast<std::int64_t>(reach) + 34) * 16;
+        std::vector<std::size_t> row;
+        std::vector<std::uint64_t> near;
         for (std::size_t k = 0; k < segments; ++k) {
             const Box& b = boxes[k];
-            for (std::int32_t z = std::max(0, b.z0); z <= std::min(v_ - 1, b.z1); ++z) {
-                for (std::int32_t x = std::max(0, b.x0); x <= std::min(v_ - 1, b.x1); ++x) {
+            if (b.x1 < 0 || b.z1 < 0 || b.x0 > v_ - 1 || b.z0 > v_ - 1) {
+                continue;
+            }
+            for (std::int32_t bz = std::max(0, b.z0) / kBlock; bz <= std::min(v_ - 1, b.z1) / kBlock; ++bz) {
+                for (std::int32_t bx = std::max(0, b.x0) / kBlock; bx <= std::min(v_ - 1, b.x1) / kBlock; ++bx) {
                     std::int64_t d2 = 0;
                     std::int64_t along = 0;
-                    segment_distance(line[k], line[k + 1], x, z, d2, along);
-                    if (d2 > reach2) {
-                        continue;
-                    }
-                    // Only for the nearest segment (the first on a tie).
-                    bool mine = true;
-                    for (std::size_t j = 0; j < segments && mine; ++j) {
-                        const Box& o = boxes[j];
-                        if (j == k || x < o.x0 || x > o.x1 || z < o.z0 || z > o.z1) {
-                            continue;
-                        }
-                        std::int64_t dj = 0;
-                        std::int64_t aj = 0;
-                        segment_distance(line[j], line[j + 1], x, z, dj, aj);
-                        mine = dj > d2 || (dj == d2 && j > k);
-                    }
-                    if (mine) {
-                        fn(vi(x, z), static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(d2))),
-                           (static_cast<std::int64_t>(k) * 65536 + along) / static_cast<std::int64_t>(segments));
+                    segment_distance(line[k], line[k + 1], bx * kBlock + kBlock / 2, bz * kBlock + kBlock / 2, d2, along);
+                    if (static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(d2))) <= far) {
+                        near.push_back((static_cast<std::uint64_t>(bz * blocks + bx) << 32) | k);
                     }
                 }
             }
+        }
+        std::sort(near.begin(), near.end());
+        // Where each block's segments start in `near`, and the end.
+        std::vector<std::size_t> starts;
+        for (std::size_t i = 0; i < near.size(); ++i) {
+            if (i == 0 || near[i] >> 32 != near[i - 1] >> 32) {
+                starts.push_back(i);
+            }
+        }
+        starts.push_back(near.size());
+        // A band of blocks at a time, row by row across all its blocks, so
+        // memory is read in order.
+        for (std::size_t band = 0; band + 1 < starts.size();) {
+            const std::int32_t bz = static_cast<std::int32_t>((near[starts[band]] >> 32) / static_cast<std::uint64_t>(blocks));
+            std::size_t band_end = band + 1;
+            while (band_end + 1 < starts.size() &&
+                   static_cast<std::int32_t>((near[starts[band_end]] >> 32) / static_cast<std::uint64_t>(blocks)) == bz) {
+                ++band_end;
+            }
+            for (std::int32_t z = bz * kBlock; z < std::min(v_, bz * kBlock + kBlock); ++z) {
+                for (std::size_t g = band; g < band_end; ++g) {
+                    const std::size_t first = starts[g];
+                    const std::size_t last = starts[g + 1];
+                    const std::int32_t bx = static_cast<std::int32_t>((near[first] >> 32) % static_cast<std::uint64_t>(blocks)) * kBlock;
+                    row.clear();
+                    for (std::size_t i = first; i < last; ++i) {
+                        const std::size_t k = static_cast<std::size_t>(near[i] & 0xFFFFFFFFu);
+                        if (z < boxes[k].z0 || z > boxes[k].z1) {
+                            continue;
+                        }
+                        std::int64_t d2 = 0;
+                        std::int64_t along = 0;
+                        segment_distance(line[k], line[k + 1], bx + kBlock / 2, z, d2, along);
+                        if (static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(d2))) <= row_far) {
+                            row.push_back(k);
+                        }
+                    }
+                    if (row.empty()) {
+                        continue;
+                    }
+                    for (std::int32_t x = bx; x < std::min(v_, bx + kBlock); ++x) {
+                        // The nearest segment (the first on a tie).
+                        std::int64_t best = INT64_MAX;
+                        std::int64_t best_along = 0;
+                        std::size_t best_k = 0;
+                        for (const std::size_t k : row) {
+                            const Box& b = boxes[k];
+                            if (x < b.x0 || x > b.x1) {
+                                continue;
+                            }
+                            std::int64_t d2 = 0;
+                            std::int64_t along = 0;
+                            segment_distance(line[k], line[k + 1], x, z, d2, along);
+                            if (d2 < best) {
+                                best = d2;
+                                best_along = along;
+                                best_k = k;
+                            }
+                        }
+                        if (best <= reach2) {
+                            // Fits in 32 bits (lines have far fewer than 65536
+                            // segments), where dividing is faster.
+                            const auto at = static_cast<std::uint32_t>(best_k * 65536 + static_cast<std::size_t>(best_along)) /
+                                            static_cast<std::uint32_t>(segments);
+                            fn(vi(x, z), static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(best))), static_cast<std::int64_t>(at));
+                        }
+                    }
+                }
+            }
+            band = band_end;
         }
     }
 
@@ -1766,13 +1906,20 @@ private:
             const std::int32_t half = rng.range(100, 220) + n_ / 100;
             const std::int64_t peak = rng.range(35000, 70000);
             record(LandformKind::Range, line, half * 2);
+            // along_line goes by rows within each block.
+            std::optional<FbmRow> peaks;
+            std::int32_t peaks_z = -1;
             along_line(line, half, [&](std::size_t v, std::int64_t d16, std::int64_t at) {
                 const std::int64_t u = std::max<std::int64_t>(0, 65536 - d16 * 65536 / (half * 16));
                 // Tapered at both ends; peaks and spurs from ridged noise.
                 const std::int64_t taper = std::min<std::int64_t>({65536, at * 6, (65536 - at) * 6});
                 const auto x = static_cast<std::int32_t>(v % static_cast<std::size_t>(v_));
                 const auto z = static_cast<std::int32_t>(v / static_cast<std::size_t>(v_));
-                const std::int64_t n = fbm(s_.seed ^ kRangePeaksSeed, x, z, 7, 4);
+                if (!peaks.has_value() || z != peaks_z) {
+                    peaks.emplace(s_.seed ^ kRangePeaksSeed, z, 7, 4);
+                    peaks_z = z;
+                }
+                const std::int64_t n = peaks->at(x);
                 const std::int64_t ridged = 32768 - (n < 0 ? -n : n);  // 0..32768, high on the ridges.
                 const std::int64_t height = (peak * (((smooth(u) * taper) >> 16) * (40000 + ridged * 25536 / 32768) >> 16)) >> 16;
                 if (h_[v] > shore) {
@@ -1794,15 +1941,21 @@ private:
                 continue;  // Not in the sea or on the beach.
             }
             const std::int64_t top = center + lift;
-            const std::int32_t reach = radius * 3 / 2 + 110;
+            // The farthest the side can end: the rim at most a third of the
+            // radius out, and 100 m of ramp.
+            const std::int32_t reach = radius + radius / 3 + 100;
             record(LandformKind::Plateau, {c}, radius * 2);
             for (std::int32_t z = std::max(0, c.z - reach); z <= std::min(v_ - 1, c.z + reach); ++z) {
+                FbmRow edge(s_.seed ^ kPlateauEdgeSeed, z, 7, 3);
                 for (std::int32_t x = std::max(0, c.x - reach); x <= std::min(v_ - 1, c.x + reach); ++x) {
                     const std::int64_t dx = x - c.x;
                     const std::int64_t dz = z - c.z;
                     const std::int64_t d = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(dx * dx + dz * dz)));
+                    if (d >= reach) {
+                        continue;
+                    }
                     // The rim bent by noise, up to a third of the radius.
-                    const std::int64_t rim = radius + fbm(s_.seed ^ kPlateauEdgeSeed, x, z, 7, 3) * radius / (3 * 32768);
+                    const std::int64_t rim = radius + edge.at(x) * radius / (3 * 32768);
                     // The side: 10 m of cliff, up to 100 m of slope toward the ramp.
                     const std::int64_t facing = d == 0 ? 0 : std::max<std::int64_t>(0, (dx * rx + dz * rz) / d);
                     const std::int64_t side = 10 + 90 * facing / 65536;
