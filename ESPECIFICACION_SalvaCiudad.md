@@ -232,6 +232,7 @@ Fondo con una escena 3D del mapa en cámara lenta y el logotipo `- SALVA -` / `C
 - **Recursos iniciales:** escasos, normales o abundantes.
 - **Por jugador:** nombre, color y raza inicial, o "mixta" (ver 7.12).
 - **Inmigración de otras razas:** activada o no, y en qué proporción.
+- **Niebla de guerra:** sin niebla, estática o dinámica (fases 32 a 34), y visión compartida entre aliados (activada por omisión).
 
 ### 6.4 En partida
 
@@ -567,7 +568,29 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - Geometría nueva donde más se nota la repetición: 3 a 5 nubes, 3 o 4 casas por nivel, rocas y arbustos. Sombreros y accesorios como mucho 2 o 3 formas cada uno, porque se dibujan animados en cada aldeano.
    - El visor de la fase 30 muestra las variantes de cada definición.
    - *Criterios:* un pueblo de 1000 aldeanos y el mapa colosal en Ultra pierden como mucho un 5 % de FPS frente a la fase 30 (medido y anotado en `docs/RENDIMIENTO.md` con las llamadas de dibujo antes y después); la misma partida muestra las mismas variantes en todas las instancias y al cargarla; el hash de la simulación no cambia; una definición con `"model"` sigue funcionando.
-32. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+32. **Niebla de guerra estática** (agregada el 2026-09-27 a pedido del usuario).
+   - Opción de partida "Niebla de guerra": *sin niebla* (se ve todo, como hasta ahora), *estática* (por omisión) o *dinámica* (fase 33). Va en `GameRules`, así que es igual para todos los jugadores y se guarda con la partida y con la partida nueva recordada. Opción "Visión compartida entre aliados", activada por omisión.
+   - Esquema mixto: lo **explorado** está en la simulación (determinista, se guarda en la partida); lo **visible ahora** lo calcula solo la vista, para dibujar.
+   - Rejilla de niebla de 4 m. Lo explorado es un bit por celda y por jugador que solo se enciende; la simulación lo actualiza una vez por segundo a partir de la posición de lo que da visión. Con visión compartida, los aliados comparten lo explorado.
+   - Radio de visión en los datos, `"sight"` en metros, en unidades, edificios y razas (aldeanos); las torres ven más lejos y el centro del pueblo revela el terreno inicial. Los animales, asaltantes y mercaderes no dan visión a nadie.
+   - Estática: lo no explorado se ve negro; lo explorado se ve siempre como sin niebla, con todo lo que pasa en él.
+   - No se puede colocar un edificio en celdas no exploradas; sí se puede mandar un ejército hacia ellas.
+   - La niebla se dibuja en el terreno, el agua, los modelos y la hierba con bordes suaves, y también en el minimapa. Lo que está bajo niebla negra no se puede seleccionar ni muestra su tooltip, y las capas del mapa no muestran lo que hay en ella.
+   - Mapas separados: cada jugador descubre su región. Repeticiones: se ve todo, con un selector para ver lo de un jugador. Herramientas de desarrollo: "Revelar todo" solo en la vista.
+   - *Criterios:* con "sin niebla" el hash y la suma de verificación del mapa pequeño no cambian; dos instancias en multijugador tienen lo mismo explorado (prueba) y no se desincronizan; guardar y cargar conserva lo explorado; colocar un edificio en lo no explorado se rechaza también como comando; un pueblo de 1000 aldeanos en el mapa colosal en Ultra pierde como mucho un 5 % de FPS y la simulación como mucho un 3 % de tiempo por tick (anotado en `docs/RENDIMIENTO.md`).
+33. **Niebla de guerra dinámica** (agregada el 2026-09-27 a pedido del usuario).
+   - Lo explorado sin visión actual se ve gris tenue: terreno, árboles, rocas, vetas y demás objetos naturales en su estado actual, pero sin lo que se mueve.
+   - Todo lo que no es del jugador (animales, asaltantes, mercaderes, unidades y aldeanos de otros jugadores, también aliados) solo se ve donde hay visión actual del jugador o, con visión compartida, de sus aliados.
+   - Edificios de otros jugadores: bajo niebla gris se ven como **fantasmas**, tal como se vieron por última vez (tipo, nivel, variante, etapa de construcción, en llamas o no), aunque ya no existan o hayan cambiado. Los fantasmas están en la simulación (se anotan en la misma actualización de cada segundo), así que se guardan con la partida y son iguales en todas las instancias.
+   - Lo oculto no se dibuja, no se puede seleccionar, no muestra tooltip, no suena, no aparece en el minimapa ni en las capas, y sus partículas no se ven. Los avisos sobre el propio pueblo (asaltos, incendios, enfermedades) se siguen dando; los que revelarían algo oculto, no.
+   - *Criterios:* un lobo que sale del radio de visión desaparece y vuelve a verse al entrar; un edificio enemigo destruido fuera de la visión sigue como fantasma hasta volver a verlo; los sonidos de una pelea bajo niebla no se oyen; guardar y cargar conserva los fantasmas; mismos límites de rendimiento que la fase 32.
+34. **Niebla con techo de altura** (agregada el 2026-09-27 a pedido del usuario).
+   - La niebla tapa solo hasta un techo: la altura del terreno suavizada (un mapa de alturas de baja resolución y desenfocado) más unos metros, con una franja de transición. Lo que sobresale del techo (cerros, picos, árboles gigantes, torres altas) se ve aunque haya niebla.
+   - Bajo niebla negra, lo que sobresale se ve como silueta oscura y desaturada; bajo niebla gris, como sin niebla.
+   - Solo cuenta para el terreno y los objetos fijos; lo que se mueve nunca se ve por encima del techo. Una definición puede marcarse `"landmark": true` para verse siempre como silueta aunque no sobresalga (se puede cambiar con un parche de mod).
+   - Ver algo por encima del techo no cuenta como explorado: no permite construir ahí.
+   - *Criterios:* una meseta ancha no se revela entera, pero un pico aislado sí; un árbol marcado como `landmark` se ve en lo no explorado; un gigante o un animal alto no se ve bajo la niebla; la simulación no cambia (mismo hash con y sin techo); mismos límites de rendimiento que la fase 32.
+35. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 

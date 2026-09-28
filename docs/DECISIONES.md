@@ -1456,3 +1456,25 @@ Reemplaza a D-3108: `worldgen` vuelve a correr en los tres presets. Desde la fas
 - Los casos que generan muchos mapas enteros pasaron a suites propias, en el mismo archivo: `worldgen_sea` (islas, fondo marino, costas sin mar), `worldgen_coasts`, `worldgen_landforms` y `worldgen_large` (el mapa Grande de islas, generado dos veces). `worldgen` conserva el resto.
 - En `debug` cada una tarda entre 25 y 60 s según la carga de la máquina: cabe en los 120 s de siempre.
 - En `debug-asan` cada una tarda de 45 a 65 s, pero en esta máquina el mismo binario varía casi al doble entre corridas (`worldgen`: 61, 66 y 115 s; `worldgen_sea`: 74 y 116 s). Costas y el mapa Grande no se pueden partir más sin artificios. Por eso, solo cuando se compila con AddressSanitizer, el límite de cada suite es de 240 s en vez de 120 s (`SC_TEST_TIMEOUT` en `CMakeLists.txt`); sigue sirviendo para detectar una prueba colgada.
+
+## Plan de la niebla de guerra, fases 32 a 34 (2026-09-27)
+
+A pedido del usuario, antes del pulido (que pasa a ser la fase 35). El usuario eligió el esquema mixto, fantasmas para los edificios ajenos, techo relativo al terreno y visión compartida activada.
+
+**D-3201. Lo explorado en la simulación, lo visible en la vista.**
+Con lockstep cada máquina simula todo, así que un cliente modificado siempre podría revelar el mapa; se acepta, como en otros juegos de estrategia por lockstep. Lo explorado va en la simulación porque cambia las reglas (dónde se puede construir) y debe guardarse; lo visible ahora solo sirve para dibujar y se calcula en la vista, sin costo para la simulación. Los fantasmas (fase 33) también van en la simulación para que se guarden y sean iguales en todas las instancias.
+
+**D-3202. Niebla estática por omisión.**
+Es la que más se parece al juego de referencia, donde el mapa empieza tapado y lo descubierto queda descubierto. "Sin niebla" conserva el comportamiento de antes y el mismo hash.
+
+**D-3203. No se construye en lo no explorado.**
+La pregunta quedó sin respuesta explícita; se eligió la regla porque es la de otros juegos del género y evita colocar edificios a ciegas. Mandar un ejército hacia lo no explorado sí se permite. Queda para confirmar en el registro de revisión (`conf-niebla-construir`).
+
+**D-3204. Rejilla de 4 m, actualizada una vez por segundo.**
+Una rejilla de 1 m ocuparía 32 MB por jugador en el mapa colosal (en bits); con 4 m son 2 MB y se comprimen muy bien al guardar. Los bordes se suavizan en la GPU. Una vez por segundo basta para descubrir terreno y mantiene el costo de la simulación bajo.
+
+**D-3205. Lo ajeno se oculta aunque sea de un aliado.**
+El pedido dice "cualquier entidad que no es tuya". Con visión compartida, lo que ven los aliados cuenta como visión propia, así que en cooperativo casi nunca se nota.
+
+**D-3206. La altura no amplía la visión.**
+Se mencionó como idea (ver más lejos desde un cerro) pero no se pidió; queda fuera. La línea de visión bloqueada por el terreno también queda fuera por su costo.

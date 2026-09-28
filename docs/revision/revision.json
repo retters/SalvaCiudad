@@ -9399,7 +9399,35 @@
    "nota": "",
    "respuesta": "",
    "historial": []
+  },
+  {
+   "id": "conf-niebla-construir",
+   "tipo": "confirmar",
+   "fase": "32",
+   "grupo": "Fase 32",
+   "titulo": "No se puede construir en lo no explorado",
+   "detalle": "Con niebla de guerra, colocar un edificio en celdas no exploradas se rechaza; mandar un ejército hacia ellas sí se permite (D-3203). ¿Te parece bien?",
+   "fuente": "Claude",
+   "origen": "curado",
+   "estado": "pendiente",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "conf-niebla-omision",
+   "tipo": "confirmar",
+   "fase": "32",
+   "grupo": "Fase 32",
+   "titulo": "Niebla estática por omisión",
+   "detalle": "La partida nueva empieza con niebla estática, como en Farthest Frontier (D-3202). ¿La prefieres dinámica o sin niebla por omisión?",
+   "fuente": "Claude",
+   "origen": "curado",
+   "estado": "pendiente",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
   }
  ],
- "generado": "2026-09-27T16:18:31-06:00"
+ "generado": "2026-09-27T19:52:44-06:00"
 }
