@@ -43,8 +43,7 @@ h1 { font-size: 18px; margin: 0; font-weight: 650; }
 .btn:hover { border-color: var(--accent); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn:disabled { opacity: .5; cursor: default; }
-nav.tabs { max-width: 1100px; margin: 0 auto; padding: 0 16px; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
-nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs { max-width: 1100px; margin: 0 auto; padding: 0 16px; display: flex; flex-wrap: wrap; gap: 2px; }
 nav.tabs button { background: none; border: none; border-bottom: 3px solid transparent; padding: 8px 12px; cursor: pointer; color: var(--dim); white-space: nowrap; }
 nav.tabs button.on { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
 nav.tabs .n { font-size: 12px; background: var(--panel-2); border-radius: 9px; padding: 0 6px; margin-left: 4px; }
@@ -574,7 +573,7 @@ function renderTabs() {
   const nav = $('tabs');
   nav.replaceChildren();
   for (const t of TABS) {
-    const items = t.id === 'resumen' ? null : itemsOf(t.id);
+    const items = t.id === 'resumen' || !doc ? null : itemsOf(t.id);
     const n = items && items.length;
     const hot = t.id === 'atencion' && n > 0;
     const done = items && items.filter((it) => !pending(it)).length;
