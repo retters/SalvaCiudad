@@ -13,6 +13,12 @@
 
 namespace sc {
 
+// Phase 34: the fog's ceiling over `map`, in cells of FogView::kCeilingCell
+// meters, `side` per side: the ground smoothed over about 100 m, plus
+// FogView::kCeilingAbove. What stands higher shows through the fog.
+// Centimeters, row by row.
+[[nodiscard]] std::vector<std::uint16_t> fog_ceiling(const sim::MapData& map, std::int32_t side);
+
 class FogView {
 public:
     // Texels of the fog texture: unexplored, explored but out of sight
@@ -22,6 +28,12 @@ public:
     static constexpr std::uint8_t kInSight = 255;
     // The texture goes to the GPU in square tiles of this many texels.
     static constexpr std::int32_t kTile = 64;
+    // Phase 34: the ceiling's cells (meters), how high it stands over the
+    // smoothed ground (centimeters) and the band over it where the fog
+    // thins out (meters).
+    static constexpr std::int32_t kCeilingCell = 16;
+    static constexpr std::int32_t kCeilingAbove = 1400;
+    static constexpr float kCeilingBand = 4.0f;
 
     // Follows `game` for the vision group `group`.
     void begin(const sim::Game& game, std::uint8_t group);
@@ -46,6 +58,14 @@ public:
     // part of it counts.
     [[nodiscard]] bool rect_in_sight(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const;
     [[nodiscard]] bool rect_shows(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const;
+    // Whether nothing under the rectangle was ever explored or is in sight.
+    [[nodiscard]] bool rect_unexplored(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const;
+
+    // Phase 34: the ceiling (see fog_ceiling()), and its height at a point
+    // in meters.
+    [[nodiscard]] const std::vector<std::uint16_t>& ceiling() const { return ceiling_; }
+    [[nodiscard]] std::int32_t ceiling_side() const { return ceiling_side_; }
+    [[nodiscard]] float ceiling_at(float x, float z) const;
 
     // The texels (side x side, row by row) and the tiles that changed since
     // the last call, as texel rectangles.
@@ -76,6 +96,8 @@ private:
     std::vector<std::uint8_t> dirty_; // By tile.
     bool any_dirty_ = false;
     std::vector<Rect> pending_;       // Tiles rebuilt, not yet taken.
+    std::vector<std::uint16_t> ceiling_;
+    std::int32_t ceiling_side_ = 0;
     std::uint32_t revision_ = 0;
     std::uint32_t generation_ = 0;
 

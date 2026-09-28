@@ -422,6 +422,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Guardar y cargar conserva lo explorado y los edificios recordados.
 - [ ] Con niebla estática, los animales y los edificios de otros se siguen viendo en todo lo explorado.
 
+### Fase 34 (niebla con techo de altura)
+
+- [ ] En un mapa "Tierra de gigantes" con niebla, los árboles grandes y enormes se ven como siluetas oscuras sobre lo negro; los chicos no.
+- [ ] Con relieve montañoso, los picos aislados y los bordes altos de los cerros asoman sobre la niebla; lo alto de una meseta ancha no.
+- [ ] Con niebla dinámica, lo que asoma sobre lo gris se ve con su color, no gris.
+- [ ] Lo que asoma no deja construir: sigue diciendo "Ese lugar no está explorado.".
+- [ ] En versus, la atalaya o el centro del pueblo del rival (si su punta pasa el techo) se ven como silueta a lo lejos antes de explorarlos; no se pueden seleccionar.
+- [ ] Un mod de prueba con `"landmark": true` en una especie de árbol hace que esos árboles se vean como silueta aunque sean chicos.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

@@ -7,6 +7,8 @@
 #include <string>
 
 #include "game/fog_view.h"
+#include "game/map_scene.h"
+#include "game/village_view.h"
 #include "game/minimap.h"
 #include "sim/game.h"
 #include "sim/vision.h"
@@ -521,5 +523,83 @@ TEST_SUITE("fog") {
         }
         CHECK(dark > image.size() / 4 / 2);  // Most of the map.
         CHECK(kept > 0);                     // Not the town.
+    }
+
+    TEST_CASE("the ceiling hides a wide plateau but not a lone peak nor a tall tree") {
+        // Flat ground at 10 m, a plateau 30 m higher and 160 m wide, and a
+        // peak as high but 12 m wide far from it.
+        MapData map;
+        map.size = 1024;
+        const std::int32_t v = map.vertices_per_side();
+        map.heights.assign(static_cast<std::size_t>(v) * static_cast<std::size_t>(v), 1000);
+        for (std::int32_t z = 0; z < v; ++z) {
+            for (std::int32_t x = 0; x < v; ++x) {
+                const bool plateau = std::abs(x - 256) <= 80 && std::abs(z - 256) <= 80;
+                const bool peak = std::abs(x - 700) <= 6 && std::abs(z - 150) <= 6;
+                if (plateau || peak) {
+                    map.heights[static_cast<std::size_t>(z) * static_cast<std::size_t>(v) + static_cast<std::size_t>(x)] = 4000;
+                }
+            }
+        }
+        const std::int32_t side = map.size / FogView::kCeilingCell;
+        const std::vector<std::uint16_t> ceiling = fog_ceiling(map, side);
+        REQUIRE(ceiling.size() == static_cast<std::size_t>(side) * static_cast<std::size_t>(side));
+        const auto at = [&](std::int32_t x, std::int32_t z) {
+            return ceiling[static_cast<std::size_t>(z / FogView::kCeilingCell) * static_cast<std::size_t>(side) +
+                           static_cast<std::size_t>(x / FogView::kCeilingCell)];
+        };
+        CHECK(at(256, 256) > 4000);  // The middle of the plateau stays under the fog.
+        CHECK(at(700, 150) < 4000);  // The peak sticks out.
+        // Far from both, 14 m over the ground: a big tree (18 m) shows, a small one (4,5 m) does not.
+        CHECK(at(900, 900) == 1000 + FogView::kCeilingAbove);
+        CHECK(1000 + 1800 > at(900, 900));
+        CHECK(1000 + 450 < at(900, 900));
+        CHECK(fog_ceiling(map, 0).empty());
+    }
+
+    TEST_CASE("landmarks carry their mark to the renderer") {
+        auto copy = std::make_shared<Content>(test::core_content());
+        REQUIRE_FALSE(copy->flora.species.empty());
+        const MapData map = small_map(3);
+        const MapFeature* tree = nullptr;
+        for (const MapFeature& f : map.features) {
+            if (f.type == FeatureType::Tree) {
+                tree = &f;
+                break;
+            }
+        }
+        REQUIRE(tree != nullptr);
+        CHECK_FALSE(feature_instance(map, *tree, copy.get(), Season::Summer, false).landmark);
+        copy->flora.species[tree->species].landmark = true;
+        CHECK(feature_instance(map, *tree, copy.get(), Season::Summer, false).landmark);
+    }
+
+    TEST_CASE("only tall buildings and landmarks of others show in the unexplored, and nothing that moves") {
+        auto copy = std::make_shared<Content>(test::core_content());
+        const MapData map = small_map(12, 2);
+        Game g(copy, map, setup(2, FogMode::Static, true));
+        FogView fog;
+        fog.begin(g, g.vision_group(0));
+        VillageView view;
+        view.set_fog(&fog);
+        const Building& mine = town_center(g, 0);
+        const Building& rival = town_center(g, 1);
+        REQUIRE(fog.rect_unexplored(rival.x, rival.z, rival.width, rival.depth));
+        CHECK_FALSE(view.building_shown(g, rival));
+        CHECK_FALSE(view.building_silhouette(g, mine));  // Ours shows anyway.
+        // Without its model, the rival's town center is 5 m high: under the ceiling.
+        CHECK_FALSE(view.building_silhouette(g, rival));
+        copy->buildings[rival.def].landmark = true;
+        CHECK(view.building_silhouette(g, rival));
+        // Whatever moves there stays hidden, however tall.
+        const float rx = static_cast<float>(rival.x) + 2.0f;
+        const float rz = static_cast<float>(rival.z) + 2.0f;
+        CHECK_FALSE(view.mover_shown(g, true, 1, rx, rz));
+        CHECK_FALSE(view.mover_shown(g, false, 0, rx, rz));
+        // The ceiling does not touch the game.
+        const std::uint64_t hash = g.hash();
+        CHECK(fog.ceiling_side() == fog.side() * kFogCell / FogView::kCeilingCell);
+        CHECK(fog.ceiling_at(rx, rz) > 10.0f);
+        CHECK(g.hash() == hash);
     }
 }

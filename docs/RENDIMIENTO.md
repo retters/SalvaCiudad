@@ -141,3 +141,14 @@ El mapa enorme (4096 m, la prueba "a huge map generates in under 30 seconds") ta
 Con la fase 33, la niebla dinámica también anota qué ve cada grupo y sus fantasmas: 1,83 ms por actualización (0,18 ms por tick); la estática, sin eso, 1,2 ms. La vista, 0,2 ms por tick en las dos. Como los pueblos de la prueba no se ven entre sí, casi no hay fantasmas: cada uno ocupa 26 bytes en la partida y en la suma de verificación.
 
 La suma de verificación del estado no cambia de forma medible (19 a 22 ms en las tres corridas). El tick completo sin niebla sale más lento en esta prueba (29 ms contra 19 ms) solo porque los pueblos quedan distintos: con niebla, las casas de `grow()` no se pueden poner en lo no explorado y quedan más juntas.
+
+### En pantalla (fases 32 a 34)
+
+Mapa colosal, gráficos en Ultra (MSAA 8x, sombras 3 × 2048, distancia 2500 m), 1000 aldeanos a la vista alrededor del centro del pueblo (cámara a 97 m), niebla estática con techo, 1600 × 900:
+
+| | FPS | Descarte (CPU) |
+|---|---|---|
+| Con niebla | 132 a 139 | 1,8 a 1,9 ms |
+| "Ver a través de la niebla" (sin niebla en el sombreador) | 84 a 88 | 6,3 ms |
+
+La niebla no cuesta FPS medibles en la GPU. Sin ella el juego va más lento porque dibuja los animales de todo el mapa colosal, y su lista de instancias se rehace en cada cuadro; con niebla solo se dibujan los de lo explorado.

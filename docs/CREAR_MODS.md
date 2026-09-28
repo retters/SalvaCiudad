@@ -87,6 +87,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `tier`, `desirability`, `unique` | Nivel del centro del pueblo necesario, efecto en la deseabilidad y si solo puede haber uno. |
 | `levels` | Mejoras (casas y centro del pueblo): `residents`, `cost`, `work`, `needs`, `tier`, `population` y, si se ve distinto, `models`. |
 | `sight` | Metros que ve desde su centro con niebla de guerra (1 a 200; por omisión 12). En `core`, el centro del pueblo ve 48 y la atalaya 45. |
+| `landmark` | `true`: su silueta se ve a través de la niebla de guerra aunque no sobresalga del techo de la niebla (por omisión `false`). |
 
 ### unit y race
 
@@ -98,13 +99,13 @@ Las unidades del ejército y los pueblos también tienen `sight`: los metros que
 
 ### mapFeature
 
-Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`), `resource`, `amount`, `work`, `regrowDays` y `model` o `models` (los árboles usan el modelo de su especie).
+Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie).
 
 ### species, biome, mapType
 
 Árboles, biomas y tipos de mapa, como en `docs/ARBOLES.md`:
 
-- `species`: `name`, `model` (prefijo: se buscan `<prefijo>_small.glb`, `_medium`, `_large`, `_huge`), `sizes` y `logs` (madera por tamaño).
+- `species`: `name`, `model` (prefijo: se buscan `<prefijo>_small.glb`, `_medium`, `_large`, `_huge`), `sizes`, `logs` (madera por tamaño), `evergreen` y `landmark` (su silueta se ve a través de la niebla de guerra).
 - `biome`: `name`, `species` (`{"core:oak": 35, ...}`), `sizeWeights` (4 números), `density` (porcentaje) y `grass` (0 a 255).
 - `mapType`: `name`, `biomes` (vacío: un solo bioma que elige el jugador), `sizeBias` (4 porcentajes), `patchSize` (metros) e `islands` (`true`: el mar rodea islas, tantas por pueblo como elija el jugador; por omisión `false`).
 

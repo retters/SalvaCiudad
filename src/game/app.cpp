@@ -1395,6 +1395,8 @@ void App::update_war_fog() {
         }
         if (scene_.set_war_fog(mode, fog.side(), static_cast<float>(sim::kFogCell))) {
             scene_.update_war_fog(fog.texels(), 0, 0, fog.side(), fog.side());
+            // Phase 34: what stands high shows through it.
+            (void)scene_.set_war_ceiling(fog.ceiling(), fog.ceiling_side(), FogView::kCeilingBand);
         }
         return;
     }

@@ -151,6 +151,14 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     const bool evergreen = tree && content != nullptr && f.species < content->flora.species.size() &&
                            content->flora.species[f.species].evergreen;
     inst.tint = season_tint(shade, tree, evergreen, h >> 8, season, snowy);
+    // Phase 34: landmarks show through the fog of war.
+    if (content != nullptr) {
+        if (tree) {
+            inst.landmark = f.species < content->flora.species.size() && content->flora.species[f.species].landmark;
+        } else if (const sim::FeatureDef* fd = content->feature(f.type)) {
+            inst.landmark = fd->landmark;
+        }
+    }
     return inst;
 }
 

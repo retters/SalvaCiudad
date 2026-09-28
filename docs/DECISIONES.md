@@ -1558,3 +1558,17 @@ Fuera de la vista, un edificio ajeno se dibuja como su fantasma: la variante de 
 
 **D-3304. El gris.**
 Lo explorado fuera de vista se desatura un 75 % y queda al 45 % de brillo, con un tinte frío, después de la bruma de distancia. El minimapa usa la misma idea.
+
+## Fase 34: niebla con techo de altura (2026-09-27)
+
+**D-3401. El techo.**
+Se calcula en la vista al empezar la partida, a partir del mapa: la altura media del suelo en celdas de 16 m, suavizada dos veces sobre 7 celdas (112 m), más 14 m. Así una meseta de 160 m de ancho queda bajo la niebla salvo cerca de su borde, un pico aislado de 12 m de ancho asoma, y en terreno llano asoman los árboles grandes (12 a 24 m) y enormes, pero no los chicos ni los medianos. Sobre el techo hay una franja de 4 m en la que la niebla se va aclarando. Va a la GPU como una textura de 16 bits sobre la misma área que la de niebla (los mapas miden múltiplos de 64 m). La simulación no cambia.
+
+**D-3402. Cómo se ve lo que asoma.**
+Bajo la niebla negra, como una silueta oscura con un poco de su luz; bajo la gris, como sin niebla. Lo que se mueve nunca asoma: no se dibuja fuera de lo que se permite ver.
+
+**D-3403. `landmark`.**
+Una marca en especies de árbol, recursos del mapa y edificios (`"landmark": true`). Viaja al sombreador en el tinte de la instancia (la paleta más 4096) y hace que el objeto se vea como silueta aunque no sobresalga del techo. `core` no marca nada por ahora: los árboles altos ya asoman por su altura.
+
+**D-3404. Edificios de otros en lo no explorado.**
+Se dibujan solo si todo su terreno está sin explorar y su punta sobresale del techo (o son `landmark`), para que se vea su silueta, como la de una atalaya a lo lejos. No se pueden seleccionar ni aparecen en el minimapa. Los bajos no se dibujan, así tampoco echan una sombra que los delate.

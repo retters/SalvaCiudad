@@ -420,6 +420,18 @@ bool VillageView::mover_shown(const sim::Game& game, bool owned, std::uint8_t to
     return (owned && game.town_group(town) == fog_->group()) || fog_->shows(x, z);
 }
 
+bool VillageView::building_silhouette(const sim::Game& game, const sim::Building& b) const {
+    if (fog_ == nullptr || fog_->mode() == sim::FogMode::None || game.town_group(b.owner) == fog_->group() ||
+        !fog_->rect_unexplored(b.x, b.z, b.width, b.depth)) {
+        return false;
+    }
+    if (game.content().buildings[b.def].landmark) {
+        return true;
+    }
+    const math::Vec3 top = building_top(game, b);
+    return top.y - 1.0f > fog_->ceiling_at(top.x, top.z);
+}
+
 std::uint64_t VillageView::shown_signature(const sim::Game& game) const {
     if (fog_ == nullptr || fog_->mode() == sim::FogMode::None) {
         return 0;
@@ -428,7 +440,8 @@ std::uint64_t VillageView::shown_signature(const sim::Game& game) const {
     const auto& store = game.buildings();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const sim::Building& b = store.data()[k];
-        if (game.town_group(b.owner) != fog_->group() && fog_->rect_shows(b.x, b.z, b.width, b.depth)) {
+        if (game.town_group(b.owner) != fog_->group() &&
+            (fog_->rect_shows(b.x, b.z, b.width, b.depth) || building_silhouette(game, b))) {
             h = (h ^ (store.entities()[k].index + 1ull)) * 0x100000001b3ull;
         }
     }
@@ -841,6 +854,7 @@ render::Instance VillageView::building_instance(const sim::Game& game, sim::DefI
                      static_cast<float>(z) + static_cast<float>(d) * 0.5f};
     // Models face +Z; rotation 0 puts the door on the -Z side.
     inst.yaw = std::numbers::pi_v<float> - static_cast<float>(rotation) * std::numbers::pi_v<float> * 0.5f;
+    inst.landmark = bd.landmark;  // Phase 34.
     if (progress < 1.0f) {
         // Rises out of the ground as it is built; unfinished wood color.
         const float shown = 0.08f + 0.92f * std::clamp(progress, 0.0f, 1.0f);
@@ -861,7 +875,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     const sim::Content& content = game.content();
     for (const sim::Building& b : game.buildings().data()) {
         const Model* m = model_for(b.def, b.level, place_key(b.x, b.z));
-        if (m == nullptr || !building_shown(game, b)) {
+        if (m == nullptr || (!building_shown(game, b) && !building_silhouette(game, b))) {
             continue;
         }
         const sim::BuildingDef& d = content.buildings[b.def];

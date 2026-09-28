@@ -28,6 +28,8 @@ struct Instance {
     // Building palette (phase 31): 0 keeps the model's own colors; n takes
     // palette n - 1 for the materials named after its slots.
     std::uint32_t palette = 0;
+    // Phase 34: shows as a silhouette through the fog of war, however low.
+    bool landmark = false;
 };
 
 // An animated character. Accessories (hats, aprons...) are chosen with a

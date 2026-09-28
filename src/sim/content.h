@@ -130,6 +130,7 @@ struct BuildingDef {
     std::int32_t attack_damage = 0; // Per shot (towers) or per trap.
     std::int32_t attack_every = 20; // Ticks between shots.
     std::int32_t sight = 12;        // Phase 32: meters it sees from its center (fog of war).
+    bool landmark = false;          // Phase 34: its silhouette shows through the fog of war.
     bool trains = false;            // A barracks: turns villagers into soldiers (phase 16).
 };
 
@@ -235,6 +236,7 @@ struct FeatureDef {
     std::int32_t regrow_days = 0;  // Berries and herbs grow back; 0 = never.
     std::vector<std::string> models;  // Variants, paths inside the mod (trees use their species).
     std::string mod;
+    bool landmark = false;         // Phase 34: its silhouette shows through the fog of war.
 };
 
 struct Content {

@@ -605,6 +605,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.amount = r.integer("amount", 1, 10000, 10);
         def.work = r.integer("work", 1, 10000, 20);
         def.regrow_days = r.integer("regrowDays", 0, 3650, 0);
+        def.landmark = r.flag("landmark");
         // Features have no name of their own: the viewer shows the resource's.
         def.models = r.models(mod_dir, false, refs,
                               ri < 0 ? std::string{} : out.resources[static_cast<std::size_t>(ri)].name_key);
@@ -661,6 +662,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.attack_damage = r.integer("attackDamage", 0, 10000, 0);
         def.attack_every = r.integer("attackEvery", 1, 1000, 20);
         def.sight = r.integer("sight", 1, sim::kMaxSight, 12);
+        def.landmark = r.flag("landmark");
         def.trains = r.flag("trains");
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
@@ -748,6 +750,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
         r.numbers("logs", def.logs, sim::kTreeSizes, 0, 1000);
         def.evergreen = r.flag("evergreen");
+        def.landmark = r.flag("landmark");
         const std::string prefix = r.text("model", true, 200);
         for (std::size_t s = 0; s < sim::kTreeSizes && r.ok(); ++s) {
             if (((def.sizes >> s) & 1u) == 0) {

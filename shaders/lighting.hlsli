@@ -85,8 +85,9 @@ float sample_shadow(float3 world_pos, float view_distance, float3 normal)
     return lit / 9.0;
 }
 
-// Lit, fogged color for the swapchain from a linear albedo.
-float4 shade(float3 albedo, float3 n, float3 world_pos)
+// Lit, fogged color for the swapchain from a linear albedo. A landmark
+// (1) shows through the fog of war as if it stood over its ceiling.
+float4 shade(float3 albedo, float3 n, float3 world_pos, float landmark = 0.0)
 {
     float3 to_camera = camera_position.xyz - world_pos;
     float distance = length(to_camera);
@@ -104,7 +105,7 @@ float4 shade(float3 albedo, float3 n, float3 world_pos)
     if (war_params.y > 0.5)
     {
         float war = war_fog_value(war_fog_tex, war_sampler, world_pos.xz, war_params);
-        float lift = war_lift(war_ceiling_tex, war_ceiling_sampler, world_pos, war_params);
+        float lift = max(war_lift(war_ceiling_tex, war_ceiling_sampler, world_pos, war_params), landmark);
         color = apply_war_fog(color, war, lift, war_params);
     }
     return float4(linear_to_srgb(tonemap(color)), 1.0);

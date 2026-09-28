@@ -912,7 +912,9 @@ struct SceneRenderer::Impl {
         g.row2[2] = c;
         g.row2[3] = inst.position.z;
         // The palette number rides in the tint's unused fourth channel.
-        set4(g.tint, inst.tint, static_cast<float>(std::min(inst.palette, kMaxBuildingPalettes)));
+        // The palette number, plus 4096 for a landmark (mesh.vert splits them).
+        set4(g.tint, inst.tint,
+             static_cast<float>(std::min(inst.palette, kMaxBuildingPalettes) + (inst.landmark ? 4096u : 0u)));
         return g;
     }
 

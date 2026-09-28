@@ -38,6 +38,7 @@ struct SpeciesDef {
     std::uint8_t sizes = 0;  // Bit per TreeSize the species can have.
     std::int32_t logs[kTreeSizes] = {2, 5, 10, 20};  // Wood per tree of each size.
     bool evergreen = false;  // Keeps its leaves in autumn and winter (the look only).
+    bool landmark = false;   // Phase 34: its silhouette shows through the fog of war.
 };
 
 struct BiomeDef {

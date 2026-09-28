@@ -81,6 +81,10 @@ public:
     // `town` (or to nobody), is shown to the local player.
     [[nodiscard]] bool building_shown(const sim::Game& game, const sim::Building& b) const;
     [[nodiscard]] bool mover_shown(const sim::Game& game, bool owned, std::uint8_t town, float x, float z) const;
+    // Phase 34: a building of others nobody explored around that still
+    // shows, as a silhouette, because it stands over the fog's ceiling or
+    // is a landmark. Never selectable.
+    [[nodiscard]] bool building_silhouette(const sim::Game& game, const sim::Building& b) const;
 
     [[nodiscard]] std::optional<sim::EntityId> pick_villager(const sim::Game& game, math::Vec3 origin, math::Vec3 dir,
                                                              float alpha) const;
