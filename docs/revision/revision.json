@@ -10243,10 +10243,19 @@
    "detalle": "El criterio pide perder como mucho un 5 % de FPS con 1000 aldeanos en el mapa colosal en Ultra. Lo mido una sola vez al terminar la fase 34, con las tres fases juntas (la 34 agrega el techo al mismo sombreador), comparando con la casilla \"Ver a través de la niebla\".",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "abierto",
+   "estado": "hecho",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "respuesta": "Medido al cerrar la fase 34 en el mapa colosal en Ultra con 1000 aldeanos: 132-139 FPS con niebla, 84-88 viéndola a través (docs/RENDIMIENTO.md). La niebla no resta FPS.",
+   "historial": [
+    {
+     "fecha": "2026-09-27T22:35:11-06:00",
+     "quien": "Claude",
+     "accion": "respuesta",
+     "estado": "hecho",
+     "texto": "Medido al cerrar la fase 34 en el mapa colosal en Ultra con 1000 aldeanos: 132-139 FPS con niebla, 84-88 viéndola a través (docs/RENDIMIENTO.md). La niebla no resta FPS."
+    }
+   ],
+   "actualizado": "2026-09-27T22:35:11-06:00"
   },
   {
    "id": "D-3301",
@@ -10259,8 +10268,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3302",
@@ -10273,8 +10282,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3303",
@@ -10287,8 +10296,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3304",
@@ -10301,8 +10310,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-33-9f27ffe8",
@@ -10315,8 +10324,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-33-b8f6cba1",
@@ -10329,8 +10338,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-33-9edeabad",
@@ -10343,8 +10352,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-33-6720fc84",
@@ -10357,8 +10366,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-33-7231ae50",
@@ -10371,8 +10380,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "cambio-33",
@@ -10387,7 +10396,175 @@
    "nota": "",
    "respuesta": "",
    "historial": []
+  },
+  {
+   "id": "D-3401",
+   "tipo": "decision",
+   "fase": "34",
+   "grupo": "Fase 34: niebla con techo de altura",
+   "titulo": "El techo",
+   "detalle": "Se calcula en la vista al empezar la partida, a partir del mapa: la altura media del suelo en celdas de 16 m, suavizada dos veces sobre 7 celdas (112 m), más 14 m. Así una meseta de 160 m de ancho queda bajo la niebla salvo cerca de su borde, un pico aislado de 12 m de ancho asoma, y en terreno llano asoman los árboles grandes (12 a 24 m) y enormes, pero no los chicos ni los medianos. Sobre el techo hay una franja de 4 m en la que la niebla se va aclarando. Va a la GPU como una textura de 16 bits sobre la misma área que la de niebla (los mapas miden múltiplos de 64 m). La simulación no cambia.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3402",
+   "tipo": "decision",
+   "fase": "34",
+   "grupo": "Fase 34: niebla con techo de altura",
+   "titulo": "Cómo se ve lo que asoma",
+   "detalle": "Bajo la niebla negra, como una silueta oscura con un poco de su luz; bajo la gris, como sin niebla. Lo que se mueve nunca asoma: no se dibuja fuera de lo que se permite ver.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3403",
+   "tipo": "decision",
+   "fase": "34",
+   "grupo": "Fase 34: niebla con techo de altura",
+   "titulo": "`landmark`",
+   "detalle": "Una marca en especies de árbol, recursos del mapa y edificios (`\"landmark\": true`). Viaja al sombreador en el tinte de la instancia (la paleta más 4096) y hace que el objeto se vea como silueta aunque no sobresalga del techo. `core` no marca nada por ahora: los árboles altos ya asoman por su altura.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3404",
+   "tipo": "decision",
+   "fase": "34",
+   "grupo": "Fase 34: niebla con techo de altura",
+   "titulo": "Edificios de otros en lo no explorado",
+   "detalle": "Se dibujan solo si todo su terreno está sin explorar y su punta sobresale del techo (o son `landmark`), para que se vea su silueta, como la de una atalaya a lo lejos. No se pueden seleccionar ni aparecen en el minimapa. Los bajos no se dibujan, así tampoco echan una sombra que los delate.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-34-580f2292",
+   "tipo": "prueba",
+   "fase": "34",
+   "grupo": "Fase 34 (niebla con techo de altura)",
+   "titulo": "En un mapa \"Tierra de gigantes\" con niebla, los árboles grandes y enormes se ven como siluetas oscuras sobre lo negro; los chicos no.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-34-cd3a37f1",
+   "tipo": "prueba",
+   "fase": "34",
+   "grupo": "Fase 34 (niebla con techo de altura)",
+   "titulo": "Con relieve montañoso, los picos aislados y los bordes altos de los cerros asoman sobre la niebla; lo alto de una meseta ancha no.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-34-df6f4c9e",
+   "tipo": "prueba",
+   "fase": "34",
+   "grupo": "Fase 34 (niebla con techo de altura)",
+   "titulo": "Con niebla dinámica, lo que asoma sobre lo gris se ve con su color, no gris.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-34-b0acf495",
+   "tipo": "prueba",
+   "fase": "34",
+   "grupo": "Fase 34 (niebla con techo de altura)",
+   "titulo": "Lo que asoma no deja construir: sigue diciendo \"Ese lugar no está explorado.\".",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-34-dc085815",
+   "tipo": "prueba",
+   "fase": "34",
+   "grupo": "Fase 34 (niebla con techo de altura)",
+   "titulo": "En versus, la atalaya o el centro del pueblo del rival (si su punta pasa el techo) se ven como silueta a lo lejos antes de explorarlos; no se pueden seleccionar.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-34-20b12d1b",
+   "tipo": "prueba",
+   "fase": "34",
+   "grupo": "Fase 34 (niebla con techo de altura)",
+   "titulo": "Un mod de prueba con `\"landmark\": true` en una especie de árbol hace que esos árboles se vean como silueta aunque sean chicos.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "cambio-34",
+   "tipo": "cambio",
+   "fase": "34",
+   "grupo": "Fase 34",
+   "titulo": "Niebla con techo de altura",
+   "detalle": "- La niebla tapa hasta un techo: el suelo suavizado en unos 110 m más 14 m. Lo que sobresale se ve como silueta oscura en lo negro y con su color en lo gris.\n- Asoman los árboles grandes y enormes, los picos aislados y los bordes altos; lo alto de una meseta ancha no.\n- Marca `\"landmark\": true` en especies de árbol, recursos del mapa y edificios para verse siempre como silueta (en `core` no hay ninguna por ahora).\n- Los edificios de otros en lo no explorado solo se dibujan si su punta pasa el techo (una atalaya a lo lejos); no se pueden seleccionar.\n- Lo que se mueve nunca asoma. La simulación no cambia.\n- FPS en el mapa colosal en Ultra con 1000 aldeanos: 132 a 139 con niebla, 84 a 88 viendo a través de ella (ver docs/RENDIMIENTO.md).\n\nCommit: `86062d1`.",
+   "fuente": "git",
+   "origen": "curado",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "sug-animales-instancias",
+   "tipo": "sugerencia",
+   "fase": "34",
+   "grupo": "Fase 34",
+   "titulo": "Dibujar los animales sin rehacer su lista en cada cuadro",
+   "detalle": "Al medir la niebla se vio que, sin niebla, el mapa colosal pierde unos 4 ms por cuadro (de 139 a 88 FPS) porque la lista de instancias de todos los animales del mapa se rehace en cada cuadro, aunque casi ninguno esté a la vista. Se podría quedarse solo con los animales cerca de la cámara, o moverlos con update_instance en lugar de rehacer la lista. No lo toqué porque no es parte de la niebla.",
+   "fuente": "Claude",
+   "origen": "curado",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
   }
  ],
- "generado": "2026-09-27T21:39:49-06:00"
+ "generado": "2026-09-27T22:35:11-06:00"
 }
