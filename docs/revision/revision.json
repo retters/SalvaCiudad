@@ -9797,8 +9797,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3112",
@@ -9811,8 +9811,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3113",
@@ -9825,8 +9825,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3114",
@@ -9839,8 +9839,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3115",
@@ -9853,8 +9853,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-generaciónmá-2b5b76c6",
@@ -9867,8 +9867,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-generaciónmá-386bb9d0",
@@ -9881,8 +9881,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-generaciónmá-346cc7a4",
@@ -9895,8 +9895,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "cambio-mapas-rapidos",
@@ -9925,7 +9925,329 @@
    "nota": "",
    "respuesta": "",
    "historial": []
+  },
+  {
+   "id": "D-3207",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "Qué da visión y cuánto",
+   "detalle": "- Todo edificio del pueblo, también en obra, ve desde su centro su `sight` más medio lado; los aldeanos, el `sight` de su raza; los soldados, el de su unidad, salvo mientras viajan por el mapa del mundo. Animales, asaltantes y mercaderes no dan visión.\n- Por omisión: 12 m edificios y aldeanos, 16 m soldados. En `core`: centro del pueblo 48 m (el terreno inicial), atalaya 45 m y arquero 24 m (más que su alcance de 20 m).\n- Una celda de 4 m queda vista si su centro está dentro del radio. La simulación lo anota después de cada tick múltiplo de 10 (una vez por segundo a x1) y al crear la partida.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3208",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "Grupos de visión",
+   "detalle": "En cooperativo con visión compartida hay un solo grupo; si no, uno por pueblo (el pueblo común es uno solo). Los grupos se fijan al crear la partida y se comprueban al cargarla. Con mapas separados cada jugador descubre su región sin nada especial: su gente no sale de ella.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3209",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "Suma de verificación, partida y red",
+   "detalle": "- La cuenta de celdas exploradas y una suma de un número mezclado por celda, por grupo, entran en el estado como una parte propia, \"vision\", que el anfitrión compara cada 5 s como las demás. Recorrer 2 MB por grupo en cada comprobación saldría caro; la cuenta y la suma se llevan al día al descubrir cada celda.\n- Las celdas mismas van en la partida guardada y en la instantánea de red, después de los números al azar. Al cargar se recalculan la cuenta y la suma y deben coincidir con las guardadas.\n- Versión de las reglas 24 y versión del protocolo de red 2 (ocho partes en la comprobación).\n- Sin niebla no se guarda ninguna celda y la simulación no cambia: la prueba \"the fog does not change the rest of the game\" compara todas las partes menos la cabecera (las reglas) y \"vision\".",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3210",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "La regla por omisión",
+   "detalle": "`GameRules{}` sigue sin niebla, así que las pruebas, los tutoriales y cualquier partida hecha en código se comportan como antes. El formulario de partida nueva empieza en estática, también tras \"Restablecer\" (D-3202).",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3211",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "Lo que ve la vista (`FogView`)",
+   "detalle": "- Vive en `GameSession` y en cada tick recalcula lo que el jugador tiene a la vista con los mismos discos que la simulación, solo en las filas que tocaron los discos ahora o el tick anterior. Lo explorado lo copia de la simulación cuando su cuenta cambia.\n- La textura de niebla tiene un texel por celda (R8: 0 sin explorar, 128 explorado fuera de vista, 255 a la vista) y se sube en cuadros de 64 texeles, solo los que cambian, con filas alineadas a 256 bytes y cada cuadro a 512, como pide Direct3D 12.\n- El sombreador toma cinco muestras para un borde suave y aplica la niebla después de la bruma de distancia, así lo no explorado es un mismo negro cerca y lejos y no deja ver siluetas. El agua sin explorar se vuelve opaca.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3212",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "Qué se oculta con niebla estática",
+   "detalle": "Lo que no es del jugador (edificios, campos, aldeanos, soldados, animales, asaltantes) solo se dibuja, se puede seleccionar, suena, echa humo y aparece en el minimapa donde está explorado. Las capas del mapa no pintan sobre lo no explorado. Si lo seleccionado queda bajo la niebla, se deselecciona. Lo propio se ve siempre. La vista previa de un edificio sobre lo negro queda negra, pero el aviso \"Ese lugar no está explorado.\" dice por qué no se puede.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3213",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "Repeticiones",
+   "detalle": "Las partidas de pueblo no tienen repeticiones (solo el núcleo de la fase 5), así que la parte de la especificación sobre ver las repeticiones no aplica.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3214",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "Ver a través de la niebla",
+   "detalle": "Una casilla en Ctrl+F3 > Pueblo apaga la niebla solo en la vista, sin comando ni cambio en la partida. Está desactivada donde no se permiten los comandos de desarrollo (multijugador, D-910).",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3215",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "La sala multijugador",
+   "detalle": "La sala tiene una fila \"Niebla de guerra\" que cambia el anfitrión; la visión compartida se elige en el formulario de partida nueva del anfitrión, como la mayoría de las reglas.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3216",
+   "tipo": "decision",
+   "fase": "32",
+   "grupo": "Fase 32: niebla de guerra estática",
+   "titulo": "Rendimiento",
+   "detalle": "`Game::update_vision()` es pública para poder medirla sola. Medido en `docs/RENDIMIENTO.md`.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-257f0880",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "El formulario de partida nueva tiene \"Niebla de guerra\" (Sin niebla, Estática, Dinámica) y \"Visión compartida\"; por omisión y tras \"Restablecer\", Estática y Entre aliados. Lo elegido se recuerda.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-2a185aa5",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "Con niebla estática, la partida empieza con un círculo alrededor del centro del pueblo a la vista y todo lo demás negro parejo, sin siluetas de árboles, cerca y lejos. El borde es suave, no cuadriculado.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-ad26ddf0",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "El minimapa muestra negro lo no explorado y el círculo del pueblo a color.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-d56de545",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "Al poner leñadores o recolectores lejos, lo que recorren sus trabajadores se descubre y queda a la vista aunque se vayan.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-5a5823a7",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "Al intentar colocar un edificio en lo negro, abajo dice \"Ese lugar no está explorado.\" y no se puede construir.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-e450a33c",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "Los ciervos y lobos solo aparecen en lo explorado; sus sonidos y los de otros pueblos no se oyen desde lo negro.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-fed14e9f",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "La capa de fertilidad (Capas) no pinta nada sobre lo negro.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-bede269c",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "En Ctrl+F3 > Pueblo, \"Ver a través de la niebla de guerra\" muestra todo el mapa; al quitarlo, vuelve la niebla. En multijugador la casilla está desactivada.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-465da018",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "Guardar y cargar conserva lo explorado.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-11825747",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "Con \"Sin niebla\" el juego se ve y se juega como antes.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-32-74299de8",
+   "tipo": "prueba",
+   "fase": "32",
+   "grupo": "Fase 32 (niebla de guerra estática)",
+   "titulo": "En multijugador (`--instance 1 --loopback` y `--instance 2 --loopback`) la sala muestra la fila \"Niebla de guerra\"; en cooperativo con visión compartida, lo que explora un jugador lo ve el otro; en versus, cada uno ve solo lo suyo. No hay desincronizaciones.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "cambio-32",
+   "tipo": "cambio",
+   "fase": "32",
+   "grupo": "Fase 32",
+   "titulo": "Niebla de guerra estática",
+   "detalle": "- Opción de partida \"Niebla de guerra\" (sin niebla, estática, dinámica) y \"Visión compartida\", en el formulario, en la sala multijugador y recordadas en settings.json. Por omisión, estática.\n- La simulación anota lo explorado por cada grupo de visión en celdas de 4 m, una vez por segundo; se guarda con la partida y se comprueba en red como parte propia (\"vision\"). Reglas versión 24, protocolo de red 2.\n- No se construye en lo no explorado: \"Ese lugar no está explorado.\"\n- Radio de visión `sight` en edificios, unidades y razas (centro del pueblo 48 m, atalaya 45 m, arquero 24 m).\n- La vista calcula lo que se ve en cada tick y sube a la GPU solo los cuadros que cambian; lo no explorado es negro parejo con borde suave, también en el agua y el minimapa.\n- Lo que no es tuyo solo se ve, se selecciona, suena y aparece en el minimapa donde está explorado; las capas no pintan sobre lo negro.\n- Ctrl+F3 > Pueblo: \"Ver a través de la niebla de guerra\" (solo esta vista; no en multijugador).\n- Costo: 0,18 ms por tick en la simulación y 0,28 ms en la vista con 12 000 aldeanos en un mapa enorme.\n\nCommit: `23f37a1`.",
+   "fuente": "git",
+   "origen": "curado",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "pend-niebla-fps",
+   "tipo": "pendiente",
+   "fase": "32",
+   "grupo": "Fase 32",
+   "titulo": "Medir los FPS con niebla en el mapa colosal",
+   "detalle": "El criterio pide perder como mucho un 5 % de FPS con 1000 aldeanos en el mapa colosal en Ultra. Lo mido una sola vez al terminar la fase 34, con las tres fases juntas (la 34 agrega el techo al mismo sombreador), comparando con la casilla \"Ver a través de la niebla\".",
+   "fuente": "Claude",
+   "origen": "curado",
+   "estado": "abierto",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
   }
  ],
- "generado": "2026-09-27T20:01:32-06:00"
+ "generado": "2026-09-27T21:06:14-06:00"
 }
