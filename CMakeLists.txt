@@ -335,11 +335,21 @@ sc_harden_target(SalvaCiudad)
 set_target_properties(SalvaCiudad PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# The game reads data/ next to the executable.
-add_custom_command(TARGET SalvaCiudad POST_BUILD
+# The game and the model viewer read data/ next to the executable. One target
+# copies it for both, so two copies never run at the same time (decision
+# D-3107). The stamp reruns the copy only when a file in data/ changes; the
+# CONFIGURE_DEPENDS glob notices new files.
+file(GLOB_RECURSE SC_DATA_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/*")
+set(SC_DATA_STAMP "${CMAKE_CURRENT_BINARY_DIR}/sc_data.stamp")
+add_custom_command(OUTPUT "${SC_DATA_STAMP}"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:SalvaCiudad>/data"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data"
+    COMMAND ${CMAKE_COMMAND} -E touch "${SC_DATA_STAMP}"
+    DEPENDS ${SC_DATA_FILES}
+    COMMENT "Copying data/ next to the executables"
     VERBATIM)
+add_custom_target(sc_data ALL DEPENDS "${SC_DATA_STAMP}")
+add_dependencies(SalvaCiudad sc_data)
 
 # ---------------------------------------------------------------------------
 # Model viewer (phase 30): a developer tool apart from the game. Its catalog
@@ -356,13 +366,8 @@ target_compile_definitions(SalvaCiudadModelos PRIVATE SC_VIEWER_SOURCE_DATA="${C
 sc_harden_target(SalvaCiudadModelos)
 set_target_properties(SalvaCiudadModelos PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-# It reads the game's data/ next to it, like the game. After the game, so the
-# two copies of data/ never run at the same time.
-add_dependencies(SalvaCiudadModelos SalvaCiudad)
-add_custom_command(TARGET SalvaCiudadModelos POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:SalvaCiudadModelos>/data"
-    VERBATIM)
+# It reads the game's data/ next to it, like the game.
+add_dependencies(SalvaCiudadModelos sc_data)
 
 # ---------------------------------------------------------------------------
 # Tests.

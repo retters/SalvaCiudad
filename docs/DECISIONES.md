@@ -1440,3 +1440,6 @@ Las variantes de una definición, niveles incluidos, forman un grupo. "Otros col
 
 **D-3106. La compilación del visor espera a la del juego.**
 Los dos copian `data/` junto al ejecutable al terminar de enlazar; en paralelo, una copia podía fallar. Ahora el visor se enlaza después del juego.
+
+**D-3107. Una sola copia de `data/` para los dos ejecutables.**
+Reemplaza a D-3106: esperar al juego no bastaba como garantía y ataba la compilación del visor a la del juego. Ahora un solo objetivo, `sc_data`, copia `data/` a `bin/data` y deja un archivo testigo (`sc_data.stamp`); el juego y el visor dependen de él, así la copia corre una vez y nunca dos a la vez. Se repite solo cuando cambia o se agrega un archivo de `data/` (la lista se recalcula en cada compilación), no en cada enlace. Como antes, borrar un archivo de `data/` no lo borra de `bin/data`; si se borra `bin/data` a mano, hay que borrar también el testigo o compilar desde cero.
