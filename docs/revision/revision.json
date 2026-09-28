@@ -4220,10 +4220,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:16:38-06:00-2v1ven",
+     "fecha": "2026-09-27T18:16:38-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:16:38-06:00"
   },
   {
    "id": "prueba-1-caf897c5",
@@ -4234,10 +4244,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:16:44-06:00-n3w0ka",
+     "fecha": "2026-09-27T18:16:44-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:16:44-06:00"
   },
   {
    "id": "prueba-1-aa6c880c",
@@ -4248,10 +4268,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:16:49-06:00-qllo2j",
+     "fecha": "2026-09-27T18:16:49-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:16:49-06:00"
   },
   {
    "id": "prueba-1-b52993e0",
@@ -4276,10 +4306,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:18:02-06:00-shpfhl",
+     "fecha": "2026-09-27T18:18:02-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:18:02-06:00"
   },
   {
    "id": "prueba-1-dc5a79e3",
@@ -4290,10 +4330,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:19:01-06:00-n33nyk",
+     "fecha": "2026-09-27T18:19:01-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:19:01-06:00"
   },
   {
    "id": "prueba-1-f94362ee",
@@ -4304,10 +4354,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:19:27-06:00-pn4a38",
+     "fecha": "2026-09-27T18:19:27-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:19:27-06:00"
   },
   {
    "id": "prueba-2-18db5cfe",
@@ -4342,10 +4402,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:19:35-06:00-mwj5nf",
+     "fecha": "2026-09-27T18:19:35-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:19:35-06:00"
   },
   {
    "id": "prueba-2-fb03f479",
@@ -4356,10 +4426,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:19:39-06:00-r89v69",
+     "fecha": "2026-09-27T18:19:39-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:19:39-06:00"
   },
   {
    "id": "prueba-2-e3d05011",
@@ -4370,10 +4450,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:19:43-06:00-3fz4yh",
+     "fecha": "2026-09-27T18:19:43-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:19:43-06:00"
   },
   {
    "id": "prueba-2-5be0eb21",
@@ -4384,10 +4474,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:19:49-06:00-r0b7gl",
+     "fecha": "2026-09-27T18:19:49-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:19:49-06:00"
   },
   {
    "id": "prueba-2-b501f801",
@@ -4398,10 +4498,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:19:53-06:00-gofkz3",
+     "fecha": "2026-09-27T18:19:53-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:19:53-06:00"
   },
   {
    "id": "prueba-2-1ab62f79",
@@ -4412,10 +4522,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:19:57-06:00-quj37q",
+     "fecha": "2026-09-27T18:19:57-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:19:57-06:00"
   },
   {
    "id": "prueba-2-6d301e7a",
@@ -4426,10 +4546,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:20:01-06:00-qu4jtg",
+     "fecha": "2026-09-27T18:20:01-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:20:01-06:00"
   },
   {
    "id": "prueba-2-6c0a63f4",
@@ -4440,10 +4570,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:20:09-06:00-yhjllk",
+     "fecha": "2026-09-27T18:20:09-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:20:09-06:00"
   },
   {
    "id": "prueba-2-37b99af6",
@@ -4454,10 +4594,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:20:49-06:00-8cr4ij",
+     "fecha": "2026-09-27T18:20:49-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:20:49-06:00"
   },
   {
    "id": "prueba-2-ea045464",
@@ -4468,10 +4618,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:20:55-06:00-9kuak2",
+     "fecha": "2026-09-27T18:20:55-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:20:55-06:00"
   },
   {
    "id": "prueba-2-45c1d7b7",
@@ -4482,10 +4642,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:21:58-06:00-iyc24a",
+     "fecha": "2026-09-27T18:21:58-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:21:58-06:00"
   },
   {
    "id": "prueba-2-f713e4f0",
@@ -4496,10 +4666,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:22:01-06:00-q9tmoy",
+     "fecha": "2026-09-27T18:22:01-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:22:01-06:00"
   },
   {
    "id": "prueba-2-6462135d",
@@ -4510,10 +4690,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:22:31-06:00-1nhtcu",
+     "fecha": "2026-09-27T18:22:31-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:22:31-06:00"
   },
   {
    "id": "prueba-3-3cead845",
@@ -4524,10 +4714,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:22:45-06:00-j2yc1n",
+     "fecha": "2026-09-27T18:22:45-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:22:45-06:00"
   },
   {
    "id": "prueba-3-4839b9ab",
@@ -4538,10 +4738,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:22:49-06:00-ngvpfa",
+     "fecha": "2026-09-27T18:22:49-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:22:49-06:00"
   },
   {
    "id": "prueba-3-11243d76",
@@ -4552,10 +4762,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:22:53-06:00-nucx7v",
+     "fecha": "2026-09-27T18:22:53-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:22:53-06:00"
   },
   {
    "id": "prueba-3-cc86408d",
@@ -4566,10 +4786,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:22:58-06:00-71jrf3",
+     "fecha": "2026-09-27T18:22:58-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:22:58-06:00"
   },
   {
    "id": "prueba-3-055d30d0",
@@ -4580,10 +4810,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:05-06:00-4lr1aq",
+     "fecha": "2026-09-27T18:23:05-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:05-06:00"
   },
   {
    "id": "prueba-3-ba8863fc",
@@ -4594,10 +4834,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:12-06:00-xhq4ti",
+     "fecha": "2026-09-27T18:23:12-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:12-06:00"
   },
   {
    "id": "prueba-3-06845887",
@@ -4608,10 +4858,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:16-06:00-vba42p",
+     "fecha": "2026-09-27T18:23:16-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:16-06:00"
   },
   {
    "id": "prueba-4-4fb4d3e3",
@@ -4622,10 +4882,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:27-06:00-tjewfi",
+     "fecha": "2026-09-27T18:23:27-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:27-06:00"
   },
   {
    "id": "prueba-4-6ac3685f",
@@ -4636,10 +4906,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:31-06:00-gascd4",
+     "fecha": "2026-09-27T18:23:31-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:31-06:00"
   },
   {
    "id": "prueba-4-8fe67c3c",
@@ -4650,10 +4930,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:36-06:00-opmbgr",
+     "fecha": "2026-09-27T18:23:36-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:36-06:00"
   },
   {
    "id": "prueba-4-555aee69",
@@ -4664,10 +4954,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:38-06:00-elx0j0",
+     "fecha": "2026-09-27T18:23:38-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:38-06:00"
   },
   {
    "id": "prueba-4-242e1961",
@@ -4678,10 +4978,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:44-06:00-48hkdi",
+     "fecha": "2026-09-27T18:23:44-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:44-06:00"
   },
   {
    "id": "prueba-4-507df1c2",
@@ -4692,10 +5002,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:50-06:00-k6odde",
+     "fecha": "2026-09-27T18:23:50-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:50-06:00"
   },
   {
    "id": "prueba-4-1f023ba1",
@@ -4706,10 +5026,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:23:56-06:00-s2lxtx",
+     "fecha": "2026-09-27T18:23:56-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:23:56-06:00"
   },
   {
    "id": "prueba-4-61de3606",
@@ -4720,10 +5050,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:24:04-06:00-25ecae",
+     "fecha": "2026-09-27T18:24:04-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:24:04-06:00"
   },
   {
    "id": "prueba-modosdecámar-a140d8f1",
@@ -4804,10 +5144,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:24:09-06:00-6vi25q",
+     "fecha": "2026-09-27T18:24:09-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:24:09-06:00"
   },
   {
    "id": "prueba-5-179bcf5f",
@@ -4818,10 +5168,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:24:13-06:00-v886cr",
+     "fecha": "2026-09-27T18:24:13-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:24:13-06:00"
   },
   {
    "id": "prueba-6-664c377b",
@@ -4832,10 +5192,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:25:27-06:00-kt7ukg",
+     "fecha": "2026-09-27T18:25:27-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:25:27-06:00"
   },
   {
    "id": "prueba-6-f5897895",
@@ -4846,10 +5216,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:25:56-06:00-f2ch2k",
+     "fecha": "2026-09-27T18:25:56-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:25:56-06:00"
   },
   {
    "id": "prueba-6-5fbd51b7",
@@ -4860,10 +5240,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:26:02-06:00-1f3rc7",
+     "fecha": "2026-09-27T18:26:02-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:26:02-06:00"
   },
   {
    "id": "prueba-6-e91300c9",
@@ -4874,10 +5264,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:26:08-06:00-5o4yyd",
+     "fecha": "2026-09-27T18:26:08-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:26:08-06:00"
   },
   {
    "id": "prueba-6-3439b5aa",
@@ -4888,10 +5288,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:26:14-06:00-oowndb",
+     "fecha": "2026-09-27T18:26:14-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:26:14-06:00"
   },
   {
    "id": "prueba-6-42ab4fd2",
@@ -4902,10 +5312,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:26:18-06:00-coccva",
+     "fecha": "2026-09-27T18:26:18-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:26:18-06:00"
   },
   {
    "id": "prueba-6-447a6a96",
@@ -4916,10 +5336,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:26:24-06:00-t25fmq",
+     "fecha": "2026-09-27T18:26:24-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:26:24-06:00"
   },
   {
    "id": "prueba-6-2c75047d",
@@ -4930,10 +5360,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:26:27-06:00-897l7w",
+     "fecha": "2026-09-27T18:26:27-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:26:27-06:00"
   },
   {
    "id": "prueba-6-acb0fc39",
@@ -4944,10 +5384,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:26:32-06:00-p686o4",
+     "fecha": "2026-09-27T18:26:32-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:26:32-06:00"
   },
   {
    "id": "prueba-6-c430f7c5",
@@ -4958,10 +5408,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:27:59-06:00-ulnx1l",
+     "fecha": "2026-09-27T18:27:59-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:27:59-06:00"
   },
   {
    "id": "prueba-6-645fa963",
@@ -4972,10 +5432,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:28:04-06:00-6di9xm",
+     "fecha": "2026-09-27T18:28:04-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:28:04-06:00"
   },
   {
    "id": "prueba-6-e63991c1",
@@ -4986,10 +5456,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:27:33-06:00-lyci9d",
+     "fecha": "2026-09-27T18:27:33-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:27:33-06:00"
   },
   {
    "id": "prueba-6b-bec97f25",
@@ -5000,10 +5480,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:28:23-06:00-rubam7",
+     "fecha": "2026-09-27T18:28:23-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:28:23-06:00"
   },
   {
    "id": "prueba-6b-6bbc8e64",
@@ -5014,10 +5504,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:29:17-06:00-rf31fj",
+     "fecha": "2026-09-27T18:29:17-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:29:17-06:00"
   },
   {
    "id": "prueba-6b-d379857c",
@@ -5028,10 +5528,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:28:44-06:00-tfbr0z",
+     "fecha": "2026-09-27T18:28:44-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:28:44-06:00"
   },
   {
    "id": "prueba-6b-1249afa7",
@@ -5042,10 +5552,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:28:48-06:00-n1w947",
+     "fecha": "2026-09-27T18:28:48-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:28:48-06:00"
   },
   {
    "id": "prueba-6b-05d38ffb",
@@ -5056,10 +5576,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:28:52-06:00-lwxugn",
+     "fecha": "2026-09-27T18:28:52-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:28:52-06:00"
   },
   {
    "id": "prueba-6b-36df76dd",
@@ -5070,10 +5600,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:29:00-06:00-0i6n7g",
+     "fecha": "2026-09-27T18:29:00-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:29:00-06:00"
   },
   {
    "id": "prueba-6b-372aa754",
@@ -5084,10 +5624,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:29:05-06:00-my90qr",
+     "fecha": "2026-09-27T18:29:05-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:29:05-06:00"
   },
   {
    "id": "prueba-6b-02e48ab5",
@@ -5098,10 +5648,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:29:39-06:00-2oa0nr",
+     "fecha": "2026-09-27T18:29:39-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:29:39-06:00"
   },
   {
    "id": "prueba-6c-6b1e1463",
@@ -5112,10 +5672,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:29:51-06:00-m0nosf",
+     "fecha": "2026-09-27T18:29:51-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:29:51-06:00"
   },
   {
    "id": "prueba-6c-b89d8219",
@@ -5126,10 +5696,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:30:15-06:00-3yo7lp",
+     "fecha": "2026-09-27T18:30:15-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:30:15-06:00"
   },
   {
    "id": "prueba-6c-dcee1a20",
@@ -5140,10 +5720,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:30:18-06:00-t0m92n",
+     "fecha": "2026-09-27T18:30:18-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:30:18-06:00"
   },
   {
    "id": "prueba-6c-ed07d84d",
@@ -5154,10 +5744,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:30:22-06:00-xrcb8f",
+     "fecha": "2026-09-27T18:30:22-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:30:22-06:00"
   },
   {
    "id": "prueba-6c-c8630b77",
@@ -5168,10 +5768,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:30:51-06:00-r21idg",
+     "fecha": "2026-09-27T18:30:51-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:30:51-06:00"
   },
   {
    "id": "prueba-6c-372aa754",
@@ -5182,10 +5792,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:30:54-06:00-mwxwne",
+     "fecha": "2026-09-27T18:30:54-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:30:54-06:00"
   },
   {
    "id": "prueba-6c-5bce9ba0",
@@ -5196,10 +5816,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:31:00-06:00-wnlq7r",
+     "fecha": "2026-09-27T18:31:00-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:31:00-06:00"
   },
   {
    "id": "prueba-7-15d1f17e",
@@ -5210,10 +5840,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:31:10-06:00-cihkb6",
+     "fecha": "2026-09-27T18:31:10-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:31:10-06:00"
   },
   {
    "id": "prueba-7-edd349ef",
@@ -5224,10 +5864,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:31:17-06:00-lx6bql",
+     "fecha": "2026-09-27T18:31:17-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:31:17-06:00"
   },
   {
    "id": "prueba-7-f3b3e625",
@@ -5238,10 +5888,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:31:29-06:00-djaf6m",
+     "fecha": "2026-09-27T18:31:29-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:31:29-06:00"
   },
   {
    "id": "prueba-7-6cdb8377",
@@ -5294,10 +5954,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:32:05-06:00-mh3k1b",
+     "fecha": "2026-09-27T18:32:05-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:32:05-06:00"
   },
   {
    "id": "prueba-8-0a189eb7",
@@ -5308,10 +5978,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:32:18-06:00-r29iai",
+     "fecha": "2026-09-27T18:32:18-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:32:18-06:00"
   },
   {
    "id": "prueba-8-e7bdc2a2",
@@ -5322,10 +6002,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:32:25-06:00-uwm3k9",
+     "fecha": "2026-09-27T18:32:25-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:32:25-06:00"
   },
   {
    "id": "prueba-8-0b684231",
@@ -5364,10 +6054,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:32:51-06:00-jr7qro",
+     "fecha": "2026-09-27T18:32:51-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:32:51-06:00"
   },
   {
    "id": "prueba-8-ec9de0c4",
@@ -5378,10 +6078,20 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
-   "respuesta": ""
+   "historial": [
+    {
+     "id": "2026-09-27T18:33:06-06:00-kpl4v5",
+     "fecha": "2026-09-27T18:33:06-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "respuesta": "",
+   "actualizado": "2026-09-27T18:33:06-06:00"
   },
   {
    "id": "prueba-8-9707cac3",
