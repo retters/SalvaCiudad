@@ -29,7 +29,8 @@
         "core:bows": 1
       },
       "trainWork": 300,
-      "power": 3
+      "power": 3,
+      "sight": 24
     },
     {
       "type": "unit",

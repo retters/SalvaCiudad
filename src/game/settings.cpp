@@ -413,6 +413,8 @@ void read_new_game(Reader& r, yyjson_mut_val* obj, NewGameSettings& n) {
     read_def_id(r, obj, "race", "newGame.race", true, n.race);
     r.read_int(obj, "otherRaces", "newGame.otherRaces", 0, 100, n.other_races);
     r.read_int(obj, "maxPopulation", "newGame.maxPopulation", lim::kMinPopulation, lim::kMaxPopulation, n.max_population);
+    read_choice(r, obj, "fog", "newGame.fog", names::kFogs, n.fog);
+    r.read_bool(obj, "sharedVision", "newGame.sharedVision", n.shared_vision);
 }
 
 bool write_bindings(yyjson_mut_doc* doc, yyjson_mut_val* obj, const KeyBindings& bindings) {
@@ -529,6 +531,8 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_string(doc, ng, "race", n.race);
     ok = ok && json::set_int(doc, ng, "otherRaces", n.other_races);
     ok = ok && json::set_int(doc, ng, "maxPopulation", n.max_population);
+    ok = ok && json::set_string(doc, ng, "fog", n.fog);
+    ok = ok && json::set_bool(doc, ng, "sharedVision", n.shared_vision);
     return ok;
 }
 

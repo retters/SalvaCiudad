@@ -38,3 +38,64 @@ float3 linear_to_srgb(float3 c)
 {
     return pow(saturate(c), 1.0 / 2.2);
 }
+
+// Fog of war (phases 32 to 34). The fog texture has one texel per 4 m
+// cell: 0 unexplored, 0.5 explored but out of sight, 1 in sight. The
+// ceiling texture holds, in coarse cells, the height (in units of 655.35 m)
+// under which the fog hides things. `war`: x = texture coordinates per
+// meter, y = mode (0 none, 1 static, 2 dynamic), z = height of the band
+// over the ceiling where the fog thins out (0: no ceiling), w = unused.
+static const float kWarCeilingScale = 655.35;
+
+float war_fog_value(Texture2D<float> fog, SamplerState s, float2 xz, float4 war)
+{
+    // A few taps for soft edges instead of 4 m squares.
+    float2 uv = xz * war.x;
+    float o = 1.6 * war.x;
+    float v = fog.Sample(s, uv) * 0.36;
+    v += fog.Sample(s, uv + float2(o, o)) * 0.16;
+    v += fog.Sample(s, uv + float2(-o, o)) * 0.16;
+    v += fog.Sample(s, uv + float2(o, -o)) * 0.16;
+    v += fog.Sample(s, uv + float2(-o, -o)) * 0.16;
+    return v;
+}
+
+// How far over the fog's ceiling a point stands, 0..1 (phase 34).
+float war_lift(Texture2D<float> ceiling, SamplerState s, float3 world_pos, float4 war)
+{
+    if (war.z <= 0.0)
+    {
+        return 0.0;
+    }
+    float top = ceiling.Sample(s, world_pos.xz * war.x) * kWarCeilingScale;
+    return saturate((world_pos.y - top) / war.z);
+}
+
+// Unexplored ground goes black and what was explored but is out of sight
+// goes dim and grey (dynamic fog). What stands over the ceiling shows as a
+// dark silhouette in the black and as it is in the grey.
+float3 apply_war_fog(float3 color, float value, float lift, float4 war)
+{
+    if (war.y < 0.5)
+    {
+        return color;
+    }
+    float black;
+    float dim;
+    if (war.y < 1.5)
+    {
+        black = saturate(1.0 - value);
+        dim = 0.0;
+    }
+    else
+    {
+        black = saturate(1.0 - 2.0 * value);
+        dim = saturate(2.0 - 2.0 * value);
+    }
+    float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
+    float3 dimmed = lerp(color, luma * float3(0.85, 0.92, 1.05), 0.75) * 0.45;
+    color = lerp(color, dimmed, dim * (1.0 - lift));
+    float3 silhouette = luma * float3(0.16, 0.18, 0.22) + float3(0.012, 0.014, 0.02);
+    float3 hidden = lerp(float3(0.006, 0.007, 0.01), silhouette, lift);
+    return lerp(color, hidden, black);
+}

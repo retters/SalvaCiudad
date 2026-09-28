@@ -7,6 +7,11 @@ Texture2D<float4> base_color_tex : register(t0, space2);
 Texture2DArray<float> shadow_map : register(t1, space2);
 SamplerState base_sampler : register(s0, space2);
 SamplerComparisonState shadow_sampler : register(s1, space2);
+// Fog of war (phase 32) and its ceiling (phase 34).
+Texture2D<float> war_fog_tex : register(t2, space2);
+Texture2D<float> war_ceiling_tex : register(t3, space2);
+SamplerState war_sampler : register(s2, space2);
+SamplerState war_ceiling_sampler : register(s3, space2);
 
 cbuffer SceneUniforms : register(b0, space3)
 {
@@ -19,6 +24,7 @@ cbuffer SceneUniforms : register(b0, space3)
     float4 fog_color;           // rgb; a = density.
     float4 camera_position;     // xyz; w = number of cascades (0 = no shadows).
     float4 shadow_params;       // x = texel size, y = depth bias, z = snow cover (0..1).
+    float4 war_params;          // Fog of war: see apply_war_fog().
 };
 
 // Snow settles on what faces up, more the deeper it is.
@@ -93,5 +99,13 @@ float4 shade(float3 albedo, float3 n, float3 world_pos)
 
     float fog = 1.0 - exp2(-fog_color.a * distance * distance);
     color = lerp(color, fog_color.rgb, saturate(fog));
+    // The fog of war goes over the haze: what was never seen is the same
+    // black near and far, so no shape shows through it.
+    if (war_params.y > 0.5)
+    {
+        float war = war_fog_value(war_fog_tex, war_sampler, world_pos.xz, war_params);
+        float lift = war_lift(war_ceiling_tex, war_ceiling_sampler, world_pos, war_params);
+        color = apply_war_fog(color, war, lift, war_params);
+    }
     return float4(linear_to_srgb(tonemap(color)), 1.0);
 }

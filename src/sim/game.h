@@ -22,6 +22,7 @@
 #include "sim/nav.h"
 #include "sim/rng.h"
 #include "sim/serialize.h"
+#include "sim/vision.h"
 
 namespace sc::sim {
 
@@ -37,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 23;
+inline constexpr std::uint32_t kGameRulesVersion = 24;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -330,6 +331,7 @@ enum class PlaceError : std::uint8_t {
     TooMany,     // A farm with all its fields.
     BadSize,
     Locked,      // Needs a bigger town center.
+    Unexplored,  // Under the fog of war (phase 32).
 };
 
 // How a game is set up besides its map.
@@ -487,6 +489,20 @@ public:
     // workshops take away) and trees (phase 12; the map layer, phase 17).
     [[nodiscard]] std::int32_t desirability_at(FixedVec2 here, const Building* self = nullptr) const;
 
+    // Fog of war (phase 32): what each vision group has explored. A
+    // group is a town, or all the allies when they share what they see.
+    [[nodiscard]] bool fog() const { return rules_.fog != FogMode::None; }
+    [[nodiscard]] const Vision& vision() const { return vision_; }
+    [[nodiscard]] std::uint8_t town_group(std::uint8_t town) const;
+    [[nodiscard]] std::uint8_t vision_group(std::uint8_t player) const { return town_group(town_of(player)); }
+    // Meters a building, a villager or a soldier sees (0: it gives no sight).
+    [[nodiscard]] std::int32_t sight(const Building& b) const;
+    [[nodiscard]] std::int32_t sight(const Villager& v) const;
+    [[nodiscard]] std::int32_t sight(const Creature& a) const;
+    // Explores around every town's people and buildings; step() does it
+    // once a second (public for the benchmarks). Nothing without fog.
+    void update_vision();
+
     // Armies and the end of the game (phase 16).
     [[nodiscard]] std::int32_t soldiers(std::uint8_t player) const;
     [[nodiscard]] std::int32_t military_power(std::uint8_t player) const;
@@ -568,6 +584,10 @@ private:
     std::vector<Caravan> caravans_;
     std::uint32_t next_offer_ = 1;
     std::vector<Event> events_;
+
+    Vision vision_;
+    // The vision groups the players make up (fixed for a game).
+    [[nodiscard]] std::uint16_t vision_groups() const;
 
     std::vector<std::pair<std::uint64_t, std::uint32_t>> regrow_;  // (tick, node), sorted.
     std::vector<std::uint32_t> changed_nodes_;

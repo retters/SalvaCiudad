@@ -316,6 +316,8 @@ TEST_SUITE("settings") {
         n.race = "mixed";
         n.other_races = 50;
         n.max_population = 350;
+        n.fog = "dynamic";
+        n.shared_vision = false;
         {
             SettingsStore store(dir / "settings.json");
             (void)store.load();
@@ -334,8 +336,9 @@ TEST_SUITE("settings") {
             "size": "enormous", "mapType": "../x", "biome": "Core:Pine", "islands": 9, "water": "lots",
             "forests": 3, "relief": "cliffs", "players": 13, "seasons": 16, "year": "", "winter": "cold",
             "startGoods": "none", "diseases": "extreme", "race": "mixed!", "otherRaces": 101,
-            "maxPopulation": 20, "resources": "high", "fires": "low", "sea": "ocean", "landforms": "all"}})", s);
-        CHECK(r.ignored_fields == 18);
+            "maxPopulation": 20, "resources": "high", "fires": "low", "sea": "ocean", "landforms": "all",
+            "fog": "thick", "sharedVision": 1}})", s);
+        CHECK(r.ignored_fields == 20);
         NewGameSettings expected;
         expected.resources = "high";
         expected.fires = "low";

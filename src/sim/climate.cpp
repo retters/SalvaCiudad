@@ -57,6 +57,8 @@ void GameRules::write(BinaryWriter& w) const {
         w.u8(r);
     }
     w.u8(other_races);
+    w.u8(static_cast<std::uint8_t>(fog));
+    w.u8(shared_vision ? 1 : 0);
 }
 
 bool GameRules::read(BinaryReader& r, GameRules& out) {
@@ -97,6 +99,13 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
         r.fail();
         return false;
     }
+    std::uint8_t fog = 0, shared_vision = 0;
+    if (!r.u8(fog) || fog >= static_cast<std::uint8_t>(FogMode::Count) || !r.u8(shared_vision) || shared_vision > 1) {
+        r.fail();
+        return false;
+    }
+    g.fog = static_cast<FogMode>(fog);
+    g.shared_vision = shared_vision != 0;
     if (g.climate.seasons == 0 || g.climate.seasons > 0b1111 || year >= static_cast<std::uint8_t>(YearLength::Count) ||
         winter >= static_cast<std::uint8_t>(Harshness::Count) || start >= static_cast<std::uint8_t>(StartGoods::Count) ||
         g.max_population < kMinPopulationLimit || g.max_population > kMaxPopulationLimit) {

@@ -158,6 +158,13 @@ private:
     void compass(ui::Context& ctx, const ui::Rect& box, float yaw);
     const GameSession* minimap_session_ = nullptr;  // Whose map the image shows.
     sim::MapSettings minimap_settings_;
+    // Phase 32: the map's image without fog, and the fog it was last drawn
+    // with (the view's generation and revision, and when).
+    std::vector<std::uint8_t> minimap_base_;
+    std::uint32_t minimap_fog_generation_ = 0;
+    std::uint32_t minimap_fog_revision_ = 0;
+    int minimap_fog_mode_ = -1;
+    std::uint64_t minimap_fog_ns_ = 0;
     bool minimap_dragging_ = false;
     float top_bar_bottom_ = 0.0f;
     float right_top_ = 0.0f;  // Below the minimap: where windows on the right start.

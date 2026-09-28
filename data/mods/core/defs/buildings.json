@@ -6,6 +6,7 @@
       "id": "core:town_center",
       "name": "building.townCenter",
       "kind": "townCenter",
+      "sight": 48,
       "model": "models/buildings/town_center.glb",
       "size": [
         8,
@@ -1157,7 +1158,8 @@
       "hp": 800,
       "attackRange": 30,
       "attackDamage": 60,
-      "attackEvery": 20
+      "attackEvery": 20,
+      "sight": 45
     },
     {
       "type": "building",

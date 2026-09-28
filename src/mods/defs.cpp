@@ -5,6 +5,7 @@
 #include <system_error>
 
 #include "mods/mod_library.h"
+#include "sim/vision.h"
 
 namespace sc::mods {
 
@@ -478,6 +479,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.cold = r.integer("cold", -100, 90, 0);
         def.disease = r.integer("disease", -100, 90, 0);
         def.night_vision = r.flag("nightVision");
+        def.sight = r.integer("sight", 1, sim::kMaxSight, 12);
         if (yyjson_mut_val* work = yyjson_mut_obj_get(d->obj, "work"); work != nullptr) {
             if (!yyjson_mut_is_obj(work)) {
                 r.fail("\"work\" must be an object of skill: percent");
@@ -548,6 +550,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.train_work = r.integer("trainWork", 1, 100000, 300);
         def.power = r.integer("power", 0, 1000, 1);
         def.tier = static_cast<std::uint8_t>(r.integer("tier", 0, 10, 0));
+        def.sight = r.integer("sight", 1, sim::kMaxSight, 16);
         if (r.ok() && out.units.size() < 64) {
             out.units.push_back(std::move(def));
         }
@@ -657,6 +660,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.attack_range = r.integer("attackRange", 0, 200, 0);
         def.attack_damage = r.integer("attackDamage", 0, 10000, 0);
         def.attack_every = r.integer("attackEvery", 1, 1000, 20);
+        def.sight = r.integer("sight", 1, sim::kMaxSight, 12);
         def.trains = r.flag("trains");
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);

@@ -1,0 +1,241 @@
+#include "game/fog_view.h"
+
+#include <algorithm>
+#include <bit>
+#include <cmath>
+
+namespace sc {
+
+namespace {
+
+// Words of a grid holding rows first..last (inclusive), as [begin, end).
+std::pair<std::size_t, std::size_t> row_words(std::int32_t side, std::int32_t first, std::int32_t last) {
+    if (first > last || side <= 0) {
+        return {0, 0};
+    }
+    const std::size_t begin = static_cast<std::size_t>(first) * static_cast<std::size_t>(side) / 64;
+    const std::size_t end = (static_cast<std::size_t>(last + 1) * static_cast<std::size_t>(side) - 1) / 64 + 1;
+    return {begin, end};
+}
+
+std::int32_t cell_of(float meters) {
+    return static_cast<std::int32_t>(std::floor(meters / static_cast<float>(sim::kFogCell)));
+}
+
+}  // namespace
+
+void FogView::begin(const sim::Game& game, std::uint8_t group) {
+    mode_ = game.rules().fog;
+    group_ = group;
+    // Unique across views, so a new game is never mistaken for the last.
+    static std::uint32_t next_generation = 0;
+    generation_ = ++next_generation;
+    side_ = game.fog() ? game.vision().side() : 0;
+    tick_ = ~0ull;
+    explored_count_ = 0;
+    rows_[0] = last_rows_[0] = 0;
+    rows_[1] = last_rows_[1] = -1;
+    pending_.clear();
+    visible_.reset(side_);
+    previous_.reset(side_);
+    explored_.reset(side_);
+    texels_.assign(static_cast<std::size_t>(side_) * static_cast<std::size_t>(side_), kHidden);
+    tiles_ = (side_ + kTile - 1) / kTile;
+    dirty_.assign(static_cast<std::size_t>(tiles_) * static_cast<std::size_t>(tiles_), 0);
+    ++revision_;
+    if (side_ == 0) {
+        return;
+    }
+    // Everything once, then only what changes.
+    explored_ = game.vision().explored(group_);
+    explored_count_ = game.vision().count(group_);
+    update(game);
+    mark_all();
+    refresh_tiles();
+    pending_.clear();  // The caller sends the whole texture at first.
+}
+
+void FogView::set_revealed(bool revealed) {
+    if (revealed != revealed_) {
+        revealed_ = revealed;
+        ++revision_;
+    }
+}
+
+void FogView::stamp(std::int32_t x, std::int32_t z, std::int32_t radius) {
+    sim::for_each_disc_row(side_, x, z, radius, [&](std::int32_t cz, std::int32_t cx0, std::int32_t cx1) {
+        visible_.set_span(cz, cx0, cx1);
+        rows_[0] = std::min(rows_[0], cz);
+        rows_[1] = std::max(rows_[1], cz);
+    });
+}
+
+void FogView::mark_word(std::size_t word, std::uint64_t changed) {
+    while (changed != 0) {
+        const std::size_t cell = (word << 6) | static_cast<std::size_t>(std::countr_zero(changed));
+        changed &= changed - 1;
+        const auto cx = static_cast<std::int32_t>(cell % static_cast<std::size_t>(side_));
+        const auto cz = static_cast<std::int32_t>(cell / static_cast<std::size_t>(side_));
+        if (cz >= side_) {
+            continue;
+        }
+        dirty_[static_cast<std::size_t>(cz / kTile) * static_cast<std::size_t>(tiles_) + static_cast<std::size_t>(cx / kTile)] = 1;
+        any_dirty_ = true;
+    }
+}
+
+void FogView::mark_all() {
+    std::fill(dirty_.begin(), dirty_.end(), std::uint8_t{1});
+    any_dirty_ = !dirty_.empty();
+}
+
+void FogView::update(const sim::Game& game) {
+    if (side_ == 0 || game.tick() == tick_) {
+        return;
+    }
+    tick_ = game.tick();
+    // What was in sight is only in the rows stamped last time.
+    std::vector<std::uint64_t>& now = visible_.words();
+    std::vector<std::uint64_t>& before = previous_.words();
+    {
+        const auto [b, e] = row_words(side_, last_rows_[0], last_rows_[1]);
+        std::fill(now.begin() + static_cast<std::ptrdiff_t>(b), now.begin() + static_cast<std::ptrdiff_t>(e), 0ull);
+    }
+    rows_[0] = side_;
+    rows_[1] = -1;
+    for (const sim::Building& b : game.buildings().data()) {
+        if (game.town_group(b.owner) == group_) {
+            stamp(b.x + b.width / 2, b.z + b.depth / 2, game.sight(b));
+        }
+    }
+    for (const sim::Villager& v : game.villagers().data()) {
+        if (game.town_group(v.owner) == group_) {
+            stamp(v.position.x.floor_int(), v.position.z.floor_int(), game.sight(v));
+        }
+    }
+    for (const sim::Creature& a : game.creatures().data()) {
+        const std::int32_t r = game.sight(a);
+        if (r > 0 && game.town_group(a.town) == group_) {
+            stamp(a.position.x.floor_int(), a.position.z.floor_int(), r);
+        }
+    }
+    // Compare over the rows stamped now or last time, then remember.
+    const std::int32_t first = std::min(rows_[0], last_rows_[0]);
+    const std::int32_t last = std::max(rows_[1], last_rows_[1]);
+    {
+        const auto [b, e] = row_words(side_, first, last);
+        for (std::size_t k = b; k < e; ++k) {
+            if (now[k] != before[k]) {
+                mark_word(k, now[k] ^ before[k]);
+                before[k] = now[k];
+            }
+        }
+    }
+    last_rows_[0] = rows_[0];
+    last_rows_[1] = rows_[1];
+    // Newly explored cells (the game reveals them once a second).
+    const sim::FogGrid& game_explored = game.vision().explored(group_);
+    if (game.vision().count(group_) != explored_count_ && game_explored.side() == side_) {
+        explored_count_ = game.vision().count(group_);
+        std::vector<std::uint64_t>& mine = explored_.words();
+        const std::vector<std::uint64_t>& theirs = game_explored.words();
+        for (std::size_t k = 0; k < mine.size(); ++k) {
+            if (mine[k] != theirs[k]) {
+                mark_word(k, mine[k] ^ theirs[k]);
+                mine[k] = theirs[k];
+            }
+        }
+    }
+    refresh_tiles();
+}
+
+void FogView::refresh_tiles() {
+    if (!any_dirty_) {
+        return;
+    }
+    any_dirty_ = false;
+    ++revision_;
+    for (std::int32_t tz = 0; tz < tiles_; ++tz) {
+        for (std::int32_t tx = 0; tx < tiles_; ++tx) {
+            std::uint8_t& flag = dirty_[static_cast<std::size_t>(tz) * static_cast<std::size_t>(tiles_) + static_cast<std::size_t>(tx)];
+            if (flag == 0) {
+                continue;
+            }
+            flag = 0;
+            const Rect r{tx * kTile, tz * kTile, std::min(kTile, side_ - tx * kTile), std::min(kTile, side_ - tz * kTile)};
+            for (std::int32_t cz = r.z; cz < r.z + r.d; ++cz) {
+                std::uint8_t* row = texels_.data() + static_cast<std::size_t>(cz) * static_cast<std::size_t>(side_);
+                for (std::int32_t cx = r.x; cx < r.x + r.w; ++cx) {
+                    std::uint8_t t = kHidden;
+                    if (cell_in_sight(cx, cz)) {
+                        t = kInSight;
+                    } else if (explored_.get(cx, cz)) {
+                        t = mode_ == sim::FogMode::Dynamic ? kExplored : kInSight;
+                    }
+                    row[cx] = t;
+                }
+            }
+            pending_.push_back(r);
+        }
+    }
+}
+
+std::vector<FogView::Rect> FogView::take_dirty() {
+    std::vector<Rect> out;
+    out.swap(pending_);
+    return out;
+}
+
+bool FogView::in_sight(float x, float z) const {
+    if (mode() == sim::FogMode::None) {
+        return true;
+    }
+    return cell_in_sight(cell_of(x), cell_of(z));
+}
+
+bool FogView::explored(float x, float z) const {
+    if (mode() == sim::FogMode::None) {
+        return true;
+    }
+    return cell_explored(cell_of(x), cell_of(z));
+}
+
+bool FogView::shows(float x, float z) const {
+    switch (mode()) {
+        case sim::FogMode::Static: return explored(x, z);
+        case sim::FogMode::Dynamic: return in_sight(x, z);
+        default: return true;
+    }
+}
+
+bool FogView::rect_in_sight(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const {
+    if (mode() == sim::FogMode::None) {
+        return true;
+    }
+    for (std::int32_t cz = z / sim::kFogCell; cz <= (z + std::max(1, d) - 1) / sim::kFogCell; ++cz) {
+        for (std::int32_t cx = x / sim::kFogCell; cx <= (x + std::max(1, w) - 1) / sim::kFogCell; ++cx) {
+            if (cell_in_sight(cx, cz)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool FogView::rect_shows(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const {
+    switch (mode()) {
+        case sim::FogMode::Static:
+            for (std::int32_t cz = z / sim::kFogCell; cz <= (z + std::max(1, d) - 1) / sim::kFogCell; ++cz) {
+                for (std::int32_t cx = x / sim::kFogCell; cx <= (x + std::max(1, w) - 1) / sim::kFogCell; ++cx) {
+                    if (cell_explored(cx, cz)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        case sim::FogMode::Dynamic: return rect_in_sight(x, z, w, d);
+        default: return true;
+    }
+}
+
+}  // namespace sc

@@ -134,6 +134,12 @@ private:
     int overlay_ = 0;
     SoundDirector sound_;  // Phase 18.
     bool sound_started_ = false;
+    // Phase 32: the fog of war the renderer shows (mode, grid side and the
+    // view's generation), so it changes only when the game's fog does.
+    int war_mode_shown_ = 0;
+    std::int32_t war_side_shown_ = 0;
+    std::uint32_t war_generation_shown_ = 0;
+    void update_war_fog();
     void apply_snapshot(std::vector<std::uint8_t> state);
     void close_network();
     [[nodiscard]] net::LocalInfo local_info() const;

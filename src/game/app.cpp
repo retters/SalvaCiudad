@@ -702,6 +702,8 @@ void App::render_frame(float dt) {
                 update_placement(frame.width, frame.height);
                 const int speed = host_->game_paused() ? 0 : clock_.speed();
                 village_.set_view(camera_.target().x, camera_.target().z, session_->town());
+                update_war_fog();
+                village_.set_fog(&session_->fog());
                 village_.update(scene_, map_scene_, session_->game(), static_cast<float>(clock_.interpolation()), dt,
                                 speed);
                 // People placed with the developer tools walk among them.
@@ -991,6 +993,11 @@ void App::leave_map() {
         return;
     }
     dev_tools_.reset();
+    village_.set_fog(nullptr);
+    (void)scene_.set_war_fog(0, 0, 0.0f);
+    war_mode_shown_ = 0;
+    war_side_shown_ = 0;
+    war_generation_shown_ = 0;
     village_.end(scene_);
     session_.reset();
     lighting_ = render::Lighting{};
@@ -1372,6 +1379,44 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
     }
 }
 
+void App::update_war_fog() {
+    FogView& fog = session_->fog();
+    fog.update(session_->game());
+    const int mode = static_cast<int>(fog.mode());
+    if (mode != war_mode_shown_ || fog.side() != war_side_shown_ || fog.generation() != war_generation_shown_) {
+        // Another game, or the fog turned on or off: the whole grid again.
+        war_mode_shown_ = mode;
+        war_side_shown_ = fog.side();
+        war_generation_shown_ = fog.generation();
+        (void)fog.take_dirty();
+        if (mode == 0 || fog.side() <= 0) {
+            (void)scene_.set_war_fog(0, 0, 0.0f);
+            return;
+        }
+        if (scene_.set_war_fog(mode, fog.side(), static_cast<float>(sim::kFogCell))) {
+            scene_.update_war_fog(fog.texels(), 0, 0, fog.side(), fog.side());
+        }
+        return;
+    }
+    for (const FogView::Rect& r : fog.take_dirty()) {
+        if (mode != 0) {
+            scene_.update_war_fog(fog.texels(), r.x, r.z, r.w, r.d);
+        }
+    }
+    // What is now under the fog cannot stay selected.
+    GameSession::Interaction& ui = session_->ui();
+    const sim::Game& game = session_->game();
+    if (const sim::Villager* v = game.villagers().get(ui.selected_villager);
+        v != nullptr && !village_.mover_shown(game, true, v->owner, static_cast<float>(v->position.x.raw()) / 65536.0f,
+                                              static_cast<float>(v->position.z.raw()) / 65536.0f)) {
+        ui.selected_villager = {};
+    }
+    if (const sim::Building* b = game.buildings().get(ui.selected_building);
+        b != nullptr && !village_.building_shown(game, *b)) {
+        ui.selected_building = {};
+    }
+}
+
 void App::start_session(std::unique_ptr<GameSession> session) {
     session_ = std::move(session);
     const sim::Game& game = session_->game();
@@ -1714,8 +1759,8 @@ void App::update_sound(float dt) {
         sound_.ui_click();  // Every click: the interface or the world.
     }
     if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
-        sound_.update(session_->game(), camera_.target().x, camera_.target().z, camera_.distance(), host_->game_paused(),
-                      dt * static_cast<float>(std::max(1, clock_.speed())));
+        sound_.update(session_->game(), &session_->fog(), camera_.target().x, camera_.target().z, camera_.distance(),
+                      host_->game_paused(), dt * static_cast<float>(std::max(1, clock_.speed())));
     } else {
         sound_.stop();
     }

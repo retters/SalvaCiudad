@@ -322,6 +322,10 @@ void VillageView::rebuild_fields(render::SceneRenderer& renderer, const sim::Gam
     const sim::Content& content = game.content();
     for (const sim::Building& b : game.buildings().data()) {
         for (const sim::Field& f : b.fields) {
+            if (fog_ != nullptr && fog_->mode() != sim::FogMode::None && game.town_group(b.owner) != fog_->group() &&
+                !fog_->rect_shows(f.x, f.z, f.w, f.d)) {
+                continue;
+            }
             math::Vec3 soil{0.16f, 0.09f, 0.05f};  // Linear colors.
             float scale = 0.0f;
             math::Vec3 plant{0.1f, 0.32f, 0.06f};
@@ -391,7 +395,10 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
         }
         scene.set_feature_look(renderer, game.map(), game.content(), i, look);
     }
-    if (game.take_buildings_changed() || ghost_changed_) {
+    // Buildings of others come and go with the fog.
+    const std::uint64_t shown = shown_signature(game);
+    if (game.take_buildings_changed() || ghost_changed_ || shown != shown_buildings_) {
+        shown_buildings_ = shown;
         rebuild_buildings(renderer, game);
         ghost_changed_ = false;
     }
@@ -399,6 +406,33 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
     update_creatures(renderer, game, alpha, dt, speed);
     update_overlay(renderer, game, dt);
     update_particles(renderer, game, dt, speed);
+}
+
+bool VillageView::building_shown(const sim::Game& game, const sim::Building& b) const {
+    return fog_ == nullptr || fog_->mode() == sim::FogMode::None || game.town_group(b.owner) == fog_->group() ||
+           fog_->rect_shows(b.x, b.z, b.width, b.depth);
+}
+
+bool VillageView::mover_shown(const sim::Game& game, bool owned, std::uint8_t town, float x, float z) const {
+    if (fog_ == nullptr || fog_->mode() == sim::FogMode::None) {
+        return true;
+    }
+    return (owned && game.town_group(town) == fog_->group()) || fog_->shows(x, z);
+}
+
+std::uint64_t VillageView::shown_signature(const sim::Game& game) const {
+    if (fog_ == nullptr || fog_->mode() == sim::FogMode::None) {
+        return 0;
+    }
+    std::uint64_t h = 0xcbf29ce484222325ull;
+    const auto& store = game.buildings();
+    for (std::size_t k = 0; k < store.size(); ++k) {
+        const sim::Building& b = store.data()[k];
+        if (game.town_group(b.owner) != fog_->group() && fog_->rect_shows(b.x, b.z, b.width, b.depth)) {
+            h = (h ^ (store.entities()[k].index + 1ull)) * 0x100000001b3ull;
+        }
+    }
+    return h;
 }
 
 float VillageView::random01() {
@@ -423,7 +457,8 @@ void VillageView::update_particles(render::SceneRenderer& renderer, const sim::G
         for (const sim::Building& b : game.buildings().data()) {
             const float cx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
             const float cz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
-            if (std::abs(cx - view_x_) > 180.0f || std::abs(cz - view_z_) > 180.0f || particles_.size() >= kMaxParticles) {
+            if (std::abs(cx - view_x_) > 180.0f || std::abs(cz - view_z_) > 180.0f || particles_.size() >= kMaxParticles ||
+                !building_shown(game, b)) {
                 continue;
             }
             const sim::BuildingDef& d = content.buildings[b.def];
@@ -526,6 +561,9 @@ void VillageView::update_overlay(render::SceneRenderer& renderer, const sim::Gam
     const sim::MapData& map = game.map();
     const sim::Content& content = game.content();
     const auto tile = [&](float x, float z, float size, math::Vec3 color) {
+        if (fog_ != nullptr && !fog_->explored(x, z)) {
+            return;  // Nothing to tell about what was never seen.
+        }
         render::Instance t;
         t.position = {x, map_surface_height(map, x, z) + 0.05f, z};
         t.scale = size * 0.5f * 0.9f;
@@ -690,6 +728,9 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         if (a.state == sim::CreatureState::Travel) {
             continue;  // Away on the world map.
         }
+        if (!mover_shown(game, a.kind == sim::CreatureKind::Soldier, a.town, x, z)) {
+            continue;  // Under the fog of war.
+        }
         if (a.kind == sim::CreatureKind::Raider || a.kind == sim::CreatureKind::Soldier) {
             // A villager body with a mark under it: red for raiders, the
             // town's color for soldiers.
@@ -820,7 +861,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     const sim::Content& content = game.content();
     for (const sim::Building& b : game.buildings().data()) {
         const Model* m = model_for(b.def, b.level, place_key(b.x, b.z));
-        if (m == nullptr) {
+        if (m == nullptr || !building_shown(game, b)) {
             continue;
         }
         const sim::BuildingDef& d = content.buildings[b.def];
@@ -890,6 +931,9 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
         }
         Look& look = looks_[id.index];
         const bool moving = v.position != v.previous;
+        if (!mover_shown(game, true, v.owner, to_float(v.position.x), to_float(v.position.z))) {
+            continue;  // Under the fog of war.
+        }
         if (look.generation != id.generation) {
             look = Look{};
             look.generation = id.generation;
@@ -963,6 +1007,9 @@ std::optional<sim::EntityId> VillageView::pick_villager(const sim::Game& game, m
     const auto& store = game.villagers();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const math::Vec3 p = villager_position(game, store.data()[k], alpha);
+        if (!mover_shown(game, true, store.data()[k].owner, p.x, p.z)) {
+            continue;
+        }
         const RayHit hit = ray_to_vertical_segment(origin, dir, p, kHeight);
         if (hit.distance <= kRadius && hit.t < best_t) {
             best_t = hit.t;
@@ -979,6 +1026,9 @@ std::optional<sim::EntityId> VillageView::pick_building(const sim::Game& game, m
     const auto& store = game.buildings();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const sim::Building& b = store.data()[k];
+        if (!building_shown(game, b)) {
+            continue;
+        }
         const math::Vec3 top = building_top(game, b);
         const float lo[3] = {static_cast<float>(b.x), top.y - 12.0f, static_cast<float>(b.z)};
         const float hi[3] = {static_cast<float>(b.x + b.width), top.y, static_cast<float>(b.z + b.depth)};

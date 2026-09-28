@@ -1040,6 +1040,17 @@
     "viewer.code.bear": "Oso",
     "viewer.code.hat": "Sombreros",
     "viewer.code.beard": "Barba",
-    "viewer.code.apron": "Delantales"
+    "viewer.code.apron": "Delantales",
+    "hud.place.error.unexplored": "Ese lugar no está explorado.",
+    "newGame.fog": "Niebla de guerra",
+    "newGame.fog.tooltip": "Sin niebla: se ve todo el mapa. Estática: el mapa empieza tapado y lo que tu gente explora queda a la vista para siempre. Dinámica: lo explorado queda tenue y gris, y lo que se mueve (animales, asaltantes, otros pueblos) solo se ve cerca de tu gente. No se puede construir en lo no explorado.",
+    "newGame.fog.none": "Sin niebla",
+    "newGame.fog.static": "Estática",
+    "newGame.fog.dynamic": "Dinámica",
+    "newGame.sharedVision": "Visión compartida",
+    "newGame.sharedVision.tooltip": "En una partida cooperativa, los aliados ven y exploran lo mismo.",
+    "newGame.sharedVision.on": "Entre aliados",
+    "newGame.sharedVision.off": "Cada pueblo la suya",
+    "dev.village.reveal": "Ver a través de la niebla de guerra (solo esta vista)"
   }
 }

@@ -78,6 +78,32 @@ std::vector<std::uint8_t> render(const sim::MapData& map) {
     return out;
 }
 
+void apply_fog(std::vector<std::uint8_t>& rgba, std::int32_t map_size, const FogView& fog) {
+    if (fog.mode() == sim::FogMode::None || map_size <= 0 ||
+        rgba.size() != static_cast<std::size_t>(kImageSize) * kImageSize * 4) {
+        return;
+    }
+    const float meters = static_cast<float>(map_size) / kImageSize;
+    for (int ty = 0; ty < kImageSize; ++ty) {
+        for (int tx = 0; tx < kImageSize; ++tx) {
+            const float x = (static_cast<float>(tx) + 0.5f) * meters;
+            const float z = (static_cast<float>(ty) + 0.5f) * meters;
+            std::uint8_t* px = &rgba[(static_cast<std::size_t>(ty) * kImageSize + static_cast<std::size_t>(tx)) * 4];
+            if (!fog.explored(x, z)) {
+                px[0] = 14;
+                px[1] = 15;
+                px[2] = 20;
+            } else if (fog.mode() == sim::FogMode::Dynamic && !fog.in_sight(x, z)) {
+                // Dim and grey, as on the ground.
+                const int luma = (px[0] * 54 + px[1] * 183 + px[2] * 19) >> 8;
+                px[0] = static_cast<std::uint8_t>((px[0] + luma * 3) / 4 * 11 / 20);
+                px[1] = static_cast<std::uint8_t>((px[1] + luma * 3) / 4 * 11 / 20);
+                px[2] = static_cast<std::uint8_t>((px[2] + luma * 3) / 4 * 12 / 20);
+            }
+        }
+    }
+}
+
 std::array<float, 2> north_on_screen(float yaw) {
     // The camera's right is (cos, sin) and its forward (sin, -cos) on the
     // ground (x, z); north is (0, -1). Up the screen is forward.

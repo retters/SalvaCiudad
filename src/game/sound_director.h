@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "audio/mixer.h"
+#include "game/fog_view.h"
 #include "game/settings.h"
 #include "mods/mod_library.h"
 #include "sim/game.h"
@@ -25,8 +26,8 @@ public:
     void ui_click();
     void event(sim::Game::Event::Kind kind);
     // Once a frame while a game is shown: `x`, `z` where the camera looks,
-    // `height` how far it is.
-    void update(const sim::Game& game, float x, float z, float height, bool paused, float dt);
+    // `height` how far it is. What the fog of war hides makes no sound.
+    void update(const sim::Game& game, const FogView* fog, float x, float z, float height, bool paused, float dt);
     // Leaving a game: everything stops.
     void stop();
     // Closes the audio device; before SDL_Quit, which frees it.

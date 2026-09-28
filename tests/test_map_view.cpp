@@ -252,6 +252,8 @@ TEST_SUITE("new_game") {
         last.race = "core:dwarf";
         last.other_races = 50;
         last.max_population = 400;
+        last.fog = "dynamic";
+        last.shared_vision = false;
         NewGameScreen screen;
         screen.open(&content, false, last);
         const sim::MapSettings& m = screen.settings();
@@ -273,6 +275,8 @@ TEST_SUITE("new_game") {
         CHECK(g.races[11] == g.races[0]);
         CHECK(g.other_races == 50);
         CHECK(g.max_population == 400);
+        CHECK(g.fog == sim::FogMode::Dynamic);
+        CHECK_FALSE(g.shared_vision);
         // What it remembers opens the same form again.
         const NewGameSettings back = screen.remembered();
         CHECK(back.size == "giant");
@@ -288,7 +292,9 @@ TEST_SUITE("new_game") {
         sim::MapSettings defaults;
         defaults.seed = seed;
         CHECK(screen.settings() == defaults);
-        CHECK(screen.rules() == sim::GameRules{});
+        sim::GameRules default_rules;
+        default_rules.fog = sim::FogMode::Static;  // Decision D-3202.
+        CHECK(screen.rules() == default_rules);
         // Choices that no longer exist, or seasons the form does not offer, fall back.
         NewGameSettings gone;
         gone.map_type = "oldmod:swamp";

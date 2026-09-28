@@ -21,6 +21,9 @@ inline constexpr std::uint8_t kMixedRace = 0xFF;
 
 // How a versus game is won (section 6.3).
 enum class Victory : std::uint8_t { None, Elimination, Score, Objective, Count };
+// Fog of war (phases 32 and 33): none; what was explored stays in view; or
+// what was explored stays dim and only what is in sight shows what moves.
+enum class FogMode : std::uint8_t { None, Static, Dynamic, Count };
 // Chances scale with the threat: 0, 50, 100, 200 or 400 %.
 [[nodiscard]] std::int32_t threat_percent(Threat t);
 
@@ -50,6 +53,10 @@ struct GameRules {
     // how many newcomers are of another race, percent.
     std::array<std::uint8_t, 12> races{};
     std::uint8_t other_races = 20;
+    // Phase 32: fog of war (the new game form starts with static fog,
+    // decision D-3202) and whether allies share what they see.
+    FogMode fog = FogMode::None;
+    bool shared_vision = true;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, GameRules& out);

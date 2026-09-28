@@ -4297,6 +4297,11 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     for (std::uint8_t p = 1; p < player_count_ && shared_town_; ++p) {
         players_[p].town_center = players_[0].town_center;
     }
+    // What each town sees from the start (phase 32).
+    if (fog()) {
+        vision_.reset(map_.size, vision_groups());
+        update_vision();
+    }
     buildings_changed_ = true;
 }
 
@@ -4323,6 +4328,59 @@ void Game::step() {
     goods_changed();
     VillageRules(*this).step();
     goods_changed();
+    // The fog lifts once a second, where anybody's people are (phase 32).
+    if (vision_.active() && tick_ % kTicksPerSecond == 0) {
+        update_vision();
+    }
+}
+
+std::uint8_t Game::town_group(std::uint8_t town) const {
+    // Allies (every town in a cooperative game) share what they see.
+    if (rules_.shared_vision && !rules_.versus) {
+        return 0;
+    }
+    return static_cast<std::uint8_t>(town % kVisionGroups);
+}
+
+std::uint16_t Game::vision_groups() const {
+    std::uint16_t groups = 0;
+    for (std::uint8_t p = 0; p < player_count_; ++p) {
+        groups = static_cast<std::uint16_t>(groups | (1u << vision_group(p)));
+    }
+    return groups;
+}
+
+std::int32_t Game::sight(const Building& b) const {
+    // From the middle, so the whole footprint is inside.
+    return content_->buildings[b.def].sight + std::max(b.width, b.depth) / 2;
+}
+
+std::int32_t Game::sight(const Villager& v) const {
+    return v.race < content_->races.size() ? content_->races[v.race].sight : 12;
+}
+
+std::int32_t Game::sight(const Creature& a) const {
+    if (a.kind != CreatureKind::Soldier || a.state == CreatureState::Travel) {
+        return 0;  // Animals and raiders give nobody sight; soldiers away on the world map neither.
+    }
+    return a.unit < content_->units.size() ? content_->units[a.unit].sight : 16;
+}
+
+void Game::update_vision() {
+    if (!vision_.active()) {
+        return;
+    }
+    for (const Building& b : buildings_.data()) {
+        vision_.reveal(town_group(b.owner), b.x + b.width / 2, b.z + b.depth / 2, sight(b));
+    }
+    for (const Villager& v : villagers_.data()) {
+        vision_.reveal(town_group(v.owner), v.position.x.floor_int(), v.position.z.floor_int(), sight(v));
+    }
+    for (const Creature& a : creatures_.data()) {
+        if (const std::int32_t r = sight(a); r > 0) {
+            vision_.reveal(town_group(a.town), a.position.x.floor_int(), a.position.z.floor_int(), r);
+        }
+    }
 }
 
 void Game::footprint(const BuildingDef& def, std::uint8_t rotation, std::int32_t& w, std::int32_t& d) {
@@ -4386,6 +4444,9 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
             return PlaceError::OutsideMap;
         }
     }
+    if (vision_.active() && !vision_.explored_rect(vision_group(player), x, z, w, dp)) {
+        return PlaceError::Unexplored;  // Decision D-3203.
+    }
     std::int32_t lo = 65535, hi = 0;
     for (std::int32_t cz = z; cz < z + dp; ++cz) {
         for (std::int32_t cx = x; cx < x + w; ++cx) {
@@ -4435,6 +4496,9 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
     const std::int64_t dz = (z + d / 2) - (farm->z + farm->depth / 2);
     if (dx * dx + dz * dz > static_cast<std::int64_t>(fd.work_radius) * fd.work_radius) {
         return PlaceError::TooFar;
+    }
+    if (vision_.active() && !vision_.explored_rect(vision_group(player), x, z, w, d)) {
+        return PlaceError::Unexplored;
     }
     std::int32_t lo = 65535, hi = 0;
     for (std::int32_t cz = z; cz < z + d; ++cz) {
@@ -4920,7 +4984,7 @@ bool read_map(BinaryReader& r, MapData& m, const Content& c) {
 
 // Where each part of the state starts in the written bytes.
 struct Marks {
-    std::size_t players = 0, registry = 0, nodes = 0, buildings = 0, villagers = 0;
+    std::size_t players = 0, registry = 0, nodes = 0, buildings = 0, villagers = 0, vision = 0;
 };
 
 void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32_t rejected,
@@ -5164,6 +5228,10 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(static_cast<std::uint8_t>(a.target_kind));
         w.u16(a.unit);
     }
+    // What each side explored: a count and a checksum (the cells themselves
+    // follow the random numbers in a save).
+    m.vision = w.bytes().size();
+    g.vision().write_summary(w);
     if (marks != nullptr) {
         *marks = m;
     }
@@ -5183,8 +5251,8 @@ std::vector<Game::PartHash> Game::hash_parts() const {
     };
     return {part("header", 0, m.players),         part("players", m.players, m.registry),
             part("entities", m.registry, m.nodes), part("nodes", m.nodes, m.buildings),
-            part("buildings", m.buildings, m.villagers), part("villagers", m.villagers, end),
-            part("random", end, w.bytes().size())};
+            part("buildings", m.buildings, m.villagers), part("villagers", m.villagers, m.vision),
+            part("vision", m.vision, end),          part("random", end, w.bytes().size())};
 }
 
 std::uint64_t Game::hash() const {
@@ -5203,6 +5271,7 @@ void Game::save(BinaryWriter& w) const {
     write_state(*this, w, seed_, rejected_, regrow_);
     w.u64(rng_.state());
     w.u64(rng_.increment());
+    vision_.write(w);
 }
 
 bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
@@ -5551,8 +5620,33 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         a.target_kind = static_cast<TargetKind>(target_kind);
         g.creatures_.add(id, a);
     }
+    // The fog's summary, checked against the cells after the random numbers.
+    BinaryWriter summary;
+    {
+        std::uint16_t groups = 0;
+        if (!r.u16(groups)) {
+            return false;
+        }
+        summary.u16(groups);
+        for (std::uint8_t k = 0; k < kVisionGroups; ++k) {
+            std::uint32_t count = 0;
+            std::uint64_t sum = 0;
+            if (((groups >> k) & 1u) != 0) {
+                if (!r.u32(count) || !r.u64(sum)) {
+                    return false;
+                }
+                summary.u32(count);
+                summary.u64(sum);
+            }
+        }
+    }
     std::uint64_t state = 0, inc = 0;
     if (!r.u64(state) || !r.u64(inc) || !Rng::restore(state, inc, g.rng_)) {
+        r.fail();
+        return false;
+    }
+    if (!Vision::read(r, g.map_.size, g.fog(), summary.bytes(), g.vision_) ||
+        (g.fog() && g.vision_.groups() != g.vision_groups())) {
         r.fail();
         return false;
     }

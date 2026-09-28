@@ -117,6 +117,7 @@ void NewGameScreen::reset() {
     settings_ = sim::MapSettings{};
     settings_.seed = seed;
     rules_ = sim::GameRules{};
+    rules_.fog = sim::FogMode::Static;  // The form's default (decision D-3202).
 }
 
 namespace {
@@ -129,6 +130,7 @@ static_assert(std::size(names::kSeas) == static_cast<std::size_t>(sim::Sea::Coun
 static_assert(std::size(names::kYears) == static_cast<std::size_t>(sim::YearLength::Count));
 static_assert(std::size(names::kWinters) == static_cast<std::size_t>(sim::Harshness::Count));
 static_assert(std::size(names::kStarts) == static_cast<std::size_t>(sim::StartGoods::Count));
+static_assert(std::size(names::kFogs) == static_cast<std::size_t>(sim::FogMode::Count));
 static_assert(std::size(names::kThreats) == static_cast<std::size_t>(sim::Threat::Count));
 static_assert(settings_limits::kMaxIslandsPerTown == sim::kMaxIslandsPerTown);
 static_assert(settings_limits::kMaxPlayers == static_cast<int>(sim::kMaxPlayers));
@@ -194,6 +196,8 @@ void NewGameScreen::apply(const NewGameSettings& n) {
     rules_.other_races = static_cast<std::uint8_t>(std::clamp(n.other_races, 0, 100));
     // On the slider's steps.
     rules_.max_population = std::clamp(n.max_population / 50 * 50, sim::kMinPopulationLimit, sim::kMaxPopulationLimit);
+    rules_.fog = named(names::kFogs, n.fog, rules_.fog);
+    rules_.shared_vision = n.shared_vision;
 }
 
 NewGameSettings NewGameScreen::remembered() const {
@@ -231,6 +235,8 @@ NewGameSettings NewGameScreen::remembered() const {
     n.wildlife = name_of(names::kThreats, rules_.wildlife);
     n.other_races = rules_.other_races;
     n.max_population = rules_.max_population;
+    n.fog = name_of(names::kFogs, rules_.fog);
+    n.shared_vision = rules_.shared_vision;
     return n;
 }
 
@@ -389,6 +395,23 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
             rules_.max_population = std::clamp(limit, sim::kMinPopulationLimit, sim::kMaxPopulationLimit);
         }
     }
+    // Phase 32: the fog of war, and whether allies share what they see.
+    {
+        const std::vector<std::string> options = {tr("newGame.fog.none"), tr("newGame.fog.static"),
+                                                  tr("newGame.fog.dynamic")};
+        int index = static_cast<int>(rules_.fog);
+        const Row r = row(ctx, x, y, cw, tr("newGame.fog"), tr("newGame.fog.tooltip"));
+        if (ctx.selector(ctx.id("fog"), r.control, index, options, tr("newGame.fog.tooltip"))) {
+            rules_.fog = static_cast<sim::FogMode>(index);
+        }
+        const std::vector<std::string> shared = {tr("newGame.sharedVision.off"), tr("newGame.sharedVision.on")};
+        int on = rules_.shared_vision ? 1 : 0;
+        const Row s = row(ctx, x, y, cw, tr("newGame.sharedVision"), tr("newGame.sharedVision.tooltip"));
+        if (ctx.selector(ctx.id("shared_vision"), s.control, on, shared, tr("newGame.sharedVision.tooltip"),
+                         rules_.fog != sim::FogMode::None)) {
+            rules_.shared_vision = on == 1;
+        }
+    }
 }
 
 NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
@@ -400,7 +423,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     const bool wide = w - 2 * pad >= ctx.s(480.0f);
     const float row_h = wide ? ctx.s(kRowHeight + kRowGap)
                              : ctx.text().line_height(ctx.style(ctx.theme().body)) + ctx.s(4.0f + kRowHeight + kRowGap);
-    constexpr int kRows = 23;
+    constexpr int kRows = 25;
     const float button_h = ctx.s(48.0f);
     const float content_h = title_h + pad + kRows * row_h + pad + button_h;
     const float h = content_h + 2 * pad;

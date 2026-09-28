@@ -20,7 +20,7 @@
 
 namespace sc::net {
 
-inline constexpr std::uint32_t kProtocolVersion = 1;
+inline constexpr std::uint32_t kProtocolVersion = 2;
 inline constexpr std::uint16_t kDefaultPort = 47800;
 inline constexpr std::uint16_t kDiscoveryPort = 47799;
 inline constexpr std::size_t kMaxNameBytes = 32;
@@ -73,7 +73,7 @@ struct TurnCommand {
 };
 
 struct PartHashes {
-    std::array<std::uint64_t, 7> parts{};
+    std::array<std::uint64_t, 8> parts{};
     bool operator==(const PartHashes&) const = default;
 };
 

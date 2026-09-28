@@ -160,6 +160,20 @@ public:
     // Replaces the characters to draw; call every frame they move.
     void set_characters(std::span<const CharacterInstance> characters);
 
+    // Fog of war (phase 32): `mode` 1 (static) or 2 (dynamic) over a grid of
+    // `side` x `side` texels of `cell` meters from the map's corner; 0 turns
+    // it off. The texels start unexplored; update_war_fog() fills them.
+    bool set_war_fog(int mode, std::int32_t side, float cell);
+    // Sends the rectangle x, z, w, d (in texels) of `texels`, the whole grid
+    // row by row (side * side values: 0 unexplored, 128 explored, 255 in
+    // sight), with the next frame.
+    void update_war_fog(std::span<const std::uint8_t> texels, std::int32_t x, std::int32_t z, std::int32_t w,
+                        std::int32_t d);
+    // Phase 34: what stands higher than `heights` (centimeters, `side` x
+    // `side` texels over the same area as the fog) shows through the fog,
+    // fully `band` meters over it. Empty turns it off.
+    bool set_war_ceiling(std::span<const std::uint16_t> heights, std::int32_t side, float band);
+
     // Records the shadow passes and the main pass into the frame. The
     // swapchain ends up holding the (resolved) scene.
     bool render(GpuFrame& frame, const SceneView& view, const Lighting& lighting);

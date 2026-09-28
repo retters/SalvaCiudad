@@ -10,6 +10,7 @@
 #include <ostream>
 #include <vector>
 
+#include "game/fog_view.h"
 #include "net/protocol.h"
 #include "sim/game.h"
 #include "sim/worldgen.h"
@@ -175,6 +176,57 @@ TEST_SUITE("sim_perf") {
         const sc::net::Snapshot snap = sc::net::pack_snapshot(g.tick(), w.bytes());
         MESSAGE("network snapshot: " << std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - z0).count()
                                      << " ms, " << snap.packed.size() / 1024 << " KiB packed");
+    }
+
+    // Phases 32 to 34: what the fog of war costs the simulation, with a
+    // vision group per town (versus) as the worst case.
+    TEST_CASE("twelve towns of 1000 with and without fog of war" * doctest::skip()) {
+        MapSettings ms;
+        ms.seed = 2026;
+        ms.size = MapSize::Huge;
+        ms.players = 12;
+        std::optional<MapData> map = generate_map(ms, sc::test::core_content());
+        REQUIRE(map.has_value());
+        for (const FogMode fog : {FogMode::Static, FogMode::None, FogMode::Dynamic}) {
+            GameSetup setup = rules(12);
+            setup.rules.fog = fog;
+            setup.rules.versus = true;
+            Game g(core(), *map, setup);
+            for (std::uint8_t p = 0; p < 12; ++p) {
+                grow(g, p, 1000);
+            }
+            (void)measure(g, 600);
+            const Timing t = measure(g, 2000);
+            const auto h0 = std::chrono::steady_clock::now();
+            (void)g.hash();
+            const double hash_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - h0).count();
+            BinaryWriter w;
+            g.save(w);
+            // The update itself, once a second (ten ticks).
+            const auto v0 = std::chrono::steady_clock::now();
+            for (int k = 0; k < 20; ++k) {
+                g.update_vision();
+            }
+            const double vision_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - v0).count() / 20.0;
+            // What the view works out each tick for one town.
+            double view_ms = 0.0;
+            if (fog != FogMode::None) {
+                sc::FogView view;
+                view.begin(g, g.vision_group(0));
+                for (int k = 0; k < 50; ++k) {
+                    g.step();
+                    const auto f0 = std::chrono::steady_clock::now();
+                    view.update(g);
+                    (void)view.take_dirty();
+                    view_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - f0).count();
+                }
+                view_ms /= 50.0;
+            }
+            MESSAGE("fog " << static_cast<int>(fog) << ": " << g.villagers().size() << " villagers; tick " << t.mean_ms
+                           << " ms mean, " << t.p95_ms << " ms p95, " << t.worst_ms << " ms worst; vision update "
+                           << vision_ms << " ms (" << vision_ms / 10.0 << " ms a tick); view " << view_ms << " ms a tick; hash " << hash_ms
+                           << " ms; save " << w.bytes().size() / 1024 << " KiB");
+        }
     }
 }
 

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "game/fog_view.h"
 #include "sim/map.h"
 
 namespace sc::minimap {
@@ -19,6 +20,10 @@ inline constexpr std::uint32_t kImageId = 1;
 // darker forests, shading from the relief, and water darker where deep.
 // RGBA, kImageSize x kImageSize.
 [[nodiscard]] std::vector<std::uint8_t> render(const sim::MapData& map);
+
+// Covers `rgba` (from render()) with the fog of war: black where nothing
+// was explored and dim where it is out of sight (dynamic fog).
+void apply_fog(std::vector<std::uint8_t>& rgba, std::int32_t map_size, const FogView& fog);
 
 // Where north lies on the screen for a camera turned `yaw` radians (0
 // looks north; turning right is positive): a unit vector, x to the right

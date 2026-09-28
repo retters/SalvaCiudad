@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "game/fog_view.h"
 #include "game/map_scene.h"
 #include "game/test_scene.h"
 #include "mods/mod_library.h"
@@ -68,6 +69,18 @@ public:
     void set_field_ghost(std::optional<FieldGhost> ghost);
     // Winter brings caps; summer, straw hats.
     void set_season(sim::Season season) { season_ = season; }
+    // Phase 32: what the local player sees; null shows everything. What is
+    // not theirs shows only where the fog lets it.
+    void set_fog(const FogView* fog) {
+        if (fog != fog_) {
+            fog_ = fog;
+            ghost_changed_ = true;
+        }
+    }
+    // Whether a building, or something that moves at (x, z) and belongs to
+    // `town` (or to nobody), is shown to the local player.
+    [[nodiscard]] bool building_shown(const sim::Game& game, const sim::Building& b) const;
+    [[nodiscard]] bool mover_shown(const sim::Game& game, bool owned, std::uint8_t town, float x, float z) const;
 
     [[nodiscard]] std::optional<sim::EntityId> pick_villager(const sim::Game& game, math::Vec3 origin, math::Vec3 dir,
                                                              float alpha) const;
@@ -154,6 +167,9 @@ private:
     void update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, int speed);
     void rebuild_fields(render::SceneRenderer& renderer, const sim::Game& game);
     sim::Season season_ = sim::Season::Summer;
+    const FogView* fog_ = nullptr;
+    std::uint64_t shown_buildings_ = 0;  // Which buildings of others show (a hash).
+    [[nodiscard]] std::uint64_t shown_signature(const sim::Game& game) const;
     bool ghost_changed_ = false;
     bool shown_ = false;
 

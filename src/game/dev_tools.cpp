@@ -501,6 +501,16 @@ void DevTools::village_tab(DevContext& ctx) {
         c.type = sim::CommandType::DevRaid;
         ctx.session->issue(c);
     }
+    // Phase 32: see through the fog of war. Only this view changes, and only
+    // where the developer tools' commands are allowed.
+    if (game.fog()) {
+        bool reveal = ctx.session->fog().revealed();
+        ImGui::BeginDisabled(!game.dev_commands());
+        if (ImGui::Checkbox((tr("dev.village.reveal") + "###reveal").c_str(), &reveal)) {
+            ctx.session->fog().set_revealed(reveal);
+        }
+        ImGui::EndDisabled();
+    }
     ImGui::Separator();
     ImGui::Text("tick %llu", static_cast<unsigned long long>(game.tick()));
     ImGui::Text("villagers %zu, buildings %zu", game.villagers().size(), game.buildings().size());

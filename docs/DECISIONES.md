@@ -1503,3 +1503,42 @@ El pedido dice "cualquier entidad que no es tuya". Con visión compartida, lo qu
 
 **D-3206. La altura no amplía la visión.**
 Se mencionó como idea (ver más lejos desde un cerro) pero no se pidió; queda fuera. La línea de visión bloqueada por el terreno también queda fuera por su costo.
+
+## Fase 32: niebla de guerra estática (2026-09-27)
+
+**D-3207. Qué da visión y cuánto.**
+- Todo edificio del pueblo, también en obra, ve desde su centro su `sight` más medio lado; los aldeanos, el `sight` de su raza; los soldados, el de su unidad, salvo mientras viajan por el mapa del mundo. Animales, asaltantes y mercaderes no dan visión.
+- Por omisión: 12 m edificios y aldeanos, 16 m soldados. En `core`: centro del pueblo 48 m (el terreno inicial), atalaya 45 m y arquero 24 m (más que su alcance de 20 m).
+- Una celda de 4 m queda vista si su centro está dentro del radio. La simulación lo anota después de cada tick múltiplo de 10 (una vez por segundo a x1) y al crear la partida.
+
+**D-3208. Grupos de visión.**
+En cooperativo con visión compartida hay un solo grupo; si no, uno por pueblo (el pueblo común es uno solo). Los grupos se fijan al crear la partida y se comprueban al cargarla. Con mapas separados cada jugador descubre su región sin nada especial: su gente no sale de ella.
+
+**D-3209. Suma de verificación, partida y red.**
+- La cuenta de celdas exploradas y una suma de un número mezclado por celda, por grupo, entran en el estado como una parte propia, "vision", que el anfitrión compara cada 5 s como las demás. Recorrer 2 MB por grupo en cada comprobación saldría caro; la cuenta y la suma se llevan al día al descubrir cada celda.
+- Las celdas mismas van en la partida guardada y en la instantánea de red, después de los números al azar. Al cargar se recalculan la cuenta y la suma y deben coincidir con las guardadas.
+- Versión de las reglas 24 y versión del protocolo de red 2 (ocho partes en la comprobación).
+- Sin niebla no se guarda ninguna celda y la simulación no cambia: la prueba "the fog does not change the rest of the game" compara todas las partes menos la cabecera (las reglas) y "vision".
+
+**D-3210. La regla por omisión.**
+`GameRules{}` sigue sin niebla, así que las pruebas, los tutoriales y cualquier partida hecha en código se comportan como antes. El formulario de partida nueva empieza en estática, también tras "Restablecer" (D-3202).
+
+**D-3211. Lo que ve la vista (`FogView`).**
+- Vive en `GameSession` y en cada tick recalcula lo que el jugador tiene a la vista con los mismos discos que la simulación, solo en las filas que tocaron los discos ahora o el tick anterior. Lo explorado lo copia de la simulación cuando su cuenta cambia.
+- La textura de niebla tiene un texel por celda (R8: 0 sin explorar, 128 explorado fuera de vista, 255 a la vista) y se sube en cuadros de 64 texeles, solo los que cambian, con filas alineadas a 256 bytes y cada cuadro a 512, como pide Direct3D 12.
+- El sombreador toma cinco muestras para un borde suave y aplica la niebla después de la bruma de distancia, así lo no explorado es un mismo negro cerca y lejos y no deja ver siluetas. El agua sin explorar se vuelve opaca.
+
+**D-3212. Qué se oculta con niebla estática.**
+Lo que no es del jugador (edificios, campos, aldeanos, soldados, animales, asaltantes) solo se dibuja, se puede seleccionar, suena, echa humo y aparece en el minimapa donde está explorado. Las capas del mapa no pintan sobre lo no explorado. Si lo seleccionado queda bajo la niebla, se deselecciona. Lo propio se ve siempre. La vista previa de un edificio sobre lo negro queda negra, pero el aviso "Ese lugar no está explorado." dice por qué no se puede.
+
+**D-3213. Repeticiones.**
+Las partidas de pueblo no tienen repeticiones (solo el núcleo de la fase 5), así que la parte de la especificación sobre ver las repeticiones no aplica.
+
+**D-3214. Ver a través de la niebla.**
+Una casilla en Ctrl+F3 > Pueblo apaga la niebla solo en la vista, sin comando ni cambio en la partida. Está desactivada donde no se permiten los comandos de desarrollo (multijugador, D-910).
+
+**D-3215. La sala multijugador.**
+La sala tiene una fila "Niebla de guerra" que cambia el anfitrión; la visión compartida se elige en el formulario de partida nueva del anfitrión, como la mayoría de las reglas.
+
+**D-3216. Rendimiento.**
+`Game::update_vision()` es pública para poder medirla sola. Medido en `docs/RENDIMIENTO.md`.

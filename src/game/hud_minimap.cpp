@@ -29,11 +29,30 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
     if (map.size <= 0) {
         return;
     }
-    // The image, made again only for another map.
+    // The image, made again only for another map; the fog over it when it
+    // changed, at most a few times a second.
+    const FogView& fog = s.fog();
+    bool redraw = false;
     if (minimap_session_ != &s || !(minimap_settings_ == map.settings)) {
-        services_.set_ui_image(minimap::kImageId, minimap::kImageSize, minimap::kImageSize, minimap::render(map));
+        minimap_base_ = minimap::render(map);
         minimap_session_ = &s;
         minimap_settings_ = map.settings;
+        redraw = true;
+    }
+    const int fog_mode = static_cast<int>(fog.mode());
+    if (fog_mode != minimap_fog_mode_ || fog.generation() != minimap_fog_generation_) {
+        redraw = true;
+    } else if (fog.revision() != minimap_fog_revision_ && ctx.now_ns() - minimap_fog_ns_ > 250'000'000ull) {
+        redraw = true;
+    }
+    if (redraw) {
+        std::vector<std::uint8_t> image = minimap_base_;
+        minimap::apply_fog(image, map.size, fog);
+        services_.set_ui_image(minimap::kImageId, minimap::kImageSize, minimap::kImageSize, std::move(image));
+        minimap_fog_mode_ = fog_mode;
+        minimap_fog_generation_ = fog.generation();
+        minimap_fog_revision_ = fog.revision();
+        minimap_fog_ns_ = ctx.now_ns();
     }
 
     const float band = std::round(ctx.s(kLetterBand));
@@ -55,6 +74,10 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
     // Buildings in their town's color, at least a dot.
     const float dot = std::max(2.0f, std::round(ctx.s(2.0f)));
     for (const sim::Building& b : game.buildings().data()) {
+        if (fog.mode() != sim::FogMode::None && game.town_group(b.owner) != fog.group() &&
+            !fog.rect_shows(b.x, b.z, b.width, b.depth)) {
+            continue;  // Under the fog of war.
+        }
         const auto [x, y] = to_screen(static_cast<float>(b.x), static_cast<float>(b.z));
         const float w = std::max(dot, static_cast<float>(b.width) * scale);
         const float h = std::max(dot, static_cast<float>(b.depth) * scale);

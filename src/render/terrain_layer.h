@@ -67,10 +67,11 @@ public:
     bool prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frustum, math::Vec3 eye, float draw_distance);
 
     // Draws the faceted ground in the current pass. The scene's fragment
-    // uniforms (slot 0) must already be pushed.
+    // uniforms (slot 0) must already be pushed. `war` is the fog of war and
+    // its ceiling (two bindings; phase 32).
     void draw_ground(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,
                      SDL_GPUTexture* white, SDL_GPUSampler* sampler, SDL_GPUTexture* shadow_map,
-                     SDL_GPUSampler* shadow_sampler);
+                     SDL_GPUSampler* shadow_sampler, const SDL_GPUTextureSamplerBinding* war);
 
     struct WaterLook {
         math::Vec3 sun_direction;
@@ -80,6 +81,9 @@ public:
         math::Vec3 eye;
         float time = 0.0f;
         float ice = 0.0f;  // 0..1: frozen over.
+        // Fog of war (phase 32): two bindings, and the shader's parameters.
+        const SDL_GPUTextureSamplerBinding* war = nullptr;
+        float war_params[4] = {};
     };
     // Draws the water surfaces; call after everything opaque.
     void draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,
@@ -89,7 +93,7 @@ public:
     // fragment uniforms like the ground.
     void draw_grass(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj, math::Vec3 eye,
                     float time, float distance, SDL_GPUTexture* white, SDL_GPUSampler* sampler,
-                    SDL_GPUTexture* shadow_map, SDL_GPUSampler* shadow_sampler);
+                    SDL_GPUTexture* shadow_map, SDL_GPUSampler* shadow_sampler, const SDL_GPUTextureSamplerBinding* war);
 
     [[nodiscard]] const TerrainStats& stats() const { return stats_; }
 

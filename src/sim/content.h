@@ -129,6 +129,7 @@ struct BuildingDef {
     std::int32_t attack_range = 0;  // Towers shoot enemies this close (meters).
     std::int32_t attack_damage = 0; // Per shot (towers) or per trap.
     std::int32_t attack_every = 20; // Ticks between shots.
+    std::int32_t sight = 12;        // Phase 32: meters it sees from its center (fog of war).
     bool trains = false;            // A barracks: turns villagers into soldiers (phase 16).
 };
 
@@ -158,6 +159,7 @@ struct UnitDef {
     std::int32_t train_work = 300;   // Ticks at the barracks.
     std::int32_t power = 1;          // Military power (score).
     std::uint8_t tier = 0;
+    std::int32_t sight = 16;         // Phase 32: meters it sees (fog of war).
 };
 
 // What a villager's work is, for the races' speeds (phase 19).
@@ -174,6 +176,7 @@ struct RaceDef {
     std::int32_t cold = 0;       // Resistance to cold, percent (less warmth lost, less flu); may be negative.
     std::int32_t disease = 0;    // Resistance to every disease, percent.
     bool night_vision = false;   // Declared for a day and night cycle (not in the game yet).
+    std::int32_t sight = 12;     // Phase 32: meters a villager sees (fog of war).
 };
 
 // Path of a race's body model inside the core mod:

@@ -13,7 +13,7 @@ constexpr std::size_t kChecksKept = 64;
 constexpr std::uint64_t kAckEvery = 5;       // Ticks between acknowledgements.
 constexpr std::uint64_t kDelayUpdateMs = 1000;
 
-const char* kPartNames[] = {"header", "players", "entities", "nodes", "buildings", "villagers", "random"};
+const char* kPartNames[] = {"header", "players", "entities", "nodes", "buildings", "villagers", "vision", "random"};
 
 std::string differing_parts(const PartHashes& a, const PartHashes& b) {
     std::string out;

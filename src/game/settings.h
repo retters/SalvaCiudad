@@ -128,6 +128,8 @@ struct NewGameSettings {
     std::string race;               // A race's id, "mixed", or empty for the first.
     int other_races = 20;           // Percent of newcomers.
     int max_population = 1000;
+    std::string fog = "static";     // new_game_names::kFogs (phase 32, decision D-3202).
+    bool shared_vision = true;
 
     bool operator==(const NewGameSettings&) const = default;
 };
@@ -143,6 +145,7 @@ inline constexpr std::string_view kYears[] = {"short", "normal", "long"};
 inline constexpr std::string_view kWinters[] = {"mild", "normal", "harsh"};
 inline constexpr std::string_view kStarts[] = {"scarce", "normal", "plenty"};
 inline constexpr std::string_view kThreats[] = {"none", "low", "medium", "high", "brutal"};
+inline constexpr std::string_view kFogs[] = {"none", "static", "dynamic"};
 inline constexpr std::string_view kMixedRace = "mixed";
 }  // namespace new_game_names
 

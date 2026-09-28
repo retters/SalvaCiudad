@@ -30,6 +30,7 @@ const char* place_error_key(sim::PlaceError e) {
         case sim::PlaceError::TooMany: return "hud.place.error.tooMany";
         case sim::PlaceError::BadSize: return "hud.place.error.badSize";
         case sim::PlaceError::Locked: return "hud.place.error.locked";
+        case sim::PlaceError::Unexplored: return "hud.place.error.unexplored";
     }
     return "hud.place.error.unknown";
 }

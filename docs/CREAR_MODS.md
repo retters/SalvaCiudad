@@ -86,6 +86,11 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `storage`, `stores` | Capacidad y categorías que guarda. Un `storage` que guarda `gold` y no es el puesto de comercio es una bóveda: ahí van los peones a dejar el oro que sobra. |
 | `tier`, `desirability`, `unique` | Nivel del centro del pueblo necesario, efecto en la deseabilidad y si solo puede haber uno. |
 | `levels` | Mejoras (casas y centro del pueblo): `residents`, `cost`, `work`, `needs`, `tier`, `population` y, si se ve distinto, `models`. |
+| `sight` | Metros que ve desde su centro con niebla de guerra (1 a 200; por omisión 12). En `core`, el centro del pueblo ve 48 y la atalaya 45. |
+
+### unit y race
+
+Las unidades del ejército y los pueblos también tienen `sight`: los metros que ve cada soldado (por omisión 16; el arquero de `core`, 24) y cada aldeano de esa raza (por omisión 12). Los animales, los asaltantes y los mercaderes no le dan visión a nadie.
 
 ### recipe
 

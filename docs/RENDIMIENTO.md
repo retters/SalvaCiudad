@@ -126,3 +126,16 @@ El mapa enorme (4096 m, la prueba "a huge map generates in under 30 seconds") ta
 - Valles y cordilleras siguen creciendo con el cubo del lado: el colosal tiene 4 veces más, el doble de largos y más anchos. Valles y cañones pasan por 67 millones de puntos en el gigante y por 747 millones en el colosal (11 veces más, con un mapa 4 veces mayor). Sin cambiar los mapas, solo se puede bajar el costo por punto. Una propuesta: que la cantidad vaya por kilómetro de borde en vez de por km², o que las líneas no crucen siempre el mapa entero. Así el colosal tendría la misma proporción de valles que un mapa enorme. Cambiaría todos los mapas grandes (versión 7 del generador) y queda para que la decida el usuario.
 - Los lagos del colosal (58 s) están limitados por la memoria: el orden revuelto en lo plano es parte del mapa.
 - Sin hilos: la simulación no los permite, para que el resultado sea el mismo en todas las máquinas.
+
+## Niebla de guerra (fase 32)
+
+`salvaciudad_tests -ts=sim_perf -tc="twelve towns of 1000 with and without fog of war" --no-skip` hace crecer 12 pueblos de 1000 en un mapa enorme en versus (un grupo de visión por pueblo, el peor caso) con cada modo de niebla:
+
+| Medida | Estática | Dinámica |
+|---|---|---|
+| Actualizar lo explorado (una vez por segundo) | 1,85 ms | 1,85 ms |
+| Lo mismo repartido por tick | 0,18 ms (menos del 1 % de un tick de 19 ms) | 0,18 ms |
+| Lo que la vista calcula cada tick para un pueblo | 0,28 ms | 0,28 ms |
+| Partida guardada | +0,7 MB (125,6 MB) | igual |
+
+La suma de verificación del estado no cambia de forma medible (19 a 22 ms en las tres corridas). El tick completo sin niebla sale más lento en esta prueba (29 ms contra 19 ms) solo porque los pueblos quedan distintos: con niebla, las casas de `grow()` no se pueden poner en lo no explorado y quedan más juntas.

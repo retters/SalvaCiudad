@@ -32,10 +32,14 @@ std::string now_iso() {
 
 GameSession::GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, const sim::GameSetup& setup,
                          std::uint8_t local_player)
-    : game_(std::make_unique<sim::Game>(std::move(content), std::move(map), setup)), local_player_(local_player) {}
+    : game_(std::make_unique<sim::Game>(std::move(content), std::move(map), setup)), local_player_(local_player) {
+    fog_.begin(*game_, game_->vision_group(local_player_));
+}
 
 GameSession::GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_player)
-    : game_(std::move(game)), local_player_(local_player) {}
+    : game_(std::move(game)), local_player_(local_player) {
+    fog_.begin(*game_, game_->vision_group(local_player_));
+}
 
 void GameSession::issue(sim::Command command) {
     command.player = local_player();
@@ -99,6 +103,7 @@ GameSession::LoadResult GameSession::load(const save::SaveData& data, std::share
         log::warn("save: the game data could not be read");
         return LoadResult::Damaged;
     }
+    session->fog_.begin(*session->game_, session->game_->vision_group(session->local_player_));
     out = std::move(session);
     return LoadResult::Ok;
 }

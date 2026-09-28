@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "game/fog_view.h"
 #include "game/save_file.h"
 #include "mods/mod_library.h"
 #include "sim/game.h"
@@ -33,7 +34,10 @@ public:
     void attach(net::NetSession* net) { net_ = net; }
     [[nodiscard]] bool networked() const { return net_ != nullptr; }
     // The host's state replaces this machine's (a resynchronization).
-    void replace_game(std::unique_ptr<sim::Game> game) { game_ = std::move(game); }
+    void replace_game(std::unique_ptr<sim::Game> game) {
+        game_ = std::move(game);
+        fog_.begin(*game_, game_->vision_group(local_player_));
+    }
 
     [[nodiscard]] sim::Game& game() { return *game_; }
     [[nodiscard]] const sim::Game& game() const { return *game_; }
@@ -73,6 +77,11 @@ public:
     [[nodiscard]] Interaction& ui() { return ui_; }
     [[nodiscard]] const Interaction& ui() const { return ui_; }
 
+    // What the local player sees through the fog of war (phase 32); update
+    // it once a frame.
+    [[nodiscard]] FogView& fog() { return fog_; }
+    [[nodiscard]] const FogView& fog() const { return fog_; }
+
     // Queues a command from the local player; it runs on the next tick.
     void issue(sim::Command command);
     // Applies the queued commands and advances one tick.
@@ -93,6 +102,7 @@ private:
     std::uint8_t local_player_ = 0;
     net::NetSession* net_ = nullptr;
     Interaction ui_;
+    FogView fog_;
 };
 
 // Text key explaining a load result to the player.

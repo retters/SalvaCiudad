@@ -1,6 +1,7 @@
 #include "render/scene_renderer.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstring>
@@ -119,7 +120,19 @@ struct SceneUniforms {
     float fog_color[4];
     float camera_position[4];
     float shadow_params[4];
+    float war_params[4];
 };
+
+// A rectangle of fog-of-war texels waiting to go to the GPU.
+struct WarUpload {
+    bool ceiling = false;             // The ceiling texture (2 bytes a texel), else the fog (1).
+    std::uint32_t x = 0, z = 0, w = 0, d = 0;
+    std::vector<std::uint8_t> bytes;  // Row by row, w * d texels.
+};
+
+std::uint32_t align_up(std::uint32_t v, std::uint32_t a) {
+    return (v + a - 1) / a * a;
+}
 
 struct MaterialUniforms {
     float base_color[4];
@@ -370,6 +383,56 @@ struct SceneRenderer::Impl {
 
     TerrainLayer terrain;
 
+    // Fog of war (phase 32) and its ceiling (phase 34).
+    SDL_GPUTexture* war_fog = nullptr;
+    SDL_GPUTexture* war_ceiling = nullptr;
+    int war_mode = 0;
+    std::int32_t war_side = 0;
+    std::int32_t war_ceiling_side = 0;
+    float war_meters = 1.0f;  // Meters both textures span per side.
+    float war_band = 0.0f;
+    std::vector<WarUpload> war_uploads;
+
+    void release_war() {
+        SDL_ReleaseGPUTexture(device, war_fog);
+        SDL_ReleaseGPUTexture(device, war_ceiling);
+        war_fog = war_ceiling = nullptr;
+        war_mode = 0;
+        war_side = war_ceiling_side = 0;
+        war_band = 0.0f;
+        war_uploads.clear();
+    }
+
+    SDL_GPUTexture* make_war_texture(std::int32_t side, SDL_GPUTextureFormat format) {
+        SDL_GPUTextureCreateInfo info{};
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.format = format;
+        info.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        info.width = info.height = static_cast<std::uint32_t>(side);
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        SDL_GPUTexture* t = SDL_CreateGPUTexture(device, &info);
+        if (t == nullptr) {
+            log::error("scene: cannot create a fog of war texture: {}", SDL_GetError());
+        }
+        return t;
+    }
+
+    // The fog of war and its ceiling for the lit shaders; white (in sight,
+    // no ceiling) when there is none.
+    [[nodiscard]] std::array<SDL_GPUTextureSamplerBinding, 2> war_bindings() const {
+        return {SDL_GPUTextureSamplerBinding{war_fog != nullptr ? war_fog : white, clamp_sampler},
+                SDL_GPUTextureSamplerBinding{war_ceiling != nullptr ? war_ceiling : white, clamp_sampler}};
+    }
+
+    void war_params(float out[4]) const {
+        const bool on = war_fog != nullptr && war_mode > 0;
+        out[0] = 1.0f / std::max(1.0f, war_meters);
+        out[1] = on ? static_cast<float>(war_mode) : 0.0f;
+        out[2] = on && war_ceiling != nullptr ? war_band : 0.0f;
+        out[3] = 0.0f;
+    }
+
     ~Impl() { release_all(); }
 
     void release_post() {
@@ -432,6 +495,7 @@ struct SceneRenderer::Impl {
         }
         release_targets();
         release_pipelines();
+        release_war();
         terrain.release();
         for (GpuModel& m : models) {
             SDL_ReleaseGPUBuffer(device, m.vertices);
@@ -614,7 +678,7 @@ struct SceneRenderer::Impl {
     bool create_pipelines() {
         release_pipelines();
         SDL_GPUShader* mesh_vs = make_shader(device, kMeshVertDxil, kMeshVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 2, 2);
-        SDL_GPUShader* mesh_fs = make_shader(device, kMeshFragDxil, kMeshFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 2);
+        SDL_GPUShader* mesh_fs = make_shader(device, kMeshFragDxil, kMeshFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 4, 0, 2);
         SDL_GPUShader* sky_vs = make_shader(device, kSkyVertDxil, kSkyVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0);
         SDL_GPUShader* sky_fs = make_shader(device, kSkyFragDxil, kSkyFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 1);
         SDL_GPUShader* shadow_vs = make_shader(device, kShadowVertDxil, kShadowVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 1);
@@ -1355,6 +1419,81 @@ void SceneRenderer::clear_instances() {
     }
 }
 
+bool SceneRenderer::set_war_fog(int mode, std::int32_t side, float cell) {
+    Impl& d = *impl_;
+    if (d.device == nullptr) {
+        return false;
+    }
+    if (mode <= 0 || side <= 0 || cell <= 0.0f) {
+        d.release_war();
+        return true;
+    }
+    if (d.war_fog == nullptr || d.war_side != side) {
+        d.release_war();
+        d.war_fog = d.make_war_texture(side, SDL_GPU_TEXTUREFORMAT_R8_UNORM);
+        if (d.war_fog == nullptr) {
+            return false;
+        }
+        d.war_side = side;
+        // Unexplored until told otherwise.
+        const std::vector<std::uint8_t> zero(static_cast<std::size_t>(side) * static_cast<std::size_t>(side), 0);
+        update_war_fog(zero, 0, 0, side, side);
+    }
+    d.war_mode = std::min(mode, 2);
+    d.war_meters = static_cast<float>(side) * cell;
+    return true;
+}
+
+void SceneRenderer::update_war_fog(std::span<const std::uint8_t> texels, std::int32_t x, std::int32_t z, std::int32_t w,
+                                   std::int32_t d_rows) {
+    Impl& d = *impl_;
+    const std::int32_t side = d.war_side;
+    if (d.war_fog == nullptr || texels.size() != static_cast<std::size_t>(side) * static_cast<std::size_t>(side) ||
+        x < 0 || z < 0 || w <= 0 || d_rows <= 0 || x + w > side || z + d_rows > side) {
+        return;
+    }
+    WarUpload u;
+    u.x = static_cast<std::uint32_t>(x);
+    u.z = static_cast<std::uint32_t>(z);
+    u.w = static_cast<std::uint32_t>(w);
+    u.d = static_cast<std::uint32_t>(d_rows);
+    u.bytes.resize(static_cast<std::size_t>(w) * static_cast<std::size_t>(d_rows));
+    for (std::int32_t row = 0; row < d_rows; ++row) {
+        const std::size_t from = static_cast<std::size_t>(z + row) * static_cast<std::size_t>(side) + static_cast<std::size_t>(x);
+        std::memcpy(u.bytes.data() + static_cast<std::size_t>(row) * static_cast<std::size_t>(w), texels.data() + from,
+                    static_cast<std::size_t>(w));
+    }
+    d.war_uploads.push_back(std::move(u));
+}
+
+bool SceneRenderer::set_war_ceiling(std::span<const std::uint16_t> heights, std::int32_t side, float band) {
+    Impl& d = *impl_;
+    if (d.device == nullptr) {
+        return false;
+    }
+    SDL_ReleaseGPUTexture(d.device, d.war_ceiling);
+    d.war_ceiling = nullptr;
+    d.war_ceiling_side = 0;
+    d.war_band = 0.0f;
+    std::erase_if(d.war_uploads, [](const WarUpload& u) { return u.ceiling; });
+    if (side <= 0 || heights.size() != static_cast<std::size_t>(side) * static_cast<std::size_t>(side) || band <= 0.0f) {
+        return true;
+    }
+    d.war_ceiling = d.make_war_texture(side, SDL_GPU_TEXTUREFORMAT_R16_UNORM);
+    if (d.war_ceiling == nullptr) {
+        return false;
+    }
+    d.war_ceiling_side = side;
+    d.war_band = band;
+    WarUpload u;
+    u.ceiling = true;
+    u.w = u.d = static_cast<std::uint32_t>(side);
+    u.bytes.resize(heights.size() * 2);
+    std::memcpy(u.bytes.data(), heights.data(), u.bytes.size());
+    d.war_uploads.push_back(std::move(u));
+    return true;
+}
+
 bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lighting& lighting) {
     Impl& d = *impl_;
     stats_ = RenderStats{};
@@ -1447,6 +1586,16 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const auto bone_bytes = static_cast<std::uint32_t>(d.bone_rows.size() * sizeof(float));
     const auto palette_bytes = static_cast<std::uint32_t>(d.palette_data.size() * sizeof(float));
     const auto building_palette_bytes = static_cast<std::uint32_t>(d.building_palette_data.size() * sizeof(float));
+    // Fog of war rectangles: rows padded to 256 bytes and each one starting
+    // on 512 bytes, as Direct3D 12 wants for texture uploads.
+    std::uint32_t war_bytes = 0;
+    for (const WarUpload& u : d.war_uploads) {
+        const std::uint32_t texel = u.ceiling ? 2u : 1u;
+        war_bytes = align_up(war_bytes, 512) + align_up(u.w * texel, 256) * u.d;
+    }
+    if (!d.war_uploads.empty()) {
+        war_bytes += 512;
+    }
     std::uint32_t upload_instances = 0;
     for (const auto& [first, count] : instance_ranges) {
         upload_instances += count * static_cast<std::uint32_t>(sizeof(GpuInstance));
@@ -1488,7 +1637,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         (d.bone_capacity != old_bone_capacity || upload_bones > 0) ? bone_bytes : 0;
     const std::uint32_t palettes_to_upload = upload_palettes;
     const std::uint32_t to_send = visible_bytes + upload_instances + character_bytes + bones_to_upload +
-                                  palettes_to_upload + building_palettes_to_upload;
+                                  palettes_to_upload + building_palettes_to_upload + war_bytes;
     if (to_send > 0) {
         if (!d.ensure_transfer(to_send + 16)) {
             return false;
@@ -1528,6 +1677,18 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
                 offset += items[i].bytes;
             }
         }
+        std::vector<std::uint32_t> war_offsets;
+        for (const WarUpload& u : d.war_uploads) {
+            const std::uint32_t texel = u.ceiling ? 2u : 1u;
+            const std::uint32_t pitch = align_up(u.w * texel, 256);
+            offset = align_up(offset, 512);
+            war_offsets.push_back(offset);
+            for (std::uint32_t row = 0; row < u.d; ++row) {
+                std::memcpy(mapped + offset + row * pitch, u.bytes.data() + static_cast<std::size_t>(row) * u.w * texel,
+                            static_cast<std::size_t>(u.w) * texel);
+            }
+            offset += pitch * u.d;
+        }
         SDL_UnmapGPUTransferBuffer(d.device, d.transfer);
         SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(frame.cmd);
         for (std::size_t r = 0; r < send_instances.size(); ++r) {
@@ -1545,6 +1706,28 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             const SDL_GPUBufferRegion dst{items[i].dst, 0, items[i].bytes};
             SDL_UploadToGPUBuffer(copy, &src, &dst, items[i].cycle);
         }
+        for (std::size_t i = 0; i < d.war_uploads.size(); ++i) {
+            const WarUpload& u = d.war_uploads[i];
+            SDL_GPUTexture* texture = u.ceiling ? d.war_ceiling : d.war_fog;
+            if (texture == nullptr) {
+                continue;
+            }
+            const std::uint32_t texel = u.ceiling ? 2u : 1u;
+            SDL_GPUTextureTransferInfo src{};
+            src.transfer_buffer = d.transfer;
+            src.offset = war_offsets[i];
+            src.pixels_per_row = align_up(u.w * texel, 256) / texel;
+            src.rows_per_layer = u.d;
+            SDL_GPUTextureRegion dst{};
+            dst.texture = texture;
+            dst.x = u.x;
+            dst.y = u.z;
+            dst.w = u.w;
+            dst.h = u.d;
+            dst.d = 1;
+            SDL_UploadToGPUTexture(copy, &src, &dst, false);
+        }
+        d.war_uploads.clear();
         SDL_EndGPUCopyPass(copy);
         if (upload_instances > 0) {
             d.full_upload = false;
@@ -1560,6 +1743,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         }
     }
 
+    const std::array<SDL_GPUTextureSamplerBinding, 2> war_bind = d.war_bindings();
     // Draws every model's visible instances; `with_materials` binds colors.
     const auto draw_models = [&](SDL_GPURenderPass* pass, const std::vector<Range>& ranges, bool with_materials) {
         SDL_GPUBuffer* storage[2] = {d.instance_buffer, d.building_palette_buffer};
@@ -1585,9 +1769,9 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
                     MaterialUniforms mu{};
                     std::copy(std::begin(mat.base_color), std::end(mat.base_color), mu.base_color);
                     SDL_PushGPUFragmentUniformData(frame.cmd, 1, &mu, sizeof(mu));
-                    const SDL_GPUTextureSamplerBinding bindings[2] = {{mat.texture, d.base_sampler},
-                                                                      {d.shadow_map, d.shadow_sampler}};
-                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 2);
+                    const SDL_GPUTextureSamplerBinding bindings[4] = {
+                        {mat.texture, d.base_sampler}, {d.shadow_map, d.shadow_sampler}, war_bind[0], war_bind[1]};
+                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 4);
                 }
                 SDL_DrawGPUIndexedPrimitives(pass, p.index_count, r.count, p.first_index, 0, 0);
                 ++stats_.draw_calls;
@@ -1619,9 +1803,9 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
                     MaterialUniforms mu{};
                     std::copy(std::begin(mat.base_color), std::end(mat.base_color), mu.base_color);
                     SDL_PushGPUFragmentUniformData(frame.cmd, 1, &mu, sizeof(mu));
-                    const SDL_GPUTextureSamplerBinding bindings[2] = {{mat.texture, d.base_sampler},
-                                                                      {d.shadow_map, d.shadow_sampler}};
-                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 2);
+                    const SDL_GPUTextureSamplerBinding bindings[4] = {
+                        {mat.texture, d.base_sampler}, {d.shadow_map, d.shadow_sampler}, war_bind[0], war_bind[1]};
+                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 4);
                 }
                 SDL_DrawGPUIndexedPrimitives(pass, p.index_count, r.count, p.first_index, 0, 0);
                 ++stats_.draw_calls;
@@ -1717,13 +1901,15 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     su.shadow_params[0] = d.shadow_size > 0 ? 1.0f / static_cast<float>(d.shadow_size) : 0.0f;
     su.shadow_params[1] = 0.0002f;
     su.shadow_params[2] = std::clamp(view.snow, 0.0f, 1.0f);
+    d.war_params(su.war_params);
     SDL_PushGPUFragmentUniformData(frame.cmd, 0, &su, sizeof(su));
-    d.terrain.draw_ground(frame.cmd, pass, view_proj, d.white, d.base_sampler, d.shadow_map, d.shadow_sampler);
+    d.terrain.draw_ground(frame.cmd, pass, view_proj, d.white, d.base_sampler, d.shadow_map, d.shadow_sampler,
+                          war_bind.data());
     // Grass thins out as snow covers it, and is gone under deep snow.
     const float grass_distance = grass_distance_for_level(d.graphics.vegetation) * std::max(0.0f, 1.0f - view.snow * 2.5f);
     if (grass_distance > 1.0f) {
         d.terrain.draw_grass(frame.cmd, pass, view_proj, view.eye, view.time, grass_distance, d.white, d.base_sampler,
-                             d.shadow_map, d.shadow_sampler);
+                             d.shadow_map, d.shadow_sampler, war_bind.data());
     }
     SDL_BindGPUGraphicsPipeline(pass, d.mesh_pipeline);
     const MeshVertexUniforms mv{view_proj};
@@ -1751,6 +1937,8 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     water.eye = view.eye;
     water.time = view.time;
     water.ice = view.ice;
+    water.war = war_bind.data();
+    std::copy(std::begin(su.war_params), std::end(su.war_params), water.war_params);
     d.terrain.draw_water(frame.cmd, pass, view_proj, water);
     const TerrainStats& ts = d.terrain.stats();
     stats_.terrain_chunks = ts.chunks_drawn;

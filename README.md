@@ -400,6 +400,20 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Ese mapa es el mismo de antes: el registro (`map: seed 12345 size 16384 ...`) muestra la suma de verificación `eb8174aa7a3641ce`.
 - [ ] Un mapa Gigante con la misma semilla tarda menos de un minuto y su suma es `a62012064264c43a`.
 
+### Fase 32 (niebla de guerra estática)
+
+- [ ] El formulario de partida nueva tiene "Niebla de guerra" (Sin niebla, Estática, Dinámica) y "Visión compartida"; por omisión y tras "Restablecer", Estática y Entre aliados. Lo elegido se recuerda.
+- [ ] Con niebla estática, la partida empieza con un círculo alrededor del centro del pueblo a la vista y todo lo demás negro parejo, sin siluetas de árboles, cerca y lejos. El borde es suave, no cuadriculado.
+- [ ] El minimapa muestra negro lo no explorado y el círculo del pueblo a color.
+- [ ] Al poner leñadores o recolectores lejos, lo que recorren sus trabajadores se descubre y queda a la vista aunque se vayan.
+- [ ] Al intentar colocar un edificio en lo negro, abajo dice "Ese lugar no está explorado." y no se puede construir.
+- [ ] Los ciervos y lobos solo aparecen en lo explorado; sus sonidos y los de otros pueblos no se oyen desde lo negro.
+- [ ] La capa de fertilidad (Capas) no pinta nada sobre lo negro.
+- [ ] En Ctrl+F3 > Pueblo, "Ver a través de la niebla de guerra" muestra todo el mapa; al quitarlo, vuelve la niebla. En multijugador la casilla está desactivada.
+- [ ] Guardar y cargar conserva lo explorado.
+- [ ] Con "Sin niebla" el juego se ve y se juega como antes.
+- [ ] En multijugador (`--instance 1 --loopback` y `--instance 2 --loopback`) la sala muestra la fila "Niebla de guerra"; en cooperativo con visión compartida, lo que explora un jugador lo ve el otro; en versus, cada uno ve solo lo suyo. No hay desincronizaciones.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

@@ -91,7 +91,13 @@ void SoundDirector::event(sim::Game::Event::Kind kind) {
     }
 }
 
-void SoundDirector::update(const sim::Game& game, float x, float z, float height, bool paused, float dt) {
+void SoundDirector::update(const sim::Game& game, const FogView* fog, float x, float z, float height, bool paused,
+                           float dt) {
+    // Others' fires and work only where the player can see them (phase 32).
+    const auto heard = [&](std::uint8_t town, float px, float pz) {
+        return fog == nullptr || fog->mode() == sim::FogMode::None || game.town_group(town) == fog->group() ||
+               fog->shows(px, pz);
+    };
     // The ambient bed: birds in the warm seasons, wind in the cold. Higher
     // up, the birds fade and the wind stays.
     const bool cold = game.temperature() < 2 || game.calendar().season == sim::Season::Winter;
@@ -106,6 +112,9 @@ void SoundDirector::update(const sim::Game& game, float x, float z, float height
         if (b.fire > 0) {
             const float bx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
             const float bz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
+            if (!heard(b.owner, bx, bz)) {
+                continue;
+            }
             fire = std::max(fire, near_gain(bx - x, bz - z, height, 120.0f));
         }
     }
@@ -129,6 +138,9 @@ void SoundDirector::update(const sim::Game& game, float x, float z, float height
         const bool chopping = v.task == sim::Task::Gather && v.node > 0 && v.node <= game.map().features.size() &&
                               game.map().features[v.node - 1].type == sim::FeatureType::Tree;
         if (!building && !chopping) {
+            continue;
+        }
+        if (!heard(v.owner, to_float(v.position.x), to_float(v.position.z))) {
             continue;
         }
         const float gain = near_gain(to_float(v.position.x) - x, to_float(v.position.z) - z, height, 80.0f);

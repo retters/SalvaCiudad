@@ -258,6 +258,7 @@ set(SC_ENGINE_SOURCES
     src/game/minimap.cpp
     src/game/sound_director.cpp
     src/audio/mixer.cpp
+    src/game/fog_view.cpp
     src/game/game_session.cpp
     src/game/replay_file.cpp
     src/game/save_file.cpp
@@ -302,6 +303,7 @@ set(SC_ENGINE_SOURCES
     src/sim/rng.cpp
     src/sim/serialize.cpp
     src/sim/simulation.cpp
+    src/sim/vision.cpp
     src/sim/world.cpp
     src/sim/worldgen.cpp
     src/platform/window.cpp
@@ -412,14 +414,15 @@ if(SC_BUILD_TESTS)
         tests/test_races.cpp
         tests/test_perf.cpp
         tests/test_viewer.cpp
-        tests/test_variants.cpp)
+        tests/test_variants.cpp
+        tests/test_fog.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine sc_viewer doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen worldgen_sea worldgen_coasts worldgen_landforms worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer variants)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen worldgen_sea worldgen_coasts worldgen_landforms worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer variants fog)
     # AddressSanitizer runs about twice as slow, and its times vary up to
     # twice between runs (D-3110).
     set(SC_TEST_TIMEOUT 120)

@@ -188,7 +188,7 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
     // Many villagers in all: a warning (phase 20, docs/RENDIMIENTO.md).
     const std::int32_t seats = static_cast<std::int32_t>(lobby.players.size());
     const bool heavy = seats * lobby.config.rules.max_population > sim::kPopulationWarning;
-    const float content_h = line * (heavy ? 3 : 2) + gap + row_h * 4 + gap * 4 + list_h + gap + button_h;
+    const float content_h = line * (heavy ? 3 : 2) + gap + row_h * 5 + gap * 5 + list_h + gap + button_h;
     float y = 0.0f;
     const ui::Rect c = frame_panel(ctx, 760.0f, content_h, tr(host ? "lobby.title.host" : "lobby.title.client"), y);
     Result result = Result::None;
@@ -266,6 +266,19 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
                 cfg.rules.versus = kind != 0;
                 cfg.rules.pvp = kind >= 2;
                 cfg.rules.victory = kVictory[kind];
+                static_cast<net::NetHost*>(net)->set_config(cfg);
+            }
+            y += row_h + gap;
+        }
+        // The fog of war (phase 32).
+        {
+            const std::string fogs[] = {tr("newGame.fog.none"), tr("newGame.fog.static"), tr("newGame.fog.dynamic")};
+            int fog = static_cast<int>(lobby.config.rules.fog);
+            ctx.label({c.x, y, label_w, row_h}, tr("newGame.fog"), body, ctx.theme().text);
+            if (ctx.selector(ctx.id("lobby_fog"), {c.x + label_w, y, c.w - label_w, row_h}, fog, fogs,
+                             tr("newGame.fog.tooltip"), host)) {
+                net::GameConfig cfg = lobby.config;
+                cfg.rules.fog = static_cast<sim::FogMode>(fog);
                 static_cast<net::NetHost*>(net)->set_config(cfg);
             }
             y += row_h + gap;
