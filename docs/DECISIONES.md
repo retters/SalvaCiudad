@@ -1443,3 +1443,9 @@ Los dos copian `data/` junto al ejecutable al terminar de enlazar; en paralelo, 
 
 **D-3107. Una sola copia de `data/` para los dos ejecutables.**
 Reemplaza a D-3106: esperar al juego no bastaba como garantía y ataba la compilación del visor a la del juego. Ahora un solo objetivo, `sc_data`, copia `data/` a `bin/data` y deja un archivo testigo (`sc_data.stamp`); el juego y el visor dependen de él, así la copia corre una vez y nunca dos a la vez. Se repite solo cuando cambia o se agrega un archivo de `data/` (la lista se recalcula en cada compilación), no en cada enlace. Como antes, borrar un archivo de `data/` no lo borra de `bin/data`; si se borra `bin/data` a mano, hay que borrar también el testigo o compilar desde cero.
+
+**D-3108. La prueba `worldgen` corre solo en `release`.**
+Sin optimizaciones tarda casi 4 minutos (en `release`, unos 50 s) y pasaba el límite de 120 s de cada prueba en `debug` y `debug-asan`. En esos dos presets no se registra en `ctest`; sigue compilándose y se puede correr a mano con `salvaciudad_tests --test-suite=worldgen`.
+
+**D-3109. La semilla fija de Lua ahora sí se aplica.**
+Corrige D-702: CMake descartaba la definición `luai_makeseed(L)=0u` porque no pasa macros con parámetros por la línea de comandos (solo avisaba al configurar), así que Lua usaba una semilla al azar y el orden de `pairs` sobre claves de texto cambiaba entre estados y entre máquinas. La macro está ahora en `src/script/lua_user.h`, que Lua incluye por su mecanismo oficial `LUA_USER_H`, sin tocar el código vendorizado. La prueba "pairs walks string keys in the same order in every state" fallaba antes del cambio y ahora pasa.

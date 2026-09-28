@@ -163,7 +163,8 @@ add_library(lua STATIC
     third_party/lua/ltm.c third_party/lua/lundump.c third_party/lua/lutf8lib.c third_party/lua/lvm.c
     third_party/lua/lzio.c)
 target_include_directories(lua SYSTEM PUBLIC third_party/lua)
-target_compile_definitions(lua PRIVATE "luai_makeseed(L)=0u")
+target_include_directories(lua PRIVATE src/script)
+target_compile_definitions(lua PRIVATE "LUA_USER_H=\"lua_user.h\"")
 
 add_library(doctest INTERFACE)
 target_include_directories(doctest SYSTEM INTERFACE third_party/doctest)
@@ -419,6 +420,10 @@ if(SC_BUILD_TESTS)
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
     set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer variants)
+    # worldgen takes minutes without optimizations; it runs only in release.
+    if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+        list(REMOVE_ITEM SC_TEST_SUITES worldgen)
+    endif()
     foreach(suite IN LISTS SC_TEST_SUITES)
         add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT 120)

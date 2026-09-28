@@ -299,6 +299,27 @@ TEST_SUITE("lua") {
         CHECK(box.call("ok", 0, 1, error));
     }
 
+    TEST_CASE("pairs walks string keys in the same order in every state") {
+        // With a random hash seed each state would order the keys its own way
+        // (decision D-702).
+        const char* source = R"(
+            function order()
+                local t = {}
+                for i = 1, 64 do t["key" .. i] = i end
+                local out = {}
+                for k in pairs(t) do out[#out + 1] = k end
+                return table.concat(out, ",")
+            end)";
+        std::string error;
+        script::LuaSandbox a;
+        script::LuaSandbox b;
+        REQUIRE(a.open("a", {}, source, error));
+        REQUIRE(b.open("b", {}, source, error));
+        REQUIRE(a.call("order", 0, 1, error));
+        REQUIRE(b.call("order", 0, 1, error));
+        CHECK(std::string(lua_tostring(a.state(), -1)) == std::string(lua_tostring(b.state(), -1)));
+    }
+
     TEST_CASE("syntax errors and require outside the mod fail cleanly") {
         script::LuaSandbox box;
         std::string error;
