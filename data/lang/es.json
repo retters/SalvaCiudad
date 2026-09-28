@@ -606,6 +606,7 @@
     "net.slowPlayer": "La computadora de {0:name} no alcanza a seguir: la velocidad baja a {1:speed}×.",
     "net.rejected.title": "No se pudo entrar",
     "net.rejected.version": "El anfitrión juega la versión {0:host} y tú tienes la {1:yours}. Todos necesitan la misma versión.",
+    "net.rejected.build": "El anfitrión tiene otra compilación del juego ({0:host}) y tú tienes la {1:yours}. Copien la misma compilación a todos los equipos.",
     "net.rejected.mods": "Los mods no coinciden. El anfitrión tiene y tú no:{0:missing}\n\nTú tienes y el anfitrión no:{1:extra}",
     "net.rejected.none": " ninguno",
     "net.rejected.full": "La partida no tiene lugares libres.",

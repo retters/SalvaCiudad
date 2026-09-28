@@ -17,6 +17,7 @@
 
 #include "core/log.h"
 #include "core/text.h"
+#include "game/build_info.h"
 #include "embedded/lang_en.h"
 #include "i18n/translator.h"
 #include "mods/mod_settings.h"
@@ -182,7 +183,7 @@ bool App::init() {
     if (!log::open(paths_->logs_dir(), log_options)) {
         std::fprintf(stderr, "Cannot open the log file; continuing without it\n");
     }
-    log::info("SalvaCiudad {} starting on {}", SC_VERSION_STRING, SDL_GetPlatform());
+    log::info("SalvaCiudad {} starting on {}", full_version(), SDL_GetPlatform());
     log::info("data: {} mode", paths_->portable ? "portable" : "per-user");
     // Log the language files now that the log is open.
     load_languages();
@@ -1577,7 +1578,7 @@ std::string App::player_name() const {
 
 net::LocalInfo App::local_info() const {
     net::LocalInfo info;
-    info.game_version = SC_VERSION_STRING;
+    info.game_version = std::string(full_version());
     info.content_hash = pack_->content.hash;
     for (const mods::ModInfo& m : mod_library_.mods()) {
         if (m.loaded && m.manifest.affects_simulation) {
@@ -1877,7 +1878,7 @@ void App::handle_net_event(const net::NetEvent& e) {
             host_->toast(tr("net.desync", seat_name(e.slot)));
             if (net_->role() == net::NetSession::Role::Host && paths_) {
                 // A report for whoever looks into it.
-                const std::string text = "SalvaCiudad " + std::string(SC_VERSION_STRING) + "\ndesync with seat " +
+                const std::string text = "SalvaCiudad " + std::string(full_version()) + "\ndesync with seat " +
                                          std::to_string(e.slot) + " at tick " + std::to_string(e.value) +
                                          "\ndifferent parts: " + e.detail + "\n";
                 const std::filesystem::path file =
@@ -1897,7 +1898,10 @@ void App::handle_net_event(const net::NetEvent& e) {
             std::string body;
             switch (e.reject.reason) {
                 case net::RejectReason::Version:
-                    body = tr("net.rejected.version", e.reject.host_version, std::string(SC_VERSION_STRING));
+                    // Same version number, other sources: another build (D-3321).
+                    body = version_number(e.reject.host_version) == SC_VERSION_STRING
+                               ? tr("net.rejected.build", e.reject.host_version, std::string(full_version()))
+                               : tr("net.rejected.version", e.reject.host_version, std::string(full_version()));
                     break;
                 case net::RejectReason::Mods: {
                     // What the host has that we do not, and the other way round.

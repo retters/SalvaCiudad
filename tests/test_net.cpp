@@ -6,11 +6,13 @@
 #include <optional>
 #include <ostream>
 
+#include "game/build_info.h"
 #include "net/enet_link.h"
 #include "net/lockstep.h"
 #include "net/protocol.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
+#include "version.h"
 
 using namespace sc;
 using namespace sc::net;
@@ -428,6 +430,33 @@ TEST_SUITE("net") {
         CHECK(reason(a) == RejectReason::Version);
         CHECK(reason(b) == RejectReason::Mods);
         CHECK(c.host().lobby().players.size() == 1);
+    }
+
+    TEST_CASE("another build with the same version number is refused") {
+        // The game sends its version with the build (D-3321).
+        const std::string_view full = full_version();
+        CHECK(version_number(full) == SC_VERSION_STRING);
+        CHECK(full.size() == std::string_view(SC_VERSION_STRING).size() + 1 + 12);
+        CHECK(build_id().size() == 12);
+        CHECK(build_id().find_first_not_of("0123456789abcdef") == std::string_view::npos);
+        CHECK(full.ends_with(build_id()));
+        CHECK(version_number("0.20.0") == "0.20.0");
+
+        // The host of the cluster plays "0.9.0"; a client adds a build to it.
+        Cluster c;
+        LocalInfo other = info("Other");
+        other.game_version += "+000000000000";
+        const std::size_t a = c.join("Other", other);
+        LocalInfo same = info("Same");
+        const std::size_t b = c.join("Same", same);
+        c.frames(4, 0);
+        bool refused = false;
+        for (const NetEvent& e : c.m[a].events) {
+            refused = refused || (e.kind == NetEvent::Kind::Rejected && e.reject.reason == RejectReason::Version &&
+                                  version_number(e.reject.host_version) == version_number(other.game_version));
+        }
+        CHECK(refused);
+        CHECK(c.m[b].session->state() != NetSession::State::Closed);
     }
 
     TEST_CASE("local network discovery datagrams") {

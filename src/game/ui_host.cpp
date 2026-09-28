@@ -4,8 +4,8 @@
 #include <cmath>
 
 #include "core/text.h"
+#include "game/build_info.h"
 #include "i18n/translator.h"
-#include "version.h"
 
 namespace sc {
 
@@ -399,7 +399,7 @@ void UiHost::main_menu(ui::Context& ctx) {
         }
         y += button_h + gap;
     }
-    const std::string version = tr("menu.main.version", std::string(SC_VERSION_STRING));
+    const std::string version = tr("menu.main.version", std::string(full_version()));
     if (!version_in_corner) {
         ctx.label({margin, y, ctx.width() - 2 * margin, version_h}, version, small, ctx.theme().text_dim,
                   ui::Align::Center);

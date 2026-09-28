@@ -237,7 +237,21 @@ add_custom_command(
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/lang/en.json" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake"
     COMMENT "Embedding the base language"
     VERBATIM)
-add_custom_target(sc_generated DEPENDS ${SC_SHADER_HEADERS} "${SC_LANG_EN_HEADER}")
+# Which sources this build comes from, so the lobby refuses another build
+# with the same version number (decision D-3321). It is worked out on every
+# build; the header only changes when the sources do.
+set(SC_BUILD_ID_HEADER "${SC_GENERATED_DIR}/build_id.h")
+file(GLOB_RECURSE SC_ALL_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*")
+add_custom_command(
+    OUTPUT "${SC_GENERATED_DIR}/build_id.stamp"
+    BYPRODUCTS "${SC_BUILD_ID_HEADER}"
+    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DOUTPUT=${SC_BUILD_ID_HEADER}
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildId.cmake"
+    COMMAND ${CMAKE_COMMAND} -E touch "${SC_GENERATED_DIR}/build_id.stamp"
+    DEPENDS ${SC_ALL_SOURCES} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildId.cmake"
+    COMMENT "Working out the build identifier"
+    VERBATIM)
+add_custom_target(sc_generated DEPENDS ${SC_SHADER_HEADERS} "${SC_LANG_EN_HEADER}" "${SC_GENERATED_DIR}/build_id.stamp")
 
 # ---------------------------------------------------------------------------
 # Engine library: everything except the program entry point, so the tests can
@@ -249,6 +263,7 @@ set(SC_ENGINE_SOURCES
     src/core/log.cpp
     src/core/text.cpp
     src/game/app.cpp
+    src/game/build_info.cpp
     src/game/dev_tools.cpp
     src/game/camera.cpp
     src/game/game_clock.cpp

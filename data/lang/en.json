@@ -606,6 +606,7 @@
     "net.slowPlayer": "{0:name}'s computer cannot keep up: the speed goes down to {1:speed}×.",
     "net.rejected.title": "Could not join",
     "net.rejected.version": "The host plays version {0:host} and you have {1:yours}. Everybody needs the same version.",
+    "net.rejected.build": "The host has another build of the game ({0:host}) and you have {1:yours}. Copy the same build to every computer.",
     "net.rejected.mods": "The mods do not match. The host has, and you do not:{0:missing}\n\nYou have, and the host does not:{1:extra}",
     "net.rejected.none": " none",
     "net.rejected.full": "The game has no free seat.",

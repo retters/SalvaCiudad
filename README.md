@@ -194,6 +194,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Listo" en la 2 y "Empezar" en la 1: las dos generan el mapa y juegan la misma partida (mismo pueblo, mismos aldeanos).
 - [ ] Una casa colocada en una ventana aparece en la otra; en "un pueblo por jugador" cada uno tiene su centro del pueblo.
 - [ ] Espacio pausa a los dos al instante; 2 en una ventana pregunta en la otra, y la velocidad cambia al aceptar.
+- [ ] El menú principal muestra la versión con su compilación (`0.20.0+…`); un equipo con otra compilación no entra a la sala y ve un aviso que pide copiar la misma.
 - [ ] Cerrar a la fuerza la ventana 2 (Administrador de tareas), abrirla de nuevo y unirse con el mismo nombre: vuelve a su lugar y la partida sigue igual.
 - [ ] Jugar 30 minutos con 2 a 4 ventanas sin avisos de desincronización (si aparece uno, el informe queda en `userdata/instance-1/logs/`).
 - [ ] En dos computadoras de la misma red: la partida aparece sola en "Partidas en tu red local" (Windows pedirá permiso del firewall la primera vez).
