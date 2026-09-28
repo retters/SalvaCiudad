@@ -9937,8 +9937,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3208",
@@ -9951,8 +9951,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3209",
@@ -9965,8 +9965,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3210",
@@ -9979,8 +9979,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3211",
@@ -9993,8 +9993,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3212",
@@ -10007,8 +10007,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3213",
@@ -10021,8 +10021,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3214",
@@ -10035,8 +10035,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3215",
@@ -10049,8 +10049,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-3216",
@@ -10063,8 +10063,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-257f0880",
@@ -10077,8 +10077,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-2a185aa5",
@@ -10091,8 +10091,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-ad26ddf0",
@@ -10105,8 +10105,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-d56de545",
@@ -10119,8 +10119,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-5a5823a7",
@@ -10133,8 +10133,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-e450a33c",
@@ -10147,8 +10147,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-fed14e9f",
@@ -10161,8 +10161,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-bede269c",
@@ -10175,8 +10175,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-465da018",
@@ -10189,8 +10189,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-11825747",
@@ -10203,8 +10203,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "prueba-32-74299de8",
@@ -10217,8 +10217,8 @@
    "origen": "README",
    "estado": "sin probar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "cambio-32",
@@ -10247,7 +10247,147 @@
    "nota": "",
    "respuesta": "",
    "historial": []
+  },
+  {
+   "id": "D-3301",
+   "tipo": "decision",
+   "fase": "33",
+   "grupo": "Fase 33: niebla de guerra dinámica",
+   "titulo": "Qué ve cada grupo, en la simulación",
+   "detalle": "Con niebla dinámica, la actualización de cada segundo anota también qué celdas ve cada grupo en ese momento. Es un dato derivado: no se guarda y se rehace en la siguiente actualización, igual en todas las máquinas (también en la que acaba de cargar o de unirse). La vista sigue calculando lo suyo en cada tick para que lo que se mueve aparezca y desaparezca sin esperar un segundo.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3302",
+   "tipo": "decision",
+   "fase": "33",
+   "grupo": "Fase 33: niebla de guerra dinámica",
+   "titulo": "Fantasmas",
+   "detalle": "- En cada actualización, cada grupo recuerda los edificios de otros grupos que ve (tipo, dueño, giro, nivel, avance de obra, si arde y cuánto se quemó) y olvida los recordados cuyo lugar ve y ya no existen. No guarda campos, bienes ni trabajadores.\n- Se guardan con la partida y entran en la suma de verificación, en la parte \"vision\", ordenados por entidad.\n- Con niebla estática no hay fantasmas: todo lo explorado se ve en vivo.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3303",
+   "tipo": "decision",
+   "fase": "33",
+   "grupo": "Fase 33: niebla de guerra dinámica",
+   "titulo": "Cómo se ven",
+   "detalle": "Fuera de la vista, un edificio ajeno se dibuja como su fantasma: la variante de su lugar, a medio levantar si estaba en obra, rojizo si ardía o chamuscado. No echa humo ni suena y no se puede seleccionar. En el minimapa sale un poco más tenue. Los campos de las granjas ajenas solo se ven a la vista. Si el edificio real está a la vista, se dibuja el real.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-3304",
+   "tipo": "decision",
+   "fase": "33",
+   "grupo": "Fase 33: niebla de guerra dinámica",
+   "titulo": "El gris",
+   "detalle": "Lo explorado fuera de vista se desatura un 75 % y queda al 45 % de brillo, con un tinte frío, después de la bruma de distancia. El minimapa usa la misma idea.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-33-9f27ffe8",
+   "tipo": "prueba",
+   "fase": "33",
+   "grupo": "Fase 33 (niebla de guerra dinámica)",
+   "titulo": "Con niebla dinámica, lo que tu gente exploró y ya no ve queda apagado y gris (terreno, árboles, rocas, agua), también en el minimapa; lo que nunca se vio sigue negro.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-33-b8f6cba1",
+   "tipo": "prueba",
+   "fase": "33",
+   "grupo": "Fase 33 (niebla de guerra dinámica)",
+   "titulo": "Un ciervo o un lobo que sale del alcance de tu gente desaparece; al volver a verlo, aparece donde esté.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-33-9edeabad",
+   "tipo": "prueba",
+   "fase": "33",
+   "grupo": "Fase 33 (niebla de guerra dinámica)",
+   "titulo": "En multijugador versus (`--instance 1 --loopback` y `--instance 2 --loopback`, niebla dinámica): al mandar el ejército al pueblo rival se ven sus edificios; al volver, siguen dibujados tal como se vieron (y en el minimapa, un poco más tenues), aunque el rival construya, mejore o pierda edificios. Al volver a verlos, se ponen al día; los que ya no existen desaparecen.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-33-6720fc84",
+   "tipo": "prueba",
+   "fase": "33",
+   "grupo": "Fase 33 (niebla de guerra dinámica)",
+   "titulo": "Guardar y cargar conserva lo explorado y los edificios recordados.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "prueba-33-7231ae50",
+   "tipo": "prueba",
+   "fase": "33",
+   "grupo": "Fase 33 (niebla de guerra dinámica)",
+   "titulo": "Con niebla estática, los animales y los edificios de otros se siguen viendo en todo lo explorado.",
+   "detalle": "",
+   "fuente": "README.md",
+   "origen": "README",
+   "estado": "sin probar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "cambio-33",
+   "tipo": "cambio",
+   "fase": "33",
+   "grupo": "Fase 33",
+   "titulo": "Niebla de guerra dinámica",
+   "detalle": "- Lo explorado fuera de la vista queda apagado y gris (terreno, árboles, agua y minimapa); lo nunca visto, negro.\n- Lo que no es tuyo y se mueve (animales, asaltantes, gente y soldados de otros) solo se ve donde tu gente ve ahora.\n- Fantasmas: cada pueblo recuerda los edificios ajenos tal como los vio (tipo, nivel, obra, fuego) y los dibuja así fuera de la vista hasta volver a ver el lugar. Se guardan con la partida y entran en la suma de verificación.\n- Más allá del borde del mapa cuenta como no explorado (antes se veía una franja iluminada).\n- Costo: 0,18 ms por tick en la simulación con 12 000 aldeanos.\n\nCommit: `4e48e37`.",
+   "fuente": "git",
+   "origen": "curado",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
   }
  ],
- "generado": "2026-09-27T21:06:14-06:00"
+ "generado": "2026-09-27T21:39:49-06:00"
 }
