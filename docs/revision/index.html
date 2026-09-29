@@ -356,10 +356,29 @@ function userFields(it) {
   return out;
 }
 function applyMine(it, mine) {
-  if (doc.estados[it.tipo].includes(mine.estado)) it.estado = mine.estado;
+  if (mine.texto && textStillEditable(it, mine.texto)) { it.detalle = mine.texto.detalle; it.titulo = ideaTitle(mine.texto.detalle); }
+  // The state only if Salvador chose one: a note or a text edit never undoes a state Claude set meanwhile.
+  const chose = (mine.historial || []).some((h) => h.accion === 'estado' || h.accion === 'eleccion');
+  if (chose && doc.estados[it.tipo].includes(mine.estado)) it.estado = mine.estado;
   it.nota = typeof mine.nota === 'string' ? mine.nota : it.nota;
   it.actualizado = mine.actualizado;
   if (hasOptions(it) && mine.eleccion) it.eleccion = cleanChoice(it, mine.eleccion);
+}
+// Salvador's own idea or correction, while nobody has worked on it yet (D-9015).
+function textEditable(it) {
+  return (it.tipo === 'idea' || it.tipo === 'correccion') && it.estado === 'nueva' && it.autor !== 'Claude' && !it.prueba && !it.archivado;
+}
+// On disk it is still as Salvador last saw it.
+function textStillEditable(it, texto) {
+  return it.estado === 'nueva' && (it.detalle === texto.antes || it.detalle === texto.detalle);
+}
+// Claude analyzed it meanwhile: the new text is kept as a note instead, never lost.
+function keepTextAsNote(it, texto) {
+  if (it.detalle === texto.detalle) return;
+  const fecha = now();
+  it.nota = (it.nota ? it.nota + '\n\n' : '') + 'Texto que quise poner:\n' + texto.detalle;
+  it.historial.push({id: fecha + '-' + Math.random().toString(36).slice(2, 8), fecha, quien: USER, accion: 'nota', estado: it.estado, texto: it.nota});
+  toast(`${it.id} ya estaba analizada: tu texto nuevo quedó como nota.`);
 }
 // An idea or correction written on this page, as kept in local storage until it is saved.
 function isIdea(it) {
@@ -455,9 +474,12 @@ async function save() {
         byId.set(it.id, it);
       }
       if (!it) continue;
+      const textOk = !mine.texto || textStillEditable(it, mine.texto);
       applyMine(it, mine);
+      if (!textOk) keepTextAsNote(it, mine.texto);
       const seen = new Set(it.historial.map(entryKey));
-      for (const h of mine.historial) if (!seen.has(entryKey(h))) it.historial.push(h);
+      // A text change that did not apply leaves no "changed the text" entry.
+      for (const h of mine.historial) if (!seen.has(entryKey(h)) && (textOk || h.accion !== 'texto')) it.historial.push(h);
       it.historial.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
     }
     const text = JSON.stringify(disk, null, 1) + '\n';
@@ -552,6 +574,22 @@ function edit(it, changes) {
   it.historial.push(entry);
   const prev = dirty.get(it.id);
   dirty.set(it.id, Object.assign(userFields(it), {historial: [...(prev ? prev.historial : []), entry]},
+    prev && prev.nueva ? {nueva: prev.nueva} : {}, prev && prev.texto ? {texto: prev.texto} : {}));
+  scheduleSave();
+}
+function editText(it, text) {
+  const antes = it.detalle;
+  if (!text || text === antes || !textEditable(it)) return;
+  const prev = dirty.get(it.id);
+  it.detalle = text;
+  it.titulo = ideaTitle(text);
+  it.actualizado = now();
+  const entry = {id: it.actualizado + '-' + Math.random().toString(36).slice(2, 8), fecha: it.actualizado, quien: USER, accion: 'texto',
+    estado: it.estado, texto: antes};
+  it.historial.push(entry);
+  // "antes" stays the text on disk, even after several edits before a save.
+  const base = prev && prev.texto ? prev.texto.antes : antes;
+  dirty.set(it.id, Object.assign(userFields(it), {historial: [...(prev ? prev.historial : []), entry], texto: {antes: base, detalle: text}},
     prev && prev.nueva ? {nueva: prev.nueva} : {}));
   scheduleSave();
 }
@@ -603,6 +641,7 @@ function historyLine(h) {
   if (h.accion === 'nota') return `${fmtDate(h.fecha)} · ${who} · nota: ${h.texto || '(borrada)'}`;
   if (h.accion === 'eleccion') return `${fmtDate(h.fecha)} · ${who} · eligió: ${h.texto || '(nada)'}`;
   if (h.accion === 'idea') return `${fmtDate(h.fecha)} · ${who} · escribió la idea`;
+  if (h.accion === 'texto') return `${fmtDate(h.fecha)} · ${who} · cambió el texto; antes decía: ${h.texto}`;
   return `${fmtDate(h.fecha)} · ${who} · ${h.estado}${h.texto ? ' — ' + h.texto : ''}`;
 }
 
@@ -725,10 +764,41 @@ function card(it, showKind) {
 function ideaBody(it) {
   const original = el('div', {class: 'original'}, it.detalle);
   const box = el('div');
+  if (textEditable(it)) { box.append(textEditor(it, original)); return box; }
   if (!it.analisis) { box.append(original); return box; }
   const analysis = el('div', {class: 'analysis'}, el('b', {}, 'Análisis de Claude'), markdown(it.analisis));
   if (tab === 'analisis') box.append(analysis, el('details', {class: 'hist'}, el('summary', {}, 'Tu idea tal como la escribiste'), original));
   else box.append(original, el('details', {class: 'hist'}, el('summary', {}, 'Análisis de Claude'), markdown(it.analisis)));
+  return box;
+}
+function textEditor(it, original) {
+  const KEY = 'texto:' + it.id;
+  const box = el('div');
+  const show = () => {
+    box.replaceChildren();
+    if (!drafts.has(KEY)) {
+      box.append(original, el('div', {class: 'note-actions'},
+        el('button', {class: 'btn', onclick: () => { drafts.set(KEY, it.detalle); keepDrafts(); show(); }}, '✎ Editar texto'),
+        el('span', {class: 'hint'}, 'Se puede cambiar mientras esté "nueva".')));
+      return;
+    }
+    const area = el('textarea', {class: 'draft', 'aria-label': 'Texto'});
+    area.value = drafts.get(KEY);
+    const done = () => {
+      const text = area.value.trim();
+      drafts.delete(KEY);
+      keepDrafts();
+      if (text) editText(it, text);
+      render();
+    };
+    area.addEventListener('input', () => { drafts.set(KEY, area.value); keepDrafts(); });
+    area.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); done(); } });
+    box.append(area, el('div', {class: 'note-actions'},
+      el('button', {class: 'btn primary', title: 'Ctrl+Enter', onclick: done}, '✓ Guardar texto'),
+      el('button', {class: 'btn', onclick: () => { drafts.delete(KEY); keepDrafts(); render(); }}, 'Cancelar'),
+      el('span', {class: 'hint'}, 'El texto anterior queda en el historial.')));
+  };
+  show();
   return box;
 }
 function optionsOf(q) {

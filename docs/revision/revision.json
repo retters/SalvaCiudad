@@ -8083,7 +8083,7 @@
    "detalle": "Evita cambiar el protocolo de la sala (D-1906). La alternativa es que cada jugador elija la suya junto a su color.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "pendiente",
+   "estado": "confirmado",
    "nota": "De acuerdo con que el anfitrión lo decida.",
    "respuesta": "",
    "historial": [
@@ -8093,9 +8093,17 @@
      "accion": "nota",
      "estado": "pendiente",
      "texto": "De acuerdo con que el anfitrión lo decida."
+    },
+    {
+     "id": "2026-09-28T23:26:22-06:00-betsxf",
+     "fecha": "2026-09-28T23:26:22-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "confirmado",
+     "texto": ""
     }
    ],
-   "actualizado": "2026-09-27T14:48:19-06:00"
+   "actualizado": "2026-09-28T23:26:22-06:00"
   },
   {
    "id": "conf-vision-nocturna",
@@ -11015,8 +11023,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9012",
@@ -11029,8 +11037,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9013",
@@ -11043,8 +11051,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9014",
@@ -11057,9 +11065,37 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
+   "historial": [],
+   "respuesta": ""
+  },
+  {
+   "id": "D-9015",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "El texto de una idea se puede editar mientras esté \"nueva\"",
+   "detalle": "Pedido de Salvador. En sus ideas y correcciones en estado \"nueva\", la página muestra \"✎ Editar texto\". Al guardar, el título se recalcula y el texto anterior queda en el historial (acción `texto`). No aplica a las ideas de Claude, a las correcciones creadas desde una prueba ni a lo archivado. Si Claude la analizó entre la edición y el guardado (en el disco ya no está en \"nueva\", o su texto cambió), el texto no se reemplaza: la versión nueva se guarda como nota de Salvador y la página lo avisa. Claude sigue sin poder cambiar el texto (D-9002).",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9016",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Guardar desde la página ya no deshace estados puestos por Claude",
+   "detalle": "Antes, al guardar cualquier cambio de un elemento, la página escribía también el estado que tenía en memoria. Si Claude había cambiado el estado mientras tanto, por ejemplo al marcar una idea \"analizada\", ese cambio se perdía aunque Salvador solo hubiera escrito una nota. Ahora la página escribe el estado solo si Salvador eligió uno (un estado o una opción) desde el último guardado. Si los dos lo cambiaron, gana la elección de Salvador, que es la más reciente y deliberada.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
    "respuesta": "",
    "historial": []
   }
  ],
- "generado": "2026-09-28T23:15:12-06:00"
+ "generado": "2026-09-28T23:41:21-06:00"
 }

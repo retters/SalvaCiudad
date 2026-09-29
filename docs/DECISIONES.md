@@ -1630,3 +1630,9 @@ Las 14 sugerencias y los 9 pendientes pasaron a ser ideas con `autor: "Claude"` 
 - "en curso", "implementada" y "hecho" pasan a "planeada".
 
 Lo ya hecho o descartado queda archivado. "Pulido y entrega" quedó como planeada en la fase 37. Las pestañas Sugerencias y Pendientes desaparecen, y los tipos `sugerencia` y `pendiente` ya no existen. Así, todo lo que podría hacerse pasa por la misma ronda de refinamiento, sea de Salvador o de Claude.
+
+**D-9015. El texto de una idea se puede editar mientras esté "nueva".**
+Pedido de Salvador. En sus ideas y correcciones en estado "nueva", la página muestra "✎ Editar texto". Al guardar, el título se recalcula y el texto anterior queda en el historial (acción `texto`). No aplica a las ideas de Claude, a las correcciones creadas desde una prueba ni a lo archivado. Si Claude la analizó entre la edición y el guardado (en el disco ya no está en "nueva", o su texto cambió), el texto no se reemplaza: la versión nueva se guarda como nota de Salvador y la página lo avisa. Claude sigue sin poder cambiar el texto (D-9002).
+
+**D-9016. Guardar desde la página ya no deshace estados puestos por Claude.**
+Antes, al guardar cualquier cambio de un elemento, la página escribía también el estado que tenía en memoria. Si Claude había cambiado el estado mientras tanto, por ejemplo al marcar una idea "analizada", ese cambio se perdía aunque Salvador solo hubiera escrito una nota. Ahora la página escribe el estado solo si Salvador eligió uno (un estado o una opción) desde el último guardado. Si los dos lo cambiaron, gana la elección de Salvador, que es la más reciente y deliberada.

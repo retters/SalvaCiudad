@@ -45,6 +45,7 @@ Cada elemento tiene tu **nota** (lo que ves, lo que autorizas, lo que falta defi
 ## Ideas y plan de trabajo
 
 1. **Escribes ideas** en la pestaña Ideas ("+ Agregar idea", o Ctrl+Enter) o en el chat. Cada una recibe un número (I-001, I-002…) y su texto no se cambia nunca.
+   Mientras una idea tuya siga en "nueva", puedes corregir su texto con **✎ Editar texto**. El texto anterior queda en el historial. Una vez que la analizo, el texto queda fijo; para matizarla usa tu nota o el estado "ajustar". Lo mismo vale para las correcciones en "nueva".
 2. **Cuando me pides refinarlas**, publico en Análisis una evaluación por idea (cómo se haría, conflictos, riesgos, sugerencias) y las preguntas que necesito, con opciones como en el chat. La recomendada va marcada.
 3. **Respondes cuando puedas.**
    - A cada idea analizada le das un estado: "para el plan", "ajustar" (explica en tu nota qué cambiarías), "para después" o "descartada".
