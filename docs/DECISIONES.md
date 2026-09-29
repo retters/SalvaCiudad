@@ -1606,3 +1606,9 @@ Pedido de Salvador. Un elemento está atendido cuando ya no está en su primer e
 
 **D-9008. No se separa un archivo histórico por ahora.**
 Salvador preguntó si el tamaño de `revision.json` gasta tokens. No los gasta: Claude no lee el archivo entero, sino que usa `revision.py pendientes` e `ideas`, que imprimen solo lo que espera acción, y los commits se revisan con `--stat`. Para la página, 400 KB o unos pocos MB no pesan. Separar un archivo histórico obligaría a la página a manejar dos archivos (ver D-9001). Se reconsidera si el archivo pasa de unos 5 MB o si la página se vuelve lenta; en ese caso, lo más simple sería un comando que mueva lo atendido y archivado a un `revision-historico.json` de solo lectura.
+
+**D-9009. Correcciones con su propio ciclo.**
+Pedido de Salvador para anotar lo que encuentra al probar el juego. Son el tipo `correccion`, numerado C-001…, y comparten con las ideas su regla principal: el texto de Salvador no se cambia. Estados: nueva, autorizada, en curso, corregida, no se reproduce, verificada, descartada. Salvador pone "autorizada", "verificada" y "descartada"; Claude pone "en curso", "corregida" y "no se reproduce". "Autorizada" sirve también para regresar una corrección que sigue fallando. Las correcciones no pasan por el análisis ni por el plan. Las autorizadas aparecen en `revision.py pendientes`, y `archivar` guarda las verificadas y las descartadas.
+
+**D-9010. Explicación de los estados en la página.**
+Cada estado de cada tipo tiene una frase que dice qué significa y quién lo pone. Se ve de dos formas: al pasar el ratón sobre el selector de estado, y en "¿Qué significa cada estado?", bajo la introducción de cada pestaña. Las frases viven solo en la página, porque `revision.py` no las necesita.

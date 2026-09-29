@@ -23,11 +23,12 @@ docs/revision/index.html.
         the options Salvador chose.
     python tools/revision/revision.py archivar
         Closes a refinement round: archives the ideas already planned or
-        discarded and the questions already answered. Ideas kept for later
-        stay visible.
+        discarded, the questions already answered and the corrections
+        verified or discarded. Ideas kept for later stay visible.
 
-Ideas ("idea") keep Salvador's text as he wrote it: "agregar" numbers new
-ones (I-001, I-002...) and never changes the text of one already there.
+Ideas ("idea") and corrections ("correccion") keep Salvador's text as he
+wrote it: "agregar" numbers new ones (I-001..., C-001...) and never changes
+the text of one already there. Authorized corrections show in "pendientes".
 Analysis questions ("pregunta") carry "opciones" (a list of {"etiqueta",
 "descripcion", "recomendada"}) and "multiple"; Salvador's choice is kept in
 "eleccion".
@@ -64,12 +65,15 @@ STATES = {
     'pendiente': ['abierto', 'autorizado', 'requiere definición', 'pospuesto', 'descartado', 'en curso', 'hecho'],
     'idea': ['nueva', 'analizada', 'para el plan', 'ajustar', 'para después', 'descartada', 'planeada'],
     'pregunta': ['sin responder', 'respondida', 'requiere definición'],
+    'correccion': ['nueva', 'autorizada', 'en curso', 'corregida', 'no se reproduce', 'verificada', 'descartada'],
 }
+# Written by Salvador (in the chat or on the page), numbered with a prefix.
+CAPTURED = {'idea': 'I', 'correccion': 'C'}
 # States that ask Claude to act.
 FOR_CLAUDE = {'con problemas', 'falla', 'requiere cambio', 'confirmado', 'rechazado', 'autorizada', 'autorizado',
               'requiere definición', 'para el plan', 'ajustar', 'respondida'}
 FIELDS_USER = ('estado', 'nota', 'eleccion', 'historial', 'actualizado')
-# What Claude may never rewrite in an idea: Salvador's own words.
+# What Claude may never rewrite in an idea or a correction: Salvador's own words.
 IDEA_FIXED = ('detalle', 'area', 'capturada')
 AREAS = ['Juego', 'Interfaz', 'Red', 'Arte', 'Rendimiento', 'Mods', 'Herramientas', 'Otro']
 MAX_TEXT = 20000
@@ -135,13 +139,14 @@ def clean_choice(it):
     it['eleccion'] = kept
 
 
-def next_idea_id(items):
+def next_idea_id(items, tipo='idea'):
+    prefix = CAPTURED[tipo]
     top = 0
     for it in items:
-        m = re.match(r'^I-(\d+)$', it['id'])
+        m = re.match(r'^%s-(\d+)$' % prefix, it['id'])
         if m:
             top = max(top, int(m.group(1)))
-    return 'I-%03d' % (top + 1)
+    return '%s-%03d' % (prefix, top + 1)
 
 
 def idea_title(text):
@@ -276,11 +281,11 @@ def check_new(n, prev):
         sys.exit('%s: state %r is not one of %s' % (n.get('id'), n['estado'], STATES[n['tipo']]))
     if prev and prev['tipo'] != n['tipo']:
         sys.exit('%s is a %s, not a %s' % (n['id'], prev['tipo'], n['tipo']))
-    if n['tipo'] == 'idea' and not prev:
+    if n['tipo'] in CAPTURED and not prev:
         if not isinstance(n.get('detalle'), str) or not n['detalle'].strip():
-            sys.exit('a new idea needs its text in "detalle": %r' % n)
+            sys.exit('a new %s needs its text in "detalle": %r' % (n['tipo'], n))
         if n.get('area') not in AREAS:
-            sys.exit('idea area %r is not one of %s' % (n.get('area'), AREAS))
+            sys.exit('%s area %r is not one of %s' % (n['tipo'], n.get('area'), AREAS))
     elif not isinstance(n.get('id'), str) or not n['id'] or not isinstance(n.get('titulo', prev and prev['titulo']), str):
         sys.exit('bad item: %r' % n)
     if n['tipo'] == 'pregunta' and ('opciones' in n or not prev):
@@ -303,7 +308,7 @@ def cmd_add(path):
     for n in new:
         prev = by_id.get(n.get('id')) if isinstance(n, dict) else None
         check_new(n, prev)
-        keep = FIELDS_USER + ('respuesta',) + (IDEA_FIXED if n['tipo'] == 'idea' else ())
+        keep = FIELDS_USER + ('respuesta',) + (IDEA_FIXED if n['tipo'] in CAPTURED else ())
         if prev:
             for k, v in n.items():
                 if k not in keep and k != 'id':
@@ -317,8 +322,8 @@ def cmd_add(path):
             if n['tipo'] == 'pregunta':
                 clean_choice(prev)
             continue
-        if n['tipo'] == 'idea':
-            n['id'] = n.get('id') or next_idea_id(doc['items'])
+        if n['tipo'] in CAPTURED:
+            n['id'] = n.get('id') or next_idea_id(doc['items'], n['tipo'])
             n.setdefault('titulo', idea_title(n['detalle']))
             n.setdefault('capturada', now()[:10])
             n.setdefault('grupo', n['area'])
@@ -334,8 +339,8 @@ def cmd_add(path):
             clean_choice(n)
         doc['items'].append(n)
         by_id[n['id']] = n
-        if n['tipo'] == 'idea':
-            print('new idea', n['id'], '—', n['titulo'])
+        if n['tipo'] in CAPTURED:
+            print('new', n['tipo'], n['id'], '—', n['titulo'])
     save(doc)
     print('added or updated', len(new), 'items')
 
@@ -357,6 +362,9 @@ def cmd_pending():
     fresh = [it['id'] for it in doc['items'] if it['tipo'] == 'idea' and it['estado'] == 'nueva' and not it.get('archivado')]
     if fresh:
         print('Ideas not yet analyzed (see "ideas"):', ', '.join(fresh))
+    fixes = [it['id'] for it in doc['items'] if it['tipo'] == 'correccion' and it['estado'] == 'nueva' and not it.get('archivado')]
+    if fixes:
+        print('Corrections not yet authorized (Salvador decides):', ', '.join(fixes))
     if not todo:
         print('Nothing waits for Claude.')
     for it in todo:
@@ -396,12 +404,13 @@ def cmd_archive():
     done = []
     for it in doc['items']:
         closed = ((it['tipo'] == 'idea' and it['estado'] in ('planeada', 'descartada'))
+                  or (it['tipo'] == 'correccion' and it['estado'] in ('verificada', 'descartada'))
                   or (it['tipo'] == 'pregunta' and it['estado'] == 'respondida'))
         if closed and not it.get('archivado'):
             it['archivado'] = True
             done.append(it['id'])
     save(doc)
-    kept = [it['id'] for it in doc['items'] if it['tipo'] in ('idea', 'pregunta') and not it.get('archivado')]
+    kept = [it['id'] for it in doc['items'] if it['tipo'] in ('idea', 'pregunta', 'correccion') and not it.get('archivado')]
     print('archived:', ', '.join(done) if done else 'nothing')
     print('still open:', ', '.join(kept) if kept else 'nothing')
 

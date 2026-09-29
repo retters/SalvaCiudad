@@ -149,6 +149,33 @@ class RevisionTest(unittest.TestCase):
         self.add([{'tipo': 'idea', 'area': 'Juego', 'detalle': 'Nueva'}])
         self.assertIn('I-004', self.items())
 
+    def test_corrections_have_their_own_numbers_and_cycle(self):
+        self.add([{'tipo': 'idea', 'area': 'Juego', 'detalle': 'Una idea'},
+                  {'tipo': 'correccion', 'area': 'Interfaz', 'detalle': 'El botón Salir no responde'},
+                  {'tipo': 'correccion', 'area': 'Juego', 'detalle': 'Los aldeanos atraviesan muros'}])
+        items = self.items()
+        self.assertEqual((items['C-001']['estado'], items['C-002']['titulo']), ('nueva', 'Los aldeanos atraviesan muros'))
+        self.assertIn('I-001', items)
+        self.assertIn('not yet authorized (Salvador decides): C-001, C-002', self.run_cmd(revision.cmd_pending))
+        # Salvador authorizes one; it waits for Claude.
+        doc = revision.load()
+        c1 = next(it for it in doc['items'] if it['id'] == 'C-001')
+        c1.update(estado='autorizada', historial=[{'fecha': '2026-09-28T10:00:00-06:00', 'quien': 'Salvador',
+                                                   'accion': 'estado', 'estado': 'autorizada', 'texto': ''}])
+        revision.save(doc)
+        self.assertIn('- C-001 [autorizada]', self.run_cmd(revision.cmd_pending))
+        # Claude fixes it; the text stays; once verified it is archived.
+        self.add([{'id': 'C-001', 'tipo': 'correccion', 'estado': 'corregida', 'detalle': 'otro texto'}])
+        self.assertEqual(self.items()['C-001']['detalle'], 'El botón Salir no responde')
+        self.assertNotIn('- C-001', self.run_cmd(revision.cmd_pending))
+        self.add([{'id': 'C-001', 'tipo': 'correccion', 'estado': 'verificada'}])
+        self.run_cmd(revision.cmd_archive)
+        items = self.items()
+        self.assertTrue(items['C-001'].get('archivado'))
+        self.assertNotIn('archivado', items['C-002'])
+        with self.assertRaises(SystemExit):
+            self.add([{'tipo': 'correccion', 'area': 'Cocina', 'detalle': 'x'}])
+
     def test_ideas_listing_shows_choices(self):
         self.add([{'tipo': 'idea', 'area': 'Arte', 'detalle': 'Texto completo\ncon dos líneas'}, self.question()])
         out = self.run_cmd(revision.cmd_ideas)

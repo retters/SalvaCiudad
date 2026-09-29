@@ -57,6 +57,15 @@
    "sin responder",
    "respondida",
    "requiere definición"
+  ],
+  "correccion": [
+   "nueva",
+   "autorizada",
+   "en curso",
+   "corregida",
+   "no se reproduce",
+   "verificada",
+   "descartada"
   ]
  },
  "items": [
@@ -10731,8 +10740,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9008",
@@ -10745,9 +10754,37 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
+   "historial": [],
+   "respuesta": ""
+  },
+  {
+   "id": "D-9009",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Correcciones con su propio ciclo",
+   "detalle": "Pedido de Salvador para anotar lo que encuentra al probar el juego. Son el tipo `correccion`, numerado C-001…, y comparten con las ideas su regla principal: el texto de Salvador no se cambia. Estados: nueva, autorizada, en curso, corregida, no se reproduce, verificada, descartada. Salvador pone \"autorizada\", \"verificada\" y \"descartada\"; Claude pone \"en curso\", \"corregida\" y \"no se reproduce\". \"Autorizada\" sirve también para regresar una corrección que sigue fallando. Las correcciones no pasan por el análisis ni por el plan. Las autorizadas aparecen en `revision.py pendientes`, y `archivar` guarda las verificadas y las descartadas.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9010",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Explicación de los estados en la página",
+   "detalle": "Cada estado de cada tipo tiene una frase que dice qué significa y quién lo pone. Se ve de dos formas: al pasar el ratón sobre el selector de estado, y en \"¿Qué significa cada estado?\", bajo la introducción de cada pestaña. Las frases viven solo en la página, porque `revision.py` no las necesita.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
    "respuesta": "",
    "historial": []
   }
  ],
- "generado": "2026-09-28T16:56:07-06:00"
+ "generado": "2026-09-28T23:02:32-06:00"
 }

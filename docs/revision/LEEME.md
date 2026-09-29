@@ -24,8 +24,11 @@ En Firefox la página no puede escribir en el archivo: usa **Descargar** y reemp
 | Sugerencias | Ideas mías | sin revisar, autorizada, requiere definición, pospuesta, descartada, en curso, implementada |
 | Pendientes | Trabajo abierto de la especificación | abierto, autorizado, requiere definición, pospuesto, descartado, en curso, hecho |
 | Ideas | Tus ideas tal como las escribiste, por área; aquí también se escriben | nueva, analizada, para el plan, ajustar, para después, descartada, planeada |
+| Correcciones | Fallas y mejoras pequeñas que encuentras al probar; aquí también se escriben | nueva, autorizada, en curso, corregida, no se reproduce, verificada, descartada |
 | Análisis | Mis preguntas con opciones y mi análisis de cada idea | preguntas: sin responder, respondida, requiere definición |
 | Resumen | Cuántos hay en cada estado, y un cuadro por fase | — |
+
+Bajo la introducción de cada pestaña, **"¿Qué significa cada estado?"** despliega la explicación de cada estado. Al pasar el ratón sobre el estado de un elemento se ve la misma explicación.
 
 Cada pestaña muestra **atendidos/total**. Atendido es lo que ya no está en su primer estado y no tiene una respuesta mía sin leer. Lo pendiente aparece primero, lo atendido al final, y la casilla **ocultar atendidos** lo esconde.
 
@@ -44,6 +47,17 @@ Cada elemento tiene tu **nota** (lo que ves, lo que autorizas, lo que falta defi
    - En las preguntas eliges una opción (o varias, si lo dice). Si ninguna te sirve, escribe tu respuesta en "Otra respuesta o comentario" y guárdala.
 4. **Me dices "revisa el registro".** Si falta algo, hago otra ronda de preguntas. Si no, escribo el plan por fases en la especificación y marco cada idea como "planeada", con su fase.
 5. **Al cerrar la ronda** archivo las ideas planeadas o descartadas y las preguntas respondidas. No se borran: se ven con la casilla "archivadas". Las ideas "para después" siguen visibles para la próxima ronda.
+
+## Correcciones
+
+Son para lo que encuentras al probar el juego. No pasan por rondas de análisis ni por el plan.
+
+1. **La anotas** en la pestaña Correcciones, o en el chat: qué pasó, qué esperabas y cómo llegaste ahí. Recibe un número (C-001…) y su texto no se cambia.
+2. **La marcas "autorizada"** cuando quieres que la corrija. Si es algo que conviene pensar, déjala en "nueva".
+3. **En una sesión dices "corrige lo autorizado".** Paso cada una a "en curso" y luego a "corregida", con una respuesta que dice qué cambié y cómo comprobarlo. Si no logro provocar el problema, queda en "no se reproduce" con mis preguntas.
+4. **La pruebas.** Si quedó bien, márcala "verificada". Si no, regrésala a "autorizada" con una nota de lo que viste.
+
+Si una corrección resulta ser un cambio de diseño, te lo digo y la paso al ciclo de ideas.
 
 ## Cómo lo uso yo
 
