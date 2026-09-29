@@ -26,6 +26,8 @@ En Firefox la página no puede escribir en el archivo: usa **Descargar** y reemp
 | Análisis | Mis preguntas con opciones y mi análisis de cada idea | preguntas: sin responder, respondida, requiere definición |
 | Resumen | Cuántos hay en cada estado, y un cuadro por fase | — |
 
+Los estados que solo pongo yo (por ejemplo "analizada" o "corregida") se ven en el selector, pero no se pueden elegir.
+
 Bajo la introducción de cada pestaña, **"¿Qué significa cada estado?"** despliega la explicación de cada estado. Al pasar el ratón sobre el estado de un elemento se ve la misma explicación.
 
 **Enlaces entre secciones:**

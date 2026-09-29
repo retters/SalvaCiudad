@@ -6160,9 +6160,27 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-28T23:53:41-06:00-w05zg8",
+     "fecha": "2026-09-28T23:53:41-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "no aplica",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-28T23:57:13-06:00-1zekyi",
+     "fecha": "2026-09-28T23:57:13-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-28T23:57:13-06:00",
    "respuesta": ""
   },
   {
@@ -6174,9 +6192,27 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-28T23:53:43-06:00-omfjea",
+     "fecha": "2026-09-28T23:53:43-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "no aplica",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-28T23:57:18-06:00-xcydni",
+     "fecha": "2026-09-28T23:57:18-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-28T23:57:18-06:00",
    "respuesta": ""
   },
   {
@@ -6188,9 +6224,27 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-28T23:53:50-06:00-b8lf3g",
+     "fecha": "2026-09-28T23:53:50-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "no aplica",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-28T23:57:25-06:00-acpljy",
+     "fecha": "2026-09-28T23:57:25-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-28T23:57:25-06:00",
    "respuesta": ""
   },
   {
@@ -6202,9 +6256,19 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-28T23:54:07-06:00-04w8ee",
+     "fecha": "2026-09-28T23:54:07-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-28T23:54:07-06:00",
    "respuesta": ""
   },
   {
@@ -6216,9 +6280,19 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-28T23:54:31-06:00-9b6vy7",
+     "fecha": "2026-09-28T23:54:31-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-28T23:54:31-06:00",
    "respuesta": ""
   },
   {
@@ -6230,9 +6304,19 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-28T23:54:37-06:00-j75orn",
+     "fecha": "2026-09-28T23:54:37-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-28T23:54:37-06:00",
    "respuesta": ""
   },
   {
@@ -6244,9 +6328,19 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-28T23:54:47-06:00-blizp1",
+     "fecha": "2026-09-28T23:54:47-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-28T23:54:47-06:00",
    "respuesta": ""
   },
   {
@@ -6258,9 +6352,19 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-28T23:54:53-06:00-gafpk7",
+     "fecha": "2026-09-28T23:54:53-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-28T23:54:53-06:00",
    "respuesta": ""
   },
   {
@@ -6272,9 +6376,19 @@
    "detalle": "",
    "fuente": "README.md",
    "origen": "README",
-   "estado": "sin probar",
+   "estado": "funciona",
    "nota": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-29T00:07:40-06:00-yqs0fn",
+     "fecha": "2026-09-29T00:07:40-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "funciona",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-29T00:07:40-06:00",
    "respuesta": ""
   },
   {
@@ -8406,16 +8520,26 @@
    "detalle": "Al terminar cada fase agrego aquí sus cambios, pruebas, decisiones, dudas y sugerencias, y reviso lo que marcaste antes de empezar la siguiente.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "nueva",
+   "estado": "analizada",
    "nota": "",
    "respuesta": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-29T00:35:56-06:00-jpza10",
+     "fecha": "2026-09-29T00:35:56-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "analizada",
+     "texto": ""
+    }
+   ],
    "autor": "Claude",
    "area": "Herramientas",
    "antes": {
     "tipo": "sugerencia",
     "estado": "sin revisar"
-   }
+   },
+   "actualizado": "2026-09-29T00:35:56-06:00"
   },
   {
    "id": "pend-pulido-entrega",
@@ -9566,16 +9690,66 @@
    "detalle": "Los precios de cada mercader van del 75 % al 125 % del valor. Una regla podría decir \"comprar solo si está a menos del 100 %\" o \"vender solo si pagan más del 90 %\", para aprovechar los buenos mercaderes.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "nueva",
-   "nota": "",
+   "estado": "para el plan",
+   "nota": "De acuerdo con los porcentajes y regla de compra sugerida.",
    "respuesta": "",
-   "historial": [],
+   "historial": [
+    {
+     "id": "2026-09-29T00:37:57-06:00-rm6cv9",
+     "fecha": "2026-09-29T00:37:57-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "para el plan",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-29T00:38:32-06:00-ugr6x0",
+     "fecha": "2026-09-29T00:38:32-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "analizada",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-29T00:38:40-06:00-ucfrsw",
+     "fecha": "2026-09-29T00:38:40-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "nueva",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-29T00:40:19-06:00-ij1243",
+     "fecha": "2026-09-29T00:40:19-06:00",
+     "quien": "Salvador",
+     "accion": "nota",
+     "estado": "nueva",
+     "texto": "De acuerdo con los porcentajes y regla de compra sugerida."
+    },
+    {
+     "id": "2026-09-29T00:40:22-06:00-v3uqx0",
+     "fecha": "2026-09-29T00:40:22-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "analizada",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-29T00:40:39-06:00-vegndj",
+     "fecha": "2026-09-29T00:40:39-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "para el plan",
+     "texto": ""
+    }
+   ],
    "autor": "Claude",
    "area": "Juego",
    "antes": {
     "tipo": "sugerencia",
     "estado": "sin revisar"
-   }
+   },
+   "actualizado": "2026-09-29T00:40:39-06:00"
   },
   {
    "id": "conf-niebla-construir",
@@ -10957,12 +11131,30 @@
    "fase": "",
    "origen": "curado",
    "desde": "D-003",
-   "titulo": "¿Sería posible implementar más velocidades? como x4 hasta x9",
-   "detalle": "¿Sería posible implementar más velocidades? como x4 hasta x9",
-   "estado": "nueva",
+   "titulo": "¿Sería posible implementar más velocidades? como x0.25, x0.5, x0.75, x4, x5? Hay un lím…",
+   "detalle": "¿Sería posible implementar más velocidades? como x0.25, x0.5, x0.75, x4, x5? Hay un límite teorico/recomdable?",
+   "estado": "analizada",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "id": "2026-09-29T00:35:20-06:00-ja1l31",
+     "fecha": "2026-09-29T00:35:20-06:00",
+     "quien": "Salvador",
+     "accion": "texto",
+     "estado": "nueva",
+     "texto": "¿Sería posible implementar más velocidades? como x4 hasta x9"
+    },
+    {
+     "id": "2026-09-29T00:35:23-06:00-zg6dod",
+     "fecha": "2026-09-29T00:35:23-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "analizada",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-29T00:35:23-06:00"
   },
   {
    "id": "I-002",
@@ -10973,12 +11165,30 @@
    "fase": "",
    "origen": "curado",
    "desde": "D-010",
-   "titulo": "quiero agregar años de 60, 75 y 90 minutos.",
-   "detalle": "quiero agregar años de 60, 75 y 90 minutos.",
-   "estado": "nueva",
+   "titulo": "quiero agregar años de 60, 75 y 90 minutos y posibilidad de configurar cuánto dura cada…",
+   "detalle": "quiero agregar años de 60, 75 y 90 minutos y posibilidad de configurar cuánto dura cada estación.",
+   "estado": "analizada",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [
+    {
+     "id": "2026-09-29T00:33:43-06:00-8coe70",
+     "fecha": "2026-09-29T00:33:43-06:00",
+     "quien": "Salvador",
+     "accion": "texto",
+     "estado": "nueva",
+     "texto": "quiero agregar años de 60, 75 y 90 minutos."
+    },
+    {
+     "id": "2026-09-29T00:33:48-06:00-xizufn",
+     "fecha": "2026-09-29T00:33:48-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "analizada",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-29T00:33:48-06:00"
   },
   {
    "id": "I-003",
@@ -11079,8 +11289,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9016",
@@ -11093,9 +11303,89 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
+   "historial": [],
+   "respuesta": ""
+  },
+  {
+   "id": "I-005",
+   "tipo": "idea",
+   "area": "Juego",
+   "grupo": "Juego",
+   "capturada": "2026-09-29",
+   "fase": "",
+   "origen": "pagina",
+   "titulo": "Agregar un edificio de Explorador con un trabajador. El trabajador asignado puede ser c…",
+   "detalle": "Agregar un edificio de Explorador con un trabajador. El trabajador asignado puede ser controlado por el jugador. Esta función debe permirir al jugador seleccionar a un aldeano y moverlo con click en el punto que debe ir, ya sea en el área de juego o en minimapa. Evalua si conviene esto: Si hay niebla de guerra y se da clic en una zona no explorada, y sin una ruta explorada previamente, debe caminar en línea recta al destino, hasta encontrarse con obstaculo, para evitar que se calcula la ruta más corta y se haga trampa de exploración. (¿Esta funcionalidad generaría conflictos con el multiplayer o de rendimiento? En su caso para evaluar opciones)",
+   "estado": "analizada",
+   "nota": "",
+   "respuesta": "",
+   "historial": [
+    {
+     "id": "2026-09-29T00:25:31-06:00-kq1sun",
+     "fecha": "2026-09-29T00:25:31-06:00",
+     "quien": "Salvador",
+     "accion": "idea",
+     "estado": "nueva",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-29T00:31:47-06:00-6eu58x",
+     "fecha": "2026-09-29T00:31:47-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "analizada",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-29T00:31:47-06:00"
+  },
+  {
+   "id": "I-006",
+   "tipo": "idea",
+   "area": "Juego",
+   "grupo": "Juego",
+   "capturada": "2026-09-29",
+   "fase": "",
+   "origen": "pagina",
+   "titulo": "Agregar una opción adicional en niebla de guerra que sea como la dinámica, pero todo es…",
+   "detalle": "Agregar una opción adicional en niebla de guerra que sea como la dinámica, pero todo esté explorado desde el principio.",
+   "estado": "analizada",
+   "nota": "",
+   "respuesta": "",
+   "historial": [
+    {
+     "id": "2026-09-29T00:31:21-06:00-thul7h",
+     "fecha": "2026-09-29T00:31:21-06:00",
+     "quien": "Salvador",
+     "accion": "idea",
+     "estado": "nueva",
+     "texto": ""
+    },
+    {
+     "id": "2026-09-29T00:31:37-06:00-n2cyql",
+     "fecha": "2026-09-29T00:31:37-06:00",
+     "quien": "Salvador",
+     "accion": "estado",
+     "estado": "analizada",
+     "texto": ""
+    }
+   ],
+   "actualizado": "2026-09-29T00:31:37-06:00"
+  },
+  {
+   "id": "D-9017",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Los estados que pone Claude no se pueden elegir en la página",
+   "detalle": "Pedido de Salvador. En el selector, los estados que solo pone Claude aparecen atenuados y no se pueden elegir; así se sigue viendo el estado actual. Son \"analizada\" y \"planeada\" en las ideas; \"en curso\", \"corregida\" y \"no se reproduce\" en las correcciones; y \"respondida\" en las preguntas, que se pone sola al contestar. El cambio masivo de estados también los excluye. Para no estar de acuerdo con lo que marcó Claude, se elige uno de los estados propios, por ejemplo regresar una corrección a \"autorizada\". `revision.py` sí puede ponerlos. Además, las introducciones y los textos de la página nombran a Claude en tercera persona, en vez de \"yo\" o \"mi\", para que no haya duda de quién hace qué.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
    "respuesta": "",
    "historial": []
   }
  ],
- "generado": "2026-09-28T23:41:21-06:00"
+ "generado": "2026-09-29T00:51:17-06:00"
 }

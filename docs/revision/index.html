@@ -143,13 +143,13 @@ table.phases .num { text-align: right; font-variant-numeric: tabular-nums; }
 // ---- Kinds, states and how they look -------------------------------------------------------
 const TABS = [
   {id: 'atencion', label: 'Requiere tu atención'},
-  {id: 'cambio', label: 'Cambios', intro: 'Qué se implementó en cada fase. Márcalo revisado o aprobado; si algo está mal, "con problemas" y escribe qué.'},
+  {id: 'cambio', label: 'Cambios', intro: 'Qué implementó Claude en cada fase. Márcalo revisado o aprobado; si algo está mal, "con problemas" y escribe qué.'},
   {id: 'prueba', label: 'Pruebas manuales', intro: 'La lista de verificación del README, por fase. Si algo falla, márcalo y describe qué viste.'},
   {id: 'decision', label: 'Decisiones', intro: 'Todas las decisiones de docs/DECISIONES.md. Apruébalas, pide un cambio o pide que se definan mejor.'},
-  {id: 'confirmar', label: 'Por confirmar', intro: 'Decisiones que tomé por mi cuenta y conviene que confirmes o rechaces.'},
-  {id: 'idea', label: 'Ideas', intro: 'Tus ideas tal como las escribiste, y las mías (marcadas "de Claude"): sugerencias y trabajo que quedó abierto. Agrega las nuevas aquí o en el chat; cuando quieras, pídeme refinarlas.'},
-  {id: 'correccion', label: 'Correcciones', intro: 'Fallas y mejoras pequeñas que encuentras al probar. Marca "autorizada" lo que quieres que corrija; cuando esté "corregida", pruébala y márcala "verificada", o regrésala a "autorizada" con una nota.'},
-  {id: 'analisis', label: 'Análisis', intro: 'Mi análisis de cada idea y las preguntas que necesito. Elige "para el plan", "ajustar", "para después" o "descartada", y responde las preguntas; luego dime "revisa el registro".'},
+  {id: 'confirmar', label: 'Por confirmar', intro: 'Decisiones que Claude tomó por su cuenta y conviene que confirmes o rechaces.'},
+  {id: 'idea', label: 'Ideas', intro: 'Tus ideas tal como las escribiste, y las de Claude (marcadas "de Claude"): sus sugerencias y el trabajo que quedó abierto. Agrega las nuevas aquí o en el chat; cuando quieras, pídele a Claude refinarlas.'},
+  {id: 'correccion', label: 'Correcciones', intro: 'Fallas y mejoras pequeñas que encuentras al probar. Marca "autorizada" lo que quieres que Claude corrija; cuando esté "corregida", pruébala y márcala "verificada", o regrésala a "autorizada" con una nota.'},
+  {id: 'analisis', label: 'Análisis', intro: 'El análisis de Claude de cada idea y las preguntas que necesita. Elige "para el plan", "ajustar", "para después" o "descartada", y responde las preguntas; luego dile a Claude "revisa el registro".'},
   {id: 'resumen', label: 'Resumen'},
 ];
 const KIND_LABEL = {cambio: 'Cambio', prueba: 'Prueba', decision: 'Decisión', confirmar: 'Por confirmar', sugerencia: 'Sugerencia', pendiente: 'Pendiente',
@@ -196,6 +196,8 @@ const STATE_HELP = {
     'no se reproduce': 'Lo pone Claude: no logró provocar el problema y te pregunta cómo pasó.',
     'verificada': 'Lo pones tú: la probaste y quedó bien. Queda cerrada.', 'descartada': 'Lo pones tú: no se corrige.'},
 };
+const NOT_YOURS = {idea: ['analizada', 'planeada'], correccion: ['en curso', 'corregida', 'no se reproduce'], pregunta: ['respondida']};
+function yours(tipo, estado) { return !(NOT_YOURS[tipo] || []).includes(estado); }
 function stateHelp(tipo, estado) { return (STATE_HELP[tipo] || {})[estado] || ''; }
 function stateLegend(tipos) {
   const list = el('ul', {});
@@ -209,9 +211,9 @@ function stateLegend(tipos) {
 }
 // Written by Salvador on the page: numbered with its own prefix.
 const CAPTURE = {
-  idea: {prefix: 'I', title: 'Nueva idea', button: '+ Agregar idea', placeholder: 'Escribe la idea como te salga; yo no la cambio.', done: 'Idea'},
+  idea: {prefix: 'I', title: 'Nueva idea', button: '+ Agregar idea', placeholder: 'Escribe la idea como te salga; Claude no cambia el texto.', done: 'Idea'},
   correccion: {prefix: 'C', title: 'Nueva corrección', button: '+ Agregar corrección', done: 'Corrección',
-    placeholder: 'Qué pasó, qué esperabas y cómo llegaste ahí (si lo sabes); yo no cambio el texto.'},
+    placeholder: 'Qué pasó, qué esperabas y cómo llegaste ahí (si lo sabes); Claude no cambia el texto.'},
 };
 const AREAS = ['Juego', 'Interfaz', 'Red', 'Arte', 'Rendimiento', 'Mods', 'Herramientas', 'Otro'];
 const USER = 'Salvador';
@@ -702,7 +704,9 @@ function stateSelect(it) {
       if (check && check.estado === 'falla') { edit(check, {estado: 'funciona'}); toast(`La prueba ${check.id} quedó como "funciona".`); }
       render();
     }});
-  for (const st of doc.estados[it.tipo]) s.append(el('option', {value: st, selected: st === it.estado, title: stateHelp(it.tipo, st)}, st));
+  for (const st of doc.estados[it.tipo]) {
+    s.append(el('option', {value: st, selected: st === it.estado, disabled: !yours(it.tipo, st), title: stateHelp(it.tipo, st)}, st));
+  }
   return s;
 }
 function card(it, showKind) {
@@ -858,7 +862,10 @@ function renderBulk() {
     const kinds = new Set(doc.items.filter((it) => selected.has(it.id)).map((it) => it.tipo));
     const sel = el('select', {'aria-label': 'Nuevo estado'});
     sel.append(el('option', {value: ''}, `Cambiar ${selected.size} seleccionado(s) a…`));
-    if (kinds.size === 1) for (const st of doc.estados[[...kinds][0]]) sel.append(el('option', {value: st}, st));
+    if (kinds.size === 1) {
+      const kind = [...kinds][0];
+      for (const st of doc.estados[kind]) sel.append(el('option', {value: st, disabled: !yours(kind, st)}, st));
+    }
     else sel.append(el('option', {value: '', disabled: true}, 'Selecciona un solo tipo'));
     sel.addEventListener('change', () => {
       if (!sel.value) return;
@@ -876,10 +883,10 @@ function renderList() {
   const main = $('main');
   if (tab === 'atencion') {
     main.append(el('p', {class: 'intro'}, all.length
-      ? 'Respuestas mías que esperan tu lectura y decisiones que esperan tu confirmación. Al cambiar un estado o escribir una nota, sale de aquí.'
+      ? 'Respuestas de Claude que esperan tu lectura, y lo que espera tu decisión. Al cambiar un estado o escribir una nota, sale de aquí.'
       : 'Nada espera por ti ahora mismo.'));
     const mine = doc.items.filter(forClaude);
-    if (mine.length) main.append(el('p', {class: 'intro'}, `${mine.length} elemento(s) esperan que yo los lea (autorizados, a cambiar, con fallas o con tu nota).`));
+    if (mine.length) main.append(el('p', {class: 'intro'}, `${mine.length} elemento(s) esperan a Claude (autorizados, a cambiar, con fallas o con tu nota).`));
   } else if (t.intro) {
     main.append(el('p', {class: 'intro'}, t.intro));
     main.append(stateLegend(tab === 'analisis' ? ['pregunta', 'idea'] : [tab]));
@@ -983,7 +990,7 @@ function renderWelcome() {
     el('h2', {}, 'Abre el registro de revisión'),
     el('p', {}, 'Pulsa "Abrir revision.json" y elige ', el('code', {}, 'docs/revision/revision.json'), ' en la carpeta del proyecto.'),
     canWrite
-      ? el('p', {}, 'Tus cambios se guardan solos en ese mismo archivo, que yo leo después. El navegador recuerda el archivo; la próxima vez basta con "Reconectar".')
+      ? el('p', {}, 'Tus cambios se guardan solos en ese mismo archivo, que Claude lee después. El navegador recuerda el archivo; la próxima vez basta con "Reconectar".')
       : el('p', {}, 'Este navegador no puede escribir en archivos locales: usa "Descargar" y reemplaza el archivo, o ábrelo en Edge o Chrome para que se guarde solo.'),
     el('p', {}, 'Nada sale de tu equipo: la página no usa internet.')));
 }
