@@ -147,9 +147,7 @@ const TABS = [
   {id: 'prueba', label: 'Pruebas manuales', intro: 'La lista de verificación del README, por fase. Si algo falla, márcalo y describe qué viste.'},
   {id: 'decision', label: 'Decisiones', intro: 'Todas las decisiones de docs/DECISIONES.md. Apruébalas, pide un cambio o pide que se definan mejor.'},
   {id: 'confirmar', label: 'Por confirmar', intro: 'Decisiones que tomé por mi cuenta y conviene que confirmes o rechaces.'},
-  {id: 'sugerencia', label: 'Sugerencias', intro: 'Ideas mías. "Autorizada" significa que la implemento; "requiere definición", que te pregunto más.'},
-  {id: 'pendiente', label: 'Pendientes', intro: 'Trabajo abierto o pospuesto de la especificación.'},
-  {id: 'idea', label: 'Ideas', intro: 'Tus ideas tal como las escribiste, por área. Agrega las nuevas aquí o en el chat; cuando quieras, pídeme refinarlas.'},
+  {id: 'idea', label: 'Ideas', intro: 'Tus ideas tal como las escribiste, y las mías (marcadas "de Claude"): sugerencias y trabajo que quedó abierto. Agrega las nuevas aquí o en el chat; cuando quieras, pídeme refinarlas.'},
   {id: 'correccion', label: 'Correcciones', intro: 'Fallas y mejoras pequeñas que encuentras al probar. Marca "autorizada" lo que quieres que corrija; cuando esté "corregida", pruébala y márcala "verificada", o regrésala a "autorizada" con una nota.'},
   {id: 'analisis', label: 'Análisis', intro: 'Mi análisis de cada idea y las preguntas que necesito. Elige "para el plan", "ajustar", "para después" o "descartada", y responde las preguntas; luego dime "revisa el registro".'},
   {id: 'resumen', label: 'Resumen'},
@@ -173,15 +171,11 @@ const STATE_HELP = {
   cambio: {'sin revisar': 'Aún no lo miras.', 'revisado': 'Lo viste; sin comentarios.', 'aprobado': 'Lo viste y está bien así.',
     'con problemas': 'Algo está mal: escribe qué en tu nota y lo corrijo.'},
   prueba: {'sin probar': 'Aún no la haces.', 'funciona': 'La hiciste y salió como se esperaba.',
-    'falla': 'No salió bien: describe en tu nota qué viste.', 'no aplica': 'Ya no tiene sentido probarla.'},
+    'falla': 'No salió bien: describe en tu nota qué viste. Se vuelve una corrección autorizada.', 'no aplica': 'Ya no tiene sentido probarla.'},
   decision: {'sin revisar': 'Aún no la lees.', 'aprobada': 'Estás de acuerdo.', 'requiere cambio': 'Quieres otra cosa: dilo en tu nota.',
     'requiere definición': 'No queda claro: te respondo con preguntas o una propuesta.', 'descartada': 'No se hará así ni se necesita.'},
-  confirmar: {'pendiente': 'La decidí yo y espera que la confirmes.', 'confirmado': 'Está bien lo que decidí.',
-    'rechazado': 'No estás de acuerdo: di en tu nota qué prefieres.', 'requiere definición': 'Necesitas más información para decidir.'},
-  sugerencia: {'sin revisar': 'Aún no la lees.', 'autorizada': 'Puedo implementarla.', 'requiere definición': 'Te respondo con más detalle.',
-    'pospuesta': 'Quizá más adelante.', 'descartada': 'No se hará.', 'en curso': 'La estoy implementando.', 'implementada': 'Ya está hecha.'},
-  pendiente: {'abierto': 'Trabajo que falta; aún no decides.', 'autorizado': 'Puedo hacerlo.', 'requiere definición': 'Te respondo con más detalle.',
-    'pospuesto': 'Quizá más adelante.', 'descartado': 'No se hará.', 'en curso': 'Lo estoy haciendo.', 'hecho': 'Ya está.'},
+  confirmar: {'pendiente': 'La decidí yo y espera que la confirmes.', 'confirmado': 'Está bien lo que decidí (o elegiste la opción "lo que hice").',
+    'rechazado': 'No estás de acuerdo: elegiste otra opción o dijiste en tu nota qué prefieres.', 'requiere definición': 'Necesitas más información para decidir.'},
   idea: {'nueva': 'Anotada, sin analizar.', 'analizada': 'Ya tiene mi análisis: espera tu decisión.',
     'para el plan': 'Entra en el plan de trabajo.', 'ajustar': 'Entra, con los cambios que digas en tu nota.',
     'para después': 'Se guarda para otra ronda.', 'descartada': 'No se hará.', 'planeada': 'Ya está en una fase del plan.'},
@@ -301,7 +295,14 @@ function lastBy(it, who) {
 // Claude answered after Salvador's last word.
 function claudeAnswered(it) { const c = lastBy(it, 'Claude'); return c !== '' && c > lastBy(it, USER); }
 // Salvador asked Claude to act and Claude has not answered yet.
-function forClaude(it) { const u = lastBy(it, USER); return u !== '' && u > lastBy(it, 'Claude') && (FOR_CLAUDE.has(it.estado) || !!it.nota); }
+function forClaude(it) {
+  // An authorized correction waits for Claude whoever authorized it (same rule as revision.py).
+  if (it.tipo === 'correccion' && it.estado === 'autorizada' && !it.archivado) return true;
+  const u = lastBy(it, USER);
+  return u !== '' && u > lastBy(it, 'Claude') && (FOR_CLAUDE.has(it.estado) || !!it.nota);
+}
+// Questions always offer options; a confirmation may.
+function hasOptions(it) { return it.tipo === 'pregunta' || it.opciones !== undefined; }
 // Still waits for Salvador: in its first state, or with something new to read.
 // Everything else counts as attended to (tab counters, and last in the lists).
 function pending(it) {
@@ -323,12 +324,12 @@ function validate(data) {
   let bad = 0;
   data.items = data.items.filter((it) => {
     const ok = it && typeof it.id === 'string' && Array.isArray(data.estados[it.tipo]) && typeof it.titulo === 'string' &&
-      data.estados[it.tipo].includes(it.estado) && (it.tipo !== 'pregunta' || validOptions(it.opciones));
+      data.estados[it.tipo].includes(it.estado) && (!hasOptions(it) || validOptions(it.opciones));
     if (!ok) bad++;
     else {
       it.nota = typeof it.nota === 'string' ? it.nota : '';
       it.historial = Array.isArray(it.historial) ? it.historial : [];
-      if (it.tipo === 'pregunta') it.eleccion = cleanChoice(it, it.eleccion);
+      if (hasOptions(it)) it.eleccion = cleanChoice(it, it.eleccion);
     }
     return ok;
   });
@@ -340,7 +341,8 @@ function validOptions(opts) {
   if (!Array.isArray(opts) || opts.length < 2) return false;
   const labels = opts.map((o) => (o && typeof o === 'object' ? o.etiqueta : null));
   return labels.every((x) => typeof x === 'string' && x.trim()) && new Set(labels).size === labels.length &&
-    opts.every((o) => (o.descripcion === undefined || typeof o.descripcion === 'string') && (o.recomendada === undefined || typeof o.recomendada === 'boolean'));
+    opts.every((o) => (o.descripcion === undefined || typeof o.descripcion === 'string') && (o.recomendada === undefined || typeof o.recomendada === 'boolean') &&
+      (o.actual === undefined || typeof o.actual === 'boolean'));
 }
 function cleanChoice(q, chosen) {
   const list = Array.isArray(chosen) ? chosen : [];
@@ -350,14 +352,14 @@ function cleanChoice(q, chosen) {
 // Salvador's fields of an item, as kept in `dirty` and written by save().
 function userFields(it) {
   const out = {estado: it.estado, nota: it.nota, actualizado: it.actualizado};
-  if (it.tipo === 'pregunta') out.eleccion = it.eleccion;
+  if (hasOptions(it)) out.eleccion = it.eleccion;
   return out;
 }
 function applyMine(it, mine) {
   if (doc.estados[it.tipo].includes(mine.estado)) it.estado = mine.estado;
   it.nota = typeof mine.nota === 'string' ? mine.nota : it.nota;
   it.actualizado = mine.actualizado;
-  if (it.tipo === 'pregunta' && mine.eleccion) it.eleccion = cleanChoice(it, mine.eleccion);
+  if (hasOptions(it) && mine.eleccion) it.eleccion = cleanChoice(it, mine.eleccion);
 }
 // An idea or correction written on this page, as kept in local storage until it is saved.
 function isIdea(it) {
@@ -584,7 +586,15 @@ function saveNote(it) {
 }
 function choose(q, label, on) {
   const picked = q.multiple ? q.opciones.map((o) => o.etiqueta).filter((x) => (x === label ? on : q.eleccion.includes(x))) : [label];
-  edit(q, {eleccion: picked, estado: picked.length || q.nota ? 'respondida' : 'sin responder'});
+  let estado;
+  if (q.tipo === 'confirmar') {
+    // Choosing what Claude did confirms it; anything else asks for the change.
+    const actual = q.opciones.find((o) => o.actual);
+    estado = actual && picked[0] === actual.etiqueta ? 'confirmado' : 'rechazado';
+  } else {
+    estado = picked.length || q.nota ? 'respondida' : 'sin responder';
+  }
+  edit(q, {eleccion: picked, estado});
   render();
 }
 function historyLine(h) {
@@ -636,7 +646,13 @@ function renderTabs() {
 }
 function stateSelect(it) {
   const s = el('select', {class: 'state s-' + (TONE[it.estado] || 'neutral'), 'aria-label': 'Estado', title: stateHelp(it.tipo, it.estado),
-    onchange: (e) => { edit(it, {estado: e.target.value}); render(); }});
+    onchange: (e) => {
+      edit(it, {estado: e.target.value});
+      // A verified correction that came from a failing check makes the check pass.
+      const check = it.tipo === 'correccion' && it.estado === 'verificada' && it.prueba && doc.items.find((x) => x.id === it.prueba);
+      if (check && check.estado === 'falla') { edit(check, {estado: 'funciona'}); toast(`La prueba ${check.id} quedó como "funciona".`); }
+      render();
+    }});
   for (const st of doc.estados[it.tipo]) s.append(el('option', {value: st, selected: st === it.estado, title: stateHelp(it.tipo, st)}, st));
   return s;
 }
@@ -659,7 +675,12 @@ function card(it, showKind) {
       it.capturada ? el('span', {}, it.capturada) : null,
       it.fasePlan ? el('span', {class: 'chip'}, '→ Fase ' + it.fasePlan) : null,
       Array.isArray(it.ideas) && it.ideas.length ? el('span', {}, 'Ideas: ' + it.ideas.join(', ')) : null,
-      it.tipo === 'pregunta' && it.eleccion.length ? el('span', {}, 'Elegiste: ' + it.eleccion.join(', ')) : null,
+      hasOptions(it) && it.eleccion.length ? el('span', {}, 'Elegiste: ' + it.eleccion.join(', ')) : null,
+      it.autor === 'Claude' ? el('span', {class: 'chip'}, 'de Claude') : null,
+      it.desde ? el('span', {class: 'chip', title: 'Salió de este elemento'}, 'de ' + it.desde) : null,
+      it.prueba ? el('span', {class: 'chip', title: 'Prueba manual que falló'}, 'prueba ' + it.prueba) : null,
+      it.correccion ? el('span', {class: 'chip', title: 'Corrección que la atiende'}, '→ ' + it.correccion) : null,
+      it.ideaCreada ? el('span', {class: 'chip', title: 'Idea creada a partir de tu nota'}, '→ ' + it.ideaCreada) : null,
       it.archivado ? el('span', {class: 'chip'}, 'archivada') : null,
       it.nota ? el('span', {}, '✎ tu nota') : null,
       drafts.has(it.id) ? el('span', {class: 'flag'}, 'nota sin guardar') : null,
@@ -668,9 +689,9 @@ function card(it, showKind) {
   const body = el('div', {class: 'body'});
   if (it.tipo === 'idea' || it.tipo === 'correccion') body.append(ideaBody(it));
   else if (it.detalle) body.append(markdown(it.detalle));
-  if (it.tipo === 'pregunta') body.append(optionsOf(it));
+  if (hasOptions(it)) body.append(optionsOf(it));
   if (it.respuesta) body.append(el('div', {class: 'answer'}, el('b', {}, 'Claude: '), it.respuesta));
-  const area = el('textarea', {placeholder: it.tipo === 'pregunta' ? 'Otra respuesta, o un comentario sobre tu elección…'
+  const area = el('textarea', {placeholder: hasOptions(it) ? 'Otra respuesta, o un comentario sobre tu elección…'
     : 'Tu nota: qué ves, qué autorizas, qué falta definir…'});
   area.value = drafts.has(it.id) ? drafts.get(it.id) : (it.nota || '');
   const saveBtn = el('button', {class: 'btn primary', title: 'Guarda la nota (Ctrl+Enter)', onclick: () => saveNote(it)}, '✓ Guardar nota');
@@ -691,7 +712,7 @@ function card(it, showKind) {
   });
   area.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveNote(it); } });
   sync();
-  body.append(el('label', {class: 'note'}, it.tipo === 'pregunta' ? 'Otra respuesta o comentario' : 'Tu nota', area), el('div', {class: 'note-actions'}, saveBtn, discardBtn, hint));
+  body.append(el('label', {class: 'note'}, hasOptions(it) ? 'Otra respuesta o comentario' : 'Tu nota', area), el('div', {class: 'note-actions'}, saveBtn, discardBtn, hint));
   if (it.historial.length) {
     body.append(el('details', {class: 'hist'}, el('summary', {}, `Historial (${it.historial.length})`),
       el('ul', {}, it.historial.map((h) => el('li', {}, historyLine(h))))));
@@ -717,7 +738,8 @@ function optionsOf(q) {
     const input = el('input', {type: q.multiple ? 'checkbox' : 'radio', name: 'q-' + q.id, checked: q.eleccion.includes(o.etiqueta),
       onchange: (e) => choose(q, o.etiqueta, e.target.checked)});
     box.append(el('label', {class: 'option' + (q.eleccion.includes(o.etiqueta) ? ' on' : '')}, input,
-      el('span', {}, el('b', {}, o.etiqueta), o.recomendada ? el('span', {class: 'flag'}, 'recomendada') : null,
+      el('span', {}, el('b', {}, o.etiqueta), o.actual ? el('span', {class: 'flag'}, 'lo que hice') : null,
+        o.recomendada ? el('span', {class: 'flag'}, 'recomendada') : null,
         o.descripcion ? el('span', {class: 'desc'}, o.descripcion) : null)));
   }
   return box;

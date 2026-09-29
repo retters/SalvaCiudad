@@ -18,17 +18,21 @@ En Firefox la página no puede escribir en el archivo: usa **Descargar** y reemp
 |---|---|---|
 | Requiere tu atención | Mis respuestas que no leíste y lo que espera tu confirmación | — |
 | Cambios | Qué se implementó en cada fase | sin revisar, revisado, aprobado, con problemas |
-| Pruebas manuales | La lista de verificación del README | sin probar, funciona, falla, no aplica |
+| Pruebas manuales | La lista de verificación del README. Una que falla se vuelve corrección | sin probar, funciona, falla, no aplica |
 | Decisiones | Todo `docs/DECISIONES.md` | sin revisar, aprobada, requiere cambio, requiere definición, descartada |
-| Por confirmar | Decisiones que tomé solo y conviene que confirmes | pendiente, confirmado, rechazado, requiere definición |
-| Sugerencias | Ideas mías | sin revisar, autorizada, requiere definición, pospuesta, descartada, en curso, implementada |
-| Pendientes | Trabajo abierto de la especificación | abierto, autorizado, requiere definición, pospuesto, descartado, en curso, hecho |
-| Ideas | Tus ideas tal como las escribiste, por área; aquí también se escriben | nueva, analizada, para el plan, ajustar, para después, descartada, planeada |
+| Por confirmar | Decisiones que tomé solo y conviene que confirmes; las nuevas, con opciones | pendiente, confirmado, rechazado, requiere definición |
+| Ideas | Tus ideas tal como las escribiste, y las mías ("de Claude": sugerencias y trabajo que quedó abierto); aquí también se escriben | nueva, analizada, para el plan, ajustar, para después, descartada, planeada |
 | Correcciones | Fallas y mejoras pequeñas que encuentras al probar; aquí también se escriben | nueva, autorizada, en curso, corregida, no se reproduce, verificada, descartada |
 | Análisis | Mis preguntas con opciones y mi análisis de cada idea | preguntas: sin responder, respondida, requiere definición |
 | Resumen | Cuántos hay en cada estado, y un cuadro por fase | — |
 
 Bajo la introducción de cada pestaña, **"¿Qué significa cada estado?"** despliega la explicación de cada estado. Al pasar el ratón sobre el estado de un elemento se ve la misma explicación.
+
+**Enlaces entre secciones:**
+- Una prueba que marcas "falla" se vuelve una corrección ya autorizada, y cada una muestra el número de la otra. Al marcar esa corrección "verificada", la prueba pasa sola a "funciona".
+- Si en una decisión o una confirmación tu nota pide algo nuevo, lo paso a Ideas con tus palabras. La idea muestra "de D-…" y el elemento de origen muestra "→ I-…".
+
+**Por confirmar con opciones:** las confirmaciones nuevas traen opciones, y la marcada "lo que hice" es lo que ya está implementado. Elegirla confirma. Elegir otra la rechaza, y cambio lo hecho por esa opción.
 
 Cada pestaña muestra **atendidos/total**. Atendido es lo que ya no está en su primer estado y no tiene una respuesta mía sin leer. Lo pendiente aparece primero, lo atendido al final, y la casilla **ocultar atendidos** lo esconde.
 
@@ -63,21 +67,21 @@ Si una corrección resulta ser un cambio de diseño, te lo digo y la paso al cic
 
 Cuando me pidas "revisa el registro", leo lo que marcaste:
 
-- **Autorizada / autorizado**: lo implemento y lo paso a "en curso" y luego a "implementada" o "hecho".
+- **Corrección autorizada**: la corrijo y la paso a "en curso" y luego a "corregida".
 - **Requiere cambio, con problemas, falla, rechazado**: lo corrijo o te propongo cómo, y respondo en el elemento.
 - **Requiere definición**: te respondo en el elemento con preguntas o una propuesta concreta; aparece en "Requiere tu atención" hasta que contestes.
 - **Confirmado, aprobada, funciona**: queda registrado; no hago nada más.
 - **Para el plan, ajustar, respondida**: lo tomo en cuenta al escribir el plan de trabajo.
 
-Al cerrar cada fase agrego sus cambios, pruebas, decisiones, dudas y sugerencias.
+Al cerrar cada fase agrego sus cambios, pruebas, decisiones y dudas (con opciones). Mis sugerencias y el trabajo que queda abierto van a Ideas, marcados "de Claude".
 
 Herramienta (Python, sin dependencias):
 
 ```
 python tools/revision/revision.py sincronizar            # vuelve a leer DECISIONES.md y README.md, sin perder tus estados
-python tools/revision/revision.py pendientes             # lo que espera que yo actúe
+python tools/revision/revision.py pendientes             # lo que espera que yo actúe (antes pasa las pruebas que fallan a correcciones)
 python tools/revision/revision.py responder <id> <estado|-> "<texto>"
-python tools/revision/revision.py agregar <archivo.json> # cambios, dudas y sugerencias nuevas
+python tools/revision/revision.py agregar <archivo.json> # cambios, dudas, ideas y correcciones nuevas
 python tools/revision/revision.py compactar              # limpia historiales de la primera versión (nota guardada por partes)
 python tools/revision/revision.py ideas                  # ideas y preguntas abiertas, con tus respuestas
 python tools/revision/revision.py archivar               # cierra una ronda de ideas

@@ -10,7 +10,8 @@ docs/revision/index.html.
         open work) from a JSON list; states and notes already set are kept.
     python tools/revision/revision.py pendientes
         Lists what waits for Claude: authorized, to change, failing, or with a
-        note from Salvador newer than Claude's last answer.
+        note from Salvador newer than Claude's last answer. First turns every
+        manual check marked failing into an authorized correction.
     python tools/revision/revision.py responder <id> <estado|-> <texto>
         Claude's answer on an item (and its new state, or - to keep it).
     python tools/revision/revision.py compactar
@@ -31,7 +32,9 @@ wrote it: "agregar" numbers new ones (I-001..., C-001...) and never changes
 the text of one already there. Authorized corrections show in "pendientes".
 Analysis questions ("pregunta") carry "opciones" (a list of {"etiqueta",
 "descripcion", "recomendada"}) and "multiple"; Salvador's choice is kept in
-"eleccion".
+"eleccion". A confirmation ("confirmar") may carry options too, one of them
+marked "actual": what Claude did; choosing it confirms, any other rejects.
+Claude's own suggestions and open work are ideas with "autor": "Claude".
 
 History entries have an "accion": "estado" (a state chosen), "nota" (a note
 saved with its button), "eleccion" (options chosen in a question) or
@@ -60,9 +63,6 @@ STATES = {
     'prueba': ['sin probar', 'funciona', 'falla', 'no aplica'],
     'decision': ['sin revisar', 'aprobada', 'requiere cambio', 'requiere definición', 'descartada'],
     'confirmar': ['pendiente', 'confirmado', 'rechazado', 'requiere definición'],
-    'sugerencia': ['sin revisar', 'autorizada', 'requiere definición', 'pospuesta', 'descartada', 'en curso',
-                   'implementada'],
-    'pendiente': ['abierto', 'autorizado', 'requiere definición', 'pospuesto', 'descartado', 'en curso', 'hecho'],
     'idea': ['nueva', 'analizada', 'para el plan', 'ajustar', 'para después', 'descartada', 'planeada'],
     'pregunta': ['sin responder', 'respondida', 'requiere definición'],
     'correccion': ['nueva', 'autorizada', 'en curso', 'corregida', 'no se reproduce', 'verificada', 'descartada'],
@@ -73,6 +73,8 @@ CAPTURED = {'idea': 'I', 'correccion': 'C'}
 FOR_CLAUDE = {'con problemas', 'falla', 'requiere cambio', 'confirmado', 'rechazado', 'autorizada', 'autorizado',
               'requiere definición', 'para el plan', 'ajustar', 'respondida'}
 FIELDS_USER = ('estado', 'nota', 'eleccion', 'historial', 'actualizado')
+# Links between items, kept when "sincronizar" rebuilds an item from the docs.
+LINKS = ('correccion', 'ideaCreada')
 # What Claude may never rewrite in an idea or a correction: Salvador's own words.
 IDEA_FIXED = ('detalle', 'area', 'capturada')
 AREAS = ['Juego', 'Interfaz', 'Red', 'Arte', 'Rendimiento', 'Mods', 'Herramientas', 'Otro']
@@ -100,11 +102,11 @@ def load():
     for it in doc['items']:
         if (isinstance(it, dict) and isinstance(it.get('id'), str) and it.get('tipo') in STATES
                 and isinstance(it.get('titulo'), str) and it.get('estado') in STATES[it['tipo']]
-                and (it['tipo'] != 'pregunta' or valid_options(it.get('opciones')))):
+                and (not has_options(it) or valid_options(it.get('opciones')))):
             it.setdefault('nota', '')
             it.setdefault('respuesta', '')
             it.setdefault('historial', [])
-            if it['tipo'] == 'pregunta':
+            if has_options(it):
                 clean_choice(it)
             good.append(it)
         else:
@@ -114,14 +116,20 @@ def load():
     return doc
 
 
+def has_options(it):
+    """Questions always offer options; a confirmation may (D-9013)."""
+    return it['tipo'] == 'pregunta' or 'opciones' in it
+
+
 def valid_options(opts):
-    """A question needs at least two options, each with its own label."""
+    """At least two options, each with its own label. "actual" marks, in a
+    confirmation, what Claude already did."""
     if not isinstance(opts, list) or len(opts) < 2:
         return False
     labels = [o.get('etiqueta') if isinstance(o, dict) else None for o in opts]
     return (all(isinstance(x, str) and x.strip() for x in labels) and len(set(labels)) == len(labels)
             and all(isinstance(o.get('descripcion', ''), str) and isinstance(o.get('recomendada', False), bool)
-                    for o in opts))
+                    and isinstance(o.get('actual', False), bool) for o in opts))
 
 
 def clean_choice(it):
@@ -238,7 +246,7 @@ def merge(doc, fresh, origin):
         f['origen'] = origin
         prev = old.get(f['id'])
         if prev:
-            for k in FIELDS_USER + ('respuesta',):
+            for k in FIELDS_USER + ('respuesta',) + LINKS:
                 if k in prev:
                     f[k] = prev[k]
             f.pop('retirado', None)
@@ -288,9 +296,13 @@ def check_new(n, prev):
             sys.exit('%s area %r is not one of %s' % (n['tipo'], n.get('area'), AREAS))
     elif not isinstance(n.get('id'), str) or not n['id'] or not isinstance(n.get('titulo', prev and prev['titulo']), str):
         sys.exit('bad item: %r' % n)
-    if n['tipo'] == 'pregunta' and ('opciones' in n or not prev):
+    if n['tipo'] not in ('pregunta', 'confirmar') and 'opciones' in n:
+        sys.exit('%s: only questions and confirmations have options' % n['id'])
+    if (n['tipo'] == 'pregunta' and not prev) or 'opciones' in n:
         if not valid_options(n.get('opciones')):
-            sys.exit('%s: a question needs two or more options with distinct labels' % n['id'])
+            sys.exit('%s: options need two or more distinct labels' % n['id'])
+        if n['tipo'] == 'confirmar' and n.get('multiple'):
+            sys.exit('%s: a confirmation takes a single choice' % n['id'])
         if 'multiple' in n and not isinstance(n['multiple'], bool):
             sys.exit('%s: "multiple" must be true or false' % n['id'])
 
@@ -319,7 +331,7 @@ def cmd_add(path):
                 prev['actualizado'] = now()
                 prev['historial'].append({'fecha': prev['actualizado'], 'quien': 'Claude', 'accion': 'estado',
                                           'estado': n['estado'], 'texto': ''})
-            if n['tipo'] == 'pregunta':
+            if has_options(prev):
                 clean_choice(prev)
             continue
         if n['tipo'] in CAPTURED:
@@ -335,7 +347,7 @@ def cmd_add(path):
         n.setdefault('nota', '')
         n.setdefault('respuesta', '')
         n.setdefault('historial', [])
-        if n['tipo'] == 'pregunta':
+        if has_options(n):
             clean_choice(n)
         doc['items'].append(n)
         by_id[n['id']] = n
@@ -346,7 +358,11 @@ def cmd_add(path):
 
 
 def waiting(it):
-    """Salvador wrote after Claude's last word, or set a state that asks for work."""
+    """Salvador wrote after Claude's last word, or set a state that asks for
+    work. An authorized correction waits until Claude moves it on, whoever
+    authorized it (a failing check becomes one already authorized)."""
+    if it['tipo'] == 'correccion' and it['estado'] == 'autorizada' and not it.get('archivado'):
+        return True
     last_user = last_claude = ''
     for h in it.get('historial', []):
         if h.get('quien') == 'Claude':
@@ -356,8 +372,37 @@ def waiting(it):
     return last_user > last_claude and (it['estado'] in FOR_CLAUDE or it.get('nota'))
 
 
+def failing_to_corrections(doc):
+    """Each manual check Salvador marked failing becomes an authorized
+    correction (D-9012), linked both ways; the check gets Claude's answer."""
+    made = []
+    for it in list(doc['items']):
+        if it['tipo'] != 'prueba' or it['estado'] != 'falla' or it.get('correccion'):
+            continue
+        fecha = now()
+        text = 'Falla en la prueba manual (%s): %s' % (it.get('grupo') or it.get('fase'), it['titulo'])
+        if it.get('nota'):
+            text += '\n\n' + it['nota']
+        c = {'id': next_idea_id(doc['items'], 'correccion'), 'tipo': 'correccion', 'area': 'Juego', 'grupo': 'Juego',
+             'capturada': fecha[:10], 'fase': it.get('fase', ''), 'origen': 'curado', 'prueba': it['id'],
+             'titulo': idea_title(it['titulo']), 'detalle': text, 'estado': 'autorizada', 'nota': '', 'respuesta': '',
+             'historial': [{'fecha': fecha, 'quien': 'Claude', 'accion': 'estado', 'estado': 'autorizada',
+                            'texto': 'Creada desde la prueba ' + it['id']}], 'actualizado': fecha}
+        doc['items'].append(c)
+        it['correccion'] = c['id']
+        it['respuesta'] = 'La paso a la corrección %s; cuando la marques "verificada", esta prueba queda como "funciona".' % c['id']
+        it['historial'].append({'fecha': fecha, 'quien': 'Claude', 'accion': 'respuesta', 'estado': it['estado'],
+                                'texto': it['respuesta']})
+        made.append('%s -> %s' % (it['id'], c['id']))
+    return made
+
+
 def cmd_pending():
     doc = load()
+    made = failing_to_corrections(doc)
+    if made:
+        save(doc)
+        print('Failing checks turned into corrections:', ', '.join(made))
     todo = [it for it in doc['items'] if waiting(it)]
     fresh = [it['id'] for it in doc['items'] if it['tipo'] == 'idea' and it['estado'] == 'nueva' and not it.get('archivado')]
     if fresh:

@@ -1612,3 +1612,21 @@ Pedido de Salvador para anotar lo que encuentra al probar el juego. Son el tipo 
 
 **D-9010. Explicación de los estados en la página.**
 Cada estado de cada tipo tiene una frase que dice qué significa y quién lo pone. Se ve de dos formas: al pasar el ratón sobre el selector de estado, y en "¿Qué significa cada estado?", bajo la introducción de cada pestaña. Las frases viven solo en la página, porque `revision.py` no las necesita.
+
+**D-9011. Las peticiones nuevas escritas en una decisión pasan a Ideas.**
+En D-003, D-010, D-410 y `conf-soldados`, la nota de Salvador no corregía la decisión: pedía algo nuevo (más velocidades, años más largos, mejoras de cámara, soldados que comen y cobran). Cada nota se copió tal cual a una idea (I-001 a I-004), que muestra de qué elemento salió (`desde`). El elemento de origen enlaza a la idea (`ideaCreada`) y recibe una respuesta de Claude. No se tocaron ni sus estados ni sus notas. Así esas peticiones entran en la ronda de refinamiento en vez de quedar sueltas.
+
+**D-9012. Una prueba manual que falla se vuelve una corrección autorizada.**
+`revision.py pendientes` crea, por cada prueba en "falla" que aún no tiene corrección, una corrección en estado "autorizada". Su texto dice qué prueba falló e incluye la nota de Salvador; las dos quedan enlazadas. Nace autorizada porque marcar "falla" ya era pedir el arreglo. Una corrección autorizada espera a Claude sin importar quién la autorizó. Al marcarla "verificada" en la página, la prueba pasa a "funciona". Los enlaces se conservan al sincronizar con el README.
+
+**D-9013. Por confirmar con opciones.**
+Una confirmación puede traer opciones, como una pregunta, pero siempre de elección única, y una de ellas marcada `actual`: lo que Claude ya implementó. Elegir esa opción la confirma; elegir otra la rechaza y pide el cambio. Las 20 confirmaciones que ya existían se quedan sin opciones.
+
+**D-9014. Sugerencias y pendientes son ideas.**
+Las 14 sugerencias y los 9 pendientes pasaron a ser ideas con `autor: "Claude"` y un área. Conservan su número, su texto, su historial y, en `antes`, su tipo y estado anteriores. Equivalencias:
+- "sin revisar", "abierto" y "requiere definición" pasan a "nueva";
+- "autorizada" pasa a "para el plan";
+- "pospuesta" pasa a "para después";
+- "en curso", "implementada" y "hecho" pasan a "planeada".
+
+Lo ya hecho o descartado queda archivado. "Pulido y entrega" quedó como planeada en la fase 37. Las pestañas Sugerencias y Pendientes desaparecen, y los tipos `sugerencia` y `pendiente` ya no existen. Así, todo lo que podría hacerse pasa por la misma ronda de refinamiento, sea de Salvador o de Claude.

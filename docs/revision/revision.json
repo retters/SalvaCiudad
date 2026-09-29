@@ -26,24 +26,6 @@
    "rechazado",
    "requiere definición"
   ],
-  "sugerencia": [
-   "sin revisar",
-   "autorizada",
-   "requiere definición",
-   "pospuesta",
-   "descartada",
-   "en curso",
-   "implementada"
-  ],
-  "pendiente": [
-   "abierto",
-   "autorizado",
-   "requiere definición",
-   "pospuesto",
-   "descartado",
-   "en curso",
-   "hecho"
-  ],
   "idea": [
    "nueva",
    "analizada",
@@ -140,10 +122,18 @@
      "accion": "nota",
      "estado": "requiere cambio",
      "texto": "¿Sería posible implementar más velocidades? como x4 hasta x9"
+    },
+    {
+     "fecha": "2026-09-28T23:14:18-06:00",
+     "quien": "Claude",
+     "accion": "respuesta",
+     "estado": "requiere cambio",
+     "texto": "Tu nota pide algo nuevo, así que la pasé tal cual a la idea I-001. Entra en la próxima ronda de refinamiento; aquí puedes dejar el estado que quieras."
     }
    ],
    "actualizado": "2026-09-27T15:10:00-06:00",
-   "respuesta": ""
+   "respuesta": "Tu nota pide algo nuevo, así que la pasé tal cual a la idea I-001. Entra en la próxima ronda de refinamiento; aquí puedes dejar el estado que quieras.",
+   "ideaCreada": "I-001"
   },
   {
    "id": "D-004",
@@ -308,10 +298,18 @@
      "accion": "nota",
      "estado": "requiere cambio",
      "texto": "quiero agregar años de 60, 75 y 90 minutos."
+    },
+    {
+     "fecha": "2026-09-28T23:14:18-06:00",
+     "quien": "Claude",
+     "accion": "respuesta",
+     "estado": "requiere cambio",
+     "texto": "Tu nota pide algo nuevo, así que la pasé tal cual a la idea I-002. Entra en la próxima ronda de refinamiento; aquí puedes dejar el estado que quieras."
     }
    ],
    "actualizado": "2026-09-27T15:09:49-06:00",
-   "respuesta": ""
+   "respuesta": "Tu nota pide algo nuevo, así que la pasé tal cual a la idea I-002. Entra en la próxima ronda de refinamiento; aquí puedes dejar el estado que quieras.",
+   "ideaCreada": "I-002"
   },
   {
    "id": "D-011",
@@ -1410,10 +1408,18 @@
      "accion": "nota",
      "estado": "requiere cambio",
      "texto": "quiero mejorar un poco la camara en tercera persona, para que cuando se baje la camara al suelo, el objetivo se eleve, haciendo el efecto de que se observa hacia arriba/el cielo, manteniendo la visión desde tercera persona. También quiero agregar un modelo \"fantasma\" (semi transparente) que sirva como referencia de donde se está anclando la camara cuando no se seleccionó a un aldeano para seguirlo."
+    },
+    {
+     "fecha": "2026-09-28T23:14:18-06:00",
+     "quien": "Claude",
+     "accion": "respuesta",
+     "estado": "requiere cambio",
+     "texto": "Tu nota pide algo nuevo, así que la pasé tal cual a la idea I-003. Entra en la próxima ronda de refinamiento; aquí puedes dejar el estado que quieras."
     }
    ],
    "actualizado": "2026-09-27T15:16:58-06:00",
-   "respuesta": ""
+   "respuesta": "Tu nota pide algo nuevo, así que la pasé tal cual a la idea I-003. Entra en la próxima ronda de refinamiento; aquí puedes dejar el estado que quieras.",
+   "ideaCreada": "I-003"
   },
   {
    "id": "D-411",
@@ -8048,7 +8054,7 @@
    "origen": "curado",
    "estado": "pendiente",
    "nota": "Si quiero que coman y cobren sueldo en monedas.",
-   "respuesta": "",
+   "respuesta": "Tu nota pide algo nuevo, así que la pasé tal cual a la idea I-004. Entra en la próxima ronda de refinamiento; aquí puedes dejar el estado que quieras.",
    "historial": [
     {
      "fecha": "2026-09-27T14:46:51-06:00",
@@ -8056,9 +8062,17 @@
      "accion": "nota",
      "estado": "pendiente",
      "texto": "Si quiero que coman y cobren sueldo en monedas."
+    },
+    {
+     "fecha": "2026-09-28T23:14:18-06:00",
+     "quien": "Claude",
+     "accion": "respuesta",
+     "estado": "pendiente",
+     "texto": "Tu nota pide algo nuevo, así que la pasé tal cual a la idea I-004. Entra en la próxima ronda de refinamiento; aquí puedes dejar el estado que quieras."
     }
    ],
-   "actualizado": "2026-09-27T14:46:51-06:00"
+   "actualizado": "2026-09-27T14:46:51-06:00",
+   "ideaCreada": "I-004"
   },
   {
    "id": "conf-raza-sala",
@@ -8197,241 +8211,344 @@
   },
   {
    "id": "sug-modelos-combate",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "18",
-   "grupo": "Fase 18",
+   "grupo": "Arte",
    "titulo": "Modelos propios para asaltantes y soldados",
    "detalle": "Hoy usan el cuerpo de los aldeanos con una marca de color. Propongo cuerpos con armadura, armas por unidad y capucha para los asaltantes.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Arte",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-animaciones",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "18",
-   "grupo": "Fase 18",
+   "grupo": "Arte",
    "titulo": "Animaciones de trabajo y combate",
    "detalle": "Solo hay reposo y caminar. La especificación pide talar, picar, construir, sembrar, cosechar, comer, atacar y morir; y esqueleto para los animales.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Arte",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-balance",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "19",
-   "grupo": "Fase 19",
+   "grupo": "Juego",
    "titulo": "Balancear jugando partidas largas",
    "detalle": "Los números de razas, enfermedades, asaltos, precios y producción están puestos a ojo. Propongo una prueba automática de \"partida de 10 años\" que reporte población, muertes y reservas, para ajustar con datos.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Juego",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-barra-superior",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "17",
-   "grupo": "Fase 17",
+   "grupo": "Interfaz",
    "titulo": "Rediseñar la barra superior con íconos",
    "detalle": "En ventanas angostas los bienes se agrupan en \"+N más\". Con íconos cabría todo.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Interfaz",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-caminos-repartidos",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "20",
-   "grupo": "Fase 20",
+   "grupo": "Rendimiento",
    "titulo": "Repartir las búsquedas de camino entre ticks",
    "detalle": "Cuando llega mucha gente a la vez hay picos de hasta 400 ms por tick.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Rendimiento",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-hash-por-partes",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "21",
-   "grupo": "Fase 21",
+   "grupo": "Red",
    "titulo": "Suma de verificación por partes",
    "detalle": "En un mapa colosal la verificación de red (cada 50 ticks) toma 175 ms: a x3 se nota un tirón cada pocos segundos. Se puede calcular a medida que cambia el estado.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Red",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-dia-noche",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "19",
-   "grupo": "Fase 19",
+   "grupo": "Juego",
    "titulo": "Ciclo de día y noche",
    "detalle": "Luz que cambia, aldeanos que duermen, y un uso para la visión nocturna de los gatunos.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Juego",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-barcos",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "22",
-   "grupo": "Fase 22",
+   "grupo": "Juego",
    "titulo": "Barcos",
    "detalle": "Con islas y costas, barcos para pescar, comerciar y llevar ejércitos, en vez de cruzar \"por el mapa del mundo\".",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Juego",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-ideas-visuales",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "18",
-   "grupo": "Fase 18",
+   "grupo": "Arte",
    "titulo": "Ideas visuales que quedaron",
    "detalle": "Oclusión ambiental, balanceo de los árboles con el viento, árboles sin hojas en invierno, huellas en la nieve (docs/IDEAS_VISUALES.md).",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Arte",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "sug-revision-como-habito",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "",
-   "grupo": "",
+   "grupo": "Herramientas",
    "titulo": "Mantener este registro al cerrar cada fase",
    "detalle": "Al terminar cada fase agrego aquí sus cambios, pruebas, decisiones, dudas y sugerencias, y reviso lo que marcaste antes de empezar la siguiente.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Herramientas",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "pend-pulido-entrega",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "",
-   "grupo": "",
+   "grupo": "Otro",
    "titulo": "Pulido y entrega (fase 21 de la especificación)",
    "detalle": "Análisis estático /analyze limpio, README revisado, guías y DECISIONES revisados, ZIP de entrega y compilación en tu Linux. La numeración del proyecto siguió con otras fases, pero esta sigue pendiente.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "abierto",
+   "estado": "planeada",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Otro",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "abierto"
+   },
+   "fasePlan": "37"
   },
   {
    "id": "pend-musica",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "",
-   "grupo": "",
+   "grupo": "Arte",
    "titulo": "Música",
    "detalle": "Pendiente según la sección 14 de la especificación.",
    "fuente": "Claude",
-   "estado": "pospuesto",
+   "estado": "para después",
    "origen": "curado",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Arte",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "pospuesto"
+   }
   },
   {
    "id": "pend-macos",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "",
-   "grupo": "",
+   "grupo": "Herramientas",
    "titulo": "Compilación y pruebas en macOS",
    "detalle": "Sección 14 de la especificación.",
    "fuente": "Claude",
-   "estado": "pospuesto",
+   "estado": "para después",
    "origen": "curado",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Herramientas",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "pospuesto"
+   }
   },
   {
    "id": "pend-ci",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "",
-   "grupo": "",
+   "grupo": "Herramientas",
    "titulo": "Integración continua en GitHub (Windows, Linux, macOS)",
    "detalle": "Sección 14 de la especificación.",
    "fuente": "Claude",
-   "estado": "pospuesto",
+   "estado": "para después",
    "origen": "curado",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Herramientas",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "pospuesto"
+   }
   },
   {
    "id": "pend-steam",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "",
-   "grupo": "",
+   "grupo": "Red",
    "titulo": "Steam: publicación, Workshop y conexión sin abrir puertos",
    "detalle": "Sección 14 de la especificación.",
    "fuente": "Claude",
-   "estado": "pospuesto",
+   "estado": "para después",
    "origen": "curado",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Red",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "pospuesto"
+   }
   },
   {
    "id": "pend-servidor",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "",
-   "grupo": "",
+   "grupo": "Red",
    "titulo": "Servidor dedicado",
    "detalle": "Sección 14 de la especificación.",
    "fuente": "Claude",
-   "estado": "pospuesto",
+   "estado": "para después",
    "origen": "curado",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Red",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "pospuesto"
+   }
   },
   {
    "id": "pend-raza-jugador",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "19",
-   "grupo": "Fase 19",
+   "grupo": "Juego",
    "titulo": "Cada jugador elige su raza en la sala",
    "detalle": "Hoy la elige el anfitrión para todos (ver la confirmación correspondiente).",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "abierto",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Juego",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "abierto"
+   }
   },
   {
    "id": "cambio-27",
@@ -8516,14 +8633,14 @@
   },
   {
    "id": "pend-medir-colosal-27",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "27",
-   "grupo": "Fase 27",
+   "grupo": "Rendimiento",
    "titulo": "Volver a medir los mapas gigante y colosal",
    "detalle": "Las fases 25 a 27 agregaron trabajo al generador. El enorme tarda 14 s (antes 6,5 s); el gigante y el colosal no se midieron de nuevo (docs/RENDIMIENTO.md tiene los tiempos de la fase 21).",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "hecho",
+   "estado": "planeada",
    "nota": "",
    "respuesta": "Medido y acelerado: gigante 83 s → 31 s, colosal 550 s → 190 s, enorme 8,4 s, con los mismos mapas. Detalle por etapa en docs/RENDIMIENTO.md (D-3111 a D-3115).",
    "historial": [
@@ -8535,21 +8652,34 @@
      "texto": "Medido y acelerado: gigante 83 s → 31 s, colosal 550 s → 190 s, enorme 8,4 s, con los mismos mapas. Detalle por etapa en docs/RENDIMIENTO.md (D-3111 a D-3115)."
     }
    ],
-   "actualizado": "2026-09-27T20:01:32-06:00"
+   "actualizado": "2026-09-27T20:01:32-06:00",
+   "autor": "Claude",
+   "area": "Rendimiento",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "hecho"
+   },
+   "archivado": true
   },
   {
    "id": "sug-vista-previa-mapa",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "27",
-   "grupo": "Fase 27",
+   "grupo": "Interfaz",
    "titulo": "Vista previa del mapa en la partida nueva",
    "detalle": "Una imagen chica del mapa (como el minimapa) en la partida nueva, para ver costas, islas y accidentes antes de generar el mapa completo; en mapas pequeños y medianos saldría en uno o dos segundos.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Interfaz",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "D-2701",
@@ -9421,17 +9551,23 @@
   },
   {
    "id": "sug-precio-maximo",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "29",
-   "grupo": "Fase 29",
+   "grupo": "Juego",
    "titulo": "Reglas con precio máximo y mínimo",
    "detalle": "Los precios de cada mercader van del 75 % al 125 % del valor. Una regla podría decir \"comprar solo si está a menos del 100 %\" o \"vender solo si pagan más del 90 %\", para aprovechar los buenos mercaderes.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Juego",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "conf-niebla-construir",
@@ -9938,17 +10074,23 @@
   },
   {
    "id": "sug-formas-por-borde",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "31",
-   "grupo": "Tras la fase 31",
+   "grupo": "Juego",
    "titulo": "Menos valles y cordilleras en los mapas más grandes",
    "detalle": "Hoy su cantidad va por km² y cada uno cruza el mapa entero: en el colosal, valles y cañones pasan por 2,8 veces la superficie del mapa, y siguen siendo lo que más tarda (unos 70 s). Si la cantidad fuera por kilómetro de borde, o las líneas no cruzaran siempre el mapa entero, el colosal tendría la misma proporción que un mapa enorme y se generaría en unos 2 minutos. Cambia todos los mapas grandes (generador versión 7).",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Juego",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "D-3207",
@@ -10260,14 +10402,14 @@
   },
   {
    "id": "pend-niebla-fps",
-   "tipo": "pendiente",
+   "tipo": "idea",
    "fase": "32",
-   "grupo": "Fase 32",
+   "grupo": "Rendimiento",
    "titulo": "Medir los FPS con niebla en el mapa colosal",
    "detalle": "El criterio pide perder como mucho un 5 % de FPS con 1000 aldeanos en el mapa colosal en Ultra. Lo mido una sola vez al terminar la fase 34, con las tres fases juntas (la 34 agrega el techo al mismo sombreador), comparando con la casilla \"Ver a través de la niebla\".",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "hecho",
+   "estado": "planeada",
    "nota": "",
    "respuesta": "Medido al cerrar la fase 34 en el mapa colosal en Ultra con 1000 aldeanos: 132-139 FPS con niebla, 84-88 viéndola a través (docs/RENDIMIENTO.md). La niebla no resta FPS.",
    "historial": [
@@ -10279,7 +10421,14 @@
      "texto": "Medido al cerrar la fase 34 en el mapa colosal en Ultra con 1000 aldeanos: 132-139 FPS con niebla, 84-88 viéndola a través (docs/RENDIMIENTO.md). La niebla no resta FPS."
     }
    ],
-   "actualizado": "2026-09-27T22:35:11-06:00"
+   "actualizado": "2026-09-27T22:35:11-06:00",
+   "autor": "Claude",
+   "area": "Rendimiento",
+   "antes": {
+    "tipo": "pendiente",
+    "estado": "hecho"
+   },
+   "archivado": true
   },
   {
    "id": "D-3301",
@@ -10577,17 +10726,23 @@
   },
   {
    "id": "sug-animales-instancias",
-   "tipo": "sugerencia",
+   "tipo": "idea",
    "fase": "34",
-   "grupo": "Fase 34",
+   "grupo": "Rendimiento",
    "titulo": "Dibujar los animales sin rehacer su lista en cada cuadro",
    "detalle": "Al medir la niebla se vio que, sin niebla, el mapa colosal pierde unos 4 ms por cuadro (de 139 a 88 FPS) porque la lista de instancias de todos los animales del mapa se rehace en cada cuadro, aunque casi ninguno esté a la vista. Se podría quedarse solo con los animales cerca de la cámara, o moverlos con update_instance en lugar de rehacer la lista. No lo toqué porque no es parte de la niebla.",
    "fuente": "Claude",
    "origen": "curado",
-   "estado": "sin revisar",
+   "estado": "nueva",
    "nota": "",
    "respuesta": "",
-   "historial": []
+   "historial": [],
+   "autor": "Claude",
+   "area": "Rendimiento",
+   "antes": {
+    "tipo": "sugerencia",
+    "estado": "sin revisar"
+   }
   },
   {
    "id": "D-3320",
@@ -10768,8 +10923,8 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
-   "respuesta": "",
-   "historial": []
+   "historial": [],
+   "respuesta": ""
   },
   {
    "id": "D-9010",
@@ -10782,9 +10937,129 @@
    "origen": "DECISIONES",
    "estado": "sin revisar",
    "nota": "",
+   "historial": [],
+   "respuesta": ""
+  },
+  {
+   "id": "I-001",
+   "tipo": "idea",
+   "area": "Juego",
+   "grupo": "Juego",
+   "capturada": "2026-09-28",
+   "fase": "",
+   "origen": "curado",
+   "desde": "D-003",
+   "titulo": "¿Sería posible implementar más velocidades? como x4 hasta x9",
+   "detalle": "¿Sería posible implementar más velocidades? como x4 hasta x9",
+   "estado": "nueva",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "I-002",
+   "tipo": "idea",
+   "area": "Juego",
+   "grupo": "Juego",
+   "capturada": "2026-09-28",
+   "fase": "",
+   "origen": "curado",
+   "desde": "D-010",
+   "titulo": "quiero agregar años de 60, 75 y 90 minutos.",
+   "detalle": "quiero agregar años de 60, 75 y 90 minutos.",
+   "estado": "nueva",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "I-003",
+   "tipo": "idea",
+   "area": "Interfaz",
+   "grupo": "Interfaz",
+   "capturada": "2026-09-28",
+   "fase": "",
+   "origen": "curado",
+   "desde": "D-410",
+   "titulo": "quiero mejorar un poco la camara en tercera persona, para que cuando se baje la camara…",
+   "detalle": "quiero mejorar un poco la camara en tercera persona, para que cuando se baje la camara al suelo, el objetivo se eleve, haciendo el efecto de que se observa hacia arriba/el cielo, manteniendo la visión desde tercera persona. También quiero agregar un modelo \"fantasma\" (semi transparente) que sirva como referencia de donde se está anclando la camara cuando no se seleccionó a un aldeano para seguirlo.",
+   "estado": "nueva",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "I-004",
+   "tipo": "idea",
+   "area": "Juego",
+   "grupo": "Juego",
+   "capturada": "2026-09-28",
+   "fase": "",
+   "origen": "curado",
+   "desde": "conf-soldados",
+   "titulo": "Si quiero que coman y cobren sueldo en monedas.",
+   "detalle": "Si quiero que coman y cobren sueldo en monedas.",
+   "estado": "nueva",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9011",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Las peticiones nuevas escritas en una decisión pasan a Ideas",
+   "detalle": "En D-003, D-010, D-410 y `conf-soldados`, la nota de Salvador no corregía la decisión: pedía algo nuevo (más velocidades, años más largos, mejoras de cámara, soldados que comen y cobran). Cada nota se copió tal cual a una idea (I-001 a I-004), que muestra de qué elemento salió (`desde`). El elemento de origen enlaza a la idea (`ideaCreada`) y recibe una respuesta de Claude. No se tocaron ni sus estados ni sus notas. Así esas peticiones entran en la ronda de refinamiento en vez de quedar sueltas.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9012",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Una prueba manual que falla se vuelve una corrección autorizada",
+   "detalle": "`revision.py pendientes` crea, por cada prueba en \"falla\" que aún no tiene corrección, una corrección en estado \"autorizada\". Su texto dice qué prueba falló e incluye la nota de Salvador; las dos quedan enlazadas. Nace autorizada porque marcar \"falla\" ya era pedir el arreglo. Una corrección autorizada espera a Claude sin importar quién la autorizó. Al marcarla \"verificada\" en la página, la prueba pasa a \"funciona\". Los enlaces se conservan al sincronizar con el README.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9013",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Por confirmar con opciones",
+   "detalle": "Una confirmación puede traer opciones, como una pregunta, pero siempre de elección única, y una de ellas marcada `actual`: lo que Claude ya implementó. Elegir esa opción la confirma; elegir otra la rechaza y pide el cambio. Las 20 confirmaciones que ya existían se quedan sin opciones.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
+   "respuesta": "",
+   "historial": []
+  },
+  {
+   "id": "D-9014",
+   "tipo": "decision",
+   "fase": "Herramienta: ideas y análisis en el registro de revisión",
+   "grupo": "Herramienta: ideas y análisis en el registro de revisión",
+   "titulo": "Sugerencias y pendientes son ideas",
+   "detalle": "Las 14 sugerencias y los 9 pendientes pasaron a ser ideas con `autor: \"Claude\"` y un área. Conservan su número, su texto, su historial y, en `antes`, su tipo y estado anteriores. Equivalencias:\n- \"sin revisar\", \"abierto\" y \"requiere definición\" pasan a \"nueva\";\n- \"autorizada\" pasa a \"para el plan\";\n- \"pospuesta\" pasa a \"para después\";\n- \"en curso\", \"implementada\" y \"hecho\" pasan a \"planeada\".\n\nLo ya hecho o descartado queda archivado. \"Pulido y entrega\" quedó como planeada en la fase 37. Las pestañas Sugerencias y Pendientes desaparecen, y los tipos `sugerencia` y `pendiente` ya no existen. Así, todo lo que podría hacerse pasa por la misma ronda de refinamiento, sea de Salvador o de Claude.",
+   "fuente": "docs/DECISIONES.md",
+   "origen": "DECISIONES",
+   "estado": "sin revisar",
+   "nota": "",
    "respuesta": "",
    "historial": []
   }
  ],
- "generado": "2026-09-28T23:02:32-06:00"
+ "generado": "2026-09-28T23:15:12-06:00"
 }

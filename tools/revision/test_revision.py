@@ -176,6 +176,40 @@ class RevisionTest(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.add([{'tipo': 'correccion', 'area': 'Cocina', 'detalle': 'x'}])
 
+    def test_failing_check_becomes_an_authorized_correction(self):
+        doc = revision.empty()
+        doc['items'].append({'id': 'prueba-5-x', 'tipo': 'prueba', 'fase': '5', 'grupo': 'Fase 5: mercado', 'titulo': 'Se vende pan',
+                             'detalle': '', 'estado': 'falla', 'nota': 'No aparece el botón', 'respuesta': '', 'origen': 'README',
+                             'historial': [{'fecha': '2026-09-28T10:00:00-06:00', 'quien': 'Salvador', 'accion': 'estado',
+                                            'estado': 'falla', 'texto': ''}]})
+        revision.save(doc)
+        out = self.run_cmd(revision.cmd_pending)
+        self.assertIn('prueba-5-x -> C-001', out)
+        self.assertIn('- C-001 [autorizada]', out)
+        self.assertNotIn('- prueba-5-x', out)  # Answered: the correction carries it now.
+        items = self.items()
+        self.assertEqual(items['prueba-5-x']['correccion'], 'C-001')
+        self.assertEqual(items['C-001']['prueba'], 'prueba-5-x')
+        self.assertIn('No aparece el botón', items['C-001']['detalle'])
+        self.assertNotIn('->', self.run_cmd(revision.cmd_pending))  # Only once.
+        # Rebuilding the checks from the README keeps the link.
+        doc = revision.load()
+        revision.merge(doc, [{'id': 'prueba-5-x', 'tipo': 'prueba', 'fase': '5', 'grupo': 'Fase 5: mercado',
+                              'titulo': 'Se vende pan', 'detalle': '', 'fuente': 'README.md'}], 'README')
+        self.assertEqual(next(i for i in doc['items'] if i['id'] == 'prueba-5-x')['correccion'], 'C-001')
+
+    def test_confirmations_may_offer_options(self):
+        conf = {'id': 'conf-x', 'tipo': 'confirmar', 'titulo': '¿Cuántas monedas?',
+                'opciones': [{'etiqueta': '100', 'actual': True}, {'etiqueta': '200'}]}
+        self.add([conf])
+        self.assertEqual(self.items()['conf-x']['eleccion'], [])
+        self.add([{'id': 'conf-y', 'tipo': 'confirmar', 'titulo': 'Sin opciones'}])  # Still allowed.
+        for bad in ([dict(conf, id='conf-z', multiple=True)],
+                    [dict(conf, id='conf-z', opciones=[{'etiqueta': '1', 'actual': 'sí'}, {'etiqueta': '2'}])],
+                    [{'id': 'D-1', 'tipo': 'decision', 'titulo': 'x', 'opciones': conf['opciones']}]):
+            with self.assertRaises(SystemExit, msg=bad):
+                self.add(bad)
+
     def test_ideas_listing_shows_choices(self):
         self.add([{'tipo': 'idea', 'area': 'Arte', 'detalle': 'Texto completo\ncon dos líneas'}, self.question()])
         out = self.run_cmd(revision.cmd_ideas)
