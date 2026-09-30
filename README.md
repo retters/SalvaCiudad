@@ -485,6 +485,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con "Accidentes: Pocos" hay más llanura que con "Muchos"; con relieve "Montañoso" hay más montañas.
 - [ ] Guardar y cargar una partida jerárquica conserva los nombres de F3.
 
+### Fase 40 (generador jerárquico: estructuras)
+
+- [ ] En las montañas se ve una cresta larga con picos que sigue la cadena; F3 dice "Estructura: Cresta" en el filo y "Paso de montaña" donde baja.
+- [ ] Cada meseta tiene una rampa por la que se sube (F3: "Rampa"); su borde es "Acantilado".
+- [ ] Los valles bajan de las colinas o montañas a una llanura o cuenca, en forma de U, a veces con río.
+- [ ] Los cañones solo están en mesetas, son pocos, angostos, de paredes a pique, y la mayoría lleva un río que sale de la meseta.
+- [ ] F3 nunca dice a la vez cañón y cresta, ni cañón y meseta como estructura.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

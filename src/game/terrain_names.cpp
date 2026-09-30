@@ -212,6 +212,10 @@ const char* landform_key(sim::LandformKind kind) {
         case sim::LandformKind::Hills: return "landform.hills";
         case sim::LandformKind::Mountains: return "landform.mountains";
         case sim::LandformKind::Basin: return "landform.basin";
+        case sim::LandformKind::Crest: return "landform.crest";
+        case sim::LandformKind::Pass: return "landform.pass";
+        case sim::LandformKind::Cliff: return "landform.cliff";
+        case sim::LandformKind::Ramp: return "landform.ramp";
         case sim::LandformKind::Count: break;
     }
     return "landform.coast";

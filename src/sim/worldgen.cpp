@@ -809,7 +809,8 @@ private:
         std::vector<std::size_t> sources;
         for (const Point& head : canyon_heads_) {
             const std::size_t v = vi(std::clamp(head.x, 0, v_ - 1), std::clamp(head.z, 0, v_ - 1));
-            if (lake_[v] == 0 && static_cast<std::int32_t>(sources.size()) < wanted) {
+            // A hierarchical map's valleys and canyons all get the river they asked for.
+            if (lake_[v] == 0 && (static_cast<std::int32_t>(sources.size()) < wanted || !out_.region_owner.empty())) {
                 sources.push_back(v);
             }
         }

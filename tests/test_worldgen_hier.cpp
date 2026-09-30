@@ -1,6 +1,7 @@
 #include <doctest.h>
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <memory>
 #include <optional>
@@ -220,3 +221,134 @@ TEST_SUITE("worldgen_hier") {
         }
     }
 }
+
+namespace {
+
+// The ground (cm) at a point along a structure's line: `t` of the way
+// (0..1) and `side` meters to its left; -1 off the map.
+std::int32_t ground_beside(const sim::MapData& m, const sim::Landform& l, double t, double side) {
+    const double pos = t * static_cast<double>(l.points.size() - 1);
+    const auto k = std::min(static_cast<std::size_t>(pos), l.points.size() - 2);
+    const double f = pos - static_cast<double>(k);
+    const double ax = l.points[k][0], az = l.points[k][1];
+    const double bx = l.points[k + 1][0], bz = l.points[k + 1][1];
+    const double len = std::max(1.0, std::hypot(bx - ax, bz - az));
+    const double x = ax + (bx - ax) * f - (bz - az) / len * side;
+    const double z = az + (bz - az) * f + (bx - ax) / len * side;
+    if (x < 1 || z < 1 || x >= m.size - 1 || z >= m.size - 1) {
+        return -1;
+    }
+    return m.height_cm(static_cast<std::int32_t>(x), static_cast<std::int32_t>(z));
+}
+
+}  // namespace
+
+// The slowest ones, each in a suite of its own so debug builds fit the
+// time limit (as in D-3110).
+TEST_SUITE("worldgen_hier_structures") {
+    TEST_CASE("structures: canyons below both sides, crests above their flanks, a ramp up each plateau") {
+        int canyon_samples = 0, canyon_good = 0;
+        int crest_samples = 0, crest_good = 0;
+        int plateaus = 0, ramps = 0;
+        for (std::uint64_t seed = 40; seed < 46; ++seed) {
+            sim::MapSettings s = hier_settings(seed, sim::MapSize::Large);
+            s.landforms = sim::Amount::High;
+            s.relief = seed % 2 == 0 ? sim::Relief::Mountainous : sim::Relief::Gentle;
+            const sim::MapData m = generate(s);
+            for (const sim::Landform& l : m.landforms) {
+                if (l.kind == LandformKind::Plateau) {
+                    ++plateaus;
+                } else if (l.kind == LandformKind::Ramp) {
+                    ++ramps;
+                } else if (l.kind == LandformKind::Canyon || l.kind == LandformKind::Crest) {
+                    const bool canyon = l.kind == LandformKind::Canyon;
+                    const double half = l.width / 2.0;
+                    for (int k = 2; k < 18; ++k) {
+                        const double t = k / 20.0;
+                        const double off = canyon ? half * 1.8 : half * 1.6;
+                        const std::int32_t mid = ground_beside(m, l, t, 0.0);
+                        const std::int32_t left = ground_beside(m, l, t, off);
+                        const std::int32_t right = ground_beside(m, l, t, -off);
+                        if (mid < 0 || left < 0 || right < 0) {
+                            continue;
+                        }
+                        if (canyon) {
+                            // Inside its plateau only (past the rim it runs into the plain).
+                            const auto owner = m.owner_at(m.region_owner, static_cast<std::int32_t>(l.points[0][0]),
+                                                          static_cast<std::int32_t>(l.points[0][1]));
+                            const std::int32_t cx = static_cast<std::int32_t>(l.points[0][0] + (l.points.back()[0] - l.points[0][0]) * t);
+                            const std::int32_t cz = static_cast<std::int32_t>(l.points[0][1] + (l.points.back()[1] - l.points[0][1]) * t);
+                            // Well inside it: both sides and the middle on the plateau's own squares.
+                            const auto on = [&](double side) {
+                                const double ax = l.points[0][0], az = l.points[0][1];
+                                const double bx = l.points.back()[0], bz = l.points.back()[1];
+                                const double len = std::max(1.0, std::hypot(bx - ax, bz - az));
+                                const auto x = static_cast<std::int32_t>(cx - (bz - az) / len * side);
+                                const auto z = static_cast<std::int32_t>(cz + (bx - ax) / len * side);
+                                return m.owner_at(m.region_owner, x, z) == owner;
+                            };
+                            if (!on(0.0) || !on(off * 1.5) || !on(-off * 1.5)) {
+                                continue;
+                            }
+                            ++canyon_samples;
+                            canyon_good += mid + 500 <= std::min(left, right) ? 1 : 0;
+                        } else if (k >= 5 && k <= 15) {
+                            ++crest_samples;
+                            crest_good += mid >= std::max(left, right) + 500 ? 1 : 0;
+                        }
+                    }
+                }
+            }
+            // Each square has one structure at most, and it names a structure.
+            for (const std::uint16_t owner : m.structure_owner) {
+                if (owner != 0) {
+                    REQUIRE(owner <= m.landforms.size());
+                    CHECK_FALSE(is_region(m.landforms[owner - 1u].kind));
+                }
+            }
+        }
+        MESSAGE("canyons " << canyon_good << "/" << canyon_samples << ", crests " << crest_good << "/" << crest_samples
+                           << ", ramps " << ramps << " for " << plateaus << " plateaus");
+        CHECK(canyon_samples > 20);
+        CHECK(canyon_good * 10 >= canyon_samples * 8);
+        CHECK(crest_samples > 20);
+        CHECK(crest_good * 10 >= crest_samples * 7);
+        CHECK(ramps * 10 >= plateaus * 8);
+    }
+
+}
+
+TEST_SUITE("worldgen_hier_compare") {
+    TEST_CASE("less canyon than the classic generator with the same options") {
+        // Meters of canyon: the classic ones cross the whole map.
+        const auto meters = [](const sim::MapData& m, int& count) {
+            double total = 0.0;
+            for (const sim::Landform& l : m.landforms) {
+                if (l.kind != LandformKind::Canyon) {
+                    continue;
+                }
+                ++count;
+                for (std::size_t k = 1; k < l.points.size(); ++k) {
+                    total += std::hypot(l.points[k][0] - l.points[k - 1][0], l.points[k][1] - l.points[k - 1][1]);
+                }
+            }
+            return total;
+        };
+        int hier_count = 0;
+        int classic_count = 0;
+        double hier = 0.0;
+        double classic = 0.0;
+        for (std::uint64_t seed = 50; seed < 54; ++seed) {
+            sim::MapSettings s = hier_settings(seed, sim::MapSize::Large);
+            s.landforms = sim::Amount::High;
+            hier += meters(generate(s), hier_count);
+            s.generator = sim::MapGenerator::Classic;
+            classic += meters(generate(s), classic_count);
+        }
+        MESSAGE("canyons: " << hier_count << " hierarchical (" << hier << " m), " << classic_count << " classic (" << classic << " m)");
+        CHECK(hier_count > 0);
+        CHECK(hier_count <= classic_count);
+        CHECK(hier * 2 < classic);
+    }
+}
+

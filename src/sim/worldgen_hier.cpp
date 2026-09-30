@@ -21,6 +21,8 @@ constexpr std::uint64_t kMicroSeed = 0x484945524d494335ull;
 constexpr std::uint64_t kBumpSeed = 0x4849455242554d36ull;
 constexpr std::uint64_t kRagXSeed = 0x4849455252414737ull;
 constexpr std::uint64_t kRagZSeed = 0x4849455252414738ull;
+constexpr std::uint64_t kStructSeed = 0x4849455253545239ull;
+constexpr std::uint64_t kPeakSeed = 0x484945525045414bull;
 
 enum class Role : std::uint8_t { Plain, Hills, Mountains, Plateau, Basin };
 
@@ -70,7 +72,7 @@ public:
         assign_roles();
         set_heights();
         record_regions();
-        if (!base_field() || !vertices()) {
+        if (!base_field() || !vertices() || !structures()) {
             return false;
         }
         return report(100);
@@ -87,11 +89,13 @@ private:
     int warp_log2_;
     std::int32_t side_;       // Owner squares per side.
     std::vector<Region> regions_;
+    std::vector<std::vector<std::uint32_t>> chains_;  // Mountain regions, in chains.
     // Base height and bump amplitude at the corners of the owner squares,
     // (side + 1)^2, millimeters.
     std::vector<std::int32_t> base_;
     std::vector<std::int32_t> rough_;
     std::vector<std::int32_t> bumps_;
+    std::vector<std::int32_t> mountain_;  // How much of it is mountains, 0..65536.
 
     bool report(int percent) { return !progress_ || progress_(percent); }
 
@@ -238,8 +242,10 @@ private:
             const std::int64_t dz = sin(dir).raw();
             auto cur = static_cast<std::uint32_t>(first);
             const std::int32_t length = rng.range(2, 4);
+            chains_.emplace_back();
             for (std::int32_t k = 0; k < length && mountains > 0; ++k) {
                 regions_[cur].role = Role::Mountains;
+                chains_.back().push_back(cur);
                 --mountains;
                 std::int64_t best = 0;
                 std::int64_t next = -1;
@@ -344,6 +350,7 @@ private:
         base_.assign(corners * corners, 0);
         rough_.assign(corners * corners, 0);
         bumps_.assign(corners * corners, 0);
+        mountain_.assign(corners * corners, 0);
         const std::int64_t smooth_band = spacing_ * 35 / 100;
         constexpr std::int64_t kCliffBand = 6;
         struct Near {
@@ -372,6 +379,7 @@ private:
                 std::int64_t h = 0;
                 std::int64_t rough = 0;
                 std::int64_t bumps = 0;
+                std::int64_t mountain = 0;
                 for (const Near& c : near) {
                     const Region& r = regions_[c.id];
                     const std::int64_t band = (r.role == Role::Plateau) != plateau1 ? kCliffBand : smooth_band;
@@ -386,11 +394,13 @@ private:
                     h += w * r.height;
                     rough += w * r.rough;
                     bumps += w * r.bumps;
+                    mountain += r.role == Role::Mountains ? w : 0;
                 }
                 const std::size_t i = static_cast<std::size_t>(cz) * corners + static_cast<std::size_t>(cx);
                 base_[i] = static_cast<std::int32_t>(h / total);
                 rough_[i] = static_cast<std::int32_t>(rough / total);
                 bumps_[i] = static_cast<std::int32_t>(bumps / total);
+                mountain_[i] = static_cast<std::int32_t>(mountain * 65536 / total);
             }
             if ((cz & 63) == 0 && !report(20 + cz * 30 / (side_ + 1))) {
                 return false;
@@ -427,11 +437,460 @@ private:
                 out_.h[static_cast<std::size_t>(z) * static_cast<std::size_t>(v_) + static_cast<std::size_t>(x)] =
                     static_cast<std::int32_t>(std::max<std::int64_t>(1000, h));
             }
-            if ((z & 63) == 0 && !report(50 + z * 50 / v_)) {
+            if ((z & 63) == 0 && !report(50 + z * 25 / v_)) {
                 return false;
             }
         }
         return true;
+    }
+
+    // --- Level 2: structures -----------------------------------------------------
+
+    struct Pt {
+        std::int32_t x = 0;
+        std::int32_t z = 0;
+    };
+
+    // The region a cell is in (its square's owner), or none off the map.
+    [[nodiscard]] std::int64_t region_of(std::int32_t x, std::int32_t z) const {
+        if (x < 0 || z < 0 || x >= n_ || z >= n_) {
+            return -1;
+        }
+        return static_cast<std::int64_t>(out_.region_owner[static_cast<std::size_t>((z / kOwnerBlock) * side_ + x / kOwnerBlock)]) - 1;
+    }
+    [[nodiscard]] std::int32_t& h(std::int32_t x, std::int32_t z) {
+        return out_.h[static_cast<std::size_t>(z) * static_cast<std::size_t>(v_) + static_cast<std::size_t>(x)];
+    }
+    [[nodiscard]] std::int32_t ground(Pt p) {
+        return h(std::clamp(p.x, 0, n_), std::clamp(p.z, 0, n_));
+    }
+    // A point moved onto the map, a few meters from its border (where a
+    // river can start).
+    [[nodiscard]] Pt inside(Pt p) const {
+        constexpr std::int32_t kMargin = 16;
+        return {std::clamp(p.x, kMargin, n_ - kMargin), std::clamp(p.z, kMargin, n_ - kMargin)};
+    }
+    [[nodiscard]] static Pt toward(const Region& a, const Region& b, std::int32_t percent) {
+        return {a.x + (b.x - a.x) * percent / 100, a.z + (b.z - a.z) * percent / 100};
+    }
+
+    // A wandering line from a to b: `pieces` segments, each bend moved up to
+    // `wander` meters to either side.
+    [[nodiscard]] static std::vector<Pt> wander(Rng& rng, Pt a, Pt b, std::int32_t pieces, std::int32_t wander_m) {
+        std::vector<Pt> line{a};
+        const std::int64_t dx = b.x - a.x;
+        const std::int64_t dz = b.z - a.z;
+        const auto len = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(dx * dx + dz * dz)));
+        for (std::int32_t k = 1; k < pieces; ++k) {
+            const std::int64_t off = len > 0 ? rng.range(-wander_m, wander_m) : 0;
+            line.push_back({static_cast<std::int32_t>(a.x + dx * k / pieces - (len > 0 ? dz * off / len : 0)),
+                            static_cast<std::int32_t>(a.z + dz * k / pieces + (len > 0 ? dx * off / len : 0))});
+        }
+        line.push_back(b);
+        return line;
+    }
+
+    // Calls fn(x, z, distance in 1/16 m, how far along the line 0..65536)
+    // for the vertices within `reach` meters of the line, each once (for the
+    // nearest of its segment and the two beside it).
+    template <typename Fn>
+    void along(const std::vector<Pt>& line, std::int32_t reach, Fn&& fn) {
+        if (line.size() < 2) {
+            return;
+        }
+        std::vector<std::int64_t> start(line.size(), 0);  // Length before each point, 1/16 m.
+        for (std::size_t k = 1; k < line.size(); ++k) {
+            const std::int64_t dx = line[k].x - line[k - 1].x;
+            const std::int64_t dz = line[k].z - line[k - 1].z;
+            start[k] = start[k - 1] + static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>((dx * dx + dz * dz) * 256)));
+        }
+        const std::int64_t total = std::max<std::int64_t>(1, start.back());
+        // Squared distance (1/256 m^2) to segment k, and the length along it (1/16 m).
+        const auto seg = [&](std::size_t k, std::int64_t px, std::int64_t pz, std::int64_t& at) {
+            const std::int64_t ax = line[k].x * 16, az = line[k].z * 16;
+            const std::int64_t dx = line[k + 1].x * 16 - ax, dz = line[k + 1].z * 16 - az;
+            const std::int64_t len2 = dx * dx + dz * dz;
+            std::int64_t t = len2 > 0 ? ((px - ax) * dx + (pz - az) * dz) * 65536 / len2 : 0;
+            t = std::clamp<std::int64_t>(t, 0, 65536);
+            const std::int64_t qx = ax + dx * t / 65536 - px;
+            const std::int64_t qz = az + dz * t / 65536 - pz;
+            at = start[k] + (start[k + 1] - start[k]) * t / 65536;
+            return qx * qx + qz * qz;
+        };
+        const std::int64_t reach16 = static_cast<std::int64_t>(reach) * 16;
+        for (std::size_t k = 0; k + 1 < line.size(); ++k) {
+            const std::int32_t x0 = std::max(0, std::min(line[k].x, line[k + 1].x) - reach);
+            const std::int32_t x1 = std::min(v_ - 1, std::max(line[k].x, line[k + 1].x) + reach);
+            const std::int32_t z0 = std::max(0, std::min(line[k].z, line[k + 1].z) - reach);
+            const std::int32_t z1 = std::min(v_ - 1, std::max(line[k].z, line[k + 1].z) + reach);
+            for (std::int32_t z = z0; z <= z1; ++z) {
+                for (std::int32_t x = x0; x <= x1; ++x) {
+                    std::int64_t at = 0;
+                    const std::int64_t d2 = seg(k, x * 16, z * 16, at);
+                    if (d2 > reach16 * reach16) {
+                        continue;
+                    }
+                    // Only for the nearest segment around it (ties to the first).
+                    std::int64_t other = 0;
+                    if ((k > 0 && seg(k - 1, x * 16, z * 16, other) <= d2) ||
+                        (k + 2 < line.size() && seg(k + 1, x * 16, z * 16, other) < d2)) {
+                        continue;
+                    }
+                    fn(x, z, static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(d2))), at * 65536 / total);
+                }
+            }
+        }
+    }
+
+    // Marks the squares whose middle is within `reach` meters of the line
+    // (and passes `ok`) as owned by landform `owner` (index + 1).
+    template <typename Ok>
+    void own(const std::vector<Pt>& line, std::int32_t reach, std::uint16_t owner, Ok&& ok) {
+        const std::int64_t r2 = static_cast<std::int64_t>(reach) * reach;
+        for (std::size_t k = 0; k + 1 < line.size(); ++k) {
+            const std::int32_t bx0 = std::max(0, (std::min(line[k].x, line[k + 1].x) - reach) / kOwnerBlock);
+            const std::int32_t bx1 = std::min(side_ - 1, (std::max(line[k].x, line[k + 1].x) + reach) / kOwnerBlock);
+            const std::int32_t bz0 = std::max(0, (std::min(line[k].z, line[k + 1].z) - reach) / kOwnerBlock);
+            const std::int32_t bz1 = std::min(side_ - 1, (std::max(line[k].z, line[k + 1].z) + reach) / kOwnerBlock);
+            const std::int64_t ax = line[k].x, az = line[k].z;
+            const std::int64_t dx = line[k + 1].x - ax, dz = line[k + 1].z - az;
+            const std::int64_t len2 = dx * dx + dz * dz;
+            for (std::int32_t bz = bz0; bz <= bz1; ++bz) {
+                for (std::int32_t bx = bx0; bx <= bx1; ++bx) {
+                    const std::int64_t px = bx * kOwnerBlock + kOwnerBlock / 2;
+                    const std::int64_t pz = bz * kOwnerBlock + kOwnerBlock / 2;
+                    const std::int64_t t = len2 > 0 ? std::clamp<std::int64_t>(((px - ax) * dx + (pz - az) * dz) * 65536 / len2, 0, 65536) : 0;
+                    const std::int64_t qx = ax + dx * t / 65536 - px;
+                    const std::int64_t qz = az + dz * t / 65536 - pz;
+                    const auto sq = static_cast<std::size_t>(bz * side_ + bx);
+                    if (qx * qx + qz * qz <= r2 && ok(out_.region_owner[sq] - 1u)) {
+                        out_.structure_owner[sq] = owner;
+                    }
+                }
+            }
+        }
+    }
+
+    // Records a structure; its owner number for the squares.
+    std::uint16_t record(LandformKind kind, const std::vector<Pt>& line, std::int32_t width) {
+        Landform l;
+        l.kind = kind;
+        l.width = width;
+        for (const Pt& p : line) {
+            l.points.push_back({p.x, p.z});
+        }
+        out_.landforms.push_back(std::move(l));
+        return static_cast<std::uint16_t>(out_.landforms.size());
+    }
+
+    [[nodiscard]] static std::int64_t smooth(std::int64_t u) {
+        u = std::clamp<std::int64_t>(u, 0, 65536);
+        return (((u * u) >> 16) * (3 * 65536 - 2 * u)) >> 16;
+    }
+
+    // The amount of `role` near a vertex, 0..65536 (from the base field).
+    [[nodiscard]] std::int64_t share(const std::vector<std::int32_t>& field, std::int32_t x, std::int32_t z) const {
+        const auto corners = static_cast<std::size_t>(side_ + 1);
+        const std::int32_t cx = std::min(x / kOwnerBlock, side_ - 1);
+        const std::int32_t cz = std::min(z / kOwnerBlock, side_ - 1);
+        const std::int64_t fx = static_cast<std::int64_t>(x - cx * kOwnerBlock) * 65536 / kOwnerBlock;
+        const std::int64_t fz = static_cast<std::int64_t>(z - cz * kOwnerBlock) * 65536 / kOwnerBlock;
+        const std::size_t i00 = static_cast<std::size_t>(cz) * corners + static_cast<std::size_t>(cx);
+        const std::size_t i01 = i00 + corners;
+        const std::int64_t a = field[i00] + (((field[i00 + 1] - field[i00]) * fx) >> 16);
+        const std::int64_t b = field[i01] + (((field[i01 + 1] - field[i01]) * fx) >> 16);
+        return a + (((b - a) * fz) >> 16);
+    }
+
+    bool structures() {
+        Rng rng(s_.seed ^ kStructSeed, 40);
+        crests(rng);
+        if (!report(80)) {
+            return false;
+        }
+        plateau_rims(rng);
+        valleys(rng);
+        if (!report(90)) {
+            return false;
+        }
+        canyons(rng);
+        return true;
+    }
+
+    // Mountains: a crest along each chain, with peaks and spurs, and
+    // sometimes a pass where it dips.
+    void crests(Rng& rng) {
+        const bool low = s_.relief == Relief::Low;
+        const bool high = s_.relief == Relief::Mountainous;
+        for (const std::vector<std::uint32_t>& chain : chains_) {
+            std::vector<Pt> spine;
+            const Region& first = regions_[chain.front()];
+            const Region& last = regions_[chain.back()];
+            if (chain.size() == 1) {
+                const Angle dir = rng.angle();
+                const std::int32_t r = spacing_ * 45 / 100;
+                const auto ox = static_cast<std::int32_t>((static_cast<std::int64_t>(cos(dir).raw()) * r) >> 16);
+                const auto oz = static_cast<std::int32_t>((static_cast<std::int64_t>(sin(dir).raw()) * r) >> 16);
+                spine = {{first.x - ox, first.z - oz}, {first.x + ox, first.z + oz}};
+            } else {
+                // Past both ends a little, through every region's middle.
+                spine.push_back(toward(first, regions_[chain[1]], -35));
+                for (const std::uint32_t id : chain) {
+                    spine.push_back({regions_[id].x, regions_[id].z});
+                }
+                spine.push_back(toward(last, regions_[chain[chain.size() - 2]], -35));
+            }
+            std::vector<Pt> line{spine.front()};
+            for (std::size_t k = 1; k < spine.size(); ++k) {
+                const std::vector<Pt> piece = wander(rng, spine[k - 1], spine[k], 3, spacing_ / 10);
+                line.insert(line.end(), piece.begin() + 1, piece.end());
+            }
+            const std::int32_t half = spacing_ * 45 / 100;
+            const std::int64_t peak = low ? rng.range(25000, 40000) : (high ? rng.range(65000, 110000) : rng.range(40000, 65000));
+            // A pass: where along it, and how wide (1/65536 of the line).
+            const bool pass = rng.below(100) < 70;
+            const std::int64_t pass_at = rng.range(30, 70) * 65536 / 100;
+            std::int64_t length16 = 0;
+            for (std::size_t k = 1; k < line.size(); ++k) {
+                const std::int64_t dx = line[k].x - line[k - 1].x, dz = line[k].z - line[k - 1].z;
+                length16 += static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>((dx * dx + dz * dz) * 256)));
+            }
+            const std::int64_t pass_w = std::max<std::int64_t>(1, 60 * 16 * 65536 / std::max<std::int64_t>(1, length16));
+            along(line, half, [&](std::int32_t x, std::int32_t z, std::int64_t d16, std::int64_t at) {
+                const std::int64_t mountain = share(mountain_, x, z);
+                if (mountain <= 0) {
+                    return;
+                }
+                const std::int64_t u = smooth(65536 - d16 * 65536 / (half * 16));
+                const std::int64_t taper = std::min<std::int64_t>({65536, at * 5, (65536 - at) * 5});
+                const std::int64_t n = fbm(s_.seed ^ kPeakSeed, x, z, 6, 3);
+                const std::int64_t ridged = 32768 - (n < 0 ? -n : n);  // High on the ridges.
+                std::int64_t height = peak * u / 65536 * taper / 65536 * (36000 + ridged * 29536 / 32768) / 65536;
+                if (pass) {
+                    const std::int64_t off = at > pass_at ? at - pass_at : pass_at - at;
+                    height -= height * 65 / 100 * smooth(65536 - off * 65536 / pass_w) / 65536;
+                }
+                h(x, z) += static_cast<std::int32_t>(height * mountain / 65536);
+            });
+            const auto in_mountains = [&](std::uint32_t id) { return regions_[id].role == Role::Mountains; };
+            own(line, half * 35 / 100, record(LandformKind::Crest, line, half * 70 / 100), in_mountains);
+            if (pass && length16 > 0) {
+                // The pass's stretch of the line.
+                std::vector<Pt> saddle;
+                std::int64_t walked = 0;
+                for (std::size_t k = 1; k < line.size(); ++k) {
+                    const std::int64_t dx = line[k].x - line[k - 1].x, dz = line[k].z - line[k - 1].z;
+                    walked += static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>((dx * dx + dz * dz) * 256)));
+                    const std::int64_t at = walked * 65536 / length16;
+                    if ((at > pass_at ? at - pass_at : pass_at - at) < pass_w) {
+                        saddle.push_back(line[k]);
+                    }
+                }
+                if (saddle.empty()) {
+                    saddle.push_back(line[line.size() / 2]);
+                }
+                if (saddle.size() == 1) {
+                    saddle.push_back(saddle.front());
+                }
+                own(saddle, half * 45 / 100, record(LandformKind::Pass, saddle, half), in_mountains);
+            }
+        }
+    }
+
+    // Plateaus: the rim is a cliff, but for a ramp up from one side.
+    void plateau_rims(Rng& rng) {
+        for (std::uint32_t id = 0; id < regions_.size(); ++id) {
+            const Region& p = regions_[id];
+            if (p.role != Role::Plateau || p.blocks == 0) {
+                continue;
+            }
+            // The cliff: plateau squares next to squares of another region.
+            const std::uint16_t cliff = record(LandformKind::Cliff, {{p.x, p.z}}, spacing_);
+            for (std::int32_t bz = 0; bz < side_; ++bz) {
+                for (std::int32_t bx = 0; bx < side_; ++bx) {
+                    const auto sq = static_cast<std::size_t>(bz * side_ + bx);
+                    if (out_.region_owner[sq] != id + 1) {
+                        continue;
+                    }
+                    bool edge = false;
+                    for (std::int32_t dz = -1; dz <= 1 && !edge; ++dz) {
+                        for (std::int32_t dx = -1; dx <= 1; ++dx) {
+                            const std::int32_t x = bx + dx, z = bz + dz;
+                            if (x >= 0 && z >= 0 && x < side_ && z < side_ && out_.region_owner[static_cast<std::size_t>(z * side_ + x)] != id + 1) {
+                                edge = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (edge) {
+                        out_.structure_owner[sq] = cliff;
+                    }
+                }
+            }
+            // The ramp, toward a neighbor that is not a plateau or a basin.
+            std::vector<std::uint32_t> sides;
+            for (const std::uint32_t nb : p.neighbors) {
+                if (regions_[nb].blocks > 0 && regions_[nb].role != Role::Plateau && regions_[nb].role != Role::Basin &&
+                    regions_[nb].role != Role::Mountains) {
+                    sides.push_back(nb);
+                }
+            }
+            if (sides.empty()) {
+                continue;
+            }
+            const Region& to = regions_[sides[rng.below(static_cast<std::uint32_t>(sides.size()))]];
+            const Pt top = toward(p, to, 30);
+            const Pt foot = toward(p, to, 85);
+            const std::int64_t top_h = ground(top);
+            const std::int64_t foot_h = ground(foot);
+            const std::int32_t half = rng.range(16, 24);
+            const std::vector<Pt> line{top, foot};
+            along(line, half + 10, [&](std::int32_t x, std::int32_t z, std::int64_t d16, std::int64_t at) {
+                const std::int64_t target = top_h + (foot_h - top_h) * at / 65536;
+                // Flat across its width, easing into the ground at the sides.
+                const std::int64_t w = d16 <= half * 16 ? 65536 : smooth(65536 - (d16 - half * 16) * 65536 / (10 * 16));
+                std::int32_t& v = h(x, z);
+                v += static_cast<std::int32_t>((target - v) * w / 65536);
+            });
+            own(line, half + 4, record(LandformKind::Ramp, line, half * 2), [](std::uint32_t) { return true; });
+        }
+    }
+
+    // Valleys: U-shaped, from inside hills or mountains down to a lower
+    // neighbor, only within those two regions.
+    void valleys(Rng& rng) {
+        std::vector<std::uint32_t> from;
+        for (std::uint32_t id = 0; id < regions_.size(); ++id) {
+            const Region& r = regions_[id];
+            if ((r.role == Role::Hills || r.role == Role::Mountains) && r.blocks > 0 &&
+                std::any_of(r.neighbors.begin(), r.neighbors.end(), [&](std::uint32_t nb) {
+                    return regions_[nb].blocks > 0 && (regions_[nb].role == Role::Plain || regions_[nb].role == Role::Basin);
+                })) {
+                from.push_back(id);
+            }
+        }
+        const std::int32_t percent = s_.landforms == Amount::Low ? 15 : (s_.landforms == Amount::High ? 45 : 30);
+        auto count = static_cast<std::int32_t>(from.size()) * percent / 100;
+        if (count == 0 && !from.empty() && s_.landforms != Amount::Low) {
+            count = 1;
+        }
+        for (std::int32_t i = 0; i < count && !from.empty(); ++i) {
+            const std::size_t pick = rng.below(static_cast<std::uint32_t>(from.size()));
+            const std::uint32_t id = from[pick];
+            from.erase(from.begin() + static_cast<std::ptrdiff_t>(pick));
+            const Region& r = regions_[id];
+            std::vector<std::uint32_t> exits;
+            for (const std::uint32_t nb : r.neighbors) {
+                if (regions_[nb].blocks > 0 && (regions_[nb].role == Role::Plain || regions_[nb].role == Role::Basin)) {
+                    exits.push_back(nb);
+                }
+            }
+            const std::uint32_t exit = exits[rng.below(static_cast<std::uint32_t>(exits.size()))];
+            const Region& e = regions_[exit];
+            // In mountains it starts on a flank, off the crest through the middle.
+            const Pt head = inside(r.role == Role::Mountains ? toward(r, e, 30) : toward(r, e, -20));
+            const Pt mouth = toward(r, e, 95);
+            const std::int32_t length = static_cast<std::int32_t>(isqrt(static_cast<std::uint64_t>(
+                static_cast<std::int64_t>(mouth.x - head.x) * (mouth.x - head.x) + static_cast<std::int64_t>(mouth.z - head.z) * (mouth.z - head.z))));
+            const std::vector<Pt> line = wander(rng, head, mouth, 6, std::max(4, length / 12));
+            const std::int32_t half = std::clamp(spacing_ * rng.range(20, 32) / 100, 40, 160);
+            const std::int64_t depth = rng.range(6000, 12000);
+            const std::int64_t head_floor = ground(head) - depth;
+            const std::int64_t mouth_floor = std::min<std::int64_t>(head_floor, ground(mouth) - 500);
+            const auto mine = [&](std::int32_t x, std::int32_t z) {
+                const std::int64_t reg = region_of(std::min(x, n_ - 1), std::min(z, n_ - 1));
+                return reg == id || reg == exit;
+            };
+            along(line, half, [&](std::int32_t x, std::int32_t z, std::int64_t d16, std::int64_t at) {
+                if (!mine(x, z)) {
+                    return;
+                }
+                const std::int64_t floor = head_floor + (mouth_floor - head_floor) * at / 65536;
+                const std::int64_t w16 = half * 16;
+                const std::int64_t target = floor + depth * 2 * d16 * d16 / (w16 * w16);
+                const std::int64_t blend = d16 * 2 < w16 ? 65536 : smooth((w16 - d16) * 65536 / (w16 / 2));
+                std::int32_t& v = h(x, z);
+                if (v > target) {
+                    v -= static_cast<std::int32_t>((v - target) * blend / 65536);
+                }
+            });
+            own(line, half * 60 / 100, record(LandformKind::Valley, line, half * 2),
+                [&](std::uint32_t reg) { return reg == id || reg == exit; });
+            if (rng.below(100) < 60) {
+                out_.river_sources.push_back({head.x, head.z});
+            }
+        }
+    }
+
+    // Canyons: few, narrow, with sheer walls, from inside a plateau out to a
+    // lower neighbor; most carry a river.
+    void canyons(Rng& rng) {
+        std::vector<std::uint32_t> plateaus;
+        for (std::uint32_t id = 0; id < regions_.size(); ++id) {
+            if (regions_[id].role == Role::Plateau && regions_[id].blocks > 0) {
+                plateaus.push_back(id);
+            }
+        }
+        // Few: a canyon for some of the plateaus, at least one if there are any.
+        const std::int32_t percent = s_.landforms == Amount::Low ? 15 : (s_.landforms == Amount::High ? 40 : 25);
+        std::int32_t count = static_cast<std::int32_t>(plateaus.size()) * percent / 100;
+        if (count == 0 && !plateaus.empty() && s_.landforms != Amount::Low) {
+            count = 1;
+        }
+        for (std::int32_t i = 0; i < count && !plateaus.empty(); ++i) {
+            const std::size_t pick = rng.below(static_cast<std::uint32_t>(plateaus.size()));
+            const std::uint32_t id = plateaus[pick];
+            plateaus.erase(plateaus.begin() + static_cast<std::ptrdiff_t>(pick));
+            const Region& p = regions_[id];
+            std::vector<std::uint32_t> exits;
+            for (const std::uint32_t nb : p.neighbors) {
+                const Role role = regions_[nb].role;
+                if (regions_[nb].blocks > 0 && (role == Role::Plain || role == Role::Hills || role == Role::Basin)) {
+                    exits.push_back(nb);
+                }
+            }
+            if (exits.empty()) {
+                continue;
+            }
+            const std::uint32_t exit = exits[rng.below(static_cast<std::uint32_t>(exits.size()))];
+            const Region& e = regions_[exit];
+            // It starts deep in the plateau, on the side away from its exit,
+            // but never past the plateau's far rim.
+            Pt head = inside({p.x, p.z});
+            for (std::int32_t back = 30; back >= 0; back -= 5) {
+                const Pt at = inside(toward(p, e, -back));
+                if (region_of(at.x, at.z) == id) {
+                    head = at;
+                    break;
+                }
+            }
+            const Pt mouth = toward(p, e, 90);
+            const std::int32_t length = static_cast<std::int32_t>(isqrt(static_cast<std::uint64_t>(
+                static_cast<std::int64_t>(mouth.x - head.x) * (mouth.x - head.x) + static_cast<std::int64_t>(mouth.z - head.z) * (mouth.z - head.z))));
+            const std::vector<Pt> line = wander(rng, head, mouth, 10, std::max(4, length / 14));
+            const std::int32_t half = rng.range(14, 22);
+            const std::int64_t top = p.height;
+            const std::int64_t mouth_floor = ground(mouth) - 800;
+            const std::int64_t head_floor = std::max(mouth_floor + 1000, top - (top - mouth_floor) * rng.range(55, 75) / 100);
+            along(line, half, [&](std::int32_t x, std::int32_t z, std::int64_t d16, std::int64_t at) {
+                const std::int64_t reg = region_of(std::min(x, n_ - 1), std::min(z, n_ - 1));
+                if (reg != id && reg != exit) {
+                    return;
+                }
+                const std::int64_t floor = head_floor + (mouth_floor - head_floor) * at / 65536;
+                const std::int64_t w16 = half * 16;
+                // A flat bottom, then walls straight up.
+                std::int32_t& v = h(x, z);
+                const std::int64_t target = d16 * 100 < w16 * 55 ? floor : floor + (v - floor) * (d16 * 100 - w16 * 55) / (w16 * 45);
+                if (v > target) {
+                    v = static_cast<std::int32_t>(target);
+                }
+            });
+            own(line, half + 6, record(LandformKind::Canyon, line, half * 2), [&](std::uint32_t reg) { return reg == id || reg == exit; });
+            if (rng.below(100) < 75) {
+                out_.river_sources.push_back({head.x, head.z});
+            }
+        }
     }
 };
 

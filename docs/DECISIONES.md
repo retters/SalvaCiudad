@@ -1735,3 +1735,21 @@ Las primeras pruebas dejaban cientos de estanques en cualquier hondonada. En un 
 **D-3907. Hasta la fase 41, sin mar.**
 El jerárquico todavía no hace mar ni islas: ignora "Mar", y en los tipos de mapa con islas genera tierra firme. La fase 41 agrega el agua.
 
+## Fase 40: generador jerárquico, estructuras (2026-09-30)
+
+**D-4001. Qué estructura va en cada región.**
+Cada estructura solo modifica el terreno de su región (y, los valles y cañones, el de la región vecina a la que desembocan). Cada cuadro de 8 m tiene como mucho un dueño. Si dos se superponen, gana el más específico, en este orden: acantilado y rampa, cresta y paso, valle, cañón.
+- **Montañas:** una cresta por cadena, que pasa por el centro de cada región de la cadena y se alarga un poco en los extremos. Se eleva sobre la base con un perfil suave hasta el 45 % de la separación entre regiones, con picos y espolones de ruido "crestado" y más baja en los extremos. Altura de la cresta: 25 a 40 m con relieve bajo, 40 a 65 m con suave y 65 a 110 m con montañoso. Siete de cada diez tienen un paso: un tramo de 120 m donde baja un 65 %. El nombre "Cresta" cubre el 35 % central del ancho; el resto de la región es "Montañas".
+- **Mesetas:** su borde es "Acantilado", y tienen una rampa de 32 a 48 m de ancho, del 30 % de la meseta al 85 % de la región vecina, hacia una llanura o unas colinas (nunca montañas ni cuencas).
+- **Valles:** en forma de U, de 80 a 320 m de ancho y 6 a 12 m de hondo, desde una región de colinas o montañas hasta una llanura o cuenca vecina, con el fondo en bajada. En las montañas empiezan en una ladera, al 30 % del camino hacia la salida, para no cortar la cresta. Hay uno por cada 7, 3 o 2 regiones candidatas (según "Accidentes": pocos, normales o muchos). El 60 % lleva río.
+- **Cañones:** solo en mesetas, desde lo hondo de la meseta hasta la región vecina más baja: de 28 a 44 m de ancho, con fondo plano y paredes a pique. El fondo empieza 55 a 75 % más abajo que la cima y termina 80 cm bajo la salida, para que drene. El 75 % lleva río.
+
+**D-4002. Menos cañones.**
+Salvador pidió que salieran menos pero que sí salieran. Hay un cañón por cada 15, 25 o 40 % de las mesetas (redondeando hacia abajo), y al menos uno si hay mesetas, salvo con "Pocos". En cuatro mapas grandes con "Muchos" salen 8 cañones con 2,6 km en total, contra 8 cañones con 18 km en el clásico, que cruza todo el mapa con cada uno. La prueba compara la longitud, que es lo que se ve.
+
+**D-4003. Los ríos que piden los valles y cañones.**
+Los nacimientos que pide el jerárquico se usan todos, aunque pasen del número de ríos por superficie de la etapa compartida (en el clásico sigue el tope). El inicio de un cañón o un valle siempre queda dentro del mapa, a 16 m o más del borde. Antes, algunos quedaban fuera y su río "nacía" en el borde y se iba de inmediato.
+
+**D-4004. Pruebas del jerárquico en tres suites.**
+Como las del clásico (D-3110): `worldgen_hier` (unos 36 s en debug), `worldgen_hier_structures` (49 s) y `worldgen_hier_compare` (57 s), para que cada una quepa en el límite de 120 s en debug y de 240 s con AddressSanitizer.
+
