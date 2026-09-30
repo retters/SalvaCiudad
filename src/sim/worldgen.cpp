@@ -218,7 +218,9 @@ private:
     // valleys and canyons ask for one.
     bool relief_hierarchical() {
         hier::Ground r;
-        if (!hier::shape(s_, n_, [this](int percent) { return report(GenStage::Relief, percent); }, r)) {
+        const MapTypeDef* type = map_type();
+        const bool island_type = type != nullptr && type->islands;
+        if (!hier::shape(s_, n_, island_type, [this](int percent) { return report(GenStage::Relief, percent); }, r)) {
             return false;
         }
         h_ = std::move(r.h);
@@ -226,6 +228,7 @@ private:
         out_.landforms = std::move(r.landforms);
         out_.region_owner = std::move(r.region_owner);
         out_.structure_owner = std::move(r.structure_owner);
+        islands_ = std::move(r.islands);
         for (const auto& p : r.river_sources) {
             canyon_heads_.push_back({p[0], p[1]});
         }

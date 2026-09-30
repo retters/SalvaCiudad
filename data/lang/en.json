@@ -398,6 +398,7 @@
     "landform.river": "River",
     "landform.lake": "Lake",
     "landform.sea": "Sea",
+    "landform.estuary": "Estuary",
     "cursor.region": "Region: {0:name}",
     "landform.plain": "Plain",
     "landform.hills": "Hills",

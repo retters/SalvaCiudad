@@ -398,6 +398,7 @@
     "landform.river": "Río",
     "landform.lake": "Lago",
     "landform.sea": "Mar",
+    "landform.estuary": "Estuario",
     "cursor.region": "Región: {0:name}",
     "landform.plain": "Llanura",
     "landform.hills": "Colinas",

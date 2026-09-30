@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "sim/map.h"
+#include "sim/worldgen.h"
 
 namespace sc::sim::hier {
 
@@ -35,13 +36,17 @@ struct Ground {
     std::vector<std::uint16_t> structure_owner;
     // Vertices where a river must start (x, z).
     std::vector<std::array<std::int32_t, 2>> river_sources;
+    // A map type with islands: each town's main island first, for the
+    // starts (phase 41).
+    std::vector<worldgen::Island> islands;
 };
 
 // Called with the progress (0..100); returning false cancels.
 using Progress = std::function<bool(int percent)>;
 
-// Shapes a map of `n` cells per side. False if cancelled.
-[[nodiscard]] bool shape(const MapSettings& s, std::int32_t n, const Progress& progress, Ground& out);
+// Shapes a map of `n` cells per side; `islands` for a map type with
+// islands. False if cancelled.
+[[nodiscard]] bool shape(const MapSettings& s, std::int32_t n, bool islands, const Progress& progress, Ground& out);
 
 // Tuning shared with the tests: meters between region centers.
 [[nodiscard]] std::int32_t region_spacing(std::int32_t n);

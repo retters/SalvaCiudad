@@ -124,7 +124,15 @@ CellDescription TerrainNames::describe(const sim::MapData& map, std::int32_t cx,
     if (map.water[c] != 0) {
         d.water_depth_cm = std::max(0, static_cast<std::int32_t>(map.water[c]) - h00);
         if (is_sea(cx, cz)) {
+            // A river's mouth that the sea came into, not the open sea.
             d.water = WaterKind::Sea;
+            for (const std::uint32_t i : bucket) {
+                const sim::Landform& l = map.landforms[i];
+                if (l.kind == sim::LandformKind::River && distance(l, px, pz) <= reach(l) + 8.0) {
+                    d.water = WaterKind::Estuary;
+                    break;
+                }
+            }
         } else {
             d.water = WaterKind::Lake;
             for (const std::uint32_t i : bucket) {
@@ -216,6 +224,7 @@ const char* landform_key(sim::LandformKind kind) {
         case sim::LandformKind::Pass: return "landform.pass";
         case sim::LandformKind::Cliff: return "landform.cliff";
         case sim::LandformKind::Ramp: return "landform.ramp";
+        case sim::LandformKind::Sea: return "landform.sea";
         case sim::LandformKind::Count: break;
     }
     return "landform.coast";
@@ -226,6 +235,7 @@ const char* water_key(WaterKind kind) {
         case WaterKind::River: return "landform.river";
         case WaterKind::Lake: return "landform.lake";
         case WaterKind::Sea: return "landform.sea";
+        case WaterKind::Estuary: return "landform.estuary";
         case WaterKind::None: break;
     }
     return "landform.none";

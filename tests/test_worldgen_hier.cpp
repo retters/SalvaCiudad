@@ -352,3 +352,119 @@ TEST_SUITE("worldgen_hier_compare") {
     }
 }
 
+
+TEST_SUITE("worldgen_hier_water") {
+    TEST_CASE("a coast: sea along a side, never next to a plateau, towns on land") {
+        for (std::uint64_t seed = 60; seed < 64; ++seed) {
+            sim::MapSettings s = hier_settings(seed, sim::MapSize::Medium);
+            s.sea = sim::Sea::Always;
+            const sim::MapData m = generate(s);
+            REQUIRE(m.sea_levels.size() == 1);
+            CHECK(m.sea_levels[0] != 0);
+            // The sea reaches the border along at least half a side.
+            std::int32_t wet = 0;
+            for (std::int32_t i = 0; i < m.size; ++i) {
+                wet += (m.water_at(i, 0) ? 1 : 0) + (m.water_at(i, m.size - 1) ? 1 : 0) + (m.water_at(0, i) ? 1 : 0) +
+                       (m.water_at(m.size - 1, i) ? 1 : 0);
+            }
+            CHECK(wet >= m.size / 2);
+            // Most of the map is still land.
+            std::size_t land = 0;
+            for (const std::uint16_t w : m.water) {
+                land += w == 0 ? 1 : 0;
+            }
+            CHECK(land * 2 >= m.water.size());
+            // No plateau square touches a sea square.
+            const std::int32_t side = m.owner_side();
+            const auto kind = [&](std::int32_t x, std::int32_t z) { return m.landforms[m.region_owner[static_cast<std::size_t>(z * side + x)] - 1u].kind; };
+            for (std::int32_t z = 0; z + 1 < side; ++z) {
+                for (std::int32_t x = 0; x + 1 < side; ++x) {
+                    for (const auto [a, b] : {std::pair{kind(x, z), kind(x + 1, z)}, std::pair{kind(x, z), kind(x, z + 1)}}) {
+                        CHECK_FALSE(((a == LandformKind::Plateau && b == LandformKind::Sea) || (a == LandformKind::Sea && b == LandformKind::Plateau)));
+                    }
+                }
+            }
+            for (const sim::StartPosition& st : m.starts) {
+                CHECK_FALSE(m.water_at(st.x.floor_int(), st.z.floor_int()));
+            }
+        }
+    }
+
+    TEST_CASE("islands: as many as asked, each town on its own") {
+        sim::MapSettings s = hier_settings(70, sim::MapSize::Medium);
+        s.players = 3;
+        s.islands = 2;
+        for (std::size_t t = 0; t < sc::test::core_content().flora.map_types.size(); ++t) {
+            if (sc::test::core_content().flora.map_types[t].islands) {
+                s.map_type = static_cast<std::uint8_t>(t);
+            }
+        }
+        const sim::MapData m = generate(s);
+        const std::int32_t wanted = 3 * std::min<std::int32_t>(2, sim::worldgen::max_islands_per_town(s.size, 3));
+        std::vector<const sim::Landform*> islands;
+        for (const sim::Landform& l : m.landforms) {
+            if (l.kind == LandformKind::Island) {
+                islands.push_back(&l);
+            }
+        }
+        CHECK(static_cast<std::int32_t>(islands.size()) == wanted);
+        // The middle of each island is land; the map's corners are sea.
+        for (const sim::Landform* l : islands) {
+            CHECK_FALSE(m.water_at(l->points[0][0], l->points[0][1]));
+        }
+        CHECK(m.water_at(2, 2));
+        REQUIRE(m.starts.size() == 3);
+        for (std::size_t p = 0; p < 3; ++p) {
+            const std::int32_t x = m.starts[p].x.floor_int();
+            const std::int32_t z = m.starts[p].z.floor_int();
+            CHECK_FALSE(m.water_at(x, z));
+            // On the island it was given (main islands come first).
+            const double d = std::hypot(x - islands[p]->points[0][0], z - islands[p]->points[0][1]);
+            CHECK(d <= islands[p]->width);
+        }
+    }
+
+    TEST_CASE("most canyons carry a river, and river mouths are estuaries") {
+        int canyons = 0;
+        int wet = 0;
+        int estuaries = 0;
+        for (std::uint64_t seed = 80; seed < 84; ++seed) {
+            sim::MapSettings s = hier_settings(seed, sim::MapSize::Large);
+            s.landforms = sim::Amount::High;
+            s.sea = sim::Sea::Always;
+            const sim::MapData m = generate(s);
+            for (const sim::Landform& l : m.landforms) {
+                if (l.kind != LandformKind::Canyon) {
+                    continue;
+                }
+                ++canyons;
+                int water = 0;
+                for (int k = 0; k <= 40; ++k) {
+                    const double t = k / 40.0;
+                    const auto x = static_cast<std::int32_t>(l.points[0][0] + (l.points.back()[0] - l.points[0][0]) * t);
+                    const auto z = static_cast<std::int32_t>(l.points[0][1] + (l.points.back()[1] - l.points[0][1]) * t);
+                    for (int dz = -12; dz <= 12; dz += 4) {
+                        for (int dx = -12; dx <= 12; dx += 4) {
+                            water += m.water_at(x + dx, z + dz) ? 1 : 0;
+                        }
+                    }
+                }
+                wet += water >= 20 ? 1 : 0;
+            }
+            // Water at the sea's level on a river's course is an estuary.
+            TerrainNames names;
+            for (const sim::Landform& l : m.landforms) {
+                if (l.kind != LandformKind::River) {
+                    continue;
+                }
+                const auto& end = l.points.back();
+                const CellDescription d = names.describe(m, std::min(end[0], m.size - 1), std::min(end[1], m.size - 1));
+                estuaries += d.water == WaterKind::Estuary ? 1 : 0;
+                CHECK(d.water != WaterKind::Sea);
+            }
+        }
+        MESSAGE(wet << " of " << canyons << " canyons with water; " << estuaries << " estuaries");
+        CHECK(canyons > 0);
+        CHECK(wet * 2 >= canyons);
+    }
+}

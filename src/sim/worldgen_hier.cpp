@@ -23,8 +23,17 @@ constexpr std::uint64_t kRagXSeed = 0x4849455252414737ull;
 constexpr std::uint64_t kRagZSeed = 0x4849455252414738ull;
 constexpr std::uint64_t kStructSeed = 0x4849455253545239ull;
 constexpr std::uint64_t kPeakSeed = 0x484945525045414bull;
+constexpr std::uint64_t kSeaSeed = 0x484945525345414cull;
+constexpr std::uint64_t kShoreSeed = 0x48494552534f524dull;
 
-enum class Role : std::uint8_t { Plain, Hills, Mountains, Plateau, Basin };
+enum class Role : std::uint8_t { Plain, Hills, Mountains, Plateau, Basin, Sea };
+
+// Where the sea goes on a map with a coast, and the small bits of it.
+struct Disc {
+    std::int32_t x = 0;
+    std::int32_t z = 0;
+    std::int32_t radius = 0;
+};
 
 LandformKind role_kind(Role r) {
     switch (r) {
@@ -32,6 +41,7 @@ LandformKind role_kind(Role r) {
         case Role::Mountains: return LandformKind::Mountains;
         case Role::Plateau: return LandformKind::Plateau;
         case Role::Basin: return LandformKind::Basin;
+        case Role::Sea: return LandformKind::Sea;
         case Role::Plain: break;
     }
     return LandformKind::Plain;
@@ -59,8 +69,8 @@ int log2_ceil(std::int32_t v) {
 
 class Shaper {
 public:
-    Shaper(const MapSettings& s, std::int32_t n, const Progress& progress, Ground& out)
-        : s_(s), n_(n), v_(n + 1), progress_(progress), out_(out), spacing_(region_spacing(n)),
+    Shaper(const MapSettings& s, std::int32_t n, bool islands, const Progress& progress, Ground& out)
+        : s_(s), n_(n), v_(n + 1), island_type_(islands), progress_(progress), out_(out), spacing_(region_spacing(n)),
           grid_((n + spacing_ - 1) / spacing_), warp_log2_(log2_ceil(spacing_) - 1), side_((n + kOwnerBlock - 1) / kOwnerBlock) {}
 
     bool run() {
@@ -69,10 +79,16 @@ public:
             return false;
         }
         find_neighbors();
+        plan_sea();
         assign_roles();
+        shape_coast();
         set_heights();
         record_regions();
-        if (!base_field() || !vertices() || !structures()) {
+        if (!base_field()) {
+            return false;
+        }
+        own_water();
+        if (!vertices() || !structures()) {
             return false;
         }
         return report(100);
@@ -82,6 +98,7 @@ private:
     const MapSettings& s_;
     std::int32_t n_;
     std::int32_t v_;
+    bool island_type_;
     const Progress& progress_;
     Ground& out_;
     std::int32_t spacing_;
@@ -96,6 +113,15 @@ private:
     std::vector<std::int32_t> rough_;
     std::vector<std::int32_t> bumps_;
     std::vector<std::int32_t> mountain_;  // How much of it is mountains, 0..65536.
+    std::vector<std::int32_t> land_;      // How much of it is land (not sea), 0..65536.
+    // Level 0: the sea. Its surface (millimeters, 0 without a sea), the
+    // islands of a map type with islands, and on a coast the regions that
+    // became gulfs or peninsulas and the islets off it.
+    std::int32_t sea_mm_ = 0;
+    std::vector<Disc> islets_;
+    std::vector<std::uint32_t> gulfs_;
+    std::vector<std::uint32_t> peninsulas_;
+    std::uint16_t sea_owner_ = 0;  // The open sea's landform, index + 1.
 
     bool report(int percent) { return !progress_ || progress_(percent); }
 
@@ -204,9 +230,9 @@ private:
     // basins alone, hills around the mountains first.
     void assign_roles() {
         Rng rng(s_.seed ^ kRoleSeed, 39);
-        std::vector<std::uint32_t> on_map;
+        std::vector<std::uint32_t> on_map;  // The land regions on the map.
         for (std::uint32_t id = 0; id < regions_.size(); ++id) {
-            if (regions_[id].blocks > 0) {
+            if (regions_[id].blocks > 0 && regions_[id].role != Role::Sea) {
                 on_map.push_back(id);
             }
         }
@@ -264,14 +290,18 @@ private:
             }
         }
         for (; plateaus > 0; --plateaus) {
-            const std::int64_t id = pick([&](const Region& r) { return !touches(r, Role::Plateau) && !touches(r, Role::Basin); });
+            const std::int64_t id = pick([&](const Region& r) {
+                return !touches(r, Role::Plateau) && !touches(r, Role::Basin) && !touches(r, Role::Sea);
+            });
             if (id < 0) {
                 break;
             }
             regions_[static_cast<std::size_t>(id)].role = Role::Plateau;
         }
         for (; basins > 0; --basins) {
-            const std::int64_t id = pick([&](const Region& r) { return !touches(r, Role::Basin) && !touches(r, Role::Plateau); });
+            const std::int64_t id = pick([&](const Region& r) {
+                return !touches(r, Role::Basin) && !touches(r, Role::Plateau) && !touches(r, Role::Sea);
+            });
             if (id < 0) {
                 break;
             }
@@ -322,6 +352,11 @@ private:
                     r.rough = 900;
                     r.bumps = 200;
                     break;
+                case Role::Sea:
+                    r.height = sea_mm_ - rng.range(4000, 8000);
+                    r.rough = 1500;
+                    r.bumps = 300;
+                    break;
             }
         }
     }
@@ -337,6 +372,210 @@ private:
             out_.landforms.push_back(std::move(l));
         }
         out_.structure_owner.assign(out_.region_owner.size(), 0);
+        // The open sea, for the squares under it that belong to a land region.
+        if (sea_mm_ > 0) {
+            Landform sea;
+            sea.kind = LandformKind::Sea;
+            sea.points.push_back({n_ / 2, n_ / 2});
+            sea.width = n_;
+            out_.landforms.push_back(std::move(sea));
+            sea_owner_ = static_cast<std::uint16_t>(out_.landforms.size());
+        }
+        out_.sea_mm = sea_mm_;
+    }
+
+    // --- Level 0: the sea ------------------------------------------------------------
+
+    static constexpr std::int32_t kSeaLevel = 19000;  // Millimeters: plains stand 2 m above it.
+
+    // Where the sea is: around the islands on a map type with islands;
+    // otherwise, per "Sea", along one side, a corner or two opposite sides.
+    // The regions there are sea.
+    void plan_sea() {
+        Rng rng(s_.seed ^ kSeaSeed, 41);
+        if (island_type_) {
+            const std::int32_t towns = std::clamp<std::int32_t>(s_.players, 1, 12);
+            out_.islands = worldgen::island_layout(
+                s_.seed, n_, towns, std::min<std::int32_t>(s_.islands, worldgen::max_islands_per_town(s_.size, s_.players)));
+            sea_mm_ = kSeaLevel;
+            for (Region& r : regions_) {
+                if (island_land(std::clamp(r.x, 0, n_), std::clamp(r.z, 0, n_)) < 32768) {
+                    r.role = Role::Sea;
+                }
+            }
+            return;
+        }
+        if (s_.sea == Sea::None || (s_.sea == Sea::Sometimes && rng.below(100) >= 40)) {
+            return;
+        }
+        sea_mm_ = kSeaLevel;
+        const std::uint32_t pattern = rng.below(100);
+        const std::uint32_t first = rng.below(4);
+        std::vector<std::uint32_t> sides{first};
+        if (pattern >= 85) {
+            sides.push_back(first ^ 1u);
+        } else if (pattern >= 55) {
+            sides.push_back(first < 2 ? 2 + rng.below(2) : rng.below(2));
+        }
+        std::array<std::int32_t, 4> width{};  // West, east, north, south.
+        for (const std::uint32_t side : sides) {
+            width[side] = n_ * rng.range(12, 22) / 100;
+        }
+        for (Region& r : regions_) {
+            const std::int32_t edge[4] = {r.x, n_ - r.x, r.z, n_ - r.z};
+            for (std::size_t k = 0; k < 4; ++k) {
+                if (width[k] > 0 && edge[k] < width[k]) {
+                    r.role = Role::Sea;
+                }
+            }
+        }
+    }
+
+    // A coast's gulfs (land regions the sea takes), peninsulas (sea regions
+    // that stay land) and islets off it.
+    void shape_coast() {
+        if (sea_mm_ == 0 || island_type_) {
+            return;
+        }
+        Rng rng(s_.seed ^ kSeaSeed, 42);
+        const auto land = [](const Region& r) { return r.role != Role::Sea; };
+        const auto candidates = [&](const auto& ok) {
+            std::vector<std::uint32_t> list;
+            for (std::uint32_t id = 0; id < regions_.size(); ++id) {
+                if (regions_[id].blocks > 0 && ok(regions_[id])) {
+                    list.push_back(id);
+                }
+            }
+            return list;
+        };
+        for (std::uint32_t k = rng.below(3); k > 0; --k) {
+            const auto list = candidates([&](const Region& r) {
+                return (r.role == Role::Plain || r.role == Role::Hills) && touches(r, Role::Sea) && !touches(r, Role::Plateau) &&
+                       !touches(r, Role::Basin);
+            });
+            if (list.empty()) {
+                break;
+            }
+            const std::uint32_t id = list[rng.below(static_cast<std::uint32_t>(list.size()))];
+            regions_[id].role = Role::Sea;
+            gulfs_.push_back(id);
+        }
+        for (std::uint32_t k = rng.below(3); k > 0; --k) {
+            const auto list = candidates([&](const Region& r) {
+                return r.role == Role::Sea && std::any_of(r.neighbors.begin(), r.neighbors.end(), [&](std::uint32_t nb) { return land(regions_[nb]); }) &&
+                       touches(r, Role::Sea);
+            });
+            if (list.empty()) {
+                break;
+            }
+            const std::uint32_t id = list[rng.below(static_cast<std::uint32_t>(list.size()))];
+            if (std::find(gulfs_.begin(), gulfs_.end(), id) != gulfs_.end()) {
+                continue;
+            }
+            regions_[id].role = Role::Plain;
+            peninsulas_.push_back(id);
+        }
+        for (std::uint32_t k = rng.below(4); k > 0; --k) {
+            const auto list = candidates([&](const Region& r) {
+                return r.role == Role::Sea && std::none_of(r.neighbors.begin(), r.neighbors.end(), [&](std::uint32_t nb) { return land(regions_[nb]); });
+            });
+            if (list.empty()) {
+                break;
+            }
+            const Region& r = regions_[list[rng.below(static_cast<std::uint32_t>(list.size()))]];
+            islets_.push_back({std::clamp(r.x, 0, n_), std::clamp(r.z, 0, n_), rng.range(20, std::max(21, std::min(60, spacing_ / 4)))});
+        }
+    }
+
+    // How much of a point is island or islet land, 0..65536: all of it
+    // within 70 % of the radius, none past 130 %, with shores bent into
+    // bays and capes.
+    [[nodiscard]] std::int64_t island_land(std::int32_t x, std::int32_t z) const {
+        std::int64_t best = 0;
+        const auto check = [&](std::int32_t cx, std::int32_t cz, std::int32_t radius) {
+            const std::int64_t reach = static_cast<std::int64_t>(radius) * 2;
+            if (radius <= 0 || std::abs(static_cast<std::int64_t>(x) - cx) > reach || std::abs(static_cast<std::int64_t>(z) - cz) > reach) {
+                return;
+            }
+            const int cell = std::max(3, log2_ceil(radius) - 1);
+            const std::int64_t w = static_cast<std::int64_t>(radius) * 35 / 100;
+            const std::int64_t qx = x + fbm(s_.seed ^ kShoreSeed, x, z, cell, 3) * w / 32768 - cx;
+            const std::int64_t qz = z + fbm(s_.seed ^ kShoreSeed ^ 1u, x, z, cell, 3) * w / 32768 - cz;
+            const auto d = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(qx * qx + qz * qz)));
+            const std::int64_t u = (static_cast<std::int64_t>(radius) * 130 / 100 - d) * 65536 / std::max<std::int64_t>(1, radius * 60 / 100);
+            best = std::max(best, smooth(u));
+        };
+        for (const worldgen::Island& island : out_.islands) {
+            check(island.x, island.z, island.radius);
+        }
+        for (const Disc& islet : islets_) {
+            check(islet.x, islet.z, islet.radius);
+        }
+        return best;
+    }
+
+    // The sea's squares, and the names of what the sea made: gulfs,
+    // peninsulas, islets and islands. The structures placed later can
+    // take these squares.
+    void own_water() {
+        if (sea_mm_ == 0) {
+            return;
+        }
+        const auto corners = static_cast<std::size_t>(side_ + 1);
+        std::vector<std::uint16_t> gulf(regions_.size(), 0);
+        std::vector<std::uint16_t> peninsula(regions_.size(), 0);
+        for (const std::uint32_t id : gulfs_) {
+            gulf[id] = record(LandformKind::Gulf, {{regions_[id].x, regions_[id].z}}, spacing_);
+        }
+        for (const std::uint32_t id : peninsulas_) {
+            peninsula[id] = record(LandformKind::Peninsula, {{regions_[id].x, regions_[id].z}}, spacing_);
+        }
+        std::vector<std::uint16_t> islets;
+        for (const Disc& d : islets_) {
+            islets.push_back(record(LandformKind::Islet, {{d.x, d.z}}, d.radius * 2));
+        }
+        std::vector<std::uint16_t> islands;
+        for (const worldgen::Island& is : out_.islands) {
+            islands.push_back(record(LandformKind::Island, {{is.x, is.z}}, is.radius * 2));
+        }
+        for (std::int32_t bz = 0; bz < side_; ++bz) {
+            for (std::int32_t bx = 0; bx < side_; ++bx) {
+                const auto sq = static_cast<std::size_t>(bz * side_ + bx);
+                const std::size_t c = static_cast<std::size_t>(bz) * corners + static_cast<std::size_t>(bx);
+                const std::int64_t land = (static_cast<std::int64_t>(land_[c]) + land_[c + 1] + land_[c + corners] + land_[c + corners + 1]) / 4;
+                const std::uint32_t region = out_.region_owner[sq] - 1u;
+                const std::int32_t x = bx * kOwnerBlock + kOwnerBlock / 2;
+                const std::int32_t z = bz * kOwnerBlock + kOwnerBlock / 2;
+                if (land < 32768) {
+                    if (regions_[region].role != Role::Sea) {
+                        out_.region_owner[sq] = sea_owner_;
+                    }
+                    out_.structure_owner[sq] = gulf[region];
+                    continue;
+                }
+                if (peninsula[region] != 0) {
+                    out_.structure_owner[sq] = peninsula[region];
+                }
+                // The islet or island it is on: the nearest by its size.
+                std::int64_t best = INT64_MAX;
+                const auto nearest = [&](std::int32_t cx, std::int32_t cz, std::int32_t radius, std::uint16_t owner) {
+                    const std::int64_t dx = x - cx;
+                    const std::int64_t dz = z - cz;
+                    const std::int64_t d = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(dx * dx + dz * dz))) * 65536 /
+                                           std::max(1, radius);
+                    if (d < best && d < 2 * 65536) {
+                        best = d;
+                        out_.structure_owner[sq] = owner;
+                    }
+                };
+                for (std::size_t i = 0; i < islets_.size(); ++i) {
+                    nearest(islets_[i].x, islets_[i].z, islets_[i].radius, islets[i]);
+                }
+                for (std::size_t i = 0; i < out_.islands.size(); ++i) {
+                    nearest(out_.islands[i].x, out_.islands[i].z, out_.islands[i].radius, islands[i]);
+                }
+            }
+        }
     }
 
     // --- Heights -----------------------------------------------------------------
@@ -351,6 +590,7 @@ private:
         rough_.assign(corners * corners, 0);
         bumps_.assign(corners * corners, 0);
         mountain_.assign(corners * corners, 0);
+        land_.assign(corners * corners, 65536);
         const std::int64_t smooth_band = spacing_ * 35 / 100;
         constexpr std::int64_t kCliffBand = 6;
         struct Near {
@@ -380,6 +620,7 @@ private:
                 std::int64_t rough = 0;
                 std::int64_t bumps = 0;
                 std::int64_t mountain = 0;
+                std::int64_t land = 0;
                 for (const Near& c : near) {
                     const Region& r = regions_[c.id];
                     const std::int64_t band = (r.role == Role::Plateau) != plateau1 ? kCliffBand : smooth_band;
@@ -391,16 +632,35 @@ private:
                     const std::int64_t e = (static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(c.d2))) - d1) / 2;
                     const std::int64_t w = std::max<std::int64_t>(0, (band - e) * 65536 / band);
                     total += w;
-                    h += w * r.height;
-                    rough += w * r.rough;
-                    bumps += w * r.bumps;
+                    // On a map of islands their shapes make the sea: a sea
+                    // region under an island is low plain.
+                    const bool shore = island_type_ && r.role == Role::Sea;
+                    h += w * (shore ? 21000 : r.height);
+                    rough += w * (shore ? 1800 : r.rough);
+                    bumps += w * (shore ? 250 : r.bumps);
                     mountain += r.role == Role::Mountains ? w : 0;
+                    land += r.role == Role::Sea ? 0 : w;
                 }
                 const std::size_t i = static_cast<std::size_t>(cz) * corners + static_cast<std::size_t>(cx);
-                base_[i] = static_cast<std::int32_t>(h / total);
-                rough_[i] = static_cast<std::int32_t>(rough / total);
-                bumps_[i] = static_cast<std::int32_t>(bumps / total);
-                mountain_[i] = static_cast<std::int32_t>(mountain * 65536 / total);
+                std::int64_t base = h / total;
+                std::int64_t land_share = land * 65536 / total;
+                // Islands and islets: land where their shapes are, sea around.
+                if (island_type_ || !islets_.empty()) {
+                    const std::int64_t shape = island_land(x, z);
+                    const std::int64_t floor = sea_mm_ - 6000;
+                    if (island_type_) {
+                        base = floor + (base - floor) * shape / 65536;
+                        land_share = shape;
+                    } else if (shape > land_share) {
+                        base = std::max<std::int64_t>(base, floor + (21500 - floor) * shape / 65536);
+                        land_share = shape;
+                    }
+                }
+                base_[i] = static_cast<std::int32_t>(base);
+                rough_[i] = static_cast<std::int32_t>(rough / total * land_share / 65536);
+                bumps_[i] = static_cast<std::int32_t>(bumps / total * std::max<std::int64_t>(land_share, 16384) / 65536);
+                mountain_[i] = static_cast<std::int32_t>(mountain * 65536 / total * land_share / 65536);
+                land_[i] = static_cast<std::int32_t>(land_share);
             }
             if ((cz & 63) == 0 && !report(20 + cz * 30 / (side_ + 1))) {
                 return false;
@@ -456,7 +716,9 @@ private:
         if (x < 0 || z < 0 || x >= n_ || z >= n_) {
             return -1;
         }
-        return static_cast<std::int64_t>(out_.region_owner[static_cast<std::size_t>((z / kOwnerBlock) * side_ + x / kOwnerBlock)]) - 1;
+        // The open sea's squares are no region's.
+        const std::int64_t id = static_cast<std::int64_t>(out_.region_owner[static_cast<std::size_t>((z / kOwnerBlock) * side_ + x / kOwnerBlock)]) - 1;
+        return id < static_cast<std::int64_t>(regions_.size()) ? id : -1;
     }
     [[nodiscard]] std::int32_t& h(std::int32_t x, std::int32_t z) {
         return out_.h[static_cast<std::size_t>(z) * static_cast<std::size_t>(v_) + static_cast<std::size_t>(x)];
@@ -563,7 +825,8 @@ private:
                     const std::int64_t qx = ax + dx * t / 65536 - px;
                     const std::int64_t qz = az + dz * t / 65536 - pz;
                     const auto sq = static_cast<std::size_t>(bz * side_ + bx);
-                    if (qx * qx + qz * qz <= r2 && ok(out_.region_owner[sq] - 1u)) {
+                    const std::uint32_t region = out_.region_owner[sq] - 1u;
+                    if (qx * qx + qz * qz <= r2 && region < regions_.size() && ok(region)) {
                         out_.structure_owner[sq] = owner;
                     }
                 }
@@ -657,7 +920,7 @@ private:
             }
             const std::int64_t pass_w = std::max<std::int64_t>(1, 60 * 16 * 65536 / std::max<std::int64_t>(1, length16));
             along(line, half, [&](std::int32_t x, std::int32_t z, std::int64_t d16, std::int64_t at) {
-                const std::int64_t mountain = share(mountain_, x, z);
+                const std::int64_t mountain = share(mountain_, x, z) * share(land_, x, z) / 65536;
                 if (mountain <= 0) {
                     return;
                 }
@@ -900,9 +1163,9 @@ std::int32_t region_spacing(std::int32_t n) {
     return std::clamp(n / 7, 150, 900);
 }
 
-bool shape(const MapSettings& s, std::int32_t n, const Progress& progress, Ground& out) {
+bool shape(const MapSettings& s, std::int32_t n, bool islands, const Progress& progress, Ground& out) {
     out = Ground{};
-    Shaper shaper(s, n, progress, out);
+    Shaper shaper(s, n, islands, progress, out);
     return shaper.run();
 }
 

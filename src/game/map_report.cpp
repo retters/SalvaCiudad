@@ -38,11 +38,11 @@ std::optional<std::size_t> find_name(const std::string_view (&list)[N], std::str
 constexpr std::string_view kCameraModes[] = {"aerial", "thirdPerson", "firstPerson"};
 constexpr std::string_view kSeasons[] = {"spring", "summer", "autumn", "winter"};
 constexpr std::string_view kTerrains[] = {"grass", "meadow", "forestFloor", "sand", "rock", "clay", "water"};
-constexpr std::string_view kWaters[] = {"none", "river", "lake", "sea"};
+constexpr std::string_view kWaters[] = {"none", "river", "lake", "sea", "estuary"};
 constexpr std::string_view kLandforms[] = {"coast",  "gulf",   "peninsula", "islet", "trench",    "ridge",
                                            "plateau", "valley", "range",     "canyon", "cape",     "river",
                                            "island",  "plain",  "hills",     "mountains", "basin",
-                                           "crest",   "pass",   "cliff",     "ramp"};
+                                           "crest",   "pass",   "cliff",     "ramp",   "sea"};
 constexpr std::string_view kGenerators[] = {"classic", "hierarchical"};
 static_assert(std::size(kGenerators) == static_cast<std::size_t>(sim::MapGenerator::Count));
 static_assert(std::size(kLandforms) == static_cast<std::size_t>(sim::LandformKind::Count));

@@ -493,6 +493,13 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Los cañones solo están en mesetas, son pocos, angostos, de paredes a pique, y la mayoría lleva un río que sale de la meseta.
 - [ ] F3 nunca dice a la vez cañón y cresta, ni cañón y meseta como estructura.
 
+### Fase 41 (generador jerárquico: agua)
+
+- [ ] Con "Mar: siempre", el mar ocupa uno o dos lados, a veces con un golfo, una península o islotes (F3 los nombra).
+- [ ] En "Islas" y "Archipiélagos", cada pueblo empieza en su propia isla y las islas tienen regiones (llanuras, colinas, a veces montañas).
+- [ ] Los ríos llegan al mar; donde desembocan, F3 dice "Estuario" y no "Mar" ni "Dorsal marina" (también en el clásico).
+- [ ] Ninguna meseta toca el mar.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

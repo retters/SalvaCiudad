@@ -1753,3 +1753,26 @@ Los nacimientos que pide el jerárquico se usan todos, aunque pasen del número 
 **D-4004. Pruebas del jerárquico en tres suites.**
 Como las del clásico (D-3110): `worldgen_hier` (unos 36 s en debug), `worldgen_hier_structures` (49 s) y `worldgen_hier_compare` (57 s), para que cada una quepa en el límite de 120 s en debug y de 240 s con AddressSanitizer.
 
+## Fase 41: generador jerárquico, agua (2026-09-30)
+
+**D-4101. El mar es el nivel 0: se decide antes que los papeles.**
+Con costa ("Mar": a veces el 40 % de los mapas, o siempre) el mar ocupa uno, dos opuestos o dos contiguos de los lados, con los mismos patrones que el clásico, y entra entre 12 y 22 % del lado. Las regiones cuyo centro queda en esa franja son mar. Su fondo está 4 a 8 m bajo el nivel del mar, que va a 19 m: las llanuras quedan 2 m arriba, y la mezcla entre regiones hace las playas. Después de repartir los papeles:
+- 0 a 2 regiones costeras de llanura o colinas se hunden como golfos;
+- 0 a 2 regiones de mar junto a tierra quedan como penínsulas;
+- 0 a 3 regiones de mar abierto reciben un islote de 20 a 60 m.
+
+Las mesetas y cuencas nunca tocan el mar.
+
+**D-4102. Islas y archipiélagos.**
+En los tipos de mapa con islas, las islas se ubican con la misma distribución del clásico (`worldgen::island_layout`), y la tierra la decide su forma: toda tierra dentro del 70 % del radio, nada más allá del 130 %, y la orilla doblada por ruido en bahías y cabos. Dentro de cada isla siguen las regiones con su papel (una isla puede tener montañas), y cada pueblo empieza en su isla principal, con la etapa de salidas compartida. Una región cuyo centro cae en el mar aporta altura de llanura bajo una isla (la forma de la isla manda); si no, las islas sobre esas regiones quedaban bajo el agua.
+
+**D-4103. Nombres del agua.**
+Los cuadros de mar que caen en una región de tierra se nombran "Mar". Los golfos, penínsulas, islotes e islas son estructuras, que cualquier estructura posterior puede ocupar. En los dos generadores, el agua al nivel del mar sobre el curso de un río se llama "Estuario": es la desembocadura, no mar abierto ni una dorsal (lo que Salvador vio en un reporte del clásico).
+
+**D-4104. Pruebas.**
+Nueva suite `worldgen_hier_water`:
+- con costa, el mar llega al borde en al menos medio lado, la mayoría del mapa es tierra, ninguna meseta toca el mar y los pueblos empiezan en tierra;
+- con islas, hay tantas como se pidieron, sus centros son tierra, las esquinas son mar y cada pueblo está en su isla;
+- 4 de 4 cañones tienen agua en su fondo;
+- el final de un río nunca se nombra "Mar".
+

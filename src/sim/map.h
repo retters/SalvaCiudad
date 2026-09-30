@@ -132,6 +132,8 @@ enum class LandformKind : std::uint8_t {
     Coast, Gulf, Peninsula, Islet, Trench, Ridge, Plateau, Valley, Range, Canyon, Cape, River, Island,
     // The hierarchical generator's regions (phase 39) and structures (phase 40).
     Plain, Hills, Mountains, Basin, Crest, Pass, Cliff, Ramp,
+    // Phase 41: the open sea as a region.
+    Sea,
     Count
 };
 struct Landform {

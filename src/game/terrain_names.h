@@ -14,7 +14,8 @@
 
 namespace sc {
 
-enum class WaterKind : std::uint8_t { None, River, Lake, Sea };
+// Estuary: a river's mouth at the sea's level (phase 41).
+enum class WaterKind : std::uint8_t { None, River, Lake, Sea, Estuary };
 
 struct CellDescription {
     bool inside = false;  // False: outside the map; nothing else is set.
