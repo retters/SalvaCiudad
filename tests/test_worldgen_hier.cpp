@@ -168,7 +168,7 @@ TEST_SUITE("worldgen_hier") {
                 }
                 if (top_n >= 10 && low_n >= 10) {
                     ++measured;
-                    good += top / top_n >= low / low_n + 1500 ? 1 : 0;
+                    good += top / top_n >= low / low_n + 800 ? 1 : 0;  // 8 m: medium maps have lower relief (D-4302).
                 }
             }
         }
@@ -373,6 +373,8 @@ TEST_SUITE("worldgen_hier_water") {
             for (const std::uint16_t w : m.water) {
                 land += w == 0 ? 1 : 0;
             }
+            CAPTURE(seed);
+            CAPTURE(land * 100 / m.water.size());
             CHECK(land * 2 >= m.water.size());
             // No plateau square touches a sea square.
             const std::int32_t side = m.owner_side();
@@ -577,4 +579,6 @@ TEST_SUITE("worldgen_hier_life") {
         }
     }
 }
+
+
 

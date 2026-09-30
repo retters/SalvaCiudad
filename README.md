@@ -80,6 +80,10 @@ Sirven para decirle a Claude qué te gusta o qué no de un lugar del mapa.
 
 `SalvaCiudad.exe --reporte <carpeta>` genera ese mismo mapa con el generador actual, sin niebla y con la estación del reporte, pone la cámara igual y guarda `despues_<fecha_hora>.png`, junto con un `.txt` que dice qué cambió desde el reporte (versión del generador, mods, compilación, tamaño de la ventana). Muestra el mapa generado, no la partida: no aparecen los edificios ni los árboles talados. No guarda la configuración ni partidas.
 
+## Mapas
+
+Qué genera cada generador de mapas, cómo se llama cada cosa y qué opción la controla: [docs/GENERADORES.md](docs/GENERADORES.md).
+
 ## Idiomas
 
 Español, español de México (solo cambia el formato de números) e inglés. Para agregar otro idioma sin tocar el código, ver [docs/AGREGAR_IDIOMA.md](docs/AGREGAR_IDIOMA.md).
@@ -506,6 +510,12 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Los pueblos empiezan en llanuras o colinas, con agua cerca, piedra, bayas y árboles.
 - [ ] Un mapa colosal jerárquico se genera en menos tiempo que uno clásico.
 - [ ] Una partida jerárquica en multijugador (dos ventanas con `--instance` y `--loopback`) no se desincroniza.
+
+### Fase 43 (generador jerárquico: ajuste y documentación)
+
+- [ ] Los acantilados de las mesetas siguen su borde sin escalones ni zigzag.
+- [ ] En mapas pequeños y medianos, las mesetas y montañas son más bajas que en los grandes, y la rampa de cada meseta sube sin cruzar la llanura como un terraplén.
+- [ ] `docs/GENERADORES.md` explica todo lo que F3 nombra en tus mapas.
 
 ## Licencia
 

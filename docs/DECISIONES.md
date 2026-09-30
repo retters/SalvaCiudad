@@ -1790,3 +1790,23 @@ El nivel 5 son las lomas de 64 m y los 40 cm de relieve fino de la fase 39, más
 **D-4204. Rendimiento.**
 El mapa colosal jerárquico tarda 113 s, contra 179 s del clásico (`docs/RENDIMIENTO.md`). Las pruebas de esta fase están en la suite `worldgen_hier_life`.
 
+## Fase 43: generador jerárquico, ajuste y documentación (2026-09-30)
+
+Ajustes después de revisar con `--reporte` mapas de seis semillas: mediano, grande, enorme; los tipos Clásico, Variado, Pinar del norte, Tierra de gigantes e Islas; y los tres relieves.
+
+**D-4301. Acantilados sin escalones.**
+Con la mezcla de regiones calculada cada 8 m, el borde de las mesetas salía en zigzag. Ahora, cerca del borde de una meseta, cada vértice calcula su propia mezcla (una franja de un cuadro y medio a cada lado del borde), y en el resto se sigue interpolando. El acantilado mide 6 m y sigue el borde sin dientes, sin costo apreciable: el mapa mediano sigue tardando menos de medio segundo, y el colosal pasa de 113 a 115 s.
+
+**D-4302. El relieve se escala con el tamaño de las regiones.**
+En mapas pequeños y medianos las regiones miden unos 150 m, y con las mismas alturas que en los grandes todo era acantilado y rampa. La altura sobre la llanura de colinas, montañas, crestas y mesetas se multiplica por la separación entre regiones entre 300 m: la mitad con 150 m y completa desde 300 m. La prueba de mesetas pide 8 m sobre su entorno en vez de 15.
+
+**D-4303. Rampas y cañones a la medida de la meseta.**
+- La rampa es un corte dentro de la meseta: nace en la cima y llega 20 m más allá del pie del acantilado, con pendiente de 1 en 4 si la meseta es lo bastante ancha (más empinada si no). Su ancho es el 6 % de la separación entre regiones (de 8 a 20 m de medio ancho), y sus lados bajan en el 8 % (10 a 24 m). Antes era un terraplén largo y empinado que cruzaba la llanura.
+- Un cañón solo va en una meseta de 1,3 ha o más, y su ancho es el 7 % de la separación entre regiones (de 9 a 20 m de medio ancho). En las mesetas chicas, el cañón se comía la meseta entera.
+
+**D-4304. Costa en dos lados más angosta.**
+Con mar en dos lados, cada franja entra del 10 al 16 % (en vez del 12 al 22 %), para que la tierra siga siendo la mayor parte del mapa. Una semilla con dos costas y golfos quedaba con 48 % de tierra.
+
+**D-4305. `docs/GENERADORES.md`.**
+El documento responde la pregunta que dio origen a las fases 37 a 43: qué genera cada generador, cómo se llama cada cosa, qué opción de la partida la controla y con qué frecuencia aparece. También tiene la tabla de todo lo que F3 puede nombrar.
+

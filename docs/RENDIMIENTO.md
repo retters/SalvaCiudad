@@ -160,7 +160,7 @@ Medido en release en esta PC (2026-09-30), mapa colosal (16 384 × 16 384), semi
 | Generador | Tiempo |
 |---|---|
 | Clásico | 179 s |
-| Jerárquico | 113 s |
+| Jerárquico | 113 s (115 s desde la fase 43, que calcula cada vértice junto al borde de las mesetas) |
 
 El jerárquico calcula las regiones y su mezcla en una rejilla de 8 m (unos 4 millones de esquinas en el colosal) y solo interpola en cada vértice. Sus estructuras tocan únicamente sus propias franjas, en vez de cruzar el mapa entero como los valles y cañones del clásico (ver la sugerencia `sug-formas-por-borde`). Un mapa grande (2048 × 2048) tarda 1,5 s.
 

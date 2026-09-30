@@ -1,6 +1,7 @@
 #include "sim/worldgen_hier.h"
 
 #include <algorithm>
+#include <array>
 #include <utility>
 
 #include "sim/fixed.h"
@@ -114,6 +115,7 @@ private:
     std::vector<std::int32_t> bumps_;
     std::vector<std::int32_t> mountain_;  // How much of it is mountains, 0..65536.
     std::vector<std::int32_t> land_;      // How much of it is land (not sea), 0..65536.
+    std::vector<std::uint8_t> cliff_;     // A plateau's rim near: its vertices are sampled one by one.
     // Level 0: the sea. Its surface (millimeters, 0 without a sea), the
     // islands of a map type with islands, and on a coast the regions that
     // became gulfs or peninsulas and the islets off it.
@@ -319,6 +321,17 @@ private:
         }
     }
 
+    // How tall the relief may be for the regions' size, 32768..65536
+    // (1/65536): half with regions of 150 m, all from 300 m. Small regions
+    // with the heights of big ones were all cliff and ramp.
+    [[nodiscard]] std::int64_t scale() const {
+        return std::clamp<std::int64_t>(static_cast<std::int64_t>(spacing_) * 65536 / 300, 32768, 65536);
+    }
+    // A height `above` millimeters over the plains, scaled.
+    [[nodiscard]] std::int32_t over_plain(std::int64_t above) const {
+        return static_cast<std::int32_t>(21000 + above * scale() / 65536);
+    }
+
     // Each role's base height and bumps; "Relief" makes them gentler or
     // steeper.
     void set_heights() {
@@ -333,17 +346,17 @@ private:
                     r.bumps = 250;
                     break;
                 case Role::Hills:
-                    r.height = (low ? 25000 : 27000) + rng.range(-1500, 1500);
+                    r.height = over_plain((low ? 4000 : 6000) + rng.range(-1500, 1500));
                     r.rough = low ? 3500 : (high ? 6000 : 5000);
                     r.bumps = low ? 1500 : (high ? 3000 : 2500);
                     break;
                 case Role::Mountains:
-                    r.height = (high ? 46000 : 38000) + rng.range(0, 6000);
+                    r.height = over_plain((high ? 25000 : 17000) + rng.range(0, 6000));
                     r.rough = low ? 7000 : (high ? 12000 : 9000);
                     r.bumps = low ? 6000 : (high ? 12000 : 9000);
                     break;
                 case Role::Plateau:
-                    r.height = 48000 + rng.range(0, 14000);
+                    r.height = over_plain(27000 + rng.range(0, 14000));
                     r.rough = 700;
                     r.bumps = 250;
                     break;
@@ -418,8 +431,9 @@ private:
             sides.push_back(first < 2 ? 2 + rng.below(2) : rng.below(2));
         }
         std::array<std::int32_t, 4> width{};  // West, east, north, south.
+        // With two sides of sea each one reaches in less, so land stays the most.
         for (const std::uint32_t side : sides) {
-            width[side] = n_ * rng.range(12, 22) / 100;
+            width[side] = n_ * (sides.size() == 1 ? rng.range(12, 22) : rng.range(10, 16)) / 100;
         }
         for (Region& r : regions_) {
             const std::int32_t edge[4] = {r.x, n_ - r.x, r.z, n_ - r.z};
@@ -584,6 +598,88 @@ private:
     // around each corner blended by how close it is to their borders. The
     // blend is wide between most regions, and a narrow cliff around a
     // plateau.
+    // What the regions around a point make of it.
+    struct Sample {
+        std::int64_t base = 0;   // Height, millimeters.
+        std::int64_t rough = 0;  // Broad swells.
+        std::int64_t bumps = 0;  // Small bumps.
+        std::int64_t mountain = 0;  // Share of mountains, 0..65536.
+        std::int64_t land = 0;      // Share of land, 0..65536.
+        bool cliff = false;  // A plateau's rim is near enough to need every vertex.
+    };
+    static constexpr std::int64_t kCliffBand = 6;  // Meters over which a plateau's rim drops.
+
+    // The regions around a point blended by how close it is to their
+    // borders: widely between most regions, over a narrow cliff around a
+    // plateau.
+    [[nodiscard]] Sample sample(std::int32_t x, std::int32_t z) const {
+        struct Near {
+            std::uint32_t id;
+            std::int64_t d2;
+        };
+        std::array<Near, 25> near{};
+        std::size_t count = 0;
+        const std::int64_t smooth_band = spacing_ * 35 / 100;
+        const auto [qx, qz] = warped(x, z);
+        std::int64_t best = INT64_MAX;
+        std::uint32_t first = 0;
+        around(qx, qz, [&](std::uint32_t id, std::int64_t d2) {
+            near[count++] = {id, d2};
+            if (d2 < best) {
+                best = d2;
+                first = id;
+            }
+        });
+        const auto d1 = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(best)));
+        const bool plateau1 = regions_[first].role == Role::Plateau;
+        Sample out;
+        std::int64_t total = 0;
+        for (std::size_t k = 0; k < count; ++k) {
+            const Near& c = near[k];
+            const Region& r = regions_[c.id];
+            const bool rim = (r.role == Role::Plateau) != plateau1;
+            const std::int64_t band = rim ? kCliffBand : smooth_band;
+            // Past the border's band the region has no say (a rim a square
+            // and a half away still marks the point).
+            const std::int64_t reach = d1 + 2 * std::max<std::int64_t>(band, rim ? kCliffBand + kOwnerBlock * 3 / 2 : 0);
+            if (c.d2 > reach * reach) {
+                continue;
+            }
+            const std::int64_t e = (static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(c.d2))) - d1) / 2;
+            out.cliff = out.cliff || (rim && e <= kCliffBand + kOwnerBlock * 3 / 2);
+            const std::int64_t w = std::max<std::int64_t>(0, (band - e) * 65536 / band);
+            total += w;
+            // On a map of islands their shapes make the sea: a sea
+            // region under an island is low plain.
+            const bool shore = island_type_ && r.role == Role::Sea;
+            out.base += w * (shore ? 21000 : r.height);
+            out.rough += w * (shore ? 1800 : r.rough);
+            out.bumps += w * (shore ? 250 : r.bumps);
+            out.mountain += r.role == Role::Mountains ? w : 0;
+            out.land += r.role == Role::Sea ? 0 : w;
+        }
+        out.base /= total;
+        out.land = out.land * 65536 / total;
+        // Islands and islets: land where their shapes are, sea around.
+        if (island_type_ || !islets_.empty()) {
+            const std::int64_t shape = island_land(x, z);
+            const std::int64_t floor = sea_mm_ - 6000;
+            if (island_type_) {
+                out.base = floor + (out.base - floor) * shape / 65536;
+                out.land = shape;
+            } else if (shape > out.land) {
+                out.base = std::max<std::int64_t>(out.base, floor + (21500 - floor) * shape / 65536);
+                out.land = shape;
+            }
+        }
+        out.rough = out.rough / total * out.land / 65536;
+        out.bumps = out.bumps / total * std::max<std::int64_t>(out.land, 16384) / 65536;
+        out.mountain = out.mountain * 65536 / total * out.land / 65536;
+        return out;
+    }
+
+    // The regions' blend at the corners of the squares; the vertices in
+    // between are interpolated, but for those near a plateau's rim.
     bool base_field() {
         const auto corners = static_cast<std::size_t>(side_ + 1);
         base_.assign(corners * corners, 0);
@@ -591,76 +687,17 @@ private:
         bumps_.assign(corners * corners, 0);
         mountain_.assign(corners * corners, 0);
         land_.assign(corners * corners, 65536);
-        const std::int64_t smooth_band = spacing_ * 35 / 100;
-        constexpr std::int64_t kCliffBand = 6;
-        struct Near {
-            std::uint32_t id;
-            std::int64_t d2;
-        };
-        std::vector<Near> near;
+        cliff_.assign(corners * corners, 0);
         for (std::int32_t cz = 0; cz <= side_; ++cz) {
             for (std::int32_t cx = 0; cx <= side_; ++cx) {
-                const std::int32_t x = std::min(n_, cx * kOwnerBlock);
-                const std::int32_t z = std::min(n_, cz * kOwnerBlock);
-                const auto [qx, qz] = warped(x, z);
-                near.clear();
-                std::int64_t best = INT64_MAX;
-                std::uint32_t first = 0;
-                around(qx, qz, [&](std::uint32_t id, std::int64_t d2) {
-                    near.push_back({id, d2});
-                    if (d2 < best) {
-                        best = d2;
-                        first = id;
-                    }
-                });
-                const auto d1 = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(best)));
-                const bool plateau1 = regions_[first].role == Role::Plateau;
-                std::int64_t total = 0;
-                std::int64_t h = 0;
-                std::int64_t rough = 0;
-                std::int64_t bumps = 0;
-                std::int64_t mountain = 0;
-                std::int64_t land = 0;
-                for (const Near& c : near) {
-                    const Region& r = regions_[c.id];
-                    const std::int64_t band = (r.role == Role::Plateau) != plateau1 ? kCliffBand : smooth_band;
-                    // Past the border's band the region has no say.
-                    const std::int64_t reach = d1 + 2 * band;
-                    if (c.d2 > reach * reach) {
-                        continue;
-                    }
-                    const std::int64_t e = (static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(c.d2))) - d1) / 2;
-                    const std::int64_t w = std::max<std::int64_t>(0, (band - e) * 65536 / band);
-                    total += w;
-                    // On a map of islands their shapes make the sea: a sea
-                    // region under an island is low plain.
-                    const bool shore = island_type_ && r.role == Role::Sea;
-                    h += w * (shore ? 21000 : r.height);
-                    rough += w * (shore ? 1800 : r.rough);
-                    bumps += w * (shore ? 250 : r.bumps);
-                    mountain += r.role == Role::Mountains ? w : 0;
-                    land += r.role == Role::Sea ? 0 : w;
-                }
+                const Sample p = sample(std::min(n_, cx * kOwnerBlock), std::min(n_, cz * kOwnerBlock));
                 const std::size_t i = static_cast<std::size_t>(cz) * corners + static_cast<std::size_t>(cx);
-                std::int64_t base = h / total;
-                std::int64_t land_share = land * 65536 / total;
-                // Islands and islets: land where their shapes are, sea around.
-                if (island_type_ || !islets_.empty()) {
-                    const std::int64_t shape = island_land(x, z);
-                    const std::int64_t floor = sea_mm_ - 6000;
-                    if (island_type_) {
-                        base = floor + (base - floor) * shape / 65536;
-                        land_share = shape;
-                    } else if (shape > land_share) {
-                        base = std::max<std::int64_t>(base, floor + (21500 - floor) * shape / 65536);
-                        land_share = shape;
-                    }
-                }
-                base_[i] = static_cast<std::int32_t>(base);
-                rough_[i] = static_cast<std::int32_t>(rough / total * land_share / 65536);
-                bumps_[i] = static_cast<std::int32_t>(bumps / total * std::max<std::int64_t>(land_share, 16384) / 65536);
-                mountain_[i] = static_cast<std::int32_t>(mountain * 65536 / total * land_share / 65536);
-                land_[i] = static_cast<std::int32_t>(land_share);
+                base_[i] = static_cast<std::int32_t>(p.base);
+                rough_[i] = static_cast<std::int32_t>(p.rough);
+                bumps_[i] = static_cast<std::int32_t>(p.bumps);
+                mountain_[i] = static_cast<std::int32_t>(p.mountain);
+                land_[i] = static_cast<std::int32_t>(p.land);
+                cliff_[i] = p.cliff ? 1 : 0;
             }
             if ((cz & 63) == 0 && !report(20 + cz * 30 / (side_ + 1))) {
                 return false;
@@ -669,10 +706,11 @@ private:
         return true;
     }
 
-    // Every vertex: the base between its square's corners, with broad
-    // swells (water drains along them instead of pooling in every hollow)
-    // and bumps as big as the regions there allow, and tiny ones everywhere
-    // so water does not run in straight lines.
+    // Every vertex: the base between its square's corners (or its own, by a
+    // plateau's rim, so the cliff follows the rim without steps), with
+    // broad swells (water drains along them instead of pooling in every
+    // hollow) and bumps as big as the regions there allow, and tiny ones
+    // everywhere so water does not run in straight lines.
     bool vertices() {
         out_.h.assign(static_cast<std::size_t>(v_) * static_cast<std::size_t>(v_), 0);
         const auto corners = static_cast<std::size_t>(side_ + 1);
@@ -692,8 +730,20 @@ private:
                     const std::int64_t b = f[i01] + (((f[i01 + 1] - f[i01]) * fx) >> 16);
                     return a + (((b - a) * fz) >> 16);
                 };
-                const std::int64_t h = lerp2(base_) + swell.at(x) * lerp2(rough_) / 32768 + bump.at(x) * lerp2(bumps_) / 32768 +
-                                       micro.at(x) * 400 / 32768;
+                std::int64_t base = 0;
+                std::int64_t rough = 0;
+                std::int64_t bumps = 0;
+                if ((cliff_[i00] | cliff_[i00 + 1] | cliff_[i01] | cliff_[i01 + 1]) != 0) {
+                    const Sample p = sample(x, z);
+                    base = p.base;
+                    rough = p.rough;
+                    bumps = p.bumps;
+                } else {
+                    base = lerp2(base_);
+                    rough = lerp2(rough_);
+                    bumps = lerp2(bumps_);
+                }
+                const std::int64_t h = base + swell.at(x) * rough / 32768 + bump.at(x) * bumps / 32768 + micro.at(x) * 400 / 32768;
                 out_.h[static_cast<std::size_t>(z) * static_cast<std::size_t>(v_) + static_cast<std::size_t>(x)] =
                     static_cast<std::int32_t>(std::max<std::int64_t>(1000, h));
             }
@@ -909,7 +959,8 @@ private:
                 line.insert(line.end(), piece.begin() + 1, piece.end());
             }
             const std::int32_t half = spacing_ * 45 / 100;
-            const std::int64_t peak = low ? rng.range(25000, 40000) : (high ? rng.range(65000, 110000) : rng.range(40000, 65000));
+            const std::int64_t peak =
+                (low ? rng.range(25000, 40000) : (high ? rng.range(65000, 110000) : rng.range(40000, 65000))) * scale() / 65536;
             // A pass: where along it, and how wide (1/65536 of the line).
             const bool pass = rng.below(100) < 70;
             const std::int64_t pass_at = rng.range(30, 70) * 65536 / 100;
@@ -1002,16 +1053,31 @@ private:
                 continue;
             }
             const Region& to = regions_[sides[rng.below(static_cast<std::uint32_t>(sides.size()))]];
-            const Pt top = toward(p, to, 30);
-            const Pt foot = toward(p, to, 85);
-            const std::int64_t top_h = ground(top);
+            // Cut into the plateau: from inside its top down to just past
+            // its rim, climbing 1 m every 4 m where the plateau is wide
+            // enough (steeper on a small one).
+            const std::int64_t dx = to.x - p.x;
+            const std::int64_t dz = to.z - p.z;
+            const auto dist = std::max<std::int64_t>(1, static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(dx * dx + dz * dz))));
+            const auto at = [&](std::int64_t along) {
+                return inside({static_cast<std::int32_t>(p.x + dx * along / dist), static_cast<std::int32_t>(p.z + dz * along / dist)});
+            };
+            std::int64_t rim = 0;
+            while (rim < dist && region_of(at(rim).x, at(rim).z) == id) {
+                rim += 4;
+            }
+            const Pt foot = at(rim + 20);
             const std::int64_t foot_h = ground(foot);
-            const std::int32_t half = rng.range(16, 24);
+            const std::int64_t rise = std::max<std::int64_t>(0, p.height - foot_h);
+            const Pt top = at(std::max<std::int64_t>(0, rim - rise * 4 / 1000));
+            const std::int64_t top_h = ground(top);
+            const std::int32_t half = std::clamp(spacing_ * 6 / 100, 8, 20) + rng.range(-2, 2);
             const std::vector<Pt> line{top, foot};
-            along(line, half + 10, [&](std::int32_t x, std::int32_t z, std::int64_t d16, std::int64_t at) {
+            const std::int32_t kSides = std::clamp(spacing_ * 8 / 100, 10, 24);  // Meters its sides take to ease into the ground.
+            along(line, half + kSides, [&](std::int32_t x, std::int32_t z, std::int64_t d16, std::int64_t at) {
                 const std::int64_t target = top_h + (foot_h - top_h) * at / 65536;
                 // Flat across its width, easing into the ground at the sides.
-                const std::int64_t w = d16 <= half * 16 ? 65536 : smooth(65536 - (d16 - half * 16) * 65536 / (10 * 16));
+                const std::int64_t w = d16 <= half * 16 ? 65536 : smooth(65536 - (d16 - half * 16) * 65536 / (kSides * 16));
                 std::int32_t& v = h(x, z);
                 v += static_cast<std::int32_t>((target - v) * w / 65536);
             });
@@ -1085,12 +1151,15 @@ private:
         }
     }
 
+    static constexpr std::int32_t kCanyonPlateauBlocks = 200;
+
     // Canyons: few, narrow, with sheer walls, from inside a plateau out to a
     // lower neighbor; most carry a river.
     void canyons(Rng& rng) {
         std::vector<std::uint32_t> plateaus;
         for (std::uint32_t id = 0; id < regions_.size(); ++id) {
-            if (regions_[id].role == Role::Plateau && regions_[id].blocks > 0) {
+            // Room for a canyon: a plateau of 1.3 ha or more.
+            if (regions_[id].role == Role::Plateau && regions_[id].blocks >= kCanyonPlateauBlocks) {
                 plateaus.push_back(id);
             }
         }
@@ -1131,7 +1200,8 @@ private:
             const std::int32_t length = static_cast<std::int32_t>(isqrt(static_cast<std::uint64_t>(
                 static_cast<std::int64_t>(mouth.x - head.x) * (mouth.x - head.x) + static_cast<std::int64_t>(mouth.z - head.z) * (mouth.z - head.z))));
             const std::vector<Pt> line = wander(rng, head, mouth, 10, std::max(4, length / 14));
-            const std::int32_t half = rng.range(14, 22);
+            // As wide as the regions allow: narrow on small maps.
+            const std::int32_t half = std::clamp(spacing_ * 7 / 100, 9, 20) + rng.range(-2, 2);
             const std::int64_t top = p.height;
             const std::int64_t mouth_floor = ground(mouth) - 800;
             const std::int64_t head_floor = std::max(mouth_floor + 1000, top - (top - mouth_floor) * rng.range(55, 75) / 100);
