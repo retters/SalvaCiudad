@@ -121,6 +121,12 @@ void DebugOverlay::build(const DebugInfo& info, const std::function<void()>& ext
                         static_cast<double>(info.camera_x), static_cast<double>(info.camera_z));
             ImGui::Checkbox(tr("debug.stressView").c_str(), &stress_view_);
         }
+        if (!info.cursor.empty()) {
+            ImGui::SeparatorText(tr("cursor.title").c_str());
+            for (const std::string& line : info.cursor) {
+                ImGui::TextUnformatted(line.c_str());
+            }
+        }
     }
     ImGui::End();
     ImGui::Render();

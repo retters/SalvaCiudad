@@ -10,6 +10,7 @@
 #include "game/camera.h"
 #include "game/game_session.h"
 #include "game/map_scene.h"
+#include "game/terrain_names.h"
 #include "game/test_scene.h"
 #include "i18n/translator.h"
 #include "render/scene_renderer.h"
@@ -29,20 +30,6 @@ float to_float(sim::Fixed f) {
 
 sim::Fixed to_fixed(float v) {
     return sim::Fixed::from_raw(static_cast<std::int32_t>(std::lround(static_cast<double>(v) * 65536.0)));
-}
-
-const char* terrain_key(sim::Terrain t) {
-    switch (t) {
-        case sim::Terrain::Grass: return "terrain.grass";
-        case sim::Terrain::Meadow: return "terrain.meadow";
-        case sim::Terrain::ForestFloor: return "terrain.forestFloor";
-        case sim::Terrain::Sand: return "terrain.sand";
-        case sim::Terrain::Rock: return "terrain.rock";
-        case sim::Terrain::Clay: return "terrain.clay";
-        case sim::Terrain::Water: return "terrain.water";
-        case sim::Terrain::Count: break;
-    }
-    return "terrain.grass";
 }
 
 const char* feature_key(sim::FeatureType t) {
@@ -110,6 +97,7 @@ void DevTools::reset() {
     hovered_ = {};
     indexed_map_ = nullptr;
     indexed_count_ = 0;
+    terrain_names_.reset();
     index_.clear();
     list_.clear();
     list_dirty_ = true;
@@ -521,30 +509,11 @@ void DevTools::terrain_info(const DevContext& ctx, math::Vec3 at) {
     if (ctx.map == nullptr) {
         return;
     }
-    const sim::MapData& m = *ctx.map;
     const auto cx = static_cast<std::int32_t>(std::floor(at.x));
     const auto cz = static_cast<std::int32_t>(std::floor(at.z));
-    if (cx < 0 || cz < 0 || cx >= m.size || cz >= m.size) {
-        ImGui::TextUnformatted(tr("dev.terrain.outside").c_str());
-        return;
-    }
-    const std::size_t cell = static_cast<std::size_t>(cz) * static_cast<std::size_t>(m.size) + static_cast<std::size_t>(cx);
-    const int h00 = m.height_cm(cx, cz), h10 = m.height_cm(cx + 1, cz), h01 = m.height_cm(cx, cz + 1),
-              h11 = m.height_cm(cx + 1, cz + 1);
-    const int slope = std::max({h00, h10, h01, h11}) - std::min({h00, h10, h01, h11});
     ImGui::SeparatorText(tr("dev.terrain.title").c_str());
-    ImGui::Text("%s: %d, %d", tr("dev.terrain.cell").c_str(), cx, cz);
-    ImGui::Text("%s: %s", tr("dev.terrain.type").c_str(), tr(terrain_key(m.terrain_at(cx, cz))).c_str());
-    ImGui::Text("%s: %s", tr("dev.terrain.biome").c_str(),
-                ctx.content != nullptr && m.biome_at(cx, cz) < ctx.content->flora.biomes.size()
-                    ? tr(ctx.content->flora.biomes[m.biome_at(cx, cz)].name_key).c_str()
-                    : "?");
-    ImGui::Text("%s: %d %%", tr("dev.terrain.fertility").c_str(), m.fertility[cell] * 100 / 255);
-    ImGui::Text("%s: %.2f m", tr("dev.terrain.height").c_str(), static_cast<double>(h00) / 100.0);
-    ImGui::Text("%s: %d %%", tr("dev.terrain.slope").c_str(), slope);
-    if (m.water[cell] != 0) {
-        ImGui::Text("%s: %.2f m", tr("dev.terrain.waterDepth").c_str(),
-                    static_cast<double>(static_cast<int>(m.water[cell]) - h00) / 100.0);
+    for (const std::string& line : describe_lines(terrain_names_.describe(*ctx.map, cx, cz), ctx.content)) {
+        ImGui::TextUnformatted(line.c_str());
     }
 }
 

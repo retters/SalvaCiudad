@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "game/terrain_names.h"
 #include "math/vec.h"
 #include "sim/content.h"
 #include "sim/map.h"
@@ -83,6 +84,7 @@ private:
 
     void inspector_tab(DevContext& ctx);
     void terrain_info(const DevContext& ctx, math::Vec3 at);
+    TerrainNames terrain_names_;
     void create_tab(DevContext& ctx);
     void explorer_tab(DevContext& ctx);
     void village_tab(DevContext& ctx);

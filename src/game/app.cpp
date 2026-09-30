@@ -804,6 +804,7 @@ void App::render_frame(float dt) {
             debug_info_.sim_hash = sim_.last_hash();
             debug_info_.sim_entities = sim_.world().registry().alive_count();
         }
+        update_cursor_info(frame.width, frame.height);
         debug_.build(debug_info_, [&] { dev_tools_.draw(dev); }, dev_tools_.visible());
 
         const bool uploaded = ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_);
@@ -938,6 +939,8 @@ bool App::enter_generated_map() {
     }
     leave_map();
     dev_tools_.reset();
+    cursor_names_.reset();
+    cursor_key_ = {};
     test_scene_.set_visible(scene_, false);
     if (!map_scene_.show(scene_, generated->visuals)) {
         test_scene_.set_visible(scene_, true);
@@ -994,6 +997,8 @@ void App::leave_map() {
         return;
     }
     dev_tools_.reset();
+    cursor_names_.reset();
+    cursor_key_ = {};
     village_.set_fog(nullptr);
     (void)scene_.set_war_fog(0, 0, 0.0f);
     war_mode_shown_ = 0;
@@ -1193,6 +1198,37 @@ bool App::mouse_ray(std::uint32_t width, std::uint32_t height, math::Vec3& origi
     origin = inv.transform_point({nx, ny, 1.0f});
     dir = math::normalize(inv.transform_point({nx, ny, 0.01f}) - origin);
     return true;
+}
+
+void App::update_cursor_info(std::uint32_t width, std::uint32_t height) {
+    math::Vec3 origin;
+    math::Vec3 dir;
+    std::optional<math::Vec3> hit;
+    if (debug_.visible() && map_ && scene_ok_ && host_ && interactive_scene() &&
+        host_->scene_mode() == UiHost::SceneMode::Map && !debug_.wants_mouse() && mouse_ray(width, height, origin, dir)) {
+        hit = ground_hit(map_->map, origin, dir);
+    }
+    if (!hit) {
+        debug_info_.cursor.clear();
+        cursor_key_ = {};
+        return;
+    }
+    CursorKey key;
+    key.cx = static_cast<std::int32_t>(std::floor(hit->x));
+    key.cz = static_cast<std::int32_t>(std::floor(hit->z));
+    // Under the fog of war nothing is told (decision D-3704).
+    key.shown = !session_ || session_->fog().shows(hit->x, hit->z);
+    key.language = i18n::translator().generation();
+    key.map = &map_->map;
+    if (key == cursor_key_ && !debug_info_.cursor.empty()) {
+        return;
+    }
+    cursor_key_ = key;
+    if (!key.shown) {
+        debug_info_.cursor = {tr("cursor.unexplored")};
+        return;
+    }
+    debug_info_.cursor = describe_lines(cursor_names_.describe(map_->map, key.cx, key.cz), pack_ ? &pack_->content : nullptr);
 }
 
 void App::update_placement(std::uint32_t width, std::uint32_t height) {

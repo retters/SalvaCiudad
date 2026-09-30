@@ -28,21 +28,11 @@ public:
     virtual bool map_generated(MapData& map) = 0;
 };
 
-// The landforms a generation placed (phases 26 and 27), for the tests:
-// each along a line of points (x, z in meters), `width` meters across.
-enum class LandformKind : std::uint8_t { Coast, Gulf, Peninsula, Islet, Trench, Ridge, Plateau, Valley, Range, Canyon, Count };
-struct Landform {
-    LandformKind kind = LandformKind::Coast;
-    std::vector<std::array<std::int32_t, 2>> points;
-    std::int32_t width = 0;
-};
-
 // Empty if cancelled. `content` gives the species, biomes and map types;
 // map type and biome indices out of range fall back to the first ones.
-// `landforms`, if given, gets what was placed (a single map only).
+// The map lists the landforms it got (MapData::landforms).
 [[nodiscard]] std::optional<MapData> generate_map(const MapSettings& settings, const Content& content,
-                                                  const GenProgress& progress = {}, MapHooks* hooks = nullptr,
-                                                  std::vector<Landform>* landforms = nullptr);
+                                                  const GenProgress& progress = {}, MapHooks* hooks = nullptr);
 
 // Tuning shared with the tests.
 namespace worldgen {

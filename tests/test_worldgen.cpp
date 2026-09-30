@@ -602,14 +602,21 @@ TEST_SUITE("worldgen_sea") {
                 return std::count_if(landforms.begin(), landforms.end(), [&](const Landform& l) { return l.kind == k; });
             };
             s.sea = Sea::None;
-            REQUIRE(generate_map(s, content(), {}, nullptr, &landforms).has_value());
+            {
+                const auto m = generate_map(s, content());
+                REQUIRE(m.has_value());
+                landforms = m->landforms;
+            }
             for (const LandformKind k : {LandformKind::Coast, LandformKind::Gulf, LandformKind::Peninsula,
-                                         LandformKind::Islet, LandformKind::Trench, LandformKind::Ridge}) {
+                                         LandformKind::Cape, LandformKind::Islet, LandformKind::Trench, LandformKind::Ridge}) {
                 CHECK(kinds(k) == 0);
             }
             s.sea = Sea::Sometimes;
-            landforms.clear();
-            REQUIRE(generate_map(s, content(), {}, nullptr, &landforms).has_value());
+            {
+                const auto m = generate_map(s, content());
+                REQUIRE(m.has_value());
+                landforms = m->landforms;
+            }
             with_sea += kinds(LandformKind::Coast) > 0 ? 1 : 0;
         }
         CHECK(with_sea > 0);
@@ -623,9 +630,9 @@ TEST_SUITE("worldgen_sea") {
             MapSettings s = settings(seed, MapSize::Medium, 2);
             s.map_type = map_type("islands");
             s.islands = 3;
-            std::vector<Landform> landforms;
-            const auto m = generate_map(s, content(), {}, nullptr, &landforms);
+            const auto m = generate_map(s, content());
             REQUIRE(m.has_value());
+            const std::vector<Landform>& landforms = m->landforms;
             for (const Landform& l : landforms) {
                 const bool trench = l.kind == LandformKind::Trench;
                 if (!trench && l.kind != LandformKind::Ridge) {
@@ -688,10 +695,10 @@ TEST_SUITE("worldgen_coasts") {
     TEST_CASE("coasts: sea on one or two sides, land still the most") {
         for (std::uint64_t seed = 60; seed < 70; ++seed) {
             MapSettings s = settings(seed, MapSize::Medium, 2);
-            std::vector<Landform> landforms;
             s.sea = Sea::Always;
-            const auto m = generate_map(s, content(), {}, nullptr, &landforms);
+            const auto m = generate_map(s, content());
             REQUIRE(m.has_value());
+            const std::vector<Landform>& landforms = m->landforms;
             const auto kinds = [&](LandformKind k) {
                 return std::count_if(landforms.begin(), landforms.end(), [&](const Landform& l) { return l.kind == k; });
             };
@@ -727,10 +734,14 @@ TEST_SUITE("worldgen_landforms") {
             MapSettings s = settings(seed, MapSize::Medium);
             s.sea = Sea::None;
             s.landforms = Amount::High;
-            std::vector<Landform> landforms;
-            const auto m = generate_map(s, content(), {}, nullptr, &landforms);
+            const auto m = generate_map(s, content());
             REQUIRE(m.has_value());
+            const std::vector<Landform>& landforms = m->landforms;
             for (const Landform& l : landforms) {
+                if (l.kind != LandformKind::Plateau && l.kind != LandformKind::Valley && l.kind != LandformKind::Range &&
+                    l.kind != LandformKind::Canyon) {
+                    continue;  // Rivers: see "the names of what is under the cursor".
+                }
                 ++seen[l.kind];
                 const double half = l.width / 2.0;
                 int samples = 0;

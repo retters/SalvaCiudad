@@ -6,6 +6,7 @@
 #include <functional>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_gpu.h>
@@ -31,6 +32,9 @@ struct DebugInfo {
     std::uint64_t sim_tick = 0;
     std::uint64_t sim_hash = 0;
     std::uint32_t sim_entities = 0;
+    // What is under the cursor on a map (phase 37), already in text; empty
+    // when there is no map.
+    std::vector<std::string> cursor;
 };
 
 class DebugOverlay {

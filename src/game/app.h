@@ -19,6 +19,7 @@
 #include "game/services.h"
 #include "game/sound_director.h"
 #include "game/settings.h"
+#include "game/terrain_names.h"
 #include "game/test_scene.h"
 #include "game/ui_host.h"
 #include "game/village_view.h"
@@ -106,6 +107,8 @@ private:
     void handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec3 origin, math::Vec3 dir);
     // The mouse ray into the world; false when the mouse is outside.
     bool mouse_ray(std::uint32_t width, std::uint32_t height, math::Vec3& origin, math::Vec3& dir) const;
+    // The statistics window's "under the cursor" (phase 37), while it is open.
+    void update_cursor_info(std::uint32_t width, std::uint32_t height);
     // Shows a game (new or loaded) on its map, with the camera at its town.
     void start_session(std::unique_ptr<GameSession> session);
     void autosave_if_due();
@@ -205,6 +208,17 @@ private:
     Camera camera_;
     DebugOverlay debug_;
     DebugInfo debug_info_;
+    TerrainNames cursor_names_;
+    // The cell described last: redone only when it or the language changes.
+    struct CursorKey {
+        std::int32_t cx = 0;
+        std::int32_t cz = 0;
+        bool shown = false;
+        std::uint64_t language = 0;
+        const sim::MapData* map = nullptr;
+        bool operator==(const CursorKey&) const = default;
+    };
+    CursorKey cursor_key_;
     float camera_wheel_ = 0.0f;   // Wheel notches since the last camera update.
     float camera_drag_px_ = 0.0f;  // Middle-button drag since the last update.
     bool middle_down_ = false;

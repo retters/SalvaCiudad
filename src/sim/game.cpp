@@ -4954,6 +4954,20 @@ void write_map(BinaryWriter& w, const MapData& m) {
         w.fixed(s.x);
         w.fixed(s.z);
     }
+    w.u32(static_cast<std::uint32_t>(m.landforms.size()));
+    for (const Landform& l : m.landforms) {
+        w.u8(static_cast<std::uint8_t>(l.kind));
+        w.i32(l.width);
+        w.u32(static_cast<std::uint32_t>(l.points.size()));
+        for (const auto& pt : l.points) {
+            w.i32(pt[0]);
+            w.i32(pt[1]);
+        }
+    }
+    w.u32(static_cast<std::uint32_t>(m.sea_levels.size()));
+    for (const std::uint16_t level : m.sea_levels) {
+        w.u16(level);
+    }
 }
 
 bool read_map(BinaryReader& r, MapData& m, const Content& c) {
@@ -5026,6 +5040,42 @@ bool read_map(BinaryReader& r, MapData& m, const Content& c) {
     m.starts.resize(n);
     for (StartPosition& s : m.starts) {
         if (!r.fixed(s.x) || !r.fixed(s.z)) {
+            return false;
+        }
+    }
+    // Landforms: points within a map's side of the map (a gulf's line may
+    // start a little outside it).
+    if (!r.count(kMaxLandforms, 9, n)) {
+        return false;
+    }
+    m.landforms.resize(n);
+    for (Landform& l : m.landforms) {
+        std::uint8_t kind = 0;
+        std::uint32_t points = 0;
+        if (!r.u8(kind) || kind >= static_cast<std::uint8_t>(LandformKind::Count) || !r.i32(l.width) || l.width < 0 ||
+            l.width > 2 * m.size || !r.count(kMaxLandformPoints, 8, points) || points == 0) {
+            r.fail();
+            return false;
+        }
+        l.kind = static_cast<LandformKind>(kind);
+        l.points.resize(points);
+        for (auto& pt : l.points) {
+            if (!r.i32(pt[0]) || !r.i32(pt[1]) || pt[0] < -m.size || pt[1] < -m.size || pt[0] > 2 * m.size ||
+                pt[1] > 2 * m.size) {
+                r.fail();
+                return false;
+            }
+        }
+    }
+    // None (a map made by hand) or one per region.
+    const std::int32_t grid = world_grid(m.settings);
+    if (!r.count(static_cast<std::uint32_t>(grid * grid), 2, n) || (n != 0 && n != static_cast<std::uint32_t>(grid * grid))) {
+        r.fail();
+        return false;
+    }
+    m.sea_levels.resize(n);
+    for (std::uint16_t& level : m.sea_levels) {
+        if (!r.u16(level)) {
             return false;
         }
     }

@@ -432,6 +432,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En versus, la atalaya o el centro del pueblo del rival (si su punta pasa el techo) se ven como silueta a lo lejos antes de explorarlos; no se pueden seleccionar.
 - [ ] Un mod de prueba con `"landmark": true` en una especie de árbol hace que esos árboles se vean como silueta aunque sean chicos.
 
+### Fase 37 (nombres del terreno bajo el cursor)
+
+- [ ] Con F3 abierto, la ventana de estadísticas tiene la sección "Bajo el cursor", que cambia al mover el ratón sobre el mapa: casilla, suelo y bioma, altura y pendiente, fertilidad, agua y accidentes.
+- [ ] En la vista previa del mapa de una partida nueva con "Accidentes del terreno: Muchos" y "Mar: siempre", al pasar sobre un cañón, una meseta, un valle o una cordillera, F3 dice su nombre.
+- [ ] En el agua dice "Río", "Lago" o "Mar", con la profundidad; en la orilla del mar dice "Costa".
+- [ ] Sobre un golfo, una península o un cabo que se ven en el mapa, F3 dice su nombre donde se ven.
+- [ ] En un mapa de islas dice "Isla" sobre cada isla.
+- [ ] Con niebla de guerra, sobre lo no explorado dice solo "Todavía sin explorar".
+- [ ] Guarda la partida, cárgala y comprueba que los nombres siguen apareciendo.
+- [ ] Con el idioma en inglés, los nombres salen en inglés.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

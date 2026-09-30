@@ -79,6 +79,10 @@ constexpr std::uint64_t kPlateauEdgeSeed = 0x504c415445450029ull;
 constexpr std::uint64_t kRangePeaksSeed = 0x52414e4745500030ull;
 constexpr std::uint64_t kFlatOrderSeed = 0x464c41544f520031ull;
 constexpr std::uint64_t kMicroReliefSeed = 0x4d4943524f520032ull;
+// Rivers' courses in the map's landforms (phase 37): a point every this
+// many steps, and their width (beds reach 13 m across).
+constexpr std::int64_t kRiverCourseStep = 8;
+constexpr std::int32_t kRiverWidth = 14;
 // Land is raised this much when a map has a coast, so the sea floor has
 // room below the lowest land (heights are kept above 1 m).
 constexpr std::int32_t kCoastLift = 15000;
@@ -127,8 +131,8 @@ using worldgen::island_gap;
 
 class Generator {
 public:
-    Generator(const MapSettings& s, const Content& content, const GenProgress& progress, std::vector<Landform>* landforms)
-        : s_(s), flora_(content.flora), progress_(progress), landforms_(landforms), n_(map_cells(s.size)), v_(n_ + 1),
+    Generator(const MapSettings& s, const Content& content, const GenProgress& progress)
+        : s_(s), flora_(content.flora), progress_(progress), n_(map_cells(s.size)), v_(n_ + 1),
           rng_(s.seed, 7) {}
 
     std::optional<MapData> run() {
@@ -139,6 +143,9 @@ public:
             islands_ = island_layout(s_.seed, n_, std::clamp<std::int32_t>(s_.players, 1, 12),
                                      std::min<std::int32_t>(s_.islands, max_islands_per_town(s_.size, s_.players)));
             sea_mm_ = kSeaLevelMm;
+            for (const Island& island : islands_) {
+                record(LandformKind::Island, {{island.x, island.z}}, island.radius * 2);
+            }
         } else {
             plan_coast();
         }
@@ -815,10 +822,19 @@ private:
     void carve(const std::vector<std::size_t>& path) {
         const std::int64_t length = static_cast<std::int64_t>(path.size());
         std::int32_t level = INT32_MAX;
+        // Its course for the name, a point every few meters.
+        std::vector<Point> course;
+        const auto at = [&](std::size_t idx) {
+            return Point{static_cast<std::int32_t>(idx % static_cast<std::size_t>(v_)),
+                         static_cast<std::int32_t>(idx / static_cast<std::size_t>(v_))};
+        };
         for (std::int64_t i = 0; i < length; ++i) {
             const std::size_t idx = path[static_cast<std::size_t>(i)];
             if (lake_[idx] != 0) {
                 break;
+            }
+            if (i % kRiverCourseStep == 0) {
+                course.push_back(at(idx));
             }
             // The water surface never rises going downstream.
             level = std::min(level, filled_[idx] - 300);
@@ -853,6 +869,30 @@ private:
                     }
                 }
             }
+        }
+        // The last carved point closes the course.
+        for (std::int64_t i = length - 1; i >= 0; --i) {
+            const std::size_t idx = path[static_cast<std::size_t>(i)];
+            if (lake_[idx] == 0) {
+                if (i % kRiverCourseStep != 0) {
+                    course.push_back(at(idx));
+                }
+                break;
+            }
+        }
+        if (course.size() >= 2) {
+            // At most a point per step, so long rivers fit a save's limit.
+            while (course.size() > kMaxLandformPoints) {
+                std::vector<Point> half;
+                for (std::size_t k = 0; k < course.size(); k += 2) {
+                    half.push_back(course[k]);
+                }
+                if (half.back().x != course.back().x || half.back().z != course.back().z) {
+                    half.push_back(course.back());
+                }
+                course = std::move(half);
+            }
+            record(LandformKind::River, course, kRiverWidth);
         }
     }
 
@@ -1479,6 +1519,7 @@ private:
         for (std::size_t i = 0; i < water_.size(); ++i) {
             out_.water[i] = water_[i] == 0 ? 0 : static_cast<std::uint16_t>(std::clamp(water_[i] / 10, 1, 65535));
         }
+        out_.sea_levels.assign(1, static_cast<std::uint16_t>(std::clamp(sea_mm_ / 10, 0, 65535)));
         out_.terrain = std::move(terrain_);
         out_.fertility = std::move(fertility_);
         out_.biome = std::move(biome_);
@@ -1505,19 +1546,17 @@ private:
     std::vector<std::uint8_t> biome_;   // Cell biome.
     std::vector<std::uint8_t> taken_;   // Cells kept free around trunks.
     std::vector<Island> islands_;       // Map type with islands: main islands first.
-    std::vector<Landform>* landforms_;  // What was placed, for the tests; may be null.
     std::int32_t sea_mm_ = 0;           // Sea surface, millimeters; 0 without a sea.
 
-    void record(LandformKind kind, std::vector<Point> points, std::int32_t width) {
-        if (landforms_ != nullptr) {
-            Landform l;
-            l.kind = kind;
-            l.width = width;
-            for (const Point& pt : points) {
-                l.points.push_back({pt.x, pt.z});
-            }
-            landforms_->push_back(std::move(l));
+    // Keeps a landform in the map, for its name under the cursor.
+    void record(LandformKind kind, const std::vector<Point>& points, std::int32_t width) {
+        Landform l;
+        l.kind = kind;
+        l.width = width;
+        for (const Point& pt : points) {
+            l.points.push_back({pt.x, pt.z});
         }
+        out_.landforms.push_back(std::move(l));
     }
 
     // --- Coasts (phase 26) -------------------------------------------------------------
@@ -1532,6 +1571,7 @@ private:
         std::int32_t length = 0;
         std::int32_t half = 0;
         bool land = false;
+        LandformKind kind = LandformKind::Gulf;  // Gulf, Peninsula or Cape.
     };
     struct Coast {
         bool on = false;
@@ -1601,9 +1641,8 @@ private:
             lobe.dx = dx;
             lobe.dz = dz;
             lobe.half = std::max(12, lobe.length * rng.range(22, 45) / 100);
+            lobe.kind = i < gulfs ? LandformKind::Gulf : (i < gulfs + peninsulas ? LandformKind::Peninsula : LandformKind::Cape);
             coast_.lobes.push_back(lobe);
-            const LandformKind kind = i < gulfs ? LandformKind::Gulf : LandformKind::Peninsula;
-            record(kind, {lobe.base, {lobe.base.x + dx * lobe.length / 256, lobe.base.z + dz * lobe.length / 256}}, lobe.half * 2);
         }
         for (std::uint32_t i = 0; i < islets; ++i) {
             const std::uint32_t side = sides[rng.below(static_cast<std::uint32_t>(sides.size()))];
@@ -1614,7 +1653,6 @@ private:
             on_side(side, n_ * rng.range(10, 90) / 100, w * rng.range(25, 65) / 100, at, dx, dz);
             const std::int32_t radius = std::max(10, std::min(w / 4, rng.range(25, 80)));
             coast_.islets.push_back({at.x, at.z, radius, 0});
-            record(LandformKind::Islet, {at}, radius * 2);
         }
         for (const std::uint32_t side : sides) {
             Point a;
@@ -1640,6 +1678,19 @@ private:
         const std::int64_t lobes = n_ / 20;         // How far the coast goes in and out.
         const std::int64_t shore = std::max(24, n_ / 40);  // Meters from the coastline to open water.
         const auto smooth = [](std::int64_t u) { return (((u * u) >> 16) * (3 * 65536 - 2 * u)) >> 16; };
+        // The gulfs, peninsulas, capes and islets are shaped on bent
+        // positions: their names go where they end up, the point whose bent
+        // position is theirs (near enough, as the bend changes slowly).
+        const auto unbent = [&](Point p) {
+            Point q = p;
+            for (int k = 0; k < 3; ++k) {
+                const std::int32_t x = std::clamp(q.x, 0, v_ - 1);
+                const std::int32_t z = std::clamp(q.z, 0, v_ - 1);
+                q = {p.x - static_cast<std::int32_t>(fbm(s_.seed ^ kCoastWarpX, x, z, cell, 3) * bend / 32768),
+                     p.z - static_cast<std::int32_t>(fbm(s_.seed ^ kCoastWarpZ, x, z, cell, 3) * bend / 32768)};
+            }
+            return q;
+        };
         for (std::int32_t z = 0; z < v_; ++z) {
             FbmRow warp_x(s_.seed ^ kCoastWarpX, z, cell, 3);
             FbmRow warp_z(s_.seed ^ kCoastWarpZ, z, cell, 3);
@@ -1705,6 +1756,42 @@ private:
             }
             if ((z & 63) == 0 && !report(GenStage::Relief, 60 + z * 30 / v_)) {
                 return false;
+            }
+        }
+        // The names go on what the coast became: the small bays and capes
+        // may shorten a gulf or a peninsula, or swallow a cape or an islet.
+        const auto land = [&](Point p) {
+            return h_[vi(std::clamp(p.x, 0, v_ - 1), std::clamp(p.z, 0, v_ - 1))] > sea_mm_;
+        };
+        for (const Lobe& lobe : coast_.lobes) {
+            const Point a = unbent(lobe.base);
+            const Point b = unbent({lobe.base.x + lobe.dx * lobe.length / 256, lobe.base.z + lobe.dz * lobe.length / 256});
+            // Eleven points along it: the longest unbroken stretch as it
+            // should be (land, or sea for a gulf), if it is a fifth of it.
+            constexpr std::int32_t kSamples = 10;
+            std::int32_t first = 0;
+            std::int32_t last = -1;
+            std::int32_t run_start = 0;
+            for (std::int32_t k = 0; k <= kSamples; ++k) {
+                const Point p{a.x + (b.x - a.x) * k / kSamples, a.z + (b.z - a.z) * k / kSamples};
+                if (land(p) != lobe.land) {
+                    run_start = k + 1;
+                } else if (k - run_start > last - first) {
+                    first = run_start;
+                    last = k;
+                }
+            }
+            if (last - first >= 2) {
+                record(lobe.kind,
+                       {{a.x + (b.x - a.x) * first / kSamples, a.z + (b.z - a.z) * first / kSamples},
+                        {a.x + (b.x - a.x) * last / kSamples, a.z + (b.z - a.z) * last / kSamples}},
+                       lobe.half * 2);
+            }
+        }
+        for (const Island& islet : coast_.islets) {
+            const Point at = unbent({islet.x, islet.z});
+            if (land(at)) {
+                record(LandformKind::Islet, {at}, islet.radius * 2);
             }
         }
         return true;
@@ -2099,6 +2186,7 @@ std::optional<MapData> generate_world(const MapSettings& settings, const Content
     world.terrain.assign(side * side, static_cast<std::uint8_t>(Terrain::Water));
     world.fertility.assign(side * side, 0);
     world.biome.assign(side * side, 0);
+    world.sea_levels.assign(static_cast<std::size_t>(k) * static_cast<std::size_t>(k), 0);
     std::uint16_t lowest = 65535;
     constexpr auto kStages = static_cast<std::int32_t>(GenStage::Count);
     for (std::int32_t i = 0; i < n; ++i) {
@@ -2153,6 +2241,14 @@ std::optional<MapData> generate_world(const MapSettings& settings, const Content
             start = {m->starts[0].x + fx, m->starts[0].z + fz};
         }
         world.starts.push_back(start);
+        for (Landform l : m->landforms) {
+            for (auto& pt : l.points) {
+                pt[0] += static_cast<std::int32_t>(ox);
+                pt[1] += static_cast<std::int32_t>(oz);
+            }
+            world.landforms.push_back(std::move(l));
+        }
+        world.sea_levels[static_cast<std::size_t>(i)] = m->sea_levels.empty() ? 0 : m->sea_levels[0];
     }
     // The empty squares: sea a little below the lowest land.
     for (std::int32_t i = n; i < k * k; ++i) {
@@ -2171,6 +2267,7 @@ std::optional<MapData> generate_world(const MapSettings& settings, const Content
                 world.water[(oz + cz) * side + ox + cx] = static_cast<std::uint16_t>(std::max(100, static_cast<int>(lowest) - 100));
             }
         }
+        world.sea_levels[static_cast<std::size_t>(i)] = static_cast<std::uint16_t>(std::max(100, static_cast<int>(lowest) - 100));
     }
     return world;
 }
@@ -2345,11 +2442,11 @@ std::int32_t max_islands_per_town(MapSize size, std::int32_t towns) {
 }  // namespace worldgen
 
 std::optional<MapData> generate_map(const MapSettings& settings, const Content& content, const GenProgress& progress,
-                                    MapHooks* hooks, std::vector<Landform>* landforms) {
+                                    MapHooks* hooks) {
     if (world_grid(settings) > 1) {
         return generate_world(settings, content, progress, hooks);
     }
-    Generator gen(settings, content, progress, landforms);
+    Generator gen(settings, content, progress);
     std::optional<MapData> map = gen.run();
     if (map.has_value() && hooks != nullptr && !hooks->map_generated(*map)) {
         return std::nullopt;

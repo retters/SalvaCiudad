@@ -1639,3 +1639,31 @@ Antes, al guardar cualquier cambio de un elemento, la página escribía también
 
 **D-9017. Los estados que pone Claude no se pueden elegir en la página.**
 Pedido de Salvador. En el selector, los estados que solo pone Claude aparecen atenuados y no se pueden elegir; así se sigue viendo el estado actual. Son "analizada" y "planeada" en las ideas; "en curso", "corregida" y "no se reproduce" en las correcciones; y "respondida" en las preguntas, que se pone sola al contestar. El cambio masivo de estados también los excluye. Para no estar de acuerdo con lo que marcó Claude, se elige uno de los estados propios, por ejemplo regresar una corrección a "autorizada". `revision.py` sí puede ponerlos. Además, las introducciones y los textos de la página nombran a Claude en tercera persona, en vez de "yo" o "mi", para que no haya duda de quién hace qué.
+
+## Fase 37: nombres del terreno bajo el cursor (2026-09-29)
+
+**D-3701. Los accidentes viven en el mapa, fuera de su suma de verificación.**
+Antes, el generador entregaba la lista de accidentes solo a las pruebas. Ahora queda en `MapData::landforms`, junto con `sea_levels`, el nivel del mar de cada región. Así se guarda con la partida y llega a quien se une a una partida en red sin nada aparte. `checksum()` no los incluye porque describen el terreno, no son parte de él; por eso las sumas de verificación de referencia y la versión del generador (6) no cambian. Las partidas guardadas antes de esta fase ya no se pueden cargar, como en cualquier cambio de formato (D-631).
+
+**D-3702. Tipos nuevos: cabo, río e isla.**
+Los cabos antes se contaban como penínsulas; ahora son `Cape`. Los ríos se guardan con un punto cada 8 m de su curso y 14 m de ancho, y las islas de los mapas de islas, con su centro y su radio. Los lagos no se guardan uno por uno: el agua que no es mar ni río es lago. El mar es el agua que está justo al nivel del mar de su región. La costa es tierra seca con mar a 12 m o menos. Los tipos nuevos van al final de la lista, porque la partida guarda sus números.
+
+**D-3703. Los accidentes de la costa se guardan donde quedaron.**
+Los golfos, las penínsulas, los cabos y los islotes se dibujan sobre posiciones deformadas por ruido, y encima las bahías y cabos pequeños mueven la orilla. Al medirlo, solo 10 de 15 caían donde decía el plan. Por eso, después de dar forma a la costa, el generador:
+- deshace la deformación en el punto (tres iteraciones, porque cambia despacio);
+- mide once puntos a lo largo del eje y guarda solo el tramo continuo más largo que sí es tierra (o mar, en un golfo), si mide al menos un quinto del plan;
+- descarta el que no se formó, y el islote cuyo centro quedó bajo el agua.
+
+Con esto, 12 de 12 quedan en su lugar en las pruebas. El terreno no cambia; solo cambia lo que se anota. Las mesetas, los islotes y las islas tienen bordes deformados por ruido, así que se reconocen con un margen: 4/3 del radio más 10 m, el radio más 10 m y 1,7 veces el radio.
+
+**D-3704. Bajo la niebla no se dice nada.**
+F3 es una ventana de desarrollo, pero no debe revelar lo que el jugador no ha explorado. Donde la niebla lo oculta, dice solo "Todavía sin explorar". Con "Revelar todo" de las herramientas de desarrollo, sí se ve.
+
+**D-3705. Una sola descripción para F3 y para las herramientas de desarrollo.**
+El panel "Terreno" de Ctrl+F3 ya mostraba suelo, bioma, altura, pendiente y agua. Ahora usa la misma descripción de `game/terrain_names`, y se borraron sus textos repetidos (`dev.terrain.*`, salvo el título). La descripción se recalcula solo cuando cambian la casilla, el mapa o el idioma. El índice de accidentes, por cuadros de 128 m, se arma la primera vez que hace falta. Con F3 cerrado no se hace nada.
+
+**D-3706. Lo que no tiene nombre.**
+Las montañas del relieve "Montañoso" salen de un campo de ruido, no de una lista, así que no tienen nombre de accidente: F3 muestra su altura y su pendiente, pero no dice "Cordillera". "Cordillera" es solo la de la fase 27. Tampoco se nombran las bahías y cabos pequeños que ondulan toda la costa: son parte de la "Costa". Si hiciera falta nombrarlos, el generador tendría que guardarlos también.
+
+**D-3707. Numeración de las fases.**
+Otra sesión agregó las fases 35 (movimiento) y 36 (caminos), todavía sin commit. Esta fase es la 37, el reporte con Ctrl+F12 es la 38 y el pulido pasa a la 39.

@@ -3,6 +3,7 @@
 // it is integer-only and identical on every machine.
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <vector>
 
@@ -115,6 +116,25 @@ struct StartPosition {
     bool operator==(const StartPosition&) const = default;
 };
 
+// The named features a generation placed (phases 26, 27 and 37): each
+// along a line of points (x, z in meters from the map's corner), `width`
+// meters across; a single point for the round ones (plateaus, islets,
+// islands). Only for showing names: no rule of the game reads them. New
+// kinds go at the end (saves hold the numbers).
+enum class LandformKind : std::uint8_t {
+    Coast, Gulf, Peninsula, Islet, Trench, Ridge, Plateau, Valley, Range, Canyon, Cape, River, Island, Count
+};
+struct Landform {
+    LandformKind kind = LandformKind::Coast;
+    std::vector<std::array<std::int32_t, 2>> points;
+    std::int32_t width = 0;
+
+    bool operator==(const Landform&) const = default;
+};
+// Most landforms and points a map may have (saves refuse more).
+inline constexpr std::uint32_t kMaxLandforms = 100'000;
+inline constexpr std::uint32_t kMaxLandformPoints = 4096;
+
 struct MapData {
     MapSettings settings;
     std::uint16_t generator_version = 0;  // worldgen::kGeneratorVersion when made.
@@ -128,6 +148,11 @@ struct MapData {
     std::vector<MapFeature> features;
     std::vector<Zone> zones;
     std::vector<StartPosition> starts;
+    // Phase 37, for the names under the cursor: the landforms, and the
+    // sea's water surface per region in centimeters (0 = no sea there).
+    // Not in checksum(): they describe the terrain, they are not part of it.
+    std::vector<Landform> landforms;
+    std::vector<std::uint16_t> sea_levels;
 
     [[nodiscard]] std::int32_t vertices_per_side() const { return size + 1; }
     // Separate maps: cells per side of a region (0 for a shared map) and
