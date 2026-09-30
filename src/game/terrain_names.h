@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,9 @@ struct CellDescription {
     WaterKind water = WaterKind::None;
     std::int32_t water_depth_cm = 0;
     bool coast = false;  // Dry land with the sea close by.
+    // The hierarchical generator's region there (phase 39); none on
+    // classic maps.
+    std::optional<sim::LandformKind> region;
     // Sorted, each kind once. Never Coast or River (see `coast` and `water`).
     std::vector<sim::LandformKind> landforms;
 };

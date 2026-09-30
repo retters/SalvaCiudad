@@ -18,6 +18,9 @@ enum class Amount : std::uint8_t { Low, Normal, High, Count };
 enum class Relief : std::uint8_t { Low, Gentle, Mountainous, Count };
 // Phase 26: a coast on the maps without islands.
 enum class Sea : std::uint8_t { None, Sometimes, Always, Count };
+// Phase 39: which generator makes the map. Each is a module of its own with
+// its own version; new ones go at the end (saves hold the number).
+enum class MapGenerator : std::uint8_t { Classic, Hierarchical, Count };
 
 // Most natural features a map may have (saves refuse more): a colossal
 // map with thick forests has several million.
@@ -63,8 +66,12 @@ struct MapSettings {
     Sea sea = Sea::Sometimes;
     // Phase 27: how often plateaus, valleys, mountain ranges and canyons appear.
     Amount landforms = Amount::Normal;
+    MapGenerator generator = MapGenerator::Classic;
 
     void write(BinaryWriter& w) const;
+    // What makes two maps the same, for MapData::checksum(): the classic
+    // generator's maps keep the checksums they had before there was a choice.
+    void write_identity(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);
     bool operator==(const MapSettings&) const = default;
 };
@@ -122,7 +129,10 @@ struct StartPosition {
 // islands). Only for showing names: no rule of the game reads them. New
 // kinds go at the end (saves hold the numbers).
 enum class LandformKind : std::uint8_t {
-    Coast, Gulf, Peninsula, Islet, Trench, Ridge, Plateau, Valley, Range, Canyon, Cape, River, Island, Count
+    Coast, Gulf, Peninsula, Islet, Trench, Ridge, Plateau, Valley, Range, Canyon, Cape, River, Island,
+    // The hierarchical generator's regions (phase 39).
+    Plain, Hills, Mountains, Basin,
+    Count
 };
 struct Landform {
     LandformKind kind = LandformKind::Coast;
@@ -134,6 +144,9 @@ struct Landform {
 // Most landforms and points a map may have (saves refuse more).
 inline constexpr std::uint32_t kMaxLandforms = 100'000;
 inline constexpr std::uint32_t kMaxLandformPoints = 4096;
+// The hierarchical generator tells, per square of this many meters, which
+// region and which structure is there (phase 39).
+inline constexpr std::int32_t kOwnerBlock = 8;
 
 struct MapData {
     MapSettings settings;
@@ -153,6 +166,14 @@ struct MapData {
     // Not in checksum(): they describe the terrain, they are not part of it.
     std::vector<Landform> landforms;
     std::vector<std::uint16_t> sea_levels;
+    // Phase 39, hierarchical maps only (empty otherwise): per kOwnerBlock
+    // square, row by row, the landform (index + 1, 0 = none) of its region
+    // and of its structure.
+    std::vector<std::uint16_t> region_owner;
+    std::vector<std::uint16_t> structure_owner;
+    [[nodiscard]] std::int32_t owner_side() const { return (size + kOwnerBlock - 1) / kOwnerBlock; }
+    // The landform index + 1 at a cell in one of those grids (0 = none).
+    [[nodiscard]] std::uint16_t owner_at(const std::vector<std::uint16_t>& grid, std::int32_t cx, std::int32_t cz) const;
 
     [[nodiscard]] std::int32_t vertices_per_side() const { return size + 1; }
     // Separate maps: cells per side of a region (0 for a shared map) and

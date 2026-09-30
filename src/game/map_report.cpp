@@ -39,8 +39,11 @@ constexpr std::string_view kCameraModes[] = {"aerial", "thirdPerson", "firstPers
 constexpr std::string_view kSeasons[] = {"spring", "summer", "autumn", "winter"};
 constexpr std::string_view kTerrains[] = {"grass", "meadow", "forestFloor", "sand", "rock", "clay", "water"};
 constexpr std::string_view kWaters[] = {"none", "river", "lake", "sea"};
-constexpr std::string_view kLandforms[] = {"coast", "gulf",    "peninsula", "islet", "trench", "ridge", "plateau",
-                                           "valley", "range", "canyon",    "cape",  "river",  "island"};
+constexpr std::string_view kLandforms[] = {"coast",  "gulf",   "peninsula", "islet", "trench",    "ridge",
+                                           "plateau", "valley", "range",     "canyon", "cape",     "river",
+                                           "island",  "plain",  "hills",     "mountains", "basin"};
+constexpr std::string_view kGenerators[] = {"classic", "hierarchical"};
+static_assert(std::size(kGenerators) == static_cast<std::size_t>(sim::MapGenerator::Count));
 static_assert(std::size(kLandforms) == static_cast<std::size_t>(sim::LandformKind::Count));
 static_assert(std::size(kTerrains) == static_cast<std::size_t>(sim::Terrain::Count));
 
@@ -90,6 +93,9 @@ yyjson_mut_val* describe_json(yyjson_mut_doc* doc, const CellDescription& d, con
     add_str(doc, o, "biome", d.biome < content.flora.biomes.size() ? std::string_view(content.flora.biomes[d.biome].id) : "?");
     (void)yyjson_mut_obj_add_int(doc, o, "fertilityPct", d.fertility_pct);
     add_str(doc, o, "water", pick(kWaters, static_cast<std::size_t>(d.water)));
+    if (d.region) {
+        add_str(doc, o, "region", landform_name(*d.region));
+    }
     if (d.water != WaterKind::None) {
         (void)yyjson_mut_obj_add_real(doc, o, "waterDepthM", d.water_depth_cm / 100.0);
     }
@@ -256,6 +262,7 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
     const sim::MapSettings& s = r.map;
     yyjson_mut_val* m = yyjson_mut_obj_add_obj(d, root, "map");
     add_str(d, m, "seed", std::to_string(s.seed));
+    add_str(d, m, "generator", pick(kGenerators, static_cast<std::size_t>(s.generator)));
     add_str(d, m, "size", pick(names::kSizes, static_cast<std::size_t>(s.size)));
     const auto& types = content.flora.map_types;
     add_str(d, m, "mapType", s.map_type < types.size() ? std::string_view(types[s.map_type].id) : "");
@@ -323,7 +330,7 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
         std::int32_t h_min = INT32_MAX;
         std::int32_t h_max = INT32_MIN;
         std::int32_t slope = 0;
-        std::map<std::string, std::int64_t> water, ground, biome, landform;
+        std::map<std::string, std::int64_t> water, ground, biome, landform, region;
         // Described every so many cells, so a long stroke stays quick.
         const std::size_t every = std::max<std::size_t>(1, all.size() / 20000);
         std::int64_t described = 0;
@@ -351,6 +358,9 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
             for (const sim::LandformKind k : cd.landforms) {
                 ++landform[std::string(landform_name(k))];
             }
+            if (cd.region) {
+                ++region[std::string(landform_name(*cd.region))];
+            }
         }
         (void)yyjson_mut_obj_add_val(d, marked, "min", cell_array(d, lo));
         (void)yyjson_mut_obj_add_val(d, marked, "max", cell_array(d, hi));
@@ -371,6 +381,9 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
         counts("ground", ground);
         counts("biomes", biome);
         counts("landforms", landform);
+        if (!region.empty()) {
+            counts("regions", region);
+        }
     }
     return json::write_pretty(d);
 }
@@ -431,6 +444,13 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
         error = "bad map fields";
         return false;
     }
+    // Reports made before there was a choice are the classic generator's.
+    std::size_t generator = 0;
+    if (yyjson_mut_obj_get(map, "generator") != nullptr && !get_name(map, "generator", kGenerators, generator)) {
+        error = "unknown generator";
+        return false;
+    }
+    s.generator = static_cast<sim::MapGenerator>(generator);
     const auto [p, ec] = std::from_chars(seed.data(), seed.data() + seed.size(), s.seed);
     if (seed.empty() || ec != std::errc{} || p != seed.data() + seed.size()) {
         error = "bad seed";

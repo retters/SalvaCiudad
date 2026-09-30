@@ -4968,6 +4968,8 @@ void write_map(BinaryWriter& w, const MapData& m) {
     for (const std::uint16_t level : m.sea_levels) {
         w.u16(level);
     }
+    u16s(m.region_owner);
+    u16s(m.structure_owner);
 }
 
 bool read_map(BinaryReader& r, MapData& m, const Content& c) {
@@ -5077,6 +5079,25 @@ bool read_map(BinaryReader& r, MapData& m, const Content& c) {
     for (std::uint16_t& level : m.sea_levels) {
         if (!r.u16(level)) {
             return false;
+        }
+    }
+    // The hierarchical generator's owners: none, or one per square, each
+    // naming a landform the map has.
+    const std::size_t squares = static_cast<std::size_t>(m.owner_side()) * static_cast<std::size_t>(m.owner_side());
+    for (std::vector<std::uint16_t>* owners : {&m.region_owner, &m.structure_owner}) {
+        std::uint32_t count = 0;
+        std::span<const std::uint8_t> bytes;
+        if (!r.u32(count) || (count != 0 && count != squares) || !r.bytes(static_cast<std::size_t>(count) * 2, bytes)) {
+            r.fail();
+            return false;
+        }
+        owners->resize(count);
+        for (std::size_t i = 0; i < count; ++i) {
+            (*owners)[i] = static_cast<std::uint16_t>(bytes[i * 2] | (bytes[i * 2 + 1] << 8));
+            if ((*owners)[i] > m.landforms.size()) {
+                r.fail();
+                return false;
+            }
         }
     }
     return true;

@@ -1698,3 +1698,40 @@ La acción `ui.screenshot` (F12) existe desde la fase 17 pero no hace nada. No s
 
 **D-3809. Un contorno cerrado describe su área, y el rayo llega lejos.**
 Pedido de Salvador tras sus primeros reportes. Un trazo cuenta como cerrado si su final queda cerca de su inicio: a no más de una quinta parte de su tamaño, con un mínimo de 24 píxeles. Además de la línea, el reporte describe lo que encierra: lo muestrea en una rejilla que se abre cuanto más grande es el área, con 20 000 puntos como máximo, y el JSON marca el trazo con `"closed": true`. En un reporte con la cámara a 3,4 km, dos trazos lejanos no tenían casillas: el rayo buscaba el suelo solo hasta 4 km. Ahora F3 y los reportes buscan hasta cuatro veces la distancia de la cámara más 1,5 veces el lado del mapa. El recorrido del rayo empieza a la altura máxima posible del terreno y alarga el paso con la distancia (un metro más por cada 500 m), así que llegar lejos no lo vuelve lento.
+
+## Fase 39: generadores intercambiables y generador jerárquico, mundo y regiones (2026-09-30)
+
+Salvador pidió un generador nuevo, independiente del actual, con la idea de generar por jerarquías, y que las fases 39 a 43 se hagan seguidas, sin su intervención.
+
+**D-3901. Cada generador es una opción de la partida, no un parámetro de otro.**
+`MapSettings::generator` (clásico o jerárquico) se guarda con el mapa, en la partida, en la partida nueva recordada (`newGame.generator`) y en los reportes (`"generator"`; un reporte sin ese campo es del clásico). Agregar un generador después es agregar su módulo y su nombre al final de la lista. Para que los mapas clásicos no cambien, `MapSettings::write_identity`, lo que usa la suma de verificación, no escribe el generador cuando es el clásico: las sumas de referencia siguen iguales. Cada generador tiene su propia versión; la del jerárquico es `hier::kVersion` (1).
+
+**D-3902. Qué es independiente y qué se comparte.**
+El jerárquico vive en `sim/worldgen_hier.cpp` y da forma a todo el terreno a su manera. Las etapas de agua, suelo y vida del clásico (lagos por inundación desde el borde, ríos, suelo, biomas, bosques, recursos, fauna y salidas) se reutilizan, porque están probadas y rinden bien. Solo cambian donde el jerárquico lo pide: por ejemplo, los lagos (D-3906). Si más adelante un generador necesita otra etapa distinta, se separa entonces.
+
+**D-3903. Las regiones.**
+Hay un centro por celda de una rejilla, movido al azar, cada 150 a 900 m (el lado del mapa entre 7). Cada casilla es de la región del centro más cercano, medido después de deformar el punto con ruido: una ondulación amplia (30 % de la separación) y otra corta de 14 m, para que los bordes no sean rectos. "Accidentes del terreno" decide qué parte de las regiones no es llanura (30, 45 o 60 %). "Relieve" decide qué parte de esas son montañas (20, 35 o 55 %). De las demás, un 15 % son mesetas, un 10 % cuencas y el resto colinas. Las reglas:
+- las montañas se colocan en cadenas de 2 a 4 regiones vecinas que siguen una dirección;
+- una meseta no toca otra meseta ni una cuenca;
+- una cuenca no toca otra cuenca ni una meseta;
+- las colinas van primero junto a las montañas.
+
+**D-3904. Las alturas.**
+Cada papel da una altura base y dos tamaños de irregularidad (ondulaciones de 512 m y lomas de 64 m). Las alturas base aproximadas:
+- llanura: 21 m;
+- colinas: 25 a 29 m;
+- montañas: 38 a 52 m;
+- meseta: 48 a 62 m;
+- cuenca: 13,5 m.
+
+Se calculan en las esquinas de cuadros de 8 m, mezclando las regiones cercanas según su distancia al borde: en una franja ancha entre la mayoría y en 6 m alrededor de una meseta, que así queda con acantilado. Cada vértice interpola entre esas esquinas y suma sus irregularidades, más 40 cm de relieve fino para que el agua no corra en línea recta. Así, un mapa grande tarda 1,5 s en generarse.
+
+**D-3905. Los nombres son exactos.**
+El mapa guarda, por cuadro de 8 m, la región y la estructura que lo ocupan (`region_owner`, `structure_owner`), y la partida los guarda también. No entran en la suma de verificación, igual que los accidentes (D-3701). F3 y los reportes leen esas cuadrículas en vez de adivinar por distancia: "Región: Montañas" y, desde la fase 40, la estructura.
+
+**D-3906. Los lagos van en las cuencas.**
+Las primeras pruebas dejaban cientos de estanques en cualquier hondonada. En un mapa jerárquico, la etapa de lagos solo deja un lago si al menos la mitad está en una cuenca, o si es grande (15 000 vértices con 10 cm de agua o más, cerca de 1,5 ha). Las demás hondonadas se rellenan y quedan planas. En el clásico no cambia nada.
+
+**D-3907. Hasta la fase 41, sin mar.**
+El jerárquico todavía no hace mar ni islas: ignora "Mar", y en los tipos de mapa con islas genera tierra firme. La fase 41 agrega el agua.
+

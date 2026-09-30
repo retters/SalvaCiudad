@@ -148,6 +148,21 @@ CellDescription TerrainNames::describe(const sim::MapData& map, std::int32_t cx,
         }
     }
 
+    // A hierarchical map says exactly what is where.
+    if (!map.region_owner.empty()) {
+        const auto name = [&](const std::vector<std::uint16_t>& grid) -> std::optional<sim::LandformKind> {
+            const std::uint16_t owner = map.owner_at(grid, cx, cz);
+            if (owner == 0 || owner > map.landforms.size()) {
+                return std::nullopt;
+            }
+            return map.landforms[owner - 1u].kind;
+        };
+        d.region = name(map.region_owner);
+        if (const std::optional<sim::LandformKind> structure = name(map.structure_owner)) {
+            d.landforms.push_back(*structure);
+        }
+        return d;
+    }
     const bool dry = d.water == WaterKind::None;
     const bool at_sea = d.water == WaterKind::Sea;
     for (const std::uint32_t i : bucket) {
@@ -193,6 +208,10 @@ const char* landform_key(sim::LandformKind kind) {
         case sim::LandformKind::Cape: return "landform.cape";
         case sim::LandformKind::River: return "landform.river";
         case sim::LandformKind::Island: return "landform.island";
+        case sim::LandformKind::Plain: return "landform.plain";
+        case sim::LandformKind::Hills: return "landform.hills";
+        case sim::LandformKind::Mountains: return "landform.mountains";
+        case sim::LandformKind::Basin: return "landform.basin";
         case sim::LandformKind::Count: break;
     }
     return "landform.coast";
@@ -237,6 +256,9 @@ std::vector<std::string> describe_lines(const CellDescription& d, const sim::Con
     };
     if (d.water != WaterKind::None) {
         lines.push_back(tr("cursor.water", tr(water_key(d.water)), meters(d.water_depth_cm)));
+    }
+    if (d.region) {
+        lines.push_back(tr("cursor.region", tr(landform_key(*d.region))));
     }
     std::string names;
     const auto add = [&](const char* key) { names += (names.empty() ? "" : ", ") + tr(key); };

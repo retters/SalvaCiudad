@@ -10,6 +10,7 @@
 
 #include "sim/noise.h"
 #include "sim/rng.h"
+#include "sim/worldgen_hier.h"
 
 namespace sc::sim {
 
@@ -83,6 +84,9 @@ constexpr std::uint64_t kMicroReliefSeed = 0x4d4943524f520032ull;
 // many steps, and their width (beds reach 13 m across).
 constexpr std::int64_t kRiverCourseStep = 8;
 constexpr std::int32_t kRiverWidth = 14;
+// Hierarchical maps (phase 39): a lake outside the basins needs this many
+// vertices under 10 cm of water or more (about 1.5 ha).
+constexpr std::size_t kHierFreeLake = 15000;
 // Land is raised this much when a map has a coast, so the sea floor has
 // room below the lowest land (heights are kept above 1 m).
 constexpr std::int32_t kCoastLift = 15000;
@@ -139,7 +143,10 @@ public:
         out_.settings = s_;
         out_.size = n_;
         out_.generator_version = kGeneratorVersion;
-        if (const MapTypeDef* type = map_type(); type != nullptr && type->islands) {
+        if (s_.generator == MapGenerator::Hierarchical) {
+            // Its own module shapes the ground, sea and islands included.
+            out_.generator_version = hier::kVersion;
+        } else if (const MapTypeDef* type = map_type(); type != nullptr && type->islands) {
             islands_ = island_layout(s_.seed, n_, std::clamp<std::int32_t>(s_.players, 1, 12),
                                      std::min<std::int32_t>(s_.islands, max_islands_per_town(s_.size, s_.players)));
             sea_mm_ = kSeaLevelMm;
@@ -206,7 +213,29 @@ private:
 
     // --- Relief ----------------------------------------------------------------
 
+    // The hierarchical generator's ground (phase 39): its regions and
+    // structures are the map's landforms, and its rivers start where its
+    // valleys and canyons ask for one.
+    bool relief_hierarchical() {
+        hier::Ground r;
+        if (!hier::shape(s_, n_, [this](int percent) { return report(GenStage::Relief, percent); }, r)) {
+            return false;
+        }
+        h_ = std::move(r.h);
+        sea_mm_ = r.sea_mm;
+        out_.landforms = std::move(r.landforms);
+        out_.region_owner = std::move(r.region_owner);
+        out_.structure_owner = std::move(r.structure_owner);
+        for (const auto& p : r.river_sources) {
+            canyon_heads_.push_back({p[0], p[1]});
+        }
+        return true;
+    }
+
     bool relief() {
+        if (s_.generator == MapGenerator::Hierarchical) {
+            return relief_hierarchical();
+        }
         h_.assign(static_cast<std::size_t>(v_) * static_cast<std::size_t>(v_), 0);
         lake_cut_.assign(h_.size(), 0);
         const std::int64_t amp = s_.relief == Relief::Low ? 5000 : (s_.relief == Relief::Gentle ? 10000 : 12000);  // mm
@@ -641,11 +670,13 @@ private:
             component.push_back(static_cast<std::uint32_t>(start));
             seen[start] = 1;
             std::int32_t max_depth = 0;
-            std::size_t deep = 0;  // Vertices under 10 cm of water or more.
+            std::size_t deep = 0;   // Vertices under 10 cm of water or more.
+            std::size_t basin = 0;  // Vertices in a basin region (hierarchical maps).
             for (std::size_t q = 0; q < component.size(); ++q) {
                 const std::size_t idx = component[q];
                 max_depth = std::max(max_depth, filled_[idx] - h_[idx]);
                 deep += filled_[idx] - h_[idx] >= 100 ? 1 : 0;
+                basin += in_basin(idx) ? 1 : 0;
                 const std::int32_t x = static_cast<std::int32_t>(idx % static_cast<std::size_t>(v_));
                 const std::int32_t z = static_cast<std::int32_t>(idx / static_cast<std::size_t>(v_));
                 const std::int32_t nx[4] = {x - 1, x + 1, x, x};
@@ -662,8 +693,11 @@ private:
                 }
             }
             // A lake: deep somewhere and wide where it is not shallow (a wide
-            // hollow barely wet but for one pit is filled in).
-            const bool is_lake = max_depth >= 700 && deep >= 150;
+            // hollow barely wet but for one pit is filled in). On a
+            // hierarchical map lakes belong in the basins: elsewhere only a
+            // big one stays (phase 39).
+            const bool allowed = out_.region_owner.empty() || basin * 2 >= component.size() || deep >= kHierFreeLake;
+            const bool is_lake = max_depth >= 700 && deep >= 150 && allowed;
             for (const std::uint32_t idx : component) {
                 if (is_lake) {
                     lake_[idx] = 1;
@@ -698,6 +732,17 @@ private:
             flood_sea();
         }
         return report(GenStage::Lakes, 100);
+    }
+
+    // Whether a vertex lies in a basin region of a hierarchical map.
+    [[nodiscard]] bool in_basin(std::size_t idx) const {
+        if (out_.region_owner.empty()) {
+            return false;
+        }
+        const auto x = static_cast<std::int32_t>(idx % static_cast<std::size_t>(v_));
+        const auto z = static_cast<std::int32_t>(idx / static_cast<std::size_t>(v_));
+        const std::uint16_t owner = out_.owner_at(out_.region_owner, std::min(x, n_ - 1), std::min(z, n_ - 1));
+        return owner != 0 && out_.landforms[owner - 1u].kind == LandformKind::Basin;
     }
 
     // Bits of a lake's shallow rim cut off from it by bumps of a few
@@ -2187,6 +2232,11 @@ std::optional<MapData> generate_world(const MapSettings& settings, const Content
     world.fertility.assign(side * side, 0);
     world.biome.assign(side * side, 0);
     world.sea_levels.assign(static_cast<std::size_t>(k) * static_cast<std::size_t>(k), 0);
+    if (settings.generator != MapGenerator::Classic) {
+        const auto squares = static_cast<std::size_t>(world.owner_side()) * static_cast<std::size_t>(world.owner_side());
+        world.region_owner.assign(squares, 0);
+        world.structure_owner.assign(squares, 0);
+    }
     std::uint16_t lowest = 65535;
     constexpr auto kStages = static_cast<std::int32_t>(GenStage::Count);
     for (std::int32_t i = 0; i < n; ++i) {
@@ -2241,6 +2291,24 @@ std::optional<MapData> generate_world(const MapSettings& settings, const Content
             start = {m->starts[0].x + fx, m->starts[0].z + fz};
         }
         world.starts.push_back(start);
+        // Each map's owners name its landforms, now further along the list.
+        const auto first = static_cast<std::uint16_t>(world.landforms.size());
+        if (!world.region_owner.empty() && !m->region_owner.empty()) {
+            const std::int32_t from = m->owner_side();
+            const std::int32_t to = world.owner_side();
+            const auto bx = static_cast<std::int32_t>(ox) / kOwnerBlock;
+            const auto bz = static_cast<std::int32_t>(oz) / kOwnerBlock;
+            for (std::int32_t z = 0; z < from; ++z) {
+                for (std::int32_t x = 0; x < from; ++x) {
+                    const auto src = static_cast<std::size_t>(z * from + x);
+                    const auto dst = static_cast<std::size_t>((bz + z) * to + bx + x);
+                    for (auto [a, b] : {std::pair{&m->region_owner, &world.region_owner},
+                                        std::pair{&m->structure_owner, &world.structure_owner}}) {
+                        (*b)[dst] = (*a)[src] == 0 ? 0 : static_cast<std::uint16_t>((*a)[src] + first);
+                    }
+                }
+            }
+        }
         for (Landform l : m->landforms) {
             for (auto& pt : l.points) {
                 pt[0] += static_cast<std::int32_t>(ox);

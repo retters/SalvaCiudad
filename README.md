@@ -476,6 +476,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Un círculo cerrado alrededor de una zona da en `reporte.json` un trazo con `"closed": true` y muchas más casillas que la línea sola.
 - [ ] Con la cámara muy alejada (todo el mapa a la vista), los trazos del fondo también tienen casillas.
 
+### Fase 39 (generador jerárquico: regiones)
+
+- [ ] La partida nueva tiene "Generador de mapas" (Clásico, Jerárquico), con un tooltip que explica cada uno, y lo recuerda al volver.
+- [ ] Con "Clásico" los mapas son iguales que antes (la misma semilla da el mismo mapa).
+- [ ] Con "Jerárquico", F3 muestra "Región: …" (Llanura, Colinas, Montañas, Meseta o Cuenca) y cambia al pasar de una región a otra.
+- [ ] Las mesetas se ven como terreno alto con acantilado alrededor; las cuencas tienen lagos; casi no hay estanques sueltos fuera de ellas.
+- [ ] Con "Accidentes: Pocos" hay más llanura que con "Muchos"; con relieve "Montañoso" hay más montañas.
+- [ ] Guardar y cargar una partida jerárquica conserva los nombres de F3.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).
