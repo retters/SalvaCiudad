@@ -500,6 +500,13 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Los ríos llegan al mar; donde desembocan, F3 dice "Estuario" y no "Mar" ni "Dorsal marina" (también en el clásico).
 - [ ] Ninguna meseta toca el mar.
 
+### Fase 42 (generador jerárquico: suelo y vida)
+
+- [ ] Cada región tiene un bioma propio (el cambio de árboles coincide con el cambio de región en F3); las montañas son pinares en los tipos de mapa que los tienen.
+- [ ] Los pueblos empiezan en llanuras o colinas, con agua cerca, piedra, bayas y árboles.
+- [ ] Un mapa colosal jerárquico se genera en menos tiempo que uno clásico.
+- [ ] Una partida jerárquica en multijugador (dos ventanas con `--instance` y `--loopback`) no se desincroniza.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

@@ -1776,3 +1776,17 @@ Nueva suite `worldgen_hier_water`:
 - 4 de 4 cañones tienen agua en su fondo;
 - el final de un río nunca se nombra "Mar".
 
+## Fase 42: generador jerárquico, suelo, vida y detalle (2026-09-30)
+
+**D-4201. Los biomas siguen las regiones.**
+En un mapa jerárquico, cada región tiene un solo bioma, elegido con los pesos del tipo de mapa a partir de su número. Si el tipo de mapa tiene pinares, todas las regiones de montañas son pinar. En un mapa grande de prueba, 58 de 58 regiones tienen un solo bioma (al menos 80 % de sus cuadros) y 14 de 14 montañas son pinares. Los bosques, recursos, fauna, humedad, fertilidad y suelo salen de las etapas compartidas, que ya se guían por el agua y las pendientes.
+
+**D-4202. Los pueblos empiezan en llanuras o colinas.**
+La etapa de salidas prefiere, en un mapa jerárquico, casillas de llanura o colinas que no sean parte de ninguna estructura (ni valle, ni rampa, ni islote). Si no hay suficientes, usa el resto, como el clásico. Las garantías de siempre (recursos, agua a 150 m o menos, claro de 25 m) se prueban también en el jerárquico con 1, 4 y 8 pueblos, y con 12 en un mapa grande.
+
+**D-4203. Detalle fino.**
+El nivel 5 son las lomas de 64 m y los 40 cm de relieve fino de la fase 39, más el detalle que ya ponen las etapas compartidas (rocas, arbustos, hierbas y pasto). No hizo falta agregar otro.
+
+**D-4204. Rendimiento.**
+El mapa colosal jerárquico tarda 113 s, contra 179 s del clásico (`docs/RENDIMIENTO.md`). Las pruebas de esta fase están en la suite `worldgen_hier_life`.
+

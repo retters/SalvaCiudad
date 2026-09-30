@@ -468,3 +468,113 @@ TEST_SUITE("worldgen_hier_water") {
         CHECK(wet * 2 >= canyons);
     }
 }
+
+TEST_SUITE("worldgen_hier_life") {
+    TEST_CASE("towns start fair, on plains or hills, with water, room and resources") {
+        for (const std::uint8_t players : {std::uint8_t{1}, std::uint8_t{4}, std::uint8_t{8}}) {
+            sim::MapSettings s = hier_settings(4242, sim::MapSize::Medium);
+            s.players = players;
+            const sim::MapData m = generate(s);
+            REQUIRE(m.starts.size() == players);
+            int on_good_ground = 0;
+            for (std::size_t i = 0; i < m.starts.size(); ++i) {
+                const sim::StartPosition& st = m.starts[i];
+                const std::int32_t x = st.x.floor_int();
+                const std::int32_t z = st.z.floor_int();
+                const sim::Terrain t = m.terrain_at(x, z);
+                CHECK(t != sim::Terrain::Water);
+                CHECK(t != sim::Terrain::Rock);
+                const LandformKind region = m.landforms[m.owner_at(m.region_owner, x, z) - 1u].kind;
+                on_good_ground += region == LandformKind::Plain || region == LandformKind::Hills ? 1 : 0;
+                int stones = 0, berries = 0, trees = 0;
+                for (const sim::MapFeature& f : m.features) {
+                    const double dx = (f.x - st.x).raw() / 65536.0;
+                    const double dz = (f.z - st.z).raw() / 65536.0;
+                    const double d = std::hypot(dx, dz);
+                    CHECK(d > sim::worldgen::kStartClearRadius);
+                    if (d <= sim::worldgen::kStartResourceRadius) {
+                        stones += f.type == sim::FeatureType::Stone;
+                        berries += f.type == sim::FeatureType::BerryBush;
+                        trees += f.type == sim::FeatureType::Tree;
+                    }
+                }
+                CHECK(stones >= sim::worldgen::kStartMinStones);
+                CHECK(berries >= sim::worldgen::kStartMinBerries);
+                CHECK(trees >= sim::worldgen::kStartMinTrees);
+                bool water = false;
+                const std::int32_t r = sim::worldgen::kStartMaxWaterDistance;
+                for (std::int32_t dz = -r; dz <= r && !water; dz += 2) {
+                    for (std::int32_t dx = -r; dx <= r && !water; dx += 2) {
+                        water = m.water_at(x + dx, z + dz);
+                    }
+                }
+                CHECK(water);
+            }
+            CHECK(on_good_ground == players);
+        }
+    }
+
+    TEST_CASE("biomes follow the regions, with pinewoods on the mountains") {
+        sim::MapSettings s = hier_settings(91, sim::MapSize::Large);
+        s.relief = sim::Relief::Mountainous;
+        std::int32_t pine = -1;
+        for (std::size_t t = 0; t < sc::test::core_content().flora.map_types.size(); ++t) {
+            if (sc::test::core_content().flora.map_types[t].id == "core:varied") {
+                s.map_type = static_cast<std::uint8_t>(t);
+            }
+        }
+        pine = sc::test::core_content().flora.find_biome("core:pinewood");
+        REQUIRE(pine >= 0);
+        const sim::MapData m = generate(s);
+        // Per region, how many squares have its most common biome.
+        std::map<std::uint16_t, std::map<std::uint8_t, int>> per_region;
+        const std::int32_t side = m.owner_side();
+        for (std::int32_t bz = 0; bz < side; ++bz) {
+            for (std::int32_t bx = 0; bx < side; ++bx) {
+                const std::int32_t x = bx * sim::kOwnerBlock + 4, z = bz * sim::kOwnerBlock + 4;
+                ++per_region[m.owner_at(m.region_owner, x, z)][m.biome_at(x, z)];
+            }
+        }
+        int regions = 0, uniform = 0, mountain = 0, pine_mountain = 0;
+        for (const auto& [owner, biomes] : per_region) {
+            int total = 0, most = 0;
+            for (const auto& [b, count] : biomes) {
+                total += count;
+                most = std::max(most, count);
+            }
+            if (total < 40) {
+                continue;
+            }
+            ++regions;
+            uniform += most * 10 >= total * 8 ? 1 : 0;
+            if (m.landforms[owner - 1u].kind == LandformKind::Mountains) {
+                ++mountain;
+                pine_mountain += biomes.count(static_cast<std::uint8_t>(pine)) != 0 && biomes.at(static_cast<std::uint8_t>(pine)) == most ? 1 : 0;
+            }
+        }
+        MESSAGE(uniform << " of " << regions << " regions of one biome; " << pine_mountain << " of " << mountain << " mountains of pines");
+        CHECK(uniform * 10 >= regions * 8);
+        CHECK(mountain > 0);
+        CHECK(pine_mountain == mountain);
+    }
+
+    TEST_CASE("every map type and a crowd of towns") {
+        const auto& types = sc::test::core_content().flora.map_types;
+        for (std::size_t t = 0; t < types.size(); ++t) {
+            CAPTURE(types[t].id);
+            sim::MapSettings s = hier_settings(95 + t, sim::MapSize::Small);
+            s.map_type = static_cast<std::uint8_t>(t);
+            const sim::MapData m = generate(s);
+            CHECK(m.starts.size() == 2);
+            CHECK_FALSE(m.features.empty());
+        }
+        sim::MapSettings crowd = hier_settings(99, sim::MapSize::Large);
+        crowd.players = 12;
+        const sim::MapData m = generate(crowd);
+        REQUIRE(m.starts.size() == 12);
+        for (const sim::StartPosition& st : m.starts) {
+            CHECK_FALSE(m.water_at(st.x.floor_int(), st.z.floor_int()));
+        }
+    }
+}
+

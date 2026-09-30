@@ -737,6 +737,17 @@ private:
         return report(GenStage::Lakes, 100);
     }
 
+    // Whether a town may start here: on a hierarchical map, in a plain or
+    // hills and away from any structure (phase 42); anywhere otherwise.
+    [[nodiscard]] bool town_ground(std::int32_t x, std::int32_t z) const {
+        if (out_.region_owner.empty()) {
+            return true;
+        }
+        const std::uint16_t region = out_.owner_at(out_.region_owner, x, z);
+        const LandformKind kind = region == 0 ? LandformKind::Sea : out_.landforms[region - 1u].kind;
+        return (kind == LandformKind::Plain || kind == LandformKind::Hills) && out_.owner_at(out_.structure_owner, x, z) == 0;
+    }
+
     // Whether a vertex lies in a basin region of a hierarchical map.
     [[nodiscard]] bool in_basin(std::size_t idx) const {
         if (out_.region_owner.empty()) {
@@ -1054,6 +1065,11 @@ private:
             return report(GenStage::Biomes, 100);
         }
         const MapTypeDef& type = *type_ptr;
+        std::int32_t pinewood = -1;
+        if (const int pine = flora_.find_biome("core:pinewood"); pine >= 0 &&
+            std::any_of(type.biomes.begin(), type.biomes.end(), [&](const Weighted& w) { return w.id == pine; })) {
+            pinewood = pine;
+        }
         const std::int32_t p = type.patch_m;
         const std::int32_t warp = p / 3;
         for (std::int32_t bz = 0; bz < n_; bz += kBiomeBlock) {
@@ -1077,7 +1093,17 @@ private:
                         }
                     }
                 }
-                const std::uint8_t b = pick_weighted(type.biomes, static_cast<std::uint32_t>(best_hash >> 40));
+                std::uint8_t b = pick_weighted(type.biomes, static_cast<std::uint32_t>(best_hash >> 40));
+                // A hierarchical map's biomes follow its regions: one per
+                // region, and pinewoods on the mountains if the map type
+                // has them (phase 42).
+                if (const std::uint16_t region = out_.owner_at(out_.region_owner, bx, bz); region != 0) {
+                    const LandformKind kind = out_.landforms[region - 1u].kind;
+                    b = pick_weighted(type.biomes, static_cast<std::uint32_t>(mix64(s_.seed ^ kBiomeSeed ^ region) >> 40));
+                    if (kind == LandformKind::Mountains && pinewood >= 0) {
+                        b = static_cast<std::uint8_t>(pinewood);
+                    }
+                }
                 for (std::int32_t z = bz; z < std::min(n_, bz + kBiomeBlock); ++z) {
                     for (std::int32_t x = bx; x < std::min(n_, bx + kBiomeBlock); ++x) {
                         biome_[ci(x, z)] = b;
@@ -1422,7 +1448,7 @@ private:
                     score -= (std::abs(x - n_ / 2) + std::abs(z - n_ / 2)) / 4;
                 }
                 const Candidate c{score, x, z};
-                if (d >= 12 && d <= kStartMaxWaterDistance) {
+                if (d >= 12 && d <= kStartMaxWaterDistance && town_ground(x, z)) {
                     candidates.push_back(c);
                 } else {
                     fallback.push_back(c);

@@ -152,3 +152,15 @@ Mapa colosal, gráficos en Ultra (MSAA 8x, sombras 3 × 2048, distancia 2500 m),
 | "Ver a través de la niebla" (sin niebla en el sombreador) | 84 a 88 | 6,3 ms |
 
 La niebla no cuesta FPS medibles en la GPU. Sin ella el juego va más lento porque dibuja los animales de todo el mapa colosal, y su lista de instancias se rehace en cada cuadro; con niebla solo se dibujan los de lo explorado.
+
+## Generador jerárquico (fase 42)
+
+Medido en release en esta PC (2026-09-30), mapa colosal (16 384 × 16 384), semilla 12345, 1 jugador, sin mar, opciones normales:
+
+| Generador | Tiempo |
+|---|---|
+| Clásico | 179 s |
+| Jerárquico | 113 s |
+
+El jerárquico calcula las regiones y su mezcla en una rejilla de 8 m (unos 4 millones de esquinas en el colosal) y solo interpola en cada vértice. Sus estructuras tocan únicamente sus propias franjas, en vez de cruzar el mapa entero como los valles y cañones del clásico (ver la sugerencia `sug-formas-por-borde`). Un mapa grande (2048 × 2048) tarda 1,5 s.
+
