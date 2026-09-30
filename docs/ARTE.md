@@ -43,6 +43,13 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `animals.py` | `animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb` (sin esqueleto) |
 | `build_all.py` | Ejecuta todo |
 | `preview.py` | Imágenes de revisión |
+| `studies.py` | Técnicas de modelado de los animales low poly; `build_final` es la de producción (remesh y reducción) |
+| `zoo/*.py` | Un animal o planta low poly por archivo (ver abajo) |
+| `zoo_build.py` | Genera los modelos de `zoo/` |
+| `rigs.py` | Esqueletos, pesos y animaciones de los animales de `zoo/` |
+| `rig_check.py` | Verifica las animaciones de un modelo exportado |
+| `study_preview.py` | Una imagen de revisión por modelo (4 vistas) y las tiras de sus animaciones |
+| `pig_studies.py`, `tiger_studies.py` | El cerdito y el tigre con cada técnica, para compararlas |
 
 ## Convenciones
 
@@ -117,6 +124,52 @@ Cada variante es un modelo más: se dibuja con sus propias llamadas de dibujo. P
 2. Genera con el comando de arriba y revísalo en el visor de modelos (abajo) o en las vistas previas.
 3. Si es un personaje, usa el esqueleto humano y nombres de material de la tabla de paletas.
 4. Comprueba que regenerar da el mismo archivo.
+
+## Animales y flora low poly (`art/blender/zoo/`)
+
+Los 24 modelos de la imagen de referencia `Animales low poly.png` (en la raíz del repositorio, del usuario). Todavía no están en el juego: entran en la fase 47.
+
+- **Técnica:** se compararon diez técnicas con el cerdito y el tigre (`pig_studies.py`, `tiger_studies.py`) y el usuario eligió la de *remesh* y reducción (D-4401). `studies.build_final` suelda las partes de la especificación (elipsoides y cápsulas) en una sola superficie y la reduce a `budget` triángulos. Después la corta donde un borde de color debe ser nítido (`bands` para rayas, `cuts` para bordes sueltos), pinta cada cara con `paint()`, aplana las puntas de otro color (`caps`, como el hocico del cerdito) y agrega tonos claros y oscuros a las facetas. Al final pone las piezas finas que no sobreviven al *remesh* (`details()`: orejas, cuernos, alas, aletas, hojas).
+- **Un archivo por modelo** en `zoo/`, con el nombre del modelo, que define `SPECS`. `zoo/pig.py` es el ejemplo simple; `zoo/tiger.py`, uno con rayas.
+- **Límite de triángulos** (`max_tris`, piezas incluidas): `build_final` baja el presupuesto hasta que el modelo cabe.
+
+| Tipo | Ejemplos | Límite |
+|---|---|---|
+| Animal pequeño | conejo, gallo, águila | 800 |
+| Animal mediano | cerdo, oveja, lobo, ciervo, tortuga, tiburón, pulpo | 1500 |
+| Animal grande | tigre, león, vaca, caballo, elefante | 2000 |
+| Criatura especial | grifo, dragón | 3000 |
+| Flora | cactus, piña, fresa, hongo | 1000 |
+
+Generar y revisar (`art/studies/` no se versiona: se regenera):
+
+```
+blender --background --factory-startup --python art/blender/zoo_build.py -- art/studies/animals [nombres]
+blender --background --factory-startup --python art/blender/study_preview.py -- art/studies/animals art/studies/animals/preview [nombres]
+```
+
+La vista previa hace una imagen por modelo con cuatro vistas (frente, lado, 3/4 y 3/4 con las aristas y el número de triángulos) y `overview.png` con todos. Si el modelo tiene esqueleto, también `<nombre>_anim.png`: una fila por animación con 8 fotogramas vistos de lado.
+
+### Esqueletos y animaciones de los animales
+
+`rigs.py` (fase 44). Una plantilla por familia arma el esqueleto con unos pocos puntos que declara la especificación (`rig = rigs.Quadruped(...)`, ver `zoo/pig.py`). Así todos los animales de una familia comparten nombres de huesos y animaciones.
+
+- **Cuadrúpedo:** 21 huesos: `body` (la raíz, con la parte de atrás del cuerpo), `chest`, `neck`, `head`, `ear.L/R`, `tail.1` a `tail.3` y, en cada pata, `leg_upper`, `leg_lower` y `foot` con el sufijo `.FL`, `.FR`, `.HL` o `.HR` (delantera o trasera; izquierda +X, derecha −X).
+- **Pesos por distancia a los huesos**, hasta 4 por vértice, con transición suave en las articulaciones (D-4402):
+  - los huesos de una pata solo tiran de la pata: cerca de su eje y por debajo de donde sale del cuerpo;
+  - todo lo que está bajo el tobillo es rígido, para que la pezuña no se incline;
+  - cada pieza suelta (oreja, ojo, eslabón de la cola) va entera a su hueso más cercano.
+- **Anillos en las articulaciones:** la superficie se corta en la rodilla y donde la pata sale del cuerpo, para que se doble ahí (D-4403).
+- **Animaciones**, todas en el lugar, sin avanzar:
+  - `idle`: 3 s;
+  - `walk` y `run` (trote);
+  - `eat`: baja la cabeza y vuelve a la pose de reposo;
+  - `die`: cae de lado y no se repite.
+- **Patas sin patinar:** las patas siguen una trayectoria del pie (apoyado en el suelo y luego adelante en arco) con cinemática inversa. Durante el apoyo, el pie retrocede exactamente a la velocidad de la animación. Esa velocidad se guarda en el modelo, en los *extras* del esqueleto: `walk_speed` y `run_speed` en m/s (D-4404).
+- **Verificar** un modelo exportado: `blender --background --factory-startup --python art/blender/rig_check.py -- art/studies/animals/pig.glb`. Comprueba tres cosas y termina en `RIG OK` o `RIG FAILED`:
+  - que cada animación que se repite termina en la pose con que empieza;
+  - que nada baja del suelo;
+  - que los pies apoyados retroceden a la velocidad guardada (±10 %).
 
 ## Visor de modelos
 

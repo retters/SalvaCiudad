@@ -13,6 +13,9 @@ CMakeUserPresets.json
 *.pdb
 *.ilk
 
+# Generated study models and previews (regenerated from art/blender)
+/art/studies/
+
 # Python caches (Blender and tool scripts)
 __pycache__/
 *.pyc

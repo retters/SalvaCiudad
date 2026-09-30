@@ -223,4 +223,26 @@ TEST_SUITE("model") {
         CHECK(ok.model.joint_names[0] == "root");
         CHECK_FALSE(load_glb(make_glb(kSkinnedJson, skinned_triangle(3))).ok);
     }
+
+    TEST_CASE("a rigged zoo animal loads with its skeleton and five clips") {
+        // Built by art/blender/zoo_build.py (phase 44); copied here as a fixture.
+        const ModelLoadResult r = load_file("animal_pig.glb");
+        REQUIRE_MESSAGE(r.ok, r.error);
+        const ModelData& m = r.model;
+        CHECK(m.skinned());
+        CHECK(m.joint_names.size() == 21);
+        CHECK(m.joint_index("body") >= 0);
+        CHECK(m.joint_index("foot.HR") >= 0);
+        CHECK(m.skin.size() == m.vertices.size());
+        for (const JointWeights& jw : m.skin) {
+            CHECK(jw.weights[0] + jw.weights[1] + jw.weights[2] + jw.weights[3] == 255);
+        }
+        const std::pair<const char*, int> clips[] = {{"idle", 90}, {"walk", 16}, {"run", 14}, {"eat", 90}, {"die", 45}};
+        for (const auto& [name, frames] : clips) {
+            const int c = m.clip_index(name);
+            REQUIRE_MESSAGE(c >= 0, name);
+            CHECK(m.clips[static_cast<std::size_t>(c)].frame_count == frames);
+        }
+        CHECK(m.bounds_min.y == doctest::Approx(0.0f).epsilon(0.001));
+    }
 }

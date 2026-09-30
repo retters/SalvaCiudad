@@ -1810,3 +1810,30 @@ Con mar en dos lados, cada franja entra del 10 al 16 % (en vez del 12 al 22 %), 
 **D-4305. `docs/GENERADORES.md`.**
 El documento responde la pregunta que dio origen a las fases 37 a 43: qué genera cada generador, cómo se llama cada cosa, qué opción de la partida la controla y con qué frecuencia aparece. También tiene la tabla de todo lo que F3 puede nombrar.
 
+## Fase 44: animales animados, el cerdito (2026-09-30)
+
+**D-4401. Técnica de modelado de los animales low poly.**
+Antes de la fase, a pedido del usuario, se hicieron el cerdito y el tigre con diez técnicas, con hojas de comparación y de aristas (`pig_studies.py`, `tiger_studies.py`): primitivas, envolventes convexas, icoesferas, metaballs, *remesh* con reducción planar, *remesh* con reducción por colapso, modificador Skin, loft, box modeling y vóxeles. El usuario eligió la de *remesh* y reducción por colapso (la 06) para todos los animales de la imagen de referencia. Lo que se aprendió:
+- Pintar rayas cara por cara deja manchas cuando las caras son grandes: hay que cortar la superficie en los bordes de cada raya. Los cortes cuestan muchos triángulos, así que el tigre lleva menos rayas y la vaca está cerca de su límite.
+- Un disco de otro color pegado sobre la superficie deja asomar bordes: la punta se corta y se aplana en la misma superficie (`flat_cap`).
+- En la flora (cactus, piña y fresa), el cuerpo se construye a mano en `details()` (tubo con costillas, escamas, perfil girado), porque el *remesh* no daba esas formas. Solo el hongo usa la técnica completa. Queda pendiente que el usuario confirme esa excepción.
+
+**D-4402. Pesos propios por distancia en lugar del pesado automático de Blender.**
+El pesado automático de Blender (por difusión de calor) falla con piezas separadas y da resultados difíciles de controlar. Los pesos se calculan en `rigs.py` por distancia a cada hueso, con tres reglas que salieron de las pruebas:
+- Los huesos de una pata solo tiran de puntos cerca de su eje y por debajo de donde sale del cuerpo: el vientre del cerdo cuelga tan bajo como la rodilla y se iba con la pata.
+- Bajo el tobillo todo es del hueso del pie: con una transición de 8 cm, la pezuña se inclinaba con la pierna y se hundía 1,5 cm en el suelo.
+- La transición entre huesos es de 4 cm en el cerdito (se ajusta por animal con `blend`).
+
+**D-4403. Anillos cortados en las articulaciones.**
+La reducción deja triángulos largos de la pezuña al vientre, sin vértices en la rodilla, y la pata se doblaba como una cuña de goma. La plantilla corta la superficie en la rodilla y donde la pata sale del cuerpo. Esto suma triángulos: el cerdito pasa de 1066 a 1426, dentro de su límite de 1500. Por eso el criterio de la especificación "mismos triángulos que sin esqueleto" pasa a "dentro de su límite".
+
+**D-4404. Patas por cinemática inversa y velocidad guardada en el modelo.**
+En lugar de girar las patas con ángulos fijos, cada pie sigue una trayectoria: apoyado, retrocede en línea recta a la velocidad de la animación; luego avanza en arco. Los ángulos salen de resolver los dos huesos de la pata en el plano lateral. Así los pies no patinan ni se hunden por construcción, y `rig_check.py` lo mide sobre el archivo exportado.
+- La velocidad de cada animación se guarda en los *extras* glTF del esqueleto (`walk_speed`, `run_speed`). El juego todavía no los lee (fases 45 y 47).
+- La articulación que se ve bajo el cuerpo se dobla hacia adelante en las patas delanteras (el carpo) y hacia atrás en las traseras (el corvejón).
+
+**D-4405. Animaciones pensadas para un motor sin mezcla.**
+El motor todavía no mezcla animaciones (D-403). Por eso `eat` empieza y termina en la pose de reposo (baja la cabeza, hoza y la sube), y cambiar entre `idle` y `eat` no salta. `die` no se repite: el juego deberá detenerla en su último fotograma (fase 47).
+
+**D-4406. Los modelos de estudio no se versionan.**
+`art/studies/` (modelos e imágenes de revisión) se regenera con los scripts y queda en `.gitignore`. El cerdito animado se copió a `tests/data_models_test/animal_pig.glb` para probar que el cargador del juego lo acepta: 21 huesos, las 5 animaciones y pesos que suman 1.
