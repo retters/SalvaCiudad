@@ -1286,7 +1286,7 @@ void App::update_cursor_info(std::uint32_t width, std::uint32_t height) {
     std::optional<math::Vec3> hit;
     if (debug_.visible() && map_ && scene_ok_ && host_ && interactive_scene() &&
         host_->scene_mode() == UiHost::SceneMode::Map && !debug_.wants_mouse() && mouse_ray(width, height, origin, dir)) {
-        hit = ground_hit(map_->map, origin, dir);
+        hit = ground_hit(map_->map, origin, dir, far_pick());
     }
     if (!hit) {
         debug_info_.cursor.clear();
@@ -2082,6 +2082,12 @@ std::string local_time_iso() {
 
 }  // namespace
 
+float App::far_pick() const {
+    // A zoomed-out view of the whole map reaches far past the usual 4 km.
+    const float size = map_ ? static_cast<float>(map_->map.size) : 0.0f;
+    return std::max(4000.0f, camera_.distance() * 4.0f + size * 1.5f);
+}
+
 bool App::world_only() const {
     return marking_.active || replay_step_ == ReplayStep::Settling || replay_step_ == ReplayStep::Capture;
 }
@@ -2096,7 +2102,7 @@ void App::begin_marking() {
     math::Vec3 origin;
     math::Vec3 dir;
     if (mouse_ray(view_width_, view_height_, origin, dir)) {
-        if (const std::optional<math::Vec3> hit = ground_hit(map_->map, origin, dir)) {
+        if (const std::optional<math::Vec3> hit = ground_hit(map_->map, origin, dir, far_pick())) {
             marking_.cursor =
                 report::Cell{static_cast<std::int32_t>(std::floor(hit->x)), static_cast<std::int32_t>(std::floor(hit->z))};
         }
@@ -2227,15 +2233,17 @@ void App::save_report(const FrameCapture& capture) {
     }
     r.cursor = cursor;
     // Each stroke's cells, through the camera that drew the capture.
+    const float far = far_pick();
     const auto hit = [&](float x, float y) -> std::optional<math::Vec3> {
         math::Vec3 origin;
         math::Vec3 dir;
         if (!screen_ray(capture.width, capture.height, x, y, origin, dir)) {
             return std::nullopt;
         }
-        return ground_hit(map, origin, dir);
+        return ground_hit(map, origin, dir, far);
     };
     for (report::Stroke st : strokes) {
+        st.closed = report::closes(st);
         st.cells = report::cells_under(st, hit);
         r.strokes.push_back(std::move(st));
     }

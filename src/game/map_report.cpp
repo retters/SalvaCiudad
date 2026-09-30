@@ -158,6 +158,23 @@ std::string_view landform_name(sim::LandformKind kind) {
     return pick(kLandforms, static_cast<std::size_t>(kind));
 }
 
+bool closes(const Stroke& stroke) {
+    const auto& p = stroke.screen;
+    if (p.size() < 8) {
+        return false;
+    }
+    float x0 = p[0][0], x1 = p[0][0], y0 = p[0][1], y1 = p[0][1];
+    for (const auto& q : p) {
+        x0 = std::min(x0, q[0]);
+        x1 = std::max(x1, q[0]);
+        y0 = std::min(y0, q[1]);
+        y1 = std::max(y1, q[1]);
+    }
+    const float size = std::hypot(x1 - x0, y1 - y0);
+    const float gap = std::hypot(p.back()[0] - p.front()[0], p.back()[1] - p.front()[1]);
+    return size >= 20.0f && gap <= std::max(24.0f, size * 0.2f);
+}
+
 std::vector<Cell> cells_under(const Stroke& stroke, const std::function<std::optional<math::Vec3>(float, float)>& hit,
                               float step) {
     std::vector<Cell> cells;
@@ -177,6 +194,35 @@ std::vector<Cell> cells_under(const Stroke& stroke, const std::function<std::opt
         for (int i = (k == 0 ? 0 : 1); i <= n; ++i) {
             const float t = static_cast<float>(i) / static_cast<float>(n);
             sample(p[k][0] + dx * t, p[k][1] + dy * t);
+        }
+    }
+    if (closes(stroke)) {
+        // Inside: a grid of points over its box, those within the outline
+        // (even-odd rule, with the gap between the ends closed).
+        float x0 = p[0][0], x1 = p[0][0], y0 = p[0][1], y1 = p[0][1];
+        for (const auto& q : p) {
+            x0 = std::min(x0, q[0]);
+            x1 = std::max(x1, q[0]);
+            y0 = std::min(y0, q[1]);
+            y1 = std::max(y1, q[1]);
+        }
+        const float grid = std::max({std::max(0.5f, step), std::sqrt((x1 - x0) * (y1 - y0) / static_cast<float>(kMaxAreaSamples))});
+        const auto inside = [&](float x, float y) {
+            bool in = false;
+            for (std::size_t i = 0, j = p.size() - 1; i < p.size(); j = i++) {
+                if ((p[i][1] > y) != (p[j][1] > y) &&
+                    x < (p[j][0] - p[i][0]) * (y - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0]) {
+                    in = !in;
+                }
+            }
+            return in;
+        };
+        for (float y = y0 + grid * 0.5f; y < y1 && cells.size() < kMaxCells; y += grid) {
+            for (float x = x0 + grid * 0.5f; x < x1; x += grid) {
+                if (inside(x, y)) {
+                    sample(x, y);
+                }
+            }
         }
     }
     std::sort(cells.begin(), cells.end());
@@ -253,6 +299,7 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
     yyjson_mut_val* strokes = yyjson_mut_obj_add_arr(d, root, "strokes");
     for (const Stroke& st : r.strokes) {
         yyjson_mut_val* o = yyjson_mut_arr_add_obj(d, strokes);
+        (void)yyjson_mut_obj_add_bool(d, o, "closed", st.closed);
         yyjson_mut_val* screen = yyjson_mut_obj_add_arr(d, o, "screen");
         for (const auto& p : st.screen) {
             yyjson_mut_val* pt = yyjson_mut_arr_add_arr(d, screen);

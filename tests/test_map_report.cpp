@@ -1,5 +1,6 @@
 #include <doctest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <format>
@@ -11,6 +12,7 @@
 #include "core/file_io.h"
 #include "core/png.h"
 #include "game/map_report.h"
+#include "game/map_scene.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
 
@@ -179,6 +181,48 @@ TEST_SUITE("map_report") {
         report::Stroke off;
         off.screen = {{500.0f, 0.0f}, {600.0f, 0.0f}};
         CHECK(report::cells_under(off, hit).empty());
+    }
+
+    TEST_CASE("a stroke that comes back to its start surrounds an area") {
+        const auto hit = [](float x, float y) -> std::optional<math::Vec3> { return math::Vec3{x / 4.0f, 20.0f, y / 4.0f}; };
+        // A square outline, 40 pixels a side, ending near its start.
+        report::Stroke square;
+        for (int i = 0; i <= 40; i += 4) square.screen.push_back({static_cast<float>(i), 0.0f});
+        for (int i = 0; i <= 40; i += 4) square.screen.push_back({40.0f, static_cast<float>(i)});
+        for (int i = 40; i >= 0; i -= 4) square.screen.push_back({static_cast<float>(i), 40.0f});
+        for (int i = 40; i >= 8; i -= 4) square.screen.push_back({0.0f, static_cast<float>(i)});
+        CHECK(report::closes(square));
+        const std::vector<report::Cell> cells = report::cells_under(square, hit);
+        CHECK(std::binary_search(cells.begin(), cells.end(), report::Cell{5, 5}));
+        CHECK(cells.size() >= 100);  // All of the 11 x 11 cells, near enough.
+        // An open line does not.
+        report::Stroke line;
+        for (int i = 0; i <= 80; i += 4) line.screen.push_back({static_cast<float>(i), static_cast<float>(i % 8)});
+        CHECK_FALSE(report::closes(line));
+        const std::vector<report::Cell> along = report::cells_under(line, hit);
+        CHECK_FALSE(std::binary_search(along.begin(), along.end(), report::Cell{10, 10}));
+        // A wide area is sampled more sparsely, never past the limit.
+        report::Stroke wide = square;
+        for (auto& pt : wide.screen) {
+            pt = {pt[0] * 100.0f, pt[1] * 100.0f};
+        }
+        CHECK(report::cells_under(wide, hit).size() <= report::kMaxAreaSamples + 4000);
+    }
+
+    TEST_CASE("the ground is found from far away") {
+        const sim::MapData map = small_map(79);
+        // From 5 km up and away, looking down at the middle of the map.
+        const math::Vec3 middle{256.0f, 0.0f, 256.0f};
+        const math::Vec3 origin{256.0f - 3000.0f, 4000.0f, 256.0f};
+        const math::Vec3 dir = math::normalize(middle - origin);
+        CHECK_FALSE(ground_hit(map, origin, dir).has_value());  // Past the usual 4 km.
+        const std::optional<math::Vec3> hit = ground_hit(map, origin, dir, 8000.0f);
+        REQUIRE(hit.has_value());
+        // On the ground, a little before the middle (the ground is above 0).
+        CHECK(std::abs(hit->y - map_surface_height(map, hit->x, hit->z)) < 0.05f);
+        CHECK(hit->x < 256.0f);
+        CHECK(hit->x > 150.0f);
+        CHECK(std::abs(hit->z - 256.0f) < 1.0f);
     }
 
     TEST_CASE("strokes are painted over the screenshot") {

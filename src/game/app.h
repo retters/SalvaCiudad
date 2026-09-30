@@ -124,6 +124,9 @@ private:
     void draw_marking();
     void save_report(const FrameCapture& capture);
     [[nodiscard]] bool world_only() const;
+    // How far a ray from the camera looks for the ground (the statistics
+    // window and map reports).
+    [[nodiscard]] float far_pick() const;
     bool load_replay(const sim::Content* content);
     void update_replay();
     void finish_replay(const FrameCapture& capture);

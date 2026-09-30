@@ -47,8 +47,17 @@ using Cell = std::array<std::int32_t, 2>;
 
 struct Stroke {
     std::vector<std::array<float, 2>> screen;  // Pixels from the window's top left.
-    std::vector<Cell> cells;                   // Under it, sorted, each once.
+    std::vector<Cell> cells;                   // Under it (and inside it, if closed), sorted, each once.
+    bool closed = false;                       // It surrounds an area.
 };
+
+// Most points sampled inside a closed stroke: a wide area is sampled more
+// sparsely.
+inline constexpr std::size_t kMaxAreaSamples = 20'000;
+
+// Whether a stroke ends near where it began, so it surrounds an area: its
+// ends within a fifth of its size (at least 24 pixels).
+[[nodiscard]] bool closes(const Stroke& stroke);
 
 struct Report {
     std::string created_at;  // Local time, ISO 8601.
@@ -67,7 +76,8 @@ struct Report {
 };
 
 // The cells under a stroke: `hit` gives the ground under a screen point
-// (none off the map); the stroke is sampled every `step` pixels.
+// (none off the map); the stroke is sampled every `step` pixels. A closed
+// stroke also gives the cells inside it.
 [[nodiscard]] std::vector<Cell> cells_under(const Stroke& stroke,
                                             const std::function<std::optional<math::Vec3>(float, float)>& hit,
                                             float step = 2.0f);

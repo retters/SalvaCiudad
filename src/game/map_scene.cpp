@@ -192,9 +192,17 @@ std::optional<math::Vec3> ground_hit(const sim::MapData& map, math::Vec3 origin,
         const math::Vec3 p = origin + dir * t;
         return p.y > map_surface_height(map, p.x, p.z);
     };
-    // March in steps of a meter, then narrow down the crossing.
-    float prev = 0.0f;
-    for (float t = 1.0f; t <= max_distance; t += 1.0f) {
+    // Nothing is higher than the highest height a map can hold: from far
+    // above, the march starts there.
+    constexpr float kHighest = 65535.0f / 100.0f;
+    float start = 0.0f;
+    if (origin.y > kHighest && dir.y < 0.0f) {
+        start = (origin.y - kHighest) / -dir.y;
+    }
+    // March in steps of a meter, longer far away (a meter per 500 m
+    // marched), then narrow down the crossing.
+    float prev = start;
+    for (float t = start + 1.0f; t <= max_distance; t += std::max(1.0f, (t - start) / 500.0f)) {
         const math::Vec3 p = origin + dir * t;
         if (p.x < -50.0f || p.z < -50.0f || p.x > size + 50.0f || p.z > size + 50.0f) {
             if (dir.y >= 0.0f) {

@@ -68,7 +68,7 @@ Opciones de línea de comandos:
 Sirven para decirle a Claude qué te gusta o qué no de un lugar del mapa.
 
 1. Sobre el mapa, pulsa **Ctrl+F12**. Se oculta la interfaz y la cámara se queda quieta. En una partida de un jugador el juego se pausa; en multijugador sigue.
-2. Arrastra con el clic izquierdo para pintar trazos rojos sobre lo que te interesa. **Retroceso** borra el último trazo y **Supr** borra todos.
+2. Arrastra con el clic izquierdo para pintar trazos rojos sobre lo que te interesa. Un trazo que termina cerca de donde empezó encierra un área, y el reporte describe todo lo que queda adentro. **Retroceso** borra el último trazo y **Supr** borra todos.
 3. **Enter** guarda el reporte y **Esc** cancela.
 4. Se guarda en `%TEMP%\SalvaCiudad\reportes\<fecha_hora>\`:
    - `captura.png`: la pantalla con los trazos;
@@ -473,6 +473,8 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Esc cancela sin crear carpeta y sin abrir el menú del juego.
 - [ ] `SalvaCiudad.exe --reporte "<esa carpeta>"` abre una ventana, muestra el mismo lugar y se cierra solo, dejando `despues_<fecha_hora>.png` y `.txt` en la carpeta.
 - [ ] Tu configuración (ventana, sonido) no cambió después de usar `--reporte`.
+- [ ] Un círculo cerrado alrededor de una zona da en `reporte.json` un trazo con `"closed": true` y muchas más casillas que la línea sola.
+- [ ] Con la cámara muy alejada (todo el mapa a la vista), los trazos del fondo también tienen casillas.
 
 ## Licencia
 

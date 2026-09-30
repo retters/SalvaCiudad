@@ -1695,3 +1695,6 @@ Antes de crear uno nuevo se borran los más viejos, hasta dejar 29 más el nuevo
 
 **D-3808. F12 solo sigue sin hacer nada.**
 La acción `ui.screenshot` (F12) existe desde la fase 17 pero no hace nada. No se implementó aquí para no crear un segundo tipo de captura; queda para el pulido.
+
+**D-3809. Un contorno cerrado describe su área, y el rayo llega lejos.**
+Pedido de Salvador tras sus primeros reportes. Un trazo cuenta como cerrado si su final queda cerca de su inicio: a no más de una quinta parte de su tamaño, con un mínimo de 24 píxeles. Además de la línea, el reporte describe lo que encierra: lo muestrea en una rejilla que se abre cuanto más grande es el área, con 20 000 puntos como máximo, y el JSON marca el trazo con `"closed": true`. En un reporte con la cámara a 3,4 km, dos trazos lejanos no tenían casillas: el rayo buscaba el suelo solo hasta 4 km. Ahora F3 y los reportes buscan hasta cuatro veces la distancia de la cámara más 1,5 veces el lado del mapa. El recorrido del rayo empieza a la altura máxima posible del terreno y alarga el paso con la distancia (un metro más por cada 500 m), así que llegar lejos no lo vuelve lento.
