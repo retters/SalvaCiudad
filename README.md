@@ -56,8 +56,29 @@ Todas se cambian en Configuración → Controles, salvo Alt+Enter.
 | Clic derecho o Esc | Cancelar la colocación, o quitar la selección |
 | F5 / F9 | Guardado rápido / cargar la partida más reciente |
 | Ctrl+F3 | Herramientas de desarrollo |
+| Ctrl+F12 | Reporte del mapa: marcar con el ratón y guardar (ver abajo) |
 
-Opciones de línea de comandos: `--instance <1-8>` usa una carpeta de datos y un puerto propios (para abrir varias ventanas en una PC) y `--loopback` limita el multijugador a esa misma PC. Ver `docs/RED.md`.
+Opciones de línea de comandos:
+- `--instance <1-8>` usa una carpeta de datos y un puerto propios, para abrir varias ventanas en una PC.
+- `--loopback` limita el multijugador a esa misma PC. Ver `docs/RED.md`.
+- `--reporte <carpeta>` abre el mapa y la vista de un reporte del mapa, guarda una captura en esa carpeta y se cierra (ver abajo).
+
+## Reportes del mapa
+
+Sirven para decirle a Claude qué te gusta o qué no de un lugar del mapa.
+
+1. Sobre el mapa, pulsa **Ctrl+F12**. Se oculta la interfaz y la cámara se queda quieta. En una partida de un jugador el juego se pausa; en multijugador sigue.
+2. Arrastra con el clic izquierdo para pintar trazos rojos sobre lo que te interesa. **Retroceso** borra el último trazo y **Supr** borra todos.
+3. **Enter** guarda el reporte y **Esc** cancela.
+4. Se guarda en `%TEMP%\SalvaCiudad\reportes\<fecha_hora>\`:
+   - `captura.png`: la pantalla con los trazos;
+   - `captura_limpia.png`: la misma pantalla sin trazos;
+   - `reporte.json`: la semilla y las opciones del mapa, la cámara, lo que hay bajo el cursor y las casillas que cubren los trazos, con un resumen.
+
+   Se conservan los últimos 30 reportes.
+5. En el chat dile a Claude qué quieres de ese lugar.
+
+`SalvaCiudad.exe --reporte <carpeta>` genera ese mismo mapa con el generador actual, sin niebla y con la estación del reporte, pone la cámara igual y guarda `despues_<fecha_hora>.png`, junto con un `.txt` que dice qué cambió desde el reporte (versión del generador, mods, compilación, tamaño de la ventana). Muestra el mapa generado, no la partida: no aparecen los edificios ni los árboles talados. No guarda la configuración ni partidas.
 
 ## Idiomas
 
@@ -442,6 +463,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con niebla de guerra, sobre lo no explorado dice solo "Todavía sin explorar".
 - [ ] Guarda la partida, cárgala y comprueba que los nombres siguen apareciendo.
 - [ ] Con el idioma en inglés, los nombres salen en inglés.
+
+### Fase 38 (reporte del mapa)
+
+- [ ] En una partida, Ctrl+F12 oculta la interfaz, detiene la cámara y el juego, y muestra arriba la línea de ayuda.
+- [ ] Arrastrar pinta trazos rojos; Retroceso borra el último; Supr borra todos.
+- [ ] Enter guarda y aparece "Reporte guardado en …"; la carpeta tiene `captura.png` (con los trazos, sin la línea de ayuda ni la interfaz), `captura_limpia.png` y `reporte.json`.
+- [ ] Después de guardar, la interfaz vuelve y el juego sigue a la velocidad que tenía.
+- [ ] Esc cancela sin crear carpeta y sin abrir el menú del juego.
+- [ ] `SalvaCiudad.exe --reporte "<esa carpeta>"` abre una ventana, muestra el mismo lugar y se cierra solo, dejando `despues_<fecha_hora>.png` y `.txt` en la carpeta.
+- [ ] Tu configuración (ventana, sonido) no cambió después de usar `--reporte`.
 
 ## Licencia
 

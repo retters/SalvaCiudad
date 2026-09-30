@@ -85,6 +85,9 @@ public:
     void set_max_distance_override(float meters);
     // Jumps to the goal state without smoothing.
     void snap();
+    // Puts the camera exactly as it was (a map report, phase 38): mode,
+    // point looked at, turn, tilt and distance, without smoothing.
+    void restore(CameraMode mode, math::Vec3 target, float yaw, float pitch, float distance);
 
     [[nodiscard]] math::Vec3 eye() const;
     [[nodiscard]] math::Vec3 target() const { return target_; }

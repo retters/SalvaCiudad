@@ -61,6 +61,12 @@ public:
     // Builds the windows for this frame: the statistics if visible, and
     // `extra` (more ImGui windows) if `extra_active`. Call before prepare().
     void build(const DebugInfo& info, const std::function<void()>& extra = {}, bool extra_active = false);
+    // Nothing of it this frame (a map report's capture, phase 38): call
+    // instead of build().
+    void skip_frame() {
+        built_ = false;
+        active_ = false;
+    }
     // Uploads the draw data; must run before the render pass.
     void prepare(SDL_GPUCommandBuffer* cmd);
     void render(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass);

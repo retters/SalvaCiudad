@@ -56,6 +56,12 @@ public:
     // True while the game must not advance: paused by the player, or a
     // menu is open over a single-player game.
     [[nodiscard]] bool game_paused() const;
+    // Generates a map and shows it, as "Generate" in the new game form does
+    // (phase 38, for `--reporte`).
+    void generate(const sim::MapSettings& settings, const sim::GameRules& rules) {
+        services_.start_map_generation(settings, rules);
+        screen_ = Screen::Generating;
+    }
     // A game was loaded from outside the menus (quick load): show it.
     void show_game() {
         screen_ = Screen::MapView;

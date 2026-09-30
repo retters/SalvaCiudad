@@ -107,6 +107,72 @@ bool GpuDevice::end_frame(GpuFrame& frame) {
     return ok;
 }
 
+bool GpuDevice::end_frame_captured(GpuFrame& frame, FrameCapture& capture) {
+    capture = FrameCapture{};
+    if (frame.cmd == nullptr) {
+        return false;
+    }
+    // Byte order of the swapchain's pixels; other formats are not read.
+    const SDL_GPUTextureFormat format = swapchain_format();
+    const bool bgra = format == SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM || format == SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM_SRGB;
+    const bool rgba = format == SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM || format == SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB;
+    if (frame.target == nullptr || frame.width == 0 || frame.height == 0 || (!bgra && !rgba)) {
+        log::warn("gpu: cannot capture this frame (format {})", static_cast<int>(format));
+        (void)end_frame(frame);
+        return false;
+    }
+    const std::uint32_t bytes = frame.width * frame.height * 4u;
+    SDL_GPUTransferBufferCreateInfo info{};
+    info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
+    info.size = bytes;
+    SDL_GPUTransferBuffer* buffer = SDL_CreateGPUTransferBuffer(device_, &info);
+    if (buffer == nullptr) {
+        log::error("gpu: SDL_CreateGPUTransferBuffer failed: {}", SDL_GetError());
+        (void)end_frame(frame);
+        return false;
+    }
+    SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(frame.cmd);
+    SDL_GPUTextureRegion region{};
+    region.texture = frame.target;
+    region.w = frame.width;
+    region.h = frame.height;
+    region.d = 1;
+    SDL_GPUTextureTransferInfo to{};
+    to.transfer_buffer = buffer;
+    to.pixels_per_row = frame.width;
+    to.rows_per_layer = frame.height;
+    SDL_DownloadFromGPUTexture(copy, &region, &to);
+    SDL_EndGPUCopyPass(copy);
+    SDL_GPUFence* fence = SDL_SubmitGPUCommandBufferAndAcquireFence(frame.cmd);
+    const std::uint32_t width = frame.width;
+    const std::uint32_t height = frame.height;
+    frame = GpuFrame{};
+    if (fence == nullptr) {
+        log::error("gpu: SDL_SubmitGPUCommandBufferAndAcquireFence failed: {}", SDL_GetError());
+        SDL_ReleaseGPUTransferBuffer(device_, buffer);
+        return false;
+    }
+    const bool done = SDL_WaitForGPUFences(device_, true, &fence, 1);
+    SDL_ReleaseGPUFence(device_, fence);
+    const auto* pixels = done ? static_cast<const std::uint8_t*>(SDL_MapGPUTransferBuffer(device_, buffer, false)) : nullptr;
+    if (pixels == nullptr) {
+        log::error("gpu: reading the frame back failed: {}", SDL_GetError());
+        SDL_ReleaseGPUTransferBuffer(device_, buffer);
+        return false;
+    }
+    capture.width = width;
+    capture.height = height;
+    capture.rgb.resize(static_cast<std::size_t>(width) * height * 3u);
+    for (std::size_t i = 0, n = static_cast<std::size_t>(width) * height; i < n; ++i) {
+        capture.rgb[i * 3 + 0] = pixels[i * 4 + (bgra ? 2 : 0)];
+        capture.rgb[i * 3 + 1] = pixels[i * 4 + 1];
+        capture.rgb[i * 3 + 2] = pixels[i * 4 + (bgra ? 0 : 2)];
+    }
+    SDL_UnmapGPUTransferBuffer(device_, buffer);
+    SDL_ReleaseGPUTransferBuffer(device_, buffer);
+    return true;
+}
+
 SDL_GPUTextureFormat GpuDevice::swapchain_format() const {
     return SDL_GetGPUSwapchainTextureFormat(device_, window_);
 }

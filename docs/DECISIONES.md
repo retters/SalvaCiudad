@@ -1667,3 +1667,31 @@ Las montañas del relieve "Montañoso" salen de un campo de ruido, no de una lis
 
 **D-3707. Numeración de las fases.**
 Otra sesión agregó las fases 35 (movimiento) y 36 (caminos), todavía sin commit. Esta fase es la 37, el reporte con Ctrl+F12 es la 38 y el pulido pasa a la 39.
+
+## Fase 38: reporte del mapa (2026-09-29)
+
+Salvador eligió, entre las opciones propuestas: captura solo del mundo, sin nota dentro del juego, escritor de PNG propio y carpeta temporal.
+
+**D-3801. La captura se lee del propio swapchain.**
+La API de GPU de SDL3 no permite hacer un blit desde la textura del swapchain (solo tiene uso de destino de color), pero `SDL_DownloadFromGPUTexture` sí la acepta: en Direct3D 12 la pasa al estado de copia y la regresa. En el cuadro capturado se copia a un búfer de descarga, se espera la valla y se convierte a RGB. Solo se leen formatos de 8 bits (BGRA o RGBA); otro formato hace fallar el reporte con un aviso, sin romper nada. Se verificó en Windows 11 (build 26200) con Direct3D 12: dos capturas del mismo reporte difieren en el 0,04 % de los píxeles, por el agua animada.
+
+**D-3802. Una sola captura; los trazos se pintan después.**
+El cuadro capturado no dibuja nada de la interfaz: ni los trazos, ni la línea de ayuda, ni F3, ni las herramientas de desarrollo. Esa es `captura_limpia.png`. Los trazos se pintan luego sobre una copia en la CPU, del mismo grosor que en pantalla, y esa copia es `captura.png`. Así las dos son el mismo instante, aunque el juego siga corriendo en multijugador.
+
+**D-3803. PNG propio sin compresión.**
+`core/png` escribe PNG RGB de 8 bits con bloques deflate "stored", CRC32 y Adler-32: unas 80 líneas, sin bibliotecas nuevas. Una captura de 1280×720 pesa unos 2,7 MB. Las pruebas lo leen de vuelta con `stb_image`.
+
+**D-3804. Qué se congela al marcar.**
+Al marcar se ignoran la cámara, los clics sobre el mundo, las herramientas de desarrollo y todas las teclas salvo las del reporte. En una partida local la velocidad pasa a 0 y al terminar vuelve a la que tenía; en multijugador no se pausa, para no detener a los demás. Esc cancela sin llegar al menú del juego. Ctrl+F12 es un atajo fijo, como Ctrl+F3. No funciona con un menú abierto sobre el juego.
+
+**D-3805. `reporte.json`.**
+Tiene claves en inglés, como `settings.json`, y nombres que no dependen del idioma: los tipos de mapa y biomas van por su id de mod, y los suelos, el agua y los accidentes, por nombres fijos. La semilla va como texto, porque es un entero de 64 bits. Cada trazo guarda sus puntos en pantalla y sus casillas; las casillas salen del mismo rayo de cámara que usa el juego, muestreado cada 2 píxeles. El resumen describe como mucho unas 20 000 casillas, repartidas entre todas, para que un trazo largo no tarde. `--reporte` valida estrictamente solo lo que usa: versión del esquema, opciones del mapa (con rangos y nombres conocidos) y vista (números finitos dentro de rangos). Nunca ejecuta nada del archivo.
+
+**D-3806. `--reporte` no toca la configuración ni el disco del jugador.**
+Usa una ventana en modo ventana, del tamaño en píxeles del reporte (corrigiendo la escala de la pantalla), y el sonido en silencio. Solo cambia la memoria: la configuración no se guarda y el autoguardado no corre. Genera el mapa como una partida nueva sin niebla, con velocidad 0 y la estación y la nieve del reporte; espera 3 segundos y 30 cuadros a que se llene la vista, captura y se cierra. Devuelve 1 si no pudo leer el reporte, generar el mapa o guardar la captura. El `.txt` anota lo que cambió respecto del reporte y la suma de verificación del mapa de ahora.
+
+**D-3807. Limpieza de reportes viejos.**
+Antes de crear uno nuevo se borran los más viejos, hasta dejar 29 más el nuevo. Solo se borran carpetas con nombre de reporte (`AAAA-MM-DD_HHMMSS`, quizá con `-N`) que contienen únicamente archivos de reporte. Si alguien dejó otra cosa dentro, la carpeta se conserva y se anota en el registro.
+
+**D-3808. F12 solo sigue sin hacer nada.**
+La acción `ui.screenshot` (F12) existe desde la fase 17 pero no hace nada. No se implementó aquí para no crear un segundo tipo de captura; queda para el pulido.

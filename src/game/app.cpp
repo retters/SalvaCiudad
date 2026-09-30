@@ -1,6 +1,7 @@
 #include "game/app.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <ctime>
@@ -22,6 +23,7 @@
 #include "i18n/translator.h"
 #include "mods/mod_settings.h"
 #include "core/file_io.h"
+#include "core/png.h"
 #include "version.h"
 
 #include <SDL3/SDL_keyboard.h>
@@ -110,7 +112,8 @@ std::vector<std::string> preferred_languages() {
 
 }  // namespace
 
-App::App(int instance, bool loopback) : text_(atlas_), ui_(text_), instance_(instance), loopback_(loopback) {}
+App::App(int instance, bool loopback, std::filesystem::path replay)
+    : text_(atlas_), ui_(text_), instance_(instance), loopback_(loopback), replay_dir_(std::move(replay)) {}
 
 App::~App() = default;
 
@@ -124,7 +127,7 @@ int App::run() {
         frame();
     }
     shutdown();
-    return 0;
+    return replay_exit_code_;
 }
 
 void App::load_languages() {
@@ -201,6 +204,9 @@ bool App::init() {
     }
     load_mods();
     apply_language();
+    if (!replay_dir_.empty() && !load_replay(pack_ ? &pack_->content : nullptr)) {
+        return false;
+    }
 
     if (!fonts_.load(paths_->game_data_dir() / "fonts")) {
         fatal_error("error.fatal.fonts");
@@ -252,6 +258,26 @@ bool App::init() {
     }
 
     host_ = std::make_unique<UiHost>(*this);
+    if (replay_) {
+        // The window in pixels as in the report, whatever the screen's scale.
+        int pw = 0;
+        int ph = 0;
+        int lw = 0;
+        int lh = 0;
+        if (SDL_GetWindowSizeInPixels(window_.sdl(), &pw, &ph) && SDL_GetWindowSize(window_.sdl(), &lw, &lh) && pw > 0 &&
+            ph > 0 && (static_cast<std::uint32_t>(pw) != replay_->view.width || static_cast<std::uint32_t>(ph) != replay_->view.height)) {
+            (void)SDL_SetWindowSize(window_.sdl(), static_cast<int>(std::lround(static_cast<double>(replay_->view.width) * lw / pw)),
+                                    static_cast<int>(std::lround(static_cast<double>(replay_->view.height) * lh / ph)));
+        }
+        if (!scene_ok_) {
+            log::error("report: the 3D view is not available");
+            return false;
+        }
+        sim::GameRules rules;
+        rules.fog = sim::FogMode::None;
+        host_->generate(replay_->map, rules);
+        replay_step_ = ReplayStep::Generating;
+    }
     if (report.quarantined) {
         host_->add_notice(tr("notice.settings.quarantined", text::path_to_utf8(report.quarantine_path.filename())));
     }
@@ -514,6 +540,14 @@ void App::handle_event(const SDL_Event& event) {
             return;
         case SDL_EVENT_KEY_DOWN: {
             input_.keys.push_back(event.key.scancode);
+            if (marking_.active || replay_) {
+                // Marking a report takes the keys; showing one ignores them.
+                input_.keys.pop_back();
+                if (marking_.active && !event.key.repeat) {
+                    marking_key(event.key.scancode);
+                }
+                return;
+            }
             if (ui_.typing()) {
                 return;  // Typing in a text field: no shortcuts.
             }
@@ -530,6 +564,9 @@ void App::handle_event(const SDL_Event& event) {
                 }
             } else if (settings_->settings().input.bindings.matches(Action::UiToggleFullscreen, event.key.scancode)) {
                 cycle_window_mode();
+            } else if (event.key.scancode == SDL_SCANCODE_F12 && (event.key.mod & SDL_KMOD_CTRL) != 0) {
+                // A map report (phase 38): a fixed shortcut, like Ctrl+F3.
+                begin_marking();
             } else if (event.key.scancode == SDL_SCANCODE_F3 && (event.key.mod & SDL_KMOD_CTRL) != 0) {
                 // Developer tools: a fixed shortcut, like Alt+Enter.
                 dev_tools_.toggle();
@@ -552,7 +589,8 @@ void App::handle_event(const SDL_Event& event) {
 }
 
 void App::save_settings_if_due(bool force) {
-    if (settings_dirty_since_ns_ == 0) {
+    // Showing a report changes the window and the sound only for itself.
+    if (settings_dirty_since_ns_ == 0 || !replay_dir_.empty()) {
         return;
     }
     if (!force && SDL_GetTicksNS() - settings_dirty_since_ns_ < kSettingsSaveDelayNs) {
@@ -689,18 +727,26 @@ void App::render_frame(float dt) {
         // 3D scene first, straight into the swapchain.
         bool scene_drawn = false;
         update_mouse_capture();
+        update_replay();
+        // Marking a report, or capturing one: the camera stays still.
+        const bool still = world_only();
         if (scene_ok_ && host_->scene_mode() != UiHost::SceneMode::None) {
-            handle_scene_click(frame.width, frame.height);
-            update_camera(dt);
+            if (!still) {
+                handle_scene_click(frame.width, frame.height);
+                update_camera(dt);
+            }
             if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
-                // The season: trees, hats and light.
+                // The season: trees, hats and light (a report's, when showing one).
                 const sim::Game& g = session_->game();
-                const sim::Season season = g.calendar().season;
-                map_scene_.set_season(scene_, g.map(), g.content(), season, g.snow() > 25);
+                const sim::Season season = replay_ ? replay_->view.season : g.calendar().season;
+                const bool snowy = replay_ ? replay_->view.snow * static_cast<float>(sim::village::kMaxSnow) > 25.0f : g.snow() > 25;
+                map_scene_.set_season(scene_, g.map(), g.content(), season, snowy);
                 map_scene_.update_sky(scene_, dt * static_cast<float>(host_->game_paused() ? 0 : 1));
                 village_.set_season(season);
                 lighting_ = seasonal_lighting(season);
-                update_placement(frame.width, frame.height);
+                if (!still) {
+                    update_placement(frame.width, frame.height);
+                }
                 const int speed = host_->game_paused() ? 0 : clock_.speed();
                 village_.set_view(camera_.target().x, camera_.target().z, session_->town());
                 update_war_fog();
@@ -737,6 +783,10 @@ void App::render_frame(float dt) {
                 // The water freezes over below -3 °C, as fishing stops (sim).
                 const float t = static_cast<float>(session_->game().temperature());
                 view.ice = t <= -3.0f ? std::min(1.0f, (-t - 2.0f) / 3.0f) : 0.0f;
+                if (replay_) {
+                    view.snow = replay_->view.snow;
+                    view.ice = 0.0f;
+                }
             }
             scene_drawn = scene_.render(frame, view, lighting_);
         }
@@ -747,16 +797,22 @@ void App::render_frame(float dt) {
         ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
                         SDL_GetTicksNS(), atlas_.white_u(), atlas_.white_v());
         // The developer tools pick and place in the world before drawing.
-        DevContext dev = dev_context(frame.width, frame.height);
-        dev_tools_.update(dev);
+        DevContext dev = still ? DevContext{} : dev_context(frame.width, frame.height);
+        if (!still) {
+            dev_tools_.update(dev);
+        }
         if (debug_.wants_keyboard()) {
             input_.keys.clear();  // Typing in a tool, not in the game.
         }
         // Markers belong to the 3D view, under the interface.
-        if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map && !session_) {
+        if (still) {
+            // Only the world, and the strokes over it while marking.
+            update_marking();
+            draw_marking();
+        } else if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map && !session_) {
             draw_start_markers(frame.width, frame.height);
         }
-        if (scene_drawn && session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
+        if (!still && scene_drawn && session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
             // A marker over the selected villager or building.
             const sim::Game& g = session_->game();
             const GameSession::Interaction& sel = session_->ui();
@@ -767,11 +823,11 @@ void App::render_frame(float dt) {
                 draw_marker(frame.width, frame.height, village_.building_top(g, *b), ui_.theme().accent);
             }
         }
-        if (scene_drawn && (host_->scene_mode() == UiHost::SceneMode::TestScene ||
-                            host_->scene_mode() == UiHost::SceneMode::Map)) {
+        if (!still && scene_drawn &&
+            (host_->scene_mode() == UiHost::SceneMode::TestScene || host_->scene_mode() == UiHost::SceneMode::Map)) {
             draw_scene_markers(frame.width, frame.height);
         }
-        if (scene_drawn) {
+        if (!still && scene_drawn) {
             if (const auto m = dev_tools_.hovered_marker(dev)) {
                 draw_marker(frame.width, frame.height, *m, ui_.theme().text);
             }
@@ -779,7 +835,9 @@ void App::render_frame(float dt) {
                 draw_marker(frame.width, frame.height, *m, ui_.theme().danger);
             }
         }
-        host_->frame(ui_);
+        if (!still) {
+            host_->frame(ui_);
+        }
         ui_.end_frame();
 
         debug_info_.backend = gpu_.driver_name();
@@ -805,7 +863,11 @@ void App::render_frame(float dt) {
             debug_info_.sim_entities = sim_.world().registry().alive_count();
         }
         update_cursor_info(frame.width, frame.height);
-        debug_.build(debug_info_, [&] { dev_tools_.draw(dev); }, dev_tools_.visible());
+        if (still) {
+            debug_.skip_frame();
+        } else {
+            debug_.build(debug_info_, [&] { dev_tools_.draw(dev); }, dev_tools_.visible());
+        }
 
         const bool uploaded = ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_);
         debug_.prepare(frame.cmd);
@@ -823,6 +885,18 @@ void App::render_frame(float dt) {
             }
             debug_.render(frame.cmd, pass);
             SDL_EndGPURenderPass(pass);
+        }
+        // A report's screenshot: this frame, read back from the GPU.
+        const bool mark = marking_.active && marking_.capture;
+        if (scene_drawn && (mark || replay_step_ == ReplayStep::Capture)) {
+            FrameCapture capture;
+            (void)gpu_.end_frame_captured(frame, capture);
+            if (mark) {
+                save_report(capture);
+            } else {
+                finish_replay(capture);
+            }
+            return;
         }
     }
     (void)gpu_.end_frame(frame);
@@ -1187,9 +1261,15 @@ void App::draw_scene_markers(std::uint32_t width, std::uint32_t height) {
 namespace sc {
 
 bool App::mouse_ray(std::uint32_t width, std::uint32_t height, math::Vec3& origin, math::Vec3& dir) const {
-    const float x = input_.mouse_x;
-    const float y = input_.mouse_y;
-    if (x < 0.0f || y < 0.0f || mouse_captured_) {
+    if (mouse_captured_) {
+        return false;
+    }
+    return screen_ray(width, height, input_.mouse_x, input_.mouse_y, origin, dir);
+}
+
+bool App::screen_ray(std::uint32_t width, std::uint32_t height, float x, float y, math::Vec3& origin,
+                     math::Vec3& dir) const {
+    if (x < 0.0f || y < 0.0f || width == 0 || height == 0) {
         return false;
     }
     const math::Mat4 inv = math::inverse(camera_view_proj(width, height));
@@ -1517,7 +1597,7 @@ void App::save_game() {
 void App::autosave_if_due() {
     // Every few minutes of game time (0 = off), rotating over a few files.
     const GameplaySettings& g = settings_->settings().gameplay;
-    if (!session_ || g.autosave_minutes <= 0 || session_->game().tick() < next_autosave_tick_) {
+    if (!session_ || g.autosave_minutes <= 0 || !replay_dir_.empty() || session_->game().tick() < next_autosave_tick_) {
         return;
     }
     next_autosave_tick_ = session_->game().tick() + static_cast<std::uint64_t>(g.autosave_minutes) * kTicksPerMinute;
@@ -1971,6 +2051,303 @@ void App::handle_net_event(const net::NetEvent& e) {
             close_network();
             break;
     }
+}
+
+// --- Map reports (phase 38) ---------------------------------------------------
+
+namespace {
+
+constexpr ui::Color kStrokeColor{235, 40, 40, 255};
+constexpr std::array<std::uint8_t, 3> kStrokeRgb{235, 40, 40};
+constexpr float kStrokeWidth = 4.0f;  // Pixels at interface scale 1.
+// Showing a report: time for the view to fill in (terrain, trees, shadows).
+constexpr std::uint64_t kReplaySettleNs = 3'000'000'000ull;
+constexpr int kReplaySettleFrames = 30;
+
+std::string local_time_iso() {
+    const std::time_t t = std::time(nullptr);
+    std::tm local{};
+#if defined(_WIN32)
+    if (localtime_s(&local, &t) != 0) {
+        return {};
+    }
+#else
+    if (localtime_r(&t, &local) == nullptr) {
+        return {};
+    }
+#endif
+    return std::format("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}", local.tm_year + 1900, local.tm_mon + 1, local.tm_mday,
+                       local.tm_hour, local.tm_min, local.tm_sec);
+}
+
+}  // namespace
+
+bool App::world_only() const {
+    return marking_.active || replay_step_ == ReplayStep::Settling || replay_step_ == ReplayStep::Capture;
+}
+
+void App::begin_marking() {
+    if (marking_.active || replay_ || !scene_ok_ || !host_ || !map_ || !pack_ ||
+        host_->scene_mode() != UiHost::SceneMode::Map || !interactive_scene() || host_->scene_paused()) {
+        return;
+    }
+    marking_ = Marking{};
+    marking_.active = true;
+    math::Vec3 origin;
+    math::Vec3 dir;
+    if (mouse_ray(view_width_, view_height_, origin, dir)) {
+        if (const std::optional<math::Vec3> hit = ground_hit(map_->map, origin, dir)) {
+            marking_.cursor =
+                report::Cell{static_cast<std::int32_t>(std::floor(hit->x)), static_cast<std::int32_t>(std::floor(hit->z))};
+        }
+    }
+    // A game on this computer waits; a network game goes on for the others.
+    if (session_ && !session_->networked()) {
+        marking_.speed = clock_.speed();
+        clock_.set_speed(0);
+    }
+    log::info("report: marking");
+}
+
+void App::end_marking() {
+    if (marking_.speed >= 0 && session_ && !session_->networked()) {
+        clock_.set_speed(marking_.speed);
+    }
+    marking_ = Marking{};
+}
+
+void App::marking_key(SDL_Scancode key) {
+    if (marking_.capture) {
+        return;
+    }
+    switch (key) {
+        case SDL_SCANCODE_RETURN:
+        case SDL_SCANCODE_KP_ENTER:
+            marking_.capture = true;
+            marking_.drawing = false;
+            break;
+        case SDL_SCANCODE_ESCAPE:
+            end_marking();
+            log::info("report: cancelled");
+            break;
+        case SDL_SCANCODE_BACKSPACE:
+            if (!marking_.strokes.empty()) {
+                marking_.strokes.pop_back();
+                marking_.drawing = false;
+            }
+            break;
+        case SDL_SCANCODE_DELETE:
+            marking_.strokes.clear();
+            marking_.drawing = false;
+            break;
+        default:
+            break;
+    }
+}
+
+void App::update_marking() {
+    if (!marking_.active || marking_.capture) {
+        return;
+    }
+    const float x = input_.mouse_x;
+    const float y = input_.mouse_y;
+    if (input_.mouse_pressed && x >= 0.0f && y >= 0.0f && marking_.strokes.size() < report::kMaxStrokes) {
+        marking_.drawing = true;
+        marking_.strokes.push_back(report::Stroke{{{x, y}}, {}});
+    } else if (marking_.drawing && input_.mouse_down && x >= 0.0f && y >= 0.0f) {
+        auto& points = marking_.strokes.back().screen;
+        const auto& last = points.back();
+        if (std::hypot(x - last[0], y - last[1]) >= 2.0f && points.size() < report::kMaxStrokePoints) {
+            points.push_back({x, y});
+        }
+    }
+    if (marking_.drawing && (input_.mouse_released || !input_.mouse_down)) {
+        marking_.drawing = false;
+    }
+}
+
+void App::draw_marking() {
+    if (!marking_.active || marking_.capture) {
+        return;  // The capture shows only the world.
+    }
+    ui::DrawList& dl = ui_.draw();
+    const float width = ui_.s(kStrokeWidth);
+    for (const report::Stroke& st : marking_.strokes) {
+        const auto& p = st.screen;
+        if (p.size() == 1) {
+            dl.rect({p[0][0] - width * 0.5f, p[0][1] - width * 0.5f, width, width}, kStrokeColor);
+        }
+        for (std::size_t k = 0; k + 1 < p.size(); ++k) {
+            dl.line(p[k][0], p[k][1], p[k + 1][0], p[k + 1][1], width, kStrokeColor);
+        }
+    }
+    // What the keys do, along the top.
+    const ui::TextStyle style = ui_.style(ui_.theme().body);
+    const float line = ui_.text().line_height(style);
+    const float pad = ui_.s(8.0f);
+    dl.rect({0.0f, 0.0f, ui_.width(), line + 2.0f * pad}, ui_.theme().background.with_alpha(0.8f));
+    ui_.label({pad, pad, ui_.width() - 2.0f * pad, line}, tr("report.help"), style, ui_.theme().text, ui::Align::Center);
+}
+
+void App::save_report(const FrameCapture& capture) {
+    const std::vector<report::Stroke> strokes = marking_.strokes;
+    const std::optional<report::Cell> cursor = marking_.cursor;
+    end_marking();
+    if (capture.rgb.empty() || !map_ || !pack_) {
+        host_->toast(tr("report.failed"));
+        return;
+    }
+    const sim::MapData& map = map_->map;
+    report::Report r;
+    r.created_at = local_time_iso();
+    r.game_version = SC_VERSION_STRING;
+    r.build_id = std::string(build_id());
+    r.content_hash = pack_->content.hash;
+    for (const mods::ModInfo& m : mod_library_.mods()) {
+        if (m.loaded) {
+            r.mods.push_back(m.manifest.id + " " + mods::version_text(m.manifest.version));
+        }
+    }
+    r.map = map.settings;
+    r.generator_version = map.generator_version;
+    r.map_checksum = map.checksum();
+    r.view.mode = camera_.mode();
+    r.view.target = camera_.target();
+    r.view.yaw = camera_.yaw();
+    r.view.pitch = camera_.pitch();
+    r.view.distance = camera_.distance();
+    r.view.width = capture.width;
+    r.view.height = capture.height;
+    if (session_) {
+        const sim::Game& g = session_->game();
+        r.in_game = true;
+        r.view.season = g.calendar().season;
+        r.view.snow = static_cast<float>(g.snow()) / static_cast<float>(sim::village::kMaxSnow);
+        r.fog = session_->fog().mode();
+    }
+    r.cursor = cursor;
+    // Each stroke's cells, through the camera that drew the capture.
+    const auto hit = [&](float x, float y) -> std::optional<math::Vec3> {
+        math::Vec3 origin;
+        math::Vec3 dir;
+        if (!screen_ray(capture.width, capture.height, x, y, origin, dir)) {
+            return std::nullopt;
+        }
+        return ground_hit(map, origin, dir);
+    };
+    for (report::Stroke st : strokes) {
+        st.cells = report::cells_under(st, hit);
+        r.strokes.push_back(std::move(st));
+    }
+
+    const std::filesystem::path base = report::base_dir();
+    if (!base.empty()) {
+        report::prune(base, report::kKeep - 1);
+    }
+    const std::filesystem::path dir = base.empty() ? base : report::create_folder(base, report::folder_name_now());
+    std::vector<std::uint8_t> marked = capture.rgb;
+    report::draw_strokes(marked, capture.width, capture.height, r.strokes, kStrokeWidth * ui_scale(), kStrokeRgb);
+    const std::string clean_png = png::encode_rgb(capture.rgb, capture.width, capture.height);
+    const std::string marked_png = png::encode_rgb(marked, capture.width, capture.height);
+    const std::string json_text = report::to_json(r, map, pack_->content, cursor_names_);
+    const bool ok = !dir.empty() && !clean_png.empty() && !marked_png.empty() && !json_text.empty() &&
+                    fs::write_file_atomic(dir / "captura_limpia.png", clean_png) == fs::IoError::None &&
+                    fs::write_file_atomic(dir / "captura.png", marked_png) == fs::IoError::None &&
+                    fs::write_file_atomic(dir / report::kFileName, json_text) == fs::IoError::None;
+    if (!ok) {
+        log::error("report: could not be saved in {}", text::path_to_utf8(dir));
+        host_->toast(tr("report.failed"));
+        return;
+    }
+    log::info("report: saved in {} ({} strokes)", text::path_to_utf8(dir), r.strokes.size());
+    host_->toast(tr("report.saved", text::path_to_utf8(dir)));
+}
+
+bool App::load_replay(const sim::Content* content) {
+    const std::filesystem::path file = replay_dir_ / report::kFileName;
+    const fs::ReadResult read = fs::read_file(file, report::kMaxFileBytes);
+    report::Replay replay;
+    std::string error(fs::io_error_name(read.error));
+    if (read.error != fs::IoError::None || !report::parse_replay(read.data, content, replay, error)) {
+        log::error("report: cannot show {}: {}", text::path_to_utf8(file), error);
+        std::fprintf(stderr, "Cannot show the report %s: %s\n", text::path_to_utf8(file).c_str(), error.c_str());
+        return false;
+    }
+    // A window of its own size, without sound; the settings file is not saved.
+    Settings& s = settings_->settings();
+    s.display.mode = WindowMode::Windowed;
+    s.display.window_width = static_cast<int>(replay.view.width);
+    s.display.window_height = static_cast<int>(replay.view.height);
+    s.audio.master = 0;
+    replay_ = replay;
+    log::info("report: showing {} (seed {})", text::path_to_utf8(replay_dir_), replay.map.seed);
+    return true;
+}
+
+void App::update_replay() {
+    if (!replay_ || !host_) {
+        return;
+    }
+    const std::uint64_t now = SDL_GetTicksNS();
+    switch (replay_step_) {
+        case ReplayStep::Generating:
+            if (session_ && map_ && host_->scene_mode() == UiHost::SceneMode::Map) {
+                const report::View& v = replay_->view;
+                camera_.restore(v.mode, v.target, v.yaw, v.pitch, v.distance);
+                clock_.set_speed(0);
+                replay_step_ = ReplayStep::Settling;
+                replay_since_ns_ = now;
+                replay_frames_ = 0;
+            } else if (const MapGenStatus::State st = map_generation_status().state;
+                       !map_ && st != MapGenStatus::State::Running && st != MapGenStatus::State::Done) {
+                log::error("report: the map could not be made");
+                replay_step_ = ReplayStep::Done;
+                replay_exit_code_ = 1;
+                running_ = false;
+            }
+            break;
+        case ReplayStep::Settling:
+            if (++replay_frames_ >= kReplaySettleFrames && now - replay_since_ns_ >= kReplaySettleNs) {
+                replay_step_ = ReplayStep::Capture;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+void App::finish_replay(const FrameCapture& capture) {
+    replay_step_ = ReplayStep::Done;
+    running_ = false;
+    const std::string stem = "despues_" + report::folder_name_now();
+    const std::string image = png::encode_rgb(capture.rgb, capture.width, capture.height);
+    // What differs from when the report was made.
+    std::string notes;
+    if (map_ && replay_->generator_version != map_->map.generator_version) {
+        notes += std::format("Generator version: {} in the report, {} now.\n", replay_->generator_version,
+                             map_->map.generator_version);
+    }
+    if (pack_ && replay_->content_hash != pack_->content.hash) {
+        notes += "The mods (or their files) are not the same as in the report.\n";
+    }
+    if (replay_->build_id != build_id()) {
+        notes += std::format("Build: {} in the report, {} now.\n", replay_->build_id, build_id());
+    }
+    if (capture.width != replay_->view.width || capture.height != replay_->view.height) {
+        notes += std::format("Window: {}x{} in the report, {}x{} now.\n", replay_->view.width, replay_->view.height,
+                             capture.width, capture.height);
+    }
+    if (map_) {
+        notes += std::format("Map checksum now: {:016x}\n", map_->map.checksum());
+    }
+    const bool ok = !image.empty() && fs::write_file_atomic(replay_dir_ / (stem + ".png"), image) == fs::IoError::None &&
+                    fs::write_file_atomic(replay_dir_ / (stem + ".txt"), notes) == fs::IoError::None;
+    if (!ok) {
+        log::error("report: could not save the new screenshot in {}", text::path_to_utf8(replay_dir_));
+        replay_exit_code_ = 1;
+        return;
+    }
+    log::info("report: saved {}.png", stem);
 }
 
 }  // namespace sc

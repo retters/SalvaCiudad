@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 #include <SDL3/SDL_gpu.h>
 #include <SDL3/SDL_video.h>
@@ -24,6 +25,14 @@ struct GpuFrame {
     std::uint32_t height = 0;
 };
 
+// What a frame showed, read back from the GPU (phase 38): 8-bit RGB, rows
+// from the top.
+struct FrameCapture {
+    std::uint32_t width = 0;
+    std::uint32_t height = 0;
+    std::vector<std::uint8_t> rgb;
+};
+
 class GpuDevice {
 public:
     GpuDevice() = default;
@@ -39,6 +48,9 @@ public:
 
     bool begin_frame(GpuFrame& frame);
     bool end_frame(GpuFrame& frame);
+    // Ends the frame and reads what it drew into `capture`, waiting for the
+    // GPU. False (and `capture` empty) if it could not be read.
+    bool end_frame_captured(GpuFrame& frame, FrameCapture& capture);
 
     [[nodiscard]] SDL_GPUDevice* device() const { return device_; }
     [[nodiscard]] SDL_GPUTextureFormat swapchain_format() const;

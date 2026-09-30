@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -19,6 +20,7 @@
 #include "game/services.h"
 #include "game/sound_director.h"
 #include "game/settings.h"
+#include "game/map_report.h"
 #include "game/terrain_names.h"
 #include "game/test_scene.h"
 #include "game/ui_host.h"
@@ -41,7 +43,9 @@ class App final : public Services {
 public:
     // `instance` 0 is the normal game; 1..8 use their own data folder and
     // network port (for trying multiplayer on one computer).
-    explicit App(int instance = 0, bool loopback = false);
+    // `replay` (phase 38, `--reporte <folder>`): shows the map and view of a
+    // map report, saves a screenshot of it in that folder and quits.
+    explicit App(int instance = 0, bool loopback = false, std::filesystem::path replay = {});
     ~App() override;
     App(const App&) = delete;
     App& operator=(const App&) = delete;
@@ -109,6 +113,20 @@ private:
     bool mouse_ray(std::uint32_t width, std::uint32_t height, math::Vec3& origin, math::Vec3& dir) const;
     // The statistics window's "under the cursor" (phase 37), while it is open.
     void update_cursor_info(std::uint32_t width, std::uint32_t height);
+    // The ray through a point of the window.
+    bool screen_ray(std::uint32_t width, std::uint32_t height, float x, float y, math::Vec3& origin, math::Vec3& dir) const;
+    // Map reports (phase 38): marking with Ctrl+F12, and `--reporte`.
+    void begin_marking();
+    void end_marking();
+    // A key while marking; true if it was used.
+    void marking_key(SDL_Scancode key);
+    void update_marking();
+    void draw_marking();
+    void save_report(const FrameCapture& capture);
+    [[nodiscard]] bool world_only() const;
+    bool load_replay(const sim::Content* content);
+    void update_replay();
+    void finish_replay(const FrameCapture& capture);
     // Shows a game (new or loaded) on its map, with the camera at its town.
     void start_session(std::unique_ptr<GameSession> session);
     void autosave_if_due();
@@ -219,6 +237,24 @@ private:
         bool operator==(const CursorKey&) const = default;
     };
     CursorKey cursor_key_;
+    // Marking a map report: the strokes, and the speed to go back to.
+    struct Marking {
+        bool active = false;
+        bool capture = false;  // Enter pressed: the next frame is captured.
+        bool drawing = false;
+        std::vector<report::Stroke> strokes;
+        std::optional<report::Cell> cursor;
+        int speed = -1;  // -1: the game was not paused for it.
+    };
+    Marking marking_;
+    // `--reporte`: the report shown, and how far along.
+    enum class ReplayStep : std::uint8_t { None, Generating, Settling, Capture, Done };
+    std::filesystem::path replay_dir_;
+    std::optional<report::Replay> replay_;
+    ReplayStep replay_step_ = ReplayStep::None;
+    std::uint64_t replay_since_ns_ = 0;
+    int replay_frames_ = 0;
+    int replay_exit_code_ = 0;
     float camera_wheel_ = 0.0f;   // Wheel notches since the last camera update.
     float camera_drag_px_ = 0.0f;  // Middle-button drag since the last update.
     bool middle_down_ = false;

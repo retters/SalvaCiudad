@@ -212,6 +212,17 @@ void Camera::snap() {
     distance_ = goal_distance_;
 }
 
+void Camera::restore(CameraMode mode, math::Vec3 target, float yaw, float pitch, float distance) {
+    set_mode(mode);
+    follow_.reset();
+    goal_target_ = target;
+    goal_yaw_ = yaw;
+    goal_pitch_ = pitch;
+    // The same limits as zooming by hand.
+    set_distance(distance);
+    snap();
+}
+
 math::Vec3 Camera::forward() const {
     switch (mode_) {
         case CameraMode::FirstPerson: {
