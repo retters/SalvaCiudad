@@ -38,6 +38,7 @@ struct CatalogModel {
     Category category = Category::Other;
     std::size_t group = 0;  // Index into Catalog::groups.
     std::vector<Use> uses;
+    bool loose = false;  // From a loose folder (ModFolder::loose).
 
     [[nodiscard]] bool used() const { return !uses.empty(); }
 };
@@ -55,6 +56,10 @@ struct CatalogGroup {
 struct ModFolder {
     std::string id;
     std::filesystem::path dir;
+    // A folder of models in study (phase 45): the .glb files are in `dir`
+    // itself, not under `dir/models`, and its subfolders are not read. They
+    // are listed as animals, which is what the studies are.
+    bool loose = false;
 };
 
 namespace catalog_limits {
@@ -123,6 +128,8 @@ struct ModelStats {
     bool skinned = false;
     std::size_t joints = 0;
     std::vector<std::string> clips;
+    std::vector<int> clip_frames;    // Per clip.
+    std::vector<float> clip_speeds;  // Per clip, m/s; 0 when the model gives none.
 };
 
 [[nodiscard]] ModelStats model_stats(const render::ModelData& model);

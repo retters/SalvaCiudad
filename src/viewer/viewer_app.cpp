@@ -41,6 +41,13 @@ constexpr float kGroundHalfSize = 150.0f;
 constexpr float kReloadCheckSeconds = 0.5f;
 constexpr float kStatusSeconds = 6.0f;
 constexpr float kGap = 1.5f;  // Meters between models side by side.
+constexpr float kGridPeriod = 5.0f;  // The ground's strong lines repeat every 5 m.
+constexpr float kMinPlaySpeed = 0.25f;
+constexpr float kMaxPlaySpeed = 2.0f;
+
+// The folder of models in study, in place of a mod's id. A real mod cannot
+// be called this: ids have no '@'.
+const std::string kStudiesMod = "@studies";
 
 // The reference villager beside what is shown.
 const std::string kReferenceBody = sim::race_body_file("human", false);
@@ -189,7 +196,7 @@ void OrbitCamera::zoom(float notches) {
 
 // --- Application --------------------------------------------------------------
 
-ViewerApp::ViewerApp() = default;
+ViewerApp::ViewerApp(std::filesystem::path studies_dir) : studies_dir_(std::move(studies_dir)) {}
 ViewerApp::~ViewerApp() = default;
 
 int ViewerApp::run() {
@@ -374,14 +381,44 @@ std::filesystem::path ViewerApp::builtin_mods_dir() const {
     return paths_->game_data_dir() / "mods";
 }
 
+std::filesystem::path ViewerApp::default_studies_dir() const {
+#ifdef SC_VIEWER_SOURCE_DATA
+    std::filesystem::path dir =
+        text::path_from_utf8(SC_VIEWER_SOURCE_DATA).parent_path() / "art" / "studies" / "animals";
+    dir.make_preferred();
+    return dir;
+#else
+    return {};
+#endif
+}
+
+bool ViewerApp::has_studies() const {
+    std::error_code ec;
+    return !studies_dir_.empty() && std::filesystem::is_directory(studies_dir_, ec);
+}
+
+bool ViewerApp::one_shown() const {
+    return selection_.model.has_value() || placed_.size() == 1;
+}
+
+std::uint32_t ViewerApp::shown_clip(const Loaded& l) const {
+    const bool chosen = clip_ >= 0 && one_shown() && l.accessories == 0 &&
+                        static_cast<std::size_t>(clip_) < l.stats.clips.size();
+    return chosen ? static_cast<std::uint32_t>(clip_) : l.clip;
+}
+
 void ViewerApp::load_catalog() {
     const mods::Version game{SC_VERSION_MAJOR, SC_VERSION_MINOR, SC_VERSION_PATCH};
     mods_dir_ = builtin_mods_dir();
     library_.scan(mods_dir_, paths_->user_mods_dir(), game);
-    if (library_.find(mod_) == nullptr) {
+    if (studies_dir_.empty()) {
+        studies_dir_ = default_studies_dir();
+    }
+    const bool studies = mod_ == kStudiesMod && has_studies();
+    if (!studies && library_.find(mod_) == nullptr) {
         mod_ = mods::kCoreModId;
     }
-    library_.select(mod_ == mods::kCoreModId ? std::vector<std::string>{} : std::vector<std::string>{mod_});
+    library_.select(mod_ == mods::kCoreModId || studies ? std::vector<std::string>{} : std::vector<std::string>{mod_});
     pack_ = std::make_unique<mods::BuildResult>(library_.build());
     // The mods' texts, for the names of the definitions.
     auto& t = i18n::translator();
@@ -394,11 +431,16 @@ void ViewerApp::load_catalog() {
     }
     std::vector<ModFolder> folders;
     for (const mods::ModInfo& m : library_.mods()) {
-        if (m.manifest.id == mods::kCoreModId || m.manifest.id == mod_) {
+        if (!studies && (m.manifest.id == mods::kCoreModId || m.manifest.id == mod_)) {
             folders.push_back({m.manifest.id, m.dir});
         }
     }
-    catalog_ = build_catalog(folders, pack_->model_refs);
+    if (studies) {
+        // Only the folder's own models: nothing uses them yet, and the
+        // definitions of the mods say nothing about them.
+        folders.push_back({kStudiesMod, studies_dir_, true});
+    }
+    catalog_ = build_catalog(folders, studies ? std::span<const mods::ModelRef>() : pack_->model_refs);
     open_groups_.clear();  // Group numbers changed.
     log::info("viewer: {} models in {} groups for '{}' from {}, {} unused, {} missing", catalog_.models.size(),
               catalog_.groups.size(), mod_, text::path_to_utf8(mods_dir_), catalog_.unused_count(),
@@ -576,6 +618,13 @@ ViewerApp::Loaded& ViewerApp::load_model(const std::string& mod, const std::stri
     } else if (data->skinned()) {
         out.ok = !data->clips.empty() && scene_.add_skinned_model(*data, out.body);
         out.clip = data->clip_index("idle") >= 0 ? static_cast<std::uint32_t>(data->clip_index("idle")) : 0u;
+        out.joint_parent = data->joint_parent;
+        for (const math::Mat4& rest : data->joint_rest) {
+            out.joint_rest.push_back({rest.m[3][0], rest.m[3][1], rest.m[3][2]});
+        }
+        for (const render::ModelClip& c : data->clips) {
+            out.clip_skin.push_back(c.skin);
+        }
         if (!out.ok && data->clips.empty()) {
             out.error = "a skeleton without animations";
         }
@@ -716,7 +765,9 @@ math::Vec3 ViewerApp::tint_for(const CatalogModel& m, std::size_t index) const {
 }
 
 void ViewerApp::update_scene(float dt) {
-    anim_time_ += dt;
+    if (!paused_) {
+        anim_time_ += dt * play_speed_;
+    }
     if (turntable_) {
         spin_ += dt * 0.4f;
     }
@@ -726,7 +777,20 @@ void ViewerApp::update_scene(float dt) {
     shown_rigid_.clear();
     characters_.clear();
     if (ground_ != kNone) {
-        const render::Instance g{};
+        render::Instance g{};
+        // Under a model shown alone whose clip has a speed, the ground runs
+        // back at that speed: feet that stay on a grid line do not slide.
+        if (moving_ground_ && one_shown() && placed_.size() == 1) {
+            const CatalogModel& cm = catalog_.models[placed_.front().model];
+            const auto it = loaded_.find(cm.mod + "/" + cm.path);
+            if (it != loaded_.end() && it->second.ok && it->second.body != kNone) {
+                const std::uint32_t clip = shown_clip(it->second);
+                const float speed = clip < it->second.stats.clip_speeds.size() ? it->second.stats.clip_speeds[clip] : 0.0f;
+                const float travel = std::fmod(speed * anim_time_, kGridPeriod);
+                // A model faces +Z turned by its yaw.
+                g.position = {-std::sin(spin_) * travel, 0.0f, -std::cos(spin_) * travel};
+            }
+        }
         scene_.set_instances(ground_, show_ground_ ? std::span<const render::Instance>(&g, 1)
                                                    : std::span<const render::Instance>());
     }
@@ -753,9 +817,7 @@ void ViewerApp::update_scene(float dt) {
             c.position = p.position;
             c.yaw = spin_;
             c.body = l.body;
-            const bool chosen = clip_ >= 0 && selection_.model.has_value() && l.accessories == 0 &&
-                                static_cast<std::size_t>(clip_) < l.stats.clips.size();
-            c.clip = chosen ? static_cast<std::uint32_t>(clip_) : l.clip;
+            c.clip = shown_clip(l);
             c.time = anim_time_;
             c.palette = palette_ % palette_count_;
             c.accessories = l.accessories;
@@ -796,12 +858,16 @@ void ViewerApp::check_reload(float dt) {
     std::vector<std::string> changed;
     for (const auto& [key, l] : loaded_) {
         const std::size_t slash = key.find('/');
-        const mods::ModInfo* mod = library_.find(key.substr(0, slash));
-        if (mod == nullptr) {
+        const std::string mod_id = key.substr(0, slash);
+        const mods::ModInfo* mod = library_.find(mod_id);
+        // A model in study is not in a mod: the catalog knows its file.
+        const CatalogModel* listed = catalog_.find(mod_id, key.substr(slash + 1));
+        if (mod == nullptr && listed == nullptr) {
             continue;
         }
         std::error_code ec;
-        const std::filesystem::path file = mods::mod_file(mod->dir, key.substr(slash + 1));
+        const std::filesystem::path file = mod != nullptr ? mods::mod_file(mod->dir, key.substr(slash + 1))
+                                                          : listed->file;
         const auto time = std::filesystem::last_write_time(file, ec);
         const std::uintmax_t bytes = ec ? 0 : std::filesystem::file_size(file, ec);
         if (!ec && (time != l.time || bytes != l.bytes)) {
@@ -872,7 +938,8 @@ void ViewerApp::draw_ui(float width, float height) {
     if (ImGui::Begin(title.c_str(), nullptr, fixed)) {
         // The mod and the language.
         const mods::ModInfo* current = library_.find(mod_);
-        const std::string mod_name = current != nullptr && i18n::translator().has(current->manifest.name_key)
+        const std::string mod_name = mod_ == kStudiesMod ? tr("viewer.mod.studies")
+                                     : current != nullptr && i18n::translator().has(current->manifest.name_key)
                                          ? tr(current->manifest.name_key)
                                          : mod_;
         ImGui::SetNextItemWidth(-FLT_MIN);
@@ -889,6 +956,17 @@ void ViewerApp::draw_ui(float width, float height) {
                     ImGui::End();
                     return;
                 }
+            }
+            if (has_studies()) {
+                const bool current_studies = mod_ == kStudiesMod;
+                if (ImGui::Selectable(tr("viewer.mod.studies").c_str(), current_studies) && !current_studies) {
+                    mod_ = kStudiesMod;
+                    load_catalog();
+                    ImGui::EndCombo();
+                    ImGui::End();
+                    return;
+                }
+                ImGui::SetItemTooltip("%s", text::path_to_utf8(studies_dir_).c_str());
             }
             ImGui::EndCombo();
         }
@@ -910,6 +988,7 @@ void ViewerApp::draw_ui(float width, float height) {
     ImGui::End();
     draw_card(width, height);
     draw_status(width, height);
+    draw_skeleton();
 }
 
 std::vector<CatalogRow> ViewerApp::catalog_rows() const {
@@ -1042,7 +1121,8 @@ void ViewerApp::draw_catalog_tab() {
             const CatalogGroup& group = catalog_.groups[row.group];
             bool unused = false;
             for (const std::size_t m : group.models) {
-                unused = unused || !catalog_.models[m].used();
+                // Models in study are not expected to be used yet.
+                unused = unused || (!catalog_.models[m].used() && !catalog_.models[m].loose);
             }
             ImGui::PushID(static_cast<int>(row.group));
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth |
@@ -1078,7 +1158,7 @@ void ViewerApp::draw_catalog_tab() {
         } else {
             const CatalogModel& cm = catalog_.models[row.model];
             std::string name = file_name(cm.path);
-            if (!cm.used()) {
+            if (!cm.used() && !cm.loose) {
                 name += "  " + tr("viewer.unusedMark");
             }
             ImGui::PushID(static_cast<int>(row.model));
@@ -1304,7 +1384,9 @@ void ViewerApp::draw_model_card(const CatalogModel& m) {
     ImGui::Text("%s: %s", tr("viewer.card.category").c_str(), tr(category_key(m.category)).c_str());
     ImGui::Separator();
     ImGui::TextDisabled("%s", tr("viewer.card.usedBy").c_str());
-    if (m.uses.empty()) {
+    if (m.loose) {
+        ImGui::TextWrapped("%s", tr("viewer.card.inStudy").c_str());
+    } else if (m.uses.empty()) {
         ImGui::TextColored(ImVec4(1.0f, 0.72f, 0.3f, 1.0f), "%s", tr("viewer.card.unused").c_str());
     }
     for (const Use& u : m.uses) {
@@ -1358,9 +1440,130 @@ void ViewerApp::draw_model_card(const CatalogModel& m) {
             }
             ImGui::EndCombo();
         }
+        draw_animation_controls(l);
     }
     if (l.accessories != 0) {
         ImGui::TextWrapped("%s", tr("viewer.card.onBody").c_str());
+    }
+}
+
+void ViewerApp::draw_animation_controls(const Loaded& l) {
+    const ModelStats& s = l.stats;
+    const std::uint32_t clip = shown_clip(l);
+    const int frames = clip < s.clip_frames.size() ? std::max(1, s.clip_frames[clip]) : 1;
+    const float fps = render::model_limits::kClipFps;
+    // The frame on screen, as the renderer picks it.
+    const int frame = static_cast<int>(std::fmod(std::max(0.0f, anim_time_) * fps, static_cast<float>(frames)));
+    if (ImGui::Button(paused_ ? tr("viewer.anim.play").c_str() : tr("viewer.anim.pause").c_str())) {
+        paused_ = !paused_;
+    }
+    // One frame back or forward, on a whole frame; stepping pauses.
+    const auto step = [&](float frames_delta) {
+        paused_ = true;
+        anim_time_ = std::max(0.0f, (std::floor(anim_time_ * fps + 0.5f) + frames_delta) / fps);
+    };
+    ImGui::SameLine();
+    ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+    if (ImGui::ArrowButton("##back", ImGuiDir_Left)) {
+        // At time zero there is no frame before: go around the loop.
+        if (anim_time_ * fps < 0.5f) {
+            anim_time_ = static_cast<float>(frames) / fps;
+        }
+        step(-1.0f);
+    }
+    ImGui::SetItemTooltip("%s", tr("viewer.anim.stepHelp").c_str());
+    ImGui::SameLine();
+    if (ImGui::ArrowButton("##forward", ImGuiDir_Right)) {
+        step(1.0f);
+    }
+    ImGui::SetItemTooltip("%s", tr("viewer.anim.stepHelp").c_str());
+    ImGui::PopItemFlag();
+    ImGui::SameLine();
+    ImGui::TextUnformatted(tr("viewer.anim.frame", frame + 1, frames).c_str());
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    char speed_label[64];
+    std::snprintf(speed_label, sizeof(speed_label), "%s: %%.2f×", tr("viewer.anim.speed").c_str());
+    ImGui::SliderFloat("##playSpeed", &play_speed_, kMinPlaySpeed, kMaxPlaySpeed, speed_label,
+                       ImGuiSliderFlags_AlwaysClamp);
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+        play_speed_ = 1.0f;
+    }
+    ImGui::SetItemTooltip("%s", tr("viewer.anim.speedHelp").c_str());
+    const float clip_speed = clip < s.clip_speeds.size() ? s.clip_speeds[clip] : 0.0f;
+    ImGui::BeginDisabled(clip_speed <= 0.0f);
+    char ground_label[128];
+    if (clip_speed > 0.0f) {
+        std::snprintf(ground_label, sizeof(ground_label), "%s (%.2f m/s)###movingGround",
+                      tr("viewer.anim.movingGround").c_str(), static_cast<double>(clip_speed));
+    } else {
+        std::snprintf(ground_label, sizeof(ground_label), "%s###movingGround", tr("viewer.anim.movingGround").c_str());
+    }
+    ImGui::Checkbox(ground_label, &moving_ground_);
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("%s", tr("viewer.anim.movingGroundHelp").c_str());
+    ImGui::Checkbox(tr("viewer.anim.skeleton").c_str(), &show_skeleton_);
+}
+
+void ViewerApp::draw_skeleton() {
+    if (!show_skeleton_ || !one_shown() || placed_.size() != 1) {
+        return;
+    }
+    const Placed& p = placed_.front();
+    const CatalogModel& cm = catalog_.models[p.model];
+    const auto it = loaded_.find(cm.mod + "/" + cm.path);
+    if (it == loaded_.end() || !it->second.ok || it->second.body == kNone || it->second.accessories != 0) {
+        return;
+    }
+    const Loaded& l = it->second;
+    const std::uint32_t clip = shown_clip(l);
+    const std::size_t joints = l.joint_rest.size();
+    if (clip >= l.clip_skin.size() || joints == 0 || l.joint_parent.size() != joints ||
+        l.clip_skin[clip].size() < joints) {
+        return;
+    }
+    // The pose between two frames, as the renderer blends it.
+    const std::vector<math::Mat4>& skin = l.clip_skin[clip];
+    const std::size_t frames = skin.size() / joints;
+    const float pos = std::fmod(std::max(0.0f, anim_time_) * render::model_limits::kClipFps, static_cast<float>(frames));
+    const std::size_t f0 = std::min(frames - 1, static_cast<std::size_t>(pos));
+    const std::size_t f1 = (f0 + 1) % frames;
+    const float blend = pos - static_cast<float>(f0);
+    const math::Mat4 view_proj =
+        math::perspective_reverse_z(math::radians(kFovY), static_cast<float>(view_width_) / static_cast<float>(view_height_),
+                                    std::clamp(camera_.distance * 0.01f, 0.05f, 1.0f), 4000.0f) *
+        camera_.view();
+    const ImVec2 size = ImGui::GetIO().DisplaySize;
+    const float sin_yaw = std::sin(spin_);
+    const float cos_yaw = std::cos(spin_);
+    std::vector<ImVec2> screen(joints);
+    std::vector<char> visible(joints);
+    for (std::size_t j = 0; j < joints; ++j) {
+        const math::Vec3 a = skin[f0 * joints + j].transform_point(l.joint_rest[j]);
+        const math::Vec3 b = skin[f1 * joints + j].transform_point(l.joint_rest[j]);
+        const math::Vec3 m = a + (b - a) * blend;
+        // The instance's turn about the vertical, then its place.
+        const math::Vec3 world{p.position.x + m.x * cos_yaw + m.z * sin_yaw, p.position.y + m.y,
+                               p.position.z - m.x * sin_yaw + m.z * cos_yaw};
+        const math::Vec4 clip_pos = view_proj * math::Vec4{world.x, world.y, world.z, 1.0f};
+        visible[j] = clip_pos.w > 0.001f ? 1 : 0;
+        if (visible[j] != 0) {
+            screen[j] = {(clip_pos.x / clip_pos.w * 0.5f + 0.5f) * size.x, (0.5f - clip_pos.y / clip_pos.w * 0.5f) * size.y};
+        }
+    }
+    ImDrawList* draw = ImGui::GetBackgroundDrawList();
+    const ImU32 line = IM_COL32(255, 235, 60, 255);
+    const ImU32 dot = IM_COL32(255, 120, 40, 255);
+    for (std::size_t j = 0; j < joints; ++j) {
+        const int parent = l.joint_parent[j];
+        if (parent >= 0 && static_cast<std::size_t>(parent) < joints && visible[j] != 0 &&
+            visible[static_cast<std::size_t>(parent)] != 0) {
+            draw->AddLine(screen[static_cast<std::size_t>(parent)], screen[j], line, 2.0f * ui_scale_);
+        }
+    }
+    for (std::size_t j = 0; j < joints; ++j) {
+        if (visible[j] != 0) {
+            draw->AddCircleFilled(screen[j], 3.5f * ui_scale_, dot);
+        }
     }
 }
 

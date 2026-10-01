@@ -183,6 +183,17 @@ La vista previa hace una imagen por modelo con cuatro vistas (frente, lado, 3/4 
 
 Controles: arrastrar con el botón izquierdo gira la cámara, con el derecho la mueve; la rueda acerca. F encuadra lo que se ve y F5 vuelve a leer los mods.
 
+### Revisar animaciones en el visor
+
+Para validar las animaciones antes de meterlas al juego (fase 45). El visor usa el mismo renderizador y la misma animación que el juego, así que lo que se ve ahí es lo que se verá en el juego.
+
+- **Modelos en estudio:** en la lista de mods aparece "Modelos en estudio", que muestra los `.glb` de `art/studies/animals` sin tocar `core`. Otra carpeta: `SalvaCiudadModelos.exe --estudio <carpeta>`. Se leen solo los archivos de la carpeta, no sus subcarpetas, y se recargan solos cuando cambian. Un modelo nuevo aparece con F5.
+- Al elegir un modelo con esqueleto, bajo la lista de animaciones de la ficha:
+  - **Pausa**, y las flechas para ir un fotograma atrás o adelante (mantener presionado repite). Se muestra el fotograma actual y el total.
+  - **Velocidad** de 0,25× a 2× (clic derecho vuelve a 1×).
+  - **Suelo en movimiento:** si la animación tiene una velocidad guardada (`walk_speed`, `run_speed`), la cuadrícula avanza bajo el modelo a esa velocidad. Una pata apoyada que sigue sobre la misma línea no patina.
+  - **Mostrar el esqueleto:** los huesos, dibujados sobre el modelo en la pose del momento.
+
 La lista se recorre con el teclado (W A S D, las flechas o las del teclado numérico): arriba y abajo pasan de un elemento a otro y lo muestran al momento; derecha abre una categoría o un tipo con variantes (o entra en él si ya está abierto), e izquierda lo cierra (o sube a la categoría o tipo que lo contiene). Mientras se escribe en el buscador, las teclas escriben.
 
 ## Sonidos

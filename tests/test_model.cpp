@@ -243,6 +243,14 @@ TEST_SUITE("model") {
             REQUIRE_MESSAGE(c >= 0, name);
             CHECK(m.clips[static_cast<std::size_t>(c)].frame_count == frames);
         }
+        // Phase 45: the speeds saved in the skeleton's extras, and the bones' parents.
+        CHECK(m.clips[static_cast<std::size_t>(m.clip_index("walk"))].speed == doctest::Approx(0.7f));
+        CHECK(m.clips[static_cast<std::size_t>(m.clip_index("run"))].speed == doctest::Approx(1.6f));
+        CHECK(m.clips[static_cast<std::size_t>(m.clip_index("idle"))].speed == 0.0f);
+        REQUIRE(m.joint_parent.size() == m.joint_names.size());
+        CHECK(m.joint_parent[static_cast<std::size_t>(m.joint_index("body"))] == -1);
+        CHECK(m.joint_parent[static_cast<std::size_t>(m.joint_index("chest"))] == m.joint_index("body"));
+        CHECK(m.joint_parent[static_cast<std::size_t>(m.joint_index("foot.HR"))] == m.joint_index("leg_lower.HR"));
         CHECK(m.bounds_min.y == doctest::Approx(0.0f).epsilon(0.001));
     }
 }

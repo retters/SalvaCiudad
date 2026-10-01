@@ -8,6 +8,9 @@
 
 #include <cgltf.h>
 #include <stb_image.h>
+#include <yyjson.h>
+
+#include "core/json.h"
 
 namespace sc::render {
 
@@ -212,7 +215,37 @@ private:
             inverse_bind_.push_back(inverse_bind);
             model_.joint_rest.push_back(math::inverse(inverse_bind));
         }
+        for (cgltf_size j = 0; j < count; ++j) {
+            model_.joint_parent.push_back(joint_of(skin_->joints[j]->parent));
+        }
         return true;
+    }
+
+    // The speed a clip asks for: "<clip>_speed" in the extras of a node above
+    // the skeleton (Blender writes the armature's custom properties there).
+    // Anything missing, malformed or out of range means no speed.
+    [[nodiscard]] float clip_speed(const std::string& clip) const {
+        const std::string key = clip + "_speed";
+        int depth = 0;
+        for (const cgltf_node* n = skin_->joints[0]->parent; n != nullptr && depth < 64; n = n->parent, ++depth) {
+            if (n->extras.data == nullptr) {
+                continue;
+            }
+            const std::string_view text(n->extras.data);
+            if (text.size() > lim::kMaxExtrasBytes) {
+                continue;
+            }
+            const json::ParseResult parsed = json::parse_object(text);
+            if (parsed.error != json::ParseError::None) {
+                continue;
+            }
+            double speed = 0.0;
+            if (json::get_double(yyjson_mut_doc_get_root(parsed.doc.get()), key.c_str(), 0.0,
+                                 static_cast<double>(lim::kMaxClipSpeed), speed) == json::Field::Ok) {
+                return static_cast<float>(speed);
+            }
+        }
+        return 0.0f;
     }
 
     [[nodiscard]] int joint_of(const cgltf_node* n) const {
@@ -268,6 +301,7 @@ private:
             ModelClip clip;
             clip.name = anim.name != nullptr ? anim.name : std::format("clip{}", a);
             clip.fps = lim::kClipFps;
+            clip.speed = clip_speed(clip.name);
             // A loop's last key repeats the first, so it is not a frame of its own.
             clip.frame_count = std::max(1, static_cast<int>(std::lround(duration * lim::kClipFps)));
             clip.skin.reserve(static_cast<std::size_t>(clip.frame_count) * joints);

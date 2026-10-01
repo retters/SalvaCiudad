@@ -45,7 +45,9 @@ inline constexpr float kFovY = 40.0f;  // Degrees.
 
 class ViewerApp {
 public:
-    ViewerApp();
+    // `studies_dir`: a folder of models in study to offer beside the mods;
+    // empty for the default (see default_studies_dir).
+    explicit ViewerApp(std::filesystem::path studies_dir = {});
     ~ViewerApp();
     ViewerApp(const ViewerApp&) = delete;
     ViewerApp& operator=(const ViewerApp&) = delete;
@@ -64,6 +66,10 @@ private:
         render::SkinnedId body = kNone;  // Bodies, and accessories on a body.
         std::uint32_t accessories = 0;   // Accessories: the mask that shows it.
         std::uint32_t clip = 0;          // Bodies: idle, or the first clip.
+        // Bodies: the skeleton, to draw it over the model (phase 45).
+        std::vector<int> joint_parent;
+        std::vector<math::Vec3> joint_rest;               // Model space.
+        std::vector<std::vector<math::Mat4>> clip_skin;   // Per clip: frames * joints.
         std::filesystem::file_time_type time{};
         std::uintmax_t bytes = 0;
     };
@@ -83,6 +89,15 @@ private:
     // Reads the mods again and rebuilds the catalog for `mod_`.
     void load_catalog();
     [[nodiscard]] std::filesystem::path builtin_mods_dir() const;
+    // art/studies/animals of the source tree this viewer was built from, if
+    // it is there; empty otherwise.
+    [[nodiscard]] std::filesystem::path default_studies_dir() const;
+    // Whether the folder of models in study can be shown.
+    [[nodiscard]] bool has_studies() const;
+    // Whether one model is shown alone: picked in a group, or the only one of its group.
+    [[nodiscard]] bool one_shown() const;
+    // The clip a body plays now: the chosen one or its idle.
+    [[nodiscard]] std::uint32_t shown_clip(const Loaded& l) const;
     void frame();
     void handle_event(const SDL_Event& event);
     void render_frame(float dt);
@@ -93,6 +108,9 @@ private:
     void draw_review_tab();
     void draw_card(float width, float height);
     void draw_model_card(const CatalogModel& m);
+    void draw_animation_controls(const Loaded& l);
+    // Lines between the joints of the model shown alone, at this frame.
+    void draw_skeleton();
     void draw_status(float width, float height);
     [[nodiscard]] std::string group_label(const CatalogGroup& g) const;
     [[nodiscard]] std::string use_label(const Use& u) const;
@@ -130,7 +148,8 @@ private:
     // Content.
     mods::ModLibrary library_;
     std::unique_ptr<mods::BuildResult> pack_;
-    std::string mod_ = mods::kCoreModId;  // The mod being looked at.
+    std::string mod_ = mods::kCoreModId;  // The mod being looked at, or kStudiesMod.
+    std::filesystem::path studies_dir_;   // Models in study; may be empty.
     std::filesystem::path mods_dir_;      // Where the built-in mods are read from.
     Catalog catalog_;
     std::map<std::string, Loaded> loaded_;  // By "<mod>/<path>".
@@ -172,6 +191,11 @@ private:
     std::uint32_t building_palette_ = 0;
     std::uint32_t building_palette_count_ = 0;
     int clip_ = -1;  // -1: each body's idle.
+    // Animation review (phase 45).
+    float play_speed_ = 1.0f;     // 0.25 to 2.
+    bool paused_ = false;
+    bool moving_ground_ = true;   // The ground runs under a clip that has a speed.
+    bool show_skeleton_ = false;
 
     OrbitCamera camera_;
     bool rotating_ = false;

@@ -1837,3 +1837,20 @@ El motor todavía no mezcla animaciones (D-403). Por eso `eat` empieza y termina
 
 **D-4406. Los modelos de estudio no se versionan.**
 `art/studies/` (modelos e imágenes de revisión) se regenera con los scripts y queda en `.gitignore`. El cerdito animado se copió a `tests/data_models_test/animal_pig.glb` para probar que el cargador del juego lo acepta: 21 huesos, las 5 animaciones y pesos que suman 1.
+
+## Fase 45: revisión de animaciones en el visor (2026-09-30)
+
+**D-4501. La carpeta de estudio como un mod aparte, sin copiar nada a `core`.**
+"Modelos en estudio" es una entrada más en la lista de mods del visor, con el identificador `@studies` (un mod real no puede llamarse así). Lee los `.glb` de una carpeta suelta: por omisión `art/studies/animals` del código fuente con que se compiló el visor, o la que se pase con `--estudio <carpeta>`. Solo lee los archivos de esa carpeta, no sus subcarpetas (ahí están las imágenes de revisión), y los lista como animales, sin la marca de "sin usar". Se descartó darle a la carpeta la forma de un mod (`mod.json` y `models/animals/`): obligaba a cambiar a dónde escriben los scripts y las vistas previas.
+
+**D-4502. La velocidad de cada animación se lee del modelo, y lo inválido se ignora.**
+El cargador lee `<animación>_speed` (m/s) de los *extras* glTF de un nodo por encima del esqueleto y lo guarda en `ModelClip::speed`. Se acepta solo un número entre 0 y 100, en unos *extras* de hasta 4096 bytes que sean un objeto JSON válido. Cualquier otra cosa significa "sin velocidad" (0), y el modelo se carga igual: un dato opcional mal escrito no debe dejar sin modelo al juego. El juego todavía no usa la velocidad (fase 47); el visor la usa para el suelo en movimiento.
+
+**D-4503. El esqueleto se dibuja con la interfaz, no con el renderizador.**
+El visor guarda en la CPU las matrices de cada animación, calcula la posición de cada hueso con la misma mezcla entre dos fotogramas que hace el sombreador y dibuja líneas de cada hueso a su padre con Dear ImGui, proyectadas con la cámara. No hizo falta un sombreador ni una pasada nuevos. Para saber el padre de cada hueso, `ModelData` guarda ahora `joint_parent`.
+
+**D-4504. Un solo reloj para todo lo que se anima en el visor.**
+Pausa, velocidad y paso a paso actúan sobre el reloj de animación del visor, que comparten el modelo, el aldeano de referencia y el suelo en movimiento. Así el suelo avanza exactamente lo que avanza la animación, también al ir fotograma a fotograma. El paso a paso lleva primero al fotograma entero más cercano.
+
+**D-4505. Un tipo con un solo modelo se trata como ese modelo.**
+Elegir la animación solo funcionaba al elegir un archivo dentro de un tipo con variantes. Los animales en estudio son tipos de un solo modelo, así que el visor trata ese caso igual que un archivo elegido: animación, suelo en movimiento y esqueleto.

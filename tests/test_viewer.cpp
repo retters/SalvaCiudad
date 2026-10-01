@@ -163,6 +163,43 @@ TEST_SUITE("viewer") {
         CHECK(std::find(s.clips.begin(), s.clips.end(), "walk") != s.clips.end());
     }
 
+    TEST_CASE("a loose folder of models in study is listed as animals, without its subfolders") {
+        // The test models' folder stands in for art/studies/animals (phase 45).
+        const std::filesystem::path dir = std::filesystem::path(SC_SOURCE_DIR) / "tests" / "data_models_test";
+        const viewer::ModFolder folder{"@studies", dir, true};
+        const viewer::Catalog c = viewer::build_catalog({&folder, 1}, {});
+        CHECK(c.models.size() == 4);
+        CHECK(c.missing.empty());
+        CHECK(c.unused_count() == c.models.size());
+        const viewer::CatalogModel* pig = c.find("@studies", "animal_pig.glb");
+        REQUIRE(pig != nullptr);
+        CHECK(pig->loose);
+        CHECK(pig->category == viewer::Category::Animals);
+        CHECK(pig->file == dir / "animal_pig.glb");
+        // As a mod, the same folder has no "models" folder: nothing is listed.
+        const viewer::ModFolder as_mod{"@studies", dir};
+        CHECK(viewer::build_catalog({&as_mod, 1}, {}).models.empty());
+        // A loose folder's subfolders are not read: tests/ holds the models one level down.
+        const viewer::ModFolder parent{"@studies", dir.parent_path(), true};
+        CHECK(viewer::build_catalog({&parent, 1}, {}).models.empty());
+    }
+
+    TEST_CASE("an animal's card gives each clip's frames and speed") {
+        const viewer::ModelStats s = viewer::model_stats(load("animal_pig.glb"));
+        REQUIRE(s.clips.size() == 5);
+        REQUIRE(s.clip_frames.size() == 5);
+        REQUIRE(s.clip_speeds.size() == 5);
+        for (std::size_t i = 0; i < s.clips.size(); ++i) {
+            if (s.clips[i] == "walk") {
+                CHECK(s.clip_frames[i] == 16);
+                CHECK(s.clip_speeds[i] == doctest::Approx(0.7f));
+            } else if (s.clips[i] == "idle") {
+                CHECK(s.clip_frames[i] == 90);
+                CHECK(s.clip_speeds[i] == 0.0f);
+            }
+        }
+    }
+
     TEST_CASE("the keyboard moves through the catalog list and opens and closes it") {
         using viewer::CatalogRow;
         using viewer::NavKey;

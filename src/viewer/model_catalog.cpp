@@ -79,7 +79,7 @@ Category category_of(std::string_view path, const std::vector<Use>& uses) {
 
 // The .glb files of one mod, as paths inside it. Links are not followed.
 void scan_mod(const ModFolder& mod, Catalog& out) {
-    const std::filesystem::path root = mod.dir / "models";
+    const std::filesystem::path root = mod.loose ? mod.dir : mod.dir / "models";
     std::error_code ec;
     if (!std::filesystem::is_directory(root, ec)) {
         return;
@@ -89,7 +89,7 @@ void scan_mod(const ModFolder& mod, Catalog& out) {
     const std::filesystem::recursive_directory_iterator end;
     std::vector<CatalogModel> found;
     for (; !ec && it != end; it.increment(ec)) {
-        if (it.depth() >= catalog_limits::kMaxDepth) {
+        if (it.depth() >= catalog_limits::kMaxDepth || mod.loose) {
             it.disable_recursion_pending();
         }
         const std::filesystem::directory_entry& entry = *it;
@@ -112,6 +112,7 @@ void scan_mod(const ModFolder& mod, Catalog& out) {
         m.path = text::path_to_utf8(entry.path().lexically_relative(mod.dir));
         std::replace(m.path.begin(), m.path.end(), '\\', '/');
         m.file = entry.path();
+        m.loose = mod.loose;
         found.push_back(std::move(m));
     }
     // The directory order depends on the file system.
@@ -180,7 +181,7 @@ Catalog build_catalog(std::span<const ModFolder> mods, std::span<const mods::Mod
     std::map<std::string, std::size_t> by_id;
     for (std::size_t i = 0; i < out.models.size(); ++i) {
         CatalogModel& m = out.models[i];
-        m.category = category_of(m.path, m.uses);
+        m.category = m.loose ? Category::Animals : category_of(m.path, m.uses);
         std::string id;
         std::string name_key;
         const auto def = std::find_if(m.uses.begin(), m.uses.end(), [](const Use& u) { return u.kind != "code"; });
@@ -283,6 +284,8 @@ ModelStats model_stats(const render::ModelData& model) {
     s.joints = model.joint_names.size();
     for (const render::ModelClip& c : model.clips) {
         s.clips.push_back(c.name);
+        s.clip_frames.push_back(c.frame_count);
+        s.clip_speeds.push_back(c.speed);
     }
     return s;
 }

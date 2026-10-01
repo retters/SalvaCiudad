@@ -32,6 +32,10 @@ struct ModelClip {
     std::string name;
     float fps = 30.0f;
     int frame_count = 0;
+    // How fast the model should move while the clip plays at its own rate
+    // so its feet do not slide, in m/s; 0 when the model does not say. Read
+    // from the number "<name>_speed" in the skeleton node's glTF extras.
+    float speed = 0.0f;
     std::vector<math::Mat4> skin;  // frame_count * joint count
 };
 
@@ -62,6 +66,7 @@ struct ModelData {
     // Skinned models only (empty otherwise).
     std::vector<JointWeights> skin;          // One per vertex.
     std::vector<std::string> joint_names;
+    std::vector<int> joint_parent;           // Index of each joint's parent joint, or -1.
     std::vector<math::Mat4> joint_rest;      // Bind pose of each joint, model space.
     std::vector<ModelClip> clips;
     math::Vec3 bounds_min;
@@ -85,6 +90,8 @@ inline constexpr std::size_t kMaxJoints = 64;
 inline constexpr std::size_t kMaxClips = 16;
 inline constexpr int kMaxClipFrames = 1800;  // 60 s at 30 fps.
 inline constexpr float kClipFps = 30.0f;
+inline constexpr std::size_t kMaxExtrasBytes = 4096;  // A node's extras, to read clip speeds.
+inline constexpr float kMaxClipSpeed = 100.0f;        // m/s.
 }  // namespace model_limits
 
 struct ModelLoadResult {
