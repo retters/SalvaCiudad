@@ -1854,3 +1854,25 @@ Pausa, velocidad y paso a paso actúan sobre el reloj de animación del visor, q
 
 **D-4505. Un tipo con un solo modelo se trata como ese modelo.**
 Elegir la animación solo funcionaba al elegir un archivo dentro de un tipo con variantes. Los animales en estudio son tipos de un solo modelo, así que el visor trata ese caso igual que un archivo elegido: animación, suelo en movimiento y esqueleto.
+
+## Personajes, armas y árboles low poly (2026-10-01)
+
+Pedido del usuario fuera de las fases numeradas: modelos fieles a siete imágenes de referencia suyas, con la técnica de *remesh* y reducción (D-4401) o un proceso parecido. Son modelos en estudio (`art/studies/`); todavía no entran al juego.
+
+**D-4410. Límites de triángulos.**
+Personaje 3000, arma 500 a 600, árbol con hojas 2500 y sin hojas 1500. Los eligió el agente siguiendo la tabla de animales; el usuario puede cambiarlos.
+
+**D-4411. Un cuerpo común para los 15 personajes, con proporciones medidas.**
+`people/_human.py` define la anatomía una sola vez, para que todos compartan esqueleto después. La primera versión salió con la cabeza un 30 % grande, el torso un 30 % ancho y los brazos abiertos, y los personajes no se parecían a las referencias. Se midió sobre las imágenes (la cabeza es cerca de un décimo de la altura y el pecho un quinto, con los brazos junto al cuerpo), se corrigió el cuerpo y cada personaje se ajustó midiendo su recorte. Pendiente:
+- La postura de las referencias (pies separados, brazos algo abiertos) no está en el cuerpo base, así que de la cintura para abajo las siluetas quedan más angostas.
+- Los tres grupos de personajes tienen cada uno sus propios ayudantes (bordes rectos de tela, caras, correas sobre la superficie), en `adventurer_man.py`, `lizardfolk.py` y `dark_elf_man.py`. Hay que unificarlos en `_human.py` antes de ponerles esqueleto.
+- La tela (faldas de abrigo, capas, capuchas) son láminas sueltas: al animar habrá que atarlas a varios huesos.
+
+**D-4412. Las armas no usan el *remesh* en las partes duras.**
+El *remesh* redondea hojas, escudos y cristales. Se construyen como sólidos facetados directos, y `build_final` acepta especificaciones sin partes soldadas. Las astas siguen las proporciones del dibujo (7 a 9 cm de grosor); si no se ven bien en la mano de un personaje, se adelgazan. Las armas se modelan derechas aunque el dibujo las muestre inclinadas. `grip` todavía no se exporta al archivo.
+
+**D-4413. Los árboles se trazan de las imágenes.**
+En vez de parámetros a mano, `_trace.py` saca de la imagen sin hojas el esqueleto de ramas, de la imagen en flor las masas de follaje y de la de otoño el color de cada zona. La vista de frente es la del dibujo; la profundidad se inventa. Las ramas gruesas van al *remesh* y las delgadas son tubos directos. El follaje es un núcleo oscuro por masa, cubierto de cuadros doblados en tres tonos. Lo más débil es el cerezo llorón: tiene menos hebras que el dibujo.
+
+**D-4414. Piezas abiertas y descarte de caras traseras.**
+`MeshBuilder.to_object` recalcula las normales de toda la malla, y Blender puede voltear una pieza abierta suelta. Con el descarte de caras traseras del juego, esa pieza no se vería. Los árboles lo resuelven cerrando las hojas que saldrían volteadas. Revisados en el visor (que dibuja como el juego), un árbol con hojas, un elfo con capa, la espada demoníaca y el hacha se ven completos por ambos lados. Queda pendiente una verificación automática para todos los modelos, y que `study_preview.py` pueda descartar caras traseras.

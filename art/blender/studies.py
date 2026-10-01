@@ -446,7 +446,10 @@ def remesh_collapse_mesh(spec, budget=None):
 def t06_remesh_collapse(spec, budget=None):
     """Welded voxel remesh reduced by edge collapse: even triangles."""
     mb = MeshBuilder()
-    add_mesh(mb, remesh_collapse_mesh(spec, budget))
+    # A spec without welded parts is built only from its details (a blade,
+    # a shield): hard thin shapes that a remesh would round off.
+    if spec.ellipsoids or spec.capsules:
+        add_mesh(mb, remesh_collapse_mesh(spec, budget))
     return finish(mb, spec, tones=spec.tones)
 
 
@@ -648,7 +651,7 @@ def build_final(spec, out):
         common.reset_scene()
         mb = t06_remesh_collapse(spec, budget)
         tris = triangles(mb)
-        if tris <= spec.max_tris or attempt == 5:
+        if tris <= spec.max_tris or attempt == 5 or not (spec.ellipsoids or spec.capsules):
             break
         mb.bm.free()
         budget = int(budget * max(0.5, min(0.95, spec.max_tris / tris)))

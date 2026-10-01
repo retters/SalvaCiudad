@@ -45,7 +45,10 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `preview.py` | Imágenes de revisión |
 | `studies.py` | Técnicas de modelado de los animales low poly; `build_final` es la de producción (remesh y reducción) |
 | `zoo/*.py` | Un animal o planta low poly por archivo (ver abajo) |
-| `zoo_build.py` | Genera los modelos de `zoo/` |
+| `zoo_build.py` | Genera los modelos de `zoo/` o, con `specs=<carpeta>`, los de `people/`, `weapons/` o `lowpoly_trees/` |
+| `people/*.py` | Los 15 personajes low poly; `_human.py` es el cuerpo común |
+| `weapons/wNN_*.py` | Las 40 armas y herramientas, numeradas como en la imagen de referencia |
+| `lowpoly_trees/*.py` | 16 árboles en tres estados (48 modelos) desde un solo generador, `_tree.py` |
 | `rigs.py` | Esqueletos, pesos y animaciones de los animales de `zoo/` |
 | `rig_check.py` | Verifica las animaciones de un modelo exportado |
 | `study_preview.py` | Una imagen de revisión por modelo (4 vistas) y las tiras de sus animaciones |
@@ -149,6 +152,22 @@ blender --background --factory-startup --python art/blender/study_preview.py -- 
 ```
 
 La vista previa hace una imagen por modelo con cuatro vistas (frente, lado, 3/4 y 3/4 con las aristas y el número de triángulos) y `overview.png` con todos. Si el modelo tiene esqueleto, también `<nombre>_anim.png`: una fila por animación con 8 fotogramas vistos de lado.
+
+### Personajes, armas y árboles low poly
+
+De las imágenes de referencia del usuario en la raíz del repositorio (`Personajes 1` a `3`, `Armas y herramientas` y `Arboles 1` a `3`). Tampoco están en el juego todavía. Se generan igual que los animales, con la carpeta de especificaciones:
+
+```
+blender --background --factory-startup --python art/blender/zoo_build.py -- art/studies/people specs=people [nombres]
+blender --background --factory-startup --python art/blender/zoo_build.py -- art/studies/weapons specs=weapons [nombres]
+blender --background --factory-startup --python art/blender/zoo_build.py -- art/studies/trees specs=lowpoly_trees [nombres]
+```
+
+Para verlos en el visor: `SalvaCiudadModelos.exe --estudio art\studies\people` (o `weapons`, `trees`).
+
+- **Personajes** (`people/`, límite de 3000 triángulos): todos heredan de `Human` en `_human.py`, un cuerpo de partes soldadas con nombre (cabeza, pecho, antebrazo…) y las articulaciones en el mismo lugar, para que después compartan esqueleto. Cada personaje cambia proporciones, agrega volúmenes de ropa en `customize()`, pinta por zona del cuerpo con `zone()` y pone lo fino en `details()`. Las proporciones salen de medir cada referencia (D-4411).
+- **Armas** (`weapons/`, límite de 500 a 600): piezas directas y facetadas en `details()`; el *remesh* solo en lo orgánico (báculos, garrote, martillo de piedra). De pie sobre Z = 0, con el lado ancho hacia −Y. Cada una declara `grip`, el punto donde se sujeta (D-4412).
+- **Árboles** (`lowpoly_trees/`, límite de 2500 con hojas y 1500 sin hojas): `<especie>_<variante>_<estado>`, con estados `bloom`, `autumn` y `bare` que comparten tronco y ramas. `_trace.py` (se corre a mano con Python y PIL) lee las tres imágenes y escribe `_traced.py`: ramas, masas de follaje y colores de otoño. Los modelos se generan solo con `_traced.py` (D-4413).
 
 ### Esqueletos y animaciones de los animales
 
