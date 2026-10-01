@@ -49,7 +49,9 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `people/*.py` | Los 15 personajes low poly; `_human.py` es el cuerpo común |
 | `weapons/wNN_*.py` | Las 40 armas y herramientas, numeradas como en la imagen de referencia |
 | `lowpoly_trees/*.py` | 16 árboles en tres estados (48 modelos) desde un solo generador, `_tree.py` |
-| `rigs.py` | Esqueletos, pesos y animaciones de los animales de `zoo/` |
+| `rigs.py` | Base de esqueletos, pesos y animaciones (`Rig`, `Pose`) y la plantilla de cuadrúpedo |
+| `rigs_bird.py`, `rigs_swim.py` | Plantillas de aves y de nadadores (pez, tortuga, pulpo) |
+| `rigs_human.py` | Esqueleto y animaciones de los personajes de `people/` |
 | `rig_check.py` | Verifica las animaciones de un modelo exportado |
 | `study_preview.py` | Una imagen de revisión por modelo (4 vistas) y las tiras de sus animaciones |
 | `pig_studies.py`, `tiger_studies.py` | El cerdito y el tigre con cada técnica, para compararlas |
@@ -185,6 +187,15 @@ Para verlos en el visor: `SalvaCiudadModelos.exe --estudio art\studies\people` (
   - `eat`: baja la cabeza y vuelve a la pose de reposo;
   - `die`: cae de lado y no se repite.
 - **Patas sin patinar:** las patas siguen una trayectoria del pie (apoyado en el suelo y luego adelante en arco) con cinemática inversa. Durante el apoyo, el pie retrocede exactamente a la velocidad de la animación. Esa velocidad se guarda en el modelo, en los *extras* del esqueleto: `walk_speed` y `run_speed` en m/s (D-4404).
+- **Las demás familias** (fase 46) usan la misma base. Cada especificación puede derivar su plantilla para agregar huesos y poses propias:
+  - cuadrúpedos con extras: trompa (elefante), alas y `fly` (grifo, dragón), saltos (conejo);
+  - aves (`rigs_bird.Bird`): `idle`, `walk`, `run`, `eat`, `die`, y `fly` (gallo, águila) o `swim` (pingüino);
+  - nadadores (`rigs_swim`): tiburón (`swim`, `swim_fast`, `eat`, `bite`), tortuga (`walk`, `swim`, `hide`) y pulpo (`walk`, `swim`);
+  - la flora no lleva esqueleto.
+- Las animaciones de vuelo y nado se animan cerca del origen: el juego les da la altura o la profundidad.
+- **Personajes** (fase 48, `rigs_human.Humanoid`): los 17 huesos de los aldeanos (`hips`, `spine`, `chest`, `neck`, `head`, y por lado `upper_arm`, `lower_arm`, `hand`, `thigh`, `shin`, `foot`), más los que agregue cada personaje (cola, capa, coleta, faldas). Animaciones: `idle`, `walk`, `run`, `chop` (talar), `shoot` (arco), `fish_cast`, `fish_stand` y `fish_sit`.
+  - La herramienta es un modelo aparte. El modelo dice en qué mano va en cada animación, en los *extras* del esqueleto: `chop_prop` = `axe:hand.R`, `shoot_prop` = `bow:hand.L`, `fish_*_prop` = `rod:hand.R`. Va con su eje largo (su +Z) hacia el frente de la mano, que es −Y con el brazo colgando en reposo, y con su punto `grip` en el centro de la mano. Las tiras de revisión la muestran puesta.
+  - Una animación que no se repite lleva `<animación>_loops` = 0 (`die`, `hide`, `fish_cast`).
 - **Verificar** un modelo exportado: `blender --background --factory-startup --python art/blender/rig_check.py -- art/studies/animals/pig.glb`. Comprueba tres cosas y termina en `RIG OK` o `RIG FAILED`:
   - que cada animación que se repite termina en la pose con que empieza;
   - que nada baja del suelo;

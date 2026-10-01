@@ -15,10 +15,12 @@ import math
 import random
 
 import bmesh
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 from mathutils.bvhtree import BVHTree
 
 import common
+import rigs
+import rigs_human
 import studies
 from _human import Human
 
@@ -191,6 +193,143 @@ def mirror(p, x):
     return (p[0] * x, p[1], p[2])
 
 
+# ----------------------------------------------------------------- skeleton
+
+# The bone each welded garment or head part follows (limbs get their side).
+GARMENT_BONES = {
+    "cowl": "chest", "scarf": "chest", "shawl": "chest", "sleeve": "upper_arm", "bracer": "lower_arm",
+    "cuff": "shin", "fold": "shin", "gather": "shin", "knee": "thigh", "jaw": "head", "muzzle": "head",
+    "cheek": "head", "snout": "head", "throat": "head", "eye": "head", "skirt": "hips", "tail": "hips",
+}
+
+
+class AdventurerRig(rigs_human.Humanoid):
+    """The shared skeleton plus what these characters need:
+    - a welded skirt follows the hips at the belt and each thigh lower down;
+    - a welded tail follows its own chain of bones ("tail.1"...);
+    - the detail pieces follow the bone the character marked for them while
+      making them (Adventurer.mark), whole or with weights per vertex;
+    - tails, ponytails and ears move in every clip (pose_extra)."""
+
+    def chain(self, prefix):
+        return [b for b in self.bones if b.name.startswith(prefix + ".")]
+
+    def chain_weights(self, p, prefix, root):
+        """Weights along a chain of bones (a tail, a ponytail): the nearest
+        bone, blending with its neighbors near its ends and with `root`
+        where the chain starts."""
+        bones = self.chain(prefix)
+        i = min(range(len(bones)), key=lambda j: rigs.segment_distance(p, bones[j].head, bones[j].tail))
+        b = bones[i]
+        ab = b.tail - b.head
+        t = max(0.0, min(1.0, (Vector(p) - b.head).dot(ab) / ab.dot(ab)))
+        before = bones[i - 1].name if i > 0 else root
+        weights = [(b.name, 1.0), (before, max(0.0, 0.35 - t))]
+        if i + 1 < len(bones):
+            weights.append((bones[i + 1].name, max(0.0, t - 0.65)))
+        return weights
+
+    def part_distance(self, p, part):
+        """As Humanoid's, but with a capsule's radius where the point is
+        (not its largest one): a flared sleeve or bracer does not claim the
+        trunk beside it."""
+        if part[0] == "ellipsoid":
+            return super().part_distance(p, part)
+        a, b = Vector(part[1]), Vector(part[2])
+        ab = b - a
+        t = max(0.0, min(1.0, (Vector(p) - a).dot(ab) / max(ab.dot(ab), 1e-12)))
+        return (Vector(p) - (a + ab * t)).length - (part[3] + (part[4] - part[3]) * t)
+
+    def nearest_part(self, p):
+        return min(self.spec.parts, key=lambda name: self.part_distance(p, self.spec.parts[name]))
+
+    def surface_weights(self, p):
+        part = self.nearest_part(p)
+        if part.startswith("skirt"):
+            return self.spec.drape(*self.spec.skirt_span)(p)
+        if part.startswith("tail"):
+            return self.chain_weights(p, "tail", "hips")
+        return super().surface_weights(p)
+
+    def bind(self, mb):
+        """As Rig.bind, but it tells the welded surface from the detail
+        pieces by the vertices themselves, not by their place in the mesh:
+        a mesh reuses the room of deleted vertices, so new detail vertices
+        can come before `detail_from` (and then got both kinds of weights)."""
+        spec = self.spec
+        spec.claim(mb)
+
+        def put(v, weights):
+            v[mb.deform].clear()
+            weights = sorted(((w, n) for n, w in weights if w > 0.0), reverse=True)[:4]
+            total = sum(w for w, _ in weights)
+            for w, n in weights:
+                v[mb.deform][mb._group_index(n)] = w / total
+
+        done = set()
+        for v in mb.bm.verts:
+            if v in spec.surface_verts:
+                put(v, self.surface_weights(v.co))
+                continue
+            if v in done:
+                continue
+            piece, stack = [], [v]
+            done.add(v)
+            while stack:
+                u = stack.pop()
+                piece.append(u)
+                for e in u.link_edges:
+                    w = e.other_vert(u)
+                    if w not in done:
+                        done.add(w)
+                        stack.append(w)
+            bone = spec.owners.get(v)
+            if callable(bone):
+                for u in piece:
+                    put(u, bone(u.co))
+                continue
+            if bone is None:
+                center = sum((u.co for u in piece), Vector()) / len(piece)
+                bone = self.piece_bone(center, piece)
+            for u in piece:
+                put(u, [(bone, 1.0)])
+
+    def pose_extra(self, clip, t, rot):
+        p = TAU * t
+        moving = {"walk": 1.0, "run": 1.6}.get(clip, 0.0)
+        tail = self.chain("tail")
+        for i, bone in enumerate(tail):
+            if clip == "fish_sit":
+                continue
+            if moving:
+                side, up = 7.0 * moving * math.sin(p - 0.5 * i), 3.0 * moving * math.cos(2 * p - 0.4 * i)
+            elif clip == "idle":
+                side, up = 9.0 * math.sin(p - 0.6 * i), 2.0 * math.sin(2 * p - 0.5 * i)
+            else:
+                side, up = 4.0 * math.sin(p - 0.6 * i), 0.0
+            rot[bone.name] = [(rigs.Z, side), (rigs.X, up)]
+        if tail and clip == "fish_sit":
+            # Sitting, the tail lies on the ground behind.
+            lying = (tail[-1].tail - tail[0].head).normalized().rotation_difference(
+                Vector((-0.45, 1.0, 0.1)).normalized())
+            hips = rot.get("hips", Quaternion())
+            hips = hips if isinstance(hips, Quaternion) else Quaternion()
+            rot[tail[0].name] = hips.inverted() @ Quaternion(rigs.Z, math.radians(3.0 * math.sin(p))) @ lying
+        for i, bone in enumerate(self.chain("ponytail")):
+            # The ponytail lags behind the head's bobbing.
+            swing = 7.0 * moving * math.cos(2 * p - 0.9 - 0.5 * i) if moving else 1.5 * math.sin(3 * p - 0.6 * i)
+            sway = 4.0 * moving * math.sin(p - 0.6 - 0.5 * i) if moving else 2.0 * math.sin(p - 0.6 * i)
+            rot[bone.name] = [(rigs.X, swing), (rigs.Z, sway)]
+        for bone in self.chain("ear"):
+            sx = 1.0 if bone.name.endswith("L") else -1.0
+            if moving:
+                turn = 5.0 * moving * math.cos(2 * p + 0.6)
+            else:  # A flick of one ear, then of the other.
+                at = 0.3 if sx > 0 else 0.7
+                turn = 14.0 * math.sin(math.pi * max(0.0, min(1.0, (t - at) / 0.08)))
+            rot[bone.name] = [(rigs.X, turn)]
+
+
 # -------------------------------------------------------------- shared body
 
 class Adventurer(Human):
@@ -202,7 +341,7 @@ class Adventurer(Human):
     beyond the plane is flattened onto it (a hem, a sleeve's opening, the
     rim of a cowl or a boot's cuff), painted as the dark inside."""
 
-    remesh_voxel = 0.012
+    remesh_voxel = 0.007
     budget = 1300
     # Parts that flatten() never deforms, even next to a flattened garment.
     PROTECTED = ("head", "jaw", "muzzle", "cheek", "snout", "throat", "eye")
@@ -211,6 +350,70 @@ class Adventurer(Human):
         self.flats = []
         super().__init__()
         self.cuts = [(p, n, self.in_zone(prefixes)) for p, n, prefixes, _ in self.flats]
+
+    # ----------------------------------------------------------- skeleton
+
+    skirt_span = (1.04, 0.66)  # Heights where a welded skirt starts and ends (1.8 m body).
+
+    def extra_bones(self):
+        """Hook: the character's own bones (tail, ears, ponytail)."""
+        return []
+
+    def make_rig(self):
+        bones = {}
+        for name in self.parts:
+            for garment, bone in GARMENT_BONES.items():
+                if name.startswith(garment):
+                    side = ".L" if ".L" in name else ".R" if ".R" in name else ""
+                    bones[name] = bone + (side if bone in ("upper_arm", "lower_arm", "shin", "thigh") else "")
+        return AdventurerRig(self, extra_bones=self.extra_bones(), part_bones=bones)
+
+    def chain_bones(self, prefix, points, parent):
+        """Bones "<prefix>.1"... through the points (of the 1.8 m body)."""
+        out = []
+        for i, (a, b) in enumerate(zip(points, points[1:])):
+            out.append(rigs.Bone(f"{prefix}.{i + 1}", self.P(*a), self.P(*b), parent=parent))
+            parent = f"{prefix}.{i + 1}"
+        return out
+
+    def mark(self, mb, bone):
+        """The detail pieces made from here on follow `bone`: a bone's name,
+        a function point -> [(bone, weight)] for pieces that bend, or None
+        for the nearest bone."""
+        self.claim(mb)
+        self.marked = bone
+
+    def claim(self, mb):
+        """Notes the bone of the detail vertices made since the last mark."""
+        for v in mb.bm.verts:
+            if v not in self.known_verts:
+                self.known_verts.add(v)
+                self.owners[v] = self.marked
+
+    def trunk(self, p):
+        """Weights of a point on the trunk (belts, straps): hips, spine or
+        chest by height, blending across the joints."""
+        blend = 0.05 * self.k
+        waist, chest = self.z["waist"], self.z["chest"]
+        up1 = max(0.0, min(1.0, (p.z - waist) / (2 * blend) + 0.5))
+        up2 = max(0.0, min(1.0, (p.z - chest) / (2 * blend) + 0.5))
+        return [("hips", 1.0 - up1), ("spine", up1 * (1.0 - up2)), ("chest", up2)]
+
+    def trunk_bone(self, z):
+        return "hips" if z < self.z["waist"] else "spine" if z < self.z["chest"] else "chest"
+
+    def drape(self, top, bottom, share=0.85):
+        """Weights for cloth hanging from the belt over the legs (a skirt,
+        a tabard, a loincloth) between the heights `top` and `bottom` of the
+        1.8 m body: the hips at the top, more and more of the thigh on its
+        side lower down, so the legs do not pierce it."""
+        def weights(p):
+            t = max(0.0, min(1.0, (top * self.k - p.z) / ((top - bottom) * self.k))) * share
+            left = max(0.0, min(1.0, 0.5 + p.x / (0.1 * self.k)))
+            return [("hips", 1.0 - t), ("thigh.L", t * left), ("thigh.R", t * (1.0 - left))]
+        return weights
+
+    # ------------------------------------------------------------ building
 
     def in_zone(self, prefixes):
         return lambda c, n=None: self.zone(c).startswith(prefixes)
@@ -277,6 +480,11 @@ class Adventurer(Human):
         bm.normal_update()
         bm.verts.index_update()
         mb.detail_from = len(bm.verts)
+        # From here on, new vertices are detail pieces (see mark()).
+        self.surface_verts = set(bm.verts)
+        self.known_verts = set(self.surface_verts)
+        self.owners = {}
+        self.marked = None
 
     def stack(self, parts, name, z0, z1, r0, r1, y0=0.0, y1=0.0, flat=0.03):
         """A cone of cloth: thin flat ellipsoids piled from height z0 (half
@@ -523,19 +731,24 @@ class AdventurerMan(Adventurer):
         k = self.k
         self.flatten(mb)
         surf = Surface(mb)
+        self.mark(mb, "head")
         self.face(mb, surf, "hair_dark", "skin")
         self.hair(mb)
+        self.mark(mb, None)
         self.thumbs(mb, "skin")
 
         def under_cowl(p):
             return self.zone(p).startswith("cowl")
         # Crossed chest straps, the wide belt and its buckle.
+        self.mark(mb, self.trunk)
         for s in (-1, 1):
             strap(mb, surf, (0, 0, 1.22 * k), (s * 0.7, 0, 0.71), 0.046 * k, "leather", thick=0.01, skip=under_cowl)
         strap(mb, surf, (0, 0, self.BELT * k), (0, 0, 1), 0.095 * k, "leather", thick=0.014, segments=14)
         front = surf.onto((0.015 * k, 0, self.BELT * k), (0, 1, 0))
+        self.mark(mb, "hips")
         buckle(mb, front + Vector((0, -0.02, 0)) * k, 0.105 * k, "metal", "leather_dark")
         # The belt's end hangs over the skirt, with a lighter tip.
+        self.mark(mb, self.drape(self.BELT, self.HEM))
         top = surf.onto((0.085 * k, 0, (self.BELT - 0.04) * k), (0, 1, 0)) + Vector((0, -0.016, 0))
         low = surf.onto((0.105 * k, 0, (self.HEM + 0.1) * k), (0, 1, 0)) + Vector((0, -0.012, 0))
         w = Vector((0.03 * k, 0, 0))
@@ -543,6 +756,7 @@ class AdventurerMan(Adventurer):
         tip = low + Vector((0, -0.004, -0.085 * k))
         studies.plate(mb, [low - w, low + w, tip + w, tip + Vector((0, 0, 0.035 * k)), tip - w], 0.012, "gold")
         # The gold clasp of the cowl, on his left.
+        self.mark(mb, "chest")
         p = surf.onto((0.115 * k, 0, 1.4 * k), (0, 1, 0)) + Vector((0, -0.01 * k, 0))
         chunk(mb, [p + Vector(q) * k for q in ((0.012, 0, 0.05), (-0.012, 0, -0.05), (0.038, 0, -0.008), (-0.038, 0, 0.008),
                                                (0, -0.02, 0), (0, 0.02, 0))], "gold")

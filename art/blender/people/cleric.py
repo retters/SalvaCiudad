@@ -6,11 +6,12 @@ staff topped with a gold spiked mace head held in his left hand."""
 
 import math
 
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 
 import common
 import studies
 from dark_elf_man import Figure, arc, sheet, solid
+from rigs import Bone, smooth
 
 
 class Cleric(Figure):
@@ -22,6 +23,9 @@ class Cleric(Figure):
     build = 1.15
     heel = 0.03
     raised_arm = True   # The left forearm bent forward to hold the staff (False: the arm hangs).
+    chains = (("coat", "hips", ((0, 0.13, 1.1), (0, 0.215, 0.62), (0, 0.26, 0.17)), True),
+              ("tabard", "hips", ((0, -0.165, 0.99), (0, -0.175, 0.68), (0, -0.18, 0.39)), False))
+    part_bones = {"cowl": "chest", "sleeve.L": "upper_arm.L", "sleeve.R": "upper_arm.R"}
     colors = {
         "white": common.rgb(0xE6D6C8),
         "white_light": common.rgb(0xF1E3D5),
@@ -62,6 +66,47 @@ class Cleric(Figure):
             parts["forearm.L"] = self.capsule(e, e + d * length, 0.048 * b, 0.042 * b)
             self.grip = e + d * (length + 0.055)
             parts["hand.L"] = self.ellipsoid(self.grip, (0.048, 0.055, 0.05))
+
+    # ---------------------------------------------------------------- rig
+
+    def extra_bones(self):
+        """The staff has its own bone in his left hand, so it can stay
+        upright (or lean on the ground) whatever the hand does."""
+        grip = self.V(*self.grip)
+        return [Bone("staff", grip, grip + Vector((0, 0, 0.3 * self.k)), parent="hand.L")]
+
+    def pose_fix(self, rig, clip, t, pose):
+        # Idle, walking and running: the left arm keeps holding the staff
+        # as at rest (carried a little off the ground while he moves).
+        if self.raised_arm and clip in ("idle", "walk", "run"):
+            lift = {"idle": 0.0, "walk": 0.04, "run": 0.07}[clip] * self.k
+            pose.limb("upper_arm.L", "lower_arm.L", rig.by_name["lower_arm.L"].tail + Vector((0, 0, lift)),
+                      Vector((0.3, 0.5, -1.0)))
+            pose.set_world("hand.L", Quaternion())
+
+    def pose_after(self, rig, clip, t, pose):
+        # The staff stands upright in the hand; where the hand is too low
+        # for that, it leans to his left with its butt on the ground.
+        grip = pose.head("staff")
+        butt = self.V(self.grip.x - 0.07, self.grip.y + 0.01, 0.0) - rig.by_name["staff"].head
+        for step in range(0, 181):
+            turn = Quaternion(Vector((0, 1, 0)), math.radians(-0.5 * step))
+            if grip.z + (turn @ butt).z >= 0.004 + 0.02 * self.k * math.sin(math.radians(0.5 * step)):
+                break
+        pose.set_world("staff", turn)
+
+    def hood_weights(self, p):
+        head = smooth((p.z - 1.5 * self.k) / (0.1 * self.k))
+        return [("head", head), ("chest", 1.0 - head)]
+
+    def pauldron_weights(self, p):
+        return [("chest", 0.65), ("upper_arm.L" if p.x > 0 else "upper_arm.R", 0.35)]
+
+    def tabard_weights(self, p):
+        """The tabard lies on the body down to the belt, then hangs."""
+        if p.z > 1.0 * self.k:
+            return self.rig.surface_weights(p)
+        return self.rig.chain_weights("tabard")(p)
 
     def paint(self, c, n):
         u = self.u(c)
@@ -126,6 +171,7 @@ class Cleric(Figure):
                        self.V(s * (s0 + 0.09), -0.135, 1.5), self.V(s * (s0 + 0.11), 0.0, 1.55),
                        self.V(s * (s0 + 0.09), 0.14, 1.5), self.V(s * (s0 + 0.0), -0.155, 1.5),
                        self.V(s * (s0 + 0.0), 0.16, 1.5), self.V(s * (s0 + 0.085), 0.0, 1.45)], "gold")
+            self.mark(mb, self.pauldron_weights)
             for top, low, r0, r1, point in ((1.52, 1.33, 0.1, 0.128, 0.05),):
                 rows = []
                 for z, r in ((top, r0), (low, r1)):
@@ -135,6 +181,7 @@ class Cleric(Figure):
                 rows[1][2].z -= point * k   # The edge comes to a point at the outside.
                 rows[1][2].x += s * 0.02 * k
                 sheet(mb, rows, 0.02 * k, "white", back="inner", trim="gold", hem=0.035 * k, flip=s < 0)
+            self.mark(mb, "upper_arm.?")
 
     def emblem(self, mb, z, y):
         """A white four-pointed star with a gold center, on the tabard."""
@@ -167,9 +214,13 @@ class Cleric(Figure):
 
     def details(self, mb):
         k = self.k
+        self.begin(mb)
         self.hood(mb)
+        self.mark(mb, self.hood_weights)
         self.helmet(mb)
+        self.mark(mb, "head")
         self.yoke(mb)
+        self.mark(mb, "chest")
         self.pauldrons(mb)
         # The tabard: red with a gold border, down to a point.
         xs = (-0.09, 0.0, 0.09)
@@ -180,12 +231,14 @@ class Cleric(Figure):
         sheet(mb, tabard, 0.012 * k, "red", back="inner", trim="gold", hem=0.04 * k, sides=0.032 * k)
         self.emblem(mb, 1.3, self.front(0, 1.3, 0.026).y)
         self.emblem(mb, 0.84, y - 0.014 * k)
+        self.mark(mb, self.tabard_weights)
         # The belt and its pouch on his right hip.
         self.ring(mb, 1.11, 0.058, 0.028, "brown")
         p = self.around(1.05, [math.radians(222)], 0.045)[0]
         mb.box(p, (0.08 * k, 0.065 * k, 0.12 * k), "brown", rotation_z=math.radians(40))
         mb.box(p + Vector((-0.01 * k, -0.01 * k, 0.035 * k)), (0.085 * k, 0.07 * k, 0.05 * k), "dark",
                rotation_z=math.radians(40))
+        self.mark(mb, "spine")
         # The skirt of the coat, open at the front, and its longer back layer.
         angles = arc(0, 1, 9)
         coat = self.skirt_rows([(1.1, 0.18, 0.135, 0.0, -80, 260), (0.96, 0.225, 0.17, 0.0, -73, 253),
@@ -193,17 +246,22 @@ class Cleric(Figure):
         sheet(mb, coat, 0.014 * k, "white", back="inner", trim="gold", hem=0.055 * k, sides=0.03 * k)
         back = self.skirt_rows([(0.6, 0.265, 0.2, 0.02), (0.21, 0.295, 0.235, 0.03)], arc(-10, 190, 6), jag=0.04)
         sheet(mb, back, 0.012 * k, "inner", trim="gold", hem=0.04 * k)
+        self.mark(mb, self.rig.coat_weights("coat"))
         for side, s in ((".L", 1), (".R", -1)):
             # Bracers: gold ends around a brown band.
             self.cuff(mb, "forearm" + side, 0.14, 0.34, 0.013, "gold")
             self.cuff(mb, "forearm" + side, 0.34, 0.72, 0.007, "brown")
             self.cuff(mb, "forearm" + side, 0.72, 0.9, 0.011, "gold")
+            self.mark(mb, "lower_arm" + side)
             # Gold bands at the knee, with a point, and around the ankle.
             self.cuff(mb, "shin" + side, 0.0, 0.12, 0.011, "gold")
             self.knee_guard(mb, s, "gold", 0.75)
             self.cuff(mb, "shin" + side, 0.74, 0.87, 0.013, "gold")
+            self.mark(mb, "shin" + side)
         self.heels(mb, "brown", width=0.07)
+        self.mark(mb, "foot.?")
         self.staff(mb)
+        self.mark(mb, "staff")
 
 
 SPECS = [Cleric()]

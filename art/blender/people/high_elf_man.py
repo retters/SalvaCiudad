@@ -13,6 +13,7 @@ from mathutils import Vector
 import common
 import studies
 from dark_elf_man import Elf, arc, sheet, solid
+from rigs import smooth
 
 
 class HighElf(Elf):
@@ -31,6 +32,13 @@ class HighElf(Elf):
     tones = 0.45
     BOOT = 0.4
 
+    def shoulder_weights(self, p):
+        """The shoulder pieces sit on the chest; their points rise with
+        the arms."""
+        k = self.k
+        arm = 0.5 * smooth((abs(p.x) - self.shoulder * k * 0.75) / (0.1 * k))
+        return [("chest", 1.0 - arm), ("upper_arm.L" if p.x > 0 else "upper_arm.R", arm)]
+
     def collar(self, mb, height=0.08, gap=34):
         """A standing collar, open at the front, with a gold edge."""
         k = self.k
@@ -38,6 +46,7 @@ class HighElf(Elf):
         rows = [[self.V(r * math.cos(a), 0.0 + r * 1.05 * math.sin(a), z) for a in angles]
                 for z, r in ((1.5 + height, 0.08), (1.5, 0.064))]
         sheet(mb, rows, 0.012 * k, "red", back="inner", trim="gold", top=0.02 * k)
+        self.mark(mb, "chest")
 
     def shoulder_pieces(self, mb, reach=0.29, low=1.35, lift=0.0, inner=0.03, corner=None):
         """Stiff pointed pieces from the collar out over the shoulders,
@@ -58,6 +67,7 @@ class HighElf(Elf):
                  else self.behind(s * (inner + 0.005), low + 0.03, 0.02)],
             ]
             sheet(mb, rows, 0.02 * k, "red", back="inner", trim="gold", hem=0.03 * k, flip=s < 0)
+        self.mark(mb, self.shoulder_weights)
 
     def boot_trim(self, mb):
         """A gold edge around the top of each boot, rising to a point."""
@@ -70,6 +80,7 @@ class HighElf(Elf):
             p = Vector(a).lerp(Vector(b), t) + Vector((0, -r - 0.005 * k, 0))
             solid(mb, [p + Vector(d) * k for d in ((-0.04, 0.015, 0.0), (0.04, 0.015, 0.0), (0, -0.01, 0.0),
                                                    (0, -0.002, 0.07), (0, 0.02, 0.01))], "gold")
+        self.mark(mb, "shin.?")
 
 
 class HighElfMan(HighElf):
@@ -85,6 +96,8 @@ class HighElfMan(HighElf):
     lock = (0.09, -0.135, 1.36)
     lock_mid = -0.12
     ear = (0.085, 0.07)
+    chains = (("coat", "hips", ((0, 0.11, 1.12), (0, 0.2, 0.6), (0, 0.25, 0.07)), True),
+              ("panel", "hips", ((0, -0.125, 1.14), (0, -0.135, 0.9), (0, -0.135, 0.65)), False))
     budget = 1150
     BELT = 1.175
 
@@ -118,21 +131,23 @@ class HighElfMan(HighElf):
 
     def details(self, mb):
         k = self.k
-        self.face(mb, eye="dark", brow="gold")
-        self.ears(mb)
-        self.hair(mb)
+        self.begin(mb)
+        self.head_details(mb, eye="dark", brow="gold")
         self.collar(mb)
         self.shoulder_pieces(mb)
         # Gold bands on the sleeves.
         for side in (".L", ".R"):
             self.cuff(mb, "forearm" + side, 0.34, 0.48, 0.007, "gold")
             self.cuff(mb, "forearm" + side, 0.84, 1.0, 0.007, "gold")
+        self.mark(mb, "lower_arm.?")
         # The belt and its diamond buckle; a smaller diamond on the chest.
         self.ring(mb, self.BELT, 0.045, 0.012, "gold")
-        for z, w, h, off in ((self.BELT - 0.005, 0.042, 0.068, 0.026), (1.27, 0.024, 0.042, 0.01)):
+        for z, w, h, off, bone in ((self.BELT - 0.005, 0.042, 0.068, 0.026, "spine"),
+                                   (1.27, 0.024, 0.042, 0.01, "chest")):
             p = self.front(0, z, off)
             solid(mb, [p + Vector(d) * k for d in ((0, 0, h), (0, 0, -h), (w, 0, 0), (-w, 0, 0), (0, -0.02, 0),
                                                    (0, 0.02, 0))], "gold")
+            self.mark(mb, bone)
         # The skirt of the coat: long tails behind, and a shorter layer
         # over them; both open at the front and edged with gold.
         angles = arc(0, 1, 9)
@@ -144,14 +159,17 @@ class HighElfMan(HighElf):
                                 (0.72, 0.248, 0.19, 0.01, -70, 250), (0.47, 0.28, 0.22, 0.02, -65, 245)],
                                angles, jag=0.07)
         sheet(mb, over, 0.012 * k, "red", back="inner", trim="gold", hem=0.032 * k, sides=0.03 * k)
+        self.mark(mb, self.rig.coat_weights("coat"))
         # The narrow panel hanging from the buckle.
         y = self.front(0, 1.0, 0.03).y
         panel = [[self.front(x, 1.14, 0.03) for x in (-0.045, 0.0, 0.045)],
                  [Vector((x * k, y, 0.76 * k)) for x in (-0.05, 0.0, 0.05)],
                  [Vector((x * k, y, z * k)) for x, z in ((-0.05, 0.72), (0.0, 0.65), (0.05, 0.72))]]
         sheet(mb, panel, 0.012 * k, "red", back="inner", trim="gold", hem=0.028 * k, sides=0.02 * k)
+        self.mark(mb, self.rig.chain_weights("panel"))
         self.boot_trim(mb)
         self.heels(mb, "red")
+        self.mark(mb, "foot.?")
 
 
 SPECS = [HighElfMan()]

@@ -1876,3 +1876,44 @@ En vez de parámetros a mano, `_trace.py` saca de la imagen sin hojas el esquele
 
 **D-4414. Piezas abiertas y descarte de caras traseras.**
 `MeshBuilder.to_object` recalcula las normales de toda la malla, y Blender puede voltear una pieza abierta suelta. Con el descarte de caras traseras del juego, esa pieza no se vería. Los árboles lo resuelven cerrando las hojas que saldrían volteadas. Revisados en el visor (que dibuja como el juego), un árbol con hojas, un elfo con capa, la espada demoníaca y el hacha se ven completos por ambos lados. Queda pendiente una verificación automática para todos los modelos, y que `study_preview.py` pueda descartar caras traseras.
+
+## Fases 46 y 48: animales y personajes animados (2026-10-01)
+
+Pedido del usuario: animar todos los animales y personajes, y que los personajes puedan talar con hacha, disparar flechas y pescar sentados o de pie. La fase 48 (personajes) se agregó a la especificación y se hizo junto con la 46, antes de la 47.
+
+**D-4601. Una base y plantillas por familia.**
+`rigs.Rig` reúne lo común: huesos, pesos, exportación y ganchos (`surface_weights`, `piece_bone`, `piece_weights`, `pose_extra`). `rigs.Pose` coloca un esqueleto en el espacio: lleva la cuenta de dónde queda cada hueso y resuelve extremidades de dos huesos hacia un punto. Las plantillas son `Quadruped`, `rigs_bird.Bird`, `rigs_swim` (`Fish`, `SeaTurtle`, `Tentacled`) y `rigs_human.Humanoid`. Cada especificación deriva la suya para lo propio (trompa, alas, cola, capa). La flora no lleva esqueleto.
+
+**D-4602. La superficie y los detalles se distinguen por conjunto, no por orden.**
+`bind` suponía que los vértices de detalle venían después de los de la superficie. No es cierto: bmesh reutiliza los huecos de los vértices que borran los cortes, así que piezas de detalle quedaban entre la superficie y se ataban mal (dedos atados a la cabeza, pies a medias en la cadera, modelos hundidos). El cerdito se salvó porque sus cortes no borran vértices. Ahora `finish` guarda el conjunto de vértices de la superficie. Varios archivos conservan su propio arreglo (reordenar o copiar la malla) porque se escribieron antes del cambio; `bind` los admite.
+
+**D-4603. Personajes con los huesos de los aldeanos.**
+`Humanoid` usa los mismos 17 nombres que `human.py`, para que después sirvan el mismo código del juego y los mismos accesorios. Los pesos salen de las partes del cuerpo (cada punto sigue al hueso de su parte más cercana, mezclando solo alrededor de la articulación), y los huesos de brazos y piernas siguen las partes de cada personaje, así que un brazo levantado en reposo tiene su hueso donde está.
+
+**D-4604. Extremidades por puntos y no por ángulos.**
+Los pies se plantan en el suelo y las manos van a puntos sobre el mango de la herramienta, por cinemática inversa. La zancada de `walk` y `run` sale de lo que alcanzan las piernas de cada personaje, y la velocidad guardada es la que resulta. Por eso las mismas animaciones sirven del orco a la rana sin ajustar ángulos, y los pies no patinan por construcción.
+
+**D-4605. La herramienta es un modelo aparte, declarada en el modelo.**
+El hacha, el arco y la caña no son parte del personaje. Cada animación declara su herramienta y su mano en los *extras* (`chop_prop`…), con la convención de agarre descrita en `docs/ARTE.md`. Las armas exportan su punto `grip`. El juego todavía no lee esto. Pendiente para cuando entren al juego: el mago y el clérigo llevan su báculo en la mano izquierda también mientras talan, disparan o pescan.
+
+**D-4606. La ropa.**
+Tres soluciones, una por grupo de personajes, todas dentro de sus archivos: faldas que siguen a la pierna más adelantada o atrasada con huesos `skirt.F` y `skirt.B`; faldas soldadas que se mezclan de la cadera a cada muslo; y cadenas de huesos para capas y abrigos que cuelgan por gravedad, se inclinan para no atravesar el cuerpo y se tienden en el suelo. Hay que unificarlas en `rigs_human.py` (pendiente junto con los ayudantes de D-4411). Defectos conocidos: sentados, las espaldas de abrigos y faldas quedan tendidas como un abanico rígido; al correr, los paneles se abren.
+
+**D-4607. Cambios en modelos ya aprobados, para poder animarlos.**
+- Los anillos en las articulaciones gastan triángulos, así que bajó el presupuesto del cuerpo en varios modelos (la vaca de 487 a 402, el zorro, el tigre, el ciervo).
+- Aventurera, zorro y rana: muslos, brazaletes y muñecas unos milímetros más delgados, porque el antebrazo quedaba soldado a la cadera.
+- Tigre: las rayas de las patas pasan a ser horizontales, sobre los anillos.
+- Flamenco: la pata doblada se alargó para igualar a la otra (medía 0,48 m contra 0,79 m y no podía desdoblarse para caminar).
+- Gallo y águila: su límite sube de 800 a 1000 triángulos, por las alas que se abren al volar.
+- Garras del grifo, patas del pingüino y del tigre: unos milímetros arriba o abajo para que apoyen en el suelo.
+
+**D-4608. Verificación.**
+`rig_check.py` mide sobre el archivo exportado: hasta 64 huesos y 16 animaciones; los ciclos cierran; nada baja del suelo salvo en las animaciones en que el cuerpo deja de apoyarse en los pies (`die`, `fish_sit`, `swim`, `fly`); y los pies apoyados retroceden a la velocidad guardada. Falla si una animación con velocidad en tierra no tiene pies que medir (antes se saltaba la prueba en silencio cuando el modelo flotaba). Una prueba del juego carga todos los modelos de `art/studies` que existan y comprueba esqueleto, pesos y velocidades.
+
+**D-4609. Defectos conocidos de las animaciones, pendientes de la revisión del usuario.**
+- Las patas delanteras de los cuadrúpedos se doblan hacia adelante a media pata; bien para los de pezuña, algo raro en felinos y lobo.
+- Los galopes no tienen fase de vuelo.
+- Al morir, las patas quedan rectas y algunas piezas (cuerno, oreja, colmillo, costado) entran un poco en el suelo.
+- La tortuga escondida deja ver una abertura al frente: el caparazón no tiene pared detrás del cuello.
+- El conejo salta corto y lento (1,4 m/s) para que el muslo no se estire.
+- `fly` y `swim` se animan cerca del origen; el juego debe dar la altura.

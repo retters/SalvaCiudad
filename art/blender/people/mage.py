@@ -5,11 +5,12 @@ wooden staff topped with a big blue crystal in the left hand."""
 
 import math
 
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 
 import common
 import studies
-from lizardfolk import Folk, along, belt, buckle, collar, hip_ring, hull, pouch, skirt, spike, tube
+from lizardfolk import Folk, along, belt, buckle, collar, follows, hip_ring, hull, pouch, skirt, spike, tube
+from rigs import Bone, X
 
 
 class Mage(Folk):
@@ -39,6 +40,44 @@ class Mage(Folk):
         "eye": common.rgb(0x1A1414),
     }
     BELT = 1.117
+    HANG = 0.57     # The robe's hem, below the hip joints.
+
+    def part_bones(self):
+        out = {}
+        for side in ("L", "R"):
+            out["sleeve." + side] = "upper_arm." + side
+            out["cuff." + side] = "lower_arm." + side
+        return out
+
+    def extra_bones(self):
+        wrist = Vector(self.P(*self.arm()[1]))
+        return [Bone("staff", wrist, wrist + Vector((0, 0, 0.3)), parent="hand.L")]
+
+    def animate(self, clip, t, pose):
+        """The staff stays upright on the ground: standing, walking and
+        running, the left arm keeps its raised forearm instead of
+        swinging; in the other clips the staff only leans when the hand
+        comes too low for it."""
+        rig = self.rig
+        wrist, shoulder = rig.by_name["hand.L"].head, rig.by_name["upper_arm.L"].head
+        if self.raised_arm and clip in ("idle", "walk", "run"):
+            target = pose.head("upper_arm.L") + (wrist - shoulder)
+            target.z = wrist.z
+            pose.limb("upper_arm.L", "lower_arm.L", target, Vector((0.2, 0.6, -1.0)))
+            pose.set_world("hand.L", Quaternion())
+        # The staff's foot is a little ahead of the wrist; tipping it
+        # farther forward lifts it.
+        ahead = abs(self.arm()[2][1] * self.k - 0.012 * self.k - wrist.y)
+        reach, rest = math.hypot(ahead, wrist.z), math.atan2(ahead, wrist.z)
+        height = pose.head("staff").z
+        lo, hi = rest, math.pi / 2      # The staff's angle from the vertical, found by halving.
+        for _ in range(24):
+            mid = (lo + hi) / 2
+            if height - reach * math.cos(mid) - 0.03 * math.sin(mid - rest) < 0.0:
+                lo = mid
+            else:
+                hi = mid
+        pose.set_world("staff", Quaternion(X, rest - (hi if height < wrist.z else rest)))
 
     def __init__(self):
         super().__init__()
@@ -100,10 +139,12 @@ class Mage(Folk):
 
     def details(self, mb):
         k, V = self.k, self.V
+        self.begin(mb)
         self.flatten_hems(mb)
         self.head(mb)
         self.face(mb)
         self.hair(mb)
+        self.tag(mb, "chest")
         # The cowl: wrapped around the neck, sagging at the front, with a
         # fold on the chest and the hood's lump at the back.
         collar(mb, (0.0, 0.005 * k), 1.44 * k, 1.565 * k, (0.18 * k, 0.155 * k), (0.128 * k, 0.122 * k), "dark",
@@ -112,11 +153,13 @@ class Mage(Folk):
         hull(mb, [V(*p) for p in ((-0.1, 0.1, 1.54), (0.1, 0.1, 1.54), (0.0, 0.175, 1.5), (-0.08, 0.12, 1.4),
                                   (0.08, 0.12, 1.4), (0.0, 0.15, 1.36), (0.0, 0.1, 1.58))], "dark")
         # Belt, buckle and pouches.
+        self.tag(mb, "hips")
         at = belt(mb, self, self.BELT * k, 0.058 * k, "leather", pad=0.013 * k)
         buckle(mb, at, "trim", size=0.065 * k)
         buckle(mb, at, "leather", size=0.032 * k, depth=0.018 * k)
         pouch(mb, at, -58, (0.09 * k, 0.045 * k, 0.11 * k), "leather", drop=0.005 * k, flap="sash")
         pouch(mb, at, 62, (0.065 * k, 0.038 * k, 0.07 * k), "leather", drop=0.005 * k, flap="sash")
+        self.tag(mb, self.rig.drape)
         # The robe's skirt: straight cloth from the belt to an uneven hem,
         # open at the front over the dark inner robe.
         angles = (13, 50, 90, 135, 180, 225, 270, 310, 347)
@@ -141,13 +184,16 @@ class Mage(Folk):
         # Boots: a fold at the ankle and a heel.
         for s in (-1, 1):
             knee, ankle = self.J("knee", s), self.J("ankle", s)
+            self.tag(mb, "shin.L" if s > 0 else "shin.R")
             tube(mb, [knee.lerp(ankle, t) + Vector((0.004 * (i % 2), 0, 0)) for i, t in
                       enumerate((0.3, 0.55, 0.72, 0.86, 1.0))],
                  [r * k for r in (0.066, 0.06, 0.068, 0.058, 0.064)], "sash", sides=6)
+            self.tag(mb, "foot.L" if s > 0 else "foot.R")
             mb.box(ankle + Vector((0, 0.045 * k, -ankle.z + 0.02 * k)), (0.075 * k, 0.07 * k, 0.04 * k), "sash")
         self.staff(mb)
         self.fingers(mb, "skin", sides=(-1,) if self.raised_arm else (-1, 1))
         self.tone(mb, ["robe"], 0.3)
+        self.done(mb)
 
     def hair(self, mb):
         """Tousled light-brown hair: a full mass with locks in every direction."""
@@ -168,6 +214,7 @@ class Mage(Folk):
             ((0.065, 0.1, 0.0), (0.115, 0.14, -0.05), 0.1),
             ((-0.065, 0.1, 0.0), (-0.115, 0.135, -0.06), 0.1)])
 
+    @follows("staff")
     def staff(self, mb):
         """A tall wooden staff in the left hand, with prongs holding a crystal."""
         k = self.k
@@ -183,8 +230,9 @@ class Mage(Folk):
             spike(mb, Vector((x, y, 1.45)) + d * 0.03, Vector((x, y, 1.58)) + d * 0.095, 0.065, "leather",
                   thickness=0.035)
         if self.raised_arm:  # Fingers around the staff.
-            mb.cylinder((x, y, hand.z - 0.042 * k), (x, y, hand.z + 0.042 * k), 0.036 * k, 0.036 * k, "skin",
-                        segments=6)
+            with self.bound(mb, "hand.L"):
+                mb.cylinder((x, y, hand.z - 0.042 * k), (x, y, hand.z + 0.042 * k), 0.036 * k, 0.036 * k, "skin",
+                            segments=6)
         mb.cylinder((x, y, 1.5), (x, y, 1.61), 0.0, 0.095, "crystal_dark", segments=5)
         mb.cylinder((x, y, 1.61), (x, y, 1.78), 0.095, 0.0, "crystal", segments=5)
 

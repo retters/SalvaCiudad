@@ -5,10 +5,10 @@ belt with a skull buckle, a ragged leather kilt and big wrinkled boots."""
 
 import math
 
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 
 import common
-from lizardfolk import HEAD_POINTS, Folk, along, belt, blob, hull, panel, spike, strap, surface, sym, tube
+from lizardfolk import HEAD_POINTS, Folk, along, belt, blob, follows, hull, panel, spike, strap, surface, sym, tube
 
 
 class Orc(Folk):
@@ -32,6 +32,18 @@ class Orc(Folk):
         "eye": common.rgb(0x1A1414),
     }
     BELT = 1.08
+    HANG = 0.36     # The kilt's front panel, below the hip joints.
+
+    def part_bones(self):
+        out = {}
+        for side in ("L", "R"):
+            out["pec." + side] = out["trap." + side] = "chest"
+        return out
+
+    def animate(self, clip, t, pose):
+        if clip in ("walk", "run"):     # The big boots stay level: tipped down their toes would dig in.
+            for side in ("L", "R"):
+                pose.set_world("foot." + side, Quaternion())
 
     def __init__(self):
         super().__init__()
@@ -69,9 +81,11 @@ class Orc(Folk):
         return "skin"
 
     def details(self, mb):
-        k, V = self.k, self.V
+        k, V, rig = self.k, self.V, self.rig
+        self.begin(mb)
         self.orc_head(mb)
         # Crossed straps, with a patch where they cross.
+        self.tag(mb, rig.torso)
         for front in (True, False):
             strap(mb, self, [(-0.17 * k, 1.5 * k), (0.19 * k, 1.12 * k)], 0.075 * k, "leather_dark", front=front)
             strap(mb, self, [(0.17 * k, 1.5 * k), (-0.15 * k, 1.2 * k)], 0.06 * k, "leather", front=front)
@@ -80,15 +94,18 @@ class Orc(Folk):
         self.pauldron(mb)
         # Bracers: layered rims.
         for side in (".L", ".R"):
+            self.tag(mb, "lower_arm" + side)
             part = self.parts["forearm" + side]
             a, b = Vector(part[1]), Vector(part[2])
             for t0, t1, r in ((0.04, 0.3, 0.113), (0.36, 0.6, 0.103), (0.66, 0.9, 0.093)):
                 mb.cylinder(a.lerp(b, t0), a.lerp(b, t1), r * k, (r - 0.014) * k,
                             "leather" if t0 != 0.36 else "leather_dark", segments=6)
         # Belt with a skull.
+        self.tag(mb, "hips")
         at = belt(mb, self, self.BELT * k, 0.11 * k, "leather", pad=0.018 * k, segments=10)
         self.skull(mb, at(0) + Vector((0, 0.012 * k, -0.02 * k)), k)
         # Kilt: ragged leather panels of uneven length, the front one longest.
+        self.tag(mb, rig.drape)
         for a, width, drop, point, mat in (
                 (0, 0.2, 0.35, 0.1, "leather"), (38, 0.18, 0.2, 0.08, "leather_dark"),
                 (-38, 0.18, 0.23, 0.06, "leather_dark"), (76, 0.2, 0.25, 0.07, "leather"),
@@ -100,11 +117,13 @@ class Orc(Folk):
         # Boots: wrinkled leather with folds, and a big foot.
         for s in (-1, 1):
             knee, ankle = self.J("knee", s), self.J("ankle", s)
+            self.tag(mb, "shin.L" if s > 0 else "shin.R")
             ts = (-0.08, 0.1, 0.22, 0.42, 0.55, 0.74, 0.86, 0.98)
             radii = (0.108, 0.113, 0.1, 0.107, 0.095, 0.101, 0.092, 0.098)
             path = [knee.lerp(ankle, t) + Vector(((0.01, -0.008)[i % 2] * k, (0.006, -0.01)[i % 2] * k, 0))
                     for i, t in enumerate(ts)]
             tube(mb, path, [r * k for r in radii], "boot", sides=6)
+            self.tag(mb, "foot.L" if s > 0 else "foot.R")
             a = Vector((ankle.x, ankle.y, 0.0))
             hull(mb, [a + Vector((s * 0.01 * (-y / 0.2) + x, y, z)) * k for x, y, z in sym([
                 (0.0, -0.27, 0.0), (0.0, -0.255, 0.07), (0.088, -0.16, 0.0), (0.08, -0.15, 0.105),
@@ -112,7 +131,9 @@ class Orc(Folk):
                  "boot")
         self.fingers(mb, "skin")
         self.tone(mb, ["skin"], 0.3)
+        self.done(mb)
 
+    @follows("head")
     def orc_head(self, mb):
         """A heavy head: a brow ridge, a wide jaw with an underbite and tusks,
         a broad nose, yellow eyes, pointed ears, and a topknot."""
@@ -137,9 +158,11 @@ class Orc(Folk):
             d = Vector(d).normalized()
             spike(mb, knot + d * (0.025 * u), knot + d * (0.08 * u), 0.06 * u, "hair")
 
+    @follows(None)
     def pauldron(self, mb):
         """Fur over the right shoulder, ragged below, with stubby bone spikes."""
         k = self.k
+        self.tag(mb, self.rig.shoulder("R"))
         c = self.J("shoulder", -1) + Vector((0.035, 0.0, 0.055)) * k
         r = Vector((0.185, 0.17, 0.115)) * k
         blob(mb, c, r, "leather", count=16, seed=4, rotate=((0, 1, 0), 22))

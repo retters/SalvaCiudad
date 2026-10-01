@@ -6,6 +6,7 @@ wraps, cream paws and a bushy tail with a cream tip."""
 from mathutils import Vector
 
 import common
+import rigs
 import studies
 from adventurer_man import SIDES, Adventurer, Surface, buckle, chunk, mirror, pouch, spike, strap
 
@@ -64,6 +65,13 @@ class Foxfolk(Adventurer):
         a, b = Vector(self.P(*TAIL[2][0])), Vector(self.P(*TAIL[3][0]))
         return a.lerp(b, 0.5), (b - a + Vector((0, 0, -0.05))).normalized()
 
+    skirt_span = (1.045, 0.81)
+
+    def extra_bones(self):
+        ears = [rigs.Bone("ear" + side, self.P(s * 0.08, 0.02, 1.765), self.P(s * 0.122, 0.02, 1.935), parent="head")
+                for side, s in SIDES]
+        return self.chain_bones("tail", [p for p, _ in TAIL], "hips") + ears
+
     def customize(self, parts):
         j, b = self.joints(), self.build
         del parts["jaw"]
@@ -77,7 +85,7 @@ class Foxfolk(Adventurer):
                   tilt=0.6, drape=((0, -0.12, 1.425), (0.095, 0.035, 0.075)))
         self.sleeves(parts, "olive", length=0.74, r0=0.068, r1=0.084)
         self.skirt(parts, self.BELT + 0.04, self.HEM, (0.17, 0.128), (0.205, 0.15), "olive")
-        self.bracers(parts, "fur", r=0.06, top=0.42)
+        self.bracers(parts, "fur", r=0.055, top=0.42, flare=1.1)
         self.boots(parts, "olive", top=self.CUFF, cuff=0, shaft=0.042, toe=0.13, foot=1.1, knee=0.074)
         for side, x in SIDES:  # Baggy trousers gathered below the knee.
             self.ended(parts, "gather" + side, self.shin_point(self.CUFF + 0.04, x), self.shin_point(self.WRAP, x),
@@ -131,11 +139,13 @@ class Foxfolk(Adventurer):
             return Vector(self.P(x, y, z))
         for s in (-1, 1):
             # Ears: big faceted cones, pink inside.
+            self.mark(mb, "ear.L" if s > 0 else "ear.R")
             chunk(mb, [P(s * 0.03, 0.0, 1.785), P(s * 0.136, 0.01, 1.735), P(s * 0.08, 0.08, 1.755),
                        P(s * 0.122, 0.02, 1.935)], "fur")
             studies.flap(mb, P(s * 0.05, -0.012, 1.792), P(s * 0.12, -0.004, 1.76), P(s * 0.114, 0.006, 1.895),
                          0.012 * k, "pink")
             # Dark eyes under slanted brows.
+            self.mark(mb, "head")
             p = surf.onto(P(s * 0.07, 0, 1.72), (0, 1, 0))
             chunk(mb, [p + Vector(q) * k for q in ((s * 0.03, 0.006, 0.01), (-s * 0.026, 0, -0.007), (0, 0, 0.018),
                                                    (0, 0, -0.014), (0, -0.01, 0.0), (0, 0.02, 0))], "eye")
@@ -157,6 +167,7 @@ class Foxfolk(Adventurer):
         def P(x, y, z):
             return Vector(self.P(x, y, z))
         self.head_details(mb, surf)
+        self.mark(mb, None)
         self.thumbs(mb, "fur")
         self.toes(mb, "cream", spread=0.034, length=0.035)
 
@@ -164,10 +175,13 @@ class Foxfolk(Adventurer):
             return self.zone(p).startswith("cowl")
         # The chest strap from the left shoulder to the right hip, with a
         # gold clasp, the belt, its buckle and a slanting second belt.
+        self.mark(mb, self.trunk)
         strap(mb, surf, P(0, 0, 1.24), (-0.74, 0, 0.68), 0.05 * k, "leather", thick=0.01, skip=under_cowl)
+        self.mark(mb, "chest")
         p = surf.onto(P(0.105, 0, 1.385), (0, 1, 0)) + Vector((0, -0.01 * k, 0))
         chunk(mb, [p + Vector(q) * k for q in ((0.01, 0, 0.045), (-0.01, 0, -0.045), (0.034, 0, -0.007),
                                                (-0.034, 0, 0.007), (0, -0.02, 0), (0, 0.02, 0))], "gold")
+        self.mark(mb, "hips")
         strap(mb, surf, P(0, 0, self.BELT), (0, 0, 1), 0.075 * k, "leather", thick=0.013, segments=14)
         strap(mb, surf, P(0, 0, self.BELT - 0.065), (-0.3, 0, 1), 0.04 * k, "leather", thick=0.01, segments=14)
         front = surf.onto(P(0.02, 0, self.BELT), (0, 1, 0))
@@ -177,6 +191,7 @@ class Foxfolk(Adventurer):
         pouch(mb, p + o * 0.02 * k, (0.085 * k, 0.045 * k, 0.1 * k), o, "leather", "leather_dark")
         # The teal panel hanging in front, below the belt.
         y = front.y - 0.012 * k
+        self.mark(mb, self.drape(self.BELT, 0.72))
         studies.plate(mb, [(-0.075 * k, y, self.BELT * k), (0.075 * k, y, self.BELT * k),
                            (0.085 * k, y - 0.03 * k, 0.8 * k), (0.03 * k, y - 0.03 * k, 0.72 * k),
                            (-0.08 * k, y - 0.03 * k, 0.78 * k)], 0.016 * k, "teal")

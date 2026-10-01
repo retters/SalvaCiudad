@@ -22,6 +22,7 @@ class DarkElfWoman(Elf):
     lock = (0.068, -0.115, 1.38)
     lock_mid = -0.1
     ear = (0.09, 0.05)
+    chains = (("cape", "chest", ((0, 0.14, 1.47), (0, 0.2, 1.05), (0, 0.24, 0.7), (0, 0.26, 0.39)), True),)
     colors = {
         "skin": common.rgb(0xBA8ADC),
         "skin_light": common.rgb(0xC796E6),
@@ -91,9 +92,8 @@ class DarkElfWoman(Elf):
 
     def details(self, mb):
         k = self.k
-        self.face(mb, eye="dark", brow="dark")
-        self.ears(mb)
-        self.hair(mb)
+        self.begin(mb)
+        self.head_details(mb, eye="dark", brow="dark")
         # The cape: from the shoulders down to the calves.
         xs = (1.0, 0.6, 0.0, -0.6, -1.0)
         ys = (0.0, 0.7, 1.0, 0.7, 0.0)
@@ -102,6 +102,7 @@ class DarkElfWoman(Elf):
             cape.append([self.V(x * w, 0.05 + y * d + (0.02 if i % 2 else 0.0) * (1.47 - z),
                                 z - (0.08 if jag and i % 2 == 0 else 0.0)) for i, (x, y) in enumerate(zip(xs, ys))])
         sheet(mb, cape, 0.014 * k, "cloak", back="dark")
+        self.mark(mb, self.rig.chain_weights("cape"))
         # The collar of the cape over the shoulders.
         for s in (-1, 1):
             solid(mb, [self.V(s * 0.05, 0.02, 1.535), self.V(s * 0.16, 0.0, 1.5), self.V(s * 0.165, 0.08, 1.45),
@@ -117,16 +118,19 @@ class DarkElfWoman(Elf):
             b = self.front(s * 0.085, self.TOP + 0.01, 0.0)
             t = self.front(s * 0.045, self.TOP - 0.045, 0.004)
             solid(mb, [a, b, t, a + Vector((0, 0.03, 0)), b + Vector((0, 0.03, 0))], "top")
+        self.mark(mb, "chest")   # The collar, the gem and the edge of the top.
         # Belts on the hips, with a buckle.
         self.ring(mb, self.BELT, 0.045, 0.012, "leather", tilt=-0.08)
         self.ring(mb, self.BELT - 0.03, 0.028, 0.018, "leather", tilt=0.22, count=10)
         b = self.front(0.0, self.BELT, 0.02)
         mb.box(b, (0.055 * k, 0.014 * k, 0.052 * k), "silver")
         mb.box(b - Vector((0, 0.006 * k, 0)), (0.028 * k, 0.014 * k, 0.026 * k), "leather")
+        self.mark(mb, "spine")
         # The loincloth: a pointed panel at the front.
         top = [self.front(x, self.BELT - 0.02, 0.008) for x in (-0.062, 0.0, 0.062)]
         low = [self.front(-0.022, 0.9, 0.01), self.front(0.0, 0.8, 0.03), self.front(0.022, 0.9, 0.01)]
         sheet(mb, [top, low], 0.012 * k, "top")
+        self.mark(mb, "hips")
         for side, s in ((".L", 1), (".R", -1)):
             # Glove cuffs flaring toward the elbow, with a point.
             self.cuff(mb, "forearm" + side, 0.34, 0.06, 0.004, "top", flare=0.016)
@@ -136,6 +140,7 @@ class DarkElfWoman(Elf):
             solid(mb, [a.lerp(b2, 0.25) + out * ra, a.lerp(b2, 0.02) + out * (ra + 0.016 * k) + Vector((0, 0.025 * k, 0)),
                        a.lerp(b2, 0.02) + out * (ra + 0.016 * k) - Vector((0, 0.025 * k, 0)),
                        a.lerp(b2, -0.12) + out * (ra + 0.022 * k), a.lerp(b2, 0.1)], "top")
+            self.mark(mb, "lower_arm" + side)
             # Legging cuffs: a flare with a point up the outside of the thigh.
             self.cuff(mb, "thigh" + side, 0.36, 0.25, 0.004, "boot", flare=0.014, segments=7)
             _, a, b2, ra, rb = self.parts["thigh" + side]
@@ -145,8 +150,11 @@ class DarkElfWoman(Elf):
             solid(mb, [a.lerp(b2, 0.34) + out * r, a.lerp(b2, 0.25) + out * (r + 0.018 * k) + Vector((0, 0.04 * k, 0)),
                        a.lerp(b2, 0.25) + out * (r + 0.018 * k) - Vector((s * 0.02 * k, 0.04 * k, 0)),
                        a.lerp(b2, 0.07) + out * (r + 0.03 * k), a.lerp(b2, 0.25)], "boot")
+            self.mark(mb, "thigh" + side)
             self.knee_guard(mb, s, "boot", 0.95)
+            self.mark(mb, "shin" + side)
         self.heels(mb, "boot", width=0.03)
+        self.mark(mb, "foot.?")
 
 
 SPECS = [DarkElfWoman()]

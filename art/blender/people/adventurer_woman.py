@@ -50,6 +50,11 @@ class AdventurerWoman(Adventurer):
             ((0, 0, 1.345 * k), (-0.9, 0, -1), lambda c, n: torso(c) and c.y < 0 and c.x < 0),
         ]
 
+    PONYTAIL = [(0, 0.085, 1.765), (0, 0.2, 1.72), (0, 0.225, 1.47)]
+
+    def extra_bones(self):
+        return self.chain_bones("ponytail", self.PONYTAIL, "head")
+
     def customize(self, parts):
         j, b = self.joints(), self.build
         self.angular_jaw(parts)
@@ -57,7 +62,7 @@ class AdventurerWoman(Adventurer):
                   tilt=0.5, back=0.05, drape=((0, -0.1, 1.455), (0.07, 0.03, 0.045)), name="scarf")
         parts["hips"] = self.ellipsoid((0, 0.005, 0.96), (0.18, 0.115, 0.13))
         for side, x in SIDES:
-            parts["thigh" + side] = self.capsule(mirror(j["hip"], x), mirror(j["knee"], x), 0.096, 0.056)
+            parts["thigh" + side] = self.capsule(mirror(j["hip"], x), mirror(j["knee"], x), 0.09, 0.056)
         self.bracers(parts, "skin", r=0.045, top=0.22, flare=1.1)
         self.boots(parts, "leggings", top=self.BOOT, cuff=0.088, cuff_height=0.09, shaft=0.05, toe=0.145, knee=0.062)
 
@@ -110,6 +115,7 @@ class AdventurerWoman(Adventurer):
         tie = at(0, 0.85, 0.68)
         mb.cylinder(tie - Vector((0, 0.015, 0.01)) * k, tie + Vector((0, 0.03, 0.02)) * k, 0.04 * k, 0.04 * k,
                     "leather_dark", segments=6)
+        self.mark(mb, lambda p: self.rig.chain_weights(p, "ponytail", "head"))
         tube(mb, [(tie + Vector(p) * k, rad * k) for p, rad in (
             ((0, 0.015, 0.01), 0.04), ((0, 0.06, 0.04), 0.07), ((0, 0.125, 0.02), 0.088), ((0, 0.165, -0.07), 0.085),
             ((0, 0.175, -0.17), 0.068), ((0, 0.165, -0.26), 0.045), ((0, 0.145, -0.33), 0.0))], "hair", sides=6)
@@ -118,21 +124,26 @@ class AdventurerWoman(Adventurer):
         k = self.k
         self.flatten(mb)
         surf = Surface(mb)
+        self.mark(mb, "head")
         self.face(mb, surf, "hair", "skin")
         self.hair(mb)
+        self.mark(mb, None)
         self.thumbs(mb, "skin", size=0.9)
 
         def under_scarf(p):
             return self.zone(p).startswith("scarf")
         # The harness crossing over the top, with gold studs.
+        self.mark(mb, self.trunk)
         for s in (-1, 1):
             strap(mb, surf, (0, 0, 1.3 * k), (s * 0.78, 0, 0.62), 0.034 * k, "leather", thick=0.008,
                   skip=under_scarf)
+        self.mark(mb, "chest")
         for x, z in ((0.0, 1.3), (-0.065, 1.385)):
             p = surf.onto((x * k, 0, z * k), (0, 1, 0))
             chunk(mb, [p + Vector(q) * k for q in ((0, 0, 0.03), (0, 0, -0.03), (0.02, 0, 0), (-0.02, 0, 0),
                                                    (0, -0.02, 0), (0, 0.02, 0))], "gold")
         # Two belts: one level, one slanting down to her right.
+        self.mark(mb, "hips")
         strap(mb, surf, (0, 0, self.BELT * k), (0, 0, 1), 0.06 * k, "leather", thick=0.012)
         strap(mb, surf, (0, 0, (self.BELT - 0.08) * k), (0.42, 0, 1), 0.045 * k, "leather", thick=0.01)
         front = surf.onto((0.02 * k, 0, self.BELT * k), (0, 1, 0))
@@ -140,12 +151,14 @@ class AdventurerWoman(Adventurer):
         # Pouches: a big one on the right hip, one below it on a thigh
         # strap, a small one on the left hip.
         thigh = Vector(self.parts["thigh.R"][1]).lerp(Vector(self.parts["thigh.R"][2]), 0.32)
+        self.mark(mb, "thigh.R")
         strap(mb, surf, thigh, (0.08, 0, 1), 0.045 * k, "leather", thick=0.01, segments=10)
         for z, size, out, clasp in ((0.98, (0.15, 0.075, 0.17), (-1, -0.5), "gold"),
                                     (thigh.z / k + 0.03, (0.1, 0.05, 0.1), (-1, -0.4), None),
                                     (1.0, (0.08, 0.045, 0.09), (1, -0.3), None)):
             o = Vector((out[0], out[1], 0)).normalized()
             p = surf.out((0, 0, z * k), o)
+            self.mark(mb, "hips" if z > 0.9 else "thigh.R")
             pouch(mb, p + o * size[1] * 0.4 * k, tuple(v * k for v in size), o, "leather", "leather_dark", clasp)
 
 

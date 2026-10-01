@@ -21,8 +21,11 @@ import bmesh
 from mathutils import Vector, geometry
 
 import common
+import rigs
+import rigs_human
 import studies
 from _human import Human
+from rigs import Bone, Pose, smooth
 
 
 # ------------------------------------------------------------------ pieces
@@ -130,6 +133,199 @@ def arc(a0, a1, count):
     return [math.radians(a0 + (a1 - a0) * i / (count - 1)) for i in range(count)]
 
 
+# --------------------------------------------------------------------- rig
+
+class ClothRig(rigs_human.Humanoid):
+    """The shared skeleton plus what long clothes need:
+    - chains of cloth bones (a cape, the back of a coat, a hanging panel)
+      that hang by gravity in every clip, lean out of the way of the legs
+      and lie on the ground when the character sits;
+    - weights for skirts that follow the legs (leg_weights, coat_weights);
+    - the bone or the weights of each detail piece, as the character
+      marked them while building (Figure.mark);
+    - soft weights for welded parts (Figure.soft_parts: long hair).
+
+    chains: (name, parent bone, points from top to bottom of a 1.8 m body,
+    hangs behind the body: True, or in front of it: False). The bones are
+    called <name>.1, <name>.2...
+    """
+
+    def __init__(self, spec, chains=(), part_bones=None, extra_bones=()):
+        bones = []
+        self.chains = []
+        for name, parent, points, back in chains:
+            names = []
+            pts = [Vector(spec.P(*p)) for p in points]
+            for i, (a, b) in enumerate(zip(pts, pts[1:])):
+                bones.append(Bone(f"{name}.{i + 1}", a, b, parent=names[-1] if names else parent))
+                names.append(f"{name}.{i + 1}")
+            self.chains.append((name, names, parent, back))
+        super().__init__(spec, extra_bones=bones + list(extra_bones), part_bones=part_bones)
+
+    # ------------------------------------------------------------ binding
+
+    def bind(self, mb):
+        """As Rig.bind, but telling the welded surface from the details by
+        the vertices themselves (Figure.begin) and not by their order: a
+        vertex added by a detail may take the place of one deleted while
+        the surface was cut, and then the order is not that of creation."""
+        surface = self.spec.surface
+
+        def put(v, weights):
+            weights = sorted(((w, n) for n, w in weights if w > 0.0), reverse=True)[:4]
+            total = sum(w for w, _ in weights)
+            for w, n in weights:
+                v[mb.deform][mb._group_index(n)] = w / total
+
+        seen = set()
+        for v in mb.bm.verts:
+            if v in surface:
+                put(v, self.surface_weights(v.co))
+            elif v not in seen:
+                piece, stack = [], [v]
+                seen.add(v)
+                while stack:
+                    u = stack.pop()
+                    piece.append(u)
+                    for e in u.link_edges:
+                        w = e.other_vert(u)
+                        if w not in seen:
+                            seen.add(w)
+                            stack.append(w)
+                center = sum((u.co for u in piece), Vector()) / len(piece)
+                soft = self.piece_weights(center, piece)
+                bone = self.piece_bone(center, piece) if soft is None else None
+                for u in piece:
+                    put(u, [(bone, 1.0)] if soft is None else soft(u.co))
+
+    def role(self, piece):
+        return self.spec.roles.get(piece[0])
+
+    def piece_bone(self, center, piece):
+        """The bone the character marked for the piece ("shin.?" takes the
+        side the piece is on); unmarked pieces follow the bone of the body
+        part they sit on."""
+        role = self.role(piece)
+        if isinstance(role, str):
+            return role.replace("?", "L" if center.x > 0 else "R")
+        return self.nearest_bone(center)
+
+    def piece_weights(self, center, piece):
+        role = self.role(piece)
+        return role if callable(role) else None
+
+    def surface_weights(self, p):
+        best, name = 1e9, None
+        for part_name, part in self.spec.parts.items():
+            d = self.part_distance(p, part)
+            if d < best:
+                best, name = d, part_name
+        soft = self.spec.soft_parts.get(name)
+        return getattr(self.spec, soft)(p) if soft else super().surface_weights(p)
+
+    def leg_weights(self, p):
+        """A skirt around the legs: the hips at the belt, then the thigh
+        of its side (both in the middle), then partly the shin."""
+        k = self.k
+        left = max(0.0, min(1.0, 0.5 + p.x / (0.16 * k)))
+        down = smooth((0.98 * k - p.z) / (0.3 * k))
+        low = max(0.0, min(0.65, (self.by_name["shin.L"].head.z - p.z) / (0.35 * k)))
+        out = [("hips", 1.0 - down)]
+        for side, share in (("L", left), ("R", 1.0 - left)):
+            out += [(f"thigh.{side}", down * share * (1.0 - low)), (f"shin.{side}", down * share * low)]
+        return out
+
+    def chain_weights(self, name):
+        """point -> weights along a chain of cloth bones: its parent above
+        the chain, then each bone, blending around the joints."""
+        names, parent = next((n, p) for c, n, p, _ in self.chains if c == name)
+        bones = [self.by_name[n] for n in names]
+        k = self.k
+
+        def weights(p):
+            below = [1.0 - smooth((p.z - (bones[0].head.z - 0.12 * k)) / (0.12 * k))]
+            below += [smooth((b.head.z + 0.07 * k - p.z) / (0.14 * k)) for b in bones[1:]] + [0.0]
+            return [(parent, 1.0 - below[0])] + [(b.name, max(0.0, below[i] - below[i + 1]))
+                                                 for i, b in enumerate(bones)]
+        return weights
+
+    def coat_weights(self, name):
+        """point -> weights of a long coat or skirt: its back follows the
+        chain `name`, its front and sides follow the legs."""
+        chain = self.chain_weights(name)
+
+        def weights(p):
+            back = smooth(p.y / (abs(p.x) + abs(p.y) + 1e-6) / 0.55)
+            out = {}
+            for bone, w in [(n, w * (1.0 - back)) for n, w in self.leg_weights(p)] + \
+                    [(n, w * back) for n, w in chain(p)]:
+                out[bone] = out.get(bone, 0.0) + w
+            return sorted(out.items())
+        return weights
+
+    # -------------------------------------------------------------- poses
+
+    def obstacles(self, pose):
+        """What cloth must hang clear of: the trunk and the legs, as
+        (start, end, radius)."""
+        k = self.k
+        segs = [(pose.head("hips"), pose.tail("spine"), 0.105 * k)]
+        for side in ("L", "R"):
+            hip, knee, ankle = pose.head(f"thigh.{side}"), pose.head(f"shin.{side}"), pose.tail(f"shin.{side}")
+            segs += [(hip, knee, 0.095 * k), (knee, ankle, 0.075 * k), (ankle, pose.tail(f"foot.{side}"), 0.06 * k)]
+        return segs
+
+    def hang(self, pose, names, parent, back, segs):
+        """Poses a chain of cloth bones: each hangs as at rest, leans away
+        from the body (backward or forward, as the body is turned) as far
+        as it must to clear the legs, and lies along the ground rather than
+        sinking into it."""
+        k = self.k
+        sign = 1.0 if back else -1.0
+        out = pose.world(parent) @ Vector((0.0, sign, 0.0))
+        out = Vector((out.x, out.y, 0.0)).normalized()
+
+        def flat(p):
+            """The point in the upright plane the cloth swings in."""
+            return Vector((0.0, p.dot(out), p.z))
+
+        for name in names:
+            bone = self.by_name[name]
+            rest = bone.tail - bone.head
+            head = pose.head(name)
+            first = math.degrees(math.atan2(sign * rest.y, -rest.z))
+            for step in range(160):
+                a = math.radians(min(150.0, first + step))
+                d = out * math.sin(a) + Vector((0.0, 0.0, -math.cos(a)))
+                clear = True
+                for t in (0.5, 1.0):
+                    q = head + d * (rest.length * t)
+                    if q.z < 0.02 * k:
+                        clear = False
+                    for s, e, r in segs:
+                        if rigs.segment_distance(flat(q), flat(s), flat(e)) < r + 0.025 * k:
+                            clear = False
+                if clear:
+                    break
+            pose.aim(name, d)
+
+    def clips(self):
+        out = []
+        for name, frames, loops, fn, speed in super().clips():
+            def posed(t, fn=fn, name=name):
+                q, offset, extra = fn(t)
+                pose = Pose(self, offset)
+                pose.q = q
+                self.spec.pose_fix(self, name, t, pose)
+                segs = self.obstacles(pose)
+                for _, names, parent, back in self.chains:
+                    self.hang(pose, names, parent, back, segs)
+                self.spec.pose_after(self, name, t, pose)
+                return pose.q, pose.offset, extra
+            out.append((name, frames, loops, posed, speed))
+        return out
+
+
 # ------------------------------------------------------------------ figure
 
 class Figure(Human):
@@ -211,6 +407,43 @@ class Figure(Human):
     face_width = 1.0    # Narrower heads: 0.9.
     heel = 0.0          # Height of the boots' heels (of a 1.8 m body).
     waist_width = None  # Half width of the waist, to override the body's.
+    # The skeleton (see ClothRig): chains of cloth bones, the bones of the
+    # welded parts the character added, and the welded parts with weights
+    # of their own {part: name of the method point -> weights}.
+    chains = ()
+    part_bones = {}
+    soft_parts = {}
+
+    def make_rig(self):
+        self.roles = {}
+        self.surface = set()
+        return ClothRig(self, chains=self.chains, part_bones=self.part_bones, extra_bones=self.extra_bones())
+
+    def extra_bones(self):
+        return ()
+
+    def pose_fix(self, rig, clip, t, pose):
+        """Hook: change a clip's pose for this character, before its cloth hangs."""
+
+    def pose_after(self, rig, clip, t, pose):
+        """Hook: pose the character's own bones, after its cloth hangs."""
+
+    def begin(self, mb):
+        """Starts the details: from here on mark() says what they follow."""
+        self.roles = {}
+        self.surface = set(mb.bm.verts)
+        self.marked = set(self.surface)
+
+    def mark(self, mb, role):
+        """The detail pieces added since the last mark follow `role`: a
+        bone ("shin.?": the one of the side the piece is on) or a function
+        point -> [(bone, weight)] for a piece that bends. Unmarked pieces
+        follow the bone of the body part they sit on. (By vertex and not by
+        index: a new vertex may take the place of a deleted one.)"""
+        for v in mb.bm.verts:
+            if v not in self.marked:
+                self.marked.add(v)
+                self.roles[v] = role
 
     def customize(self, parts):
         hs, w, b = self.head_size, self.face_width, self.build
@@ -250,16 +483,20 @@ class Figure(Human):
                     H(s * 0.055, -0.05, -0.208), H(s * 0.07, -0.03, -0.09), H(s * 0.058, -0.01, -0.2),
                     H(s * 0.016, -0.106, -0.246)]
         mask = solid(mb, pts, skin)
-        tris = [[v.co.copy() for v in f.verts] for f in {f for v in mask for f in v.link_faces}]
+        tris, seen = [], set()   # In the order of the mesh, so every build is the same.
+        for v in mask:
+            for f in v.link_faces:
+                if f not in seen:
+                    seen.add(f)
+                    tris.append([u.co.copy() for u in f.verts])
 
         def on(x, z, off=0.0025):
             """The point of the mask's front at head offsets (x, z)."""
             origin = H(x, -0.5, z)
-            for a, b, c in tris:
-                hit = geometry.intersect_ray_tri(a, b, c, Vector((0, 1, 0)), origin, True)
-                if hit is not None and hit.y < H(0, -0.03, 0).y:
-                    return hit - Vector((0, off * self.k, 0))
-            return H(x, -0.1, z)
+            hits = [geometry.intersect_ray_tri(a, b, c, Vector((0, 1, 0)), origin, True) for a, b, c in tris]
+            hits = [round(h.y, 5) for h in hits if h is not None]
+            y = min(hits) if hits else H(x, -0.1, z).y
+            return Vector((origin.x, y - off * self.k, origin.z))
 
         # The nose: a wedge from between the brows down to its tip.
         solid(mb, [H(0, -0.113, -0.098), H(0, -0.146, -0.158), H(-0.017, -0.11, -0.166), H(0.017, -0.11, -0.166),
@@ -298,6 +535,23 @@ class Elf(Figure):
     ear = (0.1, 0.05)             # How far the ears reach out of the head, and up.
     hair_out = 0.0                # Extra width of the hair at both sides.
     hair_ends = True              # Pointed ends under the hair down the back.
+    part_bones = {"hair_cap": "head", "hair_side.L": "head", "hair_side.R": "head"}
+    soft_parts = {"hair_back": "hair_weights"}
+
+    def hair_weights(self, p):
+        """The hair down the back: with the head at the top, then lying on
+        the back (chest, then spine), so it does not cut into the shoulders
+        when the head turns."""
+        z = self.z
+        head = smooth((p.z - (z["neck"] - 0.1 * self.k)) / (0.14 * self.k))
+        low = smooth((z["chest"] - p.z) / (0.15 * self.k))
+        return [("head", head), ("chest", (1.0 - head) * (1.0 - low)), ("spine", (1.0 - head) * low)]
+
+    def head_details(self, mb, **face):
+        """Face, ears and hair, each following its bone."""
+        self.face(mb, **face)
+        self.ears(mb)
+        self.hair(mb)
 
     def customize(self, parts):
         super().customize(parts)
@@ -330,6 +584,7 @@ class Elf(Figure):
                        self.V(s * (lx - 0.022), self.lock_mid, (zt + lz) * 0.5 + 0.02),
                        self.V(s * (lx + 0.03), self.lock_mid + 0.01, (zt + lz) * 0.5 + 0.02),
                        self.V(s * lx, ly, lz)], mat)
+        self.mark(mb, "head")
         if not self.hair_ends:
             return
         (cx, cy, cz), (rx, ry, rz) = self.hair_back
@@ -338,6 +593,7 @@ class Elf(Figure):
             solid(mb, [self.V(cx + (x - w) * rx, cy, z0), self.V(cx + (x + w) * rx, cy, z0),
                        self.V(cx + x * rx, cy - ry * 0.7, z0), self.V(cx + x * rx, cy + ry * 0.75, z0),
                        self.V(cx + x * rx, cy + ry * 0.2, cz - rz - drop)], mat)
+        self.mark(mb, self.hair_weights)
 
     def ears(self, mb, mat="skin"):
         H = self.H
@@ -358,6 +614,8 @@ class DarkElfMan(Elf):
     heel = 0.03
     hair_ends = False   # His hair goes into the cowl.
     hair_back = ((0, 0.075, 1.52), (0.115, 0.06, 0.15))
+    chains = (("cape", "chest", ((0, 0.17, 1.36), (0, 0.2, 1.0), (0, 0.23, 0.62), (0, 0.25, 0.3)), True),)
+    part_bones = dict(Elf.part_bones, cowl="chest", cowl_back="chest")
     lock = (0.072, -0.13, 1.385)
     lock_mid = -0.135
     ear = (0.1, 0.09)
@@ -418,11 +676,16 @@ class DarkElfMan(Elf):
             return "dark"
         return "boot" if u.z < self.BOOT else "dark"
 
+    def mantle_weights(self, p):
+        """The mantle lies on the chest; over each arm it lifts with it."""
+        k = self.k
+        arm = 0.75 * smooth((abs(p.x) - 0.13 * k) / (0.1 * k)) * smooth((1.5 * k - p.z) / (0.12 * k))
+        return [("chest", 1.0 - arm), ("upper_arm.L" if p.x > 0 else "upper_arm.R", arm)]
+
     def details(self, mb):
         k = self.k
-        self.face(mb, eye="dark", brow="dark")
-        self.ears(mb)
-        self.hair(mb)
+        self.begin(mb)
+        self.head_details(mb, eye="dark", brow="dark")
         # The mantle: from the cowl out over the shoulders in folded planes,
         # its edge hanging over the arms and rising to the clasp in front.
         angles = arc(-87, 267, 15)
@@ -438,6 +701,7 @@ class DarkElfMan(Elf):
                                   max(1.41 + 0.045 * abs(c), low + 0.03)))
             rows[3].append(self.V((0.262 + 0.02 * fold) * c, 0.02 + (ry + 0.012 * fold) * s, low - 0.03 * fold))
         sheet(mb, rows, 0.016 * k, "cloak", back="dark")
+        self.mark(mb, self.mantle_weights)
         # The cape: from under the mantle down to the calves.
         xs = (1.0, 0.72, 0.36, 0.0, -0.36, -0.72, -1.0)
         ys = (0.0, 0.62, 0.8, 1.0, 0.8, 0.62, 0.0)
@@ -446,25 +710,32 @@ class DarkElfMan(Elf):
             cape.append([self.V(x * w, 0.03 + y * d + (0.022 if i % 2 else 0.0) * (1.4 - z),
                                 z - (0.07 if jag and i % 2 == 0 else 0.0)) for i, (x, y) in enumerate(zip(xs, ys))])
         sheet(mb, cape, 0.014 * k, "cloak", back="dark")
+        self.mark(mb, self.rig.chain_weights("cape"))
         # The skirt of the tunic, open at the front.
         skirt = self.skirt_rows([(1.08, 0.15, 0.108, 0.0), (0.86, 0.178, 0.128, 0.0), (0.6, 0.195, 0.145, 0.0)],
                                 arc(-80, 260, 9), jag=0.025)
         sheet(mb, skirt, 0.012 * k, "tunic", back="dark", trim="tunic_trim", hem=0.028 * k, sides=0.028 * k)
+        self.mark(mb, self.rig.leg_weights)
         # Belt and buckle, and a second strap sagging over his right hip.
         self.ring(mb, 1.115, 0.06, 0.014, "leather")
         self.ring(mb, 1.06, 0.034, 0.02, "leather", tilt=0.25, count=10)
         b = self.front(0.012, 1.115, 0.024)
         mb.box(b, (0.068 * k, 0.014 * k, 0.066 * k), "silver")
         mb.box(b - Vector((0, 0.006 * k, 0)), (0.036 * k, 0.014 * k, 0.034 * k), "leather")
+        self.mark(mb, "spine")
         # The clasp where the strap meets the mantle.
         mb.box(self.V(0.035, -0.118, self.CLASP - 0.012), (0.055 * k, 0.02 * k, 0.036 * k), "silver",
                rotation_z=math.radians(-12))
+        self.mark(mb, "chest")
         # Bracers, knee guards and heels.
         for side in (".L", ".R"):
             self.cuff(mb, "forearm" + side, 0.25, 0.92, 0.009, "leather")
+        self.mark(mb, "lower_arm.?")
         for s in (-1, 1):
             self.knee_guard(mb, s, "leather", 1.05)
+        self.mark(mb, "shin.?")
         self.heels(mb, "boot")
+        self.mark(mb, "foot.?")
 
 
 SPECS = [DarkElfMan()]

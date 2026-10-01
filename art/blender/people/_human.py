@@ -37,6 +37,7 @@ class Human(studies.Spec):
     head_size = 0.9
     max_tris = 3000
     budget = 1300
+    rigged = True       # Gets the shared skeleton and clips (rigs_human.Humanoid).
 
     def __init__(self):
         self.k = self.height / 1.8
@@ -48,6 +49,14 @@ class Human(studies.Spec):
         self.customize(self.parts)
         self.ellipsoids = [(p[1], p[2]) for p in self.parts.values() if p[0] == "ellipsoid"]
         self.capsules = [(p[1], p[2], p[3], p[4]) for p in self.parts.values() if p[0] == "capsule"]
+        if self.rigged:
+            self.rig = self.make_rig()
+
+    def make_rig(self):
+        """Hook: the character's skeleton. Override to add bones (a tail,
+        a cape) or to say which bone the character's own parts follow."""
+        import rigs_human
+        return rigs_human.Humanoid(self)
 
     # ----------------------------------------------------------- building
 

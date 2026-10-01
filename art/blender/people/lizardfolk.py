@@ -6,18 +6,23 @@ trousers, grey knee guards, leg wraps, clawed feet and a long ridged tail.
 This module also holds the helpers shared by the characters of the same
 reference picture (orc, knight_man, knight_woman and mage import them from
 here): faceted hulls and shells, spikes, straps laid on the body's surface,
-belts, cloth (skirts, collars, capes), and the angular head with its face.
+belts, cloth (skirts, collars, capes), the angular head with its face, and
+the skeleton that makes armor and cloth follow the right bones (FolkRig).
 """
 
+import contextlib
+import functools
 import math
 import random
 
 import bmesh
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 import common
+import rigs_human
 import studies
 from _human import Human
+from rigs import Bone, Pose, X, Z, smooth
 
 # ------------------------------------------------------------ shared helpers
 
@@ -406,6 +411,126 @@ def collar(mb, center, z0, z1, r0, r1, mat, segments=8, drop=0.0, lean=0.0):
     return mb._finish(low + top, mat, None)
 
 
+class FolkRig(rigs_human.Humanoid):
+    """The shared skeleton plus what these characters' clothes need:
+    - two bones for what hangs from the belt, in front and behind
+      ("skirt.F", "skirt.B"); they follow the leg that is farthest forward
+      or back, and lie on the ground when the character sits;
+    - detail pieces bound to the bones the character names (Folk.tag);
+    - the character's own bones and poses (Folk.extra_bones, Folk.animate).
+    """
+
+    def __init__(self, spec, extra_bones=(), part_bones=None):
+        k = spec.k
+        hip = spec.joints()["hip"][2] * k
+        hang = [Bone("skirt.F", (0, -0.02 * k, hip), (0, -0.02 * k, hip - 0.4 * k), parent="hips"),
+                Bone("skirt.B", (0, 0.02 * k, hip), (0, 0.02 * k, hip - 0.4 * k), parent="hips")]
+        super().__init__(spec, hang + list(extra_bones), part_bones)
+        self.rest_swing = [self.thigh_angle(Pose(self), side) for side, _ in rigs_human.SIDES]
+
+    # ------------------------------------------------------------ binding
+
+    def target(self, piece):
+        """What the character said this detail piece follows (Folk.tag)."""
+        return self.spec.owner.get(piece[0])
+
+    def piece_bone(self, center, piece):
+        target = self.target(piece)
+        if isinstance(target, str):
+            return target
+        return min(self.bones[:17], key=lambda b: rigs_human.rigs.segment_distance(center, b.head, b.tail)).name
+
+    def piece_weights(self, center, piece):
+        target = self.target(piece)
+        return None if target is None or isinstance(target, str) else target
+
+    def drape(self, p):
+        """Weights of what hangs from the belt (skirts, panels, tabards,
+        loincloths): the hips at the belt, and lower down the front or
+        back bone, or the thigh on its side."""
+        k = self.k
+        top = (self.spec.BELT - 0.02) * k
+        full = min(top - 0.1 * k, self.by_name["skirt.F"].head.z)
+        f = smooth((top - p.z) / (top - full))
+        if f <= 0.0:
+            return [("hips", 1.0)]
+        d = Vector((p.x, p.y, 0.0))
+        d = d.normalized() if d.length > 1e-6 else Vector((0, -1, 0))
+        return [("hips", 1.0 - f), ("skirt.F", f * max(0.0, -d.y) ** 2), ("skirt.B", f * max(0.0, d.y) ** 2),
+                ("thigh.L", f * max(0.0, d.x) ** 2), ("thigh.R", f * max(0.0, -d.x) ** 2)]
+
+    def torso(self, p):
+        """Weights of what lies on the trunk (straps, a cuirass): hips,
+        spine and chest by height."""
+        z, b = self.spec.z, 0.05 * self.k
+        a = smooth((p.z - (z["waist"] - b)) / (2 * b))
+        c = smooth((p.z - (z["chest"] - b)) / (2 * b))
+        return [("hips", 1.0 - a), ("spine", a * (1.0 - c)), ("chest", a * c)]
+
+    def shoulder(self, side):
+        """Weights of a pauldron: mostly the chest, so it does not cut
+        into the neck when the arm rises, and partly the arm."""
+        return lambda p: [("chest", 0.6), (f"upper_arm.{side}", 0.4)]
+
+    def cape(self, p):
+        """Weights of a cape: the chest at the shoulders, its bone below."""
+        f = smooth((self.by_name["cape"].head.z - p.z) / (0.22 * self.k))
+        return [("chest", 1.0 - f), ("cape", f)]
+
+    # -------------------------------------------------------------- poses
+
+    def thigh_angle(self, pose, side):
+        """How far forward the thigh points, in radians, seen from the hips."""
+        d = pose.world("hips").inverted() @ (pose.tail(f"thigh.{side}") - pose.head(f"thigh.{side}"))
+        return math.atan2(-d.y, -d.z)
+
+    @staticmethod
+    def clear(height, length):
+        """The angle from the vertical at which something `length` long,
+        hanging from `height`, stays above the ground."""
+        return 0.0 if length <= height else math.acos(max(0.0, height) / length)
+
+    def cloth(self, pose):
+        """Poses the cloth bones for the pose of the body."""
+        spec, k = self.spec, self.k
+        swing = [self.thigh_angle(pose, side) - rest for (side, _), rest in zip(rigs_human.SIDES, self.rest_swing)]
+        forward, back = max(0.0, max(swing)), max(0.0, -min(swing))
+        down = pose.world("hips") @ Vector((0, 0, -1))
+        pitch = math.atan2(down.y, -down.z)     # How far back the hips tip what hangs from them.
+        lie = self.clear(pose.head("skirt.F").z - 0.03 * k, spec.HANG * k)
+        pose.q["skirt.F"] = Quaternion(X, -max(forward, lie) - pitch)
+        pose.q["skirt.B"] = Quaternion(X, max(back, lie) - pitch)
+        if "cape" in self.by_name:
+            ahead = pose.world("chest") @ Vector((0, -1, 0))
+            yaw = math.atan2(ahead.x, -ahead.y)
+            lie = self.clear(pose.head("cape").z - 0.03 * k, spec.CAPE * k)
+            pose.set_world("cape", Quaternion(Z, yaw) @ Quaternion(X, max(back * 0.8, lie)))
+
+    def clips(self):
+        def adjusted(name, fn):
+            def pose_fn(t):
+                q, offset, more = fn(t)
+                pose = Pose(self, offset)
+                pose.q = q
+                self.spec.animate(name, t, pose)
+                self.cloth(pose)
+                return pose.q, pose.offset, more
+            return pose_fn
+        return [(name, frames, loops, adjusted(name, fn), speed) for name, frames, loops, fn, speed in super().clips()]
+
+
+def follows(target):
+    """Decorator for the Folk methods that add detail pieces: the pieces
+    follow `target` (see Folk.tag), and afterwards the tag is what it was."""
+    def decorate(method):
+        @functools.wraps(method)
+        def wrapped(self, mb, *args, **kwargs):
+            with self.bound(mb, target):
+                return method(self, mb, *args, **kwargs)
+        return wrapped
+    return decorate
+
+
 # The angular head of the humans, for a head of size 1 and relative to the
 # head's center (x is mirrored): flat planes for the forehead, the cheeks,
 # the jaw and the chin.
@@ -431,12 +556,74 @@ class Folk(Human):
     plate armor for the legs."""
 
     jaw = 1.0   # Width of the jaw and chin (a woman's is narrower).
+    BELT = 1.1  # Height of the belt (of a 1.8 m body).
+    HANG = 0.4  # How far below the hip joints the longest cloth of the belt hangs.
 
     def __init__(self):
         self.cuts = []
         self.hems = []  # (part name, material of the flat end).
+        self.owner = {}  # Detail vertex -> what it follows; see tag().
         self.tones = 0.0  # Facet tones are added at the end of details (tone()).
         super().__init__()
+
+    # ----------------------------------------------------------- skeleton
+
+    def make_rig(self):
+        return FolkRig(self, self.extra_bones(), self.part_bones())
+
+    def extra_bones(self):
+        """Hook: the character's own bones (a tail, a cape), parents first."""
+        return []
+
+    def part_bones(self):
+        """Hook: {welded part the character added: the bone it follows}."""
+        return {}
+
+    def animate(self, clip, t, pose):
+        """Hook: pose the character's own bones, or change the clip's pose
+        (a rigs.Pose), at time t (0 to 1) of the clip."""
+
+    def begin(self, mb):
+        """Call first in details(): starts the list of what follows what.
+        The skeleton tells the detail pieces from the welded surface by
+        the order of the vertices (rigs.Rig.bind: those after
+        mb.detail_from), but the cuts made before deleted vertices and new
+        ones would take their places; a packed copy puts them in order."""
+        packed = mb.bm.copy()
+        mb.bm.free()
+        mb.bm = packed
+        mb.deform = packed.verts.layers.deform.verify()
+        mb.detail_from = len(packed.verts)
+        self.owner = {}                 # Detail vertex -> what it follows.
+        self.known = set(packed.verts)
+        self.following = None
+
+    def tag(self, mb, target):
+        """The detail pieces added from here on follow `target`: a bone's
+        name, a function point -> [(bone, weight)] for pieces that bend
+        (self.rig.drape, .torso, .cape, .shoulder(side)), or None for the
+        nearest bone. (The vertices are looked up one by one, not by
+        their order: some primitives delete helper vertices, and the next
+        piece's vertices take their places.)"""
+        for v in mb.bm.verts:
+            if v not in self.known:
+                self.known.add(v)
+                self.owner[v] = self.following
+        self.following = target
+
+    @contextlib.contextmanager
+    def bound(self, mb, target):
+        """`with self.bound(mb, target):` tags the pieces added inside."""
+        before = self.following
+        self.tag(mb, target)
+        yield
+        self.tag(mb, before)
+
+    def done(self, mb):
+        """Call last in details(): closes the last tag and numbers the
+        vertices (the skeleton tells the pieces apart by their numbers)."""
+        self.tag(mb, None)
+        mb.bm.verts.index_update()
 
     def V(self, x, y, z):
         """A point of the 1.8 m body, scaled, as a Vector."""
@@ -507,12 +694,14 @@ class Folk(Human):
         u = self.head_size * self.k
         return Vector((x * u, -0.01 * self.k + y * u, (1.8 - 0.118 * self.head_size) * self.k + z * u))
 
+    @follows("head")
     def head(self, mb, skin="skin", points=None, jaw_points=None):
         """The angular head: a hull with planes for the forehead, the
         cheeks, the jaw and the chin."""
         jaw = [(x * self.jaw, y, z) for x, y, z in (jaw_points or JAW_POINTS)]
         return hull(mb, [self.hp(*p) for p in sym((points or HEAD_POINTS) + jaw)], skin)
 
+    @follows("head")
     def face(self, mb, skin="skin", brow="hair", eye="eye", ears=True, stern=0.01, nose=1.0, forward=0.0):
         """Eyes, dark eyebrows, a nose wedge and ears, on the angular head
         (`forward`: how much farther forward this head's face is)."""
@@ -532,11 +721,13 @@ class Folk(Human):
             hull(mb, [hp(0, -0.099, 0.014), hp(0.016 * nose, -0.097, -0.036), hp(-0.016 * nose, -0.097, -0.036),
                       hp(0, -0.1 - 0.03 * nose, -0.03), hp(0, -0.098, -0.045)], skin)
 
+    @follows("head")
     def hair_hull(self, mb, mat, points):
         """A mass of hair with flat planes: the hull of points given like
         hp() (x is mirrored)."""
         return hull(mb, [self.hp(*p) for p in sym(points)], mat)
 
+    @follows("head")
     def shards(self, mb, mat, shards):
         """Locks of hair: (root, tip, width), points given like hp()."""
         u = self.head_size * self.k
@@ -545,30 +736,36 @@ class Folk(Human):
 
     # ------------------------------------------------------- hands, armor
 
+    @follows(None)
     def fingers(self, mb, mat, sides=(-1, 1)):
         """A thumb on each mitt hand, so it reads as a fist."""
         k = self.k
         for s in sides:
+            self.tag(mb, "hand.L" if s > 0 else "hand.R")
             h = Vector(self.parts["hand.L" if s > 0 else "hand.R"][1])
             mb.cylinder(h + Vector((-s * 0.016 * k, -0.032 * k, 0.03 * k)),
                         h + Vector((-s * 0.026 * k, -0.055 * k, -0.03 * k)), 0.016 * k, 0.011 * k, mat, segments=4)
 
+    @follows(None)
     def knee_guard(self, mb, mat, size=1.0):
         """An angular plate over each knee: a ridge down the middle, pointed
         above and below."""
         k = self.k * size
         for s, side in ((1, ".L"), (-1, ".R")):
+            self.tag(mb, "shin" + side)
             c = self.J("knee", s)
             r = self.parts["thigh" + side][4] * size   # The leg's radius at the knee.
             hull(mb, [c + Vector(p) for p in sym([
                 (0, -r - 0.012 * k, 0.1 * k), (r + 0.01 * k, -0.25 * r, 0.03 * k), (0, -r - 0.042 * k, 0.012 * k),
                 (0, -r - 0.012 * k, -0.095 * k), (r * 0.9, 0.45 * r, 0.0), (r * 0.8, -0.5 * r, -0.06 * k)])], mat)
 
+    @follows(None)
     def greaves(self, mb, mat, front=None, size=1.0):
         """Hard shin plates: wide under the knee, a calf behind, narrow at
         the ankle, with a ridge down the front (optionally another color)."""
         k = self.k
         for s in (-1, 1):
+            self.tag(mb, "shin.L" if s > 0 else "shin.R")
             knee, ankle = self.J("knee", s), self.J("ankle", s)
             rings = []
             for t, rx, fr, bk in ((0.14, 0.068, 0.082, 0.066), (0.42, 0.064, 0.07, 0.084), (0.93, 0.045, 0.058, 0.048)):
@@ -577,12 +774,14 @@ class Folk(Human):
             if front:
                 recolor(mb, verts, lambda c, n: front if n.y < -0.55 else None)
 
+    @follows(None)
     def sabatons(self, mb, mat, size=1.0, heel=0.028):
         """Armored shoes: a wedge over the toes with a ridge, and a heel
         (`heel`: how high the arch is)."""
         k = self.k
         heel = heel / size
         for s in (-1, 1):
+            self.tag(mb, "foot.L" if s > 0 else "foot.R")
             a = self.J("ankle", s)
             a.z = 0.0
 
@@ -620,9 +819,48 @@ class Lizardfolk(Folk):
         "eye": common.rgb(0x1A1414),
     }
     BELT = 1.09
+    HANG = 0.32
     TAIL = [(0.0, 0.07, 0.95), (0.0, 0.23, 0.72), (-0.03, 0.34, 0.44), (-0.10, 0.42, 0.21), (-0.22, 0.48, 0.075),
             (-0.37, 0.45, 0.035)]
     TAIL_R = [0.1, 0.095, 0.08, 0.06, 0.036, 0.014]
+
+    def part_bones(self):
+        out = {"snout": "head"}
+        for side in ("L", "R"):
+            out["brow." + side] = "head"
+            out["clavicle." + side] = "chest"
+            for i in range(3):
+                out[f"toe{i}.{side}"] = "foot." + side
+        for i in range(len(self.TAIL) - 1):
+            out[f"tail{i}"] = f"tail.{i + 1}"
+        return out
+
+    def extra_bones(self):
+        pts = [self.V(*p) for p in self.TAIL]
+        return [Bone(f"tail.{i + 1}", a, b, parent=f"tail.{i}" if i else "hips")
+                for i, (a, b) in enumerate(zip(pts, pts[1:]))]
+
+    def animate(self, clip, t, pose):
+        """The tail sways, stays off the ground when the body sinks, and
+        lies flat behind when sitting."""
+        p = 2 * math.pi * t
+        count = len(self.TAIL) - 1
+        if clip in ("walk", "run"):     # The long toes stay level: tipped down they would dig into the ground.
+            for side in ("L", "R"):
+                pose.set_world("foot." + side, Quaternion())
+        if clip == "fish_sit":
+            for i in range(count):
+                pose.aim(f"tail.{i + 1}", Vector((-0.12 * i + 0.05 * math.sin(p) * i, 1.0, 0.0)))
+            return
+        amp = {"idle": 4.0, "walk": 8.0, "run": 11.0}.get(clip, 2.5)
+        for i in range(count):
+            pose.turn(f"tail.{i + 1}", Z, amp * math.sin((2 if clip == "idle" else 1) * p - 0.7 * i))
+        rest = self.rig.by_name[f"tail.{count}"].tail.z
+        for _ in range(4):
+            tip, root = pose.tail(f"tail.{count}"), pose.head("tail.1")
+            if tip.z >= rest - 1e-4:
+                break
+            pose.turn("tail.1", X, math.degrees((rest - tip.z) / max(0.1, math.hypot(tip.x - root.x, tip.y - root.y))))
 
     def __init__(self):
         super().__init__()
@@ -691,6 +929,8 @@ class Lizardfolk(Folk):
 
     def details(self, mb):
         k, V = self.k, self.V
+        self.begin(mb)
+        self.tag(mb, "head")
         # Eyes on the sides of the skull, under the brow ridges.
         for s in (-1, 1):
             p = surface(self, V(0, -0.085, 1.725), (s, -0.25, 0)) - Vector((s * 0.005, 0, 0))
@@ -701,14 +941,17 @@ class Lizardfolk(Folk):
         self.crest(mb)
         self.tail_ridge(mb)
         # Scarf: wrapped around the neck, with two folds pointing down the chest.
+        self.tag(mb, "chest")
         collar(mb, (0.0, 0.0), 1.45 * k, 1.6 * k, (0.15 * k, 0.135 * k), (0.085 * k, 0.09 * k), "scarf", drop=0.03 * k)
         studies.plate(mb, [V(-0.145, -0.085, 1.5), V(0.145, -0.085, 1.5), V(0.03, -0.14, 1.3)], 0.03 * k, "scarf")
         studies.plate(mb, [V(-0.12, -0.115, 1.535), V(0.115, -0.115, 1.535), V(-0.01, -0.15, 1.4)], 0.03 * k, "scarf")
         spike(mb, V(-0.05, 0.12, 1.5), V(-0.09, 0.15, 1.3), 0.09 * k, "scarf", thickness=0.03 * k, across=(1, 0, 0))
         # Harness: two crossing straps, front and back.
+        self.tag(mb, self.rig.torso)
         for front in (True, False):
             strap(mb, self, [(-0.14 * k, 1.4 * k), (0.115 * k, 1.14 * k)], 0.04 * k, "leather", front=front)
             strap(mb, self, [(-0.135 * k, 1.2 * k), (0.125 * k, 1.37 * k)], 0.034 * k, "leather", front=front)
+        self.tag(mb, self.rig.shoulder("R"))
         # The pauldron on the right shoulder: a boulder of plates with blunt
         # points, over a dark rim.
         c = self.J("shoulder", -1) + Vector((-0.045, 0.0, 0.0)) * k
@@ -719,9 +962,11 @@ class Lizardfolk(Folk):
             d = Vector(d).normalized()
             spike(mb, c + d * (0.07 * k), c + d * (0.135 * k), 0.13 * k, "steel")
         # Belt, buckle, a sheath on the left hip and leather flaps at the hips.
+        self.tag(mb, "hips")
         at = belt(mb, self, self.BELT * k, 0.062 * k, "leather_dark", pad=0.012 * k, flare=0.005 * k)
         buckle(mb, at, "steel", size=0.062 * k, angle=8)
         buckle(mb, at, "leather_dark", size=0.03 * k, angle=8, depth=0.018 * k)
+        self.tag(mb, self.rig.drape)
         pouch(mb, at, 62, (0.042 * k, 0.036 * k, 0.2 * k), "leather", drop=0.0)
         for a in (-80, -42, 100, 140, -140):
             panel(mb, at, a, 0.13 * k, 0.15 * k, "leather", point=0.07 * k, flare=0.03 * k, dz=-0.02 * k, taper=0.8)
@@ -738,25 +983,30 @@ class Lizardfolk(Folk):
         self.knee_guard(mb, "steel", size=1.05)
         # Bracer rims.
         for side in (".L", ".R"):
+            self.tag(mb, "lower_arm" + side)
             part = self.parts["forearm" + side]
             a, b = Vector(part[1]), Vector(part[2])
             for t0, t1, r in ((0.08, 0.24, 0.074), (0.5, 0.62, 0.066)):
                 mb.cylinder(a.lerp(b, t0), a.lerp(b, t1), r * k, (r - 0.004) * k, "leather_dark", segments=6)
         # Claws on the toes and the fingers.
         for s, side in ((1, ".L"), (-1, ".R")):
+            self.tag(mb, "foot" + side)
             for i in range(3):
                 part = self.parts[f"toe{i}{side}"]
                 a, b = Vector(part[1]), Vector(part[2])
                 d = (b - a).normalized()
                 spike(mb, b + d * 0.008 + Vector((0, 0, 0.004)), b + d * (0.062 * k) - Vector((0, 0, 0.024 * k)),
                       0.038 * k, "crest")
+            self.tag(mb, "hand" + side)
             h = Vector(self.parts["hand" + side][1])
             for dy in (-0.028, 0.0, 0.028):
                 spike(mb, h + Vector((0, dy * k, -0.06 * k)), h + Vector((-s * 0.01 * k, dy * k, -0.1 * k)),
                       0.02 * k, "crest")
         self.fingers(mb, "skin")
         self.tone(mb, ["skin"], 0.3)
+        self.done(mb)
 
+    @follows("head")
     def crest(self, mb):
         """Swept-back blades over the skull and down the neck, in three rows."""
         k = self.k
@@ -772,11 +1022,13 @@ class Lizardfolk(Folk):
                 spike(mb, root, tip, size * 0.95, "crest", thickness=size * 0.42,
                       across=Vector((x * 0.6, back.z, -back.y)))
         # Two more blades on the back of the neck.
+        self.tag(mb, "neck")
         for z, size in ((1.6, 0.1), (1.54, 0.075)):
             root = surface(self, self.V(0, 0.02, z), (0, 1, 0)) - Vector((0, 0.015 * k, 0))
             spike(mb, root, root + Vector((0, 0.8, 0.3)) * size * k, size * 0.6 * k, "crest",
                   thickness=size * 0.3 * k, across=(0, 0.3, -0.8))
 
+    @follows(None)
     def tail_ridge(self, mb):
         """Triangular plates along the top of the tail."""
         k = self.k
@@ -785,6 +1037,7 @@ class Lizardfolk(Folk):
             tangent = (b - a).normalized()
             up = (Vector((0, 0, 1)) - tangent * tangent.z).normalized()
             count = 2 if i < 4 else 1
+            self.tag(mb, f"tail.{i + 1}")
             for j in range(count):
                 c = a.lerp(b, (j + 0.5) / count)
                 top = surface(self, c, up) - up * (0.012 * k)

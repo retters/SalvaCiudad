@@ -8,6 +8,7 @@ from mathutils import Vector
 import common
 import studies
 from lizardfolk import Folk, belt, buckle, collar, hip_ring, hull, recolor, sheet, skirt, sym, sym_y
+from rigs import Bone
 
 
 class KnightMan(Folk):
@@ -32,6 +33,11 @@ class KnightMan(Folk):
     }
     BELT = 1.135
     HEM = 0.54
+    HANG = 0.46     # The tabard's point, below the hip joints.
+    CAPE = 1.17     # The cape's length.
+
+    def extra_bones(self):
+        return [Bone("cape", self.V(0, 0.125, 1.47), self.V(0, 0.16, 1.0), parent="chest")]
 
     def __init__(self):
         super().__init__()
@@ -58,10 +64,12 @@ class KnightMan(Folk):
         return "dark"
 
     def details(self, mb):
-        k, V = self.k, self.V
+        k, V, rig = self.k, self.V, self.rig
+        self.begin(mb)
         self.head(mb)
         self.face(mb)
         self.hair(mb)
+        self.tag(mb, "chest")
         # The cowl: wrapped around the neck, draped in two folds to a point
         # on the chest.
         collar(mb, (0.0, 0.0), 1.455 * k, 1.57 * k, (0.165 * k, 0.14 * k), (0.112 * k, 0.112 * k), "blue",
@@ -69,6 +77,7 @@ class KnightMan(Folk):
         studies.plate(mb, [V(-0.15, -0.09, 1.485), V(0.15, -0.09, 1.485), V(0.0, -0.172, 1.27)], 0.03 * k, "blue_dark")
         studies.plate(mb, [V(-0.12, -0.115, 1.53), V(0.12, -0.115, 1.53), V(0.0, -0.178, 1.37)], 0.03 * k, "blue")
         # Breastplate: an angular shell with a ridge down the middle.
+        self.tag(mb, rig.torso)
         verts = hull(mb, [V(*p) for p in sym([
             (0.11, -0.1, 1.43), (0.0, -0.13, 1.44), (0.175, -0.03, 1.37), (0.0, -0.165, 1.31), (0.15, -0.085, 1.2),
             (0.0, -0.145, 1.165), (0.135, -0.075, 1.165), (0.12, 0.1, 1.42), (0.17, 0.04, 1.37), (0.14, 0.09, 1.185),
@@ -76,10 +85,13 @@ class KnightMan(Folk):
         recolor(mb, verts, lambda c, n: "steel_light" if abs(n.x) > 0.8 or n.z < -0.6 else None)
         for s in (-1, 1):
             # Pauldrons: sloping plates with a ridge and a tan rim.
+            side = "L" if s > 0 else "R"
             sh = self.J("shoulder", s) + Vector((s * 0.005, 0.0, 0.02)) * k
             # A leather strap from the pauldron to the belt.
+            self.tag(mb, rig.torso)
             studies.plate(mb, [V(s * 0.138, -0.092, 1.42), V(s * 0.164, -0.07, 1.42), V(s * 0.16, -0.078, 1.22),
                                V(s * 0.14, -0.092, 1.22)], 0.02 * k, "leather")
+            self.tag(mb, rig.shoulder(side))
             hull(mb, [sh + Vector((s * x, y, z)) * k * 1.1 for x, y, z in sym_y([
                 (-0.085, 0.07, 0.085), (-0.015, 0.125, 0.085), (-0.02, 0.0, 0.125), (0.075, 0.13, 0.03),
                 (0.085, 0.0, 0.09), (0.15, 0.108, -0.075), (0.172, 0.0, -0.04), (0.0, 0.14, -0.015)])], "steel_light")
@@ -88,6 +100,7 @@ class KnightMan(Folk):
                 (0.17, 0.0, -0.1), (0.05, 0.132, -0.055)])], "gold")
             # Gauntlets: a faceted sleeve, a flared cuff at the elbow and a
             # ring at the wrist.
+            self.tag(mb, "lower_arm." + side)
             a, b = self.J("elbow", s), self.J("wrist", s)
             mb.cylinder(a.lerp(b, 0.02), a.lerp(b, 1.0), 0.066 * k, 0.05 * k, "steel", segments=6)
             mb.cylinder(a.lerp(b, -0.08), a.lerp(b, 0.34), 0.088 * k, 0.07 * k, "steel_light", segments=6)
@@ -97,9 +110,11 @@ class KnightMan(Folk):
         self.knee_guard(mb, "steel_light", size=1.15)
         self.sabatons(mb, "steel")
         # Belt.
+        self.tag(mb, "hips")
         at = belt(mb, self, self.BELT * k, 0.07 * k, "leather", pad=0.014 * k)
         buckle(mb, at, "steel_light", size=0.075 * k)
         buckle(mb, at, "leather", size=0.036 * k, depth=0.018 * k)
+        self.tag(mb, rig.drape)
         # Tabard: a blue skirt hanging straight from the belt, open at the
         # front, where a blue strip with a gold border ends in a point.
         angles = (15, 52, 92, 135, 180, 225, 268, 308, 345)
@@ -117,6 +132,7 @@ class KnightMan(Folk):
                     (-w, y1 + dy, z_low)]
         studies.plate(mb, strip_points(0.08 * k, 0.58 * k, 0.475 * k, 0.0), 0.012 * k, "gold")
         studies.plate(mb, strip_points(0.06 * k, 0.6 * k, 0.52 * k, -0.008 * k), 0.012 * k, "blue")
+        self.tag(mb, rig.cape)
         # Cape: flat folded panels from the shoulders to the calves, with a
         # jagged hem.
         rows = []
@@ -132,6 +148,7 @@ class KnightMan(Folk):
         sheet(mb, rows, 0.014 * k, "blue_dark")
         self.fingers(mb, "skin")
         self.tone(mb, ["steel"], 0.4)
+        self.done(mb)
 
     def hair(self, mb):
         """Short dark hair, full on top and swept up at the front."""

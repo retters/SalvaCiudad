@@ -6,6 +6,7 @@ white fingertips, a long tail and tall boots open at the toes."""
 from mathutils import Vector
 
 import common
+import rigs
 import studies
 from adventurer_man import SIDES, Adventurer, Surface, buckle, chunk, pouch, spike, strap
 
@@ -50,6 +51,11 @@ class Catfolk(Adventurer):
             ((0, 0, 1.68 * k), (0, 0.5, 1), self.in_zone("muzzle")),
             ((0, 0, 0.125 * k), (0, 0, 1), lambda c, n: c.z < 0.3 * k and c.y < 0.2 * k),
         ]
+
+    def extra_bones(self):
+        ears = [rigs.Bone("ear" + side, self.P(s * 0.08, 0.0, 1.76), self.P(s * 0.125, 0.0, 1.94), parent="head")
+                for side, s in SIDES]
+        return self.chain_bones("tail", [p for p, _ in TAIL], "hips") + ears
 
     def customize(self, parts):
         del parts["jaw"]
@@ -99,11 +105,13 @@ class Catfolk(Adventurer):
             return Vector(self.P(x, y, z))
         for s in (-1, 1):
             # Ears: a faceted cone of fur, pink inside.
+            self.mark(mb, "ear.L" if s > 0 else "ear.R")
             chunk(mb, [P(s * 0.03, -0.02, 1.78), P(s * 0.135, -0.01, 1.73), P(s * 0.08, 0.06, 1.755),
                        P(s * 0.125, 0.0, 1.94)], "fur")
             studies.flap(mb, P(s * 0.052, -0.03, 1.788), P(s * 0.12, -0.022, 1.754), P(s * 0.116, -0.012, 1.9),
                          0.012 * k, "pink")
             # Eyes: big yellow almonds with a dark slit, under a brow.
+            self.mark(mb, "head")
             p = surf.onto(P(s * 0.064, 0, 1.71), (0, 1, 0))
             chunk(mb, [p + Vector(q) * k for q in ((s * 0.036, 0.008, 0.012), (-s * 0.032, 0, -0.01), (0, 0, 0.022),
                                                    (0, 0, -0.018), (0, -0.01, 0.002), (0, 0.02, 0))], "yellow")
@@ -133,8 +141,10 @@ class Catfolk(Adventurer):
         def P(x, y, z):
             return Vector(self.P(x, y, z))
         self.head_details(mb, surf)
+        self.mark(mb, None)
         self.thumbs(mb, "white", size=0.9)
         self.toes(mb, "white", length=0.035)
+        self.mark(mb, "chest")
         # A leather pauldron on the right shoulder: angular plates.
         sh = Vector(self.parts["shoulder.R"][1])
         chunk(mb, [sh + Vector(q) * k for q in ((0.04, -0.06, 0.066), (0.04, 0.06, 0.066), (-0.04, -0.075, 0.062),
@@ -146,15 +156,20 @@ class Catfolk(Adventurer):
             return self.zone(p).startswith("cowl")
         # The chest strap from the left shoulder to the right hip, with a
         # buckle and a pouch on it.
+        self.mark(mb, self.trunk)
         strap(mb, surf, P(0, 0, 1.27), (-0.74, 0, 0.68), 0.045 * k, "leather", thick=0.01, skip=under_cowl)
         p = surf.onto(P(0.07, 0, 1.345), (0, 1, 0))
+        self.mark(mb, "chest")
         mb.box(p + Vector((0, -0.014 * k, 0)), (0.06 * k, 0.02 * k, 0.045 * k), "yellow")
         p = surf.onto(P(-0.055, 0, 1.22), (0, 1, 0))
+        self.mark(mb, "spine")
         pouch(mb, p + Vector((0, -0.03 * k, 0)), (0.1 * k, 0.05 * k, 0.085 * k), (-0.2, -1), "leather", "leather_dark")
         # The belt, a second one slanting, the buckle and the hip pouches.
+        self.mark(mb, self.trunk)
         strap(mb, surf, P(0, 0, self.BELT), (0, 0, 1), 0.06 * k, "leather", thick=0.012)
         strap(mb, surf, P(0, 0, self.BELT - 0.06), (0.3, 0, 1), 0.04 * k, "leather", thick=0.01)
         front = surf.onto(P(0.02, 0, self.BELT), (0, 1, 0))
+        self.mark(mb, "hips")
         buckle(mb, front + Vector((0, -0.018, 0)) * k, 0.08 * k, "yellow", "leather_dark")
         for z, size, out, clasp in ((1.01, (0.16, 0.08, 0.18), (-1, -0.7), "yellow"),
                                     (1.05, (0.075, 0.045, 0.09), (1, -0.25), None)):
@@ -164,6 +179,7 @@ class Catfolk(Adventurer):
         # The tabard below the belt: two pointed panels in front, one behind.
         y = front.y - 0.01 * k
         top = (self.BELT - 0.02) * k
+        self.mark(mb, self.drape(self.BELT, 0.67))
         for x0, x1, low in ((-0.16, -0.01, 0.67), (0.03, 0.115, 0.7)):
             tip = (x0 + x1) * 0.5 + (0.025 if x0 > 0 else -0.01)
             studies.plate(mb, [(x0 * k, y, top), (x1 * k, y, top),
@@ -176,6 +192,7 @@ class Catfolk(Adventurer):
         # Thigh straps.
         for side, s in SIDES:
             thigh = Vector(self.parts["thigh" + side][1]).lerp(Vector(self.parts["thigh" + side][2]), 0.7)
+            self.mark(mb, "thigh" + side)
             strap(mb, surf, thigh, (0, 0, 1), 0.04 * k, "leather", thick=0.009, segments=8)
 
 

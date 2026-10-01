@@ -27,6 +27,8 @@ class HighElfWoman(HighElf):
     lock = (0.07, -0.118, 1.39)
     lock_mid = -0.1
     ear = (0.075, 0.1)
+    chains = (("skirt", "hips", ((0, 0.09, 1.12), (0, 0.19, 0.62), (0, 0.25, 0.17)), True),
+              ("panel", "hips", ((0, -0.11, 1.13), (0, -0.16, 0.86), (0, -0.18, 0.58)), False))
     budget = 1150
     BOOT = 0.46
 
@@ -68,9 +70,8 @@ class HighElfWoman(HighElf):
 
     def details(self, mb):
         k = self.k
-        self.face(mb, eye="dark", brow="gold")
-        self.ears(mb)
-        self.hair(mb)
+        self.begin(mb)
+        self.head_details(mb, eye="dark", brow="gold")
         self.collar(mb, height=0.055, gap=48)
         self.shoulder_pieces(mb, reach=0.215, lift=-0.035, corner=(0.13, 0.1, 1.4))
         # Bracers: red with gold ends, wider toward the elbow.
@@ -78,18 +79,21 @@ class HighElfWoman(HighElf):
             self.cuff(mb, "forearm" + side, 0.92, 0.1, 0.003, "red", flare=0.007)
             self.cuff(mb, "forearm" + side, 0.95, 0.85, 0.006, "gold")
             self.cuff(mb, "forearm" + side, 0.16, 0.04, 0.011, "gold", flare=0.005)
+        self.mark(mb, "lower_arm.?")
         # The belt: a gold band with a point down the front; two diamonds
         # on the bodice.
         self.ring(mb, self.BELT, 0.03, 0.01, "gold")
         p = self.front(0, self.BELT - 0.005, 0.018)
         solid(mb, [p + Vector(d) * k for d in ((0, 0, 0.024), (0, 0, -0.085), (0.05, 0.03, 0.018), (-0.05, 0.03, 0.018),
                                                (0, -0.014, 0), (0, 0.02, 0))], "gold")
+        self.mark(mb, "spine")
         for z, w, h in ((1.285, 0.026, 0.05), (1.19, 0.018, 0.03)):
             p = self.front(0, z, 0.005)
             solid(mb, [p + Vector(d) * k for d in ((0, 0, h), (0, 0, -h), (w, 0, 0), (-w, 0, 0), (0, -0.011, 0),
                                                    (0, 0.02, 0))], "gold")
             solid(mb, [p + Vector(d) * k for d in ((0, 0, h * 0.55), (0, 0, -h * 0.55), (w * 0.5, 0, 0), (-w * 0.5, 0, 0),
                                                    (0, -0.016, 0), (0, 0.02, 0))], "red")
+        self.mark(mb, "chest")
         # The skirt: long, longer behind, slit at the front over her right leg.
         angles = arc(0, 1, 11)
         skirt = self.skirt_rows([(1.145, 0.098, 0.088, 0.0, -100, 252), (0.96, 0.165, 0.13, 0.0, -98, 247),
@@ -98,20 +102,25 @@ class HighElfWoman(HighElf):
         for p, a in zip(skirt[-1], arc(-93, 230, 11)):
             p.z -= 0.14 * k * max(0.0, math.sin(a)) ** 2
         sheet(mb, skirt, 0.012 * k, "red", back="inner", trim="gold", hem=0.03 * k, sides=0.03 * k)
+        self.mark(mb, self.rig.coat_weights("skirt"))
         # The panel down the front, over the skirt.
         panel = [[self.V(x, y, z) for x in (-w, 0.0, w)] for w, y, z in ((0.042, -0.112, 1.13), (0.052, -0.156, 0.96),
                                                                        (0.056, -0.172, 0.67))]
         panel.append([self.V(-0.056, -0.176, 0.64), self.V(0.0, -0.182, 0.575), self.V(0.056, -0.176, 0.64)])
         sheet(mb, panel, 0.012 * k, "red", back="inner", trim="gold", hem=0.028 * k, sides=0.02 * k)
+        self.mark(mb, self.rig.chain_weights("panel"))
         # Boots: pointed knee pieces, gold edges, gold toes and heels.
         self.boot_trim(mb)
         for side, s in ((".L", 1), (".R", -1)):
             self.knee_guard(mb, s, "red", 0.95)
+            self.mark(mb, "shin" + side)
             _, a, b, ra, rb = self.parts["foot" + side]
             b = Vector(b)
             solid(mb, [b + Vector(d) * k for d in ((-0.036, 0.0, -0.036), (0.036, 0.0, -0.036), (0, 0.0, 0.04),
                                                    (0, -0.065, -0.034), (0, 0.03, 0.0))], "gold")
+            self.mark(mb, "foot" + side)
         self.heels(mb, "gold", width=0.024)
+        self.mark(mb, "foot.?")
 
 
 SPECS = [HighElfWoman()]

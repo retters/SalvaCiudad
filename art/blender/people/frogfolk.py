@@ -52,8 +52,8 @@ class Frogfolk(Adventurer):
             parts["eye" + side] = self.ellipsoid((x * 0.112, -0.05, 1.756), (0.068, 0.072, 0.06))
             parts["knee" + side] = self.ellipsoid(mirror(j["knee"], x), (0.068, 0.072, 0.074))
             parts["upper_arm" + side] = self.capsule(mirror(j["shoulder"], x), mirror(j["elbow"], x), 0.052, 0.046)
-            parts["forearm" + side] = self.capsule(mirror(j["elbow"], x), mirror(j["wrist"], x), 0.046, 0.04)
-            parts["thigh" + side] = self.capsule(mirror(j["hip"], x), mirror(j["knee"], x), 0.1, 0.06)
+            parts["forearm" + side] = self.capsule(mirror(j["elbow"], x), mirror(j["wrist"], x), 0.046, 0.036)
+            parts["thigh" + side] = self.capsule(mirror(j["hip"], x), mirror(j["knee"], x), 0.092, 0.06)
             parts["shin" + side] = self.capsule(mirror(j["knee"], x), mirror(j["ankle"], x), 0.058, 0.04)
             parts["hand" + side] = self.ellipsoid(mirror(j["hand"], x), (0.03, 0.045, 0.055))
             ankle = j["ankle"]
@@ -89,6 +89,8 @@ class Frogfolk(Adventurer):
         j = self.joints()
         for s in (-1, 1):
             # Eyes: a yellow disk looking out and forward, with a slit pupil.
+            side_name = ".L" if s > 0 else ".R"
+            self.mark(mb, "head")
             c = P(s * 0.112, -0.05, 1.756)
             d = Vector((s * 0.72, -0.66, 0.2)).normalized()
             p = surf.out(c, d)
@@ -101,6 +103,7 @@ class Frogfolk(Adventurer):
             # Nostrils.
             mb.box(P(s * 0.032, -0.238, 1.692), (0.012 * k, 0.012 * k, 0.008 * k), "blue_shade")
             # Long fingers and a thumb.
+            self.mark(mb, "hand" + side_name)
             hand = Vector(self.parts["hand.L"][1])
             hand.x *= s
             for dy, length in ((-0.03, 0.095), (-0.004, 0.11), (0.022, 0.095)):
@@ -109,11 +112,13 @@ class Frogfolk(Adventurer):
             spike(mb, hand + Vector((-s * 0.008, -0.03, 0.0)) * k, hand + Vector((-s * 0.03, -0.07, -0.055)) * k,
                   0.015 * k, "blue")
             # A yellow fin along the forearm, down to the wrist.
+            self.mark(mb, "lower_arm" + side_name)
             a = Vector(self.P(*mirror(lerp(j["elbow"], j["wrist"], 0.35), s)))
             b = Vector(self.P(*mirror(lerp(j["elbow"], j["wrist"], 1.1), s)))
             out = Vector((s * 0.03, 0.045, 0)) * k
             studies.flap(mb, a + out * 0.6, b + out * 0.5, a.lerp(b, 0.6) + out * 1.6, 0.012 * k, "yellow")
             # Long toes.
+            self.mark(mb, "foot" + side_name)
             foot = Vector(self.parts["foot.L"][2])
             foot.x *= s
             for dx, length in ((-0.075, 0.13), (-0.025, 0.17), (0.03, 0.17), (0.085, 0.12)):
@@ -123,19 +128,23 @@ class Frogfolk(Adventurer):
                 mb.cylinder(a, mid, 0.027 * k, 0.021 * k, "blue", segments=4)
                 spike(mb, mid, tip, 0.021 * k, "blue_light")
         # The shawl's end hangs in front, on his left.
+        self.mark(mb, "chest")
         p = surf.onto(P(0.05, 0, 1.3), (0, 1, 0)) + Vector((0, -0.012 * k, 0))
         studies.plate(mb, [p + Vector(q) * k for q in ((-0.06, 0, 0.03), (0.05, 0, 0.055), (0.07, 0.012, -0.07),
                                                        (0.04, 0.02, -0.17), (-0.01, 0.012, -0.09))], 0.018 * k, "tan")
         # Belt, buckle, a big pouch on the right hip and the loincloth.
+        self.mark(mb, self.trunk)
         strap(mb, surf, P(0, 0, self.BELT), (0, 0, 1), 0.06 * k, "leather", thick=0.012, segments=12)
         strap(mb, surf, P(0, 0, self.BELT - 0.05), (0.3, 0, 1), 0.035 * k, "leather", thick=0.01, segments=12)
         front = surf.onto(P(0.015, 0, self.BELT), (0, 1, 0))
+        self.mark(mb, "hips")
         buckle(mb, front + Vector((0, -0.018, 0)) * k, 0.085 * k, "metal", "leather_dark")
         o = Vector((-1, -0.55, 0)).normalized()
         p = surf.out(P(0, 0, 0.99), o)
         pouch(mb, p + o * 0.035 * k, (0.16 * k, 0.075 * k, 0.18 * k), o, "leather_dark", "leather", "yellow")
         y = front.y - 0.01 * k
         top = (self.BELT - 0.02) * k
+        self.mark(mb, self.drape(self.BELT, 0.66))
         studies.plate(mb, [(-0.045 * k, y, top), (0.045 * k, y, top), (0.05 * k, y - 0.02 * k, 0.8 * k),
                            (0.02 * k, y - 0.025 * k, 0.675 * k), (-0.04 * k, y - 0.02 * k, 0.76 * k)],
                       0.016 * k, "tan")

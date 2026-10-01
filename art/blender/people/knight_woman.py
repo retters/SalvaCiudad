@@ -3,10 +3,13 @@ a silver breastplate and armored skirt plates with blue trim, a blue
 collar, bracers, dark leggings, steel greaves and heeled boots, leather
 straps and a belt with pouches."""
 
+import math
+
 from mathutils import Vector
 
 import common
 import studies
+from rigs import Bone, X, Z, smooth
 from lizardfolk import (Folk, along, belt, buckle, hip_ring, hull, panel, pouch, recolor, skirt, spike, strip, sym_y,
                         tube)
 
@@ -36,6 +39,25 @@ class KnightWoman(Folk):
     }
     BELT = 1.165
     HEM = 0.83
+    HANG = 0.2
+    PONYTAIL = [(0.0, 0.08, 0.07), (0.0, 0.17, 0.135), (-0.01, 0.26, 0.13), (-0.02, 0.33, 0.04),
+                (-0.03, 0.34, -0.09), (-0.035, 0.315, -0.22), (-0.04, 0.28, -0.35)]
+
+    def extra_bones(self):
+        return [Bone("ponytail", self.hp(*self.PONYTAIL[1]), self.hp(*self.PONYTAIL[-1]), parent="head")]
+
+    def ponytail_weights(self, p):
+        """The ponytail follows the head at its root and its own bone beyond."""
+        bone = self.rig.by_name["ponytail"]
+        f = smooth((p - bone.head).dot((bone.tail - bone.head).normalized()) / (0.12 * self.k) + 0.5)
+        return [("head", 1.0 - f), ("ponytail", f)]
+
+    def animate(self, clip, t, pose):
+        """The ponytail lags behind the head's bobbing."""
+        p = 2 * math.pi * t
+        swing = {"walk": 5.0, "run": 9.0}.get(clip, 1.5)
+        pose.turn("ponytail", X, swing * math.sin(2 * p + 0.8))
+        pose.turn("ponytail", Z, swing * 0.6 * math.sin(p))
 
     def __init__(self):
         super().__init__()
@@ -94,21 +116,26 @@ class KnightWoman(Folk):
         return "blue"
 
     def details(self, mb):
-        k, V = self.k, self.V
+        k, V, rig = self.k, self.V, self.rig
+        self.begin(mb)
         self.head(mb)
         self.face(mb, brow="leather_dark", stern=0.006, nose=0.85)
         self.hair(mb)
         # A steel gem on the collar.
+        self.tag(mb, "chest")
         spike(mb, V(0, -0.052, 1.56), V(0, -0.062, 1.485), 0.045 * k, "steel_light", thickness=0.02 * k,
               across=(1, 0, 0))
         for s in (-1, 1):
             # Pauldrons: angular plates with a tall point by the neck.
+            side = "L" if s > 0 else "R"
+            self.tag(mb, rig.shoulder(side))
             sh = self.J("shoulder", s)
             verts = hull(mb, [sh + Vector((s * x, y, z)) * k for x, y, z in sym_y([
                 (-0.045, 0.05, 0.05), (-0.02, 0.0, 0.135), (0.03, 0.085, 0.035), (0.095, 0.07, -0.04),
                 (0.115, 0.0, 0.02), (0.105, 0.0, -0.085), (0.02, 0.075, -0.03)])], "plate")
             recolor(mb, verts, lambda c, n: "steel_light" if n.z < -0.1 else None)
             # Bracers: a faceted sleeve under a flared blue cuff.
+            self.tag(mb, "lower_arm." + side)
             a, b = self.J("elbow", s), self.J("wrist", s)
             mb.cylinder(a.lerp(b, 0.14), a.lerp(b, 1.0), 0.044 * k, 0.034 * k, "plate", segments=6)
             mb.cylinder(a.lerp(b, 0.0), a.lerp(b, 0.22), 0.05 * k, 0.04 * k, "blue", segments=6)
@@ -117,18 +144,21 @@ class KnightWoman(Folk):
         self.knee_guard(mb, "plate", size=1.25)
         self.sabatons(mb, "steel", size=0.72, heel=0.04)
         # Leather straps over the shoulders, front and back.
+        self.tag(mb, rig.torso)
         for s in (-1, 1):
             strip(mb, [V(s * 0.07, -0.06, 1.47), V(s * 0.072, -0.128, 1.375), V(s * 0.07, -0.075, 1.19)],
                   [(0, -1, 0.5), (0, -1, 0), (0, -1, -0.3)], 0.028 * k, 0.014 * k, "leather")
             strip(mb, [V(s * 0.07, 0.07, 1.47), V(s * 0.07, 0.1, 1.36), V(s * 0.07, 0.078, 1.19)],
                   [(0, 1, 0.4), (0, 1, 0), (0, 1, -0.2)], 0.028 * k, 0.014 * k, "leather")
         # Belt with a buckle and two pouches.
+        self.tag(mb, "hips")
         at = belt(mb, self, self.BELT * k, 0.05 * k, "leather_dark", pad=0.012 * k)
         buckle(mb, at, "steel_light", size=0.058 * k)
         buckle(mb, at, "leather_dark", size=0.027 * k, depth=0.018 * k)
         pouch(mb, at, -62, (0.075 * k, 0.04 * k, 0.085 * k), "leather", drop=0.01 * k, flap="leather_dark")
         pouch(mb, at, 70, (0.06 * k, 0.035 * k, 0.065 * k), "leather", drop=0.01 * k, flap="leather_dark")
         # A short blue skirt under pointed plates.
+        self.tag(mb, rig.drape)
         angles = tuple(range(0, 360, 40))
         top = [at(a, dz=-0.015 * k) for a in angles]
         hips = hip_ring(self, angles, 1.02 * k, 0.014 * k)
@@ -146,6 +176,7 @@ class KnightWoman(Folk):
                   lift=0.004 * k, taper=1.05)
         self.fingers(mb, "skin")
         self.tone(mb, ["steel"], 0.4)
+        self.done(mb)
 
     def hair(self, mb):
         """Red hair combed back into a big high ponytail, with a fringe
@@ -161,10 +192,9 @@ class KnightWoman(Folk):
             ((-0.075, -0.085, 0.05), (-0.092, -0.08, -0.09), 0.06),
             ((0.03, -0.1, 0.1), (-0.075, -0.118, 0.025), 0.09),
             ((0.0, -0.1, 0.1), (0.08, -0.115, 0.03), 0.08)])
-        path = [(0.0, 0.08, 0.07), (0.0, 0.17, 0.135), (-0.01, 0.26, 0.13), (-0.02, 0.33, 0.04),
-                (-0.03, 0.34, -0.09), (-0.035, 0.315, -0.22), (-0.04, 0.28, -0.35)]
-        tube(mb, [self.hp(*p) for p in path], [r * u for r in (0.06, 0.09, 0.108, 0.112, 0.098, 0.066, 0.0)],
-             "hair", sides=5)
+        with self.bound(mb, self.ponytail_weights):
+            tube(mb, [self.hp(*p) for p in self.PONYTAIL],
+                 [r * u for r in (0.06, 0.09, 0.108, 0.112, 0.098, 0.066, 0.0)], "hair", sides=5)
 
 
 SPECS = [KnightWoman()]
