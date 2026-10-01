@@ -7,7 +7,9 @@ import math
 from mathutils import Vector
 
 import common
+import rigs_bird
 import studies
+from rigs import Bone
 
 HEAD = ((0.0, -0.115, 0.47), (0.048, 0.058, 0.052))
 BREAST = ((0.0, -0.05, 0.28), (0.11, 0.12, 0.125))
@@ -52,6 +54,17 @@ def ribbon(mb, centers, widths, side_axis, thickness, mat):
     return mb._finish([v for r in rows for v in r], mat, None)
 
 
+def tail_weights(p):
+    """A sickle feather bends: its base follows the tail, its tip tail.2."""
+    w = max(0.0, min(1.0, ((p - TAIL_BASE).length - 0.08) / 0.14))
+    return [("tail", 1.0 - w), ("tail.2", w)]
+
+
+# A wing hidden inside the body at rest (the red patch is painted on the
+# surface); it comes out to flap in the fly clip. Left side.
+WING = [(0.055, -0.04, 0.34), (0.055, 0.03, 0.365), (0.055, 0.15, 0.33), (0.055, 0.14, 0.27), (0.055, 0.02, 0.235)]
+
+
 def sickle(start, length, curl, stations=5):
     pts = []
     p = Vector(TAIL_BASE)
@@ -83,10 +96,32 @@ class Rooster(studies.Spec):
         ((0.0, 0.17, 0.35), (0.05, 0.06, 0.06)),      # Tail root.
     ]
     capsules = [((0.0, -0.06, 0.33), (0.0, -0.1, 0.45), 0.078, 0.052)]  # Neck.
-    budget = 320
-    max_tris = 800
+    budget = 268     # What the 800 limit left the body before it had a skeleton.
+    max_tris = 1000  # Raised for the hidden wings and the rings cut at the thighs.
     tone_material = "orange"
     tones = 0.35
+    rig = rigs_bird.Bird(
+        body=((0, 0.1, 0.29), (0, -0.07, 0.33)),
+        neck=[(0, -0.07, 0.33), (0, -0.09, 0.4), (0, -0.1, 0.45)],
+        head=((0, -0.1, 0.45), (0, -0.17, 0.47)),
+        beak_tip=(0, -0.215, 0.458),
+        tail=[TAIL_BASE, (0, 0.2, 0.47), (0, 0.3, 0.56)],
+        legs=((LEG_X, 0.02, 0.25), (LEG_X, 0.02, 0.17), (LEG_X, 0.0, 0.012), (LEG_X, -0.06, 0.006)),
+        leg_exit=(0.17, 0.23), leg_reach=0.07, blend=0.04,
+        wings=[(0.055, -0.03, 0.34), (0.055, 0.15, 0.3)], wing_sides=[(0, 0, -1)], wing_twitch=0.0,
+        # A strut: slow, high steps, the head darting at every step.
+        walk=rigs_bird.Step(frames=20, duty=0.62, crouch=0.02, lift=0.06, bob=0.004, head_bob=14.0, tail=5.0),
+        run=rigs_bird.Step(frames=10, duty=0.4, crouch=0.035, lift=0.07, bob=0.008, head_bob=8.0, lean=12.0,
+                           tail=8.0),
+        eat=dict(pitch=40.0, crouch=0.035, head=75.0, height=0.025),
+        # A short flutter: fast beats, the body reared up.
+        air=dict(name="fly", frames=12, beats=2, pitch=-22.0, lift=0.15, amp=55.0, mid=10.0, tuck=35.0,
+                 speed=2.5, bob=0.015),
+        lie_height=0.09,
+        dangles={"comb": (rigs_bird.X, 14.0), "wattle": (rigs_bird.X, 22.0), "tail.2": (rigs_bird.X, 7.0)},
+        extra_bones=[Bone("comb", (0, -0.115, 0.505), (0, -0.115, 0.56), parent="head"),
+                     Bone("wattle", (0, -0.16, 0.45), (0, -0.16, 0.4), parent="head")],
+    )
 
     def __init__(self):
         breast = Vector((0, -1, -0.35)).normalized()
@@ -115,23 +150,30 @@ class Rooster(studies.Spec):
             # Side feathers fan out sideways toward their tips.
             pts = [p + Vector((x * (1 + 1.6 * i / 4), 0, 0)) for i, p in enumerate(sickle(start, length, curl))]
             widths = [0.045, 0.065, 0.06, 0.042, 0.01]
-            ribbon(mb, pts, widths, (1, 0, 0), 0.01, mat)
+            rigs_bird.tag(mb, ribbon(mb, pts, widths, (1, 0, 0), 0.01, mat), tail_weights)
         for s in (-1, 1):
-            mb.sphere((s * EYE[0], EYE[1], EYE[2]), 0.01, "eye", segments=5, rings=3)
+            side = "L" if s > 0 else "R"
+            rigs_bird.tag(mb, mb.sphere((s * EYE[0], EYE[1], EYE[2]), 0.01, "eye", segments=5, rings=3), "head")
+            rigs_bird.tag(mb, studies.plate(mb, [(s * x, y, z) for x, y, z in WING], 0.01, "red"),
+                          f"wing.{side}")
             # Leg, and three toes forward and one back.
             x = s * LEG_X
-            mb.cylinder((x, 0.02, 0.17), (x, 0.0, 0.015), 0.015, 0.012, "yellow", segments=5)
+            rigs_bird.tag(mb, mb.cylinder((x, 0.02, 0.17), (x, 0.0, 0.015), 0.015, 0.012, "yellow", segments=5),
+                          f"leg_lower.{side}")
             for dx, dy in ((-0.028, -0.05), (0.0, -0.06), (0.028, -0.05), (0.0, 0.035)):
-                mb.cylinder((x, 0.0, 0.01), (x + dx, dy, 0.006), 0.009, 0.005, "yellow", segments=3)
+                rigs_bird.tag(mb, mb.cylinder((x, 0.0, 0.01), (x + dx, dy, 0.006), 0.009, 0.005, "yellow",
+                                              segments=3), f"foot.{side}")
         # Beak: a cone out of the face.
-        mb.cylinder((0, -0.16, 0.468), (0, -0.215, 0.458), 0.018, 0.0, "yellow", segments=5)
+        rigs_bird.tag(mb, mb.cylinder((0, -0.16, 0.468), (0, -0.215, 0.458), 0.018, 0.0, "yellow", segments=5),
+                      "head")
         # Comb: three rounded points along the top of the head.
         for y, h in ((-0.15, 0.045), (-0.115, 0.06), (-0.08, 0.05)):
-            studies.plate(mb, [(0, y - 0.02, 0.5), (0, y + 0.02, 0.505), (0, y + 0.012, 0.505 + h * 0.8),
-                               (0, y, 0.505 + h), (0, y - 0.014, 0.505 + h * 0.8)], 0.014, "red")
+            rigs_bird.tag(mb, studies.plate(mb, [
+                (0, y - 0.02, 0.5), (0, y + 0.02, 0.505), (0, y + 0.012, 0.505 + h * 0.8),
+                (0, y, 0.505 + h), (0, y - 0.014, 0.505 + h * 0.8)], 0.014, "red"), "comb")
         # Wattle under the beak.
-        studies.plate(mb, [(0, -0.145, 0.45), (0, -0.18, 0.445), (0, -0.175, 0.405), (0, -0.158, 0.395),
-                           (0, -0.14, 0.42)], 0.016, "red")
+        rigs_bird.tag(mb, studies.plate(mb, [(0, -0.145, 0.45), (0, -0.18, 0.445), (0, -0.175, 0.405),
+                                             (0, -0.158, 0.395), (0, -0.14, 0.42)], 0.016, "red"), "wattle")
 
 
 SPECS = [Rooster()]

@@ -4,7 +4,9 @@ legs, tall pointy ears and a bushy tail with a dark tip."""
 from mathutils import Vector
 
 import common
+import rigs
 import studies
+from tiger import GALLOP_PHASES, Beast
 
 X = 0.13  # Half the distance between left and right legs.
 HEAD = ((0, -0.69, 0.87), (0.14, 0.14, 0.13))
@@ -12,6 +14,7 @@ SNOUT_A, SNOUT_B = (0, -0.78, 0.84), (0, -0.94, 0.8)
 SOCK = 0.2  # Below this the legs are light.
 TAIL = [(0, 0.5, 0.66), (0, 0.7, 0.56), (0, 0.84, 0.4), (0, 0.9, 0.26)]
 TAIL_R = [0.05, 0.08, 0.075, 0.045]
+PAW_TOP = 0.085  # Where the paws start: below it they stay rigid.
 
 
 def legs_capsules():
@@ -27,6 +30,12 @@ def legs_capsules():
             ((x, 0.45, 0.04), (x, 0.37, 0.04), 0.044, 0.04),            # Hind paw.
         ]
     return caps
+
+
+class WolfRig(Beast):
+    tail_reach = 0.12
+    eat = (8.0, 8.0, 30.0, 20.0)
+    eat_drop = 0.03
 
 
 class Wolf(studies.Spec):
@@ -56,6 +65,26 @@ class Wolf(studies.Spec):
                 + [(a, b, ra, rb) for a, b, ra, rb in zip(TAIL, TAIL[1:], TAIL_R, TAIL_R[1:])])
     cuts = [((0, 0, SOCK), (0, 0, 1), lambda c, n: c.z < SOCK + 0.1 and abs(c.y) > 0.25)]
     tone_material = "grey"
+    rig = WolfRig(
+        body=((0, 0.56, 0.63), (0, -0.02, 0.61)),
+        chest=((0, -0.02, 0.61), (0, -0.42, 0.66)),
+        neck=((0, -0.42, 0.66), (0, -0.62, 0.82)),
+        head=((0, -0.62, 0.82), (0, -0.98, 0.8)),
+        ears=((0.08, -0.68, 0.96), (0.1, -0.7, 1.1)),
+        tail=[(0, 0.57, 0.63)] + TAIL[1:],  # From where the tail leaves the hips.
+        legs={
+            "F": ((X, -0.34, 0.62), (X, -0.35, 0.3), (X, -0.37, PAW_TOP), (X, -0.5, 0.0)),
+            "H": ((X, 0.4, 0.52), (X, 0.48, 0.24), (X, 0.44, PAW_TOP), (X, 0.33, 0.0)),
+        },
+        leg_exit=(0.33, 0.42),
+        leg_reach=0.2,
+        walk=rigs.Gait(speed=1.0, frames=16, duty=0.62, lift=0.06, crouch=0.06, bob=0.01,
+                       phases=rigs.WALK_PHASES, wag=10.0),
+        run=rigs.Gait(speed=4.5, frames=10, duty=0.3, lift=0.12, crouch=0.1, bob=0.015,
+                      phases=GALLOP_PHASES, nod=4.0, wag=6.0),
+        lie_height=0.2,
+        blend=0.05,
+    )
 
     def paint(self, c, n):
         if c.y > 0.75 and c.z < 0.34:

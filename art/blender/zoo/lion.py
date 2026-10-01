@@ -6,7 +6,9 @@ import math
 from mathutils import Vector
 
 import common
+import rigs
 import studies
+from tiger import GALLOP_PHASES, Beast
 
 X = 0.2  # Half the distance between left and right legs.
 HEAD = ((0, -1.02, 1.22), (0.19, 0.2, 0.19))
@@ -16,6 +18,7 @@ MANE = [((0, -0.86, 1.18), (0.36, 0.27, 0.4)),   # Around the head.
 FACE_Y = -1.06  # In front of this the head is golden; behind it, mane.
 TAIL = [(0, 0.82, 0.95), (0, 1.06, 0.86), (0, 1.25, 0.66), (0.03, 1.36, 0.48), (0.07, 1.42, 0.36)]
 TAIL_R = [0.06, 0.05, 0.045, 0.042, 0.04]
+PAW_TOP = 0.14  # Where the paws start: below it they stay rigid.
 
 
 def mane_back_y(z):
@@ -36,6 +39,24 @@ def legs_capsules():
             ((x, 0.66, 0.07), (x, 0.5, 0.075), 0.08, 0.074),           # Hind paw.
         ]
     return caps
+
+
+class LionRig(Beast):
+    tail_reach = 0.1
+    eat = (8.0, 8.0, 30.0, 20.0)
+    eat_drop = 0.04
+    die_lift = 12.0
+
+    def piece_weights(self, center, piece):
+        if FACE_Y + 0.03 < center.y < 0.0:
+            # A mane spike: rigid, with the weights of the mane under it.
+            spine = [(n, w) for n, w in self.surface_weights(center) if n in ("chest", "neck", "head")]
+            return lambda p: spine
+        return None
+
+    def pose_extra(self, clip, t, rot):
+        if clip == "run":  # The tail streams behind, clear of the ground.
+            rot["tail.1"] = rot["tail.1"] + [(rigs.X, 30.0)]
 
 
 class Lion(studies.Spec):
@@ -64,6 +85,26 @@ class Lion(studies.Spec):
                 + [(a, b, ra, rb) for a, b, ra, rb in zip(TAIL, TAIL[1:], TAIL_R, TAIL_R[1:])])
     cuts = [((0, FACE_Y, 0), (0, 1, 0), lambda c, n: c.z > 0.8 and c.y < -0.9)]
     tone_material = "gold"
+    rig = LionRig(
+        body=((0, 0.78, 0.9), (0, -0.05, 0.87)),
+        chest=((0, -0.05, 0.87), (0, -0.6, 0.93)),
+        neck=((0, -0.6, 0.93), (0, -0.9, 1.15)),
+        head=((0, -0.9, 1.15), (0, -1.3, 1.13)),
+        ears=((0.11, -1.06, 1.34), (0.16, -1.09, 1.46)),
+        tail=TAIL,
+        legs={
+            "F": ((X, -0.5, 0.86), (X, -0.5, 0.45), (X, -0.53, PAW_TOP), (X, -0.72, 0.0)),
+            "H": ((X, 0.6, 0.72), (X, 0.72, 0.33), (X, 0.64, PAW_TOP), (X, 0.46, 0.0)),
+        },
+        leg_exit=(0.5, 0.6),
+        leg_reach=0.24,
+        walk=rigs.Gait(speed=1.1, frames=20, duty=0.62, lift=0.09, crouch=0.06, bob=0.01,
+                       phases=rigs.WALK_PHASES, wag=10.0),
+        run=rigs.Gait(speed=5.0, frames=12, duty=0.3, lift=0.16, crouch=0.11, bob=0.02,
+                      phases=GALLOP_PHASES, nod=4.0, wag=6.0),
+        lie_height=0.32,
+        blend=0.06,
+    )
 
     def __init__(self):
         # The slanted back edge of the mane, as a cut so its border is crisp.

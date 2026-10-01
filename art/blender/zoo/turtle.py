@@ -3,6 +3,7 @@ a yellow-green rim, a yellow-green head and big flat flippers, the front
 pair long and swept back."""
 
 import common
+import rigs_swim
 import studies
 
 SHELL = ((0.0, 0.04, 0.1), (0.4, 0.5, 0.27))
@@ -47,6 +48,17 @@ class Turtle(studies.Spec):
     budget = 650
     max_tris = 1500
     tone_material = "shell"
+    rig = rigs_swim.SeaTurtle(
+        body=((0, 0.04, 0.12), (0, -0.4, 0.12)),
+        head=((0, -0.46, 0.17), (0, -0.78, 0.16)),
+        neck_fade=(-0.45, -0.53),
+        flippers={
+            "F": ((0.28, -0.22, 0.105), (0.59, -0.25, 0.065), (0.82, -0.08, 0.02)),
+            "H": ((0.2, 0.46, 0.065), (0.29, 0.54, 0.045), (0.34, 0.63, 0.03)),
+        },
+        plant=(0.86, -0.02, 0.0),
+        tail=((0, 0.5, 0.08), (0, 0.64, 0.05)),
+    )
 
     def paint(self, c, n):
         if c.y < -0.4 and not (c.z > RIM_Z and c.y > -0.47):

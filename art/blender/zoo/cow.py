@@ -2,9 +2,12 @@
 surface, a black head with a white blaze, a pink muzzle and udder, small
 horns, black ears, dark hooves and a thin tail with a black tuft."""
 
+import math
+
 from mathutils import Vector
 
 import common
+import rigs
 import studies
 
 LEG_X = 0.2
@@ -78,6 +81,69 @@ def on_surface(spec, origin, direction, sink=0.0):
     return o + d * (t - sink)
 
 
+def mark_surface(mb):
+    """Marks the vertices of the welded surface (call when details() starts)."""
+    layer = mb.bm.verts.layers.int.new("surface")
+    for v in mb.bm.verts:
+        v[layer] = 1
+    return layer
+
+
+def surface_first(mb, layer):
+    """Puts the welded surface's vertices before the detail pieces again
+    (call when details() ends). rigs.bind takes the first mb.detail_from
+    vertices as the surface, but new vertices fill the slots of those the
+    cuts removed, so pieces and surface end up mixed and the whole surface
+    is bound a second time as if it were one piece. No vertex may be held
+    in a variable across the sort: it moves the vertices in memory."""
+    bm = mb.bm
+    bm.verts.index_update()
+    count = len(bm.verts)
+    bm.verts.sort(key=lambda v: v.index + (0 if v[layer] else count))
+    bm.verts.layers.int.remove(layer)
+    bm.verts.index_update()
+
+
+TAIL = [(0, 0.9, 1.3), (0, 0.97, 1.1), (0, 0.99, 0.85), (0, 0.99, 0.62)]
+
+
+class CowRig(rigs.Quadruped):
+    """The quadruped, with the udder kept on the body (it hangs between
+    the hind legs, inside their reach) and a head that goes lower to graze."""
+
+    def surface_weights(self, p):
+        if p.z < UDDER_Z + 0.04 and studies.inside(p, UDDER[0], [r * 1.3 for r in UDDER[1]]):
+            return [("body", 1.0)]
+        return super().surface_weights(p)
+
+    def piece_bone(self, center, piece):
+        if center.y > 0.85:  # Tail links and the tuft.
+            tail = [b for b in self.bones if b.name.startswith("tail.")]
+            return min(tail, key=lambda b: rigs.segment_distance(center, b.head, b.tail)).name
+        if center.y > 0.0:
+            return "body"  # Teats.
+        if len(piece) == 6:  # The ear flaps (the only six-vertex pieces).
+            return "ear.L" if center.x > 0 else "ear.R"
+        return "head"  # Eyes, nostrils and horns.
+
+    def eat_pose(self, t):
+        # As the template's, but the short neck has to go much further down.
+        down = rigs.smooth(t / 0.2) * (1 - rigs.smooth((t - 0.8) / 0.2))
+        root = (math.sin(2 * math.pi * 6 * t) * rigs.smooth((t - 0.2) / 0.05)
+                * (1 - rigs.smooth((t - 0.75) / 0.05)))
+        pitch = math.radians(4.0) * down
+        dz = -0.02 * down
+        rot = self.planted({}, pitch, dz)
+        rot["body"] = [(rigs.X, math.degrees(pitch))]
+        rot["chest"] = [(rigs.X, 6.0 * down)]
+        rot["neck"] = [(rigs.X, 48.0 * down)]
+        rot["head"] = [(rigs.X, 15.0 * down + 5.0 * root)]
+        rot["ear.L"] = [(rigs.X, 10.0 * down)]
+        rot["ear.R"] = [(rigs.X, 10.0 * down)]
+        self.tail_rot(rot, 25.0 * math.sin(2 * math.pi * 4 * t) * down)
+        return rot, Vector((0, 0, dz)), {}
+
+
 class Cow(studies.Spec):
     name = "cow"
     budget = 800
@@ -125,6 +191,29 @@ class Cow(studies.Spec):
         ((0, 0, HEAD_BLACK_Z), (0, 0, 1), lambda c, n: c.y < HEAD_Y),
     ] + patch_cuts()
 
+    rig = CowRig(
+        body=((0, 0.9, 1.05), (0, 0.0, 1.03)),
+        chest=((0, 0.0, 1.03), (0, -0.55, 1.05)),
+        neck=((0, -0.55, 1.05), (0, -0.88, 1.22)),
+        head=((0, -0.88, 1.22), (0, -1.22, 1.0)),
+        ears=((0.11, -0.92, 1.3), (0.34, -0.95, 1.28)),
+        tail=TAIL,
+        legs={
+            "F": ((LEG_X, FRONT_Y, 1.0), (LEG_X, FRONT_Y - 0.02, 0.42), (LEG_X, FRONT_Y - 0.02, HOOF_TOP),
+                  (LEG_X, FRONT_Y - 0.08, 0.0)),
+            "H": ((LEG_X, HIND_Y - 0.04, 1.0), (LEG_X, HIND_Y + 0.05, 0.45), (LEG_X, HIND_Y - 0.01, HOOF_TOP),
+                  (LEG_X, HIND_Y - 0.07, 0.0)),
+        },
+        leg_exit=(0.62, 0.84),
+        leg_reach=0.21,
+        walk=rigs.Gait(speed=1.0, frames=26, duty=0.65, lift=0.07, crouch=0.065, bob=0.006,
+                       phases=rigs.WALK_PHASES, nod=3.0, wag=12.0),
+        run=rigs.Gait(speed=2.8, frames=16, duty=0.42, lift=0.13, crouch=0.08, bob=0.01,
+                      phases=rigs.TROT_PHASES, nod=4.0, wag=20.0),
+        lie_height=0.36,
+        blend=0.08,
+    )
+
     def paint(self, c, n):
         if c.z < HOOF_TOP:
             return "black"
@@ -141,6 +230,7 @@ class Cow(studies.Spec):
         return "cow"
 
     def details(self, mb):
+        surface = mark_surface(mb)
         for s in (-1, 1):
             eye = on_surface(self, (s * 0.05, -1.0, 1.3), (s, -0.45, 0.1), 0.01)
             mb.sphere(eye, 0.026, "black", segments=6, rings=4)
@@ -157,10 +247,10 @@ class Cow(studies.Spec):
                 mb.cylinder((s * 0.06, y, UDDER_Z - 0.08), (s * 0.06, y, UDDER_Z - 0.17), 0.022, 0.016,
                             "pink", segments=5)
         # A thin tail hanging from the rump, with a black tuft.
-        tail = [(0, 0.9, 1.3), (0, 0.97, 1.1), (0, 0.99, 0.85), (0, 0.99, 0.62)]
-        for a, b in zip(tail, tail[1:]):
+        for a, b in zip(TAIL, TAIL[1:]):
             mb.cylinder(a, b, 0.028, 0.024, "cow", segments=5)
         mb.cylinder((0, 0.99, 0.66), (0, 1.0, 0.45), 0.05, 0.015, "black", segments=5)
+        surface_first(mb, surface)
 
 
 SPECS = [Cow()]

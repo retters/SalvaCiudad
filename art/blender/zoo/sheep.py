@@ -6,6 +6,7 @@ import math
 from mathutils import Vector
 
 import common
+import rigs
 import studies
 
 BODY = ((0.0, 0.05, 0.56), (0.32, 0.46, 0.28))
@@ -37,6 +38,27 @@ def wool_puffs():
     return puffs
 
 
+class SheepRig(rigs.Quadruped):
+    """A quadruped that grazes: the head goes all the way down to the grass."""
+
+    def eat_pose(self, t):
+        down = rigs.smooth(t / 0.2) * (1 - rigs.smooth((t - 0.8) / 0.2))
+        # Small tugs at the grass while the head is down.
+        tug = (math.sin(2 * math.pi * 6 * t) * rigs.smooth((t - 0.2) / 0.05)
+               * (1 - rigs.smooth((t - 0.75) / 0.05)))
+        pitch = math.radians(5.0) * down
+        dz = -0.005 * down
+        rot = self.planted({}, pitch, dz)
+        rot["body"] = [(rigs.X, math.degrees(pitch))]
+        rot["chest"] = [(rigs.X, 20.0 * down)]
+        rot["neck"] = [(rigs.X, 42.0 * down + 2.0 * tug)]
+        rot["head"] = [(rigs.X, -6.0 * down + 5.0 * tug)]
+        rot["ear.L"] = [(rigs.Y, 12.0 * down)]
+        rot["ear.R"] = [(rigs.Y, -12.0 * down)]
+        self.tail_rot(rot, 20.0 * math.sin(2 * math.pi * 4 * t) * down)
+        return rot, Vector((0, 0, dz)), {}
+
+
 class Sheep(studies.Spec):
     name = "sheep"
     colors = {
@@ -52,6 +74,29 @@ class Sheep(studies.Spec):
     max_tris = 1500
     tone_material = "wool"
     tones = 0.35
+    rig = SheepRig(
+        body=((0, 0.42, 0.6), (0, -0.05, 0.6)),
+        chest=((0, -0.05, 0.6), (0, -0.3, 0.67)),
+        neck=((0, -0.3, 0.67), (0, -0.5, 0.76)),
+        head=((0, -0.5, 0.76), (0, -0.77, 0.68)),
+        ears=((0.1, -0.53, 0.78), (0.27, -0.56, 0.73)),
+        tail=[(0, 0.46, 0.68), (0, 0.5, 0.67), (0, 0.54, 0.65), (0, 0.58, 0.62)],
+        legs={
+            "F": ((LEG_X, LEG_Y[0], 0.5), (LEG_X, LEG_Y[0], 0.27), (LEG_X, LEG_Y[0], 0.05),
+                  (LEG_X, LEG_Y[0] - 0.04, 0.0)),
+            "H": ((LEG_X, LEG_Y[1], 0.5), (LEG_X, LEG_Y[1], 0.27), (LEG_X, LEG_Y[1], 0.05),
+                  (LEG_X, LEG_Y[1] - 0.04, 0.0)),
+        },
+        # The wool is welded surface: the legs only pull on the bare legs.
+        leg_exit=(0.36, WOOL_LOW),
+        leg_reach=0.1,
+        walk=rigs.Gait(speed=0.6, frames=20, duty=0.64, lift=0.05, crouch=0.015, bob=0.006,
+                       phases=rigs.WALK_PHASES),
+        run=rigs.Gait(speed=2.0, frames=14, duty=0.42, lift=0.09, crouch=0.04, bob=0.015,
+                      phases=rigs.TROT_PHASES, nod=4.0, wag=10.0),
+        lie_height=0.36,
+        blend=0.05,
+    )
 
     def __init__(self):
         self.ellipsoids = [BODY, HEAD, MUZZLE, TUFT,

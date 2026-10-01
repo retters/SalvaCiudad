@@ -124,8 +124,11 @@ def finish(mb, spec, tones=0.0, seed=7, cut=True):
                     f.material_index = shade
     for f in bm.faces:
         f.smooth = False
-    # Vertices from here on are the separate detail pieces; a skeleton
-    # binds them whole to one bone (rigs.bind).
+    # The vertices so far are the welded surface; those added from here on
+    # are the separate detail pieces, which a skeleton binds apart
+    # (rigs.Rig.bind). A set, not an index range: bmesh reuses the slots of
+    # deleted vertices, so new ones do not always come last.
+    mb.surface_verts = set(bm.verts)
     bm.verts.index_update()
     mb.detail_from = len(bm.verts)
     spec.details(mb)
@@ -662,7 +665,10 @@ def build_final(spec, out):
         rigs.export_rigged(spec, mb, path)
     else:
         obj = mb.to_object(spec.name, spec.colors)
-        common.export_glb(path, [obj])
+        grip = getattr(spec, "grip", None)
+        if grip is not None:
+            obj["grip"] = [float(c) for c in grip]  # Where a hand holds it; glTF extras.
+        common.export_glb(path, [obj], extras=grip is not None)
     status = "" if tris <= spec.max_tris else f"  OVER THE LIMIT {spec.max_tris}"
     print(f"MODEL {spec.name}: {tris} triangles (budget {budget}){status}")
     return tris

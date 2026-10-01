@@ -3,11 +3,13 @@ feathered chest, yellow scaly legs with dark talons) on a lion's hind body
 (tawny legs and a tail ending in a dark tuft), with big brown wings raised
 as layered feather plates."""
 
+import math
 import random
 
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 
 import common
+import rigs
 import studies
 
 X_FRONT, X_HIND = 0.24, 0.25
@@ -87,6 +89,145 @@ def wing(mb, s):
                     s * (0.006 * count + 0.015), "wing")
 
 
+WING_BONES = ("wing_arm", "wing_fore", "wing_hand")
+# The axis the wing closes about like a fan (left wing): across the plane
+# of the leading edge and the feathers.
+WING_FAN = Vector((-0.48, 0.3, 0.36)).normalized()
+WING_ARM = (Vector(WING_EDGE[1]) - Vector(WING_EDGE[0])).normalized()
+
+
+def mirrored(axis, degrees, s):
+    """A turn of the left side (s = 1) as it is on the right side (s = -1)."""
+    return (axis, degrees) if s > 0 else (Vector((-axis[0], axis[1], axis[2])), -degrees)
+
+
+class GriffinRig(rigs.Quadruped):
+    """A quadruped with a bending tail (welded surface) and two wings of
+    three bones; adds the fly clip."""
+
+    fly_frames = 20
+    fly_speed = 7.0
+
+    def __init__(self, **points):
+        wings = []
+        for side, s in (("L", 1.0), ("R", -1.0)):
+            edge = [Vector((s * x, y, z)) for x, y, z in WING_EDGE]
+            parent = "chest"
+            for name, a, b in zip(WING_BONES, edge, edge[1:]):
+                wings.append(rigs.Bone(f"{name}.{side}", a, b, parent=parent))
+                parent = f"{name}.{side}"
+        super().__init__(extra_bones=wings, **points)
+        for bone in self.bones:
+            if bone.name.startswith("tail."):
+                bone.surface = True  # The tail is part of the welded surface.
+
+    def piece_bone(self, center, piece):
+        side = "L" if center.x > 0 else "R"
+        if center.z > 1.2 and center.y > -0.6 and abs(center.x) > 0.15:
+            # Wing pieces follow the wing bone their base is on: the bone
+            # nearest to any of their vertices.
+            bones = [self.by_name[f"{name}.{side}"] for name in WING_BONES]
+            return min(bones, key=lambda b: min(rigs.segment_distance(v.co, b.head, b.tail) for v in piece)).name
+        if center.z < 0.2:
+            return f"foot.F{side}"  # Talons.
+        return "head"               # Eyes, brows and the hook of the beak.
+
+    # -------------------------------------------------------------- poses
+
+    def leg_pose(self, leg, target, pitch, dz, pivot, lift_toe=0.0):
+        """As the template's, but the front legs are an eagle's: the joint
+        where the feathers end is the heel and bends backward, as a hind
+        leg's hock does (the template bends a front leg's joint forward)."""
+        if leg[0] == "H":
+            return super().leg_pose(leg, target, pitch, dz, pivot, lift_toe)
+        hip, knee, ankle, toe = self.leg_points[leg]
+        hip_now = pivot + Quaternion(rigs.X, pitch) @ (hip - pivot) + Vector((0, 0, dz))
+        l1, l2 = (knee - hip).length, (ankle - knee).length
+        dy, dzz = target.y - hip_now.y, target.z - hip_now.z
+        d = max(abs(l1 - l2) + 1e-4, min(l1 + l2 - 1e-4, math.hypot(dy, dzz)))
+        phi1 = math.atan2(dy, -dzz) + math.acos(max(-1.0, min(1.0, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d))))
+        knee_now = Vector((0, hip_now.y + l1 * math.sin(phi1), hip_now.z - l1 * math.cos(phi1)))
+        phi2 = math.atan2(target.y - knee_now.y, -(target.z - knee_now.z))
+        d1 = phi1 - math.atan2((knee - hip).y, -(knee - hip).z)
+        d2 = phi2 - math.atan2((ankle - knee).y, -(ankle - knee).z)
+        return {
+            f"leg_upper.{leg}": [(rigs.X, math.degrees(d1 - pitch))],
+            f"leg_lower.{leg}": [(rigs.X, math.degrees(d2 - d1))],
+            f"foot.{leg}": [(rigs.X, math.degrees(lift_toe - d2))],
+        }
+
+    def wings(self, rot, fold=0.0, drop=0.0, flat=0.0, flex=0.0, sway=0.0):
+        """Turns of the wing bones. fold: 0 raised as at rest, 1 closed like
+        a fan and swept back. drop: degrees the whole wing comes down from
+        its raised rest. flat: degrees the wing turns about its leading edge
+        (trailing edge up). flex: degrees the outer wing lags behind (bends
+        down, or up if negative). sway: degrees of the small movement of a
+        wing held still (the left one leads)."""
+        for side, s in (("L", 1.0), ("R", -1.0)):
+            lead = sway if s > 0 else sway * 0.7
+            rot[f"wing_arm.{side}"] = [
+                mirrored(WING_ARM, flat, s),
+                mirrored(rigs.Y, drop + lead, s),
+                mirrored(rigs.Z, 30.0 * fold, s),
+                mirrored(WING_FAN, 12.0 * fold, s),
+            ]
+            rot[f"wing_fore.{side}"] = [mirrored(WING_FAN, 38.0 * fold, s), mirrored(rigs.Y, flex + lead * 0.5, s)]
+            rot[f"wing_hand.{side}"] = [mirrored(WING_FAN, 45.0 * fold, s), mirrored(rigs.Y, flex * 1.3, s)]
+
+    def pose_extra(self, clip, t, rot):
+        p = 2 * math.pi * t
+        if clip == "fly":
+            return
+        if clip == "die":
+            # The wings close and fall over the back as it rolls on its side.
+            roll = rigs.smooth((t - 0.3) / 0.45)
+            self.wings(rot, fold=0.5 + 0.2 * roll, sway=6.0 * math.sin(6 * p) * (1 - roll))
+            rot["wing_arm.L"].append((rigs.Y, -70.0 * roll))
+            rot["wing_arm.R"].append((rigs.Y, 38.0 * roll))
+        elif clip in ("walk", "run"):
+            self.wings(rot, fold=0.5 if clip == "walk" else 0.4, sway=3.0 * math.sin(2 * p + 0.8),
+                       flex=4.0 * math.sin(2 * p))
+        else:
+            self.wings(rot, fold=0.5, sway=2.5 * math.sin(p * (2 if clip == "eat" else 1)))
+        if clip == "eat":
+            # A tall animal: the neck reaches much further down than the
+            # template's, and the beak tears at what it holds.
+            down = rigs.smooth(t / 0.2) * (1 - rigs.smooth((t - 0.8) / 0.2))
+            tear = (math.sin(2 * math.pi * 5 * t) * rigs.smooth((t - 0.2) / 0.05)
+                    * (1 - rigs.smooth((t - 0.75) / 0.05)))
+            rot["chest"] = [(rigs.X, 18.0 * down)]
+            rot["neck"] = [(rigs.X, 55.0 * down + 5.0 * tear)]
+            rot["head"] = [(rigs.X, 30.0 * down - 9.0 * tear)]
+
+    def fly_pose(self, t):
+        p = 2 * math.pi * t
+        beat = math.sin(p)
+        dz = 0.12 * math.sin(p - 2.0)  # The body rises after each downstroke.
+        pivot = self.by_name["body"].head
+        rot = {}
+        # Legs tucked: the front ones folded back under the chest, the hind
+        # ones trailing.
+        for leg in rigs.LEGS:
+            hip = self.leg_points[leg][0]
+            back, down = (0.55, 0.75) if leg[0] == "F" else (0.7, 0.62)
+            swing = 0.03 * math.sin(p + (0.0 if leg[0] == "F" else 1.0))
+            target = Vector((hip.x, hip.y + back + swing, hip.z - down + dz))
+            rot.update(self.leg_pose(leg, target, 0.0, dz, pivot, math.radians(35.0)))
+        rot["chest"] = [(rigs.X, -2.0 * beat)]
+        rot["neck"] = [(rigs.X, 14.0 + 3.0 * math.sin(p - 1.0))]
+        rot["head"] = [(rigs.X, -8.0 - 3.0 * math.sin(p - 1.0))]
+        # The tail streams behind with a wave running down it.
+        tail = [b.name for b in self.bones if b.name.startswith("tail.")]
+        for i, name in enumerate(tail):
+            rot[name] = [(rigs.X, (38.0, -8.0, -22.0, -28.0, -20.0)[i] + 7.0 * math.sin(p - 0.9 * i))]
+        self.wings(rot, drop=42.0 + 40.0 * beat, flat=28.0 + 10.0 * math.cos(p),
+                   flex=22.0 * math.sin(p - 1.1))
+        return rot, Vector((0, 0, dz)), {}
+
+    def clips(self):
+        return super().clips() + [("fly", self.fly_frames, True, self.fly_pose, self.fly_speed)]
+
+
 class Griffin(studies.Spec):
     name = "griffin"
     colors = {
@@ -130,6 +271,29 @@ class Griffin(studies.Spec):
     budget = 1200
     max_tris = 3000
     tone_material = "brown"
+    rig = GriffinRig(
+        body=((0, 0.8, 1.25), (0, -0.1, 1.28)),
+        chest=((0, -0.1, 1.28), (0, -0.65, 1.5)),
+        neck=((0, -0.65, 1.5), (0, -0.95, 1.98)),
+        head=((0, -0.95, 1.98), (0, -1.4, 2.06)),
+        ears=((0.1, -0.95, 2.26), (0.12, -0.9, 2.32)),  # No ears: nothing follows these.
+        tail=TAIL + [TUFT[0]],
+        legs={
+            # The hips are high inside the body, above the feet, so the
+            # nearly straight legs can stride without the body sinking.
+            # Front (eagle): the joint is where the feathers end.
+            "F": ((X_FRONT, -0.66, 1.3), (X_FRONT, -0.66, 0.55), (X_FRONT, -0.7, 0.08), (X_FRONT, -0.94, 0.0)),
+            "H": ((X_HIND, 0.62, 1.15), (X_HIND, 0.8, 0.45), (X_HIND, 0.7, 0.14), (X_HIND, 0.5, 0.0)),
+        },
+        leg_exit=(0.85, 1.05),
+        leg_reach=0.45,
+        walk=rigs.Gait(speed=1.1, frames=26, duty=0.62, lift=0.14, crouch=0.05, bob=0.012,
+                       phases=rigs.WALK_PHASES, wag=8.0),
+        run=rigs.Gait(speed=3.0, frames=16, duty=0.4, lift=0.25, crouch=0.07, bob=0.03,
+                      phases=rigs.TROT_PHASES, nod=4.0, wag=10.0),
+        lie_height=0.42,
+        blend=0.12,
+    )
 
     def paint(self, c, n):
         if c.y < -0.3 and c.z < SCALES_Z:
@@ -169,7 +333,8 @@ class Griffin(studies.Spec):
                 tip = ankle + Vector((dx, dy, -0.03))
                 mb.cylinder(ankle, tip, 0.04, 0.03, "yellow", segments=5)
                 d = (tip - ankle).normalized()
-                mb.cylinder(tip, tip + d * 0.07 + Vector((0, 0, -0.03)), 0.028, 0.003, "claw", segments=5)
+                # (The claw's point stays just above the ground.)
+                mb.cylinder(tip, tip + d * 0.07 + Vector((0, 0, -0.016)), 0.028, 0.003, "claw", segments=5)
 
 
 SPECS = [Griffin()]

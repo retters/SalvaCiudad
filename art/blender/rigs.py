@@ -1,8 +1,11 @@
-"""Skeletons and procedural animations for the zoo animals (phase 44).
+"""Skeletons and procedural animations for the low-poly models (phases 44
+and 46; the characters' template is in rigs_human.py).
 
-A template (Quadruped) turns a few points declared by a zoo spec into a
-skeleton with fixed bone names, binds the model to it and keys its clips.
-Every animal of a family gets the same clips from the same code:
+A template (a Rig subclass such as Quadruped) turns a few points declared
+by a spec into a skeleton with fixed bone names, binds the model to it and
+keys its clips. Every model of a family gets the same clips from the same
+code. A spec can subclass its template to add bones (a trunk, wings) and
+pose them in pose_extra(). For the quadrupeds:
 
 - idle, walk, run, eat loop; die plays once and holds its last pose;
 - clips are animated in place; walk and run keep each planted foot moving
@@ -20,7 +23,7 @@ piece (ears, eyes, tail links) is bound whole to its nearest bone.
 import math
 
 import bpy
-from mathutils import Quaternion, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 import common
 
@@ -65,6 +68,180 @@ class Bone:
         return r
 
 
+class Pose:
+    """Poses a skeleton in armature space: keeps each bone's turn relative
+    to its parent and works out where the bones end up, so limbs can be
+    aimed at points (two-bone inverse kinematics) whatever the body does."""
+
+    def __init__(self, rig, offset=(0, 0, 0)):
+        self.rig = rig
+        self.q = {}                   # Bone name -> Quaternion, relative to its parent.
+        self.offset = Vector(offset)  # Of the root bones.
+
+    def turn(self, bone, axis, degrees):
+        """Adds a turn about an armature axis, in the parent's frame."""
+        self.q[bone] = Quaternion(Vector(axis), math.radians(degrees)) @ self.q.get(bone, Quaternion())
+
+    def world(self, bone):
+        """The bone's turn from its rest pose, in armature space."""
+        if bone is None:
+            return Quaternion()
+        return self.world(self.rig.by_name[bone].parent) @ self.q.get(bone, Quaternion())
+
+    def set_world(self, bone, turn):
+        self.q[bone] = self.world(self.rig.by_name[bone].parent).inverted() @ turn
+
+    def head(self, bone):
+        """Where the bone starts now."""
+        b = self.rig.by_name[bone]
+        if b.parent is None:
+            return b.head + self.offset
+        parent = self.rig.by_name[b.parent]
+        return self.head(b.parent) + self.world(b.parent) @ (b.head - parent.head)
+
+    def tail(self, bone):
+        b = self.rig.by_name[bone]
+        return self.head(bone) + self.world(bone) @ (b.tail - b.head)
+
+    def aim(self, bone, direction):
+        """Points the bone along a direction (shortest turn from its rest)."""
+        b = self.rig.by_name[bone]
+        local = self.world(b.parent).inverted() @ Vector(direction).normalized()
+        self.q[bone] = (b.tail - b.head).normalized().rotation_difference(local)
+
+    def limb(self, upper, lower, target, pole):
+        """Two-bone inverse kinematics: the end of `lower` reaches `target`
+        (or as near as the limb's length allows), with the joint between
+        the two bones bent toward the direction `pole`."""
+        bu, bl = self.rig.by_name[upper], self.rig.by_name[lower]
+        start = self.head(upper)
+        l1, l2 = (bl.head - bu.head).length, (bl.tail - bl.head).length
+        to = Vector(target) - start
+        d = max(abs(l1 - l2) + 1e-4, min(l1 + l2 - 1e-4, to.length))
+        n = to.normalized()
+        along = (l1 * l1 + d * d - l2 * l2) / (2 * d)
+        side = Vector(pole) - n * Vector(pole).dot(n)
+        side = side.normalized() if side.length > 1e-6 else n.orthogonal().normalized()
+        joint = start + n * along + side * math.sqrt(max(0.0, l1 * l1 - along * along))
+        self.aim(upper, joint - start)
+        self.aim(lower, start + n * d - joint)
+
+    def orient(self, bone, forward, side, rest_forward=(0, -1, 0), rest_side=(1, 0, 0)):
+        """Turns the bone so the direction that was `rest_forward` at rest
+        points along `forward`, and `rest_side` as near `side` as it can."""
+        def basis(f, s):
+            f = Vector(f).normalized()
+            s = Vector(s) - f * Vector(s).dot(f)
+            s = s.normalized() if s.length > 1e-6 else f.orthogonal().normalized()
+            return Matrix((f, s, f.cross(s))).transposed()
+        self.set_world(bone, (basis(forward, side) @ basis(rest_forward, rest_side).transposed()).to_quaternion())
+
+
+class Rig:
+    """A skeleton template. Subclasses fill the bones (parents first) with
+    set_bones() and return their clips; a spec may subclass further to add
+    bones and poses."""
+
+    blend = 0.08  # Width of the weight transition between bones (m).
+
+    def set_bones(self, bones):
+        self.bones = list(bones)
+        self.by_name = {b.name: b for b in self.bones}
+
+    def cuts(self):
+        """Planes to cut the surface where it bends; same form as Spec.cuts."""
+        return []
+
+    def surface_weights(self, p):
+        """[(bone name, weight)] for a point of the welded surface."""
+        raise NotImplementedError
+
+    def piece_bone(self, center, piece):
+        """The bone a separate detail piece follows whole."""
+        return min(self.bones, key=lambda b: segment_distance(center, b.head, b.tail)).name
+
+    def piece_weights(self, center, piece):
+        """None to bind the piece whole to piece_bone(), or a function
+        point -> [(bone name, weight)] for a piece that must bend (a cape)."""
+        return None
+
+    def bind(self, mb):
+        """Writes bone weights into the builder's vertices."""
+        bm = mb.bm
+        bm.verts.ensure_lookup_table()
+
+        def put(v, weights):
+            weights = sorted(((w, n) for n, w in weights if w > 0.0), reverse=True)[:4]
+            total = sum(w for w, _ in weights)
+            for w, n in weights:
+                v[mb.deform][mb._group_index(n)] = w / total
+
+        surface = mb.surface_verts
+        if not any(v in surface for v in bm.verts):
+            # The spec swapped the mesh for a packed copy: there the welded
+            # surface does come first.
+            surface = set(bm.verts[:mb.detail_from])
+        for v in bm.verts:
+            if v in surface:
+                put(v, self.surface_weights(v.co))
+        # Detail pieces: connected groups of vertices.
+        seen = set()
+        for v in bm.verts:
+            if v in surface or v in seen:
+                continue
+            piece, stack = [], [v]
+            seen.add(v)
+            while stack:
+                u = stack.pop()
+                piece.append(u)
+                for e in u.link_edges:
+                    w = e.other_vert(u)
+                    if w not in seen:
+                        seen.add(w)
+                        stack.append(w)
+            center = sum((u.co for u in piece), Vector()) / len(piece)
+            soft = self.piece_weights(center, piece)
+            if soft is None:
+                bone = self.piece_bone(center, piece)
+                for u in piece:
+                    put(u, [(bone, 1.0)])
+            else:
+                for u in piece:
+                    put(u, soft(u.co))
+
+    def build_armature(self, name):
+        data = bpy.data.armatures.new(name)
+        arm = bpy.data.objects.new(name, data)
+        bpy.context.scene.collection.objects.link(arm)
+        common.select_only([arm])
+        bpy.ops.object.mode_set(mode="EDIT")
+        for bone in self.bones:
+            eb = data.edit_bones.new(bone.name)
+            eb.head = bone.head
+            eb.tail = bone.tail
+            eb.roll = 0.0
+            if bone.parent:
+                eb.parent = data.edit_bones[bone.parent]
+                eb.use_connect = False
+        bpy.ops.object.mode_set(mode="OBJECT")
+        return arm
+
+    def clips(self):
+        """(name, frames, loops, pose function, speed or None). A pose
+        function takes t in [0, 1) and returns (rotations, root offset, _);
+        rotations map a bone to a Quaternion or to a list of (armature
+        axis, degrees), relative to its parent."""
+        return []
+
+    def clip_props(self):
+        """{clip: "kind:bone"}: the tool a clip is played with (an axe in
+        the right hand), saved in the model as "<clip>_prop"."""
+        return {}
+
+    def pose_extra(self, clip, t, rot):
+        """Hook: add the turns of a spec's own bones to a clip's pose."""
+
+
 class Gait:
     """A walk or run cycle. `phases` gives each leg's offset in the cycle."""
 
@@ -89,7 +266,7 @@ WALK_PHASES = {"HL": 0.0, "FL": 0.25, "HR": 0.5, "FR": 0.75}  # Lateral sequence
 TROT_PHASES = {"FL": 0.0, "HR": 0.0, "FR": 0.5, "HL": 0.5}    # Diagonal pairs.
 
 
-class Quadruped:
+class Quadruped(Rig):
     """Four legs, a body, chest, neck, head, two ears and a tail.
 
     body: (rear, front) of the root bone, which carries the hind body.
@@ -102,10 +279,13 @@ class Quadruped:
     leg_exit: height below which the surface follows the legs fully, and
         the height above which it follows only the body.
     leg_reach: how far from a leg's axis its joint rings are cut (m).
+    extra_bones: more Bone objects (a trunk, wings, a mane), after the
+        template's; pose them in pose_extra().
     """
 
     def __init__(self, body, chest, neck, head, ears, tail, legs, leg_exit, walk, run,
-                 blend=0.08, leg_reach=0.15, idle_frames=90, eat_frames=90, die_frames=45, lie_height=None):
+                 blend=0.08, leg_reach=0.15, idle_frames=90, eat_frames=90, die_frames=45, lie_height=None,
+                 extra_bones=()):
         self.walk = walk
         self.run = run
         self.blend = blend
@@ -142,8 +322,7 @@ class Quadruped:
                           around=around))
             b.append(Bone(f"foot.{leg}", ankle, toe, parent=f"leg_lower.{leg}", surface=True, fade=fade,
                           around=around))
-        self.bones = b
-        self.by_name = {x.name: x for x in b}
+        self.set_bones(b + list(extra_bones))
 
     # ------------------------------------------------------------ binding
 
@@ -163,70 +342,22 @@ class Quadruped:
             out.append((Vector((hip.x, hip.y, self.leg_exit[0])), (0, 0, 1), near))
         return out
 
-    def bind(self, mb):
-        """Writes bone weights into the builder's vertices."""
-        bm = mb.bm
-        bm.verts.ensure_lookup_table()
-        surface = [x for x in self.bones if x.surface]
+    def surface_weights(self, p):
         feet = [x for x in self.bones if x.name.startswith("foot.")]
-        for v in bm.verts[:mb.detail_from]:
-            # Hooves and paws are rigid: below the ankle only the foot counts,
-            # or they would tilt with the leg and dig into the ground.
-            foot = min(feet, key=lambda x: segment_distance(v.co, x.head, x.tail))
-            if v.co.z <= foot.head.z:
-                v[mb.deform][mb._group_index(foot.name)] = 1.0
-                continue
-            cands = []
-            for bone in surface:
-                reach = bone.reach(v.co)
-                if reach <= 0.0:
-                    continue
-                # A faded bone counts as farther away, so it only wins near the leg.
-                d = segment_distance(v.co, bone.head, bone.tail) + (1.0 - reach) * self.blend * 3
-                cands.append((d, bone.name))
-            d0 = min(d for d, _ in cands)
-            weights = sorted(((max(0.0, 1.0 - (d - d0) / self.blend) ** 2, n) for d, n in cands), reverse=True)[:4]
-            total = sum(w for w, _ in weights)
-            for w, n in weights:
-                if w > 0.0:
-                    v[mb.deform][mb._group_index(n)] = w / total
-        # Detail pieces: connected groups of vertices, each on one bone.
-        seen = set()
-        for v in bm.verts[mb.detail_from:]:
-            if v.index in seen:
-                continue
-            piece, stack = [], [v]
-            seen.add(v.index)
-            while stack:
-                u = stack.pop()
-                piece.append(u)
-                for e in u.link_edges:
-                    w = e.other_vert(u)
-                    if w.index not in seen:
-                        seen.add(w.index)
-                        stack.append(w)
-            center = sum((u.co for u in piece), Vector()) / len(piece)
-            bone = min(self.bones, key=lambda x: segment_distance(center, x.head, x.tail))
-            group = mb._group_index(bone.name)
-            for u in piece:
-                u[mb.deform][group] = 1.0
-
-    def build_armature(self, name):
-        data = bpy.data.armatures.new(name)
-        arm = bpy.data.objects.new(name, data)
-        bpy.context.scene.collection.objects.link(arm)
-        common.select_only([arm])
-        bpy.ops.object.mode_set(mode="EDIT")
+        # Hooves and paws are rigid: below the ankle only the foot counts,
+        # or they would tilt with the leg and dig into the ground.
+        foot = min(feet, key=lambda x: segment_distance(p, x.head, x.tail))
+        if p.z <= foot.head.z:
+            return [(foot.name, 1.0)]
+        cands = []
         for bone in self.bones:
-            eb = data.edit_bones.new(bone.name)
-            eb.head = bone.head
-            eb.tail = bone.tail
-            eb.roll = 0.0
-            if bone.parent:
-                eb.parent = data.edit_bones[bone.parent]
-                eb.use_connect = False
-        bpy.ops.object.mode_set(mode="OBJECT")
-        return arm
+            reach = bone.reach(p) if bone.surface else 0.0
+            if reach <= 0.0:
+                continue
+            # A faded bone counts as farther away, so it only wins near the leg.
+            cands.append((segment_distance(p, bone.head, bone.tail) + (1.0 - reach) * self.blend * 3, bone.name))
+        d0 = min(d for d, _ in cands)
+        return [(n, max(0.0, 1.0 - (d - d0) / self.blend) ** 2) for d, n in cands]
 
     # -------------------------------------------------------------- poses
 
@@ -351,7 +482,6 @@ class Quadruped:
         return rot, Vector((0, 0, dz)), {}
 
     def clips(self):
-        """(name, frames, loops, pose function, speed or None)."""
         return [
             ("idle", self.idle_frames, True, self.idle_pose, None),
             ("walk", self.walk.frames, True, lambda t: self.gait_pose(self.walk, t), self.walk.speed),
@@ -362,22 +492,26 @@ class Quadruped:
 
 
 def pose_key(arm, frame, rotations, offset):
-    """Keys every bone at `frame`. `rotations` maps a bone to a list of
-    (armature axis, degrees) applied in order; the root bone ("body") also
-    moves by `offset` (armature space)."""
+    """Keys every bone at `frame`. `rotations` maps a bone to a Quaternion
+    or to a list of (armature axis, degrees) applied in order; the root
+    bones also move by `offset` (armature space)."""
     for pb in arm.pose.bones:
         rest = pb.bone.matrix_local.to_3x3()
-        q = Quaternion()
-        for axis, deg in rotations.get(pb.name, []):
-            q = Quaternion(Vector(axis), math.radians(deg)) @ q
+        turn = rotations.get(pb.name, [])
+        if isinstance(turn, Quaternion):
+            q = turn
+        else:
+            q = Quaternion()
+            for axis, deg in turn:
+                q = Quaternion(Vector(axis), math.radians(deg)) @ q
         pb.rotation_mode = "QUATERNION"
         pb.rotation_quaternion = (rest.transposed() @ q.to_matrix() @ rest).to_quaternion()
         pb.keyframe_insert(data_path="rotation_quaternion", frame=frame)
-        pb.location = rest.transposed() @ offset if pb.parent is None else Vector((0, 0, 0))
+        pb.location = rest.transposed() @ Vector(offset) if pb.parent is None else Vector((0, 0, 0))
         pb.keyframe_insert(data_path="location", frame=frame)
 
 
-def add_clip(arm, name, frames, loops, pose_fn):
+def add_clip(rig, arm, name, frames, loops, pose_fn):
     action = bpy.data.actions.new(name)
     action.use_fake_user = True
     arm.animation_data_create()
@@ -385,6 +519,7 @@ def add_clip(arm, name, frames, loops, pose_fn):
     for f in range(frames + 1):
         t = (f % frames) / frames if loops else f / frames
         rot, offset, _ = pose_fn(t)
+        rig.pose_extra(name, t, rot)
         pose_key(arm, f, rot, offset)
     return action
 
@@ -400,9 +535,13 @@ def export_rigged(spec, mb, path):
     mod = mesh.modifiers.new("Armature", "ARMATURE")
     mod.object = arm
     for name, frames, loops, pose_fn, speed in rig.clips():
-        add_clip(arm, name, frames, loops, pose_fn)
+        add_clip(rig, arm, name, frames, loops, pose_fn)
         if speed is not None:
             arm[f"{name}_speed"] = speed
+        if not loops:
+            arm[f"{name}_loops"] = 0   # Plays once and holds its last pose.
+    for name, prop in sorted(rig.clip_props().items()):
+        arm[f"{name}_prop"] = prop
     arm.animation_data.action = None
     for pb in arm.pose.bones:
         pb.rotation_quaternion = (1, 0, 0, 0)

@@ -35,13 +35,15 @@ class Unicorn(Equine):
     girth = 1.15
     mane_hang = 0.1
     tail_size = 1.2
+    walk = (1.2, 20, 0.62)
+    trot = (3.2, 14, 0.38)
 
-    def details(self, mb):
-        super().details(mb)
+    def pieces(self, mb):
+        super().pieces(mb)
         base = self.P((0, -0.93, 1.98), True)
         tip = base + Vector((0, -0.45, 1.0)).normalized() * self.R(0.34, True)
-        twisted_cone(mb, base - Vector((0, -0.45, 1.0)).normalized() * self.R(0.03, True), tip,
-                     self.R(0.045, True), 5, 5, 0.45, "horn")
+        self.rig.tag(twisted_cone(mb, base - Vector((0, -0.45, 1.0)).normalized() * self.R(0.03, True), tip,
+                                  self.R(0.045, True), 5, 5, 0.45, "horn"), "head")
 
 
 SPECS = [Unicorn()]

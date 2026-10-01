@@ -16,7 +16,7 @@ import os
 import sys
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 args = sys.argv[sys.argv.index("--") + 1:]
 MODELS = os.path.abspath(args[0])
@@ -30,6 +30,12 @@ PANEL_W, PANEL_H = 640, 520
 STRIP_W, STRIP_H = 400, 325
 STRIP_FRAMES = 8
 LENS = 55.0  # Millimeters, on a 36 mm wide sensor.
+
+# The tools shown in a character's hand while a clip plays ("<clip>_prop"
+# in the model): kind -> (model in art/studies/weapons, degrees the tool is
+# turned about its own long axis in the hand).
+PROPS = {"axe": ("w07_battle_axe", 90.0), "bow": ("w13_long_bow", 0.0), "rod": ("w18_fishing_rod", 0.0)}
+PROPS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "studies", "weapons")
 
 # View name, direction from the model toward the camera, edges drawn.
 VIEWS = [
@@ -207,6 +213,35 @@ def evaluated_points(meshes):
     return pts
 
 
+def attach_prop(arm, spec):
+    """Puts a tool in a hand: `spec` is "kind:bone". The tool's long axis
+    (its +Z) goes along the hand's forward direction (-Y at rest), with
+    its grip point at the middle of the hand. Returns its objects."""
+    kind, _, bone_name = spec.partition(":")
+    file = os.path.join(PROPS_DIR, PROPS.get(kind, ("", 0))[0] + ".glb")
+    bone = arm.data.bones.get(bone_name)
+    if kind not in PROPS or bone is None or not os.path.isfile(file):
+        return []
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=file)
+    new = [o for o in bpy.data.objects if o not in before and o.parent is None]
+    grip = Vector(new[0].get("grip", (0, 0, 0))) if new else Vector()
+    # The exporter turned the tool to Y up; its grip came back in Blender axes.
+    hand = arm.matrix_world @ ((bone.head_local + bone.tail_local) * 0.5)
+    place = (Matrix.Translation(hand) @ Matrix.Rotation(math.radians(90.0), 4, "X")
+             @ Matrix.Rotation(math.radians(PROPS[kind][1]), 4, "Z") @ Matrix.Translation(-grip))
+    # A bone parents at its tail.
+    rest = arm.matrix_world @ bone.matrix_local @ Matrix.Translation((0, bone.length, 0))
+    for o in new:
+        world = place @ o.matrix_world
+        o.parent = arm
+        o.parent_type = "BONE"
+        o.parent_bone = bone_name
+        o.matrix_parent_inverse = rest.inverted()
+        o.matrix_basis = world
+    return new
+
+
 def clip_frames(action, loops):
     start, end = (int(round(f)) for f in action.frame_range)
     if loops:  # The last frame repeats the first.
@@ -220,16 +255,21 @@ def animation_strips(name):
     meshes, _, arm = load(name)
     arm.data.pose_position = "POSE"
     rows = []
+    props = []
     for action in sorted(bpy.data.actions, key=lambda a: a.name):
-        clip = action.name.split("_")[0]
+        suffix = "_" + arm.name   # The importer may add the armature's name.
+        clip = action.name[:-len(suffix)] if action.name.endswith(suffix) else action.name
         arm.animation_data.action = action
         if hasattr(arm.animation_data, "action_slot") and action.slots:
             arm.animation_data.action_slot = action.slots[0]
-        frames = clip_frames(action, loops=clip != "die")
+        for o in props:
+            bpy.data.objects.remove(o)
+        props = attach_prop(arm, arm.get(f"{clip}_prop", ""))
+        frames = clip_frames(action, loops=bool(arm.get(f"{clip}_loops", 1)))
         points = []
         for f in frames:
             bpy.context.scene.frame_set(f)
-            points += evaluated_points(meshes)
+            points += evaluated_points(meshes + [o for o in props if o.type == "MESH"])
         for o in [o for o in bpy.data.objects if o.name.startswith(("cam", "label"))]:
             bpy.data.objects.remove(o)  # The previous clip's camera and label.
         cam, dist = camera_for(points, Vector((-1.0, 0.0, 0.18)), STRIP_W, STRIP_H)

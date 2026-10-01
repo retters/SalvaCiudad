@@ -5,7 +5,9 @@ beak with an orange stripe, flippers hanging at the sides and dark feet."""
 import random
 
 import common
+import rigs_bird
 import studies
+from rigs_bird import tag
 
 BODY = ((0.0, 0.02, 0.36), (0.2, 0.19, 0.34))
 CHEST = ((0.0, -0.01, 0.58), (0.16, 0.15, 0.2))
@@ -60,6 +62,26 @@ class Penguin(studies.Spec):
     budget = 420
     max_tris = 1000
     tone_material = "navy"
+    rig = rigs_bird.Bird(
+        body=((0, 0.02, 0.15), (0, 0.0, 0.64)),
+        neck=[(0, 0.0, 0.64), (0, -0.02, 0.77)],
+        head=((0, -0.02, 0.77), (0, -0.1, 0.84)),
+        beak_tip=(0, -0.265, 0.795),
+        tail=[(0, 0.15, 0.1), (0, 0.22, 0.02)],
+        # The legs are hidden in the body: only the feet show.
+        legs=((0.085, 0.0, 0.15), (0.085, 0.04, 0.09), (0.085, -0.03, 0.02), (0.09, -0.15, 0.01)),
+        wings=[(0.15, 0.02, 0.63), (0.23, 0.08, 0.22)], wing_sides=[(0, 1, 0)], wing_twitch=6.0,
+        blend=0.07,
+        # A waddle: short steps, the body rocking over each foot, the flippers out a little.
+        walk=rigs_bird.Step(frames=16, duty=0.6, crouch=0.0, lift=0.025, waddle=8.0, sway=0.02, wings=14.0,
+                            tail=3.0, toe=10.0),
+        run=rigs_bird.Step(frames=9, duty=0.55, crouch=0.0, lift=0.03, waddle=11.0, sway=0.022, wings=28.0,
+                           lean=6.0, tail=4.0, toe=10.0),
+        eat=dict(pitch=20.0, crouch=0.0, head=55.0, curl=25.0, pecks=3),   # Just dips its head.
+        air=dict(name="swim", frames=20, beats=1, pitch=86.0, lift=0.15, amp=38.0, mid=0.0, tuck=0.0,
+                 foot=80.0, head=18.0, speed=2.0, bob=0.02),
+        lie_height=0.19, look=28.0, die_droop=25.0,
+    )
 
     def paint(self, c, n):
         if c.y < BELLY_Y and c.z < PATCH_Z[2]:
@@ -72,19 +94,23 @@ class Penguin(studies.Spec):
     def details(self, mb):
         tone_faces(mb, "white", 0.25)
         # Beak: a long dark cone with a thinner orange lower half.
-        mb.cylinder((0, -0.11, 0.835), (0, -0.265, 0.795), 0.028, 0.004, "beak", segments=6)
-        mb.cylinder((0, -0.105, 0.822), (0, -0.235, 0.79), 0.024, 0.003, "orange", segments=5)
+        tag(mb, mb.cylinder((0, -0.11, 0.835), (0, -0.265, 0.795), 0.028, 0.004, "beak", segments=6), "head")
+        tag(mb, mb.cylinder((0, -0.105, 0.822), (0, -0.235, 0.79), 0.024, 0.003, "orange", segments=5), "head")
         for s in (-1, 1):
-            mb.sphere((s * EYE[0], EYE[1], EYE[2]), 0.014, "eye", segments=6, rings=4)
+            side = "L" if s > 0 else "R"
+            tag(mb, mb.sphere((s * EYE[0], EYE[1], EYE[2]), 0.014, "eye", segments=6, rings=4), "head")
             # Flipper hanging down along the side, a little out from the body.
-            studies.plate(mb, [(s * 0.145, -0.02, 0.64), (s * 0.165, 0.07, 0.6), (s * 0.215, 0.1, 0.36),
-                               (s * 0.235, 0.07, 0.22), (s * 0.21, 0.0, 0.36)], 0.02, "navy")
-            # Foot: a flat dark paddle with three toes.
-            studies.plate(mb, [(s * 0.04, -0.02, 0.0), (s * 0.13, -0.02, 0.0), (s * 0.15, -0.13, 0.0),
-                               (s * 0.09, -0.17, 0.0), (s * 0.03, -0.12, 0.0)], 0.04, "foot")
+            tag(mb, studies.plate(mb, [(s * 0.145, -0.02, 0.64), (s * 0.165, 0.07, 0.6), (s * 0.215, 0.1, 0.36),
+                                       (s * 0.235, 0.07, 0.22), (s * 0.21, 0.0, 0.36)], 0.02, "navy"),
+                f"wing.{side}")
+            # Foot: a flat dark paddle with three toes, lying on the ground
+            # (its top where it always was; the lower half used to be buried).
+            tag(mb, studies.plate(mb, [(s * 0.04, -0.02, 0.01), (s * 0.13, -0.02, 0.01), (s * 0.15, -0.13, 0.01),
+                                       (s * 0.09, -0.17, 0.01), (s * 0.03, -0.12, 0.01)], 0.02, "foot"),
+                f"foot.{side}")
         # A short stiff tail at the back, touching the ground.
-        studies.plate(mb, [(-0.06, 0.15, 0.1), (0.06, 0.15, 0.1), (0.03, 0.22, 0.0), (-0.03, 0.22, 0.0)],
-                      0.025, "navy")
+        tag(mb, studies.plate(mb, [(-0.06, 0.15, 0.1), (0.06, 0.15, 0.1), (0.03, 0.22, 0.014),
+                                   (-0.03, 0.22, 0.014)], 0.025, "navy"), "tail")
 
 
 SPECS = [Penguin()]

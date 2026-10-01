@@ -6,12 +6,94 @@ import math
 from mathutils import Vector
 
 import common
+import rigs
 import studies
 
 X = 0.19  # Half the distance between left and right legs.
 TAIL = [(0, 0.8, 0.86), (0, 1.05, 0.72), (0.05, 1.3, 0.52), (0.12, 1.55, 0.42), (0.2, 1.75, 0.45),
         (0.26, 1.9, 0.56)]
 TAIL_R = [0.075, 0.065, 0.06, 0.055, 0.05, 0.045]
+KNEE, HOCK = 0.44, 0.3  # Heights of the front and hind leg joints.
+PAW_TOP = 0.115  # Where the white paws start: below it they stay rigid.
+GALLOP_PHASES = {"HL": 0.0, "HR": 0.1, "FL": 0.5, "FR": 0.6}
+
+
+class Beast(rigs.Quadruped):
+    """The quadruped template for long-legged animals with a tail welded
+    into the surface (shared by the lion, wolf and deer specs):
+
+    - the surface near the tail's axis follows the tail bones (the template
+      only moves tails made of separate pieces);
+    - a tail of many bones swings as far as the template's three;
+    - eat lowers the head by the spec's own angles, down to the ground;
+    - die tips over the right feet instead of sinking the legs into the
+      ground while it rolls, and ends with the head lifted off the ground
+      by `die_lift` degrees and rolled back by `die_untwist` degrees (for
+      manes and antlers wider than the body).
+    """
+
+    tail_reach = None            # Surface this near the tail's axis follows the tail (m); None: rigid.
+    eat = (5.0, 0.0, 20.0, 25.0)  # Degrees down at the lowest point: body, chest, neck, head.
+    eat_drop = 0.02              # How much the body goes down while eating (m).
+    die_lift = 0.0
+    die_untwist = 0.0
+
+    def tail_bones(self):
+        return [b for b in self.bones if b.name.startswith("tail.")]
+
+    def surface_weights(self, p):
+        base = super().surface_weights(p)
+        if self.tail_reach is None:
+            return base
+        tails = self.tail_bones()
+        dists = [(rigs.segment_distance(p, b.head, b.tail), b.name) for b in tails]
+        d0 = min(d for d, _ in dists)
+        r = self.tail_reach
+        # Fades in away from the tail's root, so the rump stays with the body.
+        k = (max(0.0, min(1.0, (r - d0) / (r * 0.3)))
+             * max(0.0, min(1.0, ((p - tails[0].head).length - r * 0.5) / r)))
+        if k <= 0.0:
+            return base
+        tail = [(n, max(0.0, 1.0 - (d - d0) / self.blend) ** 2) for d, n in dists]
+        sb, st = sum(w for _, w in base), sum(w for _, w in tail)
+        return [(n, w / sb * (1 - k)) for n, w in base] + [(n, w / st * k) for n, w in tail]
+
+    def tail_rot(self, rot, side_deg, up_deg=0.0):
+        k = 3.0 / len(self.tail_bones())
+        super().tail_rot(rot, side_deg * k, up_deg * k)
+
+    def piece_bone(self, center, piece):
+        if center.y > self.tail_bones()[0].head.y:
+            return self.tail_bones()[-1].name  # A tuft.
+        if len(piece) == 6:  # A flap.
+            return "ear.L" if center.x > 0 else "ear.R"
+        return "head"  # Eyes, nose, antlers.
+
+    def eat_pose(self, t):
+        rot, offset, extra = super().eat_pose(t)
+        down = rigs.smooth(t / 0.2) * (1 - rigs.smooth((t - 0.8) / 0.2))
+        pitch, chest, neck, head = (a * down for a in self.eat)
+        dz = -self.eat_drop * down
+        root = rot["head"][0][1] - 25.0 * down  # The template's rooting about.
+        rot = self.planted(rot, math.radians(pitch), dz)
+        rot["body"] = [(rigs.X, pitch)]
+        rot["chest"] = [(rigs.X, chest)]
+        rot["neck"] = [(rigs.X, neck)]
+        rot["head"] = [(rigs.X, head + root)]
+        return rot, Vector((0, 0, dz)), extra
+
+    def die_pose(self, t):
+        rot, offset, extra = super().die_pose(t)
+        sag = rigs.smooth(t / 0.35)
+        roll = rigs.smooth((t - 0.3) / 0.45)
+        # High enough for the right legs to pass under the body as it rolls.
+        a = math.radians(90.0) * roll
+        pivot = self.by_name["body"].head
+        offset.z = max(offset.z, -0.08 * sag * (1 - roll) + pivot.z * (math.cos(a) - 1) + self.lie_height * math.sin(a))
+        rot["chest"] = [(rigs.Z, self.die_lift * roll)]
+        rot["neck"] = rot["neck"] + [(rigs.Z, self.die_lift * roll), (rigs.Y, self.die_untwist * 0.5 * roll)]
+        rot["head"] = rot["head"] + [(rigs.Y, self.die_untwist * 0.5 * roll)]
+        return rot, offset, extra
 
 
 def legs_capsules():
@@ -21,10 +103,10 @@ def legs_capsules():
         caps += [
             ((x * 0.95, -0.47, 0.8), (x, -0.47, 0.44), 0.12, 0.09),     # Front upper leg.
             ((x, -0.47, 0.44), (x, -0.52, 0.1), 0.085, 0.07),           # Front lower leg.
-            ((x, -0.5, 0.065), (x, -0.64, 0.065), 0.068, 0.062),        # Front paw.
+            ((x, -0.5, 0.05), (x, -0.64, 0.05), 0.068, 0.062),          # Front paw.
             ((x * 0.95, 0.55, 0.62), (x, 0.7, 0.3), 0.11, 0.075),       # Hind leg to the hock.
             ((x, 0.7, 0.3), (x, 0.62, 0.1), 0.07, 0.065),               # Hind lower leg.
-            ((x, 0.64, 0.065), (x, 0.5, 0.065), 0.065, 0.06),           # Hind paw.
+            ((x, 0.64, 0.05), (x, 0.5, 0.05), 0.065, 0.06),             # Hind paw.
         ]
     return caps
 
@@ -48,8 +130,10 @@ def bands():
         zmin = 0.66 + 0.07 * (i % 3)
         out.append((Vector((0, -0.52 + i * 0.2, 0.8)), n, 0.042 + 0.01 * (i % 2),
                     lambda c, nn, zmin=zmin: -0.7 < c.y < 0.86 and c.z > zmin))
-    for z in (0.26, 0.44):  # Leg rings, on the outer side.
-        out.append((Vector((0, 0, z)), Vector((0, 0.2, 1)).normalized(), 0.028,
+    # Leg rings, on the outer side. Their upper edges are where the rig cuts
+    # the legs anyway (the hock and the front knee), to save triangles.
+    for z in (HOCK, KNEE):
+        out.append((Vector((0, 0, z - 0.028)), Vector((0, 0, 1)), 0.028,
                     lambda c, nn: 0.12 < c.z < 0.58 and on_leg(c)))
     out.append((Vector((0, -0.7, 0.9)), Vector((0, 1, 0.7)).normalized(), 0.03,  # Neck.
                 lambda c, nn: -0.9 < c.y < -0.55 and c.z > 0.9))
@@ -71,10 +155,16 @@ def bands():
     return out
 
 
+class TigerRig(Beast):
+    tail_reach = 0.11
+    eat = (8.0, 8.0, 30.0, 20.0)
+    eat_drop = 0.04
+
+
 class Tiger(studies.Spec):
     name = "tiger"
     max_tris = 2000
-    budget = 520
+    budget = 494
     colors = {
         "orange": common.rgb(0xF0922A),
         "orange_light": common.rgb(0xF6A844),
@@ -115,6 +205,26 @@ class Tiger(studies.Spec):
     }
     tone_material = "orange"
     voxel = 0.05
+    rig = TigerRig(
+        body=((0, 0.78, 0.8), (0, -0.05, 0.77)),
+        chest=((0, -0.05, 0.77), (0, -0.58, 0.86)),
+        neck=((0, -0.58, 0.86), (0, -0.85, 1.0)),
+        head=((0, -0.85, 1.0), (0, -1.24, 0.97)),
+        ears=((0.13, -0.89, 1.16), (0.18, -0.9, 1.27)),
+        tail=TAIL,
+        legs={
+            "F": ((X, -0.47, 0.8), (X, -0.47, KNEE), (X, -0.52, PAW_TOP), (X, -0.7, 0.0)),
+            "H": ((X, 0.58, 0.62), (X, 0.7, HOCK), (X, 0.62, PAW_TOP), (X, 0.44, 0.0)),
+        },
+        leg_exit=(KNEE, 0.56),
+        leg_reach=0.24,
+        walk=rigs.Gait(speed=1.1, frames=18, duty=0.62, lift=0.08, crouch=0.06, bob=0.01,
+                       phases=rigs.WALK_PHASES, wag=10.0),
+        run=rigs.Gait(speed=5.0, frames=11, duty=0.3, lift=0.15, crouch=0.11, bob=0.02,
+                      phases=GALLOP_PHASES, nod=4.0, wag=6.0),
+        lie_height=0.3,
+        blend=0.06,
+    )
 
     def __init__(self):
         self.bands = bands()

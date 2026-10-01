@@ -2,7 +2,9 @@
 big side ears and branching antlers made of thin cylinders."""
 
 import common
+import rigs
 import studies
+from tiger import GALLOP_PHASES, Beast
 
 X = 0.11  # Half the distance between left and right legs.
 HEAD = ((0, -0.66, 1.48), (0.085, 0.12, 0.09))
@@ -36,10 +38,18 @@ def antler(s):
     return segs
 
 
+class DeerRig(Beast):
+    tail_reach = 0.07
+    eat = (8.0, 16.0, 97.0, -55.0)   # The long neck swings all the way down to graze.
+    eat_drop = 0.05
+    die_lift = 4.0                   # The head ends propped on the lower antler,
+    die_untwist = 46.0               # not with it sunk in the ground.
+
+
 class Deer(studies.Spec):
     name = "deer"
     max_tris = 1500
-    budget = 950
+    budget = 730
     remesh_voxel = 0.012  # Fine enough for the slim legs.
     colors = {
         "brown": common.rgb(0xB06A34),
@@ -63,6 +73,26 @@ class Deer(studies.Spec):
                 + legs_capsules())
     cuts = [((0, 0, HOOF_TOP), (0, 0, 1), lambda c, n: c.z < 0.2)]
     tone_material = "brown"
+    rig = DeerRig(
+        body=((0, 0.5, 0.98), (0, 0.0, 0.95)),
+        chest=((0, 0.0, 0.95), (0, -0.42, 1.0)),
+        neck=((0, -0.42, 1.0), (0, -0.62, 1.42)),
+        head=((0, -0.62, 1.42), (0, -0.9, 1.42)),
+        ears=((0.06, -0.59, 1.53), (0.2, -0.6, 1.61)),
+        tail=[(0, 0.52, 1.07), (0, 0.56, 1.035), (0, 0.6, 1.0)],
+        legs={
+            "F": ((X, -0.37, 0.9), (X, -0.38, 0.56), (X, -0.4, HOOF_TOP), (X, -0.44, 0.0)),
+            "H": ((X, 0.38, 0.92), (X, 0.46, 0.52), (X, 0.406, HOOF_TOP), (X, 0.37, 0.0)),
+        },
+        leg_exit=(0.62, 0.74),
+        leg_reach=0.2,
+        walk=rigs.Gait(speed=1.2, frames=18, duty=0.62, lift=0.1, crouch=0.06, bob=0.01,
+                       phases=rigs.WALK_PHASES, wag=8.0),
+        run=rigs.Gait(speed=6.0, frames=10, duty=0.28, lift=0.2, crouch=0.1, bob=0.02,
+                      phases=GALLOP_PHASES, nod=4.0, wag=6.0),
+        lie_height=0.2,
+        blend=0.05,
+    )
 
     def paint(self, c, n):
         if c.z < HOOF_TOP:

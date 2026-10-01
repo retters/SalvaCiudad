@@ -7,6 +7,7 @@ import math
 from mathutils import Vector
 
 import common
+import rigs_swim
 import studies
 
 BODY_Z = 0.42
@@ -68,6 +69,18 @@ class Shark(studies.Spec):
     budget = 650
     max_tris = 1500
     tone_material = "blue"
+    rig = rigs_swim.Fish(
+        spine=[(0, -1.6, 0.42), (0, -0.8, 0.42), (0, -0.35, 0.43), (0, 0.15, 0.44), (0, 0.55, 0.46),
+               (0, 0.9, 0.49), (0, 1.2, 0.51), (0, 1.47, 0.53)],
+        fins={
+            "fin.L": ((0.27, -0.42, 0.29), (0.85, 0.12, 0.04), "body"),
+            "fin.R": ((-0.27, -0.42, 0.29), (-0.85, 0.12, 0.04), "body"),
+            "dorsal": ((0, -0.1, 0.78), (0, 0.25, 1.3), "spine.1"),
+            "lobe.U": ((0, 1.4, 0.56), (0, 1.88, 1.18), "spine.5"),
+            "lobe.L": ((0, 1.4, 0.5), (0, 1.77, 0.12), "spine.5"),
+        },
+        jaw=(HINGE, (0, -1.3, 0.07), UPPER_N, LOWER_N),
+    )
 
     def paint(self, c, n):
         if in_mouth(c):

@@ -253,4 +253,56 @@ TEST_SUITE("model") {
         CHECK(m.joint_parent[static_cast<std::size_t>(m.joint_index("foot.HR"))] == m.joint_index("leg_lower.HR"));
         CHECK(m.bounds_min.y == doctest::Approx(0.0f).epsilon(0.001));
     }
+
+    TEST_CASE("the study models that have been generated load, skeletons and clips included") {
+        // art/studies is not versioned: the Blender scripts write it (phases 46
+        // and 48). Whatever is there must load; a checkout without it skips this.
+        std::size_t loaded = 0;
+        std::size_t skinned = 0;
+        for (const char* folder : {"animals", "people", "weapons", "trees"}) {
+            const std::filesystem::path dir = std::filesystem::path(SC_SOURCE_DIR) / "art" / "studies" / folder;
+            std::error_code ec;
+            if (!std::filesystem::is_directory(dir, ec)) {
+                continue;
+            }
+            for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dir, ec)) {
+                if (entry.path().extension() != ".glb") {
+                    continue;
+                }
+                const std::string name = entry.path().filename().string();
+                const auto file = fs::read_file(entry.path(), model_limits::kMaxFileBytes);
+                REQUIRE_MESSAGE(file.error == fs::IoError::None, name);
+                const ModelLoadResult r =
+                    load_glb({reinterpret_cast<const std::uint8_t*>(file.data.data()), file.data.size()});
+                REQUIRE_MESSAGE(r.ok, name << ": " << r.error);
+                ++loaded;
+                const ModelData& m = r.model;
+                CHECK_MESSAGE(!m.primitives.empty(), name);
+                if (!m.skinned()) {
+                    continue;
+                }
+                ++skinned;
+                CHECK_MESSAGE(m.joint_names.size() <= model_limits::kMaxJoints, name);
+                CHECK_MESSAGE(!m.clips.empty(), name);
+                CHECK_MESSAGE(m.clip_index("idle") >= 0, name);
+                CHECK_MESSAGE(m.skin.size() == m.vertices.size(), name);
+                bool weights_ok = true;
+                for (const JointWeights& jw : m.skin) {
+                    weights_ok = weights_ok && jw.weights[0] + jw.weights[1] + jw.weights[2] + jw.weights[3] == 255;
+                    for (const std::uint8_t j : jw.joints) {
+                        weights_ok = weights_ok && j < m.joint_names.size();
+                    }
+                }
+                CHECK_MESSAGE(weights_ok, name);
+                for (const ModelClip& c : m.clips) {
+                    CHECK_MESSAGE(c.skin.size() == static_cast<std::size_t>(c.frame_count) * m.joint_names.size(), name);
+                    // A clip that moves along the ground says how fast.
+                    if (c.name == "walk" || c.name == "run") {
+                        CHECK_MESSAGE(c.speed > 0.0f, name << " " << c.name);
+                    }
+                }
+            }
+        }
+        MESSAGE("study models loaded: " << loaded << ", with a skeleton: " << skinned);
+    }
 }

@@ -7,6 +7,7 @@ import math
 from mathutils import Vector
 
 import common
+import rigs_swim
 import studies
 
 MANTLE = ((0.0, 0.06, 0.78), (0.3, 0.33, 0.4))
@@ -35,11 +36,13 @@ def arm_path(angle, curl=1.0):
     return out
 
 
+ARM_PATHS = [arm_path((i + 0.5) * math.tau / ARMS, 1.0 if i % 2 else 0.8) for i in range(ARMS)]
+ARM_JOINTS = (0, 1, 2, 3, 5, 7, 10)  # The points of a path where its bones meet.
+
+
 def arm_capsules():
     caps = []
-    for i in range(ARMS):
-        angle = (i + 0.5) * math.tau / ARMS
-        path = arm_path(angle, 1.0 if i % 2 else 0.8)
+    for path in ARM_PATHS:
         for (a, ra), (b, rb) in zip(path, path[1:]):
             caps.append((tuple(a), tuple(b), ra, rb))
     return caps
@@ -60,6 +63,13 @@ class Octopus(studies.Spec):
     budget = 1000
     max_tris = 1500
     tone_material = "red"
+    rig = rigs_swim.Tentacled(
+        body=((0, 0, 0.26), (0, 0, 0.5)),
+        mantle=((0, 0.03, 0.5), (0, 0.06, 1.15)),
+        mantle_fade=(0.56, 0.72),
+        core=((0, 0, 0.3), (0, 0.06, 0.85), 0.25),
+        arms=[[path[i] for i in ARM_JOINTS] for path in ARM_PATHS],
+    )
 
     def paint(self, c, n):
         r = math.hypot(c.x, c.y)
