@@ -1,14 +1,16 @@
 """Traces the tree reference pictures into the data the generator builds from.
 
-    python art/blender/lowpoly_trees/_trace.py [debug folder] [tree names]
+    python art/blender/lowpoly_trees/_trace.py [debug folder] [tree names] [set=second]
 
 A development tool (system Python with PIL; Blender is not needed): it is
-run by hand when the reference pictures change, and writes _traced.py next
-to itself. The models are built from _traced.py alone.
+run by hand when the reference pictures change, and writes the traced data
+next to itself (_traced.py for the first set of pictures, _traced2.py for
+the second). The models are built from those files alone.
 
-The three pictures in the repository root show the same 16 trees in a 4 x 4
-grid: "Arboles 1.png" in bloom, "Arboles 2.png" in autumn and "Arboles 3.png"
-without leaves. For each tree:
+A set is three pictures in the repository root that show the same 16 trees
+in a 4 x 4 grid: in bloom, in autumn and without leaves ("Arboles 1.png" to
+"Arboles 3.png" the first set, "Arboles 4.png" to "Arboles 6.png" the
+second; see SHEETS). Without `set=`, the first set. For each tree:
 
   * the bare picture gives the branch structure: the bark pixels are
     thinned to a one-pixel skeleton, the skeleton becomes a tree of
@@ -33,20 +35,74 @@ from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
-PICTURES = {"bloom": "Arboles 1.png", "autumn": "Arboles 2.png", "bare": "Arboles 3.png"}
-# Rows of the grid in every picture (top, bottom) and the column borders.
-ROWS = {
-    "bloom": [(5, 255), (275, 497), (520, 740), (765, 985)],
-    "autumn": [(5, 255), (275, 497), (520, 740), (765, 985)],
-    "bare": [(5, 248), (270, 490), (510, 732), (752, 980)],
+# The sets of pictures. Of each: the three pictures, the rows of the grid in
+# every picture (top, bottom), the column borders, the trees' names, the
+# file the data goes to, and what is special about some trees:
+#   "skip": True          not traced (the generator builds it from numbers);
+#   "bark": "white"       which color tests find the bark (see BARK; the set
+#                         may give another default with its own "bark");
+#   "foliage": "red"      which color test finds the leaves (see FOLIAGE);
+#   "foot": (x, y)        the foot of the trunk in the bare picture's cell,
+#                         where the automatic search fails;
+#   "bloom_foot": (x, y)  the same in the bloom picture's cell;
+#   "foot_y": y           only its height, in both (see trunk_foot).
+SHEETS = {
+    "first": {
+        "pictures": {"bloom": "Arboles 1.png", "autumn": "Arboles 2.png", "bare": "Arboles 3.png"},
+        "rows": {
+            "bloom": [(5, 255), (275, 497), (520, 740), (765, 985)],
+            "autumn": [(5, 255), (275, 497), (520, 740), (765, 985)],
+            "bare": [(5, 248), (270, 490), (510, 732), (752, 980)],
+        },
+        "columns": [0, 362, 765, 1108, 1536],
+        "names": [
+            ["cherry_1", "cherry_2", "cherry_weeping", "cherry_3"],
+            ["jacaranda_1", "jacaranda_2", "jacaranda_3", "jacaranda_4"],
+            ["elm_1", "elm_2", "elm_3", "elm_4"],
+            ["guayacan_1", "guayacan_2", "guayacan_3", "guayacan_4"],
+        ],
+        "output": "_traced.py",
+        "trees": {},
+    },
+    "second": {
+        "pictures": {"bloom": "Arboles 4.png", "autumn": "Arboles 5.png", "bare": "Arboles 6.png"},
+        "rows": {
+            "bloom": [(10, 260), (280, 505), (522, 745), (768, 975)],
+            "autumn": [(10, 260), (280, 505), (522, 745), (768, 975)],
+            "bare": [(10, 260), (280, 505), (522, 745), (768, 975)],
+        },
+        "columns": [0, 370, 745, 1112, 1536],
+        "names": [
+            ["pine", "birch", "willow", "acacia"],
+            ["cypress", "magnolia", "maple", "palm"],
+            ["wisteria", "yellow_oak", "laurel", "cherry_var"],
+            ["baobab", "dragon_tree", "jacaranda_var", "apple"],
+        ],
+        "output": "_traced2.py",
+        "bark": "bright",
+        "foot": "trunk",
+        "trees": {
+            "pine": {"skip": True},
+            "cypress": {"skip": True},
+            "palm": {"skip": True},
+            "birch": {"bark": "white"},
+            "baobab": {"bark": "pale"},
+            "maple": {"foliage": "red"},
+        },
+    },
 }
-COLUMNS = [0, 362, 765, 1108, 1536]
-NAMES = [
-    ["cherry_1", "cherry_2", "cherry_weeping", "cherry_3"],
-    ["jacaranda_1", "jacaranda_2", "jacaranda_3", "jacaranda_4"],
-    ["elm_1", "elm_2", "elm_3", "elm_4"],
-    ["guayacan_1", "guayacan_2", "guayacan_3", "guayacan_4"],
-]
+PICTURES = ROWS = COLUMNS = NAMES = OUTPUT = OPTIONS = DEFAULT_BARK = FOOT = LEAF = None
+
+
+def use(name):
+    """Makes a set of pictures the one that the functions below read."""
+    global PICTURES, ROWS, COLUMNS, NAMES, OUTPUT, OPTIONS, DEFAULT_BARK, FOOT, LEAF
+    sheet = SHEETS[name]
+    DEFAULT_BARK, FOOT = sheet.get("bark"), sheet.get("foot")
+    LEAF = FOLIAGE[sheet.get("bark")]
+    PICTURES, ROWS, COLUMNS, NAMES = sheet["pictures"], sheet["rows"], sheet["columns"], sheet["names"]
+    OUTPUT, OPTIONS = sheet["output"], sheet["trees"]
+
 PX_PER_M = 32.0     # Scale of the pictures: the trees come out 6 to 7 m tall.
 S = 3               # The skeleton is traced on the picture enlarged S times.
 ROOT_Z = 0.7        # The skeleton starts here: below, grass and stones hide the trunk.
@@ -68,12 +124,58 @@ def is_strict_bark(r, g, b):
     return r - b > 30 and r > g + 12 and g > b and g < 125 and r < 185
 
 
+def is_white_bark(r, g, b):
+    """A birch: white bark and its grey shade, lighter than the background;
+    and the darker brownish tips of its twigs."""
+    return (min(r, g, b) > 158 and max(r, g, b) - min(r, g, b) < 60) or is_bark(r, g, b)
+
+
+def is_bright_strict(r, g, b):
+    """As is_strict_bark, for pictures whose bark is lit brighter."""
+    return r - b > 30 and r > g + 12 and g > b and g < 175 and r < 225
+
+
+# The bark tests by name: (in the bare picture, to find the foot of the trunk).
+BARK = {None: (is_bark, is_strict_bark), "bright": (is_bark, is_bright_strict),
+        "white": (is_white_bark, is_bright_strict)}
+
+
+def bark_tests(name):
+    return BARK[OPTIONS.get(name, {}).get("bark", DEFAULT_BARK)]
+
+
 def is_foliage(r, g, b):
     """Leaves or blossom, lit or in the shade: any color that is neither
     the grey background nor brown."""
     if max(r, g, b) - min(r, g, b) <= 26:
         return False
     return not (r > g + 8 and g > b + 4 and r < 185 and g < 125)
+
+
+def is_bright_foliage(r, g, b):
+    """As is_foliage, for pictures whose bark is lit brighter: its lit side
+    is a dull orange, not as vivid as the autumn leaves."""
+    if not is_foliage(r, g, b):
+        return False
+    return not (r > g + 8 and g > b + 4 and r < 228 and g < 172 and r - b < 150)
+
+
+def is_pale_bark(r, g, b):
+    """A baobab: a pale tan trunk with lighter facets, and brown branches."""
+    return r - b > 22 and r >= g - 4 and g >= b - 6 and not (g > 190 and b > 150)
+
+
+def is_red_foliage(r, g, b):
+    """As is_bright_foliage, for a tree with dark red leaves, which the
+    others take for bark."""
+    return is_bright_foliage(r, g, b) or (r > 120 and g < 0.5 * r and b < 0.5 * r)
+
+
+BARK["pale"] = (is_pale_bark, is_bright_strict)
+FOLIAGE = {None: is_foliage, "bright": is_bright_foliage, "red": is_red_foliage}
+
+
+use("first")
 
 
 # ------------------------------------------------------------------- masks
@@ -102,7 +204,7 @@ def mask_of(im, test):
     return grid
 
 
-def foot(im):
+def foot(im, test=is_strict_bark):
     """(x, y) of the foot of the trunk in a picture: the lowest row where
     the dark bark is as wide as a trunk, and the middle of that run."""
     w, h = im.size
@@ -114,7 +216,7 @@ def foot(im):
     def widest(y):
         best, start, gap = (0, 0), None, 0
         for x in range(w):
-            if is_strict_bark(*px[x, y]):
+            if test(*px[x, y]):
                 if start is None:
                     start = x
                 gap = 0
@@ -130,6 +232,47 @@ def foot(im):
         if widest(y)[0] >= need:
             return widest(y - 4 * scale)[1], y
     raise ValueError("no trunk found")
+
+
+def trunk_foot(im, name, state):
+    """(x, y) of the foot of a tree's trunk in one of its pictures, with
+    what the set says about it. In the sets with "foot": "trunk", the
+    height is a little above the lowest stones (the same in the three
+    pictures, whatever the grass hides; or the tree's "foot_y") and x is
+    the middle of the trunk above the grass."""
+    options = OPTIONS.get(name, {})
+    key = "foot" if state == "bare" else state + "_foot"
+    scale = max(1, round(im.width / (COLUMNS[1] - COLUMNS[0])))
+    if key in options:
+        return tuple(v * scale for v in options[key])
+    loose, strict = bark_tests(name)
+    if FOOT != "trunk":
+        return foot(im, strict)
+    px = im.load()
+    w = im.width
+    if "foot_y" in options:
+        y = options["foot_y"] * scale
+    else:
+        for y in range(im.height - 1, 0, -1):
+            count = 0
+            for x in range(0, w, scale):
+                r, g, b = px[x, y]
+                count += max(r, g, b) - min(r, g, b) > 34 or min(r, g, b) > 175
+            if count >= 6:
+                break
+        y -= int(0.16 * PX_PER_M * scale)
+    best = (0, w // 2)
+    for row in range(int(y - 0.9 * PX_PER_M * scale), int(y - 0.6 * PX_PER_M * scale), scale):
+        start = None
+        for x in range(w + 1):
+            on = x < w and loose(*px[x, row])
+            if on and start is None:
+                start = x
+            elif not on and start is not None:
+                if x - start > best[0] and abs((x + start) / 2 - w / 2) < w / 4:
+                    best = (x - start, (x + start) // 2)
+                start = None
+    return best[1], y
 
 
 def distance(grid):
@@ -288,7 +431,8 @@ def trace_branches(name, row, col, debug):
     im = cell("bare", row, col, S)
     w, h = im.size
     k = S * PX_PER_M  # Pixels per meter.
-    fx, fy = foot(im)
+    is_bark = bark_tests(name)[0]
+    fx, fy = trunk_foot(im, name, "bare")
     bark = mask_of(im, is_bark)
     # Below the cut the grass and the stones hide the trunk: the trunk goes
     # on straight down from its width at the cut, so that the skeleton
@@ -404,6 +548,8 @@ def trace_branches(name, row, col, debug):
             pts = [(fx + x * k, fy - z * k) for x, z, r in b[2]]
             draw.line(pts, fill=(255, 255, 0) if b[0] < 0 else (0, 255, 255), width=1)
             draw.ellipse((pts[-1][0] - 2, pts[-1][1] - 2, pts[-1][0] + 2, pts[-1][1] + 2), outline=(255, 0, 0))
+        draw.line((fx - 15, fy, fx + 15, fy), fill=(255, 0, 0))
+        draw.line((fx, fy - 15, fx, fy + 15), fill=(255, 0, 0))
         im.save(os.path.join(debug, name + "_trace.png"))
     print(f"TRACE {name}: {len(branches)} branches, {sum(len(b[2]) for b in branches)} points, "
           f"x {min(xs):.2f} .. {max(xs):.2f}, top {max(zs):.2f}")
@@ -475,7 +621,8 @@ def trace_canopy(name, row, col, debug):
     im = cell("bloom", row, col, scale)
     w, h = im.size
     k = scale * PX_PER_M
-    fx, fy = foot(im)
+    fx, fy = trunk_foot(im, name, "bloom")
+    is_foliage = FOLIAGE[OPTIONS[name]["foliage"]] if "foliage" in OPTIONS.get(name, {}) else LEAF
     grid = mask_of(im, is_foliage)
     # Drop the fallen petals, the grass and the stones: small pieces, or
     # pieces that stay near the ground.
@@ -575,6 +722,7 @@ def trace_canopy(name, row, col, debug):
                 if grid[y][x] and not (grid[y][x - 1] and grid[y][x + 1] and grid[y - 1][x] and grid[y + 1][x]):
                     px[x, y] = (255, 255, 255)
         draw.line((fx - 10, fy, fx + 10, fy), fill=(255, 0, 0))
+        draw.line((fx, fy - 10, fx, fy + 10), fill=(255, 0, 0))
         im.save(os.path.join(debug, name + "_canopy.png"))
     print(f"TRACE {name}: {len(blobs)} blobs, {total / k / k:.1f} m2 of foliage")
     return blobs, profile, cells
@@ -613,7 +761,7 @@ def write(trees):
         lines.append(f'        "autumn": [{text}],')
         lines.append('    },')
     lines.append('}')
-    with open(os.path.join(HERE, "_traced.py"), "w", encoding="utf-8", newline="\n") as f:
+    with open(os.path.join(HERE, OUTPUT), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
 
 
@@ -627,20 +775,24 @@ def merge(a, b):
 
 
 def main():
-    debug = sys.argv[1] if len(sys.argv) > 1 else None
-    only = set(sys.argv[2:])
+    args = [a for a in sys.argv[1:] if not a.startswith("set=")]
+    for a in sys.argv[1:]:
+        if a.startswith("set="):
+            use(a[len("set="):])
+    debug = args[0] if args else None
+    only = set(args[1:])
     if debug:
         os.makedirs(debug, exist_ok=True)
     trees = {}
     if only:  # Keep the other trees as they are.
         sys.path.insert(0, HERE)
-        import _traced
-        for name, t in _traced.TREES.items():
+        import importlib
+        for name, t in importlib.import_module(OUTPUT[:-3]).TREES.items():
             trees[name] = (t["branches"], t["blobs"], t["outline"], t["autumn"])
     for row in range(4):
         for col in range(4):
             name = NAMES[row][col]
-            if only and name not in only:
+            if (only and name not in only) or OPTIONS.get(name, {}).get("skip"):
                 continue
             branches, bare_profile = trace_branches(name, row, col, debug)
             blobs, bloom_profile, cells = trace_canopy(name, row, col, debug)

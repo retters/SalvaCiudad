@@ -27,6 +27,14 @@ How the flat tracing becomes a tree:
     leaf takes the color the autumn picture has at its place.
   * Around the foot: grass tufts, stones and, for some, fallen petals.
 
+The trees of the second set of pictures (_traced2.py) add, as options:
+other bark colors, a pale lower trunk and dark marks across it; flowers or
+rosettes of sword leaves at the twig tips instead of clumps; fruit or
+flowers on the clumps; a share of leaves of a fourth color; and, for the
+weeping ones, strands hung all around from the limbs (the picture's own
+hanging twigs cross each other too much to be traced). The trees that are
+not traced at all (pine, cypress, palm) are in _built.py.
+
 The game culls back faces, so every piece is closed, or two-sided, except
 the folded leaves, which lie on their clump's core and are seen from
 outside only (see fold_keeps_side for the one trap there).
@@ -46,6 +54,12 @@ import common
 import studies
 from _traced import TREES
 
+try:  # The second set of pictures (see _trace.py).
+    from _traced2 import TREES as _SECOND
+    TREES.update(_SECOND)
+except ImportError:
+    pass
+
 STATES = ("bloom", "autumn", "bare")
 LIMITS = {"bloom": 2500, "autumn": 2500, "bare": 1500}
 LIGHT = Vector((-0.35, -0.5, 0.8)).normalized()  # Where the pictures are lit from.
@@ -61,6 +75,10 @@ ICO_FACES = [(0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), (1, 5, 9
 
 
 # ------------------------------------------------------------ flat helpers
+
+def dist3(a, b):
+    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
+
 
 def simplify(points, keep, tolerance):
     """Douglas-Peucker on 3D points; the indices in `keep` stay. Returns
@@ -119,14 +137,81 @@ class Skeleton:
         self.rnd = random.Random(o["seed"])
         self.outline = data["outline"]
         self.autumn = data["autumn"]
-        self.branches = [Branch(p, v, pts) for p, v, pts in data["branches"]]
+        traced = data["branches"]
+        if o["curtain"]:
+            traced = self.without_hanging(traced)
+        self.branches = [Branch(p, v, pts) for p, v, pts in traced]
         self.foot()
         for i, b in enumerate(self.branches):
             if b.parent >= 0:
                 self.branches[b.parent].children.append(i)
         self.place()
+        if o["curtain"]:
+            self.curtain()
         self.weld()
         self.blobs = self.place_blobs(data["blobs"])
+
+    # -------------------------------------------------------------- curtain
+
+    def without_hanging(self, traced):
+        """The traced branches without their hanging twigs (a weeping tree's
+        are too many, and cross each other in the picture): the limbs stay,
+        up to where they turn down for good, and curtain() hangs new strands
+        from them all around."""
+        limb = self.o["curtain"]["limb"]
+        out, index = [], {}
+        cut = {}  # Kept branch: its last vertex.
+        for i, (parent, vertex, pts) in enumerate(traced):
+            if parent >= 0 and (parent not in index or vertex > cut[parent]):
+                continue
+            if i and pts[0][2] < limb and pts[-1][1] < pts[0][1] - 0.4:
+                continue  # A hanging twig.
+            apex = max(range(len(pts)), key=lambda k: pts[k][1])
+            last = len(pts) - 1
+            for k in range(apex + 1, len(pts)):
+                if pts[k][2] < limb and pts[k][1] < pts[apex][1] - 0.35:
+                    last = k
+                    break
+            if last < 1:
+                continue
+            index[i] = len(out)
+            cut[i] = last
+            out.append((index.get(parent, -1), vertex, pts[:last + 1]))
+        return out
+
+    def curtain(self):
+        """Hangs strands all around a weeping tree: each starts on the
+        nearest branch, arches to a place on the crown's dome and falls
+        from there."""
+        c = self.o["curtain"]
+        rnd = random.Random(self.o["seed"] + 5)
+        half = [(z, (hi - lo) * 0.5, (hi + lo) * 0.5) for z, lo, hi in self.outline]
+        widest = max(h for z, h, m in half)
+        crown = [(z, h, m) for z, h, m in half if z > c["from"]]
+        places = [(i, k, Vector(p)) for i, b in enumerate(self.branches) for k, p in enumerate(b.points)
+                  if b.radii[k] < 0.2 and p[2] > c["from"]]
+        for j in range(c["count"]):
+            angle = (j + rnd.uniform(-0.35, 0.35)) * math.tau / c["count"]
+            rho = math.sqrt(rnd.uniform(c["inner"] ** 2, 1.0))
+            # The highest place of the dome that far out.
+            z, h, m = max((t for t in crown if t[1] >= rho * widest * 0.97), default=crown[0])
+            radial = Vector((math.cos(angle), math.sin(angle) * self.o["depth"], 0.0))
+            top = Vector((m, 0.0, z - 0.1)) + radial * (rho * widest)
+            i, k, root = min(places, key=lambda q: (q[2] - top).length)
+            reach = (top - root).length
+            if reach > c["reach"]:
+                top = root + (top - root) * (c["reach"] / reach)
+            radial = Vector((top.x, top.y, 0.0))
+            radial = radial.normalized() if radial.length > 0.2 else Vector((math.cos(angle), math.sin(angle), 0.0))
+            end = rnd.uniform(*c["bottom"])
+            end = min(end, top.z - c["least"])
+            knee = top + radial * 0.25 + Vector((0.0, 0.0, -0.45))
+            tip = Vector((knee.x, knee.y, end)) + radial * rnd.uniform(0.1, 0.45)
+            r = min(c["radius"], self.branches[i].radii[k])
+            strand = Branch(i, k, [(q.x, q.z, r * f) for q, f in zip((root, top, knee, tip), (1.0, 0.85, 0.7, 0.45))])
+            strand.points = [tuple(q) for q in (root, top, knee, tip)]
+            self.branches[i].children.append(len(self.branches))
+            self.branches.append(strand)
 
     # ---------------------------------------------------------------- trunk
 
@@ -143,6 +228,12 @@ class Skeleton:
             limit = min(limit * 1.03, v)
             radii.append(limit)
         flat = [(x, z, r) for x, z, r in extra] + [(p[0], p[1], r) for p, r in zip(trunk.flat, radii)]
+        if self.o["straight"]:
+            # A very thick trunk's traced center line wanders: a straight
+            # line instead, up to that height.
+            top = next((i for i, p in enumerate(flat) if p[1] > self.o["straight"]), len(flat) - 1)
+            flat = [(flat[top][0] * max(0.0, z) / flat[top][1], z, r) if i < top else (x, z, r)
+                    for i, (x, z, r) in enumerate(flat)]
         for b in self.branches:
             if b.parent == 0:
                 b.vertex += len(extra)
@@ -313,6 +404,20 @@ class Skeleton:
             else:
                 out.append(((x, lo + a * 0.4, z), (a, a, r), color))
                 out.append(((x, hi - a * 0.4, z), (a, a, r), color))
+        if o["show_trunk"]:
+            # The clumps in front of the trunk go behind it, so that it is
+            # seen from the front all the way up, as in the picture.
+            trunk = self.branches[0].points
+            moved = []
+            for (x, y, z), (a, ry, r), color in out:
+                k = max((j for j in range(len(trunk)) if trunk[j][2] <= z), default=None)
+                if k is not None and k < len(trunk) - 1:
+                    f = (z - trunk[k][2]) / ((trunk[k + 1][2] - trunk[k][2]) or 1.0)
+                    tx = trunk[k][0] + (trunk[k + 1][0] - trunk[k][0]) * f
+                    if abs(x - tx) < a * 0.8 and y - ry < 0.3:
+                        y = ry + 0.3
+                moved.append(((x, y, z), (a, ry, r), color))
+            out = moved
         # A clump must hold a branch, or touch one that does: none floats.
         def holds(blob, p):
             c, rad, _ = blob
@@ -335,12 +440,20 @@ class Skeleton:
 
 # ----------------------------------------------------------- mesh helpers
 
-def tube(mb, points, radii, sides, mat):
+def tube(mb, points, radii, sides, mat, split=False):
     """A tapered tube along a polyline, flat at its start (inside its
-    parent) and closed to a point at its end: a closed piece."""
+    parent) and closed to a point at its end: a closed piece. With `split`,
+    a tube that turns back on itself is built as two, one up to the turn
+    and one from it: in one piece its rings would cross, and Blender might
+    turn the whole of it inside out when the model is made."""
     bm = mb.bm
     pts = [Vector(p) for p in points]
     n = len(pts)
+    if split:
+        for i in range(1, n - 1):
+            if (pts[i] - pts[i - 1]).dot(pts[i + 1] - pts[i]) < 0.0:
+                return (tube(mb, pts[:i + 1], radii[:i], sides, mat)
+                        + tube(mb, pts[i:], radii[i:], sides, mat, True))
     rings, u = [], None
     for i in range(n - 1):
         d = (pts[i + 1] - pts[max(i - 1, 0)]).normalized()
@@ -412,6 +525,37 @@ def card(mb, corners, thick, mat):
     bm.faces.new((v[0], v[3], v[1]))
     bm.faces.new((v[1], v[3], v[2]))
     return mb._finish(v, mat, None)
+
+
+def ground(mb, rnd, r0, tufts, stones):
+    """Grass tufts and stones around the foot of a trunk of radius r0."""
+    slots = tufts + stones
+    order = list(range(slots))
+    rnd.shuffle(order)
+    bm = mb.bm
+    for slot, kind in zip(order, ["tuft"] * tufts + ["stone"] * stones):
+        a = (slot + rnd.uniform(-0.3, 0.3)) * math.tau / slots
+        c = Vector((math.cos(a), math.sin(a), 0.0)) * (r0 * rnd.uniform(1.15, 1.7))
+        if kind == "tuft":
+            for i in range(3):
+                b = c + Vector((rnd.uniform(-0.09, 0.09), rnd.uniform(-0.09, 0.09), -0.02))
+                tip = b + Vector((rnd.uniform(-0.16, 0.16), rnd.uniform(-0.16, 0.16), rnd.uniform(0.28, 0.5)))
+                tube(mb, [b, tip], [rnd.uniform(0.06, 0.085)], 3, "grass")
+        else:
+            size = rnd.uniform(0.14, 0.22)
+            phase = rnd.uniform(0.0, math.tau)
+            low = [bm.verts.new(c + Vector((math.cos(phase + k * math.tau / 4) * size * rnd.uniform(0.85, 1.2),
+                                            math.sin(phase + k * math.tau / 4) * size * rnd.uniform(0.85, 1.2),
+                                            -0.02))) for k in range(4)]
+            top = [bm.verts.new(c + Vector((math.cos(phase + 0.5 + k * math.tau / 4) * size * 0.55,
+                                            math.sin(phase + 0.5 + k * math.tau / 4) * size * 0.55,
+                                            size * rnd.uniform(0.6, 1.0)))) for k in range(4)]
+            for k in range(4):
+                j = (k + 1) % 4
+                bm.faces.new((low[k], low[j], top[j], top[k]))
+            bm.faces.new(top)
+            bm.faces.new(list(reversed(low)))
+            mb._finish(low + top, "stone", None)
 
 
 def random_unit(rnd):
@@ -502,7 +646,29 @@ DEFAULTS = {
     "tufts": 5,
     "stones": 4,
     "petals": 0,            # Fallen petals or leaves on the ground.
+    # What the trees of the second set of pictures need.
+    "bark": None,           # (lit color, shade color) of the bark; None: the usual browns.
+    "pale": None,           # (height, color): the trunk below it is paler (a baobab's bottle).
+    "roots": True,          # Root stubs around the foot.
+    "hairpins": False,      # Twigs that turn back on themselves are built in two pieces (see tube).
+    "straight": 0.0,        # The trunk is straight up to this height (a baobab's bottle).
+    "show_trunk": False,    # No clump in front of the trunk (a birch's white trunk shows all the way up).
+    "marks": 0,             # Dark marks across the trunk (a birch), of the color "mark" in `colors`.
+    "colors": None,         # More materials: {name: color}.
+    "foliage": "clumps",    # "clumps" of leaf squares; "flowers" at the twig tips (a magnolia);
+                            # "rosettes" of sword leaves at the branch ends (a dragon tree).
+    "flower": (0.55, 0.26),  # Height and radius of a flower.
+    "greens": 0,            # With flowers: so many small leaves of the color "leaf_4" among them.
+    "rosette": (16, 1.0, 0.12, 1.0),  # Leaves in a rosette, their length and half width, and how far apart.
+    "accents": None,        # ("fruit" or "flower", count, size, color): pieces of another color on the clumps.
+    "sprinkle": None,       # (color, share): in bloom, that share of the leaves are of that fourth color.
+    "curtain": None,        # A weeping tree's strands (see Skeleton.curtain): {"count", "bottom": (low, high),
+                            # "from", "inner", "reach", "least", "radius", "limb"}.
+    "hang_shape": "card",   # Hanging leaves: "card" (blunt) or "diamond" (pointed at both ends).
+    "hang_taper": 0.0,      # How much narrower the hanging leaves are at the end of their twig (a raceme).
 }
+CURTAIN = {"count": 60, "bottom": (0.8, 2.0), "from": 2.5, "inner": 0.3, "reach": 1.8, "least": 0.8,
+           "radius": 0.034, "limb": 0.07}
 
 BARK = {"bark": 0x8C5E33, "bark_shade": 0x62401F}
 GROUND = {"grass": 0x4F9A32, "stone": 0xC9BCAD}
@@ -521,15 +687,30 @@ class Tree(studies.Spec):
         self.tree = tree
         self.state = state
         self.o = dict(DEFAULTS, **options)
+        if self.o["curtain"]:
+            self.o["curtain"] = dict(CURTAIN, **self.o["curtain"])
         self.max_tris = LIMITS[state]
         self.budget = self.o["budget"]
         self.remesh_voxel = self.o["voxel"]
         self.palette = leaves.get(state, ())
-        self.colors = {k: common.rgb(v) for k, v in {**BARK, **GROUND}.items()}
+        bark = BARK
+        if self.o["bark"]:
+            bark = {"bark": self.o["bark"][0], "bark_shade": self.o["bark"][1]}
+        self.colors = {k: common.rgb(v) for k, v in {**bark, **GROUND}.items()}
         for i, c in enumerate(self.palette):
             self.colors[f"leaf_{i + 1}"] = common.rgb(c)
         if not self.o["stones"]:
             del self.colors["stone"]
+        more = dict(self.o["colors"] or {})
+        if self.o["pale"]:
+            more["bark_pale"] = self.o["pale"][1]
+        if self.o["accents"]:
+            more["accent"] = self.o["accents"][3]
+        if state == "bloom" and self.o["sprinkle"]:
+            more["leaf_4"] = self.o["sprinkle"][0]
+        for k, v in more.items():
+            if state != "bare" or not k.startswith(("leaf", "accent")):
+                self.colors[k] = common.rgb(v)
         self.skeleton = Skeleton(tree, self.o)
         self.tones_seen = {}
         self.ellipsoids = []
@@ -537,7 +718,7 @@ class Tree(studies.Spec):
         # Roots: short stubs spreading from the foot.
         rnd = random.Random(self.o["seed"] + 11)
         r = self.skeleton.branches[0].radii[2]
-        for i in range(5):
+        for i in range(5 if self.o["roots"] else 0):
             a = (i + rnd.uniform(-0.25, 0.25)) * math.tau / 5
             d = (math.cos(a), math.sin(a))
             reach = r * rnd.uniform(1.25, 1.7)
@@ -547,7 +728,11 @@ class Tree(studies.Spec):
     def paint(self, c, n):
         h = math.sin(c.x * 12.9898 + c.y * 78.233 + c.z * 37.719) * 43758.5453
         h -= math.floor(h)
-        return "bark_shade" if n.dot(LIGHT) + (h - 0.5) * 0.9 < -0.12 else "bark"
+        shade = n.dot(LIGHT) + (h - 0.5) * 0.9 < -0.12
+        if self.o["pale"] and c.z < self.o["pale"][0]:
+            # Its shade is the lit color of the branches; more facets of it, for a bottle is one big surface.
+            return "bark" if n.dot(LIGHT) + (h - 0.5) * 1.5 < 0.3 else "bark_pale"
+        return "bark_shade" if shade else "bark"
 
     # -------------------------------------------------------------- details
 
@@ -572,12 +757,25 @@ class Tree(studies.Spec):
                 if keep == 0:
                     continue
                 points, radii = points[:keep + 1], radii[:keep + 1]
-            tube(mb, points, radii, sides, mat)
+            tube(mb, points, radii, sides, mat, self.o["hairpins"])
+        if self.o["marks"]:
+            self.marks(mb)
         self.ground(mb)
         if self.state == "bare":
             return
         petals = self.o["petals"]
         left = self.max_tris - studies.triangles(mb) - petals * 4 - 4
+        if self.o["foliage"] != "clumps":
+            before = studies.triangles(mb)
+            tips = [Vector(points[-1]) for points, radii in twigs if points[-1][2] > self.o["canopy_from"]]
+            (self.flowers if self.o["foliage"] == "flowers" else self.rosettes)(mb, tips, left)
+            self.fallen(mb, petals)
+            if os.environ.get("TREE_DEBUG"):
+                print(f"TREE {self.name}: welded {welded}, twigs and ground {before - welded}, "
+                      f"{self.o['foliage']} {studies.triangles(mb) - before - petals * 4}")
+            return
+        if self.o["accents"]:
+            left -= self.accents(mb)
         hanging = int(left * self.o["hang"])
         if hanging:
             hanging = self.hanging(mb, twigs, hanging)
@@ -605,6 +803,8 @@ class Tree(studies.Spec):
     def tone(self, rnd, normal, main, p=None):
         """Material of a leaf: by the light in bloom; in autumn, the color
         the picture has there (or its clump's), with some of the others."""
+        if self.o["sprinkle"] and self.state == "bloom" and rnd.random() < self.o["sprinkle"][1]:
+            return "leaf_4"
         if self.state == "autumn":
             if p is not None:
                 main = self.autumn_tone(p, main)
@@ -741,11 +941,16 @@ class Tree(studies.Spec):
         lines = [points for points, radii in twigs]
         lines += [(a, b) for a, b, ra, rb in self.capsules if max(ra, rb) < o["hang_limb"]]
         spans = []
+        along = []  # Of each span: how far along its twig it starts and ends (0 to 1).
         for points in lines:
-            for a, b in zip(points, points[1:]):
+            lengths = [dist3(a, b) for a, b in zip(points, points[1:])]
+            whole, done = sum(lengths) or 1.0, 0.0
+            for (a, b), step in zip(zip(points, points[1:]), lengths):
                 a, b = Vector(a), Vector(b)
                 if (b - a).length > 1e-6 and (b - a).normalized().z < o["hang_slope"]:
                     spans.append((a, b))
+                    along.append((done / whole, (done + step) / whole))
+                done += step
         total = sum((b - a).length for a, b in spans)
         count = budget // 4
         if not total or not count:
@@ -756,7 +961,7 @@ class Tree(studies.Spec):
         down = Vector((0.0, 0.0, -1.0))
         used = 0
         carry = rnd.uniform(0.0, step)
-        for a, b in spans:
+        for (a, b), (f0, f1) in zip(spans, along):
             length = (b - a).length
             d = (b - a) / length
             t = carry
@@ -775,9 +980,16 @@ class Tree(studies.Spec):
                 main = 0
                 if self.state == "autumn" and blobs:
                     main = min(blobs, key=lambda q: (q[0].x - p.x) ** 2 + (q[0].z - p.z) ** 2)[2]
-                card(mb, [c - axis * length_k + side * w * 0.75, c - axis * length_k - side * w * 0.75,
-                          c + axis * length_k - side * w * 0.55 + lean, c + axis * length_k + side * w * 0.55 + lean],
-                     0.03, self.tone(rnd, normal + LIGHT * 0.5, main, p))
+                if o["hang_taper"]:
+                    w *= 1.0 - o["hang_taper"] * (f0 + (f1 - f0) * t / length)
+                if o["hang_shape"] == "diamond":
+                    corners = [c - axis * length_k, c - side * w - axis * (length_k * 0.2),
+                               c + axis * length_k + lean, c + side * w - axis * (length_k * 0.2)]
+                else:
+                    corners = [c - axis * length_k + side * w * 0.75, c - axis * length_k - side * w * 0.75,
+                               c + axis * length_k - side * w * 0.55 + lean,
+                               c + axis * length_k + side * w * 0.55 + lean]
+                card(mb, corners, 0.03, self.tone(rnd, normal + LIGHT * 0.5, main, p))
                 used += 4
                 t += step
             carry = t - length
@@ -785,36 +997,164 @@ class Tree(studies.Spec):
 
     def ground(self, mb):
         """Grass tufts and stones around the foot."""
+        ground(mb, random.Random(self.o["seed"] + 53), self.skeleton.branches[0].radii[0],
+               self.o["tufts"], self.o["stones"])
+
+    def marks(self, mb):
+        """Dark marks across the trunk (a birch): flat lenses lying on it."""
+        rnd = random.Random(self.o["seed"] + 71)
+        trunk = self.skeleton.branches[0]
+        pts, radii = [Vector(q) for q in trunk.points], trunk.radii
+        top = max((q.z for q, r in zip(pts, radii) if r > 0.1), default=1.0)
+        up = Vector((0.0, 0.0, 1.0))
+        for i in range(self.o["marks"]):
+            z = 0.45 + (top - 0.45) * (i + rnd.uniform(0.1, 0.9)) / self.o["marks"]
+            k = max(j for j in range(len(pts) - 1) if pts[j].z <= z)
+            f = (z - pts[k].z) / ((pts[k + 1].z - pts[k].z) or 1.0)
+            center, r = pts[k].lerp(pts[k + 1], f), radii[k] + (radii[k + 1] - radii[k]) * f
+            angle = rnd.uniform(0.0, math.tau)
+            out = Vector((math.cos(angle), math.sin(angle), 0.0))
+            side = up.cross(out)
+            w, h = r * rnd.uniform(0.5, 0.9), rnd.uniform(0.05, 0.085)
+            c = center + out * r
+            sunk = out * (w * w / (2.0 * r))  # The ends follow the trunk around.
+            card(mb, [c - side * w - sunk, c - up * h, c + side * w - sunk, c + up * h], 0.08, "mark")
+
+    def flowers(self, mb, tips, budget):
+        """Big cup-shaped flowers at the ends of the twigs (a magnolia), and
+        a few small leaves among them. In autumn the same pieces are the
+        tree's bunches of colored leaves. A flower is a closed piece: a
+        bowl, five petals standing on its rim and the hollow between them."""
         o = self.o
-        rnd = random.Random(o["seed"] + 53)
-        r0 = self.skeleton.branches[0].radii[0]
-        slots = o["tufts"] + o["stones"]
-        order = list(range(slots))
-        rnd.shuffle(order)
+        rnd = random.Random(o["seed"] + 73)
         bm = mb.bm
-        for slot, kind in zip(order, ["tuft"] * o["tufts"] + ["stone"] * o["stones"]):
-            a = (slot + rnd.uniform(-0.3, 0.3)) * math.tau / slots
-            c = Vector((math.cos(a), math.sin(a), 0.0)) * (r0 * rnd.uniform(1.15, 1.7))
-            if kind == "tuft":
-                for i in range(3):
-                    b = c + Vector((rnd.uniform(-0.09, 0.09), rnd.uniform(-0.09, 0.09), -0.02))
-                    tip = b + Vector((rnd.uniform(-0.16, 0.16), rnd.uniform(-0.16, 0.16), rnd.uniform(0.28, 0.5)))
-                    tube(mb, [b, tip], [rnd.uniform(0.06, 0.085)], 3, "grass")
+        height, radius = o["flower"]
+        rnd.shuffle(tips)
+        chosen = []
+        for p in tips:  # Not on top of each other.
+            if all((p - q).length > radius * 1.5 for q in chosen):
+                chosen.append(p)
+        chosen = chosen[:max(0, (budget - o["greens"] * 4) // 20)]
+        for p in chosen:
+            out = Vector((p.x, p.y, 0.0))
+            out = out.normalized() if out.length > 0.3 else Vector((0.0, 0.0, 0.0))
+            axis = (Vector((0.0, 0.0, 1.0)) + out * 0.6 + random_unit(rnd) * 0.3).normalized()
+            u = axis.orthogonal().normalized()
+            v = axis.cross(u)
+            h, r = height * rnd.uniform(0.8, 1.15), radius * rnd.uniform(0.85, 1.15)
+            phase = rnd.uniform(0.0, math.tau)
+
+            def at(k, rr, hh):
+                a = phase + k * math.tau / 5
+                return bm.verts.new(p + axis * (h * hh) + (u * math.cos(a) + v * math.sin(a)) * (r * rr))
+
+            base = bm.verts.new(p - axis * (h * 0.12))
+            heart = bm.verts.new(p + axis * (h * 0.3))
+            rim = [at(k, 1.0, 0.42) for k in range(5)]
+            petals = [at(k + 0.5, 0.82, 1.0) for k in range(5)]
+            main = self.autumn_tone(p, rnd.randrange(3)) if self.state == "autumn" else 0
+            for k in range(5):
+                j = (k + 1) % 5
+                faces = ((base, rim[j], rim[k]), (rim[k], rim[j], petals[k]),
+                         (heart, rim[k], petals[k]), (heart, petals[k], rim[j]))
+                if self.state == "autumn":
+                    tones = (main, main if k % 2 else (main + 1) % 3, (main + 2) % 3, main)
+                else:
+                    tones = (1 if k % 2 else 2, 0, 1, 2)
+                for verts, tone in zip(faces, tones):
+                    f = bm.faces.new(verts)
+                    f.material_index = mb._material_index(f"leaf_{tone + 1}")
+                    f.smooth = False
+        if self.state == "bloom":
+            for p in tips[:o["greens"]]:
+                c = p + random_unit(rnd) * 0.3 - Vector((0.0, 0.0, 0.25))
+                normal = random_unit(rnd)
+                u = normal.orthogonal().normalized()
+                v = normal.cross(u)
+                card(mb, [c + u * 0.36, c + v * 0.17, c - u * 0.36, c - v * 0.17], 0.03, "leaf_4")
+
+    def rosettes(self, mb, tips, budget):
+        """Balls of sword leaves at the ends of the branches (a dragon
+        tree): the twig tips are gathered in groups, a rosette each, with a
+        small dark heart."""
+        o = self.o
+        rnd = random.Random(o["seed"] + 79)
+        most, length, width, apart = o["rosette"]
+        groups = []
+        for p in sorted(tips, key=lambda q: (-q.z, q.x, q.y)):
+            near = next((g for g in groups if (g[0] - p).length < apart), None)
+            if near:
+                near.append(p)
             else:
-                size = rnd.uniform(0.14, 0.22)
-                phase = rnd.uniform(0.0, math.tau)
-                low = [bm.verts.new(c + Vector((math.cos(phase + k * math.tau / 4) * size * rnd.uniform(0.85, 1.2),
-                                                math.sin(phase + k * math.tau / 4) * size * rnd.uniform(0.85, 1.2),
-                                                -0.02))) for k in range(4)]
-                top = [bm.verts.new(c + Vector((math.cos(phase + 0.5 + k * math.tau / 4) * size * 0.55,
-                                                math.sin(phase + 0.5 + k * math.tau / 4) * size * 0.55,
-                                                size * rnd.uniform(0.6, 1.0)))) for k in range(4)]
-                for k in range(4):
-                    j = (k + 1) % 4
-                    bm.faces.new((low[k], low[j], top[j], top[k]))
-                bm.faces.new(top)
-                bm.faces.new(list(reversed(low)))
-                mb._finish(low + top, "stone", None)
+                groups.append([p])
+        if not groups:
+            return
+        leaves = min(most, (budget // len(groups) - 8) // 4)
+        middle = sum((sum(g, Vector()) / len(g) for g in groups), Vector()) / len(groups)
+        dark = "leaf_3"
+        for g in groups:
+            c = sum(g, Vector()) / len(g)
+            away = (c - Vector((middle.x, middle.y, middle.z - 2.0))).normalized()
+            main = self.autumn_tone(c, rnd.randrange(3)) if self.state == "autumn" else 0
+            if self.state == "autumn":
+                dark = f"leaf_{main + 1}"
+            verts = [mb.bm.verts.new(c + Vector(q) * (length * 0.42)) for q in OCTA]
+            for f in OCTA_FACES:
+                mb.bm.faces.new([verts[i] for i in f])
+            mb._finish(verts, dark, None)
+            made = 0
+            for d in sphere_points(leaves * 2, rnd):
+                if made >= leaves:
+                    break
+                if d.dot(away) < -0.1 or d.z < -0.45:
+                    continue  # None toward the inside of the tree, nor straight down.
+                long = length * rnd.uniform(0.75, 1.1)
+                side = d.cross(random_unit(rnd)).normalized()
+                mid = c + d * (long * 0.35)
+                card(mb, [c, mid + side * width, c + d * long, mid - side * width], 0.05,
+                     self.tone(rnd, (d + away * 0.6).normalized(), main, c + d * long * 0.5))
+                made += 1
+
+    def accents(self, mb):
+        """Fruit or flowers on the clumps (an apple tree, a laurel); returns
+        the triangles used."""
+        kind, count, size, _ = self.o["accents"]
+        rnd = random.Random(self.o["seed"] + 83)
+        blobs = self.blobs()
+        if not blobs:
+            return 0
+        areas = [ellipsoid_area(r) for c, r, _ in blobs]
+        before = studies.triangles(mb)
+        made = 0
+        for _ in range(count * 12):
+            if made >= count:
+                break
+            own = rnd.choices(range(len(blobs)), areas)[0]
+            c, r, _ = blobs[own]
+            d = random_unit(rnd)
+            if d.z < -0.25:
+                continue
+            p = c + scaled(d, r) * 1.06
+            if any(i != own and inside(p, c2, r2, 1.02) for i, (c2, r2, _) in enumerate(blobs)):
+                continue
+            normal = Vector((d.x / r.x, d.y / r.y, d.z / r.z)).normalized()
+            u = normal.orthogonal().normalized()
+            v = normal.cross(u)
+            if kind == "fruit":
+                pts = [p + normal * size, p - normal * size, p + u * size, p - u * size, p + v * size, p - v * size]
+                verts = [mb.bm.verts.new(q) for q in pts]
+                for a, b, e in ((0, 2, 4), (0, 4, 3), (0, 3, 5), (0, 5, 2), (1, 4, 2), (1, 3, 4), (1, 5, 3), (1, 2, 5)):
+                    mb.bm.faces.new((verts[a], verts[b], verts[e]))
+                mb._finish(verts, "accent", None)
+            else:  # A bunch of three flat flowers.
+                for k in range(3):
+                    a = k * math.tau / 3 + rnd.uniform(-0.4, 0.4)
+                    q = p + (u * math.cos(a) + v * math.sin(a)) * (size * 0.9) + normal * rnd.uniform(0.0, 0.08)
+                    turn = rnd.uniform(0.0, math.tau)
+                    e, f = u * math.cos(turn) + v * math.sin(turn), v * math.cos(turn) - u * math.sin(turn)
+                    card(mb, [q + e * size, q + f * size, q - e * size, q - f * size], 0.06, "accent")
+            made += 1
+        return studies.triangles(mb) - before
 
     def fallen(self, mb, count):
         """Petals or leaves lying on the ground under the canopy."""

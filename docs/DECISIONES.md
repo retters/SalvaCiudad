@@ -1962,3 +1962,19 @@ En la escultura, la mano izquierda está fundida con la cadera y hay puntas de t
 
 **D-4715. Qué va con el tronco y qué con las extremidades.**
 Lo que está a más del 3 % de la altura de la superficie de un brazo o una pierna (un chal, un taparrabos) sigue al tronco; los dedos de manos y pies siguen siempre a su mano o pie. Un brazo que llega mucho más abajo que el otro sostiene algo: eso va con la mano.
+
+## Más árboles y árboles gigantes (2026-10-02)
+
+Pedido del usuario: modelos fieles a `Arboles 4`, `5` y `6` (16 árboles con hojas, en otoño y sin hojas) y a `Arboles 7` y `8` (8 árboles gigantes con y sin hojas).
+
+**D-4720. Dos generadores.**
+- Los 16 árboles normales amplían `_tree.py` y `_trace.py` con opciones apagadas por omisión, así que los 48 árboles anteriores salen idénticos (comprobado por suma de verificación). Lo nuevo: corteza por árbol (abedul blanco con marcas, baobab pálido), flores en copa en las puntas (magnolia), rosetas (drago), frutos y flores sobre el follaje (manzano, laurel), y cortinas colgadas de las ramas para sauce y glicinia. El pino, el ciprés y la palmera no se trazan: se construyen con medidas (`_built.py`).
+- Los gigantes tienen su generador (`_giant.py`), que no importa nada de `_tree.py`. Tronco, raíces y ramas gruesas son cápsulas soldadas con la técnica de *remesh* y reducción; cuatro se trazan de las imágenes (baobab, cerezo, mangle, ginkgo) y cuatro se hacen a mano (secuoya, araucaria, sauce, hongo).
+
+**D-4721. Tamaños y límites de los gigantes.**
+De 22 m (hongo) a 47 m (secuoya), siguiendo las proporciones de cada dibujo. Límite de 6000 triángulos con hojas y 4000 sin hojas, porque son árboles escasos que sirven de punto de referencia. Los eligió el agente; el usuario puede cambiarlos.
+
+**D-4722. El hongo gigante "sin hojas" conserva los sombreros**, como en la imagen: más apagados y sin manchas.
+
+**D-4723. Lo que queda flojo.**
+Sauce llorón (normal y gigante), glicinia y drago: el follaje colgante sale en rombos grandes y sueltos en vez de cortinas densas. Los árboles sin hojas tienen menos ramitas que los dibujos, por el límite de triángulos. La corteza del segundo grupo es algo más clara que la del primero.
