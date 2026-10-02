@@ -15,85 +15,8 @@ TAIL = [(0, 0.8, 0.86), (0, 1.05, 0.72), (0.05, 1.3, 0.52), (0.12, 1.55, 0.42), 
 TAIL_R = [0.075, 0.065, 0.06, 0.055, 0.05, 0.045]
 KNEE, HOCK = 0.44, 0.3  # Heights of the front and hind leg joints.
 PAW_TOP = 0.115  # Where the white paws start: below it they stay rigid.
-GALLOP_PHASES = {"HL": 0.0, "HR": 0.1, "FL": 0.5, "FR": 0.6}
-
-
-class Beast(rigs.Quadruped):
-    """The quadruped template for long-legged animals with a tail welded
-    into the surface (shared by the lion, wolf and deer specs):
-
-    - the surface near the tail's axis follows the tail bones (the template
-      only moves tails made of separate pieces);
-    - a tail of many bones swings as far as the template's three;
-    - eat lowers the head by the spec's own angles, down to the ground;
-    - die tips over the right feet instead of sinking the legs into the
-      ground while it rolls, and ends with the head lifted off the ground
-      by `die_lift` degrees and rolled back by `die_untwist` degrees (for
-      manes and antlers wider than the body).
-    """
-
-    tail_reach = None            # Surface this near the tail's axis follows the tail (m); None: rigid.
-    eat = (5.0, 0.0, 20.0, 25.0)  # Degrees down at the lowest point: body, chest, neck, head.
-    eat_drop = 0.02              # How much the body goes down while eating (m).
-    die_lift = 0.0
-    die_untwist = 0.0
-
-    def tail_bones(self):
-        return [b for b in self.bones if b.name.startswith("tail.")]
-
-    def surface_weights(self, p):
-        base = super().surface_weights(p)
-        if self.tail_reach is None:
-            return base
-        tails = self.tail_bones()
-        dists = [(rigs.segment_distance(p, b.head, b.tail), b.name) for b in tails]
-        d0 = min(d for d, _ in dists)
-        r = self.tail_reach
-        # Fades in away from the tail's root, so the rump stays with the body.
-        k = (max(0.0, min(1.0, (r - d0) / (r * 0.3)))
-             * max(0.0, min(1.0, ((p - tails[0].head).length - r * 0.5) / r)))
-        if k <= 0.0:
-            return base
-        tail = [(n, max(0.0, 1.0 - (d - d0) / self.blend) ** 2) for d, n in dists]
-        sb, st = sum(w for _, w in base), sum(w for _, w in tail)
-        return [(n, w / sb * (1 - k)) for n, w in base] + [(n, w / st * k) for n, w in tail]
-
-    def tail_rot(self, rot, side_deg, up_deg=0.0):
-        k = 3.0 / len(self.tail_bones())
-        super().tail_rot(rot, side_deg * k, up_deg * k)
-
-    def piece_bone(self, center, piece):
-        if center.y > self.tail_bones()[0].head.y:
-            return self.tail_bones()[-1].name  # A tuft.
-        if len(piece) == 6:  # A flap.
-            return "ear.L" if center.x > 0 else "ear.R"
-        return "head"  # Eyes, nose, antlers.
-
-    def eat_pose(self, t):
-        rot, offset, extra = super().eat_pose(t)
-        down = rigs.smooth(t / 0.2) * (1 - rigs.smooth((t - 0.8) / 0.2))
-        pitch, chest, neck, head = (a * down for a in self.eat)
-        dz = -self.eat_drop * down
-        root = rot["head"][0][1] - 25.0 * down  # The template's rooting about.
-        rot = self.planted(rot, math.radians(pitch), dz)
-        rot["body"] = [(rigs.X, pitch)]
-        rot["chest"] = [(rigs.X, chest)]
-        rot["neck"] = [(rigs.X, neck)]
-        rot["head"] = [(rigs.X, head + root)]
-        return rot, Vector((0, 0, dz)), extra
-
-    def die_pose(self, t):
-        rot, offset, extra = super().die_pose(t)
-        sag = rigs.smooth(t / 0.35)
-        roll = rigs.smooth((t - 0.3) / 0.45)
-        # High enough for the right legs to pass under the body as it rolls.
-        a = math.radians(90.0) * roll
-        pivot = self.by_name["body"].head
-        offset.z = max(offset.z, -0.08 * sag * (1 - roll) + pivot.z * (math.cos(a) - 1) + self.lie_height * math.sin(a))
-        rot["chest"] = [(rigs.Z, self.die_lift * roll)]
-        rot["neck"] = rot["neck"] + [(rigs.Z, self.die_lift * roll), (rigs.Y, self.die_untwist * 0.5 * roll)]
-        rot["head"] = rot["head"] + [(rigs.Y, self.die_untwist * 0.5 * roll)]
-        return rot, offset, extra
+GALLOP_PHASES = rigs.GALLOP_PHASES
+Beast = rigs.Beast  # Shared with the lion, wolf and deer specs.
 
 
 def legs_capsules():

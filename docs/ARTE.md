@@ -52,6 +52,7 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `rigs.py` | Base de esqueletos, pesos y animaciones (`Rig`, `Pose`) y la plantilla de cuadrúpedo |
 | `rigs_bird.py`, `rigs_swim.py` | Plantillas de aves y de nadadores (pez, tortuga, pulpo) |
 | `rigs_human.py` | Esqueleto y animaciones de los personajes de `people/` |
+| `tripo_build.py` | Anima un cuadrúpedo hecho en Tripo (`.fbx` con su esqueleto) y lo deja en `art/studies/tripo/` |
 | `rig_check.py` | Verifica las animaciones de un modelo exportado |
 | `study_preview.py` | Una imagen de revisión por modelo (4 vistas) y las tiras de sus animaciones |
 | `pig_studies.py`, `tiger_studies.py` | El cerdito y el tigre con cada técnica, para compararlas |
@@ -165,11 +166,26 @@ blender --background --factory-startup --python art/blender/zoo_build.py -- art/
 blender --background --factory-startup --python art/blender/zoo_build.py -- art/studies/trees specs=lowpoly_trees [nombres]
 ```
 
-Para verlos en el visor: `SalvaCiudadModelos.exe --estudio art\studies\people` (o `weapons`, `trees`).
+Para verlos en el visor: `SalvaCiudadModelos.exe --estudio people` (o `weapons`, `trees`, `animals`, `tripo`). `--estudio` acepta el nombre de una carpeta de `art/studies` o una ruta, y abre el visor directamente en esa carpeta.
 
 - **Personajes** (`people/`, límite de 3000 triángulos): todos heredan de `Human` en `_human.py`, un cuerpo de partes soldadas con nombre (cabeza, pecho, antebrazo…) y las articulaciones en el mismo lugar, para que después compartan esqueleto. Cada personaje cambia proporciones, agrega volúmenes de ropa en `customize()`, pinta por zona del cuerpo con `zone()` y pone lo fino en `details()`. Las proporciones salen de medir cada referencia (D-4411).
 - **Armas** (`weapons/`, límite de 500 a 600): piezas directas y facetadas en `details()`; el *remesh* solo en lo orgánico (báculos, garrote, martillo de piedra). De pie sobre Z = 0, con el lado ancho hacia −Y. Cada una declara `grip`, el punto donde se sujeta (D-4412).
 - **Árboles** (`lowpoly_trees/`, límite de 2500 con hojas y 1500 sin hojas): `<especie>_<variante>_<estado>`, con estados `bloom`, `autumn` y `bare` que comparten tronco y ramas. `_trace.py` (se corre a mano con Python y PIL) lee las tres imágenes y escribe `_traced.py`: ramas, masas de follaje y colores de otoño. Los modelos se generan solo con `_traced.py` (D-4413).
+
+### Modelos de Tripo
+
+Un cuadrúpedo generado en Tripo y exportado como `.fbx` con su esqueleto automático se anima con la plantilla de cuadrúpedo:
+
+```
+blender --background --factory-startup --python art/blender/tripo_build.py -- <modelo.fbx> name=<nombre> length=<metros>
+```
+
+- Conserva la malla y la textura del modelo. Del esqueleto de Tripo solo se usan las posiciones de las articulaciones: sus nombres no son fiables, así que las patas, la cola y la cabeza se reconocen por la forma (D-4701).
+- El modelo se gira para mirar hacia −Y, se escala a `length` (del hocico a la punta de la cola; sin `length` queda como viene, que en Tripo es 1 m) y se apoya en Z = 0.
+- Recibe los huesos, pesos y animaciones de la plantilla (`idle`, `walk`, `run`, `eat`, `die`) y queda en `art/studies/tripo/<nombre>.glb`.
+- Verificar con `rig_check.py` y ver con `SalvaCiudadModelos.exe --estudio tripo`.
+- Solo cuadrúpedos por ahora: si el esqueleto no tiene cuatro cadenas de huesos que lleguen al suelo, el modelo se rechaza.
+- Estos modelos son mucho más pesados que los low poly (el lobo de prueba: 10 565 triángulos y una textura de 2048 px, contra 1316 del lobo low poly).
 
 ### Esqueletos y animaciones de los animales
 

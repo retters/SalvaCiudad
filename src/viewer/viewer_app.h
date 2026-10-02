@@ -150,6 +150,7 @@ private:
     std::unique_ptr<mods::BuildResult> pack_;
     std::string mod_ = mods::kCoreModId;  // The mod being looked at, or kStudiesMod.
     std::filesystem::path studies_dir_;   // Models in study; may be empty.
+    bool studies_resolved_ = false;       // The folder given on the command line was looked up.
     std::filesystem::path mods_dir_;      // Where the built-in mods are read from.
     Catalog catalog_;
     std::map<std::string, Loaded> loaded_;  // By "<mod>/<path>".

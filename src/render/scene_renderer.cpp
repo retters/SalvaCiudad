@@ -247,6 +247,7 @@ struct GpuSkinned {
     SDL_GPUBuffer* indices = nullptr;
     std::vector<ModelPrimitive> primitives;
     std::vector<GpuMaterial> materials;
+    std::vector<SDL_GPUTexture*> textures;
     std::vector<int> slots;  // Palette slot per material, or -1.
     float radius = 1.0f;
     std::uint64_t triangles = 0;
@@ -508,6 +509,9 @@ struct SceneRenderer::Impl {
         for (GpuSkinned& m : skinned) {
             SDL_ReleaseGPUBuffer(device, m.vertices);
             SDL_ReleaseGPUBuffer(device, m.indices);
+            for (SDL_GPUTexture* t : m.textures) {
+                SDL_ReleaseGPUTexture(device, t);
+            }
         }
         skinned.clear();
         SDL_ReleaseGPUBuffer(device, bone_buffer);
@@ -1035,6 +1039,9 @@ struct SceneRenderer::Impl {
             log::error("scene: cannot upload a character model: {}", SDL_GetError());
             return false;
         }
+        for (const ModelTexture& t : data.textures) {
+            m.textures.push_back(upload_texture(t));
+        }
         for (const ModelMaterial& mat : data.materials) {
             GpuMaterial g;
             const int slot = palette_slot(mat.name);
@@ -1042,7 +1049,11 @@ struct SceneRenderer::Impl {
             for (int c = 0; c < 4; ++c) {
                 g.base_color[c] = slot >= 0 ? 1.0f : mat.base_color[c];
             }
-            g.texture = white;
+            // The villagers have no textures; an imported animal may have one.
+            const bool textured = slot < 0 && mat.texture >= 0 &&
+                                  static_cast<std::size_t>(mat.texture) < m.textures.size() &&
+                                  m.textures[static_cast<std::size_t>(mat.texture)] != nullptr;
+            g.texture = textured ? m.textures[static_cast<std::size_t>(mat.texture)] : white;
             m.materials.push_back(g);
             m.slots.push_back(slot);
         }

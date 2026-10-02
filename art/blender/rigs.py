@@ -274,7 +274,9 @@ class Quadruped(Rig):
     ears: (start, end) of the left ear (+X); the right one is mirrored.
     tail: points from the root of the tail to its tip (3 bones: 4 points).
     legs: for the left front and left hind leg (+X), the points
-        (hip, knee, ankle, toe); the right legs are mirrored. The hip lies
+        (hip, knee, ankle, toe) under the keys "F" and "H"; the right legs
+        are mirrored. Or each leg under its own key ("FL", "FR", "HL",
+        "HR"), for a model that does not stand symmetrically. The hip lies
         inside the body; the ankle is where the leg meets the hoof or paw.
     leg_exit: height below which the surface follows the legs fully, and
         the height above which it follows only the body.
@@ -309,8 +311,8 @@ class Quadruped(Rig):
             parent = f"tail.{i + 1}"
         self.leg_points = {}
         for leg in LEGS:
-            src = legs["F" if leg[0] == "F" else "H"]
-            sx = 1.0 if leg[1] == "L" else -1.0
+            src = legs.get(leg) or legs[leg[0]]
+            sx = 1.0 if leg in legs or leg[1] == "L" else -1.0
             hip, knee, ankle, toe = (Vector((p[0] * sx, p[1], p[2])) for p in src)
             self.leg_points[leg] = (hip, knee, ankle, toe)
             # Leg bones only pull on the leg itself: near its axis and below
@@ -368,14 +370,20 @@ class Quadruped(Rig):
         hip, knee, ankle, toe = self.leg_points[leg]
         rot = Quaternion(X, pitch)
         hip_now = pivot + rot @ (hip - pivot) + Vector((0, 0, dz))
-        l1, l2 = (knee - hip).length, (ankle - knee).length
+        # Lengths in the side plane: a leg that slants sideways keeps its
+        # slant, and at the rest target the solution is the rest pose.
+        l1 = math.hypot(knee.y - hip.y, knee.z - hip.z)
+        l2 = math.hypot(ankle.y - knee.y, ankle.z - knee.z)
         dy, dzz = target.y - hip_now.y, target.z - hip_now.z
         d = max(abs(l1 - l2) + 1e-4, min(l1 + l2 - 1e-4, math.hypot(dy, dzz)))
         base = math.atan2(dy, -dzz)
         a = math.acos(max(-1.0, min(1.0, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d))))
-        # The joint that shows below the body points forward on a front leg
-        # (the carpus) and back on a hind leg (the hock).
-        bend = -1.0 if leg[0] == "F" else 1.0
+        # The joint bends the way it is bent at rest. A leg drawn straight
+        # bends forward if it is a front leg (the carpus of a hoofed animal)
+        # and back if it is a hind leg (the hock).
+        rest_bend = (math.atan2(knee.y - hip.y, -(knee.z - hip.z))
+                     - math.atan2(ankle.y - hip.y, -(ankle.z - hip.z)))
+        bend = math.copysign(1.0, rest_bend) if abs(rest_bend) > 0.02 else (-1.0 if leg[0] == "F" else 1.0)
         phi1 = base + a * bend
         knee_now = Vector((0, hip_now.y + l1 * math.sin(phi1), hip_now.z - l1 * math.cos(phi1)))
         phi2 = math.atan2(target.y - knee_now.y, -(target.z - knee_now.z))
@@ -491,6 +499,87 @@ class Quadruped(Rig):
         ]
 
 
+GALLOP_PHASES = {"HL": 0.0, "HR": 0.1, "FL": 0.5, "FR": 0.6}
+
+
+class Beast(Quadruped):
+    """The quadruped template for long-legged animals with a tail welded
+    into the surface (the tiger, lion, wolf and deer, and imported models):
+
+    - the surface near the tail's axis follows the tail bones (the template
+      only moves tails made of separate pieces);
+    - a tail of many bones swings as far as the template's three;
+    - eat lowers the head by the spec's own angles, down to the ground;
+    - die tips over the right feet instead of sinking the legs into the
+      ground while it rolls, and ends with the head lifted off the ground
+      by `die_lift` degrees and rolled back by `die_untwist` degrees (for
+      manes and antlers wider than the body).
+    """
+
+    tail_reach = None            # Surface this near the tail's axis follows the tail (m); None: rigid.
+    eat = (5.0, 0.0, 20.0, 25.0)  # Degrees down at the lowest point: body, chest, neck, head.
+    eat_drop = 0.02              # How much the body goes down while eating (m).
+    die_lift = 0.0
+    die_untwist = 0.0
+
+    def tail_bones(self):
+        return [b for b in self.bones if b.name.startswith("tail.")]
+
+    def surface_weights(self, p):
+        base = super().surface_weights(p)
+        if self.tail_reach is None:
+            return base
+        tails = self.tail_bones()
+        dists = [(segment_distance(p, b.head, b.tail), b.name) for b in tails]
+        d0 = min(d for d, _ in dists)
+        r = self.tail_reach
+        # Fades in away from the tail's root, so the rump stays with the body.
+        k = (max(0.0, min(1.0, (r - d0) / (r * 0.3)))
+             * max(0.0, min(1.0, ((p - tails[0].head).length - r * 0.5) / r)))
+        if k <= 0.0:
+            return base
+        tail = [(n, max(0.0, 1.0 - (d - d0) / self.blend) ** 2) for d, n in dists]
+        sb, st = sum(w for _, w in base), sum(w for _, w in tail)
+        return [(n, w / sb * (1 - k)) for n, w in base] + [(n, w / st * k) for n, w in tail]
+
+    def tail_rot(self, rot, side_deg, up_deg=0.0):
+        k = 3.0 / len(self.tail_bones())
+        super().tail_rot(rot, side_deg * k, up_deg * k)
+
+    def piece_bone(self, center, piece):
+        if center.y > self.tail_bones()[0].head.y:
+            return self.tail_bones()[-1].name  # A tuft.
+        if len(piece) == 6:  # A flap.
+            return "ear.L" if center.x > 0 else "ear.R"
+        return "head"  # Eyes, nose, antlers.
+
+    def eat_pose(self, t):
+        rot, offset, extra = super().eat_pose(t)
+        down = smooth(t / 0.2) * (1 - smooth((t - 0.8) / 0.2))
+        pitch, chest, neck, head = (a * down for a in self.eat)
+        dz = -self.eat_drop * down
+        root = rot["head"][0][1] - 25.0 * down  # The template's rooting about.
+        rot = self.planted(rot, math.radians(pitch), dz)
+        rot["body"] = [(X, pitch)]
+        rot["chest"] = [(X, chest)]
+        rot["neck"] = [(X, neck)]
+        rot["head"] = [(X, head + root)]
+        return rot, Vector((0, 0, dz)), extra
+
+    def die_pose(self, t):
+        rot, offset, extra = super().die_pose(t)
+        sag = smooth(t / 0.35)
+        roll = smooth((t - 0.3) / 0.45)
+        # High enough for the right legs to pass under the body as it rolls.
+        a = math.radians(90.0) * roll
+        pivot = self.by_name["body"].head
+        offset.z = max(offset.z, -0.08 * sag * (1 - roll) + pivot.z * (math.cos(a) - 1) + self.lie_height * math.sin(a))
+        rot["chest"] = [(Z, self.die_lift * roll)]
+        rot["neck"] = rot["neck"] + [(Z, self.die_lift * roll), (Y, self.die_untwist * 0.5 * roll)]
+        rot["head"] = rot["head"] + [(Y, self.die_untwist * 0.5 * roll)]
+        return rot, offset, extra
+
+
 def pose_key(arm, frame, rotations, offset):
     """Keys every bone at `frame`. `rotations` maps a bone to a Quaternion
     or to a list of (armature axis, degrees) applied in order; the root
@@ -527,10 +616,14 @@ def add_clip(rig, arm, name, frames, loops, pose_fn):
 def export_rigged(spec, mb, path):
     """Binds the finished builder to the spec's skeleton, keys the clips
     and exports the model with its animations."""
-    rig = spec.rig
-    rig.bind(mb)
-    arm = rig.build_armature(spec.name + "_rig")
-    mesh = mb.to_object(spec.name, spec.colors)
+    spec.rig.bind(mb)
+    animate(spec.rig, mb.to_object(spec.name, spec.colors), spec.name, path)
+
+
+def animate(rig, mesh, name, path, images=False):
+    """Gives a mesh object whose vertex groups are the rig's bones the
+    skeleton and its clips, and exports it."""
+    arm = rig.build_armature(name + "_rig")
     mesh.parent = arm
     mod = mesh.modifiers.new("Armature", "ARMATURE")
     mod.object = arm
@@ -546,4 +639,4 @@ def export_rigged(spec, mb, path):
     for pb in arm.pose.bones:
         pb.rotation_quaternion = (1, 0, 0, 0)
         pb.location = (0, 0, 0)
-    common.export_glb(path, [arm, mesh], animations=True, extras=True)
+    common.export_glb(path, [arm, mesh], animations=True, extras=True, images=images)

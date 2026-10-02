@@ -21,7 +21,8 @@ from mathutils import Vector
 TOLERANCE_Z = 0.004     # m below the ground still accepted (rounding of the bake).
 LOOP_TOLERANCE = 0.002  # m between the first and last pose of a loop.
 SPEED_TOLERANCE = 0.10
-GROUND = 0.006          # A foot vertex this close to the ground is planted.
+GROUND = 0.006          # A foot vertex this close to where its foot stands is planted.
+FOOT_HEIGHT = 0.05      # A foot whose lowest point at rest is above this does not stand on the ground.
 
 
 def load(path):
@@ -78,15 +79,20 @@ def check(path):
     rest = [mesh.matrix_world @ v.co for v in mesh.data.vertices]
     # Foot vertices: those of each foot bone that are on the ground at rest.
     names = {g.index: g.name for g in mesh.vertex_groups}
-    # Slim feet can rest a few millimeters above Z = 0: the lowest point of
-    # the model at rest is where its feet stand.
-    floor = max(0.0, min(p.z for p in rest))
-    feet = {}
+    # Each foot stands at its own lowest point at rest: slim feet can rest a
+    # few millimeters above Z = 0, and an imported model's paws are not all
+    # at the same height.
+    rigid = {}
     for i, p in enumerate(rest):
-        if p.z < floor + GROUND:
-            for g in mesh.data.vertices[i].groups:
-                if g.weight > 0.99 and names[g.group].startswith("foot"):
-                    feet.setdefault(names[g.group], []).append(i)
+        for g in mesh.data.vertices[i].groups:
+            if g.weight > 0.99 and names[g.group].startswith("foot"):
+                rigid.setdefault(names[g.group], []).append(i)
+    feet, floors = {}, {}
+    for name, idx in rigid.items():
+        floor = min(rest[i].z for i in idx)
+        if floor < FOOT_HEIGHT:
+            floors[name] = floor
+            feet[name] = [i for i in idx if rest[i].z < floor + GROUND]
     for action in sorted(bpy.data.actions, key=lambda a: a.name):
         name = clip_name(action, arm)
         set_clip(arm, action)
@@ -112,7 +118,8 @@ def check(path):
         for leg, idx in sorted(feet.items()):
             moves = []
             for a, b in zip(frames, frames[1:]):
-                if max(a[i].z for i in idx) < floor + GROUND and max(b[i].z for i in idx) < floor + GROUND:
+                top = floors[leg] + GROUND
+                if max(a[i].z for i in idx) < top and max(b[i].z for i in idx) < top:
                     ya = sum(a[i].y for i in idx) / len(idx)
                     yb = sum(b[i].y for i in idx) / len(idx)
                     moves.append((yb - ya) * fps)

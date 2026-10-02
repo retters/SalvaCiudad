@@ -1917,3 +1917,26 @@ Tres soluciones, una por grupo de personajes, todas dentro de sus archivos: fald
 - La tortuga escondida deja ver una abertura al frente: el caparazón no tiene pared detrás del cuello.
 - El conejo salta corto y lento (1,4 m/s) para que el muslo no se estire.
 - `fly` y `swim` se animan cerca del origen; el juego debe dar la altura.
+
+## Modelos de Tripo en el visor (2026-10-01)
+
+Pedido del usuario: `--estudio tripo` para ver modelos generados en Tripo, y animar un lobo de prueba (`.fbx` con el esqueleto automático de Tripo).
+
+**D-4701. El esqueleto de Tripo solo sirve de guía.**
+El lobo trae 24 huesos con nombres que no corresponden (una pata delantera cuelga de `Head_1`, la cabeza se llama `0_Right_Limb_0`) y hasta 6 pesos por vértice (el motor admite 4). En vez de animar esos huesos, `tripo_build.py` toma las posiciones de sus articulaciones, reconoce por la forma las cuatro patas (cadenas que llegan al suelo), la cola y el frente, y le pone al modelo la plantilla `rigs.Beast` con sus pesos por distancia y sus animaciones. Así pasa por la misma verificación que los demás (`rig_check.py`). Se descartó retargetear animaciones sobre el esqueleto de Tripo: habría que mapear a mano cada modelo.
+
+**D-4702. Tres mejoras de la plantilla de cuadrúpedo que salieron de este modelo.**
+- Patas dadas una por una (`"FL"`, `"FR"`, `"HL"`, `"HR"`): un modelo importado no está parado de forma simétrica.
+- La cinemática de las patas usa las longitudes proyectadas en el plano lateral. Con las longitudes en 3D, una pata inclinada hacia un lado no volvía a su pose de reposo y el pie quedaba en el aire.
+- La articulación se dobla hacia donde está doblada en reposo; solo una pata dibujada recta usa la regla anterior (adelante en las delanteras, atrás en las traseras). Esto corrige el defecto anotado en D-4609 para felinos y lobo. Doce animales cambiaron un poco y todos siguen en `RIG OK`.
+- `Beast` y `GALLOP_PHASES` pasaron de `zoo/tiger.py` a `rigs.py`.
+
+**D-4703. Texturas en modelos con esqueleto, y un error de color.**
+- El renderizador siempre ponía una textura blanca a los modelos con esqueleto. Ahora usa la del material, salvo en los materiales que la paleta recolorea.
+- El sombreador convertía de sRGB a lineal una textura cuyo formato ya es sRGB (la GPU la entrega lineal), así que toda textura salía oscura y saturada. Nadie lo había visto porque ningún modelo de `core` tiene textura. Se quitó la conversión del sombreador, y las dos texturas hechas por código (la cuadrícula del visor y el pasto de la escena de prueba), que estaban ajustadas a ojo con la doble conversión, se convirtieron una vez para verse igual que antes.
+
+**D-4704. `--estudio` acepta un nombre.**
+`--estudio tripo` abre `art/studies/tripo`; una ruta sigue funcionando. Al pasar `--estudio`, el visor arranca mostrando esa carpeta.
+
+**D-4705. `rig_check.py`: cada pie se mide desde su propio punto más bajo en reposo.**
+Las patas de un modelo importado no apoyan todas a la misma altura.

@@ -108,8 +108,12 @@ render::ModelData make_grid_ground(float half_size) {
         for (int x = 0; x < kSize; ++x) {
             const bool major = x < 2 || y < 2;
             const bool minor = x % 32 == 0 || y % 32 == 0;
-            const std::uint8_t v = major ? 96 : minor ? 128 : 170;
-            tex.rgba.insert(tex.rgba.end(), {v, static_cast<std::uint8_t>(v + 8), static_cast<std::uint8_t>(v - 6), 255});
+            // sRGB bytes of a dull green: lines every 5 m, lines every meter, ground.
+            static constexpr std::uint8_t kMajor[3] = {30, 35, 26};
+            static constexpr std::uint8_t kMinor[3] = {56, 64, 50};
+            static constexpr std::uint8_t kBase[3] = {104, 116, 96};
+            const std::uint8_t* c = major ? kMajor : minor ? kMinor : kBase;
+            tex.rgba.insert(tex.rgba.end(), {c[0], c[1], c[2], 255});
         }
     }
     m.textures.push_back(std::move(tex));
@@ -413,7 +417,21 @@ void ViewerApp::load_catalog() {
     library_.scan(mods_dir_, paths_->user_mods_dir(), game);
     if (studies_dir_.empty()) {
         studies_dir_ = default_studies_dir();
+    } else if (!studies_resolved_) {
+        // A bare name ("tripo") is a folder beside the default one:
+        // art/studies/tripo. Anything else is a path.
+        std::error_code ec;
+        const std::filesystem::path base = default_studies_dir();
+        if (studies_dir_.has_filename() && !studies_dir_.has_parent_path() && !base.empty() &&
+            !std::filesystem::is_directory(studies_dir_, ec)) {
+            studies_dir_ = base.parent_path() / studies_dir_;
+        }
+        // Shown from the start: asking for a folder means wanting to see it.
+        if (has_studies()) {
+            mod_ = kStudiesMod;
+        }
     }
+    studies_resolved_ = true;
     const bool studies = mod_ == kStudiesMod && has_studies();
     if (!studies && library_.find(mod_) == nullptr) {
         mod_ = mods::kCoreModId;

@@ -8,9 +8,10 @@
 #include "core/text.h"
 #include "viewer/viewer_app.h"
 
-// --estudio <folder>: the folder of models in study to offer beside the mods
-// (phase 45). Without it, a viewer built from a source tree offers
-// art/studies/animals.
+// --estudio <folder>: the folder of models in study to show (phase 45): a
+// path, or the name of a folder of art/studies ("tripo", "people"). Without
+// it, a viewer built from a source tree offers art/studies/animals beside
+// the mods.
 int main(int argc, char* argv[]) {
     std::filesystem::path studies;
     for (int i = 1; i + 1 < argc; ++i) {

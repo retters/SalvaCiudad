@@ -126,9 +126,10 @@ render::ModelData make_ground_model(float half_size) {
         for (int x = 0; x < 64; ++x) {
             const float n = rng.range(-1.0f, 1.0f);
             const float stripe = 0.5f + 0.5f * std::sin(static_cast<float>(x + y) * 0.39f);
-            const auto g = static_cast<std::uint8_t>(std::clamp(134.0f + n * 14.0f + stripe * 6.0f, 0.0f, 255.0f));
-            const auto r = static_cast<std::uint8_t>(std::clamp(112.0f + n * 12.0f, 0.0f, 255.0f));
-            const auto b = static_cast<std::uint8_t>(std::clamp(72.0f + n * 8.0f, 0.0f, 255.0f));
+            // sRGB bytes.
+            const auto g = static_cast<std::uint8_t>(std::clamp(62.0f + n * 14.0f + stripe * 6.0f, 0.0f, 255.0f));
+            const auto r = static_cast<std::uint8_t>(std::clamp(42.0f + n * 10.0f, 0.0f, 255.0f));
+            const auto b = static_cast<std::uint8_t>(std::clamp(16.0f + n * 4.0f, 0.0f, 255.0f));
             tex.rgba.insert(tex.rgba.end(), {r, g, b, 255});
         }
     }

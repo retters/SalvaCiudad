@@ -132,10 +132,11 @@ def select_only(objects):
     bpy.context.view_layer.objects.active = objects[0]
 
 
-def export_glb(path, objects, animations=False, extras=False):
+def export_glb(path, objects, animations=False, extras=False, images=False):
     """Exports the given objects with fixed options, so output is reproducible.
     With extras, the objects' custom properties go into the file (node
-    "extras"), for data the game reads from the model."""
+    "extras"), for data the game reads from the model. With images, the
+    materials' textures go into the file (imported models; ours have none)."""
     select_only(objects)
     bpy.ops.export_scene.gltf(
         filepath=path,
@@ -146,7 +147,7 @@ def export_glb(path, objects, animations=False, extras=False):
         export_normals=True,
         export_tangents=False,
         export_materials="EXPORT",
-        export_image_format="NONE",
+        export_image_format="AUTO" if images else "NONE",
         export_vertex_color="NONE",
         export_extras=extras,
         export_copyright="",
