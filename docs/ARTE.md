@@ -52,7 +52,8 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `rigs.py` | Base de esqueletos, pesos y animaciones (`Rig`, `Pose`) y la plantilla de cuadrúpedo |
 | `rigs_bird.py`, `rigs_swim.py` | Plantillas de aves y de nadadores (pez, tortuga, pulpo) |
 | `rigs_human.py` | Esqueleto y animaciones de los personajes de `people/` |
-| `tripo_build.py` | Anima un cuadrúpedo hecho en Tripo (`.fbx` con su esqueleto) y lo deja en `art/studies/tripo/` |
+| `tripo_build.py` | Anima un modelo hecho en Tripo (un cuadrúpedo con su esqueleto, o un personaje esculpido) y lo deja en `art/studies/tripo/` |
+| `tripo_character.py` | La parte de personajes de `tripo_build.py`: articulaciones por la forma, reducción, colores desde la imagen |
 | `rig_check.py` | Verifica las animaciones de un modelo exportado |
 | `study_preview.py` | Una imagen de revisión por modelo (4 vistas) y las tiras de sus animaciones |
 | `pig_studies.py`, `tiger_studies.py` | El cerdito y el tigre con cada técnica, para compararlas |
@@ -186,6 +187,20 @@ blender --background --factory-startup --python art/blender/tripo_build.py -- <m
 - Verificar con `rig_check.py` y ver con `SalvaCiudadModelos.exe --estudio tripo`.
 - Solo cuadrúpedos por ahora: si el esqueleto no tiene cuatro cadenas de huesos que lleguen al suelo, el modelo se rechaza.
 - Estos modelos son mucho más pesados que los low poly (el lobo de prueba: 10 565 triángulos y una textura de 2048 px, contra 1316 del lobo low poly).
+
+**Personajes.** Un personaje de pie esculpido en Tripo (una malla sin esqueleto, sin textura y sin colores) se convierte en un personaje low poly animado:
+
+```
+blender --background --factory-startup --python art/blender/tripo_build.py -- <modelo.fbx> name=<nombre> height=<metros> image=<imagen> crop=x0,y0,x1,y1
+```
+
+- `tripo_build.py` elige el camino solo: con esqueleto es un cuadrúpedo; sin esqueleto, un personaje.
+- **Forma:** se gira para mirar hacia −Y (lo adivina por los pies; `front=+x` y demás lo corrigen), se apoya en el suelo y se escala a `height` (1,7 m si no se dice).
+- **Articulaciones:** se buscan cortando la malla en rebanadas horizontales. Donde los brazos y las piernas están separados del tronco, la rebanada cae en piezas separadas; de ahí salen las axilas, la entrepierna y el eje de cada extremidad. Por eso el personaje debe estar de pie con los brazos separados del cuerpo.
+- **Reducción:** por colapso de aristas hasta `tris` (3000 si no se dice) y con caras planas, como los demás modelos low poly.
+- **Colores:** de la imagen con que se generó el modelo (`image`) y el recuadro del personaje en ella (`crop`, en píxeles). Se busca desde qué ángulo la silueta del modelo coincide con la de la imagen, y cada cara toma el color que la imagen tiene donde se ve esa cara. Las caras que la imagen no muestra toman el color de su reflejo en el otro costado, o el de lo que tienen delante (la espalda toma el color del frente). Los colores se agrupan en hasta 12 materiales. Sin `image` queda gris.
+- **Animación:** el esqueleto y las ocho animaciones de los personajes. La tela que cuelga lejos de un brazo o una pierna se queda con el tronco. Lo que cuelga de una mano mucho más abajo que la otra mano se toma como un objeto sostenido y va con esa mano.
+- **Caras puente:** una escultura es una sola superficie fundida. Donde una mano toca la cadera o una punta de tela toca una pierna, se cortan las caras que unen partes que se separan al moverse y se tapan los huecos.
 
 ### Esqueletos y animaciones de los animales
 

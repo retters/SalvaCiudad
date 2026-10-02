@@ -1,7 +1,10 @@
-"""Animates a rigged four-legged model made with Tripo (an .fbx with its
-auto-rig) with the zoo's quadruped template, and exports it for the viewer.
+"""Animates a model made with Tripo and exports it for the viewer.
 
-    blender --background --factory-startup --python art/blender/tripo_build.py -- <model.fbx> [name=<name>] [length=<meters>] [out=<folder>]
+    blender --background --factory-startup --python art/blender/tripo_build.py -- <model.fbx> [name=<name>] [out=<folder>] [options]
+
+Two kinds of model, told apart by the file:
+
+A four-legged animal with Tripo's auto-rig (option length=<meters>):
 
 The model keeps its own mesh and texture. Tripo's skeleton only says where
 the joints are: its bone names are not reliable (a front leg may hang from
@@ -10,9 +13,15 @@ shape, and the model gets the template's bones, weights and clips (idle,
 walk, run, eat, die). The model is turned to face -Y, scaled to `length`
 (nose to tail tip; default: as it comes) and stood on Z = 0.
 
+A standing character without a skeleton (see tripo_character.py). Options:
+height=<meters> (default 1.7), tris=<triangles> (default 3000),
+image=<picture the model was generated from> and crop=x0,y0,x1,y1 (the
+character's box in that picture, in pixels) to take its colors from it, and
+front=+x|-x|+y|-y if the side it faces is guessed wrong.
+
 Writes <out>/<name>.glb (default: art/studies/tripo/<file name>.glb).
-Only quadrupeds for now: a model whose skeleton has no four chains of bones
-reaching the ground is refused.
+A rigged model whose skeleton has no four chains of bones reaching the
+ground is refused.
 """
 
 import math
@@ -27,6 +36,7 @@ sys.path.insert(0, HERE)
 
 import common  # noqa: E402
 import rigs  # noqa: E402
+import tripo_character  # noqa: E402
 
 MAX_NAME = 48
 
@@ -58,6 +68,34 @@ def leg_points(joints, height, foot):
     return hip, knee, ankle, Vector((ankle.x, ankle.y - foot, 0.0))
 
 
+def character(mesh, name, out, options):
+    height = float(options.get("height", 1.7))
+    triangles = int(options.get("tris", 3000))
+    if not 0.2 <= height <= 10.0 or not 300 <= triangles <= 200000:
+        print("TRIPO height must be between 0.2 and 10 m, and tris between 300 and 200000")
+        return
+    crop = None
+    if "crop" in options:
+        parts = options["crop"].split(",")
+        if len(parts) != 4 or not all(p.strip().lstrip("-").isdigit() for p in parts):
+            print("TRIPO crop must be x0,y0,x1,y1 in pixels")
+            return
+        crop = tuple(int(p) for p in parts)
+    picture = options.get("image")
+    if picture is not None and not os.path.isfile(picture):
+        print("TRIPO image not found:", picture)
+        return
+    front = options.get("front")
+    if front not in (None, "+x", "-x", "+y", "-y"):
+        print("TRIPO front must be +x, -x, +y or -y")
+        return
+    os.makedirs(out, exist_ok=True)
+    problem = tripo_character.build(mesh, name, os.path.join(out, name + ".glb"), height, triangles,
+                                    picture=picture, crop=crop, front=front)
+    if problem:
+        print("TRIPO", name + ":", problem)
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     if not args:
@@ -81,11 +119,14 @@ def main():
     scene.frame_start = scene.frame_end = 0
     arm = next((o for o in bpy.data.objects if o.type == "ARMATURE"), None)
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
-    if arm is None or len(meshes) != 1:
-        print("TRIPO expected one mesh with a skeleton")
+    if len(meshes) != 1:
+        print("TRIPO expected one mesh")
         return
     mesh = meshes[0]
     bpy.context.view_layer.update()
+    if arm is None:
+        character(mesh, name, out, options)
+        return
 
     # 1. What Tripo's skeleton says, in world space.
     points = [mesh.matrix_world @ v.co for v in mesh.data.vertices]

@@ -259,7 +259,7 @@ TEST_SUITE("model") {
         // and 48). Whatever is there must load; a checkout without it skips this.
         std::size_t loaded = 0;
         std::size_t skinned = 0;
-        for (const char* folder : {"animals", "people", "weapons", "trees"}) {
+        for (const char* folder : {"animals", "people", "weapons", "trees", "tripo"}) {
             const std::filesystem::path dir = std::filesystem::path(SC_SOURCE_DIR) / "art" / "studies" / folder;
             std::error_code ec;
             if (!std::filesystem::is_directory(dir, ec)) {

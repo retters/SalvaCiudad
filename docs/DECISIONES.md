@@ -1940,3 +1940,25 @@ El lobo trae 24 huesos con nombres que no corresponden (una pata delantera cuelg
 
 **D-4705. `rig_check.py`: cada pie se mide desde su propio punto más bajo en reposo.**
 Las patas de un modelo importado no apoyan todas a la misma altura.
+
+## Personajes de Tripo (2026-10-01)
+
+Pedido del usuario: que la herramienta de Tripo sirva también para personajes, probar con una versión de la rana (`Personaje 5 - tripo.fbx`) y darle los colores de la imagen original.
+
+**D-4710. El archivo era una escultura, no un modelo listo.**
+Sin esqueleto, sin textura, sin colores y con 94 608 triángulos, mirando hacia +X. `tripo_build.py` distingue los dos casos por el archivo: con esqueleto, cuadrúpedo (D-4701); sin esqueleto, personaje (`tripo_character.py`).
+
+**D-4711. Reducir con la misma técnica de los demás modelos.**
+La malla se reduce por colapso de aristas a 3000 triángulos (el límite de personajes, D-4410) con caras planas. Es el segundo paso de la técnica elegida por el usuario (D-4401), así que el resultado tiene el mismo facetado que los demás. No hace falta el *remesh*: la escultura ya es una sola superficie.
+
+**D-4712. Articulaciones por rebanadas.**
+Sin esqueleto que sirva de guía, las articulaciones salen de la forma: cada rebanada horizontal de la malla se separa en piezas conectadas. Una pierna se sigue hacia arriba desde el tobillo hasta que se une a la otra (la entrepierna); un brazo, hacia abajo desde la axila hasta la punta de los dedos. Con eso se arma un cuerpo con las mismas partes que `people/_human.py` y se usa `rigs_human.Humanoid` sin cambios. Límite: el personaje debe estar de pie y con los brazos separados del cuerpo; si no, la herramienta lo rechaza con un aviso.
+
+**D-4713. Colores proyectados desde la imagen de origen.**
+Tripo generó el modelo a partir de la imagen, así que hay un ángulo desde el que el modelo coincide con ella. Se busca comparando siluetas (para la rana: 40° de lado y 6° de elevación, con 0,80 de coincidencia) y cada cara toma el color de la imagen en su posición. La imagen solo muestra de frente un tercio de las caras. Se probó primero rellenar el resto con la cara vista más cercana: la espalda quedaba a parches oscuros (el interior de la capucha se extendía por todo). Lo que funcionó: el reflejo en el otro costado y, si tampoco se ve, el color de lo que la imagen tiene delante. Después se quitan las caras sueltas de un color entre vecinas de otro. Límites conocidos: los bordes entre colores salen dentados, porque las caras reducidas no siguen los bordes del dibujo; los ojos quedan como manchas amarillas sin pupila; la luz de la imagen queda pintada en el modelo.
+
+**D-4714. Caras puente.**
+En la escultura, la mano izquierda está fundida con la cadera y hay puntas de tela pegadas a las piernas. Al animar, esas caras se estiraban en tiras de un metro. Se cortan las caras cuyos vértices siguen a huesos que no deben tocarse (brazo con cadera o pierna, una pierna con la otra, pantorrilla con cadera) y se tapan los huecos. En la rana fueron 33 caras.
+
+**D-4715. Qué va con el tronco y qué con las extremidades.**
+Lo que está a más del 3 % de la altura de la superficie de un brazo o una pierna (un chal, un taparrabos) sigue al tronco; los dedos de manos y pies siguen siempre a su mano o pie. Un brazo que llega mucho más abajo que el otro sostiene algo: eso va con la mano.
