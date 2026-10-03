@@ -46,6 +46,9 @@ struct SpeciesDef {
     // with states has one model for all sizes, scaled to each tree.
     std::string model;
     std::vector<std::string> state_models[kTreeStates];
+    // Phase 52: the far version of each of those files ("" if it has none):
+    // a few hundred triangles, drawn where the tree is small on screen.
+    std::vector<std::string> state_far[kTreeStates];
     [[nodiscard]] bool by_state() const { return !state_models[0].empty(); }
     std::uint8_t sizes = 0;  // Bit per TreeSize the species can have.
     std::int32_t logs[kTreeSizes] = {2, 5, 10, 20};  // Wood per tree of each size.

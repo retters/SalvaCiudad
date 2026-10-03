@@ -190,12 +190,22 @@ Es el mismo tiempo dentro de lo que varía este equipo: mientras se medía, otra
 
 No se comparan con los 115 s de la fase 43: aquella medida era sin mar, y no se repitió en esas condiciones.
 
-## Cambio de estado de los árboles (fase 51)
+## Cambio de estado de los árboles (fases 51 y 52)
 
-Al cambiar de estación, al nevar y en cada uno de los 8 pasos del cambio de estado de los árboles se rehace la lista de objetos del mapa. El registro lo anota cuando tarda 20 ms o más (`map: ... features shown for the season in ... ms`).
+En la fase 51, cada uno de los 8 pasos del cambio de estado rehacía la lista de objetos del mapa: 301 ms en el mapa colosal (3 394 869 objetos), un tirón perceptible. Desde la fase 52 el estado es un dato de cada árbol que se lee al dibujarlo, y un paso solo cambia ese dato en los árboles a los que les toca (el registro lo anota si tarda 5 ms o más: `map: trees turned ...`). Rehacer la lista completa queda para el cambio de estación y las nevadas, como antes (`map: ... features shown for the season in ... ms`).
 
-| Mapa | Objetos | Tiempo |
-|---|---|---|
-| Colosal, semilla 12345 | 3 394 869 | 301 ms |
+## Versión lejana de los árboles (fase 52)
 
-En el colosal es un tirón perceptible, 8 veces en los primeros 6 días de otoño, invierno y primavera. Pendiente si molesta: rehacer solo los árboles que cambian de estado en ese paso.
+Medido con `--reporte`, compilación `release`, 1600 × 900, Ultra, sin vsync ni límite de FPS, juego en pausa. Tres juegos de datos sobre el mismo mapa y la misma vista: los árboles de antes de la fase 51; todas las especies dibujadas con el cerezo nuevo sin versión lejana; y todas con el cerezo nuevo y su versión lejana.
+
+Mapa colosal, semilla 12345, cámara aérea a 300 m sobre el centro (un bosque, 4366 árboles a la vista):
+
+| Árboles | FPS | Triángulos | Llamadas de dibujo | Descarte |
+|---|---|---|---|---|
+| De antes | 160,8; 152,1; 155,1 (156,0) | 3,05 M | 355 | 1,9 ms |
+| Nuevos, solo versión cercana | 100,0 | 10,96 M | — | — |
+| Nuevos con versión lejana | 143,6; 137,1; 153,1 (144,6; −7 %) | 1,39 M (−54 %) | 203 | 1,5 ms |
+
+Mapa grande, semilla 12345, cámara a 260 m (4291 árboles a la vista): de antes 335 FPS y 2,61 M de triángulos; nuevos sin versión lejana 92 FPS y 10,72 M; nuevos con versión lejana 427 FPS y 1,44 M. A 110 m (1011 árboles, 724 en versión lejana): sin versión lejana 103 FPS y 3,00 M; con ella 379 FPS y 1,41 M.
+
+Las corridas del colosal varían entre sí un 10 %, más que la diferencia que se mide; el dato firme es el de los triángulos.

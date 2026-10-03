@@ -106,7 +106,8 @@ void DebugOverlay::build(const DebugInfo& info, const std::function<void()>& ext
             const render::RenderStats& s = info.scene;
             ImGui::Separator();
             ImGui::Text("%s: %u", tr("debug.drawCalls").c_str(), s.draw_calls);
-            ImGui::Text("%s: %u / %u", tr("debug.instances").c_str(), s.instances_drawn, s.instances_total);
+            ImGui::Text("%s: %u / %u  (LOD %u)", tr("debug.instances").c_str(), s.instances_drawn, s.instances_total,
+                        s.instances_far);
             ImGui::Text("%s: %u", tr("debug.shadowInstances").c_str(), s.shadow_instances);
             ImGui::Text("%s: %u / %u", tr("debug.characters").c_str(), s.characters_drawn, s.characters_total);
             ImGui::Text("%s: %.2f M", tr("debug.triangles").c_str(), static_cast<double>(s.triangles) / 1e6);

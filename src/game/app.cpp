@@ -2398,6 +2398,10 @@ void App::finish_replay(const FrameCapture& capture) {
         notes += std::format("Frames: {} in {:.2f} s, {:.1f} FPS; characters drawn {} of {}\n", replay_measured_,
                              seconds, static_cast<double>(replay_measured_) / seconds, st.characters_drawn,
                              st.characters_total);
+        notes += std::format("Objects drawn: {} of {} ({} in their far version); {:.2f} M triangles; {} draw calls; "
+                             "culling {:.2f} ms\n",
+                             st.instances_drawn, st.instances_total, st.instances_far,
+                             static_cast<double>(st.triangles) / 1e6, st.draw_calls, static_cast<double>(st.cull_ms));
     }
     const bool ok = !image.empty() && fs::write_file_atomic(replay_dir_ / (stem + ".png"), image) == fs::IoError::None &&
                     fs::write_file_atomic(replay_dir_ / (stem + ".txt"), notes) == fs::IoError::None;

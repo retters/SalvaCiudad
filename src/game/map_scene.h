@@ -34,20 +34,27 @@ struct TreeCalendar {
 };
 // From a season and its progress (0..999, sim::Calendar).
 [[nodiscard]] TreeCalendar tree_calendar(sim::Season season, std::uint32_t season_progress);
+// The step at which a tree changes, from its place: 0 changes first.
+[[nodiscard]] int tree_turn(const sim::MapFeature& f);
 // The state a tree shows: the season's, or still the one before if its
 // turn has not come.
 [[nodiscard]] sim::TreeState tree_state(const sim::MapFeature& f, TreeCalendar when);
 
+// The look (render::Instance::look) a tree takes in a state: the state's
+// number, or 0 (Bloom's) for a species without models for it.
+[[nodiscard]] std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when);
+
 // Instances are grouped by "visual slot". Each tree species has
 // kSpeciesSlots: one per size, or, for a species with models by state
-// (phase 51), one per state and variant. Then one per variant of every
+// (phase 51), one per variant: a tree stays in its slot all year and the
+// state only changes its look (phase 52). Then one per variant of every
 // other feature type.
-inline constexpr std::size_t kSpeciesSlots = sim::kTreeStates * sim::kMaxModelVariants;
+inline constexpr std::size_t kSpeciesSlots = sim::kMaxModelVariants;
 [[nodiscard]] std::size_t tree_slot(std::size_t species, sim::TreeSize size);
-[[nodiscard]] std::size_t tree_slot(std::size_t species, sim::TreeState state, std::size_t variant);
+[[nodiscard]] std::size_t tree_variant_slot(std::size_t species, std::size_t variant);
 [[nodiscard]] std::size_t tree_slot_count(const sim::Content& content);
 [[nodiscard]] std::size_t visual_slot_count(const sim::Content& content);
-[[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when = {});
+[[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f);
 
 // A tree with models by state is its model scaled to the tree's height,
 // but never under half the model's height or over one and a half.
@@ -78,8 +85,8 @@ inline constexpr std::int32_t kMaxGroundColorSize = 2048;
 // Only the feature instances, by visual slot.
 [[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(
     const sim::MapData& map, const sim::Content& content, TreeCalendar when = {}, bool snowy = false);
-// One feature's instance (for trees, scale is the height in meters),
-// colored for the season: snow whitens everything; bushes, and trees
+// One feature's instance (for trees, scale is the height in meters; the
+// look is left at 0, see tree_look), colored for the season: snow whitens everything; bushes, and trees
 // without models by state, turn in autumn and fade in winter unless they
 // are evergreen (trees with models by state change model instead).
 [[nodiscard]] render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f,

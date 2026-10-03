@@ -69,6 +69,7 @@ Los pesos de tamaño reparten el suelo del bosque entre los árboles medianos, g
 
 Una especie puede declarar un modelo por estado del año en lugar de uno por tamaño (ver `docs/CREAR_MODS.md`): `bloom`, `autumn` y `bare`. La primera es el cerezo (`core:cherry`), con los modelos low poly de `art/blender/lowpoly_trees/` en `models/trees/`; las demás especies llegan en la fase 53.
 
-- El cambio de estado es solo de la vista: la simulación no sabe en qué estado se ve un árbol.
+- El cambio de estado es solo de la vista: la simulación no sabe en qué estado se ve un árbol. Tampoco rehace nada: el estado es un dato de cada árbol que el renderizador lee al dibujarlo (fase 52).
+- Cada modelo tiene su versión lejana (`<nombre>_far.glb`, unos 300 triángulos), que hace `art/blender/far_tree.py` a partir del modelo terminado. Se dibuja cuando el árbol mide en pantalla menos de 90 píxeles en Ultra (120 en Alta, 160 en Media, 220 en Baja), con un margen del 10 % para que no parpadee, y siempre en las sombras.
 - Cada árbol cambia en uno de 8 pasos repartidos en la primera quinta parte de la estación (6 días de 30 con las cuatro estaciones), según su posición. Una partida nueva empieza con todos los árboles ya en el estado de su estación.
 - El tamaño de la simulación (chico, mediano, grande) sigue decidiendo la madera, el tiempo de tala y la separación. A la vista, el modelo se escala a la altura del árbol, sin bajar de la mitad ni pasar de una vez y media de la altura del modelo.

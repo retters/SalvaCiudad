@@ -44,6 +44,7 @@ class Built(studies.Spec):
 
     tone_material = None
     tones = 0.0
+    far_limit = 300  # Triangles of its far version (far_tree.py).
     defaults = {}
 
     def __init__(self, tree, state, leaves, **options):

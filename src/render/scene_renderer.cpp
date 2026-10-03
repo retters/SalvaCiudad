@@ -228,11 +228,25 @@ struct GpuModel {
     bool dirty = true;                   // Whole range must be rebuilt.
     std::vector<std::uint32_t> changed;  // Sorted positions updated one by one.
     ModelClass model_class = ModelClass::Normal;
+    // Phase 52: the models its instances can be drawn as, and its far version.
+    std::vector<ModelId> looks;
+    ModelId far_model = kNoFarModel;
+    // Which instances are drawn far now (by sorted position), so one at the
+    // edge does not flicker between versions.
+    std::vector<std::uint8_t> far_now;
 };
 
 struct Range {
     std::uint32_t first = 0;
     std::uint32_t count = 0;
+};
+
+// Instances to draw with one mesh: a range of `visible`.
+struct DrawRange {
+    ModelId mesh = 0;
+    std::uint32_t first = 0;
+    std::uint32_t count = 0;
+    bool far_version = false;
 };
 
 struct ClipInfo {
@@ -273,6 +287,11 @@ float draw_distance_for_level(int level) {
 float vegetation_distance_for_level(int level) {
     constexpr float kDistances[] = {70.0f, 130.0f, 220.0f, 350.0f};
     return kDistances[std::clamp(level, 0, 3)];
+}
+
+float lod_pixels_for_level(int level) {
+    constexpr float kPixels[] = {220.0f, 160.0f, 120.0f, 90.0f};
+    return kPixels[std::clamp(level, 0, 3)];
 }
 
 float grass_distance_for_level(int level) {
@@ -380,6 +399,11 @@ struct SceneRenderer::Impl {
     int shadow_size = 0;
     float draw_distance = 1200.0f;
     float vegetation_distance = 220.0f;
+    float lod_pixels = 120.0f;
+    // This frame: a model is drawn far beyond this many times its size.
+    float lod_reach = 0.0f;
+    SceneRenderer::LodMode lod_mode = SceneRenderer::LodMode::Auto;
+    std::vector<std::uint32_t> lod_lists[kMaxLooks * 2];  // Scratch: look, near and far.
     float draw_distance_now = 1200.0f;  // This frame's draw distance (models).
 
     TerrainLayer terrain;
@@ -1063,18 +1087,33 @@ struct SceneRenderer::Impl {
     }
 
     // Appends the visible instances of each model to `visible` and returns
-    // one range per model. Instances farther than `max_distance` from the
-    // eye are skipped (0: no limit), and small vegetation stops at the
-    // vegetation distance. Whole regions are tested first.
-    std::vector<Range> cull(const math::Frustum& frustum, math::Vec3 eye, float max_distance, bool shadows) {
-        std::vector<Range> ranges(models.size());
+    // the ranges to draw, each with its mesh: a model's own, the one of an
+    // instance's look, or a far version (phase 52). Instances farther than
+    // `max_distance` from the eye are skipped (0: no limit), and small
+    // vegetation stops at the vegetation distance. Whole regions are tested
+    // first.
+    std::vector<DrawRange> cull(const math::Frustum& frustum, math::Vec3 eye, float max_distance, bool shadows) {
+        std::vector<DrawRange> ranges;
+        ranges.reserve(models.size());
         for (std::size_t mi = 0; mi < models.size(); ++mi) {
-            const GpuModel& m = models[mi];
-            ranges[mi].first = static_cast<std::uint32_t>(visible.size());
-            if (shadows && m.model_class == ModelClass::Sky) {
-                ranges[mi].count = 0;
+            GpuModel& m = models[mi];
+            if (m.instances.empty() || (shadows && m.model_class == ModelClass::Sky)) {
                 continue;
             }
+            // Its meshes: the model and its looks, and the far version of each.
+            ModelId mesh[kMaxLooks];
+            ModelId far_mesh[kMaxLooks];
+            bool any_far = false;
+            for (std::size_t l = 0; l < kMaxLooks; ++l) {
+                mesh[l] = l >= 1 && l - 1 < m.looks.size() ? m.looks[l - 1] : static_cast<ModelId>(mi);
+                far_mesh[l] = models[mesh[l]].far_model;
+                any_far = any_far || far_mesh[l] != kNoFarModel;
+            }
+            const bool sorted = !m.looks.empty() || any_far;
+            if (sorted && m.far_now.size() != m.order.size()) {
+                m.far_now.assign(m.order.size(), 0);
+            }
+            const auto first = static_cast<std::uint32_t>(visible.size());
             float limit = max_distance > 0.0f ? max_distance : 1e30f;
             if (m.model_class == ModelClass::SmallVegetation) {
                 limit = std::min(limit, vegetation_distance);
@@ -1098,13 +1137,48 @@ struct SceneRenderer::Impl {
                         }
                         const math::Vec3 d = inst.position - eye;
                         const float reach = limit + r;
-                        if (math::dot(d, d) <= reach * reach) {
-                            visible.push_back(m.base + n);
+                        const float d2 = math::dot(d, d);
+                        if (d2 > reach * reach) {
+                            continue;
                         }
+                        if (!sorted) {
+                            visible.push_back(m.base + n);
+                            continue;
+                        }
+                        const std::size_t look = inst.look < kMaxLooks ? inst.look : 0;
+                        bool far_version = false;
+                        if (far_mesh[look] != kNoFarModel) {
+                            if (shadows || lod_mode == SceneRenderer::LodMode::Far) {
+                                far_version = true;
+                            } else if (lod_mode == SceneRenderer::LodMode::Auto) {
+                                // Far beyond its distance; one already far
+                                // comes back only well inside it.
+                                const float at = 2.0f * r * lod_reach * (m.far_now[n] != 0 ? 0.9f : 1.1f);
+                                far_version = d2 > at * at;
+                                m.far_now[n] = far_version ? 1 : 0;
+                            }
+                        }
+                        lod_lists[look * 2 + (far_version ? 1 : 0)].push_back(m.base + n);
                     }
                 }
             }
-            ranges[mi].count = static_cast<std::uint32_t>(visible.size()) - ranges[mi].first;
+            if (!sorted) {
+                if (visible.size() > first) {
+                    ranges.push_back({static_cast<ModelId>(mi), first, static_cast<std::uint32_t>(visible.size()) - first, false});
+                }
+                continue;
+            }
+            for (std::size_t k = 0; k < kMaxLooks * 2; ++k) {
+                std::vector<std::uint32_t>& list = lod_lists[k];
+                if (list.empty()) {
+                    continue;
+                }
+                const bool far_version = (k & 1u) != 0;
+                ranges.push_back({far_version ? far_mesh[k / 2] : mesh[k / 2], static_cast<std::uint32_t>(visible.size()),
+                                  static_cast<std::uint32_t>(list.size()), far_version});
+                visible.insert(visible.end(), list.begin(), list.end());
+                list.clear();
+            }
         }
         return ranges;
     }
@@ -1180,6 +1254,7 @@ bool SceneRenderer::apply_settings(const GraphicsSettings& graphics) {
     d.graphics = graphics;
     d.draw_distance = draw_distance_for_level(graphics.draw_distance);
     d.vegetation_distance = vegetation_distance_for_level(graphics.vegetation);
+    d.lod_pixels = lod_pixels_for_level(graphics.vegetation);
     d.samples = samples;
     d.cascades = cascades;
     d.shadow_size = shadow_size;
@@ -1262,6 +1337,39 @@ void SceneRenderer::set_instances(ModelId model, std::span<const Instance> insta
             impl_->layout_dirty = true;
         }
     }
+}
+
+void SceneRenderer::set_model_looks(ModelId model, std::span<const ModelId> looks) {
+    Impl& d = *impl_;
+    if (model >= d.models.size()) {
+        return;
+    }
+    std::vector<ModelId>& out = d.models[model].looks;
+    out.clear();
+    for (const ModelId look : looks) {
+        // A look that is not a model draws as the model itself.
+        out.push_back(look < d.models.size() ? look : model);
+        if (out.size() + 1 >= kMaxLooks) {
+            break;
+        }
+    }
+}
+
+void SceneRenderer::set_far_model(ModelId model, ModelId far_model) {
+    Impl& d = *impl_;
+    if (model < d.models.size()) {
+        d.models[model].far_model = far_model < d.models.size() && far_model != model ? far_model : kNoFarModel;
+    }
+}
+
+void SceneRenderer::set_instance_look(ModelId model, std::uint32_t index, std::uint8_t look) {
+    if (model < impl_->models.size() && index < impl_->models[model].instances.size()) {
+        impl_->models[model].instances[index].look = look;  // Only culling reads it: nothing to upload.
+    }
+}
+
+void SceneRenderer::set_lod_mode(LodMode mode) {
+    impl_->lod_mode = mode;
 }
 
 void SceneRenderer::update_instance(ModelId model, std::uint32_t index, const Instance& instance) {
@@ -1574,9 +1682,13 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     // Culling (instances are grouped by region first, when they changed).
     const std::vector<std::pair<std::uint32_t, std::uint32_t>> instance_ranges = d.prepare_instances();
     d.visible.clear();
-    const std::vector<Range> main_ranges = d.cull(frustum, view.eye, view_distance, false);
+    // A model is drawn far when it is lower on screen than lod_pixels.
+    const float pixels_per_meter_at_1m =
+        static_cast<float>(frame.height) / (2.0f * std::tan(std::max(0.01f, view.fov_y) * 0.5f));
+    d.lod_reach = pixels_per_meter_at_1m / d.lod_pixels;
+    const std::vector<DrawRange> main_ranges = d.cull(frustum, view.eye, view_distance, false);
     const std::vector<Range> main_characters = d.cull_characters(frustum, &view.eye, draw_distance);
-    std::vector<Range> shadow_ranges[kMaxCascades];
+    std::vector<DrawRange> shadow_ranges[kMaxCascades];
     std::vector<Range> shadow_characters[kMaxCascades];
     for (int c = 0; c < d.cascades; ++c) {
         const math::Frustum light = math::Frustum::from_matrix(cascade_vp[c]);
@@ -1758,15 +1870,14 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
 
     const std::array<SDL_GPUTextureSamplerBinding, 2> war_bind = d.war_bindings();
     // Draws every model's visible instances; `with_materials` binds colors.
-    const auto draw_models = [&](SDL_GPURenderPass* pass, const std::vector<Range>& ranges, bool with_materials) {
+    const auto draw_models = [&](SDL_GPURenderPass* pass, const std::vector<DrawRange>& ranges, bool with_materials) {
         SDL_GPUBuffer* storage[2] = {d.instance_buffer, d.building_palette_buffer};
         SDL_BindGPUVertexStorageBuffers(pass, 0, storage, with_materials ? 2u : 1u);
-        for (std::size_t mi = 0; mi < d.models.size(); ++mi) {
-            const Range r = ranges[mi];
-            if (r.count == 0) {
+        for (const DrawRange& r : ranges) {
+            if (r.count == 0 || r.mesh >= d.models.size()) {
                 continue;
             }
-            const GpuModel& m = d.models[mi];
+            const GpuModel& m = d.models[r.mesh];
             const SDL_GPUBufferBinding vbs[2] = {{m.vertices, 0}, {d.visible_buffer, r.first * 4u}};
             SDL_BindGPUVertexBuffers(pass, 0, vbs, 2);
             const SDL_GPUBufferBinding ib{m.indices, 0};
@@ -1849,7 +1960,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         const std::uint64_t triangles_before = stats_.triangles;
         draw_models(pass, shadow_ranges[c], false);
         stats_.triangles = triangles_before;  // Count only what the player sees.
-        for (const Range& r : shadow_ranges[c]) {
+        for (const DrawRange& r : shadow_ranges[c]) {
             stats_.shadow_instances += r.count;
         }
         if (!d.characters.empty()) {
@@ -1928,8 +2039,9 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const MeshVertexUniforms mv{view_proj};
     SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
     draw_models(pass, main_ranges, true);
-    for (const Range& r : main_ranges) {
+    for (const DrawRange& r : main_ranges) {
         stats_.instances_drawn += r.count;
+        stats_.instances_far += r.far_version ? r.count : 0;
     }
     if (!d.characters.empty()) {
         SDL_BindGPUGraphicsPipeline(pass, d.skinned_pipeline);

@@ -44,6 +44,7 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `preview.py` | Imágenes de revisión |
 | `studies.py` | Técnicas de modelado de los animales low poly; `build_final` es la de producción (remesh y reducción) |
 | `zoo/*.py` | Un animal o planta low poly por archivo (ver abajo) |
+| `far_tree.py` | La versión lejana de un árbol (fase 52), a partir de su modelo terminado: `studies.build_final` la escribe como `<nombre>_far.glb` para toda especificación con `far_limit` |
 | `zoo_build.py` | Genera los modelos de `zoo/` o, con `specs=<carpeta>`, los de `people/`, `weapons/` o `lowpoly_trees/` |
 | `people/*.py` | Los 15 personajes low poly; `_human.py` es el cuerpo común |
 | `weapons/wNN_*.py` | Las 40 armas y herramientas, numeradas como en la imagen de referencia |

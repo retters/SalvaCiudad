@@ -227,7 +227,8 @@ TEST_SUITE("variants") {
         mods::ModLibrary lib;
         const mods::BuildResult pack = build_with(dir,
             R"({"type": "species", "id": "vt:leafy", "name": "s.leafy", "sizes": ["small", "large"],
-                "models": {"bloom": ["models/a.glb", "models/b.glb"], "autumn": ["models/b.glb"], "bare": ["models/c.glb"]}},
+                "models": {"bloom": ["models/a.glb", {"model": "models/b.glb", "far": "models/c.glb"}],
+                           "autumn": ["models/b.glb"], "bare": ["models/c.glb"]}},
                {"type": "species", "id": "vt:green", "name": "s.green", "sizes": ["medium"],
                 "models": {"bloom": ["models/a.glb"]}})", lib);
         REQUIRE_MESSAGE(errors_of(lib, "vt").empty(), errors_of(lib, "vt"));
@@ -241,6 +242,9 @@ TEST_SUITE("variants") {
         CHECK(l.state_models[0] == std::vector<std::string>{"models/a.glb", "models/b.glb"});
         CHECK(l.state_models[1] == std::vector<std::string>{"models/b.glb"});
         CHECK(l.state_models[2] == std::vector<std::string>{"models/c.glb"});
+        // The far versions, one entry per file ("" without one).
+        CHECK(l.state_far[0] == std::vector<std::string>{"", "models/c.glb"});
+        CHECK(l.state_far[1] == std::vector<std::string>{""});
         const sim::SpeciesDef& g = flora.species[static_cast<std::size_t>(green)];
         CHECK(g.by_state());
         CHECK(g.state_models[1].empty());
@@ -263,6 +267,9 @@ TEST_SUITE("variants") {
                  R"("models": {"bloom": ["models/missing.glb"]}})",
                  R"("models": {"bloom": "models/a.glb"}})",
                  R"("models": {"bloom": ["models/a.glb"]}, "model": "models/a"})",
+                 R"("models": {"bloom": [{"model": "models/a.glb"}]}})",                        // A pair needs its far file.
+                 R"("models": {"bloom": [{"model": "models/a.glb", "far": "models/missing.glb"}]}})",
+                 R"("models": {"bloom": [{"model": "models/a.glb", "far": "models/b.glb", "x": 1}]}})",
              }) {
             test::TempDir dir;
             mods::ModLibrary lib;
@@ -327,7 +334,7 @@ TEST_SUITE("variants") {
         }
     }
 
-    TEST_CASE("a tree by state goes to the slot of its state, and the cherry of core has the three") {
+    TEST_CASE("a tree by state keeps its slot and changes its look; the cherry of core has the three") {
         const sim::Content& content = test::core_content();
         const int cherry = content.flora.find_species("core:cherry");
         REQUIRE(cherry >= 0);
@@ -343,16 +350,23 @@ TEST_SUITE("variants") {
         f.x = sim::Fixed::from_int(40);
         f.z = sim::Fixed::from_int(90);
         const auto c = static_cast<std::size_t>(cherry);
-        CHECK(visual_slot(content, f) == tree_slot(c, sim::TreeState::Bloom, 0));
-        CHECK(visual_slot(content, f, {sim::Season::Autumn, kTurnSteps}) == tree_slot(c, sim::TreeState::Autumn, 0));
-        CHECK(visual_slot(content, f, {sim::Season::Winter, kTurnSteps}) == tree_slot(c, sim::TreeState::Bare, 0));
-        CHECK(visual_slot(content, f, {sim::Season::Winter, kTurnSteps}) < tree_slot_count(content));
-        // A species by size keeps one slot all year.
+        CHECK(visual_slot(content, f) == tree_variant_slot(c, 0));
+        CHECK(visual_slot(content, f) < tree_slot_count(content));
+        CHECK(tree_look(content, f, {sim::Season::Summer, kTurnSteps}) == 0);
+        CHECK(tree_look(content, f, {sim::Season::Autumn, kTurnSteps}) == 1);
+        CHECK(tree_look(content, f, {sim::Season::Winter, kTurnSteps}) == 2);
+        CHECK(tree_look(content, f, {sim::Season::Winter, 0}) == 1);  // Its turn has not come.
+        // Phase 52: every state has its far version.
+        for (std::size_t st = 0; st < sim::kTreeStates; ++st) {
+            REQUIRE(sp.state_far[st].size() == 1);
+            CHECK_FALSE(sp.state_far[st][0].empty());
+        }
+        // A species by size has one slot per size and no looks.
         const int oak = content.flora.find_species("core:oak");
         REQUIRE(oak >= 0);
         f.species = static_cast<std::uint8_t>(oak);
-        CHECK(visual_slot(content, f, {sim::Season::Winter, kTurnSteps}) ==
-              tree_slot(static_cast<std::size_t>(oak), sim::TreeSize::Medium));
+        CHECK(visual_slot(content, f) == tree_slot(static_cast<std::size_t>(oak), sim::TreeSize::Medium));
+        CHECK(tree_look(content, f, {sim::Season::Winter, kTurnSteps}) == 0);
         // And its color changes instead; a tree by state keeps its own colors
         // (only the snow whitens it).
         sim::MapSettings s;
@@ -370,20 +384,29 @@ TEST_SUITE("variants") {
         f.species = static_cast<std::uint8_t>(oak);
         const render::Instance oak_summer = feature_instance(*map, f, &content, sim::Season::Summer, false);
         CHECK_FALSE(feature_instance(*map, f, &content, sim::Season::Autumn, false).tint == oak_summer.tint);
-        // Every tree of the map has a place among the instances of each season.
-        std::size_t trees = 0;
+        // The instances of a season carry each tree's look; they stay in the
+        // same slots and the same order all year, so a change of state only
+        // changes looks.
+        const auto summer_all = build_feature_instances(*map, content, {sim::Season::Summer, kTurnSteps}, false);
+        std::size_t cherries = 0;
         for (const sim::MapFeature& t : map->features) {
-            trees += t.type == sim::FeatureType::Tree ? 1u : 0u;
+            cherries += t.type == sim::FeatureType::Tree && t.species == cherry ? 1u : 0u;
         }
-        for (const sim::Season season : {sim::Season::Summer, sim::Season::Autumn, sim::Season::Winter}) {
-            for (const int turn : {0, kTurnSteps / 2, kTurnSteps}) {
-                const auto instances = build_feature_instances(*map, content, {season, turn}, false);
-                std::size_t n = 0;
-                for (std::size_t slot = 0; slot < tree_slot_count(content); ++slot) {
-                    n += instances[slot].size();
+        REQUIRE(cherries > 0);
+        for (const int turn : {0, kTurnSteps / 2, kTurnSteps}) {
+            const auto autumn_all = build_feature_instances(*map, content, {sim::Season::Autumn, turn}, false);
+            REQUIRE(autumn_all.size() == summer_all.size());
+            std::size_t turned = 0;
+            for (std::size_t slot = 0; slot < autumn_all.size(); ++slot) {
+                REQUIRE(autumn_all[slot].size() == summer_all[slot].size());
+                for (std::size_t i = 0; i < autumn_all[slot].size(); ++i) {
+                    CHECK(autumn_all[slot][i].position == summer_all[slot][i].position);
+                    CHECK(summer_all[slot][i].look == 0);
+                    turned += autumn_all[slot][i].look == 1 ? 1u : 0u;
                 }
-                CHECK(n == trees);
             }
+            CHECK(turned == (turn == 0 ? 0u : turn == kTurnSteps ? cherries : turned));
+            CHECK((turn != kTurnSteps / 2 || (turned > 0 && turned < cherries)));
         }
     }
 }

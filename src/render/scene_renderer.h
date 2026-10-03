@@ -30,6 +30,9 @@ struct Instance {
     std::uint32_t palette = 0;
     // Phase 34: shows as a silhouette through the fog of war, however low.
     bool landmark = false;
+    // Phase 52: which of the model's looks it is drawn with (0: the model
+    // itself; see SceneRenderer::set_model_looks).
+    std::uint8_t look = 0;
 };
 
 // An animated character. Accessories (hats, aprons...) are chosen with a
@@ -97,6 +100,7 @@ struct RenderStats {
     std::uint32_t shadow_instances = 0;
     std::uint64_t triangles = 0;
     std::uint32_t instances_total = 0;
+    std::uint32_t instances_far = 0;  // Drawn with their far version (phase 52).
     std::uint32_t characters_drawn = 0;
     std::uint32_t characters_total = 0;
     float cull_ms = 0.0f;
@@ -111,6 +115,8 @@ struct RenderStats {
 };
 
 using ModelId = std::uint32_t;
+inline constexpr ModelId kNoFarModel = ~0u;
+inline constexpr std::size_t kMaxLooks = 4;
 using SkinnedId = std::uint32_t;
 
 // How far a model is drawn: normal models up to the draw distance; small
@@ -134,6 +140,20 @@ public:
     // Uploads a model; returns false on GPU errors.
     bool add_model(const ModelData& data, ModelId& id);
     void set_model_class(ModelId model, ModelClass model_class);
+    // Phase 52. The looks of a model: other models its instances can be
+    // drawn as, chosen by Instance::look (1 is looks[0]; an instance whose
+    // look is not there is drawn as the model itself). At most kMaxLooks - 1.
+    // A tree's states of the year are looks: changing one costs nothing.
+    void set_model_looks(ModelId model, std::span<const ModelId> looks);
+    // The far version of a model: drawn in its place where it is small on
+    // screen, and always in the shadows. kNoFarModel takes it away.
+    void set_far_model(ModelId model, ModelId far_model);
+    // Changes only the look of one instance (by its index in the last
+    // set_instances list).
+    void set_instance_look(ModelId model, std::uint32_t index, std::uint8_t look);
+    // For the model viewer: every model with a far version drawn near, or far.
+    enum class LodMode : std::uint8_t { Auto, Near, Far };
+    void set_lod_mode(LodMode mode);
     // Replaces a model's instances. Only that model's part of the GPU
     // buffer is rebuilt (unless it outgrows its room).
     void set_instances(ModelId model, std::span<const Instance> instances);
@@ -191,6 +211,9 @@ private:
 // Levels from GraphicsSettings, in the units the renderer uses.
 [[nodiscard]] float draw_distance_for_level(int level);
 [[nodiscard]] float vegetation_distance_for_level(int level);
+// A model with a far version changes to it when it is lower than this many
+// pixels on screen (by the vegetation quality level).
+[[nodiscard]] float lod_pixels_for_level(int level);
 [[nodiscard]] float grass_distance_for_level(int level);
 [[nodiscard]] int shadow_cascades_for_level(int level);
 [[nodiscard]] int shadow_map_size_for_level(int level);

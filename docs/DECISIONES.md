@@ -2132,3 +2132,29 @@ Ya muestra juntos los modelos de una definición; los tres estados de una especi
 
 **D-5107. Costo del cambio en los mapas más grandes.**
 Rehacer la lista tarda 301 ms en el mapa colosal de referencia (3,39 millones de objetos); se nota como un tirón. Ya ocurría 4 veces al año (más las nevadas) y ahora ocurre 8 veces más en cada estación que cambia. En mapas pequeños y medianos no se nota (menos de 20 ms). Queda anotado en `docs/RENDIMIENTO.md`; si molesta, se puede rehacer solo la parte que cambia.
+
+## Fase 52: versión lejana de los árboles (2026-10-03)
+
+**D-5201. El estado y la versión de un árbol se eligen al dibujar.**
+El renderizador ya no tiene una lista de instancias por cada modelo de árbol. Un modelo puede tener *aspectos* (otros modelos con los que se dibujan sus instancias, hasta 3 más el propio) y una *versión lejana*. Cada instancia lleva el número de su aspecto. Al descartar lo que no se ve, cada instancia visible va a la lista de su aspecto, en versión cercana o lejana. Los estados del año de un árbol son aspectos: `bloom` es el modelo y `autumn` y `bare` sus aspectos 1 y 2.
+
+**D-5202. Con eso se quitó el tirón del cambio de estado (pedido del usuario).**
+En la fase 51 cada paso del cambio rehacía las listas de todos los árboles (301 ms en el mapa colosal, D-5107). Ahora un paso solo cambia el número de aspecto de los árboles a los que les toca: no se reordena ni se sube nada a la GPU. Un árbol queda todo el año en el mismo lugar de la misma lista. El registro anota el paso si tarda 5 ms o más. Rehacer todo sigue pasando al cambiar de estación y al nevar, como antes de la fase 51, porque cambia el tinte de los arbustos y de los árboles viejos.
+
+**D-5203. Cuándo se cambia de versión.**
+Por el alto del árbol en pantalla: lejana por debajo de 90 píxeles en Ultra, 120 en Alta, 160 en Media y 220 en Baja (el nivel de "vegetación"). Un árbol que ya está en una versión no cambia hasta pasar el límite por un 10 %, así que no parpadea en el borde. Las sombras usan siempre la lejana. A la distancia inicial de la cámara (110 m) los árboles grandes se ven en su versión cercana y los chicos en la lejana.
+
+**D-5204. La versión lejana sale del modelo terminado, no de cada generador.**
+Hay tres generadores de árboles (los trazados, los construidos a mano y los gigantes) con muchas formas de follaje. En lugar de enseñarle a cada uno a hacer una versión simple, `far_tree.py` trabaja sobre el modelo ya hecho: reduce las piezas grandes soldadas (tronco y ramas gruesas), convierte las ramitas en púas de tres lados (las más grandes primero) y agrupa todo lo demás por cercanía en pocas masas, cada una un icosaedro estirado. Lo que está en el suelo (pasto, piedras, pétalos) se omite. Límite: 300 triángulos (600 en los gigantes).
+
+**D-5205. El color de una masa es la mezcla de sus hojas.**
+La especificación pedía el color dominante. Se probó: el bosque lejano se veía más claro que el cercano, porque de cerca se mezclan las hojas claras, medias y oscuras. Cada masa lleva la mezcla de los colores de sus hojas según cuánto cubre cada uno (sin los núcleos oscuros que quedan debajo), como material propio (`far_1`, `far_2`...).
+
+**D-5206. En los datos.**
+Una entrada de la lista de un estado puede ser `{"model": ..., "far": ...}`. El cerezo de `core` ya tiene sus tres versiones lejanas.
+
+**D-5207. El visor.**
+Las versiones lejanas aparecen en el grupo de su especie junto a las cercanas. En las opciones de vista hay "Versión: automática, cercana o lejana", que obliga a dibujar una de las dos en los modelos que tienen versión lejana.
+
+**D-5208. Medición.**
+`--reporte` anota además los objetos dibujados, cuántos en versión lejana, los triángulos, las llamadas de dibujo y el tiempo de descarte. F3 muestra cuántos objetos van en versión lejana. Resultados en `docs/RENDIMIENTO.md`: en el mapa colosal, un bosque de árboles nuevos con versión lejana dibuja menos de la mitad de triángulos que el de árboles viejos y queda un 7 % por debajo en FPS (promedio de tres corridas, que varían entre sí un 10 %).

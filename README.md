@@ -547,6 +547,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Los demás árboles se ven igual que antes (cambian de color en otoño e invierno).
 - [ ] En `SalvaCiudadModelos.exe`, el grupo del cerezo muestra sus tres estados lado a lado.
 
+### Fase 52
+
+- [ ] Al alejar la cámara de un grupo de cerezos, pasan a su versión simple (masas facetadas) sin que se note un salto a la distancia normal de juego. Al acercarla, vuelven a la detallada. En el borde no parpadean.
+- [ ] F3, en "Objetos", muestra entre paréntesis cuántos se dibujan en versión lejana (LOD).
+- [ ] Las sombras de los cerezos se ven bien (usan siempre la versión simple).
+- [ ] En los primeros días del otoño, del invierno y de la primavera, los cerezos van cambiando sin tirones, también en un mapa colosal.
+- [ ] Talar un cerezo en otoño y en invierno: desaparece el árbol correcto.
+- [ ] En `SalvaCiudadModelos.exe`, el grupo del cerezo muestra las seis versiones; con "Versión: lejana" o "cercana" las tres detalladas cambian a la que se pide.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

@@ -273,6 +273,29 @@ TEST_SUITE("model") {
         }
     }
 
+    TEST_CASE("a tree's far version is the same tree in about 300 triangles") {
+        // Phase 52: art/blender/far_tree.py makes it from the finished model.
+        for (const char* state : {"bloom", "autumn", "bare"}) {
+            const std::string name = std::string("trees/cherry_1_") + state;
+            const ModelLoadResult near_model = load_data((name + ".glb").c_str());
+            const ModelLoadResult far_model = load_data((name + "_far.glb").c_str());
+            REQUIRE_MESSAGE(near_model.ok, name << ": " << near_model.error);
+            REQUIRE_MESSAGE(far_model.ok, name << "_far: " << far_model.error);
+            const std::size_t far_triangles = far_model.model.indices.size() / 3;
+            CHECK(far_triangles >= 100);
+            CHECK(far_triangles <= 330);
+            CHECK(far_triangles * 4 < near_model.model.indices.size() / 3);
+            // As tall and as wide, within a fifth: it takes the other's place.
+            const float near_h = near_model.model.bounds_max.y - near_model.model.bounds_min.y;
+            const float far_h = far_model.model.bounds_max.y - far_model.model.bounds_min.y;
+            CHECK(far_h == doctest::Approx(near_h).epsilon(0.2));
+            const float near_w = near_model.model.bounds_max.x - near_model.model.bounds_min.x;
+            const float far_w = far_model.model.bounds_max.x - far_model.model.bounds_min.x;
+            CHECK(far_w == doctest::Approx(near_w).epsilon(0.25));
+            CHECK(far_model.model.bounds_min.y == doctest::Approx(0.0f).epsilon(0.01).scale(1.0));
+        }
+    }
+
     TEST_CASE("the study models that have been generated load, skeletons and clips included") {
         // art/studies is not versioned: the Blender scripts write it (phases 46
         // and 48). Whatever is there must load; a checkout without it skips this.

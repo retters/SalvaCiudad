@@ -660,6 +660,11 @@ def build_final(spec, out):
         budget = int(budget * max(0.5, min(0.95, spec.max_tris / tris)))
     os.makedirs(out, exist_ok=True)
     path = os.path.join(out, spec.name + ".glb")
+    # A tree also gets its far version (phase 52), made from the finished model.
+    far = None
+    if getattr(spec, "far_limit", 0):
+        import far_tree
+        far = far_tree.make(mb, spec.colors, spec.far_limit)
     if spec.rig is not None:
         import rigs
         rigs.export_rigged(spec, mb, path)
@@ -669,6 +674,10 @@ def build_final(spec, out):
         if grip is not None:
             obj["grip"] = [float(c) for c in grip]  # Where a hand holds it; glTF extras.
         common.export_glb(path, [obj], extras=grip is not None)
+    if far is not None:
+        far_tris = triangles(far)
+        common.export_glb(os.path.join(out, spec.name + "_far.glb"), [far.to_object(spec.name + "_far", {**spec.colors, **far.far_colors})])
+        print(f"MODEL {spec.name}_far: {far_tris} triangles")
     status = "" if tris <= spec.max_tris else f"  OVER THE LIMIT {spec.max_tris}"
     print(f"MODEL {spec.name}: {tris} triangles (budget {budget}){status}")
     return tris

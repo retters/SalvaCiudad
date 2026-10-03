@@ -39,8 +39,8 @@ std::size_t tree_slot(std::size_t species, sim::TreeSize size) {
     return species * kSpeciesSlots + static_cast<std::size_t>(size);
 }
 
-std::size_t tree_slot(std::size_t species, sim::TreeState state, std::size_t variant) {
-    return species * kSpeciesSlots + static_cast<std::size_t>(state) * sim::kMaxModelVariants + variant;
+std::size_t tree_variant_slot(std::size_t species, std::size_t variant) {
+    return species * kSpeciesSlots + variant;
 }
 
 std::size_t tree_slot_count(const sim::Content& content) {
@@ -69,11 +69,13 @@ sim::Season season_before(sim::Season season) {
 
 }  // namespace
 
-sim::TreeState tree_state(const sim::MapFeature& f, TreeCalendar when) {
-    // Its own step, from its place: 0 changes first.
+int tree_turn(const sim::MapFeature& f) {
     const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.z.raw()) ^ 0x51ED270Bu, static_cast<std::uint32_t>(f.x.raw()));
-    const int own = static_cast<int>((h >> 11) % static_cast<std::uint32_t>(kTurnSteps));
-    return state_of(when.turn > own ? when.season : season_before(when.season));
+    return static_cast<int>((h >> 11) % static_cast<std::uint32_t>(kTurnSteps));
+}
+
+sim::TreeState tree_state(const sim::MapFeature& f, TreeCalendar when) {
+    return state_of(when.turn > tree_turn(f) ? when.season : season_before(when.season));
 }
 
 std::size_t visual_slot_count(const sim::Content& content) {
@@ -84,19 +86,23 @@ std::size_t feature_slot(const sim::Content& content, sim::FeatureType type, std
     return tree_slot_count(content) + static_cast<std::size_t>(type) * sim::kMaxModelVariants + variant;
 }
 
-std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when) {
+std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when) {
+    if (f.type != sim::FeatureType::Tree || f.species >= content.flora.species.size() ||
+        !content.flora.species[f.species].by_state()) {
+        return 0;
+    }
+    const auto state = static_cast<std::size_t>(tree_state(f, when));
+    return content.flora.species[f.species].state_models[state].empty() ? std::uint8_t{0} : static_cast<std::uint8_t>(state);
+}
+
+std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
     if (f.type == sim::FeatureType::Tree) {
         if (f.species < content.flora.species.size() && content.flora.species[f.species].by_state()) {
-            // The state's variants, or Bloom's for a state without models.
-            const sim::SpeciesDef& sp = content.flora.species[f.species];
-            sim::TreeState state = tree_state(f, when);
-            if (sp.state_models[static_cast<std::size_t>(state)].empty()) {
-                state = sim::TreeState::Bloom;
-            }
-            const std::size_t variants = sp.state_models[static_cast<std::size_t>(state)].size();
-            return tree_slot(f.species, state,
-                             pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
-                                          std::min(variants, sim::kMaxModelVariants)));
+            // One of the variants, by the place; the state is its look.
+            const std::size_t variants = content.flora.species[f.species].state_models[0].size();
+            return tree_variant_slot(
+                f.species, pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
+                                        std::min(variants, sim::kMaxModelVariants)));
         }
         return tree_slot(f.species, static_cast<sim::TreeSize>(f.size));
     }
@@ -287,9 +293,10 @@ std::vector<std::vector<render::Instance>> build_feature_instances(const sim::Ma
     std::vector<std::vector<render::Instance>> features(visual_slot_count(content));
     // One instance per natural feature, standing on the ground.
     for (const sim::MapFeature& f : map.features) {
-        const std::size_t slot = visual_slot(content, f, when);
+        const std::size_t slot = visual_slot(content, f);
         if (slot < features.size()) {
             features[slot].push_back(feature_instance(map, f, &content, when.season, snowy));
+            features[slot].back().look = tree_look(content, f, when);
         }
     }
     return features;
@@ -394,15 +401,39 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
     bool any = false;
     for (std::size_t s = 0; s < content.flora.species.size(); ++s) {
         const sim::SpeciesDef& sp = content.flora.species[s];
-        for (std::size_t st = 0; st < sim::kTreeStates && sp.by_state(); ++st) {
-            for (std::size_t v = 0; v < sp.state_models[st].size() && v < sim::kMaxModelVariants; ++v) {
-                const std::filesystem::path file = mods::mod_file(pack.dir(sp.mod), sp.state_models[st][v]);
-                Slot& slot = slots_[tree_slot(s, static_cast<sim::TreeState>(st), v)];
-                slot = file.empty() ? Slot{} : load_file(renderer, file, render::ModelClass::Normal);
-                slot.limited = true;
-                missing += slot.model == kNoModel ? 1 : 0;
-                any = any || slot.model != kNoModel;
+        // A species by state: each variant is a model with the other states
+        // as its looks (the variant of the same number, going around), and
+        // every file may have a far version.
+        const auto state_model = [&](std::size_t st, std::size_t v) {
+            const std::vector<std::string>& files = sp.state_models[st];
+            if (files.empty()) {
+                return kNoModel;
             }
+            const std::size_t i = v % files.size();
+            const std::filesystem::path file = mods::mod_file(pack.dir(sp.mod), files[i]);
+            const render::ModelId id = file.empty() ? kNoModel : load_file(renderer, file, render::ModelClass::Normal).model;
+            missing += id == kNoModel ? 1 : 0;
+            if (id != kNoModel && i < sp.state_far[st].size() && !sp.state_far[st][i].empty()) {
+                const std::filesystem::path far_file = mods::mod_file(pack.dir(sp.mod), sp.state_far[st][i]);
+                const render::ModelId far_id =
+                    far_file.empty() ? kNoModel : load_file(renderer, far_file, render::ModelClass::Normal).model;
+                missing += far_id == kNoModel ? 1 : 0;
+                renderer.set_far_model(id, far_id == kNoModel ? render::kNoFarModel : far_id);
+            }
+            return id;
+        };
+        for (std::size_t v = 0; sp.by_state() && v < sp.state_models[0].size() && v < sim::kMaxModelVariants; ++v) {
+            Slot& slot = slots_[tree_variant_slot(s, v)];
+            const std::filesystem::path file = mods::mod_file(pack.dir(sp.mod), sp.state_models[0][v]);
+            slot = Slot{};
+            if (state_model(0, v) != kNoModel) {
+                slot = load_file(renderer, file, render::ModelClass::Normal);
+                slot.limited = true;
+                // Looks 1 and 2: autumn and bare (the model itself without them).
+                const render::ModelId looks[2] = {state_model(1, v), state_model(2, v)};
+                renderer.set_model_looks(slot.model, looks);
+            }
+            any = any || slot.model != kNoModel;
         }
         for (std::size_t z = 0; z < sim::kTreeSizes && !sp.by_state(); ++z) {
             const auto size = static_cast<sim::TreeSize>(z);
@@ -511,7 +542,7 @@ void MapScene::build_feature_refs(const sim::MapData& map, const sim::Content& c
     }
     std::vector<std::uint32_t> next(slots_.size(), 0);
     for (std::size_t k = 0; k < map.features.size(); ++k) {
-        const std::size_t slot = visual_slot(content, map.features[k], when_);
+        const std::size_t slot = visual_slot(content, map.features[k]);
         if (slot >= slots_.size()) {
             continue;
         }
@@ -529,7 +560,7 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
     }
     const FeatureRef ref = feature_refs_[feature];
     const sim::MapFeature& f = map.features[feature];
-    const std::size_t slot = visual_slot(content, f, when_);
+    const std::size_t slot = visual_slot(content, f);
     if (ref.model == kNoModel || slot >= slots_.size()) {
         return;
     }
@@ -538,6 +569,7 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
     }
     looks_[feature] = look;
     render::Instance inst = feature_instance(map, f, &content, when_.season, snowy_);
+    inst.look = tree_look(content, f, when_);
     if (slot < tree_slots_) {
         inst.scale = slots_[slot].tree_scale(inst.scale);
     }
@@ -554,6 +586,31 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
 void MapScene::set_season(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
                           TreeCalendar when, bool snowy) {
     if (when == when_ && snowy == snowy_) {
+        return;
+    }
+    if (when.season == when_.season && snowy == snowy_ && models_loaded_) {
+        // Only the turn moved on: the trees whose turn came change their
+        // look, and nothing is rebuilt (phase 52).
+        const auto t0 = std::chrono::steady_clock::now();
+        if (feature_refs_.size() != map.features.size()) {
+            build_feature_refs(map, content);
+        }
+        for (std::size_t k = 0; k < map.features.size(); ++k) {
+            const sim::MapFeature& f = map.features[k];
+            if (f.type != sim::FeatureType::Tree) {
+                continue;
+            }
+            // Only the trees whose own step lies between the two turns.
+            const int own = tree_turn(f);
+            if ((when.turn > own) != (when_.turn > own) && feature_refs_[k].model != kNoModel) {
+                renderer.set_instance_look(feature_refs_[k].model, feature_refs_[k].index, tree_look(content, f, when));
+            }
+        }
+        when_ = when;
+        const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        if (ms >= 5.0) {
+            log::info("map: trees turned (step {}) in {:.0f} ms", when.turn, ms);
+        }
         return;
     }
     when_ = when;

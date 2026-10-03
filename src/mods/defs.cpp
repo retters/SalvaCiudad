@@ -191,9 +191,11 @@ public:
     // "models" as an object of lists by state (a tree species, phase 51):
     // {"bloom": [...], "autumn": [...], "bare": [...]}. The first state is
     // required; each list has 1 to kMaxModelVariants files that must exist.
+    // An entry is a file, or {"model": file, "far": file} with its far
+    // version (phase 52); `far` gets one entry per file, "" without one.
     void state_models(const std::function<std::filesystem::path(const std::string&)>& mod_dir,
-                      const std::string_view* names, std::vector<std::string>* out, std::size_t states,
-                      std::vector<ModelRef>* refs, const std::string& name_key) {
+                      const std::string_view* names, std::vector<std::string>* out, std::vector<std::string>* far,
+                      std::size_t states, std::vector<ModelRef>* refs, const std::string& name_key) {
         yyjson_mut_val* obj = yyjson_mut_obj_get(obj_, "models");
         if (obj == nullptr || !yyjson_mut_is_obj(obj)) {
             fail("\"models\" of a species must be an object with the files of each state");
@@ -222,26 +224,36 @@ public:
             std::size_t i = 0, n = 0;
             yyjson_mut_val* item = nullptr;
             yyjson_mut_arr_foreach(list, i, n, item) {
-                const char* v = yyjson_mut_get_str(item);
+                const bool pair = yyjson_mut_is_obj(item);
+                const char* v = pair ? yyjson_mut_get_str(yyjson_mut_obj_get(item, "model")) : yyjson_mut_get_str(item);
+                const char* fv = pair ? yyjson_mut_get_str(yyjson_mut_obj_get(item, "far")) : nullptr;
                 const std::string rel = v != nullptr ? v : "";
-                if (rel.empty() || rel.size() > 200) {
-                    fail("\"models\" entries must be file paths of up to 200 characters");
+                const std::string far_rel = fv != nullptr ? fv : "";
+                if (rel.empty() || rel.size() > 200 || far_rel.size() > 200 ||
+                    (pair && (far_rel.empty() || yyjson_mut_obj_size(item) != 2))) {
+                    fail("\"models\" entries must be file paths of up to 200 characters, or {\"model\": file, \"far\": file}");
                     continue;
                 }
                 if (std::find(out[state].begin(), out[state].end(), rel) != out[state].end()) {
                     fail(std::format("\"models\" lists '{}' twice", rel));
                     continue;
                 }
-                const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), rel);
-                std::error_code ec;
-                const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
-                if (!exists) {
-                    fail(std::format("model '{}' not found in mod '{}'", rel, def_.model_mod));
-                }
-                if (refs != nullptr) {
-                    refs->push_back({def_.type, def_.id, name_key, def_.model_mod, rel, exists});
+                for (const std::string& file : {rel, far_rel}) {
+                    if (file.empty()) {
+                        continue;
+                    }
+                    const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), file);
+                    std::error_code ec;
+                    const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
+                    if (!exists) {
+                        fail(std::format("model '{}' not found in mod '{}'", file, def_.model_mod));
+                    }
+                    if (refs != nullptr) {
+                        refs->push_back({def_.type, def_.id, name_key, def_.model_mod, file, exists});
+                    }
                 }
                 out[state].push_back(rel);
+                far[state].push_back(far_rel);
             }
         }
         if (out[0].empty()) {
@@ -824,7 +836,8 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             if (r.has("model")) {
                 r.fail("use \"model\" or \"models\", not both");
             }
-            r.state_models(mod_dir, kTreeStateNames, def.state_models, sim::kTreeStates, refs, def.name_key);
+            r.state_models(mod_dir, kTreeStateNames, def.state_models, def.state_far, sim::kTreeStates, refs,
+                           def.name_key);
         }
         const std::string prefix = by_state ? std::string() : r.text("model", true, 200);
         for (std::size_t s = 0; s < sim::kTreeSizes && r.ok() && !by_state; ++s) {

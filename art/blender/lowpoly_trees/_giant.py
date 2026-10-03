@@ -684,6 +684,7 @@ class Giant(studies.Spec):
 
     tone_material = None
     tones = 0.0
+    far_limit = 600  # Triangles of its far version (far_tree.py).
     traced = None
     light_bark = True  # Three tones of bark; False: two (a tree that needs its materials for something else).
 

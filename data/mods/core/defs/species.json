@@ -116,13 +116,22 @@
       "name": "species.cherry",
       "models": {
         "bloom": [
-          "models/trees/cherry_1_bloom.glb"
+          {
+            "model": "models/trees/cherry_1_bloom.glb",
+            "far": "models/trees/cherry_1_bloom_far.glb"
+          }
         ],
         "autumn": [
-          "models/trees/cherry_1_autumn.glb"
+          {
+            "model": "models/trees/cherry_1_autumn.glb",
+            "far": "models/trees/cherry_1_autumn_far.glb"
+          }
         ],
         "bare": [
-          "models/trees/cherry_1_bare.glb"
+          {
+            "model": "models/trees/cherry_1_bare.glb",
+            "far": "models/trees/cherry_1_bare_far.glb"
+          }
         ]
       },
       "sizes": [

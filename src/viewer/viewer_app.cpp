@@ -648,6 +648,25 @@ ViewerApp::Loaded& ViewerApp::load_model(const std::string& mod, const std::stri
         }
     } else {
         out.ok = scene_.add_model(*data, out.model);
+        // Phase 52: a tree's model knows its far version, so the view can
+        // change to it by distance or be made to show one of the two.
+        for (const sim::SpeciesDef& sp : pack_ ? pack_->content.flora.species : std::vector<sim::SpeciesDef>{}) {
+            for (std::size_t st = 0; st < sim::kTreeStates && out.ok && sp.mod == mod; ++st) {
+                for (std::size_t i = 0; i < sp.state_models[st].size() && i < sp.state_far[st].size(); ++i) {
+                    const CatalogModel* far_model =
+                        sp.state_models[st][i] == path && !sp.state_far[st][i].empty() ? catalog_.find(mod, sp.state_far[st][i])
+                                                                                       : nullptr;
+                    if (far_model != nullptr) {
+                        const render::ModelId near_id = out.model;
+                        const Loaded& far_loaded = load_model(mod, far_model->path, far_model->file);
+                        if (far_loaded.ok) {
+                            scene_.set_far_model(near_id, far_loaded.model);
+                        }
+                        return loaded_[key];
+                    }
+                }
+            }
+        }
     }
     if (!out.ok && out.error.empty()) {
         out.error = "the GPU refused it";
@@ -1364,6 +1383,19 @@ void ViewerApp::draw_card(float width, float height) {
             ImGui::EndCombo();
         }
         ImGui::Checkbox(tr("viewer.view.snow").c_str(), &snowy_);
+        // Phase 52: which version of a model with a far one is drawn.
+        const std::string lods[] = {tr("viewer.view.lod.auto"), tr("viewer.view.lod.near"), tr("viewer.view.lod.far")};
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        const std::string lod_label = tr("viewer.view.lod") + ": " + lods[lod_];
+        if (ImGui::BeginCombo("##lod", lod_label.c_str())) {
+            for (int l = 0; l < 3; ++l) {
+                if (ImGui::Selectable(lods[l].c_str(), l == lod_)) {
+                    lod_ = l;
+                    scene_.set_lod_mode(static_cast<render::SceneRenderer::LodMode>(l));
+                }
+            }
+            ImGui::EndCombo();
+        }
     }
     if (bodies) {
         const std::string palette = tr("viewer.view.palette", palette_ % palette_count_ + 1, palette_count_);

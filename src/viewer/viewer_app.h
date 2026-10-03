@@ -187,6 +187,7 @@ private:
     bool turntable_ = false;
     int season_ = 1;  // sim::Season; summer.
     bool snowy_ = false;
+    int lod_ = 0;  // render::SceneRenderer::LodMode.
     std::uint32_t palette_ = 0;
     std::uint32_t palette_count_ = 1;
     std::uint32_t building_palette_ = 0;
