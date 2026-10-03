@@ -617,12 +617,31 @@ def export_rigged(spec, mb, path):
     """Binds the finished builder to the spec's skeleton, keys the clips
     and exports the model with its animations."""
     spec.rig.bind(mb)
-    animate(spec.rig, mb.to_object(spec.name, spec.colors), spec.name, path)
+    # The materials the game recolors take the name of their palette slot
+    # (see palette_name): "tunic_light" becomes "top_light".
+    slots = getattr(spec, "palette", {})
+    mb.materials[:] = [palette_name(m, slots) for m in mb.materials]
+    assert len(set(mb.materials)) == len(mb.materials), "two materials share a palette name"
+    colors = {palette_name(m, slots): c for m, c in spec.colors.items()}
+    animate(spec.rig, mb.to_object(spec.name, colors), spec.name, path, far_tris=getattr(spec, "far_tris", 0))
 
 
-def animate(rig, mesh, name, path, images=False):
+def palette_name(material, slots):
+    """The material's name in the model: `slots` maps a material to the
+    palette slot the game recolors it with ({"tunic": "top"}); its lighter
+    and darker facets ("tunic_light") follow it ("top_light")."""
+    for source, slot in slots.items():
+        if material == source or material.startswith(source + "_"):
+            return slot + material[len(source):]
+    return material
+
+
+def animate(rig, mesh, name, path, images=False, far_tris=0):
     """Gives a mesh object whose vertex groups are the rig's bones the
-    skeleton and its clips, and exports it."""
+    skeleton and its clips, and exports it. With far_tris, also exports
+    "<name>_far.glb" next to it: the same skeleton with the mesh collapsed
+    to about that many triangles and no clips (the game plays the near
+    model's on it), for when the model is small on screen."""
     arm = rig.build_armature(name + "_rig")
     mesh.parent = arm
     mod = mesh.modifiers.new("Armature", "ARMATURE")
@@ -635,8 +654,18 @@ def animate(rig, mesh, name, path, images=False):
             arm[f"{name}_loops"] = 0   # Plays once and holds its last pose.
     for name, prop in sorted(rig.clip_props().items()):
         arm[f"{name}_prop"] = prop
+        # How long the bone that holds the tool is: the tool's grip goes at
+        # its middle (the game does not know where a bone ends).
+        bone = rig.by_name[prop.partition(":")[2]]
+        arm[f"{bone.name}_length"] = (bone.tail - bone.head).length
     arm.animation_data.action = None
     for pb in arm.pose.bones:
         pb.rotation_quaternion = (1, 0, 0, 0)
         pb.location = (0, 0, 0)
     common.export_glb(path, [arm, mesh], animations=True, extras=True, images=images)
+    if far_tris:
+        tris = sum(len(p.vertices) - 2 for p in mesh.data.polygons)
+        mod = mesh.modifiers.new("Far", "DECIMATE")
+        mod.ratio = min(1.0, far_tris / max(1, tris))
+        common.export_glb(path[:-len(".glb")] + "_far.glb", [arm, mesh])
+        mesh.modifiers.remove(mod)

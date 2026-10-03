@@ -230,15 +230,9 @@ bool App::init() {
     if (scene_.create(gpu_, settings_->settings().graphics)) {
         const std::filesystem::path core = pack_->dir(mods::kCoreModId);
         scene_ok_ = true;
-        // Every race's bodies (phase 19), humans first.
-        std::vector<std::string> bodies{"human"};
-        for (const sim::RaceDef& r : pack_->content.races) {
-            if (std::find(bodies.begin(), bodies.end(), r.body) == bodies.end()) {
-                bodies.push_back(r.body);
-            }
-        }
-        if (!walkers_.load(scene_, core, bodies)) {
-            log::warn("villagers: no body models; people will not be drawn");
+        // Every race's characters (phase 57).
+        if (!walkers_.load(scene_, core, pack_->content)) {
+            log::warn("villagers: no character models; people will not be drawn");
         }
     }
     if (scene_ok_ && !map_scene_.load_models(scene_, *pack_)) {
@@ -246,7 +240,7 @@ bool App::init() {
     }
     if (scene_ok_) {
         village_.load(scene_, *pack_);
-        village_.set_bodies(&walkers_.bodies(), static_cast<std::uint32_t>(make_villager_palettes().size()));
+        village_.set_cast(&walkers_.cast());
     }
     if (!scene_ok_) {
         log::warn("scene: 3D view unavailable, menus only");
@@ -741,7 +735,6 @@ void App::render_frame(float dt) {
                 const bool snowy = replay_ ? replay_->view.snow * static_cast<float>(sim::village::kMaxSnow) > 25.0f : g.snow() > 25;
                 map_scene_.set_season(scene_, g.map(), g.content(), when, snowy);
                 map_scene_.update_sky(scene_, dt * static_cast<float>(host_->game_paused() ? 0 : 1));
-                village_.set_season(season);
                 lighting_ = seasonal_lighting(season);
                 if (!still) {
                     update_placement(frame.width, frame.height);
@@ -2338,6 +2331,13 @@ void App::update_replay() {
                 const report::View& v = replay_->view;
                 camera_.restore(v.mode, v.target, v.yaw, v.pitch, v.distance);
                 clock_.set_speed(0);
+                // A crowd to measure with: a square of villagers 2 m apart.
+                const auto side = static_cast<std::uint32_t>(std::ceil(std::sqrt(static_cast<double>(v.people))));
+                for (std::uint32_t i = 0; i < v.people; ++i) {
+                    const float x = v.target.x + (static_cast<float>(i % side) - static_cast<float>(side) * 0.5f) * 2.0f;
+                    const float z = v.target.z + (static_cast<float>(i / side) - static_cast<float>(side) * 0.5f) * 2.0f;
+                    (void)walkers_.add_villager({x, 0.0f, z}, std::nullopt);
+                }
                 replay_step_ = ReplayStep::Settling;
                 replay_since_ns_ = now;
                 replay_frames_ = 0;
@@ -2395,9 +2395,9 @@ void App::finish_replay(const FrameCapture& capture) {
     if (replay_measured_ > 0 && replay_measured_ns_ > 0) {
         const double seconds = static_cast<double>(replay_measured_ns_) / 1e9;
         const render::RenderStats& st = scene_.stats();
-        notes += std::format("Frames: {} in {:.2f} s, {:.1f} FPS; characters drawn {} of {}\n", replay_measured_,
+        notes += std::format("Frames: {} in {:.2f} s, {:.1f} FPS; characters drawn {} of {} ({} far)\n", replay_measured_,
                              seconds, static_cast<double>(replay_measured_) / seconds, st.characters_drawn,
-                             st.characters_total);
+                             st.characters_total, st.characters_far);
         notes += std::format("Objects drawn: {} of {} ({} in their far version); {:.2f} M triangles; {} draw calls; "
                              "culling {:.2f} ms\n",
                              st.instances_drawn, st.instances_total, st.instances_far,

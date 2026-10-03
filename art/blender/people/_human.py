@@ -38,6 +38,7 @@ class Human(studies.Spec):
     max_tris = 3000
     budget = 1300
     rigged = True       # Gets the shared skeleton and clips (rigs_human.Humanoid).
+    far_tris = 500      # Triangles of its far version, "<name>_far.glb" (rigs.animate).
 
     def __init__(self):
         self.k = self.height / 1.8

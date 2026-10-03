@@ -82,11 +82,11 @@ TEST_SUITE("viewer") {
         CHECK(house->uses[0].kind == "building");
         CHECK(house->uses[0].id == "core:house");
         CHECK(c.find("core", "models/animals/wolf.glb")->category == viewer::Category::Animals);
-        CHECK(c.find("core", "models/characters/elf_female.glb")->category == viewer::Category::Characters);
+        CHECK(c.find("core", "models/characters/high_elf_woman.glb")->category == viewer::Category::Characters);
         CHECK(c.find("core", "models/props/cloud.glb")->category == viewer::Category::Props);
     }
 
-    TEST_CASE("variants are grouped: a tree's states, bodies and the code's hats") {
+    TEST_CASE("variants are grouped: a tree's states, a people's characters and the code's tools") {
         const viewer::Catalog c = catalog_for();
         // A species' models: its three states, each near and far.
         const viewer::CatalogGroup* oak = group(c, "core:oak");
@@ -96,14 +96,15 @@ TEST_SUITE("viewer") {
         for (const std::size_t m : oak->models) {
             CHECK(c.models[m].path.starts_with("models/trees/yellow_oak_"));
         }
-        // A race's two bodies.
+        // A people's characters: the humans have six (the mage and the
+        // cleric are for both sexes), each with its far version.
         const viewer::CatalogGroup* human = group(c, "core:human");
         REQUIRE(human != nullptr);
-        CHECK(human->models.size() == 2);
+        CHECK(human->models.size() == 12);
         // Models the code loads by name are used, grouped by their use.
-        const viewer::CatalogGroup* hats = group(c, "code:hat");
-        REQUIRE(hats != nullptr);
-        CHECK(hats->models.size() == std::size(builtin_models::kHats));
+        const viewer::CatalogGroup* tools = group(c, "code:tool");
+        REQUIRE(tools != nullptr);
+        CHECK(tools->models.size() == std::size(builtin_models::kTools));
         const viewer::CatalogGroup* cloud = group(c, "code:cloud");
         REQUIRE(cloud != nullptr);
         CHECK(cloud->models.size() == std::size(builtin_models::kClouds));
@@ -153,14 +154,14 @@ TEST_SUITE("viewer") {
     }
 
     TEST_CASE("a body's card lists its skeleton and animations") {
-        const fs::ReadResult r = fs::read_file(kBuiltin / "core" / "models" / "characters" / "human_male.glb", 16u << 20);
+        const fs::ReadResult r = fs::read_file(kBuiltin / "core" / "models" / "characters" / "adventurer_man.glb", 16u << 20);
         REQUIRE(r.error == fs::IoError::None);
         const render::ModelLoadResult m =
             render::load_glb({reinterpret_cast<const std::uint8_t*>(r.data.data()), r.data.size()});
         REQUIRE(m.ok);
         const viewer::ModelStats s = viewer::model_stats(m.model);
         CHECK(s.skinned);
-        CHECK(s.joints == 17);
+        CHECK(s.joints >= 17);  // The villagers' 17 bones and those of his clothes.
         CHECK(std::find(s.clips.begin(), s.clips.end(), "walk") != s.clips.end());
     }
 

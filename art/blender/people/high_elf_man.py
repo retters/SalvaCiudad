@@ -17,6 +17,7 @@ from rigs import smooth
 
 
 class HighElf(Elf):
+    palette = {"red": "top"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "skin": common.rgb(0xF4B588),
         "hair": common.rgb(0xEBBE6C),

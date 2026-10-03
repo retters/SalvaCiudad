@@ -41,7 +41,11 @@ struct View {
     std::uint32_t height = 0;
     sim::Season season = sim::Season::Spring;
     float snow = 0.0f;  // 0..1, as drawn.
+    // Villagers to put in the middle of the view when the report is shown
+    // again (--reporte), to measure how a crowd draws. Written by hand.
+    std::uint32_t people = 0;
 };
+inline constexpr std::int64_t kMaxReportPeople = 5000;
 
 using Cell = std::array<std::int32_t, 2>;
 

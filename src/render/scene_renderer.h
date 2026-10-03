@@ -55,6 +55,11 @@ struct Palette {
     math::Vec3 colors[kPaletteSlots];
 };
 
+// The color a palette slot replaces in a model: that of its material named
+// as the slot ("skin"), or of the first one that starts with it
+// ("skin_light"). False if the model has no material of that slot.
+[[nodiscard]] bool palette_reference(const ModelData& model, std::size_t slot, math::Vec3& color);
+
 // Colors for the building palette slots (var_roof, var_roof_dark,
 // var_walls, var_shutter), linear RGB. Models name a material after a slot
 // to have it recolored per instance.
@@ -102,6 +107,7 @@ struct RenderStats {
     std::uint32_t instances_total = 0;
     std::uint32_t instances_far = 0;  // Drawn with their far version (phase 52).
     std::uint32_t characters_drawn = 0;
+    std::uint32_t characters_far = 0;  // Of those, with their far version (phase 57).
     std::uint32_t characters_total = 0;
     float cull_ms = 0.0f;
     int msaa_samples = 1;
@@ -171,9 +177,18 @@ public:
 
     // Animated bodies. Returns false if the model has no skeleton or clips.
     bool add_skinned_model(const ModelData& data, SkinnedId& id);
+    // The far version of a body (phase 57): the same skeleton with a
+    // simpler mesh and no clips of its own. A character lower on screen
+    // than the level of detail's pixels is drawn with it, and so are all
+    // the shadows.
+    bool set_far_body(const ModelData& data, SkinnedId body);
     // A rigid model pinned to a bone of `body`, in the body's bind pose: its
     // origin goes to the start of the bone. Returns the accessory bit.
     bool add_accessory(const ModelData& data, SkinnedId body, std::string_view bone, std::uint32_t& bit);
+    // The same, placed by `placement`: where the model's points are in the
+    // body's bind pose (a tool turned to lie along a hand).
+    bool add_accessory(const ModelData& data, SkinnedId body, std::string_view bone, const math::Mat4& placement,
+                       std::uint32_t& bit);
     [[nodiscard]] int clip_index(SkinnedId body, std::string_view name) const;
     [[nodiscard]] float clip_duration(SkinnedId body, std::uint32_t clip) const;
     void set_palettes(std::span<const Palette> palettes);

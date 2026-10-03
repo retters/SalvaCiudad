@@ -170,13 +170,13 @@ const char* kSkinnedJson = R"({"asset":{"version":"2.0"},"scene":0,"scenes":[{"n
 }  // namespace
 
 TEST_SUITE("model") {
-    TEST_CASE("the character bodies have a skeleton and baked animations") {
-        for (const char* file : {"characters/human_male.glb", "characters/human_female.glb"}) {
+    TEST_CASE("the characters have a skeleton, baked animations and what the game reads from them") {
+        for (const char* file : {"characters/adventurer_man.glb", "characters/dwarf_woman.glb", "characters/orc.glb"}) {
             const ModelLoadResult r = load_data(file);
             REQUIRE_MESSAGE(r.ok, file << ": " << r.error);
             const ModelData& m = r.model;
             CHECK(m.skinned());
-            CHECK(m.joint_names.size() == 17);
+            CHECK(m.joint_names.size() >= 17);
             CHECK(m.skin.size() == m.vertices.size());
             for (const JointWeights& jw : m.skin) {
                 CHECK(jw.weights[0] + jw.weights[1] + jw.weights[2] + jw.weights[3] == 255);
@@ -184,37 +184,56 @@ TEST_SUITE("model") {
                     CHECK(j < m.joint_names.size());
                 }
             }
-            const int idle = m.clip_index("idle");
-            const int walk = m.clip_index("walk");
-            REQUIRE(idle >= 0);
-            REQUIRE(walk >= 0);
-            CHECK(m.clips[static_cast<std::size_t>(idle)].frame_count == 60);
-            CHECK(m.clips[static_cast<std::size_t>(walk)].frame_count == 30);
+            const auto clip = [&](const char* name) -> const ModelClip& {
+                const int i = m.clip_index(name);
+                REQUIRE_MESSAGE(i >= 0, name);
+                return m.clips[static_cast<std::size_t>(i)];
+            };
+            CHECK(clip("idle").frame_count == 90);
+            CHECK(clip("walk").frame_count == 16);
             for (const ModelClip& c : m.clips) {
                 CHECK(c.skin.size() == static_cast<std::size_t>(c.frame_count) * m.joint_names.size());
             }
-            // Hats sit on the head bone, which starts at the top of the neck.
-            const int head = m.joint_index("head");
-            REQUIRE(head >= 0);
-            const math::Mat4& rest = m.joint_rest[static_cast<std::size_t>(head)];
-            const float expected = std::string_view(file).find("female") != std::string_view::npos ? 1.53f * 0.95f : 1.53f;
-            CHECK(rest.m[3][1] == doctest::Approx(expected).epsilon(0.001));
-            CHECK(std::abs(rest.m[3][0]) < 1e-4f);
+            // Walking and running say how fast, so the feet do not slide.
+            CHECK(clip("walk").speed > 0.5f);
+            CHECK(clip("run").speed > clip("walk").speed);
+            CHECK(clip("idle").speed == 0.0f);
+            // The tools: which one and in which hand; the cast plays once.
+            CHECK(clip("chop").prop == "axe:hand.R");
+            CHECK(clip("shoot").prop == "bow:hand.L");
+            CHECK(clip("fish_stand").prop == "rod:hand.R");
+            CHECK(clip("work").prop == "hammer:hand.R");
+            CHECK(clip("idle").prop.empty());
+            CHECK_FALSE(clip("fish_cast").loops);
+            CHECK(clip("walk").loops);
+            // The hands tell their length, to put the grip at their middle.
+            REQUIRE(m.joint_length.size() == m.joint_names.size());
+            for (const char* hand : {"hand.L", "hand.R"}) {
+                const int j = m.joint_index(hand);
+                REQUIRE(j >= 0);
+                CHECK(m.joint_length[static_cast<std::size_t>(j)] > 0.05f);
+                CHECK(m.joint_length[static_cast<std::size_t>(j)] < 0.4f);
+            }
+            CHECK(m.joint_length[static_cast<std::size_t>(m.joint_index("head"))] == 0.0f);
         }
     }
 
-    TEST_CASE("accessories and props are rigid models") {
-        for (const char* file : {"characters/hat_straw.glb", "characters/hat_cap.glb", "characters/beard.glb",
-                                 "characters/apron_male.glb", "characters/apron_female.glb", "trees/pine_bloom.glb",
-                                 "props/rock.glb", "props/house_small.glb"}) {
+    TEST_CASE("tools and props are rigid models; a tool says where it is held") {
+        for (const char* file : {"tools/axe.glb", "tools/bow.glb", "tools/rod.glb", "tools/hammer.glb",
+                                 "trees/pine_bloom.glb", "props/rock.glb", "props/house_small.glb"}) {
             const ModelLoadResult r = load_data(file);
             REQUIRE_MESSAGE(r.ok, file << ": " << r.error);
             CHECK_FALSE(r.model.skinned());
             CHECK_FALSE(r.model.primitives.empty());
         }
-        // The straw hat's brim rests on the head, 0.2 m above the neck.
-        const ModelLoadResult hat = load_data("characters/hat_straw.glb");
-        CHECK(hat.model.bounds_min.y == doctest::Approx(0.2f).epsilon(0.01));
+        // The axe is held 0.36 m up its handle (written with Z up, read with Y up).
+        const ModelLoadResult axe = load_data("tools/axe.glb");
+        CHECK(axe.model.grip.x == doctest::Approx(0.0f));
+        CHECK(axe.model.grip.y == doctest::Approx(0.36f).epsilon(0.01));
+        CHECK(axe.model.grip.z == doctest::Approx(0.0f));
+        // A model that does not say is held by its origin.
+        const ModelLoadResult rock = load_data("props/rock.glb");
+        CHECK(rock.model.grip.y == 0.0f);
     }
 
     TEST_CASE("a skinned model with a joint index past the skeleton is rejected") {

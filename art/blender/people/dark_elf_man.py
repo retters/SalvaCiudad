@@ -25,6 +25,8 @@ import rigs
 import rigs_human
 import studies
 from _human import Human
+from _people_kit import arc, ribbon
+from _people_kit import hull as solid
 from rigs import Bone, Pose, smooth
 
 
@@ -88,49 +90,6 @@ def sheet(mb, rows, thickness, mat, back=None, trim=None, hem=0.0, sides=0.0, to
     for j in range(nc - 1):
         for i, cell in ((0, 0), (nr - 1, nr - 2)):
             face((outer[i][j], outer[i][j + 1], inner[i][j + 1], inner[i][j]), trim if is_trim(cell, j) else mat)
-
-
-def ribbon(mb, centers, widths, side_axis, thickness, mat):
-    """A thin curved strip along `centers`: at every point it is
-    `widths[i]` wide, across the line and away from side_axis (the
-    direction its flat faces look to). As the rooster's feathers."""
-    side_axis = Vector(side_axis).normalized()
-    pts = [Vector(c) for c in centers]
-    off = side_axis * (thickness * 0.5)
-    rows = []
-    for i, p in enumerate(pts):
-        t = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
-        across = t.cross(side_axis).normalized() * (widths[i] * 0.5)
-        rows.append([mb.bm.verts.new(p + a + o) for a in (-across, across) for o in (off, -off)])
-    faces = []
-    for r0, r1 in zip(rows, rows[1:]):
-        faces += [(r0[0], r0[2], r1[2], r1[0]), (r0[3], r0[1], r1[1], r1[3]),
-                  (r0[1], r0[0], r1[0], r1[1]), (r0[2], r0[3], r1[3], r1[2])]
-    faces.append((rows[0][0], rows[0][1], rows[0][3], rows[0][2]))
-    faces.append((rows[-1][2], rows[-1][3], rows[-1][1], rows[-1][0]))
-    for f in faces:
-        mb.bm.faces.new(f)
-    return mb._finish([v for r in rows for v in r], mat, None)
-
-
-def solid(mb, points, mat):
-    """A convex faceted piece (studies.hull) of the given material."""
-    tmp = bmesh.new()
-    verts = [tmp.verts.new(Vector(p)) for p in points]
-    res = bmesh.ops.convex_hull(tmp, input=verts)
-    bmesh.ops.delete(tmp, geom=[v for v in res["geom_interior"] if isinstance(v, bmesh.types.BMVert)],
-                     context="VERTS")
-    mapping = {v: mb.bm.verts.new(v.co) for v in tmp.verts}
-    for f in tmp.faces:
-        mb.bm.faces.new([mapping[v] for v in f.verts])
-    tmp.free()
-    return mb._finish(list(mapping.values()), mat, None)
-
-
-def arc(a0, a1, count):
-    """`count` angles in radians from a0 to a1 degrees (0 = +X, -90 = the
-    front, 90 = the back; growing counter-clockwise seen from above)."""
-    return [math.radians(a0 + (a1 - a0) * i / (count - 1)) for i in range(count)]
 
 
 # --------------------------------------------------------------------- rig
@@ -619,6 +578,7 @@ class DarkElfMan(Elf):
     lock = (0.072, -0.13, 1.385)
     lock_mid = -0.135
     ear = (0.1, 0.09)
+    palette = {"cloak": "top", "tunic": "bottom"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "skin": common.rgb(0xB587D8),
         "hair": common.rgb(0xDCD2E2),

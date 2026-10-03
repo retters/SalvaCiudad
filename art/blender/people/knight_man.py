@@ -17,6 +17,7 @@ class KnightMan(Folk):
     shoulder = 0.2      # Measured on the picture: his arms hang wider than the shared body's.
     build = 1.08
     budget = 1000
+    palette = {"blue": "top"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "skin": common.rgb(0xF6AC7C),
         "hair": common.rgb(0x4A302C),

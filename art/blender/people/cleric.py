@@ -26,6 +26,7 @@ class Cleric(Figure):
     chains = (("coat", "hips", ((0, 0.13, 1.1), (0, 0.215, 0.62), (0, 0.26, 0.17)), True),
               ("tabard", "hips", ((0, -0.165, 0.99), (0, -0.175, 0.68), (0, -0.18, 0.39)), False))
     part_bones = {"cowl": "chest", "sleeve.L": "upper_arm.L", "sleeve.R": "upper_arm.R"}
+    palette = {"white": "top", "red": "bottom"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "white": common.rgb(0xE6D6C8),
         "white_light": common.rgb(0xF1E3D5),

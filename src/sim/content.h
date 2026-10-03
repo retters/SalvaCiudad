@@ -167,11 +167,19 @@ struct UnitDef {
 enum class Skill : std::uint8_t { Wood, Stone, Forage, Farm, Orchard, Hunt, Fish, Build, Craft, Metal, Count };
 inline constexpr std::size_t kSkills = static_cast<std::size_t>(Skill::Count);
 
-// A people (section 7.12): its bodies and its traits, all in data.
+// A people (section 7.12): its characters and its traits, all in data.
 struct RaceDef {
     std::string id;
     std::string name_key;
-    std::string body;            // Character files in core: see race_body_file().
+    // Its characters (phase 57), files of core (see race_body_file): a
+    // villager takes one of its sex. A people with one model for everybody
+    // lists it under either. The view's only: the simulation never reads them.
+    std::vector<std::string> bodies_male;
+    std::vector<std::string> bodies_female;
+    // Skin and hair colors its villagers come in (0xRRGGBB); empty: those
+    // of each model.
+    std::vector<std::uint32_t> skins;
+    std::vector<std::uint32_t> hairs;
     std::int32_t move = 100;     // Walking speed, percent.
     std::array<std::int32_t, kSkills> work{100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
     std::int32_t cold = 0;       // Resistance to cold, percent (less warmth lost, less flu); may be negative.
@@ -180,9 +188,11 @@ struct RaceDef {
     std::int32_t sight = 12;     // Phase 32: meters a villager sees (fog of war).
 };
 
-// Path of a race's body model inside the core mod:
-// "models/characters/<body>_male.glb" or "..._female.glb".
-[[nodiscard]] std::string race_body_file(std::string_view body, bool female);
+// Path of a character's model inside the core mod:
+// "models/characters/<body>.glb".
+[[nodiscard]] std::string race_body_file(std::string_view body);
+inline constexpr std::size_t kMaxRaceBodies = 8;   // Per sex.
+inline constexpr std::size_t kMaxRaceColors = 12;  // Skins, and hairs.
 
 // A tutorial (section 6.5): a map and steps, each with a text, a goal that
 // ends it and the part of the interface to point at.

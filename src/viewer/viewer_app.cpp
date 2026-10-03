@@ -50,21 +50,7 @@ constexpr float kMaxPlaySpeed = 2.0f;
 const std::string kStudiesMod = "@studies";
 
 // The reference villager beside what is shown.
-const std::string kReferenceBody = sim::race_body_file("human", false);
-
-// Hats, beards and aprons are shown on a body: on which one and where.
-struct AccessoryPlace {
-    std::string_view path;
-    const char* bone;
-    bool female;
-};
-constexpr AccessoryPlace kAccessories[] = {
-    {builtin_models::kHats[0], builtin_models::kHeadBone, false},
-    {builtin_models::kHats[1], builtin_models::kHeadBone, false},
-    {builtin_models::kBeard, builtin_models::kHeadBone, false},
-    {builtin_models::kApronMale, builtin_models::kHipsBone, false},
-    {builtin_models::kApronFemale, builtin_models::kHipsBone, true},
-};
+const std::string kReferenceBody = sim::race_body_file("adventurer_man");
 
 std::string_view builtin_base_language() {
     return {reinterpret_cast<const char*>(kLangEn), kLangEn_size};
@@ -139,18 +125,6 @@ std::optional<render::ModelData> read_model(const std::filesystem::path& file, s
         return std::nullopt;
     }
     return std::move(m.model);
-}
-
-const AccessoryPlace* accessory_place(std::string_view mod, std::string_view path) {
-    if (mod != mods::kCoreModId) {
-        return nullptr;
-    }
-    for (const AccessoryPlace& a : kAccessories) {
-        if (a.path == path) {
-            return &a;
-        }
-    }
-    return nullptr;
 }
 
 bool contains_text(std::string_view haystack, std::string_view needle) {
@@ -276,9 +250,12 @@ bool ViewerApp::init() {
         view_width_ = static_cast<std::uint32_t>(width);
         view_height_ = static_cast<std::uint32_t>(height);
     }
-    const std::vector<render::Palette> palettes = make_villager_palettes();
-    palette_count_ = static_cast<std::uint32_t>(palettes.size());
-    scene_.set_palettes(palettes);
+    render::Palette white;
+    for (math::Vec3& c : white.colors) {
+        c = {1.0f, 1.0f, 1.0f};
+    }
+    palettes_.assign(1, white);
+    scene_.set_palettes(palettes_);
     const std::vector<render::BuildingPalette> building_palettes = make_building_palettes();
     building_palette_count_ = static_cast<std::uint32_t>(building_palettes.size());
     scene_.set_building_palettes(building_palettes);
@@ -406,8 +383,7 @@ bool ViewerApp::one_shown() const {
 }
 
 std::uint32_t ViewerApp::shown_clip(const Loaded& l) const {
-    const bool chosen = clip_ >= 0 && one_shown() && l.accessories == 0 &&
-                        static_cast<std::size_t>(clip_) < l.stats.clips.size();
+    const bool chosen = clip_ >= 0 && one_shown() && static_cast<std::size_t>(clip_) < l.stats.clips.size();
     return chosen ? static_cast<std::uint32_t>(clip_) : l.clip;
 }
 
@@ -631,11 +607,12 @@ ViewerApp::Loaded& ViewerApp::load_model(const std::string& mod, const std::stri
     out.stats = model_stats(*data);
     out.bounds_min = data->bounds_min;
     out.bounds_max = data->bounds_max;
-    if (accessory_place(mod, path) != nullptr) {
-        out.ok = load_accessory(out, *data, path);
+    if (data->skinned() && data->clips.empty()) {
+        // A character's far version: its skeleton without clips (the game
+        // plays its character's on it). Shown standing, as it was made.
+        out.ok = scene_.add_model(*data, out.model);
     } else if (data->skinned()) {
-        out.ok = !data->clips.empty() && scene_.add_skinned_model(*data, out.body);
-        out.clip = data->clip_index("idle") >= 0 ? static_cast<std::uint32_t>(data->clip_index("idle")) : 0u;
+        load_body(out, *data, mod, path, file);
         out.joint_parent = data->joint_parent;
         for (const math::Mat4& rest : data->joint_rest) {
             out.joint_rest.push_back({rest.m[3][0], rest.m[3][1], rest.m[3][2]});
@@ -674,26 +651,54 @@ ViewerApp::Loaded& ViewerApp::load_model(const std::string& mod, const std::stri
     return out;
 }
 
-bool ViewerApp::load_accessory(Loaded& out, const render::ModelData& data, const std::string& path) {
-    const AccessoryPlace* place = accessory_place(mods::kCoreModId, path);
+void ViewerApp::load_body(Loaded& out, const render::ModelData& data, const std::string& mod, const std::string& path,
+                          const std::filesystem::path& file) {
     const std::filesystem::path core = library_.find(mods::kCoreModId) != nullptr
                                            ? library_.find(mods::kCoreModId)->dir
                                            : std::filesystem::path{};
-    std::string error;
-    const std::optional<render::ModelData> body =
-        read_model(core / sim::race_body_file("human", place->female), error);
-    std::uint32_t bit = 0;
-    if (!body || body->clip_index("idle") < 0 || !scene_.add_skinned_model(*body, out.body) ||
-        !scene_.add_accessory(data, out.body, place->bone, bit)) {
-        out.error = "no body to wear it";
-        return false;
+    // A character (it stands and walks) gets its tools in hand; anything
+    // else with a skeleton is shown as it is.
+    people::Body body;
+    // Its far version is the file next to it, "<name>_far.glb".
+    std::filesystem::path far_file = file;
+    far_file.replace_filename(file.stem().string() + "_far.glb");
+    std::error_code ec;
+    std::string far_error;
+    const std::optional<render::ModelData> far =
+        std::filesystem::is_regular_file(far_file, ec) ? read_model(far_file, far_error) : std::nullopt;
+    if (people::load_body(scene_, core, data, far.has_value() ? &*far : nullptr, body)) {
+        out.ok = true;
+        out.body = body.id;
+        out.clip_tools.assign(data.clips.size(), 0u);
+        for (std::size_t a = 0; a < people::kActs; ++a) {
+            out.clip_tools[body.clip[a]] |= body.tools[a];
+        }
+    } else {
+        out.ok = !data.clips.empty() && scene_.add_skinned_model(data, out.body);
     }
-    out.accessories = 1u << bit;
-    out.clip = static_cast<std::uint32_t>(body->clip_index("idle"));
-    // The body counts in the size, so it stands where the accessory is shown.
-    out.bounds_min = body->bounds_min;
-    out.bounds_max = body->bounds_max;
-    return true;
+    out.clip = data.clip_index("idle") >= 0 ? static_cast<std::uint32_t>(data.clip_index("idle")) : 0u;
+    if (!out.ok) {
+        return;
+    }
+    // Its palettes: with the skins and hairs of the race that uses it.
+    std::vector<std::uint32_t> skins, hairs;
+    static const std::vector<sim::RaceDef> kNoRaces;
+    for (const sim::RaceDef& race : pack_ ? pack_->content.races : kNoRaces) {
+        for (const std::vector<std::string>* list : {&race.bodies_male, &race.bodies_female}) {
+            for (const std::string& name : *list) {
+                if (mod == mods::kCoreModId && sim::race_body_file(name) == path && skins.empty() && hairs.empty()) {
+                    skins = race.skins;
+                    hairs = race.hairs;
+                }
+            }
+        }
+    }
+    std::uint32_t skin_count = 1, hair_count = 1, outfit_count = 1;
+    const std::vector<render::Palette> own = people::make_palettes(data, skins, hairs, skin_count, hair_count, outfit_count);
+    out.first_palette = static_cast<std::uint32_t>(palettes_.size());
+    out.palette_count = std::max<std::uint32_t>(1, static_cast<std::uint32_t>(own.size()));
+    palettes_.insert(palettes_.end(), own.begin(), own.end());
+    scene_.set_palettes(palettes_);
 }
 
 std::vector<std::size_t> ViewerApp::shown_models() const {
@@ -848,8 +853,9 @@ void ViewerApp::update_scene(float dt) {
             c.body = l.body;
             c.clip = shown_clip(l);
             c.time = anim_time_;
-            c.palette = palette_ % palette_count_;
-            c.accessories = l.accessories;
+            c.palette = l.first_palette + palette_ % l.palette_count;
+            c.accessories = c.clip < l.clip_tools.size() ? l.clip_tools[c.clip] : 0u;
+            palette_count_ = l.palette_count;
             characters_.push_back(c);
         }
     }
@@ -868,7 +874,7 @@ void ViewerApp::update_scene(float dt) {
             c.body = ref.body;
             c.clip = ref.clip;
             c.time = anim_time_;
-            c.palette = 0;
+            c.palette = ref.first_palette;
             characters_.push_back(c);
         }
     }
@@ -1390,9 +1396,10 @@ void ViewerApp::draw_card(float width, float height) {
         }
     }
     if (bodies) {
+        // One after another: every skin, hair and outfit of the character.
         const std::string palette = tr("viewer.view.palette", palette_ % palette_count_ + 1, palette_count_);
         if (ImGui::Button(palette.c_str())) {
-            palette_ = (palette_ * 7u + 13u) % palette_count_;
+            palette_ = (palette_ + 1u) % palette_count_;
         }
     }
     if (ImGui::Button(tr("viewer.view.frame").c_str())) {
@@ -1468,7 +1475,7 @@ void ViewerApp::draw_model_card(const CatalogModel& m) {
     }
     ImGui::TextWrapped("%s", tr("viewer.card.drawCallsHelp").c_str());
     // A body's animations.
-    if (s.skinned && !s.clips.empty() && l.accessories == 0) {
+    if (s.skinned && !s.clips.empty()) {
         ImGui::SetNextItemWidth(-FLT_MIN);
         const std::string current = clip_ >= 0 && static_cast<std::size_t>(clip_) < s.clips.size()
                                         ? s.clips[static_cast<std::size_t>(clip_)]
@@ -1483,9 +1490,6 @@ void ViewerApp::draw_model_card(const CatalogModel& m) {
             ImGui::EndCombo();
         }
         draw_animation_controls(l);
-    }
-    if (l.accessories != 0) {
-        ImGui::TextWrapped("%s", tr("viewer.card.onBody").c_str());
     }
 }
 
@@ -1553,7 +1557,7 @@ void ViewerApp::draw_skeleton() {
     const Placed& p = placed_.front();
     const CatalogModel& cm = catalog_.models[p.model];
     const auto it = loaded_.find(cm.mod + "/" + cm.path);
-    if (it == loaded_.end() || !it->second.ok || it->second.body == kNone || it->second.accessories != 0) {
+    if (it == loaded_.end() || !it->second.ok || it->second.body == kNone) {
         return;
     }
     const Loaded& l = it->second;

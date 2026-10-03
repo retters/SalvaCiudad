@@ -36,6 +36,13 @@ struct ModelClip {
     // so its feet do not slide, in m/s; 0 when the model does not say. Read
     // from the number "<name>_speed" in the skeleton node's glTF extras.
     float speed = 0.0f;
+    // The tool the clip is played with and the bone that holds it, as
+    // "kind:bone" ("axe:hand.R"), from the text "<name>_prop" there; empty
+    // for none. What model a kind is, the game decides.
+    std::string prop;
+    // False for a clip that plays once and holds its last pose
+    // ("<name>_loops" is 0 there).
+    bool loops = true;
     std::vector<math::Mat4> skin;  // frame_count * joint count
 };
 
@@ -68,11 +75,18 @@ struct ModelData {
     std::vector<std::string> joint_names;
     std::vector<int> joint_parent;           // Index of each joint's parent joint, or -1.
     std::vector<math::Mat4> joint_rest;      // Bind pose of each joint, model space.
+    // How long each bone is, along its own +Y, for those the model tells
+    // ("<bone>_length" in the same extras); 0 for the others.
+    std::vector<float> joint_length;
     std::vector<ModelClip> clips;
     math::Vec3 bounds_min;
     math::Vec3 bounds_max;
     // Sphere around the model origin that contains every vertex.
     float radius = 0.0f;
+    // Where a hand holds a tool or a weapon, in model space: the three
+    // numbers "grip" in a node's extras (written with Z up, as the art
+    // scripts measure). The origin when the model does not say.
+    math::Vec3 grip;
 
     [[nodiscard]] bool skinned() const { return !joint_names.empty(); }
     [[nodiscard]] int joint_index(std::string_view name) const;
@@ -92,6 +106,8 @@ inline constexpr int kMaxClipFrames = 1800;  // 60 s at 30 fps.
 inline constexpr float kClipFps = 30.0f;
 inline constexpr std::size_t kMaxExtrasBytes = 4096;  // A node's extras, to read clip speeds.
 inline constexpr float kMaxClipSpeed = 100.0f;        // m/s.
+inline constexpr std::size_t kMaxPropBytes = 64;      // "kind:bone".
+inline constexpr float kMaxGrip = 100.0f;             // Meters from the origin, each axis.
 }  // namespace model_limits
 
 struct ModelLoadResult {

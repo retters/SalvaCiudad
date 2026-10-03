@@ -34,7 +34,8 @@ LENS = 55.0  # Millimeters, on a 36 mm wide sensor.
 # The tools shown in a character's hand while a clip plays ("<clip>_prop"
 # in the model): kind -> (model in art/studies/weapons, degrees the tool is
 # turned about its own long axis in the hand).
-PROPS = {"axe": ("w07_battle_axe", 90.0), "bow": ("w13_long_bow", 0.0), "rod": ("w18_fishing_rod", 0.0)}
+PROPS = {"axe": ("w07_battle_axe", 90.0), "bow": ("w13_long_bow", 0.0), "rod": ("w18_fishing_rod", 0.0),
+         "hammer": ("w33_stone_hammer", 0.0)}
 PROPS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "studies", "weapons")
 
 # View name, direction from the model toward the camera, edges drawn.

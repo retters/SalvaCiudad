@@ -23,6 +23,7 @@ class DarkElfWoman(Elf):
     lock_mid = -0.1
     ear = (0.09, 0.05)
     chains = (("cape", "chest", ((0, 0.14, 1.47), (0, 0.2, 1.05), (0, 0.24, 0.7), (0, 0.26, 0.39)), True),)
+    palette = {"top": "bottom", "cloak": "top"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "skin": common.rgb(0xBA8ADC),
         "skin_light": common.rgb(0xC796E6),

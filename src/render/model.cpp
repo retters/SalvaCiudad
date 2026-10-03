@@ -176,10 +176,90 @@ public:
             error = "the scene has no triangles";
             return false;
         }
+        read_grip();
         return skin_ == nullptr || bake_clips(error);
     }
 
 private:
+    // A node's extras as a JSON object, or an empty result.
+    [[nodiscard]] static json::ParseResult extras_of(const cgltf_node& n) {
+        if (n.extras.data == nullptr || std::string_view(n.extras.data).size() > lim::kMaxExtrasBytes) {
+            json::ParseResult none;
+            none.error = json::ParseError::Empty;
+            return none;
+        }
+        return json::parse_object(std::string_view(n.extras.data));
+    }
+
+    // "grip": [x, y, z] in the extras of any node, measured with Z up.
+    void read_grip() {
+        for (cgltf_size i = 0; i < data_.nodes_count; ++i) {
+            const json::ParseResult parsed = extras_of(data_.nodes[i]);
+            if (parsed.error != json::ParseError::None) {
+                continue;
+            }
+            yyjson_mut_val* grip = yyjson_mut_obj_get(yyjson_mut_doc_get_root(parsed.doc.get()), "grip");
+            if (grip == nullptr || !yyjson_mut_is_arr(grip) || yyjson_mut_arr_size(grip) != 3) {
+                continue;
+            }
+            float v[3] = {};
+            bool ok = true;
+            for (std::size_t k = 0; k < 3; ++k) {
+                yyjson_mut_val* item = yyjson_mut_arr_get(grip, k);
+                const double d = yyjson_mut_is_num(item) ? yyjson_mut_get_num(item) : std::nan("");
+                ok = ok && std::isfinite(d) && std::abs(d) <= static_cast<double>(lim::kMaxGrip);
+                v[k] = static_cast<float>(d);
+            }
+            if (ok) {
+                model_.grip = {v[0], v[2], -v[1]};  // Z up to Y up.
+                return;
+            }
+        }
+    }
+
+    // The extras of the nodes above the skeleton (Blender writes the
+    // armature's custom properties there), nearest first.
+    template <typename Fn>
+    void skeleton_extras(Fn&& fn) const {
+        int depth = 0;
+        for (const cgltf_node* n = skin_->joints[0]->parent; n != nullptr && depth < 64; n = n->parent, ++depth) {
+            const json::ParseResult parsed = extras_of(*n);
+            if (parsed.error == json::ParseError::None && fn(yyjson_mut_doc_get_root(parsed.doc.get()))) {
+                return;
+            }
+        }
+    }
+
+    // "<clip>_prop" and "<clip>_loops" of a clip, and "<bone>_length" of
+    // the bones. Anything missing, malformed or out of range is left out.
+    void read_clip_extras(ModelClip& clip) const {
+        skeleton_extras([&](yyjson_mut_val* root) {
+            std::string prop;
+            if (json::get_string(root, (clip.name + "_prop").c_str(), lim::kMaxPropBytes, prop) == json::Field::Ok) {
+                clip.prop = prop;
+            }
+            double loops = 1.0;
+            if (json::get_double(root, (clip.name + "_loops").c_str(), 0.0, 1.0, loops) == json::Field::Ok) {
+                clip.loops = loops != 0.0;
+            }
+            return false;
+        });
+    }
+
+    void read_joint_lengths() {
+        model_.joint_length.assign(model_.joint_names.size(), 0.0f);
+        skeleton_extras([&](yyjson_mut_val* root) {
+            for (std::size_t j = 0; j < model_.joint_names.size(); ++j) {
+                double length = 0.0;
+                if (json::get_double(root, (model_.joint_names[j] + "_length").c_str(), 0.0,
+                                     static_cast<double>(lim::kMaxGrip), length) == json::Field::Ok) {
+                    model_.joint_length[j] = static_cast<float>(length);
+                }
+            }
+            return false;
+        });
+    }
+
     bool load_skin(std::string& error) {
         if (data_.skins_count == 0) {
             return true;
@@ -284,6 +364,7 @@ private:
             error = "too many animations";
             return false;
         }
+        read_joint_lengths();
         for (cgltf_size a = 0; a < data_.animations_count; ++a) {
             const cgltf_animation& anim = data_.animations[a];
             float duration = 0.0f;
@@ -302,6 +383,7 @@ private:
             clip.name = anim.name != nullptr ? anim.name : std::format("clip{}", a);
             clip.fps = lim::kClipFps;
             clip.speed = clip_speed(clip.name);
+            read_clip_extras(clip);
             // A loop's last key repeats the first, so it is not a frame of its own.
             clip.frame_count = std::max(1, static_cast<int>(std::lround(duration * lim::kClipFps)));
             clip.skin.reserve(static_cast<std::size_t>(clip.frame_count) * joints);

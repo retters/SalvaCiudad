@@ -94,7 +94,8 @@ class Humanoid(rigs.Rig):
         self.leg = min((self.rest[s]["hip"] - self.by_name[f"shin.{s}"].head).length
                        + (self.rest[s]["ankle"] - self.by_name[f"shin.{s}"].head).length for s, _ in SIDES)
         # Gaits: the stride is what the legs can reach at the gait's crouch.
-        self.walk = self.gait(frames=26, duty=0.6, crouch=0.045, lift=0.09)
+        # The walk is brisk: the villagers of the game cover 2 m a second.
+        self.walk = self.gait(frames=16, duty=0.6, crouch=0.045, lift=0.09)
         self.run = self.gait(frames=18, duty=0.38, crouch=0.075, lift=0.17)
 
     def gait(self, frames, duty, crouch, lift):
@@ -267,6 +268,33 @@ class Humanoid(rigs.Rig):
         self.hold(pose, grip, direction, hand="R", other=0.24, side=Vector((1, 0.3, 0)))
         return pose.q, pose.offset, {}
 
+    def work_pose(self, t):
+        """Hammering on something at waist height in front, with the right
+        hand; the left one steadies the piece. The trades without a clip of
+        their own use it."""
+        k = self.k
+        # 0: the hammer on the piece; 1: raised by the right shoulder.
+        if t < 0.5:
+            w = smooth(t / 0.5)
+        elif t < 0.64:
+            w = 1.0 - ((t - 0.5) / 0.14) ** 2    # Speeds up into the blow.
+        else:
+            w = 0.04 * math.sin(math.pi * (t - 0.64) / 0.36)  # A small bounce.
+        pose = Pose(self, (0, 0, (-0.05 + 0.015 * w) * k))
+        self.stand(pose, {"L": (0.03, -0.1), "R": (-0.03, 0.08)})
+        pose.turn("spine", X, lerp(14.0, 6.0, w))
+        pose.turn("chest", X, lerp(8.0, 2.0, w))
+        pose.turn("chest", Z, lerp(4.0, -8.0, w))
+        pose.set_world("head", Quaternion(X, math.radians(14.0)))
+        low = Vector((-0.1, -0.4, 1.02)) * k
+        high = Vector((-0.24, -0.22, 1.42)) * k
+        grip = low.lerp(high, w) + Vector((0, -0.08, 0.04)) * k * math.sin(math.pi * w)
+        direction = Vector((0.15, -0.95, -0.25)).normalized().slerp(Vector((0.0, -0.25, 0.97)).normalized(), w)
+        self.hold(pose, grip, direction, hand="R", other=None, side=Vector((1, 0, 0)))
+        pose.limb("upper_arm.L", "lower_arm.L", Vector((0.14, -0.36, 0.98)) * k, Vector((0.6, 0.5, -1.0)))
+        pose.aim("hand.L", Vector((-0.3, -0.8, -0.5)))
+        return pose.q, pose.offset, {}
+
     def shoot_pose(self, t):
         k = self.k
         up = smooth(t / 0.2) * (1 - smooth((t - 0.8) / 0.2))          # Bow raised.
@@ -356,8 +384,9 @@ class Humanoid(rigs.Rig):
             ("fish_cast", 40, False, self.fish_cast_pose, None),
             ("fish_stand", 120, True, self.fish_stand_pose, None),
             ("fish_sit", 120, True, self.fish_sit_pose, None),
+            ("work", 30, True, self.work_pose, None),
         ]
 
     def clip_props(self):
         return {"chop": "axe:hand.R", "shoot": "bow:hand.L", "fish_cast": "rod:hand.R",
-                "fish_stand": "rod:hand.R", "fish_sit": "rod:hand.R"}
+                "fish_stand": "rod:hand.R", "fish_sit": "rod:hand.R", "work": "hammer:hand.R"}

@@ -601,6 +601,20 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 57
+
+- [ ] Una partida nueva solo tiene personajes nuevos. Con raza humana se ven aventureros, caballeros, magos y clérigos, con ropa, piel y cabello de varios colores y estaturas algo distintas.
+- [ ] Partida nueva personalizada con cada raza inicial (o "mixta"): enanos (bajos, él con barba y ella con trenzas), elfos, elfos oscuros, gatunos, zorrunos, ranos, lagartos y orcos.
+- [ ] Al caminar los pies no patinan, tampoco a velocidad ×2 y ×3, ni en los niños (el adulto en chico) ni en los enanos (trotan).
+- [ ] Un leñador tala con el hacha en las manos; un cazador tira con arco; un pescador lanza la caña una vez y espera con ella; quien construye, cultiva o trabaja en un taller martilla. La herramienta desaparece al terminar.
+- [ ] Al huir de un animal o con la alarma, los aldeanos corren.
+- [ ] Soldados y asaltantes son aldeanos con su marca de color; al atacar dan golpes de hacha.
+- [ ] Al alejar la cámara los aldeanos pasan a su versión simple sin que se note un salto feo; al acercarla vuelven a la detallada.
+- [ ] Con las herramientas de desarrollo, "Persona" coloca personajes de cualquier raza, y el inspector dice su modelo y su paleta.
+- [ ] En el visor (`SalvaCiudadModelos.exe`): "Personajes" lista las 9 razas; cada personaje cambia con "Otra paleta" y muestra la herramienta en la mano en `chop`, `shoot`, `fish_*` y `work`.
+- [ ] **Sin revisar de cerca en el juego por Claude:** las animaciones de trabajo con la herramienta se revisaron en el visor y por pruebas; en la partida solo se vio a los aldeanos de lejos (la cámara aérea no se pudo acercar desde las pruebas automáticas).
+- [ ] **Tu opinión:** los enanos (se hicieron sin referencia); los colores de piel y pelaje de cada raza; el tamaño del hacha y del martillo; si la caminata se ve natural a la velocidad del juego.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

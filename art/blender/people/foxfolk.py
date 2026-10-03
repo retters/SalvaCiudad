@@ -20,6 +20,7 @@ class Foxfolk(Adventurer):
     shoulder = 0.185
     build = 1.06
     tones = 0.0
+    palette = {"fur": "skin", "teal": "top", "green": "bottom"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "fur": common.rgb(0xEE8C42),
         "cream": common.rgb(0xF6DDBE),

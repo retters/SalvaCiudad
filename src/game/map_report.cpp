@@ -305,6 +305,9 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
     (void)yyjson_mut_obj_add_int(d, view, "height", v.height);
     add_str(d, view, "season", pick(kSeasons, static_cast<std::size_t>(v.season)));
     (void)yyjson_mut_obj_add_real(d, view, "snow", round2(static_cast<double>(v.snow)));
+    if (v.people > 0) {
+        (void)yyjson_mut_obj_add_int(d, view, "people", v.people);
+    }
     add_str(d, view, "context", r.in_game ? "game" : "map");
     add_str(d, view, "fog", pick(names::kFogs, static_cast<std::size_t>(r.fog)));
 
@@ -579,6 +582,12 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
         error = "bad view fields";
         return false;
     }
+    std::int64_t people = 0;
+    if (json::get_int(view, "people", 0, kMaxReportPeople, people) == json::Field::Invalid) {
+        error = "bad view fields";
+        return false;
+    }
+    v.people = static_cast<std::uint32_t>(people);
     v.mode = static_cast<CameraMode>(mode);
     v.target = {static_cast<float>(target[0]), static_cast<float>(target[1]), static_cast<float>(target[2])};
     v.yaw = static_cast<float>(yaw);

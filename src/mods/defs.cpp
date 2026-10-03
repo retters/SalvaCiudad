@@ -541,22 +541,86 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         sim::RaceDef def;
         def.id = d->id;
         def.name_key = r.text("name", true);
-        def.body = r.text("body", true, 32);
-        if (!def.body.empty() && !std::all_of(def.body.begin(), def.body.end(), [](char c) {
-                return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
-            })) {
-            r.fail("\"body\" must be a plain file name ([a-z0-9_])");
-        } else if (!def.body.empty() && refs != nullptr) {
-            // The game takes every body from core; a missing one is only
-            // left out of the crowd, so it is not an error here.
+        // "bodies": {"male": [...], "female": [...]}: plain file names of
+        // characters in core. A missing file is only left out of the
+        // crowd, so it is not an error here.
+        yyjson_mut_val* bodies = yyjson_mut_obj_get(d->obj, "bodies");
+        if (bodies == nullptr || !yyjson_mut_is_obj(bodies)) {
+            r.fail("\"bodies\" must be an object with the lists \"male\" and \"female\"");
+        } else {
             for (const bool female : {false, true}) {
-                const std::string rel = sim::race_body_file(def.body, female);
-                const std::filesystem::path path = mod_file(mod_dir(kCoreModId), rel);
-                std::error_code ec;
-                refs->push_back({d->type, d->id, def.name_key, kCoreModId, rel,
-                                 !path.empty() && std::filesystem::is_regular_file(path, ec)});
+                yyjson_mut_val* list = yyjson_mut_obj_get(bodies, female ? "female" : "male");
+                if (list == nullptr) {
+                    continue;
+                }
+                if (!yyjson_mut_is_arr(list) || yyjson_mut_arr_size(list) > sim::kMaxRaceBodies) {
+                    r.fail("a list of \"bodies\" must have at most 8 file names");
+                    continue;
+                }
+                std::size_t idx = 0, max = 0;
+                yyjson_mut_val* item = nullptr;
+                yyjson_mut_arr_foreach(list, idx, max, item) {
+                    const char* text = yyjson_mut_get_str(item);
+                    const std::string name = text != nullptr ? text : "";
+                    if (name.empty() || name.size() > 32 || !std::all_of(name.begin(), name.end(), [](char c) {
+                            return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
+                        })) {
+                        r.fail("a body must be a plain file name ([a-z0-9_])");
+                        continue;
+                    }
+                    (female ? def.bodies_female : def.bodies_male).push_back(name);
+                    if (refs != nullptr) {
+                        const std::string rel = sim::race_body_file(name);
+                        const std::filesystem::path path = mod_file(mod_dir(kCoreModId), rel);
+                        std::error_code ec;
+                        refs->push_back({d->type, d->id, def.name_key, kCoreModId, rel,
+                                         !path.empty() && std::filesystem::is_regular_file(path, ec)});
+                        // Its far version, when it has one.
+                        const std::string far_rel = sim::race_body_file(name + "_far");
+                        const std::filesystem::path far_path = mod_file(mod_dir(kCoreModId), far_rel);
+                        if (!far_path.empty() && std::filesystem::is_regular_file(far_path, ec)) {
+                            refs->push_back({d->type, d->id, def.name_key, kCoreModId, far_rel, true});
+                        }
+                    }
+                }
+            }
+            if (def.bodies_male.empty() && def.bodies_female.empty()) {
+                r.fail("\"bodies\" names no character");
             }
         }
+        // "skins" and "hairs": lists of "#rrggbb".
+        const auto colors = [&](const char* key, std::vector<std::uint32_t>& out) {
+            yyjson_mut_val* list = yyjson_mut_obj_get(d->obj, key);
+            if (list == nullptr) {
+                return;
+            }
+            if (!yyjson_mut_is_arr(list) || yyjson_mut_arr_size(list) > sim::kMaxRaceColors) {
+                r.fail(std::format("\"{}\" must be a list of at most 12 colors", key));
+                return;
+            }
+            std::size_t idx = 0, max = 0;
+            yyjson_mut_val* item = nullptr;
+            yyjson_mut_arr_foreach(list, idx, max, item) {
+                const char* text = yyjson_mut_get_str(item);
+                const std::string_view hex = text != nullptr ? text : "";
+                std::uint32_t value = 0;
+                bool ok = hex.size() == 7 && hex[0] == '#';
+                for (std::size_t k = 1; ok && k < 7; ++k) {
+                    const char c = hex[k];
+                    const int digit = c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10
+                                    : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+                    ok = digit >= 0;
+                    value = value * 16u + static_cast<std::uint32_t>(std::max(digit, 0));
+                }
+                if (!ok) {
+                    r.fail(std::format("a color of \"{}\" must be \"#rrggbb\"", key));
+                    return;
+                }
+                out.push_back(value);
+            }
+        };
+        colors("skins", def.skins);
+        colors("hairs", def.hairs);
         def.move = r.integer("move", 50, 200, 100);
         def.cold = r.integer("cold", -100, 90, 0);
         def.disease = r.integer("disease", -100, 90, 0);

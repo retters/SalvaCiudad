@@ -138,7 +138,7 @@ float DevTools::height(const DevContext& ctx, DevObject o) const {
             return feature_base_height(f.type) * to_float(f.scale);
         }
         case DevObject::Kind::House: return 5.2f;
-        case DevObject::Kind::Villager: return 1.8f * ctx.crowd->scale(o.index);
+        case DevObject::Kind::Villager: return ctx.crowd->height(o.index);
         case DevObject::Kind::None: break;
     }
     return 0.0f;
@@ -155,7 +155,7 @@ std::string DevTools::name(const DevContext& ctx, DevObject o) const {
         }
         case DevObject::Kind::House: return tr("dev.object.house");
         case DevObject::Kind::Villager:
-            return tr(ctx.crowd->info(o.index).female ? "dev.object.villagerFemale" : "dev.object.villagerMale");
+            return tr("dev.object.villager");
         case DevObject::Kind::None: break;
     }
     return {};
@@ -577,10 +577,8 @@ void DevTools::inspector_tab(DevContext& ctx) {
         ImGui::Text("%s: %s", tr("dev.inspector.activity").c_str(),
                     tr(v.walking ? "dev.inspector.walking" : "dev.inspector.resting").c_str());
         ImGui::Text("%s: %.2f m/s", tr("dev.inspector.speed").c_str(), static_cast<double>(v.speed));
+        ImGui::Text("%s: %s.glb", tr("dev.inspector.model").c_str(), v.model.c_str());
         ImGui::Text("%s: %u", tr("dev.inspector.palette").c_str(), v.palette);
-        ImGui::Text("%s: %s%s%s", tr("dev.inspector.accessories").c_str(), v.hat ? tr("dev.inspector.hat").c_str() : "",
-                    v.beard ? (" " + tr("dev.inspector.beard")).c_str() : "",
-                    v.apron ? (" " + tr("dev.inspector.apron")).c_str() : "");
         ImGui::Text("%s: %.1f, %.1f", tr("dev.inspector.target").c_str(), static_cast<double>(v.target.x),
                     static_cast<double>(v.target.z));
         ImGui::Text("%s: %.1f, %.1f", tr("dev.inspector.home").c_str(), static_cast<double>(v.home.x),

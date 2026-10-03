@@ -15,6 +15,7 @@ class Frogfolk(Adventurer):
     shoulder = 0.15
     hip = 0.09
     build = 0.82
+    palette = {"blue": "skin", "tan": "bottom"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "blue": common.rgb(0x2AB4F4),
         "blue_light": common.rgb(0x48C6FA),

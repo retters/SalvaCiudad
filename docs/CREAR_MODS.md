@@ -91,6 +91,11 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 
 ### unit y race
 
+Una raza (`race`) dice qué personajes son sus aldeanos y de qué colores (fase 57; todo esto es solo de la vista):
+
+- `bodies`: `{"male": [...], "female": [...]}`, nombres de modelos de `core` (`models/characters/<nombre>.glb`), hasta 8 por sexo. Cada aldeano toma uno de su sexo. Un pueblo con un solo modelo para todos lo pone bajo cualquiera de los dos. Reemplaza a `body`.
+- `skins` y `hairs`: listas de hasta 12 colores `"#rrggbb"` de piel (o pelaje) y de cabello, además de los del propio modelo.
+
 Las unidades del ejército y los pueblos también tienen `sight`: los metros que ve cada soldado (por omisión 16; el arquero de `core`, 24) y cada aldeano de esa raza (por omisión 12). Los animales, los asaltantes y los mercaderes no le dan visión a nadie.
 
 ### recipe

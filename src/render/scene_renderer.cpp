@@ -67,9 +67,12 @@ struct MeshDrawUniforms {
 // Material names recolored per character, in palette slot order.
 constexpr const char* kPaletteSlotNames[kPaletteSlots] = {"skin", "hair", "top", "bottom", "shoes", "belt", "hat", "apron"};
 
+// A material belongs to a slot by its name: the slot's, or the slot's and
+// "_something" (the lighter and darker facets of the same cloth or skin).
 int palette_slot(const std::string& material) {
     for (std::size_t i = 0; i < kPaletteSlots; ++i) {
-        if (material == kPaletteSlotNames[i]) {
+        const std::string_view slot = kPaletteSlotNames[i];
+        if (material == slot || (material.size() > slot.size() && material.starts_with(slot) && material[slot.size()] == '_')) {
             return static_cast<int>(i);
         }
     }
@@ -267,6 +270,9 @@ struct GpuSkinned {
     std::uint64_t triangles = 0;
     std::uint32_t body = 0;              // Itself for a body.
     std::uint32_t accessory_bit = ~0u;   // ~0 for a body.
+    std::uint32_t far_of = ~0u;          // The body this is the far version of, or ~0.
+    std::uint32_t far_model = ~0u;       // A body's far version, or ~0.
+    std::uint32_t index_count = 0;
     // Body only:
     std::uint32_t joint_count = 0;
     std::uint32_t bone_base = 0;
@@ -1015,29 +1021,39 @@ struct SceneRenderer::Impl {
 
     // Visible characters, then one range per skinned model (a body or an
     // accessory) listing the characters that draw it.
+    // Without an eye (the shadows) every body that has a far version uses it.
     std::vector<Range> cull_characters(const math::Frustum& frustum, const math::Vec3* eye, float max_distance) {
-        std::vector<std::uint32_t> seen;
+        std::vector<std::uint32_t> seen;      // Index of the character, and
+        std::vector<std::uint8_t> seen_far;   // whether it is drawn far.
         const float max_d2 = max_distance * max_distance;
         for (std::size_t i = 0; i < characters.size(); ++i) {
             const CharacterInstance& c = characters[i];
             const float r = skinned[c.body].radius * c.scale;
             bool keep = frustum.sphere_visible(c.position, r);
+            bool far_version = eye == nullptr || lod_mode == SceneRenderer::LodMode::Far;
             if (keep && eye != nullptr) {
                 const math::Vec3 d = c.position - *eye;
-                keep = math::dot(d, d) <= max_d2;
+                const float d2 = math::dot(d, d);
+                keep = d2 <= max_d2;
+                // Far when lower on screen than the level of detail's pixels.
+                const float at = r * lod_reach;
+                far_version = far_version || (lod_mode == SceneRenderer::LodMode::Auto && d2 > at * at);
             }
             if (keep) {
                 seen.push_back(static_cast<std::uint32_t>(i));
+                seen_far.push_back(far_version && skinned[c.body].far_model != ~0u ? 1 : 0);
             }
         }
         std::vector<Range> ranges(skinned.size());
         for (std::size_t mi = 0; mi < skinned.size(); ++mi) {
             const GpuSkinned& m = skinned[mi];
             ranges[mi].first = static_cast<std::uint32_t>(visible.size());
-            for (const std::uint32_t i : seen) {
+            for (std::size_t k = 0; k < seen.size(); ++k) {
+                const std::uint32_t i = seen[k];
                 const CharacterInstance& c = characters[i];
-                const bool draws = m.accessory_bit == ~0u ? c.body == mi
-                                                          : c.body == m.body && ((c.accessories >> m.accessory_bit) & 1u) != 0;
+                const bool draws = m.far_of != ~0u          ? c.body == m.far_of && seen_far[k] != 0
+                                   : m.accessory_bit == ~0u ? c.body == mi && seen_far[k] == 0
+                                                            : c.body == m.body && ((c.accessories >> m.accessory_bit) & 1u) != 0;
                 if (draws) {
                     visible.push_back(i);
                 }
@@ -1069,9 +1085,19 @@ struct SceneRenderer::Impl {
         for (const ModelMaterial& mat : data.materials) {
             GpuMaterial g;
             const int slot = palette_slot(mat.name);
-            // A recolored material takes its color from the palette only.
+            // A recolored material takes its color from the palette; what is
+            // left of its own is how much lighter or darker it is than the
+            // slot's main material, so the facets keep their tones.
+            math::Vec3 reference{1.0f, 1.0f, 1.0f};
+            const bool recolored = slot >= 0 && palette_reference(data, static_cast<std::size_t>(slot), reference);
             for (int c = 0; c < 4; ++c) {
-                g.base_color[c] = slot >= 0 ? 1.0f : mat.base_color[c];
+                g.base_color[c] = mat.base_color[c];
+            }
+            if (recolored) {
+                const float ref[3] = {reference.x, reference.y, reference.z};
+                for (int c = 0; c < 3; ++c) {
+                    g.base_color[c] = ref[c] > 1e-4f ? std::clamp(mat.base_color[c] / ref[c], 0.0f, 4.0f) : 1.0f;
+                }
             }
             // The villagers have no textures; an imported animal may have one.
             const bool textured = slot < 0 && mat.texture >= 0 &&
@@ -1083,6 +1109,7 @@ struct SceneRenderer::Impl {
         }
         m.primitives = data.primitives;
         m.triangles = data.indices.size() / 3;
+        m.index_count = static_cast<std::uint32_t>(data.indices.size());
         return true;
     }
 
@@ -1433,7 +1460,70 @@ bool SceneRenderer::add_skinned_model(const ModelData& data, SkinnedId& id) {
     return true;
 }
 
+bool SceneRenderer::set_far_body(const ModelData& data, SkinnedId body) {
+    Impl& d = *impl_;
+    if (body >= d.skinned.size() || d.skinned[body].accessory_bit != ~0u || d.skinned[body].far_of != ~0u ||
+        d.skinned[body].far_model != ~0u || data.skin.size() != data.vertices.size() ||
+        data.joint_names != d.skinned[body].joint_names) {
+        log::error("scene: a far body must have the skeleton of its body");
+        return false;
+    }
+    std::vector<SkinnedVertex> verts;
+    verts.reserve(data.vertices.size());
+    for (std::size_t i = 0; i < data.vertices.size(); ++i) {
+        const ModelVertex& v = data.vertices[i];
+        SkinnedVertex sv{v.px, v.py, v.pz, v.nx, v.ny, v.nz, v.u, v.v, {}, {}};
+        std::copy(std::begin(data.skin[i].joints), std::end(data.skin[i].joints), sv.joints);
+        std::copy(std::begin(data.skin[i].weights), std::end(data.skin[i].weights), sv.weights);
+        verts.push_back(sv);
+    }
+    GpuSkinned m;
+    if (!d.add_skinned(data, verts, m)) {
+        return false;
+    }
+    m.radius = d.skinned[body].radius;
+    m.body = body;
+    m.far_of = body;
+    d.skinned[body].far_model = static_cast<std::uint32_t>(d.skinned.size());
+    d.skinned.push_back(std::move(m));
+    return true;
+}
+
+bool palette_reference(const ModelData& model, std::size_t slot, math::Vec3& color) {
+    const ModelMaterial* found = nullptr;
+    for (const ModelMaterial& m : model.materials) {
+        if (palette_slot(m.name) != static_cast<int>(slot)) {
+            continue;
+        }
+        if (m.name == kPaletteSlotNames[slot]) {
+            found = &m;
+            break;
+        }
+        found = found != nullptr ? found : &m;
+    }
+    if (found == nullptr) {
+        return false;
+    }
+    color = {found->base_color[0], found->base_color[1], found->base_color[2]};
+    return true;
+}
+
 bool SceneRenderer::add_accessory(const ModelData& data, SkinnedId body, std::string_view bone, std::uint32_t& bit) {
+    const Impl& d = *impl_;
+    math::Vec3 at{};
+    if (body < d.skinned.size()) {
+        const GpuSkinned& owner = d.skinned[body];
+        for (std::size_t j = 0; j < owner.joint_names.size(); ++j) {
+            if (owner.joint_names[j] == bone) {
+                at = owner.joint_rest_positions[j];
+            }
+        }
+    }
+    return add_accessory(data, body, bone, math::translation(at), bit);
+}
+
+bool SceneRenderer::add_accessory(const ModelData& data, SkinnedId body, std::string_view bone, const math::Mat4& placement,
+                                  std::uint32_t& bit) {
     Impl& d = *impl_;
     if (body >= d.skinned.size() || d.skinned[body].accessory_bit != ~0u || data.skinned()) {
         log::error("scene: an accessory must be a rigid model pinned to a body");
@@ -1450,13 +1540,13 @@ bool SceneRenderer::add_accessory(const ModelData& data, SkinnedId body, std::st
         log::error("scene: no bone '{}' for an accessory, or too many accessories", bone);
         return false;
     }
-    // Move the accessory to the bone in the bind pose; the bone's skin
+    // Put the accessory where it goes in the bind pose; the bone's skin
     // matrix then carries it along with the animation.
-    const math::Vec3 at = owner.joint_rest_positions[static_cast<std::size_t>(joint)];
     std::vector<SkinnedVertex> verts;
     for (const ModelVertex& v : data.vertices) {
-        verts.push_back({v.px + at.x, v.py + at.y, v.pz + at.z, v.nx, v.ny, v.nz, v.u, v.v,
-                         {static_cast<std::uint8_t>(joint), 0, 0, 0}, {255, 0, 0, 0}});
+        const math::Vec3 p = placement.transform_point({v.px, v.py, v.pz});
+        const math::Vec3 n = math::normalize(placement.transform_vector({v.nx, v.ny, v.nz}));
+        verts.push_back({p.x, p.y, p.z, n.x, n.y, n.z, v.u, v.v, {static_cast<std::uint8_t>(joint), 0, 0, 0}, {255, 0, 0, 0}});
     }
     GpuSkinned m;
     if (!d.add_skinned(data, verts, m)) {
@@ -1918,6 +2008,12 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             SDL_BindGPUVertexBuffers(pass, 0, vbs, 2);
             const SDL_GPUBufferBinding ib{m.indices, 0};
             SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+            if (!with_materials) {
+                // A shadow has no materials: the whole model in one call.
+                SDL_DrawGPUIndexedPrimitives(pass, m.index_count, r.count, 0, 0, 0);
+                ++stats_.draw_calls;
+                continue;
+            }
             for (const ModelPrimitive& p : m.primitives) {
                 if (with_materials) {
                     const std::size_t mat_index = std::min<std::size_t>(p.material, m.materials.size() - 1);
@@ -2050,6 +2146,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         for (std::size_t mi = 0; mi < d.skinned.size(); ++mi) {
             if (d.skinned[mi].accessory_bit == ~0u) {
                 stats_.characters_drawn += main_characters[mi].count;
+                stats_.characters_far += d.skinned[mi].far_of != ~0u ? main_characters[mi].count : 0;
             }
         }
     }

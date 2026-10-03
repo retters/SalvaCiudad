@@ -23,26 +23,14 @@ import rigs
 import rigs_human
 import studies
 from _human import Human
+from _people_kit import hull as chunk
+from _people_kit import lerp, mirror
 
 TAU = math.tau
 SIDES = ((".L", 1), (".R", -1))
 
 
 # ------------------------------------------------------------ detail pieces
-
-def chunk(mb, points, mat):
-    """A convex faceted solid around the points (hair, tufts, a nose)."""
-    tmp = bmesh.new()
-    verts = [tmp.verts.new(p) for p in points]
-    res = bmesh.ops.convex_hull(tmp, input=verts)
-    bmesh.ops.delete(tmp, geom=[v for v in res["geom_interior"] if isinstance(v, bmesh.types.BMVert)],
-                     context="VERTS")
-    mapping = {v: mb.bm.verts.new(v.co) for v in tmp.verts}
-    for f in tmp.faces:
-        mb.bm.faces.new([mapping[v] for v in f.verts])
-    tmp.free()
-    return mb._finish(list(mapping.values()), mat, None)
-
 
 def tube(mb, stations, mat, sides=5):
     """A faceted tube through the stations (center, radius); each ring is
@@ -183,14 +171,6 @@ def pouch(mb, center, size, out, mat, flap_mat, clasp_mat=None):
         k = size[0] * 0.2
         mb.box(center + Vector((0, 0, size[2] * 0.06)) + out * (size[1] * 0.6), (k, k, k * 1.3), clasp_mat,
                rotation_z=rot + math.pi / 4)
-
-
-def lerp(a, b, t):
-    return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
-
-
-def mirror(p, x):
-    return (p[0] * x, p[1], p[2])
 
 
 # ----------------------------------------------------------------- skeleton
@@ -625,6 +605,7 @@ class AdventurerMan(Adventurer):
     head_size = 1.0
     shoulder = 0.198
     build = 1.1
+    palette = {"tunic": "top", "trousers": "bottom"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "skin": common.rgb(0xF0B284),
         "tunic": common.rgb(0x3559C0),

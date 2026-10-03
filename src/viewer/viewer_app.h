@@ -63,9 +63,13 @@ private:
         math::Vec3 bounds_min;
         math::Vec3 bounds_max;
         render::ModelId model = kNone;   // Rigid models.
-        render::SkinnedId body = kNone;  // Bodies, and accessories on a body.
-        std::uint32_t accessories = 0;   // Accessories: the mask that shows it.
+        render::SkinnedId body = kNone;  // Bodies.
         std::uint32_t clip = 0;          // Bodies: idle, or the first clip.
+        // Characters: the tool in hand while each clip plays (accessory
+        // bits; phase 57), and its palettes in the renderer's list.
+        std::vector<std::uint32_t> clip_tools;
+        std::uint32_t first_palette = 0;
+        std::uint32_t palette_count = 1;
         // Bodies: the skeleton, to draw it over the model (phase 45).
         std::vector<int> joint_parent;
         std::vector<math::Vec3> joint_rest;               // Model space.
@@ -126,7 +130,10 @@ private:
     [[nodiscard]] std::vector<std::size_t> shown_models() const;
     Loaded& load_model(const std::string& mod, const std::string& path, const std::filesystem::path& file);
     // Registers a hat, beard or apron on its own copy of a body.
-    bool load_accessory(Loaded& out, const render::ModelData& data, const std::string& path);
+    // Loads a model with a skeleton: a character with its tools and
+    // palettes, or any other animated model.
+    void load_body(Loaded& out, const render::ModelData& data, const std::string& mod, const std::string& path,
+                   const std::filesystem::path& file);
     void layout_scene();
     void frame_camera();
     void update_scene(float dt);
@@ -189,7 +196,9 @@ private:
     bool snowy_ = false;
     int lod_ = 0;  // render::SceneRenderer::LodMode.
     std::uint32_t palette_ = 0;
-    std::uint32_t palette_count_ = 1;
+    std::uint32_t palette_count_ = 1;  // Of the character shown.
+    // Every loaded character's palettes; the first is plain white.
+    std::vector<render::Palette> palettes_;
     std::uint32_t building_palette_ = 0;
     std::uint32_t building_palette_count_ = 0;
     int clip_ = -1;  // -1: each body's idle.

@@ -16,6 +16,7 @@
 #include "game/animal_motion.h"
 #include "game/fog_view.h"
 #include "game/map_scene.h"
+#include "game/people.h"
 #include "game/walkers.h"
 #include "mods/mod_library.h"
 #include "render/scene_renderer.h"
@@ -27,8 +28,8 @@ class VillageView {
 public:
     // Loads one model per building definition (shared by path).
     void load(render::SceneRenderer& renderer, const mods::BuildResult& pack);
-    // The villagers' bodies, loaded by the app (game/walkers.h).
-    void set_bodies(const std::vector<Walkers::BodyKind>* bodies, std::uint32_t palette_count);
+    // The characters, loaded by the app (game/walkers.h).
+    void set_cast(const people::Cast* cast) { cast_ = cast; }
 
     // Shows a game that just started or was loaded.
     void begin(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game);
@@ -68,8 +69,6 @@ public:
         bool operator==(const FieldGhost&) const = default;
     };
     void set_field_ghost(std::optional<FieldGhost> ghost);
-    // Winter brings caps; summer, straw hats.
-    void set_season(sim::Season season) { season_ = season; }
     // Phase 32: what the local player sees; null shows everything. What is
     // not theirs shows only where the fog lets it.
     void set_fog(const FogView* fog) {
@@ -122,12 +121,11 @@ private:
     struct Look {
         std::uint32_t generation = ~0u;
         float yaw = 0.0f;
-        float time = 0.0f;
+        people::Motion motion;
     };
     std::vector<Look> looks_;  // By villager entity index.
     std::vector<render::CharacterInstance> characters_;
-    const std::vector<Walkers::BodyKind>* bodies_ = nullptr;
-    std::uint32_t palette_count_ = 1;
+    const people::Cast* cast_ = nullptr;
 
     std::optional<Ghost> ghost_;
     std::optional<FieldGhost> field_ghost_;
@@ -151,7 +149,8 @@ private:
     struct CreatureLook {
         std::uint32_t generation = ~0u;
         float yaw = 0.0f;
-        animal_motion::State motion;  // Raiders, soldiers and unanimated animals: only its time.
+        animal_motion::State motion;  // Unanimated animals: only its time.
+        people::Motion person;        // Raiders and soldiers.
         sim::CreatureKind kind = sim::CreatureKind::Deer;
         math::Vec3 position;
         std::uint32_t seen = 0;      // Frame it was last shown.
@@ -203,7 +202,6 @@ private:
     void add_corpse(const CreatureLook& look);
     void update_corpses(const sim::Game& game, float game_dt);
     void rebuild_fields(render::SceneRenderer& renderer, const sim::Game& game);
-    sim::Season season_ = sim::Season::Summer;
     const FogView* fog_ = nullptr;
     std::uint64_t shown_buildings_ = 0;  // Which buildings of others show (a hash).
     [[nodiscard]] std::uint64_t shown_signature(const sim::Game& game) const;

@@ -22,7 +22,6 @@ float to_float(sim::Fixed f) {
 }
 
 // Villagers walk 0.2 m per tick (sim/game.cpp), ten ticks a second at x1.
-constexpr float kWalkMetersPerSecond = 2.0f;
 
 // A slab of soil, 2 x 2 m, white so the instance tint colors it.
 render::ModelData make_tile_model() {
@@ -273,11 +272,6 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
             used_.push_back(id);
         }
     }
-}
-
-void VillageView::set_bodies(const std::vector<Walkers::BodyKind>* bodies, std::uint32_t palette_count) {
-    bodies_ = bodies;
-    palette_count_ = std::max(1u, palette_count);
 }
 
 void VillageView::begin(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game) {
@@ -789,19 +783,25 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         look.seen = frame_;
         look.position = at;
         if (a.kind == sim::CreatureKind::Raider || a.kind == sim::CreatureKind::Soldier) {
-            // A villager body with a mark under it: red for raiders, the
-            // town's color for soldiers.
-            look.motion.time += dt * (moving ? 2.0f * static_cast<float>(std::max(speed, 1)) : 1.0f);
-            if (bodies_ != nullptr && !bodies_->empty()) {
-                const Walkers::BodyKind& kind = bodies_->front();
+            // A villager with a mark under it: red for raiders, the town's
+            // color for soldiers. They hurry after an enemy and swing at
+            // what they attack.
+            if (cast_ != nullptr && cast_->loaded()) {
+                const std::uint32_t bits = id.index * 2654435761u + id.generation;
+                const people::Body& body = cast_->any_body(bits);
+                const float meters = math::length(math::Vec3{to_float(a.position.x - a.previous.x), 0.0f,
+                                                             to_float(a.position.z - a.previous.z)}) *
+                                     static_cast<float>(sim::kTicksPerSecond);
+                const people::Act act = moving ? (a.state == sim::CreatureState::Chase ? people::Act::Run : people::Act::Walk)
+                                        : a.state == sim::CreatureState::Bash ? people::Act::Chop
+                                                                              : people::Act::Idle;
+                people::advance(body, look.person, act, meters, game_dt, rest_dt);
                 render::CharacterInstance c;
-                c.body = kind.id;
-                c.clip = moving ? kind.walk : kind.idle;
-                c.time = look.motion.time;
+                people::pose(body, look.person, c);
                 c.position = at;
                 c.yaw = look.yaw;
                 c.scale = 1.05f;
-                c.palette = id.index % palette_count_;
+                c.palette = people::Cast::palette(body, bits);
                 characters_.push_back(c);
             }
             render::Instance mark;
@@ -1048,10 +1048,13 @@ math::Vec3 VillageView::building_top(const sim::Game& game, const sim::Building&
 void VillageView::update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,
                                     int speed) {
     characters_.clear();
-    if (bodies_ == nullptr || bodies_->empty()) {
+    if (cast_ == nullptr || !cast_->loaded()) {
         renderer.set_characters({});
         return;
     }
+    const float game_dt = dt * static_cast<float>(std::max(speed, 0));
+    // Work and rest at the game's pace, but never faster than real time.
+    const float rest_dt = dt * std::min(1.0f, static_cast<float>(std::max(speed, 0)));
     const auto& store = game.villagers();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const sim::EntityId id = store.entities()[k];
@@ -1068,61 +1071,28 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
             look = Look{};
             look.generation = id.generation;
             look.yaw = static_cast<float>(v.appearance % 628u) / 100.0f;
-            look.time = static_cast<float>((v.appearance >> 10) % 1000u) / 1000.0f;
+            look.motion.time = static_cast<float>((v.appearance >> 10) % 1000u) / 1000.0f;
         }
         if (moving) {
             const float want = std::atan2(to_float(v.position.x - v.previous.x), to_float(v.position.z - v.previous.z));
             look.yaw += wrap_angle(want - look.yaw) * std::min(1.0f, dt * 8.0f);
         }
-        const float rate = moving ? kWalkMetersPerSecond * static_cast<float>(speed) / Walkers::kWalkReferenceSpeed
-                                  : 1.0f;
-        look.time += dt * rate;
-
-        // The body by race and sex, a palette and accessories from the
-        // appearance bits.
-        const bool female = v.sex == sim::Sex::Female;
-        const std::string_view race_body =
-            v.race < game.content().races.size() ? std::string_view(game.content().races[v.race].body) : "human";
-        const Walkers::BodyKind* kind = &bodies_->front();
-        bool exact = false;
-        for (const Walkers::BodyKind& b : *bodies_) {
-            if (b.female == female && (!exact || b.body == race_body)) {
-                exact = b.body == race_body;
-                kind = &b;
-            }
-        }
-        const bool dwarf = race_body == "dwarf";
+        // The character by race and sex, and what it does by its task; the
+        // stride follows the ground it really covers.
+        const people::Body& body = cast_->body(v.race, v.sex == sim::Sex::Female, v.appearance);
+        const std::int32_t age = game.age_years(v);
+        const float scale = people::scale_of(age, v.appearance);
+        const float meters = math::length(math::Vec3{to_float(v.position.x - v.previous.x), 0.0f,
+                                                     to_float(v.position.z - v.previous.z)}) *
+                             static_cast<float>(sim::kTicksPerSecond);
+        // A smaller body takes shorter steps.
+        people::advance(body, look.motion, people::act_of(game, v, moving), meters / scale, game_dt, rest_dt);
         render::CharacterInstance c;
-        c.body = kind->id;
-        c.clip = moving ? kind->walk : kind->idle;
-        c.time = look.time;
+        people::pose(body, look.motion, c);
         c.position = villager_position(game, v, alpha);
         c.yaw = look.yaw;
-        const std::int32_t age = game.age_years(v);
-        c.scale = age < sim::village::kAdultAgeYears
-                      ? 0.55f + 0.4f * static_cast<float>(age) / static_cast<float>(sim::village::kAdultAgeYears)
-                      : 0.94f + static_cast<float>((v.appearance >> 3) % 12u) / 100.0f;
-        c.palette = v.appearance % palette_count_;
-        std::uint32_t mask = 0;
-        const std::uint32_t bits = v.appearance >> 16;
-        std::uint32_t hat = bits % 3u;
-        // The season decides the hat: a cap for everybody in winter, a straw
-        // hat in summer for those who wear one.
-        if (season_ == sim::Season::Winter && kind->hats.size() >= 2) {
-            hat = 2;
-        } else if (season_ == sim::Season::Summer && hat == 2) {
-            hat = 1;
-        }
-        if (hat > 0 && hat <= kind->hats.size()) {
-            mask |= 1u << kind->hats[hat - 1];
-        }
-        if (kind->beard != ~0u && age >= sim::village::kAdultAgeYears && (dwarf || (bits >> 2) % 3u == 0)) {
-            mask |= 1u << kind->beard;
-        }
-        if (kind->apron != ~0u && (bits >> 4) % 4u == 0) {
-            mask |= 1u << kind->apron;
-        }
-        c.accessories = mask;
+        c.scale = scale;
+        c.palette = people::Cast::palette(body, v.appearance);
         characters_.push_back(c);
     }
     renderer.set_characters(characters_);

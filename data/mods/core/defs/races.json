@@ -5,7 +5,35 @@
       "type": "race",
       "id": "core:human",
       "name": "race.human",
-      "body": "human",
+      "bodies": {
+        "male": [
+          "adventurer_man",
+          "knight_man",
+          "mage",
+          "cleric"
+        ],
+        "female": [
+          "adventurer_woman",
+          "knight_woman",
+          "mage",
+          "cleric"
+        ]
+      },
+      "skins": [
+        "#f1c8a4",
+        "#e0b08a",
+        "#c68e62",
+        "#9a6440",
+        "#6e4428"
+      ],
+      "hairs": [
+        "#2a1e16",
+        "#5a3a22",
+        "#8a5a2e",
+        "#c89a5a",
+        "#a8502a",
+        "#8c8c88"
+      ],
       "move": 100,
       "work": {
         "wood": 105,
@@ -24,7 +52,17 @@
       "type": "race",
       "id": "core:catfolk",
       "name": "race.catfolk",
-      "body": "catfolk",
+      "bodies": {
+        "male": [
+          "catfolk"
+        ]
+      },
+      "skins": [
+        "#d89a50",
+        "#8a8a8a",
+        "#4a4038",
+        "#e8d8b8"
+      ],
       "move": 125,
       "work": {
         "hunt": 120,
@@ -39,7 +77,25 @@
       "type": "race",
       "id": "core:dwarf",
       "name": "race.dwarf",
-      "body": "dwarf",
+      "bodies": {
+        "male": [
+          "dwarf_man"
+        ],
+        "female": [
+          "dwarf_woman"
+        ]
+      },
+      "skins": [
+        "#d99870",
+        "#c08660"
+      ],
+      "hairs": [
+        "#c8642a",
+        "#8a4a22",
+        "#3a2a20",
+        "#b8b4aa",
+        "#e0b050"
+      ],
       "move": 90,
       "work": {
         "stone": 145,
@@ -55,7 +111,24 @@
       "type": "race",
       "id": "core:elf",
       "name": "race.elf",
-      "body": "elf",
+      "bodies": {
+        "male": [
+          "high_elf_man"
+        ],
+        "female": [
+          "high_elf_woman"
+        ]
+      },
+      "skins": [
+        "#f3d2b8",
+        "#d8b090"
+      ],
+      "hairs": [
+        "#f0e0a0",
+        "#e8e4d8",
+        "#c8a060",
+        "#6a4a2a"
+      ],
       "move": 105,
       "work": {
         "forage": 130,
@@ -65,6 +138,162 @@
         "metal": 80
       },
       "disease": 25
+    },
+    {
+      "type": "race",
+      "id": "core:dark_elf",
+      "name": "race.dark_elf",
+      "bodies": {
+        "male": [
+          "dark_elf_man"
+        ],
+        "female": [
+          "dark_elf_woman"
+        ]
+      },
+      "skins": [
+        "#8a6aa8",
+        "#6e5a96",
+        "#7a7a9a"
+      ],
+      "hairs": [
+        "#d8d8e8",
+        "#b8c0d0",
+        "#f0e8c0"
+      ],
+      "move": 100,
+      "work": {
+        "wood": 105,
+        "stone": 105,
+        "forage": 105,
+        "farm": 105,
+        "orchard": 105,
+        "hunt": 105,
+        "fish": 105,
+        "build": 105,
+        "craft": 105,
+        "metal": 105
+      }
+    },
+    {
+      "type": "race",
+      "id": "core:foxfolk",
+      "name": "race.foxfolk",
+      "bodies": {
+        "male": [
+          "foxfolk"
+        ]
+      },
+      "skins": [
+        "#c8502a",
+        "#9aa0a8",
+        "#e8e0d0"
+      ],
+      "move": 100,
+      "work": {
+        "wood": 105,
+        "stone": 105,
+        "forage": 105,
+        "farm": 105,
+        "orchard": 105,
+        "hunt": 105,
+        "fish": 105,
+        "build": 105,
+        "craft": 105,
+        "metal": 105
+      }
+    },
+    {
+      "type": "race",
+      "id": "core:frogfolk",
+      "name": "race.frogfolk",
+      "bodies": {
+        "male": [
+          "frogfolk"
+        ]
+      },
+      "skins": [
+        "#4aaa5a",
+        "#c8b040",
+        "#d86a3a"
+      ],
+      "move": 100,
+      "work": {
+        "wood": 105,
+        "stone": 105,
+        "forage": 105,
+        "farm": 105,
+        "orchard": 105,
+        "hunt": 105,
+        "fish": 105,
+        "build": 105,
+        "craft": 105,
+        "metal": 105
+      }
+    },
+    {
+      "type": "race",
+      "id": "core:lizardfolk",
+      "name": "race.lizardfolk",
+      "bodies": {
+        "male": [
+          "lizardfolk"
+        ]
+      },
+      "skins": [
+        "#8a9a4a",
+        "#4a8a8a",
+        "#a8704a"
+      ],
+      "hairs": [
+        "#c83a3a",
+        "#e0b040"
+      ],
+      "move": 100,
+      "work": {
+        "wood": 105,
+        "stone": 105,
+        "forage": 105,
+        "farm": 105,
+        "orchard": 105,
+        "hunt": 105,
+        "fish": 105,
+        "build": 105,
+        "craft": 105,
+        "metal": 105
+      }
+    },
+    {
+      "type": "race",
+      "id": "core:orc",
+      "name": "race.orc",
+      "bodies": {
+        "male": [
+          "orc"
+        ]
+      },
+      "skins": [
+        "#6a8a4a",
+        "#8a8a6a",
+        "#4a6a5a"
+      ],
+      "hairs": [
+        "#4a3a2a",
+        "#8a8a88"
+      ],
+      "move": 100,
+      "work": {
+        "wood": 105,
+        "stone": 105,
+        "forage": 105,
+        "farm": 105,
+        "orchard": 105,
+        "hunt": 105,
+        "fish": 105,
+        "build": 105,
+        "craft": 105,
+        "metal": 105
+      }
     }
   ]
 }

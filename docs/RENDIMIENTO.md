@@ -210,6 +210,18 @@ Mapa grande, semilla 12345, cámara a 260 m (4291 árboles a la vista): de antes
 
 Las corridas del colosal varían entre sí un 10 %, más que la diferencia que se mide; el dato firme es el de los triángulos.
 
+## Personajes low poly (fase 57)
+
+Medido con `--reporte` y `"people": 1000` en la vista (D-5710), `release`, 1600 × 900, Ultra, sin vsync, mapa pequeño (semilla 91): mil aldeanos caminando en un cuadro de 64 m.
+
+| Vista | Antes (cuerpos viejos) | Personajes nuevos, sin versión lejana | Con versión lejana |
+|---|---|---|---|
+| Cámara a 45 m (756 a la vista) | 428 FPS, 2,04 M triángulos, 1089 llamadas | 298 FPS (−30 %), 2,76 M, 1401 | 596 FPS (+39 %), 1,11 M, 865 |
+| Cámara a 110 m (995 a la vista) | 457 a 473 FPS | 316 FPS (−33 %) | 651 FPS (+40 %) |
+| Sin aldeanos | 869 FPS | 854 FPS | 873 FPS |
+
+Los cuerpos viejos tenían unos 1300 triángulos y los nuevos de 2300 a 3000, con 9 a 12 materiales (una llamada de dibujo por material). La versión lejana (unos 500 triángulos) se usa en cuanto el personaje mide menos que los píxeles del nivel de detalle, que en la vista aérea es casi siempre, y en todas las sombras; las sombras se dibujan ahora en una llamada por modelo. El criterio de la fase (perder como mucho un 10 %) se cumple con margen.
+
 ## Árboles gigantes (fase 55)
 
 Medido con `--reporte`, `release`, 1600 × 900, Ultra, sin vsync, mapa mediano (semilla 91, relieve bajo, mar siempre, 2 jugadores), que tiene 3 gigantes.

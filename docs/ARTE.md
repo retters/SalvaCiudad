@@ -22,30 +22,22 @@ blender --background --factory-startup --python art/blender/build_all.py -- tmp/
 blender --background --factory-startup --python art/blender/build_all.py -- tmp/b
 ```
 
-**Vistas previas** (imágenes PNG, sin abrir Blender):
-
-```
-blender --background --factory-startup --python art/blender/preview.py -- data/mods/core/models tmp/preview
-```
-
-Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las poses animadas en estas vistas. La referencia es cómo se ven en el juego.
+**Vistas previas** (imágenes PNG, sin abrir Blender): `study_preview.py`, más abajo; sirve para cualquier carpeta de modelos, también las de `data/mods/core/models`.
 
 ## Archivos
 
 | Script | Genera |
 |---|---|
 | `common.py` | Utilidades: escena vacía, materiales, `MeshBuilder` (piezas con material y peso de hueso), exportación con opciones fijas |
-| `human.py` | `characters/<raza>_male.glb` y `<raza>_female.glb` para humanos, enanos, elfos y gatunos (mismo esqueleto y animaciones `idle` y `walk`); accesorios `hat_straw`, `hat_cap`, `beard`, `apron_male` y `apron_female` |
 | `props.py` | `props/rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb`, con sus variantes |
 | `lowpoly_trees/*.py` | `trees/<árbol>_<estado>.glb` y su versión lejana `_far.glb`: los 32 árboles y 8 gigantes del juego (ver `docs/ARBOLES.md`). `build_all.py ... trees [nombres]` los construye |
 | `buildings.py` | `buildings/<id>.glb`: un modelo por edificio de `core` (46), cada uno del tamaño de su terreno |
-| `build_all.py` | Ejecuta todo; los animales del juego (`animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb`) salen de `zoo/`, con esqueleto y animaciones (fase 47) |
-| `preview.py` | Imágenes de revisión |
+| `build_all.py` | Ejecuta todo; los animales del juego (`animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb`) salen de `zoo/`, con esqueleto y animaciones (fase 47); los personajes (`characters/<personaje>.glb` y su versión lejana `_far.glb`, 17 de `people/`) y las herramientas (`tools/axe.glb`, `bow.glb`, `rod.glb`, `hammer.glb`, de `weapons/`), desde la fase 57 |
 | `studies.py` | Técnicas de modelado de los animales low poly; `build_final` es la de producción (remesh y reducción) |
 | `zoo/*.py` | Un animal o planta low poly por archivo (ver abajo) |
 | `far_tree.py` | La versión lejana de un árbol (fase 52), a partir de su modelo terminado: `studies.build_final` la escribe como `<nombre>_far.glb` para toda especificación con `far_limit` |
 | `zoo_build.py` | Genera los modelos de `zoo/` o, con `specs=<carpeta>`, los de `people/`, `weapons/` o `lowpoly_trees/` |
-| `people/*.py` | Los 15 personajes low poly; `_human.py` es el cuerpo común |
+| `people/*.py` | Los 17 personajes low poly; `_human.py` es el cuerpo común y `_people_kit.py` lo que comparten los tres grupos (D-5711) |
 | `weapons/wNN_*.py` | Las 40 armas y herramientas, numeradas como en la imagen de referencia |
 | `lowpoly_trees/*.py` | 16 árboles en tres estados (48 modelos) desde un solo generador, `_tree.py` |
 | `rigs.py` | Base de esqueletos, pesos y animaciones (`Rig`, `Pose`) y la plantilla de cuadrúpedo |
@@ -60,7 +52,7 @@ Las imágenes de referencia del usuario (`Animales low poly`, `Arboles 1` a `8`,
 
 ## Convenciones
 
-- **Unidades:** metros. Un humano mide unos 1,75 m (hombre) o 1,66 m (mujer).
+- **Unidades:** metros. Un humano mide de 1,70 a 1,90 m; un enano, 1,3 m; un orco, 2,05 m.
 - **Ejes en Blender:** Z arriba y el frente hacia **−Y**. Tras exportar a glTF queda Y arriba y el frente hacia **+Z**, que es lo que espera el juego (el giro de una instancia se mide desde +Z).
 - **Apoyo:** los modelos se apoyan en Z = 0, con el origen en el centro de la base.
 - **Estilo:** low-poly "medio" con sombreado plano. Caras y manos con algo de detalle; edificios con detalles arquitectónicos (vigas, marcos, contraventanas, tejas).
@@ -68,20 +60,17 @@ Las imágenes de referencia del usuario (`Animales low poly`, `Arboles 1` a `8`,
 
 ### Materiales recoloreados por paleta
 
-Si un material de un personaje o accesorio se llama como uno de estos espacios, el juego lo pinta con el color de la **paleta de cada aldeano**. Así 2000 aldeanos pueden verse distintos con los mismos modelos:
+Si un material de un personaje se llama como uno de estos espacios, o empieza con su nombre y `_` (`skin_light`, `top_shade`), el juego lo pinta con el color de la **paleta de cada aldeano**, conservando lo más claro o más oscuro que sea respecto del material principal del espacio (D-5703). Así mil aldeanos se ven distintos con los mismos modelos:
 
 | Espacio | Nombre del material | Uso |
 |---|---|---|
-| 0 | `skin` | Piel |
-| 1 | `hair` | Pelo, barba |
-| 2 | `top` | Prenda de arriba |
-| 3 | `bottom` | Pantalón o falda |
-| 4 | `shoes` | Calzado |
-| 5 | `belt` | Cinturón, cintas |
-| 6 | `hat` | Sombrero |
-| 7 | `apron` | Delantal |
+| 0 | `skin` | Piel, o pelaje |
+| 1 | `hair` | Cabello, barba, cresta |
+| 2 | `top` | La prenda principal |
+| 3 | `bottom` | La segunda prenda (pantalón, faja) |
+| 4 a 7 | `shoes`, `belt`, `hat`, `apron` | Sin uso desde la fase 57 |
 
-Cualquier otro nombre (`eyes`, `mouth`…) conserva su color.
+Cualquier otro nombre (`eye`, `leather`, `steel`, `gold`…) conserva su color. En los scripts de `people/` los materiales tienen nombres descriptivos (`tunic`, `cloak`, `fur`); cada personaje dice cuáles se recolorean con `palette = {"tunic": "top", "trousers": "bottom"}` y al exportar toman el nombre del espacio. Las pieles y cabellos de cada raza están en `races.json` (`"skins"`, `"hairs"`); los conjuntos de ropa, en `src/game/people.cpp`.
 
 ### Materiales recoloreados en los edificios
 
@@ -96,24 +85,12 @@ Lo mismo para los edificios (fase 31): si un material se llama como uno de estos
 
 Hoy las usan las casas. El color que tenga el material en Blender es solo para la vista previa y para el visor, que puede recorrer las paletas con "Otros colores".
 
-### Esqueleto humano
+### Esqueleto y animaciones de los personajes
 
-17 huesos, con los mismos nombres para los dos cuerpos: `hips`, `spine`, `chest`, `neck`, `head`, `upper_arm.L/R`, `lower_arm.L/R`, `hand.L/R`, `thigh.L/R`, `shin.L/R` y `foot.L/R`. `.L` es el lado izquierdo del personaje (+X en Blender).
+Los 17 huesos, los clips, las herramientas en la mano y la versión lejana se describen más abajo, en "Esqueleto y animaciones". Un personaje nuevo hereda de uno de los tres grupos de `people/` (`Adventurer`, `Folk` o `Figure`) y sigue su convención (D-5711); para que entre al juego se agrega a `GAME_PEOPLE` de `build_all.py` y a los `"bodies"` de una raza en `races.json`.
 
-- La **cabeza tiene el mismo tamaño** en los dos cuerpos, para que los sombreros sirvan a ambos.
-- Cada pieza del cuerpo va unida a un hueso (piel rígida por pieza). Las piezas se solapan en las articulaciones para que no se abran huecos al doblarse. Más adelante se puede pasar a pesos suaves sin cambiar el motor, que ya mezcla hasta 4 huesos por vértice.
-
-### Animaciones
-
-- Cada **acción** de Blender se exporta como una animación glTF con su nombre (`idle`, `walk`).
-- Los ciclos repiten en el último fotograma la pose del primero. El juego muestrea a **30 fotogramas por segundo** y descarta ese último fotograma repetido.
-- `walk`: 1 s por zancada completa, pensado para caminar a **1,45 m/s**. El juego acelera o frena la animación según la velocidad real, para que los pies no patinen.
-- `idle`: respiración y balanceo leve, 2 s.
-- Las poses se escriben como rotaciones en el espacio del esqueleto (`pose_key` en `human.py`), así es fácil ajustar ángulos o agregar animaciones nuevas (talar, cargar, construir…).
-
-### Accesorios
-
-Un accesorio es un **modelo rígido cuyo origen es el punto donde se fija**: el comienzo de un hueso (`head` es la parte alta del cuello; `hips` es la pelvis). El juego lo lleva a la posición de ese hueso en la pose de reposo del cuerpo y lo mueve con la animación de ese hueso (D-404). Qué accesorio va en qué hueso está en `src/game/builtin_models.h`.
+- **Versión lejana** (fase 57): `rigs.animate` escribe `<nombre>_far.glb` junto al modelo si la especificación tiene `far_tris` (500 en `Human`): el mismo esqueleto, la malla reducida y ningún clip. El juego le pone los clips del modelo cercano.
+- **Caminar y correr** guardan su velocidad (`walk_speed`, `run_speed`); el juego avanza el clip según lo que el aldeano recorre de verdad, así que los pies no patinan.
 
 ## Variantes
 
@@ -159,7 +136,7 @@ La vista previa hace una imagen por modelo con cuatro vistas (frente, lado, 3/4 
 
 ### Personajes, armas y árboles low poly
 
-De las imágenes de referencia del usuario en `art/reference/` (`Personajes 1` a `3`, `Armas y herramientas` y `Arboles 1` a `3`). Tampoco están en el juego todavía. Se generan igual que los animales, con la carpeta de especificaciones:
+De las imágenes de referencia del usuario en `art/reference/` (`Personajes 1` a `3`, `Armas y herramientas` y `Arboles 1` a `3`). Los personajes y los árboles están en el juego (fases 53 y 57; `build_all.py` los lleva a `core`); de las armas, cuatro son las herramientas de los aldeanos. Para estudiarlos sueltos se generan igual que los animales, con la carpeta de especificaciones:
 
 ```
 blender --background --factory-startup --python art/blender/zoo_build.py -- art/studies/people specs=people [nombres]
@@ -225,8 +202,8 @@ blender --background --factory-startup --python art/blender/tripo_build.py -- <m
   - nadadores (`rigs_swim`): tiburón (`swim`, `swim_fast`, `eat`, `bite`), tortuga (`walk`, `swim`, `hide`) y pulpo (`walk`, `swim`);
   - la flora no lleva esqueleto.
 - Las animaciones de vuelo y nado se animan cerca del origen: el juego les da la altura o la profundidad.
-- **Personajes** (fase 48, `rigs_human.Humanoid`): los 17 huesos de los aldeanos (`hips`, `spine`, `chest`, `neck`, `head`, y por lado `upper_arm`, `lower_arm`, `hand`, `thigh`, `shin`, `foot`), más los que agregue cada personaje (cola, capa, coleta, faldas). Animaciones: `idle`, `walk`, `run`, `chop` (talar), `shoot` (arco), `fish_cast`, `fish_stand` y `fish_sit`.
-  - La herramienta es un modelo aparte. El modelo dice en qué mano va en cada animación, en los *extras* del esqueleto: `chop_prop` = `axe:hand.R`, `shoot_prop` = `bow:hand.L`, `fish_*_prop` = `rod:hand.R`. Va con su eje largo (su +Z) hacia el frente de la mano, que es −Y con el brazo colgando en reposo, y con su punto `grip` en el centro de la mano. Las tiras de revisión la muestran puesta.
+- **Personajes** (fase 48, `rigs_human.Humanoid`): los 17 huesos de los aldeanos (`hips`, `spine`, `chest`, `neck`, `head`, y por lado `upper_arm`, `lower_arm`, `hand`, `thigh`, `shin`, `foot`), más los que agregue cada personaje (cola, capa, coleta, faldas). Animaciones: `idle`, `walk`, `run`, `chop` (talar), `shoot` (arco), `fish_cast`, `fish_stand`, `fish_sit` y `work` (martillar; la genérica de los oficios, fase 57).
+  - La herramienta es un modelo aparte. El modelo dice en qué mano va en cada animación, en los *extras* del esqueleto: `chop_prop` = `axe:hand.R`, `shoot_prop` = `bow:hand.L`, `fish_*_prop` = `rod:hand.R`, `work_prop` = `hammer:hand.R`; y cuánto mide ese hueso (`hand.R_length`), porque el juego no sabe dónde termina un hueso. Qué modelo es cada herramienta está en `GAME_TOOLS` de `build_all.py` y en `src/game/builtin_models.h`. Va con su eje largo (su +Z) hacia el frente de la mano, que es −Y con el brazo colgando en reposo, y con su punto `grip` en el centro de la mano. Las tiras de revisión la muestran puesta.
   - Una animación que no se repite lleva `<animación>_loops` = 0 (`die`, `hide`, `fish_cast`).
 - **Verificar** un modelo exportado: `blender --background --factory-startup --python art/blender/rig_check.py -- art/studies/animals/pig.glb`. Comprueba tres cosas y termina en `RIG OK` o `RIG FAILED`:
   - que cada animación que se repite termina en la pose con que empieza;
@@ -237,7 +214,7 @@ blender --background --factory-startup --python art/blender/tripo_build.py -- <m
 
 `SalvaCiudadModelos.exe` se compila junto al juego (queda en `build\<preset>\bin\`) y sirve para revisar los modelos sin abrir el juego (D-3001):
 
-- A la izquierda, los modelos del mod elegido por categoría (edificios, árboles, objetos del mapa, personajes y accesorios, animales). Al elegir un tipo se ven **todas sus variantes lado a lado**; al elegir un archivo, solo ese.
+- A la izquierda, los modelos del mod elegido por categoría (edificios, árboles, objetos del mapa, personajes, animales). Al elegir un tipo se ven **todas sus variantes lado a lado**; al elegir un archivo, solo ese.
 - Se ven con la luz y las sombras del juego, junto a un aldeano de 1,7 m y sobre una cuadrícula de 1 m. Los árboles se pueden ver en cada estación y con nieve, y los personajes con otra paleta y cada animación.
 - A la derecha, la ficha: triángulos, vértices, llamadas de dibujo, materiales, texturas, tamaño en metros, qué definiciones lo usan y si nada lo usa.
 - La pestaña **Revisión** lista los modelos que nada usa, las definiciones cuyo modelo falta, los tipos que tienen una sola variante y los errores del mod.

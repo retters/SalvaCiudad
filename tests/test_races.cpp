@@ -65,9 +65,9 @@ void run(Game& g, std::uint32_t ticks) {
 }  // namespace
 
 TEST_SUITE("races") {
-    TEST_CASE("core has four peoples with their traits") {
+    TEST_CASE("core has nine peoples, four of them with traits of their own") {
         const Content& c = sc::test::core_content();
-        REQUIRE(c.races.size() == 4);
+        REQUIRE(c.races.size() == 9);
         const RaceDef& dwarf = c.races[race_index("core:dwarf")];
         const RaceDef& elf = c.races[race_index("core:elf")];
         const RaceDef& cat = c.races[race_index("core:catfolk")];
@@ -81,8 +81,25 @@ TEST_SUITE("races") {
         CHECK(cat.night_vision);
         CHECK(dwarf.cold > 0);
         CHECK(elf.disease > 0);
-        CHECK(human.body == "human");
-        CHECK(dwarf.body == "dwarf");
+        // Their characters (phase 57): several for the humans, a man and a
+        // woman for the dwarves, one for everybody among the catfolk.
+        CHECK(human.bodies_male.size() == 4);
+        CHECK(human.bodies_female.size() == 4);
+        CHECK(dwarf.bodies_male == std::vector<std::string>{"dwarf_man"});
+        CHECK(dwarf.bodies_female == std::vector<std::string>{"dwarf_woman"});
+        CHECK(cat.bodies_male == std::vector<std::string>{"catfolk"});
+        CHECK(cat.bodies_female.empty());
+        CHECK_FALSE(human.skins.empty());
+        CHECK_FALSE(human.hairs.empty());
+        // The new peoples work and walk like the humans.
+        for (const char* id : {"core:dark_elf", "core:foxfolk", "core:frogfolk", "core:lizardfolk", "core:orc"}) {
+            const RaceDef& r = c.races[race_index(id)];
+            CHECK(r.move == human.move);
+            CHECK(r.work == human.work);
+            CHECK(r.cold == human.cold);
+            CHECK(r.disease == human.disease);
+            CHECK_FALSE(r.bodies_male.empty());
+        }
     }
 
     TEST_CASE("the rules keep each player's people") {
@@ -109,7 +126,7 @@ TEST_SUITE("races") {
         for (const Villager& v : mixed.villagers().data()) {
             seen.insert(v.race);
         }
-        CHECK(seen.size() == 4);
+        CHECK(seen.size() >= 4);  // Of the nine peoples, among a dozen villagers.
     }
 
     TEST_CASE("catfolk walk faster") {

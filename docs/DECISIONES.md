@@ -2281,3 +2281,55 @@ La prueba pone la cabaña de caza junto a la primera zona de venados o jabalíes
 - en 2 (17, 20) la zona está al otro lado del agua: el juego deja poner la cabaña ahí, pero nadie puede llegar y nunca se construye;
 - en 2 (1, 14) el camino es tan largo (más de 400 m, o un rodeo por el agua) que quienes llevan los materiales se quedan sin comida en el viaje y mueren: un aldeano solo decide comer cuando está sin tarea, nunca a medio camino.
 La caza en sí funciona: con la zona a menos de 250 m siempre hay carne. No se cambió la simulación. Quedan dos propuestas para decidir con el usuario: (1) que un aldeano con mucha hambre deje lo que hace y vaya a comer; (2) que no se pueda construir donde ningún aldeano puede llegar, con su mensaje. La prueba sigue con la semilla 2.
+
+## Fase 57: los personajes low poly en el juego (2026-10-03)
+
+Decidido con el usuario antes de empezar: se modelan un enano y una enana sin imagen de referencia; elfo oscuro, zorruno, rano, lagarto y orco pasan a ser razas jugables con los números de los humanos; todos son aldeanos (soldados y asaltantes siguen siendo aldeanos con su marca de color; caballero, caballera, mago y clérigo son variantes humanas al azar); la variedad sale de paletas (ropa, piel y cabello) y de la estatura; las razas de un solo modelo lo usan para los dos sexos; los niños son el adulto a menor escala; sombreros, barbas y delantales se borran.
+
+**D-5701. Qué personaje es cada raza.**
+En `races.json`, `"bodies": {"male": [...], "female": [...]}` reemplaza a `"body"`. Humanos: aventurero, caballero, mago y clérigo (hombres) y aventurera, caballera, mago y clérigo (mujeres); un aldeano toma uno por sus bits de apariencia. Elfos: los altos elfos. Enanos: los dos nuevos. Gatunos, zorrunos, ranos, lagartos y orcos: su único modelo, bajo cualquiera de los dos sexos. El maniquí no entra al juego. Las cinco razas nuevas van al final de la lista, así que los índices de las cuatro de antes no cambian.
+
+**D-5702. Los enanos.**
+Son el cuerpo de los aventureros con otras proporciones (`people/dwarf_man.py`, `dwarf_woman.py`): 1,30 y 1,24 m, hombros y miembros gruesos, la cabeza grande y sin cuello, la túnica hasta la rodilla y las botas altas para que las piernas se vean cortas. Él lleva barba hasta el pecho con dos trenzas y cejas espesas; ella, dos trenzas gruesas y vestido. El cuerpo común escala todo por igual, así que las piernas tienen la proporción humana debajo de la ropa; acortarlas de verdad pedía rehacer las alturas de todo el cuerpo común.
+
+**D-5703. Paletas: el material lleva el nombre de su espacio.**
+El juego recoloreaba solo los materiales llamados exactamente `skin`, `hair`, `top`…, y los pintaba de un color liso. Los personajes nuevos tienen facetas más claras y más oscuras (`skin_light`, `tunic_shade`). Ahora un material pertenece a un espacio si se llama como él o empieza con él y `_`, y conserva su tono: se multiplica el color de la paleta por la razón entre su color y el del material principal del espacio. Cada personaje declara qué materiales suyos son ropa recoloreable (`palette = {"tunic": "top", "trousers": "bottom"}`), y al exportar toman el nombre del espacio. La piel de gatunos, zorrunos y ranos es su pelaje o su piel azul; la cresta del lagarto es su "cabello". Acero, cuero, oro y ojos no cambian.
+
+**D-5704. Qué paletas hay.**
+Por personaje: su piel propia más las de su raza (`"skins"` en `races.json`), su cabello propio más los de su raza (`"hairs"`), y su ropa propia más 7 conjuntos comunes (azul, bermejo, verde, pardo, púrpura, crudo y pizarra). Un humano tiene 6 × 7 × 8 = 336 combinaciones; un enano, 144. La primera paleta de cada personaje es el modelo tal como se hizo. Los espacios `shoes`, `belt`, `hat` y `apron` quedan sin uso.
+
+**D-5705. Animación por tarea.**
+`game/people.*` decide: quieto, caminando, corriendo (al huir, al ir a un incendio o a pelear, y con la alarma), talando (hacha; también al pelear), cazando (arco), pescando (el lance una vez y después la espera, con la caña) y trabajando (un clip nuevo, `work`: martillar a la altura de la cintura, con un martillo; lo usan construir, producir, cultivar, apagar un incendio y recoger lo que no es un árbol). Caminar y correr avanzan según los metros que el aldeano recorre de verdad entre un paso de simulación y el siguiente, divididos por la velocidad del clip y por su escala, así que los pies no patinan con ninguna raza, con nieve ni en los niños. Lo demás va a su propio ritmo, nunca más rápido que el tiempo real.
+
+**D-5706. La caminata es más viva.**
+La caminata de los personajes cubría 0,9 m/s y los aldeanos del juego van a 2 m/s: se habría visto al doble de velocidad. El ciclo pasó de 26 a 16 fotogramas (1,3 a 1,6 m/s según el personaje; 1,0 los enanos). Quien va a más de vez y media la velocidad de su caminata corre: los enanos trotan.
+
+**D-5707. Las herramientas.**
+`models/tools/axe.glb`, `bow.glb`, `rod.glb` y `hammer.glb` salen de cuatro de las 40 armas (`w07`, `w13`, `w18`, `w33`). El modelo del personaje dice qué herramienta va en qué mano en cada clip (`<clip>_prop`), y cuánto mide el hueso de la mano; la herramienta dice dónde se sujeta (`grip`). El motor la coloca una vez, en la pose de reposo, con la regla de las tiras de revisión, y la mueve con el hueso; se ve solo mientras dura el clip. Se reduce para manos chicas (un enano lleva el hacha al 74 %). El hacha de guerra y el martillo de piedra son lo que hay: herramientas de trabajo propias (hacha de leñador, pico, azada) quedan como idea.
+
+**D-5708. Soldados y asaltantes.**
+Como decidió el usuario, siguen siendo aldeanos (un humano cualquiera, por su número) con la marca de color debajo. Ahora corren al perseguir y dan golpes de hacha al atacar.
+
+**D-5709. Versión lejana de los personajes.**
+Con 1000 aldeanos a la vista el juego perdía un 30 % de FPS (de 428 a 298): los personajes nuevos tienen de 2300 a 3000 triángulos. Cada uno tiene ahora `<nombre>_far.glb`, el mismo esqueleto con la malla reducida a unos 500 triángulos y sin clips (usa los del modelo cercano). Se dibuja cuando el personaje mide en pantalla menos que los píxeles del nivel de detalle (los mismos de los árboles), y siempre en las sombras, que además pasaron a dibujarse en una sola llamada por modelo. Resultado, medido con `--reporte` y `"people": 1000` (Ultra, 1600 × 900): 596 FPS, un 39 % **más** que antes de la fase. Ver `docs/RENDIMIENTO.md`.
+
+**D-5710. `"people"` en el reporte del mapa.**
+Para medir sin manejar la ventana, `view.people` en `reporte.json` (escrito a mano, hasta 5000) pone esa cantidad de aldeanos en un cuadro alrededor del centro de la vista al repetir el reporte.
+
+**D-5711. Código repetido de los tres grupos de personajes.**
+`people/_people_kit.py` reúne lo que estaba igual en `adventurer_man.py`, `lizardfolk.py` y `dark_elf_man.py`: la pieza convexa (`chunk`, `hull` y `solid` eran la misma), la tira (`strip`; `ribbon` es una tira de normal constante), los tonos de faceta, la distancia a las partes del cuerpo y los ayudantes de puntos simétricos. Los 17 modelos salieron idénticos byte a byte antes y después. **No se unificó** lo que solo comparte el nombre: `tube`, `spike`, `strap`, `buckle`, `pouch` y `sheet` hacen cosas distintas en cada grupo (en uno `sheet(back=)` es una dirección y en otro un material), y las tres soluciones de tela y de marcar piezas a huesos (D-4606) usan convenciones opuestas; fundirlas cambiaría la geometría o los pesos de los personajes ya revisados. Queda pendiente, y cada personaje nuevo debe elegir un grupo y seguir su convención.
+
+**D-5712. Lo que se borró.**
+`art/blender/human.py` y `preview.py`, los 8 cuerpos y 5 accesorios de `models/characters/`, sus entradas en `builtin_models.h`, la carga y el reparto de sombreros, barbas y delantales, el gorro de invierno, y sus textos. `Walkers` queda solo como la gente que colocan las herramientas de desarrollo; los cuerpos están en `people::Cast`.
+
+**D-5713. La simulación.**
+El código de la simulación no cambió: `RaceDef` lleva los nombres de los modelos y los colores, que solo lee la vista. Sí cambió el contenido: hay 9 razas en vez de 4, así que con el 20 % de inmigrantes de otras razas llegan también las nuevas, y una partida con la misma semilla ya no transcurre igual que antes de la fase (la prueba "una hora de juego" usa otra semilla de partida). Las reglas siguen en la versión 29: el formato de la partida guardada no cambió, y una partida guardada antes se rechaza de todos modos porque el contenido es otro.
+
+**D-5714. El visor.**
+Cada personaje se ve con sus paletas ("Otra paleta" las recorre en orden) y con la herramienta en la mano en los clips que la usan. La versión lejana aparece en el grupo de su raza, quieta. Las herramientas están en "Otros".
+
+**D-5715. Defectos de animación de D-4609.**
+El usuario no indicó ninguno para esta fase; los de D-4609 son de los animales y siguen anotados.
+
+**D-5716. Lo que no se pudo ver en pantalla.**
+En el visor se revisaron los personajes, sus paletas y la herramienta en la mano (hacha, arco). En una partida se comprobó que los aldeanos son los nuevos, pero solo desde lejos: desde las pruebas automáticas no se pudo acercar la cámara. Que cada tarea use su animación lo cubre una prueba (`people`); queda en la lista de pruebas a mano verlo de cerca.

@@ -24,6 +24,7 @@ class KnightWoman(Folk):
     head_size = 0.84
     jaw = 0.88
     budget = 1050
+    palette = {"blue": "top"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "skin": common.rgb(0xFDB687),
         "hair": common.rgb(0xBC4332),

@@ -19,6 +19,7 @@ class Catfolk(Adventurer):
     height = 1.67
     shoulder = 0.165
     build = 0.9
+    palette = {"fur": "skin", "blue": "top"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "fur": common.rgb(0x666D90),
         "white": common.rgb(0xF0E2DA),

@@ -25,6 +25,7 @@ class Mage(Folk):
     # forearm keeps its length: it only turns at the elbow). False: both
     # arms hang as in the shared body and the staff stands in the lowered hand.
     raised_arm = True
+    palette = {"robe": "top", "sash": "bottom"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "skin": common.rgb(0xFBB888),
         "hair": common.rgb(0xB06A30),

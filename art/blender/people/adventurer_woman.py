@@ -15,6 +15,7 @@ class AdventurerWoman(Adventurer):
     head_size = 1.0
     shoulder = 0.152
     build = 0.9
+    palette = {"leggings": "bottom"}   # Materials the game recolors (rigs.palette_name).
     colors = {
         "skin": common.rgb(0xEFA878),
         "skin_light": common.rgb(0xF8BC8C),

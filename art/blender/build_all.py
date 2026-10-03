@@ -2,9 +2,9 @@
 
     blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models [only]
 
-`only` limits the build to one group: characters, props, trees, buildings
-or animals. After
-"trees", tree names limit it further (for example: trees cherry_1 pine).
+`only` limits the build to one group: characters, tools, props, trees,
+buildings or animals. After "trees" or "characters", names limit it further
+(for example: trees cherry_1 pine).
 """
 
 import importlib
@@ -15,7 +15,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import buildings  # noqa: E402
-import human  # noqa: E402
 import props  # noqa: E402
 import studies  # noqa: E402
 
@@ -45,6 +44,36 @@ def make_trees(folder, only=None):
             studies.build_final(spec, folder)
 
 
+# The people of the game (phase 57): the low-poly characters of
+# art/blender/people, with the villagers' skeleton and their clips. Which
+# race and sex each one is, races.json says.
+GAME_PEOPLE = ("adventurer_man", "adventurer_woman", "knight_man", "knight_woman", "mage", "cleric",
+               "dwarf_man", "dwarf_woman", "high_elf_man", "high_elf_woman", "dark_elf_man", "dark_elf_woman",
+               "catfolk", "foxfolk", "frogfolk", "lizardfolk", "orc")
+
+# The tools the characters hold while a clip plays ("<clip>_prop" in the
+# model names the kind): kind -> spec of art/blender/weapons. The game
+# knows them by these file names (src/game/builtin_models.h).
+GAME_TOOLS = {"axe": "w07_battle_axe", "bow": "w13_long_bow", "rod": "w18_fishing_rod", "hammer": "w33_stone_hammer"}
+
+
+def make_people(folder, only=None):
+    sys.path.insert(0, os.path.join(HERE, "people"))
+    for name in GAME_PEOPLE:
+        if only and name not in only:
+            continue
+        for spec in importlib.import_module(name).SPECS:
+            studies.build_final(spec, folder)
+
+
+def make_tools(folder):
+    sys.path.insert(0, os.path.join(HERE, "weapons"))
+    for kind, name in sorted(GAME_TOOLS.items()):
+        for spec in importlib.import_module(name).SPECS:
+            spec.name = kind   # The file is named after what the tool is.
+            studies.build_final(spec, folder)
+
+
 def make_animals(folder):
     sys.path.insert(0, os.path.join(HERE, "zoo"))
     for name in GAME_ANIMALS:
@@ -57,7 +86,9 @@ def main():
     out = os.path.abspath(args[0] if args else "data/mods/core/models")
     only = args[1] if len(args) > 1 else None
     if only in (None, "characters"):
-        human.make_all(os.path.join(out, "characters"))
+        make_people(os.path.join(out, "characters"), args[2:] if only == "characters" else None)
+    if only in (None, "tools"):
+        make_tools(os.path.join(out, "tools"))
     if only in (None, "props"):
         props.make_all(os.path.join(out, "props"))
     if only in (None, "trees"):

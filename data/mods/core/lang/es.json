@@ -155,6 +155,11 @@
     "race.catfolk": "Gatunos",
     "race.dwarf": "Enanos",
     "race.elf": "Elfos",
+    "race.dark_elf": "Elfos oscuros",
+    "race.foxfolk": "Zorrunos",
+    "race.frogfolk": "Ranos",
+    "race.lizardfolk": "Lagartos",
+    "race.orc": "Orcos",
     "resource.gold": "Oro",
     "building.vault": "Bóveda"
   }

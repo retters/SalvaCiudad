@@ -155,6 +155,11 @@
     "race.catfolk": "Catfolk",
     "race.dwarf": "Dwarves",
     "race.elf": "Elves",
+    "race.dark_elf": "Dark elves",
+    "race.foxfolk": "Foxfolk",
+    "race.frogfolk": "Frogfolk",
+    "race.lizardfolk": "Lizardfolk",
+    "race.orc": "Orcs",
     "resource.gold": "Gold",
     "building.vault": "Vault"
   }
