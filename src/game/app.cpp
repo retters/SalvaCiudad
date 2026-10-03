@@ -19,6 +19,7 @@
 #include "core/log.h"
 #include "core/text.h"
 #include "game/build_info.h"
+#include "game/menu_backgrounds.h"
 #include "embedded/lang_en.h"
 #include "i18n/translator.h"
 #include "mods/mod_settings.h"
@@ -43,19 +44,14 @@ constexpr std::int32_t kMinimizedWaitMs = 50;
 
 constexpr int kAtlasSize = 2048;
 
-// Objects in the renderer test scene (phase 3 acceptance: 50 000).
-constexpr std::size_t kTestSceneInstances = 50'000;
-
-// Animated villagers around the scene center (phase 4 acceptance: 2000).
-constexpr std::size_t kTestCrowd = 2'000;
-constexpr float kTestCrowdRadius = 70.0f;
-
 
 // Game ticks in a minute at x1 (autosave interval is set in minutes).
 constexpr std::uint64_t kTicksPerMinute = 600;
 
 // Blur behind a menu over the game, in pixels at 1080p.
 constexpr float kMenuBlur = 3.0f;
+// How far the camera turns from the middle of the map behind the menus.
+constexpr float kMenuCameraDistance = 80.0f;
 
 // The light of each season (presentation only).
 render::Lighting seasonal_lighting(sim::Season season) {
@@ -207,6 +203,9 @@ bool App::init() {
     if (!replay_dir_.empty() && !load_replay(pack_ ? &pack_->content : nullptr)) {
         return false;
     }
+    // The map behind the menu is made while the window and the rest load.
+    load_menu_seeds();
+    start_menu_background();
 
     if (!fonts_.load(paths_->game_data_dir() / "fonts")) {
         fatal_error("error.fatal.fonts");
@@ -230,7 +229,7 @@ bool App::init() {
     // The 3D scene is optional: without it the menus still work.
     if (scene_.create(gpu_, settings_->settings().graphics)) {
         const std::filesystem::path core = pack_->dir(mods::kCoreModId);
-        scene_ok_ = test_scene_.load(scene_, core, kTestSceneInstances);
+        scene_ok_ = true;
         // Every race's bodies (phase 19), humans first.
         std::vector<std::string> bodies{"human"};
         for (const sim::RaceDef& r : pack_->content.races) {
@@ -238,8 +237,8 @@ bool App::init() {
                 bodies.push_back(r.body);
             }
         }
-        if (scene_ok_ && crowd_.load(scene_, core, bodies)) {
-            crowd_.spawn(kTestCrowd, 2026, kTestCrowdRadius);
+        if (!walkers_.load(scene_, core, bodies)) {
+            log::warn("villagers: no body models; people will not be drawn");
         }
     }
     if (scene_ok_ && !map_scene_.load_models(scene_, *pack_)) {
@@ -247,12 +246,12 @@ bool App::init() {
     }
     if (scene_ok_) {
         village_.load(scene_, *pack_);
-        village_.set_bodies(&crowd_.bodies(), static_cast<std::uint32_t>(make_villager_palettes().size()));
+        village_.set_bodies(&walkers_.bodies(), static_cast<std::uint32_t>(make_villager_palettes().size()));
     }
     if (!scene_ok_) {
         log::warn("scene: 3D view unavailable, menus only");
     }
-    reset_camera_to_test_scene();
+    reset_camera_to_menu();
     if (!debug_.create(window_.sdl(), gpu_)) {
         log::warn("debug overlay unavailable");
     }
@@ -444,12 +443,14 @@ void App::load_mods() {
 void App::apply_mods(const std::vector<std::string>& enabled) {
     (void)mods::save_selection(paths_->user_dir / "mods.json", mods::ModSelection{enabled});
     leave_map();
+    hide_menu_background();
     load_mods();
     apply_language();
     if (scene_ok_) {
         (void)map_scene_.load_models(scene_, *pack_);
         village_.load(scene_, *pack_);
     }
+    start_menu_background();  // With the new mods' trees and rocks.
 }
 
 // --- Loop ----------------------------------------------------------------
@@ -570,6 +571,21 @@ void App::handle_event(const SDL_Event& event) {
             } else if (event.key.scancode == SDL_SCANCODE_F3 && (event.key.mod & SDL_KMOD_CTRL) != 0) {
                 // Developer tools: a fixed shortcut, like Alt+Enter.
                 dev_tools_.toggle();
+            } else if (dev_tools_.visible() && !map_ && replay_dir_.empty() &&
+                       (event.key.scancode == SDL_SCANCODE_F5 || event.key.scancode == SDL_SCANCODE_F6)) {
+                // Developer tools, in the menus: F5 another map behind them,
+                // from a new seed; F6 keeps this one's seed in the user's list.
+                if (event.key.scancode == SDL_SCANCODE_F5) {
+                    hide_menu_background();
+                    start_menu_background(SDL_GetPerformanceCounter() * 0x9E3779B97F4A7C15ull >> 20);
+                } else if (menu_map_ && host_) {
+                    const std::filesystem::path file = paths_->user_dir / menu_backgrounds::kFileName;
+                    const bool ok = menu_backgrounds::add(file, menu_seed_);
+                    load_menu_seeds();
+                    log::info("menu: seed {} {} {}", menu_seed_, ok ? "saved in" : "could not be saved in",
+                              text::path_to_utf8(file));
+                    host_->toast(tr(ok ? "menu.background.saved" : "menu.background.notSaved", std::to_string(menu_seed_)));
+                }
             } else if (settings_->settings().input.bindings.matches(Action::UiDebugOverlay, event.key.scancode)) {
                 debug_.toggle();
             } else if (settings_->settings().input.bindings.matches(Action::CameraCycleMode, event.key.scancode) &&
@@ -650,10 +666,6 @@ void App::update_camera(float dt) {
             in.move_forward = std::clamp(in.move_forward, -1.0f, 1.0f);
             in.move_right = std::clamp(in.move_right, -1.0f, 1.0f);
         }
-        // Moving stops following the selected villager; turning does not.
-        if (following_ && (in.move_forward != 0.0f || in.move_right != 0.0f)) {
-            following_ = false;
-        }
     } else if (mode == UiHost::SceneMode::MenuBackground) {
         in.rotate = 0.025f;  // A slow turn behind the menus.
     }
@@ -662,26 +674,6 @@ void App::update_camera(float dt) {
     camera_drag_py_ = 0.0f;
     camera_look_dx_ = 0.0f;
     camera_look_dy_ = 0.0f;
-    const bool walkers = mode == UiHost::SceneMode::TestScene || mode == UiHost::SceneMode::Map;
-    const bool follow = following_ && selected_ && walkers;
-    if (!walkers) {
-        following_ = false;
-        selected_.reset();
-    }
-    if (follow) {
-        camera_.set_follow(crowd_.position(*selected_), crowd_.scale(*selected_));
-    } else {
-        camera_.set_follow(std::nullopt);
-    }
-    // In first person, the followed villager is where the eyes are.
-    crowd_.set_hidden(follow && camera_.mode() == CameraMode::FirstPerson ? selected_ : std::nullopt);
-    // Debug stress view: the whole test scene on screen at once.
-    const bool stress = mode == UiHost::SceneMode::TestScene && debug_.stress_view();
-    if (stress != stress_view_active_) {
-        stress_view_active_ = stress;
-        camera_.set_max_distance_override(stress ? 2600.0f : 0.0f);
-        camera_.set_distance(stress ? 2600.0f : 120.0f);
-    }
     const InputSettings& s = settings_->settings().input;
     const CameraSpeeds speeds{static_cast<float>(s.camera_pan_speed), static_cast<float>(s.camera_rotate_speed),
                               static_cast<float>(s.camera_zoom_speed)};
@@ -697,7 +689,7 @@ void App::update_frame_stats(float dt) {
         fps_window_s_ = 0.0f;
         fps_window_frames_ = 0;
     }
-    // In the test scene, log the average every few seconds so performance
+    // On a map, log the average every few seconds so performance
     // can be checked without watching the screen.
     if (interactive_scene()) {
         perf_log_s_ += dt;
@@ -754,11 +746,15 @@ void App::render_frame(float dt) {
                 village_.update(scene_, map_scene_, session_->game(), static_cast<float>(clock_.interpolation()), dt,
                                 speed);
                 // People placed with the developer tools walk among them.
-                if (crowd_.size() > 0) {
-                    crowd_.update(scene_, dt, village_.characters());
+                if (walkers_.size() > 0) {
+                    walkers_.update(scene_, dt, village_.characters());
                 }
-            } else {
-                crowd_.update(scene_, dt);
+            } else if (menu_game_ && menu_map_ && !map_) {
+                // Behind the menus: the map's own animals, at the game's pace.
+                village_.set_view(camera_.target().x, camera_.target().z, 0);
+                village_.update(scene_, map_scene_, *menu_game_, static_cast<float>(clock_.interpolation()), dt,
+                                clock_.speed());
+                map_scene_.update_sky(scene_, dt);
             }
             render::SceneView view;
             view.view = camera_.view();
@@ -768,7 +764,6 @@ void App::render_frame(float dt) {
             view.aspect = static_cast<float>(frame.width) / static_cast<float>(std::max(1u, frame.height));
             view_width_ = frame.width;
             view_height_ = std::max(1u, frame.height);
-            view.draw_distance_override = stress_view_active_ ? 5000.0f : 0.0f;
             // Zoomed out past the normal limit over a map: the whole ground
             // stays visible (temporary, decision D-615).
             if (map_ && host_->scene_mode() == UiHost::SceneMode::Map && camera_.distance() > Camera::kMaxDistance) {
@@ -823,8 +818,7 @@ void App::render_frame(float dt) {
                 draw_marker(frame.width, frame.height, village_.building_top(g, *b), ui_.theme().accent);
             }
         }
-        if (!still && scene_drawn &&
-            (host_->scene_mode() == UiHost::SceneMode::TestScene || host_->scene_mode() == UiHost::SceneMode::Map)) {
+        if (!still && scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
             draw_scene_markers(frame.width, frame.height);
         }
         if (!still && scene_drawn) {
@@ -858,9 +852,9 @@ void App::render_frame(float dt) {
             }
             debug_info_.sim_entities = g.registry().alive_count();
         } else {
-            debug_info_.sim_tick = sim_.tick();
-            debug_info_.sim_hash = sim_.last_hash();
-            debug_info_.sim_entities = sim_.world().registry().alive_count();
+            debug_info_.sim_tick = menu_game_ ? menu_game_->tick() : 0;
+            debug_info_.sim_hash = 0;
+            debug_info_.sim_entities = menu_game_ ? menu_game_->registry().alive_count() : 0;
         }
         update_cursor_info(frame.width, frame.height);
         if (still) {
@@ -948,11 +942,12 @@ void App::frame() {
             }
             autosave_if_due();
         }
-    } else {
+    } else if (menu_game_) {
         for (int i = 0; i < ticks; ++i) {
-            sim_.step();
+            menu_game_->step();
         }
     }
+    update_menu_background();
 
     if (session_ && host_) {
         report_game_events();
@@ -985,18 +980,79 @@ bool App::interactive_scene() const {
         return false;
     }
     const UiHost::SceneMode mode = host_->scene_mode();
-    return (mode == UiHost::SceneMode::TestScene || mode == UiHost::SceneMode::Map) && !host_->scene_paused();
+    return mode == UiHost::SceneMode::Map && !host_->scene_paused();
 }
 
-void App::reset_camera_to_test_scene() {
-    camera_.set_ground({});
+void App::reset_camera_to_menu() {
     camera_.set_max_distance_override(0.0f);
     camera_.set_mode(CameraMode::Aerial);
-    camera_.set_bounds(-kTestSceneHalfSize, -kTestSceneHalfSize, kTestSceneHalfSize, kTestSceneHalfSize);
-    camera_.set_target({0.0f, 0.0f, 0.0f});
+    camera_.set_follow(std::nullopt);
+    if (menu_map_) {
+        // Turning slowly around the middle of the map.
+        const sim::MapData* map = &menu_map_->map;
+        const float size = static_cast<float>(map->size);
+        camera_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
+        camera_.set_bounds(0.0f, 0.0f, size, size);
+        camera_.set_target({size * 0.5f, map_surface_height(*map, size * 0.5f, size * 0.5f), size * 0.5f});
+        camera_.set_distance(kMenuCameraDistance);
+    } else {
+        camera_.set_ground({});
+        camera_.set_bounds(0.0f, 0.0f, 1.0f, 1.0f);
+        camera_.set_target({0.0f, 0.0f, 0.0f});
+        camera_.set_distance(kMenuCameraDistance);
+    }
     camera_.set_yaw(0.6f);
-    camera_.set_distance(80.0f);
     camera_.snap();
+}
+
+void App::load_menu_seeds() {
+    menu_seeds_ = menu_backgrounds::load(paths_->game_data_dir() / menu_backgrounds::kFileName);
+    menu_user_seeds_ = menu_backgrounds::load(paths_->user_dir / menu_backgrounds::kFileName);
+}
+
+void App::start_menu_background(std::optional<std::uint64_t> seed) {
+    if (!pack_ || !replay_dir_.empty()) {
+        return;  // A report shows its own map and nothing else.
+    }
+    // Any of the list; the clock only chooses which, nothing in a game.
+    menu_seed_ = seed ? *seed : menu_backgrounds::choose(menu_seeds_, menu_user_seeds_, SDL_GetPerformanceCounter() / 16);
+    menu_started_ns_ = SDL_GetTicksNS();
+    menu_job_.start(menu_backgrounds::settings_for(menu_seed_), pack_);
+}
+
+void App::update_menu_background() {
+    if (!scene_ok_ || map_ || menu_map_ || menu_job_.status().state != MapGenStatus::State::Done) {
+        return;
+    }
+    std::unique_ptr<GeneratedMap> generated = menu_job_.take();
+    if (!generated || !map_scene_.show(scene_, generated->visuals)) {
+        return;
+    }
+    generated->visuals = MapVisuals{};  // The renderer keeps its own copy.
+    menu_map_ = std::move(generated);
+    map_scene_.show_sky(scene_, menu_map_->map);
+    // A game without towns: only the wildlife of the map.
+    const std::shared_ptr<const sim::Content> content(pack_, &pack_->content);
+    menu_game_ = std::make_unique<sim::Game>(content, menu_map_->map,
+                                             sim::GameSetup{0, menu_seed_ ^ 0x5A17C1DAull, false, sim::GameRules{}});
+    village_.set_fog(nullptr);
+    village_.begin(scene_, map_scene_, *menu_game_);
+    lighting_ = render::Lighting{};
+    clock_.set_speed(1);
+    reset_camera_to_menu();
+    log::info("menu: background map of seed {} shown {:.2f} s after it was asked for", menu_seed_,
+              static_cast<double>(SDL_GetTicksNS() - menu_started_ns_) / 1e9);
+}
+
+void App::hide_menu_background() {
+    menu_job_.cancel();
+    if (!menu_map_) {
+        return;
+    }
+    village_.end(scene_);
+    map_scene_.hide(scene_);
+    menu_game_.reset();
+    menu_map_.reset();
 }
 
 void App::start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules) {
@@ -1015,9 +1071,9 @@ bool App::enter_generated_map() {
     dev_tools_.reset();
     cursor_names_.reset();
     cursor_key_ = {};
-    test_scene_.set_visible(scene_, false);
+    hide_menu_background();
     if (!map_scene_.show(scene_, generated->visuals)) {
-        test_scene_.set_visible(scene_, true);
+        start_menu_background();
         return false;
     }
     if (!generated->script_errors.empty() && host_) {
@@ -1034,7 +1090,7 @@ bool App::enter_generated_map() {
     const float size = static_cast<float>(map->size);
     camera_.set_mode(CameraMode::Aerial);
     camera_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
-    crowd_.set_area({}, [map](float x, float z) { return map_surface_height(*map, x, z); });
+    walkers_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
     camera_.set_bounds(0.0f, 0.0f, size, size);
     // For now the camera can back off until the whole map fits (D-615).
     camera_.set_max_distance_override(size * 1.6f);
@@ -1045,8 +1101,6 @@ bool App::enter_generated_map() {
     camera_.set_distance(110.0f);
     camera_.snap();
     map_scene_.show_sky(scene_, *map);
-    selected_.reset();
-    following_ = false;
     // A village game on it (phase 8); its own stream of random numbers.
     const std::shared_ptr<const sim::Content> content(pack_, &pack_->content);
     if (net_start_ && net_) {
@@ -1083,13 +1137,12 @@ void App::leave_map() {
     lighting_ = render::Lighting{};
     clock_.set_speed(1);
     map_scene_.hide(scene_);
-    test_scene_.set_visible(scene_, true);
-    crowd_.set_area({}, {});
-    crowd_.spawn(kTestCrowd, 2026, kTestCrowdRadius);
-    selected_.reset();
-    following_ = false;
-    reset_camera_to_test_scene();
+    walkers_.clear();
+    walkers_.set_ground({});
     map_.reset();
+    // Back to the menus: another map behind them.
+    reset_camera_to_menu();
+    start_menu_background();
 }
 
 DevContext App::dev_context(std::uint32_t width, std::uint32_t height) {
@@ -1102,7 +1155,7 @@ DevContext App::dev_context(std::uint32_t width, std::uint32_t height) {
     ctx.content = pack_ ? &pack_->content : nullptr;
     ctx.scene = on_map ? &map_scene_ : nullptr;
     ctx.renderer = &scene_;
-    ctx.crowd = &crowd_;
+    ctx.crowd = &walkers_;
     ctx.camera = &camera_;
     ctx.session = on_map ? session_.get() : nullptr;
     const float x = input_.mouse_x;
@@ -1176,7 +1229,7 @@ math::Mat4 App::camera_view_proj(std::uint32_t width, std::uint32_t height) cons
 }
 
 void App::update_mouse_capture() {
-    // First person in the test scene looks around with a captured pointer,
+    // First person looks around with a captured pointer,
     // unless the statistics window needs it.
     const bool focused = window_.sdl() != nullptr && (SDL_GetWindowFlags(window_.sdl()) & SDL_WINDOW_INPUT_FOCUS) != 0;
     const bool want = scene_ok_ && host_ && interactive_scene() && camera_.mode() == CameraMode::FirstPerson &&
@@ -1214,20 +1267,10 @@ void App::handle_scene_click(std::uint32_t width, std::uint32_t height) {
         handle_game_click(width, height, near_point, math::normalize(far_point - near_point));
         return;
     }
-    const std::optional<std::size_t> hit = crowd_.pick(near_point, far_point - near_point);
-    // In first person while following, the viewer's own body cannot be picked.
-    if (hit && !(following_ && camera_.mode() == CameraMode::FirstPerson && hit == selected_)) {
-        selected_ = hit;
-        following_ = true;
-    } else if (!hit) {
-        selected_.reset();
-        following_ = false;
-    }
 }
 
 void App::draw_scene_markers(std::uint32_t width, std::uint32_t height) {
     ui::DrawList& dl = ui_.draw();
-    const ui::Color accent = ui_.theme().accent;
     if (camera_.mode() == CameraMode::FirstPerson) {
         // A small cross in the middle of the screen.
         const float cx = std::round(static_cast<float>(width) * 0.5f);
@@ -1240,20 +1283,6 @@ void App::draw_scene_markers(std::uint32_t width, std::uint32_t height) {
         dl.rect({cx - len, cy - th / 2, 2 * len, th}, ui_.theme().text);
         dl.rect({cx - th / 2, cy - len, th, 2 * len}, ui_.theme().text);
     }
-    if (!selected_ || (following_ && camera_.mode() == CameraMode::FirstPerson)) {
-        return;
-    }
-    // A marker pointing down at the selected villager's head.
-    const math::Vec3 head = crowd_.position(*selected_) + math::Vec3{0.0f, 2.15f * crowd_.scale(*selected_), 0.0f};
-    const math::Vec4 clip = camera_view_proj(width, height) * math::Vec4{head.x, head.y, head.z, 1.0f};
-    if (clip.w <= 0.01f) {
-        return;
-    }
-    const float sx = (clip.x / clip.w * 0.5f + 0.5f) * static_cast<float>(width);
-    const float sy = (0.5f - clip.y / clip.w * 0.5f) * static_cast<float>(height);
-    const float r = ui_.s(11.0f);
-    dl.triangle(sx - r - 2, sy - r * 1.6f - 2, sx + r + 2, sy - r * 1.6f - 2, sx, sy + 2, ui::Color::rgb(0x000000, 150));
-    dl.triangle(sx - r, sy - r * 1.6f, sx + r, sy - r * 1.6f, sx, sy, following_ ? accent : ui_.theme().text);
 }
 
 }  // namespace sc
@@ -1539,9 +1568,9 @@ void App::update_war_fog() {
 void App::start_session(std::unique_ptr<GameSession> session) {
     session_ = std::move(session);
     const sim::Game& game = session_->game();
-    // The sample village and the test crowd make way for the real town.
+    // The sample village makes way for the real town.
     map_scene_.hide_sample_village(scene_);
-    crowd_.spawn(0, 1, 1.0f);
+    walkers_.clear();
     village_.begin(scene_, map_scene_, session_->game());
     clock_.set_speed(1);
     next_autosave_tick_ =
@@ -1656,9 +1685,9 @@ bool App::show_map_of(const sim::MapData& source) {
     auto generated = std::make_unique<GeneratedMap>();
     generated->map = source;
     generated->visuals = build_map_visuals(generated->map, pack_->content);
-    test_scene_.set_visible(scene_, false);
+    hide_menu_background();
     if (!map_scene_.show(scene_, generated->visuals)) {
-        test_scene_.set_visible(scene_, true);
+        start_menu_background();
         return false;
     }
     generated->visuals = MapVisuals{};
@@ -1667,7 +1696,7 @@ bool App::show_map_of(const sim::MapData& source) {
     const float size = static_cast<float>(map->size);
     camera_.set_mode(CameraMode::Aerial);
     camera_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
-    crowd_.set_area({}, [map](float x, float z) { return map_surface_height(*map, x, z); });
+    walkers_.set_ground([map](float x, float z) { return map_surface_height(*map, x, z); });
     camera_.set_bounds(0.0f, 0.0f, size, size);
     camera_.set_max_distance_override(size * 1.6f);
     camera_.set_yaw(0.6f);
@@ -1891,7 +1920,6 @@ void App::focus_camera(float x, float z) {
     }
     const sim::MapData& m = map_->map;
     camera_.set_target({x, map_surface_height(m, x, z), z});
-    following_ = false;
 }
 
 Services::CameraGround App::camera_ground() const {

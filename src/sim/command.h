@@ -2,8 +2,6 @@
 // they are what travels over the network (section 7.4), so they are small,
 // fully validated when read, and applied in a fixed order.
 //
-// The first three are the test set of the deterministic core (phase 5,
-// the walkers world); the others are the village game's (phase 8 on).
 #pragma once
 
 #include <cstdint>
@@ -15,9 +13,6 @@
 namespace sc::sim {
 
 enum class CommandType : std::uint8_t {
-    SpawnWalkers = 1,  // `count` walkers around `position`.
-    SendWalker = 2,    // Walker `entity` walks to `position`.
-    RemoveWalker = 3,  // Walker `entity` leaves.
     PlaceBuilding = 10,   // Building `def` with its corner cell at `position`, rotation `value` (0..3).
     RemoveBuilding = 11,  // Cancel a construction or demolish `entity`.
     SetWorkers = 12,      // Wanted workers of `entity`: `value`.
@@ -41,7 +36,6 @@ enum class CommandType : std::uint8_t {
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;
-inline constexpr std::uint16_t kMaxSpawnPerCommand = 64;
 inline constexpr std::int32_t kMaxDevGrant = 10000;
 inline constexpr std::int32_t kMaxTrade = 10000;
 // An automatic trade rule that is off; the largest amount one can name.
@@ -49,7 +43,7 @@ inline constexpr std::int32_t kNoRule = -1;
 inline constexpr std::int32_t kMaxRule = 100000;
 
 struct Command {
-    CommandType type = CommandType::SpawnWalkers;
+    CommandType type = CommandType::PlaceBuilding;
     std::uint8_t player = 0;
     EntityId entity;
     FixedVec2 position;

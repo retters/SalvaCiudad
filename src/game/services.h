@@ -48,7 +48,7 @@ public:
     [[nodiscard]] virtual std::vector<Resolution> fullscreen_resolutions(const std::string& monitor) = 0;
     [[nodiscard]] virtual const ui::FontLibrary& fonts() const = 0;
 
-    // True when the 3D test scene loaded and can be shown.
+    // True when the 3D view works (without it there are only menus).
     [[nodiscard]] virtual bool scene_available() const = 0;
     [[nodiscard]] virtual CameraMode camera_mode() const = 0;
 

@@ -20,7 +20,7 @@ namespace sc {
 class Camera;
 class GameSession;
 class MapScene;
-class TestCrowd;
+class Walkers;
 namespace render {
 class SceneRenderer;
 }
@@ -31,7 +31,7 @@ struct DevContext {
     const sim::Content* content = nullptr;
     MapScene* scene = nullptr;
     render::SceneRenderer* renderer = nullptr;
-    TestCrowd* crowd = nullptr;
+    Walkers* crowd = nullptr;
     Camera* camera = nullptr;
     GameSession* session = nullptr;  // The village game, if any.
     bool ray_valid = false;  // The pointer is over the world, not a window.

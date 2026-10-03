@@ -69,13 +69,12 @@ public:
     }
 
     // What the 3D view behind the interface should show.
-    enum class SceneMode : std::uint8_t { None, MenuBackground, TestScene, Map };
+    enum class SceneMode : std::uint8_t { None, MenuBackground, Map };
     [[nodiscard]] SceneMode scene_mode() const;
 
 private:
-    enum class Screen : std::uint8_t { MainMenu, Settings, TestScene, NewGame, Generating, MapView, Mods, Load, Join, Lobby };
+    enum class Screen : std::uint8_t { MainMenu, Settings, NewGame, Generating, MapView, Mods, Load, Join, Lobby };
 
-    void test_scene_hud(ui::Context& ctx);
     void generating_screen(ui::Context& ctx, bool modal);
     void map_hud(ui::Context& ctx);
     void game_menu(ui::Context& ctx);

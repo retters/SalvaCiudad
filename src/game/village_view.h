@@ -16,7 +16,7 @@
 #include "game/animal_motion.h"
 #include "game/fog_view.h"
 #include "game/map_scene.h"
-#include "game/test_scene.h"
+#include "game/walkers.h"
 #include "mods/mod_library.h"
 #include "render/scene_renderer.h"
 #include "sim/game.h"
@@ -27,8 +27,8 @@ class VillageView {
 public:
     // Loads one model per building definition (shared by path).
     void load(render::SceneRenderer& renderer, const mods::BuildResult& pack);
-    // The villagers' bodies, from the test crowd that already loaded them.
-    void set_bodies(const std::vector<TestCrowd::BodyKind>* bodies, std::uint32_t palette_count);
+    // The villagers' bodies, loaded by the app (game/walkers.h).
+    void set_bodies(const std::vector<Walkers::BodyKind>* bodies, std::uint32_t palette_count);
 
     // Shows a game that just started or was loaded.
     void begin(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game);
@@ -126,7 +126,7 @@ private:
     };
     std::vector<Look> looks_;  // By villager entity index.
     std::vector<render::CharacterInstance> characters_;
-    const std::vector<TestCrowd::BodyKind>* bodies_ = nullptr;
+    const std::vector<Walkers::BodyKind>* bodies_ = nullptr;
     std::uint32_t palette_count_ = 1;
 
     std::optional<Ghost> ghost_;

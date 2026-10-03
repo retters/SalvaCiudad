@@ -36,13 +36,6 @@ bool Command::read(BinaryReader& r, Command& out) {
     }
     bool ok = c.player < kMaxPlayers && coordinate_ok(c.position.x) && coordinate_ok(c.position.z);
     switch (static_cast<CommandType>(type)) {
-        case CommandType::SpawnWalkers:
-            ok = ok && c.count >= 1 && c.count <= kMaxSpawnPerCommand;
-            break;
-        case CommandType::SendWalker:
-        case CommandType::RemoveWalker:
-            ok = ok && c.entity.valid();
-            break;
         case CommandType::PlaceBuilding:
             ok = ok && c.value >= 0 && c.value <= 3 && c.position.x >= Fixed{} && c.position.z >= Fixed{};
             break;

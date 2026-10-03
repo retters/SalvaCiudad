@@ -9,6 +9,7 @@
 #include "core/log.h"
 #include "game/animal_motion.h"
 #include "game/builtin_models.h"
+#include "game/model_file.h"
 #include "game/camera.h"
 #include "game/variants.h"
 
@@ -274,7 +275,7 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
     }
 }
 
-void VillageView::set_bodies(const std::vector<TestCrowd::BodyKind>* bodies, std::uint32_t palette_count) {
+void VillageView::set_bodies(const std::vector<Walkers::BodyKind>* bodies, std::uint32_t palette_count) {
     bodies_ = bodies;
     palette_count_ = std::max(1u, palette_count);
 }
@@ -282,6 +283,8 @@ void VillageView::set_bodies(const std::vector<TestCrowd::BodyKind>* bodies, std
 void VillageView::begin(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game) {
     shown_ = true;
     looks_.clear();
+    creature_looks_.clear();
+    corpses_.clear();
     ghost_.reset();
     // The map shows every feature as generated; felled trees and picked
     // bushes of a loaded game are updated here.
@@ -305,6 +308,8 @@ void VillageView::end(render::SceneRenderer& renderer) {
     }
     renderer.set_characters({});
     looks_.clear();
+    creature_looks_.clear();
+    corpses_.clear();
     ghost_.reset();
     shown_ = false;
 }
@@ -788,7 +793,7 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
             // town's color for soldiers.
             look.motion.time += dt * (moving ? 2.0f * static_cast<float>(std::max(speed, 1)) : 1.0f);
             if (bodies_ != nullptr && !bodies_->empty()) {
-                const TestCrowd::BodyKind& kind = bodies_->front();
+                const Walkers::BodyKind& kind = bodies_->front();
                 render::CharacterInstance c;
                 c.body = kind.id;
                 c.clip = moving ? kind.walk : kind.idle;
@@ -1069,7 +1074,7 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
             const float want = std::atan2(to_float(v.position.x - v.previous.x), to_float(v.position.z - v.previous.z));
             look.yaw += wrap_angle(want - look.yaw) * std::min(1.0f, dt * 8.0f);
         }
-        const float rate = moving ? kWalkMetersPerSecond * static_cast<float>(speed) / TestCrowd::kWalkReferenceSpeed
+        const float rate = moving ? kWalkMetersPerSecond * static_cast<float>(speed) / Walkers::kWalkReferenceSpeed
                                   : 1.0f;
         look.time += dt * rate;
 
@@ -1078,9 +1083,9 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
         const bool female = v.sex == sim::Sex::Female;
         const std::string_view race_body =
             v.race < game.content().races.size() ? std::string_view(game.content().races[v.race].body) : "human";
-        const TestCrowd::BodyKind* kind = &bodies_->front();
+        const Walkers::BodyKind* kind = &bodies_->front();
         bool exact = false;
-        for (const TestCrowd::BodyKind& b : *bodies_) {
+        for (const Walkers::BodyKind& b : *bodies_) {
             if (b.female == female && (!exact || b.body == race_body)) {
                 exact = b.body == race_body;
                 kind = &b;

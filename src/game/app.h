@@ -22,7 +22,7 @@
 #include "game/settings.h"
 #include "game/map_report.h"
 #include "game/terrain_names.h"
-#include "game/test_scene.h"
+#include "game/walkers.h"
 #include "game/ui_host.h"
 #include "game/village_view.h"
 #include "platform/paths.h"
@@ -31,7 +31,6 @@
 #include "render/gpu_device.h"
 #include "render/scene_renderer.h"
 #include "render/ui_renderer.h"
-#include "sim/simulation.h"
 #include "ui/context.h"
 #include "ui/font_library.h"
 #include "ui/glyph_atlas.h"
@@ -176,7 +175,14 @@ private:
     void draw_start_markers(std::uint32_t width, std::uint32_t height);
     void draw_marker(std::uint32_t width, std::uint32_t height, math::Vec3 at, ui::Color color);
     [[nodiscard]] DevContext dev_context(std::uint32_t width, std::uint32_t height);
-    void reset_camera_to_test_scene();
+    // The map behind the menus (phase 50).
+    void load_menu_seeds();
+    // Starts making the map of `seed`, or of one of the list if empty.
+    void start_menu_background(std::optional<std::uint64_t> seed = {});
+    // Shows the map once it is made, and takes it away under a game's map.
+    void update_menu_background();
+    void hide_menu_background();
+    void reset_camera_to_menu();
     // True in the views the player moves the camera in.
     [[nodiscard]] bool interactive_scene() const;
     void update_mouse_capture();
@@ -199,8 +205,8 @@ private:
     ui::Input input_;
     render::SceneRenderer scene_;
     render::Lighting lighting_;
-    TestScene test_scene_;
-    TestCrowd crowd_;
+    // The villagers' bodies, and the people placed with the developer tools.
+    Walkers walkers_;
     MapScene map_scene_;
     mods::ModLibrary mod_library_;
     std::shared_ptr<const mods::BuildResult> pack_;
@@ -273,17 +279,20 @@ private:
     float press_x_ = 0.0f;         // Where the left button went down.
     float press_y_ = 0.0f;
     bool mouse_captured_ = false;
-    std::optional<std::size_t> selected_;  // Villager in the test crowd.
-    bool following_ = false;
-    bool stress_view_active_ = false;
     float fps_window_s_ = 0.0f;
     int fps_window_frames_ = 0;
     float perf_log_s_ = 0.0f;
     int perf_log_frames_ = 0;
     GameClock clock_;
-    // The deterministic simulation, stepped by the clock on the main thread
-    // (decision D-506). For now it runs the phase 5 test world.
-    sim::Simulation sim_{0};
+    // The map behind the menus: made in its own thread from a seed of the
+    // list, with a game without towns on it so its animals live.
+    MapGenerationJob menu_job_;
+    std::unique_ptr<GeneratedMap> menu_map_;
+    std::unique_ptr<sim::Game> menu_game_;
+    std::uint64_t menu_seed_ = 0;
+    std::uint64_t menu_started_ns_ = 0;
+    std::vector<std::uint64_t> menu_seeds_;       // data/menu_backgrounds.json.
+    std::vector<std::uint64_t> menu_user_seeds_;  // The user's own file.
     // Vsync changes wait until the frame is submitted: the swapchain cannot
     // be rebuilt while one of its images is in use (decision D-614).
     bool vsync_pending_ = false;

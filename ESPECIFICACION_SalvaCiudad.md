@@ -747,7 +747,7 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
 50. **Fondo de la pantalla de inicio con un mapa real; adiós a la escena de prueba** (agregada el 2026-10-02 a pedido del usuario).
    - Se borra la escena de prueba de la fase 3 (plano con 50 000 objetos y 2000 aldeanos), su botón en el menú, la vista de estrés y la simulación de prueba de la fase 5 (mundo de caminantes y sus repeticiones). Lo que el juego usaba de ahí pasa a su propio lugar: los cuerpos de los aldeanos y sus paletas, la carga de modelos y lo que usan las herramientas de desarrollo. Se queda la prueba que impide `float`, hilos y relojes en la simulación.
    - El fondo del menú es un mapa chico (512 m) del generador jerárquico, con su terreno, agua, árboles, rocas y animales, sin pueblos ni personajes, con la cámara girando despacio.
-   - La semilla sale de una lista en los datos (`menu_backgrounds.json`); en cada arranque se elige una al azar. Con las herramientas de desarrollo, una tecla en el menú genera otro mapa con una semilla nueva y otra guarda la semilla actual en la lista.
+   - La semilla sale de una lista en los datos (`menu_backgrounds.json`); en cada arranque se elige una al azar. Con las herramientas de desarrollo abiertas, en el menú F5 genera otro mapa con una semilla nueva y F6 guarda la semilla actual en un `menu_backgrounds.json` de la carpeta de datos del usuario, que se lee además de la lista del juego (D-5004).
    - El mapa se genera en un hilo mientras se ve el logotipo, así que el menú no espera.
    - *Criterios:* el menú aparece en menos de 1 s y el mapa de fondo en menos de 3 s (medido en release); con la misma semilla se ve el mismo mapa; no queda código de la escena de prueba; los aldeanos del juego se ven igual que antes.
 51. **Árboles por estación y tamaño en el motor** (agregada el 2026-10-02 a pedido del usuario).
@@ -808,7 +808,21 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - Lo elegido se recuerda en `settings.json` como hoy; un archivo de ajustes de una versión anterior se acepta y vuelve a Variado en lo que no entienda.
    - El lobby del multijugador usa el mismo formulario.
    - *Criterios:* las opciones de Personalizado cambian el mapa como dicen (más ríos con más ríos, sin invierno sin la estación); una partida con las opciones de Variado y otra en Personalizado con "Partir de Variado" dan el mismo mapa con la misma semilla; textos en español e inglés; compila sin advertencias.
-57. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+57. **Personajes low poly en el juego** (agregada el 2026-10-02 a pedido del usuario; reemplaza a los aldeanos de hoy por los personajes de la fase 48).
+   - Al empezar la fase se decide con el usuario:
+     - qué personaje (o personajes) de `art/blender/people/` es cada raza y sexo del juego, y cuáles quedan para soldados, asaltantes y mercaderes;
+     - cómo varían entre sí los aldeanos de una misma raza: recoloreando por paleta la ropa, la piel y el cabello como hoy, con varios modelos por raza, o con las dos cosas;
+     - si los niños son el modelo del adulto a menor escala, como hoy, o tienen modelo propio;
+     - qué pasa con los sombreros, las barbas y los delantales de hoy.
+   - Los aldeanos se dibujan con los personajes nuevos. La animación sale de lo que hace el aldeano: quieto, caminando, corriendo (al huir o con la alarma), talando, cazando con arco y pescando; los oficios sin animación propia usan una genérica de trabajo, que se agrega. La velocidad del clip al caminar y correr se ajusta a la velocidad real con la que guarda el modelo, como en los animales (fase 47).
+   - La herramienta del oficio (hacha, arco, caña y las que se agreguen de `art/blender/weapons/`) va en la mano que dice el modelo (`<animación>_prop`) y solo mientras dura esa animación.
+   - Los soldados y los asaltantes dejan de ser un aldeano con una marca de color: tienen su personaje y su arma. La marca del color del pueblo se mantiene para distinguir bandos.
+   - Antes de empezar se unifica el código repetido de los tres grupos de personajes (pendiente de la fase 48) y se corrigen los defectos de animación anotados en D-4609 que el usuario indique.
+   - Todo es solo de la vista: no cambia la simulación ni el hash.
+   - Cuando los personajes nuevos están en el juego, se borran los cuerpos de hoy (`art/blender/human.py`, `models/characters/`) y lo que solo servía para ellos.
+   - El visor muestra cada personaje con sus paletas y con la herramienta en la mano.
+   - *Criterios:* una partida nueva solo tiene personajes nuevos, de todas las razas del juego; al talar, cazar y pescar se ve la animación con su herramienta en la mano; los pies no patinan al caminar ni al correr; la simulación no cambia (mismo hash); con 1000 aldeanos a la vista (partida de referencia de `docs/RENDIMIENTO.md`) el juego pierde como mucho un 10 % de FPS, medido y anotado; las pruebas pasan en las tres configuraciones sin advertencias.
+58. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 

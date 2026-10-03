@@ -19,7 +19,7 @@ El multijugador funciona por **lockstep** (D-001): cada máquina simula todo, y 
 4. **La simulación no mira afuera.** No lee el reloj, ni archivos, ni variables de entorno, ni configuraciones locales, ni usa hilos. Todo lo que cambia el mundo entra como **comando**, y el tiempo avanza en **ticks** de 100 ms de juego.
 5. **Comandos en orden fijo.** Dentro de un tick, los comandos se aplican por número de secuencia (en multijugador lo asigna el anfitrión). Un comando inválido para el estado actual (una entidad muerta, un mundo lleno) se **ignora y se cuenta**, igual en todas las máquinas.
 6. **Estado serializable y comparable.** Todo el estado se guarda en binario little-endian explícito (`BinaryWriter`) y su **hash** (FNV-1a de 64 bits) se calcula cada 10 ticks. Si dos máquinas tienen hashes distintos, se desincronizaron.
-7. **Versión de reglas.** `kRulesVersion` (en `world.h`) sube cada vez que cambian las reglas de la simulación a propósito. Las repeticiones y las instantáneas de otra versión se rechazan con un mensaje claro.
+7. **Versión de reglas.** `kGameRulesVersion` (en `game.h`) sube cada vez que cambian las reglas de la simulación a propósito. Las partidas guardadas y las instantáneas de otra versión se rechazan con un mensaje claro.
 8. **Scripts de mods (fase 7).** Solo reciben y devuelven enteros y `Fixed`, y su biblioteca `math` se reemplaza por estas funciones.
 
 ## Cómo se verifica
@@ -31,22 +31,12 @@ Pruebas automáticas (`tests/test_sim.cpp`), en todas las configuraciones:
 | `sim_rules` | Ningún archivo de `src/sim` usa `float`, `double`, contenedores desordenados, relojes, archivos, hilos ni aleatorios estándar |
 | `sim_fixed` | Aritmética, saturación, raíces exactas, trigonometría contra la referencia |
 | `sim_rng` | PCG32 da la secuencia de referencia; los flujos son independientes |
-| "the same game gives the same hashes" | Dos corridas iguales dan los mismos 150 hashes |
-| "twelve simulations in one process" | 12 mundos con los mismos comandos no se separan (el caso de 12 jugadores) |
-| "saving, loading and continuing" | Guardar a mitad, cargar y seguir da el mismo hash que no guardar |
-| "the scenario hash is the same on every build" | El escenario da un **hash de referencia fijo** en `debug`, `release` y `debug-asan`; en Linux y macOS deberá dar el mismo |
-| `sim_replay` | Una partida grabada se reproduce exactamente desde un archivo; un comando alterado se detecta en el siguiente punto de control; los archivos dañados se rechazan |
+| "the same commands give the same game" (`test_village.cpp`) | Dos partidas con los mismos comandos dan el mismo hash |
+| "a game session saves and loads to the same hash" (`test_save.cpp`) | Guardar, cargar y seguir da el mismo hash que no guardar |
+| "twelve players in a common town stay in step" (`test_net.cpp`) | 12 máquinas con los mismos comandos no se separan |
+| "a desynchronization is found and repaired" (`test_net.cpp`) | Un estado distinto se detecta por su hash y se repara |
+| "a game without towns keeps its wildlife alive" (`test_wildlife.cpp`) | El mapa de fondo del menú (fase 50) también es repetible |
+
+Hasta la fase 50 había además un mundo de prueba de caminantes (fase 5) con su hash de referencia y sus repeticiones; se borró cuando la simulación del juego ya cubría lo mismo (D-5002).
 
 Si una prueba del hash de referencia falla sin que hayas cambiado las reglas a propósito, **se rompió el determinismo**: hay que encontrar la causa, no actualizar el número.
-
-## Repeticiones
-
-`Simulation::recording()` devuelve la partida grabada: la semilla, cada comando con su tick y los hashes de control. `verify_replay` la vuelve a jugar y compara. Formato del archivo (`.screplay`):
-
-- Firma `SCRP` y versión del formato.
-- Versión de reglas, semilla y tick final.
-- Los comandos, de 32 bytes cada uno con su tick y su secuencia.
-- Los puntos de control (tick y hash).
-- Suma de verificación FNV-1a de todo lo anterior.
-
-Se lee con límites y se valida por completo. Servirá para reproducir errores del multijugador y para detectar desincronizaciones.

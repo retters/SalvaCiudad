@@ -41,7 +41,7 @@ Todas se cambian en Configuración → Controles, salvo Alt+Enter.
 |---|---|
 | F11 | Cambia en ciclo: ventana, ventana sin bordes, pantalla completa |
 | Alt+Enter | Alterna entre ventana y el último modo de pantalla completa |
-| Esc | Cierra un diálogo, o vuelve al menú desde Configuración o la escena de prueba |
+| Esc | Cierra un diálogo, o vuelve al menú desde Configuración |
 | F3 | Panel de estadísticas (FPS, objetos dibujados, sombras…) |
 | W A S D o flechas | Mover la cámara |
 | Q / E, o arrastrar con el botón central | Girar la cámara |
@@ -122,38 +122,35 @@ Se completa en cada fase.
 
 ### Fase 3
 
-- [ ] El menú principal muestra detrás una escena 3D que gira despacio, y los botones se leen bien.
-- [ ] "Escena de prueba 3D": la cámara se mueve con WASD y las flechas, gira con Q/E y con el botón central, acerca y aleja con la rueda, y se desplaza al llevar el puntero al borde. **¿Se siente como la de Farthest Frontier?** Anota lo que cambiarías: velocidad, inclinación o suavidad.
+- [ ] El menú principal muestra detrás un mapa que gira despacio (fase 50), y los botones se leen bien.
+- [ ] En una partida, la cámara se mueve con WASD y las flechas, gira con Q/E y con el botón central, acerca y aleja con la rueda, y se desplaza al llevar el puntero al borde. **¿Se siente como la de Farthest Frontier?** Anota lo que cambiarías: velocidad, inclinación o suavidad.
 - [ ] Al acercarse, la cámara baja hacia el horizonte; al alejarse, mira más desde arriba.
 - [ ] Las casas, los árboles y las rocas proyectan sombras, y los bordes de las sombras no titilan al mover la cámara.
-- [ ] F3 muestra las estadísticas. Con la sincronización vertical desactivada, los FPS pasan de 60. Activar "Vista de estrés" (casi los 50 000 objetos en pantalla) y comprobar que siguen por encima de 60.
+- [ ] F3 muestra las estadísticas. Con la sincronización vertical desactivada, los FPS pasan de 60.
 - [ ] Configuración → Gráficos: cambiar la calidad de Baja a Ultra; las sombras, la distancia de dibujo y el suavizado cambian al instante.
 - [ ] Redimensionar la ventana y cambiar a pantalla completa con la escena abierta: no se deforma ni queda en negro.
 
 ### Fase 4
 
-- [ ] En la escena de prueba, los aldeanos caminan con las piernas y los brazos coordinados y los pies no patinan. Algunos se detienen y respiran (animación de reposo).
+- [ ] En una partida, los aldeanos caminan con las piernas y los brazos coordinados y los pies no patinan; quietos, respiran (animación de reposo).
 - [ ] Hay hombres y mujeres con ropa de colores distintos, tonos de piel y de pelo variados, sombrero de paja o gorro, barba y delantal en algunos.
 - [ ] Los sombreros, la barba y el delantal siguen la cabeza y la cadera al caminar, sin separarse del cuerpo.
 - [ ] Los aldeanos proyectan sombra.
-- [ ] Con F3, "Personajes dibujados" llega a unos 2000 al alejar la cámara, y los FPS siguen por encima de 60.
 - [ ] La casa tiene entramado de madera, ventanas con contraventanas, puerta, chimenea y tejas; el pino y la roca se ven bien de cerca.
 - [ ] Con Blender instalado, generar dos veces con `build_all.py` (ver docs/ARTE.md) da archivos idénticos.
 - [ ] **Tu opinión del estilo:** ¿te gusta este low-poly para los personajes y la casa? Qué cambiarías (proporciones, nivel de detalle, colores).
 
 ### Modos de cámara (petición del 2026-09-26)
 
-- [ ] En la escena de prueba, F4 pasa por Aérea, Tercera persona y Primera persona; la línea "Cámara:" de la ayuda lo indica.
+- [ ] En una partida, F4 pasa por Aérea, Tercera persona y Primera persona.
 - [ ] Tercera persona: arrastrar con el botón derecho gira en todos los ejes; al bajar mucho, la vista sube sola en lugar de atravesar el suelo.
-- [ ] Primera persona: el ratón mira alrededor sin cursor visible, W A S D camina, Esc vuelve al menú y suelta el ratón.
-- [ ] Clic en un aldeano: aparece el marcador y la cámara lo sigue en los tres modos. Girar sigue funcionando; W A S D deja de seguirlo.
-- [ ] Primera persona siguiendo a un aldeano: se ve con sus ojos, y el aldeano no tapa la vista.
+- [ ] Primera persona: el ratón mira alrededor sin cursor visible y W A S D camina.
 
 ### Fase 5
 
 Casi todo se verifica con pruebas automáticas (`ctest`).
-- [ ] `ctest --preset release` y `ctest --preset debug` pasan, incluido el hash de referencia de la simulación (`sim_core`).
-- [ ] F3 muestra "Tick de simulación" avanzando unas 10 veces por segundo, y el "Hash del estado" cambia cada segundo.
+- [ ] `ctest --preset release` y `ctest --preset debug` pasan.
+- [ ] En una partida, F3 muestra "Tick de simulación" avanzando unas 10 veces por segundo.
 
 ### Fase 6
 
@@ -164,7 +161,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] El número 1 marca el inicio; con varias posiciones de inicio aparecen todos los números, lejos entre sí.
 - [ ] Con F3 en un mapa Enorme, los FPS siguen por encima de 60 en los tres modos de cámara (F4), también en calidad Ultra.
 - [ ] En Configuración, bajar "Vegetación" acorta la distancia a la que se ven los arbustos y las hierbas.
-- [ ] Esc en el mapa abre el menú del juego: Continuar vuelve al mapa; Configuración se abre sobre el mapa y al cerrarla se vuelve a él; Salir al menú principal cierra el mapa y la escena de prueba sigue funcionando.
+- [ ] Esc en el mapa abre el menú del juego: Continuar vuelve al mapa; Configuración se abre sobre el mapa y al cerrarla se vuelve a él; Salir al menú principal cierra el mapa y vuelve el mapa de fondo del menú.
 - [ ] Con la rueda se puede alejar la cámara hasta ver el mapa completo (provisional).
 - [ ] En el inicio 1 hay una aldea de muestra (casas y aldeanos); clic en un aldeano para seguirlo.
 - [ ] En Configuración > Pantalla, activar y desactivar varias veces la sincronización vertical: el juego no se cierra.
@@ -520,6 +517,25 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] `SalvaCiudad.exe --reporte` sobre un reporte viejo hecho con el clásico funciona: genera el mapa con el generador de hoy y el `.txt` anota la versión del generador distinta (6 en el reporte, 1 ahora).
 - [ ] Con mapas separados, el `.txt` de un reporte dice la misma versión del generador que en un mapa compartido.
 - [ ] Las imágenes de referencia están en `art/reference/` y ya no en la raíz del repositorio.
+
+### Fase 47
+
+- [ ] Los ciervos, jabalíes, lobos y osos son los modelos low poly nuevos y mueven las patas al caminar; ya no suben y bajan.
+- [ ] Un ciervo paseando camina; al acercarle un aldeano huye corriendo. En los dos casos las patas no patinan sobre el suelo, a x1 y a x3.
+- [ ] Quietos, a veces bajan la cabeza a comer y a veces solo respiran. En pausa se quedan inmóviles.
+- [ ] Al cazar un ciervo a la vista, cae de lado donde estaba, queda unos segundos y se hunde en el suelo.
+- [ ] `SalvaCiudadModelos.exe` muestra los cuatro animales de `core` con sus cinco animaciones.
+
+### Fase 50
+
+- [ ] Al abrir el juego, el menú aparece enseguida y detrás hay un mapa de verdad (terreno, agua, árboles, rocas y animales, sin pueblo ni gente) que gira despacio.
+- [ ] Al abrirlo varias veces, el mapa de fondo cambia (sale de la lista de `data\menu_backgrounds.json`).
+- [ ] Ya no existe el botón "Escena de prueba 3D", ni la "Vista de estrés" en F3.
+- [ ] Empezar una partida, salir al menú principal: vuelve a haber un mapa de fondo.
+- [ ] Con las herramientas de desarrollo abiertas (Ctrl+F3) en el menú: F5 pone otro mapa de fondo con una semilla nueva; F6 guarda esa semilla en `menu_backgrounds.json` de tu carpeta de datos y sale un aviso. En el siguiente arranque esa semilla puede salir.
+- [ ] Los aldeanos de una partida se ven igual que antes (cuerpos, colores, sombreros, barbas y delantales).
+- [ ] En una partida, las herramientas de desarrollo siguen pudiendo poner y quitar aldeanos de prueba.
+- [ ] Activar o desactivar un mod en "Mods" y aplicar: el fondo del menú se vuelve a generar.
 
 ## Licencia
 

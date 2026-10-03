@@ -332,4 +332,29 @@ TEST_SUITE("wildlife") {
         CHECK(idle > 0);
         CHECK(eat > idle);
     }
+
+    TEST_CASE("a game without towns keeps its wildlife alive (the map behind the menu)") {
+        GameSetup s = setup();
+        s.players = 0;
+        Game g(core(), map_for(91), s);
+        CHECK(g.villagers().size() == 0);
+        CHECK(g.buildings().size() == 0);
+        const std::size_t animals = g.creatures().size();
+        CHECK(animals > 0);
+        std::vector<FixedVec2> before;
+        for (const Creature& c : g.creatures().data()) {
+            before.push_back(c.position);
+        }
+        run(g, 1200);
+        CHECK(g.creatures().size() == animals);  // Nobody hunts them.
+        std::size_t moved = 0;
+        for (std::size_t i = 0; i < animals; ++i) {
+            moved += g.creatures().data()[i].position != before[i] ? 1u : 0u;
+        }
+        CHECK(moved > animals / 2);
+        // And it is as repeatable as any game.
+        Game again(core(), map_for(91), s);
+        run(again, 1200);
+        CHECK(again.hash() == g.hash());
+    }
 }

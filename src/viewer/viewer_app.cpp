@@ -22,7 +22,7 @@
 #include "embedded/lang_en.h"
 #include "game/builtin_models.h"
 #include "game/map_scene.h"
-#include "game/test_scene.h"
+#include "game/walkers.h"
 #include "game/variants.h"
 #include "i18n/translator.h"
 #include "version.h"

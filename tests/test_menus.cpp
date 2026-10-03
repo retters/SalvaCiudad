@@ -2,6 +2,7 @@
 
 #include "core/file_io.h"
 #include "sim/worldgen.h"
+#include "game/menu_backgrounds.h"
 #include "game/services.h"
 #include "game/ui_host.h"
 #include "i18n/translator.h"
@@ -292,5 +293,57 @@ TEST_SUITE("menus") {
         key.keys = {SDL_SCANCODE_F5};
         h.frame(160, key);
         CHECK(h.services.games_saved == 1);
+    }
+
+    TEST_CASE("the menu background's seed list is read strictly and written back") {
+        namespace mb = sc::menu_backgrounds;
+        std::vector<std::uint64_t> seeds;
+        std::string error;
+        REQUIRE(mb::parse(R"({"schemaVersion": 1, "seeds": ["7", "18446744073709551615", "7"]})", seeds, error));
+        CHECK(seeds == std::vector<std::uint64_t>{7, 18446744073709551615ull});  // Repeats are dropped.
+        std::vector<std::uint64_t> back;
+        REQUIRE(mb::parse(mb::to_json(seeds), back, error));
+        CHECK(back == seeds);
+        for (const char* bad : {"", "[]", R"({"seeds": ["1"]})", R"({"schemaVersion": 2, "seeds": ["1"]})",
+                                R"({"schemaVersion": 1})", R"({"schemaVersion": 1, "seeds": "1"})",
+                                R"({"schemaVersion": 1, "seeds": [1]})", R"({"schemaVersion": 1, "seeds": ["-1"]})",
+                                R"({"schemaVersion": 1, "seeds": ["1x"]})", R"({"schemaVersion": 1, "seeds": [""]})",
+                                R"({"schemaVersion": 1, "seeds": ["18446744073709551616"]})"}) {
+            std::vector<std::uint64_t> out{99};
+            CHECK_FALSE_MESSAGE(mb::parse(bad, out, error), bad);
+            CHECK(out == std::vector<std::uint64_t>{99});  // Left alone.
+        }
+        std::string many = R"({"schemaVersion": 1, "seeds": [)";
+        for (std::size_t i = 0; i <= mb::kMaxSeeds; ++i) {
+            many += (i ? ",\"" : "\"") + std::to_string(i) + "\"";
+        }
+        CHECK_FALSE(mb::parse(many + "]}", seeds, error));
+
+        // The list that ships is valid and not empty.
+        const std::vector<std::uint64_t> shipped =
+            mb::load(std::filesystem::path(SC_SOURCE_DIR) / "data" / mb::kFileName);
+        CHECK_FALSE(shipped.empty());
+
+        // Choosing wraps over the two lists; with none there is still a seed.
+        CHECK(mb::choose({}, {}, 5) == mb::kFallbackSeed);
+        CHECK(mb::choose({10, 20}, {30}, 0) == 10);
+        CHECK(mb::choose({10, 20}, {30}, 2) == 30);
+        CHECK(mb::choose({10, 20}, {30}, 4) == 20);
+
+        // Saving a seed: in a new file, once, and next to the others.
+        const test::TempDir dir;
+        const std::filesystem::path file = dir / "menu_backgrounds.json";
+        CHECK(mb::load(file).empty());
+        REQUIRE(mb::add(file, 42));
+        REQUIRE(mb::add(file, 43));
+        REQUIRE(mb::add(file, 42));
+        CHECK(mb::load(file) == std::vector<std::uint64_t>{42, 43});
+        test::write_text(file, "not json");
+        CHECK(mb::load(file).empty());
+
+        // The map: small, with one start (the generator needs one).
+        const sim::MapSettings ms = mb::settings_for(42);
+        CHECK(ms.seed == 42);
+        CHECK(ms.size == sim::MapSize::Small);
     }
 }

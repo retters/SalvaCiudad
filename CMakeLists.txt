@@ -277,7 +277,6 @@ set(SC_ENGINE_SOURCES
     src/audio/mixer.cpp
     src/game/fog_view.cpp
     src/game/game_session.cpp
-    src/game/replay_file.cpp
     src/game/save_file.cpp
     src/game/input_actions.cpp
     src/game/map_generation.cpp
@@ -289,10 +288,12 @@ set(SC_ENGINE_SOURCES
     src/game/settings_screen.cpp
     src/game/map_report.cpp
     src/game/terrain_names.cpp
-    src/game/test_scene.cpp
+    src/game/menu_backgrounds.cpp
+    src/game/model_file.cpp
     src/game/ui_host.cpp
     src/game/variants.cpp
     src/game/village_view.cpp
+    src/game/walkers.cpp
     src/i18n/catalog.cpp
     src/mods/defs.cpp
     src/net/enet_link.cpp
@@ -321,9 +322,7 @@ set(SC_ENGINE_SOURCES
     src/sim/noise.cpp
     src/sim/rng.cpp
     src/sim/serialize.cpp
-    src/sim/simulation.cpp
     src/sim/vision.cpp
-    src/sim/world.cpp
     src/sim/worldgen.cpp
     src/sim/worldgen_hier.cpp
     src/platform/window.cpp
@@ -445,7 +444,7 @@ if(SC_BUILD_TESTS)
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_replay sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life minimap nav)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life minimap nav)
     # AddressSanitizer runs about twice as slow, and its times vary up to
     # twice between runs (D-3110).
     set(SC_TEST_TIMEOUT 120)

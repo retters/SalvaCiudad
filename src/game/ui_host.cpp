@@ -90,7 +90,7 @@ UiHost::SceneMode UiHost::scene_mode() const {
     if (over_map && services_.current_map() != nullptr) {
         return SceneMode::Map;
     }
-    return screen_ == Screen::TestScene ? SceneMode::TestScene : SceneMode::MenuBackground;
+    return SceneMode::MenuBackground;
 }
 
 bool UiHost::scene_paused() const {
@@ -169,10 +169,7 @@ void UiHost::frame(ui::Context& ctx) {
     }
 
     follow_network();
-    if (screen_ == Screen::TestScene) {
-        ctx.set_input_blocked(modal);
-        test_scene_hud(ctx);
-    } else if (screen_ == Screen::NewGame) {
+    if (screen_ == Screen::NewGame) {
         ctx.set_input_blocked(modal);
         const NewGameScreen::Result r = new_game_.frame(ctx, modal);
         // The form is remembered however it is left (phase 23).
@@ -313,7 +310,6 @@ void UiHost::main_menu(ui::Context& ctx) {
         {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), true},
         {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), true},
         {"mods", tr("menu.main.mods"), tr("menu.main.mods.tooltip"), true},
-        {"testScene", tr("menu.main.testScene"), tr("menu.main.testScene.tooltip"), services_.scene_available()},
         {"settings", tr("menu.main.settings"), tr("menu.main.settings.tooltip"), true},
         {"quit", tr("menu.main.quit"), tr("menu.main.quit.tooltip"), true},
     };
@@ -389,8 +385,6 @@ void UiHost::main_menu(ui::Context& ctx) {
             } else if (std::string_view(e.id) == "join") {
                 join_.open();
                 screen_ = Screen::Join;
-            } else if (std::string_view(e.id) == "testScene") {
-                screen_ = Screen::TestScene;
             } else if (std::string_view(e.id) == "settings") {
                 open_settings();
             } else if (std::string_view(e.id) == "quit") {
@@ -421,7 +415,7 @@ std::string UiHost::camera_line() const {
         mode_key = "camera.mode.firstPerson";
     }
     const std::string key = key_display_name(services_.settings().input.bindings.key(Action::CameraCycleMode, 0));
-    return tr("testScene.camera", tr(mode_key), key);
+    return tr("camera.line", tr(mode_key), key);
 }
 
 void UiHost::generating_screen(ui::Context& ctx, bool modal) {
@@ -910,22 +904,6 @@ void UiHost::load_screen(ui::Context& ctx, bool modal) {
     if (back) {
         screen_ = load_return_ == Screen::MapView && services_.current_map() != nullptr ? Screen::MapView
                                                                                          : Screen::MainMenu;
-    }
-}
-
-void UiHost::test_scene_hud(ui::Context& ctx) {
-    const float pad = ctx.s(12.0f);
-    const ui::TextStyle st = ctx.style(ctx.theme().body);
-    const float w = std::min(ctx.s(560.0f), ctx.width() - 2 * pad);
-    const std::string text = tr("testScene.hint") + "\n" + camera_line() + "\n" +
-                             tr(services_.camera_mode() == CameraMode::FirstPerson ? "testScene.follow.firstPerson"
-                                                                                   : "testScene.follow");
-    const float h = ctx.paragraph_height(w - 2 * pad, text, st);
-    const ui::Rect box{pad, pad, w, h + 2 * pad};
-    ctx.draw().rect(box, ctx.theme().tooltip.with_alpha(0.8f));
-    ctx.paragraph(box.inset(pad), text, st, ctx.theme().text);
-    if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
-        screen_ = Screen::MainMenu;
     }
 }
 

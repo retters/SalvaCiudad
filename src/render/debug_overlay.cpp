@@ -119,7 +119,6 @@ void DebugOverlay::build(const DebugInfo& info, const std::function<void()>& ext
             ImGui::Text("%s: %u", tr("debug.grass").c_str(), s.grass_tufts);
             ImGui::Text("%s: %.0f m  (%.0f, %.0f)", tr("debug.camera").c_str(), static_cast<double>(info.camera_distance),
                         static_cast<double>(info.camera_x), static_cast<double>(info.camera_z));
-            ImGui::Checkbox(tr("debug.stressView").c_str(), &stress_view_);
         }
         if (!info.cursor.empty()) {
             ImGui::SeparatorText(tr("cursor.title").c_str());

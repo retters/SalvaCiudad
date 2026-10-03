@@ -50,9 +50,6 @@ public:
     void process_event(const SDL_Event& event);
     void toggle() { visible_ = !visible_; }
     [[nodiscard]] bool visible() const { return visible_; }
-    // Debug option: pull the camera far back so the whole test scene is on
-    // screen at once, to measure the worst case.
-    [[nodiscard]] bool stress_view() const { return visible_ && stress_view_; }
     // True while the pointer is over an ImGui window (statistics or tools).
     [[nodiscard]] bool wants_mouse() const;
     // True while an ImGui text field has the keyboard.
@@ -76,7 +73,6 @@ private:
     bool visible_ = false;
     bool built_ = false;
     bool active_ = false;  // A frame was built last time (for input).
-    bool stress_view_ = false;
     std::array<float, 120> frame_history_{};
     std::size_t history_pos_ = 0;
 };

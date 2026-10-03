@@ -6,15 +6,12 @@
 #include <regex>
 #include <string>
 
-#include "game/replay_file.h"
 #include "sim/command.h"
 #include "sim/entity.h"
 #include "sim/fixed.h"
 #include "sim/noise.h"
 #include "sim/rng.h"
 #include "sim/serialize.h"
-#include "sim/simulation.h"
-#include "sim/world.h"
 #include "test_util.h"
 
 using namespace sc;
@@ -25,69 +22,6 @@ namespace {
 Fixed f(int v) {
     return Fixed::from_int(v);
 }
-
-// The scripted game used by the determinism tests: groups of walkers
-// arrive for several players, some are sent somewhere, some removed (one
-// twice, which must be rejected the same way every time).
-std::vector<ScheduledCommand> script() {
-    std::vector<ScheduledCommand> s;
-    const auto spawn = [&](std::uint64_t tick, std::uint8_t player, int x, int z, std::uint16_t count) {
-        Command c;
-        c.type = CommandType::SpawnWalkers;
-        c.player = player;
-        c.position = {f(x), f(z)};
-        c.count = count;
-        s.push_back({tick, 0, c});
-    };
-    const auto send = [&](std::uint64_t tick, std::uint32_t index, int x, int z) {
-        Command c;
-        c.type = CommandType::SendWalker;
-        c.entity = {index, 0};
-        c.position = {f(x), f(z)};
-        s.push_back({tick, 0, c});
-    };
-    const auto remove = [&](std::uint64_t tick, std::uint32_t index) {
-        Command c;
-        c.type = CommandType::RemoveWalker;
-        c.entity = {index, 0};
-        s.push_back({tick, 0, c});
-    };
-    spawn(0, 0, 0, 0, 40);
-    spawn(5, 1, 100, -50, 30);
-    spawn(20, 2, -200, 150, 64);
-    send(100, 0, 300, 300);
-    remove(150, 1);
-    remove(200, 1);  // Already gone: rejected.
-    spawn(300, 11, 400, 400, 50);
-    send(650, 5, -480, -480);
-    spawn(800, 3, -300, -300, 64);
-    remove(900, 7);
-    spawn(1200, 4, 10, 20, 25);
-    return s;
-}
-
-void schedule_from(Simulation& sim, std::uint64_t from_tick) {
-    for (const ScheduledCommand& c : script()) {
-        if (c.tick >= from_tick) {
-            REQUIRE(sim.schedule(c.tick, c.command));
-        }
-    }
-}
-
-Simulation run(std::uint64_t seed, std::uint64_t ticks) {
-    Simulation sim(seed);
-    schedule_from(sim, 0);
-    while (sim.tick() < ticks) {
-        sim.step();
-    }
-    return sim;
-}
-
-constexpr std::uint64_t kScenarioTicks = 1500;
-
-// The hash the scenario must give on every build and every machine. If the
-// simulation rules change on purpose, update it and bump kRulesVersion.
-constexpr std::uint64_t kGoldenHash = 0xed6fa5148c47bb17ull;
 
 }  // namespace
 
@@ -252,7 +186,7 @@ TEST_SUITE("sim_core") {
 
     TEST_CASE("commands round-trip and bad ones are rejected") {
         Command c;
-        c.type = CommandType::SendWalker;
+        c.type = CommandType::RemoveBuilding;
         c.player = 3;
         c.entity = {12, 4};
         c.position = {f(-100), Fixed::from_ratio(7, 3)};
@@ -278,10 +212,10 @@ TEST_SUITE("sim_core") {
         bad.position.x = f(20000);
         CHECK(rejects(bad));
         bad = c;
-        bad.type = CommandType::SpawnWalkers;
-        bad.count = 0;
+        bad.type = CommandType::DevGrant;
+        bad.value = 0;
         CHECK(rejects(bad));
-        bad.count = 65;
+        bad.value = kMaxDevGrant + 1;
         CHECK(rejects(bad));
         bad = c;
         bad.entity = {};
@@ -291,134 +225,6 @@ TEST_SUITE("sim_core") {
         BinaryReader wr(weird.bytes());
         Command out;
         CHECK_FALSE(Command::read(wr, out));
-    }
-
-    TEST_CASE("the same game gives the same hashes every time") {
-        const Simulation a = run(2026, kScenarioTicks);
-        const Simulation b = run(2026, kScenarioTicks);
-        CHECK(a.checkpoints().size() == kScenarioTicks / Simulation::kCheckpointInterval);
-        CHECK(a.checkpoints() == b.checkpoints());
-        CHECK(a.world().walkers().size() > 100);
-        CHECK(a.world().rejected_commands() >= 1);  // At least the double removal.
-        CHECK(a.world().rejected_commands() == b.world().rejected_commands());
-        const Simulation other = run(2027, kScenarioTicks);
-        CHECK(other.last_hash() != a.last_hash());
-    }
-
-    TEST_CASE("twelve simulations in one process stay identical") {
-        std::vector<Simulation> sims;
-        for (int i = 0; i < 12; ++i) {
-            sims.emplace_back(99);
-            schedule_from(sims.back(), 0);
-        }
-        for (std::uint64_t t = 0; t < 600; ++t) {
-            for (Simulation& s : sims) {
-                s.step();
-            }
-            if (t % 50 == 0) {
-                for (const Simulation& s : sims) {
-                    REQUIRE(s.world().hash() == sims.front().world().hash());
-                }
-            }
-        }
-        for (const Simulation& s : sims) {
-            CHECK(s.checkpoints() == sims.front().checkpoints());
-        }
-    }
-
-    TEST_CASE("saving, loading and continuing changes nothing") {
-        const Simulation straight = run(2026, kScenarioTicks);
-
-        Simulation first = run(2026, 700);
-        const std::vector<std::uint8_t> snapshot = first.world().snapshot();
-        Simulation resumed(0);  // Seed is irrelevant: the snapshot has the state.
-        REQUIRE(resumed.restore(snapshot));
-        CHECK(resumed.tick() == 700);
-        schedule_from(resumed, 700);
-        while (resumed.tick() < kScenarioTicks) {
-            resumed.step();
-        }
-        CHECK(resumed.last_hash() == straight.last_hash());
-        CHECK(resumed.world().hash() == straight.world().hash());
-    }
-
-    TEST_CASE("the scenario hash is the same on every build") {
-        const Simulation sim = run(2026, kScenarioTicks);
-        MESSAGE("scenario hash: " << sim.last_hash());
-        CHECK(sim.last_hash() == kGoldenHash);
-    }
-
-    TEST_CASE("damaged snapshots are rejected and leave the world alone") {
-        const Simulation sim = run(5, 300);
-        std::vector<std::uint8_t> snap = sim.world().snapshot();
-        World world(1);
-        world.step();
-        const std::uint64_t before = world.hash();
-
-        std::vector<std::uint8_t> truncated(snap.begin(), snap.end() - 3);
-        CHECK_FALSE(world.restore(truncated));
-        std::vector<std::uint8_t> extra = snap;
-        extra.push_back(0);
-        CHECK_FALSE(world.restore(extra));
-        std::vector<std::uint8_t> garbage(500, 0xEE);
-        CHECK_FALSE(world.restore(garbage));
-        std::vector<std::uint8_t> wrong_rules = snap;
-        wrong_rules[4] ^= 0xFF;  // The rules version.
-        CHECK_FALSE(world.restore(wrong_rules));
-        CHECK(world.hash() == before);
-        CHECK(world.restore(snap));
-        CHECK(world.hash() == sim.world().hash());
-    }
-}
-
-TEST_SUITE("sim_replay") {
-    TEST_CASE("a recorded game replays exactly, through a file") {
-        const Simulation sim = run(31, 900);
-        const Replay replay = sim.recording();
-        CHECK(replay.commands.size() == 9);  // Script commands before tick 900.
-        const ReplayCheck check = verify_replay(replay);
-        CHECK_MESSAGE(check.ok, check.error);
-
-        test::TempDir dir;
-        REQUIRE(save_replay_file(dir / "game.screplay", replay));
-        Replay loaded;
-        std::string error;
-        REQUIRE_MESSAGE(load_replay_file(dir / "game.screplay", loaded, error), error);
-        CHECK(loaded == replay);
-        CHECK(verify_replay(loaded).ok);
-    }
-
-    TEST_CASE("a changed command is caught at the next checkpoint") {
-        Replay replay = run(31, 900).recording();
-        replay.commands[3].command.position.x = f(-300);  // The walker sent at tick 100 goes elsewhere.
-        const ReplayCheck check = verify_replay(replay);
-        CHECK_FALSE(check.ok);
-        CHECK(check.mismatch_tick == 110);
-    }
-
-    TEST_CASE("damaged or foreign replay files are rejected") {
-        const Replay replay = run(31, 300).recording();
-        std::vector<std::uint8_t> bytes = encode_replay(replay);
-        Replay out;
-        std::string error;
-        CHECK(decode_replay(bytes, out, error));
-
-        std::vector<std::uint8_t> flipped = bytes;
-        flipped[30] ^= 1;
-        CHECK_FALSE(decode_replay(flipped, out, error));
-        CHECK(error.find("checksum") != std::string::npos);
-
-        std::vector<std::uint8_t> truncated(bytes.begin(), bytes.begin() + 20);
-        CHECK_FALSE(decode_replay(truncated, out, error));
-
-        Replay other_rules = replay;
-        other_rules.rules_version = kRulesVersion + 1;
-        CHECK_FALSE(verify_replay(other_rules).ok);
-
-        test::TempDir dir;
-        test::write_text(dir / "notes.txt", "hello, this is not a replay at all");
-        CHECK_FALSE(load_replay_file(dir / "notes.txt", out, error));
-        CHECK_FALSE(load_replay_file(dir / "missing.screplay", out, error));
     }
 }
 

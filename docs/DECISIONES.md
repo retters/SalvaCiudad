@@ -2089,3 +2089,24 @@ Las 13 imágenes del usuario (`Animales low poly`, `Arboles 1` a `8`, `Armas y h
 
 **D-4909. Tiempo del mapa colosal.**
 Mapa colosal, semilla 12345, opciones por omisión (mar "A veces", un jugador), en `release`, alternando el ejecutable de antes y el de después: antes 131, 132, 134 y 142 s; después 123, 126, 149 y 150 s. Es el mismo tiempo dentro de lo que varía este equipo (mientras se medía, otra sesión trabajaba en el mismo equipo). Era lo esperado: el camino del jerárquico no cambió, salvo los biomas, que ya no calculan las manchas del clásico para descartarlas. El mapa es el mismo (mismos datos antes y después). Anotado en `docs/RENDIMIENTO.md`.
+
+## Fase 50: mapa de fondo en el menú; se borra la escena de prueba (2026-10-02)
+
+**D-5001. Qué quedó de la escena de prueba.**
+Se borraron el plano con 50 000 objetos, la multitud de 2000 aldeanos, el botón del menú, la pantalla con su ayuda, la "Vista de estrés" de F3 y la selección y el seguimiento de un aldeano de la multitud con la cámara. Lo que el juego usaba pasó a su lugar: `game/model_file.*` (leer un modelo del disco) y `game/walkers.*` (los cuerpos de los aldeanos con sus paletas y accesorios, y la gente de prueba que ponen las herramientas de desarrollo, que sigue funcionando). Los modelos `props/tree_pine.glb` y `props/rock.glb` ya no los usa el código directamente; la roca sigue en uso por los datos y el pino suelto se irá con los árboles viejos (fase 53).
+
+**D-5002. La simulación de prueba de la fase 5 se borra entera.**
+`sim/world.*`, `sim/simulation.*`, `game/replay_file.*` y los tres comandos de caminantes. Las pruebas que dependían de ellos (hash de referencia del escenario, doce simulaciones, guardar y seguir, repeticiones) se borraron: la simulación del juego tiene las suyas (ver `docs/DETERMINISMO.md`). Quedan las de punto fijo, números aleatorios, entidades, comandos y la que impide `float`, hilos y relojes en `src/sim`. No había repeticiones del juego real en ningún formato, así que no se pierde ninguna función del jugador.
+
+**D-5003. El fondo es una partida sin pueblos.**
+El mapa de fondo es uno pequeño (512 m, relieve suave, lo demás por omisión) y sobre él corre una partida con cero jugadores: no hay centro del pueblo ni aldeanos, y los animales viven con la simulación de siempre. Así no hizo falta otra forma de mover animales. Una prueba cubre que esa partida corre y es repetible. La cámara gira a 80 m del centro del mapa.
+
+**D-5004. Dónde está la lista y dónde guarda la tecla.**
+La lista que viaja con el juego es `data/menu_backgrounds.json` (11 semillas elegidas mirando 12 candidatas). La tecla de guardar no escribe ahí: la carpeta del juego puede ser de solo lectura y, al compilar, `data/` se vuelve a copiar encima. Escribe en un `menu_backgrounds.json` de la carpeta de datos del usuario, que se lee además de la lista del juego. Para que una semilla viaje con el juego hay que copiarla a mano a `data/menu_backgrounds.json`. Las semillas van como texto, porque no caben en un número de JSON. Un archivo dañado se ignora con un aviso en el registro.
+
+**D-5005. Teclas.**
+Con las herramientas de desarrollo abiertas (Ctrl+F3) y en los menús: F5 genera otro fondo con una semilla nueva y F6 guarda la semilla actual. Son fijas, como Ctrl+F3.
+
+**D-5006. Cuándo se genera.**
+El mapa se empieza a generar en su hilo en cuanto se cargan los mods, antes de crear la ventana, así que el menú no lo espera: mientras llega, el fondo es el color liso de siempre. Medido en release: el mapa se genera en 0,14 s y aparece 0,93 s después de arrancar el programa, casi a la vez que el menú. Al salir de una partida al menú se genera otro (el mapa de la partida ocupa el lugar del de fondo mientras se juega), y también al cambiar de mods. Con `--reporte` no hay fondo.
+

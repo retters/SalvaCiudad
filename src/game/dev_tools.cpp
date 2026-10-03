@@ -11,7 +11,7 @@
 #include "game/game_session.h"
 #include "game/map_scene.h"
 #include "game/terrain_names.h"
-#include "game/test_scene.h"
+#include "game/walkers.h"
 #include "i18n/translator.h"
 #include "render/scene_renderer.h"
 
@@ -572,7 +572,7 @@ void DevTools::inspector_tab(DevContext& ctx) {
                     static_cast<double>(ctx.scene->houses()[o.index].yaw) * 180.0 / std::numbers::pi);
         ImGui::Text("%s: house_small.glb", tr("dev.inspector.model").c_str());
     } else if (o.kind == DevObject::Kind::Villager) {
-        const TestCrowd::VillagerInfo v = ctx.crowd->info(o.index);
+        const Walkers::VillagerInfo v = ctx.crowd->info(o.index);
         ImGui::SeparatorText(tr("dev.inspector.villager").c_str());
         ImGui::Text("%s: %s", tr("dev.inspector.activity").c_str(),
                     tr(v.walking ? "dev.inspector.walking" : "dev.inspector.resting").c_str());

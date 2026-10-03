@@ -7,7 +7,7 @@
 #include "core/log.h"
 #include "game/builtin_models.h"
 #include "game/variants.h"
-#include "game/test_scene.h"
+#include "game/model_file.h"
 
 namespace sc {
 
