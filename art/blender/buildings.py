@@ -434,6 +434,23 @@ def hunter_yard(mb, w, d):
     mb.box((1.2, -d / 2 + 0.7, 0.35), (0.7, 0.5, 0.7), "wood_light")
 
 
+def explorer_yard(mb, w, d):
+    # A signpost, a table with a map on it, travel packs and a pennant.
+    y = -d / 2 + 0.7
+    mb.box((1.7, y, 1.0), (0.1, 0.1, 2.0), "timber")
+    mb.box((1.95, y, 1.75), (0.6, 0.04, 0.18), "wood_light")
+    mb.box((1.45, y, 1.45), (0.6, 0.04, 0.18), "wood_light")
+    mb.box((-1.0, y, 0.72), (1.0, 0.6, 0.06), "wood")
+    for dx in (-0.42, 0.42):
+        for dy in (-0.22, 0.22):
+            mb.box((-1.0 + dx, y + dy, 0.35), (0.07, 0.07, 0.7), "timber")
+    mb.box((-1.0, y, 0.76), (0.7, 0.42, 0.02), "cloth_white")
+    crate(mb, 0.35, y - 0.1, 0.45)
+    mb.sphere((0.9, y, 0.24), 0.26, "hide", segments=6, rings=4)
+    mb.cylinder((-2.0, y, 0), (-2.0, y, 3.0), 0.05, 0.04, "timber", segments=6)
+    mb.box((-1.65, y, 2.7), (0.7, 0.03, 0.4), "cloth_green")
+
+
 def fisher_yard(mb, w, d):
     hull = mb.prism([(-1.0, -0.3), (1.0, -0.3), (1.3, 0.0), (1.0, 0.3), (-1.0, 0.3), (-1.3, 0.0)], 0.0, 0.35, "wood")
     for v in hull:
@@ -860,6 +877,7 @@ def make_all(folder):
         ("orchard", 5, 5, orchard_yard, ("thatch", "thatch_dark")),
         ("hunter", 5, 4, hunter_yard, ("thatch", "thatch_dark")),
         ("fisher", 5, 4, fisher_yard, ("thatch", "thatch_dark")),
+        ("explorer", 5, 4, explorer_yard, ("thatch", "thatch_dark")),
         ("herbalist", 4, 4, herbalist_yard, ("thatch", "thatch_dark")),
         ("compost_yard", 5, 5, compost_yard, ("thatch", "thatch_dark")),
         ("mill", 5, 5, mill_extras, ("roof", "roof_dark")),

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <utility>
 #include <vector>
 
@@ -31,6 +32,11 @@ public:
     // the closest walkable point to it). False if no path was found within
     // the budget.
     bool find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes = kDefaultMaxNodes);
+    // Phase 66: the same over the cells `allow` accepts only (an explorer
+    // keeps to explored ground).
+    bool find_path_within(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out,
+                          const std::function<bool(std::int32_t, std::int32_t)>& allow,
+                          std::int32_t max_nodes = kDefaultMaxNodes);
     // Raiders: a path over the ground that may cross buildings and gates
     // (they break them), which cost a lot more than open ground.
     bool find_path_through(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out,
@@ -80,7 +86,8 @@ private:
     [[nodiscard]] std::size_t index(std::int32_t cx, std::int32_t cz) const {
         return static_cast<std::size_t>(cz) * static_cast<std::size_t>(side_) + static_cast<std::size_t>(cx);
     }
-    bool search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes, bool through);
+    bool search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes, bool through,
+                const std::function<bool(std::int32_t, std::int32_t)>* allow = nullptr);
     // Nearest walkable cell to (cx, cz) within a few cells; false if none.
     bool nearest_walkable(std::int32_t& cx, std::int32_t& cz) const;
     // Connected areas, labeled inside blocks of 64 x 64 cells and joined

@@ -51,6 +51,7 @@ enum class WorkKind : std::uint8_t {
     Farm,     // Fields (phase 11).
     Hunt,     // Game in the map's animal zones.
     Fish,     // Fish from water nearby.
+    Explore,  // Phase 66: its worker goes where the player sends it.
     Count
 };
 
@@ -132,6 +133,7 @@ struct BuildingDef {
     std::int32_t sight = 12;        // Phase 32: meters it sees from its center (fog of war).
     bool landmark = false;          // Phase 34: its silhouette shows through the fog of war.
     bool trains = false;            // A barracks: turns villagers into soldiers (phase 16).
+    std::int32_t worker_sight = 0;  // Phase 66: meters its workers see, if more than their own.
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.

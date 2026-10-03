@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 33;
+inline constexpr std::uint32_t kGameRulesVersion = 34;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -55,7 +55,24 @@ inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
 inline constexpr std::int32_t kColdBelow = 10;        // Houses burn firewood below this (°C).
 inline constexpr std::int32_t kMaxSnow = 100;
+// Phase 66. With this little food to spare over what the walk to the
+// food takes, a villager leaves what it is doing and goes to eat.
+inline constexpr std::int32_t kHungryFood = 60;
+// An explorer's provisions, in hunger meter points: two full meters.
+inline constexpr std::int32_t kProvisions = 2000;
+// An order to a point this near its own building sends an explorer home.
+inline constexpr std::int32_t kHomeMeters = 12;
 }  // namespace village
+
+// Phase 66: what an explorer under orders is doing.
+enum class Order : std::uint8_t {
+    None,
+    Provision,  // Going for provisions before leaving.
+    Going,      // On its way to the point.
+    Waiting,    // There (or as far as it got).
+    Returning,  // On its way home: sent, or out of provisions, or cold.
+    Count
+};
 
 // A natural resource of the map (one per map feature, same index).
 struct Node {
@@ -166,6 +183,10 @@ enum class Task : std::uint8_t {
     GoFight,       // Militia: going for an enemy.
     Fight,
     Flee,          // Running from an animal or a raider to the town center.
+    // Phase 66: an explorer under orders.
+    GoProvision,   // Walking to a storage for provisions.
+    Scout,         // Walking where it was sent, or back home.
+    ScoutWait,     // Waiting where it was sent.
     Count
 };
 
@@ -205,6 +226,10 @@ struct Villager {
     std::uint16_t path_index = 0;
     std::int32_t idle_ticks = 0;      // Waits before deciding again.
     std::string name;                 // Phase 63: given by the player; empty: the one it came with.
+    // Phase 66: an explorer's order, where to, and the food it carries (meter points).
+    Order order = Order::None;
+    FixedVec2 order_point;
+    std::int32_t provisions = 0;
     bool operator==(const Villager&) const = default;
 };
 
@@ -476,6 +501,7 @@ public:
             Born,            // Phase 17: for the notifications.
             Died,
             AutoTrade,       // Phase 29: the merchant left; `tally` is what automatic trade did.
+            ExplorerBack,    // Phase 66: an explorer turns back; `value`: 0 low on food, 1 cold.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;

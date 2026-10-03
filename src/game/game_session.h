@@ -93,6 +93,9 @@ public:
         bool rally_mode = false;     // The next click on the ground: where the army defends.
         std::int32_t drag_x = 0;
         std::int32_t drag_z = 0;
+        // Phase 66: the minimap's picture on the screen this frame (x, y, w,
+        // h; no width: not shown), for orders given on it.
+        std::array<float, 4> minimap{};
         // Screen rectangles of the interface this frame (x, y, w, h):
         // clicks there are not for the world.
         std::vector<std::array<float, 4>> hud_rects;

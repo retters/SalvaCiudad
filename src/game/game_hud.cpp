@@ -82,6 +82,9 @@ const char* task_text_key(sim::Task task) {
         case sim::Task::GoFight: return "task.goFight";
         case sim::Task::Fight: return "task.fight";
         case sim::Task::Flee: return "task.flee";
+        case sim::Task::GoProvision: return "task.goProvision";
+        case sim::Task::Scout: return "task.scout";
+        case sim::Task::ScoutWait: return "task.scoutWait";
         case sim::Task::Count: break;
     }
     return "task.idle";
@@ -1948,9 +1951,14 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
     if (v->race < content.races.size()) {
         lines.push_back(tr("hud.villager.race", tr(content.races[v->race].name_key)));
     }
-    lines.push_back(tr("hud.villager.task", tr(task_text_key(v->task))));
+    lines.push_back(tr("hud.villager.task", tr(v->order == sim::Order::Returning ? "task.scoutBack" : task_text_key(v->task))));
     if (job == nullptr) {
         lines.push_back(tr(game.adult(*v) ? "hud.villager.laborer" : "hud.villager.child"));
+    }
+    // Phase 66: an explorer goes where a right click sends it.
+    if (job != nullptr && mine && content.buildings[job->def].work == sim::WorkKind::Explore) {
+        lines.push_back(tr("hud.explorer.provisions", v->provisions * 100 / sim::village::kProvisions));
+        lines.push_back(tr("hud.explorer.hint"));
     }
     if (home == nullptr) {
         lines.push_back(tr("hud.villager.homeless"));

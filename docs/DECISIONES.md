@@ -2585,3 +2585,44 @@ Reglas 33, protocolo de red 11.
 
 **D-6508. Sin revisar en pantalla por Claude.**
 Un edificio en ladera dentro del juego: en las partidas de prueba el terreno junto al pueblo era plano. Se vio el modelo con sus cimientos (imagen hecha con Blender) y que en terreno plano los edificios se ven como antes. Lo cubren las pruebas de la simulación con una rampa hecha a mano.
+
+## Fase 66: explorador, y el hambre que interrumpe un viaje (2026-10-03)
+
+**D-6601. El edificio y su trabajador.**
+"Explorador" (`core:explorer`, en Servicios, 10 troncos, un trabajador), con trabajo nuevo `explore` y `workerSight: 30` en los datos: su trabajador ve 30 m (el resto, lo de su raza: 12). Mientras no tiene órdenes vive como cualquier aldeano con trabajo.
+
+**D-6602. La orden.**
+Orden nueva `MoveVillager` (aldeano y punto). Solo vale para el trabajador de un Explorador terminado y del propio pueblo; cualquier otro se rechaza. En la interfaz: con ese aldeano seleccionado, clic derecho en el mapa o en el minimapa. Mientras tiene una orden no hace otra cosa: ni come en el pueblo, ni trabaja, ni pasea. Al llegar, o al toparse con algo, espera ahí la siguiente orden. Si huye de un animal, al terminar retoma la orden.
+
+**D-6603. La ruta.**
+Con niebla y el destino explorado: el camino más corto que pise solo celdas exploradas (`NavGrid::find_path_within`). Si no lo hay, o el destino no está explorado: en línea recta, metro a metro, hasta el último punto caminable antes de un obstáculo (agua, un barranco, un edificio); no lo rodea. Sin niebla: el camino de cualquiera. En "mapa revelado" todo cuenta como explorado.
+
+**D-6604. Provisiones.**
+Al recibir una orden, si lleva menos de la mitad de sus provisiones y hay comida en algún almacén, pasa primero por el más cercano y toma comida hasta completar 2000 puntos de hambre (dos medidores llenos; lo más nutritivo primero). En el camino come de lo que lleva cuando su medidor baja de la mitad. Sin comida en el pueblo sale igual, con lo puesto.
+
+**D-6605. La vuelta.**
+Cada 16 pasos se compara lo que le queda (medidor más provisiones) con lo que cuesta volver a su edificio (60 de margen más 13/8 de punto por metro en línea recta: caminar cuesta 5/4 y los caminos rara vez son rectos). Cuando ya no le sobra, vuelve solo y sale el aviso "El explorador vuelve: le queda la comida justa para el camino". Al llegar es un aldeano corriente otra vez. También se le manda a casa con una orden a menos de 12 m de su edificio.
+
+**D-6606. El frío. (No estaba en la especificación.)**
+La especificación dice que se abriga como los demás. Como no vuelve al pueblo por su cuenta, se añadió que regrese cuando su calor baja de un cuarto, con su aviso. Sin esto, uno que espera lejos en invierno moría de frío sin que el jugador pudiera saberlo.
+
+**D-6607. Deja de ser explorador.**
+Si su edificio se demuele, se detiene o le quitan el trabajador, la orden se olvida y vuelve a ser peón.
+
+**D-6608. El hambre interrumpe (I-010).**
+Cada 16 pasos, para quien camina o trabaja (no para quien pelea, apaga un incendio, huye o ya va a comer): si la comida que le queda no alcanza para terminar la caminata que lleva y llegar después al almacén con comida más cercano (5/4 de punto por metro, más 60 de margen), va a comer primero, siempre que comer lo deje mejor de lo que está: así se da la vuelta al principio de un viaje largo y no al final. Lo que cargaba para una obra vuelve al almacén. Quien trabaja parado lejos (construir, talar) va a comer cuando ya no le sobra para volver.
+
+**D-6609. Los viajes imposibles se abandonan.**
+Si ni recién comido alcanza para ir y volver, el viaje se abandona en vez de seguirlo hasta morir. Consecuencia: una obra a más de unos 340 m de cualquier almacén con comida no avanza (nadie muere por ella). La salida es la de siempre: un almacén o granero más cerca. No hay aviso propio para esto; queda como posible mejora.
+
+**D-6610. Las semillas de D-5613.**
+Con las semillas 1 y 14 la zona de caza está tan lejos que el viaje es de los imposibles: la cabaña ya no se construye y nadie pasa hambre (el medidor más bajo en un año queda sobre 400). La prueba nueva con una obra a 320 m, que sí se alcanza, termina construida sin que ningún medidor llegue a cero (el más bajo, 48).
+
+**D-6611. La prueba de equilibrio del año largo.**
+Con el hambre nueva, la suma de llegadas de las cuatro partidas quedó en 132 contra 156 (15,4 % de diferencia; el límite era 15 %). Población y comida por habitante, que son las que pedía la fase 59, siguen dentro del 15 %. Las llegadas siguen a los que mueren, y con años largos se envejece más despacio (D-5902): su margen pasa al 25 %.
+
+**D-6612. Versiones.**
+Reglas 34 (el aldeano guarda su orden, el punto y las provisiones), protocolo de red 12.
+
+**D-6613. Sin revisar en pantalla por Claude.**
+El clic derecho en el minimapa y el regreso por provisiones (se vio en pantalla: construir el Explorador, su trabajador con "Provisiones" y la pista, y mandarlo con clic derecho en el mapa: fue por provisiones y quedó esperando en el punto).

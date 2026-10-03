@@ -1,6 +1,7 @@
 #include "sim/game.h"
 
 #include <algorithm>
+#include <functional>
 #include <bit>
 #include <optional>
 
@@ -405,8 +406,224 @@ public:
         return v.position;
     }
 
+    // --- Phase 66: the explorer ------------------------------------------------------
+
+    // Meter points a walk of `meters` in a straight line takes: five ticks
+    // a meter, a point every four ticks, and paths a third longer.
+    [[nodiscard]] static std::int32_t food_for_walk(std::int32_t meters) { return meters * 13 / 8; }
+
+    [[nodiscard]] const Building* explorer_post(const Villager& v) const {
+        const Building* job = g_.buildings_.get(v.job);
+        return job != nullptr && complete(*job) && def(*job).work == WorkKind::Explore ? job : nullptr;
+    }
+
+    void stop(Villager& v) {
+        v.path.clear();
+        v.path_index = 0;
+    }
+
+    // The player's order: provisions first when it has few and the town has food.
+    void order_scout(Villager& v, FixedVec2 to) {
+        const Building* post = explorer_post(v);
+        if (post == nullptr) {
+            return;
+        }
+        release(v);
+        stop(v);
+        v.order_point = to;
+        if (distance2(to, g_.door(*post)) <= meters2(village::kHomeMeters)) {
+            return_home(v);  // Sent home.
+            return;
+        }
+        if (v.provisions < village::kProvisions / 2) {
+            const EntityId food = storage_with(v.owner, v.position, kNoDef);
+            if (food.valid()) {
+                v.order = Order::Provision;
+                go(v, Task::GoProvision, food);
+                if (v.task == Task::GoProvision) {
+                    return;
+                }
+            }
+        }
+        start_scout(v);
+    }
+
+    // At the storage: food for the road, the most nutritious first.
+    void take_provisions(Villager& v) {
+        Building* b = g_.buildings_.get(v.target);
+        while (b != nullptr && v.provisions < village::kProvisions) {
+            Stock* best = nullptr;
+            for (Stock& st : b->stock) {
+                const ResourceDef& r = c_.resources[st.resource];
+                if (st.amount > 0 && r.category == ResourceCategory::Food && r.nutrition > 0 && gives_out(c_, *b, st.resource) &&
+                    (best == nullptr || r.nutrition > c_.resources[best->resource].nutrition)) {
+                    best = &st;
+                }
+            }
+            if (best == nullptr) {
+                break;
+            }
+            --best->amount;
+            v.provisions = std::min(village::kProvisions,
+                                    v.provisions + c_.resources[best->resource].nutrition * village::kFoodPerNutrition);
+        }
+        if (b != nullptr) {
+            compact(b->stock);
+        }
+        start_scout(v);
+    }
+
+    // On its way to the point. With fog and the point explored: the
+    // shortest way over explored ground only. Else, or if there is none:
+    // straight at it until something is in the way. Without fog: the way
+    // anybody would take.
+    void start_scout(Villager& v) {
+        v.order = Order::Going;
+        v.task = Task::Scout;
+        v.target = {};
+        stop(v);
+        const FixedVec2 to = v.order_point;
+        bool found = false;
+        if (!g_.vision_.active()) {
+            found = walk_to(v, to);
+        } else {
+            const std::uint8_t group = g_.town_group(v.owner);
+            const std::function<bool(std::int32_t, std::int32_t)> known = [&](std::int32_t cx, std::int32_t cz) {
+                return g_.vision_.explored_at(group, cx * NavGrid::kCell + 1, cz * NavGrid::kCell + 1);
+            };
+            if (g_.vision_.explored_at(group, to.x.floor_int(), to.z.floor_int())) {
+                found = g_.nav_.find_path_within(v.position, to, v.path, known) && !v.path.empty();
+            }
+            if (!found) {
+                stop(v);
+                const FixedVec2 d = to - v.position;
+                const Fixed length = d.length();
+                const std::int32_t steps = length.floor_int();
+                FixedVec2 last = v.position;
+                std::int32_t done = 0;
+                for (std::int32_t i = 1; i <= steps; ++i) {
+                    const FixedVec2 p = v.position + d * (Fixed::from_int(i) / length);
+                    if (!g_.nav_.walkable(g_.nav_.cell_of(p.x), g_.nav_.cell_of(p.z))) {
+                        break;
+                    }
+                    last = p;
+                    done = i;
+                }
+                if (done == steps && g_.nav_.walkable(g_.nav_.cell_of(to.x), g_.nav_.cell_of(to.z))) {
+                    last = to;
+                    ++done;
+                }
+                if (done > 0) {
+                    v.path.push_back(last);
+                    found = true;
+                }
+            }
+        }
+        if (!found) {
+            stop(v);
+            v.order = Order::Waiting;  // No way from here: it waits for another order.
+            v.task = Task::ScoutWait;
+        }
+    }
+
+    void return_home(Villager& v) {
+        const Building* post = explorer_post(v);
+        stop(v);
+        if (post == nullptr || !walk_to(v, g_.door(*post))) {
+            v.order = Order::None;
+            fail(v);
+            return;
+        }
+        v.order = Order::Returning;
+        v.task = Task::Scout;
+        v.target = {};
+    }
+
+    // Every so often, for an explorer under orders: it eats from what it
+    // carries, and turns back with just enough left to get home, or cold.
+    void scout_check(Villager& v) {
+        const Building* post = explorer_post(v);
+        if (post == nullptr) {
+            v.order = Order::None;  // No longer an explorer.
+            if (v.task == Task::Scout || v.task == Task::ScoutWait || v.task == Task::GoProvision) {
+                fail(v);
+            }
+            return;
+        }
+        if (v.food < village::kEatBelow && v.provisions > 0) {
+            const std::int32_t bite = std::min(v.provisions, village::kFoodMax - v.food);
+            v.food += bite;
+            v.provisions -= bite;
+        }
+        if (v.order != Order::Going && v.order != Order::Waiting) {
+            return;
+        }
+        const std::int32_t meters = NavGrid::distance_estimate(v.position, g_.door(*post));
+        const bool hungry = v.food + v.provisions < village::kHungryFood + food_for_walk(meters);
+        const bool cold = v.warmth < village::kWarmthMax / 4;
+        if ((hungry || cold) && meters > village::kHomeMeters) {
+            g_.events_.push_back({Game::Event::Kind::ExplorerBack, v.owner, {}, v.position,
+                                  static_cast<std::uint16_t>(hungry ? 0 : 1), 0});
+            return_home(v);
+        }
+    }
+
+    // Not enough food left to finish the walk it is on and then get to
+    // where the food is: it goes to eat first, if that leaves it better off
+    // (it turns back at the start of a long haul, not at the end). A walk
+    // that even a villager who just ate cannot come back from is given up:
+    // nobody starves for a site too far from any food.
+    void eat_now(Villager& v) {
+        if (v.task == Task::GoEat || v.task == Task::GoFight || v.task == Task::Fight || v.task == Task::GoFire ||
+            v.task == Task::FightFire || v.task == Task::Flee || v.task == Task::Idle || v.task == Task::Wander) {
+            return;  // (Idle and strolling villagers decide to eat by themselves.)
+        }
+        const EntityId food = storage_with(v.owner, v.position, kNoDef);
+        const Building* b = g_.buildings_.get(food);
+        if (b == nullptr) {
+            return;
+        }
+        // What is left of the walk: five ticks a meter, a point every four.
+        Fixed rest;
+        FixedVec2 at = v.position;
+        for (std::size_t i = v.path_index; i < v.path.size(); ++i) {
+            rest += (v.path[i] - at).length();
+            at = v.path[i];
+        }
+        const FixedVec2 table = g_.door(*b);
+        const std::int32_t need =
+            village::kHungryFood + rest.floor_int() * 5 / 4 + NavGrid::distance_estimate(at, table) * 5 / 4;
+        if (v.food >= need) {
+            return;
+        }
+        // A meal leaves the meter at 900 or more; coming back here costs the walk.
+        const bool helps = v.food + 100 < village::kFoodMax - 100 - NavGrid::distance_estimate(v.position, table) * 5 / 4;
+        if (!moving(v) || helps) {
+            release(v);
+            stop(v);
+            go(v, Task::GoEat, food);
+        } else {
+            fail(v);  // Too far to go and come back.
+        }
+    }
+
     void decide(Villager& v) {
         const std::uint8_t owner = v.owner;
+        // 0. An explorer under orders goes on with them (after fleeing, say).
+        if (v.order != Order::None) {
+            if (explorer_post(v) == nullptr) {
+                v.order = Order::None;
+            } else if (v.order == Order::Returning) {
+                return_home(v);
+                return;
+            } else if (v.order == Order::Waiting) {
+                v.task = Task::ScoutWait;
+                return;
+            } else {
+                start_scout(v);
+                return;
+            }
+        }
         // 1. Eat.
         if (v.food < village::kEatBelow) {
             const EntityId food = storage_with(owner, v.position, kNoDef);
@@ -3002,6 +3219,16 @@ public:
             case Task::Flee:
                 v.task = Task::Idle;
                 break;
+            case Task::GoProvision: take_provisions(v); break;
+            case Task::Scout:
+                if (v.order == Order::Returning) {
+                    v.order = Order::None;  // Home: an ordinary day again.
+                    v.task = Task::Idle;
+                } else {
+                    v.order = Order::Waiting;
+                    v.task = Task::ScoutWait;
+                }
+                break;
             default: v.task = Task::Idle; break;
         }
     }
@@ -3825,11 +4052,21 @@ public:
                 dying.push_back(vs.entities()[k]);
                 continue;
             }
+            // Phase 66: the explorer's food and way back; the hungry leave their task.
+            if ((g_.tick_ + k) % 16 == 0) {
+                if (v.order != Order::None) {
+                    scout_check(v);
+                } else {
+                    eat_now(v);
+                }
+            }
             if (moving(v)) {
                 move(v);
                 if (!moving(v)) {
                     arrive(v);
                 }
+            } else if (v.task == Task::ScoutWait && v.order == Order::Waiting) {
+                // Waits for another order.
             } else if (v.task == Task::Gather || v.task == Task::Build || v.task == Task::Produce || v.task == Task::Farm ||
                        v.task == Task::Hunt || v.task == Task::Fish || v.task == Task::FightFire || v.task == Task::Fight) {
                 work(v);
@@ -4099,6 +4336,19 @@ public:
                     break;
                 }
                 v->name = c.text;
+                break;
+            }
+            case CommandType::MoveVillager: {
+                Villager* v = g_.villagers_.get(c.entity);
+                const Building* job = v != nullptr ? g_.buildings_.get(v->job) : nullptr;
+                if (v == nullptr || v->owner != g_.town_of(c.player) || job == nullptr || !complete(*job) ||
+                    def(*job).work != WorkKind::Explore) {
+                    ++g_.rejected_;
+                    break;
+                }
+                v_index_ = c.entity.index;
+                const Fixed edge = Fixed::from_int(g_.map_.size - 1);
+                order_scout(*v, {std::min(c.position.x, edge), std::min(c.position.z, edge)});
                 break;
             }
             case CommandType::SetProduction: {
@@ -4426,7 +4676,12 @@ std::int32_t Game::sight(const Building& b) const {
 }
 
 std::int32_t Game::sight(const Villager& v) const {
-    return v.race < content_->races.size() ? content_->races[v.race].sight : 12;
+    std::int32_t own = v.race < content_->races.size() ? content_->races[v.race].sight : 12;
+    // An explorer sees as far as its building says (phase 66).
+    if (const Building* job = buildings_.get(v.job)) {
+        own = std::max(own, content_->buildings[job->def].worker_sight);
+    }
+    return own;
 }
 
 std::int32_t Game::sight(const Creature& a) const {
@@ -5484,6 +5739,9 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u16(v.carrying.resource);
         w.i32(v.carrying.amount);
         w.string(v.name);
+        w.u8(static_cast<std::uint8_t>(v.order));
+        w.vec2(v.order_point);
+        w.i32(v.provisions);
         w.u32(static_cast<std::uint32_t>(v.path.size()));
         for (const FixedVec2& p : v.path) {
             w.vec2(p);
@@ -5859,10 +6117,14 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         }
         v.sex = static_cast<Sex>(sex);
         v.task = static_cast<Task>(task);
-        if (!r.string(kMaxNameBytes, v.name) || !valid_villager_name(v.name)) {
+        std::uint8_t order = 0;
+        if (!r.string(kMaxNameBytes, v.name) || !valid_villager_name(v.name) || !r.u8(order) ||
+            order >= static_cast<std::uint8_t>(Order::Count) || !r.vec2(v.order_point) || !r.i32(v.provisions) ||
+            v.provisions < 0 || v.provisions > village::kProvisions) {
             r.fail();
             return false;
         }
+        v.order = static_cast<Order>(order);
         std::uint32_t steps = 0;
         if (!r.count(100000, 8, steps)) {
             return false;

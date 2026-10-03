@@ -601,6 +601,21 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 66
+
+- [ ] Construir un "Explorador" (Servicios). Seleccionar a su trabajador: su ventana dice "Provisiones" y "Clic derecho en el mapa o el minimapa: va ahí".
+- [ ] Con niebla estática o dinámica, clic derecho en una zona sin explorar: pasa por un almacén ("yendo por provisiones") y camina en línea recta; al toparse con un lago o un barranco se queda esperando, no lo rodea.
+- [ ] Clic derecho en un punto ya explorado: va por terreno explorado.
+- [ ] Clic derecho en el minimapa: lo mismo.
+- [ ] Revela un círculo de 30 m a su alrededor (más del doble que un aldeano).
+- [ ] Dejarlo esperando lejos: cuando la comida le alcanza justo para volver, regresa solo y sale el aviso. No pasa hambre.
+- [ ] Clic derecho junto a su edificio: vuelve y sigue con su vida de aldeano.
+- [ ] Un lobo lo ataca: huye, y luego retoma la orden.
+- [ ] En red: la orden dada en una instancia se ve en la otra.
+- [ ] Una obra lejos del pueblo (unos 300 m): quienes llevan los materiales comen antes de salir si van justos, y nadie muere de hambre con comida en el almacén.
+- [ ] Una obra a más de unos 340 m de cualquier comida no avanza: poner un almacén o granero cerca la destraba.
+- [ ] **Sin revisar en pantalla por Claude**: el clic derecho en el minimapa y el regreso por provisiones.
+
 ### Fase 65
 
 - [ ] Una casa en una ladera (F3 dice la pendiente bajo el cursor; busca 40 a 60 %): con la puerta de lado o ladera arriba se puede colocar; la puerta queda a ras de suelo y ladera abajo se ven los cimientos de piedra.

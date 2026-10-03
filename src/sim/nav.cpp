@@ -347,7 +347,13 @@ bool NavGrid::find_path(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& ou
     return search(from, to, out, max_nodes, false);
 }
 
-bool NavGrid::search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes, bool through) {
+bool NavGrid::find_path_within(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out,
+                               const std::function<bool(std::int32_t, std::int32_t)>& allow, std::int32_t max_nodes) {
+    return search(from, to, out, max_nodes, false, &allow);
+}
+
+bool NavGrid::search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, std::int32_t max_nodes, bool through,
+                     const std::function<bool(std::int32_t, std::int32_t)>* allow) {
     out.clear();
     ++searches_;
     if (side_ == 0) {
@@ -357,12 +363,17 @@ bool NavGrid::search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, 
     std::int32_t sz = cell_of(from.z);
     std::int32_t tx = cell_of(to.x);
     std::int32_t tz = cell_of(to.z);
-    const auto pass = [&](std::int32_t x, std::int32_t z) { return through ? ground(x, z) : walkable(x, z); };
+    const auto pass = [&](std::int32_t x, std::int32_t z) {
+        return (through ? ground(x, z) : walkable(x, z)) && (allow == nullptr || (*allow)(x, z));
+    };
     const bool exact_target = pass(tx, tz);
     // Someone standing on a blocked cell (a building just placed on them)
     // walks out from the nearest free one.
     if (!through && (!nearest_walkable(sx, sz) || !nearest_walkable(tx, tz))) {
         return false;
+    }
+    if (allow != nullptr && !(*allow)(tx, tz)) {
+        return false;  // The place to go is not one of the cells allowed.
     }
     if (through && (!ground(sx, sz) || !ground(tx, tz))) {
         return false;

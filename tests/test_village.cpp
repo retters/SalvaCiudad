@@ -830,11 +830,14 @@ TEST_SUITE("village_years") {
                                            << usual.deaths << ", food " << usual.food);
         MESSAGE("years of 45 min: people " << longer.people << ", arrivals " << longer.arrivals << ", deaths "
                                            << longer.deaths << ", food " << longer.food);
-        const auto alike = [](std::int32_t a, std::int32_t b) {
-            return static_cast<double>(b) > static_cast<double>(a) * 0.85 && static_cast<double>(b) < static_cast<double>(a) * 1.15;
+        const auto alike = [](std::int32_t a, std::int32_t b, double within = 0.15) {
+            return static_cast<double>(b) > static_cast<double>(a) * (1.0 - within) &&
+                   static_cast<double>(b) < static_cast<double>(a) * (1.0 + within);
         };
         CHECK(alike(usual.people, longer.people));
-        CHECK(alike(usual.arrivals, longer.arrivals));
+        // Newcomers follow the room left by those who die, and with longer
+        // years people grow old more slowly (D-5902): fewer die, fewer come.
+        CHECK(alike(usual.arrivals, longer.arrivals, 0.25));
         CHECK(alike(usual.food * 100 / usual.people, longer.food * 100 / longer.people));
     }
 }

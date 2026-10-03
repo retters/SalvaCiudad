@@ -340,6 +340,25 @@
     },
     {
       "type": "building",
+      "id": "core:explorer",
+      "name": "building.explorer",
+      "kind": "workplace",
+      "model": "models/buildings/explorer.glb",
+      "size": [
+        5,
+        4
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 200,
+      "workers": 1,
+      "work": "explore",
+      "workerSight": 30,
+      "category": "services"
+    },
+    {
+      "type": "building",
       "id": "core:herbalist",
       "name": "building.herbalist",
       "kind": "workplace",

@@ -79,7 +79,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `size` | `[ancho, fondo]` en celdas de 1 m (1 a 32). |
 | `cost` | `{"core:log": 12, ...}`. |
 | `buildWork` | Trabajo para construirlo (ticks de trabajador; 10 por segundo a x1). |
-| `workers`, `work` | Trabajadores y tipo de trabajo: `gather`, `produce`, `haul`, `farm`, `hunt`, `fish`. |
+| `workers`, `work` | Trabajadores y tipo de trabajo: `gather`, `produce`, `haul`, `farm`, `hunt`, `fish`, `explore` (su trabajador va adonde el jugador lo manda con clic derecho). |
 | `gathers`, `radius` | Para `gather`: `tree`, `stone`, `ironOre`, `berryBush`, `herbs`, y el radio en metros. |
 | `recipes` | Para `produce`: lista de recetas. |
 | `residents` | Para casas. |
@@ -87,6 +87,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `tier`, `desirability`, `unique` | Nivel del centro del pueblo necesario, efecto en la deseabilidad y si solo puede haber uno. |
 | `levels` | Mejoras (casas y centro del pueblo): `residents`, `cost`, `work`, `needs`, `tier`, `population` y, si se ve distinto, `models`. |
 | `sight` | Metros que ve desde su centro con niebla de guerra (1 a 200; por omisión 12). En `core`, el centro del pueblo ve 48 y la atalaya 45. |
+| `workerSight` | Metros que ven sus trabajadores, si es más que lo de su raza (0 a 200; por omisión 0). En `core`, el del Explorador ve 30. |
 | `landmark` | `true`: su silueta se ve a través de la niebla de guerra aunque no sobresalga del techo de la niebla (por omisión `false`). |
 
 ### unit y race

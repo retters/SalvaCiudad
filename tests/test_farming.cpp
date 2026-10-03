@@ -242,6 +242,60 @@ TEST_SUITE("farming") {
         CHECK(g.buildings().get(orchard)->produced <= content()->buildings[g.buildings().get(orchard)->def].yearly_limit);
     }
 
+    TEST_CASE("nobody starves on a long haul while the town has food") {
+        // With these seeds the first game zone is so far that those who
+        // carried the lodge's materials there starved on the way (D-5613):
+        // a villager only decided to eat between tasks. Now a walk that
+        // cannot be come back from is given up (the lodge is not built, and
+        // nobody dies for it); tests/test_explorer.cpp has a site that can
+        // just be reached.
+        for (const std::uint64_t seed : {1ull, 14ull}) {
+            Game g(content(), map_for(seed), setup());
+            std::optional<std::size_t> zone;
+            for (std::size_t z = 0; z < g.map().zones.size() && !zone; ++z) {
+                const ZoneType t = g.map().zones[z].type;
+                if (g.zone_animals()[z] > 0 && (t == ZoneType::Deer || t == ZoneType::Boar)) {
+                    zone = z;
+                }
+            }
+            REQUIRE(zone.has_value());
+            const Zone& zn = g.map().zones[*zone];
+            // The lodge at the zone, where it fits (and can be walked to).
+            const DefIndex lodge = content()->find_building("core:hunter");
+            bool placed = false;
+            for (int r = 0; r < 120 && !placed; r += 2) {
+                for (int a = 0; a < 8 && !placed; ++a) {
+                    const int x = zn.x.floor_int() + (a % 3 - 1) * r;
+                    const int z = zn.z.floor_int() + (a / 3 - 1) * r;
+                    if (g.can_place(0, lodge, x, z, 0) == PlaceError::None) {
+                        Command c;
+                        c.type = CommandType::PlaceBuilding;
+                        c.def = lodge;
+                        c.position = {Fixed::from_int(x), Fixed::from_int(z)};
+                        g.apply(c);
+                        placed = true;
+                    }
+                }
+            }
+            CAPTURE(seed);
+            REQUIRE(placed);
+            // Nobody's meter reaches zero in a year (others may die of old age).
+            std::int32_t lowest = village::kFoodMax;
+            for (int month = 0; month < 12; ++month) {
+                grant(g, "core:roots", 40);
+                grant(g, "core:firewood", 20);
+                for (std::uint32_t t = 0; t < g.month_ticks(); t += 20) {
+                    run(g, 20);
+                    for (const Villager& v : g.villagers().data()) {
+                        lowest = std::min(lowest, v.food);
+                    }
+                }
+            }
+            MESSAGE("seed " << seed << ": lowest meter " << lowest << ", deaths " << g.player(0).deaths);
+            CHECK(lowest > 0);
+        }
+    }
+
     TEST_CASE("hunters take game from the zones, and it comes back") {
         // Passes on 13 of the first 20 seeds: on the others the first zone is
         // too far from the town to hunt in this time, or across water (D-5613).

@@ -38,6 +38,7 @@ enum class CommandType : std::uint8_t {
                           // `count` and `def2`: the price limits of each, percent (0: any price).
     RenameVillager = 30,  // Villager `entity` is called `text` from now on ("": its own name again).
     SetProduction = 31,   // Workplace `entity` works (`value` 1) or stands idle and lets its workers go (0).
+    MoveVillager = 32,    // Explorer `entity` (a villager) goes to `position` and waits there.
 
 };
 

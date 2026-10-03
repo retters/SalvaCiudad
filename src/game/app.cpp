@@ -730,6 +730,43 @@ void App::show_anchor(float dt) {
     village_.set_anchor_ghost(ghost);
 }
 
+// Phase 66: with an explorer selected, a right click on the map or on the
+// minimap sends it there.
+void App::order_explorer(int width, int height) {
+    const GameSession::Interaction& ui = session_->ui();
+    const sim::Game& game = session_->game();
+    const sim::Villager* v = game.villagers().get(ui.selected_villager);
+    const sim::Building* job = v != nullptr ? game.buildings().get(v->job) : nullptr;
+    if (v == nullptr || job == nullptr || v->owner != session_->town() ||
+        game.content().buildings[job->def].work != sim::WorkKind::Explore) {
+        return;
+    }
+    std::optional<math::Vec3> to;
+    const float mx = input_.mouse_x;
+    const float my = input_.mouse_y;
+    const std::array<float, 4>& mini = ui.minimap;
+    if (mini[2] > 0.0f && mx >= mini[0] && my >= mini[1] && mx < mini[0] + mini[2] && my < mini[1] + mini[3]) {
+        const auto size = static_cast<float>(game.map().size);
+        to = math::Vec3{(mx - mini[0]) / mini[2] * size, 0.0f, (my - mini[1]) / mini[3] * size};
+    } else if (!ui.over_hud(mx, my)) {
+        math::Vec3 origin;
+        math::Vec3 dir;
+        if (interactive_scene() && mouse_ray(width, height, origin, dir)) {
+            to = ground_hit(game.map(), origin, dir);
+        }
+    }
+    if (!to) {
+        return;
+    }
+    sim::Command c;
+    c.type = sim::CommandType::MoveVillager;
+    c.entity = ui.selected_villager;
+    const float edge = static_cast<float>(game.map().size - 1);
+    c.position = {sim::Fixed::from_ratio(static_cast<std::int32_t>(std::clamp(to->x, 0.0f, edge) * 16.0f), 16),
+                  sim::Fixed::from_ratio(static_cast<std::int32_t>(std::clamp(to->z, 0.0f, edge) * 16.0f), 16)};
+    session_->issue(c);
+}
+
 void App::update_camera_windows() {
     const bool playing = session_ && map_ && !replay_ && host_->scene_mode() == UiHost::SceneMode::Map;
     for (int slot = 0; slot < kCameraWindows; ++slot) {
@@ -1499,6 +1536,8 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
     ui.hover_valid = false;
     if (right_clicked_ && ui.placing != sim::kNoDef) {
         ui.placing = sim::kNoDef;  // Right click cancels.
+    } else if (right_clicked_ && !ui.field_farm.valid()) {
+        order_explorer(width, height);
     }
     math::Vec3 origin;
     math::Vec3 dir;
@@ -2168,6 +2207,9 @@ void App::report_game_events() {
                 text = tr(kKeys[e.value % std::size(kKeys)]);
                 break;
             }
+            case sim::Game::Event::Kind::ExplorerBack:
+                text = tr(e.value == 0 ? "event.explorerBack.food" : "event.explorerBack.cold");
+                break;
             case sim::Game::Event::Kind::Born: text = tr("event.born"); break;
             case sim::Game::Event::Kind::Died: text = tr("event.died"); break;
         }

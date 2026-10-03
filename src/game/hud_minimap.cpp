@@ -127,6 +127,7 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
     }
     ctx.tooltip_area(ctx.id("minimap"), image, tr("hud.minimap.tooltip"));
 
+    s.ui().minimap = {image.x, image.y, image.w, image.h};
     // A click, or a drag that started on it, takes the camera there. Not
     // through a game window lying over it.
     const ui::Input& in = ctx.input();

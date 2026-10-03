@@ -153,6 +153,9 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::SetProduction:
             ok = ok && c.entity.valid() && (c.value == 0 || c.value == 1);
             break;
+        case CommandType::MoveVillager:
+            ok = ok && c.entity.valid() && c.position.x >= Fixed{} && c.position.z >= Fixed{};
+            break;
         case CommandType::ArmyOrder:
             ok = ok && c.value >= 0 && c.value <= 2 && c.count < kMaxPlayers && c.position.x >= Fixed{} &&
                  c.position.z >= Fixed{};

@@ -328,7 +328,8 @@ private:
 };
 
 constexpr std::string_view kCategories[] = {"food", "material", "fuel", "good", "gold"};
-constexpr std::string_view kWorkKinds[] = {"none", "gather", "produce", "build", "haul", "farm", "hunt", "fish"};
+constexpr std::string_view kWorkKinds[] = {"none", "gather", "produce", "build", "haul",
+                                           "farm", "hunt",   "fish",    "explore"};
 constexpr std::string_view kBuildingKinds[] = {"house",   "storage", "workplace", "townCenter", "decoration",
                                                "defense", "military", "market"};
 constexpr std::string_view kBuildCategories[] = {"housing",  "food",       "resources", "industry",
@@ -839,6 +840,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.sight = r.integer("sight", 1, sim::kMaxSight, 12);
         def.landmark = r.flag("landmark");
         def.trains = r.flag("trains");
+        def.worker_sight = r.integer("workerSight", 0, sim::kMaxSight, 0);
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);
