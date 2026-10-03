@@ -12,7 +12,7 @@ function on_map_generated(map)
     local dist = 6000 + map.random(3000)
     local x = start.x + math.cos_deg(angle) * dist // 10000
     local z = start.z + math.sin_deg(angle) * dist // 10000
-    map.add_tree("core:sequoia", "huge", x, z, 4000)
+    map.add_tree("core:giant_sequoia", "huge", x, z, 4000)
   end
   print("stone circles placed around " .. #map.starts .. " start(s)")
 end

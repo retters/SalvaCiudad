@@ -33,12 +33,6 @@ render::ModelClass feature_class(sim::FeatureType t) {
 
 }  // namespace
 
-static_assert(kSpeciesSlots >= sim::kTreeSizes);
-
-std::size_t tree_slot(std::size_t species, sim::TreeSize size) {
-    return species * kSpeciesSlots + static_cast<std::size_t>(size);
-}
-
 std::size_t tree_variant_slot(std::size_t species, std::size_t variant) {
     return species * kSpeciesSlots + variant;
 }
@@ -87,8 +81,7 @@ std::size_t feature_slot(const sim::Content& content, sim::FeatureType type, std
 }
 
 std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when) {
-    if (f.type != sim::FeatureType::Tree || f.species >= content.flora.species.size() ||
-        !content.flora.species[f.species].by_state()) {
+    if (f.type != sim::FeatureType::Tree || f.species >= content.flora.species.size()) {
         return 0;
     }
     const auto state = static_cast<std::size_t>(tree_state(f, when));
@@ -97,14 +90,12 @@ std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, Tr
 
 std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
     if (f.type == sim::FeatureType::Tree) {
-        if (f.species < content.flora.species.size() && content.flora.species[f.species].by_state()) {
-            // One of the variants, by the place; the state is its look.
-            const std::size_t variants = content.flora.species[f.species].state_models[0].size();
-            return tree_variant_slot(
-                f.species, pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
-                                        std::min(variants, sim::kMaxModelVariants)));
-        }
-        return tree_slot(f.species, static_cast<sim::TreeSize>(f.size));
+        // One of the variants, by the place; the state is its look.
+        const std::size_t variants =
+            f.species < content.flora.species.size() ? content.flora.species[f.species].state_models[0].size() : 1;
+        return tree_variant_slot(
+            f.species, pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
+                                    std::clamp<std::size_t>(variants, 1, sim::kMaxModelVariants)));
     }
     // Each other kind has room for its variants; the place picks one.
     const sim::FeatureDef* def = content.feature(f.type);
@@ -114,12 +105,10 @@ std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
                                      std::min(variants, sim::kMaxModelVariants)));
 }
 
-std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeSize size, sim::TreeState state) {
-    if (species.by_state()) {
-        const std::vector<std::string>& files = species.state_models[static_cast<std::size_t>(state)];
-        return files.empty() ? species.state_models[0].front() : files.front();
-    }
-    return species.model + "_" + sim::size_info(size).id + ".glb";
+std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeState state) {
+    const std::vector<std::string>& files = species.state_models[static_cast<std::size_t>(state)];
+    const std::vector<std::string>& bloom = species.state_models[0];
+    return !files.empty() ? files.front() : !bloom.empty() ? bloom.front() : std::string();
 }
 
 std::size_t MapVisuals::feature_count() const {
@@ -206,11 +195,7 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
     const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
     const bool tree = f.type == sim::FeatureType::Tree;
-    // A tree with models by state changes model, not color.
-    const sim::SpeciesDef* sp =
-        tree && content != nullptr && f.species < content->flora.species.size() ? &content->flora.species[f.species] : nullptr;
-    const bool evergreen = sp != nullptr && (sp->evergreen || sp->by_state());
-    inst.tint = season_tint(shade, tree, evergreen, h >> 8, season, snowy);
+    inst.tint = season_tint(shade, tree, season, snowy);
     // Phase 34: landmarks show through the fog of war.
     if (content != nullptr) {
         if (tree) {
@@ -222,16 +207,12 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     return inst;
 }
 
-math::Vec3 season_tint(float shade, bool tree, bool evergreen, std::uint32_t pick, sim::Season season, bool snowy) {
+math::Vec3 season_tint(float shade, bool tree, sim::Season season, bool snowy) {
     math::Vec3 tint{shade, shade, shade};
-    if (!evergreen) {
-        if (season == sim::Season::Spring && tree) {
-            tint = tint * 1.0f + math::Vec3{0.02f, 0.08f, -0.02f};
-        } else if (season == sim::Season::Autumn) {
-            // Each tree turns its own way: gold, orange or red.
-            static constexpr math::Vec3 kAutumn[3] = {{1.45f, 1.15f, 0.4f}, {1.5f, 0.9f, 0.35f}, {1.35f, 0.6f, 0.35f}};
-            const math::Vec3 c = tree ? kAutumn[pick % 3] : math::Vec3{1.2f, 0.95f, 0.6f};
-            tint = {tint.x * c.x, tint.y * c.y, tint.z * c.z};
+    // A tree changes model with the season (phase 51); a bush, color.
+    if (!tree) {
+        if (season == sim::Season::Autumn) {
+            tint = {tint.x * 1.2f, tint.y * 0.95f, tint.z * 0.6f};
         } else if (season == sim::Season::Winter) {
             tint = {tint.x * 0.85f, tint.y * 0.72f, tint.z * 0.55f};
         }
@@ -401,7 +382,7 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
     bool any = false;
     for (std::size_t s = 0; s < content.flora.species.size(); ++s) {
         const sim::SpeciesDef& sp = content.flora.species[s];
-        // A species by state: each variant is a model with the other states
+        // Each variant is a model with the other states
         // as its looks (the variant of the same number, going around), and
         // every file may have a far version.
         const auto state_model = [&](std::size_t st, std::size_t v) {
@@ -422,28 +403,16 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
             }
             return id;
         };
-        for (std::size_t v = 0; sp.by_state() && v < sp.state_models[0].size() && v < sim::kMaxModelVariants; ++v) {
+        for (std::size_t v = 0; v < sp.state_models[0].size() && v < sim::kMaxModelVariants; ++v) {
             Slot& slot = slots_[tree_variant_slot(s, v)];
             const std::filesystem::path file = mods::mod_file(pack.dir(sp.mod), sp.state_models[0][v]);
             slot = Slot{};
             if (state_model(0, v) != kNoModel) {
                 slot = load_file(renderer, file, render::ModelClass::Normal);
-                slot.limited = true;
                 // Looks 1 and 2: autumn and bare (the model itself without them).
                 const render::ModelId looks[2] = {state_model(1, v), state_model(2, v)};
                 renderer.set_model_looks(slot.model, looks);
             }
-            any = any || slot.model != kNoModel;
-        }
-        for (std::size_t z = 0; z < sim::kTreeSizes && !sp.by_state(); ++z) {
-            const auto size = static_cast<sim::TreeSize>(z);
-            if (!content.flora.species_has_size(s, size)) {
-                continue;
-            }
-            const std::filesystem::path file = mods::mod_file(pack.dir(sp.mod), tree_model_file(sp, size));
-            Slot& slot = slots_[tree_slot(s, size)];
-            slot = file.empty() ? Slot{} : load_file(renderer, file, render::ModelClass::Normal);
-            missing += slot.model == kNoModel ? 1 : 0;
             any = any || slot.model != kNoModel;
         }
     }

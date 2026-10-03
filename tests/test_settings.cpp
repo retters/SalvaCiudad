@@ -296,7 +296,7 @@ TEST_SUITE("settings") {
         NewGameSettings n;
         n.size = "colossal";
         n.map_type = "core:islands";
-        n.biome = "core:pinewood";
+        n.biome = "core:boreal";
         n.islands = 5;
         n.sea = "always";
         n.landforms = "high";

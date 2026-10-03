@@ -68,7 +68,7 @@ Category category_of(std::string_view path, const std::vector<Use>& uses) {
     if (path.starts_with("models/animals/")) {
         return Category::Animals;
     }
-    if (species || path.starts_with("models/props/tree_")) {
+    if (species || path.starts_with("models/trees/")) {
         return Category::Trees;
     }
     if (path.starts_with("models/props/")) {

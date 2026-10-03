@@ -786,19 +786,11 @@ void ViewerApp::frame_camera() {
     camera_.distance = std::clamp(std::max(fit_v, fit_h) * 1.05f, 1.0f, 400.0f);
 }
 
-math::Vec3 ViewerApp::tint_for(const CatalogModel& m, std::size_t index) const {
+math::Vec3 ViewerApp::tint_for(const CatalogModel& m) const {
     if (m.category != Category::Trees && m.category != Category::Props) {
         return {1.0f, 1.0f, 1.0f};
     }
-    bool evergreen = false;
-    for (const Use& u : m.uses) {
-        for (const sim::SpeciesDef& sp : pack_->content.flora.species) {
-            evergreen = evergreen || (u.kind == "species" && sp.id == u.id && (sp.evergreen || sp.by_state()));
-        }
-    }
-    const bool tree = m.category == Category::Trees;
-    return season_tint(1.0f, tree, evergreen, static_cast<std::uint32_t>(index), static_cast<sim::Season>(season_),
-                       snowy_);
+    return season_tint(1.0f, m.category == Category::Trees, static_cast<sim::Season>(season_), snowy_);
 }
 
 void ViewerApp::update_scene(float dt) {
@@ -842,7 +834,7 @@ void ViewerApp::update_scene(float dt) {
             render::Instance inst;
             inst.position = p.position;
             inst.yaw = spin_;
-            inst.tint = tint_for(cm, i);
+            inst.tint = tint_for(cm);
             // Buildings with their roof, wall and shutter colors (phase 31).
             inst.palette = cm.category == Category::Buildings && building_palette_count_ > 0
                                ? building_palette_ % building_palette_count_ + 1

@@ -131,7 +131,7 @@ private:
     void frame_camera();
     void update_scene(float dt);
     void check_reload(float dt);
-    [[nodiscard]] math::Vec3 tint_for(const CatalogModel& m, std::size_t index) const;
+    [[nodiscard]] math::Vec3 tint_for(const CatalogModel& m) const;
 
     std::optional<DataPaths> paths_;
     SDL_Window* window_ = nullptr;

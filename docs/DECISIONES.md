@@ -2158,3 +2158,25 @@ Las versiones lejanas aparecen en el grupo de su especie junto a las cercanas. E
 
 **D-5208. Medición.**
 `--reporte` anota además los objetos dibujados, cuántos en versión lejana, los triángulos, las llamadas de dibujo y el tiempo de descarte. F3 muestra cuántos objetos van en versión lejana. Resultados en `docs/RENDIMIENTO.md`: en el mapa colosal, un bosque de árboles nuevos con versión lejana dibuja menos de la mitad de triángulos que el de árboles viejos y queda un 7 % por debajo en FPS (promedio de tres corridas, que varían entre sí un 10 %).
+
+## Fase 53: árboles nuevos en core; se borran los viejos (2026-10-03)
+
+El usuario eligió: crear ya los once biomas de la fase 54; dejar tres tipos de mapa (Clásico, Islas y Bioma único); y que los gigantes no salgan en los mapas hasta la fase 55.
+
+**D-5301. Especies.**
+19 especies con los 32 árboles (el cerezo con 4 variantes, el jacarandá con 5, el olmo y el guayacán con 4) y 8 gigantes como especies de tamaño enorme con `landmark`. El roble amarillo conserva el id `core:oak`, y se conservan `core:pine`, `core:cherry`, `core:jacaranda`, `core:magnolia`, `core:elm` y `core:apple`, para que los mods y las pruebas que los nombran sigan valiendo. La lista completa está en `docs/ARBOLES.md`.
+
+**D-5302. Tamaños y madera.**
+Los modelos miden de 6 a 7,5 m y se dibujan entre 0,5 y 1,5 veces eso, así que las especies chicas (cerezo, magnolia, palmera, glicinia, laurel, drago, manzano) tienen tamaños chico y mediano; las demás, hasta grande; el baobab, mediano y grande. La madera va según el tronco: el abedul, el ciprés, la palmera y la glicinia dan menos (1, 3, 7); el olmo, el guayacán y el arce algo más (2, 6, 12); el roble amarillo 3, 7, 13; el baobab 10 y 18.
+
+**D-5303. Biomas y tipos de mapa provisionales.**
+Los once biomas llevan las especies de la tabla de la fase 54, con pesos, densidad y pasto elegidos aquí (la sabana y el huerto ralos, el boreal denso). Hasta la fase 54 se reparten en manchas al azar con el tipo "Clásico" (el nombre se queda hasta la 54, a pedido del usuario), que da más peso al templado. Las montañas llevan el bosque de montaña, como antes llevaban el pinar. Se borraron Arboleda joven, Tierra de gigantes, Pinar del norte y Variado.
+
+**D-5304. Se borró el formato viejo.**
+`model` con prefijo por tamaño, `evergreen` y el tinte de otoño e invierno de los árboles ya no existen (D-5101 los dejaba hasta esta fase). Un mod con ese formato se rechaza con un mensaje. Los arbustos conservan su tinte. Se borraron `trees.py`, `preview_trees.py`, los árboles de `props.py`, los 72 modelos `props/tree_*.glb` y los estudios `pig_studies.py` y `tiger_studies.py`.
+
+**D-5305. Versiones.**
+Cambian los mapas: versión del generador 2, versión de reglas 26; las sumas de verificación de referencia de las pruebas se fijaron de nuevo.
+
+**D-5306. Las versiones lejanas de los gigantes pasan del límite.**
+Los 32 árboles quedan entre 150 y 330 triángulos en su versión lejana. Los gigantes, entre 590 y 1856 (su modelo completo tiene de 3400 a 6000): tienen muchas piezas grandes soldadas y cada una conserva un mínimo de triángulos. Como habrá pocos por mapa, se deja así; la fase 55 mide su costo al ponerlos en los mapas.

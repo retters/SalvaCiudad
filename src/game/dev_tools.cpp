@@ -562,7 +562,7 @@ void DevTools::inspector_tab(DevContext& ctx) {
             ImGui::Text("%s: %s", tr("dev.inspector.sizes").c_str(), sizes.c_str());
             if (species < flora.species.size()) {
                 ImGui::Text("%s: %s", tr("dev.inspector.model").c_str(),
-                            tree_model_file(flora.species[species], static_cast<sim::TreeSize>(f.size)).c_str());
+                            tree_model_file(flora.species[species]).c_str());
             }
         } else {
             ImGui::Text("%s: %.2f", tr("dev.inspector.scale").c_str(), static_cast<double>(to_float(f.scale)));

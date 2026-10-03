@@ -827,35 +827,9 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("\"sizes\" needs at least one size");
         }
         r.numbers("logs", def.logs, sim::kTreeSizes, 0, 1000);
-        def.evergreen = r.flag("evergreen");
         def.landmark = r.flag("landmark");
-        // Phase 51: "models" names the files of each state; "model" is the
-        // prefix completed with each size.
-        const bool by_state = r.has("models");
-        if (by_state) {
-            if (r.has("model")) {
-                r.fail("use \"model\" or \"models\", not both");
-            }
-            r.state_models(mod_dir, kTreeStateNames, def.state_models, def.state_far, sim::kTreeStates, refs,
-                           def.name_key);
-        }
-        const std::string prefix = by_state ? std::string() : r.text("model", true, 200);
-        for (std::size_t s = 0; s < sim::kTreeSizes && r.ok() && !by_state; ++s) {
-            if (((def.sizes >> s) & 1u) == 0) {
-                continue;
-            }
-            const std::string rel = prefix + "_" + sim::size_info(static_cast<sim::TreeSize>(s)).id + ".glb";
-            const std::filesystem::path path = mod_file(mod_dir(d->model_mod), rel);
-            std::error_code ec;
-            const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
-            if (!exists) {
-                r.fail(std::format("model '{}' not found in mod '{}'", rel, d->model_mod));
-            }
-            if (refs != nullptr) {
-                refs->push_back({d->type, d->id, def.name_key, d->model_mod, rel, exists});
-            }
-        }
-        def.model = prefix;
+        // The files of each state (phase 51), with their far versions.
+        r.state_models(mod_dir, kTreeStateNames, def.state_models, def.state_far, sim::kTreeStates, refs, def.name_key);
         if (r.ok()) {
             out.flora.species.push_back(std::move(def));
         }

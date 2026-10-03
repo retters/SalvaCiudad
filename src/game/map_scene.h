@@ -45,19 +45,17 @@ struct TreeCalendar {
 [[nodiscard]] std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when);
 
 // Instances are grouped by "visual slot". Each tree species has
-// kSpeciesSlots: one per size, or, for a species with models by state
-// (phase 51), one per variant: a tree stays in its slot all year and the
-// state only changes its look (phase 52). Then one per variant of every
-// other feature type.
+// kSpeciesSlots, one per variant: a tree stays in its slot all year and
+// the state only changes its look (phase 52). Then one per variant of
+// every other feature type.
 inline constexpr std::size_t kSpeciesSlots = sim::kMaxModelVariants;
-[[nodiscard]] std::size_t tree_slot(std::size_t species, sim::TreeSize size);
 [[nodiscard]] std::size_t tree_variant_slot(std::size_t species, std::size_t variant);
 [[nodiscard]] std::size_t tree_slot_count(const sim::Content& content);
 [[nodiscard]] std::size_t visual_slot_count(const sim::Content& content);
 [[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f);
 
-// A tree with models by state is its model scaled to the tree's height,
-// but never under half the model's height or over one and a half.
+// A tree is its model scaled to the tree's height, but never under half
+// the model's height or over one and a half.
 inline constexpr float kMinTreeScale = 0.5f;
 inline constexpr float kMaxTreeScale = 1.5f;
 // The slot of a variant of a natural feature other than trees (phase 31).
@@ -72,11 +70,9 @@ struct MapVisuals {
     [[nodiscard]] std::size_t feature_count() const;
 };
 
-// Path of a tree model inside its mod, for example
-// "models/props/tree_oak_large.glb"; for a species with models by state,
-// the first of the state.
-[[nodiscard]] std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeSize size,
-                                          sim::TreeState state = sim::TreeState::Bloom);
+// Path of a tree's model inside its mod: the first variant of the state
+// (Bloom's for a state without models), "" for a species without models.
+[[nodiscard]] std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeState state = sim::TreeState::Bloom);
 
 // Largest ground color texture, texels per side; bigger maps share texels.
 inline constexpr std::int32_t kMaxGroundColorSize = 2048;
@@ -86,17 +82,16 @@ inline constexpr std::int32_t kMaxGroundColorSize = 2048;
 [[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(
     const sim::MapData& map, const sim::Content& content, TreeCalendar when = {}, bool snowy = false);
 // One feature's instance (for trees, scale is the height in meters; the
-// look is left at 0, see tree_look), colored for the season: snow whitens everything; bushes, and trees
-// without models by state, turn in autumn and fade in winter unless they
-// are evergreen (trees with models by state change model instead).
+// look is left at 0, see tree_look), colored for the season: snow whitens
+// everything, and bushes turn in autumn and fade in winter (trees change
+// model instead).
 [[nodiscard]] render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f,
                                                 const sim::Content* content = nullptr,
                                                 sim::Season season = sim::Season::Summer, bool snowy = false);
 
-// The color a tree or bush takes in a season: `shade` is its own
-// brightness (0.9 to 1.1) and `pick` chooses its autumn color.
-[[nodiscard]] math::Vec3 season_tint(float shade, bool tree, bool evergreen, std::uint32_t pick, sim::Season season,
-                                     bool snowy);
+// The color of a tree or a bush in a season: `shade` is its own brightness
+// (0.9 to 1.1). Only bushes turn with the season; snow whitens both.
+[[nodiscard]] math::Vec3 season_tint(float shade, bool tree, sim::Season season, bool snowy);
 
 // Ground color of a cell, sRGB (presentation only).
 struct Rgb8 {
@@ -163,11 +158,10 @@ private:
     struct Slot {
         render::ModelId model = kNoModel;
         float height = 1.0f;  // Model height in meters (trees).
-        bool limited = false;  // A tree by state: its scale stays within limits.
         // The model's scale for a tree `meters` high.
         [[nodiscard]] float tree_scale(float meters) const {
             const float s = meters / height;
-            return limited && s > 0.0f ? std::clamp(s, kMinTreeScale, kMaxTreeScale) : s;
+            return s > 0.0f ? std::clamp(s, kMinTreeScale, kMaxTreeScale) : s;
         }
     };
     std::vector<Slot> slots_;

@@ -162,20 +162,37 @@ TEST_SUITE("dev_tools") {
         CHECK(fold_for_search("plain 123") == "plain 123");
     }
 
-    TEST_CASE("every tree slot has a model file name") {
+    TEST_CASE("every tree species has its model files, near and far") {
         const mods::BuildResult& pack = sc::test::core_pack();
         const sim::Flora& flora = pack.content.flora;
-        for (std::size_t s = 0; s < flora.species.size(); ++s) {
-            for (std::size_t z = 0; z < sim::kTreeSizes; ++z) {
-                const auto size = static_cast<sim::TreeSize>(z);
-                if (!flora.species_has_size(s, size)) {
-                    continue;
+        REQUIRE(flora.species.size() >= 27);
+        for (const sim::SpeciesDef& sp : flora.species) {
+            CHECK_MESSAGE(!sp.state_models[0].empty(), sp.id);
+            for (std::size_t st = 0; st < sim::kTreeStates; ++st) {
+                REQUIRE(sp.state_far[st].size() == sp.state_models[st].size());
+                for (std::size_t i = 0; i < sp.state_models[st].size(); ++i) {
+                    for (const std::string& rel : {sp.state_models[st][i], sp.state_far[st][i]}) {
+                        const std::filesystem::path file = mods::mod_file(pack.dir(sp.mod), rel);
+                        CHECK_MESSAGE(std::filesystem::exists(file), sp.id << ": " << rel);
+                    }
                 }
-                const std::filesystem::path file =
-                    mods::mod_file(pack.dir(flora.species[s].mod), tree_model_file(flora.species[s], size));
-                CHECK_MESSAGE(std::filesystem::exists(file), file.string());
+                const std::filesystem::path first =
+                    mods::mod_file(pack.dir(sp.mod), tree_model_file(sp, static_cast<sim::TreeState>(st)));
+                CHECK_MESSAGE(std::filesystem::exists(first), first.string());
             }
         }
+        // An evergreen has only its bloom; the others, the three states (a giant, two).
+        const auto states = [&](std::string_view id) {
+            const int i = flora.find_species(id);
+            REQUIRE(i >= 0);
+            const sim::SpeciesDef& sp = flora.species[static_cast<std::size_t>(i)];
+            return static_cast<int>(!sp.state_models[0].empty()) + static_cast<int>(!sp.state_models[1].empty()) +
+                   static_cast<int>(!sp.state_models[2].empty());
+        };
+        CHECK(states("core:pine") == 1);
+        CHECK(states("core:palm") == 1);
+        CHECK(states("core:elm") == 3);
+        CHECK(states("core:giant_sequoia") == 2);
     }
 
     TEST_CASE("grass grows on grass, not on sand") {
@@ -239,7 +256,7 @@ TEST_SUITE("new_game") {
         NewGameSettings last;
         last.size = "giant";
         last.map_type = "core:islands";
-        last.biome = "core:pinewood";
+        last.biome = "core:boreal";
         last.islands = 3;
         last.sea = "always";
         last.landforms = "low";
@@ -259,7 +276,7 @@ TEST_SUITE("new_game") {
         const sim::MapSettings& m = screen.settings();
         CHECK(m.size == sim::MapSize::Giant);
         CHECK(content.flora.map_types[m.map_type].id == "core:islands");
-        CHECK(content.flora.biomes[m.biome].id == "core:pinewood");
+        CHECK(content.flora.biomes[m.biome].id == "core:boreal");
         CHECK(m.islands == 3);
         CHECK(m.sea == sim::Sea::Always);
         CHECK(m.landforms == sim::Amount::Low);

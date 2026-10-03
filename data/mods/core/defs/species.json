@@ -3,13 +3,67 @@
   "defs": [
     {
       "type": "species",
-      "id": "core:oak",
-      "name": "species.oak",
-      "model": "models/props/tree_oak",
+      "id": "core:cherry",
+      "name": "species.cherry",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/cherry_1_bloom.glb",
+            "far": "models/trees/cherry_1_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_2_bloom.glb",
+            "far": "models/trees/cherry_2_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_3_bloom.glb",
+            "far": "models/trees/cherry_3_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_var_bloom.glb",
+            "far": "models/trees/cherry_var_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/cherry_1_autumn.glb",
+            "far": "models/trees/cherry_1_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_2_autumn.glb",
+            "far": "models/trees/cherry_2_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_3_autumn.glb",
+            "far": "models/trees/cherry_3_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_var_autumn.glb",
+            "far": "models/trees/cherry_var_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/cherry_1_bare.glb",
+            "far": "models/trees/cherry_1_bare_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_2_bare.glb",
+            "far": "models/trees/cherry_2_bare_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_3_bare.glb",
+            "far": "models/trees/cherry_3_bare_far.glb"
+          },
+          {
+            "model": "models/trees/cherry_var_bare.glb",
+            "far": "models/trees/cherry_var_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
         "small",
-        "medium",
-        "large"
+        "medium"
       ],
       "logs": [
         2,
@@ -20,117 +74,25 @@
     },
     {
       "type": "species",
-      "id": "core:pine",
-      "name": "species.pine",
-      "model": "models/props/tree_pine",
-      "sizes": [
-        "small",
-        "medium",
-        "large",
-        "huge"
-      ],
-      "logs": [
-        2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
-    },
-    {
-      "type": "species",
-      "id": "core:toog",
-      "name": "species.toog",
-      "model": "models/props/tree_toog",
-      "sizes": [
-        "medium",
-        "large",
-        "huge"
-      ],
-      "logs": [
-        2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
-    },
-    {
-      "type": "species",
-      "id": "core:eucalyptus",
-      "name": "species.eucalyptus",
-      "model": "models/props/tree_eucalyptus",
-      "sizes": [
-        "small",
-        "medium",
-        "large",
-        "huge"
-      ],
-      "logs": [
-        2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
-    },
-    {
-      "type": "species",
-      "id": "core:sequoia",
-      "name": "species.sequoia",
-      "model": "models/props/tree_sequoia",
-      "sizes": [
-        "small",
-        "medium",
-        "large",
-        "huge"
-      ],
-      "logs": [
-        2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
-    },
-    {
-      "type": "species",
-      "id": "core:mountain_ash",
-      "name": "species.mountain_ash",
-      "model": "models/props/tree_mountain_ash",
-      "sizes": [
-        "large",
-        "huge"
-      ],
-      "logs": [
-        2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
-    },
-    {
-      "type": "species",
-      "id": "core:cherry",
-      "name": "species.cherry",
+      "id": "core:weeping_cherry",
+      "name": "species.weeping_cherry",
       "models": {
         "bloom": [
           {
-            "model": "models/trees/cherry_1_bloom.glb",
-            "far": "models/trees/cherry_1_bloom_far.glb"
+            "model": "models/trees/cherry_weeping_bloom.glb",
+            "far": "models/trees/cherry_weeping_bloom_far.glb"
           }
         ],
         "autumn": [
           {
-            "model": "models/trees/cherry_1_autumn.glb",
-            "far": "models/trees/cherry_1_autumn_far.glb"
+            "model": "models/trees/cherry_weeping_autumn.glb",
+            "far": "models/trees/cherry_weeping_autumn_far.glb"
           }
         ],
         "bare": [
           {
-            "model": "models/trees/cherry_1_bare.glb",
-            "far": "models/trees/cherry_1_bare_far.glb"
+            "model": "models/trees/cherry_weeping_bare.glb",
+            "far": "models/trees/cherry_weeping_bare_far.glb"
           }
         ]
       },
@@ -149,7 +111,74 @@
       "type": "species",
       "id": "core:jacaranda",
       "name": "species.jacaranda",
-      "model": "models/props/tree_jacaranda",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/jacaranda_1_bloom.glb",
+            "far": "models/trees/jacaranda_1_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_2_bloom.glb",
+            "far": "models/trees/jacaranda_2_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_3_bloom.glb",
+            "far": "models/trees/jacaranda_3_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_4_bloom.glb",
+            "far": "models/trees/jacaranda_4_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_var_bloom.glb",
+            "far": "models/trees/jacaranda_var_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/jacaranda_1_autumn.glb",
+            "far": "models/trees/jacaranda_1_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_2_autumn.glb",
+            "far": "models/trees/jacaranda_2_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_3_autumn.glb",
+            "far": "models/trees/jacaranda_3_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_4_autumn.glb",
+            "far": "models/trees/jacaranda_4_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_var_autumn.glb",
+            "far": "models/trees/jacaranda_var_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/jacaranda_1_bare.glb",
+            "far": "models/trees/jacaranda_1_bare_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_2_bare.glb",
+            "far": "models/trees/jacaranda_2_bare_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_3_bare.glb",
+            "far": "models/trees/jacaranda_3_bare_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_4_bare.glb",
+            "far": "models/trees/jacaranda_4_bare_far.glb"
+          },
+          {
+            "model": "models/trees/jacaranda_var_bare.glb",
+            "far": "models/trees/jacaranda_var_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
         "small",
         "medium",
@@ -164,9 +193,64 @@
     },
     {
       "type": "species",
-      "id": "core:tulip_tree",
-      "name": "species.tulip_tree",
-      "model": "models/props/tree_tulip_tree",
+      "id": "core:elm",
+      "name": "species.elm",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/elm_1_bloom.glb",
+            "far": "models/trees/elm_1_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/elm_2_bloom.glb",
+            "far": "models/trees/elm_2_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/elm_3_bloom.glb",
+            "far": "models/trees/elm_3_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/elm_4_bloom.glb",
+            "far": "models/trees/elm_4_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/elm_1_autumn.glb",
+            "far": "models/trees/elm_1_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/elm_2_autumn.glb",
+            "far": "models/trees/elm_2_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/elm_3_autumn.glb",
+            "far": "models/trees/elm_3_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/elm_4_autumn.glb",
+            "far": "models/trees/elm_4_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/elm_1_bare.glb",
+            "far": "models/trees/elm_1_bare_far.glb"
+          },
+          {
+            "model": "models/trees/elm_2_bare.glb",
+            "far": "models/trees/elm_2_bare_far.glb"
+          },
+          {
+            "model": "models/trees/elm_3_bare.glb",
+            "far": "models/trees/elm_3_bare_far.glb"
+          },
+          {
+            "model": "models/trees/elm_4_bare.glb",
+            "far": "models/trees/elm_4_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
         "small",
         "medium",
@@ -174,17 +258,95 @@
       ],
       "logs": [
         2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
+        6,
+        12,
+        22
+      ]
     },
     {
       "type": "species",
-      "id": "core:silk_floss",
-      "name": "species.silk_floss",
-      "model": "models/props/tree_silk_floss",
+      "id": "core:guayacan",
+      "name": "species.guayacan",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/guayacan_1_bloom.glb",
+            "far": "models/trees/guayacan_1_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_2_bloom.glb",
+            "far": "models/trees/guayacan_2_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_3_bloom.glb",
+            "far": "models/trees/guayacan_3_bloom_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_4_bloom.glb",
+            "far": "models/trees/guayacan_4_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/guayacan_1_autumn.glb",
+            "far": "models/trees/guayacan_1_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_2_autumn.glb",
+            "far": "models/trees/guayacan_2_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_3_autumn.glb",
+            "far": "models/trees/guayacan_3_autumn_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_4_autumn.glb",
+            "far": "models/trees/guayacan_4_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/guayacan_1_bare.glb",
+            "far": "models/trees/guayacan_1_bare_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_2_bare.glb",
+            "far": "models/trees/guayacan_2_bare_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_3_bare.glb",
+            "far": "models/trees/guayacan_3_bare_far.glb"
+          },
+          {
+            "model": "models/trees/guayacan_4_bare.glb",
+            "far": "models/trees/guayacan_4_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        6,
+        12,
+        22
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:pine",
+      "name": "species.pine",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/pine_bloom.glb",
+            "far": "models/trees/pine_bloom_far.glb"
+          }
+        ]
+      },
       "sizes": [
         "small",
         "medium",
@@ -195,31 +357,164 @@
         5,
         10,
         20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:birch",
+      "name": "species.birch",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/birch_bloom.glb",
+            "far": "models/trees/birch_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/birch_autumn.glb",
+            "far": "models/trees/birch_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/birch_bare.glb",
+            "far": "models/trees/birch_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        1,
+        3,
+        7,
+        14
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:willow",
+      "name": "species.willow",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/willow_bloom.glb",
+            "far": "models/trees/willow_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/willow_autumn.glb",
+            "far": "models/trees/willow_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/willow_bare.glb",
+            "far": "models/trees/willow_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        5,
+        10,
+        20
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:acacia",
+      "name": "species.acacia",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/acacia_bloom.glb",
+            "far": "models/trees/acacia_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/acacia_autumn.glb",
+            "far": "models/trees/acacia_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/acacia_bare.glb",
+            "far": "models/trees/acacia_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        2,
+        4,
+        8,
+        16
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:cypress",
+      "name": "species.cypress",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/cypress_bloom.glb",
+            "far": "models/trees/cypress_bloom_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        1,
+        3,
+        7,
+        14
       ]
     },
     {
       "type": "species",
       "id": "core:magnolia",
       "name": "species.magnolia",
-      "model": "models/props/tree_magnolia",
-      "sizes": [
-        "small",
-        "medium",
-        "large"
-      ],
-      "logs": [
-        2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
-    },
-    {
-      "type": "species",
-      "id": "core:flamboyant",
-      "name": "species.flamboyant",
-      "model": "models/props/tree_flamboyant",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/magnolia_bloom.glb",
+            "far": "models/trees/magnolia_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/magnolia_autumn.glb",
+            "far": "models/trees/magnolia_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/magnolia_bare.glb",
+            "far": "models/trees/magnolia_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
         "small",
         "medium"
@@ -233,43 +528,28 @@
     },
     {
       "type": "species",
-      "id": "core:bottlebrush",
-      "name": "species.bottlebrush",
-      "model": "models/props/tree_bottlebrush",
-      "sizes": [
-        "small"
-      ],
-      "logs": [
-        2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
-    },
-    {
-      "type": "species",
-      "id": "core:stone_pine",
-      "name": "species.stone_pine",
-      "model": "models/props/tree_stone_pine",
-      "sizes": [
-        "small",
-        "medium",
-        "large"
-      ],
-      "logs": [
-        2,
-        5,
-        10,
-        20
-      ],
-      "evergreen": true
-    },
-    {
-      "type": "species",
-      "id": "core:elm",
-      "name": "species.elm",
-      "model": "models/props/tree_elm",
+      "id": "core:maple",
+      "name": "species.maple",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/maple_bloom.glb",
+            "far": "models/trees/maple_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/maple_autumn.glb",
+            "far": "models/trees/maple_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/maple_bare.glb",
+            "far": "models/trees/maple_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
         "small",
         "medium",
@@ -277,106 +557,452 @@
       ],
       "logs": [
         2,
-        5,
-        10,
-        20
+        6,
+        12,
+        22
       ]
     },
     {
       "type": "species",
-      "id": "core:lemon",
-      "name": "species.lemon",
-      "model": "models/props/tree_lemon",
+      "id": "core:palm",
+      "name": "species.palm",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/palm_bloom.glb",
+            "far": "models/trees/palm_bloom_far.glb"
+          }
+        ]
+      },
       "sizes": [
-        "small"
+        "small",
+        "medium"
+      ],
+      "logs": [
+        1,
+        3,
+        6,
+        12
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:wisteria",
+      "name": "species.wisteria",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/wisteria_bloom.glb",
+            "far": "models/trees/wisteria_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/wisteria_autumn.glb",
+            "far": "models/trees/wisteria_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/wisteria_bare.glb",
+            "far": "models/trees/wisteria_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium"
+      ],
+      "logs": [
+        1,
+        3,
+        6,
+        12
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:oak",
+      "name": "species.oak",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/yellow_oak_bloom.glb",
+            "far": "models/trees/yellow_oak_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/yellow_oak_autumn.glb",
+            "far": "models/trees/yellow_oak_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/yellow_oak_bare.glb",
+            "far": "models/trees/yellow_oak_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "logs": [
+        3,
+        7,
+        13,
+        24
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:laurel",
+      "name": "species.laurel",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/laurel_bloom.glb",
+            "far": "models/trees/laurel_bloom_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium"
       ],
       "logs": [
         2,
-        5,
-        10,
-        20
+        4,
+        8,
+        16
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:baobab",
+      "name": "species.baobab",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/baobab_bloom.glb",
+            "far": "models/trees/baobab_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/baobab_autumn.glb",
+            "far": "models/trees/baobab_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/baobab_bare.glb",
+            "far": "models/trees/baobab_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "medium",
+        "large"
       ],
-      "evergreen": true
+      "logs": [
+        4,
+        10,
+        18,
+        30
+      ]
+    },
+    {
+      "type": "species",
+      "id": "core:dragon_tree",
+      "name": "species.dragon_tree",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/dragon_tree_bloom.glb",
+            "far": "models/trees/dragon_tree_bloom_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "small",
+        "medium"
+      ],
+      "logs": [
+        2,
+        4,
+        8,
+        16
+      ]
     },
     {
       "type": "species",
       "id": "core:apple",
       "name": "species.apple",
-      "model": "models/props/tree_apple",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/apple_bloom.glb",
+            "far": "models/trees/apple_bloom_far.glb"
+          }
+        ],
+        "autumn": [
+          {
+            "model": "models/trees/apple_autumn.glb",
+            "far": "models/trees/apple_autumn_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/apple_bare.glb",
+            "far": "models/trees/apple_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
         "small",
         "medium"
       ],
       "logs": [
         2,
-        5,
-        10,
-        20
+        4,
+        8,
+        16
       ]
     },
     {
       "type": "species",
-      "id": "core:orange",
-      "name": "species.orange",
-      "model": "models/props/tree_orange",
+      "id": "core:giant_sequoia",
+      "name": "species.giant_sequoia",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/giant_sequoia_bloom.glb",
+            "far": "models/trees/giant_sequoia_bloom_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/giant_sequoia_bare.glb",
+            "far": "models/trees/giant_sequoia_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
-        "small"
+        "huge"
       ],
       "logs": [
-        2,
-        5,
-        10,
-        20
+        15,
+        30,
+        60,
+        120
       ],
-      "evergreen": true
+      "landmark": true
     },
     {
       "type": "species",
-      "id": "core:pear",
-      "name": "species.pear",
-      "model": "models/props/tree_pear",
+      "id": "core:giant_araucaria",
+      "name": "species.giant_araucaria",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/giant_araucaria_bloom.glb",
+            "far": "models/trees/giant_araucaria_bloom_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/giant_araucaria_bare.glb",
+            "far": "models/trees/giant_araucaria_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
-        "small",
-        "medium"
+        "huge"
       ],
       "logs": [
-        2,
-        5,
-        10,
-        20
-      ]
+        11,
+        22,
+        45,
+        90
+      ],
+      "landmark": true
     },
     {
       "type": "species",
-      "id": "core:peach",
-      "name": "species.peach",
-      "model": "models/props/tree_peach",
+      "id": "core:giant_ginkgo",
+      "name": "species.giant_ginkgo",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/giant_ginkgo_bloom.glb",
+            "far": "models/trees/giant_ginkgo_bloom_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/giant_ginkgo_bare.glb",
+            "far": "models/trees/giant_ginkgo_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
-        "small"
+        "huge"
       ],
       "logs": [
-        2,
-        5,
         10,
-        20
-      ]
+        20,
+        40,
+        80
+      ],
+      "landmark": true
     },
     {
       "type": "species",
-      "id": "core:avocado",
-      "name": "species.avocado",
-      "model": "models/props/tree_avocado",
+      "id": "core:giant_cherry",
+      "name": "species.giant_cherry",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/giant_cherry_bloom.glb",
+            "far": "models/trees/giant_cherry_bloom_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/giant_cherry_bare.glb",
+            "far": "models/trees/giant_cherry_bare_far.glb"
+          }
+        ]
+      },
       "sizes": [
-        "small",
-        "medium"
+        "huge"
       ],
       "logs": [
-        2,
+        8,
+        17,
+        35,
+        70
+      ],
+      "landmark": true
+    },
+    {
+      "type": "species",
+      "id": "core:giant_willow",
+      "name": "species.giant_willow",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/giant_willow_bloom.glb",
+            "far": "models/trees/giant_willow_bloom_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/giant_willow_bare.glb",
+            "far": "models/trees/giant_willow_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "huge"
+      ],
+      "logs": [
+        8,
+        17,
+        35,
+        70
+      ],
+      "landmark": true
+    },
+    {
+      "type": "species",
+      "id": "core:giant_baobab",
+      "name": "species.giant_baobab",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/giant_baobab_bloom.glb",
+            "far": "models/trees/giant_baobab_bloom_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/giant_baobab_bare.glb",
+            "far": "models/trees/giant_baobab_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "huge"
+      ],
+      "logs": [
+        12,
+        25,
+        50,
+        100
+      ],
+      "landmark": true
+    },
+    {
+      "type": "species",
+      "id": "core:giant_mangrove",
+      "name": "species.giant_mangrove",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/giant_mangrove_bloom.glb",
+            "far": "models/trees/giant_mangrove_bloom_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/giant_mangrove_bare.glb",
+            "far": "models/trees/giant_mangrove_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "huge"
+      ],
+      "logs": [
+        8,
+        17,
+        35,
+        70
+      ],
+      "landmark": true
+    },
+    {
+      "type": "species",
+      "id": "core:giant_mushroom",
+      "name": "species.giant_mushroom",
+      "models": {
+        "bloom": [
+          {
+            "model": "models/trees/giant_mushroom_bloom.glb",
+            "far": "models/trees/giant_mushroom_bloom_far.glb"
+          }
+        ],
+        "bare": [
+          {
+            "model": "models/trees/giant_mushroom_bare.glb",
+            "far": "models/trees/giant_mushroom_bare_far.glb"
+          }
+        ]
+      },
+      "sizes": [
+        "huge"
+      ],
+      "logs": [
         5,
         10,
-        20
+        20,
+        40
       ],
-      "evergreen": true
+      "landmark": true
     }
   ]
 }

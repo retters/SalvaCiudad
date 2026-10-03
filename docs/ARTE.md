@@ -13,7 +13,6 @@ blender --background --factory-startup --python art/blender/build_all.py -- data
 - `--background` no abre la interfaz ni toca tus escenas abiertas.
 - `--factory-startup` ignora tus preferencias y complementos, para que el resultado no dependa del equipo.
 - Se puede limitar a un grupo: `characters`, `props`, `trees` (y después, las especies: `trees oak elm`), `buildings` o `animals`, por ejemplo `... -- data/mods/core/models buildings`.
-- Vista previa de los árboles, cada especie en sus tamaños junto a un aldeano: `blender --background --factory-startup --python art/blender/preview_trees.py -- data/mods/core/models tmp/arboles`.
 - Los `.glb` generados se guardan en el repositorio, así compilar el juego no requiere Blender.
 
 **Reproducible:** generar dos veces da archivos idénticos byte a byte. El exportador de Blender cambia el orden de los triángulos entre ejecuciones, así que `common.export_glb` los ordena después de exportar (D-402). Para comprobarlo, genera en dos carpetas y compáralas:
@@ -37,8 +36,8 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 |---|---|
 | `common.py` | Utilidades: escena vacía, materiales, `MeshBuilder` (piezas con material y peso de hueso), exportación con opciones fijas |
 | `human.py` | `characters/<raza>_male.glb` y `<raza>_female.glb` para humanos, enanos, elfos y gatunos (mismo esqueleto y animaciones `idle` y `walk`); accesorios `hat_straw`, `hat_cap`, `beard`, `apron_male` y `apron_female` |
-| `props.py` | `props/tree_pine.glb`, `tree_oak.glb`, `rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb` |
-| `trees.py` | `props/tree_<especie>_<tamaño>.glb`: 21 especies en sus tamaños (ver `docs/ARBOLES.md`) |
+| `props.py` | `props/rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb`, con sus variantes |
+| `lowpoly_trees/*.py` | `trees/<árbol>_<estado>.glb` y su versión lejana `_far.glb`: los 32 árboles y 8 gigantes del juego (ver `docs/ARBOLES.md`). `build_all.py ... trees [nombres]` los construye |
 | `buildings.py` | `buildings/<id>.glb`: un modelo por edificio de `core` (46), cada uno del tamaño de su terreno |
 | `build_all.py` | Ejecuta todo; los animales del juego (`animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb`) salen de `zoo/`, con esqueleto y animaciones (fase 47) |
 | `preview.py` | Imágenes de revisión |
@@ -56,7 +55,6 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `tripo_character.py` | La parte de personajes de `tripo_build.py`: articulaciones por la forma, reducción, colores desde la imagen |
 | `rig_check.py` | Verifica las animaciones de un modelo exportado |
 | `study_preview.py` | Una imagen de revisión por modelo (4 vistas) y las tiras de sus animaciones |
-| `pig_studies.py`, `tiger_studies.py` | El cerdito y el tigre con cada técnica, para compararlas |
 
 Las imágenes de referencia del usuario (`Animales low poly`, `Arboles 1` a `8`, `Armas y herramientas` y `Personajes 1` a `3`) están en `art/reference/` desde la fase 49; de ahí las leen `lowpoly_trees/_trace.py` y `_giant_trace.py`.
 
@@ -138,7 +136,7 @@ Cada variante es un modelo más: se dibuja con sus propias llamadas de dibujo. P
 
 Los 24 modelos de la imagen de referencia `Animales low poly.png` (del usuario, en `art/reference/`), más el jabalí y el oso (`boar.py`, `bear.py`), que no están en la imagen. El ciervo, el jabalí, el lobo y el oso son los animales del juego (fase 47): `build_all.py` los escribe en `core`.
 
-- **Técnica:** se compararon diez técnicas con el cerdito y el tigre (`pig_studies.py`, `tiger_studies.py`) y el usuario eligió la de *remesh* y reducción (D-4401). `studies.build_final` suelda las partes de la especificación (elipsoides y cápsulas) en una sola superficie y la reduce a `budget` triángulos. Después la corta donde un borde de color debe ser nítido (`bands` para rayas, `cuts` para bordes sueltos), pinta cada cara con `paint()`, aplana las puntas de otro color (`caps`, como el hocico del cerdito) y agrega tonos claros y oscuros a las facetas. Al final pone las piezas finas que no sobreviven al *remesh* (`details()`: orejas, cuernos, alas, aletas, hojas).
+- **Técnica:** se compararon diez técnicas con el cerdito y el tigre (esos estudios se borraron en la fase 53) y el usuario eligió la de *remesh* y reducción (D-4401). `studies.build_final` suelda las partes de la especificación (elipsoides y cápsulas) en una sola superficie y la reduce a `budget` triángulos. Después la corta donde un borde de color debe ser nítido (`bands` para rayas, `cuts` para bordes sueltos), pinta cada cara con `paint()`, aplana las puntas de otro color (`caps`, como el hocico del cerdito) y agrega tonos claros y oscuros a las facetas. Al final pone las piezas finas que no sobreviven al *remesh* (`details()`: orejas, cuernos, alas, aletas, hojas).
 - **Un archivo por modelo** en `zoo/`, con el nombre del modelo, que define `SPECS`. `zoo/pig.py` es el ejemplo simple; `zoo/tiger.py`, uno con rayas.
 - **Límite de triángulos** (`max_tris`, piezas incluidas): `build_final` baja el presupuesto hasta que el modelo cabe.
 

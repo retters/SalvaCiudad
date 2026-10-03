@@ -678,7 +678,7 @@ private:
     // --- Biomes ----------------------------------------------------------------
 
     // Each region takes a biome from the map type, and the mountains are
-    // pinewoods if the map type has them (phase 42). A map type with
+    // mountain forest if the map type has it (phase 42). A map type with
     // `patchSize` 0 or no biomes has the only biome of the settings.
     bool biomes() {
         const std::size_t cells = terrain_.size();
@@ -689,10 +689,10 @@ private:
             return report(GenStage::Biomes, 100);
         }
         const MapTypeDef& type = *type_ptr;
-        std::int32_t pinewood = -1;
-        if (const int pine = flora_.find_biome("core:pinewood"); pine >= 0 &&
-            std::any_of(type.biomes.begin(), type.biomes.end(), [&](const Weighted& w) { return w.id == pine; })) {
-            pinewood = pine;
+        std::int32_t mountain = -1;
+        if (const int found = flora_.find_biome("core:mountain"); found >= 0 &&
+            std::any_of(type.biomes.begin(), type.biomes.end(), [&](const Weighted& w) { return w.id == found; })) {
+            mountain = found;
         }
         for (std::int32_t bz = 0; bz < n_; bz += kOwnerBlock) {
             for (std::int32_t bx = 0; bx < n_; bx += kOwnerBlock) {
@@ -701,8 +701,8 @@ private:
                     continue;
                 }
                 std::uint8_t b = pick_weighted(type.biomes, static_cast<std::uint32_t>(mix64(s_.seed ^ kBiomeSeed ^ region) >> 40));
-                if (out_.landforms[region - 1u].kind == LandformKind::Mountains && pinewood >= 0) {
-                    b = static_cast<std::uint8_t>(pinewood);
+                if (out_.landforms[region - 1u].kind == LandformKind::Mountains && mountain >= 0) {
+                    b = static_cast<std::uint8_t>(mountain);
                 }
                 for (std::int32_t z = bz; z < std::min(n_, bz + kOwnerBlock); ++z) {
                     for (std::int32_t x = bx; x < std::min(n_, bx + kOwnerBlock); ++x) {

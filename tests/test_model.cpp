@@ -205,7 +205,7 @@ TEST_SUITE("model") {
 
     TEST_CASE("accessories and props are rigid models") {
         for (const char* file : {"characters/hat_straw.glb", "characters/hat_cap.glb", "characters/beard.glb",
-                                 "characters/apron_male.glb", "characters/apron_female.glb", "props/tree_pine.glb",
+                                 "characters/apron_male.glb", "characters/apron_female.glb", "trees/pine_bloom.glb",
                                  "props/rock.glb", "props/house_small.glb"}) {
             const ModelLoadResult r = load_data(file);
             REQUIRE_MESSAGE(r.ok, file << ": " << r.error);

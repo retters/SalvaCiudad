@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <ostream>
+#include <set>
 #include <tuple>
 #include <vector>
 
@@ -203,7 +204,7 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0xe50a4229c67425a9ull;
+constexpr std::uint64_t kGoldenSmallMap = 0x3fe1a4fe4ef7c59cull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {
@@ -407,7 +408,7 @@ TEST_SUITE("worldgen") {
         s.water = Amount::High;
         s.relief = Relief::Gentle;
         s.map_type = map_type("single");
-        s.biome = biome("giants");
+        s.biome = biome("savanna");
         BinaryWriter w;
         s.write(w);
         BinaryReader r(w.bytes());
@@ -637,14 +638,20 @@ TEST_SUITE("worldgen_large") {
 TEST_SUITE("flora") {
     TEST_CASE("species sizes and fitting") {
         const Flora& f = content().flora;
-        CHECK(f.species.size() == 21);
-        CHECK(f.biomes.size() == 6);
-        CHECK(f.map_types.size() == 7);
-        CHECK(f.species_has_size(species("sequoia"), TreeSize::Huge));
-        CHECK_FALSE(f.species_has_size(species("lemon"), TreeSize::Medium));
-        CHECK(f.fit_size(species("lemon"), TreeSize::Huge) == TreeSize::Small);
-        CHECK(f.fit_size(species("mountain_ash"), TreeSize::Small) == TreeSize::Large);
-        CHECK(f.fit_size(species("toog"), TreeSize::Small) == TreeSize::Medium);
+        CHECK(f.species.size() == 27);
+        CHECK(f.biomes.size() == 11);
+        CHECK(f.map_types.size() == 3);
+        CHECK(f.species_has_size(species("giant_sequoia"), TreeSize::Huge));
+        CHECK_FALSE(f.species_has_size(species("palm"), TreeSize::Large));
+        CHECK(f.fit_size(species("palm"), TreeSize::Huge) == TreeSize::Medium);
+        CHECK(f.fit_size(species("baobab"), TreeSize::Small) == TreeSize::Medium);
+        CHECK(f.fit_size(species("giant_sequoia"), TreeSize::Small) == TreeSize::Huge);
+        // Until phase 55 places them, no biome has a giant.
+        for (const BiomeDef& b : f.biomes) {
+            for (const Weighted& w : b.species) {
+                CHECK_FALSE(f.species_has_size(w.id, TreeSize::Huge));
+            }
+        }
         for (const SpeciesDef& sp : f.species) {
             CHECK(sp.sizes != 0);
         }
@@ -687,8 +694,9 @@ TEST_SUITE("flora") {
             ++per_size[f.size];
             trees.push_back(&f);
         }
-        for (const std::size_t n : per_size) {
-            CHECK(n > 0);
+        // Small, medium and large; the huge ones are the giants (phase 55).
+        for (std::size_t z = 0; z < kTreeSizes; ++z) {
+            CHECK((per_size[z] > 0) == (z != static_cast<std::size_t>(TreeSize::Huge)));
         }
         // Neighbors keep apart by their sizes (half spacings, less a cell).
         std::size_t close = 0;
@@ -707,53 +715,35 @@ TEST_SUITE("flora") {
     }
 
     TEST_CASE("map types change the forests") {
-        MapSettings young = settings(33, MapSize::Small);
-        young.map_type = map_type("young");
-        MapSettings giants = young;
-        giants.map_type = map_type("giants");
-        MapSettings single = young;
+        MapSettings mixed = settings(33, MapSize::Small);
+        mixed.map_type = map_type("classic");
+        MapSettings single = mixed;
         single.map_type = map_type("single");
         single.biome = biome("orchard");
-        const auto a = gen(young);
-        const auto b = gen(giants);
+        const auto a = gen(mixed);
         const auto c = gen(single);
         REQUIRE(a.has_value());
-        REQUIRE(b.has_value());
         REQUIRE(c.has_value());
-        CHECK(a->checksum() != b->checksum());
-        std::size_t young_big = 0;
-        std::size_t giant_big = 0;
-        for (const MapFeature& f : a->features) {
-            if (f.type == FeatureType::Tree && f.size >= static_cast<std::uint8_t>(TreeSize::Large)) {
-                ++young_big;
-                // Young forests only grow big trees of species that cannot be small.
-                CHECK_FALSE(content().flora.species_has_size(f.species, TreeSize::Small));
-                CHECK_FALSE(content().flora.species_has_size(f.species, TreeSize::Medium));
-            }
-        }
-        for (const MapFeature& f : b->features) {
-            giant_big += f.type == FeatureType::Tree && f.size >= static_cast<std::uint8_t>(TreeSize::Large);
-        }
-        MESSAGE("big trees: young " << young_big << ", giants " << giant_big);
-        CHECK(giant_big > 100);
-        // How many depends on how much of the map the biomes with such species
-        // take: each region has one biome, and a small map has few regions
-        // (72 against 184 here, D-4906).
-        CHECK(young_big * 2 < giant_big);
+        CHECK(a->checksum() != c->checksum());
+        // The mix has several biomes; the single one, only its own.
+        std::set<std::uint8_t> biomes(a->biome.begin(), a->biome.end());
+        CHECK(biomes.size() > 2);
         std::size_t other_biome = 0;
         for (const std::uint8_t cell : c->biome) {
             other_biome += cell != biome("orchard");
         }
         CHECK(other_biome == 0);
+        std::size_t trees = 0;
         for (const MapFeature& f : c->features) {
             if (f.type == FeatureType::Tree) {
                 const std::uint8_t sp = f.species;
-                const bool orchard_species = sp == species("apple") || sp == species("pear") || sp == species("peach") ||
-                                             sp == species("orange") || sp == species("lemon") ||
-                                             sp == species("avocado") || sp == species("cherry");
-                CHECK(orchard_species);
+                CHECK((sp == species("apple") || sp == species("cherry") || sp == species("laurel")));
+                // The orchard's trees are small or medium.
+                CHECK(f.size <= static_cast<std::uint8_t>(TreeSize::Medium));
+                ++trees;
             }
         }
+        CHECK(trees > 50);
     }
 }
 

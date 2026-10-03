@@ -1,75 +1,89 @@
 # Árboles, biomas y tipos de mapa
 
-Catálogo de la fase 6b. Por ahora estos valores son tablas en `src/sim/flora.cpp`. En la fase 7 pasan a archivos JSON del mod base, con la misma forma.
+Catálogo de `core` desde la fase 53. Los datos están en `data/mods/core/defs/species.json`, `biomes.json` y `map_types.json`; los modelos, en `data/mods/core/models/trees/`, hechos por `art/blender/lowpoly_trees/` (ver `docs/ARTE.md`).
 
 ## Tamaños
 
-| Tamaño | Altura | Altura del modelo | Separación mínima entre troncos |
-|---|---|---|---|
-| Chico | 1–7 m | 4,5 m | 3 m |
-| Mediano | 7–12 m | 9,5 m | 5 m |
-| Grande | 12–24 m | 18 m | 8 m |
-| Enorme | 24–43 m | 33 m | 12 m |
+La simulación conserva los tamaños: deciden la madera, el tiempo de tala y la separación entre troncos.
 
-Cada especie tiene un modelo por tamaño, hecho a la altura de la tercera columna. El juego lo escala para dar la altura exacta de cada árbol. Los modelos de un mismo tamaño comparten proporciones: un árbol chico es más delgado y con menos ramas que uno enorme de la misma especie.
+| Tamaño | Altura | Separación mínima entre troncos |
+|---|---|---|
+| Chico | 1–7 m | 3 m |
+| Mediano | 7–12 m | 5 m |
+| Grande | 12–24 m | 8 m |
+| Enorme | 24–43 m | 12 m |
+
+A la vista, cada especie tiene un solo modelo (de 6 a 7,5 m de alto; los gigantes, de 22 a 46 m) que se escala a la altura de cada árbol, sin bajar de la mitad ni pasar de una vez y media de la altura del modelo. Un árbol grande se ve, entonces, de hasta unos 10 m.
+
+## Estados
+
+Cada modelo tiene hasta tres estados: `bloom` (con hojas o en flor; primavera y verano), `autumn` (otoño) y `bare` (invierno). Los de hoja perenne solo tienen `bloom`. Cada estado tiene su versión lejana de unos 300 triángulos (600 en los gigantes).
+
+- El cambio de estado es solo de la vista: la simulación no sabe en qué estado se ve un árbol. Tampoco rehace nada: el estado es un dato de cada árbol que el renderizador lee al dibujarlo (fase 52).
+- Cada árbol cambia en uno de 8 pasos repartidos en la primera quinta parte de la estación (6 días de 30 con las cuatro estaciones), según su posición. Una partida nueva empieza con todos los árboles ya en el estado de su estación.
+- La versión lejana se dibuja cuando el árbol mide en pantalla menos de 90 píxeles en Ultra (120 en Alta, 160 en Media, 220 en Baja), con un margen del 10 % para que no parpadee, y siempre en las sombras.
 
 ## Especies
 
-| Id | Nombre | Nombre científico | Tamaños | Forma y colores |
-|---|---|---|---|---|
-| `oak` | Roble | *Quercus robur* | C M G | Copa redonda y ancha, verde oscuro |
-| `pine` | Pino | *Pinus sylvestris* | C M G E | Cónico en pisos, tronco rojizo arriba |
-| `toog` | Toog | *Petersianthus quadrialatus* | M G E | Tronco muy recto y alto, copa pequeña arriba |
-| `eucalyptus` | Eucalipto | *Eucalyptus viminalis* | C M G E | Copa irregular y rala, verde azulado, corteza clara |
-| `sequoia` | Secuoya gigante | *Sequoiadendron giganteum* | C M G E | Cónica, tronco rojo muy grueso con raíces |
-| `mountain_ash` | Fresno de montaña australiano | *Eucalyptus regnans* | G E | Tronco blanco altísimo, copa en la punta |
-| `cherry` | Cerezo japonés | *Prunus serrulata* | C M | Copa extendida, flores rosas |
-| `jacaranda` | Jacaranda | *Jacaranda mimosifolia* | C M G | Sombrilla, flores violetas |
-| `tulip_tree` | Tulipán africano | *Spathodea campanulata* | C M G | Copa redonda, flores rojo anaranjado |
-| `silk_floss` | Palo borracho | *Ceiba speciosa* | C M G | Tronco en forma de botella con espinas, flores rosas |
-| `magnolia` | Magnolia | *Magnolia grandiflora* | C M G | Ovalada y densa, flores blancas |
-| `flamboyant` | Tabachín | *Delonix regia* | C M | Sombrilla ancha y plana, flores rojo naranja |
-| `bottlebrush` | Calistemo | *Callistemon* | C | Pequeño y colgante, flores rojas en cepillo |
-| `stone_pine` | Pino piñonero | *Pinus pinea* | C M G | Copa de sombrilla sobre un tronco alto |
-| `elm` | Olmo | *Ulmus minor* | C M G | Copa en forma de jarrón |
-| `lemon` | Limonero | *Citrus limon* | C | Redondo y denso, limones amarillos |
-| `apple` | Manzano | *Malus domestica* | C M | Redondo, manzanas rojas |
-| `orange` | Naranjo | *Citrus sinensis* | C | Redondo y denso, naranjas |
-| `pear` | Peral | *Pyrus communis* | C M | Copa alta y ovalada, peras verde amarillo |
-| `peach` | Durazno | *Prunus persica* | C | Copa abierta, duraznos anaranjados |
-| `avocado` | Aguacate | *Persea americana* | C M | Copa ancha y densa, verde oscuro |
+| Especie | Id | Variantes | Tamaños | Madera (chico, mediano, grande) | Hoja |
+|---|---|---|---|---|---|
+| Cerezo | `core:cherry` | 4 | chico, mediano | 2, 5 | Caduca |
+| Cerezo llorón | `core:weeping_cherry` | 1 | chico, mediano | 2, 5 | Caduca |
+| Jacarandá | `core:jacaranda` | 5 | chico a grande | 2, 5, 10 | Caduca |
+| Olmo | `core:elm` | 4 | chico a grande | 2, 6, 12 | Caduca |
+| Guayacán | `core:guayacan` | 4 | chico a grande | 2, 6, 12 | Caduca |
+| Pino | `core:pine` | 1 | chico a grande | 2, 5, 10 | Perenne |
+| Abedul | `core:birch` | 1 | chico a grande | 1, 3, 7 | Caduca |
+| Sauce llorón | `core:willow` | 1 | chico a grande | 2, 5, 10 | Caduca |
+| Acacia | `core:acacia` | 1 | chico a grande | 2, 4, 8 | Caduca |
+| Ciprés | `core:cypress` | 1 | chico a grande | 1, 3, 7 | Perenne |
+| Magnolia | `core:magnolia` | 1 | chico, mediano | 2, 5 | Caduca |
+| Arce | `core:maple` | 1 | chico a grande | 2, 6, 12 | Caduca |
+| Palmera | `core:palm` | 1 | chico, mediano | 1, 3 | Perenne |
+| Glicinia | `core:wisteria` | 1 | chico, mediano | 1, 3 | Caduca |
+| Roble amarillo | `core:oak` | 1 | chico a grande | 3, 7, 13 | Caduca |
+| Laurel | `core:laurel` | 1 | chico, mediano | 2, 4 | Perenne |
+| Baobab | `core:baobab` | 1 | mediano, grande | 10, 18 | Caduca |
+| Drago | `core:dragon_tree` | 1 | chico, mediano | 2, 4 | Perenne |
+| Manzano | `core:apple` | 1 | chico, mediano | 2, 4 | Caduca |
 
-(C = chico, M = mediano, G = grande, E = enorme.)
+Los gigantes son especies de tamaño enorme con `landmark` (su silueta se ve a través de la niebla de guerra). Hasta la fase 55 ningún bioma los tiene, así que no salen en los mapas; se ven en el visor.
+
+| Gigante | Id | Madera |
+|---|---|---|
+| Secuoya gigante | `core:giant_sequoia` | 120 |
+| Araucaria gigante | `core:giant_araucaria` | 90 |
+| Ginkgo gigante | `core:giant_ginkgo` | 80 |
+| Cerezo gigante | `core:giant_cherry` | 70 |
+| Sauce gigante | `core:giant_willow` | 70 |
+| Baobab gigante | `core:giant_baobab` | 100 |
+| Mangle gigante | `core:giant_mangrove` | 70 |
+| Hongo gigante | `core:giant_mushroom` | 40 |
 
 ## Biomas
 
-| Id | Bioma | Especies (peso) | Tamaños C/M/G/E | Densidad |
-|---|---|---|---|---|
-| `temperate` | Bosque templado | roble 35, pino 25, olmo 20, magnolia 5, manzano 5, peral 5, cerezo 5 | 30/35/30/5 | Normal |
-| `pinewood` | Pinar | pino 75, pino piñonero 20, roble 5 | 25/35/30/10 | Densa |
-| `giants` | Bosque de gigantes | secuoya 40, fresno de montaña 25, toog 20, eucalipto 15 | 15/20/30/35 | Abierta |
-| `australian` | Bosque australiano | eucalipto 45, calistemo 30, fresno de montaña 25 | 25/30/30/15 | Abierta |
-| `flowering` | Bosque florido | jacaranda 25, tabachín 20, tulipán africano 20, palo borracho 15, magnolia 10, cerezo 10 | 35/40/25/0 | Normal |
-| `orchard` | Huerto silvestre | manzano 20, peral 15, durazno 15, naranjo 15, limonero 15, aguacate 10, cerezo 10 | 60/40/0/0 | Rala |
+Son los once de la fase 54. Hasta esa fase salen en manchas al azar; la fase 54 los reparte por clima y geografía. Las montañas llevan bosque de montaña cuando el tipo de mapa lo incluye.
 
-Los pesos de tamaño reparten el suelo del bosque entre los árboles medianos, grandes y enormes; los chicos llenan lo que queda (decisión D-621). Si a una especie le toca un tamaño que no tiene, recibe el más cercano que sí tenga.
+| Bioma | Id | Especies (peso) | Densidad | Pasto |
+|---|---|---|---|---|
+| Bosque de montaña | `core:mountain` | pino 55, abedul 25, ciprés 20 | 100 % | 140 |
+| Bosque boreal | `core:boreal` | pino 65, abedul 35 | 115 % | 130 |
+| Bosque templado | `core:temperate` | olmo 30, roble amarillo 25, arce 20, abedul 15, manzano 10 | 100 % | 200 |
+| Bosque florido | `core:flowering` | cerezo 30, jacarandá 30, magnolia 20, glicinia 20 | 90 % | 210 |
+| Ribera | `core:riverside` | sauce llorón 40, cerezo llorón 20, olmo 20, abedul 20 | 80 % | 230 |
+| Bosque mediterráneo | `core:mediterranean` | ciprés 30, laurel 30, pino 25, manzano 15 | 60 % | 120 |
+| Bosque seco tropical | `core:dry_tropical` | guayacán 45, jacarandá 30, laurel 25 | 80 % | 150 |
+| Sabana | `core:savanna` | acacia 55, drago 25, baobab 20 | 35 % | 140 |
+| Costa tropical | `core:tropical_coast` | palmera 70, laurel 30 | 50 % | 130 |
+| Huerto silvestre | `core:orchard` | manzano 45, cerezo 30, laurel 25 | 55 % | 230 |
+| Bosque encantado | `core:enchanted` | glicinia 40, cerezo llorón 35, magnolia 25 | 90 % | 240 |
 
 ## Tipos de mapa
 
-| Id | Tipo | Biomas (peso) | Tamaños | Manchas |
-|---|---|---|---|---|
-| `classic` | Clásico | templado 35, pinar 20, florido 15, huerto 10, australiano 10, gigantes 10 | Los del bioma | 350 m |
-| `young` | Arboleda joven | Como el clásico | Solo chicos y medianos | 350 m |
-| `giants` | Tierra de gigantes | gigantes 50, templado 25, pinar 25 | Más grandes y enormes | 450 m |
-| `northern` | Pinar del norte | pinar 75, templado 25 | Los del bioma | 400 m |
-| `varied` | Variado | Los seis por igual | Los del bioma | 180 m |
-| `single` | Bioma único | El bioma que elija el jugador | Los del bioma | Todo el mapa |
+Quedan tres hasta la fase 54, que los borra como datos:
 
-## Modelos por estado (fase 51)
-
-Una especie puede declarar un modelo por estado del año en lugar de uno por tamaño (ver `docs/CREAR_MODS.md`): `bloom`, `autumn` y `bare`. La primera es el cerezo (`core:cherry`), con los modelos low poly de `art/blender/lowpoly_trees/` en `models/trees/`; las demás especies llegan en la fase 53.
-
-- El cambio de estado es solo de la vista: la simulación no sabe en qué estado se ve un árbol. Tampoco rehace nada: el estado es un dato de cada árbol que el renderizador lee al dibujarlo (fase 52).
-- Cada modelo tiene su versión lejana (`<nombre>_far.glb`, unos 300 triángulos), que hace `art/blender/far_tree.py` a partir del modelo terminado. Se dibuja cuando el árbol mide en pantalla menos de 90 píxeles en Ultra (120 en Alta, 160 en Media, 220 en Baja), con un margen del 10 % para que no parpadee, y siempre en las sombras.
-- Cada árbol cambia en uno de 8 pasos repartidos en la primera quinta parte de la estación (6 días de 30 con las cuatro estaciones), según su posición. Una partida nueva empieza con todos los árboles ya en el estado de su estación.
-- El tamaño de la simulación (chico, mediano, grande) sigue decidiendo la madera, el tiempo de tala y la separación. A la vista, el modelo se escala a la altura del árbol, sin bajar de la mitad ni pasar de una vez y media de la altura del modelo.
+| Tipo | Id | Qué hace |
+|---|---|---|
+| Clásico | `core:classic` | Todos los biomas en manchas de unos 350 m: templado 20, florido 12, montaña 10, boreal 10, ribera 8, mediterráneo 8, seco tropical 8, sabana 8, costa tropical 6, huerto 5, encantado 5 |
+| Islas | `core:islands` | La misma mezcla, en islas rodeadas de mar |
+| Bioma único | `core:single` | Todo el mapa es el bioma que se elige |

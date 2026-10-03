@@ -3,92 +3,68 @@
   "defs": [
     {
       "type": "biome",
+      "id": "core:mountain",
+      "name": "biome.mountain",
+      "species": {
+        "core:pine": 55,
+        "core:birch": 25,
+        "core:cypress": 20
+      },
+      "sizeWeights": [
+        25,
+        35,
+        40,
+        0
+      ],
+      "density": 100,
+      "grass": 140
+    },
+    {
+      "type": "biome",
+      "id": "core:boreal",
+      "name": "biome.boreal",
+      "species": {
+        "core:pine": 65,
+        "core:birch": 35
+      },
+      "sizeWeights": [
+        25,
+        35,
+        40,
+        0
+      ],
+      "density": 115,
+      "grass": 130
+    },
+    {
+      "type": "biome",
       "id": "core:temperate",
       "name": "biome.temperate",
       "species": {
-        "core:oak": 35,
-        "core:pine": 25,
-        "core:elm": 20,
-        "core:magnolia": 5,
-        "core:apple": 5,
-        "core:pear": 5,
-        "core:cherry": 5
+        "core:elm": 30,
+        "core:oak": 25,
+        "core:maple": 20,
+        "core:birch": 15,
+        "core:apple": 10
       },
       "sizeWeights": [
         30,
         35,
-        30,
-        5
+        35,
+        0
       ],
       "density": 100,
       "grass": 200
     },
     {
       "type": "biome",
-      "id": "core:pinewood",
-      "name": "biome.pinewood",
-      "species": {
-        "core:pine": 75,
-        "core:stone_pine": 20,
-        "core:oak": 5
-      },
-      "sizeWeights": [
-        25,
-        35,
-        30,
-        10
-      ],
-      "density": 115,
-      "grass": 120
-    },
-    {
-      "type": "biome",
-      "id": "core:giants",
-      "name": "biome.giants",
-      "species": {
-        "core:sequoia": 40,
-        "core:mountain_ash": 25,
-        "core:toog": 20,
-        "core:eucalyptus": 15
-      },
-      "sizeWeights": [
-        15,
-        20,
-        30,
-        35
-      ],
-      "density": 70,
-      "grass": 170
-    },
-    {
-      "type": "biome",
-      "id": "core:australian",
-      "name": "biome.australian",
-      "species": {
-        "core:eucalyptus": 45,
-        "core:bottlebrush": 30,
-        "core:mountain_ash": 25
-      },
-      "sizeWeights": [
-        25,
-        30,
-        30,
-        15
-      ],
-      "density": 75,
-      "grass": 110
-    },
-    {
-      "type": "biome",
       "id": "core:flowering",
       "name": "biome.flowering",
       "species": {
-        "core:jacaranda": 25,
-        "core:flamboyant": 20,
-        "core:tulip_tree": 20,
-        "core:silk_floss": 15,
-        "core:magnolia": 10,
-        "core:cherry": 10
+        "core:cherry": 30,
+        "core:jacaranda": 30,
+        "core:magnolia": 20,
+        "core:wisteria": 20
       },
       "sizeWeights": [
         35,
@@ -101,25 +77,130 @@
     },
     {
       "type": "biome",
+      "id": "core:riverside",
+      "name": "biome.riverside",
+      "species": {
+        "core:willow": 40,
+        "core:weeping_cherry": 20,
+        "core:elm": 20,
+        "core:birch": 20
+      },
+      "sizeWeights": [
+        30,
+        40,
+        30,
+        0
+      ],
+      "density": 80,
+      "grass": 230
+    },
+    {
+      "type": "biome",
+      "id": "core:mediterranean",
+      "name": "biome.mediterranean",
+      "species": {
+        "core:cypress": 30,
+        "core:laurel": 30,
+        "core:pine": 25,
+        "core:apple": 15
+      },
+      "sizeWeights": [
+        35,
+        40,
+        25,
+        0
+      ],
+      "density": 60,
+      "grass": 120
+    },
+    {
+      "type": "biome",
+      "id": "core:dry_tropical",
+      "name": "biome.dry_tropical",
+      "species": {
+        "core:guayacan": 45,
+        "core:jacaranda": 30,
+        "core:laurel": 25
+      },
+      "sizeWeights": [
+        30,
+        40,
+        30,
+        0
+      ],
+      "density": 80,
+      "grass": 150
+    },
+    {
+      "type": "biome",
+      "id": "core:savanna",
+      "name": "biome.savanna",
+      "species": {
+        "core:acacia": 55,
+        "core:dragon_tree": 25,
+        "core:baobab": 20
+      },
+      "sizeWeights": [
+        25,
+        40,
+        35,
+        0
+      ],
+      "density": 35,
+      "grass": 140
+    },
+    {
+      "type": "biome",
+      "id": "core:tropical_coast",
+      "name": "biome.tropical_coast",
+      "species": {
+        "core:palm": 70,
+        "core:laurel": 30
+      },
+      "sizeWeights": [
+        45,
+        55,
+        0,
+        0
+      ],
+      "density": 50,
+      "grass": 130
+    },
+    {
+      "type": "biome",
       "id": "core:orchard",
       "name": "biome.orchard",
       "species": {
-        "core:apple": 20,
-        "core:pear": 15,
-        "core:peach": 15,
-        "core:orange": 15,
-        "core:lemon": 15,
-        "core:avocado": 10,
-        "core:cherry": 10
+        "core:apple": 45,
+        "core:cherry": 30,
+        "core:laurel": 25
       },
       "sizeWeights": [
-        60,
-        40,
+        55,
+        45,
         0,
         0
       ],
       "density": 55,
       "grass": 230
+    },
+    {
+      "type": "biome",
+      "id": "core:enchanted",
+      "name": "biome.enchanted",
+      "species": {
+        "core:wisteria": 40,
+        "core:weeping_cherry": 35,
+        "core:magnolia": 25
+      },
+      "sizeWeights": [
+        40,
+        60,
+        0,
+        0
+      ],
+      "density": 90,
+      "grass": 240
     }
   ]
 }

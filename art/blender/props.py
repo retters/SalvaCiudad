@@ -1,4 +1,4 @@
-"""Props: trees (pine, oak), a boulder, an iron ore outcrop, a berry bush,
+"""Props: a boulder, an iron ore outcrop, a berry bush,
 an herb plant and a small half-timbered house with architectural details
 (beams, window frames, shutters, door, chimney, roof tiles in rows)."""
 
@@ -45,23 +45,6 @@ def lumpy(verts, amount, seed):
         k = 1.0 + amount * math.sin(i * 2.3 + seed) + amount * 0.5 * math.cos(i * 5.1 + seed)
         v.co.x = cx + (v.co.x - cx) * k
         v.co.y = cy + (v.co.y - cy) * k
-
-
-def oak_tree(folder):
-    common.reset_scene()
-    mb = MeshBuilder()
-    mb.cylinder((0, 0, 0), (0, 0, 2.6), 0.28, 0.2, "bark", segments=8)
-    mb.cylinder((0, 0, 2.2), (0.9, 0.3, 3.4), 0.12, 0.07, "bark", segments=6)
-    mb.cylinder((0, 0, 2.4), (-0.7, -0.5, 3.5), 0.12, 0.07, "bark", segments=6)
-    # A rounded crown of overlapping leaf clumps.
-    clumps = ((0, 0, 4.1, 1.6), (1.0, 0.4, 3.6, 1.1), (-0.9, -0.5, 3.7, 1.15), (0.2, -1.0, 3.5, 1.0),
-              (-0.3, 1.0, 3.8, 1.05), (0.1, 0.1, 5.0, 1.0))
-    for i, (x, y, z, r) in enumerate(clumps):
-        verts = mb.sphere((x, y, z), r, "leaves" if i % 2 == 0 else "leaves_dark", segments=9, rings=6,
-                          scale=(1.0, 1.0, 0.85))
-        lumpy(verts, 0.08, i)
-    obj = mb.to_object("tree_oak", COLORS)
-    common.export_glb(os.path.join(folder, "tree_oak.glb"), [obj])
 
 
 def ore_rock(folder, name="ore_rock", seed=1.7, scale=(1.15, 1.0, 0.75),
@@ -111,24 +94,6 @@ def herb(folder):
     mb.sphere((0, 0, 0.06), 0.14, "herb", segments=7, rings=4, scale=(1.0, 1.0, 0.5))
     obj = mb.to_object("herb", COLORS)
     common.export_glb(os.path.join(folder, "herb.glb"), [obj])
-
-
-def pine_tree(folder):
-    common.reset_scene()
-    mb = MeshBuilder()
-    mb.cylinder((0, 0, 0), (0, 0, 1.9), 0.2, 0.12, "bark", segments=7)
-    # Four stacked tiers, alternating two greens, each turned a little.
-    tiers = ((1.1, 3.4, 1.45), (2.1, 4.3, 1.15), (3.0, 5.1, 0.85), (3.9, 5.8, 0.55))
-    for i, (z0, z1, r) in enumerate(tiers):
-        mat = "needles" if i % 2 == 0 else "needles_dark"
-        verts = mb.cylinder((0, 0, z0), (0, 0, z1), r, 0.0, mat, segments=8)
-        angle = i * 0.35
-        c, s = math.cos(angle), math.sin(angle)
-        for v in verts:
-            x, y = v.co.x, v.co.y
-            v.co.x, v.co.y = x * c - y * s, x * s + y * c
-    obj = mb.to_object("tree_pine", COLORS)
-    common.export_glb(os.path.join(folder, "tree_pine.glb"), [obj])
 
 
 def rock_variant(folder, name, parts, seed):
@@ -264,8 +229,6 @@ def cloud(folder, name="cloud", puffs=CLOUD_PUFFS):
 
 def make_all(folder):
     os.makedirs(folder, exist_ok=True)
-    pine_tree(folder)
-    oak_tree(folder)
     rock(folder)
     ore_rock(folder)
     berry_bush(folder)

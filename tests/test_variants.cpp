@@ -238,7 +238,6 @@ TEST_SUITE("variants") {
         REQUIRE(leafy >= 0);
         REQUIRE(green >= 0);
         const sim::SpeciesDef& l = flora.species[static_cast<std::size_t>(leafy)];
-        CHECK(l.by_state());
         CHECK(l.state_models[0] == std::vector<std::string>{"models/a.glb", "models/b.glb"});
         CHECK(l.state_models[1] == std::vector<std::string>{"models/b.glb"});
         CHECK(l.state_models[2] == std::vector<std::string>{"models/c.glb"});
@@ -246,14 +245,9 @@ TEST_SUITE("variants") {
         CHECK(l.state_far[0] == std::vector<std::string>{"", "models/c.glb"});
         CHECK(l.state_far[1] == std::vector<std::string>{""});
         const sim::SpeciesDef& g = flora.species[static_cast<std::size_t>(green)];
-        CHECK(g.by_state());
         CHECK(g.state_models[1].empty());
-        CHECK(tree_model_file(g, sim::TreeSize::Medium, sim::TreeState::Bare) == "models/a.glb");
-        CHECK(tree_model_file(l, sim::TreeSize::Small, sim::TreeState::Bare) == "models/c.glb");
-        // The species of core with a prefix by size still work.
-        const int oak = flora.find_species("core:oak");
-        REQUIRE(oak >= 0);
-        CHECK_FALSE(flora.species[static_cast<std::size_t>(oak)].by_state());
+        CHECK(tree_model_file(g, sim::TreeState::Bare) == "models/a.glb");
+        CHECK(tree_model_file(l, sim::TreeState::Bare) == "models/c.glb");
     }
 
     TEST_CASE("bad models by state are rejected") {
@@ -266,7 +260,7 @@ TEST_SUITE("variants") {
                  R"("models": {"bloom": ["models/a.glb", "models/a.glb"]}})",
                  R"("models": {"bloom": ["models/missing.glb"]}})",
                  R"("models": {"bloom": "models/a.glb"}})",
-                 R"("models": {"bloom": ["models/a.glb"]}, "model": "models/a"})",
+                 R"("model": "models/a"})",                                               // The form before phase 51.
                  R"("models": {"bloom": [{"model": "models/a.glb"}]}})",                        // A pair needs its far file.
                  R"("models": {"bloom": [{"model": "models/a.glb", "far": "models/missing.glb"}]}})",
                  R"("models": {"bloom": [{"model": "models/a.glb", "far": "models/b.glb", "x": 1}]}})",
@@ -334,14 +328,13 @@ TEST_SUITE("variants") {
         }
     }
 
-    TEST_CASE("a tree by state keeps its slot and changes its look; the cherry of core has the three") {
+    TEST_CASE("a tree keeps its slot and changes its look; the cherry of core has four variants") {
         const sim::Content& content = test::core_content();
         const int cherry = content.flora.find_species("core:cherry");
         REQUIRE(cherry >= 0);
         const sim::SpeciesDef& sp = content.flora.species[static_cast<std::size_t>(cherry)];
-        REQUIRE(sp.by_state());
         for (std::size_t st = 0; st < sim::kTreeStates; ++st) {
-            CHECK(sp.state_models[st].size() == 1);
+            CHECK(sp.state_models[st].size() == 4);
         }
         sim::MapFeature f;
         f.type = sim::FeatureType::Tree;
@@ -350,7 +343,8 @@ TEST_SUITE("variants") {
         f.x = sim::Fixed::from_int(40);
         f.z = sim::Fixed::from_int(90);
         const auto c = static_cast<std::size_t>(cherry);
-        CHECK(visual_slot(content, f) == tree_variant_slot(c, 0));
+        CHECK(visual_slot(content, f) >= tree_variant_slot(c, 0));
+        CHECK(visual_slot(content, f) < tree_variant_slot(c, 4));
         CHECK(visual_slot(content, f) < tree_slot_count(content));
         CHECK(tree_look(content, f, {sim::Season::Summer, kTurnSteps}) == 0);
         CHECK(tree_look(content, f, {sim::Season::Autumn, kTurnSteps}) == 1);
@@ -358,17 +352,17 @@ TEST_SUITE("variants") {
         CHECK(tree_look(content, f, {sim::Season::Winter, 0}) == 1);  // Its turn has not come.
         // Phase 52: every state has its far version.
         for (std::size_t st = 0; st < sim::kTreeStates; ++st) {
-            REQUIRE(sp.state_far[st].size() == 1);
+            REQUIRE(sp.state_far[st].size() == 4);
             CHECK_FALSE(sp.state_far[st][0].empty());
         }
-        // A species by size has one slot per size and no looks.
-        const int oak = content.flora.find_species("core:oak");
-        REQUIRE(oak >= 0);
-        f.species = static_cast<std::uint8_t>(oak);
-        CHECK(visual_slot(content, f) == tree_slot(static_cast<std::size_t>(oak), sim::TreeSize::Medium));
+        // An evergreen looks the same all year.
+        const int pine = content.flora.find_species("core:pine");
+        REQUIRE(pine >= 0);
+        f.species = static_cast<std::uint8_t>(pine);
+        CHECK(visual_slot(content, f) == tree_variant_slot(static_cast<std::size_t>(pine), 0));
         CHECK(tree_look(content, f, {sim::Season::Winter, kTurnSteps}) == 0);
-        // And its color changes instead; a tree by state keeps its own colors
-        // (only the snow whitens it).
+        // A tree keeps its own colors all year (only the snow whitens it);
+        // a bush turns.
         sim::MapSettings s;
         s.seed = 7;
         s.size = sim::MapSize::Small;
@@ -381,16 +375,18 @@ TEST_SUITE("variants") {
         CHECK(feature_instance(*map, f, &content, sim::Season::Autumn, false).tint == summer.tint);
         CHECK(feature_instance(*map, f, &content, sim::Season::Winter, false).tint == summer.tint);
         CHECK_FALSE(feature_instance(*map, f, &content, sim::Season::Winter, true).tint == summer.tint);
-        f.species = static_cast<std::uint8_t>(oak);
-        const render::Instance oak_summer = feature_instance(*map, f, &content, sim::Season::Summer, false);
-        CHECK_FALSE(feature_instance(*map, f, &content, sim::Season::Autumn, false).tint == oak_summer.tint);
+        sim::MapFeature bush = f;
+        bush.type = sim::FeatureType::BerryBush;
+        const render::Instance bush_summer = feature_instance(*map, bush, &content, sim::Season::Summer, false);
+        CHECK_FALSE(feature_instance(*map, bush, &content, sim::Season::Autumn, false).tint == bush_summer.tint);
         // The instances of a season carry each tree's look; they stay in the
         // same slots and the same order all year, so a change of state only
         // changes looks.
         const auto summer_all = build_feature_instances(*map, content, {sim::Season::Summer, kTurnSteps}, false);
+        // The trees that lose their leaves: those of a species with autumn models.
         std::size_t cherries = 0;
         for (const sim::MapFeature& t : map->features) {
-            cherries += t.type == sim::FeatureType::Tree && t.species == cherry ? 1u : 0u;
+            cherries += t.type == sim::FeatureType::Tree && !content.flora.species[t.species].state_models[1].empty() ? 1u : 0u;
         }
         REQUIRE(cherries > 0);
         for (const int turn : {0, kTurnSteps / 2, kTurnSteps}) {

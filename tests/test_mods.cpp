@@ -115,9 +115,9 @@ TEST_SUITE("mods") {
         CHECK(pack.load_order == std::vector<std::string>{"core"});
         CHECK(c.resources.size() >= 5);
         CHECK(c.buildings.size() >= 5);
-        CHECK(c.flora.species.size() == 21);
-        CHECK(c.flora.biomes.size() == 6);
-        CHECK(c.flora.map_types.size() == 7);
+        CHECK(c.flora.species.size() == 27);  // 19 trees and 8 giants (phase 53).
+        CHECK(c.flora.biomes.size() == 11);
+        CHECK(c.flora.map_types.size() == 3);
         CHECK(c.find_building("core:house") != sim::kNoDef);
         CHECK(c.feature(sim::FeatureKind::Stone) != nullptr);
         CHECK(c.hash != 0);
@@ -371,7 +371,7 @@ TEST_SUITE("lua") {
                     local a = i * 30
                     map.add_feature("stone", s.x + math.cos_deg(a) * 60 // 100, s.z + math.sin_deg(a) * 60 // 100)
                 end
-                map.add_tree("core:sequoia", "huge", s.x + 9000, s.z)
+                map.add_tree("core:giant_sequoia", "huge", s.x + 9000, s.z)
                 -- Too close to the start: refused.
                 assert(map.add_feature("stone", s.x, s.z) == false)
             end)"}});

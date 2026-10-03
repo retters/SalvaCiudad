@@ -6,12 +6,17 @@
       "id": "core:classic",
       "name": "mapType.classic",
       "biomes": {
-        "core:temperate": 35,
-        "core:pinewood": 20,
-        "core:flowering": 15,
-        "core:orchard": 10,
-        "core:australian": 10,
-        "core:giants": 10
+        "core:temperate": 20,
+        "core:mountain": 10,
+        "core:boreal": 10,
+        "core:flowering": 12,
+        "core:riverside": 8,
+        "core:mediterranean": 8,
+        "core:dry_tropical": 8,
+        "core:savanna": 8,
+        "core:tropical_coast": 6,
+        "core:orchard": 5,
+        "core:enchanted": 5
       },
       "sizeBias": [
         100,
@@ -20,91 +25,23 @@
         100
       ],
       "patchSize": 350
-    },
-    {
-      "type": "mapType",
-      "id": "core:young",
-      "name": "mapType.young",
-      "biomes": {
-        "core:temperate": 35,
-        "core:pinewood": 20,
-        "core:flowering": 15,
-        "core:orchard": 10,
-        "core:australian": 10,
-        "core:giants": 10
-      },
-      "sizeBias": [
-        200,
-        100,
-        0,
-        0
-      ],
-      "patchSize": 350
-    },
-    {
-      "type": "mapType",
-      "id": "core:giants",
-      "name": "mapType.giants",
-      "biomes": {
-        "core:giants": 50,
-        "core:temperate": 25,
-        "core:pinewood": 25
-      },
-      "sizeBias": [
-        60,
-        80,
-        150,
-        200
-      ],
-      "patchSize": 450
-    },
-    {
-      "type": "mapType",
-      "id": "core:northern",
-      "name": "mapType.northern",
-      "biomes": {
-        "core:pinewood": 75,
-        "core:temperate": 25
-      },
-      "sizeBias": [
-        100,
-        100,
-        100,
-        100
-      ],
-      "patchSize": 400
-    },
-    {
-      "type": "mapType",
-      "id": "core:varied",
-      "name": "mapType.varied",
-      "biomes": {
-        "core:temperate": 1,
-        "core:pinewood": 1,
-        "core:giants": 1,
-        "core:australian": 1,
-        "core:flowering": 1,
-        "core:orchard": 1
-      },
-      "sizeBias": [
-        100,
-        100,
-        100,
-        100
-      ],
-      "patchSize": 180
     },
     {
       "type": "mapType",
       "id": "core:islands",
       "name": "mapType.islands",
       "biomes": {
-        "core:temperate": 35,
-        "core:pinewood": 15,
-        "core:flowering": 20,
-        "core:orchard": 10,
-        "core:australian": 15,
-        "core:giants": 5
+        "core:temperate": 20,
+        "core:mountain": 10,
+        "core:boreal": 10,
+        "core:flowering": 12,
+        "core:riverside": 8,
+        "core:mediterranean": 8,
+        "core:dry_tropical": 8,
+        "core:savanna": 8,
+        "core:tropical_coast": 6,
+        "core:orchard": 5,
+        "core:enchanted": 5
       },
       "sizeBias": [
         100,

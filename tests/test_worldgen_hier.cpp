@@ -457,16 +457,16 @@ TEST_SUITE("worldgen_hier_life") {
         }
     }
 
-    TEST_CASE("biomes follow the regions, with pinewoods on the mountains") {
+    TEST_CASE("biomes follow the regions, with mountain forest on the mountains") {
         sim::MapSettings s = hier_settings(91, sim::MapSize::Large);
         s.relief = sim::Relief::Mountainous;
         std::int32_t pine = -1;
         for (std::size_t t = 0; t < sc::test::core_content().flora.map_types.size(); ++t) {
-            if (sc::test::core_content().flora.map_types[t].id == "core:varied") {
+            if (sc::test::core_content().flora.map_types[t].id == "core:classic") {
                 s.map_type = static_cast<std::uint8_t>(t);
             }
         }
-        pine = sc::test::core_content().flora.find_biome("core:pinewood");
+        pine = sc::test::core_content().flora.find_biome("core:mountain");
         REQUIRE(pine >= 0);
         const sim::MapData m = generate(s);
         // Per region, how many squares have its most common biome.

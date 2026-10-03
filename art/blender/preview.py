@@ -114,7 +114,7 @@ for frame in (0, 8, 15, 23):
 reset()
 ground()
 load("props/house_small.glb", (0, 0, 0))
-load("props/tree_pine.glb", (5.5, 2.5, 0))
+load("trees/pine_bloom.glb", (5.5, 2.5, 0))
 load("props/rock.glb", (-4.2, -1.5, 0))
 load("characters/human_male.glb", (1.8, -3.0, 0))
 camera((9.0, -13.0, 6.5), (0, 0, 2.0), lens=40)

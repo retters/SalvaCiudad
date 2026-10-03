@@ -15,7 +15,7 @@ Hasta la fase 48 había además un generador **clásico** (relieve de ruido con 
 | Opción | Valores | Qué cambia |
 |---|---|---|
 | Tamaño | Pequeño (512 m) a Colosal (16 km) | El lado del mapa y el tamaño de las regiones |
-| Tipo de mapa | Clásico, Arboleda joven, Tierra de gigantes, Pinar del norte, Variado, Islas, Bioma único | Qué biomas hay y en qué proporción; "Islas" hace un mapa de islas. "Clásico" es solo una mezcla de biomas, no el generador que se borró |
+| Tipo de mapa | Clásico, Islas, Bioma único | Qué biomas hay y en qué proporción; "Islas" hace un mapa de islas. "Clásico" es solo una mezcla de biomas, no el generador que se borró |
 | Islas por pueblo | 1 a 8 | Solo en "Islas": cuántas islas tiene cada pueblo (la principal y las demás) |
 | Mar | Sin mar, A veces, Siempre | Si hay costa en uno o dos lados ("A veces": 40 % de las semillas) |
 | Ríos y lagos | Pocos, Normal, Muchos | Cuántos ríos nacen además de los de los valles y cañones |

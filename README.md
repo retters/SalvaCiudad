@@ -169,14 +169,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 6b (biomas, árboles y herramientas)
 
-- [ ] En Partida nueva, "Tipo de mapa" cambia los bosques: Arboleda joven sin árboles grandes, Tierra de gigantes con árboles de hasta 43 m, Bioma único con el bioma elegido.
+- [ ] En Partida nueva, "Tipo de mapa" cambia los bosques: Clásico mezcla todos los biomas, Islas los pone en islas y Bioma único usa el bioma elegido.
 - [ ] Los árboles tienen cuatro tamaños y 21 especies (cerezos y jacarandas en flor, frutales con fruta, secuoyas, eucaliptos...). La misma semilla y el mismo tipo de mapa dan el mismo bosque.
 - [ ] Hay matas de pasto cerca de la cámara, que se mueven un poco y no crecen en arena ni agua; con "Vegetación" en bajo llegan menos lejos.
 - [ ] Ctrl+F3 abre las herramientas de desarrollo. Inspector: al pasar el cursor sobre un árbol, casa o persona se ven sus datos y el terreno; clic lo selecciona.
 - [ ] Crear: poner un árbol, una casa y varias personas en el centro de la vista y con clic en el suelo; aparecen al instante.
 - [ ] Explorador: buscar "secuoya" o "arbol" (sin acento), elegir uno de la lista: la cámara va hacia él y el inspector lo muestra; "Eliminar" lo quita.
 - [ ] Mapa Enorme en Ultra: más de 60 FPS en los tres modos de cámara.
-- [ ] **Tu opinión:** formas y colores de cada especie (las vistas previas se generan con `art/blender/preview_trees.py`), cantidad de pasto y los tipos de mapa.
+- [ ] **Tu opinión:** formas y colores de cada especie (se ven en `SalvaCiudadModelos.exe`), cantidad de pasto y los tipos de mapa.
 
 ### Fase 6c (estilo low-poly facetado)
 
@@ -400,7 +400,6 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] A la izquierda están los modelos de "SalvaCiudad (juego base)" por categoría; al elegir un tipo con varias variantes (por ejemplo, Roble o Sombreros) se ven todas lado a lado, con el aldeano de referencia a la izquierda.
 - [ ] Al elegir un archivo, la ficha muestra sus triángulos, llamadas de dibujo, tamaño y quién lo usa.
 - [ ] En un árbol, cambiar la estación a Otoño o marcar "Con nieve" cambia su color como en el juego; en un personaje, "Otra paleta" cambia su ropa y el menú de animación lo pone a caminar.
-- [ ] La pestaña Revisión lista `tree_oak.glb` como modelo sin usar.
 - [ ] Con W / S o las flechas arriba y abajo se recorre la lista y cada tipo o archivo se ve al instante; con D o → se abre una categoría o un tipo con variantes, y con A o ← se cierra o se sube al que lo contiene. Mantener la tecla repite.
 - [ ] Al escribir en el buscador, W A S D escriben letras y no mueven la lista.
 - [ ] Con el visor abierto en un modelo, volver a correr su script de Blender (o guardar otra vez el archivo) lo actualiza solo y abajo aparece "Recargado".
@@ -444,7 +443,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 34 (niebla con techo de altura)
 
-- [ ] En un mapa "Tierra de gigantes" con niebla, los árboles grandes y enormes se ven como siluetas oscuras sobre lo negro; los chicos no.
+- [ ] Con niebla, los árboles más altos que el techo de la niebla se ven como siluetas oscuras sobre lo negro; los chicos no.
 - [ ] Con relieve montañoso, los picos aislados y los bordes altos de los cerros asoman sobre la niebla; lo alto de una meseta ancha no.
 - [ ] Con niebla dinámica, lo que asoma sobre lo gris se ve con su color, no gris.
 - [ ] Lo que asoma no deja construir: sigue diciendo "Ese lugar no está explorado.".
@@ -555,6 +554,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En los primeros días del otoño, del invierno y de la primavera, los cerezos van cambiando sin tirones, también en un mapa colosal.
 - [ ] Talar un cerezo en otoño y en invierno: desaparece el árbol correcto.
 - [ ] En `SalvaCiudadModelos.exe`, el grupo del cerezo muestra las seis versiones; con "Versión: lejana" o "cercana" las tres detalladas cambian a la que se pide.
+
+### Fase 53
+
+- [ ] Una partida nueva solo tiene árboles nuevos: cerezos, jacarandás, olmos, guayacanes, pinos, abedules, sauces, acacias, cipreses, magnolias, arces, palmeras, glicinias, robles amarillos, laureles, baobabs, dragos y manzanos, según el bioma.
+- [ ] "Tipo de mapa" ofrece Clásico, Islas y Bioma único; con Bioma único se puede elegir cualquiera de los once biomas, y cada uno tiene sus especies (ver `docs/ARBOLES.md`).
+- [ ] Las especies con variantes (cerezo, jacarandá, olmo, guayacán) se ven con formas distintas en un mismo bosque.
+- [ ] En otoño e invierno cambian todos los de hoja caduca; el pino, el ciprés, la palmera, el laurel y el drago siguen verdes.
+- [ ] El inspector de las herramientas de desarrollo y los nombres de F3 dicen la especie nueva de cada árbol.
+- [ ] Talar árboles de varias especies: el abedul da menos madera que el roble amarillo, y el baobab más.
+- [ ] En `SalvaCiudadModelos.exe` están los 27 grupos de árboles (19 especies y 8 gigantes) con sus estados y versiones lejanas, y ya no hay árboles viejos ni modelos sin usar en `props/`.
+- [ ] **Tu opinión:** qué especies se ven mal de lejos (versión simple) o demasiado grandes o chicas junto a las casas.
 
 ## Licencia
 

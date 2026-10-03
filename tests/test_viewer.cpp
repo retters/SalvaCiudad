@@ -86,15 +86,16 @@ TEST_SUITE("viewer") {
         CHECK(c.find("core", "models/props/cloud.glb")->category == viewer::Category::Props);
     }
 
-    TEST_CASE("variants are grouped: tree sizes, bodies and the code's hats") {
+    TEST_CASE("variants are grouped: a tree's states, bodies and the code's hats") {
         const viewer::Catalog c = catalog_for();
-        // A species' sizes, smallest first.
+        // A species' models: its three states, each near and far.
         const viewer::CatalogGroup* oak = group(c, "core:oak");
         REQUIRE(oak != nullptr);
         CHECK(oak->category == viewer::Category::Trees);
-        REQUIRE(oak->models.size() == 3);
-        CHECK(c.models[oak->models[0]].path == "models/props/tree_oak_small.glb");
-        CHECK(c.models[oak->models[2]].path == "models/props/tree_oak_large.glb");
+        REQUIRE(oak->models.size() == 6);
+        for (const std::size_t m : oak->models) {
+            CHECK(c.models[m].path.starts_with("models/trees/yellow_oak_"));
+        }
         // A race's two bodies.
         const viewer::CatalogGroup* human = group(c, "core:human");
         REQUIRE(human != nullptr);

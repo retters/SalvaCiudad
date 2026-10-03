@@ -4,7 +4,7 @@
 
 `only` limits the build to one group: characters, props, trees, buildings
 or animals. After
-"trees", species ids limit it further (for example: trees oak elm).
+"trees", tree names limit it further (for example: trees cherry_1 pine).
 """
 
 import importlib
@@ -18,27 +18,31 @@ import buildings  # noqa: E402
 import human  # noqa: E402
 import props  # noqa: E402
 import studies  # noqa: E402
-import trees  # noqa: E402
 
 # The wild animals of the game (phase 47), in the order of sim::CreatureKind:
 # the low-poly zoo specs of art/blender/zoo, with their skeleton and clips.
 GAME_ANIMALS = ("deer", "boar", "wolf", "bear")
 
 
-# The low-poly trees already in the game (phase 51 brings the first one;
-# phase 53, the rest): specs of art/blender/lowpoly_trees, one per state.
-GAME_TREES = ("cherry_1_bloom", "cherry_1_autumn", "cherry_1_bare")
+# The trees (phase 53): every spec of art/blender/lowpoly_trees, one model
+# per state, each with its far version. An evergreen looks the same all
+# year, so only its "bloom" is built.
+EVERGREEN = ("pine", "cypress", "palm", "laurel", "dragon_tree")
 
 
-def make_lowpoly_trees(folder):
+def make_trees(folder, only=None):
+    """`only`: names of trees ("cherry_1", "pine"), to build just those."""
     sys.path.insert(0, os.path.join(HERE, "lowpoly_trees"))
-    modules = sorted({name.rsplit("_", 1)[0] for name in GAME_TREES})
-    for module in modules:
-        # A module is named after its first spec's tree ("cherry.py" has cherry_1, cherry_2...).
-        source = module.rsplit("_", 1)[0] if module.rsplit("_", 1)[-1].isdigit() else module
-        for spec in importlib.import_module(source).SPECS:
-            if spec.name in GAME_TREES:
-                studies.build_final(spec, folder)
+    for file in sorted(os.listdir(os.path.join(HERE, "lowpoly_trees"))):
+        if not file.endswith(".py") or file.startswith("_"):
+            continue
+        for spec in importlib.import_module(file[:-3]).SPECS:
+            tree, state = spec.name.rsplit("_", 1)
+            if only and tree not in only:
+                continue
+            if tree in EVERGREEN and state != "bloom":
+                continue
+            studies.build_final(spec, folder)
 
 
 def make_animals(folder):
@@ -57,9 +61,7 @@ def main():
     if only in (None, "props"):
         props.make_all(os.path.join(out, "props"))
     if only in (None, "trees"):
-        trees.make_all(os.path.join(out, "props"), args[2:] if only == "trees" else None)
-    if only in (None, "trees"):
-        make_lowpoly_trees(os.path.join(out, "trees"))
+        make_trees(os.path.join(out, "trees"), args[2:] if only == "trees" else None)
     if only in (None, "buildings"):
         buildings.make_all(os.path.join(out, "buildings"))
     if only in (None, "animals"):

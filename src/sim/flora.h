@@ -39,20 +39,15 @@ struct SpeciesDef {
     std::string id;       // "core:oak"
     std::string name_key;
     std::string mod;      // Mod folder with the models.
-    // One of the two: a model file prefix inside the mod, completed with the
-    // size ("models/props/tree_oak" + "_large.glb"), or the files of each
-    // state (phase 51), each a list of variants; a state without files
-    // looks like Bloom (an evergreen declares only that one). A species
-    // with states has one model for all sizes, scaled to each tree.
-    std::string model;
+    // The model files of each state (phase 51), each a list of variants; a
+    // state without files looks like Bloom (an evergreen declares only that
+    // one). One model serves all sizes, scaled to each tree.
     std::vector<std::string> state_models[kTreeStates];
     // Phase 52: the far version of each of those files ("" if it has none):
     // a few hundred triangles, drawn where the tree is small on screen.
     std::vector<std::string> state_far[kTreeStates];
-    [[nodiscard]] bool by_state() const { return !state_models[0].empty(); }
     std::uint8_t sizes = 0;  // Bit per TreeSize the species can have.
     std::int32_t logs[kTreeSizes] = {2, 5, 10, 20};  // Wood per tree of each size.
-    bool evergreen = false;  // Keeps its leaves in autumn and winter (the look only).
     bool landmark = false;   // Phase 34: its silhouette shows through the fog of war.
 };
 
