@@ -40,8 +40,7 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `props.py` | `props/tree_pine.glb`, `tree_oak.glb`, `rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb` |
 | `trees.py` | `props/tree_<especie>_<tamaño>.glb`: 21 especies en sus tamaños (ver `docs/ARBOLES.md`) |
 | `buildings.py` | `buildings/<id>.glb`: un modelo por edificio de `core` (46), cada uno del tamaño de su terreno |
-| `animals.py` | `animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb` (sin esqueleto) |
-| `build_all.py` | Ejecuta todo |
+| `build_all.py` | Ejecuta todo; los animales del juego (`animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb`) salen de `zoo/`, con esqueleto y animaciones (fase 47) |
 | `preview.py` | Imágenes de revisión |
 | `studies.py` | Técnicas de modelado de los animales low poly; `build_final` es la de producción (remesh y reducción) |
 | `zoo/*.py` | Un animal o planta low poly por archivo (ver abajo) |
@@ -134,7 +133,7 @@ Cada variante es un modelo más: se dibuja con sus propias llamadas de dibujo. P
 
 ## Animales y flora low poly (`art/blender/zoo/`)
 
-Los 24 modelos de la imagen de referencia `Animales low poly.png` (en la raíz del repositorio, del usuario). Todavía no están en el juego: entran en la fase 47.
+Los 24 modelos de la imagen de referencia `Animales low poly.png` (en la raíz del repositorio, del usuario), más el jabalí y el oso (`boar.py`, `bear.py`), que no están en la imagen. El ciervo, el jabalí, el lobo y el oso son los animales del juego (fase 47): `build_all.py` los escribe en `core`.
 
 - **Técnica:** se compararon diez técnicas con el cerdito y el tigre (`pig_studies.py`, `tiger_studies.py`) y el usuario eligió la de *remesh* y reducción (D-4401). `studies.build_final` suelda las partes de la especificación (elipsoides y cápsulas) en una sola superficie y la reduce a `budget` triángulos. Después la corta donde un borde de color debe ser nítido (`bands` para rayas, `cuts` para bordes sueltos), pinta cada cara con `paint()`, aplana las puntas de otro color (`caps`, como el hocico del cerdito) y agrega tonos claros y oscuros a las facetas. Al final pone las piezas finas que no sobreviven al *remesh* (`details()`: orejas, cuernos, alas, aletas, hojas).
 - **Un archivo por modelo** en `zoo/`, con el nombre del modelo, que define `SPECS`. `zoo/pig.py` es el ejemplo simple; `zoo/tiger.py`, uno con rayas.

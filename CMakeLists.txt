@@ -263,6 +263,7 @@ set(SC_ENGINE_SOURCES
     src/core/log.cpp
     src/core/png.cpp
     src/core/text.cpp
+    src/game/animal_motion.cpp
     src/game/app.cpp
     src/game/build_info.cpp
     src/game/dev_tools.cpp

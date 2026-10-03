@@ -1,10 +1,12 @@
 #include <doctest.h>
 
+#include <cmath>
 #include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
 
+#include "game/animal_motion.h"
 #include "sim/game.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
@@ -265,5 +267,69 @@ TEST_SUITE("wildlife") {
         run(g, 800);
         run(back, 800);
         CHECK(back.hash() == g.hash());
+    }
+
+    TEST_CASE("an animal's clip follows its speed and its feet do not slide") {
+        namespace am = sc::animal_motion;
+        am::Clips c;
+        c.idle = 0, c.walk = 1, c.run = 2, c.eat = 3;
+        c.walk_speed = 1.2f, c.run_speed = 6.0f;
+        c.idle_length = 3.0f, c.walk_length = 0.6f, c.run_length = 0.33f, c.eat_length = 3.0f;
+        // At any speed the clip advances by distance / clip speed: the feet
+        // move back exactly as fast as the animal moves forward.
+        for (const float v : {0.3f, 0.83f, 1.0f, 1.8f, 1.81f, 2.6f, 3.2f, 6.0f, 9.0f}) {
+            am::State s;
+            am::advance(c, s, v, 0.0f, 0.0f, 7);
+            const float clip_speed = s.clip == c.run ? c.run_speed : c.walk_speed;
+            const float length = s.clip == c.run ? c.run_length : c.walk_length;
+            CHECK(s.clip == (v > c.walk_speed * am::kRunAbove ? c.run : c.walk));
+            const float dt = 0.01f;
+            const float before = s.time;
+            am::advance(c, s, v, dt, dt, 7);
+            CHECK(std::fmod(s.time - before + length, length) * clip_speed == doctest::Approx(v * dt).epsilon(0.001));
+        }
+        // Paused: frozen.
+        am::State s;
+        am::advance(c, s, 1.0f, 0.2f, 0.0f, 7);
+        const float t = s.time;
+        am::advance(c, s, 1.0f, 0.0f, 0.0f, 7);
+        CHECK(s.time == t);
+        // Walk to run keeps the point of the stride.
+        am::advance(c, s, 4.0f, 0.0f, 0.0f, 7);
+        CHECK(s.clip == c.run);
+        CHECK(s.time / c.run_length == doctest::Approx(t / c.walk_length));
+    }
+
+    TEST_CASE("a standing animal idles and grazes, taking turns at the end of each loop") {
+        namespace am = sc::animal_motion;
+        am::Clips c;
+        c.idle = 0, c.walk = 1, c.run = 2, c.eat = 3;
+        c.idle_length = 3.0f, c.eat_length = 2.0f;
+        int idle = 0, eat = 0;
+        for (std::uint32_t seed = 0; seed < 50; ++seed) {
+            am::State s;
+            am::advance(c, s, 2.0f, 0.1f, 0.1f, seed);  // Was walking.
+            std::uint32_t last = s.clip;
+            for (int f = 0; f < 600; ++f) {
+                am::advance(c, s, 0.0f, 0.05f, 0.05f, seed);
+                REQUIRE((s.clip == c.idle || s.clip == c.eat));
+                CHECK(s.time >= 0.0f);
+                CHECK(s.time < (s.clip == c.idle ? c.idle_length : c.eat_length));
+                if (s.clip != last || f == 0) {
+                    (s.clip == c.idle ? idle : eat) += 1;
+                }
+                last = s.clip;
+            }
+            // The same animal does the same.
+            am::State a, b;
+            for (int f = 0; f < 300; ++f) {
+                am::advance(c, a, 0.0f, 0.05f, 0.05f, seed);
+                am::advance(c, b, 0.0f, 0.05f, 0.05f, seed);
+            }
+            CHECK(a.clip == b.clip);
+            CHECK(a.time == b.time);
+        }
+        CHECK(idle > 0);
+        CHECK(eat > idle);
     }
 }

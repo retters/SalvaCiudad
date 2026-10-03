@@ -2315,6 +2315,15 @@ void App::update_replay() {
             }
             break;
         case ReplayStep::Settling:
+            if (now - replay_since_ns_ >= kReplaySettleNs / 2) {
+                if (replay_measure_ns_ == 0) {
+                    replay_measure_ns_ = now;
+                    replay_measured_ = 0;
+                } else {
+                    ++replay_measured_;
+                    replay_measured_ns_ = now - replay_measure_ns_;
+                }
+            }
             if (++replay_frames_ >= kReplaySettleFrames && now - replay_since_ns_ >= kReplaySettleNs) {
                 replay_step_ = ReplayStep::Capture;
             }
@@ -2347,6 +2356,13 @@ void App::finish_replay(const FrameCapture& capture) {
     }
     if (map_) {
         notes += std::format("Map checksum now: {:016x}\n", map_->map.checksum());
+    }
+    if (replay_measured_ > 0 && replay_measured_ns_ > 0) {
+        const double seconds = static_cast<double>(replay_measured_ns_) / 1e9;
+        const render::RenderStats& st = scene_.stats();
+        notes += std::format("Frames: {} in {:.2f} s, {:.1f} FPS; characters drawn {} of {}\n", replay_measured_,
+                             seconds, static_cast<double>(replay_measured_) / seconds, st.characters_drawn,
+                             st.characters_total);
     }
     const bool ok = !image.empty() && fs::write_file_atomic(replay_dir_ / (stem + ".png"), image) == fs::IoError::None &&
                     fs::write_file_atomic(replay_dir_ / (stem + ".txt"), notes) == fs::IoError::None;

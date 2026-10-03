@@ -257,6 +257,11 @@ private:
     ReplayStep replay_step_ = ReplayStep::None;
     std::uint64_t replay_since_ns_ = 0;
     int replay_frames_ = 0;
+    // The frames drawn in the second half of the settling, to note the
+    // frame rate in the report (phase 47).
+    std::uint64_t replay_measure_ns_ = 0;
+    int replay_measured_ = 0;
+    std::uint64_t replay_measured_ns_ = 0;
     int replay_exit_code_ = 0;
     float camera_wheel_ = 0.0f;   // Wheel notches since the last camera update.
     float camera_drag_px_ = 0.0f;  // Middle-button drag since the last update.

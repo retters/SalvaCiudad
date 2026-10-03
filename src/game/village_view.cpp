@@ -7,6 +7,7 @@
 #include <numbers>
 
 #include "core/log.h"
+#include "game/animal_motion.h"
 #include "game/builtin_models.h"
 #include "game/camera.h"
 #include "game/variants.h"
@@ -178,18 +179,42 @@ float wrap_angle(float a) {
 
 void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult& pack) {
     const sim::Content& content = pack.content;
-    // The animals (phase 18).
-    for (std::size_t k = 0; k < std::size(builtin_models::kAnimals); ++k) {
-        if (species_models_[k] != kNoModel) {
+    // The animals (phase 18), animated (phase 47).
+    creature_looks_.clear();
+    corpses_.clear();
+    for (std::size_t k = 0; k < std::size(builtin_models::kAnimals) && k < species_.size(); ++k) {
+        if (species_[k].loaded) {
             continue;
         }
         const std::filesystem::path file = mods::mod_file(pack.dir("core"), builtin_models::kAnimals[k]);
         const auto data = file.empty() ? std::nullopt : load_model_file(file);
-        render::ModelId id = 0;
-        if (data.has_value() && renderer.add_model(*data, id)) {
-            species_models_[k] = id;
-            used_.push_back(id);
+        Species sp;
+        if (!data.has_value() || !renderer.add_skinned_model(*data, sp.body)) {
+            continue;  // Drawn with the fallback body.
         }
+        const auto clip = [&](std::string_view name, std::uint32_t& index, float& length, float* speed) {
+            const int i = renderer.clip_index(sp.body, name);
+            if (i < 0) {
+                return false;
+            }
+            index = static_cast<std::uint32_t>(i);
+            length = std::max(0.05f, renderer.clip_duration(sp.body, index));
+            for (const render::ModelClip& c : data->clips) {
+                if (speed != nullptr && c.name == name && c.speed > 0.0f) {
+                    *speed = c.speed;
+                }
+            }
+            return true;
+        };
+        animal_motion::Clips& c = sp.clips;
+        sp.loaded = clip("idle", c.idle, c.idle_length, nullptr) && clip("walk", c.walk, c.walk_length, &c.walk_speed) &&
+                    clip("run", c.run, c.run_length, &c.run_speed) && clip("eat", c.eat, c.eat_length, nullptr) &&
+                    clip("die", sp.die, sp.die_length, nullptr);
+        if (!sp.loaded) {
+            log::warn("village: animal model without its clips: {}", file.generic_string());
+            continue;
+        }
+        species_[k] = sp;
     }
     const std::vector<render::BuildingPalette> palettes = make_building_palettes();
     renderer.set_building_palettes(palettes);
@@ -706,9 +731,6 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
                                    int speed) {
     animals_.clear();
     marks_.clear();
-    for (auto& list : species_) {
-        list.clear();
-    }
     static constexpr math::Vec3 kColors[] = {
         {0.55f, 0.36f, 0.2f},   // Deer.
         {0.25f, 0.18f, 0.14f},  // Boar.
@@ -716,6 +738,18 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         {0.3f, 0.2f, 0.12f},    // Bear.
     };
     static constexpr float kScales[] = {1.0f, 0.75f, 0.8f, 1.5f};
+    // A new game, a loaded save or a jump back: nobody died, start over.
+    if (&game != creatures_game_ || game.tick() < creatures_tick_) {
+        creature_looks_.clear();
+        corpses_.clear();
+    }
+    creatures_game_ = &game;
+    creatures_tick_ = game.tick();
+    ++frame_;
+    const float game_dt = dt * static_cast<float>(std::max(speed, 0));
+    // Breathing and grazing at the game's pace, but never faster than real
+    // time, so a fast game does not make them twitch.
+    const float rest_dt = dt * std::min(1.0f, static_cast<float>(std::max(speed, 0)));
     const auto& store = game.creatures();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const sim::EntityId id = store.entities()[k];
@@ -723,36 +757,42 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         const float x = to_float(a.previous.x) + (to_float(a.position.x) - to_float(a.previous.x)) * alpha;
         const float z = to_float(a.previous.z) + (to_float(a.position.z) - to_float(a.previous.z)) * alpha;
         const math::Vec3 at{x, map_surface_height(game.map(), x, z), z};
-        if (id.index >= looks_.size()) {
-            looks_.resize(static_cast<std::size_t>(id.index) + 1);
+        if (id.index >= creature_looks_.size()) {
+            creature_looks_.resize(static_cast<std::size_t>(id.index) + 1);
         }
-        Look& look = looks_[id.index];
+        CreatureLook& look = creature_looks_[id.index];
         if (look.generation != id.generation) {
-            look = Look{};
+            add_corpse(look);  // The slot's last animal died this tick.
+            look = CreatureLook{};
             look.generation = id.generation;
             look.yaw = static_cast<float>(id.index % 628u) / 100.0f;
+            look.motion.time = static_cast<float>(id.index % 97u) / 97.0f;
         }
+        look.kind = a.kind;
+        look.present = frame_;
         const bool moving = a.position != a.previous;
         if (moving) {
             const float want = std::atan2(to_float(a.position.x - a.previous.x), to_float(a.position.z - a.previous.z));
             look.yaw += wrap_angle(want - look.yaw) * std::min(1.0f, dt * 8.0f);
         }
-        look.time += dt * (moving ? 2.0f * static_cast<float>(std::max(speed, 1)) : 1.0f);
         if (a.state == sim::CreatureState::Travel) {
             continue;  // Away on the world map.
         }
         if (!mover_shown(game, a.kind == sim::CreatureKind::Soldier, a.town, x, z)) {
             continue;  // Under the fog of war.
         }
+        look.seen = frame_;
+        look.position = at;
         if (a.kind == sim::CreatureKind::Raider || a.kind == sim::CreatureKind::Soldier) {
             // A villager body with a mark under it: red for raiders, the
             // town's color for soldiers.
+            look.motion.time += dt * (moving ? 2.0f * static_cast<float>(std::max(speed, 1)) : 1.0f);
             if (bodies_ != nullptr && !bodies_->empty()) {
                 const TestCrowd::BodyKind& kind = bodies_->front();
                 render::CharacterInstance c;
                 c.body = kind.id;
                 c.clip = moving ? kind.walk : kind.idle;
-                c.time = look.time;
+                c.time = look.motion.time;
                 c.position = at;
                 c.yaw = look.yaw;
                 c.scale = 1.05f;
@@ -773,25 +813,41 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
             continue;
         }
         const auto kind = static_cast<std::size_t>(a.kind) % std::size(kColors);
-        render::Instance inst;
-        inst.position = at;
-        if (moving) {
-            inst.position.y += 0.06f * std::abs(std::sin(look.time * 6.0f));  // A trot.
-        }
-        inst.yaw = look.yaw;
-        if (kind < species_models_.size() && species_models_[kind] != kNoModel) {
-            species_[kind].push_back(inst);  // Its own model, in its own colors.
+        if (kind >= species_.size() || !species_[kind].loaded) {
+            render::Instance inst;
+            inst.position = at;
+            look.motion.time += dt * (moving ? 2.0f * static_cast<float>(std::max(speed, 1)) : 1.0f);
+            if (moving) {
+                inst.position.y += 0.06f * std::abs(std::sin(look.motion.time * 6.0f));  // A trot.
+            }
+            inst.yaw = look.yaw;
+            inst.scale = kScales[kind];
+            inst.tint = kColors[kind];
+            animals_.push_back(inst);
             continue;
         }
-        inst.scale = kScales[kind];
-        inst.tint = kColors[kind];
-        animals_.push_back(inst);
+        // Meters per second of game time, from the last tick's step.
+        const float step_x = to_float(a.position.x - a.previous.x);
+        const float step_z = to_float(a.position.z - a.previous.z);
+        const float v = std::sqrt(step_x * step_x + step_z * step_z) * static_cast<float>(sim::kTicksPerSecond);
+        animal_motion::advance(species_[kind].clips, look.motion, v, game_dt, rest_dt, id.index);
+        render::CharacterInstance c;
+        c.body = species_[kind].body;
+        c.clip = look.motion.clip;
+        c.time = look.motion.time;
+        c.position = at;
+        c.yaw = look.yaw;
+        characters_.push_back(c);
     }
-    for (std::size_t k = 0; k < species_models_.size(); ++k) {
-        if (species_models_[k] != kNoModel) {
-            renderer.set_instances(species_models_[k], species_[k]);
+    // Animals shown last frame and gone now died (animals only leave the
+    // game by dying).
+    for (CreatureLook& look : creature_looks_) {
+        if (look.generation != ~0u && look.present + 1 == frame_) {
+            add_corpse(look);
+            look = CreatureLook{};
         }
     }
+    update_corpses(game, game_dt);
     if (animal_model_ != kNoModel) {
         renderer.set_instances(animal_model_, animals_);
     }
@@ -799,6 +855,38 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         renderer.set_instances(mark_model_, marks_);
     }
     renderer.set_characters(characters_);
+}
+
+void VillageView::add_corpse(const CreatureLook& look) {
+    const auto kind = static_cast<std::size_t>(look.kind);
+    if (look.generation == ~0u || look.seen + 1 != frame_ || kind >= species_.size() || !species_[kind].loaded) {
+        return;  // Not an animal, or not in view when it died.
+    }
+    corpses_.push_back(Corpse{kind, look.position, look.yaw, 0.0f});
+}
+
+void VillageView::update_corpses(const sim::Game& game, float game_dt) {
+    static constexpr float kLie = 8.0f;   // Seconds lying still after the clip.
+    static constexpr float kSink = 3.0f;  // Seconds to sink into the ground.
+    static constexpr float kDepth = 0.8f;
+    std::erase_if(corpses_, [&](Corpse& c) {
+        c.time += game_dt;
+        return c.time > species_[c.species].die_length + kLie + kSink;
+    });
+    for (const Corpse& c : corpses_) {
+        if (!mover_shown(game, false, 0, c.position.x, c.position.z)) {
+            continue;
+        }
+        const Species& sp = species_[c.species];
+        const float sink = std::clamp((c.time - sp.die_length - kLie) / kSink, 0.0f, 1.0f);
+        render::CharacterInstance ch;
+        ch.body = sp.body;
+        ch.clip = sp.die;
+        ch.time = std::min(c.time, sp.die_length * 0.999f);  // Holds the last pose.
+        ch.position = {c.position.x, c.position.y - kDepth * sink, c.position.z};
+        ch.yaw = c.yaw;
+        characters_.push_back(ch);
+    }
 }
 
 VillageView::Model VillageView::load_building_file(render::SceneRenderer& renderer, const std::filesystem::path& file) {
@@ -868,7 +956,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     std::map<render::ModelId, std::vector<render::Instance>> lists;
     for (const render::ModelId id : used_) {
         if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
-            id != puff_model_ && std::find(species_models_.begin(), species_models_.end(), id) == species_models_.end()) {
+            id != puff_model_) {
             lists[id];
         }
     }
@@ -927,7 +1015,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     }
     for (auto& [id, list] : lists) {
         if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
-            id != puff_model_ && std::find(species_models_.begin(), species_models_.end(), id) == species_models_.end()) {
+            id != puff_model_) {
             renderer.set_instances(id, list);
         }
     }

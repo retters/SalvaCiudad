@@ -164,3 +164,14 @@ Medido en release en esta PC (2026-09-30), mapa colosal (16 384 × 16 384), semi
 
 El jerárquico calcula las regiones y su mezcla en una rejilla de 8 m (unos 4 millones de esquinas en el colosal) y solo interpola en cada vértice. Sus estructuras tocan únicamente sus propias franjas, en vez de cruzar el mapa entero como los valles y cañones del clásico (ver la sugerencia `sug-formas-por-borde`). Un mapa grande (2048 × 2048) tarda 1,5 s.
 
+## Animales animados (fase 47)
+
+Medido con `--reporte` (que anota los FPS de 1,5 s de cuadros, D-4720) en la misma vista con las dos versiones: la anterior a la fase (animales sin esqueleto, compilada aparte) y la nueva. Compilación `release`, ventana de 1600 × 900, Ultra, sin vsync ni límite de FPS, un jugador, juego en pausa, sin niebla de guerra (el reporte muestra todo el mapa).
+
+| Vista | Animales (a la vista / en el mapa) | Antes | Fase 47 |
+|---|---|---|---|
+| Mapa grande, semilla 12345, cámara aérea a 1500 m sobre el centro (tres corridas) | 275 / 317 | 113,0; 109,8; 106,6 (109,8) | 110,4; 107,7; 105,0 (107,7; −1,9 %) |
+| Mapa colosal, semilla 12345, cámara aérea a 2000 m sobre el centro | 321 / 19 346 | 85,4 | 99,5 (+16 %) |
+
+En el mapa grande los animales con esqueleto cuestan un 2 %. En el colosal la versión nueva es más rápida: los animales con esqueleto se descartan por cuadro como los aldeanos, mientras que antes se rehacía la lista de instancias de los 19 346 animales del mapa en cada cuadro (lo mismo que se vio en la fase 32 sin niebla).
+

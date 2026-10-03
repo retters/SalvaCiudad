@@ -7,16 +7,29 @@ or animals. After
 "trees", species ids limit it further (for example: trees oak elm).
 """
 
+import importlib
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 
-import animals  # noqa: E402
 import buildings  # noqa: E402
 import human  # noqa: E402
 import props  # noqa: E402
+import studies  # noqa: E402
 import trees  # noqa: E402
+
+# The wild animals of the game (phase 47), in the order of sim::CreatureKind:
+# the low-poly zoo specs of art/blender/zoo, with their skeleton and clips.
+GAME_ANIMALS = ("deer", "boar", "wolf", "bear")
+
+
+def make_animals(folder):
+    sys.path.insert(0, os.path.join(HERE, "zoo"))
+    for name in GAME_ANIMALS:
+        for spec in importlib.import_module(name).SPECS:
+            studies.build_final(spec, folder)
 
 
 def main():
@@ -32,7 +45,7 @@ def main():
     if only in (None, "buildings"):
         buildings.make_all(os.path.join(out, "buildings"))
     if only in (None, "animals"):
-        animals.make_all(os.path.join(out, "animals"))
+        make_animals(os.path.join(out, "animals"))
     print("SalvaCiudad models written to", out)
 
 

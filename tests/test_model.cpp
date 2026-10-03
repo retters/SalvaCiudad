@@ -1,5 +1,6 @@
 #include <doctest.h>
 
+#include <algorithm>
 #include <cstring>
 #include <ostream>
 
@@ -252,6 +253,24 @@ TEST_SUITE("model") {
         CHECK(m.joint_parent[static_cast<std::size_t>(m.joint_index("chest"))] == m.joint_index("body"));
         CHECK(m.joint_parent[static_cast<std::size_t>(m.joint_index("foot.HR"))] == m.joint_index("leg_lower.HR"));
         CHECK(m.bounds_min.y == doctest::Approx(0.0f).epsilon(0.001));
+    }
+
+    TEST_CASE("the game's animals are rigged, with the speeds of their walk and run") {
+        // Phase 47: art/blender/build_all.py builds them from the zoo specs.
+        for (const char* file : {"animals/deer.glb", "animals/boar.glb", "animals/wolf.glb", "animals/bear.glb"}) {
+            const ModelLoadResult r = load_data(file);
+            REQUIRE_MESSAGE(r.ok, file << ": " << r.error);
+            const ModelData& m = r.model;
+            CHECK(m.skinned());
+            for (const char* name : {"idle", "walk", "run", "eat", "die"}) {
+                CHECK_MESSAGE(m.clip_index(name) >= 0, file << " " << name);
+            }
+            const float walk = m.clips[static_cast<std::size_t>(std::max(0, m.clip_index("walk")))].speed;
+            const float run = m.clips[static_cast<std::size_t>(std::max(0, m.clip_index("run")))].speed;
+            CHECK(walk > 0.5f);
+            CHECK(run > walk * 2.0f);
+            CHECK(m.bounds_min.y == doctest::Approx(0.0f).epsilon(0.001));
+        }
     }
 
     TEST_CASE("the study models that have been generated load, skeletons and clips included") {

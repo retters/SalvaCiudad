@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "game/animal_motion.h"
 #include "game/fog_view.h"
 #include "game/map_scene.h"
 #include "game/test_scene.h"
@@ -136,9 +137,39 @@ private:
     // Animals: one low-poly body for all kinds (phase 18 brings real ones),
     // and a red mark under raiders.
     render::ModelId animal_model_ = kNoModel;  // The fallback body for animals without a model.
-    // Deer, boar, wolf and bear (models/animals in core), if found.
-    std::array<render::ModelId, 4> species_models_{kNoModel, kNoModel, kNoModel, kNoModel};
-    std::array<std::vector<render::Instance>, 4> species_;
+    // Deer, boar, wolf and bear (models/animals in core), animated (phase
+    // 47): the body, its clips and the speeds the clips were made for.
+    struct Species {
+        bool loaded = false;
+        render::SkinnedId body = 0;
+        animal_motion::Clips clips;
+        std::uint32_t die = 0;
+        float die_length = 1.0f;
+    };
+    std::array<Species, 4> species_{};
+    // What each creature is showing, by creature entity index.
+    struct CreatureLook {
+        std::uint32_t generation = ~0u;
+        float yaw = 0.0f;
+        animal_motion::State motion;  // Raiders, soldiers and unanimated animals: only its time.
+        sim::CreatureKind kind = sim::CreatureKind::Deer;
+        math::Vec3 position;
+        std::uint32_t seen = 0;      // Frame it was last shown.
+        std::uint32_t present = 0;   // Frame it was last in the game.
+    };
+    std::vector<CreatureLook> creature_looks_;
+    // Animals that died in view: they play their die clip where they fell,
+    // lie still a while and sink into the ground.
+    struct Corpse {
+        std::size_t species = 0;
+        math::Vec3 position;
+        float yaw = 0.0f;
+        float time = 0.0f;
+    };
+    std::vector<Corpse> corpses_;
+    std::uint32_t frame_ = 0;
+    const sim::Game* creatures_game_ = nullptr;
+    std::uint64_t creatures_tick_ = 0;
     render::ModelId mark_model_ = kNoModel;
     render::ModelId overlay_model_ = kNoModel;
     int overlay_ = 0;
@@ -169,6 +200,8 @@ private:
     std::vector<render::Instance> animals_;
     std::vector<render::Instance> marks_;
     void update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, int speed);
+    void add_corpse(const CreatureLook& look);
+    void update_corpses(const sim::Game& game, float game_dt);
     void rebuild_fields(render::SceneRenderer& renderer, const sim::Game& game);
     sim::Season season_ = sim::Season::Summer;
     const FogView* fog_ = nullptr;

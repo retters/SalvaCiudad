@@ -1039,7 +1039,7 @@ Las ventanas nuevas tienen tooltips en cada elemento: los bienes con su valor y 
 
 Todo se regenera con Blender y da archivos idénticos.
 
-**D-1802. Animales con modelo propio.**
+**D-1802. Animales con modelo propio.** *(Reemplazada por D-4716: los animales del juego son los del zoo low poly, animados.)*
 `art/blender/animals.py` hace ciervo (con cornamenta), jabalí (con colmillos), lobo y oso, sin esqueleto. El juego los hace trotar subiendo y bajando. Las animaciones con huesos quedan para más adelante. Los asaltantes y soldados siguen con el cuerpo de los aldeanos y una marca de color.
 
 **D-1803. Partículas.**
@@ -1978,3 +1978,27 @@ De 22 m (hongo) a 47 m (secuoya), siguiendo las proporciones de cada dibujo. Lí
 
 **D-4723. Lo que queda flojo.**
 Sauce llorón (normal y gigante), glicinia y drago: el follaje colgante sale en rombos grandes y sueltos en vez de cortinas densas. Los árboles sin hojas tienen menos ramitas que los dibujos, por el límite de triángulos. La corteza del segundo grupo es algo más clara que la del primero.
+
+## Fase 47: animales animados en el juego (2026-10-02)
+
+El usuario eligió mantener las cuatro especies del juego (ciervo, jabalí, lobo y oso) con su comportamiento de hoy, y modelar el jabalí y el oso que faltaban en el zoo.
+
+**D-4716. Los animales del juego salen del zoo.**
+`art/blender/zoo/boar.py` y `bear.py` son nuevos, con la técnica 06 como el resto del zoo: el jabalí con la plantilla del cerdito (lomo alto y oscuro, hocico largo, colmillos, cola con mechón; 1228 triángulos), el oso con la de las fieras (joroba, patas gruesas, hocico claro; 1460 triángulos). `build_all.py` construye `animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb` de `core` con esos cuatro archivos del zoo, y `animals.py` (los animales sin esqueleto) se borró. `rig_check.py` da RIG OK en los cuatro. En el jabalí, la cabeza baja la mitad que en el cerdito al comer, para que el hocico largo no se meta en el suelo.
+
+**D-4717. La animación sale del movimiento, no de la simulación.**
+La simulación no sabe si un animal come o descansa: solo si se movió en el último tick. La vista decide:
+- **Moviéndose:** camina o corre según su velocidad real (corre por encima de 1,5 veces la velocidad de la caminata del modelo). El clip avanza a la distancia recorrida entre la velocidad del clip guardada en el modelo, así que las patas no patinan a ninguna velocidad del juego. Al pasar de caminar a correr se conserva el punto de la zancada.
+- **Quieto:** alterna `idle` y `eat` al terminar cada vuelta (los dos empiezan y terminan en la misma pose); come el doble de veces que descansa. La elección sale del número del animal, así que se ve igual cada vez.
+- La respiración y el comer van al ritmo del juego, pero nunca más rápido que el tiempo real (a x3 no tiemblan); en pausa todo se detiene.
+La lógica está en `src/game/animal_motion.*`, con pruebas en `tests/test_wildlife.cpp`.
+
+**D-4718. Muertes solo en la vista.**
+La simulación quita al animal muerto en el mismo tick. Como los animales solo salen del juego muriendo, la vista toma a uno que estaba a la vista y desapareció como muerto: deja su cuerpo donde cayó, reproduce `die`, lo deja quieto 8 s y lo hunde en el suelo en 3 s (en tiempo de juego). Al cargar una partida o empezar otra no aparecen cuerpos.
+
+**D-4719. El aspecto de las criaturas, aparte del de los aldeanos.**
+Las criaturas y los aldeanos guardaban su aspecto (giro, tiempo de la animación) en la misma lista, indexada por el número de entidad de cada uno, que no es único entre las dos. Ahora las criaturas tienen su propia lista.
+
+**D-4720. El reporte del mapa anota los FPS.**
+Para medir sin manejar la ventana, `--reporte` anota en `despues_<hora>.txt` los cuadros dibujados en la segunda mitad de la espera (1,5 s), los FPS y cuántos personajes se dibujaron. Ver `docs/RENDIMIENTO.md`.
+
