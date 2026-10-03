@@ -20,7 +20,7 @@
 
 namespace sc::net {
 
-inline constexpr std::uint32_t kProtocolVersion = 6;
+inline constexpr std::uint32_t kProtocolVersion = 7;
 inline constexpr std::uint16_t kDefaultPort = 47800;
 inline constexpr std::uint16_t kDiscoveryPort = 47799;
 inline constexpr std::size_t kMaxNameBytes = 32;
@@ -33,6 +33,11 @@ inline constexpr std::size_t kMaxSnapshotBytes = 3u * 1024u * 1024u * 1024u;
 inline constexpr std::uint8_t kColors = 12;
 // Ticks between state checks (5 s at x1).
 inline constexpr std::uint64_t kHashInterval = 50;
+// The check comes every kHashInterval ticks up to x1 and as often in real
+// time above it (phase 58): `speed` is the one the turn was closed with.
+[[nodiscard]] constexpr std::uint64_t hash_interval(int speed) {
+    return kHashInterval * static_cast<std::uint64_t>(speed > 4 ? speed / 4 : 1);
+}
 
 struct ModRef {
     std::string id;
@@ -124,7 +129,7 @@ struct Commands {  // Client to host.
 };
 struct Turn {  // Host to all: what runs in `tick`.
     std::uint64_t tick = 0;
-    std::uint8_t speed = 1;
+    std::uint8_t speed = 4;  // Quarters of the normal speed (core/speed.h); 0 pauses.
     std::vector<TurnCommand> commands;
     bool operator==(const Turn&) const = default;
 };
@@ -141,12 +146,12 @@ struct Snapshot {  // Host to client: the whole game at `tick`, zstd-packed.
     bool operator==(const Snapshot&) const = default;
 };
 struct SpeedPropose {  // Client to host.
-    std::uint8_t speed = 1;
+    std::uint8_t speed = 4;  // Quarters of the normal speed (core/speed.h); 0 pauses.
     bool operator==(const SpeedPropose&) const = default;
 };
 struct SpeedVote {  // Host to all: someone asks for a speed.
     std::uint32_t id = 0;
-    std::uint8_t speed = 1;
+    std::uint8_t speed = 4;  // Quarters of the normal speed (core/speed.h); 0 pauses.
     std::uint8_t from = 0;
     bool operator==(const SpeedVote&) const = default;
 };
@@ -156,7 +161,7 @@ struct SpeedAnswer {  // Client to host.
     bool operator==(const SpeedAnswer&) const = default;
 };
 struct SpeedSet {  // Host to all.
-    std::uint8_t speed = 1;
+    std::uint8_t speed = 4;  // Quarters of the normal speed (core/speed.h); 0 pauses.
     std::uint8_t by = 0;
     SpeedReason reason = SpeedReason::Vote;
     bool operator==(const SpeedSet&) const = default;

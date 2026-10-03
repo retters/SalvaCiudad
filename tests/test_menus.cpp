@@ -60,6 +60,7 @@ public:
     GameSession* session() override { return game.get(); }
     int game_speed() const override { return speed; }
     void set_game_speed(int s) override { speed = s; }
+    int max_game_speed() const override { return 36; }
     void save_game() override { ++games_saved; }
     std::vector<save::Entry> list_saves() override { return saves; }
     bool load_game(const std::filesystem::path& file) override {
@@ -102,7 +103,7 @@ public:
     sim::MapSettings last_map_settings;
     MapGenStatus generation_status;
     std::unique_ptr<GameSession> game;
-    int speed = 1;
+    int speed = 4;
     int games_saved = 0;
     std::vector<save::Entry> saves;
     std::vector<std::filesystem::path> loaded;
@@ -285,10 +286,18 @@ TEST_SUITE("menus") {
         CHECK(ui.placing == sim::kNoDef);
         CHECK(h.services.speed == 0);
         h.frame(128, key);
-        CHECK(h.services.speed == 1);
+        CHECK(h.services.speed == 4);
         key.keys = {SDL_SCANCODE_3};
         h.frame(144, key);
-        CHECK(h.services.speed == 3);
+        CHECK(h.services.speed == 12);  // x3, in quarters.
+        // Period and comma go a step up and down the table.
+        key.keys = {SDL_SCANCODE_PERIOD};
+        h.frame(146, key);
+        CHECK(h.services.speed == 16);
+        key.keys = {SDL_SCANCODE_COMMA};
+        h.frame(148, key);
+        h.frame(150, key);
+        CHECK(h.services.speed == 8);
 
         key.keys = {SDL_SCANCODE_F5};
         h.frame(160, key);

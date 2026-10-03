@@ -2359,3 +2359,23 @@ En su nota de I-007, Salvador dice que las replanteará (tramos dinámicos entre
 
 **D-9105. Valores que el plan fijó sin pregunta.**
 Lo más simple en cada caso, para ajustar al probar: estaciones de 1 a 30 min (5 por omisión); límites de precio de 75 a 125 % en pasos de 5; mirar hasta 60° hacia arriba; tope de 16 ventanas de objeto y de 2 ventanas de cámara de 320 × 200; nombres de hasta 24 caracteres. En red, el tope de ×5 se sostiene midiendo los márgenes en tiempo real.
+
+## Fase 58: más velocidades (2026-10-03)
+
+**D-5801. La velocidad se cuenta en cuartos.**
+Un entero sigue bastando: 4 es ×1, 1 es ×0,25 y 36 es ×9; 0 es la pausa. Solo valen los pasos de la tabla (`src/core/speed.h`): 1, 2, 4, 8, 12, 16, 20 y, sin red, 24, 28, 32 y 36. Así no hay números con decimales en el reloj ni en la red, y lo que no es un paso baja al paso de abajo. Reemplaza al entero 0 a 3 de D-003.
+
+**D-5802. Barra y teclas.**
+Pausa y "− ×N +". Mientras está en pausa, ×N muestra la velocidad a la que volverá, y − y + la cambian y reanudan. Las teclas 1, 2 y 3 siguen poniendo ×1, ×2 y ×3. Para subir y bajar un paso se usan el punto y la coma: + y − ya son el zoom de la cámara, y dos acciones no pueden compartir tecla por omisión. Se pueden cambiar en Controles.
+
+**D-5803. En red, tope ×5 y márgenes en tiempo real.**
+El mensaje de velocidad lleva los cuartos; uno que no sea un paso o pase de ×5 se rechaza. El retraso de las órdenes, cuánto puede atrasarse un jugador y cada cuánto se compara la partida estaban en pasos de simulación pensados para ×1 a ×3. Ahora, por encima de ×1, valen lo mismo en tiempo real: hasta 1 s de retraso, 3 s de atraso y una comparación cada 5 s (a ×5, cada 250 pasos en vez de 50). La comparación usa la velocidad con que se cerró cada turno, que viaja en el turno, así que todos comparan en los mismos pasos. Por debajo de ×1 no cambia nada. "Bajar por un jugador lento" baja un paso de la tabla, hasta ×1. Protocolo de red 7.
+
+**D-5804. Si el equipo no alcanza, baja un paso.**
+En un jugador, si durante 20 cuadros seguidos se pierden pasos (el reloj corre como mucho 8 por cuadro), la velocidad baja un paso de la tabla y un aviso lo dice; no baja de ×1. En red eso ya lo hace el anfitrión con el jugador lento.
+
+**D-5805. Las velocidades lentas.**
+A ×0,25 un paso dura 0,4 s: la interpolación sigue siendo suave, pero una orden puede tardar hasta 0,4 s en notarse y la niebla se actualiza cada 4 s. Las animaciones, las partículas y los sonidos de trabajo van a la velocidad del juego (antes, por ser enteros, se habrían quedado quietos).
+
+**D-5806. Cuánto aguanta.**
+No se midió una partida de 300 aldeanos en vivo a ×9; el dato sale de las mediciones de `docs/RENDIMIENTO.md`: con 2 pueblos de 300 un paso cuesta 0,15 ms, así que ×9 (90 pasos por segundo) son 14 ms de cada segundo. En vivo se comprobó ×9 en una partida recién empezada (mapa mediano, 12 aldeanos): 9 días de juego en unos 4 s y sin bajar de velocidad. Con 12 pueblos de 1000, el paso promedio (12,5 ms) da para ×8 sin dibujar, pero uno de cada veinte pasa de 34 ms: ahí el juego bajará solo hacia ×3 o ×4.

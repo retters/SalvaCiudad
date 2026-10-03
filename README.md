@@ -601,6 +601,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 58
+
+- [ ] La barra superior tiene pausa y "− ×N +". Con + se llega a ×9 en un jugador; con − a ×0,25.
+- [ ] A ×0,25 y ×0,5 los aldeanos, el humo y los animales van en cámara lenta, sin tirones; a ×9 el calendario avanza nueve veces más rápido.
+- [ ] En pausa, ×N muestra la velocidad a la que volverá; Espacio la reanuda; − y + la cambian y reanudan.
+- [ ] Teclas: 1, 2 y 3 ponen ×1, ×2 y ×3; coma baja un paso y punto lo sube. Se pueden cambiar en Configuración > Controles.
+- [ ] En una partida grande a ×9, si el equipo no alcanza, sale el aviso y la velocidad baja sola un paso.
+- [ ] En red (dos instancias): + no pasa de ×5; pedir ×4 o ×5 abre la votación; a ×5 la partida va fluida y sin "Esperando a…" con conexión local.
+- [ ] El tutorial que pide cambiar la velocidad marca el botón +.
+
 ### Fase 57
 
 - [ ] Una partida nueva solo tiene personajes nuevos. Con raza humana se ven aventureros, caballeros, magos y clérigos, con ropa, piel y cabello de varios colores y estaturas algo distintas.

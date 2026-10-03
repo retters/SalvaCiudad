@@ -78,6 +78,8 @@ public:
     // 0 pauses; 1..3.
     [[nodiscard]] virtual int game_speed() const = 0;
     virtual void set_game_speed(int speed) = 0;
+    // The fastest speed this game allows (less with other players).
+    [[nodiscard]] virtual int max_game_speed() const = 0;
     // Saves the game in the saves folder and tells the player how it went.
     virtual void save_game() = 0;
     [[nodiscard]] virtual std::vector<save::Entry> list_saves() = 0;

@@ -6,6 +6,7 @@
 #include <optional>
 #include <ostream>
 
+#include "core/speed.h"
 #include "game/build_info.h"
 #include "net/enet_link.h"
 #include "net/lockstep.h"
@@ -208,7 +209,7 @@ TEST_SUITE("net") {
         lobby.players = {{0, "Ana", 3, true, true, true}, {4, "Ñandú", 11, false, false, true}};
         Turn turn;
         turn.tick = 99;
-        turn.speed = 2;
+        turn.speed = 8;
         sim::Command cmd;
         cmd.type = sim::CommandType::SetWorkers;
         cmd.player = 3;
@@ -227,7 +228,7 @@ TEST_SUITE("net") {
             turn,
             Ack{50, true, PartHashes{{1, 2, 3, 4, 5, 6, 7}}},
             pack_snapshot(10, std::vector<std::uint8_t>(1000, 7)),
-            SpeedPropose{3},
+            SpeedPropose{12},
             SpeedVote{4, 2, 1},
             SpeedAnswer{4, true},
             SpeedSet{0, 2, SpeedReason::Pause},
@@ -250,7 +251,10 @@ TEST_SUITE("net") {
         CHECK_FALSE(decode(encode(Welcome{12})).has_value());
         CHECK_FALSE(decode(encode(SetInfo{"", 1, false})).has_value());
         CHECK_FALSE(decode(encode(SetInfo{"a\nb", 1, false})).has_value());
-        CHECK_FALSE(decode(encode(SpeedPropose{4})).has_value());
+        CHECK_FALSE(decode(encode(SpeedPropose{3})).has_value());   // Not a step.
+        CHECK_FALSE(decode(encode(SpeedPropose{24})).has_value());  // x6: only alone.
+        CHECK(decode(encode(SpeedPropose{20})).has_value());        // x5.
+        CHECK(decode(encode(SpeedPropose{1})).has_value());         // x0.25.
         std::vector<std::uint8_t> junk = {200, 1, 2, 3};
         CHECK_FALSE(decode(junk).has_value());
         std::vector<std::uint8_t> snapshot;
@@ -346,6 +350,33 @@ TEST_SUITE("net") {
         expect_same_games(c);
     }
 
+    TEST_CASE("at x5 the game keeps in step: the margins follow the speed") {
+        Cluster c;
+        c.join("Ana");
+        c.frames(3, 0);
+        c.host().set_config(config(25, true));
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(10, 1);
+        c.host().request_speed(sc::speed::kMaxNetwork);
+        c.frames(2, 0);
+        REQUIRE(c.client(1).vote().has_value());
+        c.client(1).answer_vote(true);
+        c.frames(2, 0);
+        REQUIRE(c.host().speed() == sc::speed::kMaxNetwork);
+        // Five ticks a frame, as the clock asks for at x5.
+        const std::uint64_t before = c.m[0].game->tick();
+        c.frames(200, 5);
+        CHECK(c.m[0].game->tick() >= before + 900);  // Hardly a frame waiting for anybody.
+        CHECK(c.m[1].game->tick() + 60 >= c.m[0].game->tick());  // The client keeps up.
+        CHECK(c.host().desyncs() == 0);  // Through four checks, 250 ticks apart.
+        CHECK(c.host().speed() == sc::speed::kMaxNetwork);  // Nobody was slow.
+        // The check comes as often in real time as at x1: every 250 ticks.
+        CHECK(hash_interval(sc::speed::kMaxNetwork) == 5 * kHashInterval);
+        CHECK(hash_interval(sc::speed::kNormal) == kHashInterval);
+        CHECK(hash_interval(sc::speed::kMin) == kHashInterval);
+    }
+
     TEST_CASE("a desynchronization is found and repaired") {
         Cluster c;
         c.join("Ana");
@@ -386,28 +417,32 @@ TEST_SUITE("net") {
         c.frames(10, 1);
         CHECK(c.m[0].game->tick() == paused_at);
         // Resuming needs everybody.
-        c.client(1).request_speed(2);
+        c.client(1).request_speed(8);
         c.frames(2, 0);
         REQUIRE(c.host().vote().has_value());
         c.host().answer_vote(true);
         c.frames(2, 0);
-        CHECK(c.host().speed() == 2);
-        CHECK(c.client(1).speed() == 2);
+        CHECK(c.host().speed() == 8);
+        CHECK(c.client(1).speed() == 8);
         // A refused vote changes nothing.
-        c.host().request_speed(3);
+        c.host().request_speed(12);
         c.frames(2, 0);
         REQUIRE(c.client(1).vote().has_value());
         c.client(1).answer_vote(false);
         c.frames(2, 0);
-        CHECK(c.host().speed() == 2);
+        CHECK(c.host().speed() == 8);
+        // Over x5 there is nothing to vote with others.
+        c.host().request_speed(24);
+        c.frames(2, 0);
+        CHECK_FALSE(c.client(1).vote().has_value());
         // And one nobody answers ends by itself.
-        c.client(1).request_speed(1);
+        c.client(1).request_speed(4);
         c.frames(3, 0);
         CHECK(c.host().vote().has_value());
         c.now += NetSession::kVoteTimeoutMs;
         c.frames(1, 0);
         CHECK_FALSE(c.host().vote().has_value());
-        CHECK(c.host().speed() == 2);
+        CHECK(c.host().speed() == 8);
     }
 
     TEST_CASE("other versions and other mods are refused with the reason") {

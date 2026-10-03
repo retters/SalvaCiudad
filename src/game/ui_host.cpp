@@ -1,5 +1,7 @@
 #include "game/ui_host.h"
 
+#include "core/speed.h"
+
 #include "game/minimap.h"
 
 #include <algorithm>
@@ -430,7 +432,7 @@ void UiHost::generating_screen(ui::Context& ctx, bool modal) {
         if (services_.enter_generated_map()) {
             screen_ = Screen::MapView;
             game_menu_open_ = false;
-            last_speed_ = 1;
+            last_speed_ = speed::kNormal;
         } else {
             show_message(tr("generating.showFailed.title"), tr("generating.showFailed.body"));
             screen_ = Screen::NewGame;
@@ -491,11 +493,18 @@ void UiHost::game_keys(ui::Context& ctx) {
                 services_.set_game_speed(0);
             }
         } else if (b.matches(Action::GameSpeed1, k)) {
-            services_.set_game_speed(1);
+            services_.set_game_speed(speed::kNormal);
         } else if (b.matches(Action::GameSpeed2, k)) {
-            services_.set_game_speed(2);
+            services_.set_game_speed(2 * speed::kNormal);
         } else if (b.matches(Action::GameSpeed3, k)) {
-            services_.set_game_speed(3);
+            services_.set_game_speed(3 * speed::kNormal);
+        } else if (b.matches(Action::GameSpeedDown, k)) {
+            // From a pause, the step under the speed it will go back to.
+            const int now = services_.game_speed() > 0 ? services_.game_speed() : last_speed_;
+            services_.set_game_speed(speed::slower(now));
+        } else if (b.matches(Action::GameSpeedUp, k)) {
+            const int now = services_.game_speed() > 0 ? services_.game_speed() : last_speed_;
+            services_.set_game_speed(speed::faster(now, services_.max_game_speed()));
         } else if (b.matches(Action::GameQuickSave, k)) {
             services_.save_game();
         } else if (b.matches(Action::GameQuickLoad, k)) {

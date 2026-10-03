@@ -739,7 +739,7 @@ void App::render_frame(float dt) {
                 if (!still) {
                     update_placement(frame.width, frame.height);
                 }
-                const int speed = host_->game_paused() ? 0 : clock_.speed();
+                const float speed = host_->game_paused() ? 0.0f : speed::multiplier(clock_.speed());
                 village_.set_view(camera_.target().x, camera_.target().z, session_->town());
                 update_war_fog();
                 village_.set_fog(&session_->fog());
@@ -753,7 +753,7 @@ void App::render_frame(float dt) {
                 // Behind the menus: the map's own animals, at the game's pace.
                 village_.set_view(camera_.target().x, camera_.target().z, 0);
                 village_.update(scene_, map_scene_, *menu_game_, static_cast<float>(clock_.interpolation()), dt,
-                                clock_.speed());
+                                speed::multiplier(clock_.speed()));
                 map_scene_.update_sky(scene_, dt);
             }
             render::SceneView view;
@@ -930,7 +930,18 @@ void App::frame() {
     if (net_ && session_ && session_->networked()) {
         clock_.set_speed(net_->speed());
     }
+    const std::uint64_t dropped_before = clock_.dropped_ticks();
     const int ticks = clock_.advance(static_cast<std::int64_t>(elapsed));
+    // A machine that cannot keep the speed up goes one step down instead of
+    // losing ticks quietly (alone; with others the host does it).
+    if (session_ && !session_->networked() && host_ && !replay_) {
+        slow_frames_ = clock_.dropped_ticks() > dropped_before ? slow_frames_ + 1 : 0;
+        if (slow_frames_ >= kSlowFramesToLower && clock_.speed() > speed::kNormal) {
+            clock_.set_speed(speed::slower(clock_.speed()));
+            slow_frames_ = 0;
+            host_->toast(tr("hud.speed.lowered", speed_text(clock_.speed())));
+        }
+    }
     if (net_ && session_ && session_->networked()) {
         (void)net_->advance(ticks, now / 1'000'000ull);
         autosave_if_due();
@@ -1038,7 +1049,7 @@ void App::update_menu_background() {
     village_.set_fog(nullptr);
     village_.begin(scene_, map_scene_, *menu_game_);
     lighting_ = render::Lighting{};
-    clock_.set_speed(1);
+    clock_.set_speed(speed::kNormal);
     reset_camera_to_menu();
     log::info("menu: background map of seed {} shown {:.2f} s after it was asked for", menu_seed_,
               static_cast<double>(SDL_GetTicksNS() - menu_started_ns_) / 1e9);
@@ -1135,7 +1146,7 @@ void App::leave_map() {
     village_.end(scene_);
     session_.reset();
     lighting_ = render::Lighting{};
-    clock_.set_speed(1);
+    clock_.set_speed(speed::kNormal);
     map_scene_.hide(scene_);
     walkers_.clear();
     walkers_.set_ground({});
@@ -1572,7 +1583,7 @@ void App::start_session(std::unique_ptr<GameSession> session) {
     map_scene_.hide_sample_village(scene_);
     walkers_.clear();
     village_.begin(scene_, map_scene_, session_->game());
-    clock_.set_speed(1);
+    clock_.set_speed(speed::kNormal);
     next_autosave_tick_ =
         game.tick() + static_cast<std::uint64_t>(std::max(1, settings_->settings().gameplay.autosave_minutes)) * kTicksPerMinute;
     if (const sim::Building* tc = game.buildings().get(game.player(session_->town()).town_center)) {
@@ -1710,10 +1721,14 @@ int App::game_speed() const {
 
 void App::set_game_speed(int speed) {
     if (net_ && session_ && session_->networked()) {
-        net_->request_speed(speed);  // Pause at once; the rest by vote.
+        net_->request_speed(speed::snap(speed, speed::kMaxNetwork));  // Pause at once; the rest by vote.
     } else {
         clock_.set_speed(speed);
     }
+}
+
+int App::max_game_speed() const {
+    return net_ && session_ && session_->networked() ? speed::kMaxNetwork : speed::kMax;
 }
 
 std::string App::player_name() const {
@@ -1908,7 +1923,7 @@ void App::update_sound(float dt) {
     }
     if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
         sound_.update(session_->game(), &session_->fog(), camera_.target().x, camera_.target().z, camera_.distance(),
-                      host_->game_paused(), dt * static_cast<float>(std::max(1, clock_.speed())));
+                      host_->game_paused(), dt * std::max(speed::multiplier(speed::kMin), speed::multiplier(clock_.speed())));
     } else {
         sound_.stop();
     }
@@ -2035,7 +2050,7 @@ void App::handle_net_event(const net::NetEvent& e) {
             const char* key = e.reason == net::SpeedReason::Pause        ? "net.paused"
                               : e.reason == net::SpeedReason::SlowPlayer ? "net.slowPlayer"
                                                                           : "net.speed";
-            host_->toast(tr(key, seat_name(e.slot), e.value));
+            host_->toast(tr(key, seat_name(e.slot), speed_text(e.value)));
             break;
         }
         case Kind::Rejected: {

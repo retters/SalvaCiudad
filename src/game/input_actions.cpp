@@ -24,6 +24,8 @@ constexpr ActionInfo kActions[] = {
     {Action::GameSpeed1, "game.speed1", ActionGroup::Game, {SDL_SCANCODE_1, kNone}},
     {Action::GameSpeed2, "game.speed2", ActionGroup::Game, {SDL_SCANCODE_2, kNone}},
     {Action::GameSpeed3, "game.speed3", ActionGroup::Game, {SDL_SCANCODE_3, kNone}},
+    {Action::GameSpeedDown, "game.speedDown", ActionGroup::Game, {SDL_SCANCODE_COMMA, kNone}},
+    {Action::GameSpeedUp, "game.speedUp", ActionGroup::Game, {SDL_SCANCODE_PERIOD, kNone}},
     {Action::GameQuickSave, "game.quickSave", ActionGroup::Game, {SDL_SCANCODE_F5, kNone}},
     {Action::GameQuickLoad, "game.quickLoad", ActionGroup::Game, {SDL_SCANCODE_F9, kNone}},
     {Action::GameRotateBuilding, "game.rotateBuilding", ActionGroup::Game, {SDL_SCANCODE_R, kNone}},

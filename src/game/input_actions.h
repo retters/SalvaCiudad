@@ -28,6 +28,8 @@ enum class Action : std::uint8_t {
     GameSpeed1,
     GameSpeed2,
     GameSpeed3,
+    GameSpeedDown,
+    GameSpeedUp,
     GameQuickSave,
     GameQuickLoad,
     GameRotateBuilding,

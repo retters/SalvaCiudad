@@ -79,6 +79,7 @@ public:
     GameSession* session() override { return session_.get(); }
     int game_speed() const override;
     void set_game_speed(int speed) override;
+    int max_game_speed() const override;
     void save_game() override;
     std::vector<save::Entry> list_saves() override;
     bool load_game(const std::filesystem::path& file) override;
@@ -284,6 +285,9 @@ private:
     float perf_log_s_ = 0.0f;
     int perf_log_frames_ = 0;
     GameClock clock_;
+    // Frames in a row that lost ticks; after a few the speed goes a step down.
+    int slow_frames_ = 0;
+    static constexpr int kSlowFramesToLower = 20;
     // The map behind the menus: made in its own thread from a seed of the
     // list, with a game without towns on it so its animals live.
     MapGenerationJob menu_job_;

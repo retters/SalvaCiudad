@@ -119,7 +119,7 @@ private:
     LobbyScreen lobby_screen_;
     bool host_new_game_ = false;  // The new game screen is choosing a multiplayer map.
     void follow_network();
-    int last_speed_ = 1;  // Speed to go back to after a pause.
+    int last_speed_ = 4;  // Speed to go back to after a pause (quarters; 4 is x1).
     std::vector<save::Entry> saves_;  // The load list, read when it opens.
 
     struct Message {

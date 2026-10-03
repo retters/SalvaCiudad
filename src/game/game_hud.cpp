@@ -1,5 +1,7 @@
 #include "game/game_hud.h"
 
+#include "core/speed.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -87,6 +89,16 @@ GameDate game_date(std::uint64_t tick) {
     d.month = static_cast<std::int32_t>(tick % sim::kTicksPerYear / sim::kTicksPerMonth) + 1;
     d.day = static_cast<std::int32_t>(tick % sim::kTicksPerMonth / sim::kTicksPerDay) + 1;
     return d;
+}
+
+std::string speed_text(int quarters) {
+    if (quarters == 1) {
+        return tr("speed.quarter");
+    }
+    if (quarters == 2) {
+        return tr("speed.half");
+    }
+    return std::to_string(quarters / speed::kNormal);
 }
 
 bool GameHud::pressed(const ui::Context& ctx, Action action) const {
@@ -226,24 +238,37 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     const sim::Calendar cal = game.calendar();
     const float button = std::round(ctx.s(36.0f));
     const float gap = ctx.s(4.0f);
-    float right = bar.right() - pad - 4 * button - 3 * gap;
-    struct Speed {
-        int value;
-        const char* label;
-        const char* tooltip;
-    };
-    static constexpr Speed kSpeeds[] = {{0, "hud.speed.pause", "hud.speed.pause.tooltip"},
-                                        {1, "hud.speed.1", "hud.speed.1.tooltip"},
-                                        {2, "hud.speed.2", "hud.speed.2.tooltip"},
-                                        {3, "hud.speed.3", "hud.speed.3.tooltip"}};
-    for (std::size_t i = 0; i < std::size(kSpeeds); ++i) {
-        const ui::Rect r{right + static_cast<float>(i) * (button + gap), std::round((bar.h - button) * 0.5f), button, button};
-        if (highlight_ == "speed" && i > 1) {
-            mark(ctx, r);
+    // Pause, and "- xN +" (phase 58).
+    const float label_w = std::round(ctx.s(56.0f));
+    float right = bar.right() - pad - 3 * button - label_w - 3 * gap;
+    {
+        const float by = std::round((bar.h - button) * 0.5f);
+        const int now = services_.game_speed();
+        const int most = services_.max_game_speed();
+        float sx = right;
+        if (ctx.button(ctx.id("hud.speed.pause"), {sx, by, button, button}, tr("hud.speed.pause"), tr("hud.speed.pause.tooltip"),
+                       true, now == speed::kPause)) {
+            services_.set_game_speed(now == speed::kPause ? shown_speed_ : speed::kPause);
         }
-        if (ctx.button(ctx.id(kSpeeds[i].label), r, tr(kSpeeds[i].label), tr(kSpeeds[i].tooltip), true,
-                       services_.game_speed() == kSpeeds[i].value)) {
-            services_.set_game_speed(kSpeeds[i].value);
+        if (now != speed::kPause) {
+            shown_speed_ = now;  // What "xN" says while paused, and where the pause goes back to.
+        }
+        sx += button + gap;
+        if (ctx.button(ctx.id("hud.speed.slower"), {sx, by, button, button}, tr("hud.speed.slower"),
+                       tr("hud.speed.slower.tooltip"), shown_speed_ > speed::kMin)) {
+            services_.set_game_speed(speed::slower(shown_speed_));
+        }
+        sx += button + gap;
+        ctx.label({sx, by, label_w, button}, tr("hud.speed.value", speed_text(shown_speed_)), st,
+                  now == speed::kPause ? ctx.theme().text_dim : ctx.theme().text, ui::Align::Center);
+        sx += label_w + gap;
+        const ui::Rect faster{sx, by, button, button};
+        if (highlight_ == "speed") {
+            mark(ctx, faster);
+        }
+        if (ctx.button(ctx.id("hud.speed.faster"), faster, tr("hud.speed.faster"), tr("hud.speed.faster.tooltip"),
+                       shown_speed_ < most)) {
+            services_.set_game_speed(speed::faster(shown_speed_, most));
         }
     }
     network(ctx, s, right);
@@ -396,7 +421,7 @@ void GameHud::network(ui::Context& ctx, GameSession& s, float& right) {
         for (const net::LobbyPlayer& p : net->lobby().players) {
             from = p.slot == vote->from ? p.name : from;
         }
-        const std::string q = tr("hud.net.vote", from, static_cast<int>(vote->speed));
+        const std::string q = tr("hud.net.vote", from, speed_text(vote->speed));
         const float pad = ctx.s(12.0f);
         const float bh = std::round(ctx.s(36.0f));
         const float vw = std::min(ctx.width() - 2 * pad, std::max(ctx.s(360.0f), ctx.text().measure(st, q) + 2 * pad));

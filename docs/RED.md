@@ -18,7 +18,7 @@ La topología es una **estrella**: el anfitrión recibe las órdenes de todos y 
 
 ## Comprobación y desincronización
 
-- Cada 5 ticks los clientes confirman hasta dónde llegaron. Cada 50 ticks (5 s a x1) mandan además los hashes de siete partes del estado: cabecera, jugadores, entidades, recursos del mapa, edificios, aldeanos y generador aleatorio.
+- Cada 5 ticks los clientes confirman hasta dónde llegaron. Cada 50 ticks (5 s a x1; por encima de x1, cada 5 s reales: 250 ticks a x5) mandan además los hashes de siete partes del estado: cabecera, jugadores, entidades, recursos del mapa, edificios, aldeanos y generador aleatorio.
 - El anfitrión compara con sus propios hashes del mismo tick. Si alguno no coincide:
   - se avisa a todos;
   - se guarda un informe en la carpeta de registros (`logs/desync-<tick>-seat<n>.txt`) con las partes que difieren;
@@ -26,13 +26,14 @@ La topología es una **estrella**: el anfitrión recibe las órdenes de todos y 
 
 ## Jugadores lentos
 
-Si un jugador queda más de 30 ticks detrás del anfitrión, el anfitrión espera y todos ven "Esperando a …". Si la espera dura más de 3 s y la velocidad es mayor que x1, la velocidad baja un paso para todos y se avisa quién la bajó.
+Si un jugador queda más de 30 ticks detrás del anfitrión (3 s; por encima de x1 son los ticks de 3 s reales), el anfitrión espera y todos ven "Esperando a …". Si la espera dura más de 3 s y la velocidad es mayor que x1, la velocidad baja un paso para todos y se avisa quién la bajó.
 
 ## Velocidad y pausa (sección 7.5)
 
 - **Pausa:** inmediata. Cualquier jugador la pide y el anfitrión la aplica sin votación.
 - **Reanudar y cambiar de velocidad:** se vota. El que la pide acepta solo; los demás ven "Aceptar" y "Rechazar". Pasa cuando todos aceptan; basta un rechazo para descartarla, y se descarta sola a los 15 s.
 - Cada turno lleva la velocidad del anfitrión, así que un jugador que vuelve a entrar la ve bien.
+- **Velocidades (fase 58):** x0,25, x0,5 y x1 a x5; las de x6 a x9 solo existen en un jugador. La velocidad viaja en cuartos de x1 (4 es x1, 20 es x5); un mensaje con otro valor se rechaza. El retraso de las órdenes llega hasta 1 s real a cualquier velocidad.
 
 ## Sala, arranque y mundo
 

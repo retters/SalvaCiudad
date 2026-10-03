@@ -1,5 +1,7 @@
 #include "net/protocol.h"
 
+#include "core/speed.h"
+
 #include <zstd.h>
 
 #include "core/text.h"
@@ -57,7 +59,7 @@ bool read_name(BinaryReader& r, std::string& out) {
 }
 
 bool read_speed(BinaryReader& r, std::uint8_t& speed) {
-    if (!r.u8(speed) || speed > 3) {
+    if (!r.u8(speed) || !speed::valid(speed) || speed > speed::kMaxNetwork) {
         r.fail();
         return false;
     }

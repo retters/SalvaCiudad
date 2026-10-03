@@ -210,6 +210,18 @@ Mapa grande, semilla 12345, cámara a 260 m (4291 árboles a la vista): de antes
 
 Las corridas del colosal varían entre sí un 10 %, más que la diferencia que se mide; el dato firme es el de los triángulos.
 
+## Velocidades (fase 58)
+
+Un paso de simulación es siempre 0,1 s de juego; la velocidad dice cuántos caben en un segundo real: 2,5 a ×0,25, 10 a ×1, 50 a ×5 y 90 a ×9. Con los costos por paso medidos arriba:
+
+| Partida | Costo por paso | Velocidad que sostiene |
+|---|---|---|
+| 2 pueblos de 300, mapa mediano | 0,15 ms | ×9 (14 ms de cada segundo) |
+| 12 pueblos de 1000, mapa enorme | 12,5 ms en promedio, 34 ms uno de cada veinte | ×3 a ×4 con el dibujo; por encima el juego baja solo un paso (D-5804) |
+| Mapa colosal en red | suma de verificación de 175 ms | ×5: la suma se compara cada 5 s reales a cualquier velocidad (D-5803) |
+
+En red el tope es ×5. No se midió ×9 con 300 aldeanos en vivo; ver D-5806.
+
 ## Personajes low poly (fase 57)
 
 Medido con `--reporte` y `"people": 1000` en la vista (D-5710), `release`, 1600 × 900, Ultra, sin vsync, mapa pequeño (semilla 91): mil aldeanos caminando en un cuadro de 64 m.

@@ -407,7 +407,7 @@ void VillageView::set_ghost(std::optional<Ghost> ghost) {
 }
 
 void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game, float alpha, float dt,
-                         int speed) {
+                         float speed) {
     if (!shown_) {
         return;
     }
@@ -479,12 +479,12 @@ float VillageView::random01() {
     return static_cast<float>(particle_seed_ & 0xFFFFu) / 65535.0f;
 }
 
-void VillageView::update_particles(render::SceneRenderer& renderer, const sim::Game& game, float dt, int speed) {
+void VillageView::update_particles(render::SceneRenderer& renderer, const sim::Game& game, float dt, float speed) {
     if (puff_model_ == kNoModel) {
         return;
     }
     constexpr std::size_t kMaxParticles = 4000;
-    const float step = speed == 0 ? 0.0f : dt * static_cast<float>(speed);
+    const float step = dt * std::max(speed, 0.0f);
     // New puffs a few times a second, near the view only.
     emit_timer_ -= step;
     if (emit_timer_ <= 0.0f && speed > 0) {
@@ -727,7 +727,7 @@ void VillageView::update_overlay(render::SceneRenderer& renderer, const sim::Gam
 
 
 void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,
-                                   int speed) {
+                                   float speed) {
     animals_.clear();
     marks_.clear();
     static constexpr math::Vec3 kColors[] = {
@@ -745,10 +745,10 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
     creatures_game_ = &game;
     creatures_tick_ = game.tick();
     ++frame_;
-    const float game_dt = dt * static_cast<float>(std::max(speed, 0));
+    const float game_dt = dt * std::max(speed, 0.0f);
     // Breathing and grazing at the game's pace, but never faster than real
     // time, so a fast game does not make them twitch.
-    const float rest_dt = dt * std::min(1.0f, static_cast<float>(std::max(speed, 0)));
+    const float rest_dt = dt * std::clamp(speed, 0.0f, 1.0f);
     const auto& store = game.creatures();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const sim::EntityId id = store.entities()[k];
@@ -821,7 +821,7 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         if (kind >= species_.size() || !species_[kind].loaded) {
             render::Instance inst;
             inst.position = at;
-            look.motion.time += dt * (moving ? 2.0f * static_cast<float>(std::max(speed, 1)) : 1.0f);
+            look.motion.time += dt * (moving ? 2.0f * std::max(speed, 1.0f) : 1.0f);
             if (moving) {
                 inst.position.y += 0.06f * std::abs(std::sin(look.motion.time * 6.0f));  // A trot.
             }
@@ -1046,15 +1046,15 @@ math::Vec3 VillageView::building_top(const sim::Game& game, const sim::Building&
 }
 
 void VillageView::update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,
-                                    int speed) {
+                                    float speed) {
     characters_.clear();
     if (cast_ == nullptr || !cast_->loaded()) {
         renderer.set_characters({});
         return;
     }
-    const float game_dt = dt * static_cast<float>(std::max(speed, 0));
+    const float game_dt = dt * std::max(speed, 0.0f);
     // Work and rest at the game's pace, but never faster than real time.
-    const float rest_dt = dt * std::min(1.0f, static_cast<float>(std::max(speed, 0)));
+    const float rest_dt = dt * std::clamp(speed, 0.0f, 1.0f);
     const auto& store = game.villagers();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const sim::EntityId id = store.entities()[k];

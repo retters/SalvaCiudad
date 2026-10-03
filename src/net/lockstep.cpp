@@ -1,5 +1,7 @@
 #include "net/lockstep.h"
 
+#include "core/speed.h"
+
 #include <algorithm>
 
 #include "core/log.h"
@@ -11,6 +13,17 @@ namespace {
 constexpr std::size_t kHistoryTurns = 600;  // A minute at x1.
 constexpr std::size_t kChecksKept = 64;
 constexpr std::uint64_t kAckEvery = 5;       // Ticks between acknowledgements.
+
+// Real milliseconds a tick takes at a speed (in quarters), at least 1.
+std::uint32_t tick_ms(int speed) {
+    return std::max<std::uint32_t>(1, 400u / static_cast<std::uint32_t>(std::max(1, speed)));
+}
+
+// How far behind a player may be: kMaxLagTicks at x1 and below, and the
+// same three seconds of real time above it.
+std::uint64_t lag_ticks(int speed) {
+    return std::max<std::uint64_t>(NetSession::kMaxLagTicks, NetSession::kMaxLagTicks * 100u / tick_ms(speed));
+}
 constexpr std::uint64_t kDelayUpdateMs = 1000;
 
 const char* kPartNames[] = {"header", "players", "entities", "nodes", "buildings", "villagers", "vision", "random"};
@@ -195,8 +208,10 @@ void NetHost::update_delay() {
             rtt = std::max(rtt, link_.round_trip_ms(seats_[i].peer));
         }
     }
-    const std::uint32_t tick_ms = 100u / static_cast<std::uint32_t>(std::max(1, speed_));
-    delay_ = std::clamp((rtt / 2 + 50) / tick_ms + 1, kMinDelay, kMaxDelay);
+    // The longest delay is kMaxDelay ticks of x1 in real time (a second),
+    // whatever the speed.
+    const std::uint32_t tick = tick_ms(speed_);
+    delay_ = std::clamp((rtt / 2 + 50) / tick + 1, kMinDelay, std::max(kMaxDelay, kMaxDelay * 100u / tick));
 }
 
 void NetHost::receive(PeerId peer, std::span<const std::uint8_t> data) {
@@ -466,7 +481,7 @@ int NetHost::advance(int ticks, std::uint64_t now_ms) {
         // Wait for the slowest connected player.
         for (std::uint8_t i = 1; i < seats_.size(); ++i) {
             const Seat& s = seats_[i];
-            if (s.in_game && s.connected && s.acked + kMaxLagTicks < t) {
+            if (s.in_game && s.connected && s.acked + lag_ticks(speed_) < t) {
                 waiting_for_ = i;
             }
         }
@@ -480,9 +495,10 @@ int NetHost::advance(int ticks, std::uint64_t now_ms) {
         if (it == turns_.end()) {
             break;  // Cannot happen: turns up to the horizon are closed.
         }
+        const int turn_speed = it->second.speed;
         run_turn(it->second);
         turns_.erase(it);
-        if (game_->tick() % kHashInterval == 0) {
+        if (game_->tick() % hash_interval(turn_speed) == 0) {
             checks_[game_->tick()] = parts_of(*game_);
             while (checks_.size() > kChecksKept) {
                 checks_.erase(checks_.begin());
@@ -493,8 +509,8 @@ int NetHost::advance(int ticks, std::uint64_t now_ms) {
     if (waiting_for_) {
         if (stalled_since_ms_ == 0) {
             stalled_since_ms_ = now_ms_;
-        } else if (now_ms_ - stalled_since_ms_ > kSlowPlayerMs && speed_ > 1) {
-            set_speed(speed_ - 1, *waiting_for_, SpeedReason::SlowPlayer);
+        } else if (now_ms_ - stalled_since_ms_ > kSlowPlayerMs && speed_ > speed::kNormal) {
+            set_speed(speed::slower(speed_), *waiting_for_, SpeedReason::SlowPlayer);
             stalled_since_ms_ = now_ms_;
         }
     } else {
@@ -534,7 +550,7 @@ void NetHost::send_snapshot(std::uint8_t slot) {
 }
 
 void NetHost::request_speed(int speed) {
-    if (state_ != State::Playing || speed < 0 || speed > 3) {
+    if (state_ != State::Playing || !speed::valid(speed) || speed > speed::kMaxNetwork) {
         return;
     }
     if (speed == 0) {
@@ -772,10 +788,11 @@ int NetClient::advance(int ticks, std::uint64_t now_ms) {
             break;
         }
         speed_ = it->second.speed;  // The host's speed travels with every turn.
+        const int turn_speed = speed_;
         run_turn(it->second);
         turns_.erase(it);
         const std::uint64_t t = game_->tick();
-        if (t % kHashInterval == 0) {
+        if (t % hash_interval(turn_speed) == 0) {
             send(Ack{t, true, parts_of(*game_)});
         } else if (t % kAckEvery == 0) {
             send(Ack{t, false, {}});
@@ -789,7 +806,7 @@ int NetClient::advance(int ticks, std::uint64_t now_ms) {
 }
 
 void NetClient::request_speed(int speed) {
-    if (state_ == State::Playing && speed >= 0 && speed <= 3) {
+    if (state_ == State::Playing && speed::valid(speed) && speed <= speed::kMaxNetwork) {
         send(SpeedPropose{static_cast<std::uint8_t>(speed)});
     }
 }

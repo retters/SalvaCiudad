@@ -5,7 +5,7 @@
 namespace sc {
 
 void GameClock::set_speed(int speed) {
-    const int clamped = std::clamp(speed, 0, kMaxSpeed);
+    const int clamped = speed::snap(speed);
     if (clamped == speed_) {
         return;
     }

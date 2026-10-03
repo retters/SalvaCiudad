@@ -15,6 +15,9 @@
 
 namespace sc {
 
+// A speed as text: "0.25", "0.5", "1" ... "9" (the decimal mark by language).
+[[nodiscard]] std::string speed_text(int quarters);
+
 // Text key of a need (sim::Need).
 [[nodiscard]] const char* need_text_key(std::uint8_t need);
 // Text keys of the villagers' tasks, by sim::Task.
@@ -83,6 +86,7 @@ private:
     int offer_want_amount_ = 20;
     // Multiplayer: who plays, whom the game waits for, speed votes.
     void network(ui::Context& ctx, GameSession& s, float& right);
+    int shown_speed_ = 4;  // The last speed that was not the pause (quarters).
     std::uint32_t answered_vote_ = 0;
     std::uint8_t category_ = 0;  // Build bar group shown.
     void house_lines(const sim::Game& game, const sim::Building& b, std::vector<std::string>& lines) const;

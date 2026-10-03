@@ -38,7 +38,7 @@ public:
     // Per frame. `alpha` is how far into the next tick the clock is, to
     // draw villagers between their last two positions; `speed` is the
     // game speed (0 when paused).
-    void update(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game, float alpha, float dt, int speed);
+    void update(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game, float alpha, float dt, float speed);
     // The villagers drawn by the last update().
     [[nodiscard]] std::span<const render::CharacterInstance> characters() const { return characters_; }
 
@@ -194,11 +194,11 @@ private:
     std::uint32_t particle_seed_ = 12345u;
     float emit_timer_ = 0.0f;
     [[nodiscard]] float random01();
-    void update_particles(render::SceneRenderer& renderer, const sim::Game& game, float dt, int speed);
+    void update_particles(render::SceneRenderer& renderer, const sim::Game& game, float dt, float speed);
     void update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt);
     std::vector<render::Instance> animals_;
     std::vector<render::Instance> marks_;
-    void update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, int speed);
+    void update_creatures(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, float speed);
     void add_corpse(const CreatureLook& look);
     void update_corpses(const sim::Game& game, float game_dt);
     void rebuild_fields(render::SceneRenderer& renderer, const sim::Game& game);
@@ -213,7 +213,7 @@ private:
                                                      std::int32_t x,
                                                      std::int32_t z, std::int32_t w, std::int32_t d,
                                                      std::uint8_t rotation, float progress) const;
-    void update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, int speed);
+    void update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, float speed);
 };
 
 }  // namespace sc

@@ -107,7 +107,7 @@ protected:
     State state_ = State::Connecting;
     Lobby lobby_;
     std::uint8_t slot_ = 0;
-    int speed_ = 1;
+    int speed_ = 4;  // Quarters of the normal speed; 0 pauses.
     std::uint32_t delay_ = kMinDelay;
     sim::Game* game_ = nullptr;
     std::optional<Start> start_;
