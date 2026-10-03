@@ -1,6 +1,8 @@
 """Props: a boulder, an iron ore outcrop, a berry bush,
 an herb plant and a small half-timbered house with architectural details
-(beams, window frames, shutters, door, chimney, roof tiles in rows)."""
+(beams, window frames, shutters, door, chimney, roof tiles in rows).
+Since phase 67 also the piles of goods shown at construction sites and
+storages (pile_<what>_<level>) and the merchant's hand cart."""
 
 import math
 import os
@@ -33,6 +35,26 @@ COLORS = {
     "flowers": common.rgb(0x9C6AC8),
     "cloud": common.rgb(0xF4F6F8),
     "cloud_shade": common.rgb(0xDDE3EA),
+    # Piles and the cart (phase 67).
+    "log": common.rgb(0x7A5232),
+    "log_dark": common.rgb(0x64422A),
+    "log_end": common.rgb(0xC8A06A),
+    "block": common.rgb(0x8C8A88),
+    "block_light": common.rgb(0xA3A19E),
+    "block_dark": common.rgb(0x6F6D6C),
+    "sack": common.rgb(0xCDB98E),
+    "sack_dark": common.rgb(0xB39E74),
+    "rope": common.rgb(0x8A6A3C),
+    "plank": common.rgb(0xB08A5A),
+    "plank_dark": common.rgb(0x8A6038),
+    "wicker": common.rgb(0xB88E52),
+    "wicker_dark": common.rgb(0x8E6A3A),
+    "apples": common.rgb(0xC8342A),
+    "grain": common.rgb(0xD8B85A),
+    "greens": common.rgb(0x4E8A34),
+    "iron": common.rgb(0x44484E),
+    "awning": common.rgb(0xA8403A),
+    "awning_light": common.rgb(0xE8E4D8),
 }
 
 
@@ -227,6 +249,170 @@ def cloud(folder, name="cloud", puffs=CLOUD_PUFFS):
     common.export_glb(os.path.join(folder, name + ".glb"), [obj])
 
 
+# --- Piles of goods and the merchant's cart (phase 67) ------------------------------------
+
+
+def pile_log(mb, x0, x1, y, z, r, mat="log"):
+    mb.cylinder((x0, y, z), (x1, y, z), r, r, mat, segments=7)
+    for x in (x0, x1):
+        mb.cylinder((x - 0.006, y, z), (x + 0.006, y, z), r * 0.86, r * 0.86, "log_end", segments=7)
+
+
+def pile_crate(mb, cx, cy, z, s, turn=0.0):
+    """A crate of side s standing at height z: planks with darker battens."""
+    mb.box((cx, cy, z + s / 2), (s - 0.03, s - 0.03, s - 0.02), "plank", rotation_z=turn)
+    for dz in (0.05, s - 0.05):
+        mb.box((cx, cy, z + dz), (s, s, 0.07), "plank_dark", rotation_z=turn)
+    c, n = math.cos(turn), math.sin(turn)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            dx, dy = sx * (s - 0.07) / 2, sy * (s - 0.07) / 2
+            mb.box((cx + dx * c - dy * n, cy + dx * n + dy * c, z + s / 2), (0.07, 0.07, s), "plank_dark",
+                   rotation_z=turn)
+
+
+def pile_sack(mb, cx, cy, z, turn=0.0, seed=0.0, mat="sack"):
+    """A full sack lying down at height z, its tied neck toward its +X."""
+    c, n = math.cos(turn), math.sin(turn)
+    verts = mb.sphere((0, 0, 0), 0.3, mat, segments=7, rings=5, scale=(1.1, 0.75, 0.42))
+    lumpy(verts, 0.07, seed)
+    verts += mb.cylinder((0.3, 0, 0.0), (0.4, 0, 0.02), 0.035, 0.03, "rope", segments=5)
+    verts += mb.cylinder((0.4, 0, 0.02), (0.47, 0, 0.04), 0.03, 0.07, mat, segments=5)
+    for v in verts:
+        x, y = v.co.x, v.co.y
+        v.co.x, v.co.y, v.co.z = cx + x * c - y * n, cy + x * n + y * c, max(z, z + 0.125 + v.co.z)
+
+
+def pile_basket(mb, cx, cy, z, fill, r=0.3, h=0.38):
+    """A round basket standing at height z, heaped with `fill`."""
+    mb.cylinder((cx, cy, z), (cx, cy, z + h * 0.5), r * 0.78, r * 0.92, "wicker_dark", segments=8)
+    mb.cylinder((cx, cy, z + h * 0.5), (cx, cy, z + h), r * 0.92, r, "wicker", segments=8)
+    mb.cylinder((cx, cy, z + h - 0.02), (cx, cy, z + h + 0.03), r * 1.06, r * 1.06, "wicker_dark", segments=8)
+    mb.sphere((cx, cy, z + h + 0.02), r * 0.9, fill, segments=8, rings=4, scale=(1.0, 1.0, 0.35))
+
+
+def pile_stone(mb, x, y, z, r, scale, seed, mat):
+    verts = mb.sphere((x, y, z), r, mat, segments=6, rings=4, scale=scale)
+    lumpy(verts, 0.12, seed)
+    for v in verts:
+        v.co.z = max(v.co.z, 0.0)
+
+
+# How many items each level of a pile holds: 1 a few, 2 about half, 3 full.
+PILE_COUNTS = {"logs": (3, 7, 12), "stone": (3, 6, 10), "sacks": (3, 7, 12), "crates": (2, 4, 8),
+               "baskets": (2, 4, 5)}
+
+# Logs: (y, z); 1.4 m long, lying along X.
+PILE_LOGS = ((-0.3, 0.13), (0.0, 0.13), (0.3, 0.13), (-0.58, 0.13), (0.58, 0.13), (-0.15, 0.36), (0.15, 0.36),
+             (-0.44, 0.36), (0.44, 0.36), (0.0, 0.59), (-0.29, 0.59), (0.29, 0.59))
+# Stones: (x, y, z, radius, scale).
+PILE_STONES = ((-0.3, -0.25, 0.2, 0.3, (1.1, 1.0, 0.8)), (0.35, -0.3, 0.18, 0.27, (1.0, 1.1, 0.8)),
+               (0.05, 0.3, 0.2, 0.3, (1.2, 0.9, 0.8)), (-0.5, 0.35, 0.17, 0.25, (1.0, 1.0, 0.8)),
+               (0.52, 0.2, 0.18, 0.26, (0.9, 1.1, 0.85)), (0.0, -0.55, 0.15, 0.22, (1.2, 0.9, 0.8)),
+               (-0.15, 0.0, 0.52, 0.28, (1.1, 1.0, 0.75)), (0.3, 0.0, 0.5, 0.25, (1.0, 1.0, 0.8)),
+               (-0.1, 0.38, 0.5, 0.22, (1.0, 0.9, 0.8)), (0.08, 0.05, 0.8, 0.22, (1.1, 1.0, 0.7)))
+# Sacks: (x, y, z, turn in degrees).
+PILE_SACKS = ((-0.33, -0.5, 0.0, 0), (-0.33, 0.0, 0.0, 6), (0.38, -0.5, 0.0, 180), (-0.33, 0.5, 0.0, -5),
+              (0.38, 0.0, 0.0, 174), (0.38, 0.5, 0.0, 184), (0.02, -0.28, 0.21, 92), (0.02, 0.3, 0.21, 88),
+              (-0.38, 0.0, 0.2, 80), (0.42, 0.02, 0.2, 100), (0.0, -0.05, 0.4, 4), (0.05, 0.38, 0.38, 176))
+# Crates: (x, y, z, side, turn in degrees).
+PILE_CRATES = ((-0.36, -0.36, 0.0, 0.66, 0), (0.38, -0.33, 0.0, 0.6, 8), (-0.36, 0.38, 0.0, 0.62, -4),
+               (0.38, 0.38, 0.0, 0.66, 0), (-0.3, -0.25, 0.66, 0.56, 12), (0.34, 0.3, 0.66, 0.52, -9),
+               (-0.32, 0.38, 0.62, 0.48, 3), (0.3, -0.3, 0.6, 0.44, 30))
+# Baskets: (x, y, z, what it holds).
+PILE_BASKETS = ((-0.36, -0.36, 0.0, "apples"), (0.36, 0.36, 0.0, "grain"), (0.36, -0.36, 0.0, "greens"),
+                (-0.36, 0.36, 0.0, "apples"), (0.0, 0.0, 0.4, "grain"))
+
+
+def pile(folder, what, level):
+    """One fill level (1 to 3) of a pile of goods, about 1.5 x 1.5 m, its
+    origin at the center of its base: props/pile_<what>_<level>.glb."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    count = PILE_COUNTS[what][level - 1]
+    if what == "logs":
+        for i, (y, z) in enumerate(PILE_LOGS[:count]):
+            shift = 0.04 * math.sin(i * 2.1)
+            pile_log(mb, -0.7 + shift, 0.7 + shift, y, z, 0.13, "log" if i % 3 else "log_dark")
+    elif what == "stone":
+        for i, (x, y, z, r, scale) in enumerate(PILE_STONES[:count]):
+            pile_stone(mb, x, y, z, r, scale, i * 1.7, ("block", "block_dark", "block_light")[i % 3])
+    elif what == "sacks":
+        for i, (x, y, z, turn) in enumerate(PILE_SACKS[:count]):
+            pile_sack(mb, x, y, z, math.radians(turn), i * 1.3, "sack" if i % 3 else "sack_dark")
+    elif what == "crates":
+        for x, y, z, s, turn in PILE_CRATES[:count]:
+            pile_crate(mb, x, y, z, s, math.radians(turn))
+    elif what == "baskets":
+        for x, y, z, fill in PILE_BASKETS[:count]:
+            pile_basket(mb, x, y, z, fill)
+    name = f"pile_{what}_{level}"
+    obj = mb.to_object(name, COLORS)
+    common.export_glb(os.path.join(folder, name + ".glb"), [obj])
+
+
+def piles(folder):
+    for what in sorted(PILE_COUNTS):
+        for level in (1, 2, 3):
+            pile(folder, what, level)
+
+
+def cart(folder):
+    """The merchant's hand cart: two wheels, two shafts toward -Y (its
+    front), loaded with crates, sacks and a barrel under a cloth awning.
+    2.2 m long (2.3 m with the awning's overhang), 1.3 m wide, standing on Z = 0."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    bed = 0.62            # Height of the floor of the cart.
+    y0, y1 = -0.55, 0.9   # The bed, front to back.
+    half = 0.5            # Half width of the bed.
+    mid = (y0 + y1) / 2
+    mb.box((0, mid, bed - 0.04), (2 * half, y1 - y0, 0.08), "plank")
+    for x in (-half, half):
+        mb.box((x, mid, bed + 0.13), (0.05, y1 - y0, 0.26), "plank_dark")
+    for y in (y0, y1):
+        mb.box((0, y, bed + 0.13), (2 * half, 0.05, 0.26), "plank_dark")
+    # The shafts a person pulls it by, joined by a bar, and the legs it rests on.
+    for x in (-0.42, 0.42):
+        mb.cylinder((x, y1 - 0.1, bed - 0.12), (x, -1.3, bed + 0.1), 0.035, 0.03, "timber", segments=5)
+        mb.box((x, y0 + 0.08, (bed - 0.1) / 2), (0.07, 0.07, bed - 0.1), "timber")
+    mb.cylinder((-0.46, -1.24, bed + 0.09), (0.46, -1.24, bed + 0.09), 0.028, 0.028, "timber", segments=5)
+    # Wheels and axle.
+    wy, wr = 0.35, 0.45
+    mb.cylinder((-0.6, wy, wr), (0.6, wy, wr), 0.04, 0.04, "iron", segments=6)
+    for x in (-0.61, 0.61):
+        mb.cylinder((x - 0.03, wy, wr), (x + 0.03, wy, wr), wr, wr, "timber", segments=12)
+        mb.cylinder((x - 0.04, wy, wr), (x + 0.04, wy, wr), wr * 0.8, wr * 0.8, "plank", segments=12)
+        mb.cylinder((x - 0.05, wy, wr), (x + 0.05, wy, wr), 0.08, 0.08, "iron", segments=6)
+    # The load.
+    pile_crate(mb, -0.2, 0.55, bed, 0.5)
+    pile_crate(mb, 0.26, 0.6, bed, 0.36, math.radians(10))
+    pile_crate(mb, -0.2, 0.52, bed + 0.5, 0.34, math.radians(-14))
+    pile_sack(mb, -0.12, -0.2, bed, math.radians(95), 0.4)
+    pile_sack(mb, -0.08, -0.12, bed + 0.2, math.radians(80), 1.9, "sack_dark")
+    bx, by, br, bh = 0.24, 0.1, 0.2, 0.55
+    mb.cylinder((bx, by, bed), (bx, by, bed + bh / 2), br * 0.85, br, "plank_dark", segments=8)
+    mb.cylinder((bx, by, bed + bh / 2), (bx, by, bed + bh), br, br * 0.85, "plank_dark", segments=8)
+    for z in (bed + bh * 0.2, bed + bh * 0.8):
+        mb.cylinder((bx, by, z - 0.02), (bx, by, z + 0.02), br * 0.97, br * 0.97, "iron", segments=8)
+    # The awning: four posts and a striped cloth, higher at the front.
+    top_front, top_back = 1.95, 1.75
+    for x in (-half, half):
+        mb.cylinder((x, y0, bed), (x, y0, top_front), 0.03, 0.03, "timber", segments=5)
+        mb.cylinder((x, y1, bed), (x, y1, top_back), 0.03, 0.03, "timber", segments=5)
+    strips = 5
+    a0, a1 = y0 - 0.12, y1 + 0.12
+    for i in range(strips):
+        x0 = -0.62 + 1.24 * i / strips
+        x1 = -0.62 + 1.24 * (i + 1) / strips
+        verts = mb.prism([(x0, a0), (x1, a0), (x1, a1), (x0, a1)], 0.0, 0.035,
+                         "awning" if i % 2 == 0 else "awning_light")
+        for v in verts:
+            v.co.z += top_front + (top_back - top_front) * (v.co.y - y0) / (y1 - y0)
+    obj = mb.to_object("cart", COLORS)
+    common.export_glb(os.path.join(folder, "cart.glb"), [obj])
+
+
 def make_all(folder):
     os.makedirs(folder, exist_ok=True)
     rock(folder)
@@ -236,6 +422,8 @@ def make_all(folder):
     house(folder)
     cloud(folder)
     variants(folder)
+    piles(folder)
+    cart(folder)
 
 
 def variants(folder):

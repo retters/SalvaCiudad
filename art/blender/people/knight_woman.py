@@ -56,7 +56,7 @@ class KnightWoman(Folk):
     def animate(self, clip, t, pose):
         """The ponytail lags behind the head's bobbing."""
         p = 2 * math.pi * t
-        swing = {"walk": 5.0, "run": 9.0}.get(clip, 1.5)
+        swing = {"walk": 5.0, "carry_walk": 5.0, "run": 9.0}.get(clip, 1.5)
         pose.turn("ponytail", X, swing * math.sin(2 * p + 0.8))
         pose.turn("ponytail", Z, swing * 0.6 * math.sin(p))
 

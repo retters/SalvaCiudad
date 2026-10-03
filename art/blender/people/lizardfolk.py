@@ -752,14 +752,14 @@ class Lizardfolk(Folk):
         lies flat behind when sitting."""
         p = 2 * math.pi * t
         count = len(self.TAIL) - 1
-        if clip in ("walk", "run"):     # The long toes stay level: tipped down they would dig into the ground.
+        if clip in ("walk", "run", "carry_walk"):     # The long toes stay level: tipped down they would dig into the ground.
             for side in ("L", "R"):
                 pose.set_world("foot." + side, Quaternion())
         if clip == "fish_sit":
             for i in range(count):
                 pose.aim(f"tail.{i + 1}", Vector((-0.12 * i + 0.05 * math.sin(p) * i, 1.0, 0.0)))
             return
-        amp = {"idle": 4.0, "walk": 8.0, "run": 11.0}.get(clip, 2.5)
+        amp = {"idle": 4.0, "walk": 8.0, "carry_walk": 8.0, "run": 11.0}.get(clip, 2.5)
         for i in range(count):
             pose.turn(f"tail.{i + 1}", Z, amp * math.sin((2 if clip == "idle" else 1) * p - 0.7 * i))
         rest = self.rig.by_name[f"tail.{count}"].tail.z

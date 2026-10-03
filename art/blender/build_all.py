@@ -2,9 +2,10 @@
 
     blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models [only]
 
-`only` limits the build to one group: characters, tools, props, trees,
-buildings or animals. After "trees" or "characters", names limit it further
-(for example: trees cherry_1 pine).
+`only` limits the build to one group: characters, tools, loads, props,
+trees, buildings or animals. After "trees" or "characters", names limit it
+further (for example: trees cherry_1 pine); "buildings sites" builds only
+the construction sites.
 """
 
 import importlib
@@ -54,7 +55,9 @@ GAME_PEOPLE = ("adventurer_man", "adventurer_woman", "knight_man", "knight_woman
 # The tools the characters hold while a clip plays ("<clip>_prop" in the
 # model names the kind): kind -> spec of art/blender/weapons. The game
 # knows them by these file names (src/game/builtin_models.h).
-GAME_TOOLS = {"axe": "w07_battle_axe", "bow": "w13_long_bow", "rod": "w18_fishing_rod", "hammer": "w33_stone_hammer"}
+# The arrow is not held: it is what a bow shoots (phase 67).
+GAME_TOOLS = {"axe": "w07_battle_axe", "bow": "w13_long_bow", "rod": "w18_fishing_rod", "hammer": "w33_stone_hammer",
+              "arrow": "w17_arrow"}
 
 
 def make_people(folder, only=None):
@@ -74,6 +77,18 @@ def make_tools(folder):
             studies.build_final(spec, folder)
 
 
+def make_loads(folder):
+    """What a villager carries (phase 67): every spec of art/blender/loads,
+    rigid models the game pins to the chest bone ("<what>_back" on the back,
+    "<what>_arms" in the arms; see loads/_load_kit.py for where they go)."""
+    sys.path.insert(0, os.path.join(HERE, "loads"))
+    for file in sorted(os.listdir(os.path.join(HERE, "loads"))):
+        if not file.endswith(".py") or file.startswith("_"):
+            continue
+        for spec in importlib.import_module(file[:-3]).SPECS:
+            studies.build_final(spec, folder)
+
+
 def make_animals(folder):
     sys.path.insert(0, os.path.join(HERE, "zoo"))
     for name in GAME_ANIMALS:
@@ -89,12 +104,14 @@ def main():
         make_people(os.path.join(out, "characters"), args[2:] if only == "characters" else None)
     if only in (None, "tools"):
         make_tools(os.path.join(out, "tools"))
+    if only in (None, "loads"):
+        make_loads(os.path.join(out, "loads"))
     if only in (None, "props"):
         props.make_all(os.path.join(out, "props"))
     if only in (None, "trees"):
         make_trees(os.path.join(out, "trees"), args[2:] if only == "trees" else None)
     if only in (None, "buildings"):
-        buildings.make_all(os.path.join(out, "buildings"))
+        buildings.make_all(os.path.join(out, "buildings"), args[2:] if only == "buildings" else None)
     if only in (None, "animals"):
         make_animals(os.path.join(out, "animals"))
     print("SalvaCiudad models written to", out)
