@@ -29,10 +29,9 @@ struct CellDescription {
     WaterKind water = WaterKind::None;
     std::int32_t water_depth_cm = 0;
     bool coast = false;  // Dry land with the sea close by.
-    // The hierarchical generator's region there (phase 39); none on
-    // classic maps.
+    // The region there (phase 39).
     std::optional<sim::LandformKind> region;
-    // Sorted, each kind once. Never Coast or River (see `coast` and `water`).
+    // The structure there, if any (phase 40). Never River (see `water`).
     std::vector<sim::LandformKind> landforms;
 };
 

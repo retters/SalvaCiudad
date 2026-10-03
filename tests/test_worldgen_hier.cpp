@@ -23,7 +23,6 @@ sim::MapSettings hier_settings(std::uint64_t seed, sim::MapSize size) {
     s.size = size;
     s.players = 2;
     s.sea = sim::Sea::None;
-    s.generator = sim::MapGenerator::Hierarchical;
     return s;
 }
 
@@ -54,32 +53,9 @@ std::shared_ptr<const sim::Content> shared_content() {
 }  // namespace
 
 TEST_SUITE("worldgen_hier") {
-    TEST_CASE("the generator is a setting of the map, kept in saves") {
-        sim::MapSettings s = hier_settings(5, sim::MapSize::Small);
-        sim::BinaryWriter w;
-        s.write(w);
-        sim::MapSettings back;
-        sim::BinaryReader r(w.bytes());
-        REQUIRE(sim::MapSettings::read(r, back));
-        CHECK(back == s);
-        // An unknown generator is refused.
-        std::vector<std::uint8_t> bytes = w.bytes();
-        bytes.back() = static_cast<std::uint8_t>(sim::MapGenerator::Count);
-        sim::BinaryReader bad(bytes);
-        CHECK_FALSE(sim::MapSettings::read(bad, back));
-        // A classic map is named as before there was a choice.
-        sim::MapSettings classic = s;
-        classic.generator = sim::MapGenerator::Classic;
-        sim::BinaryWriter identity;
-        classic.write_identity(identity);
-        sim::BinaryWriter full;
-        classic.write(full);
-        CHECK(identity.bytes().size() + 1 == full.bytes().size());
-    }
-
     TEST_CASE("every square of a hierarchical map is in one region, the same each time") {
         const sim::MapData m = generate(hier_settings(11, sim::MapSize::Medium));
-        CHECK(m.generator_version == sim::hier::kVersion);
+        CHECK(m.generator_version == sim::worldgen::kGeneratorVersion);
         const auto side = static_cast<std::size_t>(m.owner_side());
         REQUIRE(m.region_owner.size() == side * side);
         REQUIRE(m.structure_owner.size() == side * side);
@@ -96,10 +72,6 @@ TEST_SUITE("worldgen_hier") {
         const sim::MapData again = generate(hier_settings(11, sim::MapSize::Medium));
         CHECK(again.checksum() == m.checksum());
         CHECK(again.region_owner == m.region_owner);
-        // Another generator, another map.
-        sim::MapSettings classic = hier_settings(11, sim::MapSize::Medium);
-        classic.generator = sim::MapGenerator::Classic;
-        CHECK(generate(classic).checksum() != m.checksum());
     }
 
     TEST_CASE("the options change how many regions are not plains") {
@@ -197,7 +169,7 @@ TEST_SUITE("worldgen_hier") {
         sim::Game back(shared_content(), sim::MapData{}, 0, 0);
         sim::BinaryReader r(w.bytes());
         REQUIRE(back.load(r, shared_content()));
-        CHECK(back.map().settings.generator == sim::MapGenerator::Hierarchical);
+        CHECK(back.map().settings == map.settings);
         CHECK(back.map().region_owner == map.region_owner);
         CHECK(back.map().structure_owner == map.structure_owner);
         CHECK(back.map().checksum() == map.checksum());
@@ -207,6 +179,9 @@ TEST_SUITE("worldgen_hier") {
         sim::MapSettings s = hier_settings(14, sim::MapSize::Small);
         s.separate = true;
         const sim::MapData world = generate(s);
+        // The world says the generator's version, as a single map does
+        // (before phase 49 it said the classic one's).
+        CHECK(world.generator_version == sim::worldgen::kGeneratorVersion);
         REQUIRE(world.region_owner.size() == static_cast<std::size_t>(world.owner_side()) * world.owner_side());
         const std::int32_t t = world.region_size();
         // Both players' squares name a region inside their own map.
@@ -316,40 +291,6 @@ TEST_SUITE("worldgen_hier_structures") {
         CHECK(ramps * 10 >= plateaus * 8);
     }
 
-}
-
-TEST_SUITE("worldgen_hier_compare") {
-    TEST_CASE("less canyon than the classic generator with the same options") {
-        // Meters of canyon: the classic ones cross the whole map.
-        const auto meters = [](const sim::MapData& m, int& count) {
-            double total = 0.0;
-            for (const sim::Landform& l : m.landforms) {
-                if (l.kind != LandformKind::Canyon) {
-                    continue;
-                }
-                ++count;
-                for (std::size_t k = 1; k < l.points.size(); ++k) {
-                    total += std::hypot(l.points[k][0] - l.points[k - 1][0], l.points[k][1] - l.points[k - 1][1]);
-                }
-            }
-            return total;
-        };
-        int hier_count = 0;
-        int classic_count = 0;
-        double hier = 0.0;
-        double classic = 0.0;
-        for (std::uint64_t seed = 50; seed < 54; ++seed) {
-            sim::MapSettings s = hier_settings(seed, sim::MapSize::Large);
-            s.landforms = sim::Amount::High;
-            hier += meters(generate(s), hier_count);
-            s.generator = sim::MapGenerator::Classic;
-            classic += meters(generate(s), classic_count);
-        }
-        MESSAGE("canyons: " << hier_count << " hierarchical (" << hier << " m), " << classic_count << " classic (" << classic << " m)");
-        CHECK(hier_count > 0);
-        CHECK(hier_count <= classic_count);
-        CHECK(hier * 2 < classic);
-    }
 }
 
 
@@ -579,6 +520,3 @@ TEST_SUITE("worldgen_hier_life") {
         }
     }
 }
-
-
-

@@ -186,7 +186,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] El terreno se ve en facetas: grandes en lo llano, pequeñas en orillas, barrancos y crestas. No hay grietas entre parcelas.
 - [ ] El agua es turquesa y facetada, se mueve un poco y se ve el fondo de arena cerca de la orilla. Los ríos tienen agua de verdad (antes algunos quedaban como franjas de arena).
 - [ ] Los lagos tienen formas irregulares, con playas de arena de ancho variable.
-- [ ] "Relieve: Montañoso" crea cordilleras con valles dentro del mapa; los inicios quedan en zonas llanas.
+- [ ] "Relieve: Montañoso" da más montañas y crestas más altas; los inicios quedan en zonas llanas.
 - [ ] Alrededor del mapa hay una cordillera con nieve en las cumbres, y hay nubes low-poly en el cielo.
 - [ ] Mapa Enorme en Ultra: más de 60 FPS en los tres modos de cámara.
 - [ ] **Tu opinión:** comparado con las imágenes de referencia, ¿qué ajustarías (tamaño de las facetas, colores, agua, montañas)?
@@ -365,15 +365,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 ### Fase 26 (costas y fondo marino)
 
 - [ ] La partida nueva tiene "Mar" (Sin mar, A veces, Siempre), desactivado con el tipo de mapa Islas.
-- [ ] Con "Siempre", el mapa tiene mar en uno o dos lados, con una costa irregular; a veces con golfos, penínsulas, cabos o islotes (se ven en el minimapa).
+- [ ] Con "Siempre", el mapa tiene mar en uno o dos lados, con una costa irregular; a veces con golfos, penínsulas o islotes (se ven en el minimapa).
 - [ ] Fuera del mapa hay mar donde el borde es mar, y montañas donde es tierra.
-- [ ] En el minimapa, bajo el mar a veces se ven franjas más oscuras (fosas) o más claras (dorsales).
 - [ ] Con "Sin mar", el mapa no tiene costa.
 
 ### Fase 27 (accidentes del terreno)
 
 - [ ] La partida nueva tiene "Accidentes del terreno" (Pocos, Normales, Muchos).
-- [ ] Con "Muchos" en un mapa grande se ven cordilleras (crestas con picos), mesetas (cimas planas con acantilado y una rampa), valles anchos y cañones de paredes a pique con un río en el fondo.
+- [ ] Con "Muchos" en un mapa grande hay más colinas, montañas, mesetas (cimas planas con acantilado y una rampa) y cuencas, y más valles y cañones con un río en el fondo.
 - [ ] Se puede subir a una meseta por su rampa; las paredes de un cañón no se pueden cruzar.
 - [ ] Los ríos serpentean en lugar de ir en línea recta.
 - [ ] En costas e islas, un valle o cañón que llega al mar termina en él.
@@ -422,9 +421,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Generación más rápida de mapas grandes (tras la fase 31)
 
-- [ ] Un mapa Colosal con semilla 12345 (Clásico, mar "A veces", lo demás por omisión) se genera en unos 4 minutos, no en 13, y la barra ya no se queda casi todo el tiempo en 10 % "Dando forma al terreno".
-- [ ] Ese mapa es el mismo de antes: el registro (`map: seed 12345 size 16384 ...`) muestra la suma de verificación `eb8174aa7a3641ce`.
-- [ ] Un mapa Gigante con la misma semilla tarda menos de un minuto y su suma es `a62012064264c43a`.
+- [ ] Un mapa Colosal con semilla 12345 (mar "A veces", lo demás por omisión) se genera en unos 2 minutos, y la barra no se queda casi todo el tiempo en 10 % "Dando forma al terreno" (los tiempos de hoy, en `docs/RENDIMIENTO.md`).
 
 ### Fase 32 (niebla de guerra estática)
 
@@ -460,9 +457,9 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 ### Fase 37 (nombres del terreno bajo el cursor)
 
 - [ ] Con F3 abierto, la ventana de estadísticas tiene la sección "Bajo el cursor", que cambia al mover el ratón sobre el mapa: casilla, suelo y bioma, altura y pendiente, fertilidad, agua y accidentes.
-- [ ] En la vista previa del mapa de una partida nueva con "Accidentes del terreno: Muchos" y "Mar: siempre", al pasar sobre un cañón, una meseta, un valle o una cordillera, F3 dice su nombre.
+- [ ] En la vista previa del mapa de una partida nueva con "Accidentes del terreno: Muchos" y "Mar: siempre", al pasar sobre un cañón, una meseta, un valle o una cresta, F3 dice su nombre.
 - [ ] En el agua dice "Río", "Lago" o "Mar", con la profundidad; en la orilla del mar dice "Costa".
-- [ ] Sobre un golfo, una península o un cabo que se ven en el mapa, F3 dice su nombre donde se ven.
+- [ ] Sobre un golfo, una península o un islote que se ven en el mapa, F3 dice su nombre donde se ven.
 - [ ] En un mapa de islas dice "Isla" sobre cada isla.
 - [ ] Con niebla de guerra, sobre lo no explorado dice solo "Todavía sin explorar".
 - [ ] Guarda la partida, cárgala y comprueba que los nombres siguen apareciendo.
@@ -482,9 +479,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 39 (generador jerárquico: regiones)
 
-- [ ] La partida nueva tiene "Generador de mapas" (Clásico, Jerárquico), con un tooltip que explica cada uno, y lo recuerda al volver.
-- [ ] Con "Clásico" los mapas son iguales que antes (la misma semilla da el mismo mapa).
-- [ ] Con "Jerárquico", F3 muestra "Región: …" (Llanura, Colinas, Montañas, Meseta o Cuenca) y cambia al pasar de una región a otra.
+- [ ] F3 muestra "Región: …" (Llanura, Colinas, Montañas, Meseta o Cuenca) y cambia al pasar de una región a otra.
 - [ ] Las mesetas se ven como terreno alto con acantilado alrededor; las cuencas tienen lagos; casi no hay estanques sueltos fuera de ellas.
 - [ ] Con "Accidentes: Pocos" hay más llanura que con "Muchos"; con relieve "Montañoso" hay más montañas.
 - [ ] Guardar y cargar una partida jerárquica conserva los nombres de F3.
@@ -501,14 +496,13 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 - [ ] Con "Mar: siempre", el mar ocupa uno o dos lados, a veces con un golfo, una península o islotes (F3 los nombra).
 - [ ] En "Islas" y "Archipiélagos", cada pueblo empieza en su propia isla y las islas tienen regiones (llanuras, colinas, a veces montañas).
-- [ ] Los ríos llegan al mar; donde desembocan, F3 dice "Estuario" y no "Mar" ni "Dorsal marina" (también en el clásico).
+- [ ] Los ríos llegan al mar; donde desembocan, F3 dice "Estuario" y no "Mar".
 - [ ] Ninguna meseta toca el mar.
 
 ### Fase 42 (generador jerárquico: suelo y vida)
 
 - [ ] Cada región tiene un bioma propio (el cambio de árboles coincide con el cambio de región en F3); las montañas son pinares en los tipos de mapa que los tienen.
 - [ ] Los pueblos empiezan en llanuras o colinas, con agua cerca, piedra, bayas y árboles.
-- [ ] Un mapa colosal jerárquico se genera en menos tiempo que uno clásico.
 - [ ] Una partida jerárquica en multijugador (dos ventanas con `--instance` y `--loopback`) no se desincroniza.
 
 ### Fase 43 (generador jerárquico: ajuste y documentación)
@@ -516,6 +510,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Los acantilados de las mesetas siguen su borde sin escalones ni zigzag.
 - [ ] En mapas pequeños y medianos, las mesetas y montañas son más bajas que en los grandes, y la rampa de cada meseta sube sin cruzar la llanura como un terraplén.
 - [ ] `docs/GENERADORES.md` explica todo lo que F3 nombra en tus mapas.
+
+### Fase 49 (un solo generador: el jerárquico)
+
+- [ ] La partida nueva ya no tiene "Generador de mapas"; un `settings.json` anterior que todavía lo tenga se lee sin avisos y lo demás se conserva.
+- [ ] Con una semilla y opciones que antes usabas con "Jerárquico", sale el mismo mapa (mismas regiones en F3, mismos ríos y árboles).
+- [ ] F3 y los reportes nunca dicen "Cordillera", "Cabo", "Fosa marina" ni "Dorsal marina"; en la orilla del mar sigue diciendo "Costa".
+- [ ] Una partida guardada antes de esta fase se rechaza con el mensaje de partida de otra versión.
+- [ ] `SalvaCiudad.exe --reporte` sobre un reporte viejo hecho con el clásico funciona: genera el mapa con el generador de hoy y el `.txt` anota la versión del generador distinta (6 en el reporte, 1 ahora).
+- [ ] Con mapas separados, el `.txt` de un reporte dice la misma versión del generador que en un mapa compartido.
+- [ ] Las imágenes de referencia están en `art/reference/` y ya no en la raíz del repositorio.
 
 ## Licencia
 

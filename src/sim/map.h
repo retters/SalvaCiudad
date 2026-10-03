@@ -18,9 +18,6 @@ enum class Amount : std::uint8_t { Low, Normal, High, Count };
 enum class Relief : std::uint8_t { Low, Gentle, Mountainous, Count };
 // Phase 26: a coast on the maps without islands.
 enum class Sea : std::uint8_t { None, Sometimes, Always, Count };
-// Phase 39: which generator makes the map. Each is a module of its own with
-// its own version; new ones go at the end (saves hold the number).
-enum class MapGenerator : std::uint8_t { Classic, Hierarchical, Count };
 
 // Most natural features a map may have (saves refuse more): a colossal
 // map with thick forests has several million.
@@ -64,14 +61,11 @@ struct MapSettings {
     std::uint8_t islands = 2;
     // Phase 26: sea along one or two sides, for map types without islands.
     Sea sea = Sea::Sometimes;
-    // Phase 27: how often plateaus, valleys, mountain ranges and canyons appear.
+    // Phase 27: how many regions are not plains, and how many valleys and
+    // canyons there are (phase 39).
     Amount landforms = Amount::Normal;
-    MapGenerator generator = MapGenerator::Classic;
 
     void write(BinaryWriter& w) const;
-    // What makes two maps the same, for MapData::checksum(): the classic
-    // generator's maps keep the checksums they had before there was a choice.
-    void write_identity(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);
     bool operator==(const MapSettings&) const = default;
 };
@@ -123,21 +117,22 @@ struct StartPosition {
     bool operator==(const StartPosition&) const = default;
 };
 
-// The named features a generation placed (phases 26, 27 and 37): each
-// along a line of points (x, z in meters from the map's corner), `width`
-// meters across; a single point for the round ones (plateaus, islets,
-// islands). Only for showing names: no rule of the game reads them. New
-// kinds go at the end (saves hold the numbers).
+// The named features a generation placed (phases 37 to 41): each along a
+// line of points (x, z in meters from the map's corner), `width` meters
+// across; a single point for the round ones (regions, islets, islands).
+// Only for showing names: no rule of the game reads them. New kinds go at
+// the end (saves hold the numbers).
 enum class LandformKind : std::uint8_t {
-    Coast, Gulf, Peninsula, Islet, Trench, Ridge, Plateau, Valley, Range, Canyon, Cape, River, Island,
-    // The hierarchical generator's regions (phase 39) and structures (phase 40).
-    Plain, Hills, Mountains, Basin, Crest, Pass, Cliff, Ramp,
-    // Phase 41: the open sea as a region.
-    Sea,
+    // Structures of the coast and the sea (phase 41), rivers.
+    Gulf, Peninsula, Islet, Island, River,
+    // Regions (phase 39); a plateau is a region too.
+    Plain, Hills, Mountains, Plateau, Basin, Sea,
+    // Structures on land (phase 40).
+    Crest, Pass, Cliff, Ramp, Valley, Canyon,
     Count
 };
 struct Landform {
-    LandformKind kind = LandformKind::Coast;
+    LandformKind kind = LandformKind::Plain;
     std::vector<std::array<std::int32_t, 2>> points;
     std::int32_t width = 0;
 
@@ -146,8 +141,8 @@ struct Landform {
 // Most landforms and points a map may have (saves refuse more).
 inline constexpr std::uint32_t kMaxLandforms = 100'000;
 inline constexpr std::uint32_t kMaxLandformPoints = 4096;
-// The hierarchical generator tells, per square of this many meters, which
-// region and which structure is there (phase 39).
+// The generator tells, per square of this many meters, which region and
+// which structure is there (phase 39).
 inline constexpr std::int32_t kOwnerBlock = 8;
 
 struct MapData {
@@ -168,9 +163,8 @@ struct MapData {
     // Not in checksum(): they describe the terrain, they are not part of it.
     std::vector<Landform> landforms;
     std::vector<std::uint16_t> sea_levels;
-    // Phase 39, hierarchical maps only (empty otherwise): per kOwnerBlock
-    // square, row by row, the landform (index + 1, 0 = none) of its region
-    // and of its structure.
+    // Phase 39: per kOwnerBlock square, row by row, the landform (index + 1,
+    // 0 = none) of its region and of its structure.
     std::vector<std::uint16_t> region_owner;
     std::vector<std::uint16_t> structure_owner;
     [[nodiscard]] std::int32_t owner_side() const { return (size + kOwnerBlock - 1) / kOwnerBlock; }

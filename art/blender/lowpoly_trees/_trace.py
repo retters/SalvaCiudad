@@ -7,7 +7,7 @@ run by hand when the reference pictures change, and writes the traced data
 next to itself (_traced.py for the first set of pictures, _traced2.py for
 the second). The models are built from those files alone.
 
-A set is three pictures in the repository root that show the same 16 trees
+A set is three pictures in art/reference/ that show the same 16 trees
 in a 4 x 4 grid: in bloom, in autumn and without leaves ("Arboles 1.png" to
 "Arboles 3.png" the first set, "Arboles 4.png" to "Arboles 6.png" the
 second; see SHEETS). Without `set=`, the first set. For each tree:
@@ -34,7 +34,8 @@ import sys
 from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
+# The user's reference pictures (phase 49: before, in the repository root).
+REFERENCE = os.path.abspath(os.path.join(HERE, "..", "..", "reference"))
 # The sets of pictures. Of each: the three pictures, the rows of the grid in
 # every picture (top, bottom), the column borders, the trees' names, the
 # file the data goes to, and what is special about some trees:
@@ -181,7 +182,7 @@ use("first")
 # ------------------------------------------------------------------- masks
 
 def cell(state, row, col, scale):
-    im = Image.open(os.path.join(ROOT, PICTURES[state])).convert("RGB")
+    im = Image.open(os.path.join(REFERENCE, PICTURES[state])).convert("RGB")
     y0, y1 = ROWS[state][row]
     box = (COLUMNS[col], y0, COLUMNS[col + 1], y1)
     im = im.crop(box)

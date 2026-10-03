@@ -6,7 +6,7 @@ A development tool (system Python with PIL; Blender is not needed), run by
 hand when the reference pictures change; it writes _giant_traced.py next to
 itself. The models are built from _giant_traced.py alone.
 
-"Arboles 7.png" shows the eight giants with leaves and "Arboles 8.png" the
+"Arboles 7.png" (in art/reference/) shows the eight giants with leaves and "Arboles 8.png" the
 same eight without. Only the giants whose crown is a spread of branches are
 traced (baobab, cherry, mangrove, ginkgo); the others are defined by hand
 in their own modules. For each traced tree, as _trace.py does for the
@@ -37,7 +37,8 @@ import sys
 from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
+# The user's reference pictures (phase 49: before, in the repository root).
+REFERENCE = os.path.abspath(os.path.join(HERE, "..", "..", "reference"))
 PICTURES = {"bloom": "Arboles 7.png", "bare": "Arboles 8.png"}
 S = 2  # The pictures are traced enlarged S times.
 
@@ -99,7 +100,7 @@ def cell(name, state):
     """The tree's cell enlarged, the foot in it and the pixels per meter."""
     t = TREES[name]
     c = t[state]
-    im = Image.open(os.path.join(ROOT, PICTURES[state])).convert("RGB").crop(c["box"])
+    im = Image.open(os.path.join(REFERENCE, PICTURES[state])).convert("RGB").crop(c["box"])
     im = im.resize((im.width * S, im.height * S), Image.BICUBIC)
     fx, fy = (c["foot"][0] - c["box"][0]) * S, (c["foot"][1] - c["box"][1]) * S
     k = (c["foot"][1] - c["top"]) * S / t["height"]

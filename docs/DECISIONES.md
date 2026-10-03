@@ -275,6 +275,8 @@ La simulación no toca archivos. `game/replay_file` guarda y lee las repeticione
 
 Cada etapa informa su avance y se puede cancelar.
 
+*Reemplazada en parte por D-4901 (el generador clásico se borró en la fase 49): el relieve (etapa 1) lo hace el generador jerárquico (D-3903); las demás etapas siguen.*
+
 **D-603. Posiciones de inicio justas.**
 - Los candidatos salen de una retícula de 32 m y se eligen lo más separados posible.
 - Cada inicio recibe lo que le falte hasta tener, a menos de 180 m, al menos 2 piedras, 2 arbustos de bayas y 60 árboles, y agua a menos de 150 m.
@@ -1174,11 +1176,15 @@ El número se guarda en la configuración del mapa (un byte más en la partida y
 - La tierra conserva su relieve. Hacia la orilla baja suave hasta una playa, y bajo el agua desciende hasta el fondo del mar.
 - Si un lago parte una isla en la orilla, el pedazo suelto se hunde. Así el mapa tiene exactamente las islas pedidas; una prueba cuenta las islas de varios mapas.
 
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): la forma de las islas es la del jerárquico (D-4102); el reparto en archipiélagos sigue (D-2501).*
+
 **D-2203. Cuántas islas caben.**
 La partida nueva ofrece solo las islas por pueblo que caben: cada isla de origen necesita unos 110 m de radio y las demás unos 45 m. En un mapa pequeño con muchos pueblos cabe 1 por pueblo. El generador aplica el mismo tope si la configuración viene de otro lado.
 
 **D-2204. El mar.**
 El mar es el agua a 20 m de altura que llega al borde del mapa; los ríos terminan en él como en un lago. Fuera del mapa, el borde decorativo es mar abierto hasta el horizonte, en lugar de las montañas de los otros tipos.
+
+*Reemplazada en parte por D-4901 (el generador clásico se borró en la fase 49): el nivel del mar lo pone el jerárquico, 2 m bajo las llanuras (D-4101). Lo demás sigue.*
 
 **D-2205. Dónde empieza cada pueblo.**
 Cada pueblo empieza cerca del centro de su isla de origen, en buen suelo, con agua cerca y terreno plano. Después recibe los recursos básicos garantizados como en los otros mapas (D-603).
@@ -1247,11 +1253,17 @@ Una isla ya no es un círculo con el borde ondulado. Es un disco deformado por t
 
 Un núcleo en el centro (un quinto del radio, sin deformar) garantiza que el medio de cada isla es tierra: ahí empieza el pueblo y desde ahí se reconoce la isla. En mapas de prueba, la compacidad de las islas (4π·área/perímetro², que para un disco dibujado en casillas da unos 0,6) queda en promedio entre 0,18 y 0,37.
 
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): la forma de las islas es la del jerárquico (D-4102).*
+
 **D-2503. Canales en lugar de distancia.**
 Para que las islas no se toquen, antes se separaban tanto como su forma podía crecer, y quedaban chicas y lejanas. Ahora cada punto del mar pertenece a la isla más cercana (medida en radios de cada isla), y a lo largo de la línea donde se encuentran dos islas siempre corre un canal de mar de al menos `gap` metros (1/64 del mapa, mínimo 20 m). Así las islas pueden quedar juntas y forman estrechos, y sigue habiendo exactamente las islas pedidas. El mar también rodea el mapa.
 
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): la forma de las islas es la del jerárquico (D-4102).*
+
 **D-2504. Tierra suelta.**
 La tierra que se une a su isla solo por una esquina de casilla contaba como otra isla. Ahora la limpieza de tierra suelta trabaja por casillas (las cuatro esquinas sobre el mar), igual que se recorre y se cuenta el mapa. Además no se cavan lagos en el centro de una isla.
+
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49).*
 
 **D-2505. Versión del generador.**
 Los mapas de islas cambian con la misma semilla: el generador pasa a la versión 4 y cambió la suma de verificación del mapa pequeño de referencia. Los demás tipos de mapa salen igual.
@@ -1267,8 +1279,12 @@ Los tipos de mapa sin islas tienen la opción "Mar": sin mar, a veces (por omisi
 - Además, al azar: de 0 a 2 golfos hacia tierra adentro, de 0 a 2 penínsulas y de 0 a 3 cabos hacia el mar, y de 0 a 3 islotes frente a la costa, que forman estrechos con ella.
 - Golfos, penínsulas e islotes usan la misma deformación y el mismo ruido que la costa, así que tampoco son formas geométricas.
 
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): la costa es la del jerárquico (D-4101, D-4304).*
+
 **D-2603. La altura del mar.**
 Con costa, toda la tierra sube 15 m para dejar lugar al fondo del mar bajo la tierra más baja (las alturas se guardan en centímetros sin signo). El mar queda 1 m bajo el punto más bajo que puede tener el relieve. La tierra conserva su relieve, con una playa en la orilla.
+
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): la costa es la del jerárquico (D-4101).*
 
 **D-2604. Fosas y dorsales.**
 En todo mapa con mar, incluido el de islas, puede haber hasta 2 fosas y 2 dorsales (cada una con 55 % de probabilidad, y 20 % de que haya otra). Son líneas serpenteantes de borde a borde:
@@ -1276,6 +1292,8 @@ En todo mapa con mar, incluido el de islas, puede haber hasta 2 fosas y 2 dorsal
 - una dorsal lo sube en una franja de 90 a 160 m, con crestas, hasta 1,2 m bajo la superficie: nunca sale del agua, así que no cambia las islas.
 
 Solo tocan el fondo abierto, no la orilla. Se ven por el color del agua, más oscuro donde es honda.
+
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): ya no hay fosas ni dorsales.*
 
 **D-2605. El borde decorativo.**
 Fuera del mapa hay mar donde el borde del mapa es mar a lo largo de 48 m, y montañas donde es tierra. Reemplaza la regla del mapa de islas (D-2204). La desembocadura de un río no cuenta como mar.
@@ -1291,6 +1309,8 @@ Pasa a la 5: con "a veces", un mapa clásico puede tener costa con la misma semi
 **D-2701. La opción "Accidentes del terreno".**
 Pocos, normales (por omisión) o muchos. Da cuántos hay por km² en promedio: mesetas 0,35, valles 0,30, cordilleras 0,20 y cañones 0,25 con "normales"; la mitad con "pocos" y el doble con "muchos". Sale la parte entera y una más al azar por el resto. Así, en un mapa pequeño muchas veces no hay ninguno, y en uno enorme hay varios. Se guarda en la configuración del mapa y se recuerda con la partida nueva.
 
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): "Accidentes del terreno" decide qué parte de las regiones no es llanura y cuántos valles y cañones hay (D-3903, D-4001).*
+
 **D-2702. Cómo son.**
 - **Cordillera:** una cresta a lo largo de una línea curva de 35 a 70 % del mapa, de 100 a 220 m de ancho y de 35 a 70 m de alto, con picos y estribaciones por ruido, y más baja en los extremos. Se suma al relieve (también a las cordilleras de "Montañoso").
 - **Meseta:** una cima plana de 110 a 260 m de radio, de 10 a 22 m sobre el suelo, con un borde irregular. Casi toda rodeada de acantilado (10 m), con una rampa suave de hasta 100 m hacia un lado para poder subir. La cima conserva un poco de la forma del suelo.
@@ -1299,8 +1319,12 @@ Pocos, normales (por omisión) o muchos. Da cuántos hay por km² en promedio: m
 
 Todos siguen líneas curvas: dobleces al azar suavizados, cuatro tramos por doblez.
 
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): las mesetas, valles y cañones son los del jerárquico (D-3903, D-4001) y ya no hay cordilleras.*
+
 **D-2703. Sobre la tierra, después del mar.**
 Se aplican después de formar la costa o las islas y solo sobre tierra. Así no quedan bajíos raros en el mar, y un valle o cañón que llega a la costa termina en ella. El fondo de un valle o cañón nunca baja del nivel del mar (30 cm por encima), para no partir una isla.
+
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49).*
 
 **D-2704. Ríos que serpentean.**
 Los ríos bajaban en línea recta por las pendientes suaves: el terreno no tenía detalle de menos de 32 m y el agua sigue la cuadrícula. Arreglos:
@@ -1470,6 +1494,8 @@ Todos los cambios dan exactamente el mismo resultado: la versión del generador 
 - Se recorre por franjas de bloques, fila por fila, para leer la memoria en orden. El orden en que se tocan los puntos cambia, pero cada forma solo cambia el punto que toca, así que el resultado es el mismo.
 - Las mesetas recorrían un cuadrado de 1,5 radios más 110 m; ahora el de su borde más lejano posible (el radio más un tercio, más 100 m de rampa).
 
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): `along_line` era solo del clásico.*
+
 **D-3113. Los lagos, con un montículo por milímetro de altura.**
 La inundación desde el borde (D-2704) usaba un solo montículo con todo el frente: en el colosal, con millones de puntos en orden revuelto, cada paso buscaba en memoria lejana. Ahora hay un montículo por milímetro de altura y se vacían de menor a mayor. Nada entra por debajo de la altura que se está vaciando, así que sale el mismo orden. Además se pide al procesador que cargue de antemano los datos del siguiente punto (solo es una pista: no cambia el resultado).
 
@@ -1481,6 +1507,8 @@ La inundación desde el borde (D-2704) usaba un solo montículo con todo el fren
 **D-3115. Lo que queda.**
 - Sin hilos ni coma flotante: la simulación los prohíbe (prueba "the simulation code avoids what breaks determinism").
 - Los valles y cordilleras siguen costando más de lo que crece el mapa. Su cantidad va por km² (D-2701) y cada uno cruza el mapa entero, así que su superficie total crece con el cubo del lado: en el colosal, valles y cañones pasan por 2,8 veces la superficie del mapa. Bajarlo cambiaría los mapas, así que queda como propuesta para que decida el usuario (ver `docs/RENDIMIENTO.md`).
+
+*Reemplazada en parte por D-4901 (el generador clásico se borró en la fase 49): ya no hay valles ni cordilleras que crucen el mapa entero.*
 
 ## Plan de la niebla de guerra, fases 32 a 34 (2026-09-27)
 
@@ -1656,6 +1684,8 @@ Los golfos, las penínsulas, los cabos y los islotes se dibujan sobre posiciones
 
 Con esto, 12 de 12 quedan en su lugar en las pruebas. El terreno no cambia; solo cambia lo que se anota. Las mesetas, los islotes y las islas tienen bordes deformados por ruido, así que se reconocen con un margen: 4/3 del radio más 10 m, el radio más 10 m y 1,7 veces el radio.
 
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): los golfos, penínsulas e islotes del jerárquico son estructuras y se nombran por su cuadrícula (D-4103).*
+
 **D-3704. Bajo la niebla no se dice nada.**
 F3 es una ventana de desarrollo, pero no debe revelar lo que el jugador no ha explorado. Donde la niebla lo oculta, dice solo "Todavía sin explorar". Con "Revelar todo" de las herramientas de desarrollo, sí se ve.
 
@@ -1664,6 +1694,8 @@ El panel "Terreno" de Ctrl+F3 ya mostraba suelo, bioma, altura, pendiente y agua
 
 **D-3706. Lo que no tiene nombre.**
 Las montañas del relieve "Montañoso" salen de un campo de ruido, no de una lista, así que no tienen nombre de accidente: F3 muestra su altura y su pendiente, pero no dice "Cordillera". "Cordillera" es solo la de la fase 27. Tampoco se nombran las bahías y cabos pequeños que ondulan toda la costa: son parte de la "Costa". Si hiciera falta nombrarlos, el generador tendría que guardarlos también.
+
+*Reemplazada por D-4901 (el generador clásico se borró en la fase 49): las montañas son regiones con nombre, y "Cordillera" ya no existe.*
 
 **D-3707. Numeración de las fases.**
 Otra sesión agregó las fases 35 (movimiento) y 36 (caminos), todavía sin commit. Esta fase es la 37, el reporte con Ctrl+F12 es la 38 y el pulido pasa a la 39.
@@ -1706,8 +1738,12 @@ Salvador pidió un generador nuevo, independiente del actual, con la idea de gen
 **D-3901. Cada generador es una opción de la partida, no un parámetro de otro.**
 `MapSettings::generator` (clásico o jerárquico) se guarda con el mapa, en la partida, en la partida nueva recordada (`newGame.generator`) y en los reportes (`"generator"`; un reporte sin ese campo es del clásico). Agregar un generador después es agregar su módulo y su nombre al final de la lista. Para que los mapas clásicos no cambien, `MapSettings::write_identity`, lo que usa la suma de verificación, no escribe el generador cuando es el clásico: las sumas de referencia siguen iguales. Cada generador tiene su propia versión; la del jerárquico es `hier::kVersion` (1).
 
+*Reemplazada por D-4901 y D-4902: desde la fase 49 hay un solo generador y la partida ya no guarda cuál fue.*
+
 **D-3902. Qué es independiente y qué se comparte.**
 El jerárquico vive en `sim/worldgen_hier.cpp` y da forma a todo el terreno a su manera. Las etapas de agua, suelo y vida del clásico (lagos por inundación desde el borde, ríos, suelo, biomas, bosques, recursos, fauna y salidas) se reutilizan, porque están probadas y rinden bien. Solo cambian donde el jerárquico lo pide: por ejemplo, los lagos (D-3906). Si más adelante un generador necesita otra etapa distinta, se separa entonces.
+
+*Reemplazada por D-4901: las etapas de agua, suelo y vida ya no se comparten con nadie; son las del único generador.*
 
 **D-3903. Las regiones.**
 Hay un centro por celda de una rejilla, movido al azar, cada 150 a 900 m (el lado del mapa entre 7). Cada casilla es de la región del centro más cercano, medido después de deformar el punto con ruido: una ondulación amplia (30 % de la separación) y otra corta de 14 m, para que los bordes no sean rectos. "Accidentes del terreno" decide qué parte de las regiones no es llanura (30, 45 o 60 %). "Relieve" decide qué parte de esas son montañas (20, 35 o 55 %). De las demás, un 15 % son mesetas, un 10 % cuencas y el resto colinas. Las reglas:
@@ -2002,3 +2038,54 @@ Las criaturas y los aldeanos guardaban su aspecto (giro, tiempo de la animación
 **D-4720. El reporte del mapa anota los FPS.**
 Para medir sin manejar la ventana, `--reporte` anota en `despues_<hora>.txt` los cuadros dibujados en la segunda mitad de la espera (1,5 s), los FPS y cuántos personajes se dibujaron. Ver `docs/RENDIMIENTO.md`.
 
+## Fase 49: un solo generador, el jerárquico (2026-10-02)
+
+**D-4901. Qué se borró.**
+- En `sim/worldgen.cpp`, unas 1000 líneas: el relieve por ruido, la costa con sus golfos, penínsulas, cabos e islotes, las islas a la antigua (forma, canales y hundimiento de la tierra suelta), las mesetas, valles, cordilleras y cañones que cruzaban el mapa, el fondo marino con fosas y dorsales, y `along_line`, que solo usaban ellos.
+- `MapGenerator` y `MapSettings::generator`; el selector "Generador de mapas" de la partida nueva, `newGame.generator` de `settings.json`, el campo `"generator"` del reporte del mapa y sus textos.
+- Los tipos de accidente que solo hacía el clásico (`Coast`, `Cape`, `Range`, `Trench`, `Ridge`) y sus nombres ("Cordillera", "Cabo", "Fosa marina", "Dorsal marina").
+- Las ramas del clásico en las etapas que quedan: lagos (siempre la regla de las cuencas, D-3906), ríos (siempre todos los nacimientos que piden los valles y cañones, D-4003), biomas (siempre uno por región, D-4201), salidas (siempre en llanuras o colinas, D-4202) y mapas separados.
+
+Se quedan, con su comportamiento: lagos, ríos, suelo, biomas, bosques, recursos, fauna, salidas y el reparto de las islas en archipiélagos (`worldgen::island_layout`, que usa el jerárquico). Las decisiones del clásico quedan marcadas como reemplazadas.
+
+**D-4902. Versión del generador, partidas y red.**
+- El mapa ya no guarda qué generador lo hizo: `MapSettings` pierde su último byte. `write_identity` (que existía solo para que los mapas clásicos conservaran su suma) desaparece y la suma de verificación usa `write`.
+- `worldgen::kGeneratorVersion` es la única versión y sigue en **1**, el número que ya tenía el jerárquico (`hier::kVersion`, que se borra). Así un reporte hecho con el jerárquico coincide, y uno del clásico (versión 6) queda anotado como distinto.
+- Arreglo: los mapas separados guardaban siempre la versión del clásico (6), aunque los hiciera el jerárquico. Ahora guardan la misma que un mapa compartido; una prueba lo comprueba.
+- `LandformKind` se renumera sin los tipos borrados, así que cambia el formato de la partida guardada. Las reglas pasan a la versión 25: una partida anterior se rechaza con el mensaje de partida de otra versión (D-631). El protocolo de red pasa a la versión 3, porque la configuración del mapa que manda la sala tiene un byte menos.
+- Los mapas no cambian: se compararon los datos (alturas, agua, suelo, fertilidad, biomas, objetos, zonas, salidas, accidentes, niveles del mar y dueños) de 28 mapas jerárquicos de 4 semillas con costa, montañoso, muchos accidentes, islas, mapas separados y otros tipos de mapa, antes y después: iguales. Sí cambian todas las sumas de verificación, porque ya no incluyen el byte del generador; y 3 de esos 28 mapas por el arreglo de D-4907.
+
+**D-4903. Los nombres.**
+- F3 y los reportes nombran siempre por las cuadrículas de región y estructura (D-3905). El índice de `TerrainNames` guarda ahora solo los ríos, que es lo único que se busca por distancia (para decir "Río" o "Estuario").
+- "Costa" se queda: no es el accidente `Coast` del clásico, sino la tierra seca con el mar a 12 m o menos, que F3 calcula del mar mismo (D-3702), también en el jerárquico.
+- Los tooltips de "Relieve", "Accidentes del terreno" y "Mar" describen lo que hace el jerárquico (cuántas montañas y qué tan altas; qué parte no es llanura y cuántos valles y cañones; golfos, penínsulas e islotes).
+
+**D-4904. Reportes y ajustes de antes.**
+- `--reporte` ignora el campo `"generator"` de un reporte viejo y genera el mapa con el único generador. El `.txt` ya anota cuando la versión del generador es otra (6 en un reporte del clásico, 1 ahora). Rechazar esos reportes no servía de nada: el clásico ya no existe para compararlo.
+- Un `settings.json` con `newGame.generator` se lee sin aviso (las claves desconocidas se ignoran, como siempre) y la próxima vez se guarda sin ella.
+
+**D-4905. Biomas y tipos de mapa.**
+- Los biomas se deciden por cuadro de 8 m (el de las regiones) en vez de 4 m y sin la deformación por ruido del clásico. El resultado es el mismo que antes en los mapas jerárquicos, porque ya se tomaba la región de cada cuadro.
+- `patchSize` de los tipos de mapa ya no da el tamaño de las manchas; solo `0` sigue queriendo decir "un solo bioma" (el del ajuste). No se cambia el formato de los datos: la fase 54 borra los tipos de mapa como datos.
+- El tipo de mapa "Clásico" (`core:classic`) se queda: es una mezcla de biomas, no el generador. Se aclara en `docs/GENERADORES.md`.
+
+**D-4906. Pruebas.**
+- Se borraron las que solo probaban el clásico: las suites `worldgen_coasts`, `worldgen_landforms` y `worldgen_hier_compare` (que comparaba cañones con el clásico), "trenches are deeper and ridges higher", y "the generator is a setting of the map".
+- Las que generaban mapas clásicos sin decirlo ahora generan jerárquicos: `worldgen`, `worldgen_sea`, `worldgen_large`, `flora`, `worldgen_perf`, `terrain_names` y las de juego. Ajustes:
+  - suma de referencia del mapa pequeño (semilla 12345): `0xf49f15655b948834` → `0xe50a4229c67425a9`;
+  - "layout and contents of a medium map": más de 7000 árboles en vez de 9000 (salen 8217);
+  - "map types change the forests": la arboleda joven tiene menos de la mitad de árboles grandes que la tierra de gigantes (72 contra 184 en este mapa pequeño) en vez de la veinteava parte, y se comprueba lo que de verdad importa: todos sus árboles grandes son de especies que no pueden ser chicas (`core:mountain_ash`). Con una región por bioma, en un mapa chico la parte de cada bioma varía más que con las manchas del clásico;
+  - "coasts: none without sea, and sometimes by the seed" mira el nivel del mar y que no haya golfos, penínsulas ni islotes, en vez del accidente `Coast`;
+  - "the names of what is under the cursor": la meseta se reconoce como región, y en valles y cañones basta el 80 % del trazo (una rampa o un acantilado, más específicos, pueden ocupar parte);
+  - mapas de islas: se cuentan las islas que el mapa nombra y se comprueba que cada pueblo esté en un pedazo de tierra propio. El jerárquico **no** garantiza lo que garantizaba el clásico (D-2504): en el mapa grande de prueba (4 pueblos × 2 islas) hay 11 pedazos de tierra para 8 islas y dos islas quedan unidas, y en el mediano (2 × 3) el centro de una isla quedó bajo el agua. La prueba lo informa sin fallar; queda para que lo decida el usuario;
+  - pruebas de juego que dependían de la forma de un mapa en particular, con otra semilla (como en D-2705): "an hour of play" (el jugador de prueba prospera en 9 de las primeras 20 semillas, como antes en 7 de 16; se usa la 1), "a farm sows" (16 de 20; semilla 4), "hunters take game" (10 de 20; semilla 2) y "villagers put a fire out" (19 de 20; semilla 2).
+- Se agregan a `ctest` los grupos `minimap` (0,2 s en release) y `nav` (1 s), que existían pero nunca corrían.
+
+**D-4907. Arreglo: las salidas cuentan solo lo que queda.**
+Al pasar la prueba de salidas justas al jerárquico con mar "A veces", un pueblo quedó sin piedra a 180 m. La etapa de salidas contaba las piedras y bayas que había cerca y después despejaba 25 m alrededor del centro del pueblo: las dos piedras que había contado estaban dentro de ese claro. Ahora la cuenta deja fuera lo que se va a despejar, con la misma regla del claro. Cambian solo los mapas donde pasaba eso (3 de los 28 comparados en D-4902).
+
+**D-4908. Las imágenes de referencia entran al repositorio.**
+Las 13 imágenes del usuario (`Animales low poly`, `Arboles 1` a `8`, `Armas y herramientas`, `Personajes 1` a `3`; unos 26 MB) se copiaron de la raíz del repositorio, donde estaban sin seguimiento, a `art/reference/`. Los originales de la raíz no se tocaron: el usuario los puede borrar. `lowpoly_trees/_trace.py` y `_giant_trace.py` las leen de ahí; no se volvieron a generar los modelos. No se usa Git LFS, porque el repositorio no lo usa para nada más.
+
+**D-4909. Tiempo del mapa colosal.**
+Mapa colosal, semilla 12345, opciones por omisión (mar "A veces", un jugador), en `release`, alternando el ejecutable de antes y el de después: antes 131, 132, 134 y 142 s; después 123, 126, 149 y 150 s. Es el mismo tiempo dentro de lo que varía este equipo (mientras se medía, otra sesión trabajaba en el mismo equipo). Era lo esperado: el camino del jerárquico no cambió, salvo los biomas, que ya no calculan las manchas del clásico para descartarlas. El mapa es el mismo (mismos datos antes y después). Anotado en `docs/RENDIMIENTO.md`.

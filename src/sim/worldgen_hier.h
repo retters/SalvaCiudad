@@ -7,7 +7,7 @@
 //   Level 2, structures: only those of the region's role inside it.
 //   Level 3, water; level 4, soil and life; level 5, fine detail.
 // This module shapes the ground (levels 0 to 2); the water, soil and life
-// stages are shared with the classic generator (worldgen.cpp).
+// stages are in worldgen.cpp. Since phase 49 it is the only generator.
 // Deterministic and integer-only, like the rest of the simulation.
 #pragma once
 
@@ -21,10 +21,7 @@
 
 namespace sc::sim::hier {
 
-// Changes whenever the same settings would give a different map.
-inline constexpr std::uint16_t kVersion = 1;
-
-// The shaped ground, for the shared stages.
+// The shaped ground, for the water, soil and life stages.
 struct Ground {
     std::vector<std::int32_t> h;  // (n + 1)^2 vertex heights, millimeters.
     std::int32_t sea_mm = 0;      // Sea surface; 0 without a sea.
