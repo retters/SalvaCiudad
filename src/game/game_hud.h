@@ -55,6 +55,24 @@ private:
     // The windows of things on the map (phase 62): each acts on its own.
     void building_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     void villager_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    void node_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    void creature_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    // Phase 63. A list of villagers by name; a click opens each one's window.
+    [[nodiscard]] float people_height(ui::Context& ctx, std::size_t count) const;
+    void people_list(ui::Context& ctx, GameSession& s, const WindowList::Object& o, const ui::Rect& box, float& y,
+                     const std::vector<sim::EntityId>& people, const char* title_key);
+    // A button of window `from` opens another thing: `from` stays (it is
+    // pinned) and the thing becomes the selection, in a window of its own.
+    void open_link(const std::string& from, WindowList::Kind kind, sim::EntityId entity);
+    struct Link {
+        std::string from;
+        WindowList::Kind kind = WindowList::Kind::Building;
+        sim::EntityId entity;
+    };
+    std::vector<Link> links_;
+    // The villager being renamed: its window and the text typed so far.
+    std::string rename_id_;
+    std::string rename_text_;
     // A pinned window whose thing is no more.
     void gone_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     // The selection on the map opens, or takes over, a window.

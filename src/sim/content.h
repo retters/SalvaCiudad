@@ -180,6 +180,10 @@ struct RaceDef {
     // of each model.
     std::vector<std::uint32_t> skins;
     std::vector<std::uint32_t> hairs;
+    // Phase 63: the names its villagers go by, per sex (a people with one
+    // list uses it for both). Each fits kMaxNameBytes.
+    std::vector<std::string> names_male;
+    std::vector<std::string> names_female;
     std::int32_t move = 100;     // Walking speed, percent.
     std::array<std::int32_t, kSkills> work{100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
     std::int32_t cold = 0;       // Resistance to cold, percent (less warmth lost, less flu); may be negative.
@@ -193,6 +197,7 @@ struct RaceDef {
 [[nodiscard]] std::string race_body_file(std::string_view body);
 inline constexpr std::size_t kMaxRaceBodies = 8;   // Per sex.
 inline constexpr std::size_t kMaxRaceColors = 12;  // Skins, and hairs.
+inline constexpr std::size_t kMaxRaceNames = 64;   // Per sex.
 
 // A tutorial (section 6.5): a map and steps, each with a text, a goal that
 // ends it and the part of the interface to point at.

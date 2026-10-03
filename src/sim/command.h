@@ -5,6 +5,8 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <string_view>
 
 #include "sim/entity.h"
 #include "sim/fixed.h"
@@ -34,6 +36,8 @@ enum class CommandType : std::uint8_t {
     ArmyOrder = 26,       // The army: defend around `position` (`value` 0), attack player `count` (1) or retreat (2).
     SetTradeRule = 29,    // Automatic trade of `def`: sell over `value`, buy under `value2` (kNoRule: off);
                           // `count` and `def2`: the price limits of each, percent (0: any price).
+    RenameVillager = 30,  // Villager `entity` is called `text` from now on ("": its own name again).
+    SetProduction = 31,   // Workplace `entity` works (`value` 1) or stands idle and lets its workers go (0).
 
 };
 
@@ -50,6 +54,10 @@ inline constexpr std::int32_t kMaxPriceLimit = 125;
     return percent == 0 || (percent >= kMinPriceLimit && percent <= kMaxPriceLimit && percent % 5 == 0);
 }
 inline constexpr std::int32_t kMaxRule = 100000;
+// A villager's name: at most this many bytes of UTF-8, no control
+// characters, no space at either end. "" is valid: no name of its own.
+inline constexpr std::size_t kMaxNameBytes = 24;
+[[nodiscard]] bool valid_villager_name(std::string_view name);
 
 struct Command {
     CommandType type = CommandType::PlaceBuilding;
@@ -61,6 +69,7 @@ struct Command {
     std::int32_t value = 0;    // Rotation, worker count...
     std::uint16_t def2 = 0;    // A second definition (trade offers).
     std::int32_t value2 = 0;
+    std::string text;          // A name (RenameVillager); empty in every other command.
 
     void write(BinaryWriter& w) const;
     // Reads and validates the shape of a command (not whether its target

@@ -55,6 +55,19 @@ public:
         sim::PlaceError hover_error = sim::PlaceError::None;
         sim::EntityId selected_building;
         sim::EntityId selected_villager;
+        // Phase 63: a natural feature (its node's index + 1; 0: none) or an
+        // animal, soldier or raider. One thing is selected at a time.
+        std::uint32_t selected_node = 0;
+        sim::EntityId selected_creature;
+        void clear_selection() {
+            selected_building = {};
+            selected_villager = {};
+            selected_node = 0;
+            selected_creature = {};
+        }
+        [[nodiscard]] bool any_selected() const {
+            return selected_building.valid() || selected_villager.valid() || selected_node != 0 || selected_creature.valid();
+        }
         // Phase 61: the villager the camera follows (third or first person).
         sim::EntityId followed_villager;
         // Marking out a field for this farm: dragged from one corner cell.

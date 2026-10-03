@@ -324,6 +324,186 @@ TEST_SUITE("village") {
         CHECK(back.hash() == g.hash());
     }
 
+    TEST_CASE("villagers have names, and a new name is the same for everyone and after loading") {
+        const MapData map = small_map(17);
+        Game a(content(), map, 1, 5);
+        Game b(content(), map, 1, 5);
+        // Each comes with a name of its people and sex, the same on both machines.
+        for (std::size_t i = 0; i < a.villagers().size(); ++i) {
+            const Villager& v = a.villagers().data()[i];
+            const std::string name = a.villager_name(v);
+            REQUIRE(v.race < content()->races.size());
+            const RaceDef& race = content()->races[v.race];
+            const auto& own = v.sex == Sex::Female ? race.names_female : race.names_male;
+            CHECK(std::find(own.begin(), own.end(), name) != own.end());
+            CHECK(v.name.empty());
+            CHECK(b.villager_name(b.villagers().data()[i]) == name);
+        }
+        const EntityId who = a.villagers().entities()[3];
+        const std::string born = a.villager_name(*a.villagers().get(who));
+        Command rename;
+        rename.type = CommandType::RenameVillager;
+        rename.entity = who;
+        rename.text = "Doña Ñandú";
+        // It travels as bytes, like in a network game.
+        BinaryWriter wire;
+        rename.write(wire);
+        BinaryReader in(wire.bytes());
+        Command received;
+        REQUIRE(Command::read(in, received));
+        CHECK(received == rename);
+        a.apply(rename);
+        b.apply(received);
+        CHECK(a.villager_name(*a.villagers().get(who)) == "Doña Ñandú");
+        CHECK(b.villager_name(*b.villagers().get(who)) == "Doña Ñandú");
+        CHECK(a.rejected_commands() == 0);
+        run(a, 300);
+        run(b, 300);
+        CHECK(a.hash() == b.hash());
+        // The name is part of the game: without it the two would differ.
+        Game c(content(), map, 1, 5);
+        run(c, 300);
+        CHECK(c.hash() != a.hash());
+
+        // Saved and loaded with it.
+        BinaryWriter w;
+        a.save(w);
+        Game back(content(), small_map(1), 1, 1);
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.villager_name(*back.villagers().get(who)) == "Doña Ñandú");
+        CHECK(back.hash() == a.hash());
+
+        // An empty name gives back the one it came with.
+        rename.text.clear();
+        a.apply(rename);
+        CHECK(a.villager_name(*a.villagers().get(who)) == born);
+
+        // Somebody who is not there: refused.
+        rename.entity = EntityId{4000000, 0};
+        rename.text = "Nadie";
+        a.apply(rename);
+        CHECK(a.rejected_commands() == 1);
+    }
+
+    TEST_CASE("names that are not plain text are refused") {
+        CHECK(valid_villager_name(""));
+        CHECK(valid_villager_name("Ana"));
+        CHECK(valid_villager_name("José María Ñandú"));
+        CHECK(valid_villager_name(std::string(24, 'a')));
+        CHECK_FALSE(valid_villager_name(std::string(25, 'a')));
+        CHECK_FALSE(valid_villager_name(" Ana"));
+        CHECK_FALSE(valid_villager_name("Ana "));
+        CHECK_FALSE(valid_villager_name("A\nna"));
+        CHECK_FALSE(valid_villager_name(std::string("A\0na", 4)));
+        CHECK_FALSE(valid_villager_name("A\x7Fna"));
+        CHECK_FALSE(valid_villager_name("\xC3"));          // Cut short.
+        CHECK_FALSE(valid_villager_name("\xC0\xAF"));      // Overlong.
+        CHECK_FALSE(valid_villager_name("\xED\xA0\x80"));  // A surrogate.
+        CHECK_FALSE(valid_villager_name("\xFF"));
+        CHECK_FALSE(valid_villager_name("\xC2\x85"));      // A control of the second block.
+
+        const auto travels = [](const Command& c) {
+            BinaryWriter w;
+            c.write(w);
+            BinaryReader r(w.bytes());
+            Command back;
+            return Command::read(r, back);
+        };
+        Command c;
+        c.type = CommandType::RenameVillager;
+        c.entity = EntityId{1, 0};
+        c.text = "Ana";
+        CHECK(travels(c));
+        c.text = "A\tna";
+        CHECK_FALSE(travels(c));
+        c.text = std::string(25, 'a');
+        CHECK_FALSE(travels(c));
+        // Only a rename carries text.
+        c.type = CommandType::SetWorkers;
+        c.text = "Ana";
+        CHECK_FALSE(travels(c));
+        c.text.clear();
+        CHECK(travels(c));
+        c.type = CommandType::SetProduction;
+        c.value = 1;
+        CHECK(travels(c));
+        c.value = 2;
+        CHECK_FALSE(travels(c));
+    }
+
+    TEST_CASE("a stopped workshop lets its workers go and takes them back") {
+        Game g(content(), small_map(19), 1, 7);
+        REQUIRE(place(g, building("firewood_splitter")));
+        run(g, 3000);
+        REQUIRE(complete_count(g, building("firewood_splitter")) == 1);
+        EntityId shop;
+        for (std::size_t i = 0; i < g.buildings().size(); ++i) {
+            if (g.buildings().data()[i].def == building("firewood_splitter")) {
+                shop = g.buildings().entities()[i];
+            }
+        }
+        REQUIRE(g.buildings().get(shop) != nullptr);
+        const std::int32_t wanted = g.buildings().get(shop)->wanted_workers;
+        REQUIRE(wanted == 1);
+        CHECK(g.buildings().get(shop)->workers.size() == 1);
+        const EntityId worker = g.buildings().get(shop)->workers[0];
+
+        Command stop;
+        stop.type = CommandType::SetProduction;
+        stop.entity = shop;
+        stop.value = 0;
+        g.apply(stop);
+        run(g, 400);  // What was on its way is brought in.
+        CHECK(g.buildings().get(shop)->stopped);
+        CHECK(g.buildings().get(shop)->workers.empty());
+        CHECK(g.buildings().get(shop)->wanted_workers == wanted);  // Remembered.
+        REQUIRE(g.villagers().get(worker) != nullptr);
+        CHECK_FALSE(g.villagers().get(worker)->job.valid());  // A laborer again.
+        // Stopped, it neither uses logs nor makes firewood.
+        const std::int32_t logs = g.stored(0)[resource("log")];
+        const std::int32_t firewood = g.stored(0)[resource("firewood")];
+        run(g, 2000);
+        CHECK(g.stored(0)[resource("log")] == logs);
+        CHECK(g.stored(0)[resource("firewood")] <= firewood);
+        CHECK(g.buildings().get(shop)->workers.empty());
+
+        // Saved and loaded stopped.
+        BinaryWriter w;
+        g.save(w);
+        Game back(content(), small_map(1), 1, 1);
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.buildings().get(shop)->stopped);
+        CHECK(back.hash() == g.hash());
+
+        // Working again: its worker comes back and it makes firewood (told
+        // to keep a large stock, so it does not rest on what there is).
+        Command limit;
+        limit.type = CommandType::SetLimit;
+        limit.entity = shop;
+        limit.value = 5000;
+        g.apply(limit);
+        stop.value = 1;
+        g.apply(stop);
+        run(g, 3000);
+        CHECK_FALSE(g.buildings().get(shop)->stopped);
+        CHECK(g.buildings().get(shop)->workers.size() == 1);
+        CHECK(g.stored(0)[resource("log")] < logs);
+
+        // A building without workers has nothing to stop.
+        Command house;
+        house.type = CommandType::SetProduction;
+        house.entity = g.player(0).town_center;
+        house.value = 0;
+        const std::uint32_t rejected = g.rejected_commands();
+        if (content()->buildings[town_center(g).def].workers <= 0) {
+            g.apply(house);
+            CHECK(g.rejected_commands() == rejected + 1);
+            CHECK_FALSE(town_center(g).stopped);
+        }
+    }
+
     TEST_CASE("broken saves are rejected and leave the game untouched") {
         Game g(content(), small_map(18), 1, 21);
         run(g, 200);

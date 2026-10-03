@@ -601,6 +601,19 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 63
+
+- [ ] Cada aldeano tiene nombre propio (título de su ventana); los de cada raza suenan a su raza.
+- [ ] "Renombrar": clic en el campo, escribir y OK o Intro. El nombre nuevo sale en el título y en las listas, y sigue ahí tras guardar y cargar. Vacío devuelve el nombre de siempre. Esc mientras escribes solo deja de escribir.
+- [ ] En red, el nombre nuevo se ve en la otra instancia.
+- [ ] Ventana de aldeano: "Vive en: …" y "Trabaja en: …" abren la ventana de ese edificio y dejan abierta (fijada) la del aldeano.
+- [ ] Ventana de una casa: lista "Habitantes" con nombre y edad; cada botón abre a esa persona. De un taller: "Trabajadores". Con más de cinco, la lista se desplaza con la rueda.
+- [ ] "Producción: activa" en un taller: al pulsar pasa a "detenida", sus trabajadores quedan de peones y deja de gastar y producir; al volver a pulsar recupera sus trabajadores.
+- [ ] "Ver" en cualquier ventana de objeto lleva la cámara ahí.
+- [ ] Clic en un árbol: su especie, altura y los troncos que da. En una piedra, veta, arbusto de bayas o hierbas: lo que da; un arbusto recogido dice que volverá a crecer.
+- [ ] Clic en un venado o jabalí: lo que trae un cazador; en un lobo u oso, que es peligroso; en un soldado o asaltante, qué hace y su salud.
+- [ ] **Sin revisar en pantalla por Claude**: escribir el nombre, el interruptor de producción, el desplazamiento de las listas y las ventanas de animales.
+
 ### Fase 62
 
 - [ ] Seleccionar un aldeano y luego otro: la misma ventana cambia de aldeano. Pulsar "Fijar" y seleccionar otro: se abre una segunda ventana al lado.

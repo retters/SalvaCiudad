@@ -31,6 +31,13 @@ TEST_SUITE("windows") {
         // A building and a villager may share a number: they are not the same thing.
         CHECK(w.select(WindowList::Kind::Building, EntityId{7, 0}) == first);
         CHECK(w.passing()->kind == WindowList::Kind::Building);
+        // A tree and an animal too (phase 63).
+        CHECK(w.select(WindowList::Kind::Node, EntityId{7, 0}) == first);
+        CHECK(w.passing()->kind == WindowList::Kind::Node);
+        w.set_pinned(first, true);
+        const std::string second = w.select(WindowList::Kind::Creature, EntityId{7, 0});
+        CHECK(second != first);
+        CHECK(w.objects().size() == 2);
     }
 
     TEST_CASE("a pinned window stays and the next selection opens another") {

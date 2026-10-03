@@ -102,6 +102,78 @@ std::string speed_text(int quarters) {
     return std::to_string(quarters / speed::kNormal);
 }
 
+namespace {
+
+float meters(sim::Fixed f) {
+    return static_cast<float>(f.raw()) / 65536.0f;
+}
+
+// Whether a natural feature is still there to look at: not felled or dug
+// out (a picked bush that grows back is).
+bool node_there(const sim::Game& game, std::uint32_t index) {
+    return index < game.nodes().size() && index < game.map().features.size() &&
+           (game.nodes()[index].amount > 0 || game.nodes()[index].regrow_tick != 0);
+}
+
+// The thing selected on the map, as the windows name it.
+struct Selected {
+    bool valid = false;
+    WindowList::Kind kind = WindowList::Kind::Building;
+    sim::EntityId entity;
+};
+Selected selected(const GameSession::Interaction& ui) {
+    if (ui.selected_building.valid()) {
+        return {true, WindowList::Kind::Building, ui.selected_building};
+    }
+    if (ui.selected_villager.valid()) {
+        return {true, WindowList::Kind::Villager, ui.selected_villager};
+    }
+    if (ui.selected_creature.valid()) {
+        return {true, WindowList::Kind::Creature, ui.selected_creature};
+    }
+    if (ui.selected_node != 0) {
+        return {true, WindowList::Kind::Node, sim::EntityId{ui.selected_node - 1, 0}};
+    }
+    return {};
+}
+
+const char* feature_key(sim::FeatureType type) {
+    switch (type) {
+        case sim::FeatureType::Stone: return "feature.stone";
+        case sim::FeatureType::IronOre: return "feature.ironOre";
+        case sim::FeatureType::BerryBush: return "feature.berryBush";
+        case sim::FeatureType::Herbs: return "feature.herbs";
+        default: return "feature.tree";
+    }
+}
+
+const char* creature_key(sim::CreatureKind kind) {
+    switch (kind) {
+        case sim::CreatureKind::Deer: return "hud.creature.deer";
+        case sim::CreatureKind::Boar: return "hud.creature.boar";
+        case sim::CreatureKind::Wolf: return "hud.creature.wolf";
+        case sim::CreatureKind::Bear: return "hud.creature.bear";
+        case sim::CreatureKind::Raider: return "hud.creature.raider";
+        default: return "hud.creature.soldier";
+    }
+}
+
+const char* creature_state_key(sim::CreatureState state) {
+    switch (state) {
+        case sim::CreatureState::Flee: return "hud.creature.state.flee";
+        case sim::CreatureState::Chase: return "hud.creature.state.chase";
+        case sim::CreatureState::Approach: return "hud.creature.state.approach";
+        case sim::CreatureState::Bash: return "hud.creature.state.bash";
+        case sim::CreatureState::Leave: return "hud.creature.state.leave";
+        case sim::CreatureState::Travel: return "hud.creature.state.travel";
+        default: return "hud.creature.state.wander";
+    }
+}
+
+constexpr std::size_t kPeopleRows = 5;  // More than these scroll.
+
+}  // namespace
+
 bool GameHud::pressed(const ui::Context& ctx, Action action) const {
     const KeyBindings& b = services_.settings().input.bindings;
     for (const SDL_Scancode k : ctx.input().keys) {
@@ -155,6 +227,12 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     if (ui.selected_villager.valid() && game.villagers().get(ui.selected_villager) == nullptr) {
         ui.selected_villager = {};
     }
+    if (ui.selected_creature.valid() && game.creatures().get(ui.selected_creature) == nullptr) {
+        ui.selected_creature = {};
+    }
+    if (ui.selected_node != 0 && !node_there(game, ui.selected_node - 1)) {
+        ui.selected_node = 0;
+    }
 
     // Another game: the windows of the last one's things go.
     if (windows_session_ != s) {
@@ -169,16 +247,17 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
         if (pressed(ctx, Action::GameRotateBuilding) && ui.placing != sim::kNoDef) {
             ui.rotation = static_cast<std::uint8_t>((ui.rotation + 1) & 3u);
         }
-        if (ctx.input().key(SDL_SCANCODE_ESCAPE)) {
+        if (ctx.input().key(SDL_SCANCODE_ESCAPE) && ctx.typing()) {
+            rename_id_.clear();  // Esc while typing a name: only the typing ends.
+        } else if (ctx.input().key(SDL_SCANCODE_ESCAPE)) {
             if (ui.field_farm.valid()) {
                 ui.field_farm = {};
                 ui.field_dragging = false;
             } else if (ui.placing != sim::kNoDef) {
                 ui.placing = sim::kNoDef;
-            } else if (ui.selected_building.valid() || ui.selected_villager.valid() || windows_.passing() != nullptr) {
+            } else if (ui.any_selected() || windows_.passing() != nullptr) {
                 // Only the passing window goes; the pinned ones stay.
-                ui.selected_building = {};
-                ui.selected_villager = {};
+                ui.clear_selection();
                 windows_.close_passing();
             } else {
                 open_menu = true;
@@ -221,10 +300,11 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     fixed("layers", layers_open_, &GameHud::layers_window);
     for (const WindowList::Object& o : windows_.objects()) {
         jobs.push_back({o.id, [this, &ctx, s, o] {
-                            if (o.kind == WindowList::Kind::Building) {
-                                building_window(ctx, *s, o);
-                            } else {
-                                villager_window(ctx, *s, o);
+                            switch (o.kind) {
+                                case WindowList::Kind::Building: building_window(ctx, *s, o); break;
+                                case WindowList::Kind::Villager: villager_window(ctx, *s, o); break;
+                                case WindowList::Kind::Node: node_window(ctx, *s, o); break;
+                                case WindowList::Kind::Creature: creature_window(ctx, *s, o); break;
                             }
                         }});
     }
@@ -250,16 +330,32 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     for (const std::string& id : closing_) {
         if (const WindowList::Object* o = windows_.object(id)) {
             // The selection goes with its window.
-            if (o->entity == ui.selected_building) {
-                ui.selected_building = {};
+            const Selected sel = selected(ui);
+            if (sel.valid && sel.kind == o->kind && sel.entity == o->entity) {
+                ui.clear_selection();
             }
-            if (o->entity == ui.selected_villager) {
-                ui.selected_villager = {};
-            }
+        }
+        if (rename_id_ == id) {
+            rename_id_.clear();
         }
         windows_.close(id);
     }
     closing_.clear();
+    // Links pressed this frame: the window they are in stays, and the
+    // thing becomes the selection (its window opens with the next frame).
+    for (const Link& link : links_) {
+        if (windows_.object(link.from) != nullptr) {
+            windows_.place(link.from).pinned = true;
+        }
+        ui.clear_selection();
+        switch (link.kind) {
+            case WindowList::Kind::Building: ui.selected_building = link.entity; break;
+            case WindowList::Kind::Villager: ui.selected_villager = link.entity; break;
+            case WindowList::Kind::Node: ui.selected_node = link.entity.index + 1; break;
+            case WindowList::Kind::Creature: ui.selected_creature = link.entity; break;
+        }
+    }
+    links_.clear();
     windows_end(ctx);
     return open_menu;
 }
@@ -267,11 +363,11 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
 void GameHud::sync_selection(ui::Context& ctx, GameSession& s) {
     GameSession::Interaction& ui = s.ui();
     const sim::Game& game = s.game();
-    const bool building = ui.selected_building.valid();
-    const sim::EntityId now = building ? ui.selected_building : ui.selected_villager;
-    const WindowList::Kind kind = building ? WindowList::Kind::Building : WindowList::Kind::Villager;
-    if (now != selected_shown_ || (now.valid() && kind != selected_kind_)) {
-        if (now.valid()) {
+    const Selected sel = selected(ui);
+    const sim::EntityId now = sel.valid ? sel.entity : sim::EntityId{};
+    const WindowList::Kind kind = sel.kind;
+    if (now != selected_shown_ || (sel.valid && kind != selected_kind_)) {
+        if (sel.valid) {
             if (windows_.select(kind, now).empty()) {
                 notify(tr("hud.window.limit", static_cast<int>(WindowList::kMaxObjects)), false, 0.0f, 0.0f,
                        game.calendar(), ctx.now_ns());
@@ -285,8 +381,13 @@ void GameHud::sync_selection(ui::Context& ctx, GameSession& s) {
     // The passing window of a thing that is no more goes; a pinned one
     // stays to say so.
     if (const WindowList::Object* o = windows_.passing()) {
-        const bool there = o->kind == WindowList::Kind::Building ? game.buildings().get(o->entity) != nullptr
-                                                                 : game.villagers().get(o->entity) != nullptr;
+        bool there = false;
+        switch (o->kind) {
+            case WindowList::Kind::Building: there = game.buildings().get(o->entity) != nullptr; break;
+            case WindowList::Kind::Villager: there = game.villagers().get(o->entity) != nullptr; break;
+            case WindowList::Kind::Node: there = node_there(game, o->entity.index); break;
+            case WindowList::Kind::Creature: there = game.creatures().get(o->entity) != nullptr; break;
+        }
         if (!there) {
             windows_.close_passing();
         }
@@ -298,7 +399,9 @@ void GameHud::gone_window(ui::Context& ctx, GameSession& s, const WindowList::Ob
     const float pad = ctx.s(14.0f);
     const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
     const float w = std::min(ctx.s(kWindowW), ctx.width() - 2 * pad);
-    const std::string text = tr(o.kind == WindowList::Kind::Building ? "hud.window.gone.building" : "hud.window.gone.villager");
+    const std::string text = tr(o.kind == WindowList::Kind::Building   ? "hud.window.gone.building"
+                                : o.kind == WindowList::Kind::Villager ? "hud.window.gone.villager"
+                                                                       : "hud.window.gone.thing");
     const float text_h = ctx.paragraph_height(w - 2 * pad, text, body);
     ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
                  std::round(pad + title_h + pad + text_h + pad)};
@@ -609,8 +712,7 @@ void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
         }
         if (ctx.button(ctx.id(d.id), {bx, by, bw, bh}, tr(d.name_key), tooltip, !locked, ui.placing == defs[i])) {
             ui.placing = ui.placing == defs[i] ? sim::kNoDef : defs[i];
-            ui.selected_building = {};
-            ui.selected_villager = {};
+            ui.clear_selection();
         }
     }
     ctx.pop_id();
@@ -707,12 +809,18 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
             }
         }
     }
+    const bool mine = b->owner == s.town();
     const bool has_workers = d.workers > 0 && b->state == sim::BuildingState::Complete;
     const bool farm = d.work == sim::WorkKind::Farm && b->state == sim::BuildingState::Complete;
     const float field_row = std::round(ctx.s(30.0f));
     const float button_h = std::round(ctx.s(34.0f));
     const float title_h = ctx.text().line_height(title);
     float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line;
+    h += button_h + pad * 0.5f;  // The eye and the switch.
+    const bool lists = mine && b->state == sim::BuildingState::Complete;
+    if (lists) {
+        h += people_height(ctx, b->residents.size()) + people_height(ctx, b->workers.size());
+    }
     if (progress >= 0.0f) {
         h += ctx.s(14.0f);
     }
@@ -757,6 +865,27 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     ctx.push_id("building_window");
     float y = box.y + pad;
     y += title_h + pad * 0.5f;
+    {
+        // The eye takes the camera to it; the switch stops its work and
+        // lets its workers go (it remembers how many it wanted).
+        const float half = std::round((box.w - 2 * pad - ctx.s(6.0f)) * 0.5f);
+        if (ctx.button(ctx.id("eye"), {box.x + pad, y, half, button_h}, tr("hud.window.eye"), tr("hud.window.eye.tooltip"))) {
+            services_.focus_camera(static_cast<float>(b->x) + static_cast<float>(b->width) * 0.5f,
+                                   static_cast<float>(b->z) + static_cast<float>(b->depth) * 0.5f);
+        }
+        if (has_workers && mine) {
+            if (ctx.button(ctx.id("production"), {box.right() - pad - half, y, half, button_h},
+                           tr(b->stopped ? "hud.building.stopped" : "hud.building.working"),
+                           tr("hud.building.production.tooltip"), true, b->stopped)) {
+                sim::Command c;
+                c.type = sim::CommandType::SetProduction;
+                c.entity = window_entity_;
+                c.value = b->stopped ? 1 : 0;
+                s.issue(c);
+            }
+        }
+        y += button_h + pad * 0.5f;
+    }
     if (progress >= 0.0f) {
         meter(ctx, {box.x + pad, y, box.w - 2 * pad, ctx.s(8.0f)}, progress, ctx.theme().accent);
         y += ctx.s(14.0f);
@@ -764,6 +893,10 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     for (const std::string& l : lines) {
         ctx.label({box.x + pad, y, box.w - 2 * pad, line}, l, body, ctx.theme().text);
         y += line;
+    }
+    if (lists) {
+        people_list(ctx, s, o, box, y, b->residents, "hud.building.residentList");
+        people_list(ctx, s, o, box, y, b->workers, "hud.building.workerList");
     }
     if (has_workers) {
         y += pad * 0.5f;
@@ -1572,6 +1705,62 @@ void GameHud::farm_fields(ui::Context& ctx, GameSession& s, const sim::Building&
     y += button_h;
 }
 
+float GameHud::people_height(ui::Context& ctx, std::size_t count) const {
+    if (count == 0) {
+        return 0.0f;
+    }
+    const float row = std::round(ctx.s(28.0f)) + ctx.s(3.0f);
+    return ctx.s(14.0f) * 0.5f + ctx.text().line_height(ctx.style(ctx.theme().small)) +
+           static_cast<float>(std::min(count, kPeopleRows)) * row;
+}
+
+void GameHud::people_list(ui::Context& ctx, GameSession& s, const WindowList::Object& o, const ui::Rect& box, float& y,
+                          const std::vector<sim::EntityId>& people, const char* title_key) {
+    if (people.empty()) {
+        return;
+    }
+    const sim::Game& game = s.game();
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const float pad = ctx.s(14.0f);
+    const float row_h = std::round(ctx.s(28.0f));
+    const float row = row_h + ctx.s(3.0f);
+    y += pad * 0.5f;
+    ctx.label({box.x + pad, y, box.w - 2 * pad, ctx.text().line_height(small)},
+              tr(title_key, static_cast<int>(people.size())), small, ctx.theme().text_dim);
+    y += ctx.text().line_height(small);
+    const float shown_h = static_cast<float>(std::min(people.size(), kPeopleRows)) * row;
+    const ui::Rect view{box.x + pad, y, box.w - 2 * pad, shown_h};
+    const bool scrolls = people.size() > kPeopleRows;
+    ctx.push_id(title_key);
+    float top = scrolls ? ctx.begin_scroll(ctx.id("scroll"), view) : y;
+    for (std::size_t k = 0; k < people.size(); ++k) {
+        const sim::Villager* v = game.villagers().get(people[k]);
+        if (v == nullptr) {
+            continue;
+        }
+        std::string name = game.villager_name(*v);
+        if (name.empty()) {
+            name = tr(v->sex == sim::Sex::Female ? "hud.villager.woman" : "hud.villager.man");
+        }
+        // The id is the villager's own: the rows move as people come and go.
+        if (ctx.button(ctx.id("v" + std::to_string(people[k].index)),
+                       {view.x, top, view.w - (scrolls ? ctx.s(12.0f) : 0.0f), row_h},
+                       tr("hud.villager.listed", name, game.age_years(*v)), tr("hud.villager.open.tooltip"))) {
+            open_link(o.id, WindowList::Kind::Villager, people[k]);
+        }
+        top += row;
+    }
+    if (scrolls) {
+        ctx.end_scroll(static_cast<float>(people.size()) * row);
+    }
+    ctx.pop_id();
+    y += shown_h;
+}
+
+void GameHud::open_link(const std::string& from, WindowList::Kind kind, sim::EntityId entity) {
+    links_.push_back({from, kind, entity});
+}
+
 void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o) {
     const sim::Game& game = s.game();
     const sim::Content& content = game.content();
@@ -1584,20 +1773,33 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
     const ui::TextStyle body = ctx.style(ctx.theme().body);
     const ui::TextStyle title = ctx.style(ctx.theme().heading, ui::FontRole::Bold);
     const float pad = ctx.s(14.0f);
+    const float gap = ctx.s(6.0f);
     const float line = ctx.text().line_height(body);
     const float w = std::min(ctx.s(kWindowW), ctx.width() - 2 * pad);
     const std::int32_t age = game.age_years(*v);
+    const bool mine = v->owner == s.town();
+    const bool female = v->sex == sim::Sex::Female;
+    const char* kind_key = !game.adult(*v) ? (female ? "hud.villager.girl" : "hud.villager.boy")
+                                           : (female ? "hud.villager.woman" : "hud.villager.man");
+    std::string name = game.villager_name(*v);
+    if (name.empty()) {
+        name = tr(kind_key);
+    }
+    const sim::Building* home = game.buildings().get(v->home);
+    const sim::Building* job = game.buildings().get(v->job);
 
     std::vector<std::string> lines;
-    lines.push_back(tr("hud.villager.age", age));
+    lines.push_back(tr("hud.villager.who", tr(kind_key), age));
     if (v->race < content.races.size()) {
         lines.push_back(tr("hud.villager.race", tr(content.races[v->race].name_key)));
     }
     lines.push_back(tr("hud.villager.task", tr(task_text_key(v->task))));
-    const sim::Building* job = game.buildings().get(v->job);
-    lines.push_back(job != nullptr ? tr("hud.villager.job", tr(content.buildings[job->def].name_key))
-                                   : tr(game.adult(*v) ? "hud.villager.laborer" : "hud.villager.child"));
-    lines.push_back(tr(game.buildings().get(v->home) != nullptr ? "hud.villager.housed" : "hud.villager.homeless"));
+    if (job == nullptr) {
+        lines.push_back(tr(game.adult(*v) ? "hud.villager.laborer" : "hud.villager.child"));
+    }
+    if (home == nullptr) {
+        lines.push_back(tr("hud.villager.homeless"));
+    }
     lines.push_back(tr(v->clothes > 0 ? "hud.villager.clothes" : "hud.villager.noClothes"));
     if (v->disease != 0 && v->disease <= content.diseases.size()) {
         lines.push_back(tr("hud.villager.sick", tr(content.diseases[v->disease - 1u].name_key), v->sick_days));
@@ -1606,17 +1808,18 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
         lines.push_back(tr("hud.villager.carrying", tr("hud.amount", tr(content.resources[v->carrying.resource].name_key),
                                                        v->carrying.amount)));
     }
+    const bool renaming = rename_id_ == o.id && mine;
     const float bar_block = 3 * (line + ctx.s(10.0f));
     const float title_h = ctx.text().line_height(title);
-    const float follow_h = std::round(ctx.s(36.0f));
-    const float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line + bar_block + follow_h + pad * 0.5f + pad;
+    const float button_h = std::round(ctx.s(34.0f));
+    const float link_h = std::round(ctx.s(30.0f));
+    const float links = (home != nullptr ? link_h + ctx.s(3.0f) : 0.0f) + (job != nullptr ? link_h + ctx.s(3.0f) : 0.0f);
+    const float h = pad + title_h + pad * 0.5f + button_h + pad * 0.5f + (renaming ? button_h + pad * 0.5f : 0.0f) +
+                    static_cast<float>(lines.size()) * line + (links > 0.0f ? pad * 0.25f + links : 0.0f) + bar_block + pad;
     ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
                  std::round(h)};
-    const bool female = v->sex == sim::Sex::Female;
-    const char* name_key = !game.adult(*v) ? (female ? "hud.villager.girl" : "hud.villager.boy")
-                                           : (female ? "hud.villager.woman" : "hud.villager.man");
     bool open = true;
-    if (!window(ctx, s, o.id, tr(name_key), box, open)) {
+    if (!window(ctx, s, o.id, name, box, open)) {
         if (!open) {
             closing_.push_back(o.id);
         }
@@ -1625,9 +1828,70 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
     ctx.push_id("villager_window");
     float y = box.y + pad;
     y += title_h + pad * 0.5f;
+    // The eye, following (a double click on it does the same) and its name.
+    {
+        const float third = std::round((box.w - 2 * pad - 2 * gap) / 3.0f);
+        if (ctx.button(ctx.id("eye"), {box.x + pad, y, third, button_h}, tr("hud.window.eye"), tr("hud.window.eye.tooltip"))) {
+            services_.focus_camera(meters(v->position.x), meters(v->position.z));
+        }
+        const bool followed = ui.followed_villager == o.entity;
+        if (ctx.button(ctx.id("follow"), {box.x + pad + third + gap, y, third, button_h},
+                       tr(followed ? "hud.villager.unfollow" : "hud.villager.follow"), tr("hud.villager.follow.tooltip"),
+                       true, followed)) {
+            ui.followed_villager = followed ? sim::EntityId{} : o.entity;
+        }
+        if (ctx.button(ctx.id("rename"), {box.right() - pad - third, y, third, button_h}, tr("hud.villager.rename"),
+                       tr("hud.villager.rename.tooltip"), mine, renaming)) {
+            rename_id_ = renaming ? std::string{} : o.id;
+            rename_text_ = name;
+        }
+        y += button_h + pad * 0.5f;
+    }
+    if (renaming) {
+        const float ok_w = std::round(ctx.s(64.0f));
+        (void)ctx.text_field(ctx.id("name"), {box.x + pad, y, box.w - 2 * pad - ok_w - gap, button_h}, rename_text_,
+                             sim::kMaxNameBytes, tr("hud.villager.name.tooltip"));
+        // Spaces at the ends are not part of a name.
+        std::string wanted = rename_text_;
+        while (!wanted.empty() && wanted.back() == ' ') {
+            wanted.pop_back();
+        }
+        wanted.erase(0, wanted.find_first_not_of(' ') == std::string::npos ? wanted.size() : wanted.find_first_not_of(' '));
+        const bool valid = sim::valid_villager_name(wanted);
+        const bool enter = ctx.input().key(SDL_SCANCODE_RETURN) || ctx.input().key(SDL_SCANCODE_KP_ENTER);
+        if ((ctx.button(ctx.id("name_ok"), {box.right() - pad - ok_w, y, ok_w, button_h}, tr("hud.villager.name.ok"),
+                        tr("hud.villager.name.ok.tooltip"), valid) ||
+             (enter && !ctx.input_blocked())) &&
+            valid) {
+            sim::Command c;
+            c.type = sim::CommandType::RenameVillager;
+            c.entity = o.entity;
+            c.text = wanted;
+            s.issue(c);
+            rename_id_.clear();
+        }
+        y += button_h + pad * 0.5f;
+    }
     for (const std::string& l : lines) {
         ctx.label({box.x + pad, y, box.w - 2 * pad, line}, l, body, ctx.theme().text);
         y += line;
+    }
+    // Its home and its workplace: a click opens that building's window.
+    if (links > 0.0f) {
+        y += pad * 0.25f;
+        const auto link = [&](const char* id, const char* key, const sim::Building& b, sim::EntityId building) {
+            if (ctx.button(ctx.id(id), {box.x + pad, y, box.w - 2 * pad, link_h},
+                           tr(key, tr(content.buildings[b.def].name_key)), tr("hud.building.open.tooltip"))) {
+                open_link(o.id, WindowList::Kind::Building, building);
+            }
+            y += link_h + ctx.s(3.0f);
+        };
+        if (home != nullptr) {
+            link("home", "hud.villager.home", *home, v->home);
+        }
+        if (job != nullptr) {
+            link("job", "hud.villager.job", *job, v->job);
+        }
     }
     const auto bar = [&](const std::string& label, float fraction, ui::Color color) {
         ctx.label({box.x + pad, y, box.w - 2 * pad, line}, label, body, ctx.theme().text_dim);
@@ -1641,15 +1905,137 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
         v->warmth < sim::village::kWarmthMax / 3 ? ctx.theme().danger : ui::Color::rgb(0xE08A3C));
     bar(tr("hud.villager.health"), static_cast<float>(v->health) / static_cast<float>(sim::village::kHealthMax),
         v->health < sim::village::kHealthMax / 2 ? ctx.theme().danger : ui::Color::rgb(0x6FAF5A));
-    // Phase 61: the camera follows it (a double click on it does the same).
-    y += pad * 0.5f;
-    const bool followed = ui.followed_villager == o.entity;
-    if (ctx.button(ctx.id("follow"), {box.x + pad, y, box.w - 2 * pad, follow_h},
-                   tr(followed ? "hud.villager.unfollow" : "hud.villager.follow"), tr("hud.villager.follow.tooltip"), true,
-                   followed)) {
-        ui.followed_villager = followed ? sim::EntityId{} : o.entity;
-    }
     ctx.pop_id();
+}
+
+// A tree, a stone, a vein, a bush or herbs: what it is and what it gives.
+void GameHud::node_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o) {
+    const sim::Game& game = s.game();
+    const sim::Content& content = game.content();
+    const std::uint32_t index = o.entity.index;
+    if (!node_there(game, index)) {
+        gone_window(ctx, s, o);
+        return;
+    }
+    const sim::MapFeature& f = game.map().features[index];
+    const sim::Node& n = game.nodes()[index];
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const float pad = ctx.s(14.0f);
+    const float line = ctx.text().line_height(body);
+    const float w = std::min(ctx.s(kWindowW), ctx.width() - 2 * pad);
+    const bool tree = f.type == sim::FeatureType::Tree;
+    std::string name = tr(feature_key(f.type));
+    std::vector<std::string> lines;
+    if (tree) {
+        if (f.species < content.flora.species.size()) {
+            name = tr(content.flora.species[f.species].name_key);
+        }
+        lines.push_back(tr("hud.node.tree", static_cast<int>((sim::MapData::tree_height_cm(f) + 50) / 100)));
+    }
+    sim::DefIndex resource = sim::kNoDef;
+    for (const sim::FeatureDef& d : content.features) {
+        if (d.kind == f.type) {
+            resource = d.resource;
+            break;
+        }
+    }
+    if (n.amount > 0 && resource < content.resources.size()) {
+        lines.push_back(tr("hud.thing.gives", tr("hud.amount", tr(content.resources[resource].name_key), n.amount)));
+    } else if (n.amount <= 0) {
+        lines.push_back(tr("hud.node.empty"));
+    }
+    if (n.reserved != 0) {
+        lines.push_back(tr("hud.node.busy"));
+    }
+    const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
+    const float button_h = std::round(ctx.s(34.0f));
+    ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
+                 std::round(pad + title_h + pad * 0.5f + button_h + pad * 0.5f + static_cast<float>(lines.size()) * line + pad)};
+    bool open = true;
+    if (!window(ctx, s, o.id, name, box, open)) {
+        if (!open) {
+            closing_.push_back(o.id);
+        }
+        return;
+    }
+    float y = box.y + pad + title_h + pad * 0.5f;
+    if (ctx.button(ctx.id("eye"), {box.x + pad, y, std::round((box.w - 2 * pad) * 0.5f), button_h}, tr("hud.window.eye"),
+                   tr("hud.window.eye.tooltip"))) {
+        services_.focus_camera(meters(f.x), meters(f.z));
+    }
+    y += button_h + pad * 0.5f;
+    for (const std::string& l : lines) {
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, l, body, ctx.theme().text);
+        y += line;
+    }
+}
+
+// An animal, a soldier or a raider: what it is, what it is doing and, for
+// game, what a hunter brings from one.
+void GameHud::creature_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o) {
+    const sim::Game& game = s.game();
+    const sim::Content& content = game.content();
+    const sim::Creature* c = game.creatures().get(o.entity);
+    if (c == nullptr) {
+        gone_window(ctx, s, o);
+        return;
+    }
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const float pad = ctx.s(14.0f);
+    const float line = ctx.text().line_height(body);
+    const float w = std::min(ctx.s(kWindowW), ctx.width() - 2 * pad);
+    std::string name = tr(creature_key(c->kind));
+    std::vector<std::string> lines;
+    switch (c->kind) {
+        case sim::CreatureKind::Deer:
+        case sim::CreatureKind::Boar: {
+            std::string gives;
+            const sim::DefIndex meat = content.find_resource("core:meat");
+            const sim::DefIndex hide = content.find_resource("core:hide");
+            if (meat != sim::kNoDef && game.hunt_meat() > 0) {
+                gives = tr("hud.amount", tr(content.resources[meat].name_key), game.hunt_meat());
+            }
+            if (hide != sim::kNoDef && game.hunt_hides() > 0) {
+                gives += (gives.empty() ? "" : ", ") + tr("hud.amount", tr(content.resources[hide].name_key), game.hunt_hides());
+            }
+            if (!gives.empty()) {
+                lines.push_back(tr("hud.thing.gives", gives));
+            }
+            break;
+        }
+        case sim::CreatureKind::Wolf:
+        case sim::CreatureKind::Bear: lines.push_back(tr("hud.creature.danger")); break;
+        case sim::CreatureKind::Raider: lines.push_back(tr("hud.creature.raiderNote")); break;
+        default:
+            if (c->unit < content.units.size()) {
+                name = tr(content.units[c->unit].name_key);
+            }
+            lines.push_back(tr("hud.creature.soldierOf", town_name(c->town)));
+            break;
+    }
+    lines.push_back(tr("hud.villager.task", tr(creature_state_key(c->state))));
+    lines.push_back(tr("hud.creature.health", c->health));
+    const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
+    const float button_h = std::round(ctx.s(34.0f));
+    ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
+                 std::round(pad + title_h + pad * 0.5f + button_h + pad * 0.5f + static_cast<float>(lines.size()) * line + pad)};
+    bool open = true;
+    if (!window(ctx, s, o.id, name, box, open)) {
+        if (!open) {
+            closing_.push_back(o.id);
+        }
+        return;
+    }
+    float y = box.y + pad + title_h + pad * 0.5f;
+    if (ctx.button(ctx.id("eye"), {box.x + pad, y, std::round((box.w - 2 * pad) * 0.5f), button_h}, tr("hud.window.eye"),
+                   tr("hud.window.eye.tooltip"))) {
+        services_.focus_camera(meters(c->position.x), meters(c->position.z));
+    }
+    y += button_h + pad * 0.5f;
+    for (const std::string& l : lines) {
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, l, body, ctx.theme().text);
+        y += line;
+    }
 }
 
 }  // namespace sc

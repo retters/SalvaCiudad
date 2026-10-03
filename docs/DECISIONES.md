@@ -2498,3 +2498,32 @@ De 360 a 400 unidades, para que el título quepa junto a los tres botones.
 
 **D-6214. Sin revisar en pantalla por Claude.**
 Mover ventanas, los imanes, anclar y cambiar el ancho: la herramienta de pruebas no logra arrastrar dentro del juego. Los cubren las pruebas de `WindowList`. Sí se vio en pantalla: varias ventanas de objeto fijadas a la vez, Esc y clic en el suelo, la X, minimizar, el traslape con la de arriba delante y la lectura de un `ui.windows` del formato anterior.
+
+## Fase 63: ventanas, contenido (2026-10-03)
+
+**D-6301. De dónde sale el nombre.**
+Cada raza trae en `races.json` dos listas de nombres (`names.male` y `names.female`, hasta 64 cada una; una raza con una sola lista la usa para todos). El nombre de un aldeano sale de la lista de su raza y sexo según los bits al azar con los que nació (los mismos que deciden su aspecto, revueltos para que el nombre no vaya ligado al aspecto). Esos bits ya se guardaban en la partida, así que el nombre es el mismo en todas las máquinas y al cargar, sin gastar otro número al azar al nacer: las partidas con la misma semilla transcurren igual que antes de la fase. Solo el nombre que pone el jugador se guarda aparte.
+
+**D-6302. Renombrar es una orden del juego.**
+Orden nueva `RenameVillager` con el texto: hasta 24 bytes de UTF-8 bien formado, sin caracteres de control y sin espacios en los extremos. La validación es la misma al leer la orden de la red, al aplicarla, al cargar una partida y al leer los nombres de un mod. Un nombre vacío devuelve el de siempre. Solo el dueño puede renombrar a los suyos. Las órdenes llevan ahora un texto (vacío salvo en esta) y miden 36 bytes en lugar de 32.
+
+**D-6303. Interruptor de producción.**
+Orden nueva `SetProduction`. Un edificio detenido cuenta como si quisiera cero trabajadores: los que tenía vuelven a ser peones con la regla de siempre y, sin trabajadores, ni consume ni produce. El número que quería no se toca, así que al reactivarlo vuelve a pedir los mismos. Vale para todo edificio con trabajadores (talleres, recolectores, granjas, mercados, cuarteles); uno sin trabajadores rechaza la orden.
+
+**D-6304. Enlaces entre ventanas.**
+La ventana del aldeano tiene botones "Vive en" y "Trabaja en"; la del edificio, un botón por habitante y por trabajador con su nombre y edad. Pulsar uno fija la ventana desde la que se pulsa y abre lo enlazado como selección nueva, en la ventana de paso: así se recorre aldeano → casa → otro habitante → su trabajo con todas las ventanas abiertas. Las listas de más de cinco personas se desplazan. Las listas y el interruptor solo salen en los edificios propios.
+
+**D-6305. El botón de ojo.**
+"Ver", en la primera fila de toda ventana de objeto: lleva la cámara principal al objeto. Va en el contenido y no en la barra de título para no quitarle más lugar al nombre.
+
+**D-6306. Seleccionar lo demás.**
+Un clic que no cae en un aldeano ni en un edificio busca un animal, soldado o asaltante a la vista y luego un árbol, piedra, veta, arbusto o hierba en terreno explorado. Los árboles se eligen por el tronco o por la copa. La ventana dice qué es (la especie del árbol, su altura), qué da (los troncos que le quedan; la carne y la piel que trae un cazador de un venado o jabalí) y su estado (alguien lo trabaja; vacío y volverá a crecer; qué hace el animal; su salud). Son ventanas de solo lectura: no dan órdenes.
+
+**D-6307. Lo que da un animal.**
+La caza no mata al animal que se ve: descuenta uno de la zona y el cazador vuelve con lo que carga de carne y una piel. La ventana muestra eso mismo, igual para venados y jabalíes; lobos y osos dicen que son peligrosos.
+
+**D-6308. Versiones.**
+Reglas 32 (el aldeano guarda su nombre puesto y el edificio si está detenido), protocolo de red 10 (las órdenes llevan texto).
+
+**D-6309. Sin revisar en pantalla por Claude.**
+Escribir un nombre (la herramienta de pruebas no teclea texto), el interruptor de producción, las listas con desplazamiento y las ventanas de animales. Los cubren las pruebas de la simulación. Sí se vio en pantalla: nombres en títulos y listas, "Renombrar" abre el campo, el enlace de habitante fija la casa y abre al aldeano con "Vive en: Casa", y la ventana de un árbol ("Pino, árbol de 3 m, da: Troncos 4").

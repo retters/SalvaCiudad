@@ -878,6 +878,11 @@ void App::render_frame(float dt) {
                 draw_marker(frame.width, frame.height, p + math::Vec3{0.0f, 2.3f, 0.0f}, ui_.theme().accent);
             } else if (const sim::Building* b = g.buildings().get(sel.selected_building)) {
                 draw_marker(frame.width, frame.height, village_.building_top(g, *b), ui_.theme().accent);
+            } else if (const sim::Creature* c = g.creatures().get(sel.selected_creature)) {
+                const math::Vec3 p = village_.creature_position(g, *c, static_cast<float>(clock_.interpolation()));
+                draw_marker(frame.width, frame.height, p + math::Vec3{0.0f, 2.3f, 0.0f}, ui_.theme().accent);
+            } else if (sel.selected_node != 0 && village_.feature_shown(g, sel.selected_node - 1)) {
+                draw_marker(frame.width, frame.height, village_.feature_top(g, sel.selected_node - 1), ui_.theme().accent);
             }
         }
         if (!still && scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
@@ -1589,8 +1594,7 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
         return;
     }
     const float alpha = static_cast<float>(clock_.interpolation());
-    ui.selected_villager = {};
-    ui.selected_building = {};
+    ui.clear_selection();
     if (const auto v = village_.pick_villager(game, origin, dir, alpha)) {
         ui.selected_villager = *v;
         // A second click on the same villager right away: follow it.
@@ -1602,6 +1606,10 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
         last_click_ns_ = now;
     } else if (const auto b = village_.pick_building(game, origin, dir)) {
         ui.selected_building = *b;
+    } else if (const auto c = village_.pick_creature(game, origin, dir, alpha)) {
+        ui.selected_creature = *c;
+    } else if (const auto f = village_.pick_feature(game, origin, dir)) {
+        ui.selected_node = *f + 1;
     }
 }
 
@@ -1642,6 +1650,12 @@ void App::update_war_fog() {
     if (const sim::Building* b = game.buildings().get(ui.selected_building);
         b != nullptr && !village_.building_shown(game, *b)) {
         ui.selected_building = {};
+    }
+    if (const sim::Creature* c = game.creatures().get(ui.selected_creature);
+        c != nullptr && !village_.mover_shown(game, c->kind == sim::CreatureKind::Soldier, c->town,
+                                              static_cast<float>(c->position.x.raw()) / 65536.0f,
+                                              static_cast<float>(c->position.z.raw()) / 65536.0f)) {
+        ui.selected_creature = {};
     }
 }
 

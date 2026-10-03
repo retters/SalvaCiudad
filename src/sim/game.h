@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 31;
+inline constexpr std::uint32_t kGameRulesVersion = 32;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -136,6 +136,9 @@ struct Building {
     // Phase 16: barracks.
     std::vector<DefIndex> training;  // Units waiting, first in training.
     std::int32_t train_progress = 0;
+    // Phase 63: stopped by the player. Its workers go back to laboring and
+    // `wanted_workers` is kept for when it works again.
+    bool stopped = false;
     bool operator==(const Building&) const = default;
 };
 
@@ -201,6 +204,7 @@ struct Villager {
     std::vector<FixedVec2> path;
     std::uint16_t path_index = 0;
     std::int32_t idle_ticks = 0;      // Waits before deciding again.
+    std::string name;                 // Phase 63: given by the player; empty: the one it came with.
     bool operator==(const Villager&) const = default;
 };
 
@@ -419,6 +423,14 @@ public:
     [[nodiscard]] std::vector<std::int32_t> stored(std::uint8_t player) const;
     [[nodiscard]] std::int32_t population(std::uint8_t player, bool adults_only = false) const;
     [[nodiscard]] std::int32_t age_years(const Villager& v) const;
+    // Phase 63. What a villager is called: the name the player gave it, or
+    // the one it came with (from its people's list, by the random bits it
+    // was born with: the same on every machine and after loading); "" for
+    // a people without names.
+    [[nodiscard]] std::string villager_name(const Villager& v) const;
+    // What a hunter brings from one animal: meat, and hides left at the lodge.
+    [[nodiscard]] std::int32_t hunt_meat() const;
+    [[nodiscard]] std::int32_t hunt_hides() const;
     [[nodiscard]] bool adult(const Villager& v) const;
     // Rotated footprint of a building definition.
     static void footprint(const BuildingDef& def, std::uint8_t rotation, std::int32_t& w, std::int32_t& d);

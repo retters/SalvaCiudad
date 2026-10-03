@@ -19,6 +19,44 @@
           "cleric"
         ]
       },
+      "names": {
+        "male": [
+          "Alonso",
+          "Bruno",
+          "Camilo",
+          "Diego",
+          "Esteban",
+          "Fermín",
+          "Gonzalo",
+          "Hernán",
+          "Ignacio",
+          "Julián",
+          "Lorenzo",
+          "Mateo",
+          "Nicolás",
+          "Pascual",
+          "Rodrigo",
+          "Tomás"
+        ],
+        "female": [
+          "Adela",
+          "Beatriz",
+          "Carmen",
+          "Dolores",
+          "Elena",
+          "Francisca",
+          "Inés",
+          "Jimena",
+          "Leonor",
+          "Marta",
+          "Olalla",
+          "Paula",
+          "Rosa",
+          "Sancha",
+          "Teresa",
+          "Violante"
+        ]
+      },
       "skins": [
         "#f1c8a4",
         "#e0b08a",
@@ -57,6 +95,36 @@
           "catfolk"
         ]
       },
+      "names": {
+        "male": [
+          "Bigotes",
+          "Mirrin",
+          "Rasko",
+          "Sedal",
+          "Tufo",
+          "Zarpo",
+          "Ronro",
+          "Felko",
+          "Misur",
+          "Garfio",
+          "Pardo",
+          "Lince"
+        ],
+        "female": [
+          "Mirra",
+          "Sisa",
+          "Nuba",
+          "Ronra",
+          "Zafira",
+          "Tigra",
+          "Mishka",
+          "Parda",
+          "Felina",
+          "Suri",
+          "Kisa",
+          "Lina"
+        ]
+      },
       "skins": [
         "#d89a50",
         "#8a8a8a",
@@ -83,6 +151,40 @@
         ],
         "female": [
           "dwarf_woman"
+        ]
+      },
+      "names": {
+        "male": [
+          "Balin",
+          "Dorin",
+          "Thrain",
+          "Borin",
+          "Gundar",
+          "Harek",
+          "Korin",
+          "Morgrim",
+          "Nori",
+          "Rurik",
+          "Thorek",
+          "Ulfar",
+          "Brokk",
+          "Dain"
+        ],
+        "female": [
+          "Dagna",
+          "Helga",
+          "Brunna",
+          "Gerda",
+          "Hilda",
+          "Ingra",
+          "Kelda",
+          "Morna",
+          "Sigrun",
+          "Thora",
+          "Ulla",
+          "Vigdis",
+          "Bera",
+          "Dis"
         ]
       },
       "skins": [
@@ -119,6 +221,36 @@
           "high_elf_woman"
         ]
       },
+      "names": {
+        "male": [
+          "Aelar",
+          "Caladon",
+          "Elrian",
+          "Faelor",
+          "Galathil",
+          "Ilvaren",
+          "Lorien",
+          "Maedor",
+          "Nimloth",
+          "Orelis",
+          "Sylvar",
+          "Thalion"
+        ],
+        "female": [
+          "Aerin",
+          "Celeth",
+          "Elanor",
+          "Faelwen",
+          "Galiel",
+          "Ilyana",
+          "Lirael",
+          "Mirien",
+          "Nimue",
+          "Sariel",
+          "Thalia",
+          "Yselle"
+        ]
+      },
       "skins": [
         "#f3d2b8",
         "#d8b090"
@@ -149,6 +281,36 @@
         ],
         "female": [
           "dark_elf_woman"
+        ]
+      },
+      "names": {
+        "male": [
+          "Azrin",
+          "Belnor",
+          "Drazen",
+          "Kelvor",
+          "Malrik",
+          "Nyxar",
+          "Rhazien",
+          "Solvek",
+          "Tarnis",
+          "Vexor",
+          "Zaknar",
+          "Umbrel"
+        ],
+        "female": [
+          "Azra",
+          "Belmira",
+          "Dravena",
+          "Ilvara",
+          "Malice",
+          "Nyssa",
+          "Rhaena",
+          "Shyra",
+          "Talice",
+          "Vesna",
+          "Zarya",
+          "Umbra"
         ]
       },
       "skins": [
@@ -184,6 +346,36 @@
           "foxfolk"
         ]
       },
+      "names": {
+        "male": [
+          "Raposo",
+          "Kitsu",
+          "Zorro",
+          "Rojizo",
+          "Vulpo",
+          "Tod",
+          "Renar",
+          "Cobre",
+          "Astuto",
+          "Brasa",
+          "Canelo",
+          "Fennec"
+        ],
+        "female": [
+          "Raposa",
+          "Kita",
+          "Zora",
+          "Vulpa",
+          "Canela",
+          "Renata",
+          "Ascua",
+          "Vixa",
+          "Ambar",
+          "Fenna",
+          "Rubia",
+          "Brisa"
+        ]
+      },
       "skins": [
         "#c8502a",
         "#9aa0a8",
@@ -212,6 +404,36 @@
           "frogfolk"
         ]
       },
+      "names": {
+        "male": [
+          "Croak",
+          "Renco",
+          "Charco",
+          "Brinco",
+          "Limo",
+          "Junco",
+          "Sapo",
+          "Verdín",
+          "Ribo",
+          "Nenúfar",
+          "Chapo",
+          "Lodo"
+        ],
+        "female": [
+          "Rana",
+          "Croa",
+          "Charca",
+          "Brisa",
+          "Lima",
+          "Junca",
+          "Ninfa",
+          "Verda",
+          "Riba",
+          "Lila",
+          "Gota",
+          "Lenteja"
+        ]
+      },
       "skins": [
         "#4aaa5a",
         "#c8b040",
@@ -238,6 +460,36 @@
       "bodies": {
         "male": [
           "lizardfolk"
+        ]
+      },
+      "names": {
+        "male": [
+          "Ssark",
+          "Zeth",
+          "Krax",
+          "Ixal",
+          "Tessek",
+          "Varn",
+          "Sskal",
+          "Draz",
+          "Quetz",
+          "Rhiss",
+          "Okar",
+          "Thazz"
+        ],
+        "female": [
+          "Ssira",
+          "Zetha",
+          "Kraxa",
+          "Ixa",
+          "Tessa",
+          "Varna",
+          "Sskala",
+          "Draza",
+          "Quila",
+          "Rhissa",
+          "Oka",
+          "Thazza"
         ]
       },
       "skins": [
@@ -270,6 +522,36 @@
       "bodies": {
         "male": [
           "orc"
+        ]
+      },
+      "names": {
+        "male": [
+          "Grok",
+          "Urzog",
+          "Mogar",
+          "Thrak",
+          "Durgash",
+          "Borzag",
+          "Krull",
+          "Nazgor",
+          "Ragor",
+          "Skarn",
+          "Ugluk",
+          "Zogar"
+        ],
+        "female": [
+          "Grasha",
+          "Urza",
+          "Moga",
+          "Thraka",
+          "Durga",
+          "Borza",
+          "Krula",
+          "Nazra",
+          "Raga",
+          "Skarna",
+          "Ugla",
+          "Zoga"
         ]
       },
       "skins": [

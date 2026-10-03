@@ -3364,15 +3364,17 @@ public:
             if (!complete(b)) {
                 continue;
             }
-            // Too many: the newest go back to laboring.
-            while (static_cast<std::int32_t>(b.workers.size()) > b.wanted_workers) {
+            // Too many (all of them, when it is stopped): the newest go
+            // back to laboring.
+            const std::int32_t wanted = b.stopped ? 0 : b.wanted_workers;
+            while (static_cast<std::int32_t>(b.workers.size()) > wanted) {
                 if (Villager* w = g_.villagers_.get(b.workers.back())) {
                     w->job = {};
                     ++free[b.owner];
                 }
                 b.workers.pop_back();
             }
-            while (static_cast<std::int32_t>(b.workers.size()) < b.wanted_workers && free[b.owner] > reserve[b.owner]) {
+            while (static_cast<std::int32_t>(b.workers.size()) < wanted && free[b.owner] > reserve[b.owner]) {
                 // The nearest free adult of the owner.
                 EntityId best;
                 std::uint64_t best_d = UINT64_MAX;
@@ -4089,6 +4091,25 @@ public:
                     break;
                 }
                 b->limit = c.value;
+                break;
+            }
+            case CommandType::RenameVillager: {
+                Villager* v = g_.villagers_.get(c.entity);
+                if (v == nullptr || v->owner != g_.town_of(c.player) || !valid_villager_name(c.text)) {
+                    ++g_.rejected_;
+                    break;
+                }
+                v->name = c.text;
+                break;
+            }
+            case CommandType::SetProduction: {
+                Building* b = g_.buildings_.get(c.entity);
+                if (b == nullptr || b->owner != g_.town_of(c.player) || def(*b).workers <= 0) {
+                    ++g_.rejected_;
+                    break;
+                }
+                b->stopped = c.value == 0;
+                g_.buildings_changed_ = true;
                 break;
             }
             case CommandType::Trade: trade_with_merchant(c); break;
@@ -4895,6 +4916,38 @@ std::int32_t Game::population(std::uint8_t player, bool adults_only) const {
     return n;
 }
 
+std::string Game::villager_name(const Villager& v) const {
+    if (!v.name.empty()) {
+        return v.name;
+    }
+    if (v.race >= content_->races.size()) {
+        return {};
+    }
+    const RaceDef& race = content_->races[v.race];
+    const bool female = v.sex == Sex::Female;
+    const std::vector<std::string>& own = female ? race.names_female : race.names_male;
+    const std::vector<std::string>& names = own.empty() ? (female ? race.names_male : race.names_female) : own;
+    if (names.empty()) {
+        return {};
+    }
+    // Its random bits, stirred so the name does not go with the looks.
+    std::uint32_t h = v.appearance ^ 0x9E3779B9u;
+    h ^= h >> 16;
+    h *= 0x7FEB352Du;
+    h ^= h >> 15;
+    h *= 0x846CA68Bu;
+    h ^= h >> 16;
+    return names[h % names.size()];
+}
+
+std::int32_t Game::hunt_meat() const {
+    return meat_ != kNoDef ? carry_capacity(*content_, meat_) : 0;
+}
+
+std::int32_t Game::hunt_hides() const {
+    return hide_ != kNoDef ? 1 : 0;
+}
+
 std::int32_t Game::age_years(const Villager& v) const {
     const std::int64_t age = static_cast<std::int64_t>(tick_) - v.born_tick;
     return static_cast<std::int32_t>(std::max<std::int64_t>(0, age) / year_ticks());
@@ -5318,6 +5371,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
             w.u16(u);
         }
         w.i32(b.train_progress);
+        w.u8(b.stopped ? 1 : 0);
         w.u32(static_cast<std::uint32_t>(b.fields.size()));
         for (const Field& f : b.fields) {
             w.i32(f.x);
@@ -5381,6 +5435,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(v.timer);
         w.u16(v.carrying.resource);
         w.i32(v.carrying.amount);
+        w.string(v.name);
         w.u32(static_cast<std::uint32_t>(v.path.size()));
         for (const FixedVec2& p : v.path) {
             w.vec2(p);
@@ -5686,10 +5741,12 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
                 return false;
             }
         }
-        if (!r.i32(b.train_progress) || b.train_progress < 0) {
+        std::uint8_t stopped = 0;
+        if (!r.i32(b.train_progress) || b.train_progress < 0 || !r.u8(stopped) || stopped > 1) {
             r.fail();
             return false;
         }
+        b.stopped = stopped != 0;
         b.upgrading = upgrading != 0;
         g.fires_ += b.fire > 0 ? 1 : 0;
         std::uint32_t nf = 0;
@@ -5754,6 +5811,10 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         }
         v.sex = static_cast<Sex>(sex);
         v.task = static_cast<Task>(task);
+        if (!r.string(kMaxNameBytes, v.name) || !valid_villager_name(v.name)) {
+            r.fail();
+            return false;
+        }
         std::uint32_t steps = 0;
         if (!r.count(100000, 8, steps)) {
             return false;

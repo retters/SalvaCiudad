@@ -123,6 +123,16 @@ public:
                                                              float alpha) const;
     [[nodiscard]] std::optional<sim::EntityId> pick_building(const sim::Game& game, math::Vec3 origin,
                                                              math::Vec3 dir) const;
+    // Phase 63: an animal, soldier or raider in view, and a natural feature
+    // (its index in the map's list) on explored ground.
+    [[nodiscard]] std::optional<sim::EntityId> pick_creature(const sim::Game& game, math::Vec3 origin, math::Vec3 dir,
+                                                             float alpha) const;
+    [[nodiscard]] std::optional<std::uint32_t> pick_feature(const sim::Game& game, math::Vec3 origin,
+                                                            math::Vec3 dir) const;
+    // Where a creature is drawn (feet), and the top of a feature, for markers.
+    [[nodiscard]] math::Vec3 creature_position(const sim::Game& game, const sim::Creature& c, float alpha) const;
+    [[nodiscard]] math::Vec3 feature_top(const sim::Game& game, std::uint32_t feature) const;
+    [[nodiscard]] bool feature_shown(const sim::Game& game, std::uint32_t feature) const;
     // Where a villager is drawn (feet), for markers and the camera.
     [[nodiscard]] math::Vec3 villager_position(const sim::Game& game, const sim::Villager& v, float alpha) const;
     // Top of a building, for its marker.

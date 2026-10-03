@@ -5,6 +5,7 @@
 #include <system_error>
 
 #include "mods/mod_library.h"
+#include "sim/command.h"
 #include "sim/vision.h"
 
 namespace sc::mods {
@@ -621,6 +622,34 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         };
         colors("skins", def.skins);
         colors("hairs", def.hairs);
+        // "names": {"male": [...], "female": [...]}: what its villagers are called.
+        if (yyjson_mut_val* names = yyjson_mut_obj_get(d->obj, "names"); names != nullptr) {
+            if (!yyjson_mut_is_obj(names)) {
+                r.fail("\"names\" must be an object with the lists \"male\" and \"female\"");
+            } else {
+                for (const bool female : {false, true}) {
+                    yyjson_mut_val* list = yyjson_mut_obj_get(names, female ? "female" : "male");
+                    if (list == nullptr) {
+                        continue;
+                    }
+                    if (!yyjson_mut_is_arr(list) || yyjson_mut_arr_size(list) > sim::kMaxRaceNames) {
+                        r.fail("a list of \"names\" must have at most 64 names");
+                        continue;
+                    }
+                    std::size_t idx = 0, max = 0;
+                    yyjson_mut_val* item = nullptr;
+                    yyjson_mut_arr_foreach(list, idx, max, item) {
+                        const char* text = yyjson_mut_get_str(item);
+                        const std::string name = text != nullptr ? text : "";
+                        if (name.empty() || !sim::valid_villager_name(name)) {
+                            r.fail("a name must be 1 to 24 bytes of plain text");
+                            continue;
+                        }
+                        (female ? def.names_female : def.names_male).push_back(name);
+                    }
+                }
+            }
+        }
         def.move = r.integer("move", 50, 200, 100);
         def.cold = r.integer("cold", -100, 90, 0);
         def.disease = r.integer("disease", -100, 90, 0);

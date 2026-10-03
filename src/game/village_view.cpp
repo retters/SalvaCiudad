@@ -1174,6 +1174,101 @@ std::optional<sim::EntityId> VillageView::pick_villager(const sim::Game& game, m
     return best;
 }
 
+math::Vec3 VillageView::creature_position(const sim::Game& game, const sim::Creature& c, float alpha) const {
+    const float x = to_float(c.previous.x) + (to_float(c.position.x) - to_float(c.previous.x)) * alpha;
+    const float z = to_float(c.previous.z) + (to_float(c.position.z) - to_float(c.previous.z)) * alpha;
+    return {x, map_surface_height(game.map(), x, z), z};
+}
+
+std::optional<sim::EntityId> VillageView::pick_creature(const sim::Game& game, math::Vec3 origin, math::Vec3 dir,
+                                                        float alpha) const {
+    std::optional<sim::EntityId> best;
+    float best_t = 1e30f;
+    const auto& store = game.creatures();
+    for (std::size_t k = 0; k < store.size(); ++k) {
+        const sim::Creature& c = store.data()[k];
+        if (c.state == sim::CreatureState::Travel) {
+            continue;  // Away on the world map.
+        }
+        const math::Vec3 p = creature_position(game, c, alpha);
+        if (!mover_shown(game, c.kind == sim::CreatureKind::Soldier, c.town, p.x, p.z)) {
+            continue;
+        }
+        // People stand; animals are low and long.
+        const bool person = c.kind == sim::CreatureKind::Raider || c.kind == sim::CreatureKind::Soldier;
+        const bool big = c.kind == sim::CreatureKind::Bear;
+        const RayHit hit = ray_to_vertical_segment(origin, dir, p, person ? 1.8f : big ? 1.4f : 1.0f);
+        if (hit.distance <= (person ? 0.5f : big ? 1.1f : 0.8f) && hit.t < best_t) {
+            best_t = hit.t;
+            best = store.entities()[k];
+        }
+    }
+    return best;
+}
+
+bool VillageView::feature_shown(const sim::Game& game, std::uint32_t feature) const {
+    if (feature >= game.map().features.size() || feature >= game.nodes().size()) {
+        return false;
+    }
+    const sim::Node& n = game.nodes()[feature];
+    if (n.amount <= 0 && n.regrow_tick == 0) {
+        return false;  // Felled or dug out.
+    }
+    const sim::MapFeature& f = game.map().features[feature];
+    return fog_ == nullptr || fog_->mode() == sim::FogMode::None || fog_->explored(to_float(f.x), to_float(f.z));
+}
+
+math::Vec3 VillageView::feature_top(const sim::Game& game, std::uint32_t feature) const {
+    if (feature >= game.map().features.size()) {
+        return {};
+    }
+    const sim::MapFeature& f = game.map().features[feature];
+    const float x = to_float(f.x);
+    const float z = to_float(f.z);
+    const float height = f.type == sim::FeatureType::Tree
+                             ? static_cast<float>(sim::MapData::tree_height_cm(f)) / 100.0f
+                             : 1.0f;
+    return {x, map_surface_height(game.map(), x, z) + height + 1.0f, z};
+}
+
+std::optional<std::uint32_t> VillageView::pick_feature(const sim::Game& game, math::Vec3 origin, math::Vec3 dir) const {
+    const sim::MapData& map = game.map();
+    // Only those near where the ray meets the ground: the tallest tree
+    // leans no farther than this over it.
+    const std::optional<math::Vec3> ground = ground_hit(map, origin, dir);
+    if (!ground) {
+        return std::nullopt;
+    }
+    constexpr float kReach = 80.0f;
+    std::optional<std::uint32_t> best;
+    float best_t = 1e30f;
+    for (std::size_t i = 0; i < map.features.size(); ++i) {
+        const sim::MapFeature& f = map.features[i];
+        const float x = to_float(f.x);
+        const float z = to_float(f.z);
+        if (std::abs(x - ground->x) > kReach || std::abs(z - ground->z) > kReach ||
+            !feature_shown(game, static_cast<std::uint32_t>(i))) {
+            continue;
+        }
+        const bool tree = f.type == sim::FeatureType::Tree;
+        const float height = tree ? static_cast<float>(sim::MapData::tree_height_cm(f)) / 100.0f : 0.8f;
+        const float ground_y = map_surface_height(map, x, z);
+        RayHit hit = ray_to_vertical_segment(origin, dir, {x, ground_y, z}, height);
+        bool on = hit.distance <= 0.8f;
+        if (tree && !on) {
+            // Not on the trunk: on the crown, a third of the height wide,
+            // over the lower third of the tree.
+            hit = ray_to_vertical_segment(origin, dir, {x, ground_y + height * 0.35f, z}, height * 0.5f);
+            on = hit.distance <= std::max(1.0f, height * 0.3f);
+        }
+        if (on && hit.t < best_t) {
+            best_t = hit.t;
+            best = static_cast<std::uint32_t>(i);
+        }
+    }
+    return best;
+}
+
 std::optional<sim::EntityId> VillageView::pick_building(const sim::Game& game, math::Vec3 origin,
                                                         math::Vec3 dir) const {
     std::optional<sim::EntityId> best;

@@ -13,6 +13,55 @@ bool coordinate_ok(Fixed v) {
 
 }  // namespace
 
+bool valid_villager_name(std::string_view name) {
+    if (name.size() > kMaxNameBytes) {
+        return false;
+    }
+    if (!name.empty() && (name.front() == ' ' || name.back() == ' ')) {
+        return false;
+    }
+    // Well-formed UTF-8 (no overlong forms, no surrogates) without controls.
+    for (std::size_t i = 0; i < name.size();) {
+        const auto c = static_cast<unsigned char>(name[i]);
+        std::size_t extra = 0;
+        std::uint32_t code = 0;
+        std::uint32_t least = 0;
+        if (c < 0x80) {
+            code = c;
+        } else if ((c & 0xE0) == 0xC0) {
+            extra = 1;
+            code = c & 0x1Fu;
+            least = 0x80;
+        } else if ((c & 0xF0) == 0xE0) {
+            extra = 2;
+            code = c & 0x0Fu;
+            least = 0x800;
+        } else if ((c & 0xF8) == 0xF0) {
+            extra = 3;
+            code = c & 0x07u;
+            least = 0x10000;
+        } else {
+            return false;
+        }
+        if (i + extra >= name.size() + (extra == 0 ? 1 : 0)) {
+            return false;
+        }
+        for (std::size_t k = 1; k <= extra; ++k) {
+            const auto next = static_cast<unsigned char>(name[i + k]);
+            if ((next & 0xC0) != 0x80) {
+                return false;
+            }
+            code = (code << 6) | (next & 0x3Fu);
+        }
+        if (code < least || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF) || code < 0x20 ||
+            (code >= 0x7F && code < 0xA0)) {
+            return false;
+        }
+        i += extra + 1;
+    }
+    return true;
+}
+
 void Command::write(BinaryWriter& w) const {
     w.u8(static_cast<std::uint8_t>(type));
     w.u8(player);
@@ -24,6 +73,7 @@ void Command::write(BinaryWriter& w) const {
     w.i32(value);
     w.u16(def2);
     w.i32(value2);
+    w.string(text);
 }
 
 bool Command::read(BinaryReader& r, Command& out) {
@@ -31,10 +81,12 @@ bool Command::read(BinaryReader& r, Command& out) {
     Command c;
     if (!r.u8(type) || !r.u8(c.player) || !r.u32(c.entity.index) || !r.u32(c.entity.generation) ||
         !r.vec2(c.position) || !r.u16(c.count) || !r.u16(c.def) || !r.i32(c.value) || !r.u16(c.def2) ||
-        !r.i32(c.value2)) {
+        !r.i32(c.value2) || !r.string(kMaxNameBytes, c.text)) {
         return false;
     }
     bool ok = c.player < kMaxPlayers && coordinate_ok(c.position.x) && coordinate_ok(c.position.z);
+    // Only a rename carries text.
+    ok = ok && (static_cast<CommandType>(type) == CommandType::RenameVillager || c.text.empty());
     switch (static_cast<CommandType>(type)) {
         case CommandType::PlaceBuilding:
             ok = ok && c.value >= 0 && c.value <= 3 && c.position.x >= Fixed{} && c.position.z >= Fixed{};
@@ -93,6 +145,12 @@ bool Command::read(BinaryReader& r, Command& out) {
             ok = ok && c.value >= 1 && c.value <= 1000;
             break;
         case CommandType::TrainUnit:
+            ok = ok && c.entity.valid() && (c.value == 0 || c.value == 1);
+            break;
+        case CommandType::RenameVillager:
+            ok = ok && c.entity.valid() && valid_villager_name(c.text);
+            break;
+        case CommandType::SetProduction:
             ok = ok && c.entity.valid() && (c.value == 0 || c.value == 1);
             break;
         case CommandType::ArmyOrder:

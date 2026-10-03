@@ -178,7 +178,7 @@ void write(BinaryWriter& w, const Commands& m) {
 }
 bool read(BinaryReader& r, Commands& m) {
     std::uint32_t n = 0;
-    if (!r.count(kMaxCommandsPerMessage, 26, n)) {
+    if (!r.count(kMaxCommandsPerMessage, 36, n)) {
         return false;
     }
     m.commands.resize(n);
@@ -201,7 +201,7 @@ void write(BinaryWriter& w, const Turn& m) {
 }
 bool read(BinaryReader& r, Turn& m) {
     std::uint32_t n = 0;
-    if (!r.u64(m.tick) || !read_speed(r, m.speed) || !r.count(kMaxCommandsPerTurn, 27, n)) {
+    if (!r.u64(m.tick) || !read_speed(r, m.speed) || !r.count(kMaxCommandsPerTurn, 37, n)) {
         return false;
     }
     m.commands.resize(n);

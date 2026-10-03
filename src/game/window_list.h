@@ -57,7 +57,8 @@ public:
     void close(const std::string& id);
 
     // --- Windows of things on the map ---------------------------------------
-    enum class Kind : std::uint8_t { Building, Villager };
+    // Node: a natural feature, `entity.index` its place in the map's list.
+    enum class Kind : std::uint8_t { Building, Villager, Node, Creature };
     struct Object {
         std::string id;  // "obj1" ... "obj16".
         Kind kind = Kind::Building;

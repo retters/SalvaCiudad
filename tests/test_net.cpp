@@ -215,7 +215,12 @@ TEST_SUITE("net") {
         cmd.player = 3;
         cmd.entity = {5, 1};
         cmd.value = 2;
-        turn.commands = {{3, cmd}};
+        sim::Command rename;
+        rename.type = sim::CommandType::RenameVillager;
+        rename.player = 3;
+        rename.entity = {9, 2};
+        rename.text = "Ñandú";
+        turn.commands = {{3, cmd}, {3, rename}};
         const std::vector<Message> all = {
             Hello{kProtocolVersion, "0.9.0", 42, {{"core", "1.0.0", 9}}, "Ana"},
             Welcome{7},
@@ -224,7 +229,7 @@ TEST_SUITE("net") {
             SetInfo{"Bob", 2, true},
             Start{config(3, false), 4},
             Loaded{123},
-            Commands{{cmd}},
+            Commands{{cmd, rename}},
             turn,
             Ack{50, true, PartHashes{{1, 2, 3, 4, 5, 6, 7}}},
             pack_snapshot(10, std::vector<std::uint8_t>(1000, 7)),

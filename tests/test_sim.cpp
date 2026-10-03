@@ -192,7 +192,7 @@ TEST_SUITE("sim_core") {
         c.position = {f(-100), Fixed::from_ratio(7, 3)};
         BinaryWriter w;
         c.write(w);
-        CHECK(w.bytes().size() == 32);
+        CHECK(w.bytes().size() == 36);
         BinaryReader r(w.bytes());
         Command back;
         REQUIRE(Command::read(r, back));
