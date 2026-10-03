@@ -25,6 +25,9 @@ struct CellDescription {
     std::int32_t slope_pct = 0;  // Height difference across the cell, per 100.
     sim::Terrain terrain = sim::Terrain::Grass;
     std::uint8_t biome = 0;
+    // Phase 54: the climate that chose the biome, 0 to 100; -1 on a map of one biome.
+    int temperature = -1;
+    int humidity = -1;
     std::int32_t fertility_pct = 0;
     WaterKind water = WaterKind::None;
     std::int32_t water_depth_cm = 0;

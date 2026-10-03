@@ -162,11 +162,7 @@ TEST_SUITE("terrain_names") {
         s.seed = 404;
         s.size = sim::MapSize::Small;
         s.players = 2;
-        for (std::size_t t = 0; t < sc::test::core_content().flora.map_types.size(); ++t) {
-            if (sc::test::core_content().flora.map_types[t].islands) {
-                s.map_type = static_cast<std::uint8_t>(t);
-            }
-        }
+        s.island_map = true;
         const sim::MapData islands = generate(s);
         TerrainNames names;
         int count = 0;

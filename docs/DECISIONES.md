@@ -2180,3 +2180,35 @@ Cambian los mapas: versión del generador 2, versión de reglas 26; las sumas de
 
 **D-5306. Las versiones lejanas de los gigantes pasan del límite.**
 Los 32 árboles quedan entre 150 y 330 triángulos en su versión lejana. Los gigantes, entre 590 y 1856 (su modelo completo tiene de 3400 a 6000): tienen muchas piezas grandes soldadas y cada una conserva un mínimo de triángulos. Como habrá pocos por mapa, se deja así; la fase 55 mide su costo al ponerlos en los mapas.
+
+## Fase 54: clima y biomas por geografía (2026-10-03)
+
+**D-5401. El clima es de la vista del generador, por bloques de 8 m.**
+Temperatura y humedad van de 0 a 100 y solo deciden qué bioma crece; no tocan la temperatura de la simulación (fase 10). El norte es el borde de z = 0 (arriba en el minimapa). La temperatura va de 20 en el norte a 80 en el sur, baja un punto cada 5 m de altura y lleva un ruido de ±8; la humedad es un ruido alrededor de 50 más hasta 20 puntos cerca del agua. Se guardan por bloque en el mapa (`climate`) para F3 y el reporte, fuera de la suma de verificación, como los dueños de región.
+
+**D-5402. Todo mapa es "mezclado" hasta la fase 56.**
+Con las opciones por omisión, un mapa de cualquier tamaño va del frío al calor, así que caben todos los biomas. `MapSettings` ya lleva `temperature` y `humidity` (0 a 200 %), que corren el mapa hasta 30 puntos; la fase 56 les pone el formulario y hace que la semilla elija el clima en "Variado".
+
+**D-5403. Reglas de los biomas.**
+Los rangos, pesos y condiciones de cada bioma están en `docs/ARBOLES.md`. La ribera y la costa tropical pesan 400 para ganar siempre junto a su agua; el huerto pesa 60 para ser raro. El bosque de montaña pide estar en la mitad más alta de la tierra (por altura, no por tipo de región): así cumple el criterio en cualquier mapa, y las montañas, que son altas y frías, lo llevan de todos modos. El "bosque encantado" pide cuenca y humedad.
+
+**D-5404. Cuando ningún bioma encaja.**
+Se elige el de clima más parecido sin exigir región ni margen, pero nunca se renuncia al agua ni a la altura que pide un bioma. Antes de este cuidado, la ribera (por su peso) ganaba lejos del agua y había sauces en seco.
+
+**D-5405. Palmeras lejos de pinos.**
+La costa tropical empieza en 78 de temperatura y el mediterráneo (que tiene pinos) termina en 60, con 6 puntos de margen cada uno: quedan al menos 6 puntos entre los dos, unos 50 m en un mapa pequeño. La prueba exige que ninguna palmera esté a menos de 15 m de un pino.
+
+**D-5406. Sin tipos de mapa.**
+Se borraron `mapType`, `patchSize`, `sizeBias` y el bioma único como tipo. `MapSettings` lleva `island_map` (islas o tierra firme) y `biomes`, una máscara de los biomas permitidos (los primeros 64 del contenido; 0 es todos). La partida nueva ofrece, hasta la fase 56, "Mapa: Tierra firme o Islas" y "Biomas: Todos o uno solo". Un `settings.json` anterior se acepta: `core:islands` sigue siendo islas y lo demás vuelve a tierra firme con todos los biomas. Un reporte anterior también: `core:single` con su bioma da ese bioma solo. Un mod con definiciones `mapType` se rechaza con un mensaje.
+
+**D-5407. Bosques más abiertos (pedido del usuario).**
+La separación mínima entre troncos pasó de 3, 5, 8 y 12 m a 5, 7, 10 y 16 m. El mapa mediano de referencia pasó de 17 751 objetos a 6558. Para compensar, la madera por árbol se duplicó en chicos y medianos y subió un 50 % en grandes; aun así hay menos madera total en el mapa (queda para el balance con partidas largas).
+
+**D-5408. Tiempo de generación.**
+El mapa mediano de referencia (semilla 12345): 0,46 s antes y 0,48 s después (tres corridas cada uno). La etapa de biomas agrega dos mapas de distancia al agua y el cálculo por bloque, y la de bosques coloca menos árboles.
+
+**D-5409. Versiones.**
+Generador 3, reglas 27, protocolo de red 4 (cambió `MapSettings`).
+
+**D-5410. Datos viejos en las carpetas de compilación.**
+`data/` se copia junto al ejecutable sin borrar lo que ya no existe, así que `map_types.json` y los modelos viejos seguían ahí y el juego los leía. Ahora la copia es un espejo: la carpeta se borra antes de copiar.

@@ -165,12 +165,11 @@ void NewGameScreen::apply(const NewGameSettings& n) {
     settings_.landforms = named(names::kAmounts, n.landforms, settings_.landforms);
     settings_.players = static_cast<std::uint8_t>(std::clamp(n.players, 1, static_cast<int>(sim::kMaxPlayers)));
     settings_.islands = static_cast<std::uint8_t>(std::clamp(n.islands, 1, static_cast<int>(sim::kMaxIslandsPerTown)));
+    settings_.island_map = n.map_type == names::kIslandsMap;
+    settings_.biomes = 0;
     if (content_ != nullptr) {
-        if (const int t = content_->flora.find_map_type(n.map_type); t >= 0) {
-            settings_.map_type = static_cast<std::uint8_t>(t);
-        }
-        if (const int b = content_->flora.find_biome(n.biome); b >= 0) {
-            settings_.biome = static_cast<std::uint8_t>(b);
+        if (const int b = content_->flora.find_biome(n.biome); b >= 0 && b < 64) {
+            settings_.biomes = std::uint64_t{1} << b;
         }
         if (n.race == names::kMixedRace) {
             rules_.races.fill(sim::kMixedRace);
@@ -211,12 +210,13 @@ NewGameSettings NewGameScreen::remembered() const {
     n.landforms = name_of(names::kAmounts, settings_.landforms);
     n.players = settings_.players;
     n.islands = settings_.islands;
+    n.map_type = settings_.island_map ? std::string(names::kIslandsMap) : std::string();
+    n.biome.clear();
     if (content_ != nullptr) {
-        if (settings_.map_type < content_->flora.map_types.size()) {
-            n.map_type = content_->flora.map_types[settings_.map_type].id;
-        }
-        if (settings_.biome < content_->flora.biomes.size()) {
-            n.biome = content_->flora.biomes[settings_.biome].id;
+        for (std::size_t b = 0; b < content_->flora.biomes.size() && b < 64; ++b) {
+            if (settings_.biomes == std::uint64_t{1} << b) {
+                n.biome = content_->flora.biomes[b].id;
+            }
         }
         const std::uint8_t race = rules_.races[0];
         if (race == sim::kMixedRace) {
@@ -461,29 +461,18 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         }
     }
     {
-        std::vector<std::string> options;
-        static const sim::Flora kNoFlora;
-        const sim::Flora& flora = content_ != nullptr ? content_->flora : kNoFlora;
-        for (const sim::MapTypeDef& t : flora.map_types) {
-            options.push_back(tr(t.name_key));
-        }
-        if (options.empty()) {
-            options.push_back("-");
-        }
-        int index = static_cast<int>(settings_.map_type);
-        const std::string tip = settings_.map_type < flora.map_types.size()
-                                    ? tr(flora.map_types[settings_.map_type].name_key + ".tooltip")
-                                    : std::string{};
+        // One piece of land, or islands (phase 54; the map types were data).
+        const std::vector<std::string> options = {tr("newGame.mapType.land"), tr("newGame.mapType.islands")};
+        int index = settings_.island_map ? 1 : 0;
+        const std::string tip = tr(settings_.island_map ? "newGame.mapType.islands.tooltip" : "newGame.mapType.land.tooltip");
         const Row r = row(ctx, x, y, cw, tr("newGame.mapType"), tip);
         if (ctx.selector(ctx.id("map_type"), r.control, index, options, tip)) {
-            settings_.map_type = static_cast<std::uint8_t>(index);
+            settings_.island_map = index == 1;
         }
     }
     {
-        // Islands per town (phase 22), for a map type with islands.
-        static const sim::Flora kNoFlora;
-        const sim::Flora& flora = content_ != nullptr ? content_->flora : kNoFlora;
-        const bool islands = settings_.map_type < flora.map_types.size() && flora.map_types[settings_.map_type].islands;
+        // Islands per town (phase 22), for an island map.
+        const bool islands = settings_.island_map;
         const int most = sim::worldgen::max_islands_per_town(settings_.size, settings_.players);
         settings_.islands = static_cast<std::uint8_t>(std::clamp<int>(settings_.islands, 1, most));
         std::vector<std::string> options;
@@ -496,7 +485,7 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         if (ctx.selector(ctx.id("islands"), r.control, index, options, tip, islands)) {
             settings_.islands = static_cast<std::uint8_t>(index + 1);
         }
-        // The sea (phase 26), for the other map types.
+        // The sea (phase 26), for a map of land.
         const std::vector<std::string> seas = {tr("newGame.sea.none"), tr("newGame.sea.sometimes"), tr("newGame.sea.always")};
         int sea = static_cast<int>(settings_.sea);
         const std::string sea_tip = tr(islands ? "newGame.sea.disabledTooltip" : "newGame.sea.tooltip");
@@ -506,22 +495,21 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
         }
     }
     {
-        std::vector<std::string> options;
+        // Every biome where its climate and place are (phase 54), or one alone.
+        std::vector<std::string> options = {tr("newGame.biome.all")};
         static const sim::Flora kNoFlora;
         const sim::Flora& flora = content_ != nullptr ? content_->flora : kNoFlora;
-        for (const sim::BiomeDef& b : flora.biomes) {
-            options.push_back(tr(b.name_key));
+        int index = 0;
+        for (std::size_t b = 0; b < flora.biomes.size() && b < 64; ++b) {
+            options.push_back(tr(flora.biomes[b].name_key));
+            if (settings_.biomes == std::uint64_t{1} << b) {
+                index = static_cast<int>(b) + 1;
+            }
         }
-        if (options.empty()) {
-            options.push_back("-");
-        }
-        int index = static_cast<int>(settings_.biome);
-        // The biome matters for map types without their own mix of biomes.
-        const bool single = settings_.map_type < flora.map_types.size() && flora.map_types[settings_.map_type].biomes.empty();
-        const std::string tip = tr(single ? "newGame.biome.tooltip" : "newGame.biome.disabledTooltip");
+        const std::string tip = tr("newGame.biome.tooltip");
         const Row r = row(ctx, x, y, cw, tr("newGame.biome"), tip);
-        if (ctx.selector(ctx.id("biome"), r.control, index, options, tip, single)) {
-            settings_.biome = static_cast<std::uint8_t>(index);
+        if (ctx.selector(ctx.id("biome"), r.control, index, options, tip)) {
+            settings_.biomes = index == 0 ? 0 : std::uint64_t{1} << (index - 1);
         }
     }
     struct AmountRow {

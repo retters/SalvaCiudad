@@ -408,10 +408,9 @@ BuildResult ModLibrary::build() {
         }
     }
     result.content.hash = hash;
-    log::info("mods: loaded {} mod(s): {} resources, {} buildings, {} species, {} biomes, {} map types, hash {:016x}",
-              order.size(), result.content.resources.size(), result.content.buildings.size(),
-              result.content.flora.species.size(), result.content.flora.biomes.size(),
-              result.content.flora.map_types.size(), hash);
+    log::info("mods: loaded {} mod(s): {} resources, {} buildings, {} species, {} biomes, hash {:016x}", order.size(),
+              result.content.resources.size(), result.content.buildings.size(), result.content.flora.species.size(),
+              result.content.flora.biomes.size(), hash);
     return result;
 }
 

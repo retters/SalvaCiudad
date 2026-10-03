@@ -17,7 +17,20 @@
         0
       ],
       "density": 100,
-      "grass": 140
+      "grass": 140,
+      "temperature": [
+        0,
+        45
+      ],
+      "humidity": [
+        0,
+        100
+      ],
+      "altitude": [
+        50,
+        100
+      ],
+      "weight": 150
     },
     {
       "type": "biome",
@@ -34,7 +47,22 @@
         0
       ],
       "density": 115,
-      "grass": 130
+      "grass": 130,
+      "temperature": [
+        0,
+        36
+      ],
+      "humidity": [
+        0,
+        100
+      ],
+      "regions": [
+        "plain",
+        "hills",
+        "plateau",
+        "basin"
+      ],
+      "weight": 100
     },
     {
       "type": "biome",
@@ -54,7 +82,16 @@
         0
       ],
       "density": 100,
-      "grass": 200
+      "grass": 200,
+      "temperature": [
+        36,
+        62
+      ],
+      "humidity": [
+        30,
+        80
+      ],
+      "weight": 100
     },
     {
       "type": "biome",
@@ -73,7 +110,21 @@
         0
       ],
       "density": 90,
-      "grass": 210
+      "grass": 210,
+      "temperature": [
+        50,
+        80
+      ],
+      "humidity": [
+        55,
+        100
+      ],
+      "regions": [
+        "plain",
+        "basin",
+        "hills"
+      ],
+      "weight": 100
     },
     {
       "type": "biome",
@@ -92,7 +143,18 @@
         0
       ],
       "density": 80,
-      "grass": 230
+      "grass": 230,
+      "temperature": [
+        30,
+        100
+      ],
+      "humidity": [
+        0,
+        100
+      ],
+      "water": "fresh",
+      "waterDistance": 30,
+      "weight": 400
     },
     {
       "type": "biome",
@@ -111,7 +173,16 @@
         0
       ],
       "density": 60,
-      "grass": 120
+      "grass": 120,
+      "temperature": [
+        46,
+        60
+      ],
+      "humidity": [
+        0,
+        45
+      ],
+      "weight": 100
     },
     {
       "type": "biome",
@@ -129,7 +200,16 @@
         0
       ],
       "density": 80,
-      "grass": 150
+      "grass": 150,
+      "temperature": [
+        64,
+        100
+      ],
+      "humidity": [
+        35,
+        70
+      ],
+      "weight": 100
     },
     {
       "type": "biome",
@@ -147,7 +227,21 @@
         0
       ],
       "density": 35,
-      "grass": 140
+      "grass": 140,
+      "temperature": [
+        64,
+        100
+      ],
+      "humidity": [
+        0,
+        42
+      ],
+      "regions": [
+        "plain",
+        "plateau",
+        "hills"
+      ],
+      "weight": 100
     },
     {
       "type": "biome",
@@ -164,7 +258,18 @@
         0
       ],
       "density": 50,
-      "grass": 130
+      "grass": 130,
+      "temperature": [
+        78,
+        100
+      ],
+      "humidity": [
+        0,
+        100
+      ],
+      "water": "sea",
+      "waterDistance": 120,
+      "weight": 400
     },
     {
       "type": "biome",
@@ -182,7 +287,19 @@
         0
       ],
       "density": 55,
-      "grass": 230
+      "grass": 230,
+      "temperature": [
+        40,
+        62
+      ],
+      "humidity": [
+        45,
+        85
+      ],
+      "regions": [
+        "plain"
+      ],
+      "weight": 60
     },
     {
       "type": "biome",
@@ -200,7 +317,19 @@
         0
       ],
       "density": 90,
-      "grass": 240
+      "grass": 240,
+      "temperature": [
+        30,
+        90
+      ],
+      "humidity": [
+        60,
+        100
+      ],
+      "regions": [
+        "basin"
+      ],
+      "weight": 140
     }
   ]
 }

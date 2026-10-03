@@ -4970,6 +4970,7 @@ void write_map(BinaryWriter& w, const MapData& m) {
     }
     u16s(m.region_owner);
     u16s(m.structure_owner);
+    u16s(m.climate);
 }
 
 bool read_map(BinaryReader& r, MapData& m, const Content& c) {
@@ -5099,6 +5100,22 @@ bool read_map(BinaryReader& r, MapData& m, const Content& c) {
                 return false;
             }
         }
+    }
+    // The climate of each square (phase 54): none, or temperature and
+    // humidity from 0 to 100.
+    std::uint32_t count = 0;
+    std::span<const std::uint8_t> bytes;
+    if (!r.u32(count) || (count != 0 && count != squares) || !r.bytes(static_cast<std::size_t>(count) * 2, bytes)) {
+        r.fail();
+        return false;
+    }
+    m.climate.resize(count);
+    for (std::size_t i = 0; i < count; ++i) {
+        if (bytes[i * 2] > 100 || bytes[i * 2 + 1] > 100) {
+            r.fail();
+            return false;
+        }
+        m.climate[i] = static_cast<std::uint16_t>(bytes[i * 2] | (bytes[i * 2 + 1] << 8));
     }
     return true;
 }

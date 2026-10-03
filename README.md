@@ -169,7 +169,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 6b (biomas, árboles y herramientas)
 
-- [ ] En Partida nueva, "Tipo de mapa" cambia los bosques: Clásico mezcla todos los biomas, Islas los pone en islas y Bioma único usa el bioma elegido.
+- [ ] En Partida nueva, "Biomas" cambia los bosques: con "Todos" cada bioma sale donde le toca por el clima; con uno solo, todo el mapa es de ese bioma.
 - [ ] Los árboles tienen cuatro tamaños y 21 especies (cerezos y jacarandas en flor, frutales con fruta, secuoyas, eucaliptos...). La misma semilla y el mismo tipo de mapa dan el mismo bosque.
 - [ ] Hay matas de pasto cerca de la cámara, que se mueven un poco y no crecen en arena ni agua; con "Vegetación" en bajo llegan menos lejos.
 - [ ] Ctrl+F3 abre las herramientas de desarrollo. Inspector: al pasar el cursor sobre un árbol, casa o persona se ven sus datos y el terreno; clic lo selecciona.
@@ -330,7 +330,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 22 (mapa de islas)
 
-- [ ] La partida nueva tiene el tipo de mapa "Islas"; "Islas por pueblo" solo se puede cambiar con ese tipo.
+- [ ] La partida nueva tiene "Mapa: Islas"; "Islas por pueblo" solo se puede cambiar con esa opción.
 - [ ] Con 2 posiciones de inicio y 3 islas por pueblo, la opción dice "3 por pueblo (6 islas)", y al alejar la cámara se ven 6 islas con playas.
 - [ ] En un mapa pequeño con muchos pueblos solo se ofrece 1 isla por pueblo.
 - [ ] Fuera del mapa se ve mar abierto hasta el horizonte, no montañas.
@@ -342,7 +342,6 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Cambiar opciones en "Partida nueva", volver al menú y entrar otra vez: siguen igual, salvo la semilla, que es nueva.
 - [ ] Cerrar el juego y abrirlo: la partida nueva sigue recordando lo elegido.
 - [ ] "Restablecer" deja todo como en una instalación nueva y no cambia la semilla.
-- [ ] Con un tipo de mapa de un mod que después se desactiva, la partida nueva vuelve a "Clásico" sin perder el resto.
 - [ ] El juego se cierra sin error (antes, a veces Windows registraba un fallo al cerrar).
 
 ### Fase 24 (minimapa y brújula)
@@ -361,7 +360,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 26 (costas y fondo marino)
 
-- [ ] La partida nueva tiene "Mar" (Sin mar, A veces, Siempre), desactivado con el tipo de mapa Islas.
+- [ ] La partida nueva tiene "Mar" (Sin mar, A veces, Siempre), desactivado con "Mapa: Islas".
 - [ ] Con "Siempre", el mapa tiene mar en uno o dos lados, con una costa irregular; a veces con golfos, penínsulas o islotes (se ven en el minimapa).
 - [ ] Fuera del mapa hay mar donde el borde es mar, y montañas donde es tierra.
 - [ ] Con "Sin mar", el mapa no tiene costa.
@@ -497,7 +496,6 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 42 (generador jerárquico: suelo y vida)
 
-- [ ] Cada región tiene un bioma propio (el cambio de árboles coincide con el cambio de región en F3); las montañas son pinares en los tipos de mapa que los tienen.
 - [ ] Los pueblos empiezan en llanuras o colinas, con agua cerca, piedra, bayas y árboles.
 - [ ] Una partida jerárquica en multijugador (dos ventanas con `--instance` y `--loopback`) no se desincroniza.
 
@@ -558,13 +556,24 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 ### Fase 53
 
 - [ ] Una partida nueva solo tiene árboles nuevos: cerezos, jacarandás, olmos, guayacanes, pinos, abedules, sauces, acacias, cipreses, magnolias, arces, palmeras, glicinias, robles amarillos, laureles, baobabs, dragos y manzanos, según el bioma.
-- [ ] "Tipo de mapa" ofrece Clásico, Islas y Bioma único; con Bioma único se puede elegir cualquiera de los once biomas, y cada uno tiene sus especies (ver `docs/ARBOLES.md`).
 - [ ] Las especies con variantes (cerezo, jacarandá, olmo, guayacán) se ven con formas distintas en un mismo bosque.
 - [ ] En otoño e invierno cambian todos los de hoja caduca; el pino, el ciprés, la palmera, el laurel y el drago siguen verdes.
 - [ ] El inspector de las herramientas de desarrollo y los nombres de F3 dicen la especie nueva de cada árbol.
 - [ ] Talar árboles de varias especies: el abedul da menos madera que el roble amarillo, y el baobab más.
 - [ ] En `SalvaCiudadModelos.exe` están los 27 grupos de árboles (19 especies y 8 gigantes) con sus estados y versiones lejanas, y ya no hay árboles viejos ni modelos sin usar en `props/`.
 - [ ] **Tu opinión:** qué especies se ven mal de lejos (versión simple) o demasiado grandes o chicas junto a las casas.
+
+### Fase 54
+
+- [ ] En un mapa mediano o grande con "Biomas: Todos", el norte es frío (pinos y abedules) y el sur cálido (sabana, bosque seco, jacarandás); las alturas tienen bosque de montaña.
+- [ ] Junto a ríos y lagos hay sauces y cerezos llorones (ribera), salvo en lo más frío; lejos del agua dulce no hay sauces.
+- [ ] En el sur, junto al mar, hay palmeras (costa tropical); no hay palmeras lejos del mar ni junto a pinos.
+- [ ] Las fronteras entre biomas son irregulares, no líneas rectas.
+- [ ] F3 muestra bajo el cursor "Clima: temperatura, humedad" y por qué ese lugar tiene su bioma.
+- [ ] Los bosques se ven más abiertos que antes: se distingue cada árbol y se puede caminar entre ellos.
+- [ ] Talar da más madera por árbol que antes (hay menos árboles): revisar que la madera del inicio de la partida alcance.
+- [ ] La partida nueva ofrece "Mapa: Tierra firme o Islas" y "Biomas: Todos o uno solo"; ya no hay tipos de mapa.
+- [ ] **Revisión con el reporte del mapa (Ctrl+F12):** marcar los lugares donde un bioma se vea fuera de lugar; el reporte guarda la temperatura y la humedad del punto.
 
 ## Licencia
 

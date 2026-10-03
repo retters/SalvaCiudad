@@ -117,7 +117,6 @@ TEST_SUITE("mods") {
         CHECK(c.buildings.size() >= 5);
         CHECK(c.flora.species.size() == 27);  // 19 trees and 8 giants (phase 53).
         CHECK(c.flora.biomes.size() == 11);
-        CHECK(c.flora.map_types.size() == 3);
         CHECK(c.find_building("core:house") != sim::kNoDef);
         CHECK(c.feature(sim::FeatureKind::Stone) != nullptr);
         CHECK(c.hash != 0);

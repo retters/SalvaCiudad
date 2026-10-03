@@ -24,8 +24,13 @@ bool valid_name_part(std::string_view s) {
     return std::all_of(s.begin(), s.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'; });
 }
 
-constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome", "mapType",
-                                        "crop",     "disease",    "unit",    "tutorial", "race"};
+constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome",
+                                        "crop",     "disease",    "unit",   "tutorial", "race"};
+// In the order of sim::BiomeWater and sim::BiomeRegion (phase 54).
+constexpr std::string_view kBiomeWaters[] = {"any", "fresh", "sea"};
+constexpr std::string_view kBiomeRegions[] = {"plain", "hills", "mountains", "plateau", "basin"};
+static_assert(std::size(kBiomeWaters) == static_cast<std::size_t>(sim::BiomeWater::Count));
+static_assert(std::size(kBiomeRegions) == static_cast<std::size_t>(sim::BiomeRegion::Count));
 constexpr std::string_view kSkillNames[] = {"wood", "stone", "forage", "farm",  "orchard",
                                             "hunt", "fish",  "build",  "craft", "metal"};
 constexpr std::string_view kTutorialGoals[] = {"none",  "camera", "place",      "build", "workers",
@@ -478,8 +483,8 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                    sim::Content& out, std::vector<DefError>& errors, std::vector<ModelRef>* refs) {
     out = sim::Content{};
     // Ids first, so definitions can refer to each other in any order.
-    std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, map_types, crops, diseases,
-        units, tutorials, races;
+    std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, crops, diseases, units,
+        tutorials, races;
     for (const RawDef& d : set.defs()) {
         if (d.type == "resource") resources.push_back(&d);
         else if (d.type == "mapFeature") features.push_back(&d);
@@ -487,14 +492,13 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         else if (d.type == "recipe") recipes.push_back(&d);
         else if (d.type == "species") species.push_back(&d);
         else if (d.type == "biome") biomes.push_back(&d);
-        else if (d.type == "mapType") map_types.push_back(&d);
         else if (d.type == "crop") crops.push_back(&d);
         else if (d.type == "disease") diseases.push_back(&d);
         else if (d.type == "unit") units.push_back(&d);
         else if (d.type == "tutorial") tutorials.push_back(&d);
         else if (d.type == "race") races.push_back(&d);
     }
-    if (species.size() > sim::kMaxSpecies || biomes.size() > sim::kMaxBiomes || map_types.size() > sim::kMaxMapTypes ||
+    if (species.size() > sim::kMaxSpecies || biomes.size() > sim::kMaxBiomes ||
         resources.size() > 1000 || buildings.size() > 1000 || recipes.size() > 2000) {
         errors.push_back({"", "too many definitions of one type"});
         return;
@@ -847,29 +851,29 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         r.numbers("sizeWeights", def.size_weights, sim::kTreeSizes, 0, 10000);
         def.density = static_cast<std::uint16_t>(r.integer("density", 0, 400, 100));
         def.grass = static_cast<std::uint8_t>(r.integer("grass", 0, 255, 180));
+        // Phase 54: where it grows. Ranges are [low, high], 0 to 100.
+        const auto range = [&](const char* key, std::uint8_t* out2) {
+            r.numbers(key, out2, 2, 0, 100);
+            if (out2[0] > out2[1]) {
+                r.fail(std::format("\"{}\" must be [low, high]", key));
+            }
+        };
+        range("temperature", def.temperature);
+        range("humidity", def.humidity);
+        range("altitude", def.altitude);
+        def.water = static_cast<sim::BiomeWater>(r.choice("water", kBiomeWaters, 0));
+        def.water_m = static_cast<std::uint16_t>(r.integer("waterDistance", 0, 250, 0));
+        if ((def.water == sim::BiomeWater::Any) != (def.water_m == 0)) {
+            r.fail("\"water\" (fresh or sea) and \"waterDistance\" go together");
+        }
+        def.regions = r.choices("regions", kBiomeRegions);
+        def.weight = static_cast<std::uint16_t>(r.integer("weight", 1, 1000, 100));
         if (r.ok()) {
             out.flora.biomes.push_back(std::move(def));
         }
     }
-    const auto find_biome = [&](std::string_view id) { return out.flora.find_biome(id); };
-    // Map types.
-    for (const RawDef* d : map_types) {
-        Reader r(*d, errors);
-        sim::MapTypeDef def;
-        def.id = d->id;
-        def.name_key = r.text("name", true);
-        for (const auto& [b, w] : r.table("biomes", find_biome, 0, 10000, 64)) {
-            def.biomes.push_back({static_cast<std::uint8_t>(b), static_cast<std::uint16_t>(w)});
-        }
-        r.numbers("sizeBias", def.size_bias, sim::kTreeSizes, 0, 1000);
-        def.patch_m = r.integer("patchSize", 0, 5000, 350);
-        def.islands = r.flag("islands");
-        if (r.ok()) {
-            out.flora.map_types.push_back(std::move(def));
-        }
-    }
-    if (out.flora.map_types.empty() || out.flora.biomes.empty()) {
-        errors.push_back({"", "the content has no map types or no biomes"});
+    if (out.flora.biomes.empty()) {
+        errors.push_back({"", "the content has no biomes"});
     }
 }
 

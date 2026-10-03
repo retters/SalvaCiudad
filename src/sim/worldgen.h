@@ -41,7 +41,7 @@ namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
 // the map (decision D-620). It goes on from the hierarchical generator's
 // own number, which it was until phase 49 (D-4902).
-inline constexpr std::uint16_t kGeneratorVersion = 2;
+inline constexpr std::uint16_t kGeneratorVersion = 3;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 2;

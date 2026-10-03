@@ -101,6 +101,13 @@ CellDescription TerrainNames::describe(const sim::MapData& map, std::int32_t cx,
     d.slope_pct = std::max({h00, h10, h01, h11}) - std::min({h00, h10, h01, h11});
     d.terrain = map.terrain_at(cx, cz);
     d.biome = map.biome_at(cx, cz);
+    if (const std::int32_t side = map.owner_side();
+        map.climate.size() == static_cast<std::size_t>(side) * static_cast<std::size_t>(side)) {
+        const std::uint16_t climate = map.climate[static_cast<std::size_t>(cz / sim::kOwnerBlock) * static_cast<std::size_t>(side) +
+                                                  static_cast<std::size_t>(cx / sim::kOwnerBlock)];
+        d.temperature = climate & 0xFF;
+        d.humidity = climate >> 8;
+    }
     d.fertility_pct = c < map.fertility.size() ? map.fertility[c] * 100 / 255 : 0;
 
     // The sea: water at the level of the region's sea.
@@ -225,6 +232,19 @@ std::vector<std::string> describe_lines(const CellDescription& d, const sim::Con
         tr("cursor.height", meters(d.height_cm), d.slope_pct),
         tr("cursor.fertility", d.fertility_pct),
     };
+    if (d.temperature >= 0) {
+        // Why this biome is here (phase 54): what its rule asks for.
+        const char* why = "cursor.climate.byClimate";
+        if (content != nullptr && d.biome < content->flora.biomes.size()) {
+            const sim::BiomeDef& b = content->flora.biomes[d.biome];
+            why = b.water == sim::BiomeWater::Fresh ? "cursor.climate.byFreshWater"
+                  : b.water == sim::BiomeWater::Sea ? "cursor.climate.bySea"
+                  : b.altitude[0] > 0               ? "cursor.climate.byHeight"
+                  : b.regions != 0                  ? "cursor.climate.byRegion"
+                                                    : "cursor.climate.byClimate";
+        }
+        lines.push_back(tr("cursor.climate", d.temperature, d.humidity, tr(why)));
+    }
     if (d.water != WaterKind::None) {
         lines.push_back(tr("cursor.water", tr(water_key(d.water)), meters(d.water_depth_cm)));
     }

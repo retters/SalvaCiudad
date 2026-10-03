@@ -5,10 +5,12 @@ namespace sc::sim {
 namespace {
 
 constexpr SizeInfo kSizes[kTreeSizes] = {
-    {"small", 100, 700, 450, 3},
-    {"medium", 700, 1200, 950, 5},
-    {"large", 1200, 2400, 1800, 8},
-    {"huge", 2400, 4300, 3300, 12},
+    // Phase 54: the trunks keep further apart, for the wide crowns of the
+    // low-poly trees.
+    {"small", 100, 700, 450, 5},
+    {"medium", 700, 1200, 950, 7},
+    {"large", 1200, 2400, 1800, 10},
+    {"huge", 2400, 4300, 3300, 16},
 };
 
 template <typename T>
@@ -51,10 +53,6 @@ int Flora::find_species(std::string_view id) const {
 
 int Flora::find_biome(std::string_view id) const {
     return find_id(biomes, id);
-}
-
-int Flora::find_map_type(std::string_view id) const {
-    return find_id(map_types, id);
 }
 
 std::uint8_t pick_weighted(std::span<const Weighted> items, std::uint32_t roll16) {

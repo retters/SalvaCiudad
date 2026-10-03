@@ -42,6 +42,9 @@ inline constexpr MapSize kMaxWorldSize = MapSize::Colossal;
     return 512;
 }
 
+// The climate settings go from 0 to this, in percent.
+inline constexpr std::uint8_t kMaxClimatePercent = 200;
+
 struct MapSettings {
     std::uint64_t seed = 1;
     MapSize size = MapSize::Medium;
@@ -50,16 +53,24 @@ struct MapSettings {
     Amount resources = Amount::Normal;
     Relief relief = Relief::Low;
     std::uint8_t players = 1;           // Start positions to place (1..12).
-    std::uint8_t map_type = 0;          // Index into the content's map types.
-    std::uint8_t biome = 0;             // The only biome, for a map type without biomes.
+    // Phase 54: an island map (the sea surrounds islands, a few per town)
+    // instead of one piece of land.
+    bool island_map = false;
+    // The biomes the map may have: bit i is biome i of the content (the
+    // first 64). 0: all of them.
+    std::uint64_t biomes = 0;
+    // The climate, in percent: 100 is a map with cold in the north and warm
+    // in the south; less is colder (or drier), more is warmer (or wetter).
+    std::uint8_t temperature = 100;
+    std::uint8_t humidity = 100;
     // Separate maps (section 7.7): each player gets a map of `size` from
     // seed + player number, laid side by side in one world with no way
     // across. Only with more than one player.
     bool separate = false;
-    // Islands per town, for a map type with islands (1..kMaxIslandsPerTown):
+    // Islands per town, for an island map (1..kMaxIslandsPerTown):
     // 2 towns with 3 islands each make 6 islands.
     std::uint8_t islands = 2;
-    // Phase 26: sea along one or two sides, for map types without islands.
+    // Phase 26: sea along one or two sides, for maps that are not islands.
     Sea sea = Sea::Sometimes;
     // Phase 27: how many regions are not plains, and how many valleys and
     // canyons there are (phase 39).
@@ -167,6 +178,10 @@ struct MapData {
     // 0 = none) of its region and of its structure.
     std::vector<std::uint16_t> region_owner;
     std::vector<std::uint16_t> structure_owner;
+    // Phase 54, for the names under the cursor: per square of the same
+    // grid, the temperature (low byte) and the humidity (high byte) that
+    // chose its biome, 0 to 100. Empty on a map of one biome.
+    std::vector<std::uint16_t> climate;
     [[nodiscard]] std::int32_t owner_side() const { return (size + kOwnerBlock - 1) / kOwnerBlock; }
     // The landform index + 1 at a cell in one of those grids (0 = none).
     [[nodiscard]] std::uint16_t owner_at(const std::vector<std::uint16_t>& grid, std::int32_t cx, std::int32_t cz) const;

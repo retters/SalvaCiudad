@@ -45,10 +45,9 @@ std::uint8_t biome(std::string_view id) {
     return static_cast<std::uint8_t>(i);
 }
 
-std::uint8_t map_type(std::string_view id) {
-    const int i = content().flora.find_map_type(std::string("core:") + std::string(id));
-    REQUIRE(i >= 0);
-    return static_cast<std::uint8_t>(i);
+// Only this biome on the map.
+std::uint64_t only(std::string_view id) {
+    return std::uint64_t{1} << biome(id);
 }
 
 double meters(Fixed f) {
@@ -169,7 +168,7 @@ std::vector<std::int32_t> named_islands(const MapData& m, const std::vector<std:
 void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town) {
     CAPTURE(static_cast<int>(size));
     MapSettings s = settings(404, size, static_cast<std::uint8_t>(towns));
-    s.map_type = map_type("islands");
+    s.island_map = true;
     s.islands = static_cast<std::uint8_t>(per_town);
     REQUIRE(per_town <= worldgen::max_islands_per_town(size, towns));
     const auto m = gen(s);
@@ -204,7 +203,7 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0x3fe1a4fe4ef7c59cull;
+constexpr std::uint64_t kGoldenSmallMap = 0xae3b5ebf0a569568ull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {
@@ -298,7 +297,7 @@ TEST_SUITE("worldgen") {
             trees += f.type == FeatureType::Tree;
             stones += f.type == FeatureType::Stone;
         }
-        CHECK(trees > 7000);  // 8217 with this seed (D-4906).
+        CHECK(trees > 2500);  // 3093 with this seed, since the trunks keep further apart (phase 54).
         CHECK(stones > 20);
         CHECK_FALSE(m->zones.empty());
     }
@@ -407,8 +406,10 @@ TEST_SUITE("worldgen") {
         MapSettings s = settings(99, MapSize::Large, 6);
         s.water = Amount::High;
         s.relief = Relief::Gentle;
-        s.map_type = map_type("single");
-        s.biome = biome("savanna");
+        s.island_map = true;
+        s.biomes = only("savanna");
+        s.temperature = 150;
+        s.humidity = 25;
         BinaryWriter w;
         s.write(w);
         BinaryReader r(w.bytes());
@@ -424,20 +425,26 @@ TEST_SUITE("worldgen") {
         BinaryReader bp(bad);
         CHECK_FALSE(MapSettings::read(bp, back));
         bad = w.bytes();
-        bad[14] = 255;  // Map type out of range.
+        bad[14] = 2;  // Islands or not: nothing else.
         BinaryReader bt(bad);
         CHECK_FALSE(MapSettings::read(bt, back));
+        for (const std::size_t climate : {std::size_t{23}, std::size_t{24}}) {
+            bad = w.bytes();
+            bad[climate] = kMaxClimatePercent + 1;  // Temperature, humidity.
+            BinaryReader bc(bad);
+            CHECK_FALSE(MapSettings::read(bc, back));
+        }
         bad = w.bytes();
-        bad[18] = 3;  // Sea out of range.
+        bad[27] = 3;  // Sea out of range.
         BinaryReader bs(bad);
         CHECK_FALSE(MapSettings::read(bs, back));
         bad = w.bytes();
-        bad[19] = 3;  // Landforms out of range.
+        bad[28] = 3;  // Landforms out of range.
         BinaryReader bl(bad);
         CHECK_FALSE(MapSettings::read(bl, back));
         for (const std::uint8_t islands : {std::uint8_t{0}, std::uint8_t{kMaxIslandsPerTown + 1}}) {
             bad = w.bytes();
-            bad[17] = islands;
+            bad[26] = islands;
             BinaryReader bi(bad);
             CHECK_FALSE(MapSettings::read(bi, back));
         }
@@ -549,7 +556,7 @@ TEST_SUITE("worldgen_sea") {
     TEST_CASE("islands are irregular, the main ones bigger") {
         for (const std::uint64_t seed : {21u, 22u, 23u}) {
             MapSettings s = settings(seed, MapSize::Medium, 2);
-            s.map_type = map_type("islands");
+            s.island_map = true;
             s.islands = 3;
             const auto m = gen(s);
             REQUIRE(m.has_value());
@@ -640,7 +647,6 @@ TEST_SUITE("flora") {
         const Flora& f = content().flora;
         CHECK(f.species.size() == 27);
         CHECK(f.biomes.size() == 11);
-        CHECK(f.map_types.size() == 3);
         CHECK(f.species_has_size(species("giant_sequoia"), TreeSize::Huge));
         CHECK_FALSE(f.species_has_size(species("palm"), TreeSize::Large));
         CHECK(f.fit_size(species("palm"), TreeSize::Huge) == TreeSize::Medium);
@@ -655,15 +661,10 @@ TEST_SUITE("flora") {
         for (const SpeciesDef& sp : f.species) {
             CHECK(sp.sizes != 0);
         }
-        // Every biome's species exist, and every map type's biomes too.
+        // Every biome's species exist.
         for (const BiomeDef& b : f.biomes) {
             for (const Weighted& w : b.species) {
                 CHECK(w.id < f.species.size());
-            }
-        }
-        for (const MapTypeDef& t : f.map_types) {
-            for (const Weighted& w : t.biomes) {
-                CHECK(w.id < f.biomes.size());
             }
         }
         const Weighted items[] = {{3, 1}, {7, 3}};
@@ -714,12 +715,10 @@ TEST_SUITE("flora") {
         CHECK(close == 0);
     }
 
-    TEST_CASE("map types change the forests") {
+    TEST_CASE("one biome alone, or all by the climate") {
         MapSettings mixed = settings(33, MapSize::Small);
-        mixed.map_type = map_type("classic");
         MapSettings single = mixed;
-        single.map_type = map_type("single");
-        single.biome = biome("orchard");
+        single.biomes = only("orchard");
         const auto a = gen(mixed);
         const auto c = gen(single);
         REQUIRE(a.has_value());

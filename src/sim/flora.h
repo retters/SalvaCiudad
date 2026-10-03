@@ -51,6 +51,12 @@ struct SpeciesDef {
     bool landmark = false;   // Phase 34: its silhouette shows through the fog of war.
 };
 
+// Where a biome needs water nearby (phase 54).
+enum class BiomeWater : std::uint8_t { Any, Fresh, Sea, Count };
+
+// The kinds of region a biome may grow on, as bits of BiomeDef::regions.
+enum class BiomeRegion : std::uint8_t { Plain, Hills, Mountains, Plateau, Basin, Count };
+
 struct BiomeDef {
     std::string id;
     std::string name_key;
@@ -58,34 +64,31 @@ struct BiomeDef {
     std::uint16_t size_weights[kTreeSizes] = {25, 25, 25, 25};
     std::uint16_t density = 100;  // Percent of the usual forest density.
     std::uint8_t grass = 180;     // Decorative grass, 0..255.
-};
-
-struct MapTypeDef {
-    std::string id;
-    std::string name_key;
-    std::vector<Weighted> biomes;  // Empty: a single biome chosen by the player.
-    std::uint16_t size_bias[kTreeSizes] = {100, 100, 100, 100};
-    std::int32_t patch_m = 350;
-    // Phase 22: the sea surrounds islands, a few per town.
-    bool islands = false;
+    // Phase 54: where it likes to be. A place takes the biome that fits it
+    // best. Temperature and humidity go from 0 to 100; the altitude is the
+    // share of the map's land that lies lower, 0 to 100.
+    std::uint8_t temperature[2] = {0, 100};
+    std::uint8_t humidity[2] = {0, 100};
+    std::uint8_t altitude[2] = {0, 100};
+    BiomeWater water = BiomeWater::Any;  // Fresh or sea water must be within...
+    std::uint16_t water_m = 0;           // ...this many meters.
+    std::uint8_t regions = 0;            // Bit per BiomeRegion; 0: any.
+    std::uint16_t weight = 100;          // How readily it wins where several fit.
 };
 
 // Limits so an index fits in the map's bytes.
 inline constexpr std::size_t kMaxSpecies = 250;
 inline constexpr std::size_t kMaxBiomes = 250;
-inline constexpr std::size_t kMaxMapTypes = 250;
 
 struct Flora {
     std::vector<SpeciesDef> species;
     std::vector<BiomeDef> biomes;
-    std::vector<MapTypeDef> map_types;
 
     [[nodiscard]] bool species_has_size(std::size_t species, TreeSize size) const;
     // The allowed size closest to `wanted` (smaller wins a tie).
     [[nodiscard]] TreeSize fit_size(std::size_t species, TreeSize wanted) const;
     [[nodiscard]] int find_species(std::string_view id) const;  // -1 if missing.
     [[nodiscard]] int find_biome(std::string_view id) const;
-    [[nodiscard]] int find_map_type(std::string_view id) const;
 };
 
 // Picks from weights with a value in 0..65535 (a slice of a hash). Returns

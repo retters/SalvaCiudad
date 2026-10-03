@@ -9,12 +9,6 @@
     "minimumGroupingDigits": 2
   },
   "strings": {
-    "mapType.classic": "Clásico",
-    "mapType.classic.tooltip": "Todos los biomas en manchas: sobre todo bosque templado, con montaña, boreal, florido y los demás.",
-    "mapType.islands": "Islas",
-    "mapType.islands.tooltip": "El mar rodea varias islas; cada pueblo empieza en una propia. Abajo se elige cuántas islas hay por pueblo.",
-    "mapType.single": "Bioma único",
-    "mapType.single.tooltip": "Todo el mapa es un solo bioma, que se elige abajo.",
     "biome.mountain": "Bosque de montaña",
     "biome.boreal": "Bosque boreal",
     "biome.temperate": "Bosque templado",

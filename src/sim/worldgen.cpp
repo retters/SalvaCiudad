@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <utility>
 #include <vector>
 #if defined(_MSC_VER) && !defined(__clang__) && (defined(_M_X64) || defined(_M_IX86))
@@ -25,6 +26,12 @@ constexpr std::uint64_t kClaySeed = 0x434c415900000005ull;
 constexpr std::uint64_t kForestSeed = 0x464f524553540006ull;
 constexpr std::uint64_t kPlacementSeed = 0x504c414345000008ull;
 constexpr std::uint64_t kBiomeSeed = 0x42494f4d45000009ull;
+constexpr std::uint64_t kTemperatureSeed = 0x54454d5000000011ull;
+constexpr std::uint64_t kHumiditySeed = 0x48554d4944000012ull;
+// Half the temperature range from the north to the south of a map.
+constexpr std::int32_t kClimateSpan = 30;
+// How far outside its ranges of temperature and humidity a biome still grows.
+constexpr std::int32_t kClimateSlack = 6;
 constexpr std::uint64_t kBeachSeed = 0x4245414348000015ull;
 constexpr std::uint64_t kIslandSeed = 0x49534c414e440016ull;
 constexpr std::uint64_t kFlatOrderSeed = 0x464c41544f520031ull;
@@ -134,9 +141,7 @@ private:
     // and its rivers start where its valleys and canyons ask for one.
     bool relief() {
         hier::Ground r;
-        const MapTypeDef* type = map_type();
-        const bool island_type = type != nullptr && type->islands;
-        if (!hier::shape(s_, n_, island_type, [this](int percent) { return report(GenStage::Relief, percent); }, r)) {
+        if (!hier::shape(s_, n_, s_.island_map, [this](int percent) { return report(GenStage::Relief, percent); }, r)) {
             return false;
         }
         h_ = std::move(r.h);
@@ -677,40 +682,180 @@ private:
 
     // --- Biomes ----------------------------------------------------------------
 
-    // Each region takes a biome from the map type, and the mountains are
-    // mountain forest if the map type has it (phase 42). A map type with
-    // `patchSize` 0 or no biomes has the only biome of the settings.
-    bool biomes() {
-        const std::size_t cells = terrain_.size();
-        const std::uint8_t only = s_.biome < flora_.biomes.size() ? s_.biome : 0;
-        biome_.assign(cells, only);
-        const MapTypeDef* type_ptr = map_type();
-        if (type_ptr == nullptr || type_ptr->biomes.empty() || type_ptr->patch_m <= 0) {
-            return report(GenStage::Biomes, 100);
+    // Distance in meters (4-neighbor steps, capped at 255) from every cell
+    // to the nearest water cell that `pick` accepts.
+    template <typename Pick>
+    std::vector<std::uint8_t> water_distance(Pick pick) const {
+        std::vector<std::uint8_t> dist(terrain_.size(), 255);
+        std::vector<std::uint32_t> queue;
+        for (std::size_t c = 0; c < dist.size(); ++c) {
+            if (water_[c] != 0 && pick(c)) {
+                dist[c] = 0;
+                queue.push_back(static_cast<std::uint32_t>(c));
+            }
         }
-        const MapTypeDef& type = *type_ptr;
-        std::int32_t mountain = -1;
-        if (const int found = flora_.find_biome("core:mountain"); found >= 0 &&
-            std::any_of(type.biomes.begin(), type.biomes.end(), [&](const Weighted& w) { return w.id == found; })) {
-            mountain = found;
-        }
-        for (std::int32_t bz = 0; bz < n_; bz += kOwnerBlock) {
-            for (std::int32_t bx = 0; bx < n_; bx += kOwnerBlock) {
-                const std::uint16_t region = out_.owner_at(out_.region_owner, bx, bz);
-                if (region == 0) {
+        for (std::size_t q = 0; q < queue.size(); ++q) {
+            const std::size_t c = queue[q];
+            const std::uint8_t d = dist[c];
+            if (d >= 254) {
+                continue;
+            }
+            const std::int32_t x = static_cast<std::int32_t>(c % static_cast<std::size_t>(n_));
+            const std::int32_t z = static_cast<std::int32_t>(c / static_cast<std::size_t>(n_));
+            const std::int32_t nx[4] = {x - 1, x + 1, x, x};
+            const std::int32_t nz[4] = {z, z, z - 1, z + 1};
+            for (int k = 0; k < 4; ++k) {
+                if (nx[k] < 0 || nz[k] < 0 || nx[k] >= n_ || nz[k] >= n_) {
                     continue;
                 }
-                std::uint8_t b = pick_weighted(type.biomes, static_cast<std::uint32_t>(mix64(s_.seed ^ kBiomeSeed ^ region) >> 40));
-                if (out_.landforms[region - 1u].kind == LandformKind::Mountains && mountain >= 0) {
-                    b = static_cast<std::uint8_t>(mountain);
+                const std::size_t n = ci(nx[k], nz[k]);
+                if (dist[n] > d + 1) {
+                    dist[n] = static_cast<std::uint8_t>(d + 1);
+                    queue.push_back(static_cast<std::uint32_t>(n));
+                }
+            }
+        }
+        return dist;
+    }
+
+    // Phase 54. Every 8 m block takes the biome that fits it best: by its
+    // climate (a temperature that falls with the height and toward the
+    // north, z = 0; a humidity that rises near water), by the water nearby,
+    // by its region and by how high it lies among the map's land. A slow
+    // noise of its own makes each biome win in patches where several fit.
+    bool biomes() {
+        const std::size_t cells = terrain_.size();
+        biome_.assign(cells, 0);
+        const std::size_t count = std::min<std::size_t>(flora_.biomes.size(), kMaxBiomes);
+        std::vector<std::uint8_t> allowed;
+        for (std::size_t b = 0; b < count; ++b) {
+            if (s_.biomes == 0 || (b < 64 && ((s_.biomes >> b) & 1u) != 0)) {
+                allowed.push_back(static_cast<std::uint8_t>(b));
+            }
+        }
+        if (allowed.empty() && count > 0) {
+            allowed.push_back(0);
+        }
+        if (allowed.size() <= 1) {
+            biome_.assign(cells, allowed.empty() ? std::uint8_t{0} : allowed[0]);
+            out_.climate.assign(static_cast<std::size_t>(out_.owner_side()) * static_cast<std::size_t>(out_.owner_side()), 0);
+            return report(GenStage::Biomes, 100);
+        }
+        const bool sea = sea_mm_ > 0;
+        const std::vector<std::uint8_t> fresh_m =
+            water_distance([&](std::size_t c) { return !sea || water_[c] != sea_mm_; });
+        const std::vector<std::uint8_t> sea_m =
+            sea ? water_distance([&](std::size_t c) { return water_[c] == sea_mm_; }) : std::vector<std::uint8_t>(cells, 255);
+        if (!report(GenStage::Biomes, 25)) {
+            return false;
+        }
+        // How high each block lies among the land: the share of land below.
+        std::int32_t lowest = std::numeric_limits<std::int32_t>::max();
+        std::int32_t highest = 0;
+        for (std::int32_t z = 0; z < n_; z += 2) {
+            for (std::int32_t x = 0; x < n_; x += 2) {
+                if (land(x, z)) {
+                    lowest = std::min(lowest, h_[vi(x, z)]);
+                    highest = std::max(highest, h_[vi(x, z)]);
+                }
+            }
+        }
+        if (lowest > highest) {
+            return report(GenStage::Biomes, 100);  // No land.
+        }
+        constexpr std::int32_t kSteps = 1024;
+        const std::int64_t range = std::max<std::int64_t>(1, highest - lowest);
+        std::vector<std::uint32_t> below(kSteps + 1, 0);
+        std::uint32_t land_cells = 0;
+        for (std::int32_t z = 0; z < n_; z += 2) {
+            for (std::int32_t x = 0; x < n_; x += 2) {
+                if (land(x, z)) {
+                    ++below[static_cast<std::size_t>((h_[vi(x, z)] - lowest) * std::int64_t{kSteps - 1} / range) + 1];
+                    ++land_cells;
+                }
+            }
+        }
+        for (std::int32_t i = 1; i <= kSteps; ++i) {
+            below[static_cast<std::size_t>(i)] += below[static_cast<std::size_t>(i - 1)];
+        }
+        const std::int32_t base = sea ? sea_mm_ : lowest;
+        const std::int32_t side = out_.owner_side();
+        out_.climate.assign(static_cast<std::size_t>(side) * static_cast<std::size_t>(side), 0);
+        for (std::int32_t bz = 0; bz < n_; bz += kOwnerBlock) {
+            for (std::int32_t bx = 0; bx < n_; bx += kOwnerBlock) {
+                const std::int32_t cx = std::min(n_ - 1, bx + kOwnerBlock / 2);
+                const std::int32_t cz = std::min(n_ - 1, bz + kOwnerBlock / 2);
+                const std::size_t c = ci(cx, cz);
+                const std::int32_t height = h_[vi(cx, cz)];
+                // Temperature: 20 in the north to 80 in the south at 100 %,
+                // a degree less every 5 m of height, and a slow noise.
+                std::int32_t temp = 50 + (static_cast<std::int32_t>(s_.temperature) - 100) * 3 / 10 +
+                                    (2 * cz - n_) * kClimateSpan / n_ - std::max(0, height - base) / 5000 +
+                                    fbm(s_.seed ^ kTemperatureSeed, cx, cz, 8, 2) * 8 / 32768;
+                // Humidity: a slow noise, wetter within 60 m of water.
+                const std::int32_t water_m = std::min<std::int32_t>(fresh_m[c], sea_m[c]);
+                std::int32_t hum = 50 + (static_cast<std::int32_t>(s_.humidity) - 100) * 3 / 10 +
+                                   fbm(s_.seed ^ kHumiditySeed, cx, cz, 9, 3) * 34 / 32768 +
+                                   (water_m < 60 ? (60 - water_m) / 3 : 0);
+                temp = std::clamp(temp, 0, 100);
+                hum = std::clamp(hum, 0, 100);
+                const auto step = static_cast<std::size_t>(std::clamp<std::int64_t>(
+                    (height - lowest) * std::int64_t{kSteps - 1} / range, 0, kSteps - 1));
+                const auto alt = static_cast<std::int32_t>(std::uint64_t{below[step]} * 100 / std::max<std::uint32_t>(1, land_cells));
+                const std::uint16_t region = out_.owner_at(out_.region_owner, cx, cz);
+                std::uint8_t kind_bit = 0;
+                if (region != 0 && region - 1u < out_.landforms.size()) {
+                    switch (out_.landforms[region - 1u].kind) {
+                        case LandformKind::Plain: kind_bit = 1u << static_cast<unsigned>(BiomeRegion::Plain); break;
+                        case LandformKind::Hills: kind_bit = 1u << static_cast<unsigned>(BiomeRegion::Hills); break;
+                        case LandformKind::Mountains: kind_bit = 1u << static_cast<unsigned>(BiomeRegion::Mountains); break;
+                        case LandformKind::Plateau: kind_bit = 1u << static_cast<unsigned>(BiomeRegion::Plateau); break;
+                        case LandformKind::Basin: kind_bit = 1u << static_cast<unsigned>(BiomeRegion::Basin); break;
+                        default: break;
+                    }
+                }
+                // The best of those whose place this can be; if none, the nearest in climate.
+                std::int64_t best = std::numeric_limits<std::int64_t>::min();
+                std::uint8_t pick = allowed[0];
+                for (int strict = 1; strict >= 0 && best == std::numeric_limits<std::int64_t>::min(); --strict) {
+                    for (const std::uint8_t b : allowed) {
+                        const BiomeDef& d = flora_.biomes[b];
+                        const auto outside = [](std::int32_t v, const std::uint8_t* r) {
+                            return v < r[0] ? r[0] - v : v > r[1] ? v - r[1] : 0;
+                        };
+                        const std::int32_t off_t = outside(temp, d.temperature);
+                        const std::int32_t off_h = outside(hum, d.humidity);
+                        // The water it needs and its height are never given up; its
+                        // climate and its region are, where nothing else fits.
+                        if (outside(alt, d.altitude) > 0 || (d.water == BiomeWater::Fresh && fresh_m[c] > d.water_m) ||
+                            (d.water == BiomeWater::Sea && sea_m[c] > d.water_m)) {
+                            continue;
+                        }
+                        if (strict != 0 && (off_t > kClimateSlack || off_h > kClimateSlack ||
+                                            (d.regions != 0 && (d.regions & kind_bit) == 0))) {
+                            continue;
+                        }
+                        // Its own slow noise, 0 to 1024: where it is high, the biome wins.
+                        const std::int64_t patch =
+                            (fbm(mix64(s_.seed ^ kBiomeSeed ^ (b + 1u)), cx, cz, 8, 2) + 32768) * 1024 / 65536;
+                        const std::int64_t score = 10000 - (off_t * 40 + off_h * 30) * 10 + d.weight * patch / 16;
+                        if (score > best) {
+                            best = score;
+                            pick = b;
+                        }
+                    }
                 }
                 for (std::int32_t z = bz; z < std::min(n_, bz + kOwnerBlock); ++z) {
                     for (std::int32_t x = bx; x < std::min(n_, bx + kOwnerBlock); ++x) {
-                        biome_[ci(x, z)] = b;
+                        biome_[ci(x, z)] = pick;
                     }
                 }
+                // For F3 and the map report: temperature and humidity.
+                out_.climate[static_cast<std::size_t>(bz / kOwnerBlock) * static_cast<std::size_t>(side) +
+                             static_cast<std::size_t>(bx / kOwnerBlock)] =
+                    static_cast<std::uint16_t>(temp | (hum << 8));
             }
-            if ((bz & 127) == 0 && !report(GenStage::Biomes, bz * 100 / n_)) {
+            if ((bz & 127) == 0 && !report(GenStage::Biomes, 25 + bz * 75 / n_)) {
                 return false;
             }
         }
@@ -745,13 +890,6 @@ private:
     }
 
     // Places a tree if there is room; `hash` gives its height and rotation.
-    [[nodiscard]] const MapTypeDef* map_type() const {
-        if (flora_.map_types.empty()) {
-            return nullptr;
-        }
-        return &flora_.map_types[s_.map_type < flora_.map_types.size() ? s_.map_type : 0];
-    }
-
     bool plant(Fixed x, Fixed z, std::uint8_t species, TreeSize size, std::uint64_t hash) {
         const std::int32_t cx = x.floor_int();
         const std::int32_t cz = z.floor_int();
@@ -775,11 +913,9 @@ private:
 
     bool forests() {
         taken_.assign(terrain_.size(), 0);
-        const MapTypeDef* type_ptr = map_type();
-        if (type_ptr == nullptr || flora_.biomes.empty() || flora_.species.empty()) {
+        if (flora_.biomes.empty() || flora_.species.empty()) {
             return report(GenStage::Forests, 100);
         }
-        const MapTypeDef& type = *type_ptr;
         // Biggest first; smaller trees fill the gaps.
         for (int pass = static_cast<int>(kTreeSizes) - 1; pass >= 0; --pass) {
             const auto size = static_cast<TreeSize>(pass);
@@ -813,9 +949,9 @@ private:
                     }
                     std::int64_t total = 0;
                     for (std::size_t k = 0; k < kTreeSizes; ++k) {
-                        total += static_cast<std::int64_t>(biome.size_weights[k]) * type.size_bias[k];
+                        total += static_cast<std::int64_t>(biome.size_weights[k]);
                     }
-                    const std::int64_t share = static_cast<std::int64_t>(biome.size_weights[pass]) * type.size_bias[pass];
+                    const std::int64_t share = static_cast<std::int64_t>(biome.size_weights[pass]);
                     if (total == 0 || share == 0) {
                         continue;
                     }
@@ -1270,6 +1406,7 @@ std::optional<MapData> generate_world(const MapSettings& settings, const Content
     const auto squares = static_cast<std::size_t>(world.owner_side()) * static_cast<std::size_t>(world.owner_side());
     world.region_owner.assign(squares, 0);
     world.structure_owner.assign(squares, 0);
+    world.climate.assign(squares, 0);
     std::uint16_t lowest = 65535;
     constexpr auto kStages = static_cast<std::int32_t>(GenStage::Count);
     for (std::int32_t i = 0; i < n; ++i) {
@@ -1338,6 +1475,9 @@ std::optional<MapData> generate_world(const MapSettings& settings, const Content
                     for (auto [a, b] : {std::pair{&m->region_owner, &world.region_owner},
                                         std::pair{&m->structure_owner, &world.structure_owner}}) {
                         (*b)[dst] = (*a)[src] == 0 ? 0 : static_cast<std::uint16_t>((*a)[src] + first);
+                    }
+                    if (src < m->climate.size()) {
+                        world.climate[dst] = m->climate[src];
                     }
                 }
             }

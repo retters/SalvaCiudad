@@ -91,6 +91,10 @@ yyjson_mut_val* describe_json(yyjson_mut_doc* doc, const CellDescription& d, con
     add_str(doc, o, "ground", pick(kTerrains, static_cast<std::size_t>(d.terrain)));
     add_str(doc, o, "biome", d.biome < content.flora.biomes.size() ? std::string_view(content.flora.biomes[d.biome].id) : "?");
     (void)yyjson_mut_obj_add_int(doc, o, "fertilityPct", d.fertility_pct);
+    if (d.temperature >= 0) {
+        (void)yyjson_mut_obj_add_int(doc, o, "temperature", d.temperature);
+        (void)yyjson_mut_obj_add_int(doc, o, "humidity", d.humidity);
+    }
     add_str(doc, o, "water", pick(kWaters, static_cast<std::size_t>(d.water)));
     if (d.region) {
         add_str(doc, o, "region", landform_name(*d.region));
@@ -262,10 +266,16 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
     yyjson_mut_val* m = yyjson_mut_obj_add_obj(d, root, "map");
     add_str(d, m, "seed", std::to_string(s.seed));
     add_str(d, m, "size", pick(names::kSizes, static_cast<std::size_t>(s.size)));
-    const auto& types = content.flora.map_types;
-    add_str(d, m, "mapType", s.map_type < types.size() ? std::string_view(types[s.map_type].id) : "");
-    const auto& biomes = content.flora.biomes;
-    add_str(d, m, "biome", s.biome < biomes.size() ? std::string_view(biomes[s.biome].id) : "");
+    // Phase 54: land or islands, the biomes allowed (none listed: all) and the climate.
+    add_str(d, m, "mapType", s.island_map ? "islands" : "land");
+    yyjson_mut_val* allowed = yyjson_mut_obj_add_arr(d, m, "biomes");
+    for (std::size_t b = 0; b < content.flora.biomes.size() && b < 64 && s.biomes != 0; ++b) {
+        if (((s.biomes >> b) & 1u) != 0) {
+            (void)yyjson_mut_arr_add_strncpy(d, allowed, content.flora.biomes[b].id.data(), content.flora.biomes[b].id.size());
+        }
+    }
+    (void)yyjson_mut_obj_add_int(d, m, "temperature", s.temperature);
+    (void)yyjson_mut_obj_add_int(d, m, "humidity", s.humidity);
     add_str(d, m, "water", pick(names::kAmounts, static_cast<std::size_t>(s.water)));
     add_str(d, m, "forests", pick(names::kAmounts, static_cast<std::size_t>(s.forests)));
     add_str(d, m, "resources", pick(names::kAmounts, static_cast<std::size_t>(s.resources)));
@@ -432,7 +442,8 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
     bool separate = false;
     if (json::get_string(map, "seed", 20, seed) != json::Field::Ok || !get_name(map, "size", names::kSizes, size) ||
         json::get_string(map, "mapType", 128, type_id) != json::Field::Ok ||
-        json::get_string(map, "biome", 128, biome_id) != json::Field::Ok || !get_name(map, "water", names::kAmounts, water) ||
+        json::get_string(map, "biome", 128, biome_id) == json::Field::Invalid ||
+        !get_name(map, "water", names::kAmounts, water) ||
         !get_name(map, "forests", names::kAmounts, forests) || !get_name(map, "resources", names::kAmounts, resources) ||
         !get_name(map, "relief", names::kReliefs, relief) || !get_name(map, "sea", names::kSeas, sea) ||
         !get_name(map, "landforms", names::kAmounts, landforms) ||
@@ -449,17 +460,50 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
         error = "bad seed";
         return false;
     }
-    if (content != nullptr) {
-        const auto& types = content->flora.map_types;
-        const auto type = std::find_if(types.begin(), types.end(), [&](const sim::MapTypeDef& t) { return t.id == type_id; });
-        const auto& biomes = content->flora.biomes;
-        const auto biome = std::find_if(biomes.begin(), biomes.end(), [&](const sim::BiomeDef& b) { return b.id == biome_id; });
-        if (type == types.end() || biome == biomes.end() || types.size() > 255 || biomes.size() > 255) {
-            error = "the map type or biome is not in the loaded mods";
+    // Islands or land; a report from before phase 54 names one of core's map types.
+    if (type_id != "land" && type_id != "islands" && !type_id.starts_with("core:")) {
+        error = "unknown map type";
+        return false;
+    }
+    s.island_map = type_id == "islands" || type_id == "core:islands";
+    std::int64_t percent = 100;
+    for (const auto& [key, field] : {std::pair{"temperature", &s.temperature}, std::pair{"humidity", &s.humidity}}) {
+        const json::Field f = json::get_int(map, key, 0, sim::kMaxClimatePercent, percent);
+        if (f == json::Field::Invalid) {
+            error = "bad climate";
             return false;
         }
-        s.map_type = static_cast<std::uint8_t>(type - types.begin());
-        s.biome = static_cast<std::uint8_t>(biome - biomes.begin());
+        if (f == json::Field::Ok) {
+            *field = static_cast<std::uint8_t>(percent);
+        }
+    }
+    if (content != nullptr) {
+        // The biomes allowed: the list, or the only biome of an old report
+        // of the type "single biome".
+        std::vector<std::string> ids;
+        if (yyjson_mut_val* list = yyjson_mut_obj_get(map, "biomes"); list != nullptr) {
+            if (!yyjson_mut_is_arr(list) || yyjson_mut_arr_size(list) > 64) {
+                error = "bad biomes";
+                return false;
+            }
+            std::size_t idx = 0, max = 0;
+            yyjson_mut_val* item = nullptr;
+            yyjson_mut_arr_foreach(list, idx, max, item) {
+                const char* v = yyjson_mut_get_str(item);
+                ids.emplace_back(v != nullptr ? v : "");
+            }
+        } else if (type_id == "core:single") {
+            ids.push_back(biome_id);
+        }
+        const auto& biomes = content->flora.biomes;
+        for (const std::string& id : ids) {
+            const auto biome = std::find_if(biomes.begin(), biomes.end(), [&](const sim::BiomeDef& b) { return b.id == id; });
+            if (biome == biomes.end() || biome - biomes.begin() >= 64) {
+                error = "a biome is not in the loaded mods";
+                return false;
+            }
+            s.biomes |= std::uint64_t{1} << (biome - biomes.begin());
+        }
     }
     s.size = static_cast<sim::MapSize>(size);
     s.water = static_cast<sim::Amount>(water);

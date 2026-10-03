@@ -151,7 +151,9 @@ TEST_SUITE("map_report") {
         CHECK(refused(changed("\"schemaVersion\": 1", "\"schemaVersion\": 2")));
         CHECK(refused(changed("\"size\": \"small\"", "\"size\": \"tiny\"")));
         CHECK(refused(changed("\"camera\": \"thirdPerson\"", "\"camera\": \"orbit\"")));
-        CHECK(refused(changed("\"mapType\": \"core:", "\"mapType\": \"evil:")));
+        CHECK(refused(changed("\"mapType\": \"land\"", "\"mapType\": \"evil:x\"")));
+        CHECK(refused(changed("\"biomes\": []", "\"biomes\": [\"evil:swamp\"]")));
+        CHECK(refused(changed("\"temperature\": 100", "\"temperature\": 900")));
         CHECK(refused(changed("\"width\": 1280", "\"width\": 99999")));
         CHECK(refused(changed("\"players\": 2", "\"players\": 40")));
         CHECK(refused(changed("\"seed\": \"78\"", "\"seed\": \"78; del *\"")));

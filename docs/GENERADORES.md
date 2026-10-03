@@ -15,7 +15,8 @@ Hasta la fase 48 había además un generador **clásico** (relieve de ruido con 
 | Opción | Valores | Qué cambia |
 |---|---|---|
 | Tamaño | Pequeño (512 m) a Colosal (16 km) | El lado del mapa y el tamaño de las regiones |
-| Tipo de mapa | Clásico, Islas, Bioma único | Qué biomas hay y en qué proporción; "Islas" hace un mapa de islas. "Clásico" es solo una mezcla de biomas, no el generador que se borró |
+| Mapa | Tierra firme, Islas | "Islas" hace un mapa de islas |
+| Biomas | Todos según el clima, o uno solo | Con todos, cada bioma crece donde le toca (fase 54, ver `docs/ARBOLES.md`) |
 | Islas por pueblo | 1 a 8 | Solo en "Islas": cuántas islas tiene cada pueblo (la principal y las demás) |
 | Mar | Sin mar, A veces, Siempre | Si hay costa en uno o dos lados ("A veces": 40 % de las semillas) |
 | Ríos y lagos | Pocos, Normal, Muchos | Cuántos ríos nacen además de los de los valles y cañones |
@@ -69,7 +70,7 @@ Los lagos van en las cuencas. Fuera de ellas solo queda un lago si es grande (1,
 
 ### Nivel 4: suelo y vida
 
-Humedad, fertilidad y suelos (pasto, pradera, suelo de bosque, arena, roca, arcilla) según el agua y las pendientes. Cada región tiene un solo bioma del tipo de mapa, y las montañas son pinares si el tipo de mapa los tiene. Después, bosques, recursos y fauna. Los pueblos empiezan en llanuras o colinas, fuera de cualquier estructura, con agua a 150 m o menos, piedra, bayas y árboles cerca.
+Humedad, fertilidad y suelos (pasto, pradera, suelo de bosque, arena, roca, arcilla) según el agua y las pendientes. Cada bloque de 8 m toma el bioma que mejor encaja con su temperatura (baja hacia el norte y con la altura), su humedad, el agua cercana, su región y su altura (fase 54; las reglas, en `docs/ARBOLES.md`). Después, bosques, recursos y fauna. Los pueblos empiezan en llanuras o colinas, fuera de cualquier estructura, con agua a 150 m o menos, piedra, bayas y árboles cerca.
 
 ### Nivel 5: detalle fino
 

@@ -451,7 +451,7 @@ TEST_SUITE("nav") {
         s.size = MapSize::Medium;
         s.players = 2;
         s.islands = 2;
-        s.map_type = static_cast<std::uint8_t>(content()->flora.find_map_type("core:islands"));
+        s.island_map = true;
         std::optional<MapData> m = generate_map(s, *content());
         REQUIRE(m.has_value());
         REQUIRE(m->starts.size() == 2);

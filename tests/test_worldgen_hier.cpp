@@ -1,5 +1,7 @@
 #include <doctest.h>
 
+#include <tuple>
+#include <set>
 #include <algorithm>
 #include <cmath>
 #include <map>
@@ -337,11 +339,7 @@ TEST_SUITE("worldgen_hier_water") {
         sim::MapSettings s = hier_settings(70, sim::MapSize::Medium);
         s.players = 3;
         s.islands = 2;
-        for (std::size_t t = 0; t < sc::test::core_content().flora.map_types.size(); ++t) {
-            if (sc::test::core_content().flora.map_types[t].islands) {
-                s.map_type = static_cast<std::uint8_t>(t);
-            }
-        }
+        s.island_map = true;
         const sim::MapData m = generate(s);
         const std::int32_t wanted = 3 * std::min<std::int32_t>(2, sim::worldgen::max_islands_per_town(s.size, 3));
         std::vector<const sim::Landform*> islands;
@@ -457,56 +455,138 @@ TEST_SUITE("worldgen_hier_life") {
         }
     }
 
-    TEST_CASE("biomes follow the regions, with mountain forest on the mountains") {
-        sim::MapSettings s = hier_settings(91, sim::MapSize::Large);
-        s.relief = sim::Relief::Mountainous;
-        std::int32_t pine = -1;
-        for (std::size_t t = 0; t < sc::test::core_content().flora.map_types.size(); ++t) {
-            if (sc::test::core_content().flora.map_types[t].id == "core:classic") {
-                s.map_type = static_cast<std::uint8_t>(t);
+    TEST_CASE("each biome grows where its climate and its place are") {
+        // Phase 54: several seeds and sizes, with every biome allowed.
+        const sim::Content& content = sc::test::core_content();
+        const auto species = [&](const char* id) {
+            const int i = content.flora.find_species(id);
+            REQUIRE(i >= 0);
+            return static_cast<std::uint8_t>(i);
+        };
+        const auto biome = [&](const char* id) {
+            const int i = content.flora.find_biome(id);
+            REQUIRE(i >= 0);
+            return static_cast<std::uint8_t>(i);
+        };
+        const std::uint8_t willow = species("core:willow"), palm = species("core:palm"), pine = species("core:pine");
+        const std::uint8_t mountain = biome("core:mountain");
+        std::set<std::uint8_t> seen;
+        std::size_t willows = 0, palms = 0, high_trees = 0;
+        for (const auto& [seed, size, sea] : {std::tuple{std::uint64_t{91}, sim::MapSize::Medium, sim::Sea::Always},
+                                              std::tuple{std::uint64_t{12}, sim::MapSize::Medium, sim::Sea::Always},
+                                              std::tuple{std::uint64_t{7}, sim::MapSize::Large, sim::Sea::Always},
+                                              std::tuple{std::uint64_t{33}, sim::MapSize::Small, sim::Sea::None}}) {
+            CAPTURE(seed);
+            sim::MapSettings s = hier_settings(seed, size);
+            s.sea = sea;
+            const sim::MapData m = generate(s);
+            const std::int32_t n = m.size;
+            const std::uint16_t sea_cm = m.sea_levels.empty() ? std::uint16_t{0} : m.sea_levels[0];
+            const auto cell = [&](std::int32_t x, std::int32_t z) { return static_cast<std::size_t>(z) * static_cast<std::size_t>(n) + static_cast<std::size_t>(x); };
+            // Is there water of the kind within `reach` meters (in a square)?
+            const auto water_near = [&](std::int32_t cx, std::int32_t cz, std::int32_t reach, bool salt) {
+                for (std::int32_t z = std::max(0, cz - reach); z <= std::min(n - 1, cz + reach); ++z) {
+                    for (std::int32_t x = std::max(0, cx - reach); x <= std::min(n - 1, cx + reach); ++x) {
+                        const std::uint16_t w = m.water[cell(x, z)];
+                        if (w != 0 && (sea_cm != 0 && w == sea_cm) == salt) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+            // The median height of the land.
+            std::vector<std::uint16_t> heights;
+            for (std::int32_t z = 0; z < n; z += 2) {
+                for (std::int32_t x = 0; x < n; x += 2) {
+                    if (m.water[cell(x, z)] == 0) {
+                        heights.push_back(m.height_cm(x, z));
+                    }
+                }
+            }
+            REQUIRE_FALSE(heights.empty());
+            std::nth_element(heights.begin(), heights.begin() + static_cast<std::ptrdiff_t>(heights.size() / 2), heights.end());
+            const std::uint16_t median = heights[heights.size() / 2];
+            std::vector<const sim::MapFeature*> pines, palm_trees;
+            for (const std::uint8_t b : m.biome) {
+                seen.insert(b);
+            }
+            for (const sim::MapFeature& f : m.features) {
+                if (f.type != sim::FeatureType::Tree) {
+                    continue;
+                }
+                const std::int32_t x = f.x.floor_int(), z = f.z.floor_int();
+                if (f.species == willow) {
+                    ++willows;
+                    CHECK_MESSAGE(water_near(x, z, 40, false), "a willow far from fresh water at " << x << ", " << z);
+                } else if (f.species == palm) {
+                    ++palms;
+                    palm_trees.push_back(&f);
+                    CHECK_MESSAGE(water_near(x, z, 150, true), "a palm far from the sea at " << x << ", " << z);
+                } else if (f.species == pine) {
+                    pines.push_back(&f);
+                }
+                if (m.biome_at(x, z) == mountain) {
+                    ++high_trees;
+                    // A little slack: the biome is chosen per 8 m block, by its middle.
+                    CHECK_MESSAGE(m.height_cm(x, z) + 300 >= median, "mountain forest in the lower half at " << x << ", " << z);
+                }
+            }
+            // No palm next to a pine.
+            std::size_t together = 0;
+            for (const sim::MapFeature* p : palm_trees) {
+                for (const sim::MapFeature* q : pines) {
+                    const std::int64_t dx = (p->x - q->x).floor_int(), dz = (p->z - q->z).floor_int();
+                    together += dx * dx + dz * dz < 15 * 15 ? 1u : 0u;
+                }
+            }
+            CHECK(together == 0);
+            // The same seed, the same map.
+            if (size == sim::MapSize::Small) {
+                CHECK(generate(s).checksum() == m.checksum());
             }
         }
-        pine = sc::test::core_content().flora.find_biome("core:mountain");
-        REQUIRE(pine >= 0);
-        const sim::MapData m = generate(s);
-        // Per region, how many squares have its most common biome.
-        std::map<std::uint16_t, std::map<std::uint8_t, int>> per_region;
-        const std::int32_t side = m.owner_side();
-        for (std::int32_t bz = 0; bz < side; ++bz) {
-            for (std::int32_t bx = 0; bx < side; ++bx) {
-                const std::int32_t x = bx * sim::kOwnerBlock + 4, z = bz * sim::kOwnerBlock + 4;
-                ++per_region[m.owner_at(m.region_owner, x, z)][m.biome_at(x, z)];
-            }
-        }
-        int regions = 0, uniform = 0, mountain = 0, pine_mountain = 0;
-        for (const auto& [owner, biomes] : per_region) {
-            int total = 0, most = 0;
-            for (const auto& [b, count] : biomes) {
-                total += count;
-                most = std::max(most, count);
-            }
-            if (total < 40) {
-                continue;
-            }
-            ++regions;
-            uniform += most * 10 >= total * 8 ? 1 : 0;
-            if (m.landforms[owner - 1u].kind == LandformKind::Mountains) {
-                ++mountain;
-                pine_mountain += biomes.count(static_cast<std::uint8_t>(pine)) != 0 && biomes.at(static_cast<std::uint8_t>(pine)) == most ? 1 : 0;
-            }
-        }
-        MESSAGE(uniform << " of " << regions << " regions of one biome; " << pine_mountain << " of " << mountain << " mountains of pines");
-        CHECK(uniform * 10 >= regions * 8);
-        CHECK(mountain > 0);
-        CHECK(pine_mountain == mountain);
+        MESSAGE(willows << " willows, " << palms << " palms, " << high_trees << " trees of mountain forest, " << seen.size()
+                        << " biomes seen");
+        CHECK(willows > 20);
+        CHECK(palms > 20);
+        CHECK(high_trees > 100);
+        CHECK(seen.size() >= 8);
     }
 
-    TEST_CASE("every map type and a crowd of towns") {
-        const auto& types = sc::test::core_content().flora.map_types;
-        for (std::size_t t = 0; t < types.size(); ++t) {
-            CAPTURE(types[t].id);
-            sim::MapSettings s = hier_settings(95 + t, sim::MapSize::Small);
-            s.map_type = static_cast<std::uint8_t>(t);
+    TEST_CASE("the climate settings move the biomes") {
+        const sim::Content& content = sc::test::core_content();
+        const auto share = [&](std::uint8_t temperature, const char* id) {
+            sim::MapSettings s = hier_settings(91, sim::MapSize::Medium);
+            s.temperature = temperature;
+            const sim::MapData m = generate(s);
+            const int b = content.flora.find_biome(id);
+            REQUIRE(b >= 0);
+            return static_cast<double>(std::count(m.biome.begin(), m.biome.end(), static_cast<std::uint8_t>(b))) /
+                   static_cast<double>(m.biome.size());
+        };
+        // Colder: more boreal forest; warmer: more savanna and dry forest.
+        CHECK(share(20, "core:boreal") > share(180, "core:boreal") + 0.1);
+        CHECK(share(180, "core:savanna") + share(180, "core:dry_tropical") >
+              share(20, "core:savanna") + share(20, "core:dry_tropical") + 0.1);
+        // The climate of each block is kept for the names under the cursor.
+        const sim::MapData m = generate(hier_settings(91, sim::MapSize::Small));
+        REQUIRE(m.climate.size() == static_cast<std::size_t>(m.owner_side()) * static_cast<std::size_t>(m.owner_side()));
+        const std::int32_t side = m.owner_side();
+        // Colder in the north (z = 0) than in the south, on average.
+        std::int64_t north = 0, south = 0;
+        for (std::int32_t x = 0; x < side; ++x) {
+            north += m.climate[static_cast<std::size_t>(x)] & 0xFF;
+            south += m.climate[static_cast<std::size_t>((side - 1) * side + x)] & 0xFF;
+        }
+        CHECK(south > north + 20 * side);
+    }
+
+    TEST_CASE("land, islands and a crowd of towns") {
+        for (const bool islands : {false, true}) {
+            CAPTURE(islands);
+            sim::MapSettings s = hier_settings(95 + (islands ? 1u : 0u), sim::MapSize::Small);
+            s.island_map = islands;
             const sim::MapData m = generate(s);
             CHECK(m.starts.size() == 2);
             CHECK_FALSE(m.features.empty());

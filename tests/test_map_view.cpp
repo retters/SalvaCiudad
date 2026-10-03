@@ -275,8 +275,9 @@ TEST_SUITE("new_game") {
         screen.open(&content, false, last);
         const sim::MapSettings& m = screen.settings();
         CHECK(m.size == sim::MapSize::Giant);
-        CHECK(content.flora.map_types[m.map_type].id == "core:islands");
-        CHECK(content.flora.biomes[m.biome].id == "core:boreal");
+        CHECK(m.island_map);
+        REQUIRE(content.flora.find_biome("core:boreal") >= 0);
+        CHECK(m.biomes == std::uint64_t{1} << content.flora.find_biome("core:boreal"));
         CHECK(m.islands == 3);
         CHECK(m.sea == sim::Sea::Always);
         CHECK(m.landforms == sim::Amount::Low);
@@ -320,7 +321,8 @@ TEST_SUITE("new_game") {
         gone.max_population = 437;
         NewGameScreen fallback;
         fallback.open(&content, false, gone);
-        CHECK(fallback.settings().map_type == 0);
+        CHECK_FALSE(fallback.settings().island_map);
+        CHECK(fallback.settings().biomes == 0);  // Every biome.
         CHECK(fallback.rules().races[0] == 0);
         CHECK(fallback.rules().climate.seasons == 0b1111);
         CHECK(fallback.rules().max_population == 400);
@@ -348,7 +350,7 @@ TEST_SUITE("minimap") {
         sim::MapSettings s;
         s.seed = 4;
         s.size = sim::MapSize::Small;
-        s.map_type = static_cast<std::uint8_t>(sc::test::core_content().flora.find_map_type("core:islands"));
+        s.island_map = true;
         s.islands = 1;
         const std::optional<sim::MapData> m = sim::generate_map(s, sc::test::core_content());
         REQUIRE(m.has_value());

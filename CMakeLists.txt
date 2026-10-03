@@ -364,6 +364,9 @@ set_target_properties(SalvaCiudad PROPERTIES
 file(GLOB_RECURSE SC_DATA_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/*")
 set(SC_DATA_STAMP "${CMAKE_CURRENT_BINARY_DIR}/sc_data.stamp")
 add_custom_command(OUTPUT "${SC_DATA_STAMP}"
+    # A mirror: files deleted from data/ must not stay next to the executables
+    # (the game would still read them).
+    COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/data" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data"
     COMMAND ${CMAKE_COMMAND} -E touch "${SC_DATA_STAMP}"

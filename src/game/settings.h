@@ -107,8 +107,9 @@ struct GameplaySettings {
 // to its default. The seed is not kept: each new game gets a fresh one.
 struct NewGameSettings {
     std::string size = "medium";    // new_game_names::kSizes
-    std::string map_type;           // Empty: the first one.
-    std::string biome;              // Empty: the first one.
+    // Phase 54: kIslandsMap for an island map; anything else is land.
+    std::string map_type;
+    std::string biome;              // The only biome of the map; empty: all of them.
     int islands = 2;                // Per town, with islands.
     std::string sea = "sometimes";  // new_game_names::kSeas
     std::string water = "normal";   // new_game_names::kAmounts
@@ -137,6 +138,7 @@ struct NewGameSettings {
 // Names of the choices in NewGameSettings, in the order of the game's own
 // values.
 namespace new_game_names {
+inline constexpr std::string_view kIslandsMap = "core:islands";
 inline constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge", "giant", "colossal"};
 inline constexpr std::string_view kAmounts[] = {"low", "normal", "high"};
 inline constexpr std::string_view kReliefs[] = {"low", "gentle", "mountainous"};

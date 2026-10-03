@@ -9,12 +9,6 @@
     "minimumGroupingDigits": 1
   },
   "strings": {
-    "mapType.classic": "Classic",
-    "mapType.classic.tooltip": "Every biome in patches: mostly temperate forest, with mountain, boreal, flowering and the others.",
-    "mapType.islands": "Islands",
-    "mapType.islands.tooltip": "The sea surrounds several islands; each town starts on its own. Choose below how many islands there are per town.",
-    "mapType.single": "Single biome",
-    "mapType.single.tooltip": "The whole map is one biome, chosen below.",
     "biome.mountain": "Mountain forest",
     "biome.boreal": "Boreal forest",
     "biome.temperate": "Temperate forest",

@@ -1,6 +1,6 @@
 # Crear mods
 
-Un mod es una carpeta con un `mod.json`. Puede agregar o cambiar contenido (recursos, edificios, árboles, biomas, tipos de mapa), traer sus modelos y textos, y reglas en Lua. El juego base es también un mod: `data/mods/core`, y sirve de referencia para todos los campos.
+Un mod es una carpeta con un `mod.json`. Puede agregar o cambiar contenido (recursos, edificios, árboles, biomas), traer sus modelos y textos, y reglas en Lua. El juego base es también un mod: `data/mods/core`, y sirve de referencia para todos los campos.
 
 El mod de ejemplo está en `tools/example_mod`. Para probarlo, copia esa carpeta a tu carpeta de mods (menú Mods > Abrir carpeta de mods), actívalo y pulsa Aplicar.
 
@@ -101,17 +101,22 @@ Las unidades del ejército y los pueblos también tienen `sight`: los metros que
 
 Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie).
 
-### species, biome, mapType
+### species y biome
 
-Árboles, biomas y tipos de mapa, como en `docs/ARBOLES.md`:
+Árboles y biomas, como en `docs/ARBOLES.md`:
 
 - `species`: `name`, `models`, `sizes`, `logs` (madera por tamaño) y `landmark` (su silueta se ve a través de la niebla de guerra). `models` va por estado: `{"bloom": [...], "autumn": [...], "bare": [...]}`.
   - Cada estado es una lista de 1 a 8 archivos (variantes; cada árbol toma una según su lugar). Una entrada puede ser `{"model": archivo, "far": archivo}` para dar la versión lejana del modelo: unos 300 triángulos, que se dibujan cuando el árbol se ve chico en pantalla y siempre en las sombras. La variante de un árbol la deciden los archivos de `bloom`; si otro estado tiene menos archivos, se repiten en orden.
   - `bloom` (con hojas o en flor) es obligatorio; un estado que falta se ve como `bloom`, así que un árbol de hoja perenne declara solo ese. En primavera y verano se ve `bloom`, en otoño `autumn` y en invierno `bare`; cada árbol cambia en un momento distinto de la primera quinta parte de la estación.
   - El mismo modelo sirve para todos los tamaños: se escala a la altura de cada árbol, entre la mitad y una vez y media de la altura del modelo.
   - El formato anterior a la fase 51 (`model` con un prefijo por tamaño, y `evergreen`) ya no se acepta.
-- `biome`: `name`, `species` (`{"core:oak": 35, ...}`), `sizeWeights` (4 números), `density` (porcentaje) y `grass` (0 a 255).
-- `mapType`: `name`, `biomes` (vacío: un solo bioma que elige el jugador), `sizeBias` (4 porcentajes), `patchSize` (metros) e `islands` (`true`: el mar rodea islas, tantas por pueblo como elija el jugador; por omisión `false`).
+- `biome`: `name`, `species` (`{"core:oak": 35, ...}`), `sizeWeights` (4 números), `density` (porcentaje) y `grass` (0 a 255). Y dónde crece (fase 54), todo opcional:
+  - `temperature` y `humidity`: rangos `[mínimo, máximo]` de 0 a 100 (por omisión, cualquiera);
+  - `altitude`: rango de 0 a 100, la parte de la tierra del mapa que queda más abajo (`[50, 100]`: la mitad más alta);
+  - `water` (`fresh` o `sea`) con `waterDistance` (metros, hasta 250): solo crece con esa agua a esa distancia o menos;
+  - `regions`: lista de `plain`, `hills`, `mountains`, `plateau`, `basin` (vacía: cualquiera);
+  - `weight` (1 a 1000, 100 por omisión): cuánto gana donde caben varios.
+- Los tipos de mapa (`mapType`) ya no existen: una definición de ese tipo se rechaza.
 
 ## Textos (`lang/`)
 

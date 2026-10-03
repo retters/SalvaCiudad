@@ -13,8 +13,10 @@ void MapSettings::write(BinaryWriter& w) const {
     w.u8(static_cast<std::uint8_t>(resources));
     w.u8(static_cast<std::uint8_t>(relief));
     w.u8(players);
-    w.u8(map_type);
-    w.u8(biome);
+    w.u8(island_map ? 1 : 0);
+    w.u64(biomes);
+    w.u8(temperature);
+    w.u8(humidity);
     w.u8(separate ? 1 : 0);
     w.u8(islands);
     w.u8(static_cast<std::uint8_t>(sea));
@@ -57,14 +59,14 @@ std::int32_t MapData::region_at(std::int32_t cx, std::int32_t cz) const {
 
 bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     MapSettings s;
-    std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, map_type = 0, biome = 0, separate = 0,
-                 sea = 0, landforms = 0;
+    std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, island_map = 0, separate = 0, sea = 0,
+                 landforms = 0;
     if (!r.u64(s.seed) || !r.u8(size) || !r.u8(water) || !r.u8(forests) || !r.u8(resources) || !r.u8(relief) ||
-        !r.u8(s.players) || !r.u8(map_type) || !r.u8(biome) || !r.u8(separate) || !r.u8(s.islands) || !r.u8(sea) ||
-        !r.u8(landforms)) {
+        !r.u8(s.players) || !r.u8(island_map) || !r.u64(s.biomes) || !r.u8(s.temperature) || !r.u8(s.humidity) ||
+        !r.u8(separate) || !r.u8(s.islands) || !r.u8(sea) || !r.u8(landforms)) {
         return false;
     }
-    if (separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown || sea >= static_cast<std::uint8_t>(Sea::Count) ||
+    if (island_map > 1 || s.temperature > kMaxClimatePercent || s.humidity > kMaxClimatePercent || separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown || sea >= static_cast<std::uint8_t>(Sea::Count) ||
         landforms >= static_cast<std::uint8_t>(Amount::Count)) {
         r.fail();
         return false;
@@ -72,8 +74,7 @@ bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     s.separate = separate != 0;
     if (size >= static_cast<std::uint8_t>(MapSize::Count) || water >= static_cast<std::uint8_t>(Amount::Count) ||
         forests >= static_cast<std::uint8_t>(Amount::Count) || resources >= static_cast<std::uint8_t>(Amount::Count) ||
-        relief >= static_cast<std::uint8_t>(Relief::Count) || s.players < 1 || s.players > 12 ||
-        map_type >= kMaxMapTypes || biome >= kMaxBiomes) {
+        relief >= static_cast<std::uint8_t>(Relief::Count) || s.players < 1 || s.players > 12) {
         r.fail();
         return false;
     }
@@ -84,8 +85,7 @@ bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     s.relief = static_cast<Relief>(relief);
     s.sea = static_cast<Sea>(sea);
     s.landforms = static_cast<Amount>(landforms);
-    s.map_type = map_type;
-    s.biome = biome;
+    s.island_map = island_map != 0;
     out = s;
     return true;
 }
