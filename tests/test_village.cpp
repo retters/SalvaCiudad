@@ -504,6 +504,136 @@ TEST_SUITE("village") {
         }
     }
 
+    TEST_CASE("a building stands on a slope of up to four meters, its floor at the door") {
+        // A plane rising to the east, 50 cm a meter, beside the town.
+        MapData map = small_map(23);
+        REQUIRE(!map.starts.empty());
+        const std::int32_t x0 = map.starts[0].x.floor_int() + 24;
+        const std::int32_t z0 = map.starts[0].z.floor_int() - 20;
+        const auto shape = [&](std::int32_t rise) {
+            MapData m = map;
+            const std::int32_t side = m.size + 1;
+            const std::uint16_t base = m.height_cm(x0, z0 + 20);
+            for (std::int32_t z = z0; z <= z0 + 40; ++z) {
+                for (std::int32_t x = x0; x <= x0 + 40; ++x) {
+                    // A ramp in the middle, level ground before and after it.
+                    const std::int32_t up = std::clamp(x - (x0 + 10), 0, 20) * rise;
+                    m.heights[static_cast<std::size_t>(z) * static_cast<std::size_t>(side) + static_cast<std::size_t>(x)] =
+                        static_cast<std::uint16_t>(base + up);
+                    if (x < x0 + 40 && z < z0 + 40) {
+                        m.water[static_cast<std::size_t>(z) * static_cast<std::size_t>(m.size) + static_cast<std::size_t>(x)] = 0;
+                    }
+                }
+            }
+            std::erase_if(m.features, [&](const MapFeature& f) {
+                return f.x.floor_int() >= x0 - 2 && f.x.floor_int() <= x0 + 42 && f.z.floor_int() >= z0 - 2 &&
+                       f.z.floor_int() <= z0 + 42;
+            });
+            return m;
+        };
+        const DefIndex house = building("house");
+        const BuildingDef& hd = content()->buildings[house];
+        REQUIRE(hd.width >= 5);
+        REQUIRE(hd.width <= 8);
+        {
+            Game g(content(), shape(50), 1, 7);
+            const std::int32_t x = x0 + 14;  // All of it on the ramp.
+            const std::int32_t z = z0 + 16;
+            const std::int32_t range = hd.width * 50;
+            REQUIRE(range <= kMaxSlopeCm);
+            REQUIRE(range > kMaxBuriedCm);
+            // Unturned, its door looks along the slope: the floor is level with the middle.
+            CHECK(g.can_place(0, house, x, z, 0) == PlaceError::None);
+            CHECK(g.floor_cm(x, z, hd.width, hd.depth, 0) == g.map().height_cm(x + hd.width / 2, z));
+            // Turned a quarter the plot is as long up the slope as it was wide.
+            std::int32_t w = 0, d = 0;
+            Game::footprint(hd, 1, w, d);
+            const bool fits = w * 50 <= kMaxSlopeCm;
+            // Door uphill (east): the floor at the top, foundations below.
+            CHECK(g.can_place(0, house, x, z, 1) == (fits ? PlaceError::None : PlaceError::TooSteep));
+            if (fits) {
+                CHECK(g.floor_cm(x, z, w, d, 1) == g.map().height_cm(x + w, z + d / 2));
+                // Door downhill (west): the ground behind would bury it.
+                CHECK(g.can_place(0, house, x, z, 3) == (w * 50 > kMaxBuriedCm ? PlaceError::DoorBelow : PlaceError::None));
+            }
+            // Built and lived in like any other.
+            Command c;
+            c.type = CommandType::PlaceBuilding;
+            c.def = house;
+            c.position = {Fixed::from_int(x), Fixed::from_int(z)};
+            c.value = 0;
+            g.apply(c);
+            REQUIRE(g.rejected_commands() == 0);
+            run(g, 4000);
+            CHECK(complete_count(g, house) == 1);
+            std::int32_t housed = 0;
+            for (const Villager& v : g.villagers().data()) {
+                housed += g.buildings().get(v.home) != nullptr ? 1 : 0;
+            }
+            CHECK(housed >= 2);
+            // Walls follow the ground: 100 cm under a piece of two meters is fine.
+            CHECK(g.can_place(0, building("palisade"), x0 + 14, z0 + 30, 0) == PlaceError::None);
+        }
+        {
+            // Steeper, a wall still goes up.
+            Game g(content(), shape(80), 1, 7);
+            CHECK(g.can_place(0, building("palisade"), x0 + 14, z0 + 30, 0) == PlaceError::None);
+        }
+        {
+            // Too steep for a house at any turn, and for a wall: its old limit.
+            Game g(content(), shape(95), 1, 7);
+            REQUIRE(std::min(hd.width, hd.depth) * 95 > kMaxSlopeCm);
+            for (std::uint8_t rotation = 0; rotation < 4; ++rotation) {
+                CHECK(g.can_place(0, house, x0 + 14, z0 + 16, rotation) == PlaceError::TooSteep);
+            }
+            CHECK(g.can_place(0, building("palisade"), x0 + 14, z0 + 30, 0) == PlaceError::TooSteep);
+        }
+    }
+
+    TEST_CASE("nothing is built where nobody of the town can walk to") {
+        // A plot beside the town, cut off by a moat.
+        MapData map = small_map(24);
+        REQUIRE(!map.starts.empty());
+        const std::int32_t x0 = map.starts[0].x.floor_int() + 24;
+        const std::int32_t z0 = map.starts[0].z.floor_int() - 20;
+        const std::int32_t side = map.size + 1;
+        const std::uint16_t base = map.height_cm(x0, z0 + 20);
+        for (std::int32_t z = z0; z <= z0 + 40; ++z) {
+            for (std::int32_t x = x0; x <= x0 + 40; ++x) {
+                map.heights[static_cast<std::size_t>(z) * static_cast<std::size_t>(side) + static_cast<std::size_t>(x)] = base;
+            }
+        }
+        for (std::int32_t z = z0; z < z0 + 40; ++z) {
+            for (std::int32_t x = x0; x < x0 + 40; ++x) {
+                const bool moat = x < x0 + 6 || z < z0 + 6 || x >= x0 + 34 || z >= z0 + 34;
+                map.water[static_cast<std::size_t>(z) * static_cast<std::size_t>(map.size) + static_cast<std::size_t>(x)] =
+                    moat ? static_cast<std::uint16_t>(base + 50) : std::uint16_t{0};
+            }
+        }
+        std::erase_if(map.features, [&](const MapFeature& f) {
+            return f.x.floor_int() >= x0 - 2 && f.x.floor_int() <= x0 + 42 && f.z.floor_int() >= z0 - 2 &&
+                   f.z.floor_int() <= z0 + 42;
+        });
+        Game g(content(), map, 1, 7);
+        const DefIndex house = building("house");
+        // On the island: level, dry, free... and out of reach.
+        CHECK(g.can_place(0, house, x0 + 16, z0 + 16, 0) == PlaceError::Unreachable);
+        CHECK_FALSE(g.site_reachable(0, x0 + 16, z0 + 16, 7, 6));
+        Command c;
+        c.type = CommandType::PlaceBuilding;
+        c.def = house;
+        c.position = {Fixed::from_int(x0 + 16), Fixed::from_int(z0 + 16)};
+        g.apply(c);
+        CHECK(g.rejected_commands() == 1);
+        // The same plot without the moat is fine.
+        MapData dry = map;
+        std::fill(dry.water.begin(), dry.water.end(), std::uint16_t{0});
+        Game open(content(), dry, 1, 7);
+        CHECK(open.can_place(0, house, x0 + 16, z0 + 16, 0) == PlaceError::None);
+        // And the town's own ground is, of course.
+        CHECK(place(g, house));
+    }
+
     TEST_CASE("broken saves are rejected and leave the game untouched") {
         Game g(content(), small_map(18), 1, 21);
         run(g, 200);

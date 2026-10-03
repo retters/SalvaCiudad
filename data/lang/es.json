@@ -1171,6 +1171,8 @@
     "viewer.code.bear": "Oso",
     "viewer.code.tool": "Herramientas",
     "hud.place.error.unexplored": "Ese lugar no está explorado.",
+    "hud.place.error.unreachable": "Nadie del pueblo puede llegar hasta ahí.",
+    "hud.place.error.doorBelow": "La ladera sube demasiado detrás de la puerta: gira el edificio.",
     "newGame.fog": "Niebla de guerra",
     "newGame.fog.tooltip": "Sin niebla: se ve todo el mapa. Estática: el mapa empieza tapado y lo que tu gente explora queda a la vista para siempre. Dinámica: lo explorado queda tenue y gris, y lo que se mueve (animales, asaltantes, otros pueblos) solo se ve cerca de tu gente. No se puede construir en lo no explorado. Dinámica, mapa revelado: como la dinámica, pero el terreno de todo el mapa se conoce desde el principio y se puede construir en cualquier parte de tu región.",
     "newGame.fog.none": "Sin niebla",

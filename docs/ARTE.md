@@ -244,3 +244,7 @@ python art/audio/make_sounds.py data/mods/core/sounds
 ```
 
 Son WAV mono de 16 bits a 22 050 Hz; el juego no acepta otro formato. Generar dos veces da archivos idénticos.
+
+## Cimientos de los edificios (fase 65)
+
+Todos los edificios menos murallas, empalizadas, portones y trampas llevan bajo el piso (Z = 0) un bloque de cimientos de piedra de 4,5 m, del tamaño de la planta del modelo: `foundation(mb)` en `art/blender/buildings.py`, que `export` llama solo. El juego pone el piso a la altura del suelo frente a la puerta; en una ladera, los cimientos son lo que se ve ladera abajo. Un edificio nuevo los recibe sin hacer nada; para que un modelo siga al terreno (sin cimientos) su nombre va en `ON_GROUND`.

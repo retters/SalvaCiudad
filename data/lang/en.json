@@ -1171,6 +1171,8 @@
     "viewer.code.bear": "Bear",
     "viewer.code.tool": "Tools",
     "hud.place.error.unexplored": "That place is unexplored.",
+    "hud.place.error.unreachable": "Nobody of the town can walk there.",
+    "hud.place.error.doorBelow": "The slope rises too high behind the door: turn the building.",
     "newGame.fog": "Fog of war",
     "newGame.fog.tooltip": "None: the whole map is in view. Static: the map starts covered and whatever your people explore stays in view for good. Dynamic: explored ground stays dim and grey, and what moves (animals, raiders, other towns) shows only near your people. You cannot build where nobody has explored. Dynamic, map revealed: like dynamic, but the whole map's ground is known from the start and you may build anywhere in your region.",
     "newGame.fog.none": "None",

@@ -170,7 +170,35 @@ def stall(mb, cx, cy, w, cloth):
     sloped_slab(mb, cx - w / 2 - 0.1, cx + w / 2 + 0.1, cy - 0.85, cy + 0.7, 2.0, 2.4, 0.05, cloth)
 
 
+# Walls, palisades, gates and traps follow the ground (the game's
+# follows_ground): no foundations.
+ON_GROUND = ("palisade", "stone_wall", "gate", "trap")
+FOUNDATION_DEPTH = 4.5
+
+
+def foundation(mb):
+    """Stone foundations under the whole plot (phase 65).
+
+    The game puts the floor (Z = 0) level with the ground at the door, on
+    slopes of up to 4 m: downhill, this is what shows under the building.
+    It stays inside the model's own outline, so the game scales it the same.
+    """
+    xs = [v.co.x for v in mb.bm.verts]
+    ys = [v.co.y for v in mb.bm.verts]
+    cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+    w, d = max(xs) - min(xs), max(ys) - min(ys)
+    top = -0.05   # Just under the floor: on level ground the terrain covers it.
+    mb.box((cx, cy, top - 0.2), (w, d, 0.4), "stone")
+    rest = FOUNDATION_DEPTH - 0.4
+    mb.box((cx, cy, top - 0.4 - rest / 2), (w - 0.2, d - 0.2, rest), "stone_dark")
+    # Courses of lighter stone, a meter apart.
+    for k in range(1, 4):
+        mb.box((cx, cy, top - 0.4 - k * 1.0), (w - 0.08, d - 0.08, 0.1), "stone")
+
+
 def export(folder, name, mb):
+    if name not in ON_GROUND:
+        foundation(mb)
     obj = mb.to_object(name, COLORS)
     common.export_glb(os.path.join(folder, name + ".glb"), [obj])
 

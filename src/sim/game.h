@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 32;
+inline constexpr std::uint32_t kGameRulesVersion = 33;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -341,7 +341,14 @@ enum class PlaceError : std::uint8_t {
     BadSize,
     Locked,      // Needs a bigger town center.
     Unexplored,  // Under the fog of war (phase 32).
+    Unreachable, // Phase 65: no villager of the town can walk there.
+    DoorBelow,   // Phase 65: the ground rises too high behind the door; turned, it may fit.
 };
+// Phase 65: the ground under a building may differ this much in height, and
+// rise this much over its floor (the walls are buried that far, no more).
+inline constexpr std::int32_t kMaxSlopeCm = 400;
+inline constexpr std::int32_t kMaxWallSlopeCm = 180;  // What follows the ground (walls...).
+inline constexpr std::int32_t kMaxBuriedCm = 200;
 
 // How a game is set up besides its map.
 struct GameSetup {
@@ -545,6 +552,16 @@ public:
     [[nodiscard]] const std::vector<std::int32_t>& zone_animals() const { return zone_animals_; }
     // Point in front of a building's door, where villagers go.
     [[nodiscard]] FixedVec2 door(const Building& b) const;
+    // Phase 65. The height of a building's floor, in centimeters: that of
+    // the ground at the middle of its door's side (w, d: the rotated
+    // footprint).
+    [[nodiscard]] std::int32_t floor_cm(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d,
+                                        std::uint8_t rotation) const;
+    // Whether a villager of `town` can walk to a place of that size: one
+    // of its four sides is joined by land to the town center's door. True
+    // for a town without a center yet.
+    [[nodiscard]] bool site_reachable(std::uint8_t town, std::int32_t x, std::int32_t z, std::int32_t w,
+                                      std::int32_t d) const;
     // Where someone coming from `from` stands to use a building.
     [[nodiscard]] FixedVec2 approach(const Building& b, FixedVec2 from) const;
 

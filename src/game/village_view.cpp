@@ -904,7 +904,7 @@ VillageView::Model VillageView::load_building_file(render::SceneRenderer& render
         render::ModelId id = 0;
         if (data.has_value() && renderer.add_model(*data, id)) {
             m.id = id;
-            m.height = std::max(0.1f, data->bounds_max.y - data->bounds_min.y);
+            m.height = std::max(0.1f, data->bounds_max.y);  // Over the floor; foundations go below.
             m.width = std::max(0.1f, data->bounds_max.x - data->bounds_min.x);
             m.depth = std::max(0.1f, data->bounds_max.z - data->bounds_min.z);
             used_.push_back(id);
@@ -936,15 +936,8 @@ render::Instance VillageView::building_instance(const sim::Game& game, sim::DefI
     render::Instance inst;
     // Roof, wall and shutter colors by its place (materials named var_*).
     inst.palette = pick_building_palette(place_key(x, z), palette_count_buildings_);
-    // Sit on the lowest corner so no corner floats on a slope.
-    std::int32_t low = 65535;
-    for (const std::int32_t vz : {z, z + d}) {
-        for (const std::int32_t vx : {x, x + w}) {
-            low = std::min<std::int32_t>(low, game.map().height_cm(vx, vz));
-        }
-    }
     inst.scale = std::min(static_cast<float>(bd.width) / m.width, static_cast<float>(bd.depth) / m.depth) * 0.95f;
-    inst.position = {static_cast<float>(x) + static_cast<float>(w) * 0.5f, static_cast<float>(low) * 0.01f - 0.1f,
+    inst.position = {static_cast<float>(x) + static_cast<float>(w) * 0.5f, floor_y(game, def, x, z, w, d, rotation),
                      static_cast<float>(z) + static_cast<float>(d) * 0.5f};
     // Models face +Z; rotation 0 puts the door on the -Z side.
     inst.yaw = std::numbers::pi_v<float> - static_cast<float>(rotation) * std::numbers::pi_v<float> * 0.5f;
@@ -956,6 +949,21 @@ render::Instance VillageView::building_instance(const sim::Game& game, sim::DefI
         inst.tint = {0.85f, 0.72f, 0.55f};
     }
     return inst;
+}
+
+float VillageView::floor_y(const sim::Game& game, sim::DefIndex def, std::int32_t x, std::int32_t z, std::int32_t w,
+                           std::int32_t d, std::uint8_t rotation) const {
+    if (!sim::follows_ground(game.content().buildings[def])) {
+        return static_cast<float>(game.floor_cm(x, z, w, d, rotation)) * 0.01f;
+    }
+    // On the lowest corner, a little sunk, so no corner floats on a slope.
+    std::int32_t low = 65535;
+    for (const std::int32_t vz : {z, z + d}) {
+        for (const std::int32_t vx : {x, x + w}) {
+            low = std::min<std::int32_t>(low, game.map().height_cm(vx, vz));
+        }
+    }
+    return static_cast<float>(low) * 0.01f - 0.1f;
 }
 
 void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::Game& game) {
@@ -1065,7 +1073,7 @@ math::Vec3 VillageView::building_top(const sim::Game& game, const sim::Building&
         h = m->height * std::min(static_cast<float>(d.width) / m->width, static_cast<float>(d.depth) / m->depth) *
             0.95f;
     }
-    return {base.x, map_surface_height(game.map(), base.x, base.z) + h + 1.0f, base.z};
+    return {base.x, floor_y(game, b.def, b.x, b.z, b.width, b.depth, b.rotation) + h + 1.0f, base.z};
 }
 
 void VillageView::update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,

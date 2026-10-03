@@ -601,6 +601,18 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 65
+
+- [ ] Una casa en una ladera (F3 dice la pendiente bajo el cursor; busca 40 a 60 %): con la puerta de lado o ladera arriba se puede colocar; la puerta queda a ras de suelo y ladera abajo se ven los cimientos de piedra.
+- [ ] La misma casa con la puerta ladera abajo en una ladera fuerte: "La ladera sube demasiado detrás de la puerta: gira el edificio".
+- [ ] En una ladera de más de 4 m de desnivel bajo el edificio: "El terreno es demasiado empinado aquí".
+- [ ] Los aldeanos construyen la casa en ladera, entran y salen.
+- [ ] En terreno plano los edificios se ven como antes (los cimientos quedan bajo tierra).
+- [ ] Murallas y empalizadas: igual que antes.
+- [ ] Un sitio al otro lado de un río o en una isla sin paso: "Nadie del pueblo puede llegar hasta ahí". Un campo de granja, igual.
+- [ ] El marcador de selección, el humo de las chimeneas y la obra quedan a la altura correcta en un edificio en ladera.
+- [ ] **Sin revisar en pantalla por Claude**: los edificios en ladera dentro del juego.
+
 ### Fase 64
 
 - [ ] Arrastrar una ventana y soltarla sobre el título de otra: quedan en una sola con dos pestañas arriba. Repetir hasta tener cuatro pestañas.

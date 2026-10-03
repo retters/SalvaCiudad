@@ -142,6 +142,8 @@ private:
     static constexpr render::ModelId kNoModel = ~0u;
     struct Model {
         render::ModelId id = kNoModel;
+        // Meters over its floor (the model's origin): what lies under it
+        // is foundations (phase 65).
         float height = 1.0f;
         float width = 1.0f;  // Model size along x and z, meters.
         float depth = 1.0f;
@@ -256,6 +258,11 @@ private:
     bool shown_ = false;
 
     void rebuild_buildings(render::SceneRenderer& renderer, const sim::Game& game);
+    // Phase 65: the height a building's model stands at. Its floor, level
+    // with the ground at its door; walls and the like, on the lowest ground
+    // under them.
+    [[nodiscard]] float floor_y(const sim::Game& game, sim::DefIndex def, std::int32_t x, std::int32_t z, std::int32_t w,
+                                std::int32_t d, std::uint8_t rotation) const;
     [[nodiscard]] render::Instance building_instance(const sim::Game& game, sim::DefIndex def, const Model& m,
                                                      std::int32_t x,
                                                      std::int32_t z, std::int32_t w, std::int32_t d,

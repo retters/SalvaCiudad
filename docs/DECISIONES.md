@@ -2559,3 +2559,29 @@ Los botones de la primera fila de las ventanas de objeto se reparten el ancho se
 
 **D-6410. Sin revisar en pantalla por Claude.**
 Unir ventanas soltándolas y sacar una pestaña arrastrando, y girar o acercar la vista de la cámara (la herramienta de pruebas no arrastra ni mueve la rueda). Los cubren las pruebas de `WindowList`. Sí se vio en pantalla: una pila de tres ventanas leída de los ajustes, cambiar de pestaña con un clic, cerrar una pestaña, y dos ventanas de cámara vivas (un edificio y un aldeano) con la cámara principal en otra parte.
+
+## Fase 65: construir en pendiente (2026-10-03)
+
+**D-6501. Hasta 4 m de desnivel.**
+El desnivel permitido bajo un edificio pasa de 1,8 a 4 m. Murallas, empalizadas, portones y trampas ("lo que sigue al terreno": defensas sin ataque) quedan como estaban: 1,8 m y apoyadas en la esquina más baja, como pidió Salvador.
+
+**D-6502. El piso, a la altura del suelo frente a la puerta.**
+El piso de un edificio queda a la altura del terreno en el punto medio del lado de la puerta. Girar el edificio al colocarlo elige ese lado. `Game::floor_cm` lo calcula; la vista dibuja el modelo a esa altura.
+
+**D-6503. Cimientos en los modelos.**
+Los 51 modelos de edificios que no siguen al terreno ganan cimientos de piedra de 4,5 m bajo el piso (un ayudante común, `foundation`, en `art/blender/buildings.py`), del tamaño de la planta del modelo para que el juego los escale igual. En terreno plano quedan bajo tierra; ladera abajo son lo que se ve. Son 4,5 y no 4 m porque el juego escala los modelos a 0,95 de su planta. La vista usa ahora la altura del modelo sobre su piso (marcadores, humo, selección, obra, lo que estorba a la cámara).
+
+**D-6504. Ladera arriba: la pared queda enterrada hasta 2 m; no se recorta el terreno. (Cambio respecto a la especificación.)**
+La especificación decía recortar el terreno bajo el edificio solo en lo dibujado. El terreno se dibuja con mallas facetadas hechas una vez por mapa, con facetas grandes en las laderas lisas: recortarlo pide rehacer y volver a subir las mallas de las parcelas tocadas en cada construcción y demolición, y deja a los aldeanos caminando a una altura distinta de la que se ve junto al edificio. Se eligió lo más simple y seguro: el terreno puede subir hasta 2 m por encima del piso (la pared queda enterrada esa altura, por debajo de los aleros); si sube más, el lugar se rechaza con el mensaje "La ladera sube demasiado detrás de la puerta: gira el edificio". Con la puerta ladera arriba o de lado cabe siempre que el desnivel no pase de 4 m. Queda en el registro para que Salvador confirme o pida el recorte de verdad.
+
+**D-6505. No se construye donde nadie puede llegar (I-011).**
+Un sitio se rechaza ("Nadie del pueblo puede llegar hasta ahí") si ninguno de sus cuatro lados está unido por tierra caminable con la puerta del centro del pueblo. Vale también para los campos (su centro con la puerta de su granja). Un recinto cerrado por murallas sin portón cuenta como inalcanzable. El centro del pueblo mismo no se comprueba.
+
+**D-6506. La prueba de los cazadores.**
+Uno de los tres motivos de D-5613 era que la cabaña se podía poner al otro lado del agua y nunca se construía; un sitio así ahora se rechaza al colocarlo (prueba nueva con un foso hecho a mano). No se volvieron a correr las semillas 17 y 20 una por una. La prueba de los cazadores sigue con la semilla 2; las otras fallas de D-5613, por distancia y por hambre en el camino, son de la fase 66.
+
+**D-6507. Versiones.**
+Reglas 33, protocolo de red 11.
+
+**D-6508. Sin revisar en pantalla por Claude.**
+Un edificio en ladera dentro del juego: en las partidas de prueba el terreno junto al pueblo era plano. Se vio el modelo con sus cimientos (imagen hecha con Blender) y que en terreno plano los edificios se ven como antes. Lo cubren las pruebas de la simulación con una rampa hecha a mano.

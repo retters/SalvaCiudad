@@ -192,6 +192,14 @@ struct RaceDef {
     std::int32_t sight = 12;     // Phase 32: meters a villager sees (fog of war).
 };
 
+// Phase 65. Walls, palisades, gates and traps follow the ground piece by
+// piece: they keep the old slope limit and stand on the ground. Every other
+// building has a level floor at the height of the ground by its door, over
+// stone foundations.
+[[nodiscard]] inline bool follows_ground(const BuildingDef& d) {
+    return d.kind == BuildingKind::Defense && d.attack_range <= 0;
+}
+
 // Path of a character's model inside the core mod:
 // "models/characters/<body>.glb".
 [[nodiscard]] std::string race_body_file(std::string_view body);

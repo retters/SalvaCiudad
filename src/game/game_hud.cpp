@@ -35,6 +35,8 @@ const char* place_error_key(sim::PlaceError e) {
         case sim::PlaceError::BadSize: return "hud.place.error.badSize";
         case sim::PlaceError::Locked: return "hud.place.error.locked";
         case sim::PlaceError::Unexplored: return "hud.place.error.unexplored";
+        case sim::PlaceError::Unreachable: return "hud.place.error.unreachable";
+        case sim::PlaceError::DoorBelow: return "hud.place.error.doorBelow";
     }
     return "hud.place.error.unknown";
 }

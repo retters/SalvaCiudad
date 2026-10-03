@@ -10,7 +10,6 @@ namespace {
 
 constexpr std::uint32_t kSaveVersion = 1;
 constexpr std::int32_t kNodeCell = 16;           // Meters per node lookup cell.
-constexpr std::int32_t kMaxSlopeCm = 180;        // Height range allowed under a building.
 constexpr std::uint32_t kJobEvery = 20;          // Ticks between job assignments.
 constexpr std::int32_t kWanderRadius = 18;
 constexpr std::int32_t kStartGold = 100;         // In the town center, at 100 % starting goods (D-2803).
@@ -4586,10 +4585,54 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
             hi = std::max(hi, h);
         }
     }
-    if (hi - lo > kMaxSlopeCm) {
+    const bool on_ground = follows_ground(d);
+    if (hi - lo > (on_ground ? kMaxWallSlopeCm : kMaxSlopeCm)) {
         return PlaceError::TooSteep;
     }
+    // Its floor is level with the ground at the door. Downhill the
+    // foundations show; uphill the ground may bury the walls only so far.
+    if (!on_ground && hi - floor_cm(x, z, w, dp, rotation) > kMaxBuriedCm) {
+        return PlaceError::DoorBelow;
+    }
+    // Not where nobody of the town could ever come to build it.
+    if (d.kind != BuildingKind::TownCenter && !site_reachable(town_of(player), x, z, w, dp)) {
+        return PlaceError::Unreachable;
+    }
     return PlaceError::None;
+}
+
+std::int32_t Game::floor_cm(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d, std::uint8_t rotation) const {
+    // The door faces -Z in the model; rotations turn it a quarter each.
+    switch (rotation & 3u) {
+        case 0: return map_.height_cm(x + w / 2, z);
+        case 1: return map_.height_cm(x + w, z + d / 2);
+        case 2: return map_.height_cm(x + w / 2, z + d);
+        default: return map_.height_cm(x, z + d / 2);
+    }
+}
+
+bool Game::site_reachable(std::uint8_t town, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const {
+    if (town >= kMaxPlayers) {
+        return false;
+    }
+    const Building* center = buildings_.get(players_[town].town_center);
+    if (center == nullptr) {
+        return true;
+    }
+    const FixedVec2 home = door(*center);
+    const Fixed cx = Fixed::from_int(x) + Fixed::from_ratio(w, 2);
+    const Fixed cz = Fixed::from_int(z) + Fixed::from_ratio(d, 2);
+    // One meter out from the middle of each side: any of them is a way in.
+    const FixedVec2 sides[4] = {{cx, Fixed::from_int(z - 1)},
+                                {Fixed::from_int(x + w + 1), cz},
+                                {cx, Fixed::from_int(z + d + 1)},
+                                {Fixed::from_int(x - 1), cz}};
+    for (const FixedVec2& side : sides) {
+        if (nav_.connected(side, home)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int32_t x, std::int32_t z, std::int32_t w,
@@ -4637,6 +4680,11 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
     }
     if (hi - lo > 300) {
         return PlaceError::TooSteep;
+    }
+    // Its farmers must be able to walk to it.
+    const FixedVec2 middle{Fixed::from_int(x) + Fixed::from_ratio(w, 2), Fixed::from_int(z) + Fixed::from_ratio(d, 2)};
+    if (!nav_.connected(middle, door(*farm))) {
+        return PlaceError::Unreachable;
     }
     return PlaceError::None;
 }
