@@ -248,7 +248,7 @@ Fondo con una escena 3D del mapa en cámara lenta y el logotipo `- SALVA -` / `C
 - **Minimapa y brújula** (fase 24): el mundo entero con el norte arriba, los cuatro puntos cardinales, los edificios de cada pueblo y lo que ve la cámara; un clic lleva la cámara ahí. Una brújula con una flecha que apunta al norte y gira con la cámara.
 - **Superposiciones del mapa:** fertilidad, deseabilidad, cobertura de servicios (agua, mercado, religión, salud), riesgo de incendio y rutas de los aldeanos.
 - **Velocidad:** pausa, x1, x2 y x3. Ver 7.5 para el voto en multijugador.
-- **Pausa:** la pantalla se desenfoca y se muestra el menú de pausa. No se puede hacer nada en el juego mientras dure.
+- **Pausa:** es la velocidad x0. El tiempo se detiene, pero la cámara se mueve libre y se pueden dar órdenes, que se cumplen al reanudar. No desenfoca la pantalla ni bloquea la interfaz (D-3320).
 - **Notificaciones** de eventos (nacimientos, muertes, incendio, asaltantes, llega un mercader) con un clic que lleva la cámara al lugar.
 
 ### 6.5 Tutorial
@@ -331,6 +331,8 @@ Se documenta en `docs/DETERMINISMO.md` y se verifica con pruebas:
 
 - Cada aldeano tiene edad, sexo, raza, apariencia (variante de modelo, texturas y accesorios), hogar, trabajo, inventario, necesidades, salud y felicidad.
 - **Búsqueda de rutas:** A* jerárquico sobre regiones con cache de rutas, costos por tipo de suelo y caminos más rápidos. Las solicitudes se agrupan por tick y se resuelven en paralelo con resultados aplicados en orden.
+- **Movimiento:** la velocidad depende del tipo de suelo y de la clase de viajero, según una tabla en los datos. Las rutas se suavizan con línea de vista sin abandonar los caminos, y esquivan troncos y rocas; todo se calcula al crear la ruta. Cada aldeano tiene su propio lugar de llegada y recalcula su ruta solo cuando se atasca. No hay colisiones entre aldeanos en la simulación (fase 35).
+- **Caminos:** de tierra (×2) y de piedra (×3), construidos por peones (fase 36).
 - **Decisión:** sistema de utilidad con tareas (buscar comida, trabajar, llevar recursos, dormir, ir al templo…) evaluadas de forma escalonada: no todos los aldeanos piensan en cada tick. Así 12 000 aldeanos caben en el presupuesto de CPU.
 - **Trabajos:** se asignan por edificio con prioridades, como en Farthest Frontier.
 - **Ciclo de vida:** nacimiento (si hay vivienda libre y felicidad suficiente), niñez, trabajo, vejez y muerte. También llegan inmigrantes según la deseabilidad del pueblo.
@@ -508,7 +510,7 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
      - los objetos se apoyan en el suelo facetado sin flotar ni hundirse de forma visible.
 7. **Mods y datos.** Cargador de mods, `core` como mod, esquemas y validación de definiciones, parches, Lua en sandbox, hash de mods y menú de mods. `docs/CREAR_MODS.md` y mod de ejemplo.
    - *Criterios:* el mod de ejemplo agrega un edificio y una regla en Lua sin tocar el código; un mod con errores se desactiva con un mensaje claro; el sandbox resiste las pruebas.
-8. **Primer pueblo jugable (un jugador).** Aldeanos con búsqueda de rutas, trabajo, hambre, edad, nacimiento y muerte; recolección de madera, piedra y bayas; almacén, casas, leñador, recolector y centro del pueblo; construcción por etapas; barra de construcción, barra de recursos, ventanas de edificio y de aldeano (aún sin acoplamiento); velocidad y pausa con desenfoque; guardar y cargar.
+8. **Primer pueblo jugable (un jugador).** Aldeanos con búsqueda de rutas, trabajo, hambre, edad, nacimiento y muerte; recolección de madera, piedra y bayas; almacén, casas, leñador, recolector y centro del pueblo; construcción por etapas; barra de construcción, barra de recursos, ventanas de edificio y de aldeano (aún sin acoplamiento); velocidad y pausa; guardar y cargar.
    - *Criterios:* se puede jugar una hora; el pueblo crece o muere de hambre según cómo se juegue; guardar y cargar conserva todo (verificado por hash).
 9. **Multijugador por lockstep.** ENet, anfitrión y unión por IP, descubrimiento LAN, lobby con la configuración de partida, verificación de versión y mods, turnos, retraso adaptable, detección de desincronización, voto de velocidad, unirse a partida empezada, reconexión, y `--instance`. Modo cooperativo con mapa compartido (pueblo común y pueblos separados). `docs/RED.md`.
    - *Criterios:* dos a cuatro instancias en tu PC juegan 30 minutos sin desincronizarse; un cliente que se cierra a la fuerza vuelve a entrar y sigue; la prueba automática de N simulaciones pasa con 12 jugadores.
@@ -590,9 +592,227 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - Solo cuenta para el terreno y los objetos fijos; lo que se mueve nunca se ve por encima del techo. Una definición puede marcarse `"landmark": true` para verse siempre como silueta aunque no sobresalga (se puede cambiar con un parche de mod).
    - Ver algo por encima del techo no cuenta como explorado: no permite construir ahí.
    - *Criterios:* una meseta ancha no se revela entera, pero un pico aislado sí; un árbol marcado como `landmark` se ve en lo no explorado; un gigante o un animal alto no se ve bajo la niebla; la simulación no cambia (mismo hash con y sin techo); mismos límites de rendimiento que la fase 32.
-35. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+35. **Movimiento de los aldeanos** (agregada el 2026-09-27 a pedido del usuario). En esta fase, "ruta" es el trayecto que sigue un aldeano; "camino" es lo que se construye (fase 36). Regla de rendimiento de toda la fase: lo nuevo se calcula al crear una ruta o solo en la vista. En cada tick, cada aldeano hace a lo más unas pocas lecturas triviales.
+   - **Tipo de suelo y velocidad real:** la rejilla de 2 m guarda por celda un tipo de suelo (normal, bosque, mojado; los caminos llegan en la fase 36), además de si está bloqueada y su pendiente. Una tabla en los datos da la velocidad de cada tipo de suelo para cada clase de viajero: aldeanos, unidades, asaltantes, mercaderes y animales. Así, las carretas y los caballos de más adelante solo agregan una clase. Un mod puede agregar suelos y clases, o cambiar la tabla con un parche.
+     - `move()` usa la velocidad del suelo que se pisa. Hoy el terreno solo cambia qué ruta se elige; con esto, el bosque, lo mojado y las pendientes también frenan de verdad. El suelo normal y plano conserva la velocidad actual.
+     - El costo del A\* pasa a ser tiempo: distancia entre velocidad. La escala del costo cambia para que quepan velocidades ×2 y ×3 sin redondeos que las distorsionen.
+   - **Rutas suavizadas:** después del A\*, se quitan los puntos intermedios cuando hay línea de vista sobre la rejilla. La línea de vista no cruza celdas bloqueadas ni corta esquinas. Solo se acorta un tramo si el atajo no tarda más que la ruta original, así que una ruta que sigue un camino no lo abandona para cruzar por el pasto. En terreno abierto se camina en cualquier ángulo y no solo en 8 direcciones. Aplica a las rutas de aldeanos y unidades; las de los asaltantes que atraviesan edificios se quedan como hoy.
+   - **Troncos y rocas:** al crear la ruta, si un tramo pasa demasiado cerca de un tronco o una roca, se agrega un punto de desvío. El radio de cada objeto se define en los datos (`"radius"` en metros; un mod puede cambiarlo con un parche). No se revisan colisiones contra troncos en cada tick, y los troncos no se marcan como celdas bloqueadas, porque con celdas de 2 m el bosque quedaría intransitable.
+   - **Lugares de llegada:** los puntos alrededor de un edificio se reparten entre quienes llegan a él, según un número de lugar que sale del aldeano, así que no hace falta un campo nuevo. Dos aldeanos que llegan desde el mismo lado ya no terminan en el mismo punto. El último tramo nunca termina dentro de una celda bloqueada: si el destino exacto cae en una, se usa el punto libre más cercano.
+   - **Desatascar:** en cada tick, el aldeano solo revisa si la celda de su siguiente punto quedó bloqueada. Si quedó bloqueada, o si lleva unos segundos sin avanzar, recalcula su propia ruta. Tras varios intentos fallidos abandona la tarea, como hoy. Un cambio en la rejilla (un edificio o un camino nuevo) nunca hace recalcular a todos: quien ya va en camino termina su ruta, y el camino nuevo se aprovecha en la siguiente. Si en un tick piden recalcular más aldeanos que un tope, los demás esperan al siguiente, en orden de índice. Si se construye un edificio encima de un aldeano, este pasa a la celda libre más cercana.
+   - **Vueltas suaves:** solo en la vista, las esquinas de la ruta se dibujan redondeadas. Se apartan como mucho medio metro de la posición de la simulación, así que no cambian el hash ni afectan la selección.
+   - Los contadores nuevos (ticks sin avanzar, intentos) y el tipo de suelo de cada celda se guardan con la partida. Una partida anterior se carga con los contadores en cero y el suelo calculado del mapa.
+   - Queda fuera de esta fase:
+     - La separación entre aldeanos en la simulación, porque costaría en cada tick con cada vecino. Si después de esta fase todavía se amontonan, se evalúa un desplazamiento solo visual.
+     - La aceleración y el frenado.
+     - La evitación completa del tipo RVO/ORCA.
+   - *Criterios:*
+     - Una ruta por terreno abierto sin obstáculos es un solo tramo.
+     - En mapas al azar de varias semillas, ningún tramo de ninguna ruta cruza una celda bloqueada ni corta una esquina, y ninguno pasa por dentro del radio de un tronco o una roca (salvo el recurso que se va a trabajar).
+     - Un aldeano tarda más en cruzar 20 m de bosque que 20 m de pasto plano, en la proporción que dice la tabla. En pasto plano tarda lo mismo que antes de esta fase.
+     - Con un suelo de prueba ×3 que da una vuelta, la ruta lo sigue cuando ahorra tiempo y el suavizado no lo corta.
+     - Cuatro aldeanos mandados al mismo edificio desde el mismo lado terminan al menos a 1 m entre sí.
+     - Un edificio colocado sobre la ruta de un aldeano lo hace recalcular y llegar. Un edificio colocado encima de un aldeano lo deja afuera.
+     - En una partida larga con construcción, ningún aldeano queda dentro de una celda bloqueada.
+     - Dos instancias en multijugador no se desincronizan, y guardar y cargar conserva el hash.
+     - En la prueba de 12 pueblos de 1000 aldeanos:
+       - el tick promedio crece como mucho un 3 %;
+       - el tick más lento no crece;
+       - todo se anota en `docs/RENDIMIENTO.md`.
+36. **Caminos de tierra y piedra** (agregada el 2026-09-27 a pedido del usuario).
+   - Dos tipos de camino en los datos: tierra y piedra. Son suelos de la tabla de la fase 35. Para aldeanos, unidades, asaltantes y mercaderes, la tierra es ×2 y la piedra ×3 sobre el suelo normal; los animales no ganan velocidad en ellos. Un mod puede agregar tipos de camino o cambiar las velocidades con un parche.
+   - Herramienta para trazar: se arrastra sobre el mapa y el trazo se ajusta a la rejilla de 2 m, en línea recta o con esquinas. Muestra el costo total antes de confirmar.
+     - Mismas reglas que un edificio: no se traza sobre agua, acantilados, edificios ni terreno sin explorar. Los árboles, rocas y demás cosas del trazo se quitan como al colocar un edificio.
+     - No se puede colocar un edificio sobre un camino; primero hay que quitar el camino.
+   - Los construyen los peones, tramo por tramo:
+     - Tierra: solo tiempo de trabajo.
+     - Piedra: piedra por tramo y más tiempo. Se puede trazar piedra sobre tierra para mejorarla.
+     - Un tramo solo cuenta como camino (y da velocidad) cuando está terminado.
+   - Quitar un camino sigue las reglas de demoler un edificio.
+   - Sin desgaste ni mantenimiento, y no aparecen senderos solos.
+   - Trazar, mejorar y quitar son comandos (deterministas en multijugador). Los caminos se guardan con la partida.
+   - Se dibujan en el terreno con bordes suaves y con uniones limpias en esquinas y cruces, en el minimapa y en la capa de terreno. Bajo la niebla se ven como el terreno: en lo explorado, en su estado actual.
+   - **Rendimiento del A\*:** con suelos hasta ×3 más rápidos, una estimación que nunca sobrestima tendría que suponer que todo el resto es piedra, y el A\* exploraría muchas más celdas. Se usa una estimación intermedia: rutas casi óptimas, con una exploración parecida a la de hoy. El presupuesto de nodos por búsqueda se revisa con caminos largos. Si no alcanza, se anota y se propone una red de caminos como grafo aparte, antes de implementarla.
+   - *Criterios:*
+     - Un aldeano recorre 60 m de piedra en un tercio del tiempo que 60 m de pasto plano, y 60 m de tierra en la mitad.
+     - Entre dos puntos unidos por un camino de piedra que da un rodeo razonable, el aldeano toma el camino.
+     - Un tramo de piedra descuenta la piedra y no da velocidad hasta estar terminado.
+     - Trazar sobre agua, edificios o lo no explorado se rechaza también como comando. Colocar un edificio sobre un camino se rechaza.
+     - Dos instancias en multijugador no se desincronizan, y guardar y cargar conserva los caminos y el hash.
+     - En la prueba de 12 pueblos de 1000 aldeanos, con una red de caminos en cada pueblo:
+       - el tick promedio crece como mucho un 5 % frente a la fase 35;
+       - el tick más lento no crece;
+       - todo se anota en `docs/RENDIMIENTO.md`, con las celdas exploradas por búsqueda.
+37. **Nombres del terreno bajo el cursor** (agregada el 2026-09-29 a pedido del usuario, para poder nombrar lo que el generador hace y pedir cambios).
+   - El mapa guarda los accidentes que el generador colocó, con su tipo, su trazo y su ancho: mesetas, valles, cordilleras, cañones, golfos, penínsulas, cabos, islotes, islas, fosas, dorsales y ríos. También guarda el nivel del mar de cada región. Viajan con la partida guardada y en el multijugador, pero no cambian el terreno ni su suma de verificación, y ninguna regla del juego los lee.
+   - Lo que se guarda es lo que de verdad quedó en el terreno: un golfo o una península que las bahías y cabos pequeños acortaron se guarda recortado, y uno que no llegó a formarse no se guarda.
+   - La ventana de estadísticas (F3) muestra "Bajo el cursor": casilla, suelo, bioma, altura, pendiente, fertilidad, agua (río, lago o mar, con su profundidad) y los accidentes del lugar, incluida la costa. En lo no explorado solo dice "Todavía sin explorar". También funciona en la vista previa del mapa, antes de empezar la partida. El panel "Terreno" de las herramientas de desarrollo muestra lo mismo.
+   - Rendimiento: con F3 cerrado no cuesta nada. Con F3 abierto se describe la casilla solo cuando cambia, con un índice de los accidentes por cuadros de 128 m.
+   - *Criterios:* sobre un cañón, una meseta, un valle o una cordillera, F3 dice su nombre; en el agua dice si es río, lago o mar; los golfos, penínsulas y cabos se nombran donde realmente están; guardar y cargar conserva los nombres; la suma de verificación del mapa no cambia; con F3 cerrado no hay costo medible.
+38. **Reporte del mapa con Ctrl+F12** (agregada el 2026-09-29 a pedido del usuario).
+   - Ctrl+F12 sobre el mapa: se oculta la interfaz, la cámara queda quieta y una partida local se pausa. Se pintan trazos con el ratón; Retroceso borra el último, Supr borra todos, Enter guarda y Esc cancela.
+   - Se guarda en `%TEMP%\SalvaCiudad\reportes\<fecha_hora>\`: `captura.png` (con trazos), `captura_limpia.png` y `reporte.json` (versiones, semilla y opciones del mapa, cámara, lo que hay bajo el cursor, casillas de cada trazo y un resumen). Se conservan los últimos 30.
+   - `--reporte <carpeta>` genera el mismo mapa con el generador actual, pone la cámara igual, guarda `despues_<fecha_hora>.png` y un `.txt` con lo que cambió, y se cierra, sin tocar la configuración.
+   - *Criterios:* Enter crea la carpeta con las dos capturas y un JSON válido; Esc no crea nada; las casillas de los trazos son las del rayo de la cámara; `--reporte` reproduce la vista con la misma suma de verificación del mapa; un `reporte.json` dañado o manipulado se rechaza; sin Ctrl+F12 no hay costo.
+39. **Generadores de mapas intercambiables y generador jerárquico: mundo y regiones** (agregada el 2026-09-30 a pedido del usuario; las fases 39 a 43 se hacen seguidas, sin su intervención, y él las prueba al final).
+   - La partida nueva tiene "Generador de mapas": *clásico* (el de siempre, sin cambios: mismos mapas y mismas sumas de verificación) o *jerárquico* (el nuevo). Cada generador es un módulo independiente con su propia versión. Se guarda en `MapSettings`, en la partida y en la partida nueva recordada, y agregar otro generador después solo requiere un módulo nuevo y su nombre en la lista.
+   - El jerárquico decide de lo general a lo particular, y cada nivel solo refina lo que permitió el anterior:
+     - nivel 0, mundo: tamaño, semilla, mar e islas;
+     - nivel 1, regiones;
+     - nivel 2, estructuras;
+     - nivel 3, agua;
+     - nivel 4, suelo y vida;
+     - nivel 5, detalle fino.
+     Las partes comunes (lagos por inundación desde el borde, ríos, suelo, biomas, bosques, recursos, fauna, salidas) se reutilizan como etapas compartidas.
+   - Nivel 1: el mapa se divide en regiones irregulares (celdas de Voronoi deformadas por ruido), de 150 a 900 m según el tamaño del mapa. Cada región recibe un solo papel: llanura, colinas, montañas, meseta o cuenca. "Relieve" cambia la proporción de montañas y colinas; "Accidentes del terreno" cambia cuántas regiones no son llanura. Reglas:
+     - las montañas se agrupan en cadenas de regiones vecinas;
+     - una meseta no toca el mar ni otra meseta;
+     - una cuenca queda rodeada de terreno más alto.
+   - Cada papel da una altura base. Entre regiones de papel distinto hay una transición suave, salvo en el borde de una meseta, que es un acantilado.
+   - El mapa guarda qué región y qué estructura ocupa cada cuadro de 8 m, y F3 muestra ambos nombres de forma exacta ("Región: Montañas", "Estructura: …").
+   - *Criterios:* el generador clásico da las mismas sumas de verificación que antes; con "jerárquico", cada casilla pertenece a una sola región y F3 dice su papel; la misma semilla da el mismo mapa; guardar y cargar conserva el generador y los nombres; un mapa mediano se genera en un tiempo parecido al clásico.
+40. **Generador jerárquico: estructuras** (agregada el 2026-09-30).
+   - Dentro de cada región solo se colocan estructuras de su papel, y cada casilla pertenece a una sola estructura:
+     - montañas: una cresta principal con picos y a veces un paso;
+     - colinas: lomas suaves;
+     - meseta: cima plana, acantilado alrededor y una o dos rampas;
+     - valles: fondo en U que baja hacia una salida, entre montañas o colinas;
+     - cañones: pocos, angostos y de paredes a pique, que solo cruzan mesetas o montañas y bajan hacia terreno más bajo; la mayoría llevan un río en el fondo.
+   - "Accidentes del terreno" decide cuántos valles y cañones hay. Con "Muchos" siguen siendo pocos cañones y claramente separados.
+   - *Criterios:* ninguna casilla es a la vez cañón y cordillera o meseta; en mapas al azar de varias semillas, cada cañón es más bajo que sus dos lados, cada meseta tiene una cima plana y cada cresta es más alta que sus faldas; hay menos cañones que en el generador clásico con las mismas opciones.
+41. **Generador jerárquico: agua** (agregada el 2026-09-30).
+   - Mar según "Mar" (uno o dos lados, con golfos, penínsulas y cabos) y los tipos de mapa con islas y archipiélagos. Las islas también reciben regiones con papel. Hay lagos en las cuencas. Los ríos nacen en las montañas y colinas y siguen primero los valles y los cañones con río.
+   - F3 distingue río, lago y mar sin confundir un cauce inundado por el mar con una dorsal o con mar abierto: la desembocadura de un río se nombra "Estuario".
+   - *Criterios:* todo cañón o valle marcado "con río" tiene agua en su fondo; los mapas de islas tienen la cantidad de islas pedida y cada pueblo empieza en la suya; toda salida tiene agua cerca.
+42. **Generador jerárquico: suelo, vida y detalle** (agregada el 2026-09-30).
+   - Humedad, fertilidad y suelo según la región y el agua. Biomas que siguen las regiones (por ejemplo, pinares en las montañas). Bosques, recursos y fauna con las etapas compartidas. Salidas justas para cada jugador en llanuras o colinas. Irregularidades pequeñas del terreno para que no se vea liso.
+   - Funciona con todos los tamaños (hasta colosal), tipos de mapa, mapas separados y de 1 a 12 jugadores.
+   - *Criterios:* las mismas garantías de salida que el clásico (recursos, agua y espacio); el mapa colosal se genera en un tiempo parecido al clásico (anotado en `docs/RENDIMIENTO.md`); guardar, cargar y multijugador sin desincronizar.
+43. **Generador jerárquico: ajuste y documentación** (agregada el 2026-09-30).
+   - Revisión con `--reporte` de mapas de varias semillas y tamaños, y ajuste de proporciones y alturas.
+   - `docs/GENERADORES.md` explica cada generador: sus niveles, cada región y estructura con su nombre, qué opción de la partida controla cada una y con qué frecuencia aparece.
+   - *Criterios:* el documento cubre todo lo que F3 puede nombrar; las pruebas de cada nivel pasan en las tres configuraciones.
+44. **Animales animados: esqueleto y animaciones del cerdito** (agregada el 2026-09-30 a pedido del usuario). Los animales de `art/blender/zoo/` salen de la técnica de modelado que él eligió (remesh y reducción, la 06 de los estudios); esta fase les da esqueleto y animaciones, empezando por el cerdito.
+   - **Plantilla de cuadrúpedo** en `art/blender/rigs.py`: pelvis, columna, pecho, cuello, cabeza, orejas, cola en cadena y tres o cuatro huesos por pata. Cada especificación de `zoo/` declara dónde están sus articulaciones y el esqueleto se arma con eso. Los nombres de los huesos son fijos por plantilla, así que las animaciones de una familia sirven para todos sus animales.
+   - **Pesos calculados por código:** cada vértice se ata a los huesos más cercanos (hasta 4, que suman 1), con una transición suave en las articulaciones. Las piezas sueltas (orejas, cola, ojos) van enteras a un solo hueso para no deformarse. Regenerar da el mismo archivo (D-402).
+   - **Animaciones generadas por código** a 30 fps: `idle` (respiración, cabeza, orejas y cola), `walk` (las patas en el orden del paso natural), `run` (trote), `eat` (la cabeza al suelo) y `die` (cae de lado; no se repite). Se animan en el lugar, sin avanzar. El largo del paso y la velocidad de marcha salen de las medidas del animal y se guardan en el modelo para el visor y el juego.
+   - **Vista previa:** por cada animación, una tira de 8 fotogramas vista de lado, junto a la imagen de 4 vistas del modelo.
+   - Los demás animales siguen generándose sin esqueleto hasta que tengan plantilla.
+   - *Criterios:*
+     - El `.glb` del cerdito tiene un esqueleto de hasta 64 huesos y hasta 16 animaciones, cada vértice con hasta 4 pesos que suman 1, y lo carga el cargador del juego.
+     - Cada animación que se repite termina en la pose con que empieza: no hay salto al volver a empezar.
+     - En `walk` y `run`, las pezuñas nunca bajan de Z = 0, y durante el apoyo retroceden a la velocidad de marcha guardada (±10 %), así que no patinan en el juego (medido por script).
+     - El modelo sigue dentro de su límite de triángulos (los anillos que se cortan en las articulaciones suman algunos, D-4403); regenerar da el mismo archivo byte a byte.
+     - En las tiras no hay piezas separadas ni pliegues notorios en rodillas, hombros ni cuello (revisión visual).
+45. **Visor: revisión de animaciones** (agregada el 2026-09-30 a pedido del usuario, para validar las animaciones antes de meterlas al juego).
+   - En el visor de modelos (fase 30): velocidad de reproducción (de 0,25× a 2×), pausa, avance y retroceso fotograma a fotograma, y el número de fotograma.
+   - Suelo que avanza bajo el modelo a su velocidad de marcha guardada mientras se reproduce `walk` o `run`, para ver si las patas patinan sin entrar al juego.
+   - Opción para dibujar el esqueleto encima del modelo.
+   - Abrir una carpeta de modelos en estudio (por omisión `art/studies/animals`) como si fuera un mod, sin tocar `core`, con la recarga automática de la fase 30.
+   - Textos en español e inglés.
+   - *Criterios:* el cerdito se ve en el visor con sus 5 animaciones, igual que en las tiras de Blender; el suelo avanza a la velocidad guardada; paso a paso recorre cada fotograma; los modelos de `core` y los personajes se ven igual que antes; compila sin advertencias en todas las configuraciones.
+46. **Animales animados: todas las familias** (agregada el 2026-09-30 a pedido del usuario).
+   - Plantillas y animaciones para el resto de `zoo/`:
+     - cuadrúpedos: con trompa (elefante), con cuello largo, con alas (grifo, dragón: se agrega `fly`), y el conejo con patas de salto (`walk` y `run` a saltos);
+     - aves: el gallo primero; `idle`, `walk`, `run`, `eat` (picotear), `die`, y `fly` en las que vuelan;
+     - nadadores: el tiburón ondula el cuerpo y la cola; la tortuga rema con las aletas (`swim` en lugar de `walk` y `run`);
+     - el pulpo, con los tentáculos en onda.
+   - La flora no lleva esqueleto: su balanceo con el viento se decide al meterla al juego.
+   - *Criterios:* los mismos de la fase 44 para cada animal; el usuario los revisa en el visor y las correcciones que pida se hacen dentro de esta fase.
+47. **Animales animados en el juego** (agregada el 2026-09-30 a pedido del usuario).
+   - Al empezar la fase se decide con el usuario qué especies entran (las del juego hoy son ciervo, jabalí, lobo y oso, sin esqueleto) y con qué comportamiento.
+   - Los animales se dibujan con esqueleto como los aldeanos, sin el sube y baja de hoy. La animación sale de lo que hace el animal (quieto, caminando, huyendo, comiendo, muerto) y la velocidad del clip se ajusta a su velocidad real con el largo del paso guardado en el modelo. Todo esto es solo de la vista: no entra al estado de la simulación.
+   - *Criterios:* las patas no patinan a ninguna velocidad del juego; la simulación no cambia (mismo hash); con el máximo de animales a la vista, el juego pierde como mucho un 5 % de FPS, medido y anotado en `docs/RENDIMIENTO.md`.
+48. **Personajes low poly animados** (agregada el 2026-10-01 a pedido del usuario; se hace junto con la fase 46, antes de la 47).
+   - Los 15 personajes de `art/blender/people/` comparten un esqueleto (`art/blender/rigs_human.py`) con los mismos 17 huesos y nombres que los aldeanos del juego, para que sirvan el mismo código y los mismos accesorios. Cada personaje agrega los huesos que necesite: cola, capa, coleta, orejas.
+   - Animaciones generadas por código, en el lugar: `idle`, `walk`, `run`, y las de trabajo que pidió el usuario:
+     - `chop`: talar con hacha a dos manos;
+     - `shoot`: levantar el arco, tensar, apuntar, soltar y bajar (para la cacería);
+     - `fish_cast` (lanzar, una sola vez), `fish_stand` (pescar de pie) y `fish_sit` (pescar sentado en el suelo).
+   - La herramienta es un modelo aparte (hacha, arco, caña). El modelo del personaje dice en qué mano va en cada animación (`<animación>_prop`), y las tiras de revisión la muestran en la mano.
+   - Brazos y piernas se colocan por cinemática inversa hacia puntos (el pie en el suelo, las dos manos sobre el mango), así que sirven para cuerpos de cualquier proporción, del orco a la rana.
+   - *Criterios:*
+     - Cada personaje carga en el cargador del juego: hasta 64 huesos, hasta 16 animaciones, pesos que suman 1, dentro de su límite de triángulos.
+     - `rig_check.py` da `RIG OK` en los 15: los ciclos cierran sin salto, nada baja del suelo salvo en `fish_sit`, y en `walk` y `run` los pies apoyados retroceden a la velocidad guardada (±10 %).
+     - En las tiras, la ropa, el cabello, las colas y las capas siguen al cuerpo sin separarse ni atravesarlo de forma notoria, y la herramienta queda en las manos (revisión visual).
+     - Regenerar da el mismo archivo byte a byte.
+     - El usuario los revisa en el visor; las correcciones que pida se hacen dentro de esta fase.
+49. **Un solo generador: el jerárquico** (agregada el 2026-10-02 a pedido del usuario; las fases 49 a 56 reorganizan el juego en torno a los modelos low poly nuevos. Lo anterior quedó archivado en `J:\Back\salvaciudad-alfa-1.zip`).
+   - Se borra el generador clásico: en `worldgen.cpp`, el relieve por ruido, las costas, las islas a la antigua, los accidentes del terreno y el fondo marino (unas 900 líneas); el selector de generador de la partida nueva, de los ajustes y del reporte del mapa; y los accidentes que solo hacía el clásico (cordilleras, cabos, costas, fosas y dorsales), con sus nombres. Las etapas que comparten los dos (lagos, ríos, suelo, biomas, bosques, recursos, salidas, islas por pueblo) quedan, sin las ramas del clásico.
+   - El jerárquico pasa a ser el único y deja de guardar su número de generador en el mapa. Se corrige la versión de los mapas separados (siempre ponía la del clásico).
+   - Las pruebas que generaban mapas clásicos sin decirlo pasan al jerárquico; las que solo probaban el clásico se borran; las sumas de verificación de referencia se vuelven a fijar. Se agregan a `ctest` los grupos de pruebas que nunca corrían (`minimap`, `nav`).
+   - `docs/GENERADORES.md` describe solo el jerárquico. Las decisiones del clásico se marcan como reemplazadas, sin borrarlas.
+   - Las imágenes de referencia del usuario pasan a `art/reference/` y entran al repositorio (los scripts de los árboles las leen).
+   - *Criterios:* no queda código ni texto de interfaz del clásico; la misma semilla da el mismo mapa; un mapa colosal tarda como hoy con el jerárquico (anotado); las pruebas pasan en las tres configuraciones.
+50. **Fondo de la pantalla de inicio con un mapa real; adiós a la escena de prueba** (agregada el 2026-10-02 a pedido del usuario).
+   - Se borra la escena de prueba de la fase 3 (plano con 50 000 objetos y 2000 aldeanos), su botón en el menú, la vista de estrés y la simulación de prueba de la fase 5 (mundo de caminantes y sus repeticiones). Lo que el juego usaba de ahí pasa a su propio lugar: los cuerpos de los aldeanos y sus paletas, la carga de modelos y lo que usan las herramientas de desarrollo. Se queda la prueba que impide `float`, hilos y relojes en la simulación.
+   - El fondo del menú es un mapa chico (512 m) del generador jerárquico, con su terreno, agua, árboles, rocas y animales, sin pueblos ni personajes, con la cámara girando despacio.
+   - La semilla sale de una lista en los datos (`menu_backgrounds.json`); en cada arranque se elige una al azar. Con las herramientas de desarrollo, una tecla en el menú genera otro mapa con una semilla nueva y otra guarda la semilla actual en la lista.
+   - El mapa se genera en un hilo mientras se ve el logotipo, así que el menú no espera.
+   - *Criterios:* el menú aparece en menos de 1 s y el mapa de fondo en menos de 3 s (medido en release); con la misma semilla se ve el mismo mapa; no queda código de la escena de prueba; los aldeanos del juego se ven igual que antes.
+51. **Árboles por estación y tamaño en el motor** (agregada el 2026-10-02 a pedido del usuario).
+   - Una especie declara sus modelos por estado: `"models": {"bloom": [...], "autumn": [...], "bare": [...]}`, cada uno una lista de variantes (fase 31). Una especie de hoja perenne declara solo `bloom`.
+   - Primavera y verano usan `bloom`, otoño `autumn` e invierno `bare`; con nieve se aplica el tinte de nieve de hoy. El tinte de otoño e invierno se borra.
+   - Cada árbol cambia de estado en un día distinto de los primeros de la estación, según su posición. Es solo de la vista: no cambia la simulación ni el hash.
+   - Tamaños: el modelo se escala según la altura de cada árbol, del 50 % al 150 % de la altura del modelo. La simulación conserva chico, mediano y grande (madera, tiempo de tala, separación); `huge` queda para los gigantes (fase 55).
+   - El visor muestra los estados de una especie lado a lado.
+   - *Criterios:* una especie de prueba con los tres estados se ve con el modelo de cada estación en el juego y en el visor; en la primera semana de otoño hay árboles en los dos estados; el hash de la simulación no cambia con la estación que se ve; compila sin advertencias en todas las configuraciones.
+52. **Versión lejana de los árboles (LOD)** (agregada el 2026-10-02 a pedido del usuario).
+   - Cada modelo de árbol tiene una versión lejana de unos 300 triángulos: tronco y ramas gruesas, y el follaje como pocas masas facetadas del color dominante de cada masa. La generan los scripts de Blender, para cada estado; el modelo declara su versión lejana en los datos.
+   - El renderizador elige la versión por el tamaño del árbol en pantalla, con un margen para que no parpadee. Las sombras usan siempre la lejana.
+   - El visor muestra las dos versiones y permite forzar una.
+   - *Criterios:* con la partida de referencia de `docs/RENDIMIENTO.md` (mapa colosal, semilla 12345, Ultra) y un bosque de árboles nuevos a la vista, los FPS y los triángulos dibujados quedan como mucho un 10 % peor que con los árboles de antes de esta fase (medido y anotado); el cambio de versión no se nota a la distancia normal de juego.
+53. **Árboles nuevos en core; se borran los viejos** (agregada el 2026-10-02 a pedido del usuario).
+   - Los 32 árboles y los 8 gigantes de `art/blender/lowpoly_trees/` entran a `core`, en `models/trees/`, con nombres en español e inglés. Especies, con sus variantes:
+     - cerezo (variantes 1, 2, 3 y la de la segunda imagen), cerezo llorón, jacarandá (4 variantes y la de la segunda imagen), olmo (4 variantes), guayacán (4 variantes);
+     - pino, abedul, sauce llorón, acacia, ciprés, magnolia, arce, palmera, glicinia, roble amarillo, laurel, baobab, drago y manzano;
+     - de hoja perenne: pino, ciprés, palmera, laurel y drago.
+   - Se borran los 21 árboles viejos y todo lo suyo: modelos, `art/blender/trees.py`, `preview_trees.py`, los árboles de `props.py`, sus especies, biomas y tipos de mapa, sus textos y `docs/ARBOLES.md` (reemplazado por el catálogo nuevo). También los estudios de técnicas del cerdito y el tigre.
+   - Madera por tamaño según el tronco de cada especie, en los datos.
+   - Hasta la fase 54, los biomas de `core` reparten las especies nuevas con las reglas de hoy.
+   - *Criterios:* una partida nueva solo tiene árboles nuevos; no queda ningún archivo de los viejos; un mod con `"patch": "core:pine"` funciona; las pruebas pasan en las tres configuraciones.
+54. **Clima y biomas por geografía** (agregada el 2026-10-02 a pedido del usuario).
+   - **Clima del lugar:** una temperatura que baja con la altura y hacia el norte del mapa, más la humedad que ya calcula el generador. Solo decide dónde crece cada cosa; no cambia la temperatura de la simulación (fase 10).
+   - **Reglas en los datos:** cada bioma declara dónde le gusta estar: rango de temperatura y de humedad, cercanía a agua dulce o al mar, tipo de región (llanura, colinas, montañas, meseta, cuenca) y un peso. Cada lugar toma el bioma que mejor encaja, con transiciones irregulares.
+   - **Biomas de `core`:**
+
+     | Bioma | Dónde | Especies | Gigante |
+     |---|---|---|---|
+     | Bosque de montaña | Frío, montañas y alturas | pino, abedul, ciprés | secuoya, araucaria |
+     | Bosque boreal | Frío, llanuras y colinas del norte | pino, abedul | — |
+     | Bosque templado | Templado, humedad media, llanuras y colinas | olmo, arce, roble amarillo, abedul, manzano | ginkgo |
+     | Bosque florido | Templado a cálido, húmedo, llanuras | cerezo, jacarandá, magnolia, glicinia | cerezo gigante |
+     | Ribera | Junto a ríos y lagos, salvo en el frío | sauce llorón, cerezo llorón, olmo, abedul | sauce gigante |
+     | Mediterráneo | Templado a cálido, seco, colinas y costas | ciprés, laurel, pino, manzano | — |
+     | Bosque seco tropical | Cálido, humedad media | guayacán, jacarandá, laurel | — |
+     | Sabana | Cálido y seco, mesetas y llanuras | acacia, baobab, drago | baobab gigante |
+     | Costa tropical | Cálido, junto al mar | palmera, laurel | mangle gigante |
+     | Huerto silvestre | Templado, fértil, llanuras (raro) | manzano, cerezo, laurel | — |
+     | Bosque encantado | Húmedo, cuencas (raro) | glicinia, cerezo llorón, magnolia | hongo gigante |
+
+   - Se borran los tipos de mapa como datos (sus manchas al azar, `patchSize`, `sizeBias`, el bioma único). F3 y el reporte del mapa muestran la temperatura del lugar y por qué tiene su bioma.
+   - *Criterios:* en mapas de varias semillas y tamaños, los sauces están a menos de 40 m de agua dulce, las palmeras a menos de 150 m del mar, los pinos de montaña en la mitad más alta del mapa y no hay palmeras junto a pinos; un mapa mediano se genera en un tiempo parecido al de hoy; la misma semilla da el mismo mapa; las salidas siguen siendo justas; revisión del usuario con `--reporte`.
+55. **Árboles gigantes como hitos** (agregada el 2026-10-02 a pedido del usuario).
+   - Pocos por mapa, según su tamaño (por ejemplo de 2 a 4 en uno mediano y unos 30 en uno colosal), cada uno en su bioma y lugar: el mangle en un estuario o costa baja, la secuoya y la araucaria en laderas de montaña, el sauce junto a un río, el baobab en la sabana, el hongo en un claro del bosque encantado, el cerezo y el ginkgo en llanuras. Lejos entre sí y de las salidas, con un claro alrededor.
+   - Se ven siempre como silueta a través de la niebla (`landmark`, fase 34). Se pueden talar: mucha madera y mucho tiempo, en los datos. Cambian por estación como los demás.
+   - *Criterios:* en mapas de varias semillas, cada gigante está en su bioma y lugar; ninguno a menos de 200 m de una salida; se ven bajo la niebla; talar uno da la madera de los datos; el rendimiento con varios a la vista se mide y se anota.
+56. **Partida nueva: Variado y Personalizado** (agregada el 2026-10-02 a pedido del usuario).
+   - Siempre visibles: tamaño, jugadores y semilla. Dos tipos de mapa:
+   - **Variado** (por omisión): sin más opciones. La semilla decide el clima (frío, templado, cálido o mezclado) y el mar (sin mar, uno o dos lados, a veces islas o archipiélago). Lo demás en valores medios: relieve suave, ríos, lagos, bosques y recursos normales, gigantes normales, 4 estaciones con año normal e invierno normal, recursos iniciales normales, enfermedades, incendios, asaltantes y fauna peligrosa en medio, niebla estática con visión compartida, población máxima 1000, raza humana con 20 % de inmigrantes de otras razas. Una línea resume lo que salió ("Mapa templado, costa al este, 3 árboles gigantes").
+   - **Personalizado:**
+     - casillas: biomas (al menos uno), estaciones (cada una por separado, al menos una), razas que pueden llegar como inmigrantes, árboles gigantes sí o no;
+     - barras de 0 a 200 % en pasos de 25 % (100 % es lo de Variado): temperatura (frío a cálido), humedad (seco a húmedo), ríos, lagos, bosques, recursos, relieve, accidentes del terreno, gigantes, duración del año, otras razas, y población máxima de 50 a 1000;
+     - listas: mar (sin mar, un lado, dos lados, islas, archipiélago; con islas, las islas por pueblo), invierno (suave, normal, duro), raza inicial (o mixta), recursos iniciales, enfermedades, incendios, asaltantes, fauna peligrosa (ninguna a brutal), niebla de guerra (ninguna, estática, dinámica) y visión compartida;
+     - un botón "Partir de Variado" que llena todo con los valores de Variado.
+   - Una vista previa del mapa (mapa chico) se regenera al cambiar las opciones.
+   - Lo elegido se recuerda en `settings.json` como hoy; un archivo de ajustes de una versión anterior se acepta y vuelve a Variado en lo que no entienda.
+   - El lobby del multijugador usa el mismo formulario.
+   - *Criterios:* las opciones de Personalizado cambian el mapa como dicen (más ríos con más ríos, sin invierno sin la estación); una partida con las opciones de Variado y otra en Personalizado con "Partir de Variado" dan el mismo mapa con la misma semilla; textos en español e inglés; compila sin advertencias.
+57. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
+
+- Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvaciudad-alfa-1.zip` (pedido del usuario, 2026-10-02).
 
 - Compilación y pruebas en macOS.
 - CI en GitHub para Windows, Linux y macOS.
