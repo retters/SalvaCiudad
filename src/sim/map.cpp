@@ -6,14 +6,6 @@
 namespace sc::sim {
 
 void MapSettings::write(BinaryWriter& w) const {
-    write_identity(w);
-    // Always ends with the generator: write_identity leaves the classic one out.
-    if (generator == MapGenerator::Classic) {
-        w.u8(static_cast<std::uint8_t>(generator));
-    }
-}
-
-void MapSettings::write_identity(BinaryWriter& w) const {
     w.u64(seed);
     w.u8(static_cast<std::uint8_t>(size));
     w.u8(static_cast<std::uint8_t>(water));
@@ -27,9 +19,6 @@ void MapSettings::write_identity(BinaryWriter& w) const {
     w.u8(islands);
     w.u8(static_cast<std::uint8_t>(sea));
     w.u8(static_cast<std::uint8_t>(landforms));
-    if (generator != MapGenerator::Classic) {
-        w.u8(static_cast<std::uint8_t>(generator));
-    }
 }
 
 std::int32_t world_grid(const MapSettings& s) {
@@ -69,14 +58,14 @@ std::int32_t MapData::region_at(std::int32_t cx, std::int32_t cz) const {
 bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     MapSettings s;
     std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, map_type = 0, biome = 0, separate = 0,
-                 sea = 0, landforms = 0, generator = 0;
+                 sea = 0, landforms = 0;
     if (!r.u64(s.seed) || !r.u8(size) || !r.u8(water) || !r.u8(forests) || !r.u8(resources) || !r.u8(relief) ||
         !r.u8(s.players) || !r.u8(map_type) || !r.u8(biome) || !r.u8(separate) || !r.u8(s.islands) || !r.u8(sea) ||
-        !r.u8(landforms) || !r.u8(generator)) {
+        !r.u8(landforms)) {
         return false;
     }
     if (separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown || sea >= static_cast<std::uint8_t>(Sea::Count) ||
-        landforms >= static_cast<std::uint8_t>(Amount::Count) || generator >= static_cast<std::uint8_t>(MapGenerator::Count)) {
+        landforms >= static_cast<std::uint8_t>(Amount::Count)) {
         r.fail();
         return false;
     }
@@ -95,7 +84,6 @@ bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     s.relief = static_cast<Relief>(relief);
     s.sea = static_cast<Sea>(sea);
     s.landforms = static_cast<Amount>(landforms);
-    s.generator = static_cast<MapGenerator>(generator);
     s.map_type = map_type;
     s.biome = biome;
     out = s;
@@ -165,7 +153,7 @@ std::int32_t MapData::tree_height_cm(const MapFeature& f) {
 
 std::uint64_t MapData::checksum() const {
     BinaryWriter w;
-    settings.write_identity(w);
+    settings.write(w);
     w.u16(generator_version);
     w.i32(size);
     std::uint64_t h = fnv1a64(w.bytes());

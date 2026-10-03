@@ -58,6 +58,8 @@ Nota: el importador glTF de Blender reorienta los huesos y puede mostrar mal las
 | `study_preview.py` | Una imagen de revisión por modelo (4 vistas) y las tiras de sus animaciones |
 | `pig_studies.py`, `tiger_studies.py` | El cerdito y el tigre con cada técnica, para compararlas |
 
+Las imágenes de referencia del usuario (`Animales low poly`, `Arboles 1` a `8`, `Armas y herramientas` y `Personajes 1` a `3`) están en `art/reference/` desde la fase 49; de ahí las leen `lowpoly_trees/_trace.py` y `_giant_trace.py`.
+
 ## Convenciones
 
 - **Unidades:** metros. Un humano mide unos 1,75 m (hombre) o 1,66 m (mujer).
@@ -134,7 +136,7 @@ Cada variante es un modelo más: se dibuja con sus propias llamadas de dibujo. P
 
 ## Animales y flora low poly (`art/blender/zoo/`)
 
-Los 24 modelos de la imagen de referencia `Animales low poly.png` (en la raíz del repositorio, del usuario). Todavía no están en el juego: entran en la fase 47.
+Los 24 modelos de la imagen de referencia `Animales low poly.png` (del usuario, en `art/reference/`). Todavía no están en el juego: entran en la fase 47.
 
 - **Técnica:** se compararon diez técnicas con el cerdito y el tigre (`pig_studies.py`, `tiger_studies.py`) y el usuario eligió la de *remesh* y reducción (D-4401). `studies.build_final` suelda las partes de la especificación (elipsoides y cápsulas) en una sola superficie y la reduce a `budget` triángulos. Después la corta donde un borde de color debe ser nítido (`bands` para rayas, `cuts` para bordes sueltos), pinta cada cara con `paint()`, aplana las puntas de otro color (`caps`, como el hocico del cerdito) y agrega tonos claros y oscuros a las facetas. Al final pone las piezas finas que no sobreviven al *remesh* (`details()`: orejas, cuernos, alas, aletas, hojas).
 - **Un archivo por modelo** en `zoo/`, con el nombre del modelo, que define `SPECS`. `zoo/pig.py` es el ejemplo simple; `zoo/tiger.py`, uno con rayas.
@@ -159,7 +161,7 @@ La vista previa hace una imagen por modelo con cuatro vistas (frente, lado, 3/4 
 
 ### Personajes, armas y árboles low poly
 
-De las imágenes de referencia del usuario en la raíz del repositorio (`Personajes 1` a `3`, `Armas y herramientas` y `Arboles 1` a `3`). Tampoco están en el juego todavía. Se generan igual que los animales, con la carpeta de especificaciones:
+De las imágenes de referencia del usuario en `art/reference/` (`Personajes 1` a `3`, `Armas y herramientas` y `Arboles 1` a `3`). Tampoco están en el juego todavía. Se generan igual que los animales, con la carpeta de especificaciones:
 
 ```
 blender --background --factory-startup --python art/blender/zoo_build.py -- art/studies/people specs=people [nombres]

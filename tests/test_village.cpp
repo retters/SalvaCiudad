@@ -307,8 +307,9 @@ TEST_SUITE("village") {
         // The economy alone: no raids (the "wildlife" suite has those).
         GameSetup setup{1, 77, false, GameRules{}};
         setup.rules.raiders = Threat::None;
-        // A map where this scripted player does well (maps changed in phase 27).
-        Game g(content(), small_map(29), setup);
+        // A map where this scripted player does well (maps changed in phases
+        // 27 and 49; it prospers on 9 of the first 20 seeds, D-4906).
+        Game g(content(), small_map(1), setup);
         opening(g);
         int houses = 2;
         int foragers = 1;

@@ -131,7 +131,6 @@ static_assert(std::size(names::kYears) == static_cast<std::size_t>(sim::YearLeng
 static_assert(std::size(names::kWinters) == static_cast<std::size_t>(sim::Harshness::Count));
 static_assert(std::size(names::kStarts) == static_cast<std::size_t>(sim::StartGoods::Count));
 static_assert(std::size(names::kFogs) == static_cast<std::size_t>(sim::FogMode::Count));
-static_assert(std::size(names::kGenerators) == static_cast<std::size_t>(sim::MapGenerator::Count));
 static_assert(std::size(names::kThreats) == static_cast<std::size_t>(sim::Threat::Count));
 static_assert(settings_limits::kMaxIslandsPerTown == sim::kMaxIslandsPerTown);
 static_assert(settings_limits::kMaxPlayers == static_cast<int>(sim::kMaxPlayers));
@@ -164,7 +163,6 @@ void NewGameScreen::apply(const NewGameSettings& n) {
     settings_.relief = named(names::kReliefs, n.relief, settings_.relief);
     settings_.sea = named(names::kSeas, n.sea, settings_.sea);
     settings_.landforms = named(names::kAmounts, n.landforms, settings_.landforms);
-    settings_.generator = named(names::kGenerators, n.generator, settings_.generator);
     settings_.players = static_cast<std::uint8_t>(std::clamp(n.players, 1, static_cast<int>(sim::kMaxPlayers)));
     settings_.islands = static_cast<std::uint8_t>(std::clamp(n.islands, 1, static_cast<int>(sim::kMaxIslandsPerTown)));
     if (content_ != nullptr) {
@@ -211,7 +209,6 @@ NewGameSettings NewGameScreen::remembered() const {
     n.relief = name_of(names::kReliefs, settings_.relief);
     n.sea = name_of(names::kSeas, settings_.sea);
     n.landforms = name_of(names::kAmounts, settings_.landforms);
-    n.generator = name_of(names::kGenerators, settings_.generator);
     n.players = settings_.players;
     n.islands = settings_.islands;
     if (content_ != nullptr) {
@@ -446,19 +443,6 @@ NewGameScreen::Result NewGameScreen::frame(ui::Context& ctx, bool modal) {
     {
         const Row r = row(ctx, x, y, cw, tr("newGame.seed"), tr("newGame.seed.tooltip"));
         seed_field(ctx, r.control, modal);
-    }
-    {
-        // Phase 39: a different way of making the map, not an option of one.
-        std::vector<std::string> options;
-        for (const std::string_view name : names::kGenerators) {
-            options.push_back(tr("newGame.generator." + std::string(name)));
-        }
-        int index = static_cast<int>(settings_.generator);
-        const std::string tip = tr("newGame.generator." + std::string(names::kGenerators[index]) + ".tooltip");
-        const Row r = row(ctx, x, y, cw, tr("newGame.generator"), tip);
-        if (ctx.selector(ctx.id("generator"), r.control, index, options, tip)) {
-            settings_.generator = static_cast<sim::MapGenerator>(index);
-        }
     }
     {
         std::vector<std::string> options;

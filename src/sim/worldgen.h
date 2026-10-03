@@ -1,5 +1,7 @@
 // Procedural map generation from a seed (section 7.6). Deterministic: the
-// same settings give the same map, bit for bit, on every machine.
+// same settings give the same map, bit for bit, on every machine. The
+// ground is shaped by the hierarchical generator (worldgen_hier.h); the
+// water, soil and life stages are here (phase 49: the only generator).
 #pragma once
 
 #include <array>
@@ -37,8 +39,9 @@ public:
 // Tuning shared with the tests.
 namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
-// the map (decision D-620).
-inline constexpr std::uint16_t kGeneratorVersion = 6;
+// the map (decision D-620). It goes on from the hierarchical generator's
+// own number, which it was until phase 49 (D-4902).
+inline constexpr std::uint16_t kGeneratorVersion = 1;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 2;
@@ -46,8 +49,7 @@ inline constexpr std::int32_t kStartMinBerries = 2;
 inline constexpr std::int32_t kStartMinTrees = 60;
 inline constexpr std::int32_t kStartMaxWaterDistance = 150;  // A start always has water this close.
 
-// Phase 22: the map type with islands.
-inline constexpr std::int32_t kSeaLevelMm = 20000;  // Sea surface, millimeters.
+// Phases 22 and 25: the map types with islands.
 struct Island {
     std::int32_t x = 0;       // Center, meters.
     std::int32_t z = 0;

@@ -12,17 +12,9 @@ using i18n::tr;
 
 namespace {
 
-// How far past its line (or its center) a landform may show: the
-// generator bends some shapes by noise (decision D-3703).
+// How far past its course a river's water may show.
 double reach(const sim::Landform& l) {
-    const double half = l.width / 2.0;
-    switch (l.kind) {
-        case sim::LandformKind::Island: return half * 1.7;
-        case sim::LandformKind::Plateau: return half * 4.0 / 3.0 + 10.0;
-        case sim::LandformKind::Islet: return half + 10.0;
-        case sim::LandformKind::River: return half + 2.0;
-        default: return half;
-    }
+    return l.width / 2.0 + 2.0;
 }
 
 // Distance in meters from (x, z) to the landform's line, or to its point.
@@ -60,8 +52,8 @@ void TerrainNames::build(const sim::MapData& map) {
     buckets_.assign(static_cast<std::size_t>(side_) * static_cast<std::size_t>(side_), {});
     for (std::size_t i = 0; i < map.landforms.size(); ++i) {
         const sim::Landform& l = map.landforms[i];
-        if (l.kind == sim::LandformKind::Coast || l.points.empty()) {
-            continue;  // The coast is found from the sea itself.
+        if (l.kind != sim::LandformKind::River || l.points.empty()) {
+            continue;  // Only rivers: the rest is named by the owner grids.
         }
         const double r = reach(l);
         const auto index = static_cast<std::uint32_t>(i);
@@ -156,64 +148,29 @@ CellDescription TerrainNames::describe(const sim::MapData& map, std::int32_t cx,
         }
     }
 
-    // A hierarchical map says exactly what is where.
-    if (!map.region_owner.empty()) {
-        const auto name = [&](const std::vector<std::uint16_t>& grid) -> std::optional<sim::LandformKind> {
-            const std::uint16_t owner = map.owner_at(grid, cx, cz);
-            if (owner == 0 || owner > map.landforms.size()) {
-                return std::nullopt;
-            }
-            return map.landforms[owner - 1u].kind;
-        };
-        d.region = name(map.region_owner);
-        if (const std::optional<sim::LandformKind> structure = name(map.structure_owner)) {
-            d.landforms.push_back(*structure);
+    // The map says exactly what is where.
+    const auto name = [&](const std::vector<std::uint16_t>& grid) -> std::optional<sim::LandformKind> {
+        const std::uint16_t owner = map.owner_at(grid, cx, cz);
+        if (owner == 0 || owner > map.landforms.size()) {
+            return std::nullopt;
         }
-        return d;
+        return map.landforms[owner - 1u].kind;
+    };
+    d.region = name(map.region_owner);
+    if (const std::optional<sim::LandformKind> structure = name(map.structure_owner)) {
+        d.landforms.push_back(*structure);
     }
-    const bool dry = d.water == WaterKind::None;
-    const bool at_sea = d.water == WaterKind::Sea;
-    for (const std::uint32_t i : bucket) {
-        const sim::Landform& l = map.landforms[i];
-        const double dist = distance(l, px, pz);
-        const double r = reach(l);
-        bool here = false;
-        switch (l.kind) {
-            case sim::LandformKind::Gulf:
-            case sim::LandformKind::Trench:
-            case sim::LandformKind::Ridge: here = at_sea && dist <= r; break;
-            case sim::LandformKind::Peninsula:
-            case sim::LandformKind::Cape:
-            case sim::LandformKind::Islet: here = dry && dist <= r; break;
-            case sim::LandformKind::Plateau:
-            case sim::LandformKind::Valley:
-            case sim::LandformKind::Range:
-            case sim::LandformKind::Canyon: here = !at_sea && dist <= r; break;
-            case sim::LandformKind::Island: here = dry && dist <= r; break;
-            default: break;
-        }
-        if (here) {
-            d.landforms.push_back(l.kind);
-        }
-    }
-    std::sort(d.landforms.begin(), d.landforms.end());
-    d.landforms.erase(std::unique(d.landforms.begin(), d.landforms.end()), d.landforms.end());
     return d;
 }
 
 const char* landform_key(sim::LandformKind kind) {
     switch (kind) {
-        case sim::LandformKind::Coast: return "landform.coast";
         case sim::LandformKind::Gulf: return "landform.gulf";
         case sim::LandformKind::Peninsula: return "landform.peninsula";
         case sim::LandformKind::Islet: return "landform.islet";
-        case sim::LandformKind::Trench: return "landform.trench";
-        case sim::LandformKind::Ridge: return "landform.ridge";
         case sim::LandformKind::Plateau: return "landform.plateau";
         case sim::LandformKind::Valley: return "landform.valley";
-        case sim::LandformKind::Range: return "landform.range";
         case sim::LandformKind::Canyon: return "landform.canyon";
-        case sim::LandformKind::Cape: return "landform.cape";
         case sim::LandformKind::River: return "landform.river";
         case sim::LandformKind::Island: return "landform.island";
         case sim::LandformKind::Plain: return "landform.plain";
@@ -227,7 +184,7 @@ const char* landform_key(sim::LandformKind kind) {
         case sim::LandformKind::Sea: return "landform.sea";
         case sim::LandformKind::Count: break;
     }
-    return "landform.coast";
+    return "landform.none";
 }
 
 const char* water_key(WaterKind kind) {

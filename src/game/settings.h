@@ -116,7 +116,6 @@ struct NewGameSettings {
     std::string resources = "normal";
     std::string relief = "low";     // new_game_names::kReliefs
     std::string landforms = "normal";  // new_game_names::kAmounts
-    std::string generator = "classic";  // new_game_names::kGenerators (phase 39)
     int players = 1;
     int seasons = 0b1111;           // Bit per season: spring, summer, autumn, winter.
     std::string year = "normal";    // new_game_names::kYears
@@ -147,7 +146,6 @@ inline constexpr std::string_view kWinters[] = {"mild", "normal", "harsh"};
 inline constexpr std::string_view kStarts[] = {"scarce", "normal", "plenty"};
 inline constexpr std::string_view kThreats[] = {"none", "low", "medium", "high", "brutal"};
 inline constexpr std::string_view kFogs[] = {"none", "static", "dynamic"};
-inline constexpr std::string_view kGenerators[] = {"classic", "hierarchical"};
 inline constexpr std::string_view kMixedRace = "mixed";
 }  // namespace new_game_names
 

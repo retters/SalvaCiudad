@@ -98,7 +98,7 @@ Medido en el equipo de desarrollo, compilación `release`, ventana de 1600 × 90
 build\release\bin\salvaciudad_tests.exe -ts=worldgen_perf -tc="*time per stage" --no-skip
 ```
 
-"giant map, time per stage" y "colossal map, time per stage" se saltan por omisión. Generan el mapa con los valores por omisión de la partida nueva (Clásico, mar "A veces", un jugador) y la semilla 12345, y muestran el tiempo de cada etapa y la suma de verificación, para comparar versiones.
+"giant map, time per stage" y "colossal map, time per stage" se saltan por omisión. Generan el mapa con los valores por omisión de la partida nueva (mar "A veces", un jugador) y la semilla 12345, y muestran el tiempo de cada etapa y la suma de verificación, para comparar versiones. Desde la fase 49 miden el generador jerárquico, que es el único; la tabla de abajo es del clásico, que se borró, y queda como historia.
 
 Compilación `release`, en el equipo de desarrollo (i9-9900K, 32 GB). Mismo mapa antes y después: las sumas de verificación son iguales (gigante `a62012064264c43a`, colosal `eb8174aa7a3641ce`), y la versión del generador sigue en 6 (D-3111).
 
@@ -162,5 +162,19 @@ Medido en release en esta PC (2026-09-30), mapa colosal (16 384 × 16 384), semi
 | Clásico | 179 s |
 | Jerárquico | 113 s (115 s desde la fase 43, que calcula cada vértice junto al borde de las mesetas) |
 
+Desde la fase 49 el jerárquico es el único generador (ver más abajo).
+
 El jerárquico calcula las regiones y su mezcla en una rejilla de 8 m (unos 4 millones de esquinas en el colosal) y solo interpola en cada vértice. Sus estructuras tocan únicamente sus propias franjas, en vez de cruzar el mapa entero como los valles y cañones del clásico (ver la sugerencia `sug-formas-por-borde`). Un mapa grande (2048 × 2048) tarda 1,5 s.
 
+## Un solo generador (fase 49)
+
+Medido en release en esta PC (2026-10-02), mapa colosal (16 384 × 16 384), semilla 12345, opciones por omisión de la partida nueva (mar "A veces", un jugador). Se alternaron el ejecutable de antes de la fase (con el jerárquico elegido) y el de después, dos veces cada uno, más dos medidas sueltas de cada uno:
+
+| | Tiempos |
+|---|---|
+| Antes de la fase 49 (jerárquico) | 131, 132, 134 y 142 s |
+| Después de la fase 49 | 123, 126, 149 y 150 s |
+
+Es el mismo tiempo dentro de lo que varía este equipo: mientras se medía, otra sesión trabajaba en el mismo equipo. Los datos del mapa son idénticos antes y después (3 314 686 objetos); la suma de verificación pasa de `862d1baec39f9102` a `c071fdf05c8d7569` solo porque ya no incluye el byte del generador (D-4902).
+
+No se comparan con los 115 s de la fase 43: aquella medida era sin mar, y no se repitió en esas condiciones.

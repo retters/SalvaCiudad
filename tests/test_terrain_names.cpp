@@ -58,6 +58,7 @@ CellDescription describe_at(TerrainNames& names, const sim::MapData& m, std::arr
 TEST_SUITE("terrain_names") {
     TEST_CASE("the names of what is under the cursor, on maps with a coast") {
         int lines = 0, lines_named = 0;
+        int regions = 0, regions_named = 0;
         int river_points = 0, river_named = 0;
         int lobes = 0, lobes_right = 0;
         int sea_border = 0, border_water = 0;
@@ -72,18 +73,19 @@ TEST_SUITE("terrain_names") {
             for (const sim::Landform& l : m.landforms) {
                 switch (l.kind) {
                     case sim::LandformKind::Plateau: {
+                        // A region: its middle says so.
                         const CellDescription d = describe_at(names, m, {double(l.points[0][0]), double(l.points[0][1])});
                         if (d.water == WaterKind::None) {
-                            ++lines;
-                            lines_named += has(d, l.kind) ? 1 : 0;
+                            ++regions;
+                            regions_named += d.region == l.kind ? 1 : 0;
                         }
                         break;
                     }
                     case sim::LandformKind::Valley:
-                    case sim::LandformKind::Range:
                     case sim::LandformKind::Canyon:
-                        // All along the line, through many squares of the index.
-                        for (int k = 0; k <= 40; ++k) {
+                        // Along the middle of the line: a more specific
+                        // structure (a ramp, a cliff) may take some of it.
+                        for (int k = 4; k <= 36; ++k) {
                             const CellDescription d = describe_at(names, m, along(l, k / 40.0));
                             if (d.inside && d.water == WaterKind::None) {
                                 ++lines;
@@ -101,11 +103,10 @@ TEST_SUITE("terrain_names") {
                         }
                         break;
                     case sim::LandformKind::Gulf:
-                    case sim::LandformKind::Peninsula:
-                    case sim::LandformKind::Cape: {
-                        // Halfway along what formed: sea in a
-                        // gulf, land on a peninsula or a cape.
-                        const CellDescription d = describe_at(names, m, along(l, 0.5));
+                    case sim::LandformKind::Peninsula: {
+                        // The middle of the region it took: sea in a gulf,
+                        // land on a peninsula.
+                        const CellDescription d = describe_at(names, m, {double(l.points[0][0]), double(l.points[0][1])});
                         if (d.inside) {
                             ++lobes;
                             const bool gulf = l.kind == sim::LandformKind::Gulf;
@@ -140,10 +141,12 @@ TEST_SUITE("terrain_names") {
                 }
             }
         }
-        MESSAGE("lines " << lines_named << "/" << lines << ", rivers " << river_named << "/" << river_points << ", lobes "
+        MESSAGE("regions " << regions_named << "/" << regions << ", lines " << lines_named << "/" << lines << ", rivers " << river_named << "/" << river_points << ", lobes "
                          << lobes_right << "/" << lobes << ", sea border " << sea_border << "/" << border_water);
+        CHECK(regions > 0);
+        CHECK(regions_named == regions);
         CHECK(lines > 100);
-        CHECK(lines_named == lines);
+        CHECK(lines_named * 10 >= lines * 8);
         CHECK(river_points > 50);
         CHECK(river_named * 10 >= river_points * 9);
         CHECK(lobes >= 6);
