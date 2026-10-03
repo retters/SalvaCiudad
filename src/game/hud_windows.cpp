@@ -1,12 +1,12 @@
-// The game windows' frame (section 6.4): moved by the title bar, drawn to
-// the screen edges and to each other like magnets, docked in groups that
-// move together, collapsed to a tab when they lose the focus and opened
-// again under the cursor, pinned to stay open, wider or narrower by the
-// corner grip, and remembered in settings.json. Also the launcher on the
-// left, the goods, statistics, event log and map layers windows, and the
-// notifications.
+// The game windows' frame (section 6.4, phase 62): one in front of another
+// (the one touched comes forward and only the one in front gets the click),
+// moved by the title bar, drawn to the screen edges, the build bar and each
+// other like magnets, docked in groups that move together, minimized to
+// their title, pinned to stay open, wider or narrower by the corner grip,
+// and remembered in settings.json (game/window_list.h keeps the list).
+// Also the launcher on the left, the goods, statistics, event log and map
+// layers windows, and the notifications.
 #include <algorithm>
-#include <charconv>
 #include <cmath>
 
 #include <SDL3/SDL_keyboard.h>
@@ -24,71 +24,25 @@ namespace {
 constexpr float kTopBarH = 44.0f;
 constexpr float kDockW = 132.0f;
 constexpr float kSnap = 12.0f;
-constexpr std::uint64_t kCollapseNs = 700'000'000;
 constexpr std::uint64_t kNoteNs = 12'000'000'000;
 
 bool inside(const ui::Rect& r, float x, float y) {
     return x >= r.x && y >= r.y && x < r.right() && y < r.bottom();
 }
 
-// "id:x,y,w,pinned,group;..." with whole design units.
-bool valid_layout_char(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ':' || c == ',' || c == ';' || c == '-' ||
-           c == '_';
-}
-
 }  // namespace
 
-void GameHud::load_places() {
-    places_loaded_ = true;
-    const std::string& text = services_.settings().ui.windows;
-    std::size_t at = 0;
-    while (at < text.size()) {
-        const std::size_t end = std::min(text.find(';', at), text.size());
-        const std::string entry = text.substr(at, end - at);
-        at = end + 1;
-        const std::size_t colon = entry.find(':');
-        if (colon == std::string::npos || colon == 0 || colon > 16) {
-            continue;
-        }
-        int values[5] = {0, 0, 0, 0, 0};
-        std::size_t p = colon + 1;
-        int n = 0;
-        for (; n < 5 && p <= entry.size(); ++n) {
-            const std::size_t comma = std::min(entry.find(',', p), entry.size());
-            const auto r = std::from_chars(entry.data() + p, entry.data() + comma, values[n]);
-            if (r.ec != std::errc{} || r.ptr != entry.data() + comma) {
-                break;
-            }
-            p = comma + 1;
-        }
-        if (n != 5 || values[0] < 0 || values[1] < 0 || values[0] > 20000 || values[1] > 20000 || values[2] < 0 ||
-            values[2] > 2000 || values[3] < 0 || values[3] > 1 || values[4] < 0 || values[4] > 1000) {
-            continue;  // A damaged entry: that window goes back to its place.
-        }
-        WindowPlace& w = places_[entry.substr(0, colon)];
-        w.x = static_cast<float>(values[0]);
-        w.y = static_cast<float>(values[1]);
-        w.w = static_cast<float>(values[2]);
-        w.placed = true;
-        w.pinned = values[3] == 1;
-        w.group = values[4];
-    }
-}
-
 void GameHud::save_places() {
-    std::string text;
-    for (const auto& [id, w] : places_) {
-        if (!w.placed && !w.pinned) {
-            continue;
+    const std::string text = windows_.save();
+    if (text.empty() && !windows_.places().empty() && !services_.settings().ui.windows.empty()) {
+        // Nothing to keep, or it would not fit: an empty layout is still a layout.
+        bool any = false;
+        for (const auto& [id, w] : windows_.places()) {
+            any = any || (!WindowList::is_object_id(id) && (w.placed || w.pinned));
         }
-        text += id + ":" + std::to_string(static_cast<int>(std::lround(w.x))) + "," +
-                std::to_string(static_cast<int>(std::lround(w.y))) + "," +
-                std::to_string(static_cast<int>(std::lround(w.w))) + "," + (w.pinned ? "1" : "0") + "," +
-                std::to_string(w.group) + ";";
-    }
-    if (text.size() > kMaxLayoutBytes || !std::all_of(text.begin(), text.end(), valid_layout_char)) {
-        return;
+        if (any) {
+            return;
+        }
     }
     if (services_.settings().ui.windows != text) {
         services_.settings().ui.windows = text;
@@ -98,24 +52,18 @@ void GameHud::save_places() {
 
 void GameHud::windows_begin(ui::Context& ctx) {
     if (!places_loaded_) {
-        load_places();
+        places_loaded_ = true;
+        windows_.load(services_.settings().ui.windows);
     }
     shown_last_ = std::move(shown_);
     shown_.clear();
-    (void)ctx;
+    // The window the cursor is over: the only one that hears the mouse.
+    const ui::Input& in = ctx.input();
+    hover_top_ = dragging_.empty() ? windows_.top_at(shown_last_, in.mouse_x, in.mouse_y) : dragging_;
 }
 
 void GameHud::windows_end(ui::Context& ctx) {
     const ui::Input& in = ctx.input();
-    if (in.mouse_pressed && !ctx.input_blocked()) {
-        bool over = false;
-        for (const auto& [id, r] : shown_) {
-            over = over || inside(r, in.mouse_x, in.mouse_y);
-        }
-        if (!over) {
-            focus_.clear();  // A click on the world or elsewhere.
-        }
-    }
     if (!in.mouse_down && !dragging_.empty()) {
         dragging_.clear();
         resizing_ = false;
@@ -125,31 +73,46 @@ void GameHud::windows_end(ui::Context& ctx) {
 
 bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, const std::string& title, ui::Rect& box,
                      bool& open) {
-    WindowPlace& p = places_[id];
+    WindowList::Place& p = windows_.place(id);
     const float sc = ctx.s(1.0f);
     const float pad = ctx.s(14.0f);
     const ui::TextStyle title_style = ctx.style(ctx.theme().heading, ui::FontRole::Bold);
     const float title_h = ctx.text().line_height(title_style);
-    const float bar_h = pad + title_h + pad * 0.5f;
+    const float bar_h = std::round(pad + title_h + pad * 0.5f);
     const float button = std::round(ctx.s(34.0f));
     const float min_w = ctx.s(280.0f);
+    const float gap = ctx.s(6.0f);
     const ui::Input& in = ctx.input();
     const bool live = !ctx.input_blocked();
-    const std::uint64_t now = ctx.now_ns();
+    const float top = std::round(ctx.s(kTopBarH));
 
+    if (p.w > 0.0f) {
+        box.w = std::round(std::clamp(p.w * sc, min_w, std::max(min_w, ctx.width() - 2 * pad)));
+    }
     if (p.placed) {
         box.x = std::round(p.x * sc);
         box.y = std::round(p.y * sc);
     } else {
-        // Not placed yet: below the windows already at its default place.
-        const float step = std::round(title_h + pad * 0.6f) + ctx.s(6.0f);
-        for (bool moved = true; moved;) {
-            moved = false;
-            for (const auto& [other, r] : shown_) {
-                if (other != id && std::abs(r.x - box.x) < 4.0f && std::abs(r.y - box.y) < 4.0f) {
-                    box.y += std::max(step, r.h + ctx.s(6.0f));
-                    moved = true;
+        // Not placed yet: away from the windows already at its default
+        // place. The windows of things go beside each other while there is
+        // room, the others below.
+        const bool beside = WindowList::is_object_id(id);
+        for (int tries = 0; tries < 2 * static_cast<int>(WindowList::kMaxObjects); ++tries) {
+            const ui::Rect* hit = nullptr;
+            for (const auto* rects : {&shown_, &shown_last_}) {
+                for (const auto& [other, r] : *rects) {
+                    if (other != id && std::abs(r.x - box.x) < 4.0f && std::abs(r.y - box.y) < 4.0f) {
+                        hit = &r;
+                    }
                 }
+            }
+            if (hit == nullptr) {
+                break;
+            }
+            if (beside && box.x - box.w - gap >= left_x(ctx)) {
+                box.x -= box.w + gap;
+            } else {
+                box.y += beside ? bar_h : std::max(bar_h + gap, hit->h + gap);
             }
         }
         // From now on it stays there (until the player moves it).
@@ -157,66 +120,58 @@ bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, co
         p.y = box.y / sc;
         p.placed = true;
     }
-    if (p.w > 0.0f) {
-        box.w = std::round(std::clamp(p.w * sc, min_w, std::max(min_w, ctx.width() - 2 * pad)));
+    if (p.minimized) {
+        box.h = bar_h;
     }
     // Always on the screen, below the top bar.
     box.x = std::clamp(box.x, 0.0f, std::max(0.0f, ctx.width() - box.w));
-    box.y = std::clamp(box.y, std::round(ctx.s(kTopBarH)), std::max(std::round(ctx.s(kTopBarH)), ctx.height() - bar_h));
+    box.y = std::clamp(box.y, top, std::max(top, ctx.height() - bar_h));
 
-    // Just opened: it takes the focus.
-    if (!shown_last_.contains(id) || opened_.contains(id)) {
-        focus_ = id;
-        seen_ns_[id] = now;
-        opened_.erase(id);
-    }
-    if (inside(box, in.mouse_x, in.mouse_y) || dragging_ == id) {
-        seen_ns_[id] = now;
-    }
-    const bool collapsed = !p.pinned && focus_ != id && dragging_ != id && now - seen_ns_[id] > kCollapseNs;
-    if (collapsed) {
-        // A tab with the title; the cursor over it opens the window again.
-        const float tw = std::min(box.w, ctx.text().measure(ctx.style(ctx.theme().body), title) + 2 * pad + ctx.s(16.0f));
-        const ui::Rect tab{box.x, box.y, tw, std::round(title_h + pad * 0.6f)};
-        ctx.panel(tab);
-        block(s, tab);
-        ctx.label(tab.inset(ctx.s(6.0f)), title, ctx.style(ctx.theme().body), ctx.theme().text_dim, ui::Align::Center);
-        if (inside(tab, in.mouse_x, in.mouse_y)) {
-            seen_ns_[id] = now;
-        }
-        shown_[id] = tab;
-        return false;
-    }
-
+    // Solid: what lies behind a window does not show through it.
+    ui::Color solid = ctx.theme().panel;
+    solid.a = 255;
+    ctx.draw().rect(box, solid);
     ctx.panel(box);
     block(s, box);
     shown_[id] = box;
     if (live && in.mouse_pressed && inside(box, in.mouse_x, in.mouse_y)) {
-        focus_ = id;
+        windows_.raise(id);  // Touched: in front from the next frame.
     }
-    ctx.push_id(id);
-    // Title, pin and close.
+    // Title, minimize, pin and close.
     const float pin_w = std::round(ctx.s(64.0f));
-    ctx.label({box.x + pad, box.y + pad, box.w - 2 * pad - button - pin_w - ctx.s(6.0f), title_h}, title, title_style,
-              ctx.theme().accent);
-    if (ctx.button(ctx.id("pin"), {box.right() - pad - button - pin_w - ctx.s(6.0f), box.y + pad, pin_w, button},
-                   tr(p.pinned ? "hud.window.pinned" : "hud.window.pin"), tr("hud.window.pin.tooltip"), true, p.pinned)) {
-        p.pinned = !p.pinned;
+    const float buttons = button + gap + pin_w + gap + button;
+    ctx.label({box.x + pad, box.y + pad, box.w - 2 * pad - buttons - gap, title_h}, title, title_style, ctx.theme().accent);
+    const float by = box.y + std::round((bar_h - button) * 0.5f) + (p.minimized ? 0.0f : ctx.s(2.0f));
+    const bool pinned = p.pinned;
+    bool closed = false;
+    if (ctx.button(ctx.id("minimize"), {box.right() - pad - buttons, by, button, button},
+                   tr(p.minimized ? "hud.window.restore" : "hud.window.minimize"),
+                   tr(p.minimized ? "hud.window.restore.tooltip" : "hud.window.minimize.tooltip"))) {
+        p.minimized = !p.minimized;
         save_places();
     }
-    if (ctx.button(ctx.id("close"), {box.right() - pad - button, box.y + pad, button, button}, tr("hud.close"),
+    if (ctx.button(ctx.id("pin"), {box.right() - pad - button - gap - pin_w, by, pin_w, button},
+                   tr(pinned ? "hud.window.pinned" : "hud.window.pin"), tr("hud.window.pin.tooltip"), true, pinned)) {
+        windows_.set_pinned(id, !pinned);
+        save_places();
+    }
+    if (ctx.button(ctx.id("close"), {box.right() - pad - button, by, button, button}, tr("hud.close"),
                    tr("hud.window.close.tooltip"))) {
         open = false;
+        closed = true;
     }
-    ctx.pop_id();
 
     // Moving by the title bar (with its group), resizing by the corner.
-    const ui::Rect bar{box.x, box.y, box.w - button - pin_w - pad - ctx.s(6.0f), bar_h};
+    const ui::Rect bar{box.x, box.y, box.w - buttons - pad - gap, bar_h};
     const ui::Rect grip{box.right() - ctx.s(16.0f), box.bottom() - ctx.s(16.0f), ctx.s(16.0f), ctx.s(16.0f)};
-    ctx.draw().rect({grip.x + ctx.s(6.0f), grip.bottom() - ctx.s(4.0f), ctx.s(8.0f), ctx.s(2.0f)}, ctx.theme().panel_border);
-    ctx.draw().rect({grip.right() - ctx.s(4.0f), grip.y + ctx.s(6.0f), ctx.s(2.0f), ctx.s(8.0f)}, ctx.theme().panel_border);
-    if (live && in.mouse_pressed && dragging_.empty()) {
-        if (inside(grip, in.mouse_x, in.mouse_y)) {
+    if (!p.minimized) {
+        ctx.draw().rect({grip.x + ctx.s(6.0f), grip.bottom() - ctx.s(4.0f), ctx.s(8.0f), ctx.s(2.0f)},
+                        ctx.theme().panel_border);
+        ctx.draw().rect({grip.right() - ctx.s(4.0f), grip.y + ctx.s(6.0f), ctx.s(2.0f), ctx.s(8.0f)},
+                        ctx.theme().panel_border);
+    }
+    if (live && in.mouse_pressed && dragging_.empty() && !closed) {
+        if (!p.minimized && inside(grip, in.mouse_x, in.mouse_y)) {
             dragging_ = id;
             resizing_ = true;
         } else if (inside(bar, in.mouse_x, in.mouse_y)) {
@@ -225,7 +180,7 @@ bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, co
             grab_x_ = in.mouse_x - box.x;
             grab_y_ = in.mouse_y - box.y;
             if ((SDL_GetModState() & SDL_KMOD_CTRL) != 0) {
-                p.group = 0;  // Ctrl: out of its group.
+                windows_.leave_group(id);  // Ctrl: out of its group.
             }
         }
     }
@@ -233,60 +188,34 @@ bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, co
         if (resizing_) {
             p.w = std::clamp(in.mouse_x - box.x, min_w, ctx.width()) / sc;
             box.w = std::round(p.w * sc);
-            if (!p.placed) {
-                p.x = box.x / sc;
-                p.y = box.y / sc;
-                p.placed = true;
-            }
         } else {
-            float x = in.mouse_x - grab_x_;
-            float y = in.mouse_y - grab_y_;
-            // Magnets: the screen edges and the other windows' edges.
-            const float snap = kSnap * sc;
-            const auto pull = [&](float& v, float target) {
-                if (std::abs(v - target) < snap) {
-                    v = target;
-                }
-            };
-            pull(x, 0.0f);
-            pull(x, ctx.width() - box.w);
-            pull(y, std::round(ctx.s(kTopBarH)));
+            ui::Rect moved = box;
+            moved.x = in.mouse_x - grab_x_;
+            moved.y = in.mouse_y - grab_y_;
+            // Magnets: the screen, the build bar and the other windows.
+            std::vector<ui::Rect> others;
             for (const auto& [other, r] : shown_last_) {
-                if (other == id || (p.group != 0 && places_[other].group == p.group)) {
-                    continue;
-                }
-                const bool rows = y < r.bottom() + snap && y + box.h > r.y - snap;
-                const bool cols = x < r.right() + snap && x + box.w > r.x - snap;
-                if (rows) {
-                    pull(x, r.right());
-                    pull(x, r.x - box.w);
-                    pull(x, r.x);
-                }
-                if (cols) {
-                    pull(y, r.bottom());
-                    pull(y, r.y);
+                if (other != id && (p.group == 0 || windows_.place(other).group != p.group)) {
+                    others.push_back(r);
                 }
             }
-            const float dx = x - box.x;
-            const float dy = y - box.y;
-            box.x = x;
-            box.y = y;
-            p.x = x / sc;
-            p.y = y / sc;
-            p.placed = true;
+            WindowList::magnets(moved, others, {ctx.width(), ctx.height(), top, build_bar_top_}, kSnap * sc);
+            const float dx = moved.x - box.x;
+            const float dy = moved.y - box.y;
+            box.x = moved.x;
+            box.y = moved.y;
+            p.x = box.x / sc;
+            p.y = box.y / sc;
             // The group moves along.
             if (p.group != 0 && (dx != 0.0f || dy != 0.0f)) {
-                for (auto& [other, w] : places_) {
+                for (const auto& [other, r] : shown_last_) {
+                    WindowList::Place& w = windows_.place(other);
                     if (other == id || w.group != p.group) {
                         continue;
                     }
                     if (!w.placed) {
-                        const auto it = shown_last_.find(other);
-                        if (it == shown_last_.end()) {
-                            continue;
-                        }
-                        w.x = it->second.x / sc;
-                        w.y = it->second.y / sc;
+                        w.x = r.x / sc;
+                        w.y = r.y / sc;
                         w.placed = true;
                     }
                     w.x += dx / sc;
@@ -298,32 +227,22 @@ bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, co
     // Released touching another window: they dock.
     if (dragging_ == id && !in.mouse_down && !resizing_) {
         for (const auto& [other, r] : shown_last_) {
-            if (other == id) {
-                continue;
-            }
-            const bool side = (std::abs(box.x - r.right()) < 1.0f || std::abs(box.right() - r.x) < 1.0f) &&
-                              box.y < r.bottom() && box.bottom() > r.y;
-            const bool stack = (std::abs(box.y - r.bottom()) < 1.0f || std::abs(box.bottom() - r.y) < 1.0f) &&
-                               box.x < r.right() && box.right() > r.x;
-            if (side || stack) {
-                WindowPlace& o = places_[other];
+            if (other != id && WindowList::touching(box, r)) {
+                WindowList::Place& o = windows_.place(other);
                 if (!o.placed) {
                     o.x = r.x / sc;
                     o.y = r.y / sc;
                     o.placed = true;
                 }
-                if (o.group == 0) {
-                    o.group = next_group_++;
-                }
-                p.group = o.group;
+                windows_.dock(id, other);
             }
         }
     }
-    return true;
+    return !closed && !windows_.place(id).minimized;
 }
 
 void GameHud::open_window(const std::string& id) {
-    opened_.insert(id);
+    windows_.raise(id);
 }
 
 // --- The launcher on the left -----------------------------------------------------------------
@@ -372,9 +291,13 @@ void GameHud::dock(ui::Context& ctx, GameSession& s) {
             label = tr("hud.army", game.soldiers(s.town()));
         }
         if (ctx.button(ctx.id(std::string("dock_") + e.id), r, label, tr(e.tooltip), true, *e.open)) {
-            *e.open = !*e.open;
-            if (*e.open) {
-                open_window(e.id);
+            if (*e.open && windows_.place(e.id).pinned) {
+                open_window(e.id);  // Pinned: only its own X closes it.
+            } else {
+                *e.open = !*e.open;
+                if (*e.open) {
+                    open_window(e.id);
+                }
             }
         }
         y += h + gap;

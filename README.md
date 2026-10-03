@@ -601,6 +601,22 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 62
+
+- [ ] Seleccionar un aldeano y luego otro: la misma ventana cambia de aldeano. Pulsar "Fijar" y seleccionar otro: se abre una segunda ventana al lado.
+- [ ] Tres ventanas de aldeano y dos de edificio abiertas a la vez; "Seguir", los trabajadores (+/−) y demoler actúan sobre el objeto de su propia ventana.
+- [ ] Con una ventana fijada: Esc, un clic en el suelo, elegir un edificio de la barra de construcción y otra selección no la cierran. Su × sí.
+- [ ] La × cierra las ventanas de aldeano y de edificio (antes no hacía nada).
+- [ ] Dos ventanas encimadas: se ve entera la de arriba, no se lee la de abajo a través de ella, y un clic donde se enciman solo actúa en la de arriba. Tocar la de abajo la trae al frente.
+- [ ] Una ventana sobre la barra de construcción: el clic no elige el edificio que queda debajo.
+- [ ] "–" deja solo el título; "+" la restaura. Ya no se pliegan solas.
+- [ ] Al arrastrar: se pegan al borde inferior, a la barra de construcción y a los bordes de otras ventanas (también alineando bordes iguales). Soltadas tocándose quedan ancladas y se mueven juntas; al cerrar una de dos, la otra queda suelta.
+- [ ] Fijar una ventana de edificio y demolerlo desde otra parte (o que se queme): la ventana dice "Ya no existe" y se cierra con su ×.
+- [ ] Con Bienes fijada, el botón "Bienes" del lanzador no la cierra.
+- [ ] Salir y volver a entrar: las ventanas del lanzador recuerdan sitio, ancho, fijado y minimizado.
+- [ ] La brújula es solo la aguja y la N, sin disco.
+- [ ] **Sin revisar en pantalla por Claude**: arrastrar, imanes, anclar y cambiar el ancho.
+
 ### Fase 61
 
 - [ ] Tercera persona (F4): al bajar la cámara hasta el suelo y seguir arrastrando, la vista sube hacia el cielo (hasta unos 60°) sin atravesar el suelo; al volver, primero baja la vista y luego sube la cámara.

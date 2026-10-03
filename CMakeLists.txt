@@ -296,6 +296,7 @@ set(SC_ENGINE_SOURCES
     src/game/variants.cpp
     src/game/village_view.cpp
     src/game/walkers.cpp
+    src/game/window_list.cpp
     src/i18n/catalog.cpp
     src/mods/defs.cpp
     src/net/enet_link.cpp
@@ -443,7 +444,8 @@ if(SC_BUILD_TESTS)
         tests/test_fog.cpp
         tests/test_terrain_names.cpp
         tests/test_map_report.cpp
-        tests/test_worldgen_hier.cpp)
+        tests/test_worldgen_hier.cpp
+        tests/test_windows.cpp)
     target_link_libraries(salvaciudad_tests PRIVATE sc_engine sc_viewer doctest)
     target_compile_definitions(salvaciudad_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
@@ -456,7 +458,7 @@ if(SC_BUILD_TESTS)
         target_link_options(salvaciudad_tests PRIVATE /INCREMENTAL:NO)
     endif()
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life minimap nav)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life minimap nav windows)
     # AddressSanitizer runs about twice as slow, and its times vary up to
     # twice between runs (D-3110).
     set(SC_TEST_TIMEOUT 120)

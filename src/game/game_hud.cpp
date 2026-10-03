@@ -3,6 +3,7 @@
 #include "core/speed.h"
 
 #include <algorithm>
+#include <functional>
 #include <cmath>
 
 #include "i18n/translator.h"
@@ -16,7 +17,7 @@ namespace {
 constexpr float kTopBarH = 44.0f;
 constexpr float kBuildButtonW = 150.0f;
 constexpr float kBuildButtonH = 44.0f;
-constexpr float kWindowW = 360.0f;
+constexpr float kWindowW = 400.0f;  // Room for the title beside its three buttons.
 
 const char* place_error_key(sim::PlaceError e) {
     switch (e) {
@@ -155,6 +156,14 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
         ui.selected_villager = {};
     }
 
+    // Another game: the windows of the last one's things go.
+    if (windows_session_ != s) {
+        windows_session_ = s;
+        windows_.clear_objects();
+        selected_shown_ = {};
+    }
+    windows_begin(ctx);
+
     bool open_menu = false;
     if (!blocked) {
         if (pressed(ctx, Action::GameRotateBuilding) && ui.placing != sim::kNoDef) {
@@ -166,58 +175,141 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
                 ui.field_dragging = false;
             } else if (ui.placing != sim::kNoDef) {
                 ui.placing = sim::kNoDef;
-            } else if (ui.selected_building.valid() || ui.selected_villager.valid()) {
+            } else if (ui.selected_building.valid() || ui.selected_villager.valid() || windows_.passing() != nullptr) {
+                // Only the passing window goes; the pinned ones stay.
                 ui.selected_building = {};
                 ui.selected_villager = {};
+                windows_.close_passing();
             } else {
                 open_menu = true;
             }
         }
     }
+    sync_selection(ctx, *s);
 
+    // Under a window, the rest of the interface does not hear the mouse.
+    const bool covered = !hover_top_.empty();
+    ctx.set_input_blocked(blocked || covered);
     top_bar(ctx, *s);
     build_bar(ctx, *s);
-    minimap(ctx, *s, blocked);
+    minimap(ctx, *s, blocked);  // It knows by itself what lies over it.
     if (ui.placing != sim::kNoDef || ui.field_farm.valid()) {
         placement_hint(ctx, *s);
     }
-    windows_begin(ctx);
     dock(ctx, *s);
-    // A newly selected building or villager: its window comes forward.
-    if (ui.selected_building != last_building_ && ui.selected_building.valid()) {
-        open_window("building");
-    }
-    if (ui.selected_villager != last_villager_ && ui.selected_villager.valid()) {
-        open_window("villager");
-    }
-    last_building_ = ui.selected_building;
-    last_villager_ = ui.selected_villager;
-    if (ui.selected_building.valid()) {
-        building_window(ctx, *s);
-    } else if (ui.selected_villager.valid()) {
-        villager_window(ctx, *s);
-    }
-    if (trade_open_) {
-        trade_window(ctx, *s);
-    }
-    if (army_open_) {
-        army_window(ctx, *s);
-    }
-    if (goods_open_) {
-        goods_window(ctx, *s);
-    }
-    if (stats_open_) {
-        stats_window(ctx, *s);
-    }
-    if (log_open_) {
-        log_window(ctx, *s);
-    }
-    if (layers_open_) {
-        layers_window(ctx, *s);
-    }
     notifications(ctx, *s, build_bar_top_);
+
+    // The windows, from the back to the front; only the one in front under
+    // the cursor (or the one being dragged) hears the mouse.
+    struct Job {
+        std::string id;
+        std::function<void()> draw;
+    };
+    std::vector<Job> jobs;
+    const auto fixed = [&](const char* id, bool& open, void (GameHud::*draw)(ui::Context&, GameSession&)) {
+        if (open) {
+            jobs.push_back({id, [this, &ctx, s, draw] { (this->*draw)(ctx, *s); }});
+        } else if (windows_.open(id)) {
+            windows_.close(id);
+        }
+    };
+    fixed("trade", trade_open_, &GameHud::trade_window);
+    fixed("army", army_open_, &GameHud::army_window);
+    fixed("goods", goods_open_, &GameHud::goods_window);
+    fixed("stats", stats_open_, &GameHud::stats_window);
+    fixed("log", log_open_, &GameHud::log_window);
+    fixed("layers", layers_open_, &GameHud::layers_window);
+    for (const WindowList::Object& o : windows_.objects()) {
+        jobs.push_back({o.id, [this, &ctx, s, o] {
+                            if (o.kind == WindowList::Kind::Building) {
+                                building_window(ctx, *s, o);
+                            } else {
+                                villager_window(ctx, *s, o);
+                            }
+                        }});
+    }
+    for (const Job& j : jobs) {
+        if (!windows_.open(j.id)) {
+            windows_.raise(j.id);  // Opened without a click (a trade offer): in front.
+        }
+    }
+    const std::vector<std::string> order = windows_.order();
+    for (const std::string& id : order) {
+        const auto job = std::find_if(jobs.begin(), jobs.end(), [&](const Job& j) { return j.id == id; });
+        // A window may have gone while the ones behind it were drawn.
+        if (job == jobs.end() || (WindowList::is_object_id(id) && windows_.object(id) == nullptr)) {
+            continue;
+        }
+        const bool mine = hover_top_.empty() || hover_top_ == id;
+        ctx.set_input_blocked(blocked || !mine);
+        ctx.push_id(id);
+        job->draw();
+        ctx.pop_id();
+    }
+    ctx.set_input_blocked(blocked);
+    for (const std::string& id : closing_) {
+        if (const WindowList::Object* o = windows_.object(id)) {
+            // The selection goes with its window.
+            if (o->entity == ui.selected_building) {
+                ui.selected_building = {};
+            }
+            if (o->entity == ui.selected_villager) {
+                ui.selected_villager = {};
+            }
+        }
+        windows_.close(id);
+    }
+    closing_.clear();
     windows_end(ctx);
     return open_menu;
+}
+
+void GameHud::sync_selection(ui::Context& ctx, GameSession& s) {
+    GameSession::Interaction& ui = s.ui();
+    const sim::Game& game = s.game();
+    const bool building = ui.selected_building.valid();
+    const sim::EntityId now = building ? ui.selected_building : ui.selected_villager;
+    const WindowList::Kind kind = building ? WindowList::Kind::Building : WindowList::Kind::Villager;
+    if (now != selected_shown_ || (now.valid() && kind != selected_kind_)) {
+        if (now.valid()) {
+            if (windows_.select(kind, now).empty()) {
+                notify(tr("hud.window.limit", static_cast<int>(WindowList::kMaxObjects)), false, 0.0f, 0.0f,
+                       game.calendar(), ctx.now_ns());
+            }
+        } else {
+            windows_.close_passing();  // A click on the ground, the build bar...
+        }
+        selected_shown_ = now;
+        selected_kind_ = kind;
+    }
+    // The passing window of a thing that is no more goes; a pinned one
+    // stays to say so.
+    if (const WindowList::Object* o = windows_.passing()) {
+        const bool there = o->kind == WindowList::Kind::Building ? game.buildings().get(o->entity) != nullptr
+                                                                 : game.villagers().get(o->entity) != nullptr;
+        if (!there) {
+            windows_.close_passing();
+        }
+    }
+}
+
+void GameHud::gone_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o) {
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const float pad = ctx.s(14.0f);
+    const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
+    const float w = std::min(ctx.s(kWindowW), ctx.width() - 2 * pad);
+    const std::string text = tr(o.kind == WindowList::Kind::Building ? "hud.window.gone.building" : "hud.window.gone.villager");
+    const float text_h = ctx.paragraph_height(w - 2 * pad, text, body);
+    ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
+                 std::round(pad + title_h + pad + text_h + pad)};
+    bool open = true;
+    if (!window(ctx, s, o.id, tr("hud.window.gone.title"), box, open)) {
+        if (!open) {
+            closing_.push_back(o.id);
+        }
+        return;
+    }
+    (void)ctx.paragraph({box.x + pad, box.y + pad + title_h + pad, box.w - 2 * pad, text_h}, text, body, ctx.theme().text_dim);
 }
 
 void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
@@ -543,12 +635,13 @@ void GameHud::placement_hint(ui::Context& ctx, GameSession& s) {
     ctx.label(r, text, st, color, ui::Align::Center);
 }
 
-void GameHud::building_window(ui::Context& ctx, GameSession& s) {
+void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o) {
     const sim::Game& game = s.game();
     const sim::Content& content = game.content();
-    GameSession::Interaction& ui = s.ui();
-    const sim::Building* b = game.buildings().get(ui.selected_building);
+    window_entity_ = o.entity;
+    const sim::Building* b = game.buildings().get(o.entity);
     if (b == nullptr) {
+        gone_window(ctx, s, o);
         return;
     }
     const sim::BuildingDef& d = content.buildings[b->def];
@@ -626,7 +719,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     if (has_workers) {
         h += button_h + pad * 0.5f;
     }
-    const bool removable = ui.selected_building != game.player(s.town()).town_center;
+    const bool removable = window_entity_ != game.player(s.town()).town_center;
     if (removable) {
         h += button_h + pad * 0.5f;
     }
@@ -655,9 +748,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
     ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
                  std::round(h)};
     bool open = true;
-    if (!window(ctx, s, "building", tr(d.name_key), box, open)) {
+    if (!window(ctx, s, o.id, tr(d.name_key), box, open)) {
         if (!open) {
-            ui.selected_building = {};
+            closing_.push_back(o.id);
         }
         return;
     }
@@ -679,7 +772,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         const auto set_workers = [&](std::int32_t n) {
             sim::Command c;
             c.type = sim::CommandType::SetWorkers;
-            c.entity = ui.selected_building;
+            c.entity = window_entity_;
             c.value = n;
             s.issue(c);
         };
@@ -710,7 +803,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         const auto set_reserve = [&](std::int32_t n) {
             sim::Command c;
             c.type = sim::CommandType::SetLimit;
-            c.entity = ui.selected_building;
+            c.entity = window_entity_;
             c.value = std::clamp(n, 0, 10000);
             s.issue(c);
         };
@@ -739,7 +832,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
         const auto set_limit = [&](std::int32_t n) {
             sim::Command c;
             c.type = sim::CommandType::SetLimit;
-            c.entity = ui.selected_building;
+            c.entity = window_entity_;
             c.value = std::clamp(n, 0, 10000);
             s.issue(c);
         };
@@ -775,7 +868,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
                        tr("hud.tc.upgrade.tooltip"), can)) {
             sim::Command c;
             c.type = sim::CommandType::UpgradeBuilding;
-            c.entity = ui.selected_building;
+            c.entity = window_entity_;
             s.issue(c);
         }
         y += button_h + pad * 0.5f;
@@ -798,9 +891,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s) {
                        tr(building ? "hud.building.cancel.tooltip" : "hud.building.demolish.tooltip"))) {
             sim::Command c;
             c.type = sim::CommandType::RemoveBuilding;
-            c.entity = ui.selected_building;
+            c.entity = window_entity_;
             s.issue(c);
-            ui.selected_building = {};
+            closing_.push_back(o.id);
         }
     }
     ctx.pop_id();
@@ -826,7 +919,7 @@ void GameHud::barracks_section(ui::Context& ctx, GameSession& s, const sim::Buil
                    !b.training.empty())) {
         sim::Command c;
         c.type = sim::CommandType::TrainUnit;
-        c.entity = s.ui().selected_building;
+        c.entity = window_entity_;
         c.value = 0;
         s.issue(c);
     }
@@ -852,7 +945,7 @@ void GameHud::barracks_section(ui::Context& ctx, GameSession& s, const sim::Buil
         const auto order = [&](std::int32_t value) {
             sim::Command c;
             c.type = sim::CommandType::TrainUnit;
-            c.entity = s.ui().selected_building;
+            c.entity = window_entity_;
             c.def = static_cast<sim::DefIndex>(i);
             c.value = value;
             s.issue(c);
@@ -1038,7 +1131,7 @@ void GameHud::merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect&
         const auto trade = [&](std::int32_t n) {
             sim::Command c;
             c.type = sim::CommandType::Trade;
-            c.entity = s.ui().selected_building;
+            c.entity = window_entity_;
             c.def = r;
             c.value = n;
             s.issue(c);
@@ -1452,7 +1545,7 @@ void GameHud::farm_fields(ui::Context& ctx, GameSession& s, const sim::Building&
                 }
                 sim::Command c;
                 c.type = sim::CommandType::SetCrop;
-                c.entity = ui.selected_building;
+                c.entity = window_entity_;
                 c.def = next;
                 c.value = static_cast<std::int32_t>(i) | static_cast<std::int32_t>(year << 8);
                 s.issue(c);
@@ -1462,7 +1555,7 @@ void GameHud::farm_fields(ui::Context& ctx, GameSession& s, const sim::Building&
                        tr("hud.farm.remove.tooltip"))) {
             sim::Command c;
             c.type = sim::CommandType::RemoveField;
-            c.entity = ui.selected_building;
+            c.entity = window_entity_;
             c.value = static_cast<std::int32_t>(i);
             s.issue(c);
         }
@@ -1472,19 +1565,20 @@ void GameHud::farm_fields(ui::Context& ctx, GameSession& s, const sim::Building&
     const bool room = static_cast<std::int32_t>(b.fields.size()) < content.buildings[b.def].fields;
     const float button_h = std::round(ctx.s(34.0f));
     if (ctx.button(ctx.id("new_field"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr("hud.farm.newField"),
-                   tr(room ? "hud.farm.newField.tooltip" : "hud.farm.full"), room, ui.field_farm == ui.selected_building)) {
-        ui.field_farm = ui.selected_building;
+                   tr(room ? "hud.farm.newField.tooltip" : "hud.farm.full"), room, ui.field_farm == window_entity_)) {
+        ui.field_farm = window_entity_;
         ui.placing = sim::kNoDef;
     }
     y += button_h;
 }
 
-void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
+void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o) {
     const sim::Game& game = s.game();
     const sim::Content& content = game.content();
     GameSession::Interaction& ui = s.ui();
-    const sim::Villager* v = game.villagers().get(ui.selected_villager);
+    const sim::Villager* v = game.villagers().get(o.entity);
     if (v == nullptr) {
+        gone_window(ctx, s, o);
         return;
     }
     const ui::TextStyle body = ctx.style(ctx.theme().body);
@@ -1522,9 +1616,9 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
     const char* name_key = !game.adult(*v) ? (female ? "hud.villager.girl" : "hud.villager.boy")
                                            : (female ? "hud.villager.woman" : "hud.villager.man");
     bool open = true;
-    if (!window(ctx, s, "villager", tr(name_key), box, open)) {
+    if (!window(ctx, s, o.id, tr(name_key), box, open)) {
         if (!open) {
-            ui.selected_villager = {};
+            closing_.push_back(o.id);
         }
         return;
     }
@@ -1549,11 +1643,11 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
         v->health < sim::village::kHealthMax / 2 ? ctx.theme().danger : ui::Color::rgb(0x6FAF5A));
     // Phase 61: the camera follows it (a double click on it does the same).
     y += pad * 0.5f;
-    const bool followed = ui.followed_villager == ui.selected_villager;
+    const bool followed = ui.followed_villager == o.entity;
     if (ctx.button(ctx.id("follow"), {box.x + pad, y, box.w - 2 * pad, follow_h},
                    tr(followed ? "hud.villager.unfollow" : "hud.villager.follow"), tr("hud.villager.follow.tooltip"), true,
                    followed)) {
-        ui.followed_villager = followed ? sim::EntityId{} : ui.selected_villager;
+        ui.followed_villager = followed ? sim::EntityId{} : o.entity;
     }
     ctx.pop_id();
 }

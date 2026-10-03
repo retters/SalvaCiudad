@@ -148,8 +148,7 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
     compass(ctx, {std::round(frame.x - margin - ctx.s(kCompassSize)), frame.y, std::round(ctx.s(kCompassSize)),
                   std::round(ctx.s(kCompassSize))},
             view.yaw);
-    block(s, {std::round(frame.x - margin - ctx.s(kCompassSize)), frame.y, std::round(ctx.s(kCompassSize)),
-              std::round(ctx.s(kCompassSize))});
+    // Without a dial there is nothing to click on: the map under it is.
 }
 
 void GameHud::compass(ui::Context& ctx, const ui::Rect& box, float yaw) {
@@ -158,18 +157,9 @@ void GameHud::compass(ui::Context& ctx, const ui::Rect& box, float yaw) {
     const float cx = box.x + box.w * 0.5f;
     const float cy = box.y + box.h * 0.5f;
     const float radius = box.w * 0.5f;
-    // A round dial from a fan of triangles.
-    constexpr int kSides = 32;
-    const float border = std::max(1.0f, std::round(ctx.s(1.5f)));
-    for (int i = 0; i < kSides; ++i) {
-        const float a0 = static_cast<float>(i) / kSides * 6.2831853f;
-        const float a1 = static_cast<float>(i + 1) / kSides * 6.2831853f;
-        d.triangle(cx, cy, cx + std::cos(a0) * radius, cy + std::sin(a0) * radius, cx + std::cos(a1) * radius,
-                   cy + std::sin(a1) * radius, theme.panel_border);
-        const float inner = radius - border;
-        d.triangle(cx, cy, cx + std::cos(a0) * inner, cy + std::sin(a0) * inner, cx + std::cos(a1) * inner,
-                   cy + std::sin(a1) * inner, theme.panel);
-    }
+    // No dial (phase 62): only the arrow and the N over the map. A dark
+    // edge under each keeps them readable on any ground.
+    const ui::Color edge = theme.tooltip;
     // The arrow: a red half toward north, a light half behind.
     const std::array<float, 2> north = minimap::north_on_screen(yaw);
     const float nx = north[0];
@@ -178,12 +168,24 @@ void GameHud::compass(ui::Context& ctx, const ui::Rect& box, float yaw) {
     const float py = nx;
     const float tip = radius * 0.5f;
     const float half = radius * 0.2f;
+    const float grow = std::max(1.5f, ctx.s(2.5f));
+    d.triangle(cx + nx * (tip + 2 * grow), cy + ny * (tip + 2 * grow), cx + px * (half + grow), cy + py * (half + grow),
+               cx - px * (half + grow), cy - py * (half + grow), edge);
+    d.triangle(cx - nx * (tip + 2 * grow), cy - ny * (tip + 2 * grow), cx + px * (half + grow), cy + py * (half + grow),
+               cx - px * (half + grow), cy - py * (half + grow), edge);
     d.triangle(cx + nx * tip, cy + ny * tip, cx + px * half, cy + py * half, cx - px * half, cy - py * half, theme.danger);
     d.triangle(cx - nx * tip, cy - ny * tip, cx + px * half, cy + py * half, cx - px * half, cy - py * half, theme.text);
     // The N at the arrow's head.
     const ui::TextStyle letter = ctx.style(theme.small, ui::FontRole::Bold);
     const float lh = ctx.text().line_height(letter);
     const float at = radius * 0.74f;
+    const float off = std::max(1.0f, std::round(ctx.s(1.0f)));
+    for (const float ox : {-off, off}) {
+        for (const float oy : {-off, off}) {
+            ctx.label({cx + nx * at - lh * 0.5f + ox, cy + ny * at - lh * 0.5f + oy, lh, lh}, tr("hud.minimap.north"),
+                      letter, edge, ui::Align::Center);
+        }
+    }
     ctx.label({cx + nx * at - lh * 0.5f, cy + ny * at - lh * 0.5f, lh, lh}, tr("hud.minimap.north"), letter, theme.text,
               ui::Align::Center);
     ctx.tooltip_area(ctx.id("compass"), box, tr("hud.compass.tooltip"));

@@ -2454,3 +2454,47 @@ Los árboles se buscan en una rejilla de 16 m hecha una vez por mapa, con muestr
 
 **D-6108. Sin revisar en pantalla por Claude.**
 Mirar al cielo (necesita arrastrar con el ratón) y los árboles translúcidos (no había árbol cerca en la partida de prueba). Sí se vio en pantalla: la casa que tapa el ancla translúcida, el fantasma del ancla y el botón "Seguir".
+
+## Fase 62: ventanas, base (2026-10-03)
+
+**D-6201. La lista de ventanas.**
+Las ventanas dejan de ser funciones sueltas que se dibujan en orden fijo: `WindowList` (`src/game/window_list.h`) guarda dónde está cada una, cuál va delante de cuál, las ventanas de objeto, los grupos y los imanes, sin dibujar nada, para poder probarla sola. `GameHud` las dibuja de atrás hacia adelante.
+
+**D-6202. Un clic solo llega a la ventana de arriba.**
+Cada cuadro se calcula qué ventana está delante bajo el cursor (con los rectángulos del cuadro anterior) y solo esa oye al ratón; las demás, y el resto de la interfaz que quede debajo (barra de construcción, lanzador, avisos), se dibujan sin atenderlo. Tocar una ventana la trae al frente. Las ventanas ahora son opacas: antes eran algo translúcidas y la de atrás se leía a través de la de adelante.
+
+**D-6203. Ventana "de paso" y ventanas fijadas.**
+Seleccionar algo en el mapa lo abre en la ventana de paso (la única ventana de objeto sin fijar), que la siguiente selección reutiliza en el mismo sitio. Al fijarla se queda y la siguiente selección abre otra, al lado mientras haya lugar. Si lo seleccionado ya tiene ventana fijada, esa pasa al frente y no se abre otra. Esc y un clic en el suelo cierran solo la de paso. Soltar ("Fijada" → "Fijar") una ventana de objeto la convierte en la de paso y cierra la que lo era. Cada ventana da sus órdenes sobre su propio objeto, no sobre la selección.
+
+**D-6204. Tope de 16.**
+Con 16 ventanas de objeto fijadas, una selección nueva no abre ventana y sale un aviso. Es lo más simple: cerrar por su cuenta una ventana que el jugador fijó iría contra "fijar".
+
+**D-6205. Qué impide "Fijar".**
+Una ventana fijada solo se cierra con su X. Para las ventanas del lanzador (Bienes, Estadísticas...) eso incluye el botón del lanzador: con la ventana fijada, el botón la trae al frente en vez de cerrarla.
+
+**D-6206. Objeto que deja de existir.**
+La ventana de paso se cierra sola (como antes). Una fijada se queda, con el título "Ya no existe" y una línea que lo explica, hasta que se cierre con su X. Demoler un edificio desde su ventana la cierra.
+
+**D-6207. Minimizar en lugar del plegado automático.**
+Se quitó el plegado a pestaña por tiempo. El botón "–" deja solo la barra de título (que se puede mover y fijar) y "+" la restaura. Se guarda en los ajustes como sexto valor de cada ventana; el formato de cinco valores de antes se sigue leyendo.
+
+**D-6208. Imanes.**
+Además de los bordes de pantalla y de quedar lado a lado o apiladas, las ventanas se pegan al borde inferior, a la barra de construcción y a los bordes iguales de otras (arriba con arriba, abajo con abajo, izquierda con izquierda, derecha con derecha). La pantalla gana a las ventanas cuando las dos tiran.
+
+**D-6209. Grupos.**
+Al cerrar una ventana, sale de su grupo; si el grupo queda con una sola, deja de existir (dos que siguen juntas siguen siendo grupo). Antes una ventana cerrada seguía en su grupo y al reabrirla se movía con ventanas que ya no tocaba. Al cargar, los grupos de un solo miembro se descartan y los grupos nuevos se numeran después de los leídos (antes volvían a empezar en 1 y se mezclaban con los guardados). Las ventanas de objeto pueden anclarse durante la partida, pero ni ellas ni sus grupos se guardan.
+
+**D-6210. Qué se guarda.**
+Solo las ventanas del lanzador. Las entradas `building` y `villager` de un `ui.windows` anterior se leen y se descartan. Al empezar otra partida se cierran las ventanas de objeto.
+
+**D-6211. C-003: la X no cerraba.**
+La función de la ventana devolvía "dibuja el contenido" aunque se hubiera pulsado la X, y las ventanas de aldeano y edificio solo miraban el cierre cuando no se dibujaba. Ahora la X devuelve "no dibujar" y cada ventana se cierra a sí misma.
+
+**D-6212. C-001: la brújula.**
+Sin disco: solo la aguja y la N, con un borde oscuro para que se lean sobre cualquier terreno. El cuadro de la brújula ya no tapa los clics al mapa.
+
+**D-6213. Ventanas de objeto más anchas.**
+De 360 a 400 unidades, para que el título quepa junto a los tres botones.
+
+**D-6214. Sin revisar en pantalla por Claude.**
+Mover ventanas, los imanes, anclar y cambiar el ancho: la herramienta de pruebas no logra arrastrar dentro del juego. Los cubren las pruebas de `WindowList`. Sí se vio en pantalla: varias ventanas de objeto fijadas a la vez, Esc y clic en el suelo, la X, minimizar, el traslape con la de arriba delante y la lectura de un `ui.windows` del formato anterior.

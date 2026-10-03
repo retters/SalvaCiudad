@@ -1,7 +1,7 @@
 // The interface of a village game (section 6.4): the top bar with goods,
 // population, date and speed; the build bar; the launcher on the left; the
-// game windows, which move, snap, dock, collapse to tabs and are remembered
-// (hud_windows.cpp); and the notifications.
+// game windows, which overlap, move, snap, dock, minimize and are remembered
+// (hud_windows.cpp, window_list.h); and the notifications.
 #pragma once
 
 #include <cstdint>
@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "game/services.h"
+#include "game/window_list.h"
 #include "ui/context.h"
 
 namespace sc {
@@ -51,8 +52,18 @@ public:
 private:
     void top_bar(ui::Context& ctx, GameSession& s);
     void build_bar(ui::Context& ctx, GameSession& s);
-    void building_window(ui::Context& ctx, GameSession& s);
-    void villager_window(ui::Context& ctx, GameSession& s);
+    // The windows of things on the map (phase 62): each acts on its own.
+    void building_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    void villager_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    // A pinned window whose thing is no more.
+    void gone_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    // The selection on the map opens, or takes over, a window.
+    void sync_selection(ui::Context& ctx, GameSession& s);
+    sim::EntityId window_entity_;        // The building of the window being drawn.
+    std::vector<std::string> closing_;   // Object windows closed this frame.
+    const GameSession* windows_session_ = nullptr;
+    WindowList::Kind selected_kind_ = WindowList::Kind::Building;
+    sim::EntityId selected_shown_;       // The selection the windows last followed.
     void farm_fields(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
                      float row_h);
     void placement_hint(ui::Context& ctx, GameSession& s);
@@ -97,35 +108,23 @@ private:
     void block(GameSession& s, const ui::Rect& r);
     [[nodiscard]] std::string cost_text(const sim::BuildingDef& def) const;
 
-    // Phase 17: the windows (hud_windows.cpp).
-    struct WindowPlace {
-        float x = 0.0f;  // Design units.
-        float y = 0.0f;
-        float w = 0.0f;  // 0: the window's own width.
-        bool placed = false;
-        bool pinned = false;
-        int group = 0;   // Docked windows share a group; 0 = alone.
-    };
-    static constexpr std::size_t kMaxLayoutBytes = 2048;
-    std::map<std::string, WindowPlace> places_;
+    // Phase 17: the windows (hud_windows.cpp); phase 62: as a list.
+    WindowList windows_;
     bool places_loaded_ = false;
-    std::string focus_;
+    std::string hover_top_;  // The window in front under the cursor (last frame's places).
     std::string dragging_;
     bool resizing_ = false;
     float grab_x_ = 0.0f;
     float grab_y_ = 0.0f;
-    int next_group_ = 1;
     std::map<std::string, ui::Rect> shown_;       // Drawn this frame.
-    std::map<std::string, ui::Rect> shown_last_;  // Drawn last frame (for the magnets).
-    std::map<std::string, std::uint64_t> seen_ns_;
-    std::set<std::string> opened_;                // Opened by the player this frame: they take the focus.
-    void load_places();
+    std::map<std::string, ui::Rect> shown_last_;  // Drawn last frame (for the magnets and the depth).
     void save_places();
     void windows_begin(ui::Context& ctx);
     void windows_end(ui::Context& ctx);
-    // Draws a window's frame, title, pin and close; `box` comes in with the
-    // default place and size and goes out where the player put it. False
-    // when it is collapsed to a tab or was closed (`open` becomes false).
+    // Draws a window's frame, title, minimize, pin and close; `box` comes in
+    // with the default place and size and goes out where the player put it.
+    // False when it is minimized or was closed (`open` becomes false): its
+    // content is not drawn.
     bool window(ui::Context& ctx, GameSession& s, const std::string& id, const std::string& title, ui::Rect& box,
                 bool& open);
     void open_window(const std::string& id);
@@ -139,8 +138,6 @@ private:
     bool stats_open_ = false;
     bool log_open_ = false;
     bool layers_open_ = false;
-    sim::EntityId last_building_;
-    sim::EntityId last_villager_;
     struct Note {
         std::string text;
         bool has_pos = false;
