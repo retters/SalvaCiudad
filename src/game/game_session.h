@@ -21,6 +21,10 @@ namespace net {
 class NetSession;
 }
 
+// Phase 64: the pictures of the camera windows, as images of the interface.
+inline constexpr std::uint32_t kCameraImageId = 10;  // And the next one.
+inline constexpr int kCameraWindows = 2;
+
 class GameSession {
 public:
     // A new game. In multiplayer `players` seats share the map (one common
@@ -70,6 +74,18 @@ public:
         }
         // Phase 61: the villager the camera follows (third or first person).
         sim::EntityId followed_villager;
+        // Phase 64: the camera windows. Each looks at a thing from an orbit
+        // of its own, without moving the main camera. `kind` as
+        // WindowList::Kind. The view closes one whose thing is gone.
+        struct CameraWindow {
+            bool open = false;
+            std::uint8_t kind = 0;
+            sim::EntityId entity;
+            float yaw = 0.6f;       // Radians around the thing.
+            float pitch = 0.5f;     // Radians over the horizon.
+            float distance = 12.0f;
+        };
+        std::array<CameraWindow, kCameraWindows> camera_windows;
         // Marking out a field for this farm: dragged from one corner cell.
         sim::EntityId field_farm;
         bool field_dragging = false;

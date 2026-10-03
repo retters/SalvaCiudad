@@ -23,7 +23,8 @@ cbuffer SceneUniforms : register(b0, space3)
     float4 ground_ambient;      // rgb for normals facing down.
     float4 fog_color;           // rgb; a = density.
     float4 camera_position;     // xyz; w = number of cascades (0 = no shadows).
-    float4 shadow_params;       // x = texel size, y = depth bias, z = snow cover (0..1).
+    float4 shadow_params;       // x = texel size, y = depth bias, z = snow cover (0..1),
+                                // w = 1: the cascades were fitted to another camera (a camera window).
     float4 war_params;          // Fog of war: see apply_war_fog().
 };
 
@@ -52,16 +53,40 @@ float sample_shadow(float3 world_pos, float view_distance, float3 normal)
         return 1.0;
     }
     int cascade = count - 1;
-    [unroll] for (int i = 2; i >= 0; --i)
+    if (shadow_params.w > 0.5)
     {
-        if (i < count && view_distance < cascade_split[i])
+        // Another camera's cascades: the finest one that holds the point,
+        // or no shadow where none does.
+        cascade = -1;
+        [unroll] for (int k = 2; k >= 0; --k)
         {
-            cascade = i;
+            if (k < count)
+            {
+                float4 at = mul(cascade_matrix[k], float4(world_pos, 1.0));
+                if (all(abs(at.xy) < 0.97) && at.z > 0.0 && at.z < 1.0)
+                {
+                    cascade = k;
+                }
+            }
+        }
+        if (cascade < 0)
+        {
+            return 1.0;
         }
     }
-    if (view_distance >= cascade_split[count - 1])
+    else
     {
-        return 1.0;  // Beyond the shadow distance.
+        [unroll] for (int i = 2; i >= 0; --i)
+        {
+            if (i < count && view_distance < cascade_split[i])
+            {
+                cascade = i;
+            }
+        }
+        if (view_distance >= cascade_split[count - 1])
+        {
+            return 1.0;  // Beyond the shadow distance.
+        }
     }
     // Push the lookup slightly along the normal to avoid self-shadowing.
     float3 offset_pos = world_pos + normal * (0.04 + 0.02 * cascade);

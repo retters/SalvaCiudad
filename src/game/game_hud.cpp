@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include "i18n/translator.h"
+#include "render/scene_renderer.h"
 
 namespace sc {
 
@@ -17,7 +18,7 @@ namespace {
 constexpr float kTopBarH = 44.0f;
 constexpr float kBuildButtonW = 150.0f;
 constexpr float kBuildButtonH = 44.0f;
-constexpr float kWindowW = 400.0f;  // Room for the title beside its three buttons.
+constexpr float kWindowW = 420.0f;  // Room for the title beside its three buttons, and for four in a row.
 
 const char* place_error_key(sim::PlaceError e) {
     switch (e) {
@@ -298,6 +299,14 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     fixed("stats", stats_open_, &GameHud::stats_window);
     fixed("log", log_open_, &GameHud::log_window);
     fixed("layers", layers_open_, &GameHud::layers_window);
+    for (int slot = 0; slot < kCameraWindows; ++slot) {
+        const std::string id = "cam" + std::to_string(slot + 1);
+        if (ui.camera_windows[static_cast<std::size_t>(slot)].open) {
+            jobs.push_back({id, [this, &ctx, s, slot] { camera_window(ctx, *s, slot); }});
+        } else if (windows_.open(id)) {
+            windows_.close(id);
+        }
+    }
     for (const WindowList::Object& o : windows_.objects()) {
         jobs.push_back({o.id, [this, &ctx, s, o] {
                             switch (o.kind) {
@@ -317,8 +326,8 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     for (const std::string& id : order) {
         const auto job = std::find_if(jobs.begin(), jobs.end(), [&](const Job& j) { return j.id == id; });
         // A window may have gone while the ones behind it were drawn.
-        if (job == jobs.end() || (WindowList::is_object_id(id) && windows_.object(id) == nullptr)) {
-            continue;
+        if (job == jobs.end() || (WindowList::is_object_id(id) && windows_.object(id) == nullptr) || windows_.hidden(id)) {
+            continue;  // (Or it is behind another tab of its window.)
         }
         const bool mine = hover_top_.empty() || hover_top_ == id;
         ctx.set_input_blocked(blocked || !mine);
@@ -868,15 +877,21 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     {
         // The eye takes the camera to it; the switch stops its work and
         // lets its workers go (it remembers how many it wanted).
-        const float half = std::round((box.w - 2 * pad - ctx.s(6.0f)) * 0.5f);
-        if (ctx.button(ctx.id("eye"), {box.x + pad, y, half, button_h}, tr("hud.window.eye"), tr("hud.window.eye.tooltip"))) {
+        std::vector<std::string> labels = {tr("hud.window.eye"), tr("hud.window.camera")};
+        if (has_workers && mine) {
+            labels.push_back(tr(b->stopped ? "hud.building.stopped" : "hud.building.working"));
+        }
+        const std::vector<ui::Rect> row = button_row(ctx, box, y, button_h, labels);
+        if (ctx.button(ctx.id("eye"), row[0], labels[0], tr("hud.window.eye.tooltip"))) {
             services_.focus_camera(static_cast<float>(b->x) + static_cast<float>(b->width) * 0.5f,
                                    static_cast<float>(b->z) + static_cast<float>(b->depth) * 0.5f);
         }
+        if (ctx.button(ctx.id("camera"), row[1], labels[1], tr("hud.window.camera.tooltip"))) {
+            open_camera(s, WindowList::Kind::Building, o.entity);
+        }
         if (has_workers && mine) {
-            if (ctx.button(ctx.id("production"), {box.right() - pad - half, y, half, button_h},
-                           tr(b->stopped ? "hud.building.stopped" : "hud.building.working"),
-                           tr("hud.building.production.tooltip"), true, b->stopped)) {
+            if (ctx.button(ctx.id("production"), row[2],
+                           labels[2], tr("hud.building.production.tooltip"), true, b->stopped)) {
                 sim::Command c;
                 c.type = sim::CommandType::SetProduction;
                 c.entity = window_entity_;
@@ -1757,6 +1772,144 @@ void GameHud::people_list(ui::Context& ctx, GameSession& s, const WindowList::Ob
     y += shown_h;
 }
 
+std::vector<ui::Rect> GameHud::button_row(ui::Context& ctx, const ui::Rect& box, float y, float h,
+                                          const std::vector<std::string>& labels) const {
+    // Each as wide as its text asks, stretched (or squeezed) to fill the row.
+    const float pad = ctx.s(14.0f);
+    const float gap = ctx.s(6.0f);
+    const ui::TextStyle st = ctx.style(ctx.theme().body);
+    std::vector<float> want;
+    float total = 0.0f;
+    for (const std::string& l : labels) {
+        want.push_back(ctx.text().measure(st, l) + ctx.s(22.0f));
+        total += want.back();
+    }
+    const float room = box.w - 2 * pad - gap * static_cast<float>(labels.empty() ? 0 : labels.size() - 1);
+    std::vector<ui::Rect> out;
+    float x = box.x + pad;
+    for (std::size_t i = 0; i < labels.size(); ++i) {
+        const float w = i + 1 == labels.size() ? box.right() - pad - x : std::round(want[i] * room / std::max(1.0f, total));
+        out.push_back({x, y, w, h});
+        x += w + gap;
+    }
+    return out;
+}
+
+std::string GameHud::thing_title(const sim::Game& game, WindowList::Kind kind, sim::EntityId entity) const {
+    const sim::Content& content = game.content();
+    switch (kind) {
+        case WindowList::Kind::Building:
+            if (const sim::Building* b = game.buildings().get(entity)) {
+                return tr(content.buildings[b->def].name_key);
+            }
+            break;
+        case WindowList::Kind::Villager:
+            if (const sim::Villager* v = game.villagers().get(entity)) {
+                const std::string name = game.villager_name(*v);
+                return name.empty() ? tr(v->sex == sim::Sex::Female ? "hud.villager.woman" : "hud.villager.man") : name;
+            }
+            break;
+        case WindowList::Kind::Node:
+            if (entity.index < game.map().features.size()) {
+                const sim::MapFeature& f = game.map().features[entity.index];
+                if (f.type == sim::FeatureType::Tree && f.species < content.flora.species.size()) {
+                    return tr(content.flora.species[f.species].name_key);
+                }
+                return tr(feature_key(f.type));
+            }
+            break;
+        case WindowList::Kind::Creature:
+            if (const sim::Creature* c = game.creatures().get(entity)) {
+                return c->kind == sim::CreatureKind::Soldier && c->unit < content.units.size()
+                           ? tr(content.units[c->unit].name_key)
+                           : tr(creature_key(c->kind));
+            }
+            break;
+    }
+    return tr("hud.window.gone.title");
+}
+
+void GameHud::open_camera(GameSession& s, WindowList::Kind kind, sim::EntityId entity) {
+    auto& windows = s.ui().camera_windows;
+    int slot = -1;
+    for (int i = 0; i < kCameraWindows; ++i) {
+        const auto& w = windows[static_cast<std::size_t>(i)];
+        if (w.open && w.kind == static_cast<std::uint8_t>(kind) && w.entity == entity) {
+            windows_.raise("cam" + std::to_string(i + 1));  // It has one already.
+            return;
+        }
+    }
+    for (int i = 0; i < kCameraWindows && slot < 0; ++i) {
+        slot = windows[static_cast<std::size_t>(i)].open ? -1 : i;
+    }
+    if (slot < 0) {
+        // Both taken: the one opened first looks at this now.
+        slot = camera_opened_[0] <= camera_opened_[1] ? 0 : 1;
+    }
+    GameSession::Interaction::CameraWindow& w = windows[static_cast<std::size_t>(slot)];
+    w = {};
+    w.open = true;
+    w.kind = static_cast<std::uint8_t>(kind);
+    w.entity = entity;
+    w.distance = kind == WindowList::Kind::Building ? 30.0f : kind == WindowList::Kind::Node ? 20.0f : 9.0f;
+    camera_opened_[slot] = ++camera_count_;
+    windows_.raise("cam" + std::to_string(slot + 1));
+}
+
+// A live picture of a thing from an orbit of its own: dragging on it turns
+// the orbit, the wheel comes closer or goes away. The main camera stays.
+void GameHud::camera_window(ui::Context& ctx, GameSession& s, int slot) {
+    GameSession::Interaction::CameraWindow& cw = s.ui().camera_windows[static_cast<std::size_t>(slot)];
+    const std::string id = "cam" + std::to_string(slot + 1);
+    const float pad = ctx.s(14.0f);
+    const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
+    const float min_w = ctx.s(280.0f);
+    float w = std::min(ctx.s(static_cast<float>(render::kInsetWidth) + 28.0f), ctx.width() - 2 * pad);
+    // The picture keeps its shape, so the height follows the width the
+    // player gave the window.
+    if (const float own = windows_.place(id).w; own > 0.0f) {
+        w = std::round(std::clamp(own * ctx.s(1.0f), min_w, std::max(min_w, ctx.width() - 2 * pad)));
+    }
+    const float shape = static_cast<float>(render::kInsetHeight) / static_cast<float>(render::kInsetWidth);
+    const float top = pad + title_h + pad * 0.5f;
+    ui::Rect box{left_x(ctx), std::round(ctx.s(kTopBarH) + pad), std::round(w),
+                 std::round(top + std::round((w - 2 * pad) * shape) + pad)};
+    bool open = true;
+    const std::string title = thing_title(s.game(), static_cast<WindowList::Kind>(cw.kind), cw.entity);
+    if (!window(ctx, s, id, title, box, open)) {
+        if (!open) {
+            cw.open = false;
+        }
+        return;
+    }
+    const ui::Rect picture{box.x + pad, box.y + top, box.w - 2 * pad, std::round((box.w - 2 * pad) * shape)};
+    ctx.draw().rect(picture, ctx.theme().button);
+    ctx.draw().picture(picture, kCameraImageId + static_cast<std::uint32_t>(slot), 0.0f, 0.0f, 1.0f, 1.0f,
+                       ui::Color::rgb(0xFFFFFF));
+    ctx.draw().rect_outline(picture, ctx.theme().panel_border, std::max(1.0f, std::round(ctx.s(1.0f))));
+    ctx.tooltip_area(ctx.id("picture"), picture, tr("hud.camera.tooltip"));
+    const ui::Input& in = ctx.input();
+    const bool over = !ctx.input_blocked() && picture.contains(in.mouse_x, in.mouse_y);
+    if (over && in.mouse_pressed) {
+        camera_drag_ = slot;
+        camera_drag_x_ = in.mouse_x;
+        camera_drag_y_ = in.mouse_y;
+    }
+    if (camera_drag_ == slot) {
+        if (in.mouse_down) {
+            cw.yaw -= (in.mouse_x - camera_drag_x_) * 0.012f;
+            cw.pitch = std::clamp(cw.pitch + (in.mouse_y - camera_drag_y_) * 0.01f, 0.05f, 1.45f);
+            camera_drag_x_ = in.mouse_x;
+            camera_drag_y_ = in.mouse_y;
+        } else {
+            camera_drag_ = -1;
+        }
+    }
+    if (over && in.wheel != 0.0f) {
+        cw.distance = std::clamp(cw.distance * std::pow(0.88f, in.wheel), 3.0f, 80.0f);
+    }
+}
+
 void GameHud::open_link(const std::string& from, WindowList::Kind kind, sim::EntityId entity) {
     links_.push_back({from, kind, entity});
 }
@@ -1830,18 +1983,21 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
     y += title_h + pad * 0.5f;
     // The eye, following (a double click on it does the same) and its name.
     {
-        const float third = std::round((box.w - 2 * pad - 2 * gap) / 3.0f);
-        if (ctx.button(ctx.id("eye"), {box.x + pad, y, third, button_h}, tr("hud.window.eye"), tr("hud.window.eye.tooltip"))) {
+        const bool followed = ui.followed_villager == o.entity;
+        const std::vector<std::string> labels = {tr("hud.window.eye"), tr("hud.window.camera"),
+                                                 tr(followed ? "hud.villager.unfollow" : "hud.villager.follow"),
+                                                 tr("hud.villager.rename")};
+        const std::vector<ui::Rect> row = button_row(ctx, box, y, button_h, labels);
+        if (ctx.button(ctx.id("eye"), row[0], labels[0], tr("hud.window.eye.tooltip"))) {
             services_.focus_camera(meters(v->position.x), meters(v->position.z));
         }
-        const bool followed = ui.followed_villager == o.entity;
-        if (ctx.button(ctx.id("follow"), {box.x + pad + third + gap, y, third, button_h},
-                       tr(followed ? "hud.villager.unfollow" : "hud.villager.follow"), tr("hud.villager.follow.tooltip"),
-                       true, followed)) {
+        if (ctx.button(ctx.id("camera"), row[1], labels[1], tr("hud.window.camera.tooltip"))) {
+            open_camera(s, WindowList::Kind::Villager, o.entity);
+        }
+        if (ctx.button(ctx.id("follow"), row[2], labels[2], tr("hud.villager.follow.tooltip"), true, followed)) {
             ui.followed_villager = followed ? sim::EntityId{} : o.entity;
         }
-        if (ctx.button(ctx.id("rename"), {box.right() - pad - third, y, third, button_h}, tr("hud.villager.rename"),
-                       tr("hud.villager.rename.tooltip"), mine, renaming)) {
+        if (ctx.button(ctx.id("rename"), row[3], labels[3], tr("hud.villager.rename.tooltip"), mine, renaming)) {
             rename_id_ = renaming ? std::string{} : o.id;
             rename_text_ = name;
         }
@@ -1959,9 +2115,15 @@ void GameHud::node_window(ui::Context& ctx, GameSession& s, const WindowList::Ob
         return;
     }
     float y = box.y + pad + title_h + pad * 0.5f;
-    if (ctx.button(ctx.id("eye"), {box.x + pad, y, std::round((box.w - 2 * pad) * 0.5f), button_h}, tr("hud.window.eye"),
-                   tr("hud.window.eye.tooltip"))) {
-        services_.focus_camera(meters(f.x), meters(f.z));
+    {
+        const std::vector<std::string> labels = {tr("hud.window.eye"), tr("hud.window.camera")};
+        const std::vector<ui::Rect> row = button_row(ctx, box, y, button_h, labels);
+        if (ctx.button(ctx.id("eye"), row[0], labels[0], tr("hud.window.eye.tooltip"))) {
+            services_.focus_camera(meters(f.x), meters(f.z));
+        }
+        if (ctx.button(ctx.id("camera"), row[1], labels[1], tr("hud.window.camera.tooltip"))) {
+            open_camera(s, WindowList::Kind::Node, o.entity);
+        }
     }
     y += button_h + pad * 0.5f;
     for (const std::string& l : lines) {
@@ -2027,9 +2189,15 @@ void GameHud::creature_window(ui::Context& ctx, GameSession& s, const WindowList
         return;
     }
     float y = box.y + pad + title_h + pad * 0.5f;
-    if (ctx.button(ctx.id("eye"), {box.x + pad, y, std::round((box.w - 2 * pad) * 0.5f), button_h}, tr("hud.window.eye"),
-                   tr("hud.window.eye.tooltip"))) {
-        services_.focus_camera(meters(c->position.x), meters(c->position.z));
+    {
+        const std::vector<std::string> labels = {tr("hud.window.eye"), tr("hud.window.camera")};
+        const std::vector<ui::Rect> row = button_row(ctx, box, y, button_h, labels);
+        if (ctx.button(ctx.id("eye"), row[0], labels[0], tr("hud.window.eye.tooltip"))) {
+            services_.focus_camera(meters(c->position.x), meters(c->position.z));
+        }
+        if (ctx.button(ctx.id("camera"), row[1], labels[1], tr("hud.window.camera.tooltip"))) {
+            open_camera(s, WindowList::Kind::Creature, o.entity);
+        }
     }
     y += button_h + pad * 0.5f;
     for (const std::string& l : lines) {

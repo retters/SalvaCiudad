@@ -251,7 +251,7 @@ TEST_SUITE("windows") {
         w.set_pinned(thing, true);
         w.dock(thing, "goods");
         const std::string text = w.save();
-        CHECK(text == "goods:150,60,440,1,2,1;stats:150,300,380,0,2,0;");
+        CHECK(text == "goods:150,60,440,1,2,1,0,0;stats:150,300,380,0,2,0,0,0;");
         WindowList again;
         again.load(text);
         CHECK(again.save() == text);
@@ -261,7 +261,7 @@ TEST_SUITE("windows") {
         const std::string t2 = solo.select(WindowList::Kind::Villager, EntityId{1, 0});
         solo.place(t2).placed = true;
         solo.dock(t2, "goods");
-        CHECK(solo.save() == "goods:150,60,440,0,0,0;");
+        CHECK(solo.save() == "goods:150,60,440,0,0,0,0,0;");
 
         // Damaged entries are skipped, the rest is read.
         WindowList bad;
@@ -269,9 +269,120 @@ TEST_SUITE("windows") {
                  "averyveryverylongwindowname:1,2,3,0,0;GOODS:1,2,3,0,0;obj3:5,5,0,1,0");
         CHECK(bad.places().size() == 1);
         CHECK(bad.place("army").pinned);
-        CHECK(bad.save() == "army:10,20,0,1,0,0;");
+        CHECK(bad.save() == "army:10,20,0,1,0,0,0,0;");
         WindowList empty;
         empty.load("");
         CHECK(empty.save().empty());
+    }
+
+    TEST_CASE("four windows joined as tabs of one, and taken apart again") {
+        WindowList w;
+        for (const char* id : {"goods", "stats", "log", "layers"}) {
+            w.raise(id);
+            w.place(id).placed = true;
+        }
+        w.place("goods").x = 100;
+        w.place("goods").y = 80;
+        w.place("goods").w = 440;
+        w.place("stats").x = 700;
+        CHECK(w.tabs("goods").empty());
+        CHECK_FALSE(w.hidden("goods"));
+
+        // Stats dropped on the title of goods: one window, two tabs, stats showing.
+        w.merge("stats", "goods");
+        CHECK(w.tabs("goods") == std::vector<std::string>{"goods", "stats"});
+        CHECK(w.tabs("stats") == w.tabs("goods"));
+        CHECK(w.hidden("goods"));
+        CHECK_FALSE(w.hidden("stats"));
+        CHECK(w.place("stats").x == 100);  // Where goods was.
+        CHECK(w.place("stats").y == 80);
+        CHECK(w.place("stats").w == 440);
+        w.merge("log", "stats");
+        w.merge("layers", "goods");
+        CHECK(w.tabs("log") == std::vector<std::string>{"goods", "stats", "log", "layers"});
+        int showing = 0;
+        for (const char* id : {"goods", "stats", "log", "layers"}) {
+            showing += w.hidden(id) ? 0 : 1;
+        }
+        CHECK(showing == 1);
+        CHECK_FALSE(w.hidden("layers"));
+        // A click on a tab shows it.
+        w.raise("goods");
+        CHECK_FALSE(w.hidden("goods"));
+        CHECK(w.hidden("layers"));
+        // Moving the window moves its tabs.
+        w.place("goods").x = 300;
+        w.sync_stack("goods");
+        CHECK(w.place("log").x == 300);
+        // Joining again what is joined changes nothing.
+        w.merge("stats", "log");
+        CHECK(w.tabs("log").size() == 4);
+
+        // Remembered: the stack and which tab shows.
+        const std::string text = w.save();
+        WindowList again;
+        again.load(text);
+        CHECK(again.save() == text);
+        // Nothing is open yet: opening them brings the tabs back.
+        CHECK(again.tabs("goods").empty());
+        again.raise("log");
+        CHECK(again.tabs("log").empty());   // One open window is a window alone.
+        CHECK_FALSE(again.hidden("log"));
+        again.raise("stats");
+        CHECK(again.tabs("log") == std::vector<std::string>{"stats", "log"});
+        CHECK(again.hidden("log"));
+
+        // A closed tab leaves the others showing, and comes back to its place.
+        w.close("goods");
+        CHECK(w.tabs("stats") == std::vector<std::string>{"stats", "log", "layers"});
+        showing = 0;
+        for (const char* id : {"stats", "log", "layers"}) {
+            showing += w.hidden(id) ? 0 : 1;
+        }
+        CHECK(showing == 1);
+        w.raise("goods");
+        CHECK(w.tabs("stats").size() == 4);
+
+        // Pulled out one by one: four windows again.
+        w.split("goods");
+        CHECK(w.tabs("goods").empty());
+        CHECK_FALSE(w.hidden("goods"));
+        CHECK(w.tabs("stats").size() == 3);
+        w.split("log");
+        w.split("layers");
+        for (const char* id : {"goods", "stats", "log", "layers"}) {
+            CHECK(w.tabs(id).empty());
+            CHECK_FALSE(w.hidden(id));
+        }
+        CHECK(w.save().find(",0,0;") != std::string::npos);  // No stack is written.
+        CHECK(w.save().find(",1,") == std::string::npos);
+    }
+
+    TEST_CASE("the windows of things can be tabs too, until they close") {
+        WindowList w;
+        w.raise("goods");
+        w.place("goods").placed = true;
+        const std::string a = w.select(WindowList::Kind::Villager, EntityId{1, 0});
+        w.set_pinned(a, true);
+        const std::string b = w.select(WindowList::Kind::Villager, EntityId{2, 0});
+        w.merge(b, a);
+        w.merge(a, "goods");  // The two of them, onto goods.
+        CHECK(w.tabs("goods") == std::vector<std::string>{"goods", a, b});
+        CHECK_FALSE(w.hidden(a));
+        // The next selection takes the passing window, wherever it is, and shows it.
+        CHECK(w.select(WindowList::Kind::Villager, EntityId{3, 0}) == b);
+        CHECK_FALSE(w.hidden(b));
+        // Closed for good: out of the stack.
+        w.close(b);
+        CHECK(w.tabs("goods") == std::vector<std::string>{"goods", a});
+        w.close(a);
+        CHECK(w.tabs("goods").empty());
+        CHECK_FALSE(w.hidden("goods"));
+        // Stacks with windows of things are not written.
+        CHECK(w.save() == "goods:0,0,0,0,0,0,0,0;");
+        // A layout of phase 62 (six values) is still read.
+        WindowList old;
+        old.load("goods:150,60,440,1,0,1;");
+        CHECK(old.place("goods").minimized);
     }
 }

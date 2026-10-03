@@ -126,6 +126,20 @@ struct RenderStats {
     std::uint32_t water_chunks = 0;
 };
 
+// Phase 64: a small second view of the scene, drawn into a texture of its
+// own for a camera window: with the main view's shadows where they reach,
+// without grass, and only as far as `distance`.
+struct InsetView {
+    math::Mat4 view;
+    math::Vec3 eye;
+    float fov_y = 0.9f;
+    float near_z = 0.2f;
+    float distance = 200.0f;
+};
+inline constexpr int kInsetWidth = 320;
+inline constexpr int kInsetHeight = 200;
+inline constexpr int kInsets = 2;
+
 using ModelId = std::uint32_t;
 inline constexpr ModelId kNoFarModel = ~0u;
 inline constexpr std::size_t kMaxLooks = 4;
@@ -216,6 +230,13 @@ public:
     // `side` texels over the same area as the fog) shows through the fog,
     // fully `band` meters over it. Empty turns it off.
     bool set_war_ceiling(std::span<const std::uint16_t> heights, std::int32_t side, float band);
+
+    // Draws inset `slot` (0 to kInsets - 1) with the next render(), after
+    // the main view. One inset a frame: the last one asked for.
+    void request_inset(int slot, const InsetView& view);
+    // The picture of an inset, kInsetWidth x kInsetHeight; null until it
+    // has been drawn (and again after the quality settings change).
+    [[nodiscard]] SDL_GPUTexture* inset_texture(int slot) const;
 
     // Records the shadow passes and the main pass into the frame. The
     // swapchain ends up holding the (resolved) scene.

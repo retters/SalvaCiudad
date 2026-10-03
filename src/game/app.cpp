@@ -730,6 +730,80 @@ void App::show_anchor(float dt) {
     village_.set_anchor_ghost(ghost);
 }
 
+void App::update_camera_windows() {
+    const bool playing = session_ && map_ && !replay_ && host_->scene_mode() == UiHost::SceneMode::Map;
+    for (int slot = 0; slot < kCameraWindows; ++slot) {
+        ui_renderer_.set_external_image(kCameraImageId + static_cast<std::uint32_t>(slot),
+                                        playing ? scene_.inset_texture(slot) : nullptr);
+    }
+    if (!playing) {
+        return;
+    }
+    const sim::Game& g = session_->game();
+    const float alpha = static_cast<float>(clock_.interpolation());
+    auto& windows = session_->ui().camera_windows;
+    // Where each one looks; a window whose thing is gone or under the fog closes.
+    std::array<std::optional<math::Vec3>, kCameraWindows> targets;
+    for (int slot = 0; slot < kCameraWindows; ++slot) {
+        GameSession::Interaction::CameraWindow& w = windows[static_cast<std::size_t>(slot)];
+        if (!w.open) {
+            continue;
+        }
+        std::optional<math::Vec3> at;
+        switch (w.kind) {
+            case 0:
+                if (const sim::Building* b = g.buildings().get(w.entity); b != nullptr && village_.building_shown(g, *b)) {
+                    const math::Vec3 top = village_.building_top(g, *b);
+                    const float ground = map_surface_height(g.map(), top.x, top.z);
+                    at = math::Vec3{top.x, ground + (top.y - 1.0f - ground) * 0.5f, top.z};
+                }
+                break;
+            case 1:
+                if (const auto standing = village_.standing(g, w.entity, alpha)) {
+                    at = standing->feet + math::Vec3{0.0f, 1.2f * standing->height, 0.0f};
+                }
+                break;
+            case 2:
+                if (village_.feature_shown(g, w.entity.index)) {
+                    const math::Vec3 top = village_.feature_top(g, w.entity.index);
+                    const float ground = map_surface_height(g.map(), top.x, top.z);
+                    at = math::Vec3{top.x, ground + (top.y - 1.0f - ground) * 0.6f, top.z};
+                }
+                break;
+            default:
+                if (const sim::Creature* c = g.creatures().get(w.entity);
+                    c != nullptr && c->state != sim::CreatureState::Travel) {
+                    const math::Vec3 p = village_.creature_position(g, *c, alpha);
+                    if (village_.mover_shown(g, c->kind == sim::CreatureKind::Soldier, c->town, p.x, p.z)) {
+                        at = p + math::Vec3{0.0f, 0.9f, 0.0f};
+                    }
+                }
+                break;
+        }
+        if (!at) {
+            w.open = false;
+        }
+        targets[static_cast<std::size_t>(slot)] = at;
+    }
+    const int slot = static_cast<int>(camera_window_turn_++ % static_cast<std::uint32_t>(kCameraWindows));
+    const GameSession::Interaction::CameraWindow& w = windows[static_cast<std::size_t>(slot)];
+    if (!w.open || !targets[static_cast<std::size_t>(slot)]) {
+        return;
+    }
+    const math::Vec3 target = *targets[static_cast<std::size_t>(slot)];
+    const float cp = std::cos(w.pitch);
+    math::Vec3 eye = target + math::Vec3{std::sin(w.yaw) * cp, std::sin(w.pitch), std::cos(w.yaw) * cp} * w.distance;
+    eye.y = std::max(eye.y, map_surface_height(g.map(), eye.x, eye.z) + 0.5f);
+    render::InsetView view;
+    view.view = math::look_at(eye, target, {0.0f, 1.0f, 0.0f});
+    view.eye = eye;
+    view.fov_y = math::radians(50.0f);
+    view.near_z = 0.2f;
+    // Far enough to give the thing its surroundings, near enough to be cheap.
+    view.distance = std::clamp(w.distance * 8.0f, 120.0f, 400.0f);
+    scene_.request_inset(slot, view);
+}
+
 void App::update_frame_stats(float dt) {
     debug_info_.frame_ms = dt * 1000.0f;
     fps_window_s_ += dt;
@@ -845,6 +919,7 @@ void App::render_frame(float dt) {
                     view.ice = 0.0f;
                 }
             }
+            update_camera_windows();
             scene_drawn = scene_.render(frame, view, lighting_);
         }
 

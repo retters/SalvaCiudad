@@ -144,6 +144,9 @@ void UiRenderer::destroy() {
     SDL_ReleaseGPUGraphicsPipeline(device_, pipeline_);
     SDL_ReleaseGPUTexture(device_, atlas_);
     for (auto& [id, image] : images_) {
+        if (image.external) {
+            continue;
+        }
         SDL_ReleaseGPUTexture(device_, image.texture);
     }
     images_.clear();
@@ -192,6 +195,25 @@ bool UiRenderer::ensure_transfer(std::uint32_t needed) {
         log::error("ui renderer: SDL_CreateGPUTransferBuffer failed: {}", SDL_GetError());
     }
     return transfer_ != nullptr;
+}
+
+void UiRenderer::set_external_image(std::uint32_t id, SDL_GPUTexture* texture) {
+    if (id == 0) {
+        return;
+    }
+    const auto it = images_.find(id);
+    if (it != images_.end() && !it->second.external) {
+        return;  // That id is an image of ours.
+    }
+    if (texture == nullptr) {
+        if (it != images_.end()) {
+            images_.erase(it);
+        }
+        return;
+    }
+    Image& image = images_[id];
+    image.texture = texture;
+    image.external = true;
 }
 
 bool UiRenderer::set_image(std::uint32_t id, int width, int height, std::vector<std::uint8_t> rgba) {

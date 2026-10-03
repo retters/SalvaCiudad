@@ -244,3 +244,14 @@ Medido con `--reporte`, `release`, 1600 × 900, Ultra, sin vsync, mapa mediano (
 | A 70 m del mangle gigante | 925 | 319 (153) | 0,93 M |
 | A 70 m del hongo gigante | 1055 | 222 (103) | 0,84 M |
 | A 90 m de la secuoya gigante | 1284 | 96 (55) | 0,64 M |
+
+## Ventanas de cámara (fase 64)
+
+Medido en pantalla con F3, `release`, 1600 × 900, Ultra (suavizado 8x), sin vsync, partida nueva en mapa mediano con 12 aldeanos, cámara aérea a 70 m.
+
+| Ventanas de cámara abiertas | FPS | Llamadas de dibujo |
+|---|---|---|
+| Ninguna | 797 a 801 | 717 |
+| Dos (el centro del pueblo y un aldeano) | 784 a 800 | 955 en el cuadro en que se dibuja una |
+
+Cada cuadro se dibuja a lo más una vista pequeña (320 × 200, sin pasto, sin sombras propias, hasta 400 m), así que con dos ventanas cada una va a la mitad de los cuadros. La pérdida medida es menor al 2 %; el criterio de la fase permitía un 25 %. No se midió con un pueblo grande: `--reporte` no abre ventanas de cámara.

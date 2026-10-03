@@ -73,6 +73,20 @@ private:
     // The villager being renamed: its window and the text typed so far.
     std::string rename_id_;
     std::string rename_text_;
+    // Phase 64: the camera windows. `open_camera` gives a thing a window
+    // with a live picture of it (the one that has looked longest goes when
+    // both are taken).
+    void camera_window(ui::Context& ctx, GameSession& s, int slot);
+    void open_camera(GameSession& s, WindowList::Kind kind, sim::EntityId entity);
+    [[nodiscard]] std::string thing_title(const sim::Game& game, WindowList::Kind kind, sim::EntityId entity) const;
+    // The first row of an object window: buttons as wide as their texts need.
+    [[nodiscard]] std::vector<ui::Rect> button_row(ui::Context& ctx, const ui::Rect& box, float y, float h,
+                                                  const std::vector<std::string>& labels) const;
+    int camera_drag_ = -1;  // The camera window being turned with the mouse.
+    float camera_drag_x_ = 0.0f;
+    float camera_drag_y_ = 0.0f;
+    std::uint32_t camera_opened_[kCameraWindows] = {};
+    std::uint32_t camera_count_ = 0;
     // A pinned window whose thing is no more.
     void gone_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     // The selection on the map opens, or takes over, a window.
@@ -134,6 +148,15 @@ private:
     bool resizing_ = false;
     float grab_x_ = 0.0f;
     float grab_y_ = 0.0f;
+    // Phase 64: the tabs. The title bars (with the tab strip) drawn this
+    // frame and the last, to drop a window on; the tab pressed, which is
+    // pulled out when the mouse moves away with it.
+    std::map<std::string, ui::Rect> bars_;
+    std::map<std::string, ui::Rect> bars_last_;
+    std::string tab_pressed_;
+    float tab_press_x_ = 0.0f;
+    float tab_press_y_ = 0.0f;
+    [[nodiscard]] std::string window_title(GameSession& s, const std::string& id) const;
     std::map<std::string, ui::Rect> shown_;       // Drawn this frame.
     std::map<std::string, ui::Rect> shown_last_;  // Drawn last frame (for the magnets and the depth).
     void save_places();

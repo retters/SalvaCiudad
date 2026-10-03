@@ -411,6 +411,65 @@ struct SceneRenderer::Impl {
     SceneRenderer::LodMode lod_mode = SceneRenderer::LodMode::Auto;
     std::vector<std::uint32_t> lod_lists[kMaxLooks * 2];  // Scratch: look, near and far.
     float draw_distance_now = 1200.0f;  // This frame's draw distance (models).
+    // Culling for the main view remembers which instances are far, so they
+    // do not flicker at the limit; another view (an inset) leaves that alone.
+    bool lod_track = true;
+
+    // Insets (phase 64): a picture each, and one set of targets to draw
+    // them with (multisampled like the main view: the pipelines are).
+    SDL_GPUTexture* inset_color[kInsets] = {};
+    bool inset_drawn[kInsets] = {};
+    SDL_GPUTexture* inset_msaa = nullptr;
+    SDL_GPUTexture* inset_depth = nullptr;
+    int inset_slot = -1;  // Asked for the next render().
+    InsetView inset_view;
+
+    void release_insets() {
+        for (int i = 0; i < kInsets; ++i) {
+            SDL_ReleaseGPUTexture(device, inset_color[i]);
+            inset_color[i] = nullptr;
+            inset_drawn[i] = false;
+        }
+        SDL_ReleaseGPUTexture(device, inset_msaa);
+        SDL_ReleaseGPUTexture(device, inset_depth);
+        inset_msaa = nullptr;
+        inset_depth = nullptr;
+    }
+
+    bool ensure_inset(int slot) {
+        if (slot < 0 || slot >= kInsets || device == nullptr) {
+            return false;
+        }
+        SDL_GPUTextureCreateInfo info{};
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.width = static_cast<std::uint32_t>(kInsetWidth);
+        info.height = static_cast<std::uint32_t>(kInsetHeight);
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        if (inset_depth == nullptr) {
+            info.sample_count = to_sample_count(samples);
+            info.format = depth_format;
+            info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+            inset_depth = SDL_CreateGPUTexture(device, &info);
+        }
+        if (samples > 1 && inset_msaa == nullptr) {
+            info.sample_count = to_sample_count(samples);
+            info.format = swapchain_format;
+            info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;
+            inset_msaa = SDL_CreateGPUTexture(device, &info);
+        }
+        if (inset_color[slot] == nullptr) {
+            info.sample_count = SDL_GPU_SAMPLECOUNT_1;
+            info.format = swapchain_format;
+            info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER;
+            inset_color[slot] = SDL_CreateGPUTexture(device, &info);
+        }
+        if (inset_depth == nullptr || (samples > 1 && inset_msaa == nullptr) || inset_color[slot] == nullptr) {
+            log::error("scene: cannot create the targets of a camera window: {}", SDL_GetError());
+            return false;
+        }
+        return true;
+    }
 
     TerrainLayer terrain;
 
@@ -501,6 +560,7 @@ struct SceneRenderer::Impl {
 
     void release_targets() {
         release_post();
+        release_insets();
         SDL_ReleaseGPUTexture(device, color_msaa);
         SDL_ReleaseGPUTexture(device, depth);
         color_msaa = nullptr;
@@ -1180,12 +1240,15 @@ struct SceneRenderer::Impl {
                         if (far_mesh[look] != kNoFarModel) {
                             if (shadows || lod_mode == SceneRenderer::LodMode::Far) {
                                 far_version = true;
-                            } else if (lod_mode == SceneRenderer::LodMode::Auto) {
+                            } else if (lod_mode == SceneRenderer::LodMode::Auto && lod_track) {
                                 // Far beyond its distance; one already far
                                 // comes back only well inside it.
                                 const float at = 2.0f * r * lod_reach * (m.far_now[n] != 0 ? 0.9f : 1.1f);
                                 far_version = d2 > at * at;
                                 m.far_now[n] = far_version ? 1 : 0;
+                            } else if (lod_mode == SceneRenderer::LodMode::Auto) {
+                                const float at = 2.0f * r * lod_reach;
+                                far_version = d2 > at * at;
                             }
                         }
                         lod_lists[look * 2 + (far_version ? 1 : 0)].push_back(m.base + n);
@@ -1708,8 +1771,22 @@ bool SceneRenderer::set_war_ceiling(std::span<const std::uint16_t> heights, std:
     return true;
 }
 
+void SceneRenderer::request_inset(int slot, const InsetView& view) {
+    if (slot >= 0 && slot < kInsets) {
+        impl_->inset_slot = slot;
+        impl_->inset_view = view;
+    }
+}
+
+SDL_GPUTexture* SceneRenderer::inset_texture(int slot) const {
+    return slot >= 0 && slot < kInsets && impl_->inset_drawn[slot] ? impl_->inset_color[slot] : nullptr;
+}
+
 bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lighting& lighting) {
     Impl& d = *impl_;
+    // The inset asked for is drawn with this frame or not at all.
+    const int inset_slot = d.inset_slot;
+    d.inset_slot = -1;
     stats_ = RenderStats{};
     stats_.msaa_samples = d.samples;
     stats_.shadow_cascades = d.cascades;
@@ -1787,6 +1864,29 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         const math::Frustum light = math::Frustum::from_matrix(cascade_vp[c]);
         shadow_ranges[c] = d.cull(light, view.eye, 0.0f, true);
         shadow_characters[c] = d.cull_characters(light, nullptr, 0.0f);
+    }
+    // A camera window's view: culled now, so its lists go up with the rest.
+    const bool inset = inset_slot >= 0 && d.ensure_inset(inset_slot);
+    const InsetView inset_view = d.inset_view;
+    math::Mat4 inset_view_proj = math::Mat4::identity();
+    std::vector<DrawRange> inset_ranges;
+    std::vector<Range> inset_characters;
+    if (inset) {
+        const float aspect = static_cast<float>(kInsetWidth) / static_cast<float>(kInsetHeight);
+        inset_view_proj =
+            math::perspective_reverse_z(inset_view.fov_y, aspect, inset_view.near_z, inset_view.distance) * inset_view.view;
+        const math::Frustum inset_frustum = math::Frustum::from_matrix(inset_view_proj);
+        // A small picture: models turn to their far version sooner.
+        const float main_reach = d.lod_reach;
+        d.lod_reach = static_cast<float>(kInsetHeight) / (2.0f * std::tan(std::max(0.01f, inset_view.fov_y) * 0.5f)) /
+                      d.lod_pixels;
+        d.draw_distance_now = inset_view.distance;
+        d.lod_track = false;
+        inset_ranges = d.cull(inset_frustum, inset_view.eye, inset_view.distance, false);
+        inset_characters = d.cull_characters(inset_frustum, &inset_view.eye, inset_view.distance);
+        d.lod_track = true;
+        d.lod_reach = main_reach;
+        d.draw_distance_now = draw_distance;
     }
     if (!d.terrain.prepare(frame.cmd, frustum, view.eye, view_distance)) {
         log::warn("scene: terrain lists not uploaded this frame");
@@ -2098,73 +2198,88 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         return false;
     }
 
-    SkyUniforms sky{};
-    sky.inverse_view_proj = math::inverse(view_proj);
-    set4(sky.sun_direction, sun, 0.0f);
-    set4(sky.zenith_color, lighting.zenith_color, 1.0f);
-    set4(sky.horizon_color, lighting.horizon_color, 1.0f);
-    set4(sky.sun_color, lighting.sun_color, 1.0f);
-    SDL_BindGPUGraphicsPipeline(pass, d.sky_pipeline);
-    SDL_PushGPUFragmentUniformData(frame.cmd, 0, &sky, sizeof(sky));
-    SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
-    ++stats_.draw_calls;
+    // Everything a view shows: the sky, the ground, the models, the people
+    // and the water. `other_camera`: the shadows were fitted to another view.
+    struct ViewDraw {
+        math::Mat4 view_proj;
+        math::Vec3 eye;
+        float distance = 0.0f;
+        float grass = 0.0f;
+        bool other_camera = false;
+        const std::vector<DrawRange>* ranges = nullptr;
+        const std::vector<Range>* characters = nullptr;
+    };
+    const auto draw_view = [&](SDL_GPURenderPass* target, const ViewDraw& v) {
+        SkyUniforms sky{};
+        sky.inverse_view_proj = math::inverse(v.view_proj);
+        set4(sky.sun_direction, sun, 0.0f);
+        set4(sky.zenith_color, lighting.zenith_color, 1.0f);
+        set4(sky.horizon_color, lighting.horizon_color, 1.0f);
+        set4(sky.sun_color, lighting.sun_color, 1.0f);
+        SDL_BindGPUGraphicsPipeline(target, d.sky_pipeline);
+        SDL_PushGPUFragmentUniformData(frame.cmd, 0, &sky, sizeof(sky));
+        SDL_DrawGPUPrimitives(target, 3, 1, 0, 0);
+        ++stats_.draw_calls;
 
-    SceneUniforms su{};
-    for (int c = 0; c < kMaxCascades; ++c) {
-        su.cascade_matrix[c] = c < d.cascades ? cascade_vp[c] : math::Mat4::identity();
-        su.cascade_split[c] = splits[c];
-    }
-    set4(su.sun_direction, sun, 0.0f);
-    set4(su.sun_color, lighting.sun_color, 1.0f);
-    set4(su.sky_ambient, lighting.sky_ambient, 1.0f);
-    set4(su.ground_ambient, lighting.ground_ambient, 1.0f);
-    // Fog reaches about 90 % at the draw distance: 1 - 2^(-k d^2) = 0.9.
-    set4(su.fog_color, lighting.horizon_color, 3.32f / (view_distance * view_distance));
-    set4(su.camera_position, view.eye, static_cast<float>(d.cascades));
-    su.shadow_params[0] = d.shadow_size > 0 ? 1.0f / static_cast<float>(d.shadow_size) : 0.0f;
-    su.shadow_params[1] = 0.0002f;
-    su.shadow_params[2] = std::clamp(view.snow, 0.0f, 1.0f);
-    d.war_params(su.war_params);
-    SDL_PushGPUFragmentUniformData(frame.cmd, 0, &su, sizeof(su));
-    d.terrain.draw_ground(frame.cmd, pass, view_proj, d.white, d.base_sampler, d.shadow_map, d.shadow_sampler,
-                          war_bind.data());
+        SceneUniforms su{};
+        for (int c = 0; c < kMaxCascades; ++c) {
+            su.cascade_matrix[c] = c < d.cascades ? cascade_vp[c] : math::Mat4::identity();
+            su.cascade_split[c] = splits[c];
+        }
+        set4(su.sun_direction, sun, 0.0f);
+        set4(su.sun_color, lighting.sun_color, 1.0f);
+        set4(su.sky_ambient, lighting.sky_ambient, 1.0f);
+        set4(su.ground_ambient, lighting.ground_ambient, 1.0f);
+        // Fog reaches about 90 % at the draw distance: 1 - 2^(-k d^2) = 0.9.
+        set4(su.fog_color, lighting.horizon_color, 3.32f / (v.distance * v.distance));
+        set4(su.camera_position, v.eye, static_cast<float>(d.cascades));
+        su.shadow_params[0] = d.shadow_size > 0 ? 1.0f / static_cast<float>(d.shadow_size) : 0.0f;
+        su.shadow_params[1] = 0.0002f;
+        su.shadow_params[2] = std::clamp(view.snow, 0.0f, 1.0f);
+        su.shadow_params[3] = v.other_camera ? 1.0f : 0.0f;
+        d.war_params(su.war_params);
+        SDL_PushGPUFragmentUniformData(frame.cmd, 0, &su, sizeof(su));
+        d.terrain.draw_ground(frame.cmd, target, v.view_proj, d.white, d.base_sampler, d.shadow_map, d.shadow_sampler,
+                              war_bind.data());
+        if (v.grass > 1.0f) {
+            d.terrain.draw_grass(frame.cmd, target, v.view_proj, v.eye, view.time, v.grass, d.white, d.base_sampler,
+                                 d.shadow_map, d.shadow_sampler, war_bind.data());
+        }
+        SDL_BindGPUGraphicsPipeline(target, d.mesh_pipeline);
+        const MeshVertexUniforms mv{v.view_proj};
+        SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
+        draw_models(target, *v.ranges, true);
+        if (!d.characters.empty()) {
+            SDL_BindGPUGraphicsPipeline(target, d.skinned_pipeline);
+            SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
+            draw_characters(target, *v.characters, true);
+        }
+        // Water last: it is see-through.
+        TerrainLayer::WaterLook water;
+        water.sun_direction = sun;
+        water.sun_color = lighting.sun_color;
+        water.fog_color = lighting.horizon_color;
+        water.fog_density = su.fog_color[3];
+        water.eye = v.eye;
+        water.time = view.time;
+        water.ice = view.ice;
+        water.war = war_bind.data();
+        std::copy(std::begin(su.war_params), std::end(su.war_params), water.war_params);
+        d.terrain.draw_water(frame.cmd, target, v.view_proj, water);
+    };
     // Grass thins out as snow covers it, and is gone under deep snow.
     const float grass_distance = grass_distance_for_level(d.graphics.vegetation) * std::max(0.0f, 1.0f - view.snow * 2.5f);
-    if (grass_distance > 1.0f) {
-        d.terrain.draw_grass(frame.cmd, pass, view_proj, view.eye, view.time, grass_distance, d.white, d.base_sampler,
-                             d.shadow_map, d.shadow_sampler, war_bind.data());
-    }
-    SDL_BindGPUGraphicsPipeline(pass, d.mesh_pipeline);
-    const MeshVertexUniforms mv{view_proj};
-    SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
-    draw_models(pass, main_ranges, true);
+    draw_view(pass, {view_proj, view.eye, view_distance, grass_distance, false, &main_ranges, &main_characters});
     for (const DrawRange& r : main_ranges) {
         stats_.instances_drawn += r.count;
         stats_.instances_far += r.far_version ? r.count : 0;
     }
-    if (!d.characters.empty()) {
-        SDL_BindGPUGraphicsPipeline(pass, d.skinned_pipeline);
-        SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
-        draw_characters(pass, main_characters, true);
-        for (std::size_t mi = 0; mi < d.skinned.size(); ++mi) {
-            if (d.skinned[mi].accessory_bit == ~0u) {
-                stats_.characters_drawn += main_characters[mi].count;
-                stats_.characters_far += d.skinned[mi].far_of != ~0u ? main_characters[mi].count : 0;
-            }
+    for (std::size_t mi = 0; mi < d.skinned.size() && !d.characters.empty(); ++mi) {
+        if (d.skinned[mi].accessory_bit == ~0u) {
+            stats_.characters_drawn += main_characters[mi].count;
+            stats_.characters_far += d.skinned[mi].far_of != ~0u ? main_characters[mi].count : 0;
         }
     }
-    // Water last: it is see-through.
-    TerrainLayer::WaterLook water;
-    water.sun_direction = sun;
-    water.sun_color = lighting.sun_color;
-    water.fog_color = lighting.horizon_color;
-    water.fog_density = su.fog_color[3];
-    water.eye = view.eye;
-    water.time = view.time;
-    water.ice = view.ice;
-    water.war = war_bind.data();
-    std::copy(std::begin(su.war_params), std::end(su.war_params), water.war_params);
-    d.terrain.draw_water(frame.cmd, pass, view_proj, water);
     const TerrainStats& ts = d.terrain.stats();
     stats_.terrain_chunks = ts.chunks_drawn;
     stats_.grass_tufts = ts.grass_tufts;
@@ -2198,6 +2313,44 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             SDL_EndGPURenderPass(blur_pass);
             ++stats_.draw_calls;
         }
+    }
+    if (inset) {
+        // The camera window's picture. The counts stay those of the main
+        // view; only the draw calls are added.
+        const RenderStats main_stats = stats_;
+        if (!d.terrain.prepare(frame.cmd, math::Frustum::from_matrix(inset_view_proj), inset_view.eye,
+                               inset_view.distance)) {
+            log::warn("scene: terrain lists of a camera window not uploaded this frame");
+        }
+        SDL_GPUColorTargetInfo it{};
+        it.clear_color = SDL_FColor{horizon.x, horizon.y, horizon.z, 1.0f};
+        it.load_op = SDL_GPU_LOADOP_CLEAR;
+        if (d.samples > 1) {
+            it.texture = d.inset_msaa;
+            it.resolve_texture = d.inset_color[inset_slot];
+            it.store_op = SDL_GPU_STOREOP_RESOLVE;
+        } else {
+            it.texture = d.inset_color[inset_slot];
+            it.store_op = SDL_GPU_STOREOP_STORE;
+        }
+        SDL_GPUDepthStencilTargetInfo id{};
+        id.texture = d.inset_depth;
+        id.clear_depth = 0.0f;
+        id.load_op = SDL_GPU_LOADOP_CLEAR;
+        id.store_op = SDL_GPU_STOREOP_DONT_CARE;
+        id.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
+        id.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
+        SDL_GPURenderPass* inset_pass = SDL_BeginGPURenderPass(frame.cmd, &it, 1, &id);
+        if (inset_pass == nullptr) {
+            return false;
+        }
+        draw_view(inset_pass, {inset_view_proj, inset_view.eye, inset_view.distance, 0.0f, true, &inset_ranges,
+                               &inset_characters});
+        SDL_EndGPURenderPass(inset_pass);
+        d.inset_drawn[inset_slot] = true;
+        const std::uint32_t calls = stats_.draw_calls + d.terrain.stats().draw_calls;
+        stats_ = main_stats;
+        stats_.draw_calls = calls;
     }
     return true;
 }

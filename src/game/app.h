@@ -297,6 +297,10 @@ private:
     bool anchor_known_ = false;
     // What is in the camera's way, drawn see-through.
     Occluders occluders_;
+    // Phase 64: asks the renderer for the picture of a camera window, one a
+    // frame in turns (each window moves at half the frame rate).
+    void update_camera_windows();
+    std::uint32_t camera_window_turn_ = 0;
     // Frames in a row that lost ticks; after a few the speed goes a step down.
     int slow_frames_ = 0;
     static constexpr int kSlowFramesToLower = 20;

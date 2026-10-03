@@ -36,6 +36,10 @@ public:
     // the GPU with the next upload(). False for a bad size.
     bool set_image(std::uint32_t id, int width, int height, std::vector<std::uint8_t> rgba);
     static constexpr int kMaxImageSize = 2048;
+    // A texture somebody else owns (the picture of a camera window), drawn
+    // by `id` like an image; null takes it away. Set it every frame the
+    // texture may have changed: this renderer does not keep it alive.
+    void set_external_image(std::uint32_t id, SDL_GPUTexture* texture);
 
 private:
     bool ensure_buffer(SDL_GPUBuffer*& buffer, std::uint32_t& capacity, std::uint32_t needed,
@@ -60,6 +64,7 @@ private:
         int width = 0;
         int height = 0;
         std::vector<std::uint8_t> pending;  // Pixels waiting for the next upload.
+        bool external = false;              // Not ours to release.
     };
     std::map<std::uint32_t, Image> images_;
     bool upload_images(SDL_GPUCommandBuffer* cmd);

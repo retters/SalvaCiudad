@@ -601,6 +601,19 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 64
+
+- [ ] Arrastrar una ventana y soltarla sobre el título de otra: quedan en una sola con dos pestañas arriba. Repetir hasta tener cuatro pestañas.
+- [ ] Un clic en una pestaña muestra esa ventana. Arrastrar una pestaña hacia afuera la separa y queda en la mano.
+- [ ] Mover la ventana con pestañas mueve todas; cerrar la que se ve deja las demás.
+- [ ] Salir y volver a entrar: al abrir las ventanas del lanzador vuelven como pestañas, en el mismo orden.
+- [ ] Ventana de un aldeano, "Cámara": se abre una ventana con su imagen en vivo; la cámara principal no se mueve. Llevar la cámara principal a otro lado: la imagen sigue al aldeano.
+- [ ] En la imagen: arrastrar gira la vista, la rueda acerca y aleja.
+- [ ] Una segunda ventana de cámara para otro aldeano (o edificio, árbol, animal). Una tercera reemplaza a la más antigua.
+- [ ] Con las dos abiertas el juego va casi igual de fluido (F3 muestra los FPS); al cerrarlas vuelve a lo de antes.
+- [ ] La ventana de cámara de un aldeano que muere se cierra sola.
+- [ ] **Sin revisar en pantalla por Claude**: unir y separar pestañas arrastrando, y girar o acercar la imagen.
+
 ### Fase 63
 
 - [ ] Cada aldeano tiene nombre propio (título de su ventana); los de cada raza suenan a su raza.

@@ -2527,3 +2527,35 @@ Reglas 32 (el aldeano guarda su nombre puesto y el edificio si está detenido), 
 
 **D-6309. Sin revisar en pantalla por Claude.**
 Escribir un nombre (la herramienta de pruebas no teclea texto), el interruptor de producción, las listas con desplazamiento y las ventanas de animales. Los cubren las pruebas de la simulación. Sí se vio en pantalla: nombres en títulos y listas, "Renombrar" abre el campo, el enlace de habitante fija la casa y abre al aldeano con "Vive en: Casa", y la ventana de un árbol ("Pino, árbol de 3 m, da: Troncos 4").
+
+## Fase 64: pestañas y ventana de cámara (2026-10-03)
+
+**D-6401. Pestañas.**
+Soltar una ventana sobre la barra de título de otra las une en una pila: comparten sitio y ancho, se dibuja una sola y las demás quedan como pestañas encima. Un clic en una pestaña la muestra; arrastrarla más de 10 unidades la saca de la pila y sigue el arrastre como ventana suelta. Si la que se suelta ya era una pila, entran todas sus pestañas. Unir gana a anclar: soltada sobre un título se une; soltada tocando un borde se ancla.
+
+**D-6402. Solo cuentan las abiertas.**
+Una pila con una sola ventana abierta se ve como una ventana sola, sin pestañas. Cerrar una ventana del lanzador no la saca de su pila: al volver a abrirla regresa como pestaña (así se restaura también lo guardado, porque al empezar no hay ninguna abierta). Las ventanas de objeto y de cámara, que no vuelven, sí salen de la pila al cerrarse.
+
+**D-6403. Qué se guarda.**
+Dos valores más por ventana en `ui.windows`: el número de su pila y su pestaña (el doble de su lugar entre las pestañas, más uno si es la que se muestra), para conservar el orden. Se siguen leyendo los formatos de cinco y de seis valores. Las pilas con ventanas de objeto o de cámara no se escriben.
+
+**D-6404. La segunda vista del motor.**
+`SceneRenderer::request_inset` pide una vista pequeña (320 × 200) que se dibuja en su propia textura después de la vista principal, en el mismo cuadro: mismo cielo, terreno, modelos, personajes, agua y niebla de guerra; sin pasto. Los destinos tienen el mismo suavizado que la vista principal porque los programas de dibujo están hechos para él; así no hizo falta otro juego de programas. La interfaz dibuja esa textura como una imagen más.
+
+**D-6405. Sombras de la vista principal.**
+La vista pequeña no calcula sombras: usa las cascadas de la vista principal. Como están ajustadas a otra cámara, elige para cada punto la cascada más fina que lo contiene y, donde ninguna llega, no hay sombra. Lejos de la cámara principal la ventana de cámara se ve sin sombras; se acepta por el costo.
+
+**D-6406. Media frecuencia.**
+Se dibuja a lo más una vista pequeña por cuadro, por turnos: cada ventana de cámara se actualiza un cuadro sí y otro no, haya una o dos abiertas. Su distancia de dibujo es corta (ocho veces la distancia de la órbita, entre 120 y 400 m) y los modelos pasan antes a su versión lejana, sin tocar la memoria que evita el parpadeo en la vista principal.
+
+**D-6407. La ventana de cámara.**
+Botón "Cámara" en la primera fila de toda ventana de objeto. La ventana muestra la vista desde una órbita propia: arrastrar sobre la imagen la gira y la rueda acerca o aleja (de 3 a 80 m). Como cualquier ventana se mueve, se fija, se minimiza, se ensancha y se une en pestañas. Si el objeto deja de existir o queda bajo la niebla, se cierra. Dos como mucho: con las dos ocupadas, la que se abrió primero pasa a mirar lo nuevo. Su título es el nombre del objeto.
+
+**D-6408. Fila de botones.**
+Los botones de la primera fila de las ventanas de objeto se reparten el ancho según lo que mide su texto, y las ventanas de objeto pasan de 400 a 420 unidades para que quepan los cuatro del aldeano.
+
+**D-6409. Medición.**
+`release`, 1600 × 900, Ultra, sin vsync, partida nueva en mapa mediano con 12 aldeanos, a 70 m: 797–801 FPS sin ventanas de cámara y 784–800 con las dos abiertas (238 llamadas de dibujo más en el cuadro que le toca a una). La pérdida queda por debajo del 2 %, muy lejos del 25 % permitido. No se midió con un pueblo grande: la herramienta de reportes no abre ventanas de cámara. Anotado en `docs/RENDIMIENTO.md`.
+
+**D-6410. Sin revisar en pantalla por Claude.**
+Unir ventanas soltándolas y sacar una pestaña arrastrando, y girar o acercar la vista de la cámara (la herramienta de pruebas no arrastra ni mueve la rueda). Los cubren las pruebas de `WindowList`. Sí se vio en pantalla: una pila de tres ventanas leída de los ajustes, cambiar de pestaña con un clic, cerrar una pestaña, y dos ventanas de cámara vivas (un edificio y un aldeano) con la cámara principal en otra parte.

@@ -8,6 +8,7 @@
 // layers windows, and the notifications.
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include <SDL3/SDL_keyboard.h>
 
@@ -57,6 +58,8 @@ void GameHud::windows_begin(ui::Context& ctx) {
     }
     shown_last_ = std::move(shown_);
     shown_.clear();
+    bars_last_ = std::move(bars_);
+    bars_.clear();
     // The window the cursor is over: the only one that hears the mouse.
     const ui::Input& in = ctx.input();
     hover_top_ = dragging_.empty() ? windows_.top_at(shown_last_, in.mouse_x, in.mouse_y) : dragging_;
@@ -69,6 +72,28 @@ void GameHud::windows_end(ui::Context& ctx) {
         resizing_ = false;
         save_places();
     }
+    if (!in.mouse_down) {
+        tab_pressed_.clear();
+    }
+}
+
+std::string GameHud::window_title(GameSession& s, const std::string& id) const {
+    static constexpr std::pair<const char*, const char*> kFixed[] = {
+        {"goods", "hud.goods.title"}, {"stats", "hud.stats.title"},   {"log", "hud.log.title"},
+        {"trade", "hud.trade.title"}, {"layers", "hud.layers.title"}, {"army", "hud.army.title"}};
+    for (const auto& [name, key] : kFixed) {
+        if (id == name) {
+            return tr(key);
+        }
+    }
+    if (const WindowList::Object* o = windows_.object(id)) {
+        return thing_title(s.game(), o->kind, o->entity);
+    }
+    if (WindowList::is_camera_id(id) && id.size() == 4 && id[3] >= '1' && id[3] < '1' + kCameraWindows) {
+        const auto& cw = s.ui().camera_windows[static_cast<std::size_t>(id[3] - '1')];
+        return thing_title(s.game(), static_cast<WindowList::Kind>(cw.kind), cw.entity);
+    }
+    return id;
 }
 
 bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, const std::string& title, ui::Rect& box,
@@ -123,9 +148,52 @@ bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, co
     if (p.minimized) {
         box.h = bar_h;
     }
+    // The tabs of its stack go over it (phase 64).
+    const std::vector<std::string> tabs = windows_.tabs(id);
+    const float tab_h = tabs.empty() ? 0.0f : std::round(ctx.s(26.0f));
     // Always on the screen, below the top bar.
     box.x = std::clamp(box.x, 0.0f, std::max(0.0f, ctx.width() - box.w));
-    box.y = std::clamp(box.y, top, std::max(top, ctx.height() - bar_h));
+    box.y = std::clamp(box.y, top + tab_h, std::max(top + tab_h, ctx.height() - bar_h));
+    if (!tabs.empty()) {
+        const ui::TextStyle small = ctx.style(ctx.theme().small);
+        const float tab_w = std::floor(std::min(ctx.s(150.0f), box.w / static_cast<float>(tabs.size())));
+        ui::Color solid = ctx.theme().panel;
+        solid.a = 255;
+        for (std::size_t k = 0; k < tabs.size(); ++k) {
+            const ui::Rect tab{box.x + static_cast<float>(k) * tab_w, box.y - tab_h, tab_w, tab_h};
+            const bool mine = tabs[k] == id;
+            ctx.draw().rect(tab, mine ? solid : ctx.theme().button_active);
+            ctx.draw().rect_outline(tab, ctx.theme().panel_border, std::max(1.0f, std::round(ctx.s(1.0f))));
+            ctx.label(tab.inset(ctx.s(4.0f)), window_title(s, tabs[k]), small, mine ? ctx.theme().accent : ctx.theme().text_dim,
+                      ui::Align::Center);
+            block(s, tab);
+            if (live && in.mouse_pressed && inside(tab, in.mouse_x, in.mouse_y)) {
+                // A click shows it; holding and moving away pulls it out.
+                tab_pressed_ = tabs[k];
+                tab_press_x_ = in.mouse_x;
+                tab_press_y_ = in.mouse_y;
+                if (!mine) {
+                    windows_.raise(tabs[k]);
+                }
+            }
+        }
+        if (!tab_pressed_.empty() && in.mouse_down && dragging_.empty() &&
+            std::find(tabs.begin(), tabs.end(), tab_pressed_) != tabs.end() &&
+            std::abs(in.mouse_x - tab_press_x_) + std::abs(in.mouse_y - tab_press_y_) > ctx.s(10.0f)) {
+            // Out of the stack, under the cursor, and dragged from now on.
+            windows_.split(tab_pressed_);
+            WindowList::Place& out = windows_.place(tab_pressed_);
+            grab_x_ = ctx.s(60.0f);
+            grab_y_ = bar_h * 0.5f;
+            out.x = (in.mouse_x - grab_x_) / sc;
+            out.y = (in.mouse_y - grab_y_) / sc;
+            out.placed = true;
+            windows_.raise(tab_pressed_);
+            dragging_ = tab_pressed_;
+            resizing_ = false;
+            tab_pressed_.clear();
+        }
+    }
 
     // Solid: what lies behind a window does not show through it.
     ui::Color solid = ctx.theme().panel;
@@ -133,7 +201,8 @@ bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, co
     ctx.draw().rect(box, solid);
     ctx.panel(box);
     block(s, box);
-    shown_[id] = box;
+    shown_[id] = {box.x, box.y - tab_h, box.w, box.h + tab_h};
+    bars_[id] = {box.x, box.y - tab_h, box.w, tab_h + bar_h};
     if (live && in.mouse_pressed && inside(box, in.mouse_x, in.mouse_y)) {
         windows_.raise(id);  // Touched: in front from the next frame.
     }
@@ -224,8 +293,25 @@ bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, co
             }
         }
     }
-    // Released touching another window: they dock.
+    // Released over another window's title: they become tabs of one window.
+    bool merged = false;
     if (dragging_ == id && !in.mouse_down && !resizing_) {
+        std::string onto;
+        const std::vector<std::string> mine = windows_.tabs(id);
+        for (const std::string& other : windows_.order()) {  // The one in front wins.
+            const auto bar_it = bars_last_.find(other);
+            if (other != id && bar_it != bars_last_.end() && inside(bar_it->second, in.mouse_x, in.mouse_y) &&
+                std::find(mine.begin(), mine.end(), other) == mine.end()) {
+                onto = other;
+            }
+        }
+        if (!onto.empty()) {
+            windows_.merge(id, onto);
+            merged = true;
+        }
+    }
+    // Released touching another window: they dock.
+    if (dragging_ == id && !in.mouse_down && !resizing_ && !merged) {
         for (const auto& [other, r] : shown_last_) {
             if (other != id && WindowList::touching(box, r)) {
                 WindowList::Place& o = windows_.place(other);
@@ -237,6 +323,9 @@ bool GameHud::window(ui::Context& ctx, GameSession& s, const std::string& id, co
                 windows_.dock(id, other);
             }
         }
+    }
+    if (!merged) {
+        windows_.sync_stack(id);  // Its tabs stay where it is.
     }
     return !closed && !windows_.place(id).minimized;
 }

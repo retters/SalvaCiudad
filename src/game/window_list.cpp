@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <charconv>
 #include <cmath>
+#include <utility>
 
 namespace sc {
 
@@ -14,12 +15,13 @@ bool valid_layout_char(char c) {
 
 // Windows whose place is not remembered between runs.
 bool kept(std::string_view id) {
-    return !WindowList::is_object_id(id) && id != "building" && id != "villager";
+    return !WindowList::is_object_id(id) && !WindowList::is_camera_id(id) && id != "building" && id != "villager";
 }
 
 }  // namespace
 
 void WindowList::load(std::string_view text) {
+    std::vector<std::vector<std::pair<int, std::string>>> read;  // By stack: tab value and window.
     std::size_t at = 0;
     while (at < text.size()) {
         const std::size_t end = std::min(text.find(';', at), text.size());
@@ -33,10 +35,10 @@ void WindowList::load(std::string_view text) {
         if (!std::all_of(id.begin(), id.end(), valid_layout_char)) {
             continue;
         }
-        int values[6] = {0, 0, 0, 0, 0, 0};
+        int values[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         std::size_t p = colon + 1;
         int n = 0;
-        for (; n < 6 && p <= entry.size(); ++n) {
+        for (; n < 8 && p <= entry.size(); ++n) {
             const std::size_t comma = std::min(entry.find(',', p), entry.size());
             const auto r = std::from_chars(entry.data() + p, entry.data() + comma, values[n]);
             if (r.ec != std::errc{} || r.ptr != entry.data() + comma) {
@@ -44,10 +46,11 @@ void WindowList::load(std::string_view text) {
             }
             p = comma + 1;
         }
-        // Five values before phase 62; six with "minimized".
-        if ((n != 5 && n != 6) || p <= entry.size() || values[0] < 0 || values[1] < 0 || values[0] > 20000 ||
+        // Five values before phase 62; six with "minimized"; eight with the tabs.
+        if ((n != 5 && n != 6 && n != 8) || p <= entry.size() || values[0] < 0 || values[1] < 0 || values[0] > 20000 ||
             values[1] > 20000 || values[2] < 0 || values[2] > 2000 || values[3] < 0 || values[3] > 1 || values[4] < 0 ||
-            values[4] > 1000 || values[5] < 0 || values[5] > 1) {
+            values[4] > 1000 || values[5] < 0 || values[5] > 1 || values[6] < 0 || values[6] > 64 || values[7] < 0 ||
+            values[7] > 255) {
             continue;  // A damaged entry: that window goes back to its place.
         }
         if (!kept(id)) {
@@ -61,6 +64,32 @@ void WindowList::load(std::string_view text) {
         w.pinned = values[3] == 1;
         w.group = values[4];
         w.minimized = values[5] == 1;
+        if (values[6] > 0) {
+            // Its stack, by number, and its tab: twice its place among
+            // the tabs, plus one for the tab that shows.
+            const auto number = static_cast<std::size_t>(values[6]);
+            if (read.size() < number) {
+                read.resize(number);
+            }
+            read[number - 1].push_back({values[7], std::string(id)});
+        }
+    }
+    for (std::vector<std::pair<int, std::string>>& tabs : read) {
+        if (tabs.size() < 2) {
+            continue;
+        }
+        std::stable_sort(tabs.begin(), tabs.end(), [](const auto& a, const auto& b) { return a.first / 2 < b.first / 2; });
+        Stack stack;
+        for (const auto& [tab, name] : tabs) {
+            stack.ids.push_back(name);
+            if ((tab & 1) != 0) {
+                stack.shown = name;
+            }
+        }
+        if (stack.shown.empty()) {
+            stack.shown = stack.ids.front();
+        }
+        stacks_.push_back(std::move(stack));
     }
     // A group needs two windows; new groups take numbers after the read ones.
     std::map<int, int> members;
@@ -91,10 +120,26 @@ std::string WindowList::save() const {
             }
             group = members >= 2 ? group : 0;
         }
+        // Its stack, numbered among those with two windows that are kept.
+        int stack_number = 0;
+        int tab = 0;
+        int number = 0;
+        for (const Stack& stack : stacks_) {
+            const auto members = std::count_if(stack.ids.begin(), stack.ids.end(), [](const std::string& m) { return kept(m); });
+            if (members < 2) {
+                continue;
+            }
+            ++number;
+            if (const auto at = std::find(stack.ids.begin(), stack.ids.end(), id); at != stack.ids.end()) {
+                stack_number = number;
+                tab = static_cast<int>(at - stack.ids.begin()) * 2 + (stack.shown == id ? 1 : 0);
+            }
+        }
         text += id + ":" + std::to_string(static_cast<int>(std::lround(w.x))) + "," +
                 std::to_string(static_cast<int>(std::lround(w.y))) + "," +
                 std::to_string(static_cast<int>(std::lround(w.w))) + "," + (w.pinned ? "1" : "0") + "," +
-                std::to_string(group) + "," + (w.minimized ? "1" : "0") + ";";
+                std::to_string(group) + "," + (w.minimized ? "1" : "0") + "," + std::to_string(stack_number) + "," +
+                std::to_string(tab) + ";";
     }
     if (text.size() > kMaxLayoutBytes || !std::all_of(text.begin(), text.end(), valid_layout_char)) {
         return {};
@@ -105,6 +150,9 @@ std::string WindowList::save() const {
 void WindowList::raise(const std::string& id) {
     std::erase(order_, id);
     order_.push_back(id);
+    if (Stack* stack = stack_of(id)) {
+        stack->shown = id;  // Its tab comes forward too.
+    }
 }
 
 bool WindowList::open(const std::string& id) const {
@@ -123,15 +171,145 @@ std::string WindowList::top_at(const std::map<std::string, ui::Rect>& rects, flo
 
 void WindowList::close(const std::string& id) {
     std::erase(order_, id);
-    leave_group(id);
+    if (!kept(id)) {
+        split(id);  // A window of this run only: it will not come back to its tab.
+    } else if (stack_of(id) == nullptr) {
+        leave_group(id);
+    }
     if (is_object_id(id)) {
         std::erase_if(objects_, [&](const Object& o) { return o.id == id; });
         places_.erase(id);
+    } else if (is_camera_id(id)) {
+        places_.erase(id);
+    }
+}
+
+const WindowList::Stack* WindowList::stack_of(const std::string& id) const {
+    for (const Stack& stack : stacks_) {
+        if (std::find(stack.ids.begin(), stack.ids.end(), id) != stack.ids.end()) {
+            return &stack;
+        }
+    }
+    return nullptr;
+}
+
+WindowList::Stack* WindowList::stack_of(const std::string& id) {
+    return const_cast<Stack*>(std::as_const(*this).stack_of(id));
+}
+
+std::string WindowList::shown_of(const Stack& stack) const {
+    if (open(stack.shown)) {
+        return stack.shown;
+    }
+    for (const std::string& id : stack.ids) {
+        if (open(id)) {
+            return id;
+        }
+    }
+    return {};
+}
+
+std::vector<std::string> WindowList::tabs(const std::string& id) const {
+    std::vector<std::string> out;
+    if (const Stack* stack = stack_of(id)) {
+        for (const std::string& member : stack->ids) {
+            if (open(member)) {
+                out.push_back(member);
+            }
+        }
+    }
+    if (out.size() < 2) {
+        out.clear();
+    }
+    return out;
+}
+
+bool WindowList::hidden(const std::string& id) const {
+    const Stack* stack = stack_of(id);
+    return stack != nullptr && shown_of(*stack) != id;
+}
+
+void WindowList::drop_small_stacks() {
+    std::erase_if(stacks_, [](const Stack& stack) { return stack.ids.size() < 2; });
+}
+
+void WindowList::merge(const std::string& id, const std::string& onto) {
+    if (id == onto) {
+        return;
+    }
+    const Stack* mine = stack_of(id);
+    if (mine != nullptr && mine == stack_of(onto)) {
+        return;  // Tabs of the same window already.
+    }
+    // What moves: the window, or the whole stack it shows for.
+    std::vector<std::string> moving = mine != nullptr ? mine->ids : std::vector<std::string>{id};
+    if (mine != nullptr) {
+        std::erase_if(stacks_, [&](const Stack& stack) { return &stack == mine; });
+    }
+    if (stack_of(onto) == nullptr) {
+        stacks_.push_back({{onto}, onto});
+    }
+    Stack* target = stack_of(onto);
+    const Place where = places_[onto];
+    for (const std::string& member : moving) {
+        leave_group(member);
+        Place& p = places_[member];
+        p.x = where.x;
+        p.y = where.y;
+        p.w = where.w;
+        p.placed = where.placed;
+        p.group = where.group;
+        target->ids.push_back(member);
+    }
+    target->shown = id;
+    raise(id);
+}
+
+void WindowList::split(const std::string& id) {
+    Stack* stack = stack_of(id);
+    if (stack == nullptr) {
+        leave_group(id);
+        return;
+    }
+    const auto at = std::find(stack->ids.begin(), stack->ids.end(), id);
+    const bool was_shown = stack->shown == id;
+    const auto next = stack->ids.erase(at);
+    if (was_shown && !stack->ids.empty()) {
+        // The tab beside it shows now.
+        stack->shown = next != stack->ids.begin() ? *(next - 1) : stack->ids.front();
+    }
+    // Out of the group too; the others of the stack stay in it.
+    const auto it = places_.find(id);
+    if (it != places_.end()) {
+        it->second.group = 0;
+    }
+    drop_small_stacks();
+}
+
+void WindowList::sync_stack(const std::string& id) {
+    const Stack* stack = stack_of(id);
+    if (stack == nullptr) {
+        return;
+    }
+    const Place where = places_[id];
+    for (const std::string& member : stack->ids) {
+        if (member != id) {
+            Place& p = places_[member];
+            p.x = where.x;
+            p.y = where.y;
+            p.w = where.w;
+            p.placed = where.placed;
+            p.group = where.group;
+        }
     }
 }
 
 bool WindowList::is_object_id(std::string_view id) {
     return id.size() > 3 && id.substr(0, 3) == "obj";
+}
+
+bool WindowList::is_camera_id(std::string_view id) {
+    return id.size() > 3 && id.substr(0, 3) == "cam";
 }
 
 const WindowList::Object* WindowList::object(const std::string& id) const {

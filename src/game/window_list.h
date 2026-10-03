@@ -1,7 +1,8 @@
 // The game windows as a list (phase 62): where each one is, which are in
 // front of which, the windows of the things selected on the map (one
 // "passing" window that the next selection takes over, and the pinned ones
-// that stay), the groups of docked windows and the magnets. No drawing
+// that stay), the groups of docked windows, the windows joined as tabs of
+// one (phase 64) and the magnets. No drawing
 // here: GameHud draws them and tells this list what the player did.
 #pragma once
 
@@ -32,8 +33,9 @@ public:
     static constexpr std::size_t kMaxLayoutBytes = 2048;
     static constexpr std::size_t kMaxObjects = 16;
 
-    // The windows' places as text: "id:x,y,w,pinned,group[,minimized];...",
-    // whole design units. Damaged entries are skipped; those of windows
+    // The windows' places as text:
+    // "id:x,y,w,pinned,group[,minimized[,stack,tab]];...", whole design units
+    // (`tab`: twice its place among the tabs, plus one if it is the one showing). Damaged entries are skipped; those of windows
     // that are not kept (the object windows, and the "building" and
     // "villager" windows of before phase 62) are read and dropped.
     void load(std::string_view text);
@@ -67,6 +69,9 @@ public:
     [[nodiscard]] const std::vector<Object>& objects() const { return objects_; }
     [[nodiscard]] const Object* object(const std::string& id) const;
     [[nodiscard]] static bool is_object_id(std::string_view id);
+    // The camera windows ("cam1", "cam2"): like the object windows, their
+    // places are of this run only.
+    [[nodiscard]] static bool is_camera_id(std::string_view id);
     // The player selected a thing: its own window comes to the front if it
     // has one; else the passing window shows it; else a new passing window
     // opens. Returns the window's id, or "" when there are kMaxObjects
@@ -81,6 +86,23 @@ public:
     void set_pinned(const std::string& id, bool pinned);
     // Another game: no object windows.
     void clear_objects();
+
+    // --- Tabs (phase 64) -------------------------------------------------
+    // Windows joined in a stack share one place: one of them shows and the
+    // others are tabs over it. Only the open ones count: a stack with one
+    // open window looks like a window alone.
+    // The open windows of `id`'s stack, in order; empty unless there are
+    // at least two.
+    [[nodiscard]] std::vector<std::string> tabs(const std::string& id) const;
+    // Whether `id` is behind another tab of its stack (it is not drawn).
+    [[nodiscard]] bool hidden(const std::string& id) const;
+    // `id` (with the stack it was in) joins `onto`'s stack, takes its place
+    // and group, and shows. raise() shows a tab.
+    void merge(const std::string& id, const std::string& onto);
+    // `id` leaves its stack and its group; it keeps its place.
+    void split(const std::string& id);
+    // The other windows of `id`'s stack take its place and width.
+    void sync_stack(const std::string& id);
 
     // --- Groups ----------------------------------------------------------
     // `id` was dropped touching `other`: they move together from now on.
@@ -106,6 +128,16 @@ private:
     std::vector<std::string> order_;
     std::vector<Object> objects_;
     int next_group_ = 1;
+    struct Stack {
+        std::vector<std::string> ids;
+        std::string shown;
+    };
+    std::vector<Stack> stacks_;
+    [[nodiscard]] const Stack* stack_of(const std::string& id) const;
+    [[nodiscard]] Stack* stack_of(const std::string& id);
+    // The window of a stack that shows: the chosen one, or the first open.
+    [[nodiscard]] std::string shown_of(const Stack& stack) const;
+    void drop_small_stacks();
 };
 
 }  // namespace sc
