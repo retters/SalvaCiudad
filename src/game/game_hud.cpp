@@ -1077,7 +1077,7 @@ float GameHud::auto_trade_height(ui::Context& ctx, const sim::Game& game, std::u
     const float line = ctx.text().line_height(ctx.style(ctx.theme().body));
     const float small = ctx.text().line_height(ctx.style(ctx.theme().small));
     const std::size_t rules = std::min<std::size_t>(game.player(town).trade_rules.size(), 8);
-    return 2 * line + 4 * row_h + static_cast<float>(rules) * small;
+    return 2 * line + 6 * row_h + static_cast<float>(rules) * small;
 }
 
 // "Sell over N, buy under M" for one good at a time, applied with a
@@ -1097,7 +1097,7 @@ void GameHud::auto_trade_section(ui::Context& ctx, GameSession& s, const ui::Rec
     ctx.tooltip_area(ctx.id("auto_title"), {box.x + pad, y, box.w - 2 * pad, line}, tr("hud.auto.tooltip"));
     y += line;
     if (goods.empty()) {
-        y += line + 4 * row_h;
+        y += line + 6 * row_h;
         return;
     }
     std::vector<std::string> names;
@@ -1115,6 +1115,8 @@ void GameHud::auto_trade_section(ui::Context& ctx, GameSession& s, const ui::Rec
         rule_loaded_ = rule_pick_;
         rule_sell_ = current != nullptr && current->sell_above != sim::kNoRule ? current->sell_above : -10;
         rule_buy_ = current != nullptr && current->buy_below != sim::kNoRule ? current->buy_below : -10;
+        rule_sell_min_ = current != nullptr && current->sell_min != 0 ? current->sell_min : 70;
+        rule_buy_max_ = current != nullptr && current->buy_max != 0 ? current->buy_max : 70;
     }
     const float x = box.x + pad;
     const float w = box.w - 2 * pad;
@@ -1128,13 +1130,26 @@ void GameHud::auto_trade_section(ui::Context& ctx, GameSession& s, const ui::Rec
     ctx.slider(ctx.id("sell"), {x, y + gap / 2, w, row_h - gap}, rule_sell_, -10, 2000, 10, shown("hud.auto.sell"),
                tr("hud.auto.sell.tooltip"));
     y += row_h;
+    // Only at a good price: over a share of the good's value when selling.
+    const auto price = [&](const char* key) {
+        return [key](int v) { return v < sim::kMinPriceLimit ? tr("hud.auto.anyPrice") : tr(key, v); };
+    };
+    ctx.slider(ctx.id("sell_min"), {x, y + gap / 2, w, row_h - gap}, rule_sell_min_, 70, sim::kMaxPriceLimit, 5,
+               price("hud.auto.sellMin"), tr("hud.auto.sellMin.tooltip"), rule_sell_ >= 0);
+    y += row_h;
     ctx.slider(ctx.id("buy"), {x, y + gap / 2, w, row_h - gap}, rule_buy_, -10, 2000, 10, shown("hud.auto.buy"),
                tr("hud.auto.buy.tooltip"));
+    y += row_h;
+    ctx.slider(ctx.id("buy_max"), {x, y + gap / 2, w, row_h - gap}, rule_buy_max_, 70, sim::kMaxPriceLimit, 5,
+               price("hud.auto.buyMax"), tr("hud.auto.buyMax.tooltip"), rule_buy_ >= 0);
     y += row_h;
     const std::int32_t sell = rule_sell_ < 0 ? sim::kNoRule : rule_sell_;
     const std::int32_t buy = rule_buy_ < 0 ? sim::kNoRule : rule_buy_;
     const bool valid = sell == sim::kNoRule || buy == sim::kNoRule || buy <= sell;
-    const bool same = current != nullptr ? current->sell_above == sell && current->buy_below == buy
+    const int sell_min = sell == sim::kNoRule || rule_sell_min_ < sim::kMinPriceLimit ? 0 : rule_sell_min_;
+    const int buy_max = buy == sim::kNoRule || rule_buy_max_ < sim::kMinPriceLimit ? 0 : rule_buy_max_;
+    const bool same = current != nullptr ? current->sell_above == sell && current->buy_below == buy &&
+                                               current->sell_min == sell_min && current->buy_max == buy_max
                                          : sell == sim::kNoRule && buy == sim::kNoRule;
     if (ctx.button(ctx.id("apply"), {x, y + gap / 2, w, row_h - gap}, tr("hud.auto.apply"),
                    valid ? tr("hud.auto.apply.tooltip") : tr("hud.auto.apply.invalid"), valid && !same)) {
@@ -1143,6 +1158,8 @@ void GameHud::auto_trade_section(ui::Context& ctx, GameSession& s, const ui::Rec
         c.def = picked;
         c.value = sell;
         c.value2 = buy;
+        c.count = static_cast<std::uint16_t>(sell_min);
+        c.def2 = static_cast<std::uint16_t>(buy_max);
         s.issue(c);
     }
     y += row_h;
@@ -1155,9 +1172,15 @@ void GameHud::auto_trade_section(ui::Context& ctx, GameSession& s, const ui::Rec
         std::string parts;
         if (rule.sell_above != sim::kNoRule) {
             parts = tr("hud.auto.sell", rule.sell_above);
+            if (rule.sell_min != 0) {
+                parts += " (" + tr("hud.auto.sellMin", static_cast<int>(rule.sell_min)) + ")";
+            }
         }
         if (rule.buy_below != sim::kNoRule) {
             parts += (parts.empty() ? "" : " · ") + tr("hud.auto.buy", rule.buy_below);
+            if (rule.buy_max != 0) {
+                parts += " (" + tr("hud.auto.buyMax", static_cast<int>(rule.buy_max)) + ")";
+            }
         }
         const std::string name = rule.resource < content.resources.size() ? tr(content.resources[rule.resource].name_key)
                                                                           : std::string();

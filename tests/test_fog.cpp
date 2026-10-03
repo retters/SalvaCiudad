@@ -350,6 +350,66 @@ TEST_SUITE("fog") {
         CHECK(g.rejected_commands() == rejected + 1);
     }
 
+    TEST_CASE("revealed fog: the whole map explored from the start, the rest as dynamic") {
+        Game g(content(), small_map(3), setup(1, FogMode::Revealed));
+        REQUIRE(g.vision().active());
+        CHECK(g.vision().all_explored());
+        const Building& tc = town_center(g);
+        const std::uint8_t group = g.vision_group(0);
+        // Explored everywhere on the map, and nowhere off it.
+        CHECK(g.vision().explored_at(group, tc.x + tc.width / 2 + 150, tc.z + tc.depth / 2));
+        CHECK(g.vision().explored_at(group, 0, 0));
+        CHECK(g.vision().explored_at(group, g.map().size - 1, g.map().size - 1));
+        CHECK_FALSE(g.vision().explored_at(group, g.map().size + 8, 4));
+        CHECK(g.vision().explored_rect(group, 8, 8, 5, 5));
+        CHECK_FALSE(g.vision().explored_rect(group, g.map().size - 2, 8, 5, 5));
+        // So the fog refuses no place to build: far away is as near.
+        const DefIndex house = building("house");
+        for (std::int32_t x = 12; x < g.map().size - 20; x += 16) {
+            CHECK(g.can_place(0, house, x, tc.z, 0) != PlaceError::Unexplored);
+        }
+        // The same places a game without fog takes.
+        Game open(content(), small_map(3), setup(1, FogMode::None));
+        for (std::int32_t x = 12; x < g.map().size - 20; x += 16) {
+            CHECK(g.can_place(0, house, x, tc.z, 0) == open.can_place(0, house, x, tc.z, 0));
+        }
+        // The view: all of it explored, dim where nobody is looking, clear
+        // around the town; nothing hidden.
+        FogView view;
+        view.begin(g, group);
+        CHECK(view.game_mode() == FogMode::Revealed);
+        CHECK(view.mode() == FogMode::Dynamic);
+        std::size_t dim = 0, clear = 0;
+        for (const std::uint8_t t : view.texels()) {
+            CHECK(t != FogView::kHidden);
+            dim += t == FogView::kExplored ? 1 : 0;
+            clear += t == FogView::kInSight ? 1 : 0;
+        }
+        CHECK(clear > 100);
+        CHECK(dim > clear);
+        CHECK(view.explored(4.0f, 4.0f));
+        CHECK_FALSE(view.in_sight(4.0f, 4.0f));
+        // Saving and loading keep it, with nothing more in the file than
+        // the dynamic fog has.
+        run(g, 300);
+        BinaryWriter w;
+        g.save(w);
+        Game back(content(), MapData{}, 0, 0);
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.rules().fog == FogMode::Revealed);
+        CHECK(back.vision().all_explored());
+        CHECK(back.hash() == g.hash());
+        Game dynamic(content(), small_map(3), setup(1, FogMode::Dynamic));
+        run(dynamic, 300);
+        BinaryWriter wd;
+        dynamic.save(wd);
+        CHECK(w.bytes().size() == wd.bytes().size());
+        run(g, 200);
+        run(back, 200);
+        CHECK(back.hash() == g.hash());
+    }
+
     TEST_CASE("the villagers explore as they walk") {
         Game g(content(), small_map(5), setup(1, FogMode::Static));
         const std::uint32_t start = g.vision().count(g.vision_group(0));
@@ -416,6 +476,7 @@ TEST_SUITE("fog") {
         CHECK(back.vision() == g.vision());
         CHECK(back.hash() == g.hash());
         CHECK(back.rules().fog == FogMode::Dynamic);
+        CHECK_FALSE(back.vision().all_explored());
         // And they go on the same way.
         run(g, 300);
         run(back, 300);

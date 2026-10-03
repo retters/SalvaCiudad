@@ -104,6 +104,11 @@ public:
     // A grid per group whose bit is set in `groups`, all unexplored.
     void reset(std::int32_t map_size, std::uint16_t groups);
     [[nodiscard]] bool active() const { return side_ > 0; }
+    // Phase 60: every cell counts as explored for every group (the cells
+    // themselves, their count and their sum go on as the groups walk, so
+    // nothing more is saved or compared). Set after reset() or read().
+    void set_all_explored(bool all) { all_explored_ = all; }
+    [[nodiscard]] bool all_explored() const { return all_explored_; }
     [[nodiscard]] std::int32_t side() const { return side_; }
     [[nodiscard]] std::uint16_t groups() const { return groups_; }
     [[nodiscard]] bool used(std::uint8_t group) const { return group < kVisionGroups && ((groups_ >> group) & 1u) != 0; }
@@ -163,6 +168,7 @@ private:
     std::array<std::uint64_t, kVisionGroups> sum_{};
     std::array<std::vector<BuildingGhost>, kVisionGroups> ghosts_;
     // Derived, never saved.
+    bool all_explored_ = false;
     std::array<FogGrid, kVisionGroups> sight_;
     std::uint32_t ghost_revision_ = 0;
 };

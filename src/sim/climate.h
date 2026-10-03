@@ -30,7 +30,13 @@ inline constexpr std::uint8_t kMixedRace = 0xFF;
 enum class Victory : std::uint8_t { None, Elimination, Score, Objective, Count };
 // Fog of war (phases 32 and 33): none; what was explored stays in view; or
 // what was explored stays dim and only what is in sight shows what moves.
-enum class FogMode : std::uint8_t { None, Static, Dynamic, Count };
+// Revealed (phase 60) is the dynamic one with the whole map explored from
+// the start.
+enum class FogMode : std::uint8_t { None, Static, Dynamic, Revealed, Count };
+// Whether the mode keeps what is in sight now and ghosts of what was seen.
+[[nodiscard]] constexpr bool fog_is_dynamic(FogMode m) {
+    return m == FogMode::Dynamic || m == FogMode::Revealed;
+}
 // Chances scale with the threat: 0, 50, 100, 200 or 400 %.
 [[nodiscard]] std::int32_t threat_percent(Threat t);
 

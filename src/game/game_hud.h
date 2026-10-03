@@ -81,6 +81,9 @@ private:
     int rule_loaded_ = -1;
     int rule_sell_ = -10;
     int rule_buy_ = -10;
+    // Their price limits, percent; under 75: at any price.
+    int rule_sell_min_ = 70;
+    int rule_buy_max_ = 70;
     int offer_give_amount_ = 20;
     int offer_want_ = 1;
     int offer_want_amount_ = 20;

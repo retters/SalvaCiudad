@@ -626,6 +626,95 @@ TEST_SUITE("auto_trade") {
         CHECK(g.player(0).trade_rules[0].resource == stone);
     }
 
+    TEST_CASE("a rule may wait for a good price") {
+        // The limits go with the command, and only in steps the form has.
+        Command limited = rule(3, 200, 50);
+        limited.count = 110;  // Sell only at 110 % of the value or more.
+        limited.def2 = 90;    // Buy only at 90 % or less.
+        BinaryWriter w;
+        limited.write(w);
+        BinaryReader r(w.bytes());
+        Command back;
+        REQUIRE(Command::read(r, back));
+        CHECK(back == limited);
+        for (const std::uint16_t bad : {std::uint16_t{74}, std::uint16_t{126}, std::uint16_t{92}, std::uint16_t{5}}) {
+            Command c = rule(3, 200, 50);
+            c.count = bad;
+            BinaryWriter wb;
+            c.write(wb);
+            BinaryReader rb(wb.bytes());
+            CHECK_FALSE(Command::read(rb, back));
+        }
+        CHECK(valid_price_limit(0));
+        CHECK(valid_price_limit(75));
+        CHECK(valid_price_limit(125));
+
+        // Selling logs: a limit over what this merchant pays keeps them; one
+        // under it sells.
+        Game g = town_with_merchant(83);
+        const DefIndex log = g.content().find_resource("core:log");
+        std::int32_t pays = 0;
+        for (const MerchantGood& m : g.player(0).merchant) {
+            pays = m.resource == log ? m.sell : pays;
+        }
+        REQUIRE(pays > 0);
+        const std::int32_t value = g.content().resources[log].value;
+        const std::int32_t percent = pays * 400 / (value * 3);  // His price of the day, of the value.
+        const std::int32_t logs = amount(g, "core:log");
+        REQUIRE(logs > 30);
+        const auto step_up = [](std::int32_t p) { return std::clamp((p / 5 + 1) * 5, kMinPriceLimit, kMaxPriceLimit); };
+        const auto step_down = [](std::int32_t p) { return std::clamp(p / 5 * 5, kMinPriceLimit, kMaxPriceLimit); };
+        if (step_up(percent) * value * 3 > pays * 400) {
+            Command dear = rule(log, 30, kNoRule);
+            dear.count = static_cast<std::uint16_t>(step_up(percent));
+            g.apply(dear);
+            REQUIRE(g.player(0).trade_rules.size() == 1);
+            CHECK(g.player(0).trade_rules[0].sell_min == step_up(percent));
+            run(g, g.day_ticks() + 1);
+            CHECK(amount(g, "core:log") >= logs - 2);  // Kept (builders may take a couple).
+            CHECK(g.player(0).tally.sold == 0);
+        }
+        if (step_down(percent) * value * 3 <= pays * 400) {
+            Command fair = rule(log, 30, kNoRule);
+            fair.count = static_cast<std::uint16_t>(step_down(percent));
+            g.apply(fair);
+            run(g, g.day_ticks() + 1);
+            CHECK(amount(g, "core:log") == 30);
+            CHECK(g.player(0).tally.sold > 0);
+        }
+        // Buying, in a game of its own (the merchant stays only so long):
+        // with the same gold in the post, a limit under this merchant's
+        // price buys nothing and one over it buys.
+        const auto buys = [&](bool cheap_only) {
+            Game b = town_with_merchant(83);
+            const MerchantGood* good = stocked_good(b);
+            REQUIRE(good != nullptr);
+            const DefIndex res = good->resource;
+            const std::int32_t costs = good->buy * 400 / (b.content().resources[res].value * 5);
+            if (cheap_only && costs <= kMinPriceLimit + 1) {
+                return 0;  // This merchant is as cheap as they come.
+            }
+            Command c = rule(res, kNoRule, b.tradeable(0, res) + 5);
+            c.def2 = static_cast<std::uint16_t>(cheap_only ? kMinPriceLimit : kMaxPriceLimit);
+            b.apply(c);
+            b.apply(set_reserve(post_of(b), 100));
+            for (int d = 0; d < 8 && b.merchant_here(0) && b.player(0).tally.bought == 0; ++d) {
+                run(b, b.day_ticks());
+            }
+            return b.player(0).tally.bought;
+        };
+        CHECK(buys(true) == 0);
+        CHECK(buys(false) > 0);
+        // The limits survive a save.
+        BinaryWriter ws;
+        g.save(ws);
+        Game loaded(core(), MapData{}, 0, 0);
+        BinaryReader rs(ws.bytes());
+        REQUIRE(loaded.load(rs, core()));
+        CHECK(loaded.player(0).trade_rules == g.player(0).trade_rules);
+        CHECK(loaded.hash() == g.hash());
+    }
+
     TEST_CASE("without a merchant nothing is traded") {
         Game g(core(), map_for(82), setup());
         (void)build(g, "core:trading_post");

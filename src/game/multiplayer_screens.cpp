@@ -272,7 +272,9 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
         }
         // The fog of war (phase 32).
         {
-            const std::string fogs[] = {tr("newGame.fog.none"), tr("newGame.fog.static"), tr("newGame.fog.dynamic")};
+            const std::string fogs[] = {tr("newGame.fog.none"), tr("newGame.fog.static"), tr("newGame.fog.dynamic"),
+                                        tr("newGame.fog.revealed")};
+            static_assert(std::size(fogs) == static_cast<std::size_t>(sim::FogMode::Count));
             int fog = static_cast<int>(lobby.config.rules.fog);
             ctx.label({c.x, y, label_w, row_h}, tr("newGame.fog"), body, ctx.theme().text);
             if (ctx.selector(ctx.id("lobby_fog"), {c.x + label_w, y, c.w - label_w, row_h}, fog, fogs,

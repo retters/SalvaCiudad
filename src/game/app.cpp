@@ -2272,7 +2272,7 @@ void App::save_report(const FrameCapture& capture) {
         r.in_game = true;
         r.view.season = g.calendar().season;
         r.view.snow = static_cast<float>(g.snow()) / static_cast<float>(sim::village::kMaxSnow);
-        r.fog = session_->fog().mode();
+        r.fog = session_->fog().game_mode();
     }
     r.cursor = cursor;
     // Each stroke's cells, through the camera that drew the capture.

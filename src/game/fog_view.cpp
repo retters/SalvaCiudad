@@ -78,7 +78,8 @@ std::vector<std::uint16_t> fog_ceiling(const sim::MapData& map, std::int32_t sid
 }
 
 void FogView::begin(const sim::Game& game, std::uint8_t group) {
-    mode_ = game.rules().fog;
+    game_mode_ = game.rules().fog;
+    mode_ = game_mode_ == sim::FogMode::Revealed ? sim::FogMode::Dynamic : game_mode_;
     group_ = group;
     // Unique across views, so a new game is never mistaken for the last.
     static std::uint32_t next_generation = 0;
@@ -108,6 +109,11 @@ void FogView::begin(const sim::Game& game, std::uint8_t group) {
     // Everything once, then only what changes.
     explored_ = game.vision().explored(group_);
     explored_count_ = game.vision().count(group_);
+    if (game.vision().all_explored()) {
+        for (std::int32_t cz = 0; cz < side_; ++cz) {
+            explored_.set_span(cz, 0, side_ - 1);
+        }
+    }
     update(game);
     mark_all();
     refresh_tiles();

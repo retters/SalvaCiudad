@@ -2411,3 +2411,20 @@ Reglas 30, protocolo de red 8 (las reglas llevan cuatro bytes más).
 
 **D-5909. Sin revisar en pantalla.**
 Las barras nuevas están en la mitad de abajo de Personalizado, que no se puede capturar desde las pruebas automáticas (D-5611). Quedan en la lista de pruebas a mano.
+
+## Fase 60: niebla "mapa revelado" y reglas de comercio con precio (2026-10-03)
+
+**D-6001. Cuarto modo de niebla.**
+`FogMode::Revealed` ("Dinámica, mapa revelado") se comporta como la dinámica en todo (lo que se mueve y los edificios de otros solo se ven donde alguien propio mira; lo visto queda como recuerdo), pero todo el mapa cuenta como explorado desde el principio. No se llena ninguna cuadrícula: `Vision` lleva una marca "todo explorado" que sale del modo de la partida, así que el archivo guardado mide lo mismo que con la dinámica y la suma de verificación no cambia de forma. La vista lo dibuja como dinámica con todas las celdas exploradas.
+
+**D-6002. Dónde se construye.**
+Como eligió Salvador, en cualquier parte de la región propia: la regla de D-3203 se cumple sola porque todo está explorado.
+
+**D-6003. Lo que se sabe de más.**
+En este modo se ve desde el principio el terreno y los recursos de todo el mapa, y un árbol que tala otro pueblo desaparece a la vista aunque nadie propio lo mire. Se acepta: es el precio de "todo explorado".
+
+**D-6004. Reglas del puesto con precio.**
+Cada regla de comercio automático puede llevar dos límites: vender solo si el precio del día del mercader es al menos N % del valor del bien, y comprar solo si es a lo más N %. N va de 75 a 125 en pasos de 5 (el rango de precios de un mercader); sin límite por omisión. El límite se compara con el precio del día, no con lo que el mercader paga o cobra: él paga tres cuartos de ese precio y cobra cinco cuartos, así que comparar con lo pagado o cobrado dejaba fuera de rango casi todos los casos (se probó primero así y ninguna compra pasaba).
+
+**D-6005. Versiones.**
+Reglas 31 (las reglas de comercio guardan dos bytes más), protocolo de red 9 (un cliente anterior no conoce el modo de niebla).

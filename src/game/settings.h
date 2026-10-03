@@ -161,7 +161,7 @@ inline constexpr std::string_view kSeas[] = {"none", "oneSide", "twoSides", "isl
 inline constexpr std::string_view kWinters[] = {"mild", "normal", "harsh"};
 inline constexpr std::string_view kStarts[] = {"scarce", "normal", "plenty"};
 inline constexpr std::string_view kThreats[] = {"none", "low", "medium", "high", "brutal"};
-inline constexpr std::string_view kFogs[] = {"none", "static", "dynamic"};
+inline constexpr std::string_view kFogs[] = {"none", "static", "dynamic", "revealed"};
 inline constexpr std::string_view kMixedRace = "mixed";
 }  // namespace new_game_names
 

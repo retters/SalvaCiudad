@@ -601,6 +601,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 60
+
+- [ ] En Personalizado (y en la sala), "Niebla de guerra" tiene un cuarto valor: "Dinámica, mapa revelado".
+- [ ] Con ese modo: al empezar se ve el terreno de todo el mapa, tenue y gris fuera de la vista de tu gente; el minimapa igual. Animales, asaltantes y edificios de otros se ven solo donde alguien tuyo mira.
+- [ ] Se puede construir lejos del pueblo desde el primer momento.
+- [ ] Guardar y cargar conserva el modo.
+- [ ] Puesto de comercio, "Comercio automático": bajo "vender si hay más de" hay una barra "si el precio es al menos N %", y bajo "comprar si hay menos de", "si el precio es a lo más N %" ("a cualquier precio" a la izquierda).
+- [ ] Con "comprar si el precio es a lo más 90 %", un mercader caro no vende nada al puesto y uno barato sí; la lista de reglas muestra el límite.
+
 ### Fase 59
 
 - [ ] En Personalizado, bajo "El año": una barra en minutos por cada estación marcada (1 a 30) y la línea "Duración del año" con la suma. Al desmarcar una estación desaparece su barra y el año se acorta.

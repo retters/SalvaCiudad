@@ -790,7 +790,8 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
     // Phase 32: the fog of war, and whether allies share what they see.
     {
         const std::vector<std::string> options = {tr("newGame.fog.none"), tr("newGame.fog.static"),
-                                                  tr("newGame.fog.dynamic")};
+                                                  tr("newGame.fog.dynamic"),
+                                                  tr("newGame.fog.revealed")};
         int index = static_cast<int>(game_.fog);
         const Row r = row(ctx, x, y, cw, tr("newGame.fog"), tr("newGame.fog.tooltip"));
         if (ctx.selector(ctx.id("fog"), r.control, index, options, tr("newGame.fog.tooltip"))) {

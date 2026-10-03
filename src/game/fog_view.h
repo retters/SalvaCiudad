@@ -43,7 +43,7 @@ public:
     // The fog shown: None when the game has none or when the developer
     // tools reveal everything.
     [[nodiscard]] sim::FogMode mode() const { return revealed_ ? sim::FogMode::None : mode_; }
-    [[nodiscard]] sim::FogMode game_mode() const { return mode_; }
+    [[nodiscard]] sim::FogMode game_mode() const { return game_mode_; }
     [[nodiscard]] bool revealed() const { return revealed_; }
     void set_revealed(bool revealed);
     [[nodiscard]] std::uint8_t group() const { return group_; }
@@ -80,7 +80,10 @@ public:
     [[nodiscard]] std::uint32_t generation() const { return generation_; }
 
 private:
+    // How it is drawn: the revealed fog (phase 60) is the dynamic one with
+    // every cell explored. `game_mode_` is the game's own.
     sim::FogMode mode_ = sim::FogMode::None;
+    sim::FogMode game_mode_ = sim::FogMode::None;
     bool revealed_ = false;
     std::uint8_t group_ = 0;
     std::int32_t side_ = 0;

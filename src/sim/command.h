@@ -32,7 +32,9 @@ enum class CommandType : std::uint8_t {
     DevLevel = 27,        // Developer tools: the town center goes up a level at once.
     DevSpawn = 28,        // Developer tools: `value` adults (couples) arrive at the town center.
     ArmyOrder = 26,       // The army: defend around `position` (`value` 0), attack player `count` (1) or retreat (2).
-    SetTradeRule = 29,    // Automatic trade of `def`: sell over `value`, buy under `value2` (kNoRule: off).
+    SetTradeRule = 29,    // Automatic trade of `def`: sell over `value`, buy under `value2` (kNoRule: off);
+                          // `count` and `def2`: the price limits of each, percent (0: any price).
+
 };
 
 inline constexpr std::uint8_t kMaxPlayers = 12;
@@ -40,6 +42,13 @@ inline constexpr std::int32_t kMaxDevGrant = 10000;
 inline constexpr std::int32_t kMaxTrade = 10000;
 // An automatic trade rule that is off; the largest amount one can name.
 inline constexpr std::int32_t kNoRule = -1;
+// A rule's price limit: none (0), or 75 to 125 % of the good's value in
+// steps of 5 (merchants' prices go from 75 to 125 %).
+inline constexpr std::int32_t kMinPriceLimit = 75;
+inline constexpr std::int32_t kMaxPriceLimit = 125;
+[[nodiscard]] constexpr bool valid_price_limit(std::int32_t percent) {
+    return percent == 0 || (percent >= kMinPriceLimit && percent <= kMaxPriceLimit && percent % 5 == 0);
+}
 inline constexpr std::int32_t kMaxRule = 100000;
 
 struct Command {

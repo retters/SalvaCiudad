@@ -2066,6 +2066,12 @@ public:
             if (rule.sell_above == kNoRule || good == nullptr || good->sell <= 0) {
                 continue;
             }
+            // Only to a merchant who pays well enough (phase 60).
+            // His price of the day, as a percent of the good's value: he pays
+            // three quarters of it and charges five quarters (merchant_arrives).
+            if (rule.sell_min != 0 && good->sell * 400 < c_.resources[rule.resource].value * 3 * rule.sell_min) {
+                continue;
+            }
             const std::int32_t n = std::min(kMaxTrade, g_.tradeable(p, rule.resource) - rule.sell_above);
             if (n > 0 && take_from_town(p, rule.resource, n)) {
                 give_to_town(p, g_.gold_, n * good->sell);
@@ -2076,6 +2082,10 @@ public:
         for (const TradeRule& rule : ps.trade_rules) {
             MerchantGood* good = good_of(rule.resource);
             if (rule.buy_below == kNoRule || good == nullptr || good->stock <= 0) {
+                continue;
+            }
+            // Only from a merchant who is not too dear.
+            if (rule.buy_max != 0 && good->buy * 400 - 399 > c_.resources[rule.resource].value * 5 * rule.buy_max) {
                 continue;
             }
             const std::int32_t budget = amount_of(post->stock, g_.gold_);
@@ -2112,6 +2122,8 @@ public:
         }
         it->sell_above = c.value;
         it->buy_below = c.value2;
+        it->sell_min = c.value == kNoRule ? std::uint8_t{0} : static_cast<std::uint8_t>(c.count);
+        it->buy_max = c.value2 == kNoRule ? std::uint8_t{0} : static_cast<std::uint8_t>(c.def2);
     }
 
     // A merchant with a few goods at prices of the day.
@@ -4337,6 +4349,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     // What each town sees from the start (phase 32).
     if (fog()) {
         vision_.reset(map_.size, vision_groups());
+        vision_.set_all_explored(rules_.fog == FogMode::Revealed);
         update_vision();
     }
     buildings_changed_ = true;
@@ -4408,7 +4421,7 @@ void Game::update_vision() {
         return;
     }
     // Dynamic fog also notes what is in sight now, for the ghosts.
-    const bool dynamic = rules_.fog == FogMode::Dynamic;
+    const bool dynamic = fog_is_dynamic(rules_.fog);
     if (dynamic) {
         vision_.begin_sight();
     }
@@ -5206,6 +5219,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
             w.u16(rule.resource);
             w.i32(rule.sell_above);
             w.i32(rule.buy_below);
+            w.u8(rule.sell_min);
+            w.u8(rule.buy_max);
         }
         w.i32(ps.tally.sold);
         w.i32(ps.tally.sold_gold);
@@ -5527,7 +5542,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             if (!r.u16(rule.resource) || rule.resource >= c.resources.size() ||
                 (k > 0 && rule.resource <= ps.trade_rules[k - 1].resource) || !r.i32(rule.sell_above) ||
                 rule.sell_above < kNoRule || rule.sell_above > kMaxRule || !r.i32(rule.buy_below) ||
-                rule.buy_below < kNoRule || rule.buy_below > kMaxRule) {
+                rule.buy_below < kNoRule || rule.buy_below > kMaxRule || !r.u8(rule.sell_min) || !r.u8(rule.buy_max) ||
+                !valid_price_limit(rule.sell_min) || !valid_price_limit(rule.buy_max)) {
                 r.fail();
                 return false;
             }
@@ -5812,6 +5828,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         r.fail();
         return false;
     }
+    g.vision_.set_all_explored(g.rules_.fog == FogMode::Revealed);
     g.buildings_changed_ = true;
     *this = std::move(g);
     return true;

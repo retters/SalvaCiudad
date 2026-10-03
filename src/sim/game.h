@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 30;
+inline constexpr std::uint32_t kGameRulesVersion = 31;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -220,6 +220,11 @@ struct TradeRule {
     DefIndex resource = 0;
     std::int32_t sell_above = kNoRule;
     std::int32_t buy_below = kNoRule;
+    // Phase 60: sell only if the merchant's price of the day is at least
+    // this percent of the good's value, buy only if it is at most this one
+    // (a merchant's prices go from 75 to 125 %); 0: at any price.
+    std::uint8_t sell_min = 0;
+    std::uint8_t buy_max = 0;
     bool operator==(const TradeRule&) const = default;
 };
 

@@ -43,12 +43,18 @@ bool Vision::explored_at(std::uint8_t group, std::int32_t x, std::int32_t z) con
     if (!used(group) || x < 0 || z < 0) {
         return false;
     }
+    if (all_explored_) {
+        return x / kFogCell < side_ && z / kFogCell < side_;
+    }
     return explored_[group].get(x / kFogCell, z / kFogCell);
 }
 
 bool Vision::explored_rect(std::uint8_t group, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const {
     if (!used(group) || w <= 0 || d <= 0 || x < 0 || z < 0) {
         return false;
+    }
+    if (all_explored_) {
+        return (x + w - 1) / kFogCell < side_ && (z + d - 1) / kFogCell < side_;
     }
     const FogGrid& grid = explored_[group];
     for (std::int32_t cz = z / kFogCell; cz <= (z + d - 1) / kFogCell; ++cz) {
