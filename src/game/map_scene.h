@@ -3,6 +3,7 @@
 // nothing here feeds back into the simulation.
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <filesystem>
@@ -20,12 +21,38 @@
 
 namespace sc {
 
-// Instances are grouped by "visual slot": one per tree species and size,
-// then one per other feature type.
+// The point of the year the trees are shown at (phase 51): the season and
+// how far its change has gone, from 0 (no tree has changed yet) to
+// kTurnSteps (all have). Each tree changes at its own step.
+inline constexpr int kTurnSteps = 8;
+// The change takes this much of the season, in thousandths.
+inline constexpr std::uint32_t kTurnProgress = 200;
+struct TreeCalendar {
+    sim::Season season = sim::Season::Summer;
+    int turn = kTurnSteps;
+    bool operator==(const TreeCalendar&) const = default;
+};
+// From a season and its progress (0..999, sim::Calendar).
+[[nodiscard]] TreeCalendar tree_calendar(sim::Season season, std::uint32_t season_progress);
+// The state a tree shows: the season's, or still the one before if its
+// turn has not come.
+[[nodiscard]] sim::TreeState tree_state(const sim::MapFeature& f, TreeCalendar when);
+
+// Instances are grouped by "visual slot". Each tree species has
+// kSpeciesSlots: one per size, or, for a species with models by state
+// (phase 51), one per state and variant. Then one per variant of every
+// other feature type.
+inline constexpr std::size_t kSpeciesSlots = sim::kTreeStates * sim::kMaxModelVariants;
 [[nodiscard]] std::size_t tree_slot(std::size_t species, sim::TreeSize size);
+[[nodiscard]] std::size_t tree_slot(std::size_t species, sim::TreeState state, std::size_t variant);
 [[nodiscard]] std::size_t tree_slot_count(const sim::Content& content);
 [[nodiscard]] std::size_t visual_slot_count(const sim::Content& content);
-[[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f);
+[[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when = {});
+
+// A tree with models by state is its model scaled to the tree's height,
+// but never under half the model's height or over one and a half.
+inline constexpr float kMinTreeScale = 0.5f;
+inline constexpr float kMaxTreeScale = 1.5f;
 // The slot of a variant of a natural feature other than trees (phase 31).
 [[nodiscard]] std::size_t feature_slot(const sim::Content& content, sim::FeatureType type, std::size_t variant);
 
@@ -39,8 +66,10 @@ struct MapVisuals {
 };
 
 // Path of a tree model inside its mod, for example
-// "models/props/tree_oak_large.glb".
-[[nodiscard]] std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeSize size);
+// "models/props/tree_oak_large.glb"; for a species with models by state,
+// the first of the state.
+[[nodiscard]] std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeSize size,
+                                          sim::TreeState state = sim::TreeState::Bloom);
 
 // Largest ground color texture, texels per side; bigger maps share texels.
 inline constexpr std::int32_t kMaxGroundColorSize = 2048;
@@ -48,10 +77,11 @@ inline constexpr std::int32_t kMaxGroundColorSize = 2048;
 [[nodiscard]] MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& content);
 // Only the feature instances, by visual slot.
 [[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(
-    const sim::MapData& map, const sim::Content& content, sim::Season season = sim::Season::Summer, bool snowy = false);
+    const sim::MapData& map, const sim::Content& content, TreeCalendar when = {}, bool snowy = false);
 // One feature's instance (for trees, scale is the height in meters),
-// colored for the season (leaves turn in autumn and fall in winter,
-// except on evergreens; snow whitens them).
+// colored for the season: snow whitens everything; bushes, and trees
+// without models by state, turn in autumn and fade in winter unless they
+// are evergreen (trees with models by state change model instead).
 [[nodiscard]] render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature& f,
                                                 const sim::Content* content = nullptr,
                                                 sim::Season season = sim::Season::Summer, bool snowy = false);
@@ -119,13 +149,19 @@ public:
     // Colors the trees and bushes for the season; felled trees and picked
     // bushes stay as they are.
     void set_season(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
-                    sim::Season season, bool snowy);
+                    TreeCalendar when, bool snowy);
 
 private:
     static constexpr std::uint32_t kNoModel = ~0u;
     struct Slot {
         render::ModelId model = kNoModel;
         float height = 1.0f;  // Model height in meters (trees).
+        bool limited = false;  // A tree by state: its scale stays within limits.
+        // The model's scale for a tree `meters` high.
+        [[nodiscard]] float tree_scale(float meters) const {
+            const float s = meters / height;
+            return limited && s > 0.0f ? std::clamp(s, kMinTreeScale, kMaxTreeScale) : s;
+        }
     };
     std::vector<Slot> slots_;
     std::size_t tree_slots_ = 0;
@@ -141,7 +177,7 @@ private:
     };
     std::vector<FeatureRef> feature_refs_;
     std::vector<FeatureLook> looks_;  // By feature, as last set.
-    sim::Season season_ = sim::Season::Summer;
+    TreeCalendar when_;
     bool snowy_ = false;
     std::vector<std::size_t> slot_counts_;  // Features per visual slot, as last shown.
     void build_feature_refs(const sim::MapData& map, const sim::Content& content);

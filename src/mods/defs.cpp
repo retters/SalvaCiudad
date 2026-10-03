@@ -33,6 +33,9 @@ constexpr std::string_view kTutorialGoals[] = {"none",  "camera", "place",      
 constexpr std::string_view kTutorialSizes[] = {"small", "medium"};
 constexpr std::string_view kDiseaseSources[] = {"cold", "water", "rats"};
 constexpr std::string_view kSeasons[] = {"spring", "summer", "autumn", "winter"};
+// In the order of sim::TreeState.
+constexpr std::string_view kTreeStateNames[] = {"bloom", "autumn", "bare"};
+static_assert(std::size(kTreeStateNames) == sim::kTreeStates);
 
 bool known_type(std::string_view t) {
     return std::find(std::begin(kTypes), std::end(kTypes), t) != std::end(kTypes);
@@ -181,6 +184,69 @@ public:
             out.emplace_back(found, static_cast<std::int32_t>(yyjson_mut_get_sint(v)));
         }
         return out;
+    }
+
+    [[nodiscard]] bool has(const char* key) const { return yyjson_mut_obj_get(obj_, key) != nullptr; }
+
+    // "models" as an object of lists by state (a tree species, phase 51):
+    // {"bloom": [...], "autumn": [...], "bare": [...]}. The first state is
+    // required; each list has 1 to kMaxModelVariants files that must exist.
+    void state_models(const std::function<std::filesystem::path(const std::string&)>& mod_dir,
+                      const std::string_view* names, std::vector<std::string>* out, std::size_t states,
+                      std::vector<ModelRef>* refs, const std::string& name_key) {
+        yyjson_mut_val* obj = yyjson_mut_obj_get(obj_, "models");
+        if (obj == nullptr || !yyjson_mut_is_obj(obj)) {
+            fail("\"models\" of a species must be an object with the files of each state");
+            return;
+        }
+        std::size_t idx = 0, max = 0;
+        yyjson_mut_val* k = nullptr;
+        yyjson_mut_val* list = nullptr;
+        yyjson_mut_obj_foreach(obj, idx, max, k, list) {
+            const char* key = yyjson_mut_get_str(k);
+            std::size_t state = states;
+            for (std::size_t s = 0; s < states && key != nullptr; ++s) {
+                if (names[s] == key) {
+                    state = s;
+                }
+            }
+            if (state == states) {
+                fail(std::format("\"models\" has an unknown state '{}'", key != nullptr ? key : "?"));
+                continue;
+            }
+            if (!yyjson_mut_is_arr(list) || yyjson_mut_arr_size(list) == 0 ||
+                yyjson_mut_arr_size(list) > sim::kMaxModelVariants) {
+                fail(std::format("\"models\" state '{}' must be a list of 1 to {} files", key, sim::kMaxModelVariants));
+                continue;
+            }
+            std::size_t i = 0, n = 0;
+            yyjson_mut_val* item = nullptr;
+            yyjson_mut_arr_foreach(list, i, n, item) {
+                const char* v = yyjson_mut_get_str(item);
+                const std::string rel = v != nullptr ? v : "";
+                if (rel.empty() || rel.size() > 200) {
+                    fail("\"models\" entries must be file paths of up to 200 characters");
+                    continue;
+                }
+                if (std::find(out[state].begin(), out[state].end(), rel) != out[state].end()) {
+                    fail(std::format("\"models\" lists '{}' twice", rel));
+                    continue;
+                }
+                const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), rel);
+                std::error_code ec;
+                const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
+                if (!exists) {
+                    fail(std::format("model '{}' not found in mod '{}'", rel, def_.model_mod));
+                }
+                if (refs != nullptr) {
+                    refs->push_back({def_.type, def_.id, name_key, def_.model_mod, rel, exists});
+                }
+                out[state].push_back(rel);
+            }
+        }
+        if (out[0].empty()) {
+            fail(std::format("\"models\" needs the state '{}'", names[0]));
+        }
     }
 
     // The model files: "models", a list of variants (phase 31), or
@@ -751,8 +817,17 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         r.numbers("logs", def.logs, sim::kTreeSizes, 0, 1000);
         def.evergreen = r.flag("evergreen");
         def.landmark = r.flag("landmark");
-        const std::string prefix = r.text("model", true, 200);
-        for (std::size_t s = 0; s < sim::kTreeSizes && r.ok(); ++s) {
+        // Phase 51: "models" names the files of each state; "model" is the
+        // prefix completed with each size.
+        const bool by_state = r.has("models");
+        if (by_state) {
+            if (r.has("model")) {
+                r.fail("use \"model\" or \"models\", not both");
+            }
+            r.state_models(mod_dir, kTreeStateNames, def.state_models, sim::kTreeStates, refs, def.name_key);
+        }
+        const std::string prefix = by_state ? std::string() : r.text("model", true, 200);
+        for (std::size_t s = 0; s < sim::kTreeSizes && r.ok() && !by_state; ++s) {
             if (((def.sizes >> s) & 1u) == 0) {
                 continue;
             }

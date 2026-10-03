@@ -219,4 +219,171 @@ TEST_SUITE("variants") {
         }
         CHECK(a.hash() == b.hash());
     }
+
+    // --- Phase 51: tree models by state ---------------------------------------
+
+    TEST_CASE("a species lists its models by state; an evergreen only the first") {
+        test::TempDir dir;
+        mods::ModLibrary lib;
+        const mods::BuildResult pack = build_with(dir,
+            R"({"type": "species", "id": "vt:leafy", "name": "s.leafy", "sizes": ["small", "large"],
+                "models": {"bloom": ["models/a.glb", "models/b.glb"], "autumn": ["models/b.glb"], "bare": ["models/c.glb"]}},
+               {"type": "species", "id": "vt:green", "name": "s.green", "sizes": ["medium"],
+                "models": {"bloom": ["models/a.glb"]}})", lib);
+        REQUIRE_MESSAGE(errors_of(lib, "vt").empty(), errors_of(lib, "vt"));
+        const sim::Flora& flora = pack.content.flora;
+        const int leafy = flora.find_species("vt:leafy");
+        const int green = flora.find_species("vt:green");
+        REQUIRE(leafy >= 0);
+        REQUIRE(green >= 0);
+        const sim::SpeciesDef& l = flora.species[static_cast<std::size_t>(leafy)];
+        CHECK(l.by_state());
+        CHECK(l.state_models[0] == std::vector<std::string>{"models/a.glb", "models/b.glb"});
+        CHECK(l.state_models[1] == std::vector<std::string>{"models/b.glb"});
+        CHECK(l.state_models[2] == std::vector<std::string>{"models/c.glb"});
+        const sim::SpeciesDef& g = flora.species[static_cast<std::size_t>(green)];
+        CHECK(g.by_state());
+        CHECK(g.state_models[1].empty());
+        CHECK(tree_model_file(g, sim::TreeSize::Medium, sim::TreeState::Bare) == "models/a.glb");
+        CHECK(tree_model_file(l, sim::TreeSize::Small, sim::TreeState::Bare) == "models/c.glb");
+        // The species of core with a prefix by size still work.
+        const int oak = flora.find_species("core:oak");
+        REQUIRE(oak >= 0);
+        CHECK_FALSE(flora.species[static_cast<std::size_t>(oak)].by_state());
+    }
+
+    TEST_CASE("bad models by state are rejected") {
+        const char* kHead = R"({"type": "species", "id": "vt:t", "name": "s.t", "sizes": ["small"], )";
+        for (const char* tail : {
+                 R"("models": ["models/a.glb"]})",                                       // A list is for other things.
+                 R"("models": {"autumn": ["models/a.glb"]}})",                            // No bloom.
+                 R"("models": {"bloom": []}})",
+                 R"("models": {"bloom": ["models/a.glb"], "spring": ["models/b.glb"]}})",  // Unknown state.
+                 R"("models": {"bloom": ["models/a.glb", "models/a.glb"]}})",
+                 R"("models": {"bloom": ["models/missing.glb"]}})",
+                 R"("models": {"bloom": "models/a.glb"}})",
+                 R"("models": {"bloom": ["models/a.glb"]}, "model": "models/a"})",
+             }) {
+            test::TempDir dir;
+            mods::ModLibrary lib;
+            const mods::BuildResult pack = build_with(dir, std::string(kHead) + tail, lib);
+            CHECK_MESSAGE(pack.content.flora.find_species("vt:t") < 0, tail);
+            CHECK_MESSAGE(!errors_of(lib, "vt").empty(), tail);
+        }
+    }
+
+    TEST_CASE("trees turn with the season, each at its own step") {
+        using sim::Season;
+        using sim::TreeState;
+        // The calendar: the turn takes the first fifth of the season.
+        CHECK(tree_calendar(Season::Autumn, 0).turn == 0);
+        CHECK(tree_calendar(Season::Autumn, kTurnProgress / 2).turn == kTurnSteps / 2);
+        CHECK(tree_calendar(Season::Autumn, kTurnProgress).turn == kTurnSteps);
+        CHECK(tree_calendar(Season::Autumn, 999).turn == kTurnSteps);
+        CHECK(TreeCalendar{}.turn == kTurnSteps);
+
+        std::vector<sim::MapFeature> trees(400);
+        for (std::size_t i = 0; i < trees.size(); ++i) {
+            trees[i].type = sim::FeatureType::Tree;
+            trees[i].x = sim::Fixed::from_ratio(static_cast<std::int32_t>(i * 37 + 5), 3);
+            trees[i].z = sim::Fixed::from_ratio(static_cast<std::int32_t>(i * 91 + 11), 7);
+        }
+        const auto count = [&](TreeCalendar when, TreeState state) {
+            std::size_t n = 0;
+            for (const sim::MapFeature& f : trees) {
+                n += tree_state(f, when) == state ? 1u : 0u;
+            }
+            return n;
+        };
+        // Before the turn starts, all are still in the state of summer; then
+        // more and more turn; at the end, all have.
+        CHECK(count({Season::Autumn, 0}, TreeState::Bloom) == trees.size());
+        std::size_t last = 0;
+        for (int turn = 1; turn <= kTurnSteps; ++turn) {
+            const std::size_t turned = count({Season::Autumn, turn}, TreeState::Autumn);
+            CHECK(turned > last);
+            CHECK(turned + count({Season::Autumn, turn}, TreeState::Bloom) == trees.size());
+            last = turned;
+        }
+        CHECK(last == trees.size());
+        // In the first days of autumn there are trees in both states.
+        const std::size_t early = count({Season::Autumn, kTurnSteps / 2}, TreeState::Autumn);
+        CHECK(early > trees.size() / 4);
+        CHECK(early < trees.size() * 3 / 4);
+        // Winter bares them, spring brings the leaves back, summer changes nothing.
+        CHECK(count({Season::Winter, 0}, TreeState::Autumn) == trees.size());
+        CHECK(count({Season::Winter, kTurnSteps}, TreeState::Bare) == trees.size());
+        CHECK(count({Season::Spring, 0}, TreeState::Bare) == trees.size());
+        CHECK(count({Season::Spring, kTurnSteps}, TreeState::Bloom) == trees.size());
+        CHECK(count({Season::Summer, 0}, TreeState::Bloom) == trees.size());
+        // A tree turns once and stays.
+        for (const sim::MapFeature& f : trees) {
+            bool turned = false;
+            for (int turn = 0; turn <= kTurnSteps; ++turn) {
+                const bool now = tree_state(f, {Season::Autumn, turn}) == TreeState::Autumn;
+                CHECK((now || !turned));
+                turned = now;
+            }
+        }
+    }
+
+    TEST_CASE("a tree by state goes to the slot of its state, and the cherry of core has the three") {
+        const sim::Content& content = test::core_content();
+        const int cherry = content.flora.find_species("core:cherry");
+        REQUIRE(cherry >= 0);
+        const sim::SpeciesDef& sp = content.flora.species[static_cast<std::size_t>(cherry)];
+        REQUIRE(sp.by_state());
+        for (std::size_t st = 0; st < sim::kTreeStates; ++st) {
+            CHECK(sp.state_models[st].size() == 1);
+        }
+        sim::MapFeature f;
+        f.type = sim::FeatureType::Tree;
+        f.species = static_cast<std::uint8_t>(cherry);
+        f.size = static_cast<std::uint8_t>(sim::TreeSize::Medium);
+        f.x = sim::Fixed::from_int(40);
+        f.z = sim::Fixed::from_int(90);
+        const auto c = static_cast<std::size_t>(cherry);
+        CHECK(visual_slot(content, f) == tree_slot(c, sim::TreeState::Bloom, 0));
+        CHECK(visual_slot(content, f, {sim::Season::Autumn, kTurnSteps}) == tree_slot(c, sim::TreeState::Autumn, 0));
+        CHECK(visual_slot(content, f, {sim::Season::Winter, kTurnSteps}) == tree_slot(c, sim::TreeState::Bare, 0));
+        CHECK(visual_slot(content, f, {sim::Season::Winter, kTurnSteps}) < tree_slot_count(content));
+        // A species by size keeps one slot all year.
+        const int oak = content.flora.find_species("core:oak");
+        REQUIRE(oak >= 0);
+        f.species = static_cast<std::uint8_t>(oak);
+        CHECK(visual_slot(content, f, {sim::Season::Winter, kTurnSteps}) ==
+              tree_slot(static_cast<std::size_t>(oak), sim::TreeSize::Medium));
+        // And its color changes instead; a tree by state keeps its own colors
+        // (only the snow whitens it).
+        sim::MapSettings s;
+        s.seed = 7;
+        s.size = sim::MapSize::Small;
+        const std::optional<sim::MapData> map = sim::generate_map(s, content);
+        REQUIRE(map.has_value());
+        f.x = sim::Fixed::from_int(100);
+        f.z = sim::Fixed::from_int(100);
+        f.species = static_cast<std::uint8_t>(cherry);
+        const render::Instance summer = feature_instance(*map, f, &content, sim::Season::Summer, false);
+        CHECK(feature_instance(*map, f, &content, sim::Season::Autumn, false).tint == summer.tint);
+        CHECK(feature_instance(*map, f, &content, sim::Season::Winter, false).tint == summer.tint);
+        CHECK_FALSE(feature_instance(*map, f, &content, sim::Season::Winter, true).tint == summer.tint);
+        f.species = static_cast<std::uint8_t>(oak);
+        const render::Instance oak_summer = feature_instance(*map, f, &content, sim::Season::Summer, false);
+        CHECK_FALSE(feature_instance(*map, f, &content, sim::Season::Autumn, false).tint == oak_summer.tint);
+        // Every tree of the map has a place among the instances of each season.
+        std::size_t trees = 0;
+        for (const sim::MapFeature& t : map->features) {
+            trees += t.type == sim::FeatureType::Tree ? 1u : 0u;
+        }
+        for (const sim::Season season : {sim::Season::Summer, sim::Season::Autumn, sim::Season::Winter}) {
+            for (const int turn : {0, kTurnSteps / 2, kTurnSteps}) {
+                const auto instances = build_feature_instances(*map, content, {season, turn}, false);
+                std::size_t n = 0;
+                for (std::size_t slot = 0; slot < tree_slot_count(content); ++slot) {
+                    n += instances[slot].size();
+                }
+                CHECK(n == trees);
+            }
+        }
+    }
 }

@@ -25,6 +25,22 @@ import trees  # noqa: E402
 GAME_ANIMALS = ("deer", "boar", "wolf", "bear")
 
 
+# The low-poly trees already in the game (phase 51 brings the first one;
+# phase 53, the rest): specs of art/blender/lowpoly_trees, one per state.
+GAME_TREES = ("cherry_1_bloom", "cherry_1_autumn", "cherry_1_bare")
+
+
+def make_lowpoly_trees(folder):
+    sys.path.insert(0, os.path.join(HERE, "lowpoly_trees"))
+    modules = sorted({name.rsplit("_", 1)[0] for name in GAME_TREES})
+    for module in modules:
+        # A module is named after its first spec's tree ("cherry.py" has cherry_1, cherry_2...).
+        source = module.rsplit("_", 1)[0] if module.rsplit("_", 1)[-1].isdigit() else module
+        for spec in importlib.import_module(source).SPECS:
+            if spec.name in GAME_TREES:
+                studies.build_final(spec, folder)
+
+
 def make_animals(folder):
     sys.path.insert(0, os.path.join(HERE, "zoo"))
     for name in GAME_ANIMALS:
@@ -42,6 +58,8 @@ def main():
         props.make_all(os.path.join(out, "props"))
     if only in (None, "trees"):
         trees.make_all(os.path.join(out, "props"), args[2:] if only == "trees" else None)
+    if only in (None, "trees"):
+        make_lowpoly_trees(os.path.join(out, "trees"))
     if only in (None, "buildings"):
         buildings.make_all(os.path.join(out, "buildings"))
     if only in (None, "animals"):

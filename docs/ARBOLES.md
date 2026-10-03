@@ -64,3 +64,11 @@ Los pesos de tamaño reparten el suelo del bosque entre los árboles medianos, g
 | `northern` | Pinar del norte | pinar 75, templado 25 | Los del bioma | 400 m |
 | `varied` | Variado | Los seis por igual | Los del bioma | 180 m |
 | `single` | Bioma único | El bioma que elija el jugador | Los del bioma | Todo el mapa |
+
+## Modelos por estado (fase 51)
+
+Una especie puede declarar un modelo por estado del año en lugar de uno por tamaño (ver `docs/CREAR_MODS.md`): `bloom`, `autumn` y `bare`. La primera es el cerezo (`core:cherry`), con los modelos low poly de `art/blender/lowpoly_trees/` en `models/trees/`; las demás especies llegan en la fase 53.
+
+- El cambio de estado es solo de la vista: la simulación no sabe en qué estado se ve un árbol.
+- Cada árbol cambia en uno de 8 pasos repartidos en la primera quinta parte de la estación (6 días de 30 con las cuatro estaciones), según su posición. Una partida nueva empieza con todos los árboles ya en el estado de su estación.
+- El tamaño de la simulación (chico, mediano, grande) sigue decidiendo la madera, el tiempo de tala y la separación. A la vista, el modelo se escala a la altura del árbol, sin bajar de la mitad ni pasar de una vez y media de la altura del modelo.

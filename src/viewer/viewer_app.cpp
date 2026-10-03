@@ -774,7 +774,7 @@ math::Vec3 ViewerApp::tint_for(const CatalogModel& m, std::size_t index) const {
     bool evergreen = false;
     for (const Use& u : m.uses) {
         for (const sim::SpeciesDef& sp : pack_->content.flora.species) {
-            evergreen = evergreen || (u.kind == "species" && sp.id == u.id && sp.evergreen);
+            evergreen = evergreen || (u.kind == "species" && sp.id == u.id && (sp.evergreen || sp.by_state()));
         }
     }
     const bool tree = m.category == Category::Trees;

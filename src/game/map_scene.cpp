@@ -1,6 +1,7 @@
 #include "game/map_scene.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <numbers>
 
@@ -32,12 +33,47 @@ render::ModelClass feature_class(sim::FeatureType t) {
 
 }  // namespace
 
+static_assert(kSpeciesSlots >= sim::kTreeSizes);
+
 std::size_t tree_slot(std::size_t species, sim::TreeSize size) {
-    return species * sim::kTreeSizes + static_cast<std::size_t>(size);
+    return species * kSpeciesSlots + static_cast<std::size_t>(size);
+}
+
+std::size_t tree_slot(std::size_t species, sim::TreeState state, std::size_t variant) {
+    return species * kSpeciesSlots + static_cast<std::size_t>(state) * sim::kMaxModelVariants + variant;
 }
 
 std::size_t tree_slot_count(const sim::Content& content) {
-    return content.flora.species.size() * sim::kTreeSizes;
+    return content.flora.species.size() * kSpeciesSlots;
+}
+
+TreeCalendar tree_calendar(sim::Season season, std::uint32_t season_progress) {
+    const std::uint32_t step = season_progress * static_cast<std::uint32_t>(kTurnSteps) / kTurnProgress;
+    return {season, static_cast<int>(std::min<std::uint32_t>(step, static_cast<std::uint32_t>(kTurnSteps)))};
+}
+
+namespace {
+
+sim::TreeState state_of(sim::Season season) {
+    switch (season) {
+        case sim::Season::Autumn: return sim::TreeState::Autumn;
+        case sim::Season::Winter: return sim::TreeState::Bare;
+        default: return sim::TreeState::Bloom;
+    }
+}
+
+sim::Season season_before(sim::Season season) {
+    const auto count = static_cast<std::uint32_t>(sim::Season::Count);
+    return static_cast<sim::Season>((static_cast<std::uint32_t>(season) + count - 1) % count);
+}
+
+}  // namespace
+
+sim::TreeState tree_state(const sim::MapFeature& f, TreeCalendar when) {
+    // Its own step, from its place: 0 changes first.
+    const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.z.raw()) ^ 0x51ED270Bu, static_cast<std::uint32_t>(f.x.raw()));
+    const int own = static_cast<int>((h >> 11) % static_cast<std::uint32_t>(kTurnSteps));
+    return state_of(when.turn > own ? when.season : season_before(when.season));
 }
 
 std::size_t visual_slot_count(const sim::Content& content) {
@@ -48,8 +84,20 @@ std::size_t feature_slot(const sim::Content& content, sim::FeatureType type, std
     return tree_slot_count(content) + static_cast<std::size_t>(type) * sim::kMaxModelVariants + variant;
 }
 
-std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
+std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when) {
     if (f.type == sim::FeatureType::Tree) {
+        if (f.species < content.flora.species.size() && content.flora.species[f.species].by_state()) {
+            // The state's variants, or Bloom's for a state without models.
+            const sim::SpeciesDef& sp = content.flora.species[f.species];
+            sim::TreeState state = tree_state(f, when);
+            if (sp.state_models[static_cast<std::size_t>(state)].empty()) {
+                state = sim::TreeState::Bloom;
+            }
+            const std::size_t variants = sp.state_models[static_cast<std::size_t>(state)].size();
+            return tree_slot(f.species, state,
+                             pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
+                                          std::min(variants, sim::kMaxModelVariants)));
+        }
         return tree_slot(f.species, static_cast<sim::TreeSize>(f.size));
     }
     // Each other kind has room for its variants; the place picks one.
@@ -60,7 +108,11 @@ std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
                                      std::min(variants, sim::kMaxModelVariants)));
 }
 
-std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeSize size) {
+std::string tree_model_file(const sim::SpeciesDef& species, sim::TreeSize size, sim::TreeState state) {
+    if (species.by_state()) {
+        const std::vector<std::string>& files = species.state_models[static_cast<std::size_t>(state)];
+        return files.empty() ? species.state_models[0].front() : files.front();
+    }
     return species.model + "_" + sim::size_info(size).id + ".glb";
 }
 
@@ -148,8 +200,10 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
     const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
     const bool tree = f.type == sim::FeatureType::Tree;
-    const bool evergreen = tree && content != nullptr && f.species < content->flora.species.size() &&
-                           content->flora.species[f.species].evergreen;
+    // A tree with models by state changes model, not color.
+    const sim::SpeciesDef* sp =
+        tree && content != nullptr && f.species < content->flora.species.size() ? &content->flora.species[f.species] : nullptr;
+    const bool evergreen = sp != nullptr && (sp->evergreen || sp->by_state());
     inst.tint = season_tint(shade, tree, evergreen, h >> 8, season, snowy);
     // Phase 34: landmarks show through the fog of war.
     if (content != nullptr) {
@@ -228,14 +282,14 @@ std::optional<math::Vec3> ground_hit(const sim::MapData& map, math::Vec3 origin,
 }
 
 std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map,
-                                                                  const sim::Content& content, sim::Season season,
+                                                                  const sim::Content& content, TreeCalendar when,
                                                                   bool snowy) {
     std::vector<std::vector<render::Instance>> features(visual_slot_count(content));
     // One instance per natural feature, standing on the ground.
     for (const sim::MapFeature& f : map.features) {
-        const std::size_t slot = visual_slot(content, f);
+        const std::size_t slot = visual_slot(content, f, when);
         if (slot < features.size()) {
-            features[slot].push_back(feature_instance(map, f, &content, season, snowy));
+            features[slot].push_back(feature_instance(map, f, &content, when.season, snowy));
         }
     }
     return features;
@@ -340,7 +394,17 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
     bool any = false;
     for (std::size_t s = 0; s < content.flora.species.size(); ++s) {
         const sim::SpeciesDef& sp = content.flora.species[s];
-        for (std::size_t z = 0; z < sim::kTreeSizes; ++z) {
+        for (std::size_t st = 0; st < sim::kTreeStates && sp.by_state(); ++st) {
+            for (std::size_t v = 0; v < sp.state_models[st].size() && v < sim::kMaxModelVariants; ++v) {
+                const std::filesystem::path file = mods::mod_file(pack.dir(sp.mod), sp.state_models[st][v]);
+                Slot& slot = slots_[tree_slot(s, static_cast<sim::TreeState>(st), v)];
+                slot = file.empty() ? Slot{} : load_file(renderer, file, render::ModelClass::Normal);
+                slot.limited = true;
+                missing += slot.model == kNoModel ? 1 : 0;
+                any = any || slot.model != kNoModel;
+            }
+        }
+        for (std::size_t z = 0; z < sim::kTreeSizes && !sp.by_state(); ++z) {
             const auto size = static_cast<sim::TreeSize>(z);
             if (!content.flora.species_has_size(s, size)) {
                 continue;
@@ -383,7 +447,7 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
 bool MapScene::show(render::SceneRenderer& renderer, const MapVisuals& visuals) {
     hide(renderer);
     looks_.clear();
-    season_ = sim::Season::Summer;
+    when_ = TreeCalendar{};
     snowy_ = false;
     if (!renderer.set_terrain(visuals.terrain)) {
         return false;
@@ -399,7 +463,7 @@ void MapScene::show_sky(render::SceneRenderer& renderer, const sim::MapData& map
 
 void MapScene::refresh_features(render::SceneRenderer& renderer, const sim::MapData& map,
                                 const sim::Content& content) {
-    apply_features(renderer, build_feature_instances(map, content));
+    apply_features(renderer, build_feature_instances(map, content, when_, snowy_));
 }
 
 void MapScene::apply_features(render::SceneRenderer& renderer,
@@ -420,7 +484,7 @@ void MapScene::apply_features(render::SceneRenderer& renderer,
                 const bool tree = i < tree_slots_;
                 for (render::Instance inst : features[i]) {
                     if (tree) {
-                        inst.scale /= slots_[i].height;
+                        inst.scale = slots_[i].tree_scale(inst.scale);
                     }
                     scratch_.push_back(inst);
                 }
@@ -447,7 +511,7 @@ void MapScene::build_feature_refs(const sim::MapData& map, const sim::Content& c
     }
     std::vector<std::uint32_t> next(slots_.size(), 0);
     for (std::size_t k = 0; k < map.features.size(); ++k) {
-        const std::size_t slot = visual_slot(content, map.features[k]);
+        const std::size_t slot = visual_slot(content, map.features[k], when_);
         if (slot >= slots_.size()) {
             continue;
         }
@@ -465,7 +529,7 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
     }
     const FeatureRef ref = feature_refs_[feature];
     const sim::MapFeature& f = map.features[feature];
-    const std::size_t slot = visual_slot(content, f);
+    const std::size_t slot = visual_slot(content, f, when_);
     if (ref.model == kNoModel || slot >= slots_.size()) {
         return;
     }
@@ -473,9 +537,9 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
         looks_.assign(map.features.size(), FeatureLook::Normal);
     }
     looks_[feature] = look;
-    render::Instance inst = feature_instance(map, f, &content, season_, snowy_);
+    render::Instance inst = feature_instance(map, f, &content, when_.season, snowy_);
     if (slot < tree_slots_) {
-        inst.scale /= slots_[slot].height;
+        inst.scale = slots_[slot].tree_scale(inst.scale);
     }
     if (look == FeatureLook::Gone) {
         inst.scale = 0.0f;
@@ -488,19 +552,25 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
 }
 
 void MapScene::set_season(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
-                          sim::Season season, bool snowy) {
-    if (season == season_ && snowy == snowy_) {
+                          TreeCalendar when, bool snowy) {
+    if (when == when_ && snowy == snowy_) {
         return;
     }
-    season_ = season;
+    when_ = when;
     snowy_ = snowy;
+    const auto t0 = std::chrono::steady_clock::now();
     // Every instance again, then the felled and the picked as they were.
     const std::vector<FeatureLook> looks = looks_;
-    apply_features(renderer, build_feature_instances(map, content, season, snowy));
+    apply_features(renderer, build_feature_instances(map, content, when, snowy));
     for (std::size_t i = 0; i < looks.size() && i < map.features.size(); ++i) {
         if (looks[i] != FeatureLook::Normal) {
             set_feature_look(renderer, map, content, i, looks[i]);
         }
+    }
+    // On the largest maps this is felt; the log says how much.
+    const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    if (ms >= 20.0) {
+        log::info("map: {} features shown for the season in {:.0f} ms", map.features.size(), ms);
     }
 }
 

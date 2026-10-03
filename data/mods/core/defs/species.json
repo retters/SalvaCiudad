@@ -114,7 +114,17 @@
       "type": "species",
       "id": "core:cherry",
       "name": "species.cherry",
-      "model": "models/props/tree_cherry",
+      "models": {
+        "bloom": [
+          "models/trees/cherry_1_bloom.glb"
+        ],
+        "autumn": [
+          "models/trees/cherry_1_autumn.glb"
+        ],
+        "bare": [
+          "models/trees/cherry_1_bare.glb"
+        ]
+      },
       "sizes": [
         "small",
         "medium"

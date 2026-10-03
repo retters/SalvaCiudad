@@ -189,3 +189,13 @@ Medido en release en esta PC (2026-10-02), mapa colosal (16 384 × 16 384), semi
 Es el mismo tiempo dentro de lo que varía este equipo: mientras se medía, otra sesión trabajaba en el mismo equipo. Los datos del mapa son idénticos antes y después (3 314 686 objetos); la suma de verificación pasa de `862d1baec39f9102` a `c071fdf05c8d7569` solo porque ya no incluye el byte del generador (D-4902).
 
 No se comparan con los 115 s de la fase 43: aquella medida era sin mar, y no se repitió en esas condiciones.
+
+## Cambio de estado de los árboles (fase 51)
+
+Al cambiar de estación, al nevar y en cada uno de los 8 pasos del cambio de estado de los árboles se rehace la lista de objetos del mapa. El registro lo anota cuando tarda 20 ms o más (`map: ... features shown for the season in ... ms`).
+
+| Mapa | Objetos | Tiempo |
+|---|---|---|
+| Colosal, semilla 12345 | 3 394 869 | 301 ms |
+
+En el colosal es un tirón perceptible, 8 veces en los primeros 6 días de otoño, invierno y primavera. Pendiente si molesta: rehacer solo los árboles que cambian de estado en ese paso.

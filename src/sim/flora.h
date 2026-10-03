@@ -30,11 +30,23 @@ struct Weighted {
     std::uint16_t weight;
 };
 
+// How a tree looks through the year (phase 51): in leaf or in flower, in
+// its autumn colors, and bare. Only the look; the simulation ignores it.
+enum class TreeState : std::uint8_t { Bloom, Autumn, Bare, Count };
+inline constexpr std::size_t kTreeStates = static_cast<std::size_t>(TreeState::Count);
+
 struct SpeciesDef {
     std::string id;       // "core:oak"
     std::string name_key;
     std::string mod;      // Mod folder with the models.
-    std::string model;    // Model file prefix inside the mod: "models/trees/oak".
+    // One of the two: a model file prefix inside the mod, completed with the
+    // size ("models/props/tree_oak" + "_large.glb"), or the files of each
+    // state (phase 51), each a list of variants; a state without files
+    // looks like Bloom (an evergreen declares only that one). A species
+    // with states has one model for all sizes, scaled to each tree.
+    std::string model;
+    std::vector<std::string> state_models[kTreeStates];
+    [[nodiscard]] bool by_state() const { return !state_models[0].empty(); }
     std::uint8_t sizes = 0;  // Bit per TreeSize the species can have.
     std::int32_t logs[kTreeSizes] = {2, 5, 10, 20};  // Wood per tree of each size.
     bool evergreen = false;  // Keeps its leaves in autumn and winter (the look only).

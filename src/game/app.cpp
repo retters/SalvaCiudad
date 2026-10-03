@@ -730,9 +730,16 @@ void App::render_frame(float dt) {
             if (session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
                 // The season: trees, hats and light (a report's, when showing one).
                 const sim::Game& g = session_->game();
-                const sim::Season season = replay_ ? replay_->view.season : g.calendar().season;
+                const sim::Calendar cal = g.calendar();
+                const sim::Season season = replay_ ? replay_->view.season : cal.season;
+                // The trees turn over the first days of a season, each at
+                // its own time; a new game starts with them already turned.
+                const sim::Calendar first = sim::calendar(g.rules().climate, 0);
+                const bool turned = replay_ || (cal.year == first.year && cal.season == first.season);
+                const TreeCalendar when = turned ? TreeCalendar{season, kTurnSteps}
+                                                 : tree_calendar(season, cal.season_progress);
                 const bool snowy = replay_ ? replay_->view.snow * static_cast<float>(sim::village::kMaxSnow) > 25.0f : g.snow() > 25;
-                map_scene_.set_season(scene_, g.map(), g.content(), season, snowy);
+                map_scene_.set_season(scene_, g.map(), g.content(), when, snowy);
                 map_scene_.update_sky(scene_, dt * static_cast<float>(host_->game_paused() ? 0 : 1));
                 village_.set_season(season);
                 lighting_ = seasonal_lighting(season);

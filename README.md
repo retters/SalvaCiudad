@@ -537,6 +537,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En una partida, las herramientas de desarrollo siguen pudiendo poner y quitar aldeanos de prueba.
 - [ ] Activar o desactivar un mod en "Mods" y aplicar: el fondo del menú se vuelve a generar.
 
+### Fase 51
+
+- [ ] Los cerezos son los low poly nuevos: en flor (rosa) en primavera y verano, rojizos en otoño y sin hojas en invierno. Se ven de tamaños distintos.
+- [ ] En los primeros días del otoño hay cerezos en flor y cerezos de otoño a la vez; a los 6 días todos cambiaron. Lo mismo al entrar el invierno y la primavera.
+- [ ] Una partida nueva empieza con los cerezos en flor, no pelados.
+- [ ] Con nieve, los cerezos se ven blanqueados como los demás árboles.
+- [ ] Talar un cerezo: desaparece y da su madera, como antes.
+- [ ] Los demás árboles se ven igual que antes (cambian de color en otoño e invierno).
+- [ ] En `SalvaCiudadModelos.exe`, el grupo del cerezo muestra sus tres estados lado a lado.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

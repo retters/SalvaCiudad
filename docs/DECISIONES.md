@@ -2110,3 +2110,25 @@ Con las herramientas de desarrollo abiertas (Ctrl+F3) y en los menús: F5 genera
 **D-5006. Cuándo se genera.**
 El mapa se empieza a generar en su hilo en cuanto se cargan los mods, antes de crear la ventana, así que el menú no lo espera: mientras llega, el fondo es el color liso de siempre. Medido en release: el mapa se genera en 0,14 s y aparece 0,93 s después de arrancar el programa, casi a la vez que el menú. Al salir de una partida al menú se genera otro (el mapa de la partida ocupa el lugar del de fondo mientras se juega), y también al cambiar de mods. Con `--reporte` no hay fondo.
 
+## Fase 51: árboles por estación y tamaño (2026-10-02)
+
+**D-5101. Los dos formatos conviven hasta la fase 53.**
+`core` todavía tiene los 21 árboles viejos, con un modelo por tamaño. Una especie declara `models` por estado o `model` con su prefijo, nunca los dos. El formato viejo y su tinte de otoño e invierno se quedan para esas especies y se borran con ellas en la fase 53 (la especificación dice que el tinte se borra: se borra cuando ya ninguna especie lo use). Los arbustos conservan su tinte.
+
+**D-5102. El cerezo es la especie de prueba.**
+`core:cherry` pasa a usar `cherry_1` de los árboles low poly en sus tres estados. No cambia los mapas: es la misma especie en los mismos lugares, con los mismos tamaños y madera. `build_all.py` construye esos modelos en `models/trees/`; los `tree_cherry_*.glb` viejos quedan sin uso hasta la fase 53.
+
+**D-5103. El cambio es por pasos, no por días.**
+La simulación da la estación y cuánto ha avanzado (de 0 a 999), no el día dentro de ella. El cambio ocupa la primera quinta parte de la estación en 8 pasos; cada árbol tiene su paso, que sale de su posición. Con las cuatro estaciones son 6 días. Cada paso rehace la lista de árboles a dibujar, como ya pasaba al cambiar de estación o al nevar.
+
+**D-5104. Una partida nueva no empieza con árboles pelados.**
+En la primera estación de la partida no hay cambio: todos los árboles están ya en su estado. Si no, una partida que empieza en primavera mostraría los árboles sin hojas los primeros días, y el mapa de fondo del menú también.
+
+**D-5105. Escala por altura.**
+Un árbol por estado se dibuja con su modelo escalado a la altura que le dio el generador, entre 0,5 y 1,5 veces la altura del modelo. Los árboles viejos siguen con su escala exacta.
+
+**D-5106. El visor no necesitó cambios.**
+Ya muestra juntos los modelos de una definición; los tres estados de una especie salen lado a lado en su grupo. Solo se le quitó el tinte de estación a las especies por estado.
+
+**D-5107. Costo del cambio en los mapas más grandes.**
+Rehacer la lista tarda 301 ms en el mapa colosal de referencia (3,39 millones de objetos); se nota como un tirón. Ya ocurría 4 veces al año (más las nevadas) y ahora ocurre 8 veces más en cada estación que cambia. En mapas pequeños y medianos no se nota (menos de 20 ms). Queda anotado en `docs/RENDIMIENTO.md`; si molesta, se puede rehacer solo la parte que cambia.
