@@ -26,6 +26,10 @@ inline constexpr DefIndex kNoDef = 0xFFFF;
 
 enum class ResourceCategory : std::uint8_t { Food, Material, Fuel, Good, Gold, Count };
 
+// Phase 67: how a resource looks when carried or piled up (presentation
+// only: the simulation never reads it).
+enum class LoadKind : std::uint8_t { Crate, Logs, Stone, Sack, Basket, Count };
+
 struct ResourceDef {
     std::string id;           // "core:log"
     std::string name_key;     // Text key, from the mod's language files.
@@ -34,6 +38,7 @@ struct ResourceDef {
     std::int32_t weight = 1;     // Units a villager carries per trip: 12 / weight.
     std::int32_t carry = 0;      // Units per trip in place of 12 / weight; 0 = from the weight (phase 28).
     std::int32_t value = 0;      // Base price in gold; 0 = merchants do not trade it (phase 14).
+    LoadKind load = LoadKind::Crate;  // Phase 67; by default food goes in a basket and the rest in a crate.
 };
 
 struct ResourceAmount {

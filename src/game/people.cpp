@@ -51,13 +51,71 @@ math::Mat4 tool_placement(const render::ModelData& body, int joint, const render
            math::translation(-tool.grip);
 }
 
+// Where a load goes in the body's bind pose (art: docs/ARTE.md): its grip
+// on the chest bone's start, pushed out a little behind the back or in
+// front of the chest; smaller on a smaller body.
+math::Mat4 load_placement(const render::ModelData& body, int joint, const render::ModelData& load, bool arms) {
+    const math::Vec3 chest = body.joint_rest[static_cast<std::size_t>(joint)].transform_point({0.0f, 0.0f, 0.0f});
+    const float size = std::clamp(body.bounds_max.y / 1.8f, 0.7f, 1.15f);
+    // The model's front is +Z: the back is behind.
+    const math::Vec3 out{0.0f, 0.0f, (arms ? 0.115f : -0.115f) * size};
+    return math::translation(chest + out) * math::scaling({size, size, size}) * math::translation(-load.grip);
+}
+
 }  // namespace
 
-void advance(const Body& body, Motion& m, Act wanted, float speed, float game_dt, float rest_dt) {
+Load load_for(const sim::ResourceDef& resource, std::int32_t amount) {
+    if (amount <= 0) {
+        return Load::None;
+    }
+    const std::int32_t trip = resource.carry > 0 ? resource.carry : std::max(1, sim::village::kCarry / std::max(1, resource.weight));
+    const bool back = amount * 2 > trip;
+    switch (resource.load) {
+        case sim::LoadKind::Logs: return back ? Load::LogsBack : Load::LogsArms;
+        case sim::LoadKind::Stone: return back ? Load::StoneBack : Load::StoneArms;
+        case sim::LoadKind::Sack: return back ? Load::SackBack : Load::CrateArms;  // (No sack to hold in the arms.)
+        case sim::LoadKind::Basket: return back ? Load::BasketBack : Load::BasketArms;
+        default: return back ? Load::CrateBack : Load::CrateArms;
+    }
+}
+
+Load load_of(const sim::Content& content, const sim::Villager& v) {
+    if (v.carrying.amount <= 0 || v.carrying.resource >= content.resources.size()) {
+        return Load::None;
+    }
+    return load_for(content.resources[v.carrying.resource], v.carrying.amount);
+}
+
+void advance(const Body& body, Motion& m, Act wanted, float speed, float game_dt, float rest_dt, Load load) {
     const auto index = [](Act a) { return static_cast<std::size_t>(a); };
+    const bool arms = in_arms(load);
+    if (arms && (wanted == Act::Walk || wanted == Act::Run)) {
+        // Holding something: the same stride, with the arms around it.
+        const float length = body.length[index(Act::CarryWalk)];
+        if (m.act == Act::Walk) {
+            m.time = m.time / body.length[index(Act::Walk)] * length;
+        } else if (m.act != Act::CarryWalk) {
+            m.time = 0.0f;
+        }
+        m.act = Act::CarryWalk;
+        m.time = std::fmod(m.time + game_dt * speed / body.walk_speed, length);
+        return;
+    }
+    if (arms && wanted == Act::Idle) {
+        if (m.act != Act::CarryIdle) {
+            m.act = Act::CarryIdle;
+            m.time = 0.0f;
+        }
+        m.time = std::fmod(m.time + rest_dt, body.length[index(Act::CarryIdle)]);
+        return;
+    }
     if (wanted == Act::Walk || wanted == Act::Run) {
         const Act gait = wanted == Act::Run || speed > body.walk_speed * kRunAbove ? Act::Run : Act::Walk;
         const float length = body.length[index(gait)];
+        if (m.act == Act::CarryWalk) {
+            m.time = gait == Act::Walk ? m.time / body.length[index(Act::CarryWalk)] * length : 0.0f;
+            m.act = gait;
+        }
         if (m.act == Act::Walk || m.act == Act::Run) {
             if (m.act != gait) {  // The same point of the stride in the other gait.
                 m.time = m.time / body.length[index(m.act)] * length;
@@ -92,13 +150,20 @@ void advance(const Body& body, Motion& m, Act wanted, float speed, float game_dt
     m.time = std::fmod(m.time + rest_dt, body.length[index(m.act)]);
 }
 
-void pose(const Body& body, const Motion& m, render::CharacterInstance& c) {
+void pose(const Body& body, const Motion& m, render::CharacterInstance& c, Load load) {
     const auto a = static_cast<std::size_t>(m.act);
     c.body = body.id;
     c.clip = body.clip[a];
     // A clip played once holds its last pose; the others loop.
     c.time = std::min(m.time, std::max(0.0f, body.length[a] - 1.0f / 60.0f));
     c.accessories = body.tools[a];
+    // What it carries, unless its hands are busy with a tool.
+    c.near_only = body.loads[static_cast<std::size_t>(load)];
+    if (c.near_only != 0 && (c.accessories == 0 || !in_arms(load))) {
+        c.accessories |= c.near_only;
+    } else {
+        c.near_only = 0;
+    }
 }
 
 Act act_of(const sim::Game& game, const sim::Villager& v, bool moving) {
@@ -191,7 +256,8 @@ bool load_body(render::SceneRenderer& renderer, const std::filesystem::path& cor
     }
     for (std::size_t a = 0; a < kActs; ++a) {
         const int found = model.clip_index(kActClips[a]);
-        const int clip = found >= 0 ? found : (a == static_cast<std::size_t>(Act::Run) ? model.clip_index("walk") : idle);
+        const bool walks = a == static_cast<std::size_t>(Act::Run) || a == static_cast<std::size_t>(Act::CarryWalk);
+        const int clip = found >= 0 ? found : (walks ? model.clip_index("walk") : idle);
         body.clip[a] = static_cast<std::uint32_t>(clip);
         body.length[a] = std::max(0.05f, renderer.clip_duration(body.id, body.clip[a]));
         body.tools[a] = 0;
@@ -230,6 +296,19 @@ bool load_body(render::SceneRenderer& renderer, const std::filesystem::path& cor
             renderer.add_accessory(*data, body.id, bone, tool_placement(model, joint, *data, tool->roll), bit)) {
             body.tools[a] = 1u << bit;
             loaded.emplace_back(prop, bit);
+        }
+    }
+    // The loads (phase 67), pinned to the chest.
+    body.loads.fill(0);
+    if (const int chest = model.joint_index("chest"); chest >= 0) {
+        for (std::size_t k = 0; k < std::size(builtin_models::kLoads) && k + 1 < kLoads; ++k) {
+            const auto data = load_model_file(core_dir / builtin_models::kLoads[k]);
+            std::uint32_t bit = 0;
+            const bool arms = in_arms(static_cast<Load>(k + 1));
+            if (data.has_value() && !data->skinned() &&
+                renderer.add_accessory(*data, body.id, "chest", load_placement(model, chest, *data, arms), bit)) {
+                body.loads[k + 1] = 1u << bit;
+            }
         }
     }
     return true;

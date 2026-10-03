@@ -68,6 +68,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `nutrition` | Puntos de comida por unidad (0 a 1000), para `food`. |
 | `weight` | 1 a 12: un aldeano carga 12 / peso unidades por viaje. |
 | `carry` | 0 a 1000: unidades por viaje en lugar de 12 / peso (el oro va en bolsas de 50). 0, o sin escribir: según el peso. |
+| `load` | Cómo se ve al cargarlo y apilarlo (fase 67): `crate`, `logs`, `stone`, `sack` o `basket`. Por omisión, `basket` para los alimentos y `crate` para lo demás. Solo cambia lo que se ve. |
 | `value` | Precio base en oro para los mercaderes (0 a 10000). Con 0 no lo compran ni lo venden. |
 
 ### building

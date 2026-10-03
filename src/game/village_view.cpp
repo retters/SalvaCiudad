@@ -12,6 +12,7 @@
 #include "game/model_file.h"
 #include "game/camera.h"
 #include "game/variants.h"
+#include "game/village_props.h"
 
 namespace sc {
 
@@ -244,6 +245,35 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
     if (missing > 0) {
         log::warn("village: {} building model(s) missing; those buildings will not be drawn", missing);
     }
+    // Phase 67: the stages of a site, by footprint; the piles; the cart; the arrow.
+    const std::filesystem::path core = pack.dir("core");
+    const auto core_model = [&](const std::string& rel) {
+        const std::filesystem::path file = mods::mod_file(core, rel);
+        std::error_code ec;
+        return !file.empty() && std::filesystem::is_regular_file(file, ec) ? load_building_file(renderer, file) : Model{};
+    };
+    for (const sim::BuildingDef& d : content.buildings) {
+        const std::pair<std::int32_t, std::int32_t> size{d.width, d.depth};
+        if (sites_.contains(size)) {
+            continue;
+        }
+        const std::string base = std::string(builtin_models::kSitePrefix) + std::to_string(d.width) + "x" + std::to_string(d.depth);
+        sites_[size] = {core_model(base + "_1.glb"), core_model(base + "_2.glb")};
+    }
+    const auto prop = [&](std::string_view rel) {
+        const Model m = core_model(std::string(rel));
+        if (m.id != kNoModel && !is_prop(m.id)) {
+            prop_models_.push_back(m.id);
+        }
+        return m;
+    };
+    for (std::size_t kind = 0; kind < piles_.size(); ++kind) {
+        for (std::size_t level = 0; level < 3; ++level) {
+            piles_[kind][level] = prop(builtin_models::kPiles[kind][level]);
+        }
+    }
+    cart_ = prop(builtin_models::kCart);
+    arrow_ = prop(builtin_models::kArrow);
     if (tile_model_ == kNoModel) {
         render::ModelId id = 0;
         if (renderer.add_model(make_tile_model(), id)) {
@@ -274,8 +304,14 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
     }
 }
 
+bool VillageView::is_prop(render::ModelId id) const {
+    return std::find(prop_models_.begin(), prop_models_.end(), id) != prop_models_.end();
+}
+
 void VillageView::begin(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game) {
     shown_ = true;
+    arrows_.clear();
+    piles_timer_ = 0.0f;
     looks_.clear();
     creature_looks_.clear();
     corpses_.clear();
@@ -428,6 +464,7 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
         ghost_changed_ = false;
     }
     update_characters(renderer, game, alpha, dt, speed);
+    update_props(renderer, game, alpha, dt, speed);
     update_creatures(renderer, game, alpha, dt, speed);
     update_overlay(renderer, game, dt);
     update_particles(renderer, game, dt, speed);
@@ -970,10 +1007,23 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     std::map<render::ModelId, std::vector<render::Instance>> lists;
     for (const render::ModelId id : used_) {
         if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
-            id != puff_model_) {
+            id != puff_model_ && !is_prop(id)) {
             lists[id];
         }
     }
+    // A site shows its foundations, then its frame, then the building.
+    const auto stage = [&](sim::DefIndex def, float progress) -> const Model* {
+        if (progress >= 1.0f || def >= game.content().buildings.size()) {
+            return nullptr;
+        }
+        const sim::BuildingDef& bd = game.content().buildings[def];
+        const auto it = sites_.find({bd.width, bd.depth});
+        if (it == sites_.end()) {
+            return nullptr;
+        }
+        const Model& m = it->second[static_cast<std::size_t>(props::site_stage(progress))];
+        return m.id != kNoModel ? &m : nullptr;
+    };
     const sim::Content& content = game.content();
     for (std::size_t k = 0; k < game.buildings().size(); ++k) {
         const sim::Building& b = game.buildings().data()[k];
@@ -986,7 +1036,15 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         if (b.state == sim::BuildingState::Construction) {
             progress = d.build_work > 0 ? static_cast<float>(b.work_done) / static_cast<float>(d.build_work) : 1.0f;
         }
-        render::Instance inst = building_instance(game, b.def, *m, b.x, b.z, b.width, b.depth, b.rotation, progress);
+        const Model* site = b.state == sim::BuildingState::Construction ? stage(b.def, progress) : nullptr;
+        if (site != nullptr) {
+            m = site;
+        }
+        render::Instance inst =
+            building_instance(game, b.def, *m, b.x, b.z, b.width, b.depth, b.rotation, site != nullptr ? 1.0f : progress);
+        if (site != nullptr) {
+            inst.palette = 0;  // A site has no colors of its own yet.
+        }
         if (b.fire > 0 || b.burned > 0) {
             // Glowing while it burns, charred after.
             const float char_level = 1.0f - 0.7f * static_cast<float>(b.burned) / 1000.0f;
@@ -1014,8 +1072,15 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
             }
             std::int32_t w = 0, d = 0;
             sim::Game::footprint(content.buildings[h.def], h.rotation, w, d);
-            render::Instance inst = building_instance(game, h.def, *m, h.x, h.z, w, d, h.rotation,
-                                                      static_cast<float>(h.progress) / 1000.0f);
+            const float seen = static_cast<float>(h.progress) / 1000.0f;
+            const Model* site = stage(h.def, seen);
+            if (site != nullptr) {
+                m = site;
+            }
+            render::Instance inst = building_instance(game, h.def, *m, h.x, h.z, w, d, h.rotation, site != nullptr ? 1.0f : seen);
+            if (site != nullptr) {
+                inst.palette = 0;
+            }
             if (h.burning || h.burned > 0) {
                 const float char_level = 1.0f - 0.7f * static_cast<float>(h.burned) / 1000.0f;
                 inst.tint = h.burning ? math::Vec3{1.9f * char_level, 0.6f * char_level, 0.3f * char_level}
@@ -1036,11 +1101,208 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     }
     for (auto& [id, list] : lists) {
         if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
-            id != puff_model_) {
+            id != puff_model_ && !is_prop(id)) {
             renderer.set_instances(id, list);
         }
     }
     rebuild_fields(renderer, game);
+    rebuild_piles(renderer, game);
+}
+
+void VillageView::shoot(math::Vec3 from, math::Vec3 to) {
+    if (arrow_.id != kNoModel && arrows_.size() < 256) {
+        arrows_.push_back({from, to, 0.0f, props::arrow_seconds(from, to)});
+    }
+}
+
+// The piles: at a site, what was brought so far; beside a storage, what it
+// holds. One pile per kind of load, along the door's side.
+void VillageView::rebuild_piles(render::SceneRenderer& renderer, const sim::Game& game) {
+    const sim::Content& content = game.content();
+    constexpr std::size_t kKinds = static_cast<std::size_t>(sim::LoadKind::Count);
+    std::array<std::array<std::vector<render::Instance>, 3>, kKinds> lists;
+    const auto& store = game.buildings();
+    for (std::size_t k = 0; k < store.size(); ++k) {
+        const sim::Building& b = store.data()[k];
+        const sim::BuildingDef& d = content.buildings[b.def];
+        const bool site = b.state == sim::BuildingState::Construction;
+        if ((!site && (d.storage <= 0 || d.kind == sim::BuildingKind::House)) || sim::follows_ground(d) ||
+            !building_shown(game, b)) {
+            continue;
+        }
+        // How much of each kind, and what a full pile of it would be.
+        std::array<std::int32_t, kKinds> amount{};
+        std::array<std::int32_t, kKinds> full{};
+        for (const sim::Stock& st : site ? b.delivered : b.stock) {
+            if (st.resource < content.resources.size()) {
+                amount[static_cast<std::size_t>(content.resources[st.resource].load)] += st.amount;
+            }
+        }
+        if (site) {
+            for (const sim::ResourceAmount& c : d.cost) {
+                if (c.resource < content.resources.size()) {
+                    full[static_cast<std::size_t>(content.resources[c.resource].load)] += c.amount;
+                }
+            }
+        } else {
+            full.fill(std::max(1, d.storage / 3));  // A third of the storage in one kind is a full pile.
+        }
+        // Along the door's side, a meter out, from its left corner.
+        const float yaw = std::numbers::pi_v<float> - static_cast<float>(b.rotation) * std::numbers::pi_v<float> * 0.5f;
+        // The door looks along -Z unturned; `out` points away from it, `along` to its right.
+        static constexpr float kOut[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
+        static constexpr float kAlong[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+        const std::size_t r = b.rotation & 3u;
+        const float cx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
+        const float cz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
+        const float half_out = static_cast<float>(r % 2 == 0 ? b.depth : b.width) * 0.5f;
+        const float half_along = static_cast<float>(r % 2 == 0 ? b.width : b.depth) * 0.5f;
+        int placed = 0;
+        for (std::size_t kind = 0; kind < kKinds; ++kind) {
+            const int level = props::pile_level(amount[kind], full[kind]);
+            if (level == 0 || piles_[kind][static_cast<std::size_t>(level - 1)].id == kNoModel) {
+                continue;
+            }
+            // Sites pile up on the left of the door, storages on the right.
+            const float side = (site ? -1.0f : 1.0f) * (half_along - 0.8f - 1.7f * static_cast<float>(placed));
+            if (std::abs(side) > half_along + 0.1f && placed > 0) {
+                break;  // No more room along this side.
+            }
+            render::Instance inst;
+            inst.position.x = cx + kOut[r][0] * (half_out + 1.0f) + kAlong[r][0] * side;
+            inst.position.z = cz + kOut[r][1] * (half_out + 1.0f) + kAlong[r][1] * side;
+            inst.position.y = map_surface_height(game.map(), inst.position.x, inst.position.z);
+            inst.yaw = yaw + static_cast<float>(placed) * 0.6f;
+            lists[kind][static_cast<std::size_t>(level - 1)].push_back(inst);
+            ++placed;
+        }
+    }
+    for (std::size_t kind = 0; kind < kKinds; ++kind) {
+        for (std::size_t level = 0; level < 3; ++level) {
+            if (piles_[kind][level].id != kNoModel) {
+                renderer.set_instances(piles_[kind][level].id, lists[kind][level]);
+            }
+        }
+    }
+}
+
+// The merchant and the cart at the trading post, the arrows in the air and
+// the piles, which follow what is stored a few times a second.
+void VillageView::update_props(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,
+                               float speed) {
+    const float game_dt = dt * std::max(speed, 0.0f);
+    const float before = props_time_;
+    props_time_ += game_dt;
+    piles_timer_ -= dt;
+    if (piles_timer_ <= 0.0f) {
+        piles_timer_ = 0.5f;
+        rebuild_piles(renderer, game);
+    }
+    const sim::Content& content = game.content();
+    // Whether something that repeats every `ticks` came around this frame;
+    // `shift` keeps each shooter on its own beat.
+    const auto beat = [&](std::int32_t ticks, std::uint32_t shift) {
+        const float period = static_cast<float>(std::max(1, ticks)) / static_cast<float>(sim::kTicksPerSecond);
+        const float phase = static_cast<float>(shift % 97u) / 97.0f * period;
+        return std::floor((props_time_ + phase) / period) != std::floor((before + phase) / period);
+    };
+    // The nearest enemy of a town within `range` meters of a point.
+    const auto enemy_near = [&](math::Vec3 from, float range) -> std::optional<math::Vec3> {
+        std::optional<math::Vec3> best;
+        float best_d = range * range;
+        for (const sim::Creature& c : game.creatures().data()) {
+            if (c.kind != sim::CreatureKind::Raider && c.kind != sim::CreatureKind::Wolf && c.kind != sim::CreatureKind::Bear) {
+                continue;
+            }
+            const math::Vec3 p = creature_position(game, c, alpha);
+            const float d2 = (p.x - from.x) * (p.x - from.x) + (p.z - from.z) * (p.z - from.z);
+            if (d2 < best_d && mover_shown(game, false, 0, p.x, p.z)) {
+                best_d = d2;
+                best = p + math::Vec3{0.0f, 1.0f, 0.0f};
+            }
+        }
+        return best;
+    };
+    std::vector<render::Instance> carts;
+    const auto& store = game.buildings();
+    for (std::size_t k = 0; k < store.size(); ++k) {
+        const sim::Building& b = store.data()[k];
+        const sim::BuildingDef& d = content.buildings[b.def];
+        if (b.state != sim::BuildingState::Complete || !building_shown(game, b)) {
+            continue;
+        }
+        const math::Vec3 top = building_top(game, b);
+        // Towers shoot at what comes near.
+        if (d.attack_range > 0 && !d.trap && beat(d.attack_every, static_cast<std::uint32_t>(k) * 31u)) {
+            if (const auto enemy = enemy_near(top, static_cast<float>(d.attack_range))) {
+                shoot(top - math::Vec3{0.0f, 2.0f, 0.0f}, *enemy);
+            }
+        }
+        // The merchant waits beside the trading post with the cart.
+        if (d.trade && b.owner < game.player_count() && game.merchant_here(b.owner)) {
+            const math::Vec3 door{to_float(game.door(b).x), 0.0f, to_float(game.door(b).z)};
+            const math::Vec3 away = math::normalize(math::Vec3{door.x - top.x, 0.0f, door.z - top.z});
+            const math::Vec3 beside{-away.z, 0.0f, away.x};
+            render::Instance cart;
+            cart.position = door + away * 1.6f + beside * 2.2f;
+            cart.position.y = map_surface_height(game.map(), cart.position.x, cart.position.z);
+            cart.yaw = std::atan2(-away.x, -away.z);  // Its shafts toward the post.
+            if (cart_.id != kNoModel) {
+                carts.push_back(cart);
+            }
+            if (cast_ != nullptr && cast_->loaded()) {
+                const people::Body& body = cast_->any_body(static_cast<std::uint32_t>(k) * 7919u + 3u);
+                people::Motion standing;
+                standing.act = people::Act::Idle;
+                standing.time = std::fmod(props_time_, body.length[static_cast<std::size_t>(people::Act::Idle)]);
+                render::CharacterInstance c;
+                people::pose(body, standing, c);
+                c.position = door + away * 1.2f + beside * 0.6f;
+                c.position.y = map_surface_height(game.map(), c.position.x, c.position.z);
+                c.yaw = std::atan2(-away.x, -away.z);
+                c.palette = people::Cast::palette(body, static_cast<std::uint32_t>(k) * 2654435761u + 11u);
+                characters_.push_back(c);
+            }
+        }
+    }
+    if (cart_.id != kNoModel) {
+        renderer.set_instances(cart_.id, carts);
+    }
+    // Archers shoot at whoever they are after.
+    const auto& creatures = game.creatures();
+    for (std::size_t k = 0; k < creatures.size(); ++k) {
+        const sim::Creature& a = creatures.data()[k];
+        if (a.kind != sim::CreatureKind::Soldier || a.unit >= content.units.size() || content.units[a.unit].range <= 4 ||
+            a.state == sim::CreatureState::Travel) {
+            continue;
+        }
+        const sim::Creature* target = a.target_kind == sim::TargetKind::Creature ? creatures.get(a.target) : nullptr;
+        if (target == nullptr || !beat(content.units[a.unit].attack_every, creatures.entities()[k].index * 53u)) {
+            continue;
+        }
+        const math::Vec3 from = creature_position(game, a, alpha);
+        const math::Vec3 to = creature_position(game, *target, alpha);
+        const float reach = static_cast<float>(content.units[a.unit].range) + 1.0f;
+        if ((to.x - from.x) * (to.x - from.x) + (to.z - from.z) * (to.z - from.z) <= reach * reach &&
+            mover_shown(game, true, a.town, from.x, from.z)) {
+            shoot(from + math::Vec3{0.0f, 1.4f, 0.0f}, to + math::Vec3{0.0f, 1.0f, 0.0f});
+        }
+    }
+    // The arrows in the air.
+    const bool had = !arrow_instances_.empty();
+    arrow_instances_.clear();
+    for (Arrow& arrow : arrows_) {
+        arrow.age += game_dt;
+        const props::ArrowPose pose = props::arrow_pose(arrow.from, arrow.to, arrow.age / arrow.seconds);
+        render::Instance inst;
+        inst.position = pose.position;
+        inst.yaw = pose.yaw;
+        arrow_instances_.push_back(inst);
+    }
+    std::erase_if(arrows_, [](const Arrow& arrow) { return arrow.age >= arrow.seconds; });
+    if (arrow_.id != kNoModel && (had || !arrow_instances_.empty())) {
+        renderer.set_instances(arrow_.id, arrow_instances_);
+    }
 }
 
 math::Vec3 VillageView::villager_position(const sim::Game& game, const sim::Villager& v, float alpha) const {
@@ -1120,10 +1382,19 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
                                                      to_float(v.position.z - v.previous.z)}) *
                              static_cast<float>(sim::kTicksPerSecond);
         // A smaller body takes shorter steps.
-        people::advance(body, look.motion, people::act_of(game, v, moving), meters / scale, game_dt, rest_dt);
+        const people::Load load = people::load_of(game.content(), v);
+        const float before = look.motion.act == people::Act::Shoot ? look.motion.time : -1.0f;
+        people::advance(body, look.motion, people::act_of(game, v, moving), meters / scale, game_dt, rest_dt, load);
         render::CharacterInstance c;
-        people::pose(body, look.motion, c);
+        people::pose(body, look.motion, c, load);
         c.position = villager_position(game, v, alpha);
+        if (look.motion.act == people::Act::Shoot && before >= 0.0f && look.motion.time < before) {
+            // The shot came around: an arrow flies where it aims, into the grass.
+            const math::Vec3 ahead{std::sin(look.yaw), 0.0f, std::cos(look.yaw)};
+            math::Vec3 to = c.position + ahead * 24.0f;
+            to.y = map_surface_height(game.map(), to.x, to.z) + 0.1f;
+            shoot(c.position + math::Vec3{0.0f, 1.4f * scale, 0.0f} + ahead * 0.5f, to);
+        }
         c.yaw = look.yaw;
         c.scale = scale;
         c.palette = people::Cast::palette(body, v.appearance);

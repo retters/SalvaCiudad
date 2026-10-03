@@ -601,6 +601,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 67
+
+- [ ] Acercar la cámara a un leñador que vuelve: lleva troncos a la espalda. Un recolector, una canasta. Con poca carga la lleva en brazos y camina sosteniéndola.
+- [ ] Al alejar la cámara las cargas dejan de verse (a unas cuatro veces la distancia en que el personaje se simplifica).
+- [ ] Una obra nueva: primero cimientos de piedra con estacas, luego un armazón con andamio, al final el edificio. Junto a la puerta se apila lo que van trayendo.
+- [ ] Junto al centro del pueblo y a los almacenes hay pilas (troncos, piedra, sacos, cajones, canastas) que crecen o bajan con lo guardado.
+- [ ] Un cazador trabajando: sale una flecha cada vez que dispara. Una atalaya o un arquero con enemigos cerca: flechas hacia ellos.
+- [ ] Cuando llega un mercader: una carreta y una persona junto al puesto de comercio; se van con él.
+- [ ] En pausa nada de esto se mueve; al guardar y cargar todo sigue igual.
+- [ ] **Sin revisar en pantalla por Claude**: las flechas y el mercader con su carreta.
+
 ### Fase 66
 
 - [ ] Construir un "Explorador" (Servicios). Seleccionar a su trabajador: su ventana dice "Provisiones" y "Clic derecho en el mapa o el minimapa: va ahí".

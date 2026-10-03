@@ -67,6 +67,7 @@ private:
         float roam = 10.0f;    // ... this far.
         float speed = 1.4f;
         float rest_time = 0.0f;  // Seconds left standing still.
+        people::Load load = people::Load::None;  // One in three carries something (phase 67).
     };
 
     std::uint32_t next_random();

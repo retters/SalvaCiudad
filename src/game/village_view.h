@@ -268,6 +268,31 @@ private:
                                                      std::int32_t z, std::int32_t w, std::int32_t d,
                                                      std::uint8_t rotation, float progress) const;
     void update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, float speed);
+
+    // Phase 67: what makes the work visible. The stages of a building site
+    // by its footprint (missing: the building rises out of the ground as
+    // before); the piles of goods beside sites and storages, by the kind
+    // of load and how full; the merchant's cart at the trading post; and
+    // the arrows of hunters, archers and towers.
+    std::map<std::pair<std::int32_t, std::int32_t>, std::array<Model, 2>> sites_;
+    std::array<std::array<Model, 3>, static_cast<std::size_t>(sim::LoadKind::Count)> piles_{};
+    Model cart_;
+    Model arrow_;
+    std::vector<render::ModelId> prop_models_;  // Piles, cart and arrow: set apart from the buildings.
+    [[nodiscard]] bool is_prop(render::ModelId id) const;
+    float piles_timer_ = 0.0f;
+    void rebuild_piles(render::SceneRenderer& renderer, const sim::Game& game);
+    struct Arrow {
+        math::Vec3 from;
+        math::Vec3 to;
+        float age = 0.0f;
+        float seconds = 1.0f;
+    };
+    std::vector<Arrow> arrows_;
+    std::vector<render::Instance> arrow_instances_;
+    float props_time_ = 0.0f;  // Game seconds, for what repeats.
+    void shoot(math::Vec3 from, math::Vec3 to);
+    void update_props(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt, float speed);
 };
 
 }  // namespace sc

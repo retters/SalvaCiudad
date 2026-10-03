@@ -8,6 +8,7 @@
 #include "core/file_io.h"
 #include "game/builtin_models.h"
 #include "game/people.h"
+#include "game/village_props.h"
 #include "render/model.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
@@ -220,6 +221,144 @@ TEST_SUITE("people") {
             CHECK_FALSE(m.skinned());
             CHECK(math::length(m.grip) > 0.05f);  // Held by its handle, not by its end.
         }
+    }
+
+    TEST_CASE("what a villager carries shows: a lot on its back, a little in its arms") {
+        const sim::Content& content = sc::test::core_content();
+        const auto resource = [&](const char* id) -> const sim::ResourceDef& {
+            const sim::DefIndex r = content.find_resource(id);
+            REQUIRE(r != sim::kNoDef);
+            return content.resources[r];
+        };
+        // The kind of load, from the data (food goes in baskets by itself).
+        CHECK(resource("core:log").load == sim::LoadKind::Logs);
+        CHECK(resource("core:firewood").load == sim::LoadKind::Logs);
+        CHECK(resource("core:stone").load == sim::LoadKind::Stone);
+        CHECK(resource("core:iron_ore").load == sim::LoadKind::Stone);
+        CHECK(resource("core:flour").load == sim::LoadKind::Sack);
+        CHECK(resource("core:berries").load == sim::LoadKind::Basket);
+        CHECK(resource("core:bread").load == sim::LoadKind::Basket);
+        CHECK(resource("core:tools").load == sim::LoadKind::Crate);
+        // Logs weigh two: six a trip. More than half of that goes on the back.
+        CHECK(people::load_for(resource("core:log"), 0) == people::Load::None);
+        CHECK(people::load_for(resource("core:log"), 3) == people::Load::LogsArms);
+        CHECK(people::load_for(resource("core:log"), 4) == people::Load::LogsBack);
+        CHECK(people::load_for(resource("core:stone"), 1) == people::Load::StoneArms);
+        CHECK(people::load_for(resource("core:berries"), 12) == people::Load::BasketBack);
+        CHECK(people::load_for(resource("core:berries"), 2) == people::Load::BasketArms);
+        CHECK(people::load_for(resource("core:flour"), 12) == people::Load::SackBack);
+        CHECK(people::load_for(resource("core:flour"), 1) == people::Load::CrateArms);  // No sack for the arms.
+        CHECK(people::in_arms(people::Load::CrateArms));
+        CHECK_FALSE(people::in_arms(people::Load::CrateBack));
+        CHECK_FALSE(people::in_arms(people::Load::None));
+
+        // With something in its arms it walks and stands holding it; on its
+        // back, as always. The load is the one accessory that hides from afar.
+        people::Body b = test_body();
+        b.loads[static_cast<std::size_t>(people::Load::LogsArms)] = 1u << 5;
+        b.loads[static_cast<std::size_t>(people::Load::LogsBack)] = 1u << 6;
+        people::Motion m;
+        people::advance(b, m, people::Act::Walk, 1.5f, 0.25f, 0.25f, people::Load::LogsArms);
+        CHECK(m.act == people::Act::CarryWalk);
+        people::advance(b, m, people::Act::Run, 4.0f, 0.25f, 0.25f, people::Load::LogsArms);
+        CHECK(m.act == people::Act::CarryWalk);  // It does not run with its arms full.
+        render::CharacterInstance c;
+        people::pose(b, m, c, people::Load::LogsArms);
+        CHECK(c.clip == static_cast<std::uint32_t>(people::Act::CarryWalk));
+        CHECK(c.accessories == 1u << 5);
+        CHECK(c.near_only == 1u << 5);
+        people::advance(b, m, people::Act::Idle, 0.0f, 0.25f, 0.25f, people::Load::LogsArms);
+        CHECK(m.act == people::Act::CarryIdle);
+        people::advance(b, m, people::Act::Walk, 1.5f, 0.25f, 0.25f, people::Load::LogsBack);
+        CHECK(m.act == people::Act::Walk);
+        people::pose(b, m, c, people::Load::LogsBack);
+        CHECK(c.accessories == 1u << 6);
+        // Put down: back to its own stride, and nothing on it.
+        people::advance(b, m, people::Act::Walk, 1.5f, 0.25f, 0.25f);
+        people::pose(b, m, c);
+        CHECK(m.act == people::Act::Walk);
+        CHECK(c.accessories == 0);
+        CHECK(c.near_only == 0);
+        // Chopping with a load on the back shows both; a load for the arms
+        // waits while the hands hold a tool.
+        m = {};
+        people::advance(b, m, people::Act::Chop, 0.0f, 0.25f, 0.25f, people::Load::LogsBack);
+        people::pose(b, m, c, people::Load::LogsBack);
+        CHECK(c.accessories == ((1u << 6) | 1u));
+        people::pose(b, m, c, people::Load::LogsArms);
+        CHECK(c.accessories == 1u);
+
+        // The models: rigid, with the point that touches the body.
+        for (const std::string_view path : builtin_models::kLoads) {
+            CAPTURE(path);
+            const render::ModelData load_model = load(std::string(path));
+            CHECK_FALSE(load_model.skinned());
+            CHECK(load_model.grip.y > 0.05f);
+            CHECK(load_model.bounds_max.y - load_model.bounds_min.y < 0.8f);
+        }
+        // Every character has a chest to carry them on.
+        for (const sim::RaceDef& race : content.races) {
+            for (const std::string& name : race.bodies_male) {
+                CHECK(load(sim::race_body_file(name)).joint_index("chest") >= 0);
+            }
+        }
+    }
+
+    TEST_CASE("sites show their stages, piles their size, and arrows fly in an arc") {
+        CHECK(props::site_stage(0.0f) == 0);
+        CHECK(props::site_stage(0.34f) == 0);
+        CHECK(props::site_stage(0.35f) == 1);
+        CHECK(props::site_stage(0.99f) == 1);
+        CHECK(props::pile_level(0, 30) == 0);
+        CHECK(props::pile_level(1, 30) == 1);
+        CHECK(props::pile_level(9, 30) == 1);
+        CHECK(props::pile_level(10, 30) == 2);
+        CHECK(props::pile_level(19, 30) == 2);
+        CHECK(props::pile_level(20, 30) == 3);
+        CHECK(props::pile_level(500, 30) == 3);
+        CHECK(props::pile_level(5, 0) == 3);
+        // An arrow: from one end to the other, highest in the middle,
+        // pointing where it goes.
+        const math::Vec3 from{10.0f, 2.0f, 10.0f};
+        const math::Vec3 to{10.0f, 1.0f, 40.0f};
+        CHECK(math::length(props::arrow_pose(from, to, 0.0f).position - from) < 1e-4f);
+        CHECK(math::length(props::arrow_pose(from, to, 1.0f).position - to) < 1e-4f);
+        const props::ArrowPose middle = props::arrow_pose(from, to, 0.5f);
+        CHECK(middle.position.z == doctest::Approx(25.0f));
+        CHECK(middle.position.y == doctest::Approx(1.5f + 30.0f / 12.0f));
+        CHECK(middle.yaw == doctest::Approx(0.0f));  // Along +Z.
+        CHECK(props::arrow_pose({0, 0, 0}, {5, 0, 0}, 0.5f).yaw == doctest::Approx(1.5708f).epsilon(0.001));
+        CHECK(props::arrow_seconds(from, to) == doctest::Approx(1.0f).epsilon(0.01));
+        CHECK(props::arrow_seconds(from, from) == doctest::Approx(0.2f));
+
+        // A site model for both stages of every footprint in the game, the
+        // piles of every kind and size, the cart and the arrow.
+        const sim::Content& content = sc::test::core_content();
+        std::set<std::string> sizes;
+        for (const sim::BuildingDef& d : content.buildings) {
+            sizes.insert(std::to_string(d.width) + "x" + std::to_string(d.depth));
+        }
+        for (const std::string& size : sizes) {
+            for (const char* stage : {"_1.glb", "_2.glb"}) {
+                const std::string rel = std::string(builtin_models::kSitePrefix) + size + stage;
+                CAPTURE(rel);
+                const render::ModelData m = load(rel);
+                CHECK(m.bounds_max.y > 0.3f);
+                CHECK(m.bounds_min.y < -4.0f);  // On foundations, like the building it will be.
+            }
+        }
+        for (const auto& kind : builtin_models::kPiles) {
+            float height = 0.0f;
+            for (const std::string_view path : kind) {
+                const render::ModelData m = load(std::string(path));
+                CHECK(m.bounds_max.y >= height);  // Each size no lower than the one before.
+                height = m.bounds_max.y;
+            }
+        }
+        CHECK(load(std::string(builtin_models::kCart)).bounds_max.y > 1.0f);
+        const render::ModelData arrow = load(std::string(builtin_models::kArrow));
+        CHECK(arrow.bounds_max.z - arrow.bounds_min.z > 1.0f);  // Lying along the way it flies.
+        CHECK(arrow.bounds_max.y - arrow.bounds_min.y < 0.2f);
     }
 
     TEST_CASE("what a villager does shows: it hurries when fleeing, chops trees, hammers at work") {

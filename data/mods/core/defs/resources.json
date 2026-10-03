@@ -7,7 +7,8 @@
       "name": "resource.log",
       "category": "material",
       "weight": 2,
-      "value": 2
+      "value": 2,
+      "load": "logs"
     },
     {
       "type": "resource",
@@ -15,7 +16,8 @@
       "name": "resource.stone",
       "category": "material",
       "weight": 3,
-      "value": 3
+      "value": 3,
+      "load": "stone"
     },
     {
       "type": "resource",
@@ -23,7 +25,8 @@
       "name": "resource.ironOre",
       "category": "material",
       "weight": 3,
-      "value": 4
+      "value": 4,
+      "load": "stone"
     },
     {
       "type": "resource",
@@ -31,7 +34,8 @@
       "name": "resource.firewood",
       "category": "fuel",
       "weight": 1,
-      "value": 2
+      "value": 2,
+      "load": "logs"
     },
     {
       "type": "resource",
@@ -48,7 +52,8 @@
       "name": "resource.herbs",
       "category": "good",
       "weight": 1,
-      "value": 3
+      "value": 3,
+      "load": "basket"
     },
     {
       "type": "resource",
@@ -135,7 +140,8 @@
       "name": "resource.fertilizer",
       "category": "material",
       "weight": 2,
-      "value": 1
+      "value": 1,
+      "load": "sack"
     },
     {
       "type": "resource",
@@ -143,7 +149,8 @@
       "name": "resource.flour",
       "category": "material",
       "weight": 2,
-      "value": 3
+      "value": 3,
+      "load": "sack"
     },
     {
       "type": "resource",
@@ -160,7 +167,8 @@
       "name": "resource.barley",
       "category": "material",
       "weight": 2,
-      "value": 1
+      "value": 1,
+      "load": "sack"
     },
     {
       "type": "resource",
@@ -176,7 +184,8 @@
       "name": "resource.flax",
       "category": "material",
       "weight": 1,
-      "value": 1
+      "value": 1,
+      "load": "sack"
     },
     {
       "type": "resource",
@@ -208,7 +217,8 @@
       "name": "resource.clay",
       "category": "material",
       "weight": 3,
-      "value": 1
+      "value": 1,
+      "load": "stone"
     },
     {
       "type": "resource",
@@ -232,7 +242,8 @@
       "name": "resource.coal",
       "category": "fuel",
       "weight": 2,
-      "value": 4
+      "value": 4,
+      "load": "stone"
     },
     {
       "type": "resource",
@@ -291,7 +302,8 @@
       "category": "gold",
       "weight": 1,
       "carry": 50,
-      "value": 0
+      "value": 0,
+      "load": "sack"
     }
   ]
 }

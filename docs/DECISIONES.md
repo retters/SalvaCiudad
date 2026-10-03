@@ -2626,3 +2626,38 @@ Reglas 34 (el aldeano guarda su orden, el punto y las provisiones), protocolo de
 
 **D-6613. Sin revisar en pantalla por Claude.**
 El clic derecho en el minimapa y el regreso por provisiones (se vio en pantalla: construir el Explorador, su trabajador con "Provisiones" y la pista, y mandarlo con clic derecho en el mapa: fue por provisiones y quedó esperando en el punto).
+
+## Fase 67: lo que pasa, a la vista (2026-10-03)
+
+**D-6701. Todo es de la vista.**
+Cargas, pilas, etapas de obra, flechas y carreta se deducen del estado del juego al dibujar; la simulación y su suma de verificación no cambian y no suben las versiones de reglas ni de red. Lo único que cambia en los datos es `"load"` en los recursos, que la simulación no lee (sí cambia la huella del contenido, así que las partidas guardadas antes no cargan; ya pasaba con las fases 63 a 66).
+
+**D-6702. El tipo de carga de cada recurso.**
+`"load"` en `resources.json`: `crate`, `logs`, `stone`, `sack` o `basket`. Por omisión, los alimentos van en canasta y lo demás en cajón. En `core`: troncos y leña como troncos; piedra, mineral de hierro, arcilla y carbón como piedra; harina, cebada, abono, lino y oro en saco; hierbas en canasta. No hay modelo de lingotes: el hierro va en cajón.
+
+**D-6703. Espalda o brazos.**
+Si lleva más de la mitad de lo que cabe en un viaje, la carga va a la espalda; si no, en brazos, y entonces camina y espera con las animaciones de carga (y no corre). No hay saco para los brazos: un saco chico se ve como cajón. Si las manos sostienen una herramienta (talar con troncos encima), la carga de brazos no se dibuja; la de espalda sí.
+
+**D-6704. Hasta dónde se ven las cargas. (Ajuste a la especificación.)**
+La especificación decía que con la versión lejana del personaje la carga no se dibuja. Pero el personaje pasa a su versión lejana muy cerca (a unos 15 m con la cámara normal), así que casi nunca se verían. Las cargas se dibujan hasta cuatro veces esa distancia y no hacen sombra; más lejos, no se dibujan.
+
+**D-6705. Cómo se dibujan.**
+Cada carga es un accesorio rígido fijado al hueso `chest` de cada personaje (9 por cada uno de los 17). Para que tantos modelos no cuesten, el descarte de personajes ya no recorre cada modelo contra todos los personajes: cada personaje entra directo en las listas de lo que se dibuja con él.
+
+**D-6706. Etapas de construcción.**
+Una obra muestra los cimientos hasta el 35 % del trabajo y el armazón con andamio desde ahí; al terminar, el edificio. Los modelos son por tamaño de terreno (`site_<ancho>x<fondo>_<etapa>.glb`, con cimientos de piedra como los edificios, fase 65). Si falta el modelo de un tamaño, esa obra sube del suelo como antes. Los edificios de otros recordados bajo la niebla usan la misma regla.
+
+**D-6707. Pilas.**
+Una pila por tipo de carga, en tres tamaños, a un metro del lado de la puerta. En una obra, a la izquierda de la puerta: lo entregado de cada tipo contra lo que pide la obra. En un almacén (todo edificio con almacenaje que no sea casa), a la derecha: lo guardado de cada tipo, donde un tercio de su capacidad ya es una pila llena. Se actualizan dos veces por segundo. Pueden encimarse con un edificio vecino; son adorno.
+
+**D-6708. Flechas.**
+La simulación no dice cuándo sale cada tiro, así que la vista lo deduce: un cazador suelta una flecha cada vez que su animación de disparo da la vuelta, hacia donde apunta; una torre, al ritmo de su ataque, a la bestia o asaltante más cercano dentro de su alcance; un arquero, al ritmo del suyo, a quien persigue si está a tiro. Vuelan a 30 m/s en un arco bajo y con el reloj del juego (en pausa se quedan en el aire). El modelo es una flecha acostada de 1,2 m (`props/arrow_flight.glb`), más grande que la real para verse desde arriba; solo gira sobre la vertical. Puede no coincidir exactamente con el golpe de la simulación.
+
+**D-6709. El mercader.**
+Mientras dura la visita, junto a cada puesto de comercio del pueblo hay una carreta y una persona de pie. No camina ni llega: aparece y se va con la visita.
+
+**D-6710. Medición.**
+Con `--reporte`, `release`, 1600 × 900, Ultra, 1000 personas de las herramientas de desarrollo, una de cada tres con una carga, comparando seguidas la versión anterior y la nueva: a media distancia (750 a la vista) 549 y 541 FPS antes, 536, 533 y 533 después (−2 %); lejos (995 a la vista) 596 y 582 antes, 586, 582 y 582 después (−1 %); de cerca (420 a la vista) 550 antes y después. El criterio permitía un 10 %. Anotado en `docs/RENDIMIENTO.md`.
+
+**D-6711. Sin revisar en pantalla por Claude.**
+Las flechas y el mercader con su carreta (no hubo cazadores, torres ni visita en las partidas de prueba). Sí se vio en pantalla: troncos y cajones a la espalda, las pilas junto al centro del pueblo y junto a una obra, y un granero pasando por cimientos, armazón y edificio.

@@ -37,6 +37,7 @@ struct Instance {
     std::uint8_t fade = 0;
 };
 inline constexpr std::uint8_t kMaxFade = 3;
+inline constexpr float kCarriedReach = 4.0f;
 
 // An animated character. Accessories (hats, aprons...) are chosen with a
 // bit mask over the accessories registered for its body.
@@ -49,6 +50,10 @@ struct CharacterInstance {
     float time = 0.0f;              // Seconds into the clip; loops.
     std::uint32_t palette = 0;
     std::uint32_t accessories = 0;  // Bit i: accessory i of the body.
+    // Phase 67: those of `accessories` not drawn from far away (what a
+    // villager carries): only up to kCarriedReach times the distance at
+    // which the body turns to its far version, and never in the shadows.
+    std::uint32_t near_only = 0;
     // How see-through it is drawn, in quarters (0 to kMaxFade); a faded
     // character casts no shadow.
     std::uint8_t fade = 0;

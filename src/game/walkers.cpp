@@ -56,7 +56,10 @@ std::size_t Walkers::add_villager(math::Vec3 at, std::optional<bool> female) {
     v.target = random_point(at, v.roam);
     v.speed = 1.2f + static_cast<float>(next_random() % 40) / 100.0f;
     v.rest_time = next_random() % 5 == 0 ? static_cast<float>(next_random() % 400) / 100.0f : 0.0f;
-    people::pose(*v.body, v.motion, v.look);
+    if (villagers_.size() % 3 == 0) {
+        v.load = static_cast<people::Load>(1 + (villagers_.size() / 3) % (people::kLoads - 1));
+    }
+    people::pose(*v.body, v.motion, v.look, v.load);
     villagers_.push_back(v);
     return villagers_.size() - 1;
 }
@@ -110,7 +113,7 @@ void Walkers::update(render::SceneRenderer& renderer, float dt, std::span<const 
         const float distance = math::length(to);
         if (v.rest_time > 0.0f) {
             v.rest_time -= dt;
-            people::advance(*v.body, v.motion, people::Act::Idle, 0.0f, dt, dt);
+            people::advance(*v.body, v.motion, people::Act::Idle, 0.0f, dt, dt, v.load);
         } else if (distance < 0.5f) {
             // Arrived: sometimes stop for a while, then pick a new goal.
             v.target = random_point(v.home, v.roam);
@@ -130,9 +133,9 @@ void Walkers::update(render::SceneRenderer& renderer, float dt, std::span<const 
             while (diff < -math::kPi) diff += 2.0f * math::kPi;
             v.look.yaw += diff * std::min(1.0f, dt * 6.0f);
             // The walk plays faster or slower so the feet match the ground.
-            people::advance(*v.body, v.motion, people::Act::Walk, v.speed, dt, dt);
+            people::advance(*v.body, v.motion, people::Act::Walk, v.speed, dt, dt, v.load);
         }
-        people::pose(*v.body, v.motion, v.look);
+        people::pose(*v.body, v.motion, v.look, v.load);
         instances_.push_back(v.look);
     }
     renderer.set_characters(instances_);

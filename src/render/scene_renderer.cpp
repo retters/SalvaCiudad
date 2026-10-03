@@ -1,6 +1,7 @@
 #include "render/scene_renderer.h"
 
 #include <algorithm>
+#include <bit>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -281,6 +282,7 @@ struct GpuSkinned {
     std::vector<std::string> joint_names;
     std::vector<math::Vec3> joint_rest_positions;
     std::uint32_t accessory_count = 0;
+    std::vector<std::uint32_t> accessory_models;  // By bit: its model among the skinned ones.
 };
 
 }  // namespace
@@ -1084,16 +1086,23 @@ struct SceneRenderer::Impl {
     // Visible characters, then one range per skinned model (a body or an
     // accessory) listing the characters that draw it.
     // Without an eye (the shadows) every body that has a far version uses it.
+    // The characters in view, as a list per model (bodies, far versions and
+    // accessories): each character goes straight into the lists of what it
+    // is drawn with, so the cost does not grow with the number of models.
+    std::vector<std::vector<std::uint32_t>> character_lists;  // Scratch.
     std::vector<Range> cull_characters(const math::Frustum& frustum, const math::Vec3* eye, float max_distance) {
-        std::vector<std::uint32_t> seen;      // Index of the character, and
-        std::vector<std::uint8_t> seen_far;   // whether it is drawn far.
+        if (character_lists.size() != skinned.size()) {
+            character_lists.assign(skinned.size(), {});
+        }
         const float max_d2 = max_distance * max_distance;
         for (std::size_t i = 0; i < characters.size(); ++i) {
             const CharacterInstance& c = characters[i];
-            const float r = skinned[c.body].radius * c.scale;
+            const GpuSkinned& body = skinned[c.body];
+            const float r = body.radius * c.scale;
             // A faded character (the ghost of the camera's anchor) casts no shadow.
             bool keep = frustum.sphere_visible(c.position, r) && (eye != nullptr || c.fade == 0);
             bool far_version = eye == nullptr || lod_mode == SceneRenderer::LodMode::Far;
+            bool carried = eye != nullptr;  // What it carries shows (never in the shadows).
             if (keep && eye != nullptr) {
                 const math::Vec3 d = c.position - *eye;
                 const float d2 = math::dot(d, d);
@@ -1101,27 +1110,30 @@ struct SceneRenderer::Impl {
                 // Far when lower on screen than the level of detail's pixels.
                 const float at = r * lod_reach;
                 far_version = far_version || (lod_mode == SceneRenderer::LodMode::Auto && d2 > at * at);
+                carried = lod_mode != SceneRenderer::LodMode::Far && d2 <= at * at * kCarriedReach * kCarriedReach;
             }
-            if (keep) {
-                seen.push_back(static_cast<std::uint32_t>(i));
-                seen_far.push_back(far_version && skinned[c.body].far_model != ~0u ? 1 : 0);
+            if (!keep) {
+                continue;
+            }
+            const auto index = static_cast<std::uint32_t>(i);
+            const bool far_now = far_version && body.far_model != ~0u;
+            character_lists[far_now ? body.far_model : c.body].push_back(index);
+            std::uint32_t bits = carried ? c.accessories : c.accessories & ~c.near_only;
+            while (bits != 0) {
+                const auto bit = static_cast<std::size_t>(std::countr_zero(bits));
+                bits &= bits - 1;
+                if (bit < body.accessory_models.size()) {
+                    character_lists[body.accessory_models[bit]].push_back(index);
+                }
             }
         }
         std::vector<Range> ranges(skinned.size());
         for (std::size_t mi = 0; mi < skinned.size(); ++mi) {
-            const GpuSkinned& m = skinned[mi];
+            std::vector<std::uint32_t>& list = character_lists[mi];
             ranges[mi].first = static_cast<std::uint32_t>(visible.size());
-            for (std::size_t k = 0; k < seen.size(); ++k) {
-                const std::uint32_t i = seen[k];
-                const CharacterInstance& c = characters[i];
-                const bool draws = m.far_of != ~0u          ? c.body == m.far_of && seen_far[k] != 0
-                                   : m.accessory_bit == ~0u ? c.body == mi && seen_far[k] == 0
-                                                            : c.body == m.body && ((c.accessories >> m.accessory_bit) & 1u) != 0;
-                if (draws) {
-                    visible.push_back(i);
-                }
-            }
-            ranges[mi].count = static_cast<std::uint32_t>(visible.size()) - ranges[mi].first;
+            ranges[mi].count = static_cast<std::uint32_t>(list.size());
+            visible.insert(visible.end(), list.begin(), list.end());
+            list.clear();
         }
         return ranges;
     }
@@ -1622,6 +1634,7 @@ bool SceneRenderer::add_accessory(const ModelData& data, SkinnedId body, std::st
     m.body = body;
     m.accessory_bit = owner.accessory_count++;
     bit = m.accessory_bit;
+    owner.accessory_models.push_back(static_cast<std::uint32_t>(d.skinned.size()));
     d.skinned.push_back(std::move(m));
     return true;
 }

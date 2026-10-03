@@ -176,6 +176,12 @@ Catalog build_catalog(std::span<const ModFolder> mods, std::span<const mods::Mod
             }
         }
     }
+    // The stages of a building site, one pair per footprint (phase 67).
+    for (CatalogModel& m : out.models) {
+        if (!builtin.empty() && m.mod == builtin_mod && m.path.starts_with(builtin_models::kSitePrefix)) {
+            m.uses.push_back({"code", "site", {}});
+        }
+    }
     // Groups: the first definition that uses a file, else its use in the
     // code, else its name without a size or sex suffix.
     std::map<std::string, std::size_t> by_id;

@@ -516,6 +516,10 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.value = r.integer("value", 0, 10000, 0);
         def.weight = r.integer("weight", 1, 12, 1);
         def.carry = r.integer("carry", 0, 1000, 0);
+        // "load": "crate", "logs", "stone", "sack" or "basket".
+        static constexpr std::string_view kLoads[] = {"crate", "logs", "stone", "sack", "basket"};
+        def.load = static_cast<sim::LoadKind>(
+            r.choice("load", kLoads, def.category == sim::ResourceCategory::Food ? 4 : 0));
         if (r.ok()) {
             out.resources.push_back(std::move(def));
         }

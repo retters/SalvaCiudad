@@ -255,3 +255,15 @@ Medido en pantalla con F3, `release`, 1600 × 900, Ultra (suavizado 8x), sin vsy
 | Dos (el centro del pueblo y un aldeano) | 784 a 800 | 955 en el cuadro en que se dibuja una |
 
 Cada cuadro se dibuja a lo más una vista pequeña (320 × 200, sin pasto, sin sombras propias, hasta 400 m), así que con dos ventanas cada una va a la mitad de los cuadros. La pérdida medida es menor al 2 %; el criterio de la fase permitía un 25 %. No se midió con un pueblo grande: `--reporte` no abre ventanas de cámara.
+
+## Cargas, pilas y obras (fase 67)
+
+Medido con `--reporte`, `release`, 1600 × 900, Ultra, sin vsync, mapa chico (semilla 91), 1000 personas de las herramientas de desarrollo, una de cada tres con una carga. La versión anterior y la nueva, una tras otra en la misma sesión:
+
+| Vista | Antes | Con cargas |
+|---|---|---|
+| Media distancia, 750 a la vista | 549 y 541 FPS | 536, 533 y 533 FPS |
+| Lejos, 995 a la vista | 596 y 582 FPS | 586, 582 y 582 FPS |
+| De cerca, 420 a la vista | 550 y 550 FPS | 548, 549 y 550 FPS |
+
+Cada carga es un accesorio de unos 300 triángulos y solo se dibuja hasta cuatro veces la distancia en que el personaje pasa a su versión lejana. El descarte de personajes se rehízo para que su costo no crezca con el número de modelos (ahora cada personaje tiene 9 cargas además de sus herramientas). La pérdida queda en 1 a 2 %; el criterio de la fase permitía un 10 %.

@@ -413,6 +413,22 @@ def cart(folder):
     common.export_glb(os.path.join(folder, "cart.glb"), [obj])
 
 
+def arrow_flight(folder):
+    """An arrow as it flies (phase 67): lying along Y with its head toward
+    -Y (the front), centered on the origin, so the game only has to turn it
+    about the vertical. Bigger than life (1.2 m) to be seen from above."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    mb.cylinder((0, 0.6, 0), (0, -0.48, 0), 0.022, 0.022, "arrow_shaft", segments=5)
+    mb.cylinder((0, -0.48, 0), (0, -0.62, 0), 0.05, 0.0, "arrow_head", segments=5)
+    # The fletching: two fins across each other.
+    mb.box((0, 0.5, 0), (0.012, 0.2, 0.13), "arrow_feather")
+    mb.box((0, 0.5, 0), (0.13, 0.2, 0.012), "arrow_feather")
+    obj = mb.to_object("arrow_flight", dict(COLORS, arrow_shaft=common.rgb(0xB08A5A), arrow_head=common.rgb(0x5A6068),
+                                            arrow_feather=common.rgb(0xE8E4D8)))
+    common.export_glb(os.path.join(folder, "arrow_flight.glb"), [obj])
+
+
 def make_all(folder):
     os.makedirs(folder, exist_ok=True)
     rock(folder)
@@ -424,6 +440,7 @@ def make_all(folder):
     variants(folder)
     piles(folder)
     cart(folder)
+    arrow_flight(folder)
 
 
 def variants(folder):

@@ -261,6 +261,7 @@ Una obra tiene tres aspectos: cimientos, armazón y el edificio terminado (su mo
 ### Flecha y carreta
 
 - `tools/arrow.glb`: la flecha de `weapons/w17_arrow.py`, de 0,8 m, con su eje largo en +Z (la punta arriba) como las demás herramientas. Está en `GAME_TOOLS` de `build_all.py`.
+- `props/arrow_flight.glb` (`props.py`): la flecha como vuela en el juego: acostada, con la punta al frente y de 1,2 m para verse desde arriba. El juego solo la gira sobre la vertical.
 - `props/cart.glb`: la carreta de mano del mercader: dos ruedas, dos varas hacia −Y (su frente), cajones, sacos y un barril bajo un toldo de tela. Mide 2,3 m de largo (2,2 m sin el vuelo del toldo), 1,3 m de ancho y 2 m de alto.
 
 ### Generar y revisar

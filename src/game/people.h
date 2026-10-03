@@ -20,10 +20,36 @@
 namespace sc::people {
 
 // What a character is doing, as far as its animation goes.
-enum class Act : std::uint8_t { Idle, Walk, Run, Chop, Shoot, FishCast, Fish, Work, Count };
+enum class Act : std::uint8_t { Idle, Walk, Run, Chop, Shoot, FishCast, Fish, Work, CarryWalk, CarryIdle, Count };
 inline constexpr std::size_t kActs = static_cast<std::size_t>(Act::Count);
-// The clip of each act; a body without one plays "idle" instead.
-inline constexpr std::string_view kActClips[kActs] = {"idle", "walk", "run", "chop", "shoot", "fish_cast", "fish_stand", "work"};
+// The clip of each act; a body without one plays "idle" instead (or "walk").
+inline constexpr std::string_view kActClips[kActs] = {"idle",      "walk",       "run",  "chop",       "shoot",
+                                                      "fish_cast", "fish_stand", "work", "carry_walk", "carry_idle"};
+
+// Phase 67: what a villager carries, as it is seen: a lot on its back, a
+// little in its arms (then it walks and stands with the carry clips).
+enum class Load : std::uint8_t {
+    None,
+    LogsBack,
+    StoneBack,
+    SackBack,
+    BasketBack,
+    CrateBack,
+    LogsArms,
+    StoneArms,
+    BasketArms,
+    CrateArms,
+    Count
+};
+inline constexpr std::size_t kLoads = static_cast<std::size_t>(Load::Count);
+[[nodiscard]] constexpr bool in_arms(Load load) {
+    return load >= Load::LogsArms && load < Load::Count;
+}
+// The load for `amount` units of a resource: by its kind, on the back when
+// it is more than half of what a villager carries of it.
+[[nodiscard]] Load load_for(const sim::ResourceDef& resource, std::int32_t amount);
+// What a villager carries now.
+[[nodiscard]] Load load_of(const sim::Content& content, const sim::Villager& v);
 
 // A character model loaded in the renderer.
 struct Body {
@@ -32,6 +58,7 @@ struct Body {
     std::array<std::uint32_t, kActs> clip{};
     std::array<float, kActs> length{};          // Seconds.
     std::array<std::uint32_t, kActs> tools{};   // Accessory bits shown while the act plays.
+    std::array<std::uint32_t, kLoads> loads{};  // Accessory bit of each load (0: not loaded).
     float walk_speed = 1.4f;  // Meters per second its clips cover at their own rate.
     float run_speed = 2.8f;
     float height = 1.8f;
@@ -58,9 +85,11 @@ inline constexpr float kRunAbove = 1.5f;
 // keeps the feet on the ground at `speed` (m/s of game time); the other
 // acts play at their own rate. `game_dt`: seconds of game time; `rest_dt`:
 // the same, never faster than real time.
-void advance(const Body& body, Motion& m, Act wanted, float speed, float game_dt, float rest_dt);
-// The clip, its time and the tool in hand, into `c`.
-void pose(const Body& body, const Motion& m, render::CharacterInstance& c);
+// `load`: what it carries; in its arms it walks and stands with the carry
+// clips (and does not run).
+void advance(const Body& body, Motion& m, Act wanted, float speed, float game_dt, float rest_dt, Load load = Load::None);
+// The clip, its time, the tool in hand and the load, into `c`.
+void pose(const Body& body, const Motion& m, render::CharacterInstance& c, Load load = Load::None);
 
 // What a villager's task looks like. `moving`: it changed place this tick.
 [[nodiscard]] Act act_of(const sim::Game& game, const sim::Villager& v, bool moving);
