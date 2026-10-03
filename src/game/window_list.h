@@ -60,7 +60,8 @@ public:
 
     // --- Windows of things on the map ---------------------------------------
     // Node: a natural feature, `entity.index` its place in the map's list.
-    enum class Kind : std::uint8_t { Building, Villager, Node, Creature };
+    // Walker: one of the developer tools' people, `entity.index` its number.
+    enum class Kind : std::uint8_t { Building, Villager, Node, Creature, Walker };
     struct Object {
         std::string id;  // "obj1" ... "obj16".
         Kind kind = Kind::Building;

@@ -684,7 +684,31 @@ void App::follow_villager(const CameraInput& in) {
         return;
     }
     GameSession::Interaction& ui = session_->ui();
+    // What the interface asks about the developer tools' people.
+    if (!ui.walker_info) {
+        ui.walker_info = [this](std::uint32_t i) {
+            GameSession::Interaction::WalkerInfo info;
+            if (i < walkers_.size()) {
+                info.there = true;
+                info.model = walkers_.info(i).model;
+                info.x = walkers_.position(i).x;
+                info.z = walkers_.position(i).z;
+            }
+            return info;
+        };
+    }
     std::optional<VillageView::Standing> at;
+    if (ui.followed_walker != 0) {
+        if (in.move_forward != 0.0f || in.move_right != 0.0f || ui.followed_walker > walkers_.size() ||
+            ui.followed_villager.valid()) {
+            ui.followed_walker = 0;
+        } else {
+            at = VillageView::Standing{walkers_.position(ui.followed_walker - 1), walkers_.height(ui.followed_walker - 1) / 1.8f};
+            if (camera_.mode() == CameraMode::Aerial && !camera_.following()) {
+                camera_.set_mode(CameraMode::ThirdPerson);
+            }
+        }
+    }
     if (ui.followed_villager.valid()) {
         if (in.move_forward != 0.0f || in.move_right != 0.0f) {
             ui.followed_villager = {};  // Walking the anchor away lets go.
@@ -805,6 +829,11 @@ void App::update_camera_windows() {
                     const math::Vec3 top = village_.feature_top(g, w.entity.index);
                     const float ground = map_surface_height(g.map(), top.x, top.z);
                     at = math::Vec3{top.x, ground + (top.y - 1.0f - ground) * 0.6f, top.z};
+                }
+                break;
+            case 4:
+                if (w.entity.index < walkers_.size()) {
+                    at = walkers_.position(w.entity.index) + math::Vec3{0.0f, 1.2f, 0.0f};
                 }
                 break;
             default:
@@ -993,6 +1022,9 @@ void App::render_frame(float dt) {
             } else if (const sim::Creature* c = g.creatures().get(sel.selected_creature)) {
                 const math::Vec3 p = village_.creature_position(g, *c, static_cast<float>(clock_.interpolation()));
                 draw_marker(frame.width, frame.height, p + math::Vec3{0.0f, 2.3f, 0.0f}, ui_.theme().accent);
+            } else if (sel.selected_walker != 0 && sel.selected_walker <= walkers_.size()) {
+                draw_marker(frame.width, frame.height,
+                            walkers_.position(sel.selected_walker - 1) + math::Vec3{0.0f, 2.3f, 0.0f}, ui_.theme().accent);
             } else if (sel.selected_node != 0 && village_.feature_shown(g, sel.selected_node - 1)) {
                 draw_marker(frame.width, frame.height, village_.feature_top(g, sel.selected_node - 1), ui_.theme().accent);
             }
@@ -1722,6 +1754,8 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
         ui.selected_building = *b;
     } else if (const auto c = village_.pick_creature(game, origin, dir, alpha)) {
         ui.selected_creature = *c;
+    } else if (const auto w = walkers_.pick(origin, dir)) {
+        ui.selected_walker = static_cast<std::uint32_t>(*w) + 1;  // One of the developer tools' people.
     } else if (const auto f = village_.pick_feature(game, origin, dir)) {
         ui.selected_node = *f + 1;
     }

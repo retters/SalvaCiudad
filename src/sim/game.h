@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 34;
+inline constexpr std::uint32_t kGameRulesVersion = 35;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -595,6 +595,12 @@ public:
     [[nodiscard]] std::vector<std::uint32_t> take_changed_nodes();
     // Buildings added, changed or removed since the last call.
     [[nodiscard]] bool take_buildings_changed();
+    // Natural features were added to the map (developer tools) since the last call.
+    [[nodiscard]] bool take_features_added() {
+        const bool added = features_added_;
+        features_added_ = false;
+        return added;
+    }
 
     void save(BinaryWriter& w) const;
     // Replaces this game with a saved one using `content`. On failure the
@@ -668,6 +674,7 @@ private:
     // Walking costs around workplaces (derived, never saved), by entity index.
     std::map<std::uint32_t, std::pair<EntityId, NavGrid::Area>> work_areas_;
     bool buildings_changed_ = true;
+    bool features_added_ = false;
 
     void build_indexes();
 };

@@ -57,6 +57,7 @@ private:
     void villager_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     void node_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     void creature_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    void walker_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     // Phase 63. A list of villagers by name; a click opens each one's window.
     [[nodiscard]] float people_height(ui::Context& ctx, std::size_t count) const;
     void people_list(ui::Context& ctx, GameSession& s, const WindowList::Object& o, const ui::Rect& box, float& y,

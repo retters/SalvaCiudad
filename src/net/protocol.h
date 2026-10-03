@@ -20,7 +20,7 @@
 
 namespace sc::net {
 
-inline constexpr std::uint32_t kProtocolVersion = 12;
+inline constexpr std::uint32_t kProtocolVersion = 13;
 inline constexpr std::uint16_t kDefaultPort = 47800;
 inline constexpr std::uint16_t kDiscoveryPort = 47799;
 inline constexpr std::size_t kMaxNameBytes = 32;

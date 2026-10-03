@@ -1,0 +1,523 @@
+[
+  {
+    "name": "decor_rose_bed",
+    "size": 3,
+    "es": "Rosal en arriate",
+    "en": "Rose bed",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 3
+    },
+    "buildWork": 60,
+    "desirability": 9
+  },
+  {
+    "name": "decor_tulip_bed",
+    "size": 3,
+    "es": "Arriate de tulipanes",
+    "en": "Tulip bed",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 3
+    },
+    "buildWork": 60,
+    "desirability": 9
+  },
+  {
+    "name": "decor_glow_bells",
+    "size": 2,
+    "es": "Campanillas luminosas",
+    "en": "Glowing bellflowers",
+    "cost": {
+      "core:stone": 4
+    },
+    "buildWork": 80,
+    "desirability": 13
+  },
+  {
+    "name": "decor_mushroom_flowers",
+    "size": 3,
+    "es": "Hongos flor gigantes",
+    "en": "Giant mushroom flowers",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 4
+    },
+    "buildWork": 90,
+    "desirability": 14
+  },
+  {
+    "name": "decor_crystal_flowers",
+    "size": 2,
+    "es": "Flores de cristal",
+    "en": "Crystal flowers",
+    "cost": {
+      "core:stone": 6
+    },
+    "buildWork": 90,
+    "desirability": 13
+  },
+  {
+    "name": "decor_carnivorous_plant",
+    "size": 3,
+    "es": "Planta carnívora gigante",
+    "en": "Giant carnivorous plant",
+    "cost": {
+      "core:log": 3,
+      "core:stone": 4
+    },
+    "buildWork": 100,
+    "desirability": 12
+  },
+  {
+    "name": "decor_pond",
+    "size": 4,
+    "es": "Estanque con nenúfares",
+    "en": "Lily pond",
+    "cost": {
+      "core:stone": 8
+    },
+    "buildWork": 100,
+    "desirability": 12
+  },
+  {
+    "name": "decor_rose_arch",
+    "size": 2,
+    "es": "Arco de rosas",
+    "en": "Rose arch",
+    "cost": {
+      "core:log": 4,
+      "core:stone": 1
+    },
+    "buildWork": 70,
+    "desirability": 10
+  },
+  {
+    "name": "decor_sunflowers",
+    "size": 2,
+    "es": "Girasoles",
+    "en": "Sunflowers",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 2
+    },
+    "buildWork": 40,
+    "desirability": 7
+  },
+  {
+    "name": "decor_lavender",
+    "size": 2,
+    "es": "Lavanda",
+    "en": "Lavender",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 2
+    },
+    "buildWork": 40,
+    "desirability": 7
+  },
+  {
+    "name": "decor_standing_stone",
+    "size": 2,
+    "es": "Piedra erguida",
+    "en": "Standing stone",
+    "cost": {
+      "core:stone": 5
+    },
+    "buildWork": 60,
+    "desirability": 6
+  },
+  {
+    "name": "decor_mossy_boulders",
+    "size": 3,
+    "es": "Rocas musgosas",
+    "en": "Mossy boulders",
+    "cost": {
+      "core:stone": 6
+    },
+    "buildWork": 50,
+    "desirability": 5
+  },
+  {
+    "name": "decor_rock_garden",
+    "size": 3,
+    "es": "Jardín de rocas",
+    "en": "Rock garden",
+    "cost": {
+      "core:log": 3,
+      "core:stone": 6
+    },
+    "buildWork": 80,
+    "desirability": 10
+  },
+  {
+    "name": "decor_fern_log",
+    "size": 3,
+    "es": "Rincón de helechos",
+    "en": "Fern and log corner",
+    "cost": {
+      "core:log": 4
+    },
+    "buildWork": 40,
+    "desirability": 5
+  },
+  {
+    "name": "decor_daisies",
+    "size": 2,
+    "es": "Margaritas",
+    "en": "Daisies",
+    "cost": {
+      "core:stone": 2
+    },
+    "buildWork": 30,
+    "desirability": 5
+  },
+  {
+    "name": "decor_lilies",
+    "size": 2,
+    "es": "Lirios",
+    "en": "Lilies",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 2
+    },
+    "buildWork": 45,
+    "desirability": 8
+  },
+  {
+    "name": "decor_flowering_shrub",
+    "size": 2,
+    "es": "Arbusto en flor",
+    "en": "Flowering shrub",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 2
+    },
+    "buildWork": 40,
+    "desirability": 7
+  },
+  {
+    "name": "decor_fairy_ring",
+    "size": 3,
+    "es": "Corro de hadas",
+    "en": "Fairy ring",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 2
+    },
+    "buildWork": 80,
+    "desirability": 13
+  },
+  {
+    "name": "decor_giant_lotus",
+    "size": 3,
+    "es": "Loto gigante",
+    "en": "Giant lotus",
+    "cost": {
+      "core:stone": 7
+    },
+    "buildWork": 90,
+    "desirability": 13
+  },
+  {
+    "name": "decor_glow_stump",
+    "size": 2,
+    "es": "Tocón luminoso",
+    "en": "Glowing stump",
+    "cost": {
+      "core:log": 4
+    },
+    "buildWork": 70,
+    "desirability": 12
+  },
+  {
+    "name": "decor_poppies",
+    "size": 2,
+    "es": "Amapolas",
+    "en": "Poppies",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 2
+    },
+    "buildWork": 35,
+    "desirability": 6
+  },
+  {
+    "name": "decor_hydrangeas",
+    "size": 3,
+    "es": "Hortensias",
+    "en": "Hydrangeas",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 3
+    },
+    "buildWork": 60,
+    "desirability": 9
+  },
+  {
+    "name": "decor_cacti",
+    "size": 2,
+    "es": "Cactus",
+    "en": "Cacti",
+    "cost": {
+      "core:stone": 4
+    },
+    "buildWork": 45,
+    "desirability": 6
+  },
+  {
+    "name": "decor_bird_bath",
+    "size": 2,
+    "es": "Bebedero de pájaros",
+    "en": "Bird bath",
+    "cost": {
+      "core:stone": 6
+    },
+    "buildWork": 70,
+    "desirability": 9
+  },
+  {
+    "name": "decor_beehive",
+    "size": 2,
+    "es": "Colmena entre flores",
+    "en": "Beehive among flowers",
+    "cost": {
+      "core:log": 4,
+      "core:stone": 2
+    },
+    "buildWork": 60,
+    "desirability": 8
+  },
+  {
+    "name": "decor_natural_arch",
+    "size": 3,
+    "es": "Arco de roca natural",
+    "en": "Natural stone arch",
+    "cost": {
+      "core:stone": 8
+    },
+    "buildWork": 90,
+    "desirability": 9
+  },
+  {
+    "name": "decor_geode",
+    "size": 2,
+    "es": "Geoda",
+    "en": "Geode",
+    "cost": {
+      "core:stone": 7
+    },
+    "buildWork": 80,
+    "desirability": 12
+  },
+  {
+    "name": "decor_wildflowers",
+    "size": 3,
+    "es": "Flores silvestres",
+    "en": "Wildflowers",
+    "cost": {
+      "core:log": 3
+    },
+    "buildWork": 40,
+    "desirability": 7
+  },
+  {
+    "name": "decor_eye_vine",
+    "size": 3,
+    "es": "Zarza de ojos",
+    "en": "Eye vine",
+    "cost": {
+      "core:log": 3,
+      "core:stone": 4
+    },
+    "buildWork": 100,
+    "desirability": 12
+  },
+  {
+    "name": "decor_floating_petals",
+    "size": 2,
+    "es": "Flor de pétalos flotantes",
+    "en": "Floating-petal flower",
+    "cost": {
+      "core:stone": 5
+    },
+    "buildWork": 90,
+    "desirability": 14
+  },
+  {
+    "name": "decor_orchids",
+    "size": 2,
+    "es": "Orquídeas",
+    "en": "Orchids",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 2
+    },
+    "buildWork": 50,
+    "desirability": 9
+  },
+  {
+    "name": "decor_bonsai_rock",
+    "size": 2,
+    "es": "Bonsái sobre roca",
+    "en": "Bonsai rock",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 4
+    },
+    "buildWork": 70,
+    "desirability": 9
+  },
+  {
+    "name": "decor_crystal_tree",
+    "size": 3,
+    "es": "Árbol de cristal",
+    "en": "Crystal tree",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 8
+    },
+    "buildWork": 100,
+    "desirability": 14
+  },
+  {
+    "name": "decor_bamboo",
+    "size": 2,
+    "es": "Bambú",
+    "en": "Bamboo",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 2
+    },
+    "buildWork": 45,
+    "desirability": 7
+  },
+  {
+    "name": "decor_topiary_pot",
+    "size": 2,
+    "es": "Topiario",
+    "en": "Topiary",
+    "cost": {
+      "core:log": 2,
+      "core:stone": 4
+    },
+    "buildWork": 60,
+    "desirability": 8
+  },
+  {
+    "name": "decor_parterre",
+    "size": 4,
+    "es": "Jardín formal",
+    "en": "Formal garden",
+    "cost": {
+      "core:log": 4,
+      "core:stone": 8
+    },
+    "buildWork": 100,
+    "desirability": 13
+  },
+  {
+    "name": "decor_waterfall",
+    "size": 3,
+    "es": "Cascada de rocas",
+    "en": "Rock waterfall",
+    "cost": {
+      "core:stone": 8
+    },
+    "buildWork": 100,
+    "desirability": 12
+  },
+  {
+    "name": "decor_wisteria_pergola",
+    "size": 3,
+    "es": "Pérgola de glicinas",
+    "en": "Wisteria pergola",
+    "cost": {
+      "core:log": 8,
+      "core:stone": 2
+    },
+    "buildWork": 100,
+    "desirability": 12
+  },
+  {
+    "name": "decor_giant_dandelions",
+    "size": 2,
+    "es": "Dientes de león gigantes",
+    "en": "Giant dandelions",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 3
+    },
+    "buildWork": 70,
+    "desirability": 11
+  },
+  {
+    "name": "decor_pumpkin_patch",
+    "size": 3,
+    "es": "Huerto de calabazas",
+    "en": "Pumpkin patch",
+    "cost": {
+      "core:log": 4
+    },
+    "buildWork": 50,
+    "desirability": 6
+  },
+  {
+    "name": "decor_fire_lilies",
+    "size": 2,
+    "es": "Lirios de fuego",
+    "en": "Fire lilies",
+    "cost": {
+      "core:stone": 6
+    },
+    "buildWork": 90,
+    "desirability": 13
+  },
+  {
+    "name": "decor_stepping_stones",
+    "size": 4,
+    "es": "Sendero de piedras",
+    "en": "Stepping-stone path",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 6
+    },
+    "buildWork": 70,
+    "desirability": 9
+  },
+  {
+    "name": "decor_moon_flowers",
+    "size": 2,
+    "es": "Flores de luna",
+    "en": "Moon flowers",
+    "cost": {
+      "core:stone": 5
+    },
+    "buildWork": 90,
+    "desirability": 14
+  },
+  {
+    "name": "decor_vine_trellis",
+    "size": 2,
+    "es": "Espaldera con enredadera",
+    "en": "Vine trellis",
+    "cost": {
+      "core:log": 5,
+      "core:stone": 1
+    },
+    "buildWork": 60,
+    "desirability": 8
+  },
+  {
+    "name": "decor_herb_spiral",
+    "size": 3,
+    "es": "Espiral de hierbas",
+    "en": "Herb spiral",
+    "cost": {
+      "core:log": 1,
+      "core:stone": 8
+    },
+    "buildWork": 80,
+    "desirability": 9
+  }
+]

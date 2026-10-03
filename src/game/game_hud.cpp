@@ -140,6 +140,9 @@ Selected selected(const GameSession::Interaction& ui) {
     if (ui.selected_node != 0) {
         return {true, WindowList::Kind::Node, sim::EntityId{ui.selected_node - 1, 0}};
     }
+    if (ui.selected_walker != 0) {
+        return {true, WindowList::Kind::Walker, sim::EntityId{ui.selected_walker - 1, 0}};
+    }
     return {};
 }
 
@@ -319,6 +322,7 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
                                 case WindowList::Kind::Villager: villager_window(ctx, *s, o); break;
                                 case WindowList::Kind::Node: node_window(ctx, *s, o); break;
                                 case WindowList::Kind::Creature: creature_window(ctx, *s, o); break;
+                                case WindowList::Kind::Walker: walker_window(ctx, *s, o); break;
                             }
                         }});
     }
@@ -367,6 +371,7 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
             case WindowList::Kind::Villager: ui.selected_villager = link.entity; break;
             case WindowList::Kind::Node: ui.selected_node = link.entity.index + 1; break;
             case WindowList::Kind::Creature: ui.selected_creature = link.entity; break;
+            case WindowList::Kind::Walker: ui.selected_walker = link.entity.index + 1; break;
         }
     }
     links_.clear();
@@ -401,6 +406,7 @@ void GameHud::sync_selection(ui::Context& ctx, GameSession& s) {
             case WindowList::Kind::Villager: there = game.villagers().get(o->entity) != nullptr; break;
             case WindowList::Kind::Node: there = node_there(game, o->entity.index); break;
             case WindowList::Kind::Creature: there = game.creatures().get(o->entity) != nullptr; break;
+            case WindowList::Kind::Walker: there = ui.walker_info && ui.walker_info(o->entity.index).there; break;
         }
         if (!there) {
             windows_.close_passing();
@@ -658,7 +664,9 @@ void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
     static constexpr const char* kCategoryKeys[] = {"hud.build.cat.housing",  "hud.build.cat.food",
                                                     "hud.build.cat.resources", "hud.build.cat.industry",
                                                     "hud.build.cat.services", "hud.build.cat.decoration",
-                                                    "hud.build.cat.defense"};
+                                                    "hud.build.cat.defense",  "hud.build.cat.plaza",
+                                                    "hud.build.cat.garden",   "hud.build.cat.nature",
+                                                    "hud.build.cat.monuments", "hud.build.cat.ruins"};
     constexpr std::size_t kCategories = std::size(kCategoryKeys);
     std::vector<sim::DefIndex> defs;
     for (std::size_t i = 0; i < content.buildings.size(); ++i) {
@@ -777,6 +785,12 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     }
     if (d.trap && b->state == sim::BuildingState::Complete) {
         lines.push_back(tr(b->rearm > 0 ? "hud.building.trapRearming" : "hud.building.trapArmed"));
+    }
+    if (d.warmth > 0 && b->state == sim::BuildingState::Complete) {
+        lines.push_back(tr("hud.building.campfire", d.warmth));
+        if (!b->heated) {
+            lines.push_back(tr("hud.building.campfireOut"));
+        }
     }
     if (b->fire > 0) {
         lines.push_back(tr("hud.building.fire", b->fire, b->burned / 10));
@@ -1823,6 +1837,7 @@ std::string GameHud::thing_title(const sim::Game& game, WindowList::Kind kind, s
                 return tr(feature_key(f.type));
             }
             break;
+        case WindowList::Kind::Walker: return tr("hud.walker.title");
         case WindowList::Kind::Creature:
             if (const sim::Creature* c = game.creatures().get(entity)) {
                 return c->kind == sim::CreatureKind::Soldier && c->unit < content.units.size()
@@ -2134,6 +2149,54 @@ void GameHud::node_window(ui::Context& ctx, GameSession& s, const WindowList::Ob
         if (ctx.button(ctx.id("camera"), row[1], labels[1], tr("hud.window.camera.tooltip"))) {
             open_camera(s, WindowList::Kind::Node, o.entity);
         }
+    }
+    y += button_h + pad * 0.5f;
+    for (const std::string& l : lines) {
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, l, body, ctx.theme().text);
+        y += line;
+    }
+}
+
+// One of the people placed with the developer tools: not a villager of the
+// game, so only what it is and where.
+void GameHud::walker_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o) {
+    GameSession::Interaction& ui = s.ui();
+    const GameSession::Interaction::WalkerInfo info =
+        ui.walker_info ? ui.walker_info(o.entity.index) : GameSession::Interaction::WalkerInfo{};
+    if (!info.there) {
+        gone_window(ctx, s, o);
+        return;
+    }
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    const float pad = ctx.s(14.0f);
+    const float line = ctx.text().line_height(body);
+    const float w = std::min(ctx.s(kWindowW), ctx.width() - 2 * pad);
+    const std::vector<std::string> lines = {tr("hud.walker.note"), tr("hud.walker.model", info.model)};
+    const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
+    const float button_h = std::round(ctx.s(34.0f));
+    ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
+                 std::round(pad + title_h + pad * 0.5f + button_h + pad * 0.5f + static_cast<float>(lines.size()) * line + pad)};
+    bool open = true;
+    if (!window(ctx, s, o.id, tr("hud.walker.title"), box, open)) {
+        if (!open) {
+            closing_.push_back(o.id);
+        }
+        return;
+    }
+    float y = box.y + pad + title_h + pad * 0.5f;
+    const bool followed = ui.followed_walker == o.entity.index + 1;
+    const std::vector<std::string> labels = {tr("hud.window.eye"), tr("hud.window.camera"),
+                                             tr(followed ? "hud.villager.unfollow" : "hud.villager.follow")};
+    const std::vector<ui::Rect> row = button_row(ctx, box, y, button_h, labels);
+    if (ctx.button(ctx.id("eye"), row[0], labels[0], tr("hud.window.eye.tooltip"))) {
+        services_.focus_camera(info.x, info.z);
+    }
+    if (ctx.button(ctx.id("camera"), row[1], labels[1], tr("hud.window.camera.tooltip"))) {
+        open_camera(s, WindowList::Kind::Walker, o.entity);
+    }
+    if (ctx.button(ctx.id("follow"), row[2], labels[2], tr("hud.villager.follow.tooltip"), true, followed)) {
+        ui.followed_walker = followed ? 0u : o.entity.index + 1;
+        ui.followed_villager = {};
     }
     y += button_h + pad * 0.5f;
     for (const std::string& l : lines) {

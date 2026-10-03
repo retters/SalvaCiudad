@@ -236,6 +236,7 @@ private:
         float size1 = 1.0f;
         math::Vec3 color0;
         math::Vec3 color1;
+        float drag = 0.15f;  // How fast it stops rising (smoke: slowly, to climb high).
     };
     render::ModelId puff_model_ = kNoModel;
     std::vector<Particle> particles_;

@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -63,14 +64,28 @@ public:
         // animal, soldier or raider. One thing is selected at a time.
         std::uint32_t selected_node = 0;
         sim::EntityId selected_creature;
+        // One of the people placed with the developer tools (its number + 1;
+        // 0: none), the one the camera follows, and what the view tells the
+        // interface about each: its model, where it is, whether it is there.
+        std::uint32_t selected_walker = 0;
+        std::uint32_t followed_walker = 0;
+        struct WalkerInfo {
+            bool there = false;
+            std::string model;
+            float x = 0.0f;
+            float z = 0.0f;
+        };
+        std::function<WalkerInfo(std::uint32_t)> walker_info;
         void clear_selection() {
             selected_building = {};
             selected_villager = {};
             selected_node = 0;
             selected_creature = {};
+            selected_walker = 0;
         }
         [[nodiscard]] bool any_selected() const {
-            return selected_building.valid() || selected_villager.valid() || selected_node != 0 || selected_creature.valid();
+            return selected_building.valid() || selected_villager.valid() || selected_node != 0 ||
+                   selected_creature.valid() || selected_walker != 0;
         }
         // Phase 61: the villager the camera follows (third or first person).
         sim::EntityId followed_villager;

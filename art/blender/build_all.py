@@ -112,6 +112,11 @@ def main():
         make_trees(os.path.join(out, "trees"), args[2:] if only == "trees" else None)
     if only in (None, "buildings"):
         buildings.make_all(os.path.join(out, "buildings"), args[2:] if only == "buildings" else None)
+    if only in (None, "decor"):
+        # The decorations (ruins, nature, statues, plaza, garden and market): one module per theme.
+        sys.path.insert(0, os.path.join(HERE, "decor"))
+        for theme in ("ruins", "nature", "statues", "plaza", "garden_market"):
+            importlib.import_module(theme).make_all(os.path.join(out, "buildings"))
     if only in (None, "animals"):
         make_animals(os.path.join(out, "animals"))
     print("SalvaCiudad models written to", out)

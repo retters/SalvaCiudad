@@ -1,0 +1,273 @@
+[
+  {
+    "name": "decor_rune_circle",
+    "size": 4,
+    "es": "Círculo de runas",
+    "en": "Rune circle",
+    "cost": {
+      "core:stone": 12
+    },
+    "buildWork": 150,
+    "desirability": 15
+  },
+  {
+    "name": "decor_stone_head",
+    "size": 3,
+    "es": "Cabeza de piedra semienterrada",
+    "en": "Half-buried stone head",
+    "cost": {
+      "core:stone": 10
+    },
+    "buildWork": 120,
+    "desirability": 14
+  },
+  {
+    "name": "decor_broken_columns",
+    "size": 3,
+    "es": "Columnas rotas",
+    "en": "Broken columns",
+    "cost": {
+      "core:stone": 8
+    },
+    "buildWork": 100,
+    "desirability": 11
+  },
+  {
+    "name": "decor_fallen_arch",
+    "size": 4,
+    "es": "Arco caído",
+    "en": "Fallen arch",
+    "cost": {
+      "core:stone": 10
+    },
+    "buildWork": 110,
+    "desirability": 12
+  },
+  {
+    "name": "decor_tower_stump",
+    "size": 4,
+    "es": "Torre en ruinas",
+    "en": "Ruined tower stump",
+    "cost": {
+      "core:stone": 12,
+      "core:log": 2
+    },
+    "buildWork": 140,
+    "desirability": 12
+  },
+  {
+    "name": "decor_ruined_wall",
+    "size": 3,
+    "es": "Muro en ruinas",
+    "en": "Ruined wall",
+    "cost": {
+      "core:stone": 7
+    },
+    "buildWork": 80,
+    "desirability": 9
+  },
+  {
+    "name": "decor_burnt_cottage",
+    "size": 5,
+    "es": "Cabaña quemada",
+    "en": "Burnt cottage",
+    "cost": {
+      "core:stone": 6,
+      "core:log": 8
+    },
+    "buildWork": 130,
+    "desirability": 7
+  },
+  {
+    "name": "decor_collapsed_shed",
+    "size": 3,
+    "es": "Cobertizo derrumbado",
+    "en": "Collapsed shed",
+    "cost": {
+      "core:log": 6
+    },
+    "buildWork": 70,
+    "desirability": 5
+  },
+  {
+    "name": "decor_wrecked_cart",
+    "size": 2,
+    "es": "Carreta destrozada",
+    "en": "Wrecked cart",
+    "cost": {
+      "core:log": 3
+    },
+    "buildWork": 45,
+    "desirability": 5
+  },
+  {
+    "name": "decor_wrecked_boat",
+    "size": 3,
+    "es": "Barca abandonada",
+    "en": "Wrecked boat",
+    "cost": {
+      "core:log": 5
+    },
+    "buildWork": 60,
+    "desirability": 6
+  },
+  {
+    "name": "decor_broken_barrels",
+    "size": 2,
+    "es": "Barriles y cajas rotos",
+    "en": "Broken barrels and crates",
+    "cost": {
+      "core:log": 2
+    },
+    "buildWork": 40,
+    "desirability": 3
+  },
+  {
+    "name": "decor_old_well",
+    "size": 2,
+    "es": "Pozo viejo",
+    "en": "Old well",
+    "cost": {
+      "core:stone": 4,
+      "core:log": 1
+    },
+    "buildWork": 55,
+    "desirability": 7
+  },
+  {
+    "name": "decor_portal_gate",
+    "size": 4,
+    "es": "Portal del templo en ruinas",
+    "en": "Ruined temple portal",
+    "cost": {
+      "core:stone": 12
+    },
+    "buildWork": 150,
+    "desirability": 15
+  },
+  {
+    "name": "decor_monolith",
+    "size": 3,
+    "es": "Monolito extraño",
+    "en": "Strange monolith",
+    "cost": {
+      "core:stone": 10
+    },
+    "buildWork": 130,
+    "desirability": 15
+  },
+  {
+    "name": "decor_giant_sword",
+    "size": 2,
+    "es": "Espada gigante clavada",
+    "en": "Giant sword in the earth",
+    "cost": {
+      "core:stone": 4,
+      "core:log": 1
+    },
+    "buildWork": 90,
+    "desirability": 12
+  },
+  {
+    "name": "decor_colossus_hand",
+    "size": 3,
+    "es": "Mano del coloso caído",
+    "en": "Hand of the fallen colossus",
+    "cost": {
+      "core:stone": 9
+    },
+    "buildWork": 110,
+    "desirability": 13
+  },
+  {
+    "name": "decor_beast_skeleton",
+    "size": 4,
+    "es": "Esqueleto de bestia gigante",
+    "en": "Giant beast skeleton",
+    "cost": {
+      "core:stone": 6
+    },
+    "buildWork": 100,
+    "desirability": 11
+  },
+  {
+    "name": "decor_abandoned_camp",
+    "size": 3,
+    "es": "Campamento abandonado",
+    "en": "Abandoned camp",
+    "cost": {
+      "core:log": 4,
+      "core:stone": 2
+    },
+    "buildWork": 60,
+    "desirability": 5
+  },
+  {
+    "name": "decor_dry_fountain",
+    "size": 3,
+    "es": "Fuente seca en ruinas",
+    "en": "Ruined dry fountain",
+    "cost": {
+      "core:stone": 8
+    },
+    "buildWork": 90,
+    "desirability": 9
+  },
+  {
+    "name": "decor_mine_entrance",
+    "size": 4,
+    "es": "Entrada de mina abandonada",
+    "en": "Abandoned mine entrance",
+    "cost": {
+      "core:stone": 10,
+      "core:log": 4
+    },
+    "buildWork": 130,
+    "desirability": 9
+  },
+  {
+    "name": "decor_rusted_plough",
+    "size": 2,
+    "es": "Arado oxidado",
+    "en": "Rusted plough",
+    "cost": {
+      "core:log": 2
+    },
+    "buildWork": 40,
+    "desirability": 4
+  },
+  {
+    "name": "decor_broken_bridge",
+    "size": 4,
+    "es": "Puente roto",
+    "en": "Broken bridge stub",
+    "cost": {
+      "core:stone": 12
+    },
+    "buildWork": 130,
+    "desirability": 9
+  },
+  {
+    "name": "decor_overgrown_house",
+    "size": 4,
+    "es": "Fachada de casa abandonada",
+    "en": "Overgrown abandoned house front",
+    "cost": {
+      "core:stone": 4,
+      "core:log": 8
+    },
+    "buildWork": 120,
+    "desirability": 7
+  },
+  {
+    "name": "decor_sunken_stairs",
+    "size": 3,
+    "es": "Escalera hundida misteriosa",
+    "en": "Mysterious sunken stairway",
+    "cost": {
+      "core:stone": 9
+    },
+    "buildWork": 110,
+    "desirability": 13
+  }
+]

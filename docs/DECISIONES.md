@@ -2661,3 +2661,25 @@ Con `--reporte`, `release`, 1600 × 900, Ultra, 1000 personas de las herramienta
 
 **D-6711. Sin revisar en pantalla por Claude.**
 Las flechas y el mercader con su carreta (no hubo cazadores, torres ni visita en las partidas de prueba). Sí se vio en pantalla: troncos y cajones a la espalda, las pilas junto al centro del pueblo y junto a una obra, y un granero pasando por cimientos, armazón y edificio.
+
+## Después de la fase 67: humo alto, fogatas, selección de lo creado con las herramientas y decoraciones (2026-10-03)
+
+Pedido directo de Salvador, fuera del plan de fases.
+
+**D-6801. Humo hasta unos 40 m.**
+El humo de chimeneas, incendios y fogatas sube ahora unos 40 m (bocanadas que duran 24 a 28 s y casi no se frenan) y se genera hasta 700 m del centro de la vista, no 180, para verse de lejos. Menos bocanadas y más grandes por chimenea; el tope de partículas pasa de 4000 a 16 000.
+
+**D-6802. Lo creado con las herramientas de desarrollo no se podía seleccionar.**
+Causa: árboles, piedras y arbustos creados ahí se añadían solo a la copia del mapa que usa la vista, no a la partida, y las personas son paseantes de la vista, no aldeanos. Ahora, en una partida, crear un recurso es una orden de desarrollo (`DevFeature`) que lo añade al juego con su nodo: se selecciona, se tala y viaja en red y en las partidas guardadas. Las personas de prueba se seleccionan con una ventana sencilla (qué modelo son, «Ver», «Cámara», «Seguir»), como eligió Salvador; siguen sin ser aldeanos.
+
+**D-6803. Fogata.**
+Edificio de Decoración de 2 × 2 (2 troncos, 2 piedras). Como eligió Salvador, da calor: quien está a 10 m de una fogata encendida no pierde calor (igual que en una casa caliente). Cada día frío (menos de 10 °C) gasta 1 de leña del almacén más cercano; sin leña se apaga y lo dice su ventana. Con llamas y humo. `"warmth"` en los datos es el radio.
+
+**D-6804. Decoraciones.**
+Modelos hechos por cinco subagentes en paralelo, uno por tema, en `art/blender/decor/` (`ruins.py`, `nature.py`, `statues.py`, `plaza.py`, `garden_market.py`), cada uno con su `.json` (nombre, tamaño, textos, costo, agrado). `build_all.py ... decor` los genera. Entran al juego como edificios de decoración, con costo bajo en troncos y piedra y agrado para las casas cercanas. Cinco pestañas nuevas en la barra de construcción: Plaza, Jardín y mercado, Naturaleza, Monumentos y Ruinas.
+
+**D-6805. Versiones.**
+Reglas 35, protocolo de red 13.
+
+**D-6806. Sin revisar.**
+Cada modelo se miró en una imagen de Blender, no uno por uno en el juego (en el juego se vieron tres construidos y las pestañas). Los brillos de runas y flores de fantasía son solo color. No se probó en pantalla la selección de lo creado con las herramientas (sí por pruebas la orden nueva). La verificación en debug y asan de este cambio queda pendiente.

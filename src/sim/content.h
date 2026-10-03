@@ -139,6 +139,7 @@ struct BuildingDef {
     bool landmark = false;          // Phase 34: its silhouette shows through the fog of war.
     bool trains = false;            // A barracks: turns villagers into soldiers (phase 16).
     std::int32_t worker_sight = 0;  // Phase 66: meters its workers see, if more than their own.
+    std::int32_t warmth = 0;        // A campfire: villagers this many meters around it do not get cold while it burns.
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.

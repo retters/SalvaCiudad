@@ -448,6 +448,17 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
     if (!shown_) {
         return;
     }
+    if (game.take_features_added()) {
+        // Everything again, then the felled and the picked as they were.
+        scene.refresh_features(renderer, game.map(), game.content());
+        for (std::size_t i = 0; i < game.nodes().size(); ++i) {
+            const sim::Node& n = game.nodes()[i];
+            if (n.amount <= 0) {
+                scene.set_feature_look(renderer, game.map(), game.content(), i,
+                                       n.regrow_tick != 0 ? MapScene::FeatureLook::Empty : MapScene::FeatureLook::Gone);
+            }
+        }
+    }
     for (const std::uint32_t i : game.take_changed_nodes()) {
         const sim::Node& n = game.nodes()[i];
         MapScene::FeatureLook look = MapScene::FeatureLook::Normal;
@@ -521,7 +532,9 @@ void VillageView::update_particles(render::SceneRenderer& renderer, const sim::G
     if (puff_model_ == kNoModel) {
         return;
     }
-    constexpr std::size_t kMaxParticles = 4000;
+    constexpr std::size_t kMaxParticles = 16000;
+    // Smoke is seen from far: it is made well beyond the middle of the view.
+    constexpr float kSmokeReach = 700.0f;
     const float step = dt * std::max(speed, 0.0f);
     // New puffs a few times a second, near the view only.
     emit_timer_ -= step;
@@ -532,7 +545,8 @@ void VillageView::update_particles(render::SceneRenderer& renderer, const sim::G
         for (const sim::Building& b : game.buildings().data()) {
             const float cx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
             const float cz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
-            if (std::abs(cx - view_x_) > 180.0f || std::abs(cz - view_z_) > 180.0f || particles_.size() >= kMaxParticles ||
+            if (std::abs(cx - view_x_) > kSmokeReach || std::abs(cz - view_z_) > kSmokeReach ||
+                particles_.size() >= kMaxParticles ||
                 !building_shown(game, b)) {
                 continue;
             }
@@ -555,15 +569,46 @@ void VillageView::update_particles(render::SceneRenderer& renderer, const sim::G
                     p.color1 = {1.8f, 0.3f, 0.05f};
                     particles_.push_back(p);
                 }
+                // A column that climbs some 40 m, to be seen from far away.
                 Particle smoke;
                 smoke.position = {cx + (random01() - 0.5f) * 2.0f, top.y, cz + (random01() - 0.5f) * 2.0f};
-                smoke.velocity = {0.6f + random01() * 0.3f, 1.4f, 0.2f};
-                smoke.life = 4.0f;
-                smoke.size0 = 1.2f;
-                smoke.size1 = 4.0f;
+                smoke.velocity = {0.6f + random01() * 0.3f, 2.2f, 0.2f};
+                smoke.life = 24.0f + random01() * 4.0f;
+                smoke.drag = 0.02f;
+                smoke.size0 = 1.4f;
+                smoke.size1 = 7.0f;
                 smoke.color0 = {0.18f, 0.16f, 0.15f};
-                smoke.color1 = {0.35f, 0.34f, 0.34f};
+                smoke.color1 = {0.42f, 0.41f, 0.41f};
                 particles_.push_back(smoke);
+                continue;
+            }
+            // A campfire that burns: flames on the logs and its smoke.
+            if (d.warmth > 0 && b.state == sim::BuildingState::Complete && b.heated) {
+                const float floor = floor_y(game, b.def, b.x, b.z, b.width, b.depth, b.rotation);
+                for (int k = 0; k < 2; ++k) {
+                    Particle p;
+                    p.position = {cx + (random01() - 0.5f) * 0.5f, floor + 0.3f + random01() * 0.2f,
+                                  cz + (random01() - 0.5f) * 0.5f};
+                    p.velocity = {(random01() - 0.5f) * 0.2f, 1.1f + random01() * 0.6f, (random01() - 0.5f) * 0.2f};
+                    p.life = 0.5f + random01() * 0.4f;
+                    p.size0 = 0.45f;
+                    p.size1 = 0.1f;
+                    p.color0 = {2.4f, 1.4f, 0.3f};
+                    p.color1 = {1.8f, 0.3f, 0.05f};
+                    particles_.push_back(p);
+                }
+                if (random01() < 0.3f) {
+                    Particle smoke;
+                    smoke.position = {cx, floor + 1.0f, cz};
+                    smoke.velocity = {0.35f + random01() * 0.2f, 1.8f, 0.1f};
+                    smoke.life = 24.0f + random01() * 4.0f;
+                    smoke.drag = 0.02f;
+                    smoke.size0 = 0.4f;
+                    smoke.size1 = 4.0f;
+                    smoke.color0 = {0.5f, 0.5f, 0.52f};
+                    smoke.color1 = {0.8f, 0.81f, 0.84f};
+                    particles_.push_back(smoke);
+                }
                 continue;
             }
             // Chimneys: homes with a fire in the cold, and workshops at work
@@ -580,15 +625,17 @@ void VillageView::update_particles(render::SceneRenderer& renderer, const sim::G
                     }
                 }
             }
-            if (!smokes || random01() > 0.45f) {
+            if (!smokes || random01() > 0.2f) {
                 continue;
             }
+            // Fewer and bigger puffs that last: the column reaches some 40 m.
             Particle p;
             p.position = {cx + static_cast<float>(b.width) * 0.2f, top.y - 0.6f, cz + static_cast<float>(b.depth) * 0.1f};
-            p.velocity = {0.35f + random01() * 0.2f, 0.9f + random01() * 0.3f, 0.1f};
-            p.life = 3.5f + random01();
-            p.size0 = 0.35f;
-            p.size1 = 1.8f;
+            p.velocity = {0.35f + random01() * 0.2f, 1.7f + random01() * 0.3f, 0.1f};
+            p.life = 24.0f + random01() * 4.0f;
+            p.drag = 0.02f;
+            p.size0 = 0.4f;
+            p.size1 = 4.5f;
             p.color0 = {0.62f, 0.62f, 0.64f};
             p.color1 = {0.86f, 0.87f, 0.9f};
             particles_.push_back(p);
@@ -604,7 +651,7 @@ void VillageView::update_particles(render::SceneRenderer& renderer, const sim::G
             continue;
         }
         p.position = p.position + p.velocity * step;
-        p.velocity.y *= 1.0f - 0.15f * step;
+        p.velocity.y *= 1.0f - std::min(1.0f, p.drag * step);
         const float t = p.age / p.life;
         float size = p.size0 + (p.size1 - p.size0) * t;
         if (t > 0.75f) {

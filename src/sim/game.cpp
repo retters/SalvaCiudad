@@ -3931,6 +3931,21 @@ public:
         auto& list = g_.buildings_;
         for (std::size_t i = 0; i < list.size(); ++i) {
             Building& b = list.data()[i];
+            if (def(b).warmth > 0 && complete(b)) {
+                // A campfire burns a unit of firewood from the town's stores
+                // each cold day; without it, it is out.
+                b.heated = true;
+                if (t < village::kColdBelow) {
+                    const FixedVec2 at{Fixed::from_int(b.x), Fixed::from_int(b.z)};
+                    Building* store = g_.firewood_ == kNoDef ? nullptr : g_.buildings_.get(storage_with(b.owner, at, g_.firewood_));
+                    b.heated = store != nullptr;
+                    if (store != nullptr) {
+                        add_to(store->stock, g_.firewood_, -1);
+                        compact(store->stock);
+                    }
+                }
+                continue;
+            }
             if (def(b).kind != BuildingKind::House || !complete(b)) {
                 continue;
             }
@@ -3965,7 +3980,20 @@ public:
             return true;
         }
         const Building* home = g_.buildings_.get(v.home);
-        const bool warm_home = home != nullptr && home->heated;
+        bool warm_home = home != nullptr && home->heated;
+        if (g_.temperature_ < 5 && !warm_home) {
+            // A campfire burning nearby is as good as a warm home.
+            for (const EntityId id : g_.owned(v.owner)) {
+                const Building& fire = *g_.buildings_.get(id);
+                const std::int32_t reach = def(fire).warmth;
+                if (reach > 0 && fire.heated && complete(fire) &&
+                    distance2(v.position, {Fixed::from_int(fire.x) + Fixed::from_ratio(fire.width, 2),
+                                           Fixed::from_int(fire.z) + Fixed::from_ratio(fire.depth, 2)}) <= meters2(reach)) {
+                    warm_home = true;
+                    break;
+                }
+            }
+        }
         if (g_.temperature_ < 5 && !warm_home) {
             std::int32_t loss = (v.clothes > 0 ? 1 : 2) + (g_.temperature_ < -8 ? 1 : 0);
             if (const RaceDef* r = race_of(v); r != nullptr && r->cold != 0) {
@@ -4465,6 +4493,41 @@ public:
             case CommandType::OfferTrade: offer_trade(c); break;
             case CommandType::SetTradeRule: set_trade_rule(c); break;
             case CommandType::AnswerOffer: answer_offer(c); break;
+            case CommandType::DevFeature: {
+                const auto type = static_cast<FeatureType>(c.def);
+                const std::int32_t x = c.position.x.floor_int();
+                const std::int32_t z = c.position.z.floor_int();
+                const bool tree = type == FeatureType::Tree;
+                if (!g_.dev_commands_ || c.def >= static_cast<std::uint16_t>(FeatureType::Count) || x >= g_.map_.size ||
+                    z >= g_.map_.size || g_.map_.features.size() >= kMaxMapFeatures ||
+                    (tree && (c.def2 >= c_.flora.species.size() || c.count >= kTreeSizes))) {
+                    ++g_.rejected_;
+                    break;
+                }
+                MapFeature f;
+                f.type = type;
+                f.species = tree ? static_cast<std::uint8_t>(c.def2) : std::uint8_t{0};
+                f.size = tree ? static_cast<std::uint8_t>(c.count) : std::uint8_t{0};
+                f.rotation = static_cast<std::uint16_t>(c.value2);
+                f.x = c.position.x;
+                f.z = c.position.z;
+                f.scale = Fixed::from_raw(c.value);
+                // A resource like any other: with its node, and where gatherers look.
+                Node node;
+                if (tree) {
+                    node.amount = c_.flora.species[f.species].logs[f.size];
+                } else if (const FeatureDef* fd = c_.feature(type)) {
+                    node.amount = std::max(1, (fd->amount * f.scale.raw()) >> 16);
+                }
+                const auto index = static_cast<std::uint32_t>(g_.map_.features.size());
+                g_.map_.features.push_back(f);
+                g_.nodes_.push_back(node);
+                const std::int32_t cx = std::clamp(x / kNodeCell, 0, g_.node_cells_side_ - 1);
+                const std::int32_t cz = std::clamp(z / kNodeCell, 0, g_.node_cells_side_ - 1);
+                g_.node_cells_[static_cast<std::size_t>(cz * g_.node_cells_side_ + cx)].push_back(index);
+                g_.features_added_ = true;
+                break;
+            }
             case CommandType::DevIgnite: {
                 Building* b = g_.buildings_.get(c.entity);
                 if (!g_.dev_commands_ || b == nullptr || b->owner != c.player) {

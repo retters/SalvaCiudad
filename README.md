@@ -601,6 +601,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Después de la fase 67 (humo, fogatas, decoraciones)
+
+- [ ] El humo de una chimenea o un incendio sube unos 40 m y se ve desde lejos.
+- [ ] Decoración → Fogata: al terminarla tiene llamas y humo; en invierno, los aldeanos cerca de ella no pierden calor y la leña del almacén baja 1 por día frío. Sin leña, su ventana dice «Apagada».
+- [ ] Herramientas de desarrollo: crear un árbol o una piedra en una partida y hacerle clic: abre su ventana; un leñador puede talarlo.
+- [ ] Crear personas con las herramientas y hacerles clic: ventana «Persona de prueba» con «Ver», «Cámara» y «Seguir».
+- [ ] Pestañas Plaza, Jardín y mercado, Naturaleza, Monumentos y Ruinas: revisar cómo se ve cada decoración construida (tamaño, colores, que no flote ni se hunda).
+- [ ] **Sin revisar en pantalla por Claude**: casi todas las decoraciones dentro del juego y la selección de lo creado con las herramientas.
+
 ### Fase 67
 
 - [ ] Acercar la cámara a un leñador que vuelve: lleva troncos a la espalda. Un recolector, una canasta. Con poca carga la lleva en brazos y camina sosteniéndola.

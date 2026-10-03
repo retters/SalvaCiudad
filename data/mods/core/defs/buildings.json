@@ -941,6 +941,25 @@
     },
     {
       "type": "building",
+      "id": "core:campfire",
+      "name": "building.campfire",
+      "kind": "decoration",
+      "model": "models/buildings/campfire.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 2
+      },
+      "buildWork": 30,
+      "desirability": 3,
+      "warmth": 10,
+      "fireproof": true
+    },
+    {
+      "type": "building",
       "id": "core:garden",
       "name": "building.garden",
       "kind": "decoration",
@@ -1273,6 +1292,2755 @@
       "unique": true,
       "tier": 2,
       "category": "defense"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_fountain",
+      "name": "building.decor_fountain",
+      "kind": "decoration",
+      "model": "models/buildings/decor_fountain.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 120,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_lamp_post",
+      "name": "building.decor_lamp_post",
+      "kind": "decoration",
+      "model": "models/buildings/decor_lamp_post.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 2
+      },
+      "buildWork": 30,
+      "desirability": 4,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_bench_pair",
+      "name": "building.decor_bench_pair",
+      "kind": "decoration",
+      "model": "models/buildings/decor_bench_pair.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 3
+      },
+      "buildWork": 50,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_signpost",
+      "name": "building.decor_signpost",
+      "kind": "decoration",
+      "model": "models/buildings/decor_signpost.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 3,
+        "core:stone": 1
+      },
+      "buildWork": 30,
+      "desirability": 3,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_notice_board",
+      "name": "building.decor_notice_board",
+      "kind": "decoration",
+      "model": "models/buildings/decor_notice_board.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 5,
+        "core:stone": 1
+      },
+      "buildWork": 45,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_flagpole",
+      "name": "building.decor_flagpole",
+      "kind": "decoration",
+      "model": "models/buildings/decor_flagpole.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 3,
+        "core:stone": 3
+      },
+      "buildWork": 45,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_plaza_planter",
+      "name": "building.decor_plaza_planter",
+      "kind": "decoration",
+      "model": "models/buildings/decor_plaza_planter.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 10
+      },
+      "buildWork": 100,
+      "desirability": 11,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_bell_frame",
+      "name": "building.decor_bell_frame",
+      "kind": "decoration",
+      "model": "models/buildings/decor_bell_frame.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 8,
+        "core:stone": 4
+      },
+      "buildWork": 90,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_hitching_post",
+      "name": "building.decor_hitching_post",
+      "kind": "decoration",
+      "model": "models/buildings/decor_hitching_post.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 5
+      },
+      "buildWork": 60,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_lamp_double",
+      "name": "building.decor_lamp_double",
+      "kind": "decoration",
+      "model": "models/buildings/decor_lamp_double.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 3
+      },
+      "buildWork": 40,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_planter_wall",
+      "name": "building.decor_planter_wall",
+      "kind": "decoration",
+      "model": "models/buildings/decor_planter_wall.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 12
+      },
+      "buildWork": 110,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_sundial_pillar",
+      "name": "building.decor_sundial_pillar",
+      "kind": "decoration",
+      "model": "models/buildings/decor_sundial_pillar.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 5
+      },
+      "buildWork": 50,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_pillory",
+      "name": "building.decor_pillory",
+      "kind": "decoration",
+      "model": "models/buildings/decor_pillory.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 6,
+        "core:stone": 1
+      },
+      "buildWork": 45,
+      "desirability": 3,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_plaza_well",
+      "name": "building.decor_plaza_well",
+      "kind": "decoration",
+      "model": "models/buildings/decor_plaza_well.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 5,
+        "core:stone": 8
+      },
+      "buildWork": 90,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_market_cross",
+      "name": "building.decor_market_cross",
+      "kind": "decoration",
+      "model": "models/buildings/decor_market_cross.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 10
+      },
+      "buildWork": 100,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_brazier_pair",
+      "name": "building.decor_brazier_pair",
+      "kind": "decoration",
+      "model": "models/buildings/decor_brazier_pair.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 3
+      },
+      "buildWork": 35,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_flower_pedestal",
+      "name": "building.decor_flower_pedestal",
+      "kind": "decoration",
+      "model": "models/buildings/decor_flower_pedestal.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 55,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_stage",
+      "name": "building.decor_stage",
+      "kind": "decoration",
+      "model": "models/buildings/decor_stage.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 12,
+        "core:stone": 2
+      },
+      "buildWork": 110,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_milestone",
+      "name": "building.decor_milestone",
+      "kind": "decoration",
+      "model": "models/buildings/decor_milestone.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 3
+      },
+      "buildWork": 30,
+      "desirability": 3,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_tree_bench",
+      "name": "building.decor_tree_bench",
+      "kind": "decoration",
+      "model": "models/buildings/decor_tree_bench.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 5,
+        "core:stone": 6
+      },
+      "buildWork": 80,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_banner_arch",
+      "name": "building.decor_banner_arch",
+      "kind": "decoration",
+      "model": "models/buildings/decor_banner_arch.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 6,
+        "core:stone": 6
+      },
+      "buildWork": 85,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_public_oven",
+      "name": "building.decor_public_oven",
+      "kind": "decoration",
+      "model": "models/buildings/decor_public_oven.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 3,
+        "core:stone": 10
+      },
+      "buildWork": 100,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_cart_stand",
+      "name": "building.decor_cart_stand",
+      "kind": "decoration",
+      "model": "models/buildings/decor_cart_stand.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 7,
+        "core:stone": 1
+      },
+      "buildWork": 60,
+      "desirability": 4,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_crier_stand",
+      "name": "building.decor_crier_stand",
+      "kind": "decoration",
+      "model": "models/buildings/decor_crier_stand.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 6,
+        "core:stone": 1
+      },
+      "buildWork": 50,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "plaza"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_market_stall",
+      "name": "building.decor_market_stall",
+      "kind": "decoration",
+      "model": "models/buildings/decor_market_stall.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 8
+      },
+      "buildWork": 80,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_hedge_square",
+      "name": "building.decor_hedge_square",
+      "kind": "decoration",
+      "model": "models/buildings/decor_hedge_square.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 3
+      },
+      "buildWork": 60,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_hay_cart",
+      "name": "building.decor_hay_cart",
+      "kind": "decoration",
+      "model": "models/buildings/decor_hay_cart.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 6
+      },
+      "buildWork": 60,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_gazebo",
+      "name": "building.decor_gazebo",
+      "kind": "decoration",
+      "model": "models/buildings/decor_gazebo.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 12,
+        "core:stone": 4
+      },
+      "buildWork": 120,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_barrel_stack",
+      "name": "building.decor_barrel_stack",
+      "kind": "decoration",
+      "model": "models/buildings/decor_barrel_stack.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 30,
+      "desirability": 4,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_potted_tree",
+      "name": "building.decor_potted_tree",
+      "kind": "decoration",
+      "model": "models/buildings/decor_potted_tree.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 3
+      },
+      "buildWork": 40,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_clothesline",
+      "name": "building.decor_clothesline",
+      "kind": "decoration",
+      "model": "models/buildings/decor_clothesline.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 3
+      },
+      "buildWork": 30,
+      "desirability": 4,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_pergola",
+      "name": "building.decor_pergola",
+      "kind": "decoration",
+      "model": "models/buildings/decor_pergola.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 10,
+        "core:stone": 4
+      },
+      "buildWork": 110,
+      "desirability": 11,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_haystacks",
+      "name": "building.decor_haystacks",
+      "kind": "decoration",
+      "model": "models/buildings/decor_haystacks.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 2
+      },
+      "buildWork": 40,
+      "desirability": 4,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_garden_arch",
+      "name": "building.decor_garden_arch",
+      "kind": "decoration",
+      "model": "models/buildings/decor_garden_arch.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 50,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_windmill_small",
+      "name": "building.decor_windmill_small",
+      "kind": "decoration",
+      "model": "models/buildings/decor_windmill_small.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 5,
+        "core:stone": 6
+      },
+      "buildWork": 100,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_topiary",
+      "name": "building.decor_topiary",
+      "kind": "decoration",
+      "model": "models/buildings/decor_topiary.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 2
+      },
+      "buildWork": 50,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_firewood_rack",
+      "name": "building.decor_firewood_rack",
+      "kind": "decoration",
+      "model": "models/buildings/decor_firewood_rack.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 6
+      },
+      "buildWork": 40,
+      "desirability": 3,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_fish_rack",
+      "name": "building.decor_fish_rack",
+      "kind": "decoration",
+      "model": "models/buildings/decor_fish_rack.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 5
+      },
+      "buildWork": 50,
+      "desirability": 3,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_scarecrow",
+      "name": "building.decor_scarecrow",
+      "kind": "decoration",
+      "model": "models/buildings/decor_scarecrow.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 3
+      },
+      "buildWork": 40,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_beehives",
+      "name": "building.decor_beehives",
+      "kind": "decoration",
+      "model": "models/buildings/decor_beehives.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 5
+      },
+      "buildWork": 50,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_vegetable_patch",
+      "name": "building.decor_vegetable_patch",
+      "kind": "decoration",
+      "model": "models/buildings/decor_vegetable_patch.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 50,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_dovecote",
+      "name": "building.decor_dovecote",
+      "kind": "decoration",
+      "model": "models/buildings/decor_dovecote.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 5,
+        "core:stone": 3
+      },
+      "buildWork": 80,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_chicken_coop",
+      "name": "building.decor_chicken_coop",
+      "kind": "decoration",
+      "model": "models/buildings/decor_chicken_coop.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 8
+      },
+      "buildWork": 80,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_pottery_stall",
+      "name": "building.decor_pottery_stall",
+      "kind": "decoration",
+      "model": "models/buildings/decor_pottery_stall.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 7,
+        "core:stone": 2
+      },
+      "buildWork": 80,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_flower_cart",
+      "name": "building.decor_flower_cart",
+      "kind": "decoration",
+      "model": "models/buildings/decor_flower_cart.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 50,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_kennel",
+      "name": "building.decor_kennel",
+      "kind": "decoration",
+      "model": "models/buildings/decor_kennel.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 40,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_rug_tent",
+      "name": "building.decor_rug_tent",
+      "kind": "decoration",
+      "model": "models/buildings/decor_rug_tent.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 6
+      },
+      "buildWork": 70,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_scale_stand",
+      "name": "building.decor_scale_stand",
+      "kind": "decoration",
+      "model": "models/buildings/decor_scale_stand.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 1
+      },
+      "buildWork": 50,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_grape_trellis",
+      "name": "building.decor_grape_trellis",
+      "kind": "decoration",
+      "model": "models/buildings/decor_grape_trellis.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 6
+      },
+      "buildWork": 60,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_tool_corner",
+      "name": "building.decor_tool_corner",
+      "kind": "decoration",
+      "model": "models/buildings/decor_tool_corner.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 1
+      },
+      "buildWork": 40,
+      "desirability": 4,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_wine_press",
+      "name": "building.decor_wine_press",
+      "kind": "decoration",
+      "model": "models/buildings/decor_wine_press.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 8,
+        "core:stone": 2
+      },
+      "buildWork": 80,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_smith_rack",
+      "name": "building.decor_smith_rack",
+      "kind": "decoration",
+      "model": "models/buildings/decor_smith_rack.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 5,
+        "core:stone": 3
+      },
+      "buildWork": 60,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "garden"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_rose_bed",
+      "name": "building.decor_rose_bed",
+      "kind": "decoration",
+      "model": "models/buildings/decor_rose_bed.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 3
+      },
+      "buildWork": 60,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_tulip_bed",
+      "name": "building.decor_tulip_bed",
+      "kind": "decoration",
+      "model": "models/buildings/decor_tulip_bed.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 3
+      },
+      "buildWork": 60,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_glow_bells",
+      "name": "building.decor_glow_bells",
+      "kind": "decoration",
+      "model": "models/buildings/decor_glow_bells.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 4
+      },
+      "buildWork": 80,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_mushroom_flowers",
+      "name": "building.decor_mushroom_flowers",
+      "kind": "decoration",
+      "model": "models/buildings/decor_mushroom_flowers.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 4
+      },
+      "buildWork": 90,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_crystal_flowers",
+      "name": "building.decor_crystal_flowers",
+      "kind": "decoration",
+      "model": "models/buildings/decor_crystal_flowers.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 90,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_carnivorous_plant",
+      "name": "building.decor_carnivorous_plant",
+      "kind": "decoration",
+      "model": "models/buildings/decor_carnivorous_plant.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 3,
+        "core:stone": 4
+      },
+      "buildWork": 100,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_pond",
+      "name": "building.decor_pond",
+      "kind": "decoration",
+      "model": "models/buildings/decor_pond.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 8
+      },
+      "buildWork": 100,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_rose_arch",
+      "name": "building.decor_rose_arch",
+      "kind": "decoration",
+      "model": "models/buildings/decor_rose_arch.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 1
+      },
+      "buildWork": 70,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_sunflowers",
+      "name": "building.decor_sunflowers",
+      "kind": "decoration",
+      "model": "models/buildings/decor_sunflowers.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 2
+      },
+      "buildWork": 40,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_lavender",
+      "name": "building.decor_lavender",
+      "kind": "decoration",
+      "model": "models/buildings/decor_lavender.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 2
+      },
+      "buildWork": 40,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_standing_stone",
+      "name": "building.decor_standing_stone",
+      "kind": "decoration",
+      "model": "models/buildings/decor_standing_stone.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 5
+      },
+      "buildWork": 60,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_mossy_boulders",
+      "name": "building.decor_mossy_boulders",
+      "kind": "decoration",
+      "model": "models/buildings/decor_mossy_boulders.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 50,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_rock_garden",
+      "name": "building.decor_rock_garden",
+      "kind": "decoration",
+      "model": "models/buildings/decor_rock_garden.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 3,
+        "core:stone": 6
+      },
+      "buildWork": 80,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_fern_log",
+      "name": "building.decor_fern_log",
+      "kind": "decoration",
+      "model": "models/buildings/decor_fern_log.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 40,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_daisies",
+      "name": "building.decor_daisies",
+      "kind": "decoration",
+      "model": "models/buildings/decor_daisies.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 2
+      },
+      "buildWork": 30,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_lilies",
+      "name": "building.decor_lilies",
+      "kind": "decoration",
+      "model": "models/buildings/decor_lilies.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 2
+      },
+      "buildWork": 45,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_flowering_shrub",
+      "name": "building.decor_flowering_shrub",
+      "kind": "decoration",
+      "model": "models/buildings/decor_flowering_shrub.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 2
+      },
+      "buildWork": 40,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_fairy_ring",
+      "name": "building.decor_fairy_ring",
+      "kind": "decoration",
+      "model": "models/buildings/decor_fairy_ring.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 2
+      },
+      "buildWork": 80,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_giant_lotus",
+      "name": "building.decor_giant_lotus",
+      "kind": "decoration",
+      "model": "models/buildings/decor_giant_lotus.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 7
+      },
+      "buildWork": 90,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_glow_stump",
+      "name": "building.decor_glow_stump",
+      "kind": "decoration",
+      "model": "models/buildings/decor_glow_stump.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 70,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_poppies",
+      "name": "building.decor_poppies",
+      "kind": "decoration",
+      "model": "models/buildings/decor_poppies.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 2
+      },
+      "buildWork": 35,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_hydrangeas",
+      "name": "building.decor_hydrangeas",
+      "kind": "decoration",
+      "model": "models/buildings/decor_hydrangeas.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 3
+      },
+      "buildWork": 60,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_cacti",
+      "name": "building.decor_cacti",
+      "kind": "decoration",
+      "model": "models/buildings/decor_cacti.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 4
+      },
+      "buildWork": 45,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_bird_bath",
+      "name": "building.decor_bird_bath",
+      "kind": "decoration",
+      "model": "models/buildings/decor_bird_bath.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 70,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_beehive",
+      "name": "building.decor_beehive",
+      "kind": "decoration",
+      "model": "models/buildings/decor_beehive.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 2
+      },
+      "buildWork": 60,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_natural_arch",
+      "name": "building.decor_natural_arch",
+      "kind": "decoration",
+      "model": "models/buildings/decor_natural_arch.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 8
+      },
+      "buildWork": 90,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_geode",
+      "name": "building.decor_geode",
+      "kind": "decoration",
+      "model": "models/buildings/decor_geode.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 7
+      },
+      "buildWork": 80,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_wildflowers",
+      "name": "building.decor_wildflowers",
+      "kind": "decoration",
+      "model": "models/buildings/decor_wildflowers.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 3
+      },
+      "buildWork": 40,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_eye_vine",
+      "name": "building.decor_eye_vine",
+      "kind": "decoration",
+      "model": "models/buildings/decor_eye_vine.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 3,
+        "core:stone": 4
+      },
+      "buildWork": 100,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_floating_petals",
+      "name": "building.decor_floating_petals",
+      "kind": "decoration",
+      "model": "models/buildings/decor_floating_petals.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 5
+      },
+      "buildWork": 90,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_orchids",
+      "name": "building.decor_orchids",
+      "kind": "decoration",
+      "model": "models/buildings/decor_orchids.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 2
+      },
+      "buildWork": 50,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_bonsai_rock",
+      "name": "building.decor_bonsai_rock",
+      "kind": "decoration",
+      "model": "models/buildings/decor_bonsai_rock.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 4
+      },
+      "buildWork": 70,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_crystal_tree",
+      "name": "building.decor_crystal_tree",
+      "kind": "decoration",
+      "model": "models/buildings/decor_crystal_tree.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 8
+      },
+      "buildWork": 100,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_bamboo",
+      "name": "building.decor_bamboo",
+      "kind": "decoration",
+      "model": "models/buildings/decor_bamboo.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 2
+      },
+      "buildWork": 45,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_topiary_pot",
+      "name": "building.decor_topiary_pot",
+      "kind": "decoration",
+      "model": "models/buildings/decor_topiary_pot.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 4
+      },
+      "buildWork": 60,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_parterre",
+      "name": "building.decor_parterre",
+      "kind": "decoration",
+      "model": "models/buildings/decor_parterre.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 8
+      },
+      "buildWork": 100,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_waterfall",
+      "name": "building.decor_waterfall",
+      "kind": "decoration",
+      "model": "models/buildings/decor_waterfall.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 8
+      },
+      "buildWork": 100,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_wisteria_pergola",
+      "name": "building.decor_wisteria_pergola",
+      "kind": "decoration",
+      "model": "models/buildings/decor_wisteria_pergola.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 8,
+        "core:stone": 2
+      },
+      "buildWork": 100,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_giant_dandelions",
+      "name": "building.decor_giant_dandelions",
+      "kind": "decoration",
+      "model": "models/buildings/decor_giant_dandelions.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 3
+      },
+      "buildWork": 70,
+      "desirability": 11,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_pumpkin_patch",
+      "name": "building.decor_pumpkin_patch",
+      "kind": "decoration",
+      "model": "models/buildings/decor_pumpkin_patch.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 50,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_fire_lilies",
+      "name": "building.decor_fire_lilies",
+      "kind": "decoration",
+      "model": "models/buildings/decor_fire_lilies.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 90,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_stepping_stones",
+      "name": "building.decor_stepping_stones",
+      "kind": "decoration",
+      "model": "models/buildings/decor_stepping_stones.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 6
+      },
+      "buildWork": 70,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_moon_flowers",
+      "name": "building.decor_moon_flowers",
+      "kind": "decoration",
+      "model": "models/buildings/decor_moon_flowers.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 5
+      },
+      "buildWork": 90,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_vine_trellis",
+      "name": "building.decor_vine_trellis",
+      "kind": "decoration",
+      "model": "models/buildings/decor_vine_trellis.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 5,
+        "core:stone": 1
+      },
+      "buildWork": 60,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_herb_spiral",
+      "name": "building.decor_herb_spiral",
+      "kind": "decoration",
+      "model": "models/buildings/decor_herb_spiral.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 1,
+        "core:stone": 8
+      },
+      "buildWork": 80,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "nature"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_runner",
+      "name": "building.decor_petrified_runner",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_runner.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 80,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_kneeling",
+      "name": "building.decor_petrified_kneeling",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_kneeling.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 80,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_warrior",
+      "name": "building.decor_petrified_warrior",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_warrior.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 7
+      },
+      "buildWork": 90,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_mother",
+      "name": "building.decor_petrified_mother",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_mother.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 7
+      },
+      "buildWork": 90,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_pair",
+      "name": "building.decor_petrified_pair",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_pair.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 10
+      },
+      "buildWork": 120,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_sunken",
+      "name": "building.decor_petrified_sunken",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_sunken.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 4
+      },
+      "buildWork": 60,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_obelisk",
+      "name": "building.decor_obelisk",
+      "kind": "decoration",
+      "model": "models/buildings/decor_obelisk.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 10
+      },
+      "buildWork": 120,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_stone_arch",
+      "name": "building.decor_stone_arch",
+      "kind": "decoration",
+      "model": "models/buildings/decor_stone_arch.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 140,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_totem_pole",
+      "name": "building.decor_totem_pole",
+      "kind": "decoration",
+      "model": "models/buildings/decor_totem_pole.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 8,
+        "core:stone": 1
+      },
+      "buildWork": 100,
+      "desirability": 11,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_roadside_shrine",
+      "name": "building.decor_roadside_shrine",
+      "kind": "decoration",
+      "model": "models/buildings/decor_roadside_shrine.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2,
+        "core:stone": 6
+      },
+      "buildWork": 100,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_wayside_cross",
+      "name": "building.decor_wayside_cross",
+      "kind": "decoration",
+      "model": "models/buildings/decor_wayside_cross.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 7
+      },
+      "buildWork": 90,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_hero_statue",
+      "name": "building.decor_hero_statue",
+      "kind": "decoration",
+      "model": "models/buildings/decor_hero_statue.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 150,
+      "desirability": 16,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_sundial",
+      "name": "building.decor_sundial",
+      "kind": "decoration",
+      "model": "models/buildings/decor_sundial.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 5
+      },
+      "buildWork": 70,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_child",
+      "name": "building.decor_petrified_child",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_child.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 5
+      },
+      "buildWork": 70,
+      "desirability": 8,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_archer",
+      "name": "building.decor_petrified_archer",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_archer.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 7
+      },
+      "buildWork": 90,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_smith",
+      "name": "building.decor_petrified_smith",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_smith.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 8
+      },
+      "buildWork": 100,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_dancer",
+      "name": "building.decor_petrified_dancer",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_dancer.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 80,
+      "desirability": 11,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_merchant",
+      "name": "building.decor_petrified_merchant",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_merchant.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 7
+      },
+      "buildWork": 90,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_elder",
+      "name": "building.decor_petrified_elder",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_elder.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 80,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_deer",
+      "name": "building.decor_petrified_deer",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_deer.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 80,
+      "desirability": 10,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_huddle",
+      "name": "building.decor_petrified_huddle",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_huddle.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 11
+      },
+      "buildWork": 130,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_petrified_dog",
+      "name": "building.decor_petrified_dog",
+      "kind": "decoration",
+      "model": "models/buildings/decor_petrified_dog.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 4
+      },
+      "buildWork": 60,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_flame_pillar",
+      "name": "building.decor_flame_pillar",
+      "kind": "decoration",
+      "model": "models/buildings/decor_flame_pillar.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 8,
+        "core:log": 2
+      },
+      "buildWork": 100,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_memorial_wall",
+      "name": "building.decor_memorial_wall",
+      "kind": "decoration",
+      "model": "models/buildings/decor_memorial_wall.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 140,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_angel",
+      "name": "building.decor_angel",
+      "kind": "decoration",
+      "model": "models/buildings/decor_angel.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 9
+      },
+      "buildWork": 120,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_king_throne",
+      "name": "building.decor_king_throne",
+      "kind": "decoration",
+      "model": "models/buildings/decor_king_throne.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 150,
+      "desirability": 16,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_guardian_lions",
+      "name": "building.decor_guardian_lions",
+      "kind": "decoration",
+      "model": "models/buildings/decor_guardian_lions.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 140,
+      "desirability": 15,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_dragon_statue",
+      "name": "building.decor_dragon_statue",
+      "kind": "decoration",
+      "model": "models/buildings/decor_dragon_statue.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 150,
+      "desirability": 16,
+      "fireproof": true,
+      "category": "monuments"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_rune_circle",
+      "name": "building.decor_rune_circle",
+      "kind": "decoration",
+      "model": "models/buildings/decor_rune_circle.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 150,
+      "desirability": 15,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_stone_head",
+      "name": "building.decor_stone_head",
+      "kind": "decoration",
+      "model": "models/buildings/decor_stone_head.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 10
+      },
+      "buildWork": 120,
+      "desirability": 14,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_broken_columns",
+      "name": "building.decor_broken_columns",
+      "kind": "decoration",
+      "model": "models/buildings/decor_broken_columns.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 8
+      },
+      "buildWork": 100,
+      "desirability": 11,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_fallen_arch",
+      "name": "building.decor_fallen_arch",
+      "kind": "decoration",
+      "model": "models/buildings/decor_fallen_arch.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 10
+      },
+      "buildWork": 110,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_tower_stump",
+      "name": "building.decor_tower_stump",
+      "kind": "decoration",
+      "model": "models/buildings/decor_tower_stump.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 12,
+        "core:log": 2
+      },
+      "buildWork": 140,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_ruined_wall",
+      "name": "building.decor_ruined_wall",
+      "kind": "decoration",
+      "model": "models/buildings/decor_ruined_wall.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 7
+      },
+      "buildWork": 80,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_burnt_cottage",
+      "name": "building.decor_burnt_cottage",
+      "kind": "decoration",
+      "model": "models/buildings/decor_burnt_cottage.glb",
+      "size": [
+        5,
+        5
+      ],
+      "cost": {
+        "core:stone": 6,
+        "core:log": 8
+      },
+      "buildWork": 130,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_collapsed_shed",
+      "name": "building.decor_collapsed_shed",
+      "kind": "decoration",
+      "model": "models/buildings/decor_collapsed_shed.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 6
+      },
+      "buildWork": 70,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_wrecked_cart",
+      "name": "building.decor_wrecked_cart",
+      "kind": "decoration",
+      "model": "models/buildings/decor_wrecked_cart.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 3
+      },
+      "buildWork": 45,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_wrecked_boat",
+      "name": "building.decor_wrecked_boat",
+      "kind": "decoration",
+      "model": "models/buildings/decor_wrecked_boat.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 5
+      },
+      "buildWork": 60,
+      "desirability": 6,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_broken_barrels",
+      "name": "building.decor_broken_barrels",
+      "kind": "decoration",
+      "model": "models/buildings/decor_broken_barrels.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2
+      },
+      "buildWork": 40,
+      "desirability": 3,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_old_well",
+      "name": "building.decor_old_well",
+      "kind": "decoration",
+      "model": "models/buildings/decor_old_well.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 4,
+        "core:log": 1
+      },
+      "buildWork": 55,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_portal_gate",
+      "name": "building.decor_portal_gate",
+      "kind": "decoration",
+      "model": "models/buildings/decor_portal_gate.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 150,
+      "desirability": 15,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_monolith",
+      "name": "building.decor_monolith",
+      "kind": "decoration",
+      "model": "models/buildings/decor_monolith.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 10
+      },
+      "buildWork": 130,
+      "desirability": 15,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_giant_sword",
+      "name": "building.decor_giant_sword",
+      "kind": "decoration",
+      "model": "models/buildings/decor_giant_sword.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 4,
+        "core:log": 1
+      },
+      "buildWork": 90,
+      "desirability": 12,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_colossus_hand",
+      "name": "building.decor_colossus_hand",
+      "kind": "decoration",
+      "model": "models/buildings/decor_colossus_hand.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 9
+      },
+      "buildWork": 110,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_beast_skeleton",
+      "name": "building.decor_beast_skeleton",
+      "kind": "decoration",
+      "model": "models/buildings/decor_beast_skeleton.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 6
+      },
+      "buildWork": 100,
+      "desirability": 11,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_abandoned_camp",
+      "name": "building.decor_abandoned_camp",
+      "kind": "decoration",
+      "model": "models/buildings/decor_abandoned_camp.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 4,
+        "core:stone": 2
+      },
+      "buildWork": 60,
+      "desirability": 5,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_dry_fountain",
+      "name": "building.decor_dry_fountain",
+      "kind": "decoration",
+      "model": "models/buildings/decor_dry_fountain.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 8
+      },
+      "buildWork": 90,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_mine_entrance",
+      "name": "building.decor_mine_entrance",
+      "kind": "decoration",
+      "model": "models/buildings/decor_mine_entrance.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 10,
+        "core:log": 4
+      },
+      "buildWork": 130,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_rusted_plough",
+      "name": "building.decor_rusted_plough",
+      "kind": "decoration",
+      "model": "models/buildings/decor_rusted_plough.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 2
+      },
+      "buildWork": 40,
+      "desirability": 4,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_broken_bridge",
+      "name": "building.decor_broken_bridge",
+      "kind": "decoration",
+      "model": "models/buildings/decor_broken_bridge.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 12
+      },
+      "buildWork": 130,
+      "desirability": 9,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_overgrown_house",
+      "name": "building.decor_overgrown_house",
+      "kind": "decoration",
+      "model": "models/buildings/decor_overgrown_house.glb",
+      "size": [
+        4,
+        4
+      ],
+      "cost": {
+        "core:stone": 4,
+        "core:log": 8
+      },
+      "buildWork": 120,
+      "desirability": 7,
+      "fireproof": true,
+      "category": "ruins"
+    },
+    {
+      "type": "building",
+      "id": "core:decor_sunken_stairs",
+      "name": "building.decor_sunken_stairs",
+      "kind": "decoration",
+      "model": "models/buildings/decor_sunken_stairs.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:stone": 9
+      },
+      "buildWork": 110,
+      "desirability": 13,
+      "fireproof": true,
+      "category": "ruins"
     }
   ]
 }

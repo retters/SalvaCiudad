@@ -694,6 +694,25 @@ def garden(folder):
     export(folder, "garden", mb)
 
 
+def campfire(folder):
+    """A ring of stones with logs leaning together; the game adds the flames and the smoke."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    mb.cylinder((0, 0, 0), (0, 0, 0.06), 0.85, 0.85, "soil", segments=10)
+    for i in range(9):
+        a = i * 2 * math.pi / 9
+        mb.sphere((0.62 * math.cos(a), 0.62 * math.sin(a), 0.12), 0.17, "stone" if i % 2 else "stone_dark",
+                  segments=6, rings=4, scale=(1.0, 1.0, 0.75))
+    for i in range(5):
+        a = i * 2 * math.pi / 5 + 0.3
+        mb.cylinder((0.42 * math.cos(a), 0.42 * math.sin(a), 0.08), (0.04 * math.cos(a), 0.04 * math.sin(a), 0.62),
+                    0.07, 0.05, "log", segments=6)
+    mb.cylinder((0, 0, 0.05), (0, 0, 0.14), 0.3, 0.26, "charcoal", segments=8)
+    # A log to sit on.
+    mb.cylinder((-0.7, -0.88, 0.14), (0.7, -0.88, 0.14), 0.14, 0.14, "log", segments=7)
+    export(folder, "campfire", mb)
+
+
 def statue(folder):
     common.reset_scene()
     mb = MeshBuilder()
@@ -1060,6 +1079,7 @@ def make_all(folder, only=None):
     market(folder)
     garden(folder)
     statue(folder)
+    campfire(folder)
     healer(folder, "healer", 4, 4)
     healer(folder, "physician", 6, 6, tier2=True)
     bathhouse(folder)

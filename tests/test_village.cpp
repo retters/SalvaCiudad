@@ -634,6 +634,104 @@ TEST_SUITE("village") {
         CHECK(place(g, house));
     }
 
+    TEST_CASE("what the developer tools plant is a resource of the game") {
+        const MapData map = small_map(26);
+        Game a(content(), map, 1, 7);
+        Game b(content(), map, 1, 7);
+        const Building& tc = town_center(a);
+        const std::size_t before = a.map().features.size();
+        Command plant;
+        plant.type = CommandType::DevFeature;
+        plant.def = static_cast<std::uint16_t>(FeatureType::Tree);
+        plant.def2 = 0;
+        plant.count = 1;
+        plant.value = Fixed::one().raw();
+        plant.position = {Fixed::from_int(tc.x - 6), Fixed::from_int(tc.z - 6)};
+        // As bytes, like in a network game.
+        BinaryWriter wire;
+        plant.write(wire);
+        BinaryReader in(wire.bytes());
+        Command received;
+        REQUIRE(Command::read(in, received));
+        a.apply(plant);
+        b.apply(received);
+        REQUIRE(a.map().features.size() == before + 1);
+        REQUIRE(a.nodes().size() == before + 1);
+        CHECK(a.map().features.back().type == FeatureType::Tree);
+        CHECK(a.nodes().back().amount == content()->flora.species[0].logs[1]);
+        CHECK(a.take_features_added());
+        CHECK_FALSE(a.take_features_added());
+        CHECK(a.hash() == b.hash());
+        // A stone too, with its amount by its size.
+        plant.def = static_cast<std::uint16_t>(FeatureType::Stone);
+        plant.value = Fixed::from_ratio(3, 2).raw();
+        a.apply(plant);
+        CHECK(a.nodes().back().amount > 0);
+        CHECK(a.rejected_commands() == 0);
+        // Saved and loaded with them.
+        BinaryWriter w;
+        a.save(w);
+        Game back(content(), small_map(1), 1, 1);
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.map().features.size() == before + 2);
+        CHECK(back.hash() == a.hash());
+        // What is not a feature, or a species that does not exist: refused.
+        plant.def = 99;
+        a.apply(plant);
+        plant.def = static_cast<std::uint16_t>(FeatureType::Tree);
+        plant.def2 = 255;
+        a.apply(plant);
+        CHECK(a.rejected_commands() == 2);
+        CHECK(a.map().features.size() == before + 2);
+        // Without the developer commands (a network game that forbids them): refused.
+        a.set_dev_commands(false);
+        plant.def2 = 0;
+        a.apply(plant);
+        CHECK(a.rejected_commands() == 3);
+    }
+
+    TEST_CASE("a campfire burns the town's firewood on cold days and keeps those near it warm") {
+        const DefIndex fire = building("campfire");
+        CHECK(content()->buildings[fire].warmth == 10);
+        CHECK(content()->buildings[fire].kind == BuildingKind::Decoration);
+        // Two towns alike through a winter without homes: one with a campfire
+        // by the town center, where the homeless stroll.
+        const auto winter = [&](bool with_fire) {
+            GameSetup setup{1, 7, false, GameRules{}};
+            setup.rules.climate.seasons = 0b1000;  // Winter all year.
+            setup.rules.raiders = Threat::None;
+            setup.rules.wildlife = Threat::None;
+            setup.rules.fires = Threat::None;
+            setup.rules.diseases = Threat::None;
+            Game g(content(), small_map(27), setup);
+            if (with_fire) {
+                REQUIRE(place(g, fire));
+            }
+            std::int64_t warmth = 0;
+            for (int day = 0; day < 40; ++day) {
+                run(g, g.day_ticks());
+                for (const Villager& v : g.villagers().data()) {
+                    warmth += v.warmth;
+                }
+            }
+            if (with_fire) {
+                CHECK(complete_count(g, fire) == 1);
+                for (const Building& b : g.buildings().data()) {
+                    if (b.def == fire) {
+                        CHECK(b.heated);  // The town still has firewood.
+                    }
+                }
+                CHECK(g.stored(0)[resource("firewood")] < 40);
+            }
+            return warmth;
+        };
+        const std::int64_t cold = winter(false);
+        const std::int64_t warm = winter(true);
+        MESSAGE("warmth through the winter: " << cold << " without a campfire, " << warm << " with one");
+        CHECK(warm > cold);
+    }
+
     TEST_CASE("broken saves are rejected and leave the game untouched") {
         Game g(content(), small_map(18), 1, 21);
         run(g, 200);

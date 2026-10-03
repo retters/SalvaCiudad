@@ -371,7 +371,21 @@ void DevTools::place(DevContext& ctx, math::Vec3 at) {
         default: return;
     }
     ctx.map->features.push_back(f);
-    ctx.scene->refresh_features(*ctx.renderer, *ctx.map, *ctx.content);
+    if (ctx.session != nullptr) {
+        // In a game it is a resource like any other: the game adds it (and
+        // every machine of a network game with it), and the view follows.
+        sim::Command c;
+        c.type = sim::CommandType::DevFeature;
+        c.position = {f.x, f.z};
+        c.def = static_cast<std::uint16_t>(f.type);
+        c.def2 = f.species;
+        c.count = f.size;
+        c.value = f.scale.raw();
+        c.value2 = f.rotation;
+        ctx.session->issue(c);
+    } else {
+        ctx.scene->refresh_features(*ctx.renderer, *ctx.map, *ctx.content);
+    }
     selected_ = {DevObject::Kind::Feature, ctx.map->features.size() - 1};
     last_message_ = tr("dev.create.added", name(ctx, selected_));
     list_dirty_ = true;

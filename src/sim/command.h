@@ -39,6 +39,8 @@ enum class CommandType : std::uint8_t {
     RenameVillager = 30,  // Villager `entity` is called `text` from now on ("": its own name again).
     SetProduction = 31,   // Workplace `entity` works (`value` 1) or stands idle and lets its workers go (0).
     MoveVillager = 32,    // Explorer `entity` (a villager) goes to `position` and waits there.
+    DevFeature = 33,      // Developer tools: a natural feature at `position`: type `def`, species `def2`,
+                          // size `count`, scale `value` (raw fixed point), rotation `value2`.
 
 };
 
