@@ -948,7 +948,8 @@ struct SceneRenderer::Impl {
         // The palette number rides in the tint's unused fourth channel.
         // The palette number, plus 4096 for a landmark (mesh.vert splits them).
         set4(g.tint, inst.tint,
-             static_cast<float>(std::min(inst.palette, kMaxBuildingPalettes) + (inst.landmark ? 4096u : 0u)));
+             static_cast<float>(std::min(inst.palette, kMaxBuildingPalettes) + (inst.landmark ? 4096u : 0u) +
+                                8192u * std::min<std::uint32_t>(inst.fade, kMaxFade)));
         return g;
     }
 
@@ -1015,6 +1016,7 @@ struct SceneRenderer::Impl {
                 pos = 0.0f;
             }
             g.extra[0] = pos;
+            g.extra[1] = 0.25f * static_cast<float>(std::min(c.fade, kMaxFade));
             gpu_characters.push_back(g);
         }
     }
@@ -1029,7 +1031,8 @@ struct SceneRenderer::Impl {
         for (std::size_t i = 0; i < characters.size(); ++i) {
             const CharacterInstance& c = characters[i];
             const float r = skinned[c.body].radius * c.scale;
-            bool keep = frustum.sphere_visible(c.position, r);
+            // A faded character (the ghost of the camera's anchor) casts no shadow.
+            bool keep = frustum.sphere_visible(c.position, r) && (eye != nullptr || c.fade == 0);
             bool far_version = eye == nullptr || lod_mode == SceneRenderer::LodMode::Far;
             if (keep && eye != nullptr) {
                 const math::Vec3 d = c.position - *eye;

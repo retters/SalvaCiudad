@@ -269,6 +269,13 @@ bool Cast::load(render::SceneRenderer& renderer, const std::filesystem::path& co
         }
         races_.push_back(std::move(mine));
     }
+    // Pale and all of one color, whatever the body.
+    render::Palette ghost;
+    for (math::Vec3& c : ghost.colors) {
+        c = {0.62f, 0.72f, 0.85f};
+    }
+    ghost_palette_ = static_cast<std::uint32_t>(palettes_.size());
+    palettes_.push_back(ghost);
     renderer.set_palettes(palettes_);
     return loaded();
 }

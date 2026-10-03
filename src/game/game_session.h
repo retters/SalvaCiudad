@@ -55,6 +55,8 @@ public:
         sim::PlaceError hover_error = sim::PlaceError::None;
         sim::EntityId selected_building;
         sim::EntityId selected_villager;
+        // Phase 61: the villager the camera follows (third or first person).
+        sim::EntityId followed_villager;
         // Marking out a field for this farm: dragged from one corner cell.
         sim::EntityId field_farm;
         bool field_dragging = false;

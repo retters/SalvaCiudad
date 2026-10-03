@@ -33,7 +33,10 @@ struct Instance {
     // Phase 52: which of the model's looks it is drawn with (0: the model
     // itself; see SceneRenderer::set_model_looks).
     std::uint8_t look = 0;
+    // Phase 61: how see-through it is drawn, in quarters (0 to kMaxFade).
+    std::uint8_t fade = 0;
 };
+inline constexpr std::uint8_t kMaxFade = 3;
 
 // An animated character. Accessories (hats, aprons...) are chosen with a
 // bit mask over the accessories registered for its body.
@@ -46,6 +49,9 @@ struct CharacterInstance {
     float time = 0.0f;              // Seconds into the clip; loops.
     std::uint32_t palette = 0;
     std::uint32_t accessories = 0;  // Bit i: accessory i of the body.
+    // How see-through it is drawn, in quarters (0 to kMaxFade); a faded
+    // character casts no shadow.
+    std::uint8_t fade = 0;
 };
 
 // Colors for the palette slots (skin, hair, top, bottom, shoes, belt, hat,

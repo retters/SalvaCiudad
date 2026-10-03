@@ -1,6 +1,7 @@
 #include <doctest.h>
 
 #include "game/camera.h"
+#include "game/occluders.h"
 
 using namespace sc;
 
@@ -97,7 +98,48 @@ TEST_SUITE("camera") {
             in.drag_pitch_px = -50.0f;
         }
         // It still reaches low angles when there is room (pivot at eye height).
-        CHECK(cam.pitch() < math::radians(10.0f));
+        CHECK(cam.eye_pitch() < math::radians(10.0f));
+    }
+
+    TEST_CASE("third person looks up at the sky once the eye is on the ground") {
+        Camera cam;
+        cam.set_mode(CameraMode::ThirdPerson);
+        cam.set_distance(20.0f);
+        cam.snap();
+        // While the ground lets the eye be there, the view looks at the
+        // point it orbits.
+        const math::Vec3 to_target = math::normalize(cam.target() - cam.eye());
+        CHECK(math::dot(cam.forward(), to_target) > 0.999f);
+        CHECK(cam.forward().y < 0.0f);
+        // Dragging on down: the eye stops over the ground and the view goes
+        // on up, to 60 degrees over the horizon and no more.
+        CameraInput in;
+        in.drag_pitch_px = -50.0f;
+        float lowest_eye = 100.0f;
+        for (int i = 0; i < 600; ++i) {
+            cam.update(in, {}, 1.0f / 60.0f);
+            lowest_eye = std::min(lowest_eye, cam.eye().y);
+        }
+        CHECK(lowest_eye >= Camera::kGroundClearance - 1e-3f);
+        CHECK(cam.eye().y == doctest::Approx(Camera::kGroundClearance).epsilon(0.05));
+        CHECK(cam.pitch() == doctest::Approx(math::radians(Camera::kOrbitMinPitch)).epsilon(0.01));
+        CHECK(cam.forward().y == doctest::Approx(std::sin(math::radians(60.0f))).epsilon(0.01));
+        CHECK(cam.eye_pitch() > cam.pitch());
+        // The point it orbits has not moved: it is still third person.
+        CHECK(cam.target().y == doctest::Approx(Camera::kPivotHeight).epsilon(0.01));
+        // Dragging back up first brings the view down to the point, with
+        // the eye still on the ground; only then does the eye rise.
+        in.drag_pitch_px = 2.0f;  // Slowly, to see it pass through level.
+        float highest_while_up = 0.0f;
+        for (int i = 0; i < 3000; ++i) {
+            cam.update(in, {}, 1.0f / 60.0f);
+            if (cam.forward().y > 0.06f) {
+                highest_while_up = std::max(highest_while_up, cam.eye().y);
+            }
+        }
+        CHECK(highest_while_up == doctest::Approx(Camera::kGroundClearance).epsilon(0.05));
+        CHECK(cam.eye().y > 5.0f);
+        CHECK(math::dot(cam.forward(), math::normalize(cam.target() - cam.eye())) > 0.999f);
     }
 
     TEST_CASE("third person keeps the pivot at eye height over bumpy ground") {
@@ -164,6 +206,53 @@ TEST_SUITE("camera") {
         }
         CHECK(cam.distance() >= Camera::kMinDistance);
         CHECK(cam.target().y == doctest::Approx(0.0f).epsilon(0.01));
+    }
+
+    TEST_CASE("what is in the camera's way is found by its box or its crown") {
+        // A house 6 x 4 m high between the eye and the anchor.
+        const math::Vec3 lo{10, 0, 10};
+        const math::Vec3 hi{16, 4, 16};
+        CHECK(occlusion::segment_hits_box({13, 2, 30}, {13, 1, 0}, lo, hi));
+        // Over its roof, beside it, and stopping short of it: not in the way.
+        CHECK_FALSE(occlusion::segment_hits_box({13, 12, 30}, {13, 6, 0}, lo, hi));
+        CHECK_FALSE(occlusion::segment_hits_box({20, 2, 30}, {20, 1, 0}, lo, hi));
+        CHECK_FALSE(occlusion::segment_hits_box({13, 2, 30}, {13, 2, 18}, lo, hi));
+        // The eye alone (no anchor): inside or outside.
+        CHECK(occlusion::segment_hits_box({12, 1, 12}, {12, 1, 12}, lo, hi));
+        CHECK_FALSE(occlusion::segment_hits_box({12, 5, 12}, {12, 5, 12}, lo, hi));
+        // Along an axis, inside the other two slabs.
+        CHECK(occlusion::segment_hits_box({0, 1, 12}, {30, 1, 12}, lo, hi));
+
+        // A tree 10 m tall on ground at 3 m: the crown starts over the trunk.
+        const occlusion::Crown crown = occlusion::crown_of(10.0f, 3.0f);
+        CHECK(crown.radius == doctest::Approx(3.0f));
+        CHECK(crown.bottom == doctest::Approx(5.5f));
+        CHECK(crown.top == doctest::Approx(13.0f));
+        CHECK(occlusion::in_crown({51, 8, 50}, 50, 50, crown.radius, crown.bottom, crown.top));
+        CHECK_FALSE(occlusion::in_crown({51, 4, 50}, 50, 50, crown.radius, crown.bottom, crown.top));   // By the trunk.
+        CHECK_FALSE(occlusion::in_crown({54, 8, 50}, 50, 50, crown.radius, crown.bottom, crown.top));   // Beside it.
+        CHECK_FALSE(occlusion::in_crown({51, 14, 50}, 50, 50, crown.radius, crown.bottom, crown.top));  // Over it.
+        // A sapling still has a crown to be inside of.
+        CHECK(occlusion::crown_of(2.0f, 0.0f).radius == doctest::Approx(1.0f));
+    }
+
+    TEST_CASE("what is in the way turns see-through in a short transition") {
+        const float full = static_cast<float>(Occluders::kFade);
+        float level = 0.0f;
+        int frames = 0;
+        while (level < full && frames < 100) {
+            level = occlusion::step_level(level, true, 1.0f / 60.0f, full, Occluders::kFadeSeconds);
+            ++frames;
+        }
+        // 0.2 s at 60 frames a second, and never past the full level.
+        CHECK(frames >= 11);
+        CHECK(frames <= 13);
+        CHECK(level == doctest::Approx(full));
+        CHECK(Occluders::kFade <= render::kMaxFade);
+        // And back, as slowly; a long frame does not go under zero.
+        level = occlusion::step_level(level, false, 0.1f, full, Occluders::kFadeSeconds);
+        CHECK(level == doctest::Approx(full * 0.5f));
+        CHECK(occlusion::step_level(level, false, 5.0f, full, Occluders::kFadeSeconds) == 0.0f);
     }
 
     TEST_CASE("rays pick a standing character") {

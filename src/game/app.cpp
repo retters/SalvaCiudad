@@ -668,10 +668,66 @@ void App::update_camera(float dt) {
     camera_drag_py_ = 0.0f;
     camera_look_dx_ = 0.0f;
     camera_look_dy_ = 0.0f;
+    follow_villager(in);
     const InputSettings& s = settings_->settings().input;
     const CameraSpeeds speeds{static_cast<float>(s.camera_pan_speed), static_cast<float>(s.camera_rotate_speed),
                               static_cast<float>(s.camera_zoom_speed)};
     camera_.update(in, interactive_scene() ? speeds : CameraSpeeds{}, dt);
+    show_anchor(dt);
+}
+
+// Phase 61: the camera keeps on the villager it follows, until the anchor
+// is moved by hand or the villager is gone.
+void App::follow_villager(const CameraInput& in) {
+    if (!session_ || !map_ || replay_) {
+        followed_shown_ = {};
+        return;
+    }
+    GameSession::Interaction& ui = session_->ui();
+    std::optional<VillageView::Standing> at;
+    if (ui.followed_villager.valid()) {
+        if (in.move_forward != 0.0f || in.move_right != 0.0f) {
+            ui.followed_villager = {};  // Walking the anchor away lets go.
+        } else {
+            at = village_.standing(session_->game(), ui.followed_villager, static_cast<float>(clock_.interpolation()));
+            if (!at) {
+                ui.followed_villager = {};
+            }
+        }
+    }
+    if (at) {
+        if (ui.followed_villager != followed_shown_ && camera_.mode() == CameraMode::Aerial) {
+            camera_.set_mode(CameraMode::ThirdPerson);  // Following starts close to it.
+        }
+        camera_.set_follow(at->feet, at->height);
+    } else if (camera_.following()) {
+        camera_.set_follow(std::nullopt);
+    }
+    followed_shown_ = ui.followed_villager;
+    // Seen from its eyes, it is not drawn.
+    village_.set_hidden_villager(at && camera_.mode() == CameraMode::FirstPerson ? ui.followed_villager : sim::EntityId{});
+}
+
+// The ghost of the anchor: in third person, when nobody is followed.
+void App::show_anchor(float dt) {
+    if (!session_ || !map_ || replay_ || camera_.mode() != CameraMode::ThirdPerson || camera_.following()) {
+        village_.set_anchor_ghost(std::nullopt);
+        anchor_known_ = false;
+        return;
+    }
+    const math::Vec3 target = camera_.target();
+    const math::Vec3 feet{target.x, map_surface_height(map_->map, target.x, target.z), target.z};
+    VillageView::AnchorGhost ghost;
+    ghost.feet = feet;
+    const math::Vec3 fwd = camera_.forward_on_ground();
+    ghost.yaw = std::atan2(fwd.x, fwd.z);
+    if (anchor_known_ && dt > 1e-4f) {
+        const float moved = math::length(math::Vec3{feet.x - anchor_last_.x, 0.0f, feet.z - anchor_last_.z});
+        ghost.speed = std::min(moved / dt, 6.0f);  // No faster than a run, however fast the anchor flies.
+    }
+    anchor_last_ = feet;
+    anchor_known_ = true;
+    village_.set_anchor_ghost(ghost);
 }
 
 void App::update_frame_stats(float dt) {
@@ -743,6 +799,12 @@ void App::render_frame(float dt) {
                 village_.set_view(camera_.target().x, camera_.target().z, session_->town());
                 update_war_fog();
                 village_.set_fog(&session_->fog());
+                // What the eye is inside of and, in third person, what
+                // stands between it and the point it turns around.
+                occluders_.update(scene_, session_->game(), village_, map_scene_, camera_.eye(),
+                                  camera_.mode() == CameraMode::ThirdPerson ? std::optional<math::Vec3>(camera_.target())
+                                                                            : std::nullopt,
+                                  dt);
                 village_.update(scene_, map_scene_, session_->game(), static_cast<float>(clock_.interpolation()), dt,
                                 speed);
                 // People placed with the developer tools walk among them.
@@ -1531,6 +1593,13 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
     ui.selected_building = {};
     if (const auto v = village_.pick_villager(game, origin, dir, alpha)) {
         ui.selected_villager = *v;
+        // A second click on the same villager right away: follow it.
+        const std::uint64_t now = SDL_GetTicksNS();
+        if (*v == last_clicked_villager_ && now - last_click_ns_ < kDoubleClickNs) {
+            ui.followed_villager = *v;
+        }
+        last_clicked_villager_ = *v;
+        last_click_ns_ = now;
     } else if (const auto b = village_.pick_building(game, origin, dir)) {
         ui.selected_building = *b;
     }

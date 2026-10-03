@@ -469,6 +469,8 @@ void MapScene::refresh_features(render::SceneRenderer& renderer, const sim::MapD
 void MapScene::apply_features(render::SceneRenderer& renderer,
                               const std::vector<std::vector<render::Instance>>& features) {
     feature_refs_.clear();
+    fades_.clear();
+    ++rebuilds_;
     slot_counts_.assign(features.size(), 0);
     for (std::size_t i = 0; i < features.size(); ++i) {
         slot_counts_[i] = features[i].size();
@@ -549,7 +551,24 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
         inst.scale *= 0.8f;
         inst.tint = inst.tint * 0.55f;
     }
+    if (const auto fade = fades_.find(feature); fade != fades_.end()) {
+        inst.fade = fade->second;
+    }
     renderer.update_instance(ref.model, ref.index, inst);
+}
+
+void MapScene::set_feature_fade(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
+                                std::size_t feature, std::uint8_t level) {
+    if (feature >= map.features.size()) {
+        return;
+    }
+    if (level == 0) {
+        fades_.erase(feature);
+    } else {
+        fades_[feature] = std::min(level, render::kMaxFade);
+    }
+    set_feature_look(renderer, map, content, feature,
+                     feature < looks_.size() ? looks_[feature] : FeatureLook::Normal);
 }
 
 void MapScene::set_season(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,

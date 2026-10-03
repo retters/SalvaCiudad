@@ -146,6 +146,13 @@ public:
     // rebuilding the others: a felled tree, a picked bush.
     void set_feature_look(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
                           std::size_t feature, FeatureLook look);
+    // Phase 61: draws one feature see-through (`level` quarters, 0 to
+    // render::kMaxFade), while it is in the camera's way. Showing every
+    // feature again (a new season) forgets it: see rebuilds().
+    void set_feature_fade(render::SceneRenderer& renderer, const sim::MapData& map, const sim::Content& content,
+                          std::size_t feature, std::uint8_t level);
+    // How many times every feature was put in the renderer again.
+    [[nodiscard]] std::uint32_t rebuilds() const { return rebuilds_; }
     // Takes out the sample village (a real game has its own town).
     void hide_sample_village(render::SceneRenderer& renderer);
     // Colors the trees and bushes for the season; felled trees and picked
@@ -178,6 +185,8 @@ private:
     };
     std::vector<FeatureRef> feature_refs_;
     std::vector<FeatureLook> looks_;  // By feature, as last set.
+    std::map<std::size_t, std::uint8_t> fades_;  // The see-through features and how much.
+    std::uint32_t rebuilds_ = 0;
     TreeCalendar when_;
     bool snowy_ = false;
     std::vector<std::size_t> slot_counts_;  // Features per visual slot, as last shown.

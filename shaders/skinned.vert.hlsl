@@ -48,5 +48,7 @@ VertexOutput main(VertexInput input)
     output.normal = normalize(character_rotate(c, model_normal));
     output.uv = input.uv;
     output.tint = draw.x >= 0 ? palettes[c.anim.w * 8 + (uint)draw.x] : float4(1.0, 1.0, 1.0, 1.0);
+    // As mesh.vert: 1, plus the share the character is faded (extra.y).
+    output.tint.a = 1.0 + c.extra.y;
     return output;
 }

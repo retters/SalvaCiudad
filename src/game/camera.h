@@ -50,7 +50,9 @@ public:
     static constexpr float kOrbitMinDistance = 2.0f;
     static constexpr float kOrbitMaxDistance = 60.0f;
     static constexpr float kOrbitMaxPitch = 85.0f;
-    static constexpr float kOrbitMinPitch = -30.0f;  // Looking up from below, if the ground allows.
+    // Looking up: past the angle the ground allows the eye stays on the
+    // ground and the view goes on turning up, to the sky (phase 61).
+    static constexpr float kOrbitMinPitch = -60.0f;
     static constexpr float kPivotHeight = 1.5f;      // Eye height of the orbit point.
     static constexpr float kOrbitDefaultDistance = 10.0f;
     static constexpr float kOrbitDefaultPitch = 25.0f;
@@ -93,6 +95,9 @@ public:
     [[nodiscard]] math::Vec3 target() const { return target_; }
     [[nodiscard]] float yaw() const { return yaw_; }
     [[nodiscard]] float pitch() const { return pitch_; }
+    // Third person: the elevation of the eye over the point it orbits; over
+    // pitch() when the ground keeps the eye from going lower.
+    [[nodiscard]] float eye_pitch() const { return eye_pitch_; }
     [[nodiscard]] float distance() const { return distance_; }
     // Aerial tilt above the horizon for the current distance, in radians.
     [[nodiscard]] float tilt() const;
@@ -121,7 +126,13 @@ private:
     math::Vec3 goal_target_{0, 0, 0};
     float yaw_ = 0.0f;
     float goal_yaw_ = 0.0f;
-    float pitch_ = 0.5f;  // Third person: orbit elevation. First person: look up (+) or down (-).
+    // Third person: how far down the view looks (the orbit's elevation,
+    // while the ground lets the eye be there). First person: look up (+) or
+    // down (-).
+    float pitch_ = 0.5f;
+    // Third person: the elevation the eye really is at: `pitch_`, or more
+    // where the ground is in the way.
+    float eye_pitch_ = 0.5f;
     float goal_pitch_ = 0.5f;
     float distance_ = 60.0f;
     float goal_distance_ = 60.0f;

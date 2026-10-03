@@ -601,6 +601,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 61
+
+- [ ] Tercera persona (F4): al bajar la cámara hasta el suelo y seguir arrastrando, la vista sube hacia el cielo (hasta unos 60°) sin atravesar el suelo; al volver, primero baja la vista y luego sube la cámara.
+- [ ] En tercera persona, sin seguir a nadie, se ve un aldeano pálido y translúcido en el punto donde gira la cámara; camina cuando mueves la cámara.
+- [ ] Ventana de un aldeano: botón "Seguir". La cámara lo sigue de cerca; el botón pasa a "Dejar de seguir". Doble clic sobre un aldeano hace lo mismo.
+- [ ] Al mover la cámara con el teclado deja de seguirlo. Si el aldeano muere, también.
+- [ ] En primera persona siguiendo a alguien se ve desde sus ojos y no se ve su cuerpo.
+- [ ] Un edificio o un árbol entre la cámara y el aldeano seguido (o el fantasma) se vuelve translúcido en un instante y vuelve a ser sólido al dejar de estorbar.
+- [ ] Al meter la cámara dentro de un edificio o de la copa de un árbol (en cualquier modo), ese se vuelve translúcido en vez de taparlo todo.
+- [ ] **Sin revisar en pantalla por Claude**: mirar al cielo y los árboles translúcidos. Revisar que el tramado no moleste.
+
 ### Fase 60
 
 - [ ] En Personalizado (y en la sala), "Niebla de guerra" tiene un cuarto valor: "Dinámica, mapa revelado".

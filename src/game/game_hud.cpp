@@ -1514,7 +1514,8 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
     }
     const float bar_block = 3 * (line + ctx.s(10.0f));
     const float title_h = ctx.text().line_height(title);
-    const float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line + bar_block + pad;
+    const float follow_h = std::round(ctx.s(36.0f));
+    const float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line + bar_block + follow_h + pad * 0.5f + pad;
     ui::Rect box{std::round(ctx.width() - w - pad), std::round(std::max(ctx.s(kTopBarH) + pad, right_top_)), std::round(w),
                  std::round(h)};
     const bool female = v->sex == sim::Sex::Female;
@@ -1546,6 +1547,14 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s) {
         v->warmth < sim::village::kWarmthMax / 3 ? ctx.theme().danger : ui::Color::rgb(0xE08A3C));
     bar(tr("hud.villager.health"), static_cast<float>(v->health) / static_cast<float>(sim::village::kHealthMax),
         v->health < sim::village::kHealthMax / 2 ? ctx.theme().danger : ui::Color::rgb(0x6FAF5A));
+    // Phase 61: the camera follows it (a double click on it does the same).
+    y += pad * 0.5f;
+    const bool followed = ui.followed_villager == ui.selected_villager;
+    if (ctx.button(ctx.id("follow"), {box.x + pad, y, box.w - 2 * pad, follow_h},
+                   tr(followed ? "hud.villager.unfollow" : "hud.villager.follow"), tr("hud.villager.follow.tooltip"), true,
+                   followed)) {
+        ui.followed_villager = followed ? sim::EntityId{} : ui.selected_villager;
+    }
     ctx.pop_id();
 }
 

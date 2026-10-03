@@ -2428,3 +2428,29 @@ Cada regla de comercio automático puede llevar dos límites: vender solo si el 
 
 **D-6005. Versiones.**
 Reglas 31 (las reglas de comercio guardan dos bytes más), protocolo de red 9 (un cliente anterior no conoce el modo de niebla).
+
+## Fase 61: cámara que mira al cielo, sigue a un aldeano y ve a través de lo que estorba (2026-10-03)
+
+**D-6101. Mirar hacia arriba en tercera persona.**
+La cámara en tercera persona lleva dos ángulos: el de la vista y el del ojo. Mientras el suelo deja, son el mismo y la vista mira al punto alrededor del que gira. Cuando el ojo tocaría el suelo se queda a ras de él y la vista sigue subiendo, hasta 60° sobre el horizonte. Al volver, primero baja la vista y solo después sube el ojo. El punto de giro no se mueve: sigue siendo tercera persona.
+
+**D-6102. Seguir a un aldeano.**
+Con el botón "Seguir" de su ventana o con doble clic sobre él (dos clics en 400 ms sobre el mismo aldeano). La cámara aérea pasa a tercera persona al empezar a seguir; en primera persona se mira desde sus ojos y ese aldeano no se dibuja. Se suelta con "Dejar de seguir", al mover la cámara con el teclado, o si el aldeano muere o queda bajo la niebla. Es solo de la vista: no viaja por la red ni se guarda en la partida.
+
+**D-6103. El fantasma del ancla.**
+En tercera persona sin seguir a nadie, en el punto de giro se dibuja un aldeano pálido y translúcido que camina cuando el ancla se mueve (a paso de carrera como mucho, por rápido que vaya la cámara). No hace sombra, no se puede seleccionar y no existe en la simulación.
+
+**D-6104. Translúcido por tramado, no por mezcla.**
+Lo translúcido se dibuja descartando píxeles con un patrón ordenado de 4 × 4 (uno, dos o tres de cada cuatro), en el mismo pase que lo opaco. Es lo más simple y seguro: no hace falta ordenar nada por distancia ni otro pase, la profundidad sigue siendo correcta y cuesta lo mismo que dibujar lo opaco. El suavizado de bordes disimula el tramado. Lo translúcido conserva su sombra en el caso de edificios y árboles (la sombra no estorba) y no la hace en el de personajes.
+
+**D-6105. Qué se vuelve translúcido.**
+El edificio o el árbol que contiene al ojo de la cámara (en cualquier modo) y, en tercera persona, los que quedan entre el ojo y el punto de giro. Un edificio cuenta como su caja (planta por altura, tal como se dibuja; una obra a medio levantar cuenta hasta donde llega); un árbol, como el cilindro de su copa (radio de 0,3 veces su altura, mínimo 1 m, desde un cuarto de su altura), así que el tronco solo no estorba. La línea de visión se corta 0,75 m antes del ancla para que lo que está justo detrás del seguido no cambie. Los árboles talados no cuentan. El relieve no se vuelve translúcido: de él se ocupa D-6101.
+
+**D-6106. La transición.**
+Lo que estorba pasa a tres cuartos translúcido en 0,2 s y vuelve igual de despacio, por los tres niveles del tramado. Un cambio de estación vuelve a dibujar todos los árboles; los que estorban se vuelven a marcar en ese mismo cuadro.
+
+**D-6107. Costo.**
+Los árboles se buscan en una rejilla de 16 m hecha una vez por mapa, con muestras cada medio metro de la línea de visión (160 como mucho); los edificios se recorren todos, que son pocos. Los edificios se vuelven a enviar al dibujante solo cuando cambia el nivel de alguno.
+
+**D-6108. Sin revisar en pantalla por Claude.**
+Mirar al cielo (necesita arrastrar con el ratón) y los árboles translúcidos (no había árbol cerca en la partida de prueba). Sí se vio en pantalla: la casa que tapa el ancla translúcida, el fantasma del ancla y el botón "Seguir".

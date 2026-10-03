@@ -7,7 +7,7 @@ struct CharacterData
     float4 row1;
     float4 row2;
     uint4 anim;   // x: first bone matrix of the clip, y: frames, z: joints, w: palette.
-    float4 extra; // x: frame position (frames, fractional).
+    float4 extra; // x: frame position (frames, fractional). y: faded share, 0 to 0.75.
 };
 
 // Baked skin matrices, three rows (float4) each, frame-major.

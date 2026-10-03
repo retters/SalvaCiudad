@@ -42,6 +42,39 @@ public:
     // The villagers drawn by the last update().
     [[nodiscard]] std::span<const render::CharacterInstance> characters() const { return characters_; }
 
+    // Phase 61. Where a villager's feet are now and how tall it is drawn
+    // (1: a body of 1.8 m), for the camera that follows it; nothing if it
+    // is gone or under the fog.
+    struct Standing {
+        math::Vec3 feet;
+        float height = 1.0f;
+    };
+    [[nodiscard]] std::optional<Standing> standing(const sim::Game& game, sim::EntityId villager, float alpha) const;
+    // A villager not drawn: the one the first-person camera looks from.
+    void set_hidden_villager(sim::EntityId id) { hidden_villager_ = id; }
+    // The ghost of the camera's anchor: a pale see-through villager where
+    // the third-person camera turns around when it follows nobody. `speed`
+    // is how fast the anchor moves, in meters per second of real time.
+    struct AnchorGhost {
+        math::Vec3 feet;
+        float yaw = 0.0f;
+        float speed = 0.0f;
+    };
+    void set_anchor_ghost(std::optional<AnchorGhost> ghost) { anchor_ghost_ = ghost; }
+    // The buildings drawn see-through, and how much (quarters, up to
+    // render::kMaxFade): those in the camera's way.
+    struct Fade {
+        sim::EntityId building;
+        std::uint8_t level = 0;
+    };
+    void set_faded_buildings(std::vector<Fade> fades) {
+        faded_ = std::move(fades);
+        ghost_changed_ = true;
+    }
+    // How high a building reaches as it is drawn now (y of its top); 0 if
+    // it is not drawn.
+    [[nodiscard]] float building_roof(const sim::Game& game, const sim::Building& b) const;
+
     struct Ghost {
         sim::DefIndex def = sim::kNoDef;
         std::int32_t x = 0;
@@ -126,6 +159,10 @@ private:
     std::vector<Look> looks_;  // By villager entity index.
     std::vector<render::CharacterInstance> characters_;
     const people::Cast* cast_ = nullptr;
+    sim::EntityId hidden_villager_;
+    std::optional<AnchorGhost> anchor_ghost_;
+    std::vector<Fade> faded_;
+    people::Motion anchor_motion_;
 
     std::optional<Ghost> ghost_;
     std::optional<FieldGhost> field_ghost_;

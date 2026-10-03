@@ -108,6 +108,8 @@ public:
     [[nodiscard]] const Body& any_body(std::uint32_t seed) const;
     // Its palette, by the same bits.
     [[nodiscard]] static std::uint32_t palette(const Body& body, std::uint32_t appearance);
+    // A palette without colors, for the ghost of the camera's anchor.
+    [[nodiscard]] std::uint32_t ghost_palette() const { return ghost_palette_; }
     // The body loaded from `name`, or null.
     [[nodiscard]] const Body* find(std::string_view name) const;
 
@@ -119,6 +121,7 @@ private:
     std::vector<Body> bodies_;
     std::vector<RaceBodies> races_;
     std::vector<render::Palette> palettes_;
+    std::uint32_t ghost_palette_ = 0;
 };
 
 }  // namespace sc::people

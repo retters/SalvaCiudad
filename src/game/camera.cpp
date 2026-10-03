@@ -85,7 +85,7 @@ void Camera::set_mode(CameraMode mode) {
             // Glide in from the current view to a close, over-the-shoulder
             // orbit; the smoothing makes the switch continuous.
             if (old == CameraMode::Aerial) {
-                pitch_ = tilt();
+                pitch_ = eye_pitch_ = tilt();
             }
             goal_pitch_ = math::radians(kOrbitDefaultPitch);
             goal_distance_ = kOrbitDefaultDistance;
@@ -161,21 +161,28 @@ math::Vec3 Camera::orbit_eye(float pitch, float distance) const {
     return target_ + back * (distance * std::cos(pitch)) + math::Vec3{0.0f, distance * std::sin(pitch), 0.0f};
 }
 
-// Third person: if the eye would go under the ground, raise the orbit so
-// the view pans up instead.
+// Third person: the eye never goes under the ground. Where the view asks
+// for a lower eye than the ground allows, the eye stays on the ground and
+// the view keeps its angle: it looks up, over the point it orbits.
 void Camera::keep_above_ground() {
+    eye_pitch_ = pitch_;
     if (mode_ != CameraMode::ThirdPerson || distance_ <= 0.0f) {
         return;
     }
-    const math::Vec3 e = orbit_eye(pitch_, distance_);
-    const float floor_y = std::max(ground(e.x, e.z), ground(target_.x, target_.z)) + kGroundClearance;
-    const float need = (floor_y - target_.y) / distance_;
-    if (need > -1.0f) {
-        const float min_pitch = std::asin(std::clamp(need, -1.0f, 1.0f));
-        if (pitch_ < min_pitch) {
-            pitch_ = min_pitch;
-            goal_pitch_ = std::max(goal_pitch_, min_pitch);
+    // The lowest elevation that keeps the eye over the ground; raising the
+    // eye moves it over other ground, so a few rounds settle it.
+    for (int round = 0; round < 4; ++round) {
+        const math::Vec3 e = orbit_eye(eye_pitch_, distance_);
+        const float floor_y = std::max(ground(e.x, e.z), ground(target_.x, target_.z)) + kGroundClearance;
+        const float need = (floor_y - target_.y) / distance_;
+        if (need <= -1.0f) {
+            break;
         }
+        const float min_pitch = std::asin(std::clamp(need, -1.0f, 1.0f));
+        if (eye_pitch_ >= min_pitch) {
+            break;
+        }
+        eye_pitch_ = min_pitch;
     }
 }
 
@@ -210,6 +217,7 @@ void Camera::snap() {
     yaw_ = goal_yaw_;
     pitch_ = goal_pitch_;
     distance_ = goal_distance_;
+    keep_above_ground();
 }
 
 void Camera::restore(CameraMode mode, math::Vec3 target, float yaw, float pitch, float distance) {
@@ -229,8 +237,13 @@ math::Vec3 Camera::forward() const {
             const float c = std::cos(pitch_);
             return {std::sin(yaw_) * c, std::sin(pitch_), -std::cos(yaw_) * c};
         }
+        case CameraMode::ThirdPerson: {
+            // Down by `pitch_`: at the point it orbits, or over it when the
+            // ground holds the eye up.
+            const float c = std::cos(pitch_);
+            return {std::sin(yaw_) * c, -std::sin(pitch_), -std::cos(yaw_) * c};
+        }
         case CameraMode::Aerial:
-        case CameraMode::ThirdPerson:
         case CameraMode::Count:
             break;
     }
@@ -240,7 +253,7 @@ math::Vec3 Camera::forward() const {
 math::Vec3 Camera::eye() const {
     switch (mode_) {
         case CameraMode::Aerial: return orbit_eye(tilt(), distance_);
-        case CameraMode::ThirdPerson: return orbit_eye(pitch_, distance_);
+        case CameraMode::ThirdPerson: return orbit_eye(eye_pitch_, distance_);
         case CameraMode::FirstPerson: return target_;
         case CameraMode::Count: break;
     }
@@ -249,7 +262,7 @@ math::Vec3 Camera::eye() const {
 
 math::Mat4 Camera::view() const {
     const math::Vec3 e = eye();
-    if (mode_ == CameraMode::FirstPerson) {
+    if (mode_ != CameraMode::Aerial) {
         return math::look_at(e, e + forward(), {0.0f, 1.0f, 0.0f});
     }
     return math::look_at(e, target_, {0.0f, 1.0f, 0.0f});

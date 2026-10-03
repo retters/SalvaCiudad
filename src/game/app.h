@@ -17,6 +17,7 @@
 #include "game/game_clock.h"
 #include "game/map_generation.h"
 #include "game/map_scene.h"
+#include "game/occluders.h"
 #include "game/services.h"
 #include "game/sound_director.h"
 #include "game/settings.h"
@@ -285,6 +286,17 @@ private:
     float perf_log_s_ = 0.0f;
     int perf_log_frames_ = 0;
     GameClock clock_;
+    // Phase 61: following a villager and the ghost of the camera's anchor.
+    void follow_villager(const CameraInput& in);
+    void show_anchor(float dt);
+    sim::EntityId followed_shown_;
+    sim::EntityId last_clicked_villager_;
+    std::uint64_t last_click_ns_ = 0;
+    static constexpr std::uint64_t kDoubleClickNs = 400'000'000ull;
+    math::Vec3 anchor_last_;
+    bool anchor_known_ = false;
+    // What is in the camera's way, drawn see-through.
+    Occluders occluders_;
     // Frames in a row that lost ticks; after a few the speed goes a step down.
     int slow_frames_ = 0;
     static constexpr int kSlowFramesToLower = 20;

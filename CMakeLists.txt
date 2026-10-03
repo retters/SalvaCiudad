@@ -291,6 +291,7 @@ set(SC_ENGINE_SOURCES
     src/game/terrain_names.cpp
     src/game/menu_backgrounds.cpp
     src/game/model_file.cpp
+    src/game/occluders.cpp
     src/game/ui_host.cpp
     src/game/variants.cpp
     src/game/village_view.cpp

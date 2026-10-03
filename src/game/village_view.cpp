@@ -303,6 +303,7 @@ void VillageView::end(render::SceneRenderer& renderer) {
     renderer.set_characters({});
     looks_.clear();
     creature_looks_.clear();
+    faded_.clear();
     corpses_.clear();
     ghost_.reset();
     shown_ = false;
@@ -966,7 +967,8 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         }
     }
     const sim::Content& content = game.content();
-    for (const sim::Building& b : game.buildings().data()) {
+    for (std::size_t k = 0; k < game.buildings().size(); ++k) {
+        const sim::Building& b = game.buildings().data()[k];
         const Model* m = model_for(b.def, b.level, place_key(b.x, b.z));
         if (m == nullptr || (!building_shown(game, b) && !building_silhouette(game, b))) {
             continue;
@@ -982,6 +984,12 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
             const float char_level = 1.0f - 0.7f * static_cast<float>(b.burned) / 1000.0f;
             inst.tint = b.fire > 0 ? math::Vec3{1.9f * char_level, 0.6f * char_level, 0.3f * char_level}
                                    : math::Vec3{char_level, char_level, char_level};
+        }
+        // In the camera's way (phase 61): see-through.
+        for (const Fade& fade : faded_) {
+            if (fade.building == game.buildings().entities()[k]) {
+                inst.fade = std::min(fade.level, render::kMaxFade);
+            }
         }
         lists[m->id].push_back(inst);
     }
@@ -1033,6 +1041,21 @@ math::Vec3 VillageView::villager_position(const sim::Game& game, const sim::Vill
     return {x, map_surface_height(game.map(), x, z), z};
 }
 
+float VillageView::building_roof(const sim::Game& game, const sim::Building& b) const {
+    const Model* m = model_for(b.def, b.level, place_key(b.x, b.z));
+    if (m == nullptr || !building_shown(game, b)) {
+        return 0.0f;
+    }
+    const sim::BuildingDef& d = game.content().buildings[b.def];
+    float progress = 1.0f;
+    if (b.state == sim::BuildingState::Construction && d.build_work > 0) {
+        progress = static_cast<float>(b.work_done) / static_cast<float>(d.build_work);
+    }
+    // The same instance it is drawn with: sunk while it is being built.
+    const render::Instance inst = building_instance(game, b.def, *m, b.x, b.z, b.width, b.depth, b.rotation, progress);
+    return inst.position.y + m->height * inst.scale;
+}
+
 math::Vec3 VillageView::building_top(const sim::Game& game, const sim::Building& b) const {
     const math::Vec3 base{static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f, 0.0f,
                           static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f};
@@ -1067,6 +1090,9 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
         if (!mover_shown(game, true, v.owner, to_float(v.position.x), to_float(v.position.z))) {
             continue;  // Under the fog of war.
         }
+        if (id == hidden_villager_) {
+            continue;  // The first-person camera looks from its eyes.
+        }
         if (look.generation != id.generation) {
             look = Look{};
             look.generation = id.generation;
@@ -1095,7 +1121,36 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
         c.palette = people::Cast::palette(body, v.appearance);
         characters_.push_back(c);
     }
+    // The ghost of the camera's anchor walks when the anchor moves; it is
+    // the camera's, so it goes by real time whatever the game's speed.
+    if (anchor_ghost_) {
+        const people::Body& body = cast_->body(0, false, 0);
+        const bool moving = anchor_ghost_->speed > 0.3f;
+        people::advance(body, anchor_motion_, moving ? people::Act::Walk : people::Act::Idle, anchor_ghost_->speed, dt, dt);
+        render::CharacterInstance c;
+        people::pose(body, anchor_motion_, c);
+        c.accessories = 0;
+        c.position = anchor_ghost_->feet;
+        c.yaw = anchor_ghost_->yaw;
+        c.palette = cast_->ghost_palette();
+        c.fade = 2;
+        characters_.push_back(c);
+    }
     renderer.set_characters(characters_);
+}
+
+std::optional<VillageView::Standing> VillageView::standing(const sim::Game& game, sim::EntityId villager, float alpha) const {
+    const sim::Villager* v = game.villagers().get(villager);
+    if (v == nullptr || !mover_shown(game, true, v->owner, to_float(v->position.x), to_float(v->position.z))) {
+        return std::nullopt;
+    }
+    Standing out;
+    out.feet = villager_position(game, *v, alpha);
+    if (cast_ != nullptr && cast_->loaded()) {
+        const people::Body& body = cast_->body(v->race, v->sex == sim::Sex::Female, v->appearance);
+        out.height = body.height / 1.8f * people::scale_of(game.age_years(*v), v->appearance);
+    }
+    return out;
 }
 
 std::optional<sim::EntityId> VillageView::pick_villager(const sim::Game& game, math::Vec3 origin, math::Vec3 dir,

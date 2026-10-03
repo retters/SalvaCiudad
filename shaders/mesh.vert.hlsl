@@ -44,11 +44,13 @@ VertexOutput main(VertexInput input)
     // A building palette (tint.w, from 1) replaces the colors of the
     // materials named after its slots; the fragment shader multiplies by
     // the material color, so divide it out here.
-    // tint.w: the palette, plus 4096 for a landmark (phase 34), which the
-    // fragment shader gets as an alpha of 2.
+    // tint.w: the palette, plus 4096 for a landmark (phase 34), plus 8192
+    // for each quarter it is faded (phase 61). The fragment shader gets 1,
+    // or 2 for a landmark, plus the faded share.
     uint packed = (uint)inst.tint.w;
     uint palette = packed & 4095u;
-    output.tint = float4(inst.tint.rgb, packed >= 4096u ? 2.0 : 1.0);
+    float faded = (float)((packed >> 13) & 3u) * 0.25;
+    output.tint = float4(inst.tint.rgb, ((packed & 4096u) != 0u ? 2.0 : 1.0) + faded);
     if (draw.x >= 0 && palette > 0)
     {
         float3 color = building_palettes[(palette - 1) * 4 + (uint)draw.x].rgb;
