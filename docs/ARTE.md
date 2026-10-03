@@ -12,7 +12,7 @@ blender --background --factory-startup --python art/blender/build_all.py -- data
 
 - `--background` no abre la interfaz ni toca tus escenas abiertas.
 - `--factory-startup` ignora tus preferencias y complementos, para que el resultado no dependa del equipo.
-- Se puede limitar a un grupo: `characters`, `props`, `trees` (y después, las especies: `trees oak elm`), `buildings` o `animals`, por ejemplo `... -- data/mods/core/models buildings`.
+- Se puede limitar a un grupo: `characters`, `tools`, `loads`, `props`, `trees` (y después, las especies: `trees oak elm`), `buildings` o `animals`, por ejemplo `... -- data/mods/core/models buildings`. `buildings sites` genera solo las obras (fase 67).
 - Los `.glb` generados se guardan en el repositorio, así compilar el juego no requiere Blender.
 
 **Reproducible:** generar dos veces da archivos idénticos byte a byte. El exportador de Blender cambia el orden de los triángulos entre ejecuciones, así que `common.export_glb` los ordena después de exportar (D-402). Para comprobarlo, genera en dos carpetas y compáralas:
@@ -29,10 +29,11 @@ blender --background --factory-startup --python art/blender/build_all.py -- tmp/
 | Script | Genera |
 |---|---|
 | `common.py` | Utilidades: escena vacía, materiales, `MeshBuilder` (piezas con material y peso de hueso), exportación con opciones fijas |
-| `props.py` | `props/rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb`, con sus variantes |
+| `props.py` | `props/rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb`, con sus variantes; desde la fase 67, las pilas `pile_<qué>_<nivel>.glb` y la carreta `cart.glb` |
 | `lowpoly_trees/*.py` | `trees/<árbol>_<estado>.glb` y su versión lejana `_far.glb`: los 32 árboles y 8 gigantes del juego (ver `docs/ARBOLES.md`). `build_all.py ... trees [nombres]` los construye |
-| `buildings.py` | `buildings/<id>.glb`: un modelo por edificio de `core` (46), cada uno del tamaño de su terreno |
-| `build_all.py` | Ejecuta todo; los animales del juego (`animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb`) salen de `zoo/`, con esqueleto y animaciones (fase 47); los personajes (`characters/<personaje>.glb` y su versión lejana `_far.glb`, 17 de `people/`) y las herramientas (`tools/axe.glb`, `bow.glb`, `rod.glb`, `hammer.glb`, de `weapons/`), desde la fase 57 |
+| `buildings.py` | `buildings/<id>.glb`: un modelo por edificio de `core` (46), cada uno del tamaño de su terreno; desde la fase 67, las obras `site_<ancho>x<fondo>_<etapa>.glb`, por tamaño de terreno |
+| `build_all.py` | Ejecuta todo; los animales del juego (`animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb`) salen de `zoo/`, con esqueleto y animaciones (fase 47); los personajes (`characters/<personaje>.glb` y su versión lejana `_far.glb`, 17 de `people/`) y las herramientas (`tools/axe.glb`, `bow.glb`, `rod.glb`, `hammer.glb`, de `weapons/`), desde la fase 57; la flecha (`tools/arrow.glb`) y las cargas (`loads/*.glb`, de `loads/`), desde la fase 67 |
+| `loads/*.py` | Las 9 cargas que lleva un aldeano (fase 67), una por archivo; `_load_kit.py` tiene las piezas comunes y la convención de colocación |
 | `studies.py` | Técnicas de modelado de los animales low poly; `build_final` es la de producción (remesh y reducción) |
 | `zoo/*.py` | Un animal o planta low poly por archivo (ver abajo) |
 | `far_tree.py` | La versión lejana de un árbol (fase 52), a partir de su modelo terminado: `studies.build_final` la escribe como `<nombre>_far.glb` para toda especificación con `far_limit` |
@@ -48,7 +49,7 @@ blender --background --factory-startup --python art/blender/build_all.py -- tmp/
 | `rig_check.py` | Verifica las animaciones de un modelo exportado |
 | `study_preview.py` | Una imagen de revisión por modelo (4 vistas) y las tiras de sus animaciones |
 
-Las imágenes de referencia del usuario (`Animales low poly`, `Arboles 1` a `8`, `Armas y herramientas` y `Personajes 1` a `3`) están en `art/reference/` desde la fase 49; de ahí las leen `lowpoly_trees/_trace.py` y `_giant_trace.py`.
+Las imágenes de referencia del usuario (`Animales low poly`, `Arboles 1` a `8`, `Armas y herramientas`, `Personajes 1` a `3` y, desde la fase 67, `Cargas del viajero anfibio`) están en `art/reference/` desde la fase 49; de ahí las leen `lowpoly_trees/_trace.py` y `_giant_trace.py`.
 
 ## Convenciones
 
@@ -209,6 +210,73 @@ blender --background --factory-startup --python art/blender/tripo_build.py -- <m
   - que cada animación que se repite termina en la pose con que empieza;
   - que nada baja del suelo;
   - que los pies apoyados retroceden a la velocidad guardada (±10 %).
+
+## Cargas, pilas, obras y carreta (fase 67)
+
+Modelos para que lo que pasa en el pueblo se vea: lo que lleva un aldeano, lo que hay apilado en una obra o un almacén, y la obra misma.
+
+### Cargas (`art/blender/loads/`, `models/loads/`)
+
+Modelos rígidos, sin esqueleto, de unos 300 triángulos, uno por archivo (`studies.Spec` con solo `details()`, como las armas). Las medidas son para un cuerpo de 1,8 m; el juego las escala para cuerpos más pequeños. El juego fija toda carga al hueso `chest`; el punto `grip` del modelo (en sus *extras*, en ejes de Blender) dice dónde:
+
+- **En la espalda** (`<qué>_back`): el modelo queda entero del lado **+Y** del plano Y = 0 (detrás del personaje), apoyado en Z = 0. Su `grip` es `(0, 0, mitad de su altura)`: el punto que toca el centro de la espalda, que en un cuerpo de 1,8 m en reposo es `(0, +0,115, 1,32)`, es decir, el inicio del hueso `chest` llevado 0,115 m hacia atrás.
+- **En los brazos** (`<qué>_arms`): el modelo queda entero del lado **−Y** del plano Y = 0 (delante del personaje), apoyado en Z = 0. Su `grip` es `(0, 0, 0,14)`: el punto que toca el centro del pecho, `(0, −0,115, 1,32)` en un cuerpo de 1,8 m. Así el fondo de la carga queda justo sobre las manos de las animaciones de carga.
+- En ambos casos el arriba del modelo es +Z y su izquierda y derecha son las del personaje. La carga no se gira respecto del hueso.
+
+| Modelo | Qué es | Ancho × fondo × alto (m) | `grip` |
+|---|---|---|---|
+| `logs_back` | 6 troncos atados con dos correas | 0,72 × 0,34 × 0,48 | (0, 0, 0,24) |
+| `stone_back` | 3 rocas en un arnés de cuero | 0,54 × 0,40 × 0,62 | (0, 0, 0,30) |
+| `sack_back` | Saco de tela atado arriba | 0,46 × 0,36 × 0,62 | (0, 0, 0,30) |
+| `basket_back` | Canasto de mimbre con verduras y pan | 0,46 × 0,40 × 0,62 | (0, 0, 0,25) |
+| `crate_back` | Cajón de madera con correas | 0,48 × 0,34 × 0,44 | (0, 0, 0,22) |
+| `logs_arms` | 4 troncos atravesados | 0,84 × 0,30 × 0,27 | (0, 0, 0,14) |
+| `stone_arms` | 3 piedras | 0,52 × 0,31 × 0,37 | (0, 0, 0,14) |
+| `basket_arms` | Canasta con asa, llena de comida | 0,42 × 0,40 × 0,34 | (0, 0, 0,14) |
+| `crate_arms` | Cajón pequeño | 0,44 × 0,30 × 0,29 | (0, 0, 0,14) |
+
+Las cargas de la espalda no traen las correas de los hombros: dependerían del cuerpo de cada personaje.
+
+### Animaciones de carga
+
+`rigs_human.Humanoid` tiene dos clips más (11 de los 16 que admite el motor):
+
+- `carry_walk`: la misma marcha que `walk` (los mismos fotogramas y la misma velocidad guardada, `carry_walk_speed`), con los dos brazos doblados al frente sosteniendo una carga contra el pecho y el tronco un poco echado hacia atrás.
+- `carry_idle`: de pie, con los brazos igual y una respiración leve; 90 fotogramas, se repite.
+
+Las muñecas quedan en `(±0,16, −0,30, 1,12)` de un cuerpo de 1,8 m (`CARRY_HAND`), fijas respecto del hueso `chest`, así que la carga no se separa de las manos. No llevan `<clip>_prop`: el juego elige la carga. Para una carga en la espalda sirven los clips normales (`walk`, `idle`).
+
+### Pilas (`props.py`)
+
+`props/pile_<qué>_<nivel>.glb`, con `<qué>` = `logs`, `stone`, `sacks`, `crates` o `baskets` y `<nivel>` = `1` (unas pocas piezas), `2` (media pila) o `3` (llena). Cada una ocupa cerca de 1,5 × 1,5 m, con el origen en el centro de la base. Un nivel contiene las piezas del anterior en el mismo lugar, así que al cambiar de nivel la pila crece sin saltos.
+
+### Obras (`buildings.py`)
+
+Una obra tiene tres aspectos: cimientos, armazón y el edificio terminado (su modelo de siempre). Los dos primeros son genéricos, uno por **tamaño de terreno** y no por edificio: `buildings/site_<ancho>x<fondo>_1.glb` y `_2.glb`. `buildings.footprints()` lee los tamaños de `defs/buildings.json`; hoy son 14: 2x2, 3x3, 4x2, 4x4, 5x4, 5x5, 6x5, 6x6, 6x8, 7x6, 7x7, 8x6, 8x7 y 8x8. Si un edificio nuevo usa otro tamaño, basta volver a generar.
+
+- **Etapa 1:** piso de tierra, un contorno de cimientos de piedra de 0,4 m de alto con el hueco de la puerta en el lado −Y, estacas con un trapo rojo y una pila de tablones.
+- **Etapa 2:** los mismos cimientos más un armazón de postes y vigas (de 3 m de alto en los terrenos de 2 m, hasta 5 m en los de 8 m), con riostras en las esquinas y, por dentro del lado +X, un andamio con su escalera.
+- Mismas convenciones que los edificios: llenan su terreno, se apoyan en Z = 0 y la puerta da a −Y.
+
+### Flecha y carreta
+
+- `tools/arrow.glb`: la flecha de `weapons/w17_arrow.py`, de 0,8 m, con su eje largo en +Z (la punta arriba) como las demás herramientas. Está en `GAME_TOOLS` de `build_all.py`.
+- `props/cart.glb`: la carreta de mano del mercader: dos ruedas, dos varas hacia −Y (su frente), cajones, sacos y un barril bajo un toldo de tela. Mide 2,3 m de largo (2,2 m sin el vuelo del toldo), 1,3 m de ancho y 2 m de alto.
+
+### Generar y revisar
+
+```
+blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models loads
+blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models tools
+blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models props
+blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models buildings sites
+blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models characters
+blender --background --factory-startup --python art/blender/study_preview.py -- data/mods/core/models/loads <carpeta de salida>
+```
+
+`buildings sites` genera solo las obras, sin tocar los edificios. Tras regenerar los personajes, `rig_check.py` sobre los 17 modelos cercanos debe terminar en `RIG OK`.
+
+Un tropiezo conocido: la versión lejana (`_far.glb`) de unos pocos personajes (`knight_man`, `knight_woman`, `orc`, `cleric`) no sale idéntica byte a byte en cada generación, porque la reducción de Blender no siempre elige las mismas aristas. Si solo cambió eso, se deja el archivo que ya estaba (`git checkout`).
 
 ## Visor de modelos
 

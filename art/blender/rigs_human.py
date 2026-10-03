@@ -12,7 +12,10 @@ Clips, all in place:
 - chop: a two-handed swing of an axe at a trunk in front;
 - shoot: raise a bow, draw, hold, release and lower it;
 - fish_cast (plays once), fish_stand and fish_sit (sitting on the ground),
-  holding a rod.
+  holding a rod;
+- carry_walk and carry_idle (phase 67): the walk and a standing pose with
+  both arms holding a load against the chest. They name no tool: the game
+  picks the load and pins it to the chest bone.
 The tool is a separate model. It goes in the hand named by the model's
 extras "<clip>_prop" ("axe:hand.R"), with the tool's long axis (its +Z)
 along the hand's forward direction: -Y while the arm hangs at rest.
@@ -373,6 +376,44 @@ class Humanoid(rigs.Rig):
         self.rod_pose(pose, Vector((-0.1, -0.34, 0.5)) * k, (0, -0.85, 0.5), t)
         return pose.q, pose.offset, {}
 
+    # The wrists while a load is held against the chest, of a 1.8 m body
+    # standing at rest (left side; the right one is mirrored).
+    CARRY_HAND = (0.16, -0.30, 1.12)
+
+    def carry_arms(self, pose):
+        """Both arms bent forward under a load held against the chest. The
+        hands keep their place relative to the chest bone, which the load is
+        pinned to, so they stay under it whatever the body does."""
+        chest = self.by_name["chest"]
+        at, turn = pose.head("chest"), pose.world("chest")
+        for side, sx in SIDES:
+            rest = Vector((sx * self.CARRY_HAND[0], self.CARRY_HAND[1], self.CARRY_HAND[2])) * self.k
+            pose.limb(f"upper_arm.{side}", f"lower_arm.{side}", at + turn @ (rest - chest.head),
+                      turn @ Vector((sx * 0.7, 0.5, -1.0)))
+            pose.aim(f"hand.{side}", turn @ Vector((-sx * 0.45, -0.85, 0.2)))
+
+    def carry_walk_pose(self, t):
+        """The walk's legs and hips, leaning back a little under a load."""
+        q, offset, extra = self.gait_pose(self.walk, t, -4.0, 0.0, 0.0, 0.012)
+        pose = Pose(self, offset)
+        pose.q = q
+        # The chest, and the load with it, turns less than in the free walk.
+        pose.q["chest"] = Quaternion(Z, math.radians(-3.0 * math.sin(2 * math.pi * t)))
+        self.carry_arms(pose)
+        return pose.q, pose.offset, extra
+
+    def carry_idle_pose(self, t):
+        p = 2 * math.pi * t
+        breath = math.sin(3 * p)
+        pose = Pose(self, (0.003 * self.k * math.sin(p), 0, -0.006 * self.k * (1.5 + breath)))
+        self.stand(pose)
+        pose.turn("spine", X, -4.0 + 0.6 * breath)
+        pose.turn("chest", X, 0.8 * breath)
+        pose.turn("neck", X, 2.4)
+        pose.turn("head", Z, 5.0 * math.sin(p))
+        self.carry_arms(pose)
+        return pose.q, pose.offset, {}
+
     def clips(self):
         w, r = self.walk, self.run
         return [
@@ -385,6 +426,8 @@ class Humanoid(rigs.Rig):
             ("fish_stand", 120, True, self.fish_stand_pose, None),
             ("fish_sit", 120, True, self.fish_sit_pose, None),
             ("work", 30, True, self.work_pose, None),
+            ("carry_walk", w["frames"], True, self.carry_walk_pose, w["speed"]),
+            ("carry_idle", 90, True, self.carry_idle_pose, None),
         ]
 
     def clip_props(self):

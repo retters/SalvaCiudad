@@ -276,7 +276,7 @@ class AdventurerRig(rigs_human.Humanoid):
 
     def pose_extra(self, clip, t, rot):
         p = TAU * t
-        moving = {"walk": 1.0, "run": 1.6}.get(clip, 0.0)
+        moving = {"walk": 1.0, "carry_walk": 1.0, "run": 1.6}.get(clip, 0.0)
         tail = self.chain("tail")
         for i, bone in enumerate(tail):
             if clip == "fish_sit":

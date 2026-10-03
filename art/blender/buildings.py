@@ -813,7 +813,162 @@ def barracks(folder):
     export(folder, "barracks", mb)
 
 
-def make_all(folder):
+# --- Construction sites (phase 67) ---------------------------------------------------------
+
+SITE_WALL = 0.35     # Thickness of the foundation.
+SITE_HEIGHT = 0.4    # Height of the foundation.
+
+
+def footprints():
+    """The distinct footprint sizes (w, d) of the buildings of core, read
+    from its definitions, in order."""
+    import json
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(here, "..", "..", "data", "mods", "core", "defs", "buildings.json")
+    with open(path, encoding="utf-8") as f:
+        defs = json.load(f)["defs"]
+    return sorted({(int(d["size"][0]), int(d["size"][1])) for d in defs if d.get("type") == "building"})
+
+
+def site_frame_height(w, d):
+    """3 m for the smallest footprints, up to 5 m for the largest (8 m)."""
+    return 3.0 + 2.0 * max(0.0, min(1.0, (max(w, d) - 2) / 6.0))
+
+
+def stone_run(mb, x0, y0, x1, y1, first=0):
+    """A stretch of the foundation from (x0, y0) to (x1, y1): blocks about
+    a meter long, of two greys and slightly uneven heights."""
+    length = math.hypot(x1 - x0, y1 - y0)
+    n = max(1, round(length))
+    along_x = abs(x1 - x0) > abs(y1 - y0)
+    for i in range(n):
+        t = (i + 0.5) / n
+        h = SITE_HEIGHT - (0.05 if (i + first) % 2 else 0.0)
+        size = (length / n, SITE_WALL, h) if along_x else (SITE_WALL, length / n, h)
+        mb.box((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, h / 2), size, "stone" if (i + first) % 2 else "stone_dark")
+
+
+def site_foundation(mb, w, d):
+    """The dirt floor and the low stone outline around the footprint, with
+    a gap for the door in the middle of the -Y side."""
+    mb.box((0, 0, 0.03), (w - 0.1, d - 0.1, 0.06), "soil")
+    x, y = (w - SITE_WALL) / 2, (d - SITE_WALL) / 2
+    door = min(1.0, w * 0.35) / 2
+    stone_run(mb, -w / 2, -y, -door, -y)
+    stone_run(mb, door, -y, w / 2, -y, 1)
+    stone_run(mb, -w / 2, y, w / 2, y, 1)
+    stone_run(mb, -x, -d / 2 + SITE_WALL, -x, d / 2 - SITE_WALL)
+    stone_run(mb, x, -d / 2 + SITE_WALL, x, d / 2 - SITE_WALL, 1)
+
+
+def plank_pile(mb, cx, cy, length):
+    """Planks stacked along X, the top ones askew."""
+    for layer, count in enumerate((3, 3, 2)):
+        for i in range(count):
+            y = cy + (i - (count - 1) / 2) * 0.24
+            mb.box((cx + 0.05 * layer, y, 0.06 + 0.03 + layer * 0.06), (length, 0.2, 0.05),
+                   "wood_light" if (i + layer) % 2 else "wood", rotation_z=0.05 * layer)
+
+
+def site_ladder(mb, foot, top, width=0.42):
+    """A ladder from `foot` to `top` (both x, z), on the plane Y = foot's y."""
+    (x0, y, z0), (x1, _, z1) = foot, top
+    for side in (-1, 1):
+        mb.cylinder((x0, y + side * width / 2, z0), (x1, y + side * width / 2, z1), 0.03, 0.03, "wood", segments=4)
+    rungs = max(3, int(math.hypot(x1 - x0, z1 - z0) / 0.32))
+    for i in range(1, rungs + 1):
+        t = i / (rungs + 1)
+        x, z = x0 + (x1 - x0) * t, z0 + (z1 - z0) * t
+        mb.cylinder((x, y - width / 2, z), (x, y + width / 2, z), 0.022, 0.022, "wood_light", segments=4)
+
+
+def site_frame(mb, w, d):
+    """Stage 2: posts on the foundation, plates and rails between them,
+    corner braces, and inside the +X wall a scaffold with a ladder."""
+    h = site_frame_height(w, d)
+    t = 0.16
+    x, y = (w - SITE_WALL) / 2, (d - SITE_WALL) / 2
+    nx, ny = max(1, round(2 * x / 2.5)), max(1, round(2 * y / 2.5))
+    xs = [-x + 2 * x * i / nx for i in range(nx + 1)]
+    ys = [-y + 2 * y * i / ny for i in range(ny + 1)]
+    z0 = SITE_HEIGHT - 0.05
+    posts = [(px, py) for px in xs for py in (-y, y)] + [(px, py) for px in (-x, x) for py in ys[1:-1]]
+    for px, py in posts:
+        mb.box((px, py, (z0 + h) / 2), (t, t, h - z0), "timber")
+    rail = z0 + (h - z0) * 0.5
+    for py in (-y, y):
+        mb.box((0, py, h - t / 2), (2 * x + t, t, t), "timber")
+        if py > 0:   # The front stays open under the plate, for the door.
+            mb.box((0, py, rail), (2 * x, t * 0.7, t * 0.7), "wood")
+    for px in (-x, x):
+        mb.box((px, 0, h - t / 2), (t, 2 * y + t, t), "timber")
+        mb.box((px, 0, rail), (t * 0.7, 2 * y, t * 0.7), "wood")
+    for px in xs[1:-1]:   # Tie beams across.
+        mb.box((px, 0, h - t / 2), (t * 0.8, 2 * y, t * 0.8), "wood")
+    # Braces from each corner post up to the plates.
+    reach = min(0.9, x * 0.8, y * 0.8)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            mb.cylinder((sx * x, sy * y, h - t - reach), (sx * (x - reach), sy * y, h - t), 0.05, 0.05, "wood",
+                        segments=4)
+            mb.cylinder((sx * x, sy * y, h - t - reach), (sx * x, sy * (y - reach), h - t), 0.05, 0.05, "wood",
+                        segments=4)
+    # The scaffold: four poles, ledgers, a plank platform and a brace.
+    outer = w / 2 - SITE_WALL - 0.25
+    inner = outer - 0.6
+    half = min(d - 1.2, 3.0) / 2
+    deck = h * 0.55
+    for px in (inner, outer):
+        for py in (-half, half):
+            mb.cylinder((px, py, 0.06), (px, py, deck + 1.0), 0.04, 0.035, "wood", segments=5)
+        for z in (deck - 0.06, deck + 0.9):
+            mb.cylinder((px, -half, z), (px, half, z), 0.03, 0.03, "wood", segments=4)
+    for py in (-half, half):
+        mb.cylinder((inner, py, deck - 0.06), (outer, py, deck - 0.06), 0.03, 0.03, "wood", segments=4)
+        mb.cylinder((inner, py, 0.3), (outer, py, deck - 0.2), 0.025, 0.025, "wood", segments=4)
+    for i, px in enumerate((inner + 0.1, inner + 0.3, inner + 0.5)):
+        mb.box((px, 0, deck), (0.19, 2 * half + 0.3, 0.05), "wood_light" if i % 2 else "wood")
+    foot = max(-w / 2 + SITE_WALL + 0.1, inner - 0.08 - deck * 0.3)
+    site_ladder(mb, (foot, 0.0, 0.06), (inner - 0.08, 0.0, deck + 0.35))
+
+
+def site(folder, w, d, stage):
+    """A construction site of a w x d footprint: site_<w>x<d>_<stage>.glb.
+    Stage 1 is the foundations (a low stone outline, a dirt floor, stakes
+    and a pile of planks); stage 2 adds the timber frame with its scaffold
+    and ladder. Stage 3 is the finished building's own model."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    site_foundation(mb, w, d)
+    inner_x, inner_y = w / 2 - SITE_WALL, d / 2 - SITE_WALL
+    if stage == 1:
+        # Stakes with a red rag, marking the corners and the door.
+        marks = [(sx * (inner_x - 0.25), sy * (inner_y - 0.25)) for sx in (-1, 1) for sy in (-1, 1)]
+        marks += [(sx * min(1.0, w * 0.35) / 2, -d / 2 + 0.12) for sx in (-1, 1)]
+        for i, (px, py) in enumerate(marks):
+            mb.box((px, py, 0.45), (0.06, 0.06, 0.9), "wood", rotation_z=0.3 * i)
+            mb.box((px, py, 0.84), (0.09, 0.09, 0.1), "cloth_red", rotation_z=0.3 * i)
+    if stage == 1 or w >= 4:
+        length = max(0.7, min(1.8, w - 2.2))
+        mb_x = -inner_x + 0.35 + length / 2 if w >= 4 else 0.0
+        plank_pile(mb, mb_x, inner_y - 0.55 if d >= 3 else 0.0, length)
+    if stage == 2:
+        site_frame(mb, w, d)
+    export(folder, f"site_{w}x{d}_{stage}", mb)
+
+
+def sites(folder):
+    os.makedirs(folder, exist_ok=True)
+    for w, d in footprints():
+        for stage in (1, 2):
+            site(folder, w, d, stage)
+
+
+def make_all(folder, only=None):
+    """`only`: ["sites"] builds just the construction sites."""
+    if only and "sites" in only:
+        sites(folder)
+        return
     os.makedirs(folder, exist_ok=True)
     town_center(folder)
     # Homes: three looks for each level (phase 31).
@@ -870,3 +1025,4 @@ def make_all(folder):
     watchtower(folder)
     trap(folder)
     barracks(folder)
+    sites(folder)

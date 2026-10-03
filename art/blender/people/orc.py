@@ -41,7 +41,7 @@ class Orc(Folk):
         return out
 
     def animate(self, clip, t, pose):
-        if clip in ("walk", "run"):     # The big boots stay level: tipped down their toes would dig in.
+        if clip in ("walk", "run", "carry_walk"):     # The big boots stay level: tipped down their toes would dig in.
             for side in ("L", "R"):
                 pose.set_world("foot." + side, Quaternion())
 
