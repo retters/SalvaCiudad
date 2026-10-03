@@ -269,7 +269,18 @@ public:
         const std::uint8_t home = g_.rules_.races[town % g_.rules_.races.size()];
         const bool mixed = home == kMixedRace || home >= races;
         if (mixed || g_.rng_.below(100) < g_.rules_.other_races) {
-            return static_cast<std::uint8_t>(g_.rng_.below(static_cast<std::uint32_t>(races)));
+            // Any race, or one of those allowed to come (phase 56).
+            const auto pick = static_cast<std::uint8_t>(g_.rng_.below(static_cast<std::uint32_t>(races)));
+            const std::uint16_t allowed = g_.rules_.immigrants;
+            if (allowed == 0 || mixed) {
+                return pick;
+            }
+            for (std::size_t k = 0; k < races; ++k) {
+                const std::size_t r = (pick + k) % races;
+                if (r < 16 && ((allowed >> r) & 1u) != 0) {
+                    return static_cast<std::uint8_t>(r);
+                }
+            }
         }
         return home;
     }

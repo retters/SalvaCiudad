@@ -14,10 +14,19 @@
 namespace sc::sim {
 
 enum class MapSize : std::uint8_t { Small, Medium, Large, Huge, Giant, Colossal, Count };
-enum class Amount : std::uint8_t { Low, Normal, High, Count };
-enum class Relief : std::uint8_t { Low, Gentle, Mountainous, Count };
-// Phase 26: a coast on the maps without islands.
-enum class Sea : std::uint8_t { None, Sometimes, Always, Count };
+// Phase 56: how much of something a map has is a percent, 0 to
+// kMaxPercent, where 100 is the usual. These name the values the three
+// levels of before had.
+inline constexpr std::uint8_t kMaxPercent = 200;
+struct Amount {
+    static constexpr std::uint8_t Low = 50, Normal = 100, High = 200;
+};
+struct Relief {
+    static constexpr std::uint8_t Low = 50, Gentle = 100, Mountainous = 175;
+};
+// The sea: none; along one side; along two (a corner or opposite sides);
+// around one island per town; or around several islands per town.
+enum class Sea : std::uint8_t { None, OneSide, TwoSides, Islands, Archipelago, Count };
 
 // Most natural features a map may have (saves refuse more): a colossal
 // map with thick forests has several million.
@@ -43,19 +52,22 @@ inline constexpr MapSize kMaxWorldSize = MapSize::Colossal;
 }
 
 // The climate settings go from 0 to this, in percent.
-inline constexpr std::uint8_t kMaxClimatePercent = 200;
+inline constexpr std::uint8_t kMaxClimatePercent = kMaxPercent;
+// Half the temperature range from the north to the south, at most.
+inline constexpr std::uint8_t kMaxClimateRange = 30;
 
 struct MapSettings {
     std::uint64_t seed = 1;
     MapSize size = MapSize::Medium;
-    Amount water = Amount::Normal;      // Rivers and lakes.
-    Amount forests = Amount::Normal;
-    Amount resources = Amount::Normal;
-    Relief relief = Relief::Low;
+    // Percents (0..kMaxPercent, 100 the usual).
+    std::uint8_t rivers = 100;
+    std::uint8_t lakes = 100;
+    std::uint8_t forests = 100;
+    std::uint8_t resources = 100;
+    // Flat to mountainous. The new game form starts at Relief::Gentle (its
+    // 100 %); a map made without choosing is flat, as it always was.
+    std::uint8_t relief = Relief::Low;
     std::uint8_t players = 1;           // Start positions to place (1..12).
-    // Phase 54: an island map (the sea surrounds islands, a few per town)
-    // instead of one piece of land.
-    bool island_map = false;
     // The biomes the map may have: bit i is biome i of the content (the
     // first 64). 0: all of them.
     std::uint64_t biomes = 0;
@@ -63,6 +75,10 @@ struct MapSettings {
     // in the south; less is colder (or drier), more is warmer (or wetter).
     std::uint8_t temperature = 100;
     std::uint8_t humidity = 100;
+    // Half the range of temperature from north to south (0..kMaxClimateRange):
+    // the most gives a map from cold to warm, with every biome; a narrow one,
+    // a map of one climate.
+    std::uint8_t climate_range = kMaxClimateRange;
     // Phase 55: how many giant trees, in percent of the usual for the size
     // (0: none; up to kMaxClimatePercent).
     std::uint8_t giants = 100;
@@ -70,14 +86,18 @@ struct MapSettings {
     // seed + player number, laid side by side in one world with no way
     // across. Only with more than one player.
     bool separate = false;
-    // Islands per town, for an island map (1..kMaxIslandsPerTown):
+    // Islands per town, for an archipelago (1..kMaxIslandsPerTown):
     // 2 towns with 3 islands each make 6 islands.
     std::uint8_t islands = 2;
-    // Phase 26: sea along one or two sides, for maps that are not islands.
-    Sea sea = Sea::Sometimes;
+    Sea sea = Sea::None;
     // Phase 27: how many regions are not plains, and how many valleys and
-    // canyons there are (phase 39).
-    Amount landforms = Amount::Normal;
+    // canyons there are (phase 39). A percent.
+    std::uint8_t landforms = 100;
+
+    // An island map: the sea surrounds islands instead of one piece of land.
+    [[nodiscard]] bool island_map() const { return sea == Sea::Islands || sea == Sea::Archipelago; }
+    // Islands per town on it: one, or `islands` on an archipelago.
+    [[nodiscard]] std::uint8_t islands_per_town() const { return sea == Sea::Archipelago ? islands : std::uint8_t{1}; }
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, MapSettings& out);

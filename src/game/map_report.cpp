@@ -266,8 +266,8 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
     yyjson_mut_val* m = yyjson_mut_obj_add_obj(d, root, "map");
     add_str(d, m, "seed", std::to_string(s.seed));
     add_str(d, m, "size", pick(names::kSizes, static_cast<std::size_t>(s.size)));
-    // Phase 54: land or islands, the biomes allowed (none listed: all) and the climate.
-    add_str(d, m, "mapType", s.island_map ? "islands" : "land");
+    // The biomes allowed (none listed: all), the climate and, as percents
+    // (phase 56), how much of everything.
     yyjson_mut_val* allowed = yyjson_mut_obj_add_arr(d, m, "biomes");
     for (std::size_t b = 0; b < content.flora.biomes.size() && b < 64 && s.biomes != 0; ++b) {
         if (((s.biomes >> b) & 1u) != 0) {
@@ -276,12 +276,15 @@ std::string to_json(const Report& r, const sim::MapData& map, const sim::Content
     }
     (void)yyjson_mut_obj_add_int(d, m, "temperature", s.temperature);
     (void)yyjson_mut_obj_add_int(d, m, "humidity", s.humidity);
-    add_str(d, m, "water", pick(names::kAmounts, static_cast<std::size_t>(s.water)));
-    add_str(d, m, "forests", pick(names::kAmounts, static_cast<std::size_t>(s.forests)));
-    add_str(d, m, "resources", pick(names::kAmounts, static_cast<std::size_t>(s.resources)));
-    add_str(d, m, "relief", pick(names::kReliefs, static_cast<std::size_t>(s.relief)));
+    (void)yyjson_mut_obj_add_int(d, m, "climateRange", s.climate_range);
+    (void)yyjson_mut_obj_add_int(d, m, "rivers", s.rivers);
+    (void)yyjson_mut_obj_add_int(d, m, "lakes", s.lakes);
+    (void)yyjson_mut_obj_add_int(d, m, "forests", s.forests);
+    (void)yyjson_mut_obj_add_int(d, m, "resources", s.resources);
+    (void)yyjson_mut_obj_add_int(d, m, "relief", s.relief);
+    (void)yyjson_mut_obj_add_int(d, m, "landforms", s.landforms);
+    (void)yyjson_mut_obj_add_int(d, m, "giants", s.giants);
     add_str(d, m, "sea", pick(names::kSeas, static_cast<std::size_t>(s.sea)));
-    add_str(d, m, "landforms", pick(names::kAmounts, static_cast<std::size_t>(s.landforms)));
     (void)yyjson_mut_obj_add_int(d, m, "players", s.players);
     (void)yyjson_mut_obj_add_bool(d, m, "separate", s.separate);
     (void)yyjson_mut_obj_add_int(d, m, "islands", s.islands);
@@ -436,17 +439,13 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
     std::string seed;
     std::string type_id;
     std::string biome_id;
-    std::size_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, sea = 0, landforms = 0;
+    std::size_t size = 0;
     std::int64_t players = 0;
     std::int64_t islands = 0;
     bool separate = false;
     if (json::get_string(map, "seed", 20, seed) != json::Field::Ok || !get_name(map, "size", names::kSizes, size) ||
-        json::get_string(map, "mapType", 128, type_id) != json::Field::Ok ||
+        json::get_string(map, "mapType", 128, type_id) == json::Field::Invalid ||
         json::get_string(map, "biome", 128, biome_id) == json::Field::Invalid ||
-        !get_name(map, "water", names::kAmounts, water) ||
-        !get_name(map, "forests", names::kAmounts, forests) || !get_name(map, "resources", names::kAmounts, resources) ||
-        !get_name(map, "relief", names::kReliefs, relief) || !get_name(map, "sea", names::kSeas, sea) ||
-        !get_name(map, "landforms", names::kAmounts, landforms) ||
         json::get_int(map, "players", 1, 12, players) != json::Field::Ok ||
         json::get_bool(map, "separate", separate) != json::Field::Ok ||
         json::get_int(map, "islands", 1, sim::kMaxIslandsPerTown, islands) != json::Field::Ok) {
@@ -460,22 +459,75 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
         error = "bad seed";
         return false;
     }
-    // Islands or land; a report from before phase 54 names one of core's map types.
-    if (type_id != "land" && type_id != "islands" && !type_id.starts_with("core:")) {
+    // A percent (phase 56), or one of the three levels of an older report.
+    const auto amount = [&](const char* key, std::uint8_t most, std::uint8_t& out, bool relief = false) {
+        yyjson_mut_val* v = yyjson_mut_obj_get(map, key);
+        if (v == nullptr) {
+            return true;  // The usual.
+        }
+        if (yyjson_mut_is_int(v)) {
+            const std::int64_t n = yyjson_mut_get_sint(v);
+            if (n < 0 || n > most) {
+                return false;
+            }
+            out = static_cast<std::uint8_t>(n);
+            return true;
+        }
+        const char* text = yyjson_mut_get_str(v);
+        const std::string_view name = text != nullptr ? text : "";
+        if (name == "low") {
+            out = sim::Amount::Low;
+        } else if (name == "normal") {
+            out = sim::Amount::Normal;
+        } else if (name == "high") {
+            out = sim::Amount::High;
+        } else if (relief && name == "gentle") {
+            out = sim::Relief::Gentle;
+        } else if (relief && name == "mountainous") {
+            out = sim::Relief::Mountainous;
+        } else {
+            return false;
+        }
+        return true;
+    };
+    std::uint8_t water = 100;
+    const bool had_water = yyjson_mut_obj_get(map, "water") != nullptr;
+    if (!amount("water", sim::kMaxPercent, water) || !amount("rivers", sim::kMaxPercent, s.rivers) ||
+        !amount("lakes", sim::kMaxPercent, s.lakes) || !amount("forests", sim::kMaxPercent, s.forests) ||
+        !amount("resources", sim::kMaxPercent, s.resources) || !amount("relief", sim::kMaxPercent, s.relief, true) ||
+        !amount("landforms", sim::kMaxPercent, s.landforms) || !amount("temperature", sim::kMaxPercent, s.temperature) ||
+        !amount("humidity", sim::kMaxPercent, s.humidity) || !amount("giants", sim::kMaxPercent, s.giants) ||
+        !amount("climateRange", sim::kMaxClimateRange, s.climate_range)) {
+        error = "bad amounts";
+        return false;
+    }
+    if (had_water) {
+        s.rivers = s.lakes = water;  // One choice before phase 56.
+    }
+    // The sea: one of its kinds, or what a report from before phase 56 had
+    // (a map type of islands; sea "sometimes" or "always").
+    if (!type_id.empty() && type_id != "land" && type_id != "islands" && !type_id.starts_with("core:")) {
         error = "unknown map type";
         return false;
     }
-    s.island_map = type_id == "islands" || type_id == "core:islands";
-    std::int64_t percent = 100;
-    for (const auto& [key, field] : {std::pair{"temperature", &s.temperature}, std::pair{"humidity", &s.humidity}}) {
-        const json::Field f = json::get_int(map, key, 0, sim::kMaxClimatePercent, percent);
-        if (f == json::Field::Invalid) {
-            error = "bad climate";
+    std::string sea_name;
+    if (json::get_string(map, "sea", 32, sea_name) == json::Field::Invalid) {
+        error = "bad sea";
+        return false;
+    }
+    if (type_id == "islands" || type_id == "core:islands") {
+        s.sea = islands > 1 ? sim::Sea::Archipelago : sim::Sea::Islands;
+    } else if (sea_name.empty() || sea_name == "sometimes") {
+        s.sea = sim::Sea::None;
+    } else if (sea_name == "always") {
+        s.sea = sim::Sea::OneSide;
+    } else {
+        std::size_t sea = 0;
+        if (!get_name(map, "sea", names::kSeas, sea)) {
+            error = "unknown sea";
             return false;
         }
-        if (f == json::Field::Ok) {
-            *field = static_cast<std::uint8_t>(percent);
-        }
+        s.sea = static_cast<sim::Sea>(sea);
     }
     if (content != nullptr) {
         // The biomes allowed: the list, or the only biome of an old report
@@ -506,12 +558,6 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
         }
     }
     s.size = static_cast<sim::MapSize>(size);
-    s.water = static_cast<sim::Amount>(water);
-    s.forests = static_cast<sim::Amount>(forests);
-    s.resources = static_cast<sim::Amount>(resources);
-    s.relief = static_cast<sim::Relief>(relief);
-    s.sea = static_cast<sim::Sea>(sea);
-    s.landforms = static_cast<sim::Amount>(landforms);
     s.players = static_cast<std::uint8_t>(players);
     s.separate = separate && players > 1;
     s.islands = static_cast<std::uint8_t>(islands);

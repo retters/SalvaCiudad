@@ -12,6 +12,19 @@ namespace sc::sim::hier {
 
 namespace {
 
+// A value for a percent setting (0..200) that goes through four points: at
+// 0, 50, 100 and 200 %, in straight lines between them.
+[[nodiscard]] std::int32_t by_percent(std::int32_t percent, std::int32_t at0, std::int32_t at50, std::int32_t at100,
+                                      std::int32_t at200) {
+    if (percent <= 50) {
+        return at0 + (at50 - at0) * percent / 50;
+    }
+    if (percent <= 100) {
+        return at50 + (at100 - at50) * (percent - 50) / 50;
+    }
+    return at100 + (at200 - at100) * (std::min(percent, 200) - 100) / 100;
+}
+
 // Seeds for each noise field and random stream, so they are unrelated.
 constexpr std::uint64_t kRegionSeed = 0x4849455252454730ull;
 constexpr std::uint64_t kWarpXSeed = 0x4849455257415831ull;
@@ -239,12 +252,13 @@ private:
             }
         }
         const auto m = static_cast<std::int32_t>(on_map.size());
-        const std::int32_t percent = s_.landforms == Amount::Low ? 30 : (s_.landforms == Amount::High ? 60 : 45);
+        const std::int32_t percent = by_percent(s_.landforms, 0, 30, 45, 60);
         const std::int32_t others = m * percent / 100;
-        const std::int32_t share = s_.relief == Relief::Low ? 20 : (s_.relief == Relief::Mountainous ? 55 : 35);
+        const std::int32_t share = by_percent(s_.relief, 5, 20, 35, 60);
         std::int32_t mountains = others * share / 100;
-        std::int32_t plateaus = std::max(m >= 8 ? 1 : 0, others * 15 / 100);
-        std::int32_t basins = std::max(m >= 6 ? 1 : 0, others * 10 / 100);
+        std::int32_t plateaus = std::max(m >= 8 && s_.landforms > 0 ? 1 : 0, others * 15 / 100);
+        // Lakes lie in the basins: "Lakes" gives more or fewer of them.
+        std::int32_t basins = std::max(m >= 6 && s_.lakes > 0 ? 1 : 0, others * 10 * s_.lakes / 10000);
         std::int32_t hills = std::max(0, others - mountains - plateaus - basins);
 
         // A random plain region passing `ok`, or none.
@@ -336,8 +350,8 @@ private:
     // steeper.
     void set_heights() {
         Rng rng(s_.seed ^ kRoleSeed, 40);
-        const bool low = s_.relief == Relief::Low;
-        const bool high = s_.relief == Relief::Mountainous;
+        const bool low = s_.relief <= 60;
+        const bool high = s_.relief >= 150;
         for (Region& r : regions_) {
             switch (r.role) {
                 case Role::Plain:
@@ -409,7 +423,8 @@ private:
         if (island_type_) {
             const std::int32_t towns = std::clamp<std::int32_t>(s_.players, 1, 12);
             out_.islands = worldgen::island_layout(
-                s_.seed, n_, towns, std::min<std::int32_t>(s_.islands, worldgen::max_islands_per_town(s_.size, s_.players)));
+                s_.seed, n_, towns,
+                std::min<std::int32_t>(s_.islands_per_town(), worldgen::max_islands_per_town(s_.size, s_.players)));
             sea_mm_ = kSeaLevel;
             for (Region& r : regions_) {
                 if (island_land(std::clamp(r.x, 0, n_), std::clamp(r.z, 0, n_)) < 32768) {
@@ -418,17 +433,16 @@ private:
             }
             return;
         }
-        if (s_.sea == Sea::None || (s_.sea == Sea::Sometimes && rng.below(100) >= 40)) {
+        if (s_.sea == Sea::None) {
             return;
         }
         sea_mm_ = kSeaLevel;
+        // One side; or two: opposite ones one time in three, else a corner.
         const std::uint32_t pattern = rng.below(100);
         const std::uint32_t first = rng.below(4);
         std::vector<std::uint32_t> sides{first};
-        if (pattern >= 85) {
-            sides.push_back(first ^ 1u);
-        } else if (pattern >= 55) {
-            sides.push_back(first < 2 ? 2 + rng.below(2) : rng.below(2));
+        if (s_.sea == Sea::TwoSides) {
+            sides.push_back(pattern >= 67 ? first ^ 1u : first < 2 ? 2 + rng.below(2) : rng.below(2));
         }
         std::array<std::int32_t, 4> width{};  // West, east, north, south.
         // With two sides of sea each one reaches in less, so land stays the most.
@@ -519,8 +533,35 @@ private:
             const std::int64_t u = (static_cast<std::int64_t>(radius) * 130 / 100 - d) * 65536 / std::max<std::int64_t>(1, radius * 60 / 100);
             best = std::max(best, smooth(u));
         };
+        // Between two islands there is always a channel of sea: a point
+        // belongs to the nearest island, measured in radii of each, and
+        // the land ends before the line where two of them meet.
+        std::int64_t nearest = INT64_MAX, second = INT64_MAX, nearest_radius = 0, second_radius = 0;
         for (const worldgen::Island& island : out_.islands) {
             check(island.x, island.z, island.radius);
+            const std::int64_t reach = static_cast<std::int64_t>(island.radius) * 2;
+            const std::int64_t dx = static_cast<std::int64_t>(x) - island.x;
+            const std::int64_t dz = static_cast<std::int64_t>(z) - island.z;
+            if (island.radius <= 0 || std::abs(dx) > reach || std::abs(dz) > reach) {
+                continue;
+            }
+            const std::int64_t k = static_cast<std::int64_t>(isqrt(static_cast<std::uint64_t>(dx * dx + dz * dz))) * 1024 / island.radius;
+            if (k < nearest) {
+                second = nearest;
+                second_radius = nearest_radius;
+                nearest = k;
+                nearest_radius = island.radius;
+            } else if (k < second) {
+                second = k;
+                second_radius = island.radius;
+            }
+        }
+        if (second != INT64_MAX) {
+            // Meters to that line, about; no land within half a channel
+            // of it, all of it a channel away.
+            const std::int64_t half = std::max<std::int64_t>(10, n_ / 128);
+            const std::int64_t to_line = (second - nearest) * std::min(nearest_radius, second_radius) / 2048;
+            best = best * smooth((to_line - half) * 65536 / half) / 65536;
         }
         for (const Disc& islet : islets_) {
             check(islet.x, islet.z, islet.radius);
@@ -933,8 +974,8 @@ private:
     // Mountains: a crest along each chain, with peaks and spurs, and
     // sometimes a pass where it dips.
     void crests(Rng& rng) {
-        const bool low = s_.relief == Relief::Low;
-        const bool high = s_.relief == Relief::Mountainous;
+        const bool low = s_.relief <= 60;
+        const bool high = s_.relief >= 150;
         for (const std::vector<std::uint32_t>& chain : chains_) {
             std::vector<Pt> spine;
             const Region& first = regions_[chain.front()];
@@ -1098,9 +1139,9 @@ private:
                 from.push_back(id);
             }
         }
-        const std::int32_t percent = s_.landforms == Amount::Low ? 15 : (s_.landforms == Amount::High ? 45 : 30);
+        const std::int32_t percent = by_percent(s_.landforms, 0, 15, 30, 45);
         auto count = static_cast<std::int32_t>(from.size()) * percent / 100;
-        if (count == 0 && !from.empty() && s_.landforms != Amount::Low) {
+        if (count == 0 && !from.empty() && s_.landforms > Amount::Low) {
             count = 1;
         }
         for (std::int32_t i = 0; i < count && !from.empty(); ++i) {
@@ -1164,9 +1205,9 @@ private:
             }
         }
         // Few: a canyon for some of the plateaus, at least one if there are any.
-        const std::int32_t percent = s_.landforms == Amount::Low ? 15 : (s_.landforms == Amount::High ? 40 : 25);
+        const std::int32_t percent = by_percent(s_.landforms, 0, 15, 25, 40);
         std::int32_t count = static_cast<std::int32_t>(plateaus.size()) * percent / 100;
-        if (count == 0 && !plateaus.empty() && s_.landforms != Amount::Low) {
+        if (count == 0 && !plateaus.empty() && s_.landforms > Amount::Low) {
             count = 1;
         }
         for (std::int32_t i = 0; i < count && !plateaus.empty(); ++i) {

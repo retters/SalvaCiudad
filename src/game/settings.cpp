@@ -389,21 +389,64 @@ void read_def_id(Reader& r, yyjson_mut_val* obj, const char* key, std::string_vi
     r.count(f, path);
 }
 
+// A percent of the form: a multiple of 25 from `min` to 200.
+void read_percent(Reader& r, yyjson_mut_val* obj, const char* key, std::string_view path, int min, int& out) {
+    int v = out;
+    r.read_int(obj, key, path, min, 200, v);
+    if (v % 25 == 0) {
+        out = v;
+    }
+}
+
+// A list of definition ids (at most `most`), kept only if every one is well formed.
+void read_def_ids(Reader& r, yyjson_mut_val* obj, const char* key, std::string_view path, std::size_t most,
+                  std::vector<std::string>& out) {
+    yyjson_mut_val* list = yyjson_mut_obj_get(obj, key);
+    if (list == nullptr) {
+        r.count(json::Field::Missing, path);
+        return;
+    }
+    std::vector<std::string> ids;
+    bool ok = yyjson_mut_is_arr(list) && yyjson_mut_arr_size(list) <= most;
+    std::size_t idx = 0, max = 0;
+    yyjson_mut_val* item = nullptr;
+    if (ok) {
+        yyjson_mut_arr_foreach(list, idx, max, item) {
+            const char* v = yyjson_mut_get_str(item);
+            if (v == nullptr || !is_valid_def_id(v)) {
+                ok = false;
+                break;
+            }
+            ids.emplace_back(v);
+        }
+    }
+    if (ok) {
+        out = std::move(ids);
+    }
+    r.count(ok ? json::Field::Ok : json::Field::Invalid, path);
+}
+
 void read_new_game(Reader& r, yyjson_mut_val* obj, NewGameSettings& n) {
     namespace names = new_game_names;
+    read_choice(r, obj, "mode", "newGame.mode", names::kModes, n.mode);
     read_choice(r, obj, "size", "newGame.size", names::kSizes, n.size);
-    read_def_id(r, obj, "mapType", "newGame.mapType", false, n.map_type);
-    read_def_id(r, obj, "biome", "newGame.biome", false, n.biome);
-    r.read_int(obj, "islands", "newGame.islands", 1, lim::kMaxIslandsPerTown, n.islands);
-    read_choice(r, obj, "sea", "newGame.sea", names::kSeas, n.sea);
-    read_choice(r, obj, "water", "newGame.water", names::kAmounts, n.water);
-    read_choice(r, obj, "forests", "newGame.forests", names::kAmounts, n.forests);
-    read_choice(r, obj, "resources", "newGame.resources", names::kAmounts, n.resources);
-    read_choice(r, obj, "relief", "newGame.relief", names::kReliefs, n.relief);
-    read_choice(r, obj, "landforms", "newGame.landforms", names::kAmounts, n.landforms);
     r.read_int(obj, "players", "newGame.players", 1, lim::kMaxPlayers, n.players);
+    read_def_ids(r, obj, "biomes", "newGame.biomes", 64, n.biomes);
+    read_percent(r, obj, "temperature", "newGame.temperature", 0, n.temperature);
+    read_percent(r, obj, "humidity", "newGame.humidity", 0, n.humidity);
+    read_choice(r, obj, "climate", "newGame.climate", names::kClimates, n.climate);
+    read_percent(r, obj, "rivers", "newGame.rivers", 0, n.rivers);
+    read_percent(r, obj, "lakes", "newGame.lakes", 0, n.lakes);
+    read_percent(r, obj, "forests", "newGame.forests", 0, n.forests);
+    read_percent(r, obj, "resources", "newGame.resources", 0, n.resources);
+    read_percent(r, obj, "relief", "newGame.relief", 0, n.relief);
+    read_percent(r, obj, "landforms", "newGame.landforms", 0, n.landforms);
+    r.read_bool(obj, "giantsOn", "newGame.giantsOn", n.giants_on);
+    read_percent(r, obj, "giants", "newGame.giants", 0, n.giants);
+    read_choice(r, obj, "sea", "newGame.sea", names::kSeas, n.sea);
+    r.read_int(obj, "islands", "newGame.islands", 1, lim::kMaxIslandsPerTown, n.islands);
     r.read_int(obj, "seasons", "newGame.seasons", 1, 0b1111, n.seasons);
-    read_choice(r, obj, "year", "newGame.year", names::kYears, n.year);
+    read_percent(r, obj, "year", "newGame.year", 25, n.year);
     read_choice(r, obj, "winter", "newGame.winter", names::kWinters, n.winter);
     read_choice(r, obj, "startGoods", "newGame.startGoods", names::kStarts, n.start);
     read_choice(r, obj, "diseases", "newGame.diseases", names::kThreats, n.diseases);
@@ -411,7 +454,8 @@ void read_new_game(Reader& r, yyjson_mut_val* obj, NewGameSettings& n) {
     read_choice(r, obj, "raiders", "newGame.raiders", names::kThreats, n.raiders);
     read_choice(r, obj, "wildlife", "newGame.wildlife", names::kThreats, n.wildlife);
     read_def_id(r, obj, "race", "newGame.race", true, n.race);
-    r.read_int(obj, "otherRaces", "newGame.otherRaces", 0, 100, n.other_races);
+    read_percent(r, obj, "otherRaces", "newGame.otherRaces", 0, n.other_races);
+    read_def_ids(r, obj, "immigrants", "newGame.immigrants", 16, n.immigrants);
     r.read_int(obj, "maxPopulation", "newGame.maxPopulation", lim::kMinPopulation, lim::kMaxPopulation, n.max_population);
     read_choice(r, obj, "fog", "newGame.fog", names::kFogs, n.fog);
     r.read_bool(obj, "sharedVision", "newGame.sharedVision", n.shared_vision);
@@ -509,19 +553,38 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     const NewGameSettings& n = s.new_game;
     yyjson_mut_val* ng = json::ensure_object(doc, root, "newGame");
     ok = ok && ng != nullptr;
+    // Keys of the form before phase 56 that mean something else now, or nothing.
+    for (const char* old : {"mapType", "biome", "water"}) {
+        (void)json::remove_key(ng, old);
+    }
+    const auto set_ids = [&](const char* key, const std::vector<std::string>& ids) {
+        (void)json::remove_key(ng, key);
+        yyjson_mut_val* list = yyjson_mut_obj_add_arr(doc, ng, key);
+        bool added = list != nullptr;
+        for (const std::string& id : ids) {
+            added = added && yyjson_mut_arr_add_strncpy(doc, list, id.data(), id.size());
+        }
+        return added;
+    };
+    ok = ok && json::set_string(doc, ng, "mode", n.mode);
     ok = ok && json::set_string(doc, ng, "size", n.size);
-    ok = ok && json::set_string(doc, ng, "mapType", n.map_type);
-    ok = ok && json::set_string(doc, ng, "biome", n.biome);
-    ok = ok && json::set_int(doc, ng, "islands", n.islands);
-    ok = ok && json::set_string(doc, ng, "sea", n.sea);
-    ok = ok && json::set_string(doc, ng, "water", n.water);
-    ok = ok && json::set_string(doc, ng, "forests", n.forests);
-    ok = ok && json::set_string(doc, ng, "resources", n.resources);
-    ok = ok && json::set_string(doc, ng, "relief", n.relief);
-    ok = ok && json::set_string(doc, ng, "landforms", n.landforms);
     ok = ok && json::set_int(doc, ng, "players", n.players);
+    ok = ok && set_ids("biomes", n.biomes);
+    ok = ok && json::set_int(doc, ng, "temperature", n.temperature);
+    ok = ok && json::set_int(doc, ng, "humidity", n.humidity);
+    ok = ok && json::set_string(doc, ng, "climate", n.climate);
+    ok = ok && json::set_int(doc, ng, "rivers", n.rivers);
+    ok = ok && json::set_int(doc, ng, "lakes", n.lakes);
+    ok = ok && json::set_int(doc, ng, "forests", n.forests);
+    ok = ok && json::set_int(doc, ng, "resources", n.resources);
+    ok = ok && json::set_int(doc, ng, "relief", n.relief);
+    ok = ok && json::set_int(doc, ng, "landforms", n.landforms);
+    ok = ok && json::set_bool(doc, ng, "giantsOn", n.giants_on);
+    ok = ok && json::set_int(doc, ng, "giants", n.giants);
+    ok = ok && json::set_string(doc, ng, "sea", n.sea);
+    ok = ok && json::set_int(doc, ng, "islands", n.islands);
     ok = ok && json::set_int(doc, ng, "seasons", n.seasons);
-    ok = ok && json::set_string(doc, ng, "year", n.year);
+    ok = ok && json::set_int(doc, ng, "year", n.year);
     ok = ok && json::set_string(doc, ng, "winter", n.winter);
     ok = ok && json::set_string(doc, ng, "startGoods", n.start);
     ok = ok && json::set_string(doc, ng, "diseases", n.diseases);
@@ -530,6 +593,7 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_string(doc, ng, "wildlife", n.wildlife);
     ok = ok && json::set_string(doc, ng, "race", n.race);
     ok = ok && json::set_int(doc, ng, "otherRaces", n.other_races);
+    ok = ok && set_ids("immigrants", n.immigrants);
     ok = ok && json::set_int(doc, ng, "maxPopulation", n.max_population);
     ok = ok && json::set_string(doc, ng, "fog", n.fog);
     ok = ok && json::set_bool(doc, ng, "sharedVision", n.shared_vision);

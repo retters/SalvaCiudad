@@ -294,19 +294,25 @@ TEST_SUITE("settings") {
     TEST_CASE("the last new game round-trips") {
         test::TempDir dir;
         NewGameSettings n;
+        n.mode = "custom";
         n.size = "colossal";
-        n.map_type = "core:islands";
-        n.biome = "core:boreal";
-        n.islands = 5;
-        n.sea = "always";
-        n.landforms = "high";
-        n.water = "high";
-        n.forests = "low";
-        n.resources = "high";
-        n.relief = "mountainous";
         n.players = 7;
+        n.biomes = {"core:boreal", "core:mountain"};
+        n.temperature = 25;
+        n.humidity = 175;
+        n.climate = "even";
+        n.rivers = 200;
+        n.lakes = 0;
+        n.forests = 50;
+        n.resources = 150;
+        n.relief = 175;
+        n.landforms = 125;
+        n.giants_on = false;
+        n.giants = 75;
+        n.sea = "archipelago";
+        n.islands = 5;
         n.seasons = 0b1000;
-        n.year = "long";
+        n.year = 200;
         n.winter = "harsh";
         n.start = "plenty";
         n.diseases = "none";
@@ -315,6 +321,7 @@ TEST_SUITE("settings") {
         n.wildlife = "high";
         n.race = "mixed";
         n.other_races = 50;
+        n.immigrants = {"core:elf"};
         n.max_population = 350;
         n.fog = "dynamic";
         n.shared_vision = false;
@@ -333,16 +340,48 @@ TEST_SUITE("settings") {
         test::TempDir dir;
         Settings s;
         const auto r = load_text(dir, R"({"schemaVersion": 1, "newGame": {
-            "size": "enormous", "mapType": "../x", "biome": "Core:Pine", "islands": 9, "water": "lots",
-            "forests": 3, "relief": "cliffs", "players": 13, "seasons": 16, "year": "", "winter": "cold",
-            "startGoods": "none", "diseases": "extreme", "race": "mixed!", "otherRaces": 101,
-            "maxPopulation": 20, "resources": "high", "fires": "low", "sea": "ocean", "landforms": "all",
-            "fog": "thick", "sharedVision": 1}})", s);
-        CHECK(r.ignored_fields == 20);
+            "mode": "random", "size": "enormous", "players": 13, "biomes": ["../x"], "temperature": 225,
+            "humidity": -25, "climate": "odd", "rivers": "lots", "lakes": 300, "relief": "cliffs",
+            "islands": 9, "sea": "ocean", "seasons": 16, "year": 0, "winter": "cold",
+            "startGoods": "none", "diseases": "extreme", "race": "mixed!", "otherRaces": 201,
+            "immigrants": "all", "maxPopulation": 20, "fog": "thick", "sharedVision": 1,
+            "resources": 150, "fires": "low", "forests": 50, "giantsOn": false}})", s);
+        CHECK(r.ignored_fields == 23);
         NewGameSettings expected;
-        expected.resources = "high";
+        expected.resources = 150;
         expected.fires = "low";
+        expected.forests = 50;
+        expected.giants_on = false;
         CHECK(s.new_game == expected);
+        // A percent off its steps of 25 is not taken.
+        Settings t;
+        (void)load_text(dir, R"({"schemaVersion": 1, "newGame": {"rivers": 60, "lakes": 125}})", t);
+        CHECK(t.new_game.rivers == 100);
+        CHECK(t.new_game.lakes == 125);
+    }
+
+    TEST_CASE("the form of before phase 56 is accepted and opens as a varied map") {
+        test::TempDir dir;
+        Settings s;
+        const auto r = load_text(dir, R"({"schemaVersion": 1, "newGame": {
+            "size": "large", "mapType": "core:islands", "biome": "core:temperate", "islands": 3, "sea": "always",
+            "water": "normal", "forests": "high", "resources": "normal", "relief": "gentle", "landforms": "low",
+            "players": 2, "seasons": 15, "year": "normal", "winter": "mild", "startGoods": "normal",
+            "diseases": "medium", "fires": "medium", "raiders": "high", "wildlife": "medium", "race": "core:elf",
+            "otherRaces": 20, "maxPopulation": 600, "fog": "static", "sharedVision": true}})", s);
+        // What still means the same is kept; the rest is the usual.
+        CHECK(s.new_game.mode == "varied");
+        CHECK(s.new_game.size == "large");
+        CHECK(s.new_game.players == 2);
+        CHECK(s.new_game.islands == 3);
+        CHECK(s.new_game.winter == "mild");
+        CHECK(s.new_game.raiders == "high");
+        CHECK(s.new_game.race == "core:elf");
+        CHECK(s.new_game.max_population == 600);
+        CHECK(s.new_game.forests == 100);
+        CHECK(s.new_game.sea == "none");
+        CHECK(s.new_game.year == 100);
+        CHECK(r.ignored_fields > 0);
         CHECK(is_valid_def_id("core:giants"));
         CHECK_FALSE(is_valid_def_id(""));
         CHECK_FALSE(is_valid_def_id("core/../x"));

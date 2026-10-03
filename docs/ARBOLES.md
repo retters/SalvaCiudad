@@ -62,7 +62,7 @@ Los gigantes son especies de tamaño enorme con `landmark` (su silueta se ve a t
 | Mangle gigante | `core:giant_mangrove` | Costa tropical, a 40 m del mar o menos | 70 |
 | Hongo gigante | `core:giant_mushroom` | Bosque encantado | 40 |
 
-**Cuántos:** 2 en un mapa pequeño, 3 en uno mediano, 6 en uno grande, 10 en uno enorme, 18 en uno gigante y 30 en uno colosal (la opción `giants` del mapa, de 0 a 200 %, los escala; el formulario llega en la fase 56). Si el mapa no tiene el bioma de un gigante, ese gigante no sale, así que puede haber menos.
+**Cuántos:** 2 en un mapa pequeño, 3 en uno mediano, 6 en uno grande, 10 en uno enorme, 18 en uno gigante y 30 en uno colosal (la opción "Cantidad de gigantes" de la partida personalizada, de 0 a 200 %, los escala, y "Árboles gigantes" los quita). Si el mapa no tiene el bioma de un gigante, ese gigante no sale, así que puede haber menos.
 
 **Dónde:** en suelo de su bioma que no sea roca ni muy empinado, a 200 m o más de la salida de cualquier pueblo, a 160 m o más de otro gigante (un octavo del lado del mapa en los mapas grandes), y con un claro de 18 m a su alrededor: los árboles de ese radio se quitan. Las especies se turnan, empezando por una que elige la semilla.
 
@@ -75,7 +75,7 @@ Desde la fase 54 cada lugar toma el bioma que mejor encaja con su clima y su geo
 **El clima de un lugar** (de 0 a 100, por bloques de 8 m):
 - **Temperatura:** de 20 en el norte del mapa a 80 en el sur, un punto menos por cada 5 m de altura sobre el mar (o sobre el punto más bajo, si no hay mar), más un ruido suave de ±8.
 - **Humedad:** un ruido suave alrededor de 50, y hasta 20 puntos más a menos de 60 m del agua.
-- Las opciones `temperatura` y `humedad` del mapa (0 a 200 %, 100 por omisión) corren todo el mapa hasta 30 puntos hacia el frío o el calor, lo seco o lo húmedo. El formulario para elegirlas llega en la fase 56.
+- Las opciones `temperatura` y `humedad` del mapa (0 a 200 %, 100 por omisión) corren todo el mapa hasta 30 puntos hacia el frío o el calor, lo seco o lo húmedo. Se eligen en la partida personalizada, junto con "Variación del clima": "Mucha" es el mapa que va del frío al calor; "Poca" deja casi el mismo clima en todo el mapa (fase 56).
 
 **Cómo se elige:** un bioma puede estar donde la temperatura y la humedad caen en sus rangos (con 6 puntos de margen), su región es de las suyas, hay agua del tipo que pide a la distancia que pide, y el lugar está en su franja de alturas (la parte de la tierra del mapa que queda más abajo). Entre los que pueden, gana el de más puntos: su peso por un ruido propio, que lo hace ganar en manchas. Si ninguno puede, gana el de clima más parecido, sin renunciar al agua ni a la altura que pide.
 
@@ -99,4 +99,4 @@ F3 muestra bajo el cursor la temperatura y la humedad del lugar y por qué tiene
 
 ## Mapa de tierra firme, de islas o de un solo bioma
 
-Los tipos de mapa ya no son datos (fase 54). La partida nueva elige "Tierra firme" o "Islas", y "Todos los biomas, según el clima" o un solo bioma en todo el mapa. La fase 56 reemplaza estas opciones por Variado y Personalizado.
+Los tipos de mapa ya no son datos (fase 54). Desde la fase 56 la partida nueva es Variado (la semilla decide el clima y el mar) o Personalizado, donde se marcan los biomas permitidos uno por uno.

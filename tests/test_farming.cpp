@@ -243,7 +243,8 @@ TEST_SUITE("farming") {
     }
 
     TEST_CASE("hunters take game from the zones, and it comes back") {
-        // The map changed in phase 49; this passes on 10 of the first 20 seeds (D-4906).
+        // Passes on 13 of the first 20 seeds: on the others the first zone is
+        // too far from the town to hunt in this time, or across water (D-5613).
         Game g(content(), map_for(2), setup());
         // The lodge next to the first zone with deer or boar.
         std::optional<std::size_t> zone;
@@ -272,6 +273,7 @@ TEST_SUITE("farming") {
         CHECK(left <= full);
         (void)animals;
     }
+
 
     TEST_CASE("fishers fish until the water freezes") {
         Game g(content(), map_for(57), setup());

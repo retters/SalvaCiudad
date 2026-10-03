@@ -25,7 +25,7 @@ sim::MapData small_map(std::uint64_t seed) {
     s.seed = seed;
     s.size = sim::MapSize::Small;
     s.players = 2;
-    s.sea = sim::Sea::Always;
+    s.sea = sim::Sea::OneSide;
     std::optional<sim::MapData> m = sim::generate_map(s, sc::test::core_content());
     REQUIRE(m.has_value());
     return std::move(*m);
@@ -151,7 +151,8 @@ TEST_SUITE("map_report") {
         CHECK(refused(changed("\"schemaVersion\": 1", "\"schemaVersion\": 2")));
         CHECK(refused(changed("\"size\": \"small\"", "\"size\": \"tiny\"")));
         CHECK(refused(changed("\"camera\": \"thirdPerson\"", "\"camera\": \"orbit\"")));
-        CHECK(refused(changed("\"mapType\": \"land\"", "\"mapType\": \"evil:x\"")));
+        CHECK(refused(changed("\"sea\": \"oneSide\"", "\"sea\": \"ocean\"")));
+        CHECK(refused(changed("\"rivers\": 100", "\"rivers\": 201")));
         CHECK(refused(changed("\"biomes\": []", "\"biomes\": [\"evil:swamp\"]")));
         CHECK(refused(changed("\"temperature\": 100", "\"temperature\": 900")));
         CHECK(refused(changed("\"width\": 1280", "\"width\": 99999")));

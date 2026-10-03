@@ -374,7 +374,7 @@ TEST_SUITE("nav") {
         MapSettings s;
         s.seed = 91;
         s.size = MapSize::Medium;
-        s.water = Amount::High;
+        s.rivers = Amount::High;
         s.relief = Relief::Mountainous;
         std::optional<MapData> m = generate_map(s, *content());
         REQUIRE(m.has_value());
@@ -451,7 +451,7 @@ TEST_SUITE("nav") {
         s.size = MapSize::Medium;
         s.players = 2;
         s.islands = 2;
-        s.island_map = true;
+        s.sea = sc::sim::Sea::Archipelago;
         std::optional<MapData> m = generate_map(s, *content());
         REQUIRE(m.has_value());
         REQUIRE(m->starts.size() == 2);

@@ -36,8 +36,6 @@ constexpr std::int32_t kGiantSlope = 120;
 constexpr std::int32_t kGiantClearing = 18;
 constexpr std::uint64_t kTemperatureSeed = 0x54454d5000000011ull;
 constexpr std::uint64_t kHumiditySeed = 0x48554d4944000012ull;
-// Half the temperature range from the north to the south of a map.
-constexpr std::int32_t kClimateSpan = 30;
 // How far outside its ranges of temperature and humidity a biome still grows.
 constexpr std::int32_t kClimateSlack = 6;
 constexpr std::uint64_t kBeachSeed = 0x4245414348000015ull;
@@ -58,10 +56,6 @@ inline void prefetch(const void* p) {
 #endif
 }
 
-// Per-amount multiplier in halves: Low 1x, Normal 2x, High 4x.
-std::int64_t amount_factor(Amount a) {
-    return a == Amount::Low ? 1 : (a == Amount::Normal ? 2 : 4);
-}
 
 // Rivers' courses in the map's landforms (phase 37): a point every this
 // many steps, and their width (beds reach 13 m across).
@@ -150,7 +144,7 @@ private:
     // and its rivers start where its valleys and canyons ask for one.
     bool relief() {
         hier::Ground r;
-        if (!hier::shape(s_, n_, s_.island_map, [this](int percent) { return report(GenStage::Relief, percent); }, r)) {
+        if (!hier::shape(s_, n_, s_.island_map(), [this](int percent) { return report(GenStage::Relief, percent); }, r)) {
             return false;
         }
         h_ = std::move(r.h);
@@ -342,8 +336,12 @@ private:
             // A lake: deep somewhere and wide where it is not shallow (a wide
             // hollow barely wet but for one pit is filled in). Lakes belong
             // in the basins: elsewhere only a big one stays (phase 39).
-            const bool allowed = basin * 2 >= component.size() || deep >= kFreeLake;
-            const bool is_lake = max_depth >= 700 && deep >= 150 && allowed;
+            // "Lakes" (phase 56): at 100 % a lake is 70 cm deep somewhere and
+            // 150 vertices wide; more lakes take smaller hollows, none at 0 %.
+            const std::size_t easier = std::max<std::size_t>(1, s_.lakes);
+            const bool allowed = basin * 2 >= component.size() || deep >= kFreeLake * 100 / easier;
+            const bool is_lake = s_.lakes > 0 && max_depth >= static_cast<std::int32_t>(700 * 100 / easier) &&
+                                 deep >= 150 * 100 / easier && allowed;
             for (const std::uint32_t idx : component) {
                 if (is_lake) {
                     lake_[idx] = 1;
@@ -438,7 +436,7 @@ private:
 
     bool rivers() {
         bed_.assign(h_.size(), 0);
-        const std::int32_t wanted = per_area(5 * amount_factor(s_.water));
+        const std::int32_t wanted = per_area(std::int64_t{10} * s_.rivers / 100);
         const std::int32_t margin = n_ / 10;
         struct Candidate {
             std::int32_t height;
@@ -633,7 +631,10 @@ private:
 
         fertility_.assign(cells, 0);
         forest_.assign(cells, 0);
-        const std::int32_t forest_threshold = s_.forests == Amount::Low ? 9000 : (s_.forests == Amount::Normal ? 3500 : -2000);
+        // 9000 at 50 %, 3500 at 100 %, -2000 at 200 %; no forest at all at 0 %.
+        const std::int32_t forest_threshold = s_.forests == 0     ? std::numeric_limits<std::int32_t>::max()
+                                              : s_.forests <= 100 ? 3500 + (100 - s_.forests) * 110
+                                                                  : 3500 - (s_.forests - 100) * 55;
         for (std::int32_t z = 0; z < n_; ++z) {
             FbmRow fertility_row(s_.seed ^ kFertilitySeed, z, 8, 4);
             FbmRow rock_row(s_.seed ^ kRockSeed, z, 7, 3);
@@ -796,10 +797,11 @@ private:
                 const std::int32_t cz = std::min(n_ - 1, bz + kOwnerBlock / 2);
                 const std::size_t c = ci(cx, cz);
                 const std::int32_t height = h_[vi(cx, cz)];
-                // Temperature: 20 in the north to 80 in the south at 100 %,
+                // Temperature: 20 in the north to 80 in the south at 100 % and the widest range,
                 // a degree less every 5 m of height, and a slow noise.
                 std::int32_t temp = 50 + (static_cast<std::int32_t>(s_.temperature) - 100) * 3 / 10 +
-                                    (2 * cz - n_) * kClimateSpan / n_ - std::max(0, height - base) / 5000 +
+                                    (2 * cz - n_) * static_cast<std::int32_t>(s_.climate_range) / n_ -
+                                    std::max(0, height - base) / 5000 +
                                     fbm(s_.seed ^ kTemperatureSeed, cx, cz, 8, 2) * 8 / 32768;
                 // Humidity: a slow noise, wetter within 60 m of water.
                 const std::int32_t water_m = std::min<std::int32_t>(fresh_m[c], sea_m[c]);
@@ -1052,14 +1054,14 @@ private:
     }
 
     bool resources() {
-        const std::int64_t k = amount_factor(s_.resources);
+        const std::int64_t k = s_.resources;  // In fiftieths: 100 % is 2.
         std::int32_t x = 0;
         std::int32_t z = 0;
         const auto any = [](std::int32_t, std::int32_t) { return true; };
         const auto rocky = [this](std::int32_t cx, std::int32_t cz) {
             return cell_slope(cx, cz) + (cell_terrain(cx, cz) == Terrain::Rock ? 1000 : 0);
         };
-        const std::int32_t stones = per_area(125 * k);
+        const std::int32_t stones = per_area(125 * k / 50);
         for (std::int32_t i = 0; i < stones; ++i) {
             if (pick_cell(8, any, rocky, x, z)) {
                 cluster(FeatureType::Stone, x, z, rng_.range(1, 3), 5, 100, 220);
@@ -1068,7 +1070,7 @@ private:
         if (!report(GenStage::Resources, 25)) {
             return false;
         }
-        const std::int32_t ores = per_area(30 * k);
+        const std::int32_t ores = per_area(30 * k / 50);
         for (std::int32_t i = 0; i < ores; ++i) {
             if (pick_cell(16, any, rocky, x, z)) {
                 cluster(FeatureType::IronOre, x, z, rng_.range(1, 2), 4, 100, 170);
@@ -1078,7 +1080,7 @@ private:
             const Terrain t = cell_terrain(cx, cz);
             return (t == Terrain::ForestFloor && forest_[ci(cx, cz)] < 40) || t == Terrain::Meadow;
         };
-        const std::int32_t berries = per_area(100 * k);
+        const std::int32_t berries = per_area(100 * k / 50);
         for (std::int32_t i = 0; i < berries; ++i) {
             if (pick_cell(10, forest_edge, {}, x, z)) {
                 cluster(FeatureType::BerryBush, x, z, rng_.range(2, 4), 6, 80, 130);
@@ -1087,7 +1089,7 @@ private:
         const auto deep_forest = [this](std::int32_t cx, std::int32_t cz) {
             return cell_terrain(cx, cz) == Terrain::ForestFloor && forest_[ci(cx, cz)] >= 60;
         };
-        const std::int32_t herbs = per_area(75 * k);
+        const std::int32_t herbs = per_area(75 * k / 50);
         for (std::int32_t i = 0; i < herbs; ++i) {
             if (pick_cell(10, deep_forest, {}, x, z)) {
                 cluster(FeatureType::Herbs, x, z, rng_.range(2, 5), 5, 80, 140);

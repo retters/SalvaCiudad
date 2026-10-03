@@ -585,6 +585,22 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En otoño e invierno los gigantes cambian de estado como los demás árboles (el hongo cambia sus manchas).
 - [ ] **Tu opinión:** tamaño de los gigantes junto a los árboles normales y cantidad por mapa.
 
+### Fase 56
+
+- [ ] "Un jugador" abre la partida nueva en **Variado**: solo semilla, tamaño, pueblos y tipo de mapa, con una vista previa y una línea que dice qué salió ("Mapa templado, costa al este, 3 árboles gigantes").
+- [ ] Con "Al azar" varias veces salen mapas fríos, templados, cálidos y mezclados; sin mar, con costa en uno o dos lados y, de vez en cuando, islas o archipiélago.
+- [ ] En **Personalizado** la vista previa cambia un momento después de mover cualquier opción del mapa. En mapas enormes o mayores no hay vista previa y el formulario lo dice.
+- [ ] El formulario se desplaza con la rueda hasta "Generar mapa"; nada queda cortado ni encimado, en español y en inglés.
+- [ ] Cada opción hace lo que dice: ríos 0 % deja solo los de valles y cañones; lagos 0 % no deja lagos; bosques 200 % da muchos más árboles; relieve 200 % da montañas altas; temperatura 0 % da un mapa frío y 200 % uno cálido (palmeras, sabana).
+- [ ] Desmarcar biomas los quita del mapa; no deja desmarcar el último. Igual con las estaciones.
+- [ ] Mar: "Islas" da una isla por pueblo; "Archipiélago" deja elegir las islas por pueblo. Las islas nunca se tocan entre sí.
+- [ ] "Árboles gigantes" desmarcado: ningún gigante en el mapa.
+- [ ] Desmarcar razas de inmigrantes: en una partida larga no llega nadie de esas razas.
+- [ ] "Partir de Variado" llena Personalizado con lo que Variado da para esa semilla, y el mapa generado es el mismo.
+- [ ] Al salir y volver a entrar, el formulario recuerda lo elegido (el botón "Restablecer" de antes ya no existe: "Partir de Variado" hace su trabajo).
+- [ ] "Crear partida multijugador" usa el mismo formulario.
+- [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

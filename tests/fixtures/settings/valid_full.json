@@ -23,17 +23,27 @@
     "ui": 100
   },
   "newGame": {
+    "mode": "custom",
     "size": "large",
-    "mapType": "core:islands",
-    "biome": "core:temperate",
-    "islands": 3,
-    "water": "normal",
-    "forests": "high",
-    "resources": "normal",
-    "relief": "gentle",
     "players": 2,
+    "biomes": [
+      "core:temperate"
+    ],
+    "temperature": 100,
+    "humidity": 125,
+    "climate": "mixed",
+    "rivers": 100,
+    "lakes": 100,
+    "forests": 200,
+    "resources": 100,
+    "relief": 100,
+    "landforms": 100,
+    "giantsOn": true,
+    "giants": 100,
+    "sea": "archipelago",
+    "islands": 3,
     "seasons": 15,
-    "year": "normal",
+    "year": 100,
     "winter": "mild",
     "startGoods": "normal",
     "diseases": "medium",
@@ -41,7 +51,10 @@
     "raiders": "high",
     "wildlife": "medium",
     "race": "core:elf",
-    "otherRaces": 20,
-    "maxPopulation": 600
+    "otherRaces": 100,
+    "immigrants": [],
+    "maxPopulation": 600,
+    "fog": "static",
+    "sharedVision": true
   }
 }

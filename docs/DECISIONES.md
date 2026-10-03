@@ -2236,3 +2236,48 @@ Generador 4, reglas 28, protocolo de red 5.
 **D-5507. Las pruebas se enlazan completas, sin enlazado incremental.**
 En `debug`, los grupos `i18n` y `sim_rules` terminaban a veces con el código 0xC0000409 al cerrar el proceso, después de pasar todas sus comprobaciones. Pasó tras las fases 52 y 55 y antes se había atribuido a objetos viejos de Ninja. La causa es el estado del enlazado incremental (`.ilk`) del ejecutable de pruebas: al borrarlo y enlazar de nuevo, sin recompilar nada, los dos grupos pasan. Ahora `salvaciudad_tests` se enlaza con `/INCREMENTAL:NO`.
 
+
+## Fase 56: partida nueva Variado y Personalizado (2026-10-03)
+
+**D-5601. Las cantidades del mapa son porcentajes.**
+`MapSettings` guardaba ríos y lagos, bosques, recursos, relieve y accidentes como tres niveles (pocos, normal, muchos). Ahora son porcentajes de 0 a 200, y "ríos y lagos" se separa en dos. Los niveles de antes equivalen a 50, 100 y 200 % (relieve: plano 50, suave 100, montañoso 175), y entre esos puntos el generador interpola en línea recta; 0 % quita la cosa (sin ríos fuera de los valles, sin lagos, sin bosques, todo llanura). Un mapa creado sin elegir nada sigue teniendo relieve plano, como siempre; el formulario empieza en relieve suave (su 100 %), que es lo que pide la especificación para Variado.
+
+**D-5602. El mar es una sola lista.**
+"Mapa: Tierra firme o Islas" y "Mar: Sin mar, A veces, Siempre" se unen en `Sea`: sin mar, un lado, dos lados (opuestos una vez de cada tres; si no, una esquina), islas (una por pueblo) y archipiélago (las islas por pueblo que se elijan, si caben). "A veces" desaparece: ahora es Variado quien decide con la semilla.
+
+**D-5603. Qué decide la semilla en Variado.**
+El clima: frío 22 %, templado 40 %, cálido 20 %, mezclado 18 %. El mar: sin mar 35 %, un lado 27 %, dos lados 20 %, islas 10 %, archipiélago 8 % (de 2 o 3 islas por pueblo). Todo lo demás, lo de la especificación. La misma semilla da siempre lo mismo; cambiar el tamaño o los jugadores no cambia el clima ni el mar.
+
+**D-5604. "Variación del clima" en Personalizado.**
+La especificación no la lista, pero sin ella "Partir de Variado" no podía reproducir Variado: un mapa frío, templado o cálido tiene poca diferencia entre norte y sur (12 puntos), y uno mezclado mucha (30, lo de la fase 54). Es una lista de dos valores, "Poca" y "Mucha", guardada en el mapa como `climate_range`.
+
+**D-5605. La vista previa.**
+Se genera el mapa de verdad, en otro hilo, un momento después del último cambio, y se pinta con el mismo código del minimapa. Si cambia algo mientras tanto, el trabajo se cancela y empieza otro. Solo hasta mapas grandes: uno enorme o mayor tarda demasiado para rehacerlo a cada cambio, y el formulario lo dice. La línea de resumen ("Mapa templado, costa al este, 3 árboles gigantes") sale de ese mismo mapa: los lados con mar y los gigantes que de verdad se colocaron. La simulación sigue sin hilos: el hilo es del formulario.
+
+**D-5606. Duración del año, estaciones e inmigrantes.**
+El año era corto, normal o largo; ahora es un porcentaje de 25 a 200 (100 % son los 12 000 pasos de siempre). Las estaciones ya se elegían una por una. Las razas que pueden llegar como inmigrantes son una máscara en las reglas (`immigrants`; 0 es todas): un inmigrante "de otra raza" se sortea solo entre las marcadas. "Otras razas" es un porcentaje de la proporción normal (100 % es el 20 % de la especificación; 200 %, el 40 %).
+
+**D-5607. Ajustes y reportes de antes.**
+`settings.json` guarda la partida nueva con las claves nuevas (`mode`, `rivers`, `lakes`, `sea`, `immigrants`…). Uno anterior se acepta: lo que no se entiende vuelve a su valor de Variado y cuenta como aviso; las claves viejas (`mapType`, `biome`, `water`) se borran al guardar. El reporte del mapa escribe los porcentajes y acepta los de antes: los niveles con nombre, `water` (vale para ríos y lagos), `mapType` de islas y el mar "sometimes" (sin mar) o "always" (un lado).
+
+**D-5608. El formulario se desplaza.**
+Personalizado no cabe en la pantalla: el panel entero se desplaza con la rueda, como el menú principal. Las casillas van en dos columnas. Una prueba llega hasta "Generar mapa" con la rueda.
+
+**D-5609. Las islas ya no se tocan (pendiente de D-4906).**
+Cada punto pertenece a la isla más cercana, medida en radios de cada una, y la tierra termina antes de la línea donde se encuentran dos islas: siempre queda un canal de mar (unos 20 m; 1/64 del mapa en los grandes). En 10 mapas de prueba (pequeño, mediano y grande, 5 semillas) ninguna isla queda unida a otra, y la prueba ahora lo exige. Sigue pudiendo haber pedazos sueltos de tierra además de las islas pedidas (islotes), y el centro de una isla puede caer en un lago o un río: no es un defecto. Las islas quedan un poco menos irregulares (compacidad media hasta 0,41), porque el canal recorta los brazos más largos.
+
+**D-5610. Versiones.**
+Generador 5, reglas 29, protocolo de red 6 (cambiaron `MapSettings` y las reglas). Suma de referencia del mapa pequeño: `0xb62f09e39b1ea9c0`.
+
+**D-5611. Lo que no se pudo ver en pantalla.**
+Se revisaron en la ventana del juego Variado y la mitad de arriba de Personalizado (clima, biomas, tierra y agua, y la vista previa, que cambia al elegir archipiélago). La mitad de abajo (el año y las reglas) quedó cubierta solo por las pruebas, porque la rueda del ratón no se pudo simular en la ventana. Queda en la lista de pruebas a mano.
+
+**D-5612. Sin botón "Restablecer".**
+El botón de la fase 23 (D-2304) ya no está: volver a "Variado" deja todo en sus valores de siempre, y "Partir de Variado" hace lo mismo dentro de Personalizado.
+
+**D-5613. Por qué "los cazadores traen carne" pasaba solo en la mitad de las semillas (investigación pedida tras la fase 49).**
+La prueba pone la cabaña de caza junto a la primera zona de venados o jabalíes del mapa, esté donde esté, y espera 3000 pasos. Con las primeras 20 semillas (ahora pasa en 13):
+- en 4 (9, 11, 15, 16) la zona está a 335-370 m del pueblo: la cabaña se termina tarde y los cazadores, que viven en el pueblo, gastan todo el tiempo caminando (unos 0,18 m por paso);
+- en 2 (17, 20) la zona está al otro lado del agua: el juego deja poner la cabaña ahí, pero nadie puede llegar y nunca se construye;
+- en 2 (1, 14) el camino es tan largo (más de 400 m, o un rodeo por el agua) que quienes llevan los materiales se quedan sin comida en el viaje y mueren: un aldeano solo decide comer cuando está sin tarea, nunca a medio camino.
+La caza en sí funciona: con la zona a menos de 250 m siempre hay carne. No se cambió la simulación. Quedan dos propuestas para decidir con el usuario: (1) que un aldeano con mucha hambre deje lo que hace y vaya a comer; (2) que no se pueda construir donde ningún aldeano puede llegar, con su mensaje. La prueba sigue con la semilla 2.

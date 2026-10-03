@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <vector>
 #include <string_view>
 
 #include "core/json.h"
@@ -102,24 +103,35 @@ struct GameplaySettings {
 };
 
 // The last "New game" form (phase 23), shown again the next time. Choices
-// are kept by name: map types, biomes and races by their mod id, since
-// their order depends on the mods. One that no longer exists falls back
-// to its default. The seed is not kept: each new game gets a fresh one.
+// are kept by name: biomes and races by their mod id, since their order
+// depends on the mods. One that no longer exists, or a value from an older
+// version that the form no longer has, falls back to its default. The seed
+// is not kept: each new game gets a fresh one.
+//
+// Phase 56: the form has two modes. "varied" has only size and players
+// (the seed decides the climate and the sea, the rest is the usual);
+// "custom" has everything below it.
 struct NewGameSettings {
+    std::string mode = "varied";    // new_game_names::kModes
     std::string size = "medium";    // new_game_names::kSizes
-    // Phase 54: kIslandsMap for an island map; anything else is land.
-    std::string map_type;
-    std::string biome;              // The only biome of the map; empty: all of them.
-    int islands = 2;                // Per town, with islands.
-    std::string sea = "sometimes";  // new_game_names::kSeas
-    std::string water = "normal";   // new_game_names::kAmounts
-    std::string forests = "normal";
-    std::string resources = "normal";
-    std::string relief = "low";     // new_game_names::kReliefs
-    std::string landforms = "normal";  // new_game_names::kAmounts
     int players = 1;
+    // Custom. Percents go from 0 to 200 in steps of 25; 100 is the usual.
+    std::vector<std::string> biomes;  // Ids of the biomes allowed; empty: all.
+    int temperature = 100;
+    int humidity = 100;
+    std::string climate = "mixed";  // new_game_names::kClimates
+    int rivers = 100;
+    int lakes = 100;
+    int forests = 100;
+    int resources = 100;
+    int relief = 100;
+    int landforms = 100;
+    bool giants_on = true;
+    int giants = 100;
+    std::string sea = "none";       // new_game_names::kSeas
+    int islands = 3;                // Per town, on an archipelago.
     int seasons = 0b1111;           // Bit per season: spring, summer, autumn, winter.
-    std::string year = "normal";    // new_game_names::kYears
+    int year = 100;                 // Percent, 25 to 200.
     std::string winter = "normal";  // new_game_names::kWinters
     std::string start = "normal";   // new_game_names::kStarts
     std::string diseases = "medium";  // new_game_names::kThreats
@@ -127,7 +139,8 @@ struct NewGameSettings {
     std::string raiders = "medium";
     std::string wildlife = "medium";
     std::string race;               // A race's id, "mixed", or empty for the first.
-    int other_races = 20;           // Percent of newcomers.
+    int other_races = 100;          // Percent of the usual share of newcomers of another race (a fifth).
+    std::vector<std::string> immigrants;  // Ids of the races that may come; empty: all.
     int max_population = 1000;
     std::string fog = "static";     // new_game_names::kFogs (phase 32, decision D-3202).
     bool shared_vision = true;
@@ -138,12 +151,10 @@ struct NewGameSettings {
 // Names of the choices in NewGameSettings, in the order of the game's own
 // values.
 namespace new_game_names {
-inline constexpr std::string_view kIslandsMap = "core:islands";
+inline constexpr std::string_view kModes[] = {"varied", "custom"};
 inline constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge", "giant", "colossal"};
-inline constexpr std::string_view kAmounts[] = {"low", "normal", "high"};
-inline constexpr std::string_view kReliefs[] = {"low", "gentle", "mountainous"};
-inline constexpr std::string_view kSeas[] = {"none", "sometimes", "always"};
-inline constexpr std::string_view kYears[] = {"short", "normal", "long"};
+inline constexpr std::string_view kClimates[] = {"even", "mixed"};
+inline constexpr std::string_view kSeas[] = {"none", "oneSide", "twoSides", "islands", "archipelago"};
 inline constexpr std::string_view kWinters[] = {"mild", "normal", "harsh"};
 inline constexpr std::string_view kStarts[] = {"scarce", "normal", "plenty"};
 inline constexpr std::string_view kThreats[] = {"none", "low", "medium", "high", "brutal"};

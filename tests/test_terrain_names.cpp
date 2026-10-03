@@ -30,9 +30,9 @@ sim::MapSettings coast_settings(std::uint64_t seed) {
     s.seed = seed;
     s.size = sim::MapSize::Medium;
     s.players = 2;
-    s.sea = sim::Sea::Always;
+    s.sea = sim::Sea::OneSide;
     s.landforms = sim::Amount::High;
-    s.water = sim::Amount::High;
+    s.rivers = sim::Amount::High;
     return s;
 }
 
@@ -162,7 +162,7 @@ TEST_SUITE("terrain_names") {
         s.seed = 404;
         s.size = sim::MapSize::Small;
         s.players = 2;
-        s.island_map = true;
+        s.sea = sc::sim::Sea::Archipelago;
         const sim::MapData islands = generate(s);
         TerrainNames names;
         int count = 0;
@@ -184,7 +184,7 @@ TEST_SUITE("terrain_names") {
         sep.size = sim::MapSize::Small;
         sep.players = 2;
         sep.separate = true;
-        sep.sea = sim::Sea::Always;
+        sep.sea = sim::Sea::OneSide;
         const sim::MapData world = generate(sep);
         const std::int32_t t = world.region_size();
         REQUIRE(world.sea_levels.size() == 4);

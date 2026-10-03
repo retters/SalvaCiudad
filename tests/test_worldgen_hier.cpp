@@ -300,7 +300,7 @@ TEST_SUITE("worldgen_hier_water") {
     TEST_CASE("a coast: sea along a side, never next to a plateau, towns on land") {
         for (std::uint64_t seed = 60; seed < 64; ++seed) {
             sim::MapSettings s = hier_settings(seed, sim::MapSize::Medium);
-            s.sea = sim::Sea::Always;
+            s.sea = sim::Sea::OneSide;
             const sim::MapData m = generate(s);
             REQUIRE(m.sea_levels.size() == 1);
             CHECK(m.sea_levels[0] != 0);
@@ -339,7 +339,7 @@ TEST_SUITE("worldgen_hier_water") {
         sim::MapSettings s = hier_settings(70, sim::MapSize::Medium);
         s.players = 3;
         s.islands = 2;
-        s.island_map = true;
+        s.sea = sc::sim::Sea::Archipelago;
         const sim::MapData m = generate(s);
         const std::int32_t wanted = 3 * std::min<std::int32_t>(2, sim::worldgen::max_islands_per_town(s.size, 3));
         std::vector<const sim::Landform*> islands;
@@ -372,7 +372,7 @@ TEST_SUITE("worldgen_hier_water") {
         for (std::uint64_t seed = 80; seed < 84; ++seed) {
             sim::MapSettings s = hier_settings(seed, sim::MapSize::Large);
             s.landforms = sim::Amount::High;
-            s.sea = sim::Sea::Always;
+            s.sea = sim::Sea::OneSide;
             const sim::MapData m = generate(s);
             for (const sim::Landform& l : m.landforms) {
                 if (l.kind != LandformKind::Canyon) {
@@ -472,9 +472,9 @@ TEST_SUITE("worldgen_hier_life") {
         const std::uint8_t mountain = biome("core:mountain");
         std::set<std::uint8_t> seen;
         std::size_t willows = 0, palms = 0, high_trees = 0;
-        for (const auto& [seed, size, sea] : {std::tuple{std::uint64_t{91}, sim::MapSize::Medium, sim::Sea::Always},
-                                              std::tuple{std::uint64_t{12}, sim::MapSize::Medium, sim::Sea::Always},
-                                              std::tuple{std::uint64_t{7}, sim::MapSize::Large, sim::Sea::Always},
+        for (const auto& [seed, size, sea] : {std::tuple{std::uint64_t{91}, sim::MapSize::Medium, sim::Sea::OneSide},
+                                              std::tuple{std::uint64_t{12}, sim::MapSize::Medium, sim::Sea::OneSide},
+                                              std::tuple{std::uint64_t{7}, sim::MapSize::Large, sim::Sea::OneSide},
                                               std::tuple{std::uint64_t{33}, sim::MapSize::Small, sim::Sea::None}}) {
             CAPTURE(seed);
             sim::MapSettings s = hier_settings(seed, size);
@@ -560,9 +560,9 @@ TEST_SUITE("worldgen_hier_life") {
         static constexpr std::int32_t kMost[] = {2, 3, 6, 10, 18, 30};
         std::set<std::uint8_t> kinds;
         std::size_t total = 0;
-        for (const auto& [seed, size, sea] : {std::tuple{std::uint64_t{91}, sim::MapSize::Medium, sim::Sea::Always},
-                                              std::tuple{std::uint64_t{12}, sim::MapSize::Medium, sim::Sea::Sometimes},
-                                              std::tuple{std::uint64_t{7}, sim::MapSize::Large, sim::Sea::Always},
+        for (const auto& [seed, size, sea] : {std::tuple{std::uint64_t{91}, sim::MapSize::Medium, sim::Sea::OneSide},
+                                              std::tuple{std::uint64_t{12}, sim::MapSize::Medium, sim::Sea::None},
+                                              std::tuple{std::uint64_t{7}, sim::MapSize::Large, sim::Sea::OneSide},
                                               std::tuple{std::uint64_t{5}, sim::MapSize::Large, sim::Sea::None},
                                               std::tuple{std::uint64_t{33}, sim::MapSize::Small, sim::Sea::None}}) {
             CAPTURE(seed);
@@ -672,7 +672,7 @@ TEST_SUITE("worldgen_hier_life") {
         for (const bool islands : {false, true}) {
             CAPTURE(islands);
             sim::MapSettings s = hier_settings(95 + (islands ? 1u : 0u), sim::MapSize::Small);
-            s.island_map = islands;
+            s.sea = islands ? sc::sim::Sea::Archipelago : sc::sim::Sea::None;
             const sim::MapData m = generate(s);
             CHECK(m.starts.size() == 2);
             CHECK_FALSE(m.features.empty());

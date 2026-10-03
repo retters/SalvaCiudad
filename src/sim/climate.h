@@ -12,7 +12,14 @@
 namespace sc::sim {
 
 enum class Season : std::uint8_t { Spring, Summer, Autumn, Winter, Count };
-enum class YearLength : std::uint8_t { Short, Normal, Long, Count };
+// Phase 56: the length of the year is a percent of the usual one (20
+// minutes at x1), from kMinYearPercent to 200. These name the three
+// lengths of before.
+struct YearLength {
+    static constexpr std::uint8_t Short = 50, Normal = 100, Long = 200;
+};
+inline constexpr std::uint8_t kMinYearPercent = 25;
+inline constexpr std::uint8_t kMaxYearPercent = 200;
 enum class Harshness : std::uint8_t { Mild, Normal, Harsh, Count };
 enum class StartGoods : std::uint8_t { Scarce, Normal, Plenty, Count };
 // How much of a threat the surroundings are (section 6.3).
@@ -29,7 +36,7 @@ enum class FogMode : std::uint8_t { None, Static, Dynamic, Count };
 
 struct ClimateSettings {
     std::uint8_t seasons = 0b1111;  // Bit per Season; at least one.
-    YearLength year = YearLength::Normal;
+    std::uint8_t year = YearLength::Normal;  // Percent.
     Harshness winter = Harshness::Normal;
     bool operator==(const ClimateSettings&) const = default;
 };
@@ -53,6 +60,9 @@ struct GameRules {
     // how many newcomers are of another race, percent.
     std::array<std::uint8_t, 12> races{};
     std::uint8_t other_races = 20;
+    // Phase 56: the races that may come as newcomers of another race: bit i
+    // is race i of the content. 0: all of them.
+    std::uint16_t immigrants = 0;
     // Phase 32: fog of war (the new game form starts with static fog,
     // decision D-3202) and whether allies share what they see.
     FogMode fog = FogMode::None;
@@ -70,7 +80,7 @@ inline constexpr std::int32_t kMaxPopulationLimit = 1000;
 inline constexpr std::int32_t kPopulationWarning = 6000;
 
 // Ticks in a year: about 10, 20 or 40 minutes at x1.
-[[nodiscard]] std::uint32_t year_ticks(YearLength length);
+[[nodiscard]] std::uint32_t year_ticks(std::uint8_t percent);
 
 struct Calendar {
     std::uint32_t year = 1;   // From 1.

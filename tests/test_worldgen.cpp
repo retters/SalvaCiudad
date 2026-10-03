@@ -154,36 +154,52 @@ std::vector<std::int32_t> named_islands(const MapData& m, const std::vector<std:
     std::vector<std::int32_t> out;
     for (const Landform& l : m.landforms) {
         if (l.kind == LandformKind::Island) {
-            out.push_back(id[static_cast<std::size_t>(l.points[0][1]) * static_cast<std::size_t>(m.size) +
-                             static_cast<std::size_t>(l.points[0][0])]);
+            // Its middle, or the nearest dry square around it.
+            std::int32_t found = -1;
+            for (std::int32_t ring = 0; ring <= 40 && found < 0; ++ring) {
+                for (std::int32_t dz = -ring; dz <= ring && found < 0; ++dz) {
+                    for (std::int32_t dx = -ring; dx <= ring && found < 0; ++dx) {
+                        const std::int32_t x = l.points[0][0] + dx;
+                        const std::int32_t z = l.points[0][1] + dz;
+                        if (std::max(std::abs(dx), std::abs(dz)) == ring && x >= 0 && z >= 0 && x < m.size && z < m.size) {
+                            found = id[static_cast<std::size_t>(z) * static_cast<std::size_t>(m.size) + static_cast<std::size_t>(x)];
+                        }
+                    }
+                }
+            }
+            out.push_back(found);
         }
     }
     return out;
 }
 
-// An island map names towns times islands per town islands, each town is on
-// a piece of land of its own, and the map is the same when generated again.
-// The classic generator also kept every island a piece of its own with a dry
-// middle; the hierarchical one does not yet (phase 49, D-4906).
-void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town) {
+// An island map names towns times islands per town islands, each one a
+// piece of land of its own (a channel of sea runs between any two, D-5609),
+// each town is on its own, and the map is the same when generated again.
+// The middle of an island may be under a lake or a river: its land is then
+// the nearest dry one.
+void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town, std::uint64_t seed = 404) {
     CAPTURE(static_cast<int>(size));
-    MapSettings s = settings(404, size, static_cast<std::uint8_t>(towns));
-    s.island_map = true;
+    CAPTURE(seed);
+    MapSettings s = settings(seed, size, static_cast<std::uint8_t>(towns));
+    s.sea = sc::sim::Sea::Archipelago;
     s.islands = static_cast<std::uint8_t>(per_town);
     REQUIRE(per_town <= worldgen::max_islands_per_town(size, towns));
     const auto m = gen(s);
     REQUIRE(m.has_value());
-    CHECK(m->checksum() == gen(s)->checksum());
+    if (seed == 404) {
+        CHECK(m->checksum() == gen(s)->checksum());
+    }
     std::int32_t count = 0;
     const std::vector<std::int32_t> id = island_ids(*m, count);
     std::vector<std::int32_t> islands = named_islands(*m, id);
     CHECK(islands.size() == static_cast<std::size_t>(towns * per_town));
-    // Not guaranteed by the hierarchical generator (D-4906): reported only.
-    const auto sunk = std::count(islands.begin(), islands.end(), -1);
+    CHECK(std::count(islands.begin(), islands.end(), -1) == 0);
     std::sort(islands.begin(), islands.end());
     const auto shared = islands.end() - std::unique(islands.begin(), islands.end());
-    MESSAGE(count << " pieces of land for " << towns * per_town << " islands; middles at sea " << sunk
-                  << ", islands joined to another " << shared);
+    CHECK(shared == 0);
+    // Loose bits of land besides the islands are allowed: reported only.
+    MESSAGE(count << " pieces of land for " << towns * per_town << " islands");
     REQUIRE(m->starts.size() == static_cast<std::size_t>(towns));
     std::vector<std::int32_t> homes;
     for (const StartPosition& st : m->starts) {
@@ -203,7 +219,7 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0x1320968c684526b0ull;
+constexpr std::uint64_t kGoldenSmallMap = 0xb62f09e39b1ea9c0ull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {
@@ -305,7 +321,7 @@ TEST_SUITE("worldgen") {
     TEST_CASE("rivers end in a lake or at the border") {
         for (const std::uint64_t seed : {1ull, 2ull, 3ull, 4ull}) {
             MapSettings s = settings(seed, MapSize::Medium);
-            s.water = Amount::High;
+            s.rivers = Amount::High;
             const auto m = gen(s);
             REQUIRE(m.has_value());
             for (const WaterArea& a : water_areas(*m)) {
@@ -318,9 +334,9 @@ TEST_SUITE("worldgen") {
     }
 
     TEST_CASE("water is above the ground it covers") {
-        for (const Relief relief : {Relief::Low, Relief::Mountainous}) {
+        for (const std::uint8_t relief : {Relief::Low, Relief::Mountainous}) {
             MapSettings s = settings(61, MapSize::Medium);
-            s.water = Amount::High;
+            s.rivers = Amount::High;
             s.relief = relief;
             const auto m = gen(s);
             REQUIRE(m.has_value());
@@ -404,9 +420,9 @@ TEST_SUITE("worldgen") {
 
     TEST_CASE("settings round-trip and bad ones are rejected") {
         MapSettings s = settings(99, MapSize::Large, 6);
-        s.water = Amount::High;
+        s.rivers = Amount::High;
         s.relief = Relief::Gentle;
-        s.island_map = true;
+        s.sea = sc::sim::Sea::Archipelago;
         s.biomes = only("savanna");
         s.temperature = 150;
         s.humidity = 25;
@@ -421,30 +437,29 @@ TEST_SUITE("worldgen") {
         BinaryReader br(bad);
         CHECK_FALSE(MapSettings::read(br, back));
         bad = w.bytes();
-        bad[13] = 13;  // Too many players.
+        bad[15] = 13;  // Too many players.
         BinaryReader bp(bad);
         CHECK_FALSE(MapSettings::read(bp, back));
         bad = w.bytes();
-        bad[14] = 2;  // Islands or not: nothing else.
+        bad[26] = kMaxClimateRange + 1;  // The range of the climate.
         BinaryReader bt(bad);
         CHECK_FALSE(MapSettings::read(bt, back));
-        for (const std::size_t climate : {std::size_t{23}, std::size_t{24}, std::size_t{25}}) {
+        // The percents: rivers, lakes, forests, resources, relief, landforms,
+        // temperature, humidity and giants.
+        for (const std::size_t percent : {std::size_t{9}, std::size_t{10}, std::size_t{11}, std::size_t{12}, std::size_t{13},
+                                          std::size_t{14}, std::size_t{24}, std::size_t{25}, std::size_t{27}}) {
             bad = w.bytes();
-            bad[climate] = kMaxClimatePercent + 1;  // Temperature, humidity, giants.
+            bad[percent] = kMaxPercent + 1;
             BinaryReader bc(bad);
             CHECK_FALSE(MapSettings::read(bc, back));
         }
         bad = w.bytes();
-        bad[28] = 3;  // Sea out of range.
+        bad[30] = static_cast<std::uint8_t>(Sea::Count);  // Sea out of range.
         BinaryReader bs(bad);
         CHECK_FALSE(MapSettings::read(bs, back));
-        bad = w.bytes();
-        bad[29] = 3;  // Landforms out of range.
-        BinaryReader bl(bad);
-        CHECK_FALSE(MapSettings::read(bl, back));
         for (const std::uint8_t islands : {std::uint8_t{0}, std::uint8_t{kMaxIslandsPerTown + 1}}) {
             bad = w.bytes();
-            bad[27] = islands;
+            bad[29] = islands;
             BinaryReader bi(bad);
             CHECK_FALSE(MapSettings::read(bi, back));
         }
@@ -553,10 +568,17 @@ TEST_SUITE("worldgen_sea") {
         check_island_map(MapSize::Small, 1, 1);
     }
 
+    TEST_CASE("islands never touch, whatever the seed") {
+        for (const std::uint64_t seed : {1u, 2u, 3u, 4u}) {
+            check_island_map(MapSize::Medium, 2, 3, seed);
+            check_island_map(MapSize::Small, 2, 1, seed);
+        }
+    }
+
     TEST_CASE("islands are irregular, the main ones bigger") {
         for (const std::uint64_t seed : {21u, 22u, 23u}) {
             MapSettings s = settings(seed, MapSize::Medium, 2);
-            s.island_map = true;
+            s.sea = sc::sim::Sea::Archipelago;
             s.islands = 3;
             const auto m = gen(s);
             REQUIRE(m.has_value());
@@ -583,19 +605,20 @@ TEST_SUITE("worldgen_sea") {
                 }
             }
             // A disc drawn in cells scores about 0.6 (its staircase shore is
-            // 4/pi longer); bays and peninsulas bring it well down.
+            // 4/pi longer); bays and peninsulas bring it down, a little less
+            // since the channels between islands trim the longest arms (D-5609).
             double mean = 0.0;
             for (const std::int32_t k : islands) {
                 if (k < 0) {
-                    continue;  // Its middle is at sea (D-4906).
+                    continue;
                 }
                 const double compact = 4.0 * 3.14159265 * area[static_cast<std::size_t>(k)] /
                                        (shore[static_cast<std::size_t>(k)] * shore[static_cast<std::size_t>(k)]);
-                CHECK(compact < 0.55);
+                CHECK(compact < 0.6);
                 mean += compact / static_cast<double>(islands.size());
             }
             MESSAGE("seed " << seed << ": mean compactness " << mean);
-            CHECK(mean < 0.4);
+            CHECK(mean < 0.45);
             // Each town starts on the biggest island of its archipelago.
             for (const StartPosition& st : m->starts) {
                 const std::int32_t home = id[static_cast<std::size_t>(st.z.floor_int() * n + st.x.floor_int())];
@@ -625,13 +648,13 @@ TEST_SUITE("worldgen_sea") {
                     CHECK(l.kind != LandformKind::Islet);
                 }
             }
-            s.sea = Sea::Sometimes;
+            // With a side of sea, or two, there always is one.
+            s.sea = seed % 2 == 0 ? Sea::OneSide : Sea::TwoSides;
             const auto m = generate_map(s, content());
             REQUIRE(m.has_value());
             with_sea += m->sea_levels[0] != 0 ? 1 : 0;
         }
-        CHECK(with_sea > 0);
-        CHECK(with_sea < 10);
+        CHECK(with_sea == 10);
     }
 }
 

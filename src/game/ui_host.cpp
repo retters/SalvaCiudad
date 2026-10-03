@@ -1,5 +1,7 @@
 #include "game/ui_host.h"
 
+#include "game/minimap.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -172,6 +174,10 @@ void UiHost::frame(ui::Context& ctx) {
     if (screen_ == Screen::NewGame) {
         ctx.set_input_blocked(modal);
         const NewGameScreen::Result r = new_game_.frame(ctx, modal);
+        // The preview's picture, when a new one is ready (phase 56).
+        if (std::optional<std::vector<std::uint8_t>> image = new_game_.take_preview()) {
+            services_.set_ui_image(kPreviewImageId, minimap::kImageSize, minimap::kImageSize, std::move(*image));
+        }
         // The form is remembered however it is left (phase 23).
         if (r != NewGameScreen::Result::None && services_.settings().new_game != new_game_.remembered()) {
             services_.settings().new_game = new_game_.remembered();

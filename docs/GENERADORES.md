@@ -15,14 +15,18 @@ Hasta la fase 48 había además un generador **clásico** (relieve de ruido con 
 | Opción | Valores | Qué cambia |
 |---|---|---|
 | Tamaño | Pequeño (512 m) a Colosal (16 km) | El lado del mapa y el tamaño de las regiones |
-| Mapa | Tierra firme, Islas | "Islas" hace un mapa de islas |
-| Biomas | Todos según el clima, o uno solo | Con todos, cada bioma crece donde le toca (fase 54, ver `docs/ARBOLES.md`) |
-| Islas por pueblo | 1 a 8 | Solo en "Islas": cuántas islas tiene cada pueblo (la principal y las demás) |
-| Mar | Sin mar, A veces, Siempre | Si hay costa en uno o dos lados ("A veces": 40 % de las semillas) |
-| Ríos y lagos | Pocos, Normal, Muchos | Cuántos ríos nacen además de los de los valles y cañones |
-| Bosques, Recursos | Pocos, Normal, Muchos | Cuántos árboles, piedras, vetas, bayas y hierbas |
-| Relieve | Plano, Colinas suaves, Montañoso | Qué parte de las regiones accidentadas son montañas y qué tan altas son sus crestas |
-| Accidentes del terreno | Pocos, Normal, Muchos | Qué parte del mapa no es llanura, y cuántos valles y cañones hay |
+| Tipo de mapa | Variado, Personalizado | En Variado la semilla decide el clima y el mar y lo demás va en 100 %; lo que sigue se elige en Personalizado (fase 56) |
+| Biomas | Una casilla por bioma | Solo crecen los marcados, cada uno donde le toca (fase 54, ver `docs/ARBOLES.md`) |
+| Temperatura, Humedad | 0 a 200 % | Corren todo el mapa hacia el frío o el calor, lo seco o lo húmedo |
+| Variación del clima | Poca, Mucha | "Mucha": frío en el norte y cálido en el sur; "Poca": casi el mismo clima en todo el mapa |
+| Mar | Sin mar, Un lado, Dos lados, Islas, Archipiélago | Costa en uno o dos lados; "Islas" da una isla por pueblo y "Archipiélago" varias |
+| Islas por pueblo | Las que quepan, hasta 8 | Solo en "Archipiélago": la isla principal de cada pueblo y las demás. Entre dos islas siempre hay un canal de mar |
+| Ríos | 0 a 200 % | Cuántos ríos nacen además de los de los valles y cañones |
+| Lagos | 0 a 200 % | Cuántas cuencas hay y qué tan fácil se llenan |
+| Bosques, Recursos | 0 a 200 % | Cuántos árboles, piedras, vetas, bayas y hierbas |
+| Relieve | 0 a 200 % | Qué parte de las regiones accidentadas son montañas (5, 20, 35 y 60 % a 0, 50, 100 y 200 %) y qué tan altas son sus crestas |
+| Accidentes del terreno | 0 a 200 % | Qué parte del mapa no es llanura (0, 30, 45 y 60 %), y cuántos valles y cañones hay |
+| Árboles gigantes | Sí o no, y 0 a 200 % | Cuántos gigantes (fase 55) |
 
 ## Los niveles
 
@@ -40,12 +44,12 @@ El mapa se divide en regiones irregulares de 150 a 900 m (el lado del mapa entre
 |---|---|---|
 | **Llanura** | Casi plana, con ondulaciones amplias | El resto: la mayoría del mapa |
 | **Colinas** | Unos 6 m más alta, con lomas; primero junto a las montañas | Lo que sobra de las que no son llanura |
-| **Montañas** | Base de 17 a 31 m sobre la llanura; van en cadenas de 2 a 4 regiones | 20, 35 o 55 % de las que no son llanura, según "Relieve" |
+| **Montañas** | Base de 17 a 31 m sobre la llanura; van en cadenas de 2 a 4 regiones | 20, 35 o 60 % de las que no son llanura con "Relieve" en 50, 100 o 200 % |
 | **Meseta** | Cima plana 27 a 41 m sobre la llanura, rodeada de acantilado; nunca toca el mar, una cuenca ni otra meseta | 15 % de las que no son llanura |
 | **Cuenca** | Hundida; ahí van los lagos; no toca el mar ni una meseta | 10 % de las que no son llanura |
 | **Mar** | Fondo 4 a 8 m bajo el nivel del mar | Las del nivel 0 |
 
-Las regiones que no son llanura son el 30, 45 o 60 % del mapa, según "Accidentes del terreno". En mapas pequeños y medianos, donde las regiones son chicas, las alturas se reducen hasta la mitad para que no todo sea acantilado.
+Las regiones que no son llanura son el 30, 45 o 60 % del mapa con "Accidentes del terreno" en 50, 100 o 200 % (ninguna en 0 %). En mapas pequeños y medianos, donde las regiones son chicas, las alturas se reducen hasta la mitad para que no todo sea acantilado.
 
 ### Nivel 2: las estructuras
 
@@ -53,7 +57,7 @@ Solo dentro de su región, y cada lugar tiene una sola. F3 las muestra en "Accid
 
 | Estructura | Dónde | Cómo es | Cuántas |
 |---|---|---|---|
-| **Cresta** | Montañas | El filo de la cadena, con picos y espolones: 25 a 40 m sobre la base con relieve plano, 40 a 65 m con colinas suaves y 65 a 110 m con montañoso | Una por cadena |
+| **Cresta** | Montañas | El filo de la cadena, con picos y espolones: 25 a 40 m sobre la base con relieve hasta 60 %, 40 a 65 m hasta 150 % y 65 a 110 m de ahí en adelante | Una por cadena |
 | **Paso de montaña** | En una cresta | Un tramo de 120 m donde la cresta baja un 65 % | 7 de cada 10 crestas |
 | **Acantilado** | Borde de una meseta | La caída de la cima al terreno de alrededor | Todo el borde |
 | **Rampa** | Una meseta | Un corte que baja de la cima hasta el pie del acantilado, hacia una llanura o colinas | Una por meseta |

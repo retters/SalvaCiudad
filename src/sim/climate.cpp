@@ -1,5 +1,7 @@
 #include "sim/climate.h"
 
+#include <algorithm>
+
 #include <array>
 
 namespace sc::sim {
@@ -41,7 +43,7 @@ std::int32_t threat_percent(Threat t) {
 
 void GameRules::write(BinaryWriter& w) const {
     w.u8(climate.seasons);
-    w.u8(static_cast<std::uint8_t>(climate.year));
+    w.u8(climate.year);
     w.u8(static_cast<std::uint8_t>(climate.winter));
     w.u8(static_cast<std::uint8_t>(start));
     w.i32(max_population);
@@ -57,6 +59,7 @@ void GameRules::write(BinaryWriter& w) const {
         w.u8(r);
     }
     w.u8(other_races);
+    w.u16(immigrants);
     w.u8(static_cast<std::uint8_t>(fog));
     w.u8(shared_vision ? 1 : 0);
 }
@@ -95,7 +98,7 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
             return false;
         }
     }
-    if (!r.u8(g.other_races) || g.other_races > 100) {
+    if (!r.u8(g.other_races) || g.other_races > 100 || !r.u16(g.immigrants)) {
         r.fail();
         return false;
     }
@@ -106,25 +109,24 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
     }
     g.fog = static_cast<FogMode>(fog);
     g.shared_vision = shared_vision != 0;
-    if (g.climate.seasons == 0 || g.climate.seasons > 0b1111 || year >= static_cast<std::uint8_t>(YearLength::Count) ||
+    if (g.climate.seasons == 0 || g.climate.seasons > 0b1111 || year < kMinYearPercent || year > kMaxYearPercent ||
+        year % 5 != 0 ||
         winter >= static_cast<std::uint8_t>(Harshness::Count) || start >= static_cast<std::uint8_t>(StartGoods::Count) ||
         g.max_population < kMinPopulationLimit || g.max_population > kMaxPopulationLimit) {
         r.fail();
         return false;
     }
-    g.climate.year = static_cast<YearLength>(year);
+    g.climate.year = year;
     g.climate.winter = static_cast<Harshness>(winter);
     g.start = static_cast<StartGoods>(start);
     out = g;
     return true;
 }
 
-std::uint32_t year_ticks(YearLength length) {
-    switch (length) {
-        case YearLength::Short: return 6000;
-        case YearLength::Long: return 24000;
-        default: return 12000;
-    }
+std::uint32_t year_ticks(std::uint8_t percent) {
+    // 12 000 ticks (20 minutes at x1) at 100 %; always a whole number of
+    // ticks per day (a year has 120 days; the percent is a multiple of 5).
+    return 120u * std::clamp<std::uint32_t>(percent, kMinYearPercent, kMaxYearPercent);
 }
 
 Calendar calendar(const ClimateSettings& c, std::uint64_t tick) {

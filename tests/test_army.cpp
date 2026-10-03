@@ -58,7 +58,7 @@ const MapData& islands_for(std::uint64_t seed, std::uint8_t players) {
         s.size = MapSize::Medium;
         s.players = players;
         s.islands = 1;
-        s.island_map = true;
+        s.sea = sc::sim::Sea::Archipelago;
         std::optional<MapData> m = generate_map(s, sc::test::core_content());
         REQUIRE(m.has_value());
         it = cache.emplace(key, std::move(*m)).first;

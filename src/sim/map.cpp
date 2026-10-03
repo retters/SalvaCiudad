@@ -8,20 +8,21 @@ namespace sc::sim {
 void MapSettings::write(BinaryWriter& w) const {
     w.u64(seed);
     w.u8(static_cast<std::uint8_t>(size));
-    w.u8(static_cast<std::uint8_t>(water));
-    w.u8(static_cast<std::uint8_t>(forests));
-    w.u8(static_cast<std::uint8_t>(resources));
-    w.u8(static_cast<std::uint8_t>(relief));
+    w.u8(rivers);
+    w.u8(lakes);
+    w.u8(forests);
+    w.u8(resources);
+    w.u8(relief);
+    w.u8(landforms);
     w.u8(players);
-    w.u8(island_map ? 1 : 0);
     w.u64(biomes);
     w.u8(temperature);
     w.u8(humidity);
+    w.u8(climate_range);
     w.u8(giants);
     w.u8(separate ? 1 : 0);
     w.u8(islands);
     w.u8(static_cast<std::uint8_t>(sea));
-    w.u8(static_cast<std::uint8_t>(landforms));
 }
 
 std::int32_t world_grid(const MapSettings& s) {
@@ -60,33 +61,29 @@ std::int32_t MapData::region_at(std::int32_t cx, std::int32_t cz) const {
 
 bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     MapSettings s;
-    std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, island_map = 0, separate = 0, sea = 0,
-                 landforms = 0;
-    if (!r.u64(s.seed) || !r.u8(size) || !r.u8(water) || !r.u8(forests) || !r.u8(resources) || !r.u8(relief) ||
-        !r.u8(s.players) || !r.u8(island_map) || !r.u64(s.biomes) || !r.u8(s.temperature) || !r.u8(s.humidity) || !r.u8(s.giants) ||
-        !r.u8(separate) || !r.u8(s.islands) || !r.u8(sea) || !r.u8(landforms)) {
+    std::uint8_t size = 0, separate = 0, sea = 0;
+    if (!r.u64(s.seed) || !r.u8(size) || !r.u8(s.rivers) || !r.u8(s.lakes) || !r.u8(s.forests) || !r.u8(s.resources) ||
+        !r.u8(s.relief) || !r.u8(s.landforms) || !r.u8(s.players) || !r.u64(s.biomes) || !r.u8(s.temperature) ||
+        !r.u8(s.humidity) || !r.u8(s.climate_range) || !r.u8(s.giants) || !r.u8(separate) || !r.u8(s.islands) ||
+        !r.u8(sea)) {
         return false;
     }
-    if (island_map > 1 || s.temperature > kMaxClimatePercent || s.humidity > kMaxClimatePercent || s.giants > kMaxClimatePercent || separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown || sea >= static_cast<std::uint8_t>(Sea::Count) ||
-        landforms >= static_cast<std::uint8_t>(Amount::Count)) {
-        r.fail();
-        return false;
+    for (const std::uint8_t percent :
+         {s.rivers, s.lakes, s.forests, s.resources, s.relief, s.landforms, s.temperature, s.humidity, s.giants}) {
+        if (percent > kMaxPercent) {
+            r.fail();
+            return false;
+        }
     }
-    s.separate = separate != 0;
-    if (size >= static_cast<std::uint8_t>(MapSize::Count) || water >= static_cast<std::uint8_t>(Amount::Count) ||
-        forests >= static_cast<std::uint8_t>(Amount::Count) || resources >= static_cast<std::uint8_t>(Amount::Count) ||
-        relief >= static_cast<std::uint8_t>(Relief::Count) || s.players < 1 || s.players > 12) {
+    if (size >= static_cast<std::uint8_t>(MapSize::Count) || s.players < 1 || s.players > 12 ||
+        s.climate_range > kMaxClimateRange || separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown ||
+        sea >= static_cast<std::uint8_t>(Sea::Count)) {
         r.fail();
         return false;
     }
     s.size = static_cast<MapSize>(size);
-    s.water = static_cast<Amount>(water);
-    s.forests = static_cast<Amount>(forests);
-    s.resources = static_cast<Amount>(resources);
-    s.relief = static_cast<Relief>(relief);
+    s.separate = separate != 0;
     s.sea = static_cast<Sea>(sea);
-    s.landforms = static_cast<Amount>(landforms);
-    s.island_map = island_map != 0;
     out = s;
     return true;
 }
