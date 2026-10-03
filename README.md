@@ -575,6 +575,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] La partida nueva ofrece "Mapa: Tierra firme o Islas" y "Biomas: Todos o uno solo"; ya no hay tipos de mapa.
 - [ ] **Revisión con el reporte del mapa (Ctrl+F12):** marcar los lugares donde un bioma se vea fuera de lugar; el reporte guarda la temperatura y la humedad del punto.
 
+### Fase 55
+
+- [ ] En un mapa mediano hay 2 o 3 árboles gigantes; en uno colosal, hasta 30. Cada uno está solo en un claro.
+- [ ] Cada gigante está en su lugar: el mangle junto al mar en la costa tropical, el sauce junto a un río o lago, la secuoya y la araucaria en las alturas, el baobab en la sabana, el hongo en el bosque encantado, el cerezo en el bosque florido y el ginkgo en el templado.
+- [ ] Ninguno está cerca del centro de un pueblo al empezar (200 m o más).
+- [ ] Con niebla de guerra, los gigantes sin explorar se ven como siluetas oscuras a lo lejos.
+- [ ] Un gigante se puede talar: da mucha madera (de 40 a 120 troncos según la especie) y tarda mucho.
+- [ ] En otoño e invierno los gigantes cambian de estado como los demás árboles (el hongo cambia sus manchas).
+- [ ] **Tu opinión:** tamaño de los gigantes junto a los árboles normales y cantidad por mapa.
+
 ## Licencia
 
 Código bajo licencia MIT (ver [LICENSE](LICENSE)). Las bibliotecas de terceros conservan las suyas; ver [third_party/README.md](third_party/README.md).

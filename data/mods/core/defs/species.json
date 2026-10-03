@@ -799,7 +799,8 @@
         60,
         120
       ],
-      "landmark": true
+      "landmark": true,
+      "giantBiome": "core:mountain"
     },
     {
       "type": "species",
@@ -828,7 +829,8 @@
         45,
         90
       ],
-      "landmark": true
+      "landmark": true,
+      "giantBiome": "core:mountain"
     },
     {
       "type": "species",
@@ -857,7 +859,8 @@
         40,
         80
       ],
-      "landmark": true
+      "landmark": true,
+      "giantBiome": "core:temperate"
     },
     {
       "type": "species",
@@ -886,7 +889,8 @@
         35,
         70
       ],
-      "landmark": true
+      "landmark": true,
+      "giantBiome": "core:flowering"
     },
     {
       "type": "species",
@@ -915,7 +919,8 @@
         35,
         70
       ],
-      "landmark": true
+      "landmark": true,
+      "giantBiome": "core:riverside"
     },
     {
       "type": "species",
@@ -944,7 +949,8 @@
         50,
         100
       ],
-      "landmark": true
+      "landmark": true,
+      "giantBiome": "core:savanna"
     },
     {
       "type": "species",
@@ -973,7 +979,9 @@
         35,
         70
       ],
-      "landmark": true
+      "landmark": true,
+      "giantBiome": "core:tropical_coast",
+      "giantWater": 40
     },
     {
       "type": "species",
@@ -1002,7 +1010,8 @@
         20,
         40
       ],
-      "landmark": true
+      "landmark": true,
+      "giantBiome": "core:enchanted"
     }
   ]
 }

@@ -203,7 +203,7 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town) {
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0xae3b5ebf0a569568ull;
+constexpr std::uint64_t kGoldenSmallMap = 0x1320968c684526b0ull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {
@@ -428,23 +428,23 @@ TEST_SUITE("worldgen") {
         bad[14] = 2;  // Islands or not: nothing else.
         BinaryReader bt(bad);
         CHECK_FALSE(MapSettings::read(bt, back));
-        for (const std::size_t climate : {std::size_t{23}, std::size_t{24}}) {
+        for (const std::size_t climate : {std::size_t{23}, std::size_t{24}, std::size_t{25}}) {
             bad = w.bytes();
-            bad[climate] = kMaxClimatePercent + 1;  // Temperature, humidity.
+            bad[climate] = kMaxClimatePercent + 1;  // Temperature, humidity, giants.
             BinaryReader bc(bad);
             CHECK_FALSE(MapSettings::read(bc, back));
         }
         bad = w.bytes();
-        bad[27] = 3;  // Sea out of range.
+        bad[28] = 3;  // Sea out of range.
         BinaryReader bs(bad);
         CHECK_FALSE(MapSettings::read(bs, back));
         bad = w.bytes();
-        bad[28] = 3;  // Landforms out of range.
+        bad[29] = 3;  // Landforms out of range.
         BinaryReader bl(bad);
         CHECK_FALSE(MapSettings::read(bl, back));
         for (const std::uint8_t islands : {std::uint8_t{0}, std::uint8_t{kMaxIslandsPerTown + 1}}) {
             bad = w.bytes();
-            bad[26] = islands;
+            bad[27] = islands;
             BinaryReader bi(bad);
             CHECK_FALSE(MapSettings::read(bi, back));
         }
@@ -695,10 +695,12 @@ TEST_SUITE("flora") {
             ++per_size[f.size];
             trees.push_back(&f);
         }
-        // Small, medium and large; the huge ones are the giants (phase 55).
-        for (std::size_t z = 0; z < kTreeSizes; ++z) {
-            CHECK((per_size[z] > 0) == (z != static_cast<std::size_t>(TreeSize::Huge)));
+        // Small, medium and large in the forests; the huge ones are the few
+        // giants (phase 55).
+        for (std::size_t z = 0; z < static_cast<std::size_t>(TreeSize::Huge); ++z) {
+            CHECK(per_size[z] > 100);
         }
+        CHECK(per_size[static_cast<std::size_t>(TreeSize::Huge)] <= 3);
         // Neighbors keep apart by their sizes (half spacings, less a cell).
         std::size_t close = 0;
         for (std::size_t i = 0; i < trees.size(); i += 7) {

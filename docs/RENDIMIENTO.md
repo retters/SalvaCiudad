@@ -209,3 +209,14 @@ Mapa colosal, semilla 12345, cámara aérea a 300 m sobre el centro (un bosque, 
 Mapa grande, semilla 12345, cámara a 260 m (4291 árboles a la vista): de antes 335 FPS y 2,61 M de triángulos; nuevos sin versión lejana 92 FPS y 10,72 M; nuevos con versión lejana 427 FPS y 1,44 M. A 110 m (1011 árboles, 724 en versión lejana): sin versión lejana 103 FPS y 3,00 M; con ella 379 FPS y 1,41 M.
 
 Las corridas del colosal varían entre sí un 10 %, más que la diferencia que se mide; el dato firme es el de los triángulos.
+
+## Árboles gigantes (fase 55)
+
+Medido con `--reporte`, `release`, 1600 × 900, Ultra, sin vsync, mapa mediano (semilla 91, relieve bajo, mar siempre, 2 jugadores), que tiene 3 gigantes.
+
+| Vista | FPS | Objetos (en versión lejana) | Triángulos |
+|---|---|---|---|
+| Los tres gigantes desde 750 m | 1038 | 3593 (3547) | 1,31 M |
+| A 70 m del mangle gigante | 925 | 319 (153) | 0,93 M |
+| A 70 m del hongo gigante | 1055 | 222 (103) | 0,84 M |
+| A 90 m de la secuoya gigante | 1284 | 96 (55) | 0,64 M |

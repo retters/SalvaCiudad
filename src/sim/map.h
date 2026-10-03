@@ -63,6 +63,9 @@ struct MapSettings {
     // in the south; less is colder (or drier), more is warmer (or wetter).
     std::uint8_t temperature = 100;
     std::uint8_t humidity = 100;
+    // Phase 55: how many giant trees, in percent of the usual for the size
+    // (0: none; up to kMaxClimatePercent).
+    std::uint8_t giants = 100;
     // Separate maps (section 7.7): each player gets a map of `size` from
     // seed + player number, laid side by side in one world with no way
     // across. Only with more than one player.

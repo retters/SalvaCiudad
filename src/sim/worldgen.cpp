@@ -26,6 +26,14 @@ constexpr std::uint64_t kClaySeed = 0x434c415900000005ull;
 constexpr std::uint64_t kForestSeed = 0x464f524553540006ull;
 constexpr std::uint64_t kPlacementSeed = 0x504c414345000008ull;
 constexpr std::uint64_t kBiomeSeed = 0x42494f4d45000009ull;
+constexpr std::uint64_t kGiantSeed = 0x4749414e54000013ull;
+// Giants (phase 55): at least this far from a town's start and from each
+// other (meters; on big maps they keep further apart), on ground no steeper
+// than this (centimeters across a cell), with this clearing around.
+constexpr std::int32_t kGiantFromStart = 200;
+constexpr std::int32_t kGiantApart = 160;
+constexpr std::int32_t kGiantSlope = 120;
+constexpr std::int32_t kGiantClearing = 18;
 constexpr std::uint64_t kTemperatureSeed = 0x54454d5000000011ull;
 constexpr std::uint64_t kHumiditySeed = 0x48554d4944000012ull;
 // Half the temperature range from the north to the south of a map.
@@ -82,6 +90,7 @@ public:
         if (!relief() || !lakes() || !rivers() || !soil() || !biomes() || !forests() || !resources() || !starts()) {
             return std::nullopt;
         }
+        giants();
         finish();
         return std::move(out_);
     }
@@ -1320,6 +1329,111 @@ private:
                 }
             }
             out_.starts.push_back({cell_center(bx), cell_center(bz)});
+        }
+    }
+
+    // --- Giants (phase 55) ---------------------------------------------------------
+
+    // A few giant trees as landmarks: each in a clearing of its biome, far
+    // from the towns' starts and from each other. A giant whose biome the
+    // map lacks is left out.
+    void giants() {
+        std::vector<std::uint8_t> kinds;
+        for (std::size_t s = 0; s < flora_.species.size() && s < kMaxSpecies; ++s) {
+            if (flora_.species[s].giant_biome >= 0) {
+                kinds.push_back(static_cast<std::uint8_t>(s));
+            }
+        }
+        static constexpr std::int32_t kCount[] = {2, 3, 6, 10, 18, 30};  // By map size, at 100 %.
+        const std::int32_t wanted =
+            (kCount[std::min<std::size_t>(static_cast<std::size_t>(s_.size), std::size(kCount) - 1)] * s_.giants + 50) / 100;
+        if (kinds.empty() || wanted <= 0) {
+            return;
+        }
+        const bool sea = sea_mm_ > 0;
+        // Only when a giant asks for its water nearby.
+        std::vector<std::uint8_t> fresh_m, sea_m;
+        for (const std::uint8_t k : kinds) {
+            const SpeciesDef& sp = flora_.species[k];
+            const BiomeWater water = flora_.biomes[static_cast<std::size_t>(sp.giant_biome)].water;
+            if (sp.giant_water_m != 0 && water == BiomeWater::Fresh && fresh_m.empty()) {
+                fresh_m = water_distance([&](std::size_t c) { return !sea || water_[c] != sea_mm_; });
+            } else if (sp.giant_water_m != 0 && water == BiomeWater::Sea && sea_m.empty() && sea) {
+                sea_m = water_distance([&](std::size_t c) { return water_[c] == sea_mm_; });
+            }
+        }
+        struct Spot {
+            std::int32_t x, z;
+        };
+        std::vector<Spot> placed;
+        const std::int64_t apart = std::max<std::int64_t>(kGiantApart, n_ / 8);
+        // The kinds take turns, starting with one the seed picks; each takes
+        // the free spot of its biome with the best hash.
+        const std::size_t first = static_cast<std::size_t>(mix64(s_.seed ^ kGiantSeed) % kinds.size());
+        std::int32_t misses = 0;
+        for (std::size_t turn = 0; static_cast<std::int32_t>(placed.size()) < wanted && misses < static_cast<std::int32_t>(kinds.size()); ++turn) {
+            const std::uint8_t kind = kinds[(first + turn) % kinds.size()];
+            const SpeciesDef& sp = flora_.species[kind];
+            const BiomeWater water = flora_.biomes[static_cast<std::size_t>(sp.giant_biome)].water;
+            bool found = false;
+            std::uint64_t best = 0;
+            Spot spot{0, 0};
+            for (std::int32_t z = kGiantClearing; z < n_ - kGiantClearing; z += kOwnerBlock) {
+                for (std::int32_t x = kGiantClearing; x < n_ - kGiantClearing; x += kOwnerBlock) {
+                    const std::size_t c = ci(x, z);
+                    if (biome_[c] != sp.giant_biome || !land(x, z) || cell_slope(x, z) > kGiantSlope) {
+                        continue;
+                    }
+                    const Terrain t = cell_terrain(x, z);
+                    if (t == Terrain::Rock || t == Terrain::Water) {
+                        continue;
+                    }
+                    if (sp.giant_water_m != 0) {
+                        const std::vector<std::uint8_t>& dist = water == BiomeWater::Sea ? sea_m : fresh_m;
+                        if (dist.empty() || dist[c] > sp.giant_water_m) {
+                            continue;
+                        }
+                    }
+                    const auto far_from = [&](std::int64_t px, std::int64_t pz, std::int64_t meters) {
+                        return (px - x) * (px - x) + (pz - z) * (pz - z) >= meters * meters;
+                    };
+                    bool free_spot = true;
+                    for (const StartPosition& st : out_.starts) {
+                        free_spot = free_spot && far_from(st.x.floor_int(), st.z.floor_int(), kGiantFromStart);
+                    }
+                    for (const Spot& p : placed) {
+                        free_spot = free_spot && far_from(p.x, p.z, apart);
+                    }
+                    const std::uint64_t hash = point_hash(kGiantSeed + kind, x, z);
+                    if (free_spot && (!found || hash > best)) {
+                        found = true;
+                        best = hash;
+                        spot = {x, z};
+                    }
+                }
+            }
+            if (!found) {
+                ++misses;
+                continue;
+            }
+            misses = 0;
+            placed.push_back(spot);
+            // Its clearing: the trees around make way.
+            std::erase_if(out_.features, [&](const MapFeature& f) {
+                const std::int64_t dx = f.x.floor_int() - spot.x, dz = f.z.floor_int() - spot.z;
+                return f.type == FeatureType::Tree && dx * dx + dz * dz < std::int64_t{kGiantClearing} * kGiantClearing;
+            });
+            const SizeInfo& si = size_info(TreeSize::Huge);
+            const std::int64_t height = si.min_cm + static_cast<std::int64_t>((best >> 44) % static_cast<std::uint64_t>(si.max_cm - si.min_cm + 1));
+            MapFeature f;
+            f.type = FeatureType::Tree;
+            f.species = kind;
+            f.size = static_cast<std::uint8_t>(TreeSize::Huge);
+            f.x = cell_center(spot.x);
+            f.z = cell_center(spot.z);
+            f.scale = Fixed::from_ratio(height, si.model_cm);
+            f.rotation = static_cast<std::uint16_t>(best >> 28);
+            out_.features.push_back(f);
         }
     }
 

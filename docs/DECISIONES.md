@@ -2212,3 +2212,27 @@ Generador 3, reglas 27, protocolo de red 4 (cambió `MapSettings`).
 
 **D-5410. Datos viejos en las carpetas de compilación.**
 `data/` se copia junto al ejecutable sin borrar lo que ya no existe, así que `map_types.json` y los modelos viejos seguían ahí y el juego los leía. Ahora la copia es un espejo: la carpeta se borra antes de copiar.
+
+## Fase 55: árboles gigantes como hitos (2026-10-03)
+
+**D-5501. El lugar de cada gigante es su bioma.**
+Desde la fase 54 los biomas ya están donde la especificación quería a los gigantes: la ribera junto al agua dulce, la costa tropical junto al mar, el bosque de montaña en lo alto, el encantado en las cuencas. Cada gigante declara su bioma en los datos (`giantBiome`). El mangle pide además el mar a 40 m o menos (`giantWater`), para quedar en la costa baja.
+
+**D-5502. Se colocan al final, después de las salidas.**
+Así se puede exigir la distancia a las salidas (200 m) sin tocar el reparto justo de recursos. El claro se hace quitando los árboles a menos de 18 m. La cantidad por tamaño de mapa (2, 3, 6, 10, 18, 30) cumple los ejemplos de la especificación; `MapSettings::giants` la escala (0 a 200 %).
+
+**D-5503. Menos gigantes si falta su bioma.**
+Las especies se turnan; la que no encuentra lugar pasa. Un mapa sin mar no tiene mangle, y uno pequeño puede quedarse con uno o ninguno si los biomas con gigante quedan cerca de las salidas.
+
+**D-5504. Tala.**
+No hizo falta nada nuevo: un árbol da `logs` de su tamaño y cada tronco cuesta el mismo trabajo, así que un gigante de 120 troncos tarda 12 veces más que un árbol grande de 10.
+
+**D-5505. Rendimiento.**
+Mapa mediano de la semilla 91, Ultra, 1600 × 900, con sus tres gigantes a la vista desde 750 m: 1038 FPS y 1,31 M de triángulos (3593 objetos, casi todos en versión lejana). De cerca, a 70 m de un gigante en su versión completa: de 925 a 1284 FPS. Los gigantes no pesan: son pocos y de lejos usan su versión simple.
+
+**D-5506. Versiones.**
+Generador 4, reglas 28, protocolo de red 5.
+
+**D-5507. Las pruebas se enlazan completas, sin enlazado incremental.**
+En `debug`, los grupos `i18n` y `sim_rules` terminaban a veces con el código 0xC0000409 al cerrar el proceso, después de pasar todas sus comprobaciones. Pasó tras las fases 52 y 55 y antes se había atribuido a objetos viejos de Ninja. La causa es el estado del enlazado incremental (`.ilk`) del ejecutable de pruebas: al borrarlo y enlazar de nuevo, sin recompilar nada, los dos grupos pasan. Ahora `salvaciudad_tests` se enlaza con `/INCREMENTAL:NO`.
+

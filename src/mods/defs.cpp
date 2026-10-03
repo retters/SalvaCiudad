@@ -820,6 +820,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
     }
     // Species.
+    std::vector<std::string> giant_biomes;  // One per species kept.
     for (const RawDef* d : species) {
         Reader r(*d, errors);
         sim::SpeciesDef def;
@@ -832,9 +833,14 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
         r.numbers("logs", def.logs, sim::kTreeSizes, 0, 1000);
         def.landmark = r.flag("landmark");
+        // Phase 55: a giant names the biome it stands in (found once the
+        // biomes are read) and how near its water it must be.
+        std::string giant_biome = r.text("giantBiome", false, 200);
+        def.giant_water_m = static_cast<std::uint16_t>(r.integer("giantWater", 0, 250, 0));
         // The files of each state (phase 51), with their far versions.
         r.state_models(mod_dir, kTreeStateNames, def.state_models, def.state_far, sim::kTreeStates, refs, def.name_key);
         if (r.ok()) {
+            giant_biomes.push_back(std::move(giant_biome));
             out.flora.species.push_back(std::move(def));
         }
     }
@@ -874,6 +880,19 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
     }
     if (out.flora.biomes.empty()) {
         errors.push_back({"", "the content has no biomes"});
+    }
+    for (std::size_t i = 0; i < out.flora.species.size() && i < giant_biomes.size(); ++i) {
+        if (giant_biomes[i].empty()) {
+            continue;
+        }
+        const int b = out.flora.find_biome(giant_biomes[i]);
+        if (b < 0) {
+            errors.push_back({out.flora.species[i].id, std::format("\"giantBiome\" refers to '{}', which does not exist", giant_biomes[i])});
+        } else if (!out.flora.species_has_size(i, sim::TreeSize::Huge)) {
+            errors.push_back({out.flora.species[i].id, "a giant needs the size \"huge\""});
+        } else {
+            out.flora.species[i].giant_biome = static_cast<std::int16_t>(b);
+        }
     }
 }
 

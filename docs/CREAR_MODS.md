@@ -109,6 +109,7 @@ Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`
   - Cada estado es una lista de 1 a 8 archivos (variantes; cada árbol toma una según su lugar). Una entrada puede ser `{"model": archivo, "far": archivo}` para dar la versión lejana del modelo: unos 300 triángulos, que se dibujan cuando el árbol se ve chico en pantalla y siempre en las sombras. La variante de un árbol la deciden los archivos de `bloom`; si otro estado tiene menos archivos, se repiten en orden.
   - `bloom` (con hojas o en flor) es obligatorio; un estado que falta se ve como `bloom`, así que un árbol de hoja perenne declara solo ese. En primavera y verano se ve `bloom`, en otoño `autumn` y en invierno `bare`; cada árbol cambia en un momento distinto de la primera quinta parte de la estación.
   - El mismo modelo sirve para todos los tamaños: se escala a la altura de cada árbol, entre la mitad y una vez y media de la altura del modelo.
+  - Un gigante (fase 55) declara `giantBiome` (el bioma donde sale como hito, pocos por mapa; necesita el tamaño `huge`) y, si quiere, `giantWater` (metros, hasta 250: a esa distancia o menos del agua que pide su bioma).
   - El formato anterior a la fase 51 (`model` con un prefijo por tamaño, y `evergreen`) ya no se acepta.
 - `biome`: `name`, `species` (`{"core:oak": 35, ...}`), `sizeWeights` (4 números), `density` (porcentaje) y `grass` (0 a 255). Y dónde crece (fase 54), todo opcional:
   - `temperature` y `humidity`: rangos `[mínimo, máximo]` de 0 a 100 (por omisión, cualquiera);

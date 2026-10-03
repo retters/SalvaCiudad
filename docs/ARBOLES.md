@@ -49,18 +49,24 @@ Cada modelo tiene hasta tres estados: `bloom` (con hojas o en flor; primavera y 
 | Drago | `core:dragon_tree` | 1 | chico, mediano | 4, 8 | Perenne |
 | Manzano | `core:apple` | 1 | chico, mediano | 4, 8 | Caduca |
 
-Los gigantes son especies de tamaño enorme con `landmark` (su silueta se ve a través de la niebla de guerra). Hasta la fase 55 ningún bioma los tiene, así que no salen en los mapas; se ven en el visor.
+Los gigantes son especies de tamaño enorme con `landmark` (su silueta se ve a través de la niebla de guerra). Desde la fase 55 salen como hitos: pocos por mapa, cada uno en un claro de su bioma.
 
-| Gigante | Id | Madera |
-|---|---|---|
-| Secuoya gigante | `core:giant_sequoia` | 120 |
-| Araucaria gigante | `core:giant_araucaria` | 90 |
-| Ginkgo gigante | `core:giant_ginkgo` | 80 |
-| Cerezo gigante | `core:giant_cherry` | 70 |
-| Sauce gigante | `core:giant_willow` | 70 |
-| Baobab gigante | `core:giant_baobab` | 100 |
-| Mangle gigante | `core:giant_mangrove` | 70 |
-| Hongo gigante | `core:giant_mushroom` | 40 |
+| Gigante | Id | Bioma | Madera |
+|---|---|---|---|
+| Secuoya gigante | `core:giant_sequoia` | Bosque de montaña | 120 |
+| Araucaria gigante | `core:giant_araucaria` | Bosque de montaña | 90 |
+| Ginkgo gigante | `core:giant_ginkgo` | Bosque templado | 80 |
+| Cerezo gigante | `core:giant_cherry` | Bosque florido | 70 |
+| Sauce gigante | `core:giant_willow` | Ribera (junto al agua dulce) | 70 |
+| Baobab gigante | `core:giant_baobab` | Sabana | 100 |
+| Mangle gigante | `core:giant_mangrove` | Costa tropical, a 40 m del mar o menos | 70 |
+| Hongo gigante | `core:giant_mushroom` | Bosque encantado | 40 |
+
+**Cuántos:** 2 en un mapa pequeño, 3 en uno mediano, 6 en uno grande, 10 en uno enorme, 18 en uno gigante y 30 en uno colosal (la opción `giants` del mapa, de 0 a 200 %, los escala; el formulario llega en la fase 56). Si el mapa no tiene el bioma de un gigante, ese gigante no sale, así que puede haber menos.
+
+**Dónde:** en suelo de su bioma que no sea roca ni muy empinado, a 200 m o más de la salida de cualquier pueblo, a 160 m o más de otro gigante (un octavo del lado del mapa en los mapas grandes), y con un claro de 18 m a su alrededor: los árboles de ese radio se quitan. Las especies se turnan, empezando por una que elige la semilla.
+
+**Tala:** un gigante se tala como cualquier árbol; da la madera de la tabla, tronco por tronco, así que tarda en proporción.
 
 ## Biomas
 

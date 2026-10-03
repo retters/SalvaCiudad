@@ -17,6 +17,7 @@ void MapSettings::write(BinaryWriter& w) const {
     w.u64(biomes);
     w.u8(temperature);
     w.u8(humidity);
+    w.u8(giants);
     w.u8(separate ? 1 : 0);
     w.u8(islands);
     w.u8(static_cast<std::uint8_t>(sea));
@@ -62,11 +63,11 @@ bool MapSettings::read(BinaryReader& r, MapSettings& out) {
     std::uint8_t size = 0, water = 0, forests = 0, resources = 0, relief = 0, island_map = 0, separate = 0, sea = 0,
                  landforms = 0;
     if (!r.u64(s.seed) || !r.u8(size) || !r.u8(water) || !r.u8(forests) || !r.u8(resources) || !r.u8(relief) ||
-        !r.u8(s.players) || !r.u8(island_map) || !r.u64(s.biomes) || !r.u8(s.temperature) || !r.u8(s.humidity) ||
+        !r.u8(s.players) || !r.u8(island_map) || !r.u64(s.biomes) || !r.u8(s.temperature) || !r.u8(s.humidity) || !r.u8(s.giants) ||
         !r.u8(separate) || !r.u8(s.islands) || !r.u8(sea) || !r.u8(landforms)) {
         return false;
     }
-    if (island_map > 1 || s.temperature > kMaxClimatePercent || s.humidity > kMaxClimatePercent || separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown || sea >= static_cast<std::uint8_t>(Sea::Count) ||
+    if (island_map > 1 || s.temperature > kMaxClimatePercent || s.humidity > kMaxClimatePercent || s.giants > kMaxClimatePercent || separate > 1 || s.islands < 1 || s.islands > kMaxIslandsPerTown || sea >= static_cast<std::uint8_t>(Sea::Count) ||
         landforms >= static_cast<std::uint8_t>(Amount::Count)) {
         r.fail();
         return false;

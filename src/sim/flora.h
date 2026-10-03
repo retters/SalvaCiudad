@@ -49,6 +49,11 @@ struct SpeciesDef {
     std::uint8_t sizes = 0;  // Bit per TreeSize the species can have.
     std::int32_t logs[kTreeSizes] = {2, 5, 10, 20};  // Wood per tree of each size.
     bool landmark = false;   // Phase 34: its silhouette shows through the fog of war.
+    // Phase 55: a giant, placed a few per map as a landmark, each in a
+    // clearing of this biome (-1: not a giant) and, if `giant_water_m` is
+    // not 0, within that many meters of the water its biome asks for.
+    std::int16_t giant_biome = -1;
+    std::uint16_t giant_water_m = 0;
 };
 
 // Where a biome needs water nearby (phase 54).

@@ -554,6 +554,92 @@ TEST_SUITE("worldgen_hier_life") {
         CHECK(seen.size() >= 8);
     }
 
+    TEST_CASE("giants are few, each in its biome, far from the towns and from each other") {
+        // Phase 55.
+        const sim::Content& content = sc::test::core_content();
+        static constexpr std::int32_t kMost[] = {2, 3, 6, 10, 18, 30};
+        std::set<std::uint8_t> kinds;
+        std::size_t total = 0;
+        for (const auto& [seed, size, sea] : {std::tuple{std::uint64_t{91}, sim::MapSize::Medium, sim::Sea::Always},
+                                              std::tuple{std::uint64_t{12}, sim::MapSize::Medium, sim::Sea::Sometimes},
+                                              std::tuple{std::uint64_t{7}, sim::MapSize::Large, sim::Sea::Always},
+                                              std::tuple{std::uint64_t{5}, sim::MapSize::Large, sim::Sea::None},
+                                              std::tuple{std::uint64_t{33}, sim::MapSize::Small, sim::Sea::None}}) {
+            CAPTURE(seed);
+            sim::MapSettings s = hier_settings(seed, size);
+            s.sea = sea;
+            const sim::MapData m = generate(s);
+            const std::int32_t n = m.size;
+            const std::uint16_t sea_cm = m.sea_levels.empty() ? std::uint16_t{0} : m.sea_levels[0];
+            std::vector<const sim::MapFeature*> giants;
+            for (const sim::MapFeature& f : m.features) {
+                if (f.type == sim::FeatureType::Tree && content.flora.species[f.species].giant_biome >= 0) {
+                    giants.push_back(&f);
+                }
+            }
+            total += giants.size();
+            CHECK(static_cast<std::int32_t>(giants.size()) <= kMost[static_cast<std::size_t>(size)]);
+            if (size != sim::MapSize::Small) {
+                CHECK(giants.size() >= 2);
+            }
+            for (const sim::MapFeature* g : giants) {
+                const sim::SpeciesDef& sp = content.flora.species[g->species];
+                const std::int32_t x = g->x.floor_int(), z = g->z.floor_int();
+                kinds.insert(g->species);
+                CHECK(g->size == static_cast<std::uint8_t>(sim::TreeSize::Huge));
+                CHECK_MESSAGE(m.biome_at(x, z) == sp.giant_biome, sp.id << " out of its biome at " << x << ", " << z);
+                CHECK_FALSE(m.water_at(x, z));
+                // Far from every start.
+                for (const sim::StartPosition& st : m.starts) {
+                    const std::int64_t dx = st.x.floor_int() - x, dz = st.z.floor_int() - z;
+                    CHECK(dx * dx + dz * dz >= 200 * 200);
+                }
+                // Alone in its clearing, and far from the other giants.
+                for (const sim::MapFeature& f : m.features) {
+                    if (f.type != sim::FeatureType::Tree || &f == g) {
+                        continue;
+                    }
+                    const std::int64_t dx = f.x.floor_int() - x, dz = f.z.floor_int() - z;
+                    CHECK(dx * dx + dz * dz >= 17 * 17);
+                    if (content.flora.species[f.species].giant_biome >= 0) {
+                        CHECK(dx * dx + dz * dz >= 160 * 160);
+                    }
+                }
+                // The one that asks for its water has it near (the mangrove, the sea).
+                if (sp.giant_water_m != 0) {
+                    bool near = false;
+                    const std::int32_t reach = sp.giant_water_m;
+                    for (std::int32_t wz = std::max(0, z - reach); wz <= std::min(n - 1, z + reach) && !near; ++wz) {
+                        for (std::int32_t wx = std::max(0, x - reach); wx <= std::min(n - 1, x + reach); ++wx) {
+                            const std::uint16_t w = m.water[static_cast<std::size_t>(wz) * static_cast<std::size_t>(n) + static_cast<std::size_t>(wx)];
+                            near = near || (w != 0 && sea_cm != 0 && w == sea_cm);
+                        }
+                    }
+                    CHECK_MESSAGE(near, sp.id << " far from the sea at " << x << ", " << z);
+                }
+            }
+            // None when asked for none; the same seed, the same giants.
+            if (size == sim::MapSize::Medium) {
+                sim::MapSettings none = s;
+                none.giants = 0;
+                const sim::MapData bare = generate(none);
+                for (const sim::MapFeature& f : bare.features) {
+                    CHECK_FALSE((f.type == sim::FeatureType::Tree && content.flora.species[f.species].giant_biome >= 0));
+                }
+                CHECK(generate(s).checksum() == m.checksum());
+            }
+        }
+        MESSAGE(total << " giants of " << kinds.size() << " kinds on five maps");
+        CHECK(kinds.size() >= 4);
+        // Felling one gives the wood of the data.
+        for (const sim::SpeciesDef& sp : content.flora.species) {
+            if (sp.giant_biome >= 0) {
+                CHECK(sp.landmark);
+                CHECK(sp.logs[static_cast<std::size_t>(sim::TreeSize::Huge)] >= 40);
+            }
+        }
+    }
+
     TEST_CASE("the climate settings move the biomes") {
         const sim::Content& content = sc::test::core_content();
         const auto share = [&](std::uint8_t temperature, const char* id) {
