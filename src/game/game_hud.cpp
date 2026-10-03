@@ -1008,7 +1008,7 @@ void GameHud::merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect&
     const float pad = ctx.s(14.0f);
     if (!game.merchant_here(town)) {
         const std::uint64_t next = ps.merchant_arrives > game.tick() ? ps.merchant_arrives - game.tick() : 0;
-        const auto days = static_cast<int>((next + game.day_ticks() - 1) / game.day_ticks());
+        const auto days = static_cast<int>((next + game.calendar_day_ticks() - 1) / game.calendar_day_ticks());
         ctx.label({box.x + pad, y, box.w - 2 * pad, line},
                   ps.merchant_arrives == 0 ? tr("hud.merchant.none") : tr("hud.merchant.next", days), body,
                   ctx.theme().text_dim);
@@ -1017,7 +1017,7 @@ void GameHud::merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect&
     }
     const std::uint64_t left = ps.merchant_leaves - game.tick();
     ctx.label({box.x + pad, y, box.w - 2 * pad, line},
-              tr("hud.merchant.here", static_cast<int>((left + game.day_ticks() - 1) / game.day_ticks())), body,
+              tr("hud.merchant.here", static_cast<int>((left + game.calendar_day_ticks() - 1) / game.calendar_day_ticks())), body,
               ctx.theme().accent);
     y += line;
     const float bw = std::round(ctx.s(74.0f));
@@ -1336,7 +1336,7 @@ void GameHud::trade_window(ui::Context& ctx, GameSession& s) {
         } else {
             const std::int32_t mine_have = game.tradeable(town, o->want);
             if (ctx.button(ctx.id("accept"), {box.right() - pad - 2 * bw - gap, y, bw, row}, tr("hud.trade.accept"),
-                           tr("hud.trade.accept.tooltip", static_cast<int>(game.travel_ticks(o->from, o->to) / game.day_ticks())),
+                           tr("hud.trade.accept.tooltip", static_cast<int>(game.travel_ticks(o->from, o->to) / game.calendar_day_ticks())),
                            mine_have >= o->want_amount)) {
                 answer(1);
             }
@@ -1354,7 +1354,7 @@ void GameHud::trade_window(ui::Context& ctx, GameSession& s) {
     y += line;
     for (const sim::Caravan* c : caravans) {
         const std::uint64_t left = c->arrives > game.tick() ? c->arrives - game.tick() : 0;
-        const auto days = static_cast<int>((left + game.day_ticks() - 1) / game.day_ticks());
+        const auto days = static_cast<int>((left + game.calendar_day_ticks() - 1) / game.calendar_day_ticks());
         const std::string text = c->to == town ? tr("hud.trade.caravanIn", c->amount, goods_name(game, c->resource),
                                                     town_name(c->from), days)
                                                : tr("hud.trade.caravanOut", c->amount, goods_name(game, c->resource),

@@ -34,10 +34,22 @@ enum class FogMode : std::uint8_t { None, Static, Dynamic, Count };
 // Chances scale with the threat: 0, 50, 100, 200 or 400 %.
 [[nodiscard]] std::int32_t threat_percent(Threat t);
 
+// Phase 59: a season may have its own length, in minutes at x1.
+inline constexpr std::uint8_t kMaxSeasonMinutes = 30;
+inline constexpr std::uint32_t kTicksPerMinute = 600;
+
 struct ClimateSettings {
     std::uint8_t seasons = 0b1111;  // Bit per Season; at least one.
-    std::uint8_t year = YearLength::Normal;  // Percent.
+    // Percent of the usual year, which the seasons share evenly; only when
+    // no season has minutes of its own.
+    std::uint8_t year = YearLength::Normal;
     Harshness winter = Harshness::Normal;
+    // Minutes of each season at x1 (1..kMaxSeasonMinutes for the enabled
+    // ones, 0 for the others), and the year is their sum; or all 0.
+    std::array<std::uint8_t, 4> minutes{};
+
+    // Whether the seasons have minutes of their own.
+    [[nodiscard]] bool own_lengths() const { return minutes != std::array<std::uint8_t, 4>{}; }
     bool operator==(const ClimateSettings&) const = default;
 };
 
@@ -79,8 +91,19 @@ inline constexpr std::int32_t kMaxPopulationLimit = 1000;
 // slowly (measured in phase 20: docs/RENDIMIENTO.md).
 inline constexpr std::int32_t kPopulationWarning = 6000;
 
-// Ticks in a year: about 10, 20 or 40 minutes at x1.
+// Ticks in a year of that percent: about 10, 20 or 40 minutes at x1.
 [[nodiscard]] std::uint32_t year_ticks(std::uint8_t percent);
+// Ticks in the year of these settings: the percent's, or the sum of the
+// seasons' minutes. Always a whole number of ticks per day (120 days).
+[[nodiscard]] std::uint32_t year_ticks(const ClimateSettings& c);
+
+// The enabled seasons in order with their lengths in ticks. Returns how
+// many there are (at least one).
+struct SeasonSpan {
+    Season season = Season::Summer;
+    std::uint32_t ticks = 0;
+};
+[[nodiscard]] std::uint32_t season_spans(const ClimateSettings& c, std::array<SeasonSpan, 4>& out);
 
 struct Calendar {
     std::uint32_t year = 1;   // From 1.
@@ -92,7 +115,8 @@ struct Calendar {
 };
 
 // Twelve months of ten days each; the enabled seasons share the year in
-// order (with one season, it lasts all year).
+// order, evenly or each with its minutes (with one season, it lasts all
+// year).
 [[nodiscard]] Calendar calendar(const ClimateSettings& c, std::uint64_t tick);
 
 // The day's temperature in whole degrees Celsius: each season's base,

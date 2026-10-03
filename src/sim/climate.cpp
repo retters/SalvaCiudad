@@ -45,6 +45,9 @@ void GameRules::write(BinaryWriter& w) const {
     w.u8(climate.seasons);
     w.u8(climate.year);
     w.u8(static_cast<std::uint8_t>(climate.winter));
+    for (const std::uint8_t m : climate.minutes) {
+        w.u8(m);
+    }
     w.u8(static_cast<std::uint8_t>(start));
     w.i32(max_population);
     w.u8(static_cast<std::uint8_t>(diseases));
@@ -67,7 +70,8 @@ void GameRules::write(BinaryWriter& w) const {
 bool GameRules::read(BinaryReader& r, GameRules& out) {
     GameRules g;
     std::uint8_t year = 0, winter = 0, start = 0, diseases = 0, fires = 0, raiders = 0, wildlife = 0;
-    if (!r.u8(g.climate.seasons) || !r.u8(year) || !r.u8(winter) || !r.u8(start) || !r.i32(g.max_population) ||
+    if (!r.u8(g.climate.seasons) || !r.u8(year) || !r.u8(winter) || !r.u8(g.climate.minutes[0]) ||
+        !r.u8(g.climate.minutes[1]) || !r.u8(g.climate.minutes[2]) || !r.u8(g.climate.minutes[3]) || !r.u8(start) || !r.i32(g.max_population) ||
         !r.u8(diseases) || !r.u8(fires) || !r.u8(raiders) || !r.u8(wildlife)) {
         return false;
     }
@@ -117,6 +121,16 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
         return false;
     }
     g.climate.year = year;
+    // Minutes of their own: every enabled season has them and no other does.
+    if (g.climate.own_lengths()) {
+        for (std::uint8_t s = 0; s < 4; ++s) {
+            const bool on = ((g.climate.seasons >> s) & 1u) != 0;
+            if (g.climate.minutes[s] > kMaxSeasonMinutes || on != (g.climate.minutes[s] != 0)) {
+                r.fail();
+                return false;
+            }
+        }
+    }
     g.climate.winter = static_cast<Harshness>(winter);
     g.start = static_cast<StartGoods>(start);
     out = g;
@@ -129,8 +143,71 @@ std::uint32_t year_ticks(std::uint8_t percent) {
     return 120u * std::clamp<std::uint32_t>(percent, kMinYearPercent, kMaxYearPercent);
 }
 
+std::uint32_t season_spans(const ClimateSettings& c, std::array<SeasonSpan, 4>& out) {
+    std::uint32_t n = 0;
+    for (std::uint8_t s = 0; s < 4; ++s) {
+        if (((c.seasons >> s) & 1u) != 0) {
+            out[n++].season = static_cast<Season>(s);
+        }
+    }
+    if (n == 0) {
+        out[n++].season = Season::Summer;
+    }
+    if (c.own_lengths()) {
+        for (std::uint32_t i = 0; i < n; ++i) {
+            const std::uint32_t minutes = c.minutes[static_cast<std::size_t>(out[i].season)];
+            out[i].ticks = std::clamp<std::uint32_t>(minutes, 1, kMaxSeasonMinutes) * kTicksPerMinute;
+        }
+        return n;
+    }
+    // Even parts of the year; the last one takes what does not divide.
+    const std::uint32_t year = year_ticks(c.year);
+    for (std::uint32_t i = 0; i < n; ++i) {
+        out[i].ticks = i + 1 < n ? year / n : year - (year / n) * (n - 1);
+    }
+    return n;
+}
+
+std::uint32_t year_ticks(const ClimateSettings& c) {
+    std::array<SeasonSpan, 4> spans{};
+    const std::uint32_t n = season_spans(c, spans);
+    std::uint32_t year = 0;
+    for (std::uint32_t i = 0; i < n; ++i) {
+        year += spans[i].ticks;
+    }
+    return year;
+}
+
+namespace {
+
+// The season at a tick of the year: its index among the enabled ones and
+// how far through it, 0..999.
+struct SeasonAt {
+    std::array<SeasonSpan, 4> spans{};
+    std::uint32_t count = 0;
+    std::uint32_t index = 0;
+    std::uint32_t progress = 0;
+};
+
+SeasonAt season_at(const ClimateSettings& c, std::uint64_t in_year) {
+    SeasonAt at;
+    at.count = season_spans(c, at.spans);
+    std::uint64_t start = 0;
+    for (std::uint32_t i = 0; i < at.count; ++i) {
+        if (in_year < start + at.spans[i].ticks || i + 1 == at.count) {
+            at.index = i;
+            at.progress = static_cast<std::uint32_t>(std::min<std::uint64_t>(999, (in_year - start) * 1000 / at.spans[i].ticks));
+            break;
+        }
+        start += at.spans[i].ticks;
+    }
+    return at;
+}
+
+}  // namespace
+
 Calendar calendar(const ClimateSettings& c, std::uint64_t tick) {
-    const std::uint64_t year = year_ticks(c.year);
+    const std::uint64_t year = year_ticks(c);
     const std::uint64_t in_year = tick % year;
     const std::uint64_t month_ticks = year / kMonths;
     const std::uint64_t day_ticks = month_ticks / kDaysPerMonth;
@@ -138,45 +215,24 @@ Calendar calendar(const ClimateSettings& c, std::uint64_t tick) {
     cal.year = static_cast<std::uint32_t>(tick / year) + 1;
     cal.month = static_cast<std::uint32_t>(in_year / month_ticks) + 1;
     cal.day = static_cast<std::uint32_t>(in_year % month_ticks / day_ticks) + 1;
-    // The enabled seasons in order, each an equal part of the year.
-    std::array<Season, 4> enabled{};
-    std::uint32_t n = 0;
-    for (std::uint8_t s = 0; s < 4; ++s) {
-        if (((c.seasons >> s) & 1u) != 0) {
-            enabled[n++] = static_cast<Season>(s);
-        }
-    }
-    if (n == 0) {
-        enabled[n++] = Season::Summer;
-    }
-    const std::uint64_t part = in_year * n;
-    cal.season = enabled[static_cast<std::size_t>(part / year)];
-    cal.season_progress = static_cast<std::uint32_t>(part % year * 1000 / year);
+    const SeasonAt at = season_at(c, in_year);
+    cal.season = at.spans[at.index].season;
+    cal.season_progress = at.progress;
     return cal;
 }
 
 std::int32_t temperature(const ClimateSettings& c, std::uint64_t seed, std::uint64_t tick) {
-    const Calendar cal = calendar(c, tick);
-    std::int32_t t = base_temperature(cal.season, c.winter);
+    const std::uint64_t year = year_ticks(c);
+    const SeasonAt at = season_at(c, tick % year);
+    std::int32_t t = base_temperature(at.spans[at.index].season, c.winter);
     // The first quarter of a season eases in from the one before.
-    std::uint32_t n = 0;
-    std::uint32_t index = 0;
-    std::array<Season, 4> enabled{};
-    for (std::uint8_t s = 0; s < 4; ++s) {
-        if (((c.seasons >> s) & 1u) != 0) {
-            if (static_cast<Season>(s) == cal.season) {
-                index = n;
-            }
-            enabled[n++] = static_cast<Season>(s);
-        }
-    }
-    if (n > 1 && cal.season_progress < 250) {
-        const Season before = enabled[(index + n - 1) % n];
+    if (at.count > 1 && at.progress < 250) {
+        const Season before = at.spans[(at.index + at.count - 1) % at.count].season;
         const std::int32_t from = base_temperature(before, c.winter);
-        t = from + (t - from) * static_cast<std::int32_t>(cal.season_progress) / 250;
+        t = from + (t - from) * static_cast<std::int32_t>(at.progress) / 250;
     }
     // A little variation from day to day, the same everywhere.
-    const std::uint64_t day = tick / (year_ticks(c.year) / (kMonths * kDaysPerMonth));
+    const std::uint64_t day = tick / (year / (kMonths * kDaysPerMonth));
     t += static_cast<std::int32_t>(mix(seed ^ (day * 0x9E3779B97F4A7C15ull)) % 7) - 3;
     return t;
 }

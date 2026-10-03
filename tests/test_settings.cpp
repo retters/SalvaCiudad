@@ -312,7 +312,7 @@ TEST_SUITE("settings") {
         n.sea = "archipelago";
         n.islands = 5;
         n.seasons = 0b1000;
-        n.year = 200;
+        n.season_minutes = {1, 30, 12, 7};
         n.winter = "harsh";
         n.start = "plenty";
         n.diseases = "none";
@@ -380,7 +380,7 @@ TEST_SUITE("settings") {
         CHECK(s.new_game.max_population == 600);
         CHECK(s.new_game.forests == 100);
         CHECK(s.new_game.sea == "none");
-        CHECK(s.new_game.year == 100);
+        CHECK(s.new_game.season_minutes == std::array<int, 4>{5, 5, 5, 5});
         CHECK(r.ignored_fields > 0);
         CHECK(is_valid_def_id("core:giants"));
         CHECK_FALSE(is_valid_def_id(""));

@@ -2379,3 +2379,35 @@ A ×0,25 un paso dura 0,4 s: la interpolación sigue siendo suave, pero una orde
 
 **D-5806. Cuánto aguanta.**
 No se midió una partida de 300 aldeanos en vivo a ×9; el dato sale de las mediciones de `docs/RENDIMIENTO.md`: con 2 pueblos de 300 un paso cuesta 0,15 ms, así que ×9 (90 pasos por segundo) son 14 ms de cada segundo. En vivo se comprobó ×9 en una partida recién empezada (mapa mediano, 12 aldeanos): 9 días de juego en unos 4 s y sin bajar de velocidad. Con 12 pueblos de 1000, el paso promedio (12,5 ms) da para ×8 sin dibujar, pero uno de cada veinte pasa de 34 ms: ahí el juego bajará solo hacia ×3 o ×4.
+
+## Fase 59: años largos y duración de cada estación (2026-10-03)
+
+**D-5901. Cada estación con sus minutos.**
+`ClimateSettings` gana `minutes`: los minutos (a ×1) de cada estación activa, de 1 a 30; el año es la suma, hasta 120 min. Con todos en 0 vale lo de antes: el porcentaje del año repartido en partes iguales (así siguen funcionando las pruebas, los tutoriales y cualquier partida hecha en código). Variado y Personalizado usan siempre minutos; cuatro estaciones de 5 min son exactamente el año de 20 min de siempre. El calendario y la temperatura salen ahora de una sola función que reparte el año entre las estaciones. Los meses siguen siendo 12 de 10 días: con un año más largo, cada día dura más.
+
+**D-5902. El día del pueblo ya no se estira.**
+Para mantener "el ritmo por minuto real" que eligió Salvador, la simulación separa dos relojes:
+- **el del calendario** (se estira con el año): estaciones, temperatura, crecimiento y siembra de los cultivos, madurez de los huertos, edad y muerte por vejez, y los años de la victoria por puntos;
+- **el del pueblo** (siempre 10 s por día y 100 s por mes a ×1): hogares, salud y enfermedades, incendios, comercio diario, asaltos, nieve, leña, nacimientos, llegadas y salidas, vuelta de los animales y arbustos, mercaderes, caravanas, ropa y calzado.
+Con el año de 20 min los dos coinciden y el orden de las operaciones es el mismo: las partidas de ese largo transcurren igual que antes.
+
+**D-5903. Cosechas y límites anuales, en proporción al año.**
+Un campo sigue dando una cosecha por año de calendario y un huerto tiene su tope anual; los dos se multiplican por la duración del año sobre 20 min (`Game::per_year`). Por minuto de juego rinden lo mismo con cualquier año. Esto corrige también los años cortos, que antes daban el doble o el cuádruple de comida por minuto.
+
+**D-5904. Diferencia con el plan: las enfermedades no se estiran.**
+El plan decía que las enfermedades, medidas en días, se estirarían con el año. Quedaron en el reloj del pueblo (duran lo mismo en minutos con cualquier año): era lo coherente con "el ritmo por minuto real" y lo más simple. Lo que sí se estira es lo que el plan decía: las estaciones y la edad.
+
+**D-5905. Lo que cambia para el jugador con un año largo.**
+Cada estación dura más, así que hay que guardar más comida y leña para el invierno; los niños tardan más minutos en crecer (5 años); un campo tarda lo mismo en madurar en días de calendario, o sea más minutos, y da una cosecha más grande. Los días que muestra la interfaz (llegada del mercader, viaje de una caravana) son días del calendario.
+
+**D-5906. La prueba de equilibrio suma cuatro partidas.**
+El criterio pedía comparar comida por habitante y población entre el año normal y el largo. Una partida sola no sirve: con la misma configuración, la suerte del pueblo mueve su población un tercio (de 23 a 47 habitantes en diez semillas). Sumando cuatro partidas de una hora con años de 15 y de 45 min (sin invierno, para que el clima sea el mismo): 149 y 140 habitantes, 161 y 147 llegadas, comida por habitante 9,7 y 9,6. La prueba (`village_years`) exige que queden dentro del 15 %.
+
+**D-5907. Ajustes de antes.**
+`settings.json` guarda `springMinutes`, `summerMinutes`, `autumnMinutes` y `winterMinutes`. Un archivo anterior con `year` (porcentaje) se convierte: ese año repartido entre sus estaciones, redondeado a minutos enteros de 1 a 30.
+
+**D-5908. Versiones.**
+Reglas 30, protocolo de red 8 (las reglas llevan cuatro bytes más).
+
+**D-5909. Sin revisar en pantalla.**
+Las barras nuevas están en la mitad de abajo de Personalizado, que no se puede capturar desde las pruebas automáticas (D-5611). Quedan en la lista de pruebas a mano.

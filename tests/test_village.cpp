@@ -152,6 +152,48 @@ void opening(Game& g) {
     CHECK(place(g, building("house")));
 }
 
+// The scripted player of the tests: an opening and then, minute by minute
+// for an hour at normal speed, houses, foragers and workplaces as the town
+// grows. `strict`: fails if a workplace finds no room.
+void tended_hour(Game& g, bool strict = true) {
+    opening(g);
+    int houses = 2;
+    int foragers = 1;
+    // An hour at normal speed; the player builds as the town grows.
+    for (int minute = 0; minute < 60; ++minute) {
+        run(g, 600);
+        const auto stored = g.stored(0);
+        if (stored[resource("log")] >= 20 && houses < 10 && g.population(0) + 4 > houses * 5 - 5) {
+            if (place(g, building("house"))) {
+                ++houses;
+            }
+        }
+        std::int32_t food = 0;
+        for (std::size_t r = 0; r < stored.size(); ++r) {
+            food += content()->resources[r].category == ResourceCategory::Food ? stored[r] : 0;
+        }
+        if (food < g.population(0) * 6 && foragers < 5 && place_for(g, building("forager"), FeatureType::BerryBush)) {
+            ++foragers;
+        }
+        if (minute == 3) {
+            const bool splitter = place(g, building("firewood_splitter"));
+            CHECK((splitter || !strict));  // Firewood for the winter.
+        }
+        if (minute == 10) {
+            const bool store = place(g, building("storehouse"));
+            CHECK((store || !strict));
+        }
+        if (minute == 15 || minute == 35) {
+            const bool cutter = place_for(g, building("woodcutter"), FeatureType::Tree);
+            CHECK((cutter || !strict));
+        }
+        if (minute == 20) {
+            const bool stone = place_for(g, building("stonecutter"), FeatureType::Stone);
+            CHECK((stone || !strict));
+        }
+    }
+}
+
 }  // namespace
 
 TEST_SUITE("village") {
@@ -312,38 +354,7 @@ TEST_SUITE("village") {
         // game seed where the newcomers of phase 57's peoples suit it (7 of
         // the 10 from 77 on do).
         Game g(content(), small_map(1), setup);
-        opening(g);
-        int houses = 2;
-        int foragers = 1;
-        // An hour at normal speed; the player builds as the town grows.
-        for (int minute = 0; minute < 60; ++minute) {
-            run(g, 600);
-            const auto stored = g.stored(0);
-            if (stored[resource("log")] >= 20 && houses < 10 && g.population(0) + 4 > houses * 5 - 5) {
-                if (place(g, building("house"))) {
-                    ++houses;
-                }
-            }
-            std::int32_t food = 0;
-            for (std::size_t r = 0; r < stored.size(); ++r) {
-                food += content()->resources[r].category == ResourceCategory::Food ? stored[r] : 0;
-            }
-            if (food < g.population(0) * 6 && foragers < 5 && place_for(g, building("forager"), FeatureType::BerryBush)) {
-                ++foragers;
-            }
-            if (minute == 3) {
-                CHECK(place(g, building("firewood_splitter")));  // Firewood for the winter.
-            }
-            if (minute == 10) {
-                CHECK(place(g, building("storehouse")));
-            }
-            if (minute == 15 || minute == 35) {
-                CHECK(place_for(g, building("woodcutter"), FeatureType::Tree));
-            }
-            if (minute == 20) {
-                CHECK(place_for(g, building("stonecutter"), FeatureType::Stone));
-            }
-        }
+        tended_hour(g);
         const Game& end = g;
         const auto stored = end.stored(0);
         MESSAGE("after an hour: population " << end.population(0) << ", births " << end.player(0).births
@@ -466,5 +477,54 @@ TEST_SUITE("nav") {
         // Buildings do not cut the land in two.
         nav.set_building(a.x.floor_int() - 20, a.z.floor_int() - 1, a.x.floor_int() + 20, a.z.floor_int() + 1, true);
         CHECK(nav.same_land({a.x, a.z - Fixed::from_int(6)}, {a.x, a.z + Fixed::from_int(6)}));
+    }
+}
+
+// Slow: eight hours of play. A suite of its own, for the time limit.
+TEST_SUITE("village_years") {
+    TEST_CASE("a long year keeps the village's pace by the minute") {
+        // The same tended village through an hour, with a year of 15 minutes
+        // and with one of 45 (no winter, so both have the same weather to
+        // live by). One game is not like another (a village's luck swings
+        // its numbers by a third), so four are added up: people, newcomers
+        // and food come out alike.
+        struct Sum {
+            std::int32_t people = 0, arrivals = 0, deaths = 0, food = 0;
+        };
+        const auto play = [](std::uint8_t season_minutes) {
+            Sum sum;
+            for (std::uint64_t seed = 70; seed < 74; ++seed) {
+                GameSetup setup{1, seed, false, GameRules{}};
+                setup.rules.raiders = Threat::None;
+                setup.rules.wildlife = Threat::None;
+                setup.rules.fires = Threat::None;
+                setup.rules.diseases = Threat::None;
+                setup.rules.climate.seasons = 0b0111;
+                setup.rules.climate.minutes = {season_minutes, season_minutes, season_minutes, 0};
+                Game g(content(), small_map(1), setup);
+                tended_hour(g, false);
+                CHECK(g.calendar().year == (season_minutes == 5 ? 5u : 2u));
+                sum.people += g.population(0);
+                sum.arrivals += g.player(0).arrivals;
+                sum.deaths += g.player(0).deaths;
+                const auto stored = g.stored(0);
+                for (std::size_t r = 0; r < stored.size(); ++r) {
+                    sum.food += content()->resources[r].category == ResourceCategory::Food ? stored[r] : 0;
+                }
+            }
+            return sum;
+        };
+        const Sum usual = play(5);
+        const Sum longer = play(15);
+        MESSAGE("years of 15 min: people " << usual.people << ", arrivals " << usual.arrivals << ", deaths "
+                                           << usual.deaths << ", food " << usual.food);
+        MESSAGE("years of 45 min: people " << longer.people << ", arrivals " << longer.arrivals << ", deaths "
+                                           << longer.deaths << ", food " << longer.food);
+        const auto alike = [](std::int32_t a, std::int32_t b) {
+            return static_cast<double>(b) > static_cast<double>(a) * 0.85 && static_cast<double>(b) < static_cast<double>(a) * 1.15;
+        };
+        CHECK(alike(usual.people, longer.people));
+        CHECK(alike(usual.arrivals, longer.arrivals));
+        CHECK(alike(usual.food * 100 / usual.people, longer.food * 100 / longer.people));
     }
 }

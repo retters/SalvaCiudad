@@ -271,7 +271,7 @@ TEST_SUITE("new_game") {
         last.climate = "even";
         last.giants_on = false;
         last.seasons = 0b1000;
-        last.year = 50;
+        last.season_minutes = {3, 4, 5, 9};
         last.raiders = "brutal";
         last.race = "core:dwarf";
         last.other_races = 200;
@@ -300,7 +300,8 @@ TEST_SUITE("new_game") {
         CHECK(m.seed >= 1u);
         const sim::GameRules& g = screen.rules();
         CHECK(g.climate.seasons == 0b1000);
-        CHECK(g.climate.year == sim::YearLength::Short);
+        CHECK(g.climate.minutes == std::array<std::uint8_t, 4>{0, 0, 0, 9});  // Only the winter it has.
+        CHECK(sim::year_ticks(g.climate) == 9u * sim::kTicksPerMinute);
         CHECK(g.raiders == sim::Threat::Brutal);
         CHECK(content.races[g.races[0]].id == "core:dwarf");
         CHECK(g.races[11] == g.races[0]);
@@ -376,6 +377,7 @@ TEST_SUITE("new_game") {
         const sim::GameRules rules = varied_rules();
         CHECK(rules.climate.seasons == 0b1111);
         CHECK(rules.climate.year == sim::YearLength::Normal);
+        CHECK(sim::year_ticks(rules.climate) == sim::year_ticks(sim::YearLength::Normal));
         CHECK(rules.fog == sim::FogMode::Static);
         CHECK(rules.shared_vision);
         CHECK(rules.max_population == 1000);

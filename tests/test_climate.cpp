@@ -94,6 +94,81 @@ TEST_SUITE("climate") {
         CHECK(calendar(no_winter, year * 9 / 10).season == Season::Autumn);
     }
 
+    TEST_CASE("the village's day does not stretch with the year; harvests do") {
+        const auto game = [](std::uint8_t season_minutes) {
+            ClimateSettings c;
+            c.seasons = 0b0111;
+            c.minutes = {season_minutes, season_minutes, season_minutes, 0};
+            return Game(content(), small_map(31), setup(c));
+        };
+        const Game usual = game(5);
+        const Game longer = game(15);
+        CHECK(usual.year_ticks() == 9000);
+        CHECK(longer.year_ticks() == 27000);
+        CHECK(usual.day_ticks() == longer.day_ticks());
+        CHECK(usual.month_ticks() == longer.month_ticks());
+        CHECK(longer.calendar_day_ticks() == 3 * usual.calendar_day_ticks());
+        // What a harvest and a yearly limit are worth follows the year.
+        CHECK(usual.per_year(120) == 90);
+        CHECK(longer.per_year(120) == 270);
+        CHECK(longer.per_year(1) == 2);
+        CHECK(Game(content(), small_map(31), setup(ClimateSettings{})).per_year(120) == 120);
+        CHECK(usual.per_year(0) == 0);
+    }
+
+    TEST_CASE("seasons with minutes of their own make the year") {
+        // A long summer, a short winter and no autumn: 12 + 30 + 2 minutes.
+        ClimateSettings c;
+        c.seasons = 0b1011;
+        c.minutes = {12, 30, 0, 2};
+        REQUIRE(c.own_lengths());
+        const std::uint32_t year = year_ticks(c);
+        CHECK(year == 44u * kTicksPerMinute);
+        CHECK(year % 120 == 0);  // A whole number of ticks per day.
+        std::array<SeasonSpan, 4> spans{};
+        REQUIRE(season_spans(c, spans) == 3);
+        CHECK(spans[0].season == Season::Spring);
+        CHECK(spans[1].ticks == 30u * kTicksPerMinute);
+        CHECK(spans[2].season == Season::Winter);
+        CHECK(calendar(c, 0).season == Season::Spring);
+        CHECK(calendar(c, 12u * kTicksPerMinute - 1).season == Season::Spring);
+        CHECK(calendar(c, 12u * kTicksPerMinute).season == Season::Summer);
+        CHECK(calendar(c, 12u * kTicksPerMinute).season_progress == 0);
+        CHECK(calendar(c, 27u * kTicksPerMinute).season_progress == 500);
+        CHECK(calendar(c, 42u * kTicksPerMinute).season == Season::Winter);
+        CHECK(calendar(c, year - 1).season == Season::Winter);
+        CHECK(calendar(c, year - 1).season_progress == 999);
+        CHECK(calendar(c, year).season == Season::Spring);
+        CHECK(calendar(c, year).year == 2);
+        // Still twelve months of ten days, each longer.
+        const Calendar mid = calendar(c, year / 2);
+        CHECK(mid.month == 7);
+        CHECK(mid.day == 1);
+        // The weather follows: warm through the long summer, freezing in
+        // the two minutes of winter (after it eases in).
+        for (std::uint64_t t = 20u * kTicksPerMinute; t < 42u * kTicksPerMinute; t += 300) {
+            CHECK(temperature(c, 5, t) >= 18);
+        }
+        CHECK(temperature(c, 5, year - 100) <= 0);
+        // Years of 60, 75 and 90 minutes, shared out as one likes.
+        for (const auto& minutes : {std::array<std::uint8_t, 4>{15, 15, 15, 15}, std::array<std::uint8_t, 4>{20, 30, 20, 5},
+                                    std::array<std::uint8_t, 4>{30, 30, 15, 15}}) {
+            ClimateSettings longer;
+            longer.minutes = minutes;
+            const std::uint32_t sum = minutes[0] + minutes[1] + minutes[2] + minutes[3];
+            CHECK(year_ticks(longer) == sum * kTicksPerMinute);
+        }
+        // Four seasons of five minutes are the usual year.
+        ClimateSettings usual;
+        usual.minutes = {5, 5, 5, 5};
+        CHECK(year_ticks(usual) == year_ticks(YearLength::Normal));
+        for (std::uint64_t t = 0; t < 12000; t += 37) {
+            CHECK(calendar(usual, t).season == calendar(ClimateSettings{}, t).season);
+            CHECK(calendar(usual, t).season_progress == calendar(ClimateSettings{}, t).season_progress);
+            CHECK(temperature(usual, 9, t) == temperature(ClimateSettings{}, 9, t));
+        }
+    }
+
     TEST_CASE("temperatures follow the seasons and the winter's harshness") {
         ClimateSettings mild;
         mild.winter = Harshness::Mild;
@@ -124,6 +199,7 @@ TEST_SUITE("climate") {
         GameRules r;
         r.climate.seasons = 0b1010;
         r.climate.year = YearLength::Long;
+        r.climate.minutes = {0, 7, 0, 30};
         r.climate.winter = Harshness::Harsh;
         r.start = StartGoods::Plenty;
         r.max_population = 300;
@@ -133,6 +209,18 @@ TEST_SUITE("climate") {
         GameRules back;
         REQUIRE(GameRules::read(rd, back));
         CHECK(back == r);
+        // Minutes for a season the year does not have, none for one it has,
+        // or too many: refused.
+        for (const auto& minutes : {std::array<std::uint8_t, 4>{5, 7, 0, 30}, std::array<std::uint8_t, 4>{0, 0, 0, 30},
+                                    std::array<std::uint8_t, 4>{0, 7, 0, 31}}) {
+            GameRules bad = r;
+            bad.climate.minutes = minutes;
+            BinaryWriter bw;
+            bad.write(bw);
+            BinaryReader br(bw.bytes());
+            GameRules out;
+            CHECK_FALSE(GameRules::read(br, out));
+        }
         for (const auto& bad : {GameRules{{0, YearLength::Normal, Harshness::Normal}, StartGoods::Normal, 100},
                                 GameRules{{0b1111, YearLength::Normal, Harshness::Normal}, StartGoods::Normal, 10}}) {
             BinaryWriter wb;

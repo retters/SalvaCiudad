@@ -5,6 +5,7 @@
 // made again whenever a choice changes.
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <mutex>
@@ -98,6 +99,8 @@ private:
     sim::GameRules game_;
     bool giants_on_ = true;
     int other_races_ = 100;  // Percent of the usual share.
+    // Minutes of each season; those of the enabled ones make the year.
+    std::array<int, 4> season_minutes_{5, 5, 5, 5};
     // As resolved from the form.
     sim::MapSettings settings_;
     sim::GameRules rules_;

@@ -27,6 +27,8 @@ constexpr std::uint64_t kPreviewDelayNs = 350'000'000ull;
 constexpr std::uint64_t kVariedSeed = 0x5641524945440014ull;
 // Half the temperature range of a map of one climate.
 constexpr std::uint8_t kEvenClimateRange = 12;
+// A season of the usual year, in minutes.
+constexpr std::uint8_t kUsualSeasonMinutes = 5;
 
 // Digit typed with this key, or -1.
 int digit_for(SDL_Scancode key) {
@@ -170,6 +172,8 @@ sim::MapSettings varied_map(std::uint64_t seed, sim::MapSize size, int players) 
 sim::GameRules varied_rules() {
     sim::GameRules r;
     r.fog = sim::FogMode::Static;  // Decision D-3202.
+    // The usual year, said in minutes: four seasons of five.
+    r.climate.minutes = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
     return r;
 }
 
@@ -208,6 +212,7 @@ void NewGameScreen::reset() {
     map_.relief = sim::Relief::Gentle;
     map_.islands = 3;
     game_ = varied_rules();
+    season_minutes_ = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
     giants_on_ = true;
     other_races_ = 100;
 }
@@ -216,6 +221,7 @@ void NewGameScreen::start_from_varied() {
     const std::uint64_t seed = parse_seed(seed_text_);
     map_ = varied_map(seed, map_.size, map_.players);
     game_ = varied_rules();
+    season_minutes_ = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
     giants_on_ = true;
     other_races_ = 100;
     custom_ = true;
@@ -302,7 +308,9 @@ void NewGameScreen::apply(const NewGameSettings& n) {
     if (n.seasons >= 1 && n.seasons <= 0b1111) {
         game_.climate.seasons = static_cast<std::uint8_t>(n.seasons);
     }
-    game_.climate.year = percent(n.year, sim::kMinYearPercent);
+    for (std::size_t i = 0; i < 4; ++i) {
+        season_minutes_[i] = std::clamp(n.season_minutes[i], 1, static_cast<int>(sim::kMaxSeasonMinutes));
+    }
     game_.climate.winter = named(names::kWinters, n.winter, game_.climate.winter);
     game_.start = named(names::kStarts, n.start, game_.start);
     game_.diseases = named(names::kThreats, n.diseases, game_.diseases);
@@ -353,7 +361,7 @@ NewGameSettings NewGameScreen::remembered() const {
         }
     }
     n.seasons = game_.climate.seasons;
-    n.year = game_.climate.year;
+    n.season_minutes = season_minutes_;
     n.winter = name_of(names::kWinters, game_.climate.winter);
     n.start = name_of(names::kStarts, game_.start);
     n.diseases = name_of(names::kThreats, game_.diseases);
@@ -383,6 +391,12 @@ void NewGameScreen::resolve() {
         settings_.giants = 0;
     }
     rules_ = game_;
+    // The year: the minutes of the seasons it has.
+    rules_.climate.year = sim::YearLength::Normal;
+    for (std::size_t i = 0; i < 4; ++i) {
+        const bool on = ((rules_.climate.seasons >> i) & 1u) != 0;
+        rules_.climate.minutes[i] = on ? static_cast<std::uint8_t>(season_minutes_[i]) : std::uint8_t{0};
+    }
     rules_.other_races = static_cast<std::uint8_t>(std::clamp(kUsualOtherRaces * other_races_ / 100, 0, 100));
 }
 
@@ -707,13 +721,24 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
                 game_.climate.seasons = next == 0 ? bit : next;  // The last one stays.
             });
     }
-    {
-        int v = game_.climate.year;
-        const Row r = row(ctx, x, y, cw, tr("newGame.year"), tr("newGame.year.tooltip"));
-        if (ctx.slider(ctx.id("year"), r.control, v, sim::kMinYearPercent, 200, 25,
-                       [](int p) { return tr("newGame.year.value", p, p / 5); }, tr("newGame.year.tooltip"))) {
-            game_.climate.year = percent(v, sim::kMinYearPercent);
+    // A bar per season it has, in minutes; the year is their sum.
+    int year_minutes = 0;
+    for (std::size_t i = 0; i < 4; ++i) {
+        static constexpr const char* kSeasonKeys[] = {"hud.season.spring", "hud.season.summer", "hud.season.autumn",
+                                                      "hud.season.winter"};
+        if (((game_.climate.seasons >> i) & 1u) == 0) {
+            continue;
         }
+        const Row r = row(ctx, x, y, cw, tr("newGame.seasonLength", tr(kSeasonKeys[i])), tr("newGame.seasonLength.tooltip"));
+        (void)ctx.slider(ctx.id(std::string("season_minutes") + std::to_string(i)), r.control, season_minutes_[i], 1,
+                         sim::kMaxSeasonMinutes, 1, [](int m) { return tr("newGame.minutes", m); },
+                         tr("newGame.seasonLength.tooltip"));
+        year_minutes += season_minutes_[i];
+    }
+    {
+        const Row r = row(ctx, x, y, cw, tr("newGame.year"), tr("newGame.year.tooltip"));
+        ctx.label(r.control, tr("newGame.minutes", year_minutes), ctx.style(ctx.theme().body), ctx.theme().text_dim,
+                  ui::Align::Center);
     }
     {
         const std::vector<std::string> options = {tr("newGame.winter.mild"), tr("newGame.winter.normal"),

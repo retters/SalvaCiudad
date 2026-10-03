@@ -3,6 +3,7 @@
 // fields that this version does not know.
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -131,7 +132,9 @@ struct NewGameSettings {
     std::string sea = "none";       // new_game_names::kSeas
     int islands = 3;                // Per town, on an archipelago.
     int seasons = 0b1111;           // Bit per season: spring, summer, autumn, winter.
-    int year = 100;                 // Percent, 25 to 200.
+    // Minutes of each season at normal speed, 1 to 30 (phase 59): spring,
+    // summer, autumn, winter. The year is the sum of the enabled ones.
+    std::array<int, 4> season_minutes{5, 5, 5, 5};
     std::string winter = "normal";  // new_game_names::kWinters
     std::string start = "normal";   // new_game_names::kStarts
     std::string diseases = "medium";  // new_game_names::kThreats
@@ -186,6 +189,7 @@ inline constexpr int kMaxWindowCoordinate = 65536;
 inline constexpr int kMinFpsLimit = 30;
 inline constexpr int kMaxFpsLimit = 500;
 inline constexpr double kMinUiScale = 0.75;
+inline constexpr int kMaxSeasonMinutes = 30;  // As sim::kMaxSeasonMinutes.
 inline constexpr double kMaxUiScale = 2.0;
 inline constexpr double kMinCameraSpeed = 0.25;
 inline constexpr double kMaxCameraSpeed = 4.0;

@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 29;
+inline constexpr std::uint32_t kGameRulesVersion = 30;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -379,9 +379,22 @@ public:
 
     // Time and weather (phase 10).
     [[nodiscard]] const GameRules& rules() const { return rules_; }
-    [[nodiscard]] std::uint32_t year_ticks() const { return sim::year_ticks(rules_.climate.year); }
-    [[nodiscard]] std::uint32_t month_ticks() const { return year_ticks() / 12; }
-    [[nodiscard]] std::uint32_t day_ticks() const { return month_ticks() / 10; }
+    // The calendar's year, month and day: they stretch with the year's
+    // length. Seasons, crops and ages go by them.
+    [[nodiscard]] std::uint32_t year_ticks() const { return sim::year_ticks(rules_.climate); }
+    [[nodiscard]] std::uint32_t calendar_month_ticks() const { return year_ticks() / 12; }
+    [[nodiscard]] std::uint32_t calendar_day_ticks() const { return calendar_month_ticks() / 10; }
+    // Phase 59: everything else keeps its pace in real time whatever the
+    // year's length, so the village's month and day are always those of
+    // the usual year (100 s and 10 s at x1).
+    [[nodiscard]] std::uint32_t month_ticks() const { return kTicksPerMonth; }
+    // What something measured per year of the usual length (a harvest, a
+    // yearly limit) is in this game's year; at least 1 for anything over 0.
+    [[nodiscard]] std::int32_t per_year(std::int32_t amount) const {
+        const std::int64_t scaled = static_cast<std::int64_t>(amount) * year_ticks() / kTicksPerYear;
+        return amount > 0 ? static_cast<std::int32_t>(std::max<std::int64_t>(1, scaled)) : 0;
+    }
+    [[nodiscard]] std::uint32_t day_ticks() const { return kTicksPerDay; }
     [[nodiscard]] Calendar calendar() const { return sim::calendar(rules_.climate, tick_); }
     [[nodiscard]] std::int32_t temperature() const { return temperature_; }
     [[nodiscard]] std::int32_t snow() const { return snow_; }

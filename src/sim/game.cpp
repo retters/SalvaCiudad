@@ -1759,14 +1759,14 @@ public:
         if (scale == 0) {
             return;
         }
-        const auto interval = static_cast<std::uint64_t>(g_.year_ticks()) * 100u / static_cast<std::uint64_t>(scale);
+        const auto interval = static_cast<std::uint64_t>(kTicksPerYear) * 100u / static_cast<std::uint64_t>(scale);
         for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
             PlayerState& ps = g_.players_[p];
             if (g_.town_of(p) != p || !ps.active || !ps.town_center.valid()) {
                 continue;
             }
             if (ps.next_raid == 0) {
-                ps.next_raid = g_.tick_ + interval + g_.year_ticks();  // A year of grace.
+                ps.next_raid = g_.tick_ + interval + kTicksPerYear;  // A year of grace (of the usual length).
             } else if (g_.tick_ >= ps.next_raid) {
                 ps.next_raid = g_.tick_ + interval * 3 / 4 + g_.rng_.below(static_cast<std::uint32_t>(interval / 2 + 1));
                 start_raid(p, scale);
@@ -2697,7 +2697,7 @@ public:
                 if (f.growth >= 1000) {
                     f.growth = 1000;
                     f.state = FieldState::Ripe;
-                    f.pending = std::max(1, f.w * f.d * crop.yield * f.fertility / 1000);
+                    f.pending = g_.per_year(std::max(1, f.w * f.d * crop.yield * f.fertility / 1000));
                     g_.buildings_changed_ = true;
                 }
             }
@@ -2848,7 +2848,7 @@ public:
                 job.produced_year = cal.year;
                 job.produced = 0;
             }
-            if (job.produced >= d.yearly_limit) {
+            if (job.produced >= g_.per_year(d.yearly_limit)) {
                 return false;
             }
         }
@@ -3038,11 +3038,11 @@ public:
         if (v.clothes <= 0 && g_.clothes_ != kNoDef && gives_out(c_, *b, g_.clothes_) &&
             amount_of(b->stock, g_.clothes_) > 0) {
             add_to(b->stock, g_.clothes_, -1);
-            v.clothes = static_cast<std::int32_t>(g_.year_ticks());
+            v.clothes = static_cast<std::int32_t>(kTicksPerYear);
         }
         if (v.shoes <= 0 && g_.shoes_ != kNoDef && gives_out(c_, *b, g_.shoes_) && amount_of(b->stock, g_.shoes_) > 0) {
             add_to(b->stock, g_.shoes_, -1);
-            v.shoes = static_cast<std::int32_t>(g_.year_ticks());
+            v.shoes = static_cast<std::int32_t>(kTicksPerYear);
         }
         compact(b->stock);
     }
@@ -3247,7 +3247,7 @@ public:
             return;
         }
         // Another worker may have reached the year's limit meanwhile.
-        const std::int32_t limit = def(*job).yearly_limit;
+        const std::int32_t limit = g_.per_year(def(*job).yearly_limit);
         if (limit > 0 && job->produced_year == g_.calendar().year && job->produced >= limit) {
             v.task = Task::Idle;
             return;
@@ -3446,18 +3446,9 @@ public:
         }
     }
 
-    void monthly() {
-        check_outcomes();
-        // Diets: last month's variety; the game comes back to its zones.
-        for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
-            const std::int32_t cap = g_.zone_open(z) ? zone_capacity(g_.map_.zones[z].type, g_.rules_) : 0;
-            const std::int32_t before = g_.zone_animals_[z];
-            g_.zone_animals_[z] = std::min(cap, before + std::max(1, cap / 6));
-            for (std::int32_t n = before; n < g_.zone_animals_[z]; ++n) {
-                spawn_animal(z);
-            }
-        }
-        // Old age.
+    // Old age goes by the calendar's months: the years of a life stretch
+    // with the year.
+    void old_age() {
         std::vector<EntityId> dying;
         const auto& vs = g_.villagers_;
         for (std::size_t k = 0; k < vs.size(); ++k) {
@@ -3470,6 +3461,24 @@ public:
         }
         for (const EntityId id : dying) {
             kill(id);
+        }
+    }
+
+    // The village's month, always a hundred seconds at x1. `calendar_month`:
+    // it is also the calendar's.
+    void monthly(bool calendar_month) {
+        check_outcomes();
+        // Diets: last month's variety; the game comes back to its zones.
+        for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
+            const std::int32_t cap = g_.zone_open(z) ? zone_capacity(g_.map_.zones[z].type, g_.rules_) : 0;
+            const std::int32_t before = g_.zone_animals_[z];
+            g_.zone_animals_[z] = std::min(cap, before + std::max(1, cap / 6));
+            for (std::int32_t n = before; n < g_.zone_animals_[z]; ++n) {
+                spawn_animal(z);
+            }
+        }
+        if (calendar_month) {
+            old_age();
         }
         // Births: a home with a man and a woman, room and fed parents.
         auto& list = g_.buildings_;
@@ -3654,9 +3663,20 @@ public:
         }
     }
 
-    void daily() {
+    // The calendar's day (phase 59): the weather turns and the crops grow.
+    void calendar_daily() {
         g_.temperature_ = sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_);
         grow_fields();
+        g_.buildings_changed_ = true;
+    }
+
+    // The village's day, always ten seconds at x1. `calendar_day`: it is
+    // also the calendar's (always, with a year of the usual length).
+    void daily(bool calendar_day) {
+        g_.temperature_ = sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_);
+        if (calendar_day) {
+            grow_fields();
+        }
         update_homes();
         update_health();
         start_fires();
@@ -3724,8 +3744,11 @@ public:
 
     void step() {
         ++g_.tick_;
+        const bool calendar_day = g_.tick_ % g_.calendar_day_ticks() == 0;
         if (g_.tick_ % g_.day_ticks() == 0) {
-            daily();
+            daily(calendar_day);
+        } else if (calendar_day) {
+            calendar_daily();
         }
         if (g_.fires_ > 0) {
             burn();
@@ -3746,8 +3769,11 @@ public:
             assign_jobs();
             assign_homes();
         }
+        const bool calendar_month = g_.tick_ % g_.calendar_month_ticks() == 0;
         if (g_.tick_ % g_.month_ticks() == 0) {
-            monthly();
+            monthly(calendar_month);
+        } else if (calendar_month) {
+            old_age();
         }
         std::vector<EntityId> dying;
         auto& vs = g_.villagers_;
@@ -5455,7 +5481,9 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
     g.dev_commands_ = dev != 0;
     g.shared_town_ = shared != 0;
     // Today's temperature follows from the tick (as on the day it began).
-    g.temperature_ = sim::temperature(g.rules_.climate, g.seed_, g.tick_ - g.tick_ % g.day_ticks());
+    // As of the last day that turned the weather: the village's or the calendar's.
+    g.temperature_ = sim::temperature(g.rules_.climate, g.seed_,
+                                      std::max(g.tick_ - g.tick_ % g.day_ticks(), g.tick_ - g.tick_ % g.calendar_day_ticks()));
     g.player_count_ = pc;
     for (std::uint8_t p = 0; p < pc; ++p) {
         PlayerState& ps = g.players_[p];

@@ -446,7 +446,25 @@ void read_new_game(Reader& r, yyjson_mut_val* obj, NewGameSettings& n) {
     read_choice(r, obj, "sea", "newGame.sea", names::kSeas, n.sea);
     r.read_int(obj, "islands", "newGame.islands", 1, lim::kMaxIslandsPerTown, n.islands);
     r.read_int(obj, "seasons", "newGame.seasons", 1, 0b1111, n.seasons);
-    read_percent(r, obj, "year", "newGame.year", 25, n.year);
+    // Each season's minutes; a file from before phase 59 has the year as a
+    // percent of 20 minutes, which the enabled seasons shared evenly.
+    static constexpr const char* kMinuteKeys[] = {"springMinutes", "summerMinutes", "autumnMinutes", "winterMinutes"};
+    bool any_minutes = false;
+    for (std::size_t s = 0; s < 4; ++s) {
+        any_minutes = any_minutes || yyjson_mut_obj_get(obj, kMinuteKeys[s]) != nullptr;
+        r.read_int(obj, kMinuteKeys[s], std::string("newGame.") + kMinuteKeys[s], 1, lim::kMaxSeasonMinutes,
+                   n.season_minutes[s]);
+    }
+    if (int year = 100; !any_minutes && yyjson_mut_obj_get(obj, "year") != nullptr) {
+        read_percent(r, obj, "year", "newGame.year", 25, year);
+        int enabled = 0;
+        for (int s = 0; s < 4; ++s) {
+            enabled += (n.seasons >> s) & 1;
+        }
+        const int each = std::clamp((20 * year / 100 + std::max(1, enabled) / 2) / std::max(1, enabled), 1,
+                                    lim::kMaxSeasonMinutes);
+        n.season_minutes = {each, each, each, each};
+    }
     read_choice(r, obj, "winter", "newGame.winter", names::kWinters, n.winter);
     read_choice(r, obj, "startGoods", "newGame.startGoods", names::kStarts, n.start);
     read_choice(r, obj, "diseases", "newGame.diseases", names::kThreats, n.diseases);
@@ -584,7 +602,11 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_string(doc, ng, "sea", n.sea);
     ok = ok && json::set_int(doc, ng, "islands", n.islands);
     ok = ok && json::set_int(doc, ng, "seasons", n.seasons);
-    ok = ok && json::set_int(doc, ng, "year", n.year);
+    ok = ok && json::set_int(doc, ng, "springMinutes", n.season_minutes[0]);
+    ok = ok && json::set_int(doc, ng, "summerMinutes", n.season_minutes[1]);
+    ok = ok && json::set_int(doc, ng, "autumnMinutes", n.season_minutes[2]);
+    ok = ok && json::set_int(doc, ng, "winterMinutes", n.season_minutes[3]);
+    (void)yyjson_mut_obj_remove_key(ng, "year");  // From before phase 59.
     ok = ok && json::set_string(doc, ng, "winter", n.winter);
     ok = ok && json::set_string(doc, ng, "startGoods", n.start);
     ok = ok && json::set_string(doc, ng, "diseases", n.diseases);

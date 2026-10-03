@@ -601,6 +601,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 59
+
+- [ ] En Personalizado, bajo "El año": una barra en minutos por cada estación marcada (1 a 30) y la línea "Duración del año" con la suma. Al desmarcar una estación desaparece su barra y el año se acorta.
+- [ ] Un año de 60 min (15 por estación), otro de 75 y otro de 90, repartidos como quieras: la fecha, la estación y la temperatura siguen a cada estación; el cambio de hojas de los árboles también.
+- [ ] Con un año largo: los aldeanos comen, trabajan y llegan al mismo ritmo que con el de 20 min; el invierno dura más y hay que guardar más leña y comida; un campo da una cosecha más grande, una vez por año.
+- [ ] Con verano de 30 min e invierno de 1 min, el invierno pasa rápido y apenas nieva.
+- [ ] Variado sigue con el año de 20 min. Al salir y volver, el formulario recuerda los minutos.
+- [ ] **Sin revisar en pantalla por Claude:** estas barras (mitad de abajo de Personalizado).
+
 ### Fase 58
 
 - [ ] La barra superior tiene pausa y "− ×N +". Con + se llega a ×9 en un jugador; con − a ×0,25.
