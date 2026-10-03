@@ -2333,3 +2333,29 @@ El usuario no indicó ninguno para esta fase; los de D-4609 son de los animales 
 
 **D-5716. Lo que no se pudo ver en pantalla.**
 En el visor se revisaron los personajes, sus paletas y la herramienta en la mano (hacha, arco). En una partida se comprobó que los aldeanos son los nuevos, pero solo desde lejos: desde las pruebas automáticas no se pudo acercar la cámara. Que cada tarea use su animación lo cubre una prueba (`people`); queda en la lista de pruebas a mano verlo de cerca.
+
+## Ronda de ideas del 2026-10-03: fases 58 a 67
+
+Salvador pidió refinar I-001, I-002, I-003, I-005, I-006, I-007, I-008 e I-009 y las correcciones C-002 y C-003. El análisis de cada una y sus respuestas están en el registro de revisión (pestaña Análisis).
+
+**D-9101. Qué entra y en qué orden.**
+Fases 58 a 67 de la especificación, en el orden propuesto y aceptado: primero lo chico de reglas (velocidades, año, niebla y comercio), luego cámara y ventanas, después lo que cambia la simulación (pendientes, explorador) y al final lo visual. El pulido y la entrega pasan a la fase 68. Entran además `sug-precio-maximo` (ya estaba "para el plan"), I-010 e I-011 (las dos propuestas de D-5613) y la corrección C-001. I-004 (soldados que comen y cobran) no se analizó en esta ronda y queda abierta.
+
+**D-9102. Lo que Salvador eligió.**
+- Velocidades: ×0,25, ×0,5, ×1 a ×5 para todos y ×6 a ×9 solo en un jugador; control "− ×N +". Se descartó ×0,75 (no la eligió).
+- Año largo: se mantiene el ritmo por minuto real; cada estación con su barra en minutos.
+- Niebla revelada: se construye en cualquier parte de la región propia.
+- Cámara: seguir con botón y doble clic; fantasma de aldeano translúcido; lo que estorba se vuelve translúcido (C-002 no era un error puntual sino una decisión de diseño).
+- Ventanas: una ventana de paso y las fijadas; nombres propios guardados en la partida; interruptor de producción que libera a los trabajadores; ventana de cámara viva, chica y con máximo; se quita el plegado automático.
+- Explorador: lleva provisiones; ve 30 m; solo él recibe órdenes de movimiento.
+- Pendiente: piso a la altura del suelo frente a la puerta; hasta 4 m de desnivel.
+- Cargas: espalda y manos según el recurso; además pilas, etapas de construcción, flechas y mercader.
+
+**D-9103. Aprobación.**
+Salvador aprobó el plan el 2026-10-03, con todas las ideas en "para el plan" (I-003 e I-008 incluidas). Pidió hacer las fases seguidas, sin pausa, y que se le pregunte antes de hacer fases en paralelo.
+
+**D-9104. Las murallas quedan fuera.**
+En su nota de I-007, Salvador dice que las replanteará (tramos dinámicos entre dos puntos) después de ver ejemplos de otros juegos. Se copió tal cual a una idea nueva. La fase 65 no toca murallas ni empalizadas.
+
+**D-9105. Valores que el plan fijó sin pregunta.**
+Lo más simple en cada caso, para ajustar al probar: estaciones de 1 a 30 min (5 por omisión); límites de precio de 75 a 125 % en pasos de 5; mirar hasta 60° hacia arriba; tope de 16 ventanas de objeto y de 2 ventanas de cámara de 320 × 200; nombres de hasta 24 caracteres. En red, el tope de ×5 se sostiene midiendo los márgenes en tiempo real.

@@ -822,7 +822,68 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - Cuando los personajes nuevos están en el juego, se borran los cuerpos de hoy (`art/blender/human.py`, `models/characters/`) y lo que solo servía para ellos.
    - El visor muestra cada personaje con sus paletas y con la herramienta en la mano.
    - *Criterios:* una partida nueva solo tiene personajes nuevos, de todas las razas del juego; al talar, cazar y pescar se ve la animación con su herramienta en la mano; los pies no patinan al caminar ni al correr; la simulación no cambia (mismo hash); con 1000 aldeanos a la vista (partida de referencia de `docs/RENDIMIENTO.md`) el juego pierde como mucho un 10 % de FPS, medido y anotado; las pruebas pasan en las tres configuraciones sin advertencias.
-58. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+58. **Más velocidades** (ronda de ideas del 2026-10-03; idea I-001).
+   - Velocidades: pausa, ×0,25, ×0,5, ×1, ×2, ×3, ×4 y ×5; en un jugador, además ×6, ×7, ×8 y ×9. La velocidad deja de ser un entero: es un índice de una tabla (en cuartos de ×1) en el reloj, la vista (animaciones, partículas, sonido) y la red.
+   - Barra superior: pausa y un control "− ×N +". Teclas: 1, 2 y 3 como hoy; + y − suben y bajan un paso; la pausa recuerda la velocidad anterior.
+   - Red: el mensaje de velocidad lleva el índice; el tope en red es ×5; "bajar un paso" por un jugador lento usa la tabla; el retraso de órdenes, el margen de atraso y la frecuencia de la verificación se miden en tiempo real, no en pasos, para que ×4 y ×5 se comporten como ×3. Sube la versión del protocolo.
+   - Si la máquina no alcanza la velocidad pedida, el juego no pierde pasos en silencio: baja un paso de la tabla y lo avisa.
+   - *Criterios:* cada velocidad avanza los pasos que le tocan por segundo real (prueba del reloj); a ×0,25 las animaciones y partículas van lentas, no congeladas; dos instancias en red votan ×5 y no pueden pasar de ahí; en un jugador ×9 funciona en un mapa mediano con 300 aldeanos sin bajar; medido y anotado en `docs/RENDIMIENTO.md` cuánto aguanta cada tamaño de partida.
+59. **Años largos y duración de cada estación** (I-002).
+   - En Personalizado, cada estación activa tiene su barra en minutos (de 1 a 30, en pasos de 1; 5 por omisión) y la duración del año es la suma (hasta 120 min). Reemplaza a la barra del año. Variado no cambia: 20 min en cuatro partes iguales. `ClimateSettings` guarda los minutos de cada estación; el calendario y la temperatura salen de una sola función. Los meses siguen siendo 12 de 10 días.
+   - Equilibrio "por minuto real": lo que hoy va por calendario se ajusta a la duración del año para que por hora de juego pase lo mismo que con el año de 20 min: rendimiento de campos y límite anual de huertos (en proporción al año), nacimientos, llegadas, vuelta de los animales y arbustos, asaltos, mercaderes, ropa y calzado. Envejecer, las enfermedades (en días) y la duración de las estaciones sí se estiran con el año. Esto corrige también los años cortos de hoy.
+   - Ajustes y reportes anteriores (porcentaje del año) se aceptan y se convierten.
+   - *Criterios:* un año de 60, 75 o 90 min se puede elegir repartido como se quiera; una prueba automática de 3 años de juego a 20 min y el mismo tiempo real a 60 min da comida por habitante y población dentro de un 15 %; con invierno de 1 min y verano de 30 las fechas, la temperatura y la siembra siguen a la estación; suben las versiones de reglas y de red.
+60. **Niebla "todo explorado" y reglas de comercio con precio** (I-006 y `sug-precio-maximo`).
+   - Cuarto modo de niebla, "Dinámica, mapa revelado": como la dinámica, con todo el mapa explorado desde el inicio (una marca, no una cuadrícula llena). Se puede construir en cualquier parte de la región propia. En la partida nueva, la sala, los ajustes y el reporte.
+   - Reglas del puesto de comercio: cada regla puede llevar "comprar solo si el precio es a lo más N %" y "vender solo si pagan al menos N %" del valor (de 75 a 125 %, en pasos de 5; sin límite por omisión).
+   - *Criterios:* en el modo nuevo se ve el terreno de todo el mapa, los edificios y la gente de otros solo donde alguien propio mira, y los edificios vistos quedan como recuerdo; guardar y cargar conserva el modo sin crecer el archivo; un mercader caro no compra con la regla puesta y uno barato sí (prueba); español e inglés.
+61. **Cámara: mirar hacia arriba, seguir, fantasma y lo que estorba** (I-003 y la corrección C-002).
+   - Pasada de dibujo con transparencia para modelos (rígidos y con esqueleto), después de lo opaco.
+   - Tercera persona: con el ojo ya en el suelo, seguir bajando sube el punto observado hasta mirar 60° hacia arriba; al volver a subir, baja primero el punto observado. Reemplaza a D-410.
+   - Seguir: botón "Seguir" en la ventana del aldeano y doble clic sobre él; la cámara pasa a tercera persona y lo sigue; mover el ancla con el teclado lo suelta. En primera persona, el seguido no se dibuja.
+   - Fantasma: sin nadie seguido, en el ancla se ve un aldeano humano translúcido y sin color, que mira hacia donde mira la cámara y camina cuando el ancla se mueve.
+   - Lo que estorba: el edificio o árbol que contiene al ojo de la cámara (en cualquier modo), o que queda entre el ojo y el ancla en tercera persona, se dibuja translúcido mientras estorba, con una transición corta.
+   - *Criterios:* en tercera persona se puede ver el cielo sin atravesar el suelo; se sigue a un aldeano entre edificios y lo que lo tapa se vuelve translúcido; al soltarlo aparece el fantasma; dentro de un edificio ya no se ven piezas sueltas; pruebas de la cámara para el nuevo límite; sin pérdida medible de FPS con nada translúcido.
+62. **Ventanas, base** (I-008, parte 1; correcciones C-003 y C-001).
+   - Las ventanas viven en una lista con orden de profundidad: la que se toca pasa al frente y un clic solo llega a la de arriba.
+   - Ventanas por objeto: seleccionar abre el objeto en la ventana "de paso", que se reutiliza con la siguiente selección; al fijarla se queda y la siguiente selección abre otra. Clic en el suelo o Esc cierran solo la de paso. Tope de 16 ventanas de objeto; no se guardan en los ajustes.
+   - "Fijar" impide cualquier cierre que no sea su propia X (Esc, clic fuera, la barra de construcción, otra selección). Si el objeto deja de existir, la ventana lo dice y se puede cerrar.
+   - Se quita el plegado automático; botón de minimizar al título.
+   - Imanes: también al borde inferior y a la barra de construcción, y alineación de bordes iguales entre ventanas. Los grupos se deshacen al cerrar un miembro y su numeración se restaura al cargar.
+   - La X cierra las ventanas de aldeano y de edificio (C-003). La brújula es solo la aguja y la N, sin disco (C-001).
+   - *Criterios:* tres ventanas de aldeano y dos de edificio abiertas a la vez, cada una con sus órdenes sobre su propio objeto; una fijada sobrevive a Esc y a clics en el mapa; la X cierra siempre y solo la ventana de arriba; pruebas de la lista de ventanas (abrir, fijar, cerrar, profundidad, imanes); un `ui.windows` anterior se lee.
+63. **Ventanas, contenido** (I-008, parte 2).
+   - Aldeano: nombre propio (cada raza tiene su lista de nombres en los datos; se elige al nacer o llegar, se guarda en la partida), botón de renombrar (orden del juego, hasta 24 caracteres validados), estadísticas, botones a su casa y a su trabajo que abren la ventana de ese edificio, "Seguir" y el botón de ojo.
+   - Edificio: estadísticas, un botón por habitante y por trabajador (con su nombre) que abre su ventana, e interruptor "Producción: activa / detenida" (orden nueva; detenido libera a los trabajadores y recuerda cuántos quería).
+   - Se pueden seleccionar árboles, piedras, vetas, arbustos, hierbas, animales, soldados y asaltantes: ventana con qué es y qué da (por ejemplo "10 troncos", "8 de carne y 1 piel") o su estado.
+   - Todas las ventanas de objeto tienen el botón de ojo (lleva la cámara principal al objeto). Las listas largas se desplazan.
+   - *Criterios:* de un aldeano se llega a su casa, de ahí a otro habitante y a su trabajo, con todas las ventanas abiertas; renombrar se ve en otra instancia en red y tras guardar y cargar; detener un taller deja de consumir y producir y sus trabajadores cargan como peones; al reactivarlo vuelve a su número; un árbol dice su madera; suben las versiones de reglas y de red; español e inglés.
+64. **Ventanas: pestañas y ventana de cámara** (I-008, parte 3).
+   - Pestañas: soltar una ventana sobre la barra de título de otra las une en una sola con pestañas; arrastrar una pestaña fuera la separa. El grupo se guarda en los ajustes (para las ventanas que se guardan).
+   - Ventana de cámara: el botón de cámara de una ventana de objeto abre otra ventana con una vista en vivo del objeto (órbita fija, se puede girar y acercar dentro de la ventana), sin mover la cámara principal. El motor gana un destino de dibujo aparte: 320 × 200, a media frecuencia, sin pasto, reutilizando las sombras de la vista principal. Máximo 2 abiertas.
+   - *Criterios:* cuatro ventanas unidas en una con pestañas, y vueltas a separar; dos ventanas de cámara siguiendo a dos aldeanos mientras la cámara principal está en otro lado; con las dos abiertas el juego pierde como mucho un 25 % de FPS en la partida de referencia, medido y anotado; cerrarlas devuelve los FPS.
+65. **Construir en pendiente** (I-007 e I-011).
+   - El límite de desnivel bajo un edificio pasa de 1,8 a 4 m. El piso queda a la altura del suelo frente a la puerta; al colocar se elige hacia dónde da la puerta girando el edificio.
+   - Todos los modelos de edificios ganan cimientos de piedra de 4 m bajo el piso (un ayudante común en `buildings.py`). La vista separa la altura sobre el piso de la del modelo (marcadores, humo, selección, obra).
+   - Ladera arriba, el terreno se recorta bajo el edificio solo en lo que se dibuja; la simulación no cambia alturas.
+   - No se puede construir donde ningún aldeano del pueblo puede llegar (I-011): mensaje propio. Vale para edificios y campos.
+   - Murallas y empalizadas quedan como están (el usuario las replanteará aparte).
+   - *Criterios:* una casa en una ladera de 3,5 m de desnivel: puerta a ras de suelo, cimientos a la vista ladera abajo y sin terreno atravesando paredes; los aldeanos entran y salen; un sitio al otro lado del agua se rechaza con su mensaje; la prueba de los cazadores ya no depende de la semilla por zonas inalcanzables; suben las versiones de reglas y de red; los 55 modelos regenerados.
+66. **Explorador** (I-005 e I-010).
+   - Un aldeano con mucha hambre deja lo que hace y va a comer (I-010): el umbral cuenta el camino hasta la comida.
+   - Edificio "Explorador" (1 trabajador, vista de 30 m en los datos). Con su trabajador seleccionado, clic derecho en el mapa o en el minimapa lo manda a ese punto (orden nueva, solo para el dueño y solo para ese trabajador). Mientras tiene una orden no hace otra cosa; al llegar o toparse con algo, espera.
+   - Ruta con niebla: si el destino está explorado, el camino más corto que pase solo por celdas exploradas; si no lo hay o el destino no está explorado, línea recta hasta toparse con un obstáculo. Sin niebla, camino normal.
+   - Provisiones: al recibir una orden lejos del pueblo toma comida del almacén para varios días y come de ella en el camino; cuando le queda lo justo para volver, regresa solo y avisa. Se abriga igual que los demás; los animales y los asaltantes lo atacan.
+   - *Criterios:* con niebla estática, mandarlo a lo no explorado lo hace caminar recto y detenerse ante un lago, sin rodearlo; mandarlo a un punto explorado por una ruta explorada la sigue; revela 30 m a su alrededor; con provisiones para N días vuelve antes de pasar hambre (prueba); un aldeano que lleva materiales a una obra lejana ya no muere de hambre con comida en el almacén (prueba con las semillas de D-5613); las órdenes funcionan en red con dos instancias; suben las versiones.
+67. **Lo que pasa, a la vista** (I-009).
+   - Cargas, como en `art/reference` (la hoja de cargas): cada recurso dice en los datos su tipo de carga (troncos, piedra, saco, canasta, caja, lingotes). Carga grande, a la espalda; poca, en brazos; los alimentos, en canasta. Animación nueva de caminar y estar de pie cargando en brazos; los 17 personajes se regeneran. De lejos (versión simple) la carga no se dibuja.
+   - Pilas de materiales en las obras (lo entregado) y junto a los almacenes (según lo guardado, por tipo de carga).
+   - Etapas de construcción: cimientos, armazón con andamio y edificio terminado, según el avance; reemplaza al modelo que sube del suelo.
+   - Flechas de cazadores, arqueros y torres (de la vista: salen al tirar y llegan al blanco).
+   - Un mercader con su carreta junto al puesto de comercio mientras dura su visita.
+   - Todo es de la vista: la simulación y su hash no cambian.
+   - *Criterios:* un leñador vuelve con troncos a la espalda y un recolector con canasta; una obra muestra lo que ya llegó y pasa por sus etapas; el almacén lleno se ve lleno; las flechas se ven al cazar y al defender; el mercader aparece y se va con su visita; con 1000 aldeanos el juego pierde como mucho un 10 % de FPS, medido y anotado.
+68. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 
