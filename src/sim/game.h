@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 51;
+inline constexpr std::uint32_t kGameRulesVersion = 52;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -310,6 +310,10 @@ struct Villager {
     std::int32_t provisions = 0;
     // Phase 71: 0..kEnergyMax; at 0 it goes to rest (if the rules say so).
     std::int32_t energy = village::kEnergyMax;
+    // Ticks spent walking since it last ate or stood at a storage with
+    // food: what the way back to the food may cost, however winding or
+    // slow it was (see eat_now).
+    std::int32_t walked = 0;
     bool operator==(const Villager&) const = default;
 };
 

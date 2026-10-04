@@ -248,9 +248,12 @@ TEST_SUITE("farming") {
         // a villager only decided to eat between tasks. Now a walk that
         // cannot be come back from is given up (the lodge is not built, and
         // nobody dies for it); tests/test_explorer.cpp has a site that can
-        // just be reached. (Seeds of the maps of phase 82, with the zone at
-        // 350 m or more; on 14, 15 and 18 somebody still starves, D-8203.)
-        for (const std::uint64_t seed : {4ull, 16ull}) {
+        // just be reached. (Seeds of the maps of phase 82: 4 and 16 have the
+        // zone at 350 m or more; on 14, 15 and 18 the way back from the lodge
+        // winds around water or is walked in the snow, and somebody's meter
+        // reached zero until the way back was measured by what the way out
+        // took, D-8810.)
+        for (const std::uint64_t seed : {4ull, 14ull, 15ull, 16ull, 18ull}) {
             Game g(content(), map_for(seed), setup());
             std::optional<std::size_t> zone;
             for (std::size_t z = 0; z < g.map().zones.size() && !zone; ++z) {

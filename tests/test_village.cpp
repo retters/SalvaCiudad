@@ -942,7 +942,9 @@ TEST_SUITE("village_years") {
         // Newcomers follow the room left by those who die, and with longer
         // years people grow old more slowly (D-5902): fewer die, fewer come.
         CHECK(alike(usual.arrivals, longer.arrivals, 0.25));
-        CHECK(alike(usual.food * 100 / usual.people, longer.food * 100 / longer.people));
+        // (A quarter too: the fruit of the wild trees comes once a calendar
+        // year, phase 84, and the hunger rule moved the numbers, D-8811.)
+        CHECK(alike(usual.food * 100 / usual.people, longer.food * 100 / longer.people, 0.25));
     }
 }
 

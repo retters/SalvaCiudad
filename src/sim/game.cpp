@@ -322,6 +322,7 @@ public:
     [[nodiscard]] static bool moving(const Villager& v) { return v.path_index < v.path.size(); }
 
     void move(Villager& v) {
+        v.walked += moving(v) ? 1 : 0;
         // Deep snow slows everybody down, to about half.
         Fixed budget = walk_speed(g_.adult(v)) * Fixed::from_ratio(200 - g_.snow_, 200);
         if (const RaceDef* r = race_of(v)) {
@@ -612,7 +613,23 @@ public:
         if (b == nullptr) {
             return;
         }
-        if (v.food >= village::kHungryFood + food_for_walk(NavGrid::distance_estimate(v.position, g_.door(*b)))) {
+        // The way back costs at least the straight line with a usual path, at
+        // today's pace (snow, the dark and slow peoples make it longer); when
+        // the way out was winding (around water), as much as that took, up
+        // to three times the usual. A quarter more is kept in reserve: the
+        // snow may deepen or the night fall on the way back.
+        std::int32_t slow = 100 * 200 / std::max(1, 200 - g_.snow_);
+        if (const RaceDef* r = race_of(v); r != nullptr && r->move > 0 && r->move < 100) {
+            slow = slow * 100 / r->move;
+        }
+        if (g_.in_the_dark(v)) {
+            slow = slow * 100 / village::kDarkPercent;
+        }
+        const std::int32_t direct = food_for_walk(NavGrid::distance_estimate(v.position, g_.door(*b))) * slow / 100;
+        const std::int32_t back = std::clamp(v.walked / static_cast<std::int32_t>(village::kTicksPerFoodPoint) * slow / 100,
+                                             direct, 3 * direct) *
+                                  5 / 4;
+        if (v.food >= village::kHungryFood + back) {
             return;
         }
         release(v);
@@ -3425,7 +3442,27 @@ public:
 
     // --- Arrivals and work ----------------------------------------------------
 
+    // Whether somebody could eat at this building now.
+    [[nodiscard]] bool has_food(const Building& b) const {
+        if (!complete(b) || def(b).storage <= 0) {
+            return false;
+        }
+        for (const Stock& s : b.stock) {
+            if (s.amount > 0 && gives_out(c_, b, s.resource) && c_.resources[s.resource].category == ResourceCategory::Food &&
+                c_.resources[s.resource].nutrition > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void arrive(Villager& v) {
+        // At a storage with food, the way back to the food starts again.
+        if (v.task == Task::GoDeliver || v.task == Task::GoFetch) {
+            if (const Building* b = g_.buildings_.get(v.target); b != nullptr && has_food(*b)) {
+                v.walked = 0;
+            }
+        }
         switch (v.task) {
             case Task::Wander:
                 v.task = Task::Idle;
@@ -3521,6 +3558,7 @@ public:
             }
             v.variety = kinds;
             v.food = std::min(village::kFoodMax, v.food + c_.resources[best->resource].nutrition * village::kFoodPerNutrition);
+            v.walked = 0;
         }
         // New clothes and shoes when the old ones are worn out; they last a year.
         if (v.clothes <= 0 && g_.clothes_ != kNoDef && gives_out(c_, *b, g_.clothes_) &&
@@ -6774,6 +6812,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.vec2(v.order_point);
         w.i32(v.provisions);
         w.i32(v.energy);
+        w.i32(v.walked);
         w.u32(static_cast<std::uint32_t>(v.path.size()));
         for (const FixedVec2& p : v.path) {
             w.vec2(p);
@@ -7178,7 +7217,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         if (!r.string(kMaxNameBytes, v.name) || !valid_villager_name(v.name) || !r.u8(order) ||
             order >= static_cast<std::uint8_t>(Order::Count) || !r.vec2(v.order_point) || !r.i32(v.provisions) ||
             v.provisions < 0 || v.provisions > village::kProvisions || !r.i32(v.energy) || v.energy < 0 ||
-            v.energy > village::kEnergyMax) {
+            v.energy > village::kEnergyMax || !r.i32(v.walked) || v.walked < 0) {
             r.fail();
             return false;
         }
