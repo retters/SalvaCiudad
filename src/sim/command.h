@@ -43,8 +43,11 @@ enum class CommandType : std::uint8_t {
                           // size `count`, scale `value` (raw fixed point), rotation `value2`.
     FoundTown = 34,       // Phase 73: the seat's town, its center's corner cell at `position`, rotation `value` (0..3).
     AddSeat = 35,         // Phase 75, the host only: a new seat without a town; `text` its name, `count` its color.
-    JoinTown = 36,        // Phase 75, a town's founder only: seat `count`, which has no town, joins the sender's.
+    JoinTown = 36,        // A town's founder only: seat `count`, which asked to (phase 77), joins the sender's town.
     SetAccess = 37,       // Phase 76, the host only: who may come into the game, `value` as access bits.
+    RequestJoin = 38,     // Phase 77: the sender, who has no town, asks the founder of town `count` to join it.
+    CancelJoin = 39,      // Phase 77: the sender withdraws its request.
+    RefuseJoin = 40,      // Phase 77, a town's founder only: seat `count`'s request to join is refused.
 
 };
 

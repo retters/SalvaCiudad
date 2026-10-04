@@ -172,7 +172,11 @@ bool Command::read(BinaryReader& r, Command& out) {
             ok = ok && valid_seat_name(c.text) && c.count <= kMaxSeatColor;
             break;
         case CommandType::JoinTown:
+        case CommandType::RequestJoin:
+        case CommandType::RefuseJoin:
             ok = ok && c.count < kMaxPlayers && c.count != c.player;
+            break;
+        case CommandType::CancelJoin:
             break;
         case CommandType::SetAccess:
             ok = ok && c.value >= 0 && c.value <= access::kAll;

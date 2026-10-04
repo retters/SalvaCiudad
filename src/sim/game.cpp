@@ -4457,16 +4457,50 @@ public:
         g_.events_.push_back({Game::Event::Kind::SeatAdded, seat, {}, {}, 0, 0});
     }
 
-    // Phase 75. A town's founder takes in a seat that has no town.
+    // Phase 77. A seat without a town asks the founder of one to join it.
+    void request_join(const Command& c) {
+        const std::uint8_t seat = c.player;
+        const auto town = static_cast<std::uint8_t>(c.count);
+        if (!g_.may_request(seat, town)) {
+            ++g_.rejected_;
+            return;
+        }
+        g_.players_[seat].request = town;
+        g_.events_.push_back({Game::Event::Kind::JoinRequested, seat, {}, {}, 0, town});
+    }
+
+    void cancel_join(const Command& c) {
+        PlayerState& ps = g_.players_[c.player];
+        if (ps.request == kNoRequest) {
+            ++g_.rejected_;
+            return;
+        }
+        g_.events_.push_back({Game::Event::Kind::JoinCancelled, c.player, {}, {}, 0, ps.request});
+        ps.request = kNoRequest;
+    }
+
+    void refuse_join(const Command& c) {
+        const std::uint8_t town = c.player;
+        const auto seat = static_cast<std::uint8_t>(c.count);
+        if (seat >= g_.player_count_ || g_.players_[seat].request != town || !g_.founder(town)) {
+            ++g_.rejected_;
+            return;
+        }
+        g_.players_[seat].request = kNoRequest;
+        g_.events_.push_back({Game::Event::Kind::JoinRefused, seat, {}, {}, 0, town});
+    }
+
+    // A town's founder takes in the seat that asked to join it (phases 75 and 77).
     void join_town(const Command& c) {
         const std::uint8_t town = c.player;
         const auto seat = static_cast<std::uint8_t>(c.count);
         if (!g_.founder(town) || seat >= g_.player_count_ || seat == town || !g_.players_[seat].active ||
             g_.town_of(seat) != seat || g_.players_[seat].founded || g_.seats_of(seat) != 1 ||
-            g_.players_[town].outcome != Outcome::Playing) {
+            g_.players_[town].outcome != Outcome::Playing || g_.players_[seat].request != town) {
             ++g_.rejected_;
             return;
         }
+        g_.players_[seat].request = kNoRequest;
         g_.seat_town_[seat] = town;
         g_.players_[seat].town_center = g_.players_[town].town_center;
         g_.players_[seat].cart = g_.players_[town].cart;
@@ -4500,6 +4534,18 @@ public:
         }
         if (command.type == CommandType::JoinTown) {
             join_town(command);
+            return;
+        }
+        if (command.type == CommandType::RequestJoin) {
+            request_join(command);
+            return;
+        }
+        if (command.type == CommandType::CancelJoin) {
+            cancel_join(command);
+            return;
+        }
+        if (command.type == CommandType::RefuseJoin) {
+            refuse_join(command);
             return;
         }
         // In a common town every player gives orders to player 0's town.
@@ -4906,6 +4952,7 @@ public:
             }
         }
         g_.players_[p].founded = true;
+        g_.players_[p].request = kNoRequest;  // It asked somebody; it has its own now.
         static constexpr std::int32_t kOut[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
         const std::int32_t out_x = kOut[rot][0];
         const std::int32_t out_z = kOut[rot][1];
@@ -5069,6 +5116,13 @@ void Game::apply(const Command& command) {
     goods_changed();
     VillageRules(*this).apply(command);
     goods_changed();
+}
+
+bool Game::may_request(std::uint8_t player, std::uint8_t town) const {
+    return player < player_count_ && players_[player].active && town_of(player) == player &&
+           !players_[player].founded && seats_of(player) == 1 && players_[player].request == kNoRequest &&
+           (access_ & access::kJoin) != 0 && town != player && town_exists(town) &&
+           players_[town].outcome == Outcome::Playing;
 }
 
 bool Game::shared_town() const {
@@ -6210,6 +6264,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.string(ps.name);
         w.u8(ps.color);
         w.u8(ps.late ? 1 : 0);
+        w.u8(ps.request);
         w.u8(ps.founded ? 1 : 0);
         w.u32(ps.cart.index);
         w.u32(ps.cart.generation);
@@ -6539,7 +6594,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t late = 0;
         if (!r.u8(active) || !r.u8(g.seat_town_[p]) || g.seat_town_[p] >= pc ||
             !r.string(kMaxSeatNameBytes, ps.name) || !valid_seat_name(ps.name) || !r.u8(ps.color) ||
-            ps.color > kMaxSeatColor || !r.u8(late) || late > 1 || !r.u8(founded) || founded > 1 || !r.u32(ps.cart.index) || !r.u32(ps.cart.generation) ||
+            ps.color > kMaxSeatColor || !r.u8(late) || late > 1 || !r.u8(ps.request) ||
+            (ps.request != kNoRequest && ps.request >= pc) || !r.u8(founded) || founded > 1 || !r.u32(ps.cart.index) || !r.u32(ps.cart.generation) ||
             !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
             !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures) ||
             !r.i32(ps.burned_down) || !r.u64(ps.merchant_arrives) ||

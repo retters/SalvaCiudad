@@ -65,6 +65,12 @@ Si un jugador queda más de 30 ticks detrás del anfitrión (3 s; por encima de 
 - Lo que se permite a quien llega es estado de la simulación (`sim::access`): **abierta** (recibe asiento), **unirse** a un pueblo, **fundar** el suyo. Solo el anfitrión lo cambia (orden `SetAccess`), también para cerrarla a jugadores nuevos y volver a abrirla.
 - Al abrir, la velocidad baja a ×5 si era mayor.
 
+## Llegar: fundar o pedir unirse (fase 77)
+
+- Quien entra sin pueblo ve una ventana con lo que el anfitrión permite: fundar el suyo (elige el sitio con el tiempo corriendo) o pedir unirse a un pueblo.
+- La solicitud llega solo al **fundador** de ese pueblo. No caduca; si el fundador no está, espera. Nadie más puede responderla. Quien pidió puede retirarla.
+- Son órdenes de la simulación (`RequestJoin`, `CancelJoin`, `JoinTown`, `RefuseJoin`): viajan por los turnos y se guardan con la partida.
+
 ## Entrar a una partida empezada y reconectar
 
 - Un jugador que vuelve con **el mismo nombre** recupera su asiento, esté la partida abierta o cerrada.
@@ -125,6 +131,7 @@ La suite `net` (`tests/test_net.cpp`) corre varias máquinas en un proceso con u
 - un jugador que se cae y vuelve;
 - una desincronización provocada que se detecta y se repara;
 - una partida de un jugador que se abre, recibe a otro, lo deja volver por su nombre y se cierra a los nuevos;
+- pedir unirse: solo el fundador responde, y la solicitud lo espera si se fue y vuelve;
 - pueblos por fundar: el tiempo espera a todos, solo el anfitrión funda el pueblo común, y quien entra durante la espera recibe la misma partida;
 - votos de velocidad;
 - rechazos por versión y por mods.

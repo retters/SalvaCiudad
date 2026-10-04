@@ -104,6 +104,12 @@ private:
     void placement_hint(ui::Context& ctx, GameSession& s);
     // Phase 74: choosing where to found the town, and waiting for the others.
     void founding(ui::Context& ctx, GameSession& s);
+    // Phase 77: the window of whoever arrives at a game already going, and
+    // the founder's answer to somebody who asks to join the town.
+    void arrival(ui::Context& ctx, GameSession& s);
+    void join_requests(ui::Context& ctx, GameSession& s);
+    std::uint8_t answered_seat_ = 0xFF;  // The request answered last, and when (in turns).
+    std::uint64_t answered_turn_ = 0;
     std::size_t next_site_ = 0;  // The suggested site the camera last went to.
     bool minimap_silhouette_ = false;  // The minimap shows the land's shape under the fog.
     // Phase 14: the merchant at a trading post, and trade with other towns.

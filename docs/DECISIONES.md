@@ -2928,3 +2928,32 @@ Reglas 43, protocolo de red 21.
 
 **D-7610. Sin revisar.**
 Todo por pruebas (suite `net`: abrir a ×9 y quedar en ×5, entrar con el estado, fundar, salir y volver por nombre, cerrar y reabrir, solo el anfitrión cambia el acceso; suite `seats` para las reglas). La prueba a mano con dos ventanas se hace al cerrar la fase 77, cuando quien llega ya tiene su ventana.
+
+## Fase 77: llegar a una partida, fundar o pedir unirse (2026-10-04)
+
+**D-7701. La solicitud vive en el asiento que la hace.**
+`PlayerState::request` guarda a qué pueblo pidió unirse (uno a la vez). Órdenes: `RequestJoin` (quien no tiene pueblo), `CancelJoin` (la retira), `JoinTown` (el fundador acepta; ahora exige que haya solicitud) y `RefuseJoin` (el fundador rechaza). Todas viajan por los turnos, entran en el hash y se guardan: por eso la solicitud sobrevive a guardar y cargar y a que el fundador se desconecte.
+
+**D-7702. Si el fundador no está, nadie responde.**
+Lo pidió Salvador de forma expresa. Ni otro miembro del pueblo ni el anfitrión de la partida pueden aceptar o rechazar: la orden de quien no fundó ese pueblo se rechaza. La solicitud no caduca. Quien pidió puede retirarla, y fundar su pueblo la anula sola.
+
+**D-7703. Pedir unirse exige que la partida lo permita y que el pueblo exista.**
+Hace falta la bandera «unirse» del acceso, y el pueblo debe estar fundado y seguir en juego. No se puede pedir entrar a un pueblo que aún no se fundó (en la lista solo salen los que existen).
+
+**D-7704. La ventana de quien llega.**
+Solo para asientos que llegaron tarde y no tienen pueblo: «Fundar mi pueblo» (pasa a la elección de sitio de la fase 74; Esc vuelve a la ventana) y la lista de pueblos con «Pedir unirme» o «Cancelar solicitud». Según lo que permita el anfitrión se muestra una cosa, la otra o las dos; si no permite nada, lo dice. Las marcas de sitios sugeridos solo aparecen mientras se elige sitio.
+
+**D-7705. El fundador responde en un cuadro como el de los votos.**
+«X quiere unirse a tu pueblo», con «Aceptar» y «Rechazar», una solicitud a la vez, mientras siga en pie; además suena y queda en el registro de avisos. Solo lo ve el fundador.
+
+**D-7706. Avisos.**
+A todos: quién se unió a qué pueblo. Al que pidió: que ya es parte del pueblo (y la cámara va a su centro) o que no lo aceptaron. Quién llegó ya lo decía la red.
+
+**D-7707. La niebla sigue al asiento.**
+La vista de la niebla se rehace cuando el asiento local cambia de grupo de visión (al recibir su asiento o al unirse a un pueblo), y se actualiza por turnos y no por ticks, para que un pueblo recién fundado se vea aunque el tiempo siga esperando a los demás.
+
+**D-7708. Versiones.**
+Reglas 44, protocolo de red 22.
+
+**D-7709. Lo revisado en pantalla.**
+Con dos instancias (`--instance 1 --loopback` y `--instance 2 --loopback`) en una copia portable: la 1 funda sola, abre la partida desde el menú de pausa (ventana con las dos casillas), la 2 entra por 127.0.0.1:47801, ve su ventana de llegada, pide unirse, la 1 ve el cuadro y acepta, y la 2 queda en el pueblo con su barra de construcción y la cámara sobre el centro. No se probó a mano: rechazar, cancelar, fundar el propio desde la ventana, ni salir y volver (lo cubren las pruebas de `net` y `seats`).

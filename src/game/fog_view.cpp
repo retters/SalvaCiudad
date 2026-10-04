@@ -155,10 +155,12 @@ void FogView::mark_all() {
 }
 
 void FogView::update(const sim::Game& game) {
-    if (side_ == 0 || game.tick() == tick_) {
+    // By turns, not ticks: a town founded while the game still waits for
+    // the others (phase 74) must show its surroundings.
+    if (side_ == 0 || game.turn() == tick_) {
         return;
     }
-    tick_ = game.tick();
+    tick_ = game.turn();
     // What was in sight is only in the rows stamped last time.
     std::vector<std::uint64_t>& now = visible_.words();
     std::vector<std::uint64_t>& before = previous_.words();

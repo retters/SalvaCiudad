@@ -260,8 +260,8 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     bool open_menu = false;
     if (!blocked) {
         // A building being placed, or the town center being founded.
-        const bool choosing_site = !game.founded(s->local_player()) && !ui.found_asked && ui.found_sent == 0;
-        if (pressed(ctx, Action::GameRotateBuilding) && (ui.placing != sim::kNoDef || choosing_site)) {
+        const bool choosing = choosing_site(game, ui, s->local_player()) && !ui.found_asked && ui.found_sent == 0;
+        if (pressed(ctx, Action::GameRotateBuilding) && (ui.placing != sim::kNoDef || choosing)) {
             ui.rotation = static_cast<std::uint8_t>((ui.rotation + 1) & 3u);
         }
         if (ctx.input().key(SDL_SCANCODE_ESCAPE) && ctx.typing()) {
@@ -269,6 +269,8 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
         } else if (ctx.input().key(SDL_SCANCODE_ESCAPE)) {
             if (ui.found_asked) {
                 ui.found_asked = false;  // The site again.
+            } else if (ui.found_mode && ui.found_sent == 0) {
+                ui.found_mode = false;   // A latecomer goes back to its arrival window.
             } else if (ui.field_farm.valid()) {
                 ui.field_farm = {};
                 ui.field_dragging = false;
@@ -299,6 +301,7 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     if (!has_town || game.awaiting_founders()) {
         founding(ctx, *s);
     }
+    join_requests(ctx, *s);
     minimap(ctx, *s, blocked);  // It knows by itself what lies over it.
     if (ui.placing != sim::kNoDef || ui.field_farm.valid()) {
         placement_hint(ctx, *s);

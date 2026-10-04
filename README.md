@@ -602,6 +602,24 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fases 75 a 77 (abrir la partida, llegar, unirse)
+
+Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --instance 2 --loopback`.
+
+- [ ] La 1 juega sola a ×8, abre el menú (Esc) y elige "Abrir a multijugador": aparecen dos casillas marcadas (pedir unirse, fundar pueblo propio). "Abrir": la velocidad queda en ×5, la barra de arriba dice "Jugadores 1" y sale el aviso de que acepta jugadores nuevos. Las velocidades de ×6 a ×9 ya no se ofrecen.
+- [ ] La 2 entra con "Unirse a partida" a `127.0.0.1`, puerto `47801`: recibe la partida y ve "Llegaste a una partida en curso", con "Fundar mi pueblo" y la lista de pueblos.
+- [ ] "Pedir unirme": la 2 muestra "Esperando a …" y "Cancelar solicitud"; la 1 ve "… quiere unirse a tu pueblo" con Aceptar y Rechazar.
+- [ ] La 1 acepta: la 2 pasa al pueblo (cámara sobre el centro, barra de recursos y de construcción) y sus órdenes construyen ahí. Todos ven el aviso de quién se unió.
+- [ ] Repetir y rechazar: la 2 recibe el aviso y puede fundar el suyo: "Fundar mi pueblo", elige sitio mientras la 1 sigue jugando; Esc vuelve a la ventana de llegada.
+- [ ] Con solo "pedir unirse" marcado, la 2 no ve "Fundar mi pueblo"; con solo "fundar", no ve la lista.
+- [ ] La 2 cierra el juego y vuelve a entrar con el mismo nombre: recupera su asiento y su pueblo.
+- [ ] En la 1, menú > "Jugadores nuevos…" > desmarcar "Aceptar jugadores nuevos" > Aplicar: una tercera ventana (`--instance 3 --loopback`) con otro nombre es rechazada con "Esa partida no acepta jugadores nuevos"; la 2, que ya tenía asiento, sí puede volver.
+- [ ] Tres ventanas: la 3 pide unirse al pueblo de la 1; la 2, que ya está en ese pueblo, no ve ningún cuadro para aceptar.
+- [ ] Una solicitud pendiente sigue ahí después de guardar (F5) y de que el fundador salga y vuelva.
+- [ ] Las herramientas de desarrollo (Ctrl+F3) siguen funcionando en la partida abierta.
+- [ ] En una partida creada en la sala con "pueblo común", quien entra después ya no pasa directo al pueblo: ve la ventana de llegada y pide unirse.
+- [ ] **Tu opinión:** el texto y el lugar de la ventana de llegada; si el cuadro del fundador debería avisar más (hoy: cuadro, sonido y línea en el registro).
+
 ### Fases 73 y 74 (fundar el pueblo)
 
 - [ ] "Un jugador" y "Generar": la partida empieza sobre el mapa vacío, de día, con el cartel "Elige dónde fundar tu pueblo" y el número de cada sitio sugerido (también en el minimapa). No hay barra de construcción ni de recursos, y el reloj no avanza aunque se cambie la velocidad.

@@ -524,6 +524,11 @@ TEST_SUITE("net") {
             CHECK(x.game->player(bea).late);
             CHECK_FALSE(x.game->founded(bea));
         }
+        sim::Command ask;
+        ask.type = sim::CommandType::RequestJoin;
+        ask.count = 0;
+        c.m[late].session->issue(ask);
+        c.frames(30, 1);
         sim::Command join;
         join.type = sim::CommandType::JoinTown;
         join.count = bea;
@@ -652,6 +657,122 @@ TEST_SUITE("net") {
             CHECK(x->game->rejected_commands() == 1);
         }
         expect_same_games(c);
+    }
+
+    TEST_CASE("asking to join a town: only its founder answers, and the request waits for him") {
+        Cluster c;
+        open_single_player(c, 44, 300, speed::kNormal);
+        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.frames(15, 1);
+        const std::size_t ana = c.join("Ana");
+        c.frames(40, 1);
+        const std::size_t beto = c.join("Beto");
+        c.frames(40, 1);
+        c.settle();
+        REQUIRE(c.m[ana].session->local_slot() == 1);
+        REQUIRE(c.m[beto].session->local_slot() == 2);
+        const auto order = [](sim::CommandType type, std::uint8_t count) {
+            sim::Command cmd;
+            cmd.type = type;
+            cmd.count = count;
+            return cmd;
+        };
+        // Ana asks and the host takes her in: both give orders to one town.
+        c.m[ana].session->issue(order(sim::CommandType::RequestJoin, 0));
+        c.frames(30, 1);
+        CHECK(c.m[0].game->player(1).request == 0);
+        c.m[0].session->issue(order(sim::CommandType::JoinTown, 1));
+        c.frames(30, 1);
+        c.settle();
+        for (const Machine* x : {&c.m[0], &c.m[ana], &c.m[beto]}) {
+            CHECK(x->game->town_of(1) == 0);
+        }
+        if (auto house = place_near(*c.m[ana].game, 1, "core:house", 0)) {
+            const std::size_t before = c.m[0].game->buildings().size();
+            c.m[ana].session->issue(*house);
+            c.frames(30, 1);
+            CHECK(c.m[0].game->buildings().size() == before + 1);
+        }
+        // Beto asks. Ana is in the town but did not found it: she cannot answer.
+        c.m[beto].session->issue(order(sim::CommandType::RequestJoin, 0));
+        c.frames(30, 1);
+        const std::uint32_t rejected = c.m[0].game->rejected_commands();
+        c.m[ana].session->issue(order(sim::CommandType::JoinTown, 2));
+        c.m[ana].session->issue(order(sim::CommandType::RefuseJoin, 2));
+        c.frames(30, 1);
+        c.settle();
+        CHECK(c.m[0].game->rejected_commands() == rejected + 2);
+        CHECK(c.m[0].game->player(2).request == 0);
+        CHECK(c.m[0].game->town_of(2) == 2);
+        // The founder refuses; Beto founds his own town while the others play on.
+        c.m[0].session->issue(order(sim::CommandType::RefuseJoin, 2));
+        c.frames(30, 1);
+        CHECK(c.m[beto].game->player(2).request == sim::kNoRequest);
+        c.m[beto].session->issue(found_on_site(*c.m[beto].game, 1));
+        c.frames(60, 1);
+        c.settle();
+        CHECK(c.m[0].game->town_exists(2));
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("a request to join waits while the founder is away, and he finds it when he returns") {
+        // Three seats made in the lobby, each with its town; the founder asked is a client.
+        Cluster c;
+        c.towns_to_found = true;
+        c.join("Ana");
+        c.frames(3, 0);
+        c.host().set_config(config(45, false));
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(20, 1);
+        c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
+        c.m[1].session->issue(found_on_site(*c.m[1].game, 1));
+        c.frames(60, 1);
+        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.frames(15, 1);
+        REQUIRE(c.m[0].game->town_exists(1));
+        const std::string ana_name = c.m[1].session->lobby().players[1].name;
+        // Ana, founder of town 1, drops out.
+        const PeerId gone = c.m[1].link->self_id();
+        c.net.cut(gone);
+        c.m[0].link->disconnect(gone);
+        c.m[1].session.reset();
+        c.m[1].game.reset();
+        c.frames(20, 1);
+        // Beto arrives and asks to join her town. Nobody else can answer.
+        const std::size_t beto = c.join("Beto");
+        c.frames(40, 1);
+        c.settle();
+        const std::uint8_t seat = c.m[beto].session->local_slot();
+        sim::Command ask;
+        ask.type = sim::CommandType::RequestJoin;
+        ask.count = 1;
+        c.m[beto].session->issue(ask);
+        c.frames(30, 1);
+        sim::Command take;
+        take.type = sim::CommandType::JoinTown;
+        take.count = seat;
+        c.m[0].session->issue(take);  // The host of the game is not the town's founder.
+        c.frames(300, 1);
+        c.settle();
+        CHECK(c.m[0].game->player(seat).request == 1);
+        CHECK(c.m[0].game->town_of(seat) == seat);
+        CHECK(c.m[0].game->rejected_commands() >= 1);
+        // She comes back: the request is in the state she receives, and she accepts.
+        const std::size_t again = c.join(ana_name, info(ana_name));
+        c.frames(60, 1);
+        c.settle();
+        REQUIRE(c.m[again].session->local_slot() == 1);
+        REQUIRE(c.m[again].game != nullptr);
+        CHECK(c.m[again].game->player(seat).request == 1);
+        c.m[again].session->issue(take);
+        c.frames(40, 1);
+        c.settle();
+        CHECK(c.m[0].game->town_of(seat) == 1);
+        CHECK(c.m[beto].game->founded(seat));
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
     }
 
     TEST_CASE("at x5 the game keeps in step: the margins follow the speed") {

@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 43;
+inline constexpr std::uint32_t kGameRulesVersion = 44;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -304,6 +304,10 @@ struct PlayerState {
     // Phase 76: the seat came after the game began (by AddSeat). What it
     // may do without a town depends on the game's access.
     bool late = false;
+    // Phase 77: the town this seat, which has none, has asked to join
+    // (kNoRequest: none). It waits until the town's founder answers, or
+    // the seat withdraws it or founds a town of its own.
+    std::uint8_t request = 0xFF;
     // Phase 73: the seat's town exists (it was founded). Until then the
     // seat owns nothing and may only found. `cart`: the wagon the settlers
     // came with, which keeps their goods until the town center is built.
@@ -413,6 +417,8 @@ inline constexpr std::int32_t kMaxSlopeCm = 400;
 inline constexpr std::int32_t kMaxWallSlopeCm = 180;  // What follows the ground (walls...).
 inline constexpr std::int32_t kMaxBuriedCm = 200;
 
+inline constexpr std::uint8_t kNoRequest = 0xFF;
+
 // A seat's player, as the lobby knows it.
 struct SeatInfo {
     std::string name;
@@ -519,6 +525,8 @@ public:
     [[nodiscard]] bool may_found(std::uint8_t player) const {
         return player < player_count_ && (!players_[player].late || (access_ & access::kFound) != 0);
     }
+    // Phase 77. Whether `player`, without a town, may ask to join `town`.
+    [[nodiscard]] bool may_request(std::uint8_t player, std::uint8_t town) const;
     // How many seats run a town.
     [[nodiscard]] std::int32_t seats_of(std::uint8_t town) const;
 
@@ -611,6 +619,9 @@ public:
             SeatAdded,       // Phase 75: seat `owner` came into the game, without a town.
             TownJoined,      // Phase 75: seat `owner` joined town `other`.
             AccessChanged,   // Phase 76: `value`: the new access bits.
+            JoinRequested,   // Phase 77: seat `owner` asks to join town `other`.
+            JoinRefused,     // Phase 77: town `other`'s founder refused seat `owner`.
+            JoinCancelled,   // Phase 77: seat `owner` withdrew its request to town `other`.
             GameStarted,     // Phase 73: every town is founded; time runs.
         };
         Kind kind = Kind::FireStarted;

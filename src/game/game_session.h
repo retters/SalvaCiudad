@@ -104,6 +104,9 @@ public:
         // Phase 74: founding the town. The site clicked, while the player is
         // asked to confirm (`found_asked`) and after the order left
         // (`found_sent`: the game's turn then, plus one; 0: not sent).
+        // `found_mode` (phase 77): a seat that came later chose to found its
+        // town (those who began the game always are choosing).
+        bool found_mode = false;
         bool found_asked = false;
         std::int32_t found_x = 0;
         std::int32_t found_z = 0;
@@ -161,6 +164,10 @@ private:
     Interaction ui_;
     FogView fog_;
 };
+
+// Phase 77. Whether the local player is choosing where to found its town:
+// it has none, may found one, and (if it came later) said it wants to.
+[[nodiscard]] bool choosing_site(const sim::Game& game, const GameSession::Interaction& ui, std::uint8_t local);
 
 // Text key explaining a load result to the player.
 [[nodiscard]] const char* load_result_key(GameSession::LoadResult r);

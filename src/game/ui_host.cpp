@@ -909,7 +909,7 @@ void UiHost::access_dialog(ui::Context& ctx) {
     for (const Row& r : rows) {
         shown += r.shown ? 1 : 0;
     }
-    const float note_h = ctx.text().line_height(body) * 2.0f;
+    const float note_h = ctx.text().line_height(body);
     const float content_h = static_cast<float>(shown) * (row_h + gap) + note_h + gap + button_h;
     float y = 0.0f;
     const ui::Rect content = dialog_frame(ctx, content_h, tr(hosting ? "access.title.change" : "access.title.open"), y);

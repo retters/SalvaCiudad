@@ -1026,7 +1026,7 @@ void App::render_frame(float dt) {
             update_marking();
             draw_marking();
         } else if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map &&
-                   (!session_ || (!replay_ && !session_->game().founded(session_->local_player())))) {
+                   (!session_ || (!replay_ && choosing_site(session_->game(), session_->ui(), session_->local_player())))) {
             // The map alone, or a town to found (phase 74): the suggested sites.
             draw_start_markers(frame.width, frame.height);
         }
@@ -1619,8 +1619,10 @@ void App::update_founding(std::uint32_t width, std::uint32_t height) {
     ui.field_farm = {};
     village_.set_field_ghost(std::nullopt);
     const sim::DefIndex center = game.town_center_def();
-    if (!game.founder(local) || center == sim::kNoDef) {
-        village_.set_ghost(std::nullopt);  // The town's first seat founds it.
+    if (center == sim::kNoDef || !choosing_site(game, ui, local)) {
+        // The town's first seat founds it; a latecomer, once it says so.
+        ui.found_asked = false;
+        village_.set_ghost(std::nullopt);
         return;
     }
     // An order that never arrived (the site was taken meanwhile): again.
@@ -1681,10 +1683,11 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
         update_founding(width, height);
         return;
     }
-    if (ui.found_asked || ui.found_sent != 0) {
-        // Founded: the ghost of the site goes.
+    if (ui.found_asked || ui.found_sent != 0 || ui.found_mode) {
+        // Founded (or taken into a town): the ghost of the site goes.
         ui.found_asked = false;
         ui.found_sent = 0;
+        ui.found_mode = false;
         village_.set_ghost(std::nullopt);
     }
     if (right_clicked_ && ui.placing != sim::kNoDef) {
@@ -1830,8 +1833,8 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
     const sim::Game& game = session_->game();
     if (!game.founded(session_->local_player())) {
         // Phase 74: the click chooses the site; the interface asks.
-        if (game.founder(session_->local_player()) && !ui.found_asked && ui.found_sent == 0 && ui.hover_valid &&
-            ui.hover_error == sim::PlaceError::None) {
+        if (choosing_site(game, ui, session_->local_player()) && !ui.found_asked && ui.found_sent == 0 &&
+            ui.hover_valid && ui.hover_error == sim::PlaceError::None) {
             ui.found_asked = true;
             ui.found_x = ui.hover_x;
             ui.found_z = ui.hover_z;
@@ -1895,6 +1898,11 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
 
 void App::update_war_fog() {
     FogView& fog = session_->fog();
+    // The seat joined a town, or got its seat (phases 75 to 77): it sees
+    // with that town's eyes from now on.
+    if (const std::uint8_t group = session_->game().vision_group(session_->local_player()); group != fog.group()) {
+        fog.begin(session_->game(), group);
+    }
     fog.update(session_->game());
     const int mode = static_cast<int>(fog.mode());
     if (mode != war_mode_shown_ || fog.side() != war_side_shown_ || fog.generation() != war_generation_shown_) {
@@ -2387,7 +2395,9 @@ void App::report_game_events() {
         if (e.owner != session_->town() && e.kind != sim::Game::Event::Kind::TownLost &&
             e.kind != sim::Game::Event::Kind::GameOver && e.kind != sim::Game::Event::Kind::TownFounded &&
             e.kind != sim::Game::Event::Kind::GameStarted && e.kind != sim::Game::Event::Kind::AccessChanged &&
-            e.kind != sim::Game::Event::Kind::SeatAdded && e.kind != sim::Game::Event::Kind::TownJoined) {
+            e.kind != sim::Game::Event::Kind::SeatAdded && e.kind != sim::Game::Event::Kind::TownJoined &&
+            e.kind != sim::Game::Event::Kind::JoinRequested && e.kind != sim::Game::Event::Kind::JoinRefused &&
+            e.kind != sim::Game::Event::Kind::JoinCancelled) {
             continue;
         }
         if (e.kind == sim::Game::Event::Kind::AccessChanged) {
@@ -2397,8 +2407,35 @@ void App::report_game_events() {
             }
             continue;
         }
-        if (e.kind == sim::Game::Event::Kind::SeatAdded || e.kind == sim::Game::Event::Kind::TownJoined) {
-            continue;  // The network tells who came; phase 77 tells who joined whom.
+        if (e.kind == sim::Game::Event::Kind::SeatAdded) {
+            continue;  // The network tells who came.
+        }
+        // Phase 77: joining a town. Everybody hears who joined whom; the
+        // founder, who asks; the one who asked, when it is refused.
+        const std::uint8_t me = session_->local_player();
+        if (e.kind == sim::Game::Event::Kind::TownJoined) {
+            if (e.owner == me) {
+                if (const sim::Building* tc = game.buildings().get(game.player(e.other).town_center)) {
+                    focus_camera(static_cast<float>(tc->x) + static_cast<float>(tc->width) * 0.5f,
+                                 static_cast<float>(tc->z) + static_cast<float>(tc->depth) * 0.5f);
+                }
+                host_->toast(tr("event.joinAccepted", town_name(e.other)));
+            } else {
+                host_->notify(tr("event.townJoined", town_name(e.owner), town_name(e.other)), false, 0.0f, 0.0f,
+                              game.calendar(), SDL_GetTicksNS());
+            }
+            continue;
+        }
+        if (e.kind == sim::Game::Event::Kind::JoinRequested || e.kind == sim::Game::Event::Kind::JoinRefused ||
+            e.kind == sim::Game::Event::Kind::JoinCancelled) {
+            if (e.kind == sim::Game::Event::Kind::JoinRequested && e.other == me) {
+                host_->notify(tr("event.joinRequested", town_name(e.owner)), false, 0.0f, 0.0f, game.calendar(),
+                              SDL_GetTicksNS());
+                sound_.event(sim::Game::Event::Kind::OfferReceived);
+            } else if (e.kind == sim::Game::Event::Kind::JoinRefused && e.owner == me) {
+                host_->toast(tr("event.joinRefused", town_name(e.other)));
+            }
+            continue;
         }
         if (e.kind == sim::Game::Event::Kind::TownFounded || e.kind == sim::Game::Event::Kind::GameStarted) {
             // Phase 74. A town founded: everybody is told, and those who
@@ -2467,6 +2504,9 @@ void App::report_game_events() {
             case sim::Game::Event::Kind::GameStarted:
             case sim::Game::Event::Kind::SeatAdded:
             case sim::Game::Event::Kind::TownJoined:
+            case sim::Game::Event::Kind::JoinRequested:
+            case sim::Game::Event::Kind::JoinRefused:
+            case sim::Game::Event::Kind::JoinCancelled:
             case sim::Game::Event::Kind::AccessChanged: break;  // Told above.
         }
         if (e.kind != sim::Game::Event::Kind::GameOver) {

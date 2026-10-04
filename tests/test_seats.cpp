@@ -48,6 +48,29 @@ Command add_seat(std::uint8_t by, const char* name, std::uint8_t color = 3) {
     return c;
 }
 
+Command request_join(std::uint8_t seat, std::uint8_t town) {
+    Command c;
+    c.type = CommandType::RequestJoin;
+    c.player = seat;
+    c.count = town;
+    return c;
+}
+
+Command cancel_join(std::uint8_t seat) {
+    Command c;
+    c.type = CommandType::CancelJoin;
+    c.player = seat;
+    return c;
+}
+
+Command refuse_join(std::uint8_t founder, std::uint8_t seat) {
+    Command c;
+    c.type = CommandType::RefuseJoin;
+    c.player = founder;
+    c.count = seat;
+    return c;
+}
+
 Command join_town(std::uint8_t founder, std::uint8_t seat) {
     Command c;
     c.type = CommandType::JoinTown;
@@ -169,6 +192,7 @@ TEST_SUITE("seats") {
             CHECK(g.rejected_commands() == 1);
         }
         const std::uint32_t before = g.rejected_commands();
+        g.apply(request_join(2, 0));
         g.apply(join_town(0, 2));
         REQUIRE(g.rejected_commands() == before);
         CHECK(g.town_of(2) == 0);
@@ -253,16 +277,23 @@ TEST_SUITE("seats") {
         CHECK(g.rejected_commands() == 2);
         g.apply(join_town(0, 9));  // No such seat.
         CHECK(g.rejected_commands() == 3);
-        g.apply(join_town(0, 2));
-        CHECK(g.rejected_commands() == 3);
-        CHECK(g.town_of(2) == 0);
-        g.apply(join_town(2, 3));  // Caro is in the town but did not found it.
+        g.apply(join_town(0, 2));  // Caro has not asked.
         CHECK(g.rejected_commands() == 4);
-        g.apply(join_town(1, 2));  // Caro already has a town.
+        CHECK(g.town_of(2) == 2);
+        g.apply(request_join(2, 0));
+        g.apply(join_town(0, 2));
+        CHECK(g.rejected_commands() == 4);
+        CHECK(g.town_of(2) == 0);
+        g.apply(request_join(3, 1));
+        g.apply(join_town(2, 3));  // Caro is in a town but did not found it.
         CHECK(g.rejected_commands() == 5);
+        g.apply(join_town(0, 3));  // Dani asked Beto, not Ana.
+        CHECK(g.rejected_commands() == 6);
+        g.apply(join_town(1, 2));  // Caro already has a town.
+        CHECK(g.rejected_commands() == 7);
         CHECK(g.town_of(2) == 0);
         g.apply(join_town(1, 3));
-        CHECK(g.rejected_commands() == 5);
+        CHECK(g.rejected_commands() == 7);
         CHECK(g.town_of(3) == 1);
         CHECK(g.seats_of(0) == 2);
         CHECK(g.seats_of(1) == 2);
@@ -306,6 +337,7 @@ TEST_SUITE("seats") {
         g.apply(add_seat(0, "Caro", 1));
         g.apply(add_seat(0, "Dani", 9));  // Stays without a town.
         g.apply(found_on_site(g, 1, 1));
+        g.apply(request_join(2, 1));
         g.apply(join_town(1, 2));
         g.set_host(1);
         REQUIRE(g.rejected_commands() == 0);
@@ -351,6 +383,7 @@ TEST_SUITE("seats") {
         CHECK(g.vision_group(1) != g.vision_group(0));
         CHECK(g.vision().used(g.vision_group(1)));
         CHECK_FALSE(g.vision().explored_at(g.vision_group(1), x, z));
+        g.apply(request_join(2, 0));
         g.apply(join_town(0, 2));
         CHECK(g.vision_group(2) == g.vision_group(0));
         CHECK(g.vision().explored_at(g.vision_group(2), x, z));
@@ -422,6 +455,100 @@ TEST_SUITE("seats") {
         CHECK_FALSE(Command::read(r, read_back));
     }
 
+    TEST_CASE("asking to join: the founder accepts or refuses, the seat may withdraw, one request at a time") {
+        Game g = one_seat(27);
+        g.apply(add_seat(0, "Beto"));
+        g.apply(found_on_site(g, 1, 1));
+        g.apply(add_seat(0, "Caro"));
+        REQUIRE(g.rejected_commands() == 0);
+        (void)g.take_events();
+        CHECK(g.may_request(2, 0));
+        CHECK(g.may_request(2, 1));
+        CHECK_FALSE(g.may_request(2, 2));  // Not its own.
+        CHECK_FALSE(g.may_request(1, 0));  // Beto has a town.
+        CHECK(g.player(2).request == kNoRequest);
+        g.apply(request_join(2, 0));
+        REQUIRE(g.rejected_commands() == 0);
+        CHECK(g.player(2).request == 0);
+        CHECK(g.town_of(2) == 2);  // Asking is not joining.
+        g.apply(request_join(2, 1));  // One at a time.
+        CHECK(g.rejected_commands() == 1);
+        CHECK(g.player(2).request == 0);
+        g.apply(refuse_join(1, 2));  // Not Beto's to answer.
+        CHECK(g.rejected_commands() == 2);
+        g.apply(refuse_join(0, 2));
+        CHECK(g.rejected_commands() == 2);
+        CHECK(g.player(2).request == kNoRequest);
+        g.apply(refuse_join(0, 2));  // Nothing left to refuse.
+        CHECK(g.rejected_commands() == 3);
+        // Refused, it asks the other town, thinks again and withdraws.
+        g.apply(request_join(2, 1));
+        CHECK(g.player(2).request == 1);
+        g.apply(cancel_join(2));
+        CHECK(g.player(2).request == kNoRequest);
+        g.apply(cancel_join(2));  // Nothing to withdraw.
+        CHECK(g.rejected_commands() == 4);
+        g.apply(join_town(1, 2));  // Withdrawn: Beto cannot take it in any more.
+        CHECK(g.rejected_commands() == 5);
+        // It asks again, and founding its own town drops the request.
+        g.apply(request_join(2, 0));
+        g.apply(found_on_site(g, 2, 2));
+        CHECK(g.rejected_commands() == 5);
+        CHECK(g.town_exists(2));
+        CHECK(g.player(2).request == kNoRequest);
+        g.apply(join_town(0, 2));
+        CHECK(g.rejected_commands() == 6);
+        int asked = 0, refused = 0, cancelled = 0;
+        for (const Game::Event& e : g.take_events()) {
+            asked += e.kind == Game::Event::Kind::JoinRequested ? 1 : 0;
+            refused += e.kind == Game::Event::Kind::JoinRefused && e.owner == 2 && e.other == 0 ? 1 : 0;
+            cancelled += e.kind == Game::Event::Kind::JoinCancelled && e.owner == 2 && e.other == 1 ? 1 : 0;
+        }
+        CHECK(asked == 3);
+        CHECK(refused == 1);
+        CHECK(cancelled == 1);
+    }
+
+    TEST_CASE("asking to join needs the game to allow it, and a town that exists") {
+        GameSetup setup;
+        setup.players = 1;
+        setup.seed = 28;
+        setup.start_towns = false;
+        setup.access = access::kOpen | access::kFound;  // To found, not to join.
+        Game g(content(), small_map(28, 3), setup);
+        g.apply(found_on_site(g, 0, 0));
+        g.apply(add_seat(0, "Beto"));
+        g.apply(add_seat(0, "Caro"));
+        REQUIRE(g.rejected_commands() == 0);
+        CHECK_FALSE(g.may_request(1, 0));
+        g.apply(request_join(1, 0));
+        CHECK(g.rejected_commands() == 1);
+        Command access;
+        access.type = CommandType::SetAccess;
+        access.value = access::kOpen | access::kJoin;
+        g.apply(access);
+        g.apply(request_join(1, 2));  // Caro has founded nothing.
+        CHECK(g.rejected_commands() == 2);
+        g.apply(request_join(1, 7));  // No such seat.
+        CHECK(g.rejected_commands() == 3);
+        g.apply(request_join(1, 0));
+        CHECK(g.rejected_commands() == 3);
+        CHECK(g.player(1).request == 0);
+        // A request waits as long as it takes, and is saved with the game.
+        for (int i = 0; i < 3000; ++i) {
+            g.step();
+        }
+        CHECK(g.player(1).request == 0);
+        Game back(content(), MapData{}, 0, 0);
+        REQUIRE(reload(g, back));
+        CHECK(back.player(1).request == 0);
+        CHECK(back.hash() == g.hash());
+        back.apply(join_town(0, 1));
+        CHECK(back.rejected_commands() == g.rejected_commands());
+        CHECK(back.town_of(1) == 0);
+        CHECK(back.founded(1));
+    }
+
     TEST_CASE("the lobby's two kinds of game are seats and towns too") {
         GameSetup setup;
         setup.players = 3;
@@ -435,6 +562,7 @@ TEST_SUITE("seats") {
         CHECK(common.shared_town());
         CHECK(common.seats_of(0) == 3);
         setup.shared_town = false;
+        setup.access = access::kAll;
         Game apart(content(), small_map(25, 3), setup);
         CHECK(apart.player_count() == 3);
         CHECK(apart.town_of(2) == 2);
@@ -444,6 +572,7 @@ TEST_SUITE("seats") {
         apart.apply(found_on_site(apart, 0, 0));
         apart.apply(found_on_site(apart, 1, 1));
         CHECK(apart.awaiting_founders());
+        apart.apply(request_join(2, 1));
         apart.apply(join_town(1, 2));
         CHECK(apart.rejected_commands() == 0);
         CHECK_FALSE(apart.awaiting_founders());

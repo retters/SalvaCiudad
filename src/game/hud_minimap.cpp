@@ -90,7 +90,7 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
         ctx.draw().rect({std::floor(x), std::floor(y), w, h}, player_color(b.owner));
     }
     // Phase 74: with a town to found, the suggested sites, fog or no fog.
-    if (!game.founded(s.local_player())) {
+    if (choosing_site(game, s.ui(), s.local_player())) {
         const float mark = std::max(5.0f, std::round(ctx.s(6.0f)));
         for (std::size_t i = 0; i < map.starts.size(); ++i) {
             if (game.site_taken(i)) {
