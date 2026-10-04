@@ -755,16 +755,18 @@ TEST_SUITE("village") {
     TEST_CASE("an hour of play: a tended village grows") {
         const auto start = std::chrono::steady_clock::now();
         // The economy alone: no raids (the "wildlife" suite has those).
-        GameSetup setup{1, 79, false, GameRules{}};
+        GameSetup setup{1, 81, false, GameRules{}};
         setup.rules.raiders = Threat::None;
         // A map where this scripted player does well (maps changed in phases
         // 27 and 49; it prospers on 9 of the first 20 seeds, D-4906), and a
         // game seed where the newcomers of phase 57's peoples suit it (7 of
-        // the 10 from 77 on do).
+        // the 10 from 77 on do; 6 of the 8 from 77 on after the hunger rule of
+        // phase 66 was made cheap).
         Game g(content(), small_map(1), setup);
         tended_hour(g);
         const Game& end = g;
         const auto stored = end.stored(0);
+        MESSAGE("tasks left to go and eat: " << g.interrupted_tasks() << ", path searches " << g.nav().searches());
         MESSAGE("after an hour: population " << end.population(0) << ", births " << end.player(0).births
                                              << ", arrivals " << end.player(0).arrivals << ", deaths "
                                              << end.player(0).deaths << ", houses " << complete_count(end, building("house"))
@@ -776,6 +778,9 @@ TEST_SUITE("village") {
                                              << " ms");
         CHECK(end.population(0) > village::kStartVillagers);
         CHECK(complete_count(end, building("house")) >= 4);
+        // Going to eat in the middle of a task is the exception: when it was not,
+        // an hour of play took six times longer (path searches).
+        CHECK(g.interrupted_tasks() < 200);
     }
 
     TEST_CASE("an untended village fades away") {

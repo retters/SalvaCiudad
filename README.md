@@ -632,8 +632,8 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Clic derecho junto a su edificio: vuelve y sigue con su vida de aldeano.
 - [ ] Un lobo lo ataca: huye, y luego retoma la orden.
 - [ ] En red: la orden dada en una instancia se ve en la otra.
-- [ ] Una obra lejos del pueblo (unos 300 m): quienes llevan los materiales comen antes de salir si van justos, y nadie muere de hambre con comida en el almacén.
-- [ ] Una obra a más de unos 340 m de cualquier comida no avanza: poner un almacén o granero cerca la destraba.
+- [ ] Una obra lejos del pueblo (unos 200 m): quien va justo de comida se da la vuelta a comer y vuelve a salir; nadie muere de hambre con comida en el almacén.
+- [ ] Una obra a más de unos 250 m de cualquier comida avanza muy poco o nada: poner un almacén o granero cerca la destraba.
 - [ ] **Sin revisar en pantalla por Claude**: el clic derecho en el minimapa y el regreso por provisiones.
 
 ### Fase 65
