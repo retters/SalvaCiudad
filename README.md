@@ -651,7 +651,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Un cantero con un yacimiento a su alcance lo trabaja con sus dos trabajadores a la vez, parados alrededor.
 - [ ] Al gastarse pasa al modelo del tamaño menor (en 2 000 y en 800 unidades) y al agotarse desaparece; ahí se puede volver a construir.
 - [ ] Con niebla de guerra, los yacimientos grandes se ven como silueta en lo no explorado.
-- [ ] **Sin revisar en pantalla por Claude:** en el juego; los tres modelos sí se vieron en una imagen hecha con Blender.
+- [ ] **Revisado solo en parte por Claude:** un yacimiento mediano se vio dibujado en el mapa con `--reporte` (semilla 12345, mapa pequeño), y los tres modelos en una imagen hecha con Blender. No se vio una partida: ni canteros trabajándolo ni el cambio de tamaño.
 - [ ] **Tu opinión:** el aspecto de los tres modelos, si hay pocos o muchos, y si los trabajadores se ven bien picando a varios metros del centro.
 
 ### Fase 82 (más roca, bayas y hierbas)

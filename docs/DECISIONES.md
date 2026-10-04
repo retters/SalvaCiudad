@@ -3190,3 +3190,17 @@ Grande o enorme, o del tamaño mayor de su especie (un manzano mediano ya es mad
 
 **D-8705. Versiones y lo medido.**
 Reglas 51. Suite nueva `resources_years` para las pruebas de años (con las de la fase 86), aparte de `resources`, para caber en el tiempo de un debug. Pruebas: con «Replantar», cuatro robles talados dejan cuatro brotes de roble en su sitio y sin él ninguno; el leñador queda «esperando que crezcan» sin evento; guardar y cargar con brotes; una casa sobre un brote lo quita; al año los brotes son robles pequeños con su madera. Con «Solo maduros», seis robles medianos no se tocan, y durante su segundo año se talan los seis sin sacar madera de ninguno que no fuera grande. Con los dos encendidos y 60 robles grandes, árboles talados por año en diez años: 32, 28, 0, 28, 32, 0, 26, 33, 1, 24; al final los 60 siguen ahí, en pie o como brote. Los interruptores viajan con la misma orden probada en la fase 85; no se probó con dos instancias reales. Nada se vio en pantalla.
+
+## Cierre de la ronda de recursos (2026-10-04)
+
+**D-8801. Lo único visto en pantalla.**
+Con una copia portátil en ventana, `SalvaCiudad.exe --reporte` sobre el mapa pequeño de semilla 12345 apuntando a (340, 506): el yacimiento mediano se dibuja con su modelo y su sombra. Sirve además de prueba de que el juego carga los modelos y aspectos nuevos sin fallar. Ese yacimiento, el garantizado del inicio, quedó a 6 m del borde del mapa: el generador no lo aleja del borde.
+
+**D-8802. Hallazgo anterior a la ronda: `--reporte` termina con 0xC0000409.**
+El modo `--reporte` guarda la imagen y el texto, escribe «SalvaCiudad stopped» en el registro y el proceso sale con el código 0xC0000409. Pasa igual con la compilación 8768267 (antes de las fases 73 a 87), así que no es de esta ronda. No se investigó.
+
+**D-8803. Verificación.**
+Cada fase se cerró con la compilación `release` sin advertencias y todas las suites. `debug` y `debug-asan` se corrieron en el árbol de verificación sobre el commit de la fase 80 (67 suites, todas pasan en los dos), el de la 85 (68, todas pasan en los dos) y el de la 87 (69: todas en `debug`; en `debug-asan` pasaron 68 y `worldgen_hier_life` se pasó de sus 240 s).
+
+**D-8804. `worldgen_hier_life` partida en dos.**
+Esa suite, sola y con AddressSanitizer, tarda 214 s de los 240 s permitidos, y los tiempos de asan varían hasta el doble en este equipo (D-3110): en la corrida completa del commit de la fase 87 se pasó del límite, y en la del commit de la fase 85 había entrado. Las fases 86 y 87 no tocan el generador; las 82 y 83 le agregan poco. Se movieron sus tres últimos casos (gigantes, ajustes de clima, tierra e islas con muchos pueblos) a una suite nueva, `worldgen_hier_giants`, como ya se hizo en D-3110. Queda al borde `worldgen_hier_structures` (212 s con asan), que es un solo caso y no se puede partir sin reescribirlo.

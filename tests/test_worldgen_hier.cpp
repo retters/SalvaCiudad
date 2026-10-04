@@ -554,6 +554,11 @@ TEST_SUITE("worldgen_hier_life") {
         CHECK(seen.size() >= 8);
     }
 
+}
+
+// The rest of the map's life, in a suite of its own: together they did not
+// fit the time of a run with AddressSanitizer (D-8804).
+TEST_SUITE("worldgen_hier_giants") {
     TEST_CASE("giants are few, each in its biome, far from the towns and from each other") {
         // Phase 55.
         const sim::Content& content = sc::test::core_content();
