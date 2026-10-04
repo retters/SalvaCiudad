@@ -12,8 +12,11 @@
         8,
         8
       ],
-      "cost": {},
-      "buildWork": 0,
+      "cost": {
+        "core:log": 30,
+        "core:stone": 10
+      },
+      "buildWork": 2400,
       "storage": 400,
       "stores": [
         "food",
@@ -43,6 +46,31 @@
         }
       ],
       "light": 20
+    },
+    {
+      "type": "building",
+      "id": "core:cart",
+      "name": "building.cart",
+      "kind": "storage",
+      "cart": true,
+      "sight": 48,
+      "model": "models/props/cart.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {},
+      "buildWork": 0,
+      "storage": 100000,
+      "stores": [
+        "food",
+        "material",
+        "fuel",
+        "good",
+        "gold"
+      ],
+      "fireproof": true,
+      "light": 12
     },
     {
       "type": "building",

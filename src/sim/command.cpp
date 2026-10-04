@@ -89,6 +89,7 @@ bool Command::read(BinaryReader& r, Command& out) {
     ok = ok && (static_cast<CommandType>(type) == CommandType::RenameVillager || c.text.empty());
     switch (static_cast<CommandType>(type)) {
         case CommandType::PlaceBuilding:
+        case CommandType::FoundTown:
             ok = ok && c.value >= 0 && c.value <= 3 && c.position.x >= Fixed{} && c.position.z >= Fixed{};
             break;
         case CommandType::RemoveBuilding:

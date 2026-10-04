@@ -41,6 +41,7 @@ enum class CommandType : std::uint8_t {
     MoveVillager = 32,    // Explorer `entity` (a villager) goes to `position` and waits there.
     DevFeature = 33,      // Developer tools: a natural feature at `position`: type `def`, species `def2`,
                           // size `count`, scale `value` (raw fixed point), rotation `value2`.
+    FoundTown = 34,       // Phase 73: the seat's town, its center's corner cell at `position`, rotation `value` (0..3).
 
 };
 

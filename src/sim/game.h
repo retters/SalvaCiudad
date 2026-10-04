@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 40;
+inline constexpr std::uint32_t kGameRulesVersion = 41;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -297,6 +297,11 @@ enum class Outcome : std::uint8_t { Playing, Won, Lost, Count };
 
 struct PlayerState {
     bool active = false;
+    // Phase 73: the seat's town exists (it was founded). Until then the
+    // seat owns nothing and may only found. `cart`: the wagon the settlers
+    // came with, which keeps their goods until the town center is built.
+    bool founded = false;
+    EntityId cart;
     EntityId town_center;
     std::uint32_t next_family = 1;
     std::int32_t births = 0;
@@ -407,6 +412,11 @@ struct GameSetup {
     std::uint64_t seed = 0;
     bool shared_town = false;  // All the players run one town (section 7.7).
     GameRules rules;
+    // Phase 73. True: every town stands from the first tick at the map's
+    // suggested sites, its center built and stocked (the tests of earlier
+    // phases and the reference town). False, as the game does it: nobody
+    // has a town until they found it, and time waits for all of them.
+    bool start_towns = true;
 };
 
 class Game {
@@ -424,6 +434,27 @@ public:
     void step();
 
     [[nodiscard]] std::uint64_t tick() const { return tick_; }
+    // Phase 73. A new game waits, without a tick going by, until every
+    // seat with a town of its own has founded it. Steps taken meanwhile
+    // only run commands; `turn()` counts them too (what multiplayer numbers
+    // its turns by).
+    [[nodiscard]] bool awaiting_founders() const { return !started_; }
+    [[nodiscard]] std::uint64_t turn() const { return tick_ + waited_; }
+    [[nodiscard]] std::uint64_t waited() const { return waited_; }
+    // Whether `player` still has to found the town it runs, and whether it
+    // is the one who founds it (in a common town, its first seat).
+    [[nodiscard]] bool founded(std::uint8_t player) const {
+        return player < kMaxPlayers && players_[town_of(player)].founded;
+    }
+    [[nodiscard]] bool founder(std::uint8_t player) const { return player < player_count_ && town_of(player) == player; }
+    // The definitions a town starts from: its center, and the settlers'
+    // wagon (kNoDef: the mods have none, and the center is built at once).
+    [[nodiscard]] DefIndex town_center_def() const { return town_center_def_; }
+    [[nodiscard]] DefIndex cart_def() const { return cart_def_; }
+    // Whether `player` may found its town with the center's corner at
+    // (x, z): the usual rules of the ground, anywhere on the map, explored
+    // or not, plus room for the wagon nearby.
+    [[nodiscard]] PlaceError can_found(std::uint8_t player, std::int32_t x, std::int32_t z, std::uint8_t rotation) const;
     [[nodiscard]] std::uint64_t hash() const;
     [[nodiscard]] std::uint32_t rejected_commands() const { return rejected_; }
     // Tasks left to go and eat (phase 66), for the tests: it must stay rare.
@@ -531,6 +562,8 @@ public:
             Died,
             AutoTrade,       // Phase 29: the merchant left; `tally` is what automatic trade did.
             ExplorerBack,    // Phase 66: an explorer turns back; `value`: 0 low on food, 1 cold.
+            TownFounded,     // Phase 73: `owner` founded its town at `at`.
+            GameStarted,     // Phase 73: every town is founded; time runs.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -671,6 +704,20 @@ private:
     std::uint32_t interrupted_ = 0;  // Not saved: a count for the tests.
     bool dev_commands_ = true;
     bool shared_town_ = false;
+    bool started_ = true;          // Phase 73: false while it waits for the founders.
+    std::uint64_t waited_ = 0;     // Steps taken while waiting.
+    DefIndex town_center_def_ = kNoDef;
+    DefIndex cart_def_ = kNoDef;
+    // The ground rules of can_place: inside the map (and the town's
+    // region), free, dry and not too steep.
+    [[nodiscard]] PlaceError ground_error(std::uint8_t town, const BuildingDef& d, std::int32_t x, std::int32_t z,
+                                          std::uint8_t rotation) const;
+    // Where the wagon of a town founded at (x, z) goes: the nearest free
+    // 2 x 2 by the center's door. False if there is none.
+    [[nodiscard]] bool cart_spot(std::uint8_t town, std::int32_t x, std::int32_t z, std::uint8_t rotation,
+                                 std::int32_t& cart_x, std::int32_t& cart_z) const;
+    // Every seat that founds has: time starts.
+    void check_started();
     GameRules rules_;
     std::int32_t temperature_ = 12;  // Today's; follows from the tick.
     std::int32_t snow_ = 0;          // 0..kMaxSnow.

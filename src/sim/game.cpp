@@ -925,9 +925,20 @@ public:
         if (v.carrying.resource != g_.gold_ || v.carrying.amount <= 0 || g_.gold_ == kNoDef) {
             return;
         }
-        if (Building* tc = g_.buildings_.get(g_.players_[v.owner].town_center)) {
+        if (Building* tc = depot(v.owner)) {
             add_to(tc->stock, g_.gold_, v.carrying.amount);
         }
+    }
+
+    // Phase 73. Where a town's loose goods go: its center, or the settlers'
+    // wagon while the center is being built.
+    [[nodiscard]] Building* depot(std::uint8_t town) {
+        Building* tc = g_.buildings_.get(g_.players_[town].town_center);
+        if (tc != nullptr && complete(*tc)) {
+            return tc;
+        }
+        Building* cart = g_.buildings_.get(g_.players_[town].cart);
+        return cart != nullptr ? cart : tc;
     }
 
     // A storage that keeps gold other than the trading post and the town
@@ -997,6 +1008,9 @@ public:
             return false;
         }
         Building* tc = g_.buildings_.get(g_.players_[town].town_center);
+        if (tc != nullptr && !complete(*tc)) {
+            tc = nullptr;  // Still being built: the wagon is the vault.
+        }
         const EntityId tc_id = g_.players_[town].town_center;
         EntityId from, to;
         if (Building* post = trading_post(town)) {
@@ -1911,11 +1925,20 @@ public:
         if (g_.game_over_) {
             return;
         }
+        // Towns not founded yet (phase 73) are neither in nor out.
         std::vector<std::uint8_t> towns;
+        bool unfounded = false;
         for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
             if (g_.town_of(p) == p && g_.players_[p].active) {
-                towns.push_back(p);
+                if (g_.players_[p].founded) {
+                    towns.push_back(p);
+                } else {
+                    unfounded = true;
+                }
             }
+        }
+        if (towns.empty() && unfounded) {
+            return;
         }
         const GameRules& rules = g_.rules_;
         for (const std::uint8_t p : towns) {
@@ -2303,7 +2326,7 @@ public:
             }
         }
         if (n > 0) {
-            if (Building* tc = g_.buildings_.get(g_.players_[town].town_center)) {
+            if (Building* tc = depot(town)) {
                 add_to(tc->stock, r, n);
             }
         }
@@ -2312,7 +2335,7 @@ public:
     // Once a day: merchants come and go, caravans arrive, offers expire.
     void daily_trade() {
         for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
-            if (g_.town_of(p) != p || !g_.players_[p].active) {
+            if (g_.town_of(p) != p || !g_.players_[p].active || !g_.players_[p].founded) {
                 continue;
             }
             PlayerState& ps = g_.players_[p];
@@ -3576,6 +3599,29 @@ public:
             b.limit = kPostReserve;
         }
         g_.buildings_changed_ = true;
+        if (def(b).kind == BuildingKind::TownCenter) {
+            unload_cart(b);  // Last: it removes a building, and `b` may move.
+        }
+    }
+
+    // Phase 73. The town center is built: what is left in the settlers'
+    // wagon goes inside (whatever its room) and the wagon is gone.
+    void unload_cart(Building& center) {
+        const std::uint8_t town = center.owner;
+        const EntityId cart_id = g_.players_[town].cart;
+        if (Building* cart = g_.buildings_.get(cart_id)) {
+            for (const Stock& s : cart->stock) {
+                add_to(center.stock, s.resource, s.amount);
+            }
+            compact(center.stock);
+            cart->stock.clear();
+            remove_building(cart_id);
+        }
+        for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+            if (g_.town_of(p) == town) {
+                g_.players_[p].cart = {};
+            }
+        }
     }
 
     void produce(Villager& v) {
@@ -4368,7 +4414,7 @@ public:
             }
         }
         // Delivered materials go back to the town center.
-        if (Building* tc = g_.buildings_.get(g_.players_[b->owner].town_center); tc != nullptr && tc != b) {
+        if (Building* tc = depot(b->owner); tc != nullptr && tc != b) {
             for (const Stock& s : b->delivered) {
                 add_to(tc->stock, s.resource, s.amount);
             }
@@ -4394,9 +4440,18 @@ public:
             ++g_.rejected_;
             return;
         }
+        if (command.type == CommandType::FoundTown) {
+            found_town(command);
+            return;
+        }
         // In a common town every player gives orders to player 0's town.
         Command c = command;
         c.player = g_.town_of(command.player);
+        // Phase 73: a seat without a town may only found it.
+        if (!g_.players_[c.player].founded) {
+            ++g_.rejected_;
+            return;
+        }
         switch (c.type) {
             case CommandType::PlaceBuilding: {
                 const std::int32_t x = c.position.x.floor_int();
@@ -4410,7 +4465,8 @@ public:
             }
             case CommandType::RemoveBuilding: {
                 const Building* b = g_.buildings_.get(c.entity);
-                if (b == nullptr || b->owner != c.player || c.entity == g_.players_[c.player].town_center) {
+                if (b == nullptr || b->owner != c.player || c.entity == g_.players_[c.player].town_center ||
+                    def(*b).cart) {
                     ++g_.rejected_;
                     break;
                 }
@@ -4666,7 +4722,7 @@ public:
                 break;
             }
             case CommandType::DevGrant: {
-                Building* tc = g_.buildings_.get(g_.players_[c.player].town_center);
+                Building* tc = depot(c.player);
                 if (!g_.dev_commands_ || tc == nullptr || c.def >= c_.resources.size() || c.value < 1 ||
                     c.value > kMaxDevGrant) {
                     ++g_.rejected_;
@@ -4681,10 +4737,134 @@ public:
         }
     }
 
-    void setup(std::uint8_t players) {
+    // What a town starts with: goods and gold by the game's rule, into `stock`.
+    void start_goods(std::vector<Stock>& stock) {
+        const struct {
+            const char* id;
+            std::int32_t amount;
+        } kStart[] = {{"core:log", 60},   {"core:stone", 20},    {"core:berries", 150},
+                      {"core:roots", 40}, {"core:firewood", 40}, {"core:clothes", 12}};
+        const std::int32_t percent = g_.rules_.start == StartGoods::Scarce   ? 50
+                                     : g_.rules_.start == StartGoods::Plenty ? 200
+                                                                             : 100;
+        for (const auto& item : kStart) {
+            const DefIndex r = c_.find_resource(item.id);
+            if (r != kNoDef) {
+                add_to(stock, r, item.amount * percent / 100);
+            }
+        }
+        if (g_.gold_ != kNoDef) {
+            add_to(stock, g_.gold_, kStartGold * percent / 100);
+        }
+    }
+
+    // The middle of the nearest cell of the walking grid somebody can
+    // stand on, looking a few cells around `p`; `p` itself if it is one.
+    [[nodiscard]] FixedVec2 walkable_near(FixedVec2 p) const {
+        const std::int32_t cx = p.x.floor_int() / NavGrid::kCellMeters;
+        const std::int32_t cz = p.z.floor_int() / NavGrid::kCellMeters;
+        for (std::int32_t ring = 0; ring <= 8; ++ring) {
+            for (std::int32_t dz = -ring; dz <= ring; ++dz) {
+                for (std::int32_t dx = -ring; dx <= ring; ++dx) {
+                    if (std::max(std::abs(dx), std::abs(dz)) != ring || !g_.nav_.walkable(cx + dx, cz + dz)) {
+                        continue;
+                    }
+                    if (ring == 0) {
+                        return p;
+                    }
+                    return {Fixed::from_int((cx + dx) * NavGrid::kCellMeters) + Fixed::from_ratio(NavGrid::kCellMeters, 2),
+                            Fixed::from_int((cz + dz) * NavGrid::kCellMeters) + Fixed::from_ratio(NavGrid::kCellMeters, 2)};
+                }
+            }
+        }
+        return p;
+    }
+
+    // The settlers: five couples and two children, around `at`. `along`
+    // and `out`: the directions of the door's side and away from it.
+    void settlers(std::uint8_t p, FixedVec2 at, std::int32_t along_x, std::int32_t along_z, std::int32_t out_x,
+                  std::int32_t out_z, bool check_ground) {
+        PlayerState& ps = g_.players_[p];
+        const std::uint8_t start_race = g_.rules_.races[p % g_.rules_.races.size()];
+        const auto races = static_cast<std::uint8_t>(std::max<std::size_t>(1, c_.races.size()));
+        for (std::int32_t n = 0; n < 5; ++n) {
+            const std::uint32_t family = ps.next_family++;
+            const std::uint8_t race = start_race == kMixedRace || start_race >= races
+                                          ? static_cast<std::uint8_t>(n % races)
+                                          : start_race;
+            // Outside, past the door.
+            const std::int32_t side = n * 2 - 4;
+            FixedVec2 spot{at.x + Fixed::from_int(along_x * side + out_x * 2),
+                           at.z + Fixed::from_int(along_z * side + out_z * 2)};
+            if (check_ground) {
+                spot = walkable_near(spot);
+            }
+            (void)spawn_villager(p, spot, Sex::Male, 20 + static_cast<std::int32_t>(g_.rng_.below(12)), family, race);
+            (void)spawn_villager(p, spot, Sex::Female, 19 + static_cast<std::int32_t>(g_.rng_.below(12)), family, race);
+            if (n < 2) {
+                (void)spawn_villager(p, spot, g_.rng_.below(2) == 0 ? Sex::Male : Sex::Female,
+                                     1 + static_cast<std::int32_t>(g_.rng_.below(3)), family, race);
+            }
+        }
+    }
+
+    // Phase 73. A seat founds its town: the center as a site, the wagon
+    // with the goods beside it, and the settlers at the door.
+    void found_town(const Command& c) {
+        const std::uint8_t p = c.player;
+        const std::int32_t x = c.position.x.floor_int();
+        const std::int32_t z = c.position.z.floor_int();
+        const auto rot = static_cast<std::uint8_t>(c.value & 3);
+        if (g_.can_found(p, x, z, rot) != PlaceError::None) {
+            ++g_.rejected_;
+            return;
+        }
+        std::int32_t cart_x = 0, cart_z = 0;
+        const bool with_cart = g_.cart_def_ != kNoDef && g_.cart_spot(p, x, z, rot, cart_x, cart_z);
+        const EntityId center = add_building(p, g_.town_center_def_, x, z, rot, !with_cart);
+        if (!center.valid()) {
+            ++g_.rejected_;
+            return;
+        }
+        EntityId cart;
+        if (with_cart) {
+            cart = add_building(p, g_.cart_def_, cart_x, cart_z, 0, true);
+        }
+        Building* tc = g_.buildings_.get(center);
+        Building* wagon = g_.buildings_.get(cart);
+        if (wagon == nullptr) {
+            tc->state = BuildingState::Complete;  // No wagon: the center stands at once.
+            tc->wanted_workers = def(*tc).workers;
+        } else {
+            for (const ResourceAmount& cost : def(*tc).cost) {
+                add_to(wagon->stock, cost.resource, cost.amount);
+            }
+        }
+        start_goods(wagon != nullptr ? wagon->stock : tc->stock);
+        for (std::uint8_t s = 0; s < g_.player_count_; ++s) {
+            if (g_.town_of(s) == p) {
+                g_.players_[s].town_center = center;
+                g_.players_[s].cart = wagon != nullptr ? cart : EntityId{};
+            }
+        }
+        g_.players_[p].founded = true;
+        static constexpr std::int32_t kOut[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
+        const std::int32_t out_x = kOut[rot][0];
+        const std::int32_t out_z = kOut[rot][1];
+        const FixedVec2 door = g_.door(*tc);
+        settlers(p, door, out_z != 0 ? 1 : 0, out_x != 0 ? 1 : 0, out_x, out_z, true);
+        g_.events_.push_back({Game::Event::Kind::TownFounded, p, center, door, 0, 0});
+        g_.check_started();
+        g_.update_vision();
+    }
+
+    void setup(std::uint8_t players, bool start_towns) {
         const auto towns = static_cast<std::uint8_t>(g_.map_.starts.size());
         // A common town has room for every seat, so anyone can join later.
-        g_.player_count_ = g_.shared_town_ ? kMaxPlayers : std::min<std::uint8_t>(players, towns);
+        // Towns that stand from the start need a site of the map each.
+        g_.player_count_ = g_.shared_town_ ? kMaxPlayers
+                           : start_towns   ? std::min<std::uint8_t>(players, towns)
+                                           : std::min<std::uint8_t>(players, kMaxPlayers);
         for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
             if (!g_.zone_open(z)) {
                 g_.zone_animals_[z] = 0;
@@ -4693,15 +4873,16 @@ public:
                 spawn_animal(z);
             }
         }
-        DefIndex tc_def = kNoDef;
-        for (std::size_t i = 0; i < c_.buildings.size(); ++i) {
-            if (c_.buildings[i].kind == BuildingKind::TownCenter && tc_def == kNoDef) {
-                tc_def = static_cast<DefIndex>(i);
-            }
-        }
+        const DefIndex tc_def = g_.town_center_def_;
         for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
             PlayerState& ps = g_.players_[p];
             ps.active = true;
+            if (!start_towns) {
+                continue;  // Phase 73: each seat founds its town.
+            }
+            if (g_.town_of(p) == p) {
+                ps.founded = true;
+            }
             if (tc_def == kNoDef || p >= towns || g_.town_of(p) != p) {
                 continue;  // The common town is player 0's.
             }
@@ -4715,41 +4896,8 @@ public:
             if (tc == nullptr) {
                 continue;
             }
-            // Starting goods.
-            const struct {
-                const char* id;
-                std::int32_t amount;
-            } kStart[] = {{"core:log", 60},   {"core:stone", 20},    {"core:berries", 150},
-                          {"core:roots", 40}, {"core:firewood", 40}, {"core:clothes", 12}};
-            const std::int32_t percent = g_.rules_.start == StartGoods::Scarce   ? 50
-                                         : g_.rules_.start == StartGoods::Plenty ? 200
-                                                                                 : 100;
-            for (const auto& item : kStart) {
-                const DefIndex r = c_.find_resource(item.id);
-                if (r != kNoDef) {
-                    add_to(tc->stock, r, item.amount * percent / 100);
-                }
-            }
-            if (g_.gold_ != kNoDef) {
-                add_to(tc->stock, g_.gold_, kStartGold * percent / 100);
-            }
-            // Five couples and two children.
-            const FixedVec2 at = g_.door(*tc);
-            const std::uint8_t start_race = g_.rules_.races[p % g_.rules_.races.size()];
-            const auto races = static_cast<std::uint8_t>(std::max<std::size_t>(1, c_.races.size()));
-            for (std::int32_t n = 0; n < 5; ++n) {
-                const std::uint32_t family = ps.next_family++;
-                const std::uint8_t race = start_race == kMixedRace || start_race >= races
-                                              ? static_cast<std::uint8_t>(n % races)
-                                              : start_race;
-                const FixedVec2 spot{at.x + Fixed::from_int(n * 2 - 4), at.z - Fixed::from_int(2)};  // Outside, past the door.
-                (void)spawn_villager(p, spot, Sex::Male, 20 + static_cast<std::int32_t>(g_.rng_.below(12)), family, race);
-                (void)spawn_villager(p, spot, Sex::Female, 19 + static_cast<std::int32_t>(g_.rng_.below(12)), family, race);
-                if (n < 2) {
-                    (void)spawn_villager(p, spot, g_.rng_.below(2) == 0 ? Sex::Male : Sex::Female,
-                                         1 + static_cast<std::int32_t>(g_.rng_.below(3)), family, race);
-                }
-            }
+            start_goods(tc->stock);
+            settlers(p, g_.door(*tc), 1, 0, 0, -1, false);
         }
     }
 
@@ -4793,6 +4941,15 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     fish_ = content_->find_resource("core:fish");
     shoes_ = content_->find_resource("core:shoes");
     gold_ = content_->find_resource("core:gold");
+    for (std::size_t i = 0; i < content_->buildings.size(); ++i) {
+        const BuildingDef& d = content_->buildings[i];
+        if (d.kind == BuildingKind::TownCenter && town_center_def_ == kNoDef) {
+            town_center_def_ = static_cast<DefIndex>(i);
+        }
+        if (d.cart && cart_def_ == kNoDef) {
+            cart_def_ = static_cast<DefIndex>(i);
+        }
+    }
     zone_animals_.resize(map_.zones.size());
     for (std::size_t z = 0; z < map_.zones.size(); ++z) {
         zone_animals_[z] = VillageRules::zone_capacity(map_.zones[z].type, rules_);
@@ -4810,10 +4967,17 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
             nodes_[i].amount = std::max(1, (fd->amount * f.scale.raw()) >> 16);
         }
     }
-    VillageRules(*this).setup(players);
+    VillageRules(*this).setup(players, setup.start_towns);
     // Players of a common town share its town center.
     for (std::uint8_t p = 1; p < player_count_ && shared_town_; ++p) {
         players_[p].town_center = players_[0].town_center;
+    }
+    // Phase 73: with towns to found, time waits for them.
+    started_ = true;
+    for (std::uint8_t p = 0; p < player_count_; ++p) {
+        if (players_[p].active && town_of(p) == p && !players_[p].founded) {
+            started_ = false;
+        }
     }
     // What each town sees from the start (phase 32).
     if (fog()) {
@@ -4843,7 +5007,24 @@ void Game::apply(const Command& command) {
     goods_changed();
 }
 
+void Game::check_started() {
+    if (started_) {
+        return;
+    }
+    for (std::uint8_t p = 0; p < player_count_; ++p) {
+        if (players_[p].active && town_of(p) == p && !players_[p].founded) {
+            return;
+        }
+    }
+    started_ = true;
+    events_.push_back({Event::Kind::GameStarted, 0, {}, {}, 0, 0});
+}
+
 void Game::step() {
+    if (!started_) {
+        ++waited_;  // Waiting for the founders: no tick goes by.
+        return;
+    }
     goods_changed();
     if (night()) {
         update_light();
@@ -5088,6 +5269,9 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
         return PlaceError::UnknownBuilding;
     }
     const BuildingDef& d = content_->buildings[def_index];
+    if (d.cart) {
+        return PlaceError::UnknownBuilding;  // It only comes with a new town.
+    }
     if (d.tier > tier(player)) {
         return PlaceError::Locked;
     }
@@ -5101,18 +5285,98 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
     }
     std::int32_t w = 0, dp = 0;
     footprint(d, rotation, w, dp);
+    const PlaceError ground = ground_error(town_of(player), d, x, z, rotation);
+    if (ground == PlaceError::OutsideMap) {
+        return ground;
+    }
+    if (vision_.active() && !vision_.explored_rect(vision_group(player), x, z, w, dp)) {
+        return PlaceError::Unexplored;  // Decision D-3203.
+    }
+    if (ground != PlaceError::None) {
+        return ground;
+    }
+    // Not where nobody of the town could ever come to build it.
+    if (d.kind != BuildingKind::TownCenter && !site_reachable(town_of(player), x, z, w, dp)) {
+        return PlaceError::Unreachable;
+    }
+    return PlaceError::None;
+}
+
+PlaceError Game::can_found(std::uint8_t player, std::int32_t x, std::int32_t z, std::uint8_t rotation) const {
+    if (player >= player_count_ || !players_[player].active || town_of(player) != player) {
+        return PlaceError::NotYours;
+    }
+    if (players_[player].founded) {
+        return PlaceError::Unique;
+    }
+    if (town_center_def_ == kNoDef) {
+        return PlaceError::UnknownBuilding;
+    }
+    const PlaceError ground = ground_error(player, content_->buildings[town_center_def_], x, z, rotation);
+    if (ground != PlaceError::None) {
+        return ground;
+    }
+    std::int32_t cart_x = 0, cart_z = 0;
+    if (cart_def_ != kNoDef && !cart_spot(player, x, z, rotation, cart_x, cart_z)) {
+        return PlaceError::Blocked;
+    }
+    return PlaceError::None;
+}
+
+bool Game::cart_spot(std::uint8_t town, std::int32_t x, std::int32_t z, std::uint8_t rotation, std::int32_t& cart_x,
+                     std::int32_t& cart_z) const {
+    const BuildingDef& center = content_->buildings[town_center_def_];
+    const BuildingDef& cart = content_->buildings[cart_def_];
+    std::int32_t w = 0, dp = 0, cw = 0, cd = 0;
+    footprint(center, rotation, w, dp);
+    footprint(cart, 0, cw, cd);
+    // The door's cell (as Game::door).
+    std::int32_t door_x = x + w / 2, door_z = z - 1;
+    switch (rotation & 3u) {
+        case 0: break;
+        case 1: door_x = x + w; door_z = z + dp / 2; break;
+        case 2: door_z = z + dp; break;
+        default: door_x = x - 1; door_z = z + dp / 2; break;
+    }
+    // Rings around the door, nearest first; two cells clear of the center
+    // so people walk between them.
+    constexpr std::int32_t kClear = 2;
+    constexpr std::int32_t kFarthest = 16;
+    for (std::int32_t ring = 2; ring <= kFarthest; ++ring) {
+        for (std::int32_t dz = -ring; dz <= ring; ++dz) {
+            for (std::int32_t dx = -ring; dx <= ring; ++dx) {
+                if (std::max(std::abs(dx), std::abs(dz)) != ring) {
+                    continue;
+                }
+                const std::int32_t px = door_x + dx;
+                const std::int32_t pz = door_z + dz;
+                if (px < x + w + kClear && px + cw > x - kClear && pz < z + dp + kClear && pz + cd > z - kClear) {
+                    continue;
+                }
+                if (ground_error(town, cart, px, pz, 0) == PlaceError::None) {
+                    cart_x = px;
+                    cart_z = pz;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+PlaceError Game::ground_error(std::uint8_t town, const BuildingDef& d, std::int32_t x, std::int32_t z,
+                              std::uint8_t rotation) const {
+    std::int32_t w = 0, dp = 0;
+    footprint(d, rotation, w, dp);
     constexpr std::int32_t kMargin = 4;
     if (x < kMargin || z < kMargin || x + w > map_.size - kMargin || z + dp > map_.size - kMargin) {
         return PlaceError::OutsideMap;
     }
     if (map_.region_size() > 0) {
-        const Region r = region(town_of(player));
+        const Region r = region(town);
         if (x < r.x + kMargin || z < r.z + kMargin || x + w > r.x + r.size - kMargin || z + dp > r.z + r.size - kMargin) {
             return PlaceError::OutsideMap;
         }
-    }
-    if (vision_.active() && !vision_.explored_rect(vision_group(player), x, z, w, dp)) {
-        return PlaceError::Unexplored;  // Decision D-3203.
     }
     std::int32_t lo = 65535, hi = 0;
     for (std::int32_t cz = z; cz < z + dp; ++cz) {
@@ -5140,10 +5404,6 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
     // foundations show; uphill the ground may bury the walls only so far.
     if (!on_ground && hi - floor_cm(x, z, w, dp, rotation) > kMaxBuriedCm) {
         return PlaceError::DoorBelow;
-    }
-    // Not where nobody of the town could ever come to build it.
-    if (d.kind != BuildingKind::TownCenter && !site_reachable(town_of(player), x, z, w, dp)) {
-        return PlaceError::Unreachable;
     }
     return PlaceError::None;
 }
@@ -5831,6 +6091,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
     w.u32(rejected);
     w.u8(g.dev_commands() ? 1 : 0);
     w.u8(g.shared_town() ? 1 : 0);
+    w.u8(g.awaiting_founders() ? 0 : 1);
+    w.u64(g.waited());
     g.rules().write(w);
     w.i32(g.snow());
     m.players = w.bytes().size();
@@ -5838,6 +6100,9 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
     for (std::uint8_t p = 0; p < g.player_count(); ++p) {
         const PlayerState& ps = g.player(p);
         w.u8(ps.active ? 1 : 0);
+        w.u8(ps.founded ? 1 : 0);
+        w.u32(ps.cart.index);
+        w.u32(ps.cart.generation);
         w.u32(ps.town_center.index);
         w.u32(ps.town_center.generation);
         w.u32(ps.next_family);
@@ -6140,8 +6405,10 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
     std::uint8_t pc = 0;
     std::uint8_t dev = 0;
     std::uint8_t shared = 0;
+    std::uint8_t started = 0;
     if (!r.u64(g.tick_) || !r.u64(g.seed_) || !r.u32(rejected) || !r.u8(dev) || dev > 1 || !r.u8(shared) ||
-        shared > 1 || !GameRules::read(r, g.rules_) || !r.i32(g.snow_) || g.snow_ < 0 || g.snow_ > village::kMaxSnow ||
+        shared > 1 || !r.u8(started) || started > 1 || !r.u64(g.waited_) || (started == 0 && g.tick_ != 0) ||
+        !GameRules::read(r, g.rules_) || !r.i32(g.snow_) || g.snow_ < 0 || g.snow_ > village::kMaxSnow ||
         !r.u8(pc) || pc > kMaxPlayers) {
         r.fail();
         return false;
@@ -6149,6 +6416,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
     g.rejected_ = rejected;
     g.dev_commands_ = dev != 0;
     g.shared_town_ = shared != 0;
+    g.started_ = started != 0;
     // Today's temperature follows from the tick (as on the day it began).
     // As of the last day that turned the weather: the village's or the calendar's.
     g.temperature_ = sim::temperature(g.rules_.climate, g.seed_,
@@ -6157,7 +6425,9 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
     for (std::uint8_t p = 0; p < pc; ++p) {
         PlayerState& ps = g.players_[p];
         std::uint8_t active = 0;
-        if (!r.u8(active) || !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
+        std::uint8_t founded = 0;
+        if (!r.u8(active) || !r.u8(founded) || founded > 1 || !r.u32(ps.cart.index) || !r.u32(ps.cart.generation) ||
+            !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
             !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures) ||
             !r.i32(ps.burned_down) || !r.u64(ps.merchant_arrives) ||
             !r.u64(ps.merchant_leaves)) {
@@ -6174,6 +6444,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         ps.outcome = static_cast<Outcome>(outcome);
         ps.alarm = alarm != 0;
         ps.active = active != 0;
+        ps.founded = founded != 0;
         std::uint32_t goods = 0;
         if (!r.count(1024, 14, goods)) {
             return false;

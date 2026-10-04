@@ -148,6 +148,9 @@ struct BuildingDef {
     // the pale blue of what glows by magic, not the color of fire.
     std::int32_t light = 0;
     bool cool_light = false;
+    // Phase 73: the settlers' wagon. Nobody builds or removes it: it comes
+    // with a new town, keeps its goods, and goes when the center is built.
+    bool cart = false;
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.

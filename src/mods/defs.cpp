@@ -849,6 +849,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.warmth = r.integer("warmth", 0, 100, 0);
         def.light = r.integer("light", 0, sim::kMaxLight, 0);
         def.cool_light = r.flag("coolLight");
+        def.cart = r.flag("cart");
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);

@@ -2797,3 +2797,38 @@ Reglas 40, protocolo de red 18.
 
 **D-7206. Sin revisar.**
 Nada de esta fase se vio en pantalla; todo por pruebas (visión, daño de la torre, reparto de asaltos), salvo las fieras (D-7202).
+
+## Fase 73: fundar el pueblo, la simulación (2026-10-03)
+
+**D-7301. De dónde salen las fases 73 a 79.**
+Salvador preguntó si una partida de un jugador podía abrirse a multijugador y pidió las fases por el chat, respondiendo ahí las preguntas (no se usó el registro de revisión). Sus respuestas están en el texto de las fases. Las hace una sesión en el worktree `.claude/worktrees/town` (rama `phase-73-found-town`) porque otra sesión trabaja a la vez en el checkout principal con las fases 80 en adelante.
+
+**D-7302. Sobre un árbol sí se puede fundar.**
+La primera redacción de la fase decía que fundar sobre un recurso se rechazaba. Las «reglas normales de construcción» que pidió Salvador no dicen eso: cualquier edificio quita los árboles y rocas que tiene debajo. El centro hace lo mismo y la especificación se corrigió.
+
+**D-7303. Las pruebas viejas no fundan: `GameSetup::start_towns`.**
+Por omisión la simulación sigue naciendo con los pueblos en pie en los sitios sugeridos, centro terminado y bienes adentro, exactamente como antes; el juego la crea con `start_towns = false`. Es el mismo patrón que el ciclo de día y el descanso (D-6810, D-7104). Se descartó cambiar las cuarenta suites para que funden con un ayudante: habría movido todos sus números (el centro en obra, el carro, los dados) sin probar nada nuevo.
+
+**D-7304. El carro es un almacén con la bandera `cart`, no una clase nueva de edificio.**
+Así recibe, entrega, guarda oro y cuenta en los totales sin tocar ninguna de esas reglas. La bandera solo impide construirlo y quitarlo. Guarda de todo y sin límite práctico (100 000), no arde y alumbra 12 m. Si los mods no definen ningún carro, el centro nace terminado y con los bienes adentro.
+
+**D-7305. Dónde va el carro.**
+En el primer hueco libre de 2 × 2 buscando por anillos alrededor de la puerta, a dos celdas o más del centro, hasta 16 m. Si no hay ninguno, ahí no se puede fundar (error «ocupado»). Se descartó dejar que el jugador lo coloque: otra decisión más antes de empezar, sin ganancia.
+
+**D-7306. El centro cuesta 30 troncos y 10 piedras y 2400 de trabajo.**
+Antes no costaba nada porque nadie lo construía. El carro trae esos materiales además de los bienes de siempre, así el pueblo empieza con lo mismo que antes una vez terminado el centro. Con los diez adultos iniciales tarda unos 50 s a ×1 (489 ticks en la prueba).
+
+**D-7307. El tiempo espera a los fundadores dentro de la simulación.**
+Mientras falte alguien por fundar, `step()` no avanza el tick: solo cuenta el paso (`waited`). Las órdenes sí se aplican. `turn()` = tick + pasos de espera es lo que numera los turnos en red, que así siguen corriendo durante la espera. Se descartó hacerlo con la pausa de la interfaz (velocidad 0): en pausa no se cierran turnos y la orden de fundar no llegaría a nadie. Quien se suma a una partida empezada (fase 75) no la detiene: la espera solo existe antes del tick 0.
+
+**D-7308. Un asiento sin pueblo solo puede fundar.**
+Cualquier otra orden suya se rechaza, incluidas las de las herramientas de desarrollo. Un pueblo sin fundar no cuenta para la derrota ni para el fin de la partida, y no recibe mercaderes ni asaltos.
+
+**D-7309. En un pueblo común funda su primer asiento.**
+Los demás no pueden; hasta la fase 75 un pueblo común es siempre el del asiento 0.
+
+**D-7310. Versiones.**
+Reglas 41, protocolo de red 19. El formato de las partidas guardadas cambia con las reglas (un número distinto las rechaza), como en las fases anteriores.
+
+**D-7311. Sin revisar.**
+Nada de esta fase se ve todavía en el juego, que sigue creando las partidas con los pueblos en pie hasta la fase 74. Todo por pruebas (suite `founding`).
