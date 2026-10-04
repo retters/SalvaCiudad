@@ -3338,3 +3338,35 @@ Pruebas nuevas: `variants` (el campo `pile`: los tres archivos, fuera del mod, s
 
 **D-8937. La simulación no cambia.**
 Ni reglas ni red ni generador. Cambia el hash del contenido (los recursos tienen un campo más), así que las partidas guardadas con la versión anterior no cargan, como siempre que cambian las definiciones.
+
+## Fase 90: cultivos por etapas (2026-10-04)
+
+**D-9001. Las parcelas del juego son de 2 × 2 m, no de 4 × 4.**
+El plan hablaba de parcelas de 4 × 4 m estiradas hasta un 25 % para llenar el campo. El motor solo escala una instancia igual en todos sus ejes, y un campo ya se dibujaba celda de 2 × 2 por celda de 2 × 2, cada una a la altura de su suelo. Con parcelas de 2 × 2 no hay que estirar nada, el cultivo sigue la pendiente y cada parcela ocupa justo el lugar de la mata genérica de antes. El tope pasa de 700 triángulos por 16 m² a 200 por 4 m²: un campo de 20 × 20 son cien parcelas, 19 200 triángulos como mucho. Se descartó agregar al motor la escala por eje: más código en el dibujado para un resultado peor en laderas.
+
+**D-9002. Se mecen en el sombreador de vértices.**
+El plan decía «todas las de un mismo modelo comparten una pose». El motor anima personajes uno por uno, con su esqueleto; hacer que cien parcelas compartan un esqueleto era una vía de dibujado nueva. En su lugar, un modelo puede marcarse como «se mece» (`set_model_sway`) y el sombreador desplaza cada vértice según su altura, con la fase de cada instancia sacada de su posición: cuesta lo mismo que no mecerse y no hay dos parcelas al compás. Lo usarán también las hierbas y flores de la fase 91. La sombra no se mece. Qué cultivos se mecen lo dice `"sways"` en su definición: trigo, cebada y lino.
+
+**D-9003. Cereales como gavillas.**
+A 200 triángulos no cabe modelar los tallos. La primera versión, el surco como una barra con espigas encima, se veía como lingotes. Quedó cada surco como tres gavillas (un tronco de pirámide que se abre hacia arriba) en dos tonos, con su corona al madurar. Verduras, frijoles y raíces sí son piezas sueltas: son pocas por parcela.
+
+**D-9004. Cada cultivo declara sus tres etapas: `"models"` y `"sways"`.**
+Como las pilas en la fase 89: en la definición, no en una tabla del código, para que un mod pueda traer su cultivo con su aspecto. Tienen que ser tres archivos exactos. Sin ellos el campo usa las matas genéricas de antes, que siguen en el código para los mods.
+
+**D-9005. Qué etapa se ve.**
+Brotes desde que se siembra; verde desde la mitad del crecimiento; maduro cuando el campo está listo para cosechar (no al 100 % de crecimiento: son la misma cosa en la simulación). Después de la cosecha, rastrojo; en barbecho, pasto: como antes. La regla es una función pura con su prueba (`props::crop_stage`).
+
+**D-9006. De lejos, el color del suelo.**
+Las parcelas son «vegetación menuda»: no se dibujan más allá de la distancia de vegetación de la configuración. Para que el campo no se vea de tierra desnuda desde lejos, la losa de suelo toma el 45 % del color del cultivo. De cerca ese color asoma entre los surcos.
+
+**D-9007. Las parcelas se apoyan sobre la losa de tierra.**
+Visto en pantalla: a ras del terreno quedaban 10 cm hundidas en la losa del campo y los surcos no se veían. Van a la altura de la cara de arriba de la losa.
+
+**D-9008. Lo medido y lo que no.**
+Pruebas: `variants` (un cultivo con tres etapas, con dos, con cuatro, con un archivo que falta, sin ninguna, y los cinco de `core`), `people` (qué etapa toca) y `model` (las 15 parcelas pesan 200 triángulos o menos, cien no pasan de 20 000, son estáticas, caben en su 2 × 2, cada etapa es al menos tan alta como la anterior y nada brilla de noche). En pantalla, en una partida: dos campos con sus surcos y brotes, y las verduras en sus tres etapas a lo largo de un verano; trigo solo en brotes (el pueblo de prueba no llegó a la cosecha del año de trigo). **No se vieron en el juego** el trigo, la cebada ni el lino verdes o maduros, ni los frijoles, ni el mecerse: solo sus vistas previas de Blender. **No se midieron los FPS con 40 campos** que pedía el criterio: hacen falta 40 campos marcados a mano. La cuenta: 40 campos de 20 × 20 son 4 000 parcelas y hasta 768 000 triángulos más con todo maduro y a la vista; la distancia de vegetación recorta los lejanos. Queda en la lista de pruebas manuales, con F3.
+
+**D-9009. Visto de paso: triángulos blancos de noche.**
+En la partida de prueba volvieron a verse los triángulos blancos sobre un risco oscuro de noche (D-6909, abierto). Hay captura. No es de esta fase y no se tocó.
+
+**D-9010. La simulación no cambia.**
+Ni reglas ni red ni generador; cambia el hash del contenido.

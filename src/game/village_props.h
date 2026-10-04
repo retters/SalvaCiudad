@@ -32,6 +32,14 @@ inline constexpr float kFrameFrom = 0.35f;
     return amount * 3 >= full ? 2 : 1;
 }
 
+// Phase 90: the stage of its crop a field shows, from whether it is growing
+// or ripe and how far it has grown (0 to 1000): 0 nothing to show (bare
+// soil, stubble, grass), 1 sprouts since it was sown, 2 green from half its
+// growth, 3 ripe when it is ready to harvest.
+[[nodiscard]] constexpr int crop_stage(bool growing, bool ripe, std::int32_t growth) {
+    return ripe ? 3 : !growing ? 0 : growth >= 500 ? 2 : 1;
+}
+
 // Phase 89: a building shows a pile for each resource it holds, at most
 // this many: those it has the most of.
 inline constexpr std::size_t kMaxPiles = 6;

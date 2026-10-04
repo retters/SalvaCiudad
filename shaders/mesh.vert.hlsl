@@ -8,11 +8,13 @@ StructuredBuffer<float4> building_palettes : register(t1, space0);
 cbuffer MeshVertexUniforms : register(b0, space1)
 {
     float4x4 view_proj;
+    float4 wind;        // x: seconds.
 };
 
 cbuffer MeshDrawUniforms : register(b1, space1)
 {
     int4 draw;          // x: building palette slot of this primitive, or -1.
+                        // y: the model sways this many millimeters at 1 m of height.
     float4 base_color;  // The material's own color, which a palette replaces.
 };
 
@@ -38,6 +40,15 @@ VertexOutput main(VertexInput input)
     InstanceData inst = instances[input.instance];
     VertexOutput output;
     output.world_pos = instance_transform(inst, input.position);
+    // Phase 90: what sways bends with the wind, more the higher the vertex
+    // stands over the model's base, each instance by where it is.
+    if (draw.y > 0)
+    {
+        float reach = (float)draw.y * 0.001 * max(input.position.y, 0.0);
+        float phase = wind.x * 1.7 + output.world_pos.x * 0.45 + output.world_pos.z * 0.31;
+        output.world_pos.x += sin(phase) * reach;
+        output.world_pos.z += cos(phase * 0.8) * reach * 0.6;
+    }
     output.position = mul(view_proj, float4(output.world_pos, 1.0));
     output.normal = normalize(instance_rotate(inst, input.normal));
     output.uv = input.uv;

@@ -255,6 +255,12 @@ Las muñecas quedan en `(±0,16, −0,30, 1,12)` de un cuerpo de 1,8 m (`CARRY_H
 
 Junto a un edificio se ven hasta 6 pilas, las de lo que más tiene: las primeras sobre la pared de la puerta, a su derecha y sin taparla, y las demás a lo largo de la pared derecha (`props::pile_spot`). Las obras apilan a la izquierda.
 
+### Parcelas de cultivo (`proposals/farm`, fase 90)
+
+`props/crop_<cultivo>_<etapa>.glb`: una parcela de 2 × 2 m por cultivo y etapa (`1` brotes, `2` verde, `3` maduro), con tres surcos a lo largo del eje Y de Blender (Z del juego) y el origen en el centro, a ras de suelo. Tope: 200 triángulos, porque un campo de 20 × 20 dibuja cien. Por eso un cultivo denso no modela cada tallo: el trigo, la cebada y el lino son gavillas (un tronco de pirámide que se abre hacia arriba, con su corona de espigas o de flores al madurar).
+
+No llevan esqueleto. Los que el cultivo marca con `"sways"` los mece el juego en el sombreador de vértices (`SceneRenderer::set_model_sway`): cada vértice se desplaza en proporción a su altura sobre la base del modelo. Las parcelas de 4 × 4 m de la página de propuestas (`farm_crop_*`, con cada tallo y un esqueleto para mecerse) siguen ahí, pero no son las del juego.
+
 ## Modelos de propuesta que entran al juego (fase 89)
 
 Los modelos de `art/blender/proposals` (los de la página `docs/propuestas`) no están en el juego hasta que una fase los usa. `art/blender/proposals/game.json` lista los que sí:

@@ -62,7 +62,7 @@ struct DrawUniforms {
 
 // Matches MeshDrawUniforms in mesh.vert.hlsl.
 struct MeshDrawUniforms {
-    std::int32_t draw[4];   // Building palette slot of this primitive, or -1.
+    std::int32_t draw[4];   // x: building palette slot of this primitive, or -1. y: sway, millimeters at 1 m.
     float base_color[4];    // Its material color, which the palette replaces.
 };
 
@@ -111,8 +111,11 @@ void affine_rows(math::Vec3 p, float yaw, float scale, float row0[4], float row1
     row2[3] = p.z;
 }
 
+// Matches MeshVertexUniforms in mesh.vert.hlsl. The skinned and the shadow
+// shaders read only the matrix.
 struct MeshVertexUniforms {
     math::Mat4 view_proj;
+    float wind[4] = {0.0f, 0.0f, 0.0f, 0.0f};  // x: seconds, for what sways (phase 90).
 };
 
 struct SceneUniforms {
@@ -248,6 +251,7 @@ struct GpuModel {
     bool dirty = true;                   // Whole range must be rebuilt.
     std::vector<std::uint32_t> changed;  // Sorted positions updated one by one.
     ModelClass model_class = ModelClass::Normal;
+    std::int32_t sway_mm = 0;            // Phase 90: millimeters it bends at one meter of height.
     // Phase 52: the models its instances can be drawn as, and its far version.
     std::vector<ModelId> looks;
     ModelId far_model = kNoFarModel;
@@ -1538,6 +1542,12 @@ void SceneRenderer::set_model_class(ModelId model, ModelClass model_class) {
     }
 }
 
+void SceneRenderer::set_model_sway(ModelId model, float meters) {
+    if (model < impl_->models.size()) {
+        impl_->models[model].sway_mm = static_cast<std::int32_t>(std::clamp(meters, 0.0f, 1.0f) * 1000.0f);
+    }
+}
+
 bool SceneRenderer::set_terrain(const TerrainData& data) {
     Impl& d = *impl_;
     return d.device != nullptr && d.terrain.set(d.device, data);
@@ -2242,6 +2252,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
                     const GpuMaterial& mat = m.materials[mat_index];
                     MeshDrawUniforms du{};
                     du.draw[0] = m.slots[mat_index];
+                    du.draw[1] = m.sway_mm;
                     std::copy(std::begin(mat.base_color), std::end(mat.base_color), du.base_color);
                     SDL_PushGPUVertexUniformData(frame.cmd, 1, &du, sizeof(du));
                     MaterialUniforms mu{};
@@ -2317,7 +2328,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             return false;
         }
         SDL_BindGPUGraphicsPipeline(pass, d.shadow_pipeline);
-        const MeshVertexUniforms su{cascade_vp[c]};
+        const MeshVertexUniforms su{cascade_vp[c], {}};
         SDL_PushGPUVertexUniformData(frame.cmd, 0, &su, sizeof(su));
         const std::uint64_t triangles_before = stats_.triangles;
         draw_models(pass, shadow_ranges[c], false);
@@ -2410,7 +2421,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
                                  d.shadow_map, d.shadow_sampler, war_bind.data());
         }
         SDL_BindGPUGraphicsPipeline(target, d.mesh_pipeline);
-        const MeshVertexUniforms mv{v.view_proj};
+        const MeshVertexUniforms mv{v.view_proj, {view.time, 0.0f, 0.0f, 0.0f}};
         SDL_PushGPUVertexUniformData(frame.cmd, 0, &mv, sizeof(mv));
         draw_models(target, *v.ranges, true);
         if (!d.characters.empty()) {

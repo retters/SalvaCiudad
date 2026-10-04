@@ -348,6 +348,14 @@ TEST_SUITE("people") {
         // A small workshop of 5 x 5 has room for four.
         CHECK(props::pile_spot(3, 2.5f, 2.5f).has_value());
         CHECK_FALSE(props::pile_spot(4, 2.5f, 2.5f).has_value());
+        // Phase 90: the stage of its crop a field shows.
+        CHECK(props::crop_stage(false, false, 0) == 0);     // Waiting to be sown, or harvested.
+        CHECK(props::crop_stage(true, false, 0) == 1);      // Sown: sprouts.
+        CHECK(props::crop_stage(true, false, 499) == 1);
+        CHECK(props::crop_stage(true, false, 500) == 2);    // Half grown: green.
+        CHECK(props::crop_stage(true, false, 1000) == 2);
+        CHECK(props::crop_stage(false, true, 1000) == 3);   // Ready to harvest.
+        CHECK(props::crop_stage(false, false, 1000) == 0);  // Brought in: stubble.
         // An arrow: from one end to the other, highest in the middle,
         // pointing where it goes.
         const math::Vec3 from{10.0f, 2.0f, 10.0f};

@@ -243,6 +243,97 @@ def crop(name, kind, stage):
     return build
 
 
+# --- The crops of the game (phase 90) --------------------------------------------------------------
+#
+# The proposals above are plots of 4 x 4 m with every stalk modeled (up to
+# 5 500 triangles). A field of the game is drawn cell by cell, each cell of
+# 2 x 2 m on its own piece of ground, and may have a hundred of them: so the
+# game's plots are 2 x 2 m, with three furrows and 200 triangles at most,
+# and a dense crop is a block with a few stalks standing out of it. They do
+# not carry a skeleton: the game sways them in its vertex shader.
+
+PLOT_ROWS = (-0.66, 0.0, 0.66)
+
+
+def plot(name, kind, stage):
+    def build():
+        mb = kit.begin()
+        rnd = random.Random({"wheat": 1, "barley": 2, "flax": 3, "vegetables": 4, "beans": 5, "roots": 6}[kind] * 100 + stage)
+
+        def ridges():
+            for x in PLOT_ROWS:
+                mb.box((x, 0, 0.04), (0.4, 1.9, 0.08), "soil_dark")
+
+        def tuft(x, y, h, mat, blades=2, lean=0.25, width=0.09):
+            for _ in range(blades):
+                a = rnd.uniform(0, TAU)
+                tx, ty = x + math.cos(a) * h * lean, y + math.sin(a) * h * lean
+                px, py = -math.sin(a) * width / 2, math.cos(a) * width / 2
+                solid(mb, [(x - px, y - py, 0.06), (x + px, y + py, 0.06), (tx, ty, 0.06 + h)], (math.cos(a) * 0.02, math.sin(a) * 0.02, 0), mat)
+
+        if kind in ("wheat", "barley", "flax"):
+            tall = {"wheat": 0.95, "barley": 0.85, "flax": 0.7}[kind]
+            if stage == 0:
+                ridges()
+                for x in PLOT_ROWS:
+                    for k in range(5):
+                        tuft(x + rnd.uniform(-0.08, 0.08), -0.8 + 0.4 * k + rnd.uniform(-0.08, 0.08), 0.16, "sprout", blades=1, width=0.07)
+            else:
+                # Each furrow as clumps of stalks: wider at the top, like a
+                # sheaf, with a crown of ears (or of flowers) when ripe.
+                ripe = stage == 2 and kind != "flax"
+                tones = (kind, kind + "_dark") if ripe else ("green", "green_dark")
+                crown = kind if ripe else "flax_blue" if stage == 2 else None
+                h = tall * (0.55, 1.0)[stage - 1]
+                if stage == 1:
+                    ridges()
+                for i, x in enumerate(PLOT_ROWS):
+                    spots = (-0.64, 0.0, 0.64) if stage == 1 or i != 1 else (-0.32, 0.32)
+                    for k, y in enumerate(spots):
+                        px, py = x + rnd.uniform(-0.05, 0.05), y + rnd.uniform(-0.06, 0.06)
+                        hh = h * rnd.uniform(0.9, 1.1)
+                        body = hh * (0.8 if crown else 1.0)
+                        mb.cylinder((px, py, 0.04), (px, py, body), 0.2, 0.33, tones[(i + k) % 2], segments=4)
+                        if crown:
+                            lean = 0.1 if kind == "barley" else 0.03
+                            a = rnd.uniform(0, TAU)
+                            mb.cylinder((px, py, body), (px + math.cos(a) * lean, py + math.sin(a) * lean, hh), 0.3, 0.1, crown, segments=4)
+        elif kind == "vegetables":
+            ridges()
+            r = (0.07, 0.15, 0.24)[stage]
+            for x in (PLOT_ROWS[0], PLOT_ROWS[2]):   # Cabbages on the outer furrows.
+                for y in ((-0.6, 0.0, 0.6) if x < 0 else (-0.3, 0.45)):
+                    mb.sphere((x, y, 0.08 + r * 0.7), r, ("sprout", "cabbage", "cabbage_light")[stage], segments=5, rings=3, scale=(1, 1, 0.8))
+            for k in range(3):                       # Carrots in the middle: only the tops show.
+                tuft(0.0, -0.6 + 0.6 * k, (0.1, 0.22, 0.36)[stage], "sprout" if stage < 2 else "green")
+        elif kind == "beans":
+            mb.box((0, 0, 0.04), (0.5, 1.9, 0.08), "soil_dark")
+            for j in range(3):   # A teepee of three poles.
+                a = TAU * j / 3 + 0.5
+                mb.cylinder((math.cos(a) * 0.45, math.sin(a) * 0.45, 0.06), (0, 0, 1.9), 0.025, 0.018, "pole", segments=4)
+                if stage == 0:
+                    tuft(math.cos(a) * 0.45, math.sin(a) * 0.45, 0.16, "sprout", blades=1, width=0.08)
+            if stage:
+                top = (0.9, 1.7)[stage - 1]
+                levels = (2, 4)[stage - 1]
+                for n in range(levels):
+                    z = 0.3 + (top - 0.3) * n / max(1, levels - 1)
+                    rr = 0.38 * (1.9 - z) / 1.6 + 0.1
+                    mb.sphere((0, 0, z), rr, "green" if n % 2 else "green_dark", segments=5, rings=3, scale=(1, 1, 0.6))
+                    if stage == 2 and n < 3:
+                        a = rnd.uniform(0, TAU)
+                        mb.box((math.cos(a) * rr, math.sin(a) * rr, z - 0.08), (0.04, 0.04, 0.2), "pod")
+        else:   # Roots: beets and turnips.
+            ridges()
+            for i, x in enumerate(PLOT_ROWS):
+                for y in ((-0.6, 0.0, 0.6) if stage < 2 else (-0.45, 0.45)):
+                    tuft(x, y, (0.12, 0.26, 0.38)[stage], ("sprout", "green", "green_dark")[stage])
+                    if stage == 2:
+                        mb.sphere((x, y, 0.1), 0.12, "beet" if i % 2 else "turnip", segments=4, rings=2)
+        kit.save(mb, FAMILY, name, COLORS)
+    return build
+
+
 def vineyard(name, bare):
     def build():
         mb = kit.begin()
@@ -592,5 +683,6 @@ for _kind in ("wheat", "barley", "flax", "vegetables", "beans", "roots"):
     for _stage in range(3):
         _name = "farm_crop_%s_%d" % (_kind, _stage + 1)
         MODELS[_name] = crop(_name, _kind, _stage)
+        MODELS["crop_%s_%d" % (_kind, _stage + 1)] = plot("crop_%s_%d" % (_kind, _stage + 1), _kind, _stage)
 
 kit.run(MODELS, FAMILY)

@@ -795,6 +795,12 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.grow_days = r.integer("growDays", 1, 1000, 40);
         def.fertility = r.integer("fertility", -100, 100, -10);
         def.hardy = r.flag("hardy");
+        def.models = r.models(mod_dir, false, refs, def.name_key);
+        def.mod = d->model_mod;
+        if (!def.models.empty() && def.models.size() != sim::kCropStages) {
+            r.fail("\"models\" must list the crop's three stages: sprouts, green and ripe");
+        }
+        def.sways = r.flag("sways");
         if (r.ok() && out.crops.size() < 250) {
             out.crops.push_back(std::move(def));
         }

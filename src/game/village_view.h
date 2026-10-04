@@ -184,9 +184,19 @@ private:
 
     std::optional<Ghost> ghost_;
     std::optional<FieldGhost> field_ghost_;
+    // No place in a list of models (a pile's, a crop's).
+    static constexpr std::size_t kNoPile = ~std::size_t{0};
+    // Meters a crop that sways bends at one meter of height.
+    static constexpr float kCropSway = 0.07f;
     // Fields: a soil slab and a plant per 2 m, made in code.
     render::ModelId tile_model_ = kNoModel;
     render::ModelId plant_model_ = kNoModel;
+    // Phase 90: each crop's own plots, one per stage, as places in
+    // `crop_ids_` (kNoPile: the plain plant above); `crop_ids_` holds every
+    // such model once and `crop_lists_` its instances while fields are rebuilt.
+    std::vector<std::array<std::size_t, sim::kCropStages>> crop_models_;
+    std::vector<render::ModelId> crop_ids_;
+    std::vector<std::vector<render::Instance>> crop_lists_;
     // Animals: one low-poly body for all kinds (phase 18 brings real ones),
     // and a red mark under raiders.
     render::ModelId animal_model_ = kNoModel;  // The fallback body for animals without a model.
@@ -287,7 +297,6 @@ private:
     // in `pile_ids_` (kNoPile: nothing to draw): its own models, or those
     // of its kind of load. `pile_ids_` holds every pile model once, and
     // `pile_lists_` the instances of each while the piles are rebuilt.
-    static constexpr std::size_t kNoPile = ~std::size_t{0};
     std::vector<std::array<std::size_t, 3>> resource_piles_;
     std::vector<render::ModelId> pile_ids_;
     std::vector<std::vector<render::Instance>> pile_lists_;

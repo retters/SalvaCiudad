@@ -379,6 +379,45 @@ TEST_SUITE("model") {
         }
     }
 
+    TEST_CASE("the plots of the crops are light enough for a field of a hundred of them") {
+        // Phase 90. A field is at most 20 x 20 cells: a hundred plots of 2 x 2 m.
+        // The limit of a plot is that of art/blender/proposals/game.json.
+        constexpr std::size_t kPlotTriangles = 200;
+        const sim::Content& content = test::core_content();
+        int with_plots = 0;
+        for (const sim::CropDef& crop : content.crops) {
+            if (crop.models.empty()) {
+                continue;
+            }
+            ++with_plots;
+            REQUIRE_MESSAGE(crop.models.size() == sim::kCropStages, crop.id);
+            float last_height = 0.0f;
+            for (const std::string& file : crop.models) {
+                REQUIRE_MESSAGE(file.starts_with("models/"), file);
+                const ModelLoadResult r = load_data(file.substr(7));
+                REQUIRE_MESSAGE(r.ok, file << ": " << r.error);
+                const std::size_t triangles = r.model.indices.size() / 3;
+                CHECK_MESSAGE(triangles <= kPlotTriangles, file << ": " << triangles);
+                CHECK_MESSAGE(triangles * 100 <= 20000, file);
+                // Still (the game sways it in its shader), on the ground, inside its 2 x 2 m.
+                CHECK_MESSAGE(!r.model.skinned(), file);
+                CHECK_MESSAGE(r.model.clips.empty(), file);
+                CHECK_MESSAGE(r.model.bounds_min.y > -0.05f, file);
+                CHECK_MESSAGE(r.model.bounds_min.x >= -1.05f, file);
+                CHECK_MESSAGE(r.model.bounds_max.x <= 1.05f, file);
+                CHECK_MESSAGE(r.model.bounds_min.z >= -1.05f, file);
+                CHECK_MESSAGE(r.model.bounds_max.z <= 1.05f, file);
+                // Each stage stands at least as tall as the one before.
+                CHECK_MESSAGE(r.model.bounds_max.y >= last_height, file);
+                last_height = r.model.bounds_max.y;
+                for (const ModelMaterial& mat : r.model.materials) {
+                    CHECK_MESSAGE(material_glow(mat.name) == 0.0f, file << " " << mat.name);
+                }
+            }
+        }
+        CHECK(with_plots >= 5);
+    }
+
     TEST_CASE("the study models that have been generated load, skeletons and clips included") {
         // art/studies is not versioned: the Blender scripts write it (phases 46
         // and 48). Whatever is there must load; a checkout without it skips this.

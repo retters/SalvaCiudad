@@ -25,9 +25,10 @@ float to_float(sim::Fixed f) {
 // Villagers walk 0.2 m per tick (sim/game.cpp), ten ticks a second at x1.
 
 // A slab of soil, 2 x 2 m, white so the instance tint colors it.
+constexpr float kSoilTop = 0.25f;  // Its top over its origin.
 render::ModelData make_tile_model() {
     render::ModelData m;
-    const float h = 0.25f;
+    const float h = kSoilTop;
     const float s = 1.0f;
     // Top and four sides (counter-clockwise seen from outside).
     const auto quad = [&](math::Vec3 a, math::Vec3 b, math::Vec3 c, math::Vec3 d, math::Vec3 n) {
@@ -272,6 +273,33 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
             piles_[kind][level] = prop(builtin_models::kPiles[kind][level]);
         }
     }
+    // Phase 90: each crop's plots, by stage. They are small vegetation (not
+    // drawn from afar, where the color of the field's ground tells the crop).
+    crop_models_.assign(content.crops.size(), {kNoPile, kNoPile, kNoPile});
+    crop_ids_.clear();
+    for (std::size_t i = 0; i < content.crops.size(); ++i) {
+        const sim::CropDef& crop = content.crops[i];
+        for (std::size_t stage = 0; stage < sim::kCropStages && crop.models.size() == sim::kCropStages; ++stage) {
+            const std::filesystem::path file = mods::mod_file(pack.dir(crop.mod), crop.models[stage]);
+            std::error_code ec;
+            const Model m = !file.empty() && std::filesystem::is_regular_file(file, ec) ? load_building_file(renderer, file)
+                                                                                         : Model{};
+            if (m.id == kNoModel) {
+                continue;
+            }
+            if (!is_prop(m.id)) {
+                prop_models_.push_back(m.id);
+            }
+            renderer.set_model_class(m.id, render::ModelClass::SmallVegetation);
+            renderer.set_model_sway(m.id, crop.sways ? kCropSway : 0.0f);
+            const auto known = std::find(crop_ids_.begin(), crop_ids_.end(), m.id);
+            crop_models_[i][stage] = static_cast<std::size_t>(known - crop_ids_.begin());
+            if (known == crop_ids_.end()) {
+                crop_ids_.push_back(m.id);
+            }
+        }
+    }
+    crop_lists_.assign(crop_ids_.size(), {});
     // Phase 89: each resource's own pile, from its mod; without one (or with
     // a file that does not load), the pile of its kind of load.
     resource_piles_.assign(content.resources.size(), {kNoPile, kNoPile, kNoPile});
@@ -391,8 +419,13 @@ void VillageView::rebuild_fields(render::SceneRenderer& renderer, const sim::Gam
     }
     std::vector<render::Instance> tiles;
     std::vector<render::Instance> plants;
+    for (std::vector<render::Instance>& list : crop_lists_) {
+        list.clear();
+    }
+    // `crop`: the place in `crop_lists_` of the crop's plot at its stage, or
+    // kNoPile for the plain plant scaled by `plant_scale`.
     const auto patch = [&](std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d, math::Vec3 soil,
-                           float plant_scale, math::Vec3 plant) {
+                           float plant_scale, math::Vec3 plant, std::size_t crop = kNoPile) {
         for (std::int32_t cz = z; cz + 1 < z + d + 1; cz += 2) {
             for (std::int32_t cx = x; cx + 1 < x + w + 1; cx += 2) {
                 const float px = static_cast<float>(cx) + 1.0f;
@@ -402,7 +435,14 @@ void VillageView::rebuild_fields(render::SceneRenderer& renderer, const sim::Gam
                 t.position = {px, y, pz};
                 t.tint = soil;
                 tiles.push_back(t);
-                if (plant_scale > 0.0f && plant_model_ != kNoModel) {
+                if (crop != kNoPile) {
+                    // The furrows of every plot run the same way; every other
+                    // plot is turned around so the field is not a stamp.
+                    render::Instance p;
+                    p.position = {px, y + kSoilTop, pz};  // On the slab of soil.
+                    p.yaw = ((cx / 2 + cz / 2) & 1) != 0 ? std::numbers::pi_v<float> : 0.0f;
+                    crop_lists_[crop].push_back(p);
+                } else if (plant_scale > 0.0f && plant_model_ != kNoModel) {
                     render::Instance p = t;
                     p.position.y = y + 0.05f;
                     p.scale = plant_scale;
@@ -456,7 +496,17 @@ void VillageView::rebuild_fields(render::SceneRenderer& renderer, const sim::Gam
                     break;
                 case sim::FieldState::Count: break;
             }
-            patch(f.x, f.z, f.w, f.d, soil, scale, plant);
+            // Phase 90: the crop's own plot at its stage, if it has one. The
+            // ground takes some of the crop's color, which is all that is
+            // seen of the field from afar.
+            const int stage = props::crop_stage(f.state == sim::FieldState::Growing, f.state == sim::FieldState::Ripe, f.growth);
+            const std::size_t own = stage > 0 && f.crop < crop_models_.size()
+                                        ? crop_models_[f.crop][static_cast<std::size_t>(stage - 1)]
+                                        : kNoPile;
+            if (own != kNoPile) {
+                soil = soil * 0.55f + plant * 0.45f;
+            }
+            patch(f.x, f.z, f.w, f.d, soil, scale, plant, own);
         }
     }
     if (field_ghost_) {
@@ -466,6 +516,9 @@ void VillageView::rebuild_fields(render::SceneRenderer& renderer, const sim::Gam
     renderer.set_instances(tile_model_, tiles);
     if (plant_model_ != kNoModel) {
         renderer.set_instances(plant_model_, plants);
+    }
+    for (std::size_t i = 0; i < crop_ids_.size(); ++i) {
+        renderer.set_instances(crop_ids_[i], crop_lists_[i]);
     }
 }
 

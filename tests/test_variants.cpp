@@ -157,6 +157,52 @@ TEST_SUITE("variants") {
         CHECK(core.resources[core.find_resource("core:log")].pile.empty());
     }
 
+    TEST_CASE("a crop lists the three stages of its plot") {
+        // Phase 90. build_with gives the mod a.glb, b.glb and c.glb.
+        constexpr const char* kRye = R"({"type": "crop", "id": "vt:rye", "name": "c.rye", "resource": "core:wheat", )";
+        {
+            test::TempDir dir;
+            mods::ModLibrary lib;
+            const mods::BuildResult pack = build_with(
+                dir, std::string(kRye) + R"("models": ["models/a.glb", "models/b.glb", "models/c.glb"], "sways": true})", lib);
+            CHECK_MESSAGE(errors_of(lib, "vt").empty(), errors_of(lib, "vt"));
+            const sim::DefIndex rye = pack.content.find_crop("vt:rye");
+            REQUIRE(rye != sim::kNoDef);
+            CHECK(pack.content.crops[rye].models == std::vector<std::string>{"models/a.glb", "models/b.glb", "models/c.glb"});
+            CHECK(pack.content.crops[rye].mod == "vt");
+            CHECK(pack.content.crops[rye].sways);
+        }
+        // Two stages, or four, are not a crop's three; a missing file neither.
+        for (const char* tail : {R"("models": ["models/a.glb", "models/b.glb"]})",
+                                 R"("models": ["models/a.glb", "models/b.glb", "models/c.glb", "models/d.glb"]})",
+                                 R"("models": ["models/a.glb", "models/b.glb", "models/missing.glb"]})"}) {
+            test::TempDir dir;
+            mods::ModLibrary lib;
+            const mods::BuildResult pack = build_with(dir, std::string(kRye) + tail, lib);
+            CHECK_MESSAGE(pack.content.find_crop("vt:rye") == sim::kNoDef, tail);
+            CHECK_MESSAGE(!errors_of(lib, "vt").empty(), tail);
+        }
+        // Without models it is drawn with the plain plants, and stands still.
+        {
+            test::TempDir dir;
+            mods::ModLibrary lib;
+            const mods::BuildResult pack = build_with(dir, std::string(kRye) + R"("yield": 9})", lib);
+            const sim::DefIndex rye = pack.content.find_crop("vt:rye");
+            REQUIRE(rye != sim::kNoDef);
+            CHECK(pack.content.crops[rye].models.empty());
+            CHECK_FALSE(pack.content.crops[rye].sways);
+        }
+        // The base game: its five crops have their plots; the cereals sway.
+        const sim::Content& core = test::core_content();
+        for (const char* id : {"core:wheat", "core:vegetables", "core:beans", "core:barley", "core:flax"}) {
+            const sim::DefIndex crop = core.find_crop(id);
+            REQUIRE_MESSAGE(crop != sim::kNoDef, id);
+            CHECK_MESSAGE(core.crops[crop].models.size() == sim::kCropStages, id);
+        }
+        CHECK(core.crops[core.find_crop("core:wheat")].sways);
+        CHECK_FALSE(core.crops[core.find_crop("core:beans")].sways);
+    }
+
     TEST_CASE("bad lists of models are rejected") {
         const char* bad[] = {
             R"("model": "models/a.glb", "models": ["models/b.glb"]})",  // Both.

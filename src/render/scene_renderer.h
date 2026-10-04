@@ -190,6 +190,11 @@ public:
     // Uploads a model; returns false on GPU errors.
     bool add_model(const ModelData& data, ModelId& id);
     void set_model_class(ModelId model, ModelClass model_class);
+    // Phase 90: the model bends with the wind, `meters` at one meter over
+    // its base and in proportion above and below (0: it stands still). Done
+    // in the vertex shader: every instance sways, each by where it stands.
+    // Its shadow does not move.
+    void set_model_sway(ModelId model, float meters);
     // Phase 52. The looks of a model: other models its instances can be
     // drawn as, chosen by Instance::look (1 is looks[0]; an instance whose
     // look is not there is drawn as the model itself). At most kMaxLooks - 1.

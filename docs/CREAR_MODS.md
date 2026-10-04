@@ -109,6 +109,17 @@ Las unidades del ejército y los pueblos también tienen `sight`: los metros que
 
 `inputs` y `outputs` (`{"recurso": cantidad}`) y `work` (ticks de trabajador por tanda).
 
+### crop
+
+Además de sus números (`resource`, `yield`, `growDays`, `fertility`, `hardy`), un cultivo puede decir cómo se ve en el campo (fase 90):
+
+| Campo | Valores |
+|---|---|
+| `models` | Sus tres etapas, en orden: brotes, verde y maduro. Tres archivos del mod, cada uno una parcela de 2 × 2 m apoyada en el suelo, con los surcos a lo largo del eje Z. El juego pone una cada dos celdas del campo. Tienen que ser exactamente tres. Sin `models`, el campo usa las matas genéricas. |
+| `sways` | `true` si se mece con el viento (cereales). El juego lo hace en el sombreador: el modelo no lleva esqueleto ni animación. |
+
+Solo cambian lo que se ve.
+
 ### mapFeature
 
 Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie). El yacimiento (`stoneDeposit`) es distinto: `amount` es lo que tiene el tamaño chico (el mediano tiene 5/2 y el grande 25/4), `models` son sus tres tamaños en orden (chico, mediano, grande) y no variantes, y `landmark` vale solo para el grande.

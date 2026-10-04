@@ -1,6 +1,6 @@
 {
   "comment": "The proposal models that are in the game (phase 89). build_all.py builds each with its family's script, checks it against the triangle limit of its class and copies it to data/mods/core/models/<to>/<id>.glb. 'each' multiplies the ids by its suffixes (a pile's three levels). A model enters this list in the phase that uses it.",
-  "limits": {"pile": 1200, "line": 800, "ground": 400, "crop": 700, "animal": 2000, "building": 6000},
+  "limits": {"pile": 1200, "line": 800, "ground": 400, "crop": 200, "animal": 2000, "building": 6000},
   "models": [
     {
       "family": "piles", "class": "pile", "to": "props", "each": ["_1", "_2", "_3"],
@@ -8,6 +8,10 @@
               "pile_wheat", "pile_barley", "pile_flax", "pile_bread", "pile_vegetables", "pile_fruit", "pile_berries", "pile_roots",
               "pile_meat", "pile_smoked", "pile_fish", "pile_herbs", "pile_beer", "pile_beans", "pile_flour", "pile_fertilizer",
               "pile_hides", "pile_leather", "pile_linen", "pile_clothes", "pile_shoes", "pile_bows", "pile_weapons"]
+    },
+    {
+      "family": "farm", "class": "crop", "to": "props", "each": ["_1", "_2", "_3"],
+      "ids": ["crop_wheat", "crop_barley", "crop_flax", "crop_vegetables", "crop_beans"]
     }
   ]
 }
