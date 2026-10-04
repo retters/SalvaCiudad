@@ -193,7 +193,9 @@ public:
                 if (s.amount <= 0 || !gives_out(c_, b, s.resource)) {
                     continue;
                 }
-                if (resource == kNoDef ? c_.resources[s.resource].category == ResourceCategory::Food
+                // "Any food" is food somebody can eat: eat() takes nothing else.
+                if (resource == kNoDef ? c_.resources[s.resource].category == ResourceCategory::Food &&
+                                             c_.resources[s.resource].nutrition > 0
                                        : s.resource == resource) {
                     has = true;
                 }
@@ -577,43 +579,30 @@ public:
         }
     }
 
-    // Not enough food left to finish the walk it is on and then get to
-    // where the food is: it goes to eat first, if that leaves it better off
-    // (it turns back at the start of a long haul, not at the end). A walk
-    // that even a villager who just ate cannot come back from is given up:
-    // nobody starves for a site too far from any food.
+    // With only the food it takes to walk to where the food is (and a
+    // little to spare), whatever it is doing waits and it goes to eat. An
+    // idle villager decides that by itself; this is for the one on a long
+    // walk or at work far away, who used to starve on the way. It may turn
+    // back from a haul it started without having eaten: the next time it
+    // leaves fed. Nothing is looked up while the meter is nearly full.
     void eat_now(Villager& v) {
-        if (v.task == Task::GoEat || v.task == Task::GoFight || v.task == Task::Fight || v.task == Task::GoFire ||
-            v.task == Task::FightFire || v.task == Task::Flee || v.task == Task::Idle || v.task == Task::Wander) {
-            return;  // (Idle and strolling villagers decide to eat by themselves.)
+        if (v.food >= village::kFoodMax - 150 || v.task == Task::GoEat || v.task == Task::GoFight || v.task == Task::Fight ||
+            v.task == Task::GoFire || v.task == Task::FightFire || v.task == Task::Flee || v.task == Task::Idle ||
+            v.task == Task::Wander) {
+            return;
         }
         const EntityId food = storage_with(v.owner, v.position, kNoDef);
         const Building* b = g_.buildings_.get(food);
         if (b == nullptr) {
             return;
         }
-        // What is left of the walk: five ticks a meter, a point every four.
-        Fixed rest;
-        FixedVec2 at = v.position;
-        for (std::size_t i = v.path_index; i < v.path.size(); ++i) {
-            rest += (v.path[i] - at).length();
-            at = v.path[i];
-        }
-        const FixedVec2 table = g_.door(*b);
-        const std::int32_t need =
-            village::kHungryFood + rest.floor_int() * 5 / 4 + NavGrid::distance_estimate(at, table) * 5 / 4;
-        if (v.food >= need) {
+        if (v.food >= village::kHungryFood + food_for_walk(NavGrid::distance_estimate(v.position, g_.door(*b)))) {
             return;
         }
-        // A meal leaves the meter at 900 or more; coming back here costs the walk.
-        const bool helps = v.food + 100 < village::kFoodMax - 100 - NavGrid::distance_estimate(v.position, table) * 5 / 4;
-        if (!moving(v) || helps) {
-            release(v);
-            stop(v);
-            go(v, Task::GoEat, food);
-        } else {
-            fail(v);  // Too far to go and come back.
-        }
+        release(v);
+        stop(v);
+        ++g_.interrupted_;
+        go(v, Task::GoEat, food);
     }
 
     // Phase 71. Where a tired villager rests: its home; with none, the
@@ -4107,13 +4096,20 @@ public:
         const Building* home = g_.buildings_.get(v.home);
         bool warm_home = home != nullptr && home->heated;
         if (g_.temperature_ < 5 && !warm_home) {
-            // A campfire burning nearby is as good as a warm home.
-            for (const EntityId id : g_.owned(v.owner)) {
-                const Building& fire = *g_.buildings_.get(id);
-                const std::int32_t reach = def(fire).warmth;
-                if (reach > 0 && fire.heated && complete(fire) &&
-                    distance2(v.position, {Fixed::from_int(fire.x) + Fixed::from_ratio(fire.width, 2),
-                                           Fixed::from_int(fire.z) + Fixed::from_ratio(fire.depth, 2)}) <= meters2(reach)) {
+            // A campfire burning nearby is as good as a warm home. The
+            // burning ones are listed once a tick, not once a villager.
+            if (!campfires_listed_) {
+                campfires_listed_ = true;
+                for (const Building& fire : g_.buildings_.data()) {
+                    if (def(fire).warmth > 0 && fire.heated && complete(fire)) {
+                        campfires_.push_back({fire.owner, def(fire).warmth,
+                                              {Fixed::from_int(fire.x) + Fixed::from_ratio(fire.width, 2),
+                                               Fixed::from_int(fire.z) + Fixed::from_ratio(fire.depth, 2)}});
+                    }
+                }
+            }
+            for (const Campfire& fire : campfires_) {
+                if (fire.owner == v.owner && distance2(v.position, fire.at) <= meters2(fire.reach)) {
                     warm_home = true;
                     break;
                 }
@@ -4758,6 +4754,14 @@ public:
     }
 
     std::uint32_t v_index_ = 0;   // Entity index of the villager being updated.
+    // The campfires burning this tick (made on first use).
+    struct Campfire {
+        std::uint8_t owner = 0;
+        std::int32_t reach = 0;
+        FixedVec2 at;
+    };
+    std::vector<Campfire> campfires_;
+    bool campfires_listed_ = false;
     bool movers_counted_ = false;
     std::uint32_t no_gold_work_ = 0;  // Bit per town.
     std::array<std::int32_t, kMaxPlayers> movers_{};

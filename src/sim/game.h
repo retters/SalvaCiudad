@@ -426,6 +426,8 @@ public:
     [[nodiscard]] std::uint64_t tick() const { return tick_; }
     [[nodiscard]] std::uint64_t hash() const;
     [[nodiscard]] std::uint32_t rejected_commands() const { return rejected_; }
+    // Tasks left to go and eat (phase 66), for the tests: it must stay rare.
+    [[nodiscard]] std::uint32_t interrupted_tasks() const { return interrupted_; }
 
     [[nodiscard]] const Content& content() const { return *content_; }
     [[nodiscard]] const std::shared_ptr<const Content>& content_ptr() const { return content_; }
@@ -666,6 +668,7 @@ private:
     std::array<PlayerState, kMaxPlayers> players_{};
     std::uint8_t player_count_ = 0;
     std::uint32_t rejected_ = 0;
+    std::uint32_t interrupted_ = 0;  // Not saved: a count for the tests.
     bool dev_commands_ = true;
     bool shared_town_ = false;
     GameRules rules_;
