@@ -28,6 +28,16 @@ namespace sc {
 // Phase 81: the text key of what a workplace lacks to take from the land,
 // or null when it has it (or does not work).
 [[nodiscard]] const char* supply_key(const sim::BuildingDef& def, const sim::Building& b);
+// Phase 85: the switches of a workplace's window, one per sim::option bit
+// (`number` is what the SetOption command calls it).
+struct WorkplaceOption {
+    std::uint8_t bit;
+    std::uint8_t number;
+    const char* on;
+    const char* off;
+    const char* tooltip;
+};
+[[nodiscard]] std::span<const WorkplaceOption> workplace_option_list();
 // "Year 2, month 3, day 4" parts from a tick.
 struct GameDate {
     std::int32_t year = 1;

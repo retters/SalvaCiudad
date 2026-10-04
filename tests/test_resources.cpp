@@ -140,6 +140,44 @@ std::uint32_t orchard_land(Land& l) {
     return static_cast<std::uint32_t>(first);
 }
 
+// A land without trees near the start, and three medium apple trees in a
+// row there. Returns the index of the first.
+std::uint32_t apple_land(Land& l) {
+    l = land(21, {FeatureType::BerryBush, FeatureType::Herbs, FeatureType::Tree}, FeatureType::Tree, 3, Fixed::one());
+    const int apple = content()->flora.find_species("core:apple");
+    REQUIRE(apple >= 0);
+    const std::size_t first = l.map.features.size() - 3;
+    for (std::size_t i = first; i < l.map.features.size(); ++i) {
+        l.map.features[i].species = static_cast<std::uint8_t>(apple);
+        l.map.features[i].size = static_cast<std::uint8_t>(TreeSize::Medium);
+    }
+    return static_cast<std::uint32_t>(first);
+}
+
+Command set_option(EntityId workplace, std::uint8_t number, bool on) {
+    Command c;
+    c.type = CommandType::SetOption;
+    c.entity = workplace;
+    c.count = number;
+    c.value = on ? 1 : 0;
+    return c;
+}
+
+// Everything of `resource` the town has: stored, at its workplaces and in hand.
+std::int32_t held(const Game& g, const char* resource) {
+    const DefIndex r = content()->find_resource(resource);
+    std::int32_t total = 0;
+    for (const Building& b : g.buildings().data()) {
+        for (const Stock& s : b.stock) {
+            total += s.resource == r ? s.amount : 0;
+        }
+    }
+    for (const Villager& v : g.villagers().data()) {
+        total += v.carrying.resource == r ? v.carrying.amount : 0;
+    }
+    return total;
+}
+
 // Steps until the calendar says `season` (at most two years).
 void run_to(Game& g, Season season) {
     for (std::uint32_t t = 0; t < 24 * g.calendar_month_ticks() && g.calendar().season != season; t += 20) {
@@ -451,6 +489,124 @@ TEST_SUITE("resources") {
         CHECK(g.calendar().year > year);
         CHECK(g.nodes()[apple].fruit_year == g.calendar().year);
         CHECK(g.nodes()[apple].amount == logs);
+    }
+
+    TEST_CASE("a woodcutter spares the fruit trees until told otherwise; felled, they give wood and their fruit") {
+        Land l;
+        const std::uint32_t apple = apple_land(l);
+        Game g(content(), l.map, setup());  // Summer all year: the trees have fruit.
+        const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 14);
+        (void)g.take_events();
+        REQUIRE(g.buildings().get(cutter)->options == 0);
+        const std::int32_t logs = g.nodes()[apple].amount;
+        int told = 0;
+        int about_fruit = 0;
+        for (int t = 0; t < 40; ++t) {
+            run(g, 50);
+            for (const Game::Event& e : g.take_events()) {
+                told += e.kind == Game::Event::Kind::Exhausted && e.entity == cutter ? 1 : 0;
+                about_fruit += e.kind == Game::Event::Kind::Exhausted && e.entity == cutter && e.value == 1 ? 1 : 0;
+            }
+        }
+        // Surrounded by apple trees only: none is felled, and it says why, once.
+        for (std::uint32_t i = apple; i < apple + 3; ++i) {
+            CHECK(g.nodes()[i].amount == logs);
+        }
+        const Building* b = g.buildings().get(cutter);
+        CHECK(b->supply == Supply::OnlyFruit);
+        CHECK(told == 1);
+        CHECK(about_fruit == 1);
+        CHECK(std::string_view(sc::supply_key(content()->buildings[b->def], *b)) == "hud.supply.onlyFruit");
+
+        // The switch is an order: as bytes, like in a network game, to two games.
+        BinaryWriter saved;
+        g.save(saved);
+        Game other(content(), l.map, setup());
+        BinaryReader in(saved.bytes());
+        REQUIRE(other.load(in, content()));
+        const Command sent = set_option(cutter, 0, true);
+        BinaryWriter wire;
+        sent.write(wire);
+        BinaryReader wire_in(wire.bytes());
+        Command received;
+        REQUIRE(Command::read(wire_in, received));
+        CHECK(received == sent);
+        const std::int32_t fruit = held(g, "core:fruit");
+        const std::int32_t wood = held(g, "core:log");
+        g.apply(sent);
+        other.apply(received);
+        CHECK((g.buildings().get(cutter)->options & option::kFellFruit) != 0);
+        // Saved and loaded with the switch on.
+        BinaryWriter w;
+        g.save(w);
+        Game back(content(), l.map, setup());
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.hash() == g.hash());
+        CHECK((back.buildings().get(cutter)->options & option::kFellFruit) != 0);
+        for (int t = 0; t < 60; ++t) {
+            run(g, 50);
+            run(other, 50);
+            REQUIRE(g.hash() == other.hash());
+        }
+        // The three apple trees came down: their wood, and 6 pieces of fruit each.
+        for (std::uint32_t i = apple; i < apple + 3; ++i) {
+            CHECK(g.nodes()[i].amount == 0);
+        }
+        CHECK(held(g, "core:log") > wood);
+        // (The villagers eat fruit too: at least most of the 18 is still there.)
+        CHECK(held(g, "core:fruit") - fruit > 9);
+        CHECK(held(g, "core:fruit") - fruit <= 18);
+        // An option the workplace does not have, or of another's building, is refused.
+        const std::uint64_t refused = g.rejected_commands();
+        g.apply(set_option(cutter, 5, true));
+        g.apply(set_option(g.player(0).town_center, 0, true));
+        CHECK(g.rejected_commands() == refused + 2);
+    }
+
+    TEST_CASE("a fruit tree felled in winter gives only wood") {
+        Land l;
+        const std::uint32_t apple = apple_land(l);
+        GameSetup s = setup();
+        s.rules.climate.seasons = 0b1000;  // Winter all year.
+        Game g(content(), l.map, s);
+        REQUIRE(g.calendar().season == Season::Winter);
+        const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 14);
+        const std::int32_t fruit = held(g, "core:fruit");
+        g.apply(set_option(cutter, 0, true));
+        for (int t = 0; t < 60 && g.nodes()[apple].amount + g.nodes()[apple + 1].amount + g.nodes()[apple + 2].amount > 0; ++t) {
+            grant(g, "core:firewood", 5);
+            run(g, 50);
+        }
+        CHECK(g.nodes()[apple].amount == 0);
+        CHECK(held(g, "core:fruit") <= fruit);
+    }
+
+    TEST_CASE("clearing a site over a fruit tree leaves its wood and its fruit with the town") {
+        Land l;
+        const std::uint32_t apple = apple_land(l);
+        Game g(content(), l.map, setup());
+        const std::int32_t logs = g.nodes()[apple + 1].amount;
+        const std::int32_t fruit = held(g, "core:fruit");
+        const std::int32_t wood = held(g, "core:log");
+        // A house right on the middle tree.
+        const DefIndex house = content()->find_building("core:house");
+        const MapFeature& f = g.map().features[apple + 1];
+        Command c;
+        c.type = CommandType::PlaceBuilding;
+        c.def = house;
+        c.position = {Fixed::from_int(f.x.floor_int() - 1), Fixed::from_int(f.z.floor_int() - 1)};
+        const std::size_t before = g.buildings().size();
+        g.apply(c);
+        REQUIRE(g.buildings().size() == before + 1);
+        CHECK(g.nodes()[apple + 1].amount == 0);
+        // (The house is wider than the row is spaced: it may take a neighbor too.)
+        std::int32_t cleared = 0;
+        for (std::uint32_t i = apple; i < apple + 3; ++i) {
+            cleared += g.nodes()[i].amount == 0 ? 1 : 0;
+        }
+        CHECK(held(g, "core:log") == wood + cleared * logs);
+        CHECK(held(g, "core:fruit") == fruit + cleared * 6);
     }
 
     TEST_CASE("a forager whose bushes are picked clean waits for them, without a word") {

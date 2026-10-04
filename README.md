@@ -602,6 +602,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 85 (el leñador y los frutales)
+
+- [ ] La ventana de un leñador terminado tiene el botón «Talar frutales: no»; al hacer clic pasa a «Talar frutales: sí» y vuelve.
+- [ ] Con «no», el leñador deja en pie manzanos, cerezos, palmas y baobabs y tala lo demás.
+- [ ] Si a su alcance solo quedan frutales, avisa «Leñador: solo quedan frutales a su alcance, y no los tala», con el cuadro rojo sobre el edificio y la línea de estado.
+- [ ] Con «sí», un frutal talado en verano u otoño deja en el leñador su madera y además fruta; en invierno, solo madera.
+- [ ] Poner una casa o un campo sobre un frutal con fruta suma su madera y su fruta al centro del pueblo (o al carro).
+- [ ] En red, el cambio del botón se ve en las dos instancias.
+- [ ] **Sin revisar en pantalla por Claude:** el botón y el aviso; por pruebas sí.
+- [ ] **Tu opinión:** hoy solo los frutales dejan su madera al despejar una obra; los demás árboles despejados siguen sin dejar nada, como siempre. Dime si prefieres que todos la dejen.
+
 ### Fase 84 (frutales silvestres)
 
 - [ ] La ventana de un manzano, cerezo, palma o baobab mediano o grande dice «Fruta en el árbol: N» en verano y otoño, y «sin fruta ahora» en invierno y primavera; la de uno pequeño, «aún es muy joven para dar fruta».

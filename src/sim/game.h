@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 48;
+inline constexpr std::uint32_t kGameRulesVersion = 49;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -112,7 +112,20 @@ enum class BuildingState : std::uint8_t { Construction, Complete };
 // take within its reach. Waiting: only what grows back is left, empty or
 // frozen today (or, for hunters and fishers, no game or no open water).
 // Exhausted: nothing is left of what does not grow back.
-enum class Supply : std::uint8_t { Fine, Waiting, Exhausted, Count };
+// OnlyFruit (phase 85): a woodcutter told to spare the fruit trees has
+// nothing else left; it is told like Exhausted, in its own words.
+enum class Supply : std::uint8_t { Fine, Waiting, Exhausted, OnlyFruit, Count };
+
+// Phase 85: what the player lets a workplace do, as bits of
+// Building::options; the SetOption command names one by its number.
+namespace option {
+inline constexpr std::uint8_t kFellFruit = 1u << 0;  // A woodcutter fells the fruit trees too.
+inline constexpr std::uint8_t kCount = 1;
+}  // namespace option
+// The options a workplace of this kind has.
+[[nodiscard]] constexpr std::uint8_t workplace_options(const BuildingDef& d) {
+    return d.work == WorkKind::Gather && (d.gathers & 1u) != 0 ? option::kFellFruit : std::uint8_t{0};
+}
 
 // A farm's field (phase 11): a rectangle of cells, a plan of three years
 // (a crop or fallow each), and this year's progress.
@@ -188,6 +201,7 @@ struct Building {
     bool stopped = false;
     // Phase 81: set when one of its workers looks for something to take.
     Supply supply = Supply::Fine;
+    std::uint8_t options = 0;        // Phase 85: sim::option bits.
     bool operator==(const Building&) const = default;
 };
 
@@ -639,7 +653,8 @@ public:
             JoinRefused,     // Phase 77: town `other`'s founder refused seat `owner`.
             JoinCancelled,   // Phase 77: seat `owner` withdrew its request to town `other`.
             GameStarted,     // Phase 73: every town is founded; time runs.
-            Exhausted,       // Phase 81: workplace `entity` has nothing left to take within its reach.
+            Exhausted,       // Phase 81: workplace `entity` has nothing left to take within its reach
+                             // (`value` 1: nothing but the fruit trees it spares, phase 85).
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;

@@ -832,8 +832,9 @@ public:
             return;
         }
         b.supply = supply;
-        if (supply == Supply::Exhausted) {
-            g_.events_.push_back({Game::Event::Kind::Exhausted, b.owner, id, center_of(b), 0, 0});
+        if (supply == Supply::Exhausted || supply == Supply::OnlyFruit) {
+            g_.events_.push_back({Game::Event::Kind::Exhausted, b.owner, id, center_of(b),
+                                  static_cast<std::uint16_t>(supply == Supply::OnlyFruit ? 1 : 0), 0});
         }
     }
 
@@ -856,6 +857,8 @@ public:
         std::uint32_t best_cost = 0xFFFF;
         bool busy = false;     // Something to take, in other hands now.
         bool waiting = false;  // Something that will grow back, or thaw.
+        bool spared = false;   // A fruit tree the woodcutter is told to leave (phase 85).
+        const bool fells_fruit = (job.options & option::kFellFruit) != 0;
         const Calendar today = g_.calendar();
         for (std::int32_t cz = cz0; cz <= cz1; ++cz) {
             for (std::int32_t cx = cx0; cx <= cx1; ++cx) {
@@ -886,6 +889,10 @@ public:
                     if (cost >= 0xFFFF) {
                         continue;  // Out of reach.
                     }
+                    if (!picking && !fells_fruit && fruit_tree(f)) {
+                        spared = true;
+                        continue;
+                    }
                     if (picking ? g_.fruit_on(i, today) <= 0 : n.amount <= 0 || (grows && g_.frozen())) {
                         waiting = true;  // Empty or frozen bushes and herbs; a tree without fruit today.
                         continue;
@@ -902,7 +909,8 @@ public:
             }
         }
         if (best == 0) {
-            set_supply(job, v.job, busy ? Supply::Fine : waiting ? Supply::Waiting : Supply::Exhausted);
+            set_supply(job, v.job,
+                       busy ? Supply::Fine : waiting ? Supply::Waiting : spared ? Supply::OnlyFruit : Supply::Exhausted);
             return false;
         }
         set_supply(job, v.job, Supply::Fine);
@@ -926,9 +934,43 @@ public:
 
     // Phase 84: whether a worker of a workplace like `d` takes the fruit of
     // `f` (a fruit tree) instead of felling it.
+    [[nodiscard]] bool fruit_tree(const MapFeature& f) const {
+        return f.type == FeatureType::Tree && f.species < c_.flora.species.size() && c_.flora.species[f.species].fruit_tree();
+    }
     [[nodiscard]] bool picks_fruit(const BuildingDef& d, const MapFeature& f) const {
-        return d.picks_fruit && f.type == FeatureType::Tree && (d.gathers & 1u) == 0 &&
-               f.species < c_.flora.species.size() && c_.flora.species[f.species].fruit_tree();
+        return d.picks_fruit && (d.gathers & 1u) == 0 && fruit_tree(f);
+    }
+
+    // Phase 85: the fruit a tree has today, taken all at once (it is felled).
+    std::int32_t take_fruit(std::uint32_t node) {
+        const Calendar today = g_.calendar();
+        const std::int32_t fruit = g_.fruit_ == kNoDef ? 0 : g_.fruit_on(node, today);
+        if (fruit > 0) {
+            Node& n = g_.nodes_[node];
+            n.fruit_picked = (n.fruit_year == today.year ? n.fruit_picked : 0) + fruit;
+            n.fruit_year = today.year;
+        }
+        return fruit;
+    }
+
+    // What stood on ground cleared for a building or a field is gone. A
+    // fruit tree leaves its wood and the fruit it had with the town.
+    void clear_node(std::uint32_t i, std::uint8_t town) {
+        Node& n = g_.nodes_[i];
+        const MapFeature& f = g_.map_.features[i];
+        if (fruit_tree(f)) {
+            const FeatureDef* fd = c_.feature(f.type);
+            if (Building* store = depot(town); store != nullptr && fd != nullptr) {
+                const std::int32_t fruit = take_fruit(i);
+                add_to(store->stock, fd->resource, n.amount);
+                if (fruit > 0) {
+                    add_to(store->stock, g_.fruit_, fruit);
+                }
+            }
+        }
+        n.amount = 0;
+        n.regrow_tick = 0;
+        g_.changed_nodes_.push_back(i);
     }
 
     [[nodiscard]] bool regrows(const MapFeature& f) const {
@@ -3610,6 +3652,14 @@ public:
             return;
         }
         v.timer = 0;
+        if (n.amount == 1 && fruit_tree(f)) {
+            // The tree comes down with the fruit it had (phase 85): it is
+            // left at the workplace, like a hunter's hides.
+            const std::int32_t fruit = take_fruit(v.node - 1);
+            if (Building* job = g_.buildings_.get(v.job); job != nullptr && fruit > 0) {
+                add_to(job->stock, g_.fruit_, fruit);
+            }
+        }
         --n.amount;
         v.carrying.resource = fd->resource;
         ++v.carrying.amount;
@@ -4423,9 +4473,7 @@ public:
                     const std::int32_t fx = f.x.floor_int();
                     const std::int32_t fz = f.z.floor_int();
                     if (fx >= x - 1 && fx <= x + b.width && fz >= z - 1 && fz <= z + b.depth && g_.nodes_[i].amount > 0) {
-                        g_.nodes_[i].amount = 0;
-                        g_.nodes_[i].regrow_tick = 0;
-                        g_.changed_nodes_.push_back(i);
+                        clear_node(i, b.owner);
                     }
                 }
             }
@@ -4482,9 +4530,7 @@ public:
                     const std::int32_t fx = mf.x.floor_int();
                     const std::int32_t fz = mf.z.floor_int();
                     if (fx >= x && fx < x + w && fz >= z && fz < z + d && g_.nodes_[i].amount > 0) {
-                        g_.nodes_[i].amount = 0;
-                        g_.nodes_[i].regrow_tick = 0;
-                        g_.changed_nodes_.push_back(i);
+                        clear_node(i, farm.owner);
                     }
                 }
             }
@@ -4780,6 +4826,16 @@ public:
                 }
                 b->stopped = c.value == 0;
                 g_.buildings_changed_ = true;
+                break;
+            }
+            case CommandType::SetOption: {
+                Building* b = g_.buildings_.get(c.entity);
+                const auto bit = static_cast<std::uint8_t>(1u << c.count);
+                if (b == nullptr || b->owner != g_.town_of(c.player) || (workplace_options(def(*b)) & bit) == 0) {
+                    ++g_.rejected_;
+                    break;
+                }
+                b->options = static_cast<std::uint8_t>(c.value == 1 ? b->options | bit : b->options & ~bit);
                 break;
             }
             case CommandType::Trade: trade_with_merchant(c); break;
@@ -6536,6 +6592,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(b.train_progress);
         w.u8(b.stopped ? 1 : 0);
         w.u8(static_cast<std::uint8_t>(b.supply));
+        w.u8(b.options);
         w.u32(static_cast<std::uint32_t>(b.fields.size()));
         for (const Field& f : b.fields) {
             w.i32(f.x);
@@ -6933,7 +6990,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t stopped = 0;
         std::uint8_t supply = 0;
         if (!r.i32(b.train_progress) || b.train_progress < 0 || !r.u8(stopped) || stopped > 1 || !r.u8(supply) ||
-            supply >= static_cast<std::uint8_t>(Supply::Count)) {
+            supply >= static_cast<std::uint8_t>(Supply::Count) || !r.u8(b.options) ||
+            (b.options & ~workplace_options(c.buildings[b.def])) != 0) {
             r.fail();
             return false;
         }

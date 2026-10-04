@@ -60,7 +60,16 @@ const char* supply_key(const sim::BuildingDef& def, const sim::Building& b) {
     if (def.work == sim::WorkKind::Fish) {
         return "hud.supply.noFish";
     }
-    return b.supply == sim::Supply::Exhausted ? "hud.supply.exhausted" : "hud.supply.waiting";
+    return b.supply == sim::Supply::Exhausted   ? "hud.supply.exhausted"
+           : b.supply == sim::Supply::OnlyFruit ? "hud.supply.onlyFruit"
+                                                : "hud.supply.waiting";
+}
+
+std::span<const WorkplaceOption> workplace_option_list() {
+    static constexpr WorkplaceOption kOptions[] = {
+        {sim::option::kFellFruit, 0, "hud.option.fellFruit.on", "hud.option.fellFruit.off", "hud.option.fellFruit.tooltip"},
+    };
+    return kOptions;
 }
 
 const char* need_text_key(std::uint8_t need) {
@@ -913,6 +922,12 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     const float title_h = ctx.text().line_height(title);
     float h = pad + title_h + pad * 0.5f + static_cast<float>(lines.size()) * line;
     h += button_h + pad * 0.5f;  // The eye and the switch.
+    // Phase 85: one more row per option the workplace has.
+    const std::uint8_t options = b->owner == s.town() && b->state == sim::BuildingState::Complete ? sim::workplace_options(d)
+                                                                                                   : std::uint8_t{0};
+    for (const WorkplaceOption& o2 : workplace_option_list()) {
+        h += (options & o2.bit) != 0 ? button_h + pad * 0.5f : 0.0f;
+    }
     const bool lists = mine && b->state == sim::BuildingState::Complete;
     if (lists) {
         h += people_height(ctx, b->residents.size()) + people_height(ctx, b->workers.size());
@@ -986,6 +1001,24 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
                 s.issue(c);
             }
         }
+        y += button_h + pad * 0.5f;
+    }
+    for (const WorkplaceOption& o2 : workplace_option_list()) {
+        if ((options & o2.bit) == 0) {
+            continue;
+        }
+        const bool on = (b->options & o2.bit) != 0;
+        ctx.push_id(o2.on);
+        if (ctx.button(ctx.id("option"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr(on ? o2.on : o2.off), tr(o2.tooltip),
+                       true, on)) {
+            sim::Command c;
+            c.type = sim::CommandType::SetOption;
+            c.entity = window_entity_;
+            c.count = o2.number;
+            c.value = on ? 0 : 1;
+            s.issue(c);
+        }
+        ctx.pop_id();
         y += button_h + pad * 0.5f;
     }
     if (progress >= 0.0f) {

@@ -1509,7 +1509,8 @@ void App::draw_supply_markers(std::uint32_t width, std::uint32_t height) {
     const ui::TextStyle st = ui_.style(ui_.theme().body, ui::FontRole::Bold);
     const float r = ui_.s(10.0f);
     for (const sim::Building& b : g.buildings().data()) {
-        if (b.supply != sim::Supply::Exhausted || b.stopped || b.workers.empty() || b.owner != session_->town() ||
+        if ((b.supply != sim::Supply::Exhausted && b.supply != sim::Supply::OnlyFruit) || b.stopped || b.workers.empty() ||
+            b.owner != session_->town() ||
             b.state != sim::BuildingState::Complete) {
             continue;
         }
@@ -2703,7 +2704,9 @@ void App::report_game_events() {
             case sim::Game::Event::Kind::ExplorerBack:
                 text = tr(e.value == 0 ? "event.explorerBack.food" : "event.explorerBack.cold");
                 break;
-            case sim::Game::Event::Kind::Exhausted: text = tr("event.exhausted", place); break;
+            case sim::Game::Event::Kind::Exhausted:
+                text = tr(e.value == 1 ? "event.onlyFruit" : "event.exhausted", place);
+                break;
             case sim::Game::Event::Kind::Born: text = tr("event.born"); break;
             case sim::Game::Event::Kind::Died: text = tr("event.died"); break;
             case sim::Game::Event::Kind::TownFounded:

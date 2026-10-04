@@ -48,6 +48,7 @@ enum class CommandType : std::uint8_t {
     RequestJoin = 38,     // Phase 77: the sender, who has no town, asks the founder of town `count` to join it.
     CancelJoin = 39,      // Phase 77: the sender withdraws its request.
     RefuseJoin = 40,      // Phase 77, a town's founder only: seat `count`'s request to join is refused.
+    SetOption = 41,       // Phase 85: workplace `entity`'s option number `count` (sim::option) on (`value` 1) or off (0).
 
 };
 

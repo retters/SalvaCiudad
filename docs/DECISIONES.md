@@ -3136,3 +3136,23 @@ Los edificios de recolección con `"picksFruit": true` (el recolector). El árbo
 
 **D-8404. Versiones y lo medido.**
 Reglas 48 (dos campos más por objeto natural en la partida guardada). Pruebas en `resources`: un manzano mediano sin fruta en primavera, con 6 en verano y otoño, sin nada en invierno y con 6 al verano siguiente; el pequeño y el roble, nunca; un roble marcado como frutal por el contenido (lo que haría un mod) da fruta; el recolector trae la fruta, el árbol y el roble de al lado siguen en pie, queda «esperando» sin evento, guardar y cargar da la misma partida y al año siguiente se vuelve a recoger. La ventana del árbol no tiene prueba y nada se vio en pantalla.
+
+## Fase 85: el leñador y los frutales (2026-10-04)
+
+**D-8501. Opciones de un edificio de trabajo, y una orden para cambiarlas.**
+`Building::options` guarda bits (`sim::option`), y la orden nueva `SetOption` (41) enciende o apaga una por su número. Qué opciones tiene cada edificio lo dice `workplace_options`: hoy solo «talar frutales», para los edificios que recogen árboles. Se hizo genérico porque la fase 87 agrega dos interruptores más al mismo edificio. Una opción que el edificio no tiene, o de un edificio ajeno, se rechaza; una partida guardada con bits que no corresponden no se carga.
+
+**D-8502. Apagado por omisión.**
+Un leñador recién construido no tala frutales (lo eligió Salvador). Cambia el comportamiento de los leñadores de siempre: en un bosque con manzanos o cerezos los dejan en pie.
+
+**D-8503. «Solo quedan frutales» es un estado propio.**
+`Supply::OnlyFruit`: avisa una vez, con su texto, el cuadro rojo y la línea de estado, igual que «agotado». Si además hay algo que rebrota o un árbol que otro tiene reservado, ganan «esperando» o «con recursos».
+
+**D-8504. Dónde queda la fruta de un frutal talado.**
+Al caer el árbol (su última unidad de madera), la fruta que tenía ese día queda en el leñador, como las pieles en la cabaña del cazador, y de ahí la llevan al almacén. La madera la sigue cargando el leñador. Fuera de verano y otoño no hay fruta que dar.
+
+**D-8505. Despejar una obra o un campo.**
+Un frutal bajo una casa, un campo o cualquier obra deja su madera y su fruta en el centro del pueblo (o en el carro si aún no hay centro), sin mirar el interruptor. Los demás árboles despejados siguen sin dejar nada, como desde la fase 8: cambiarlo era otra regla que nadie pidió. Queda como pregunta para Salvador.
+
+**D-8506. Versiones y lo medido.**
+Reglas 49, protocolo de red 25 (una orden nueva). Pruebas en `resources`: un leñador rodeado solo de manzanos no tala ninguno y avisa una vez con el texto de frutales; la orden viaja como bytes y dos partidas que la reciben siguen con el mismo hash; encendido, tala los tres y aparecen su madera y su fruta; en invierno solo madera; una casa sobre un manzano con fruta suma madera y 6 de fruta por árbol despejado; el interruptor se guarda y se carga; una opción inexistente y una sobre el centro del pueblo se rechazan. No se probó con dos instancias reales en red ni se vio en pantalla.
