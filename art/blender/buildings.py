@@ -30,6 +30,7 @@ COLORS = {
     "brick": common.rgb(0xA0553A),
     "door": common.rgb(0x6B4A2E),
     "window": common.rgb(0x2B3440),
+    "torch_flame": common.rgb(0xF2A63A),
     "shutter": common.rgb(0x4F6B4A),
     "log": common.rgb(0x7A5232),
     "log_end": common.rgb(0xC8A06A),
@@ -172,7 +173,7 @@ def stall(mb, cx, cy, w, cloth):
 
 # Walls, palisades, gates and traps follow the ground (the game's
 # follows_ground): no foundations.
-ON_GROUND = ("palisade", "stone_wall", "gate", "trap")
+ON_GROUND = ("palisade", "stone_wall", "gate", "trap", "torch")
 FOUNDATION_DEPTH = 4.5
 
 
@@ -713,6 +714,22 @@ def campfire(folder):
     export(folder, "campfire", mb)
 
 
+def torch(folder):
+    """A standing torch (phase 69): a post in a few stones with a burning head, which glows at night."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    for i in range(5):
+        a = i * 2 * math.pi / 5
+        mb.sphere((0.2 * math.cos(a), 0.2 * math.sin(a), 0.07), 0.12, "stone" if i % 2 else "stone_dark",
+                  segments=6, rings=4, scale=(1.0, 1.0, 0.7))
+    mb.cylinder((0, 0, 0), (0, 0, 2.1), 0.07, 0.055, "log", segments=6)
+    # The head: a wrapped bundle, and the flame over it.
+    mb.cylinder((0, 0, 2.0), (0, 0, 2.3), 0.09, 0.13, "timber", segments=6)
+    mb.cylinder((0, 0, 2.3), (0, 0, 2.5), 0.12, 0.09, "torch_flame", segments=6)
+    mb.cylinder((0, 0, 2.5), (0.03, 0, 2.78), 0.09, 0.0, "torch_flame", segments=5)
+    export(folder, "torch", mb)
+
+
 def statue(folder):
     common.reset_scene()
     mb = MeshBuilder()
@@ -1080,6 +1097,7 @@ def make_all(folder, only=None):
     garden(folder)
     statue(folder)
     campfire(folder)
+    torch(folder)
     healer(folder, "healer", 4, 4)
     healer(folder, "physician", 6, 6, tier2=True)
     bathhouse(folder)

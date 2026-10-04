@@ -934,9 +934,12 @@ void App::render_frame(float dt) {
                 map_scene_.set_season(scene_, g.map(), g.content(), when, snowy);
                 map_scene_.update_sky(scene_, dt * static_cast<float>(host_->game_paused() ? 0 : 1));
                 lighting_ = seasonal_lighting(season);
+                night_ = 0.0f;
                 if (const sim::DayNightSettings& cycle = g.rules().day_night; cycle.enabled() && !replay_) {
-                    lighting_ = day_lighting(lighting_, g.day_time().night,
-                                             day_progress(cycle, g.tick(), static_cast<float>(clock_.interpolation())));
+                    const bool night = g.day_time().night;
+                    const float progress = day_progress(cycle, g.tick(), static_cast<float>(clock_.interpolation()));
+                    lighting_ = day_lighting(lighting_, night, progress);
+                    night_ = 1.0f - daylight(night, progress);
                 }
                 if (!still) {
                     update_placement(frame.width, frame.height);
@@ -957,6 +960,12 @@ void App::render_frame(float dt) {
                 if (walkers_.size() > 0) {
                     walkers_.update(scene_, dt, village_.characters());
                 }
+                // The lights of the night, lit as the daylight goes.
+                night_lights_.clear();
+                if (night_ > 0.0f) {
+                    village_.lights(session_->game(), true, night_lights_);
+                }
+                scene_.set_lights(night_lights_, night_, camera_.target());
             } else if (menu_game_ && menu_map_ && !map_) {
                 // Behind the menus: the map's own animals, at the game's pace.
                 village_.set_view(camera_.target().x, camera_.target().z, 0);
@@ -1266,6 +1275,8 @@ void App::update_menu_background() {
     village_.set_fog(nullptr);
     village_.begin(scene_, map_scene_, *menu_game_);
     lighting_ = render::Lighting{};
+    night_ = 0.0f;
+    scene_.set_lights({}, 0.0f, {});
     clock_.set_speed(speed::kNormal);
     reset_camera_to_menu();
     log::info("menu: background map of seed {} shown {:.2f} s after it was asked for", menu_seed_,
@@ -1363,6 +1374,8 @@ void App::leave_map() {
     village_.end(scene_);
     session_.reset();
     lighting_ = render::Lighting{};
+    night_ = 0.0f;
+    scene_.set_lights({}, 0.0f, {});
     clock_.set_speed(speed::kNormal);
     map_scene_.hide(scene_);
     walkers_.clear();

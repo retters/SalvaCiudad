@@ -135,6 +135,10 @@ public:
     [[nodiscard]] bool feature_shown(const sim::Game& game, std::uint32_t feature) const;
     // Where a villager is drawn (feet), for markers and the camera.
     [[nodiscard]] math::Vec3 villager_position(const sim::Game& game, const sim::Villager& v, float alpha) const;
+    // The lights of the night (phase 69), added to `out`: the buildings
+    // that give light and, when `torches`, the torch of each villager drawn
+    // by the last update() who is out of their reach.
+    void lights(const sim::Game& game, bool torches, std::vector<render::PointLight>& out) const;
     // Top of a building, for its marker.
     [[nodiscard]] math::Vec3 building_top(const sim::Game& game, const sim::Building& b) const;
 

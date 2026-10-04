@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include <SDL3/SDL_error.h>
+#include <SDL3/SDL_timer.h>
 
 #include "core/log.h"
 #include "shaders/blur_frag_dxil.h"
@@ -125,11 +126,25 @@ struct SceneUniforms {
     float camera_position[4];
     float shadow_params[4];
     float war_params[4];
+    float light_params[4];
 };
+
+// The texture of the lights: kLightSide texels of kLightTexel meters.
+constexpr std::int32_t kLightSide = 512;
+constexpr float kLightTexel = 2.0f * kLightReach / static_cast<float>(kLightSide);
+// Its corner moves in steps of this many texels, so a still set of lights
+// is not drawn again while the camera pans a little.
+constexpr std::int32_t kLightStep = 16;
+// Lights that move (the villagers' torches) are drawn again this often at
+// most, in milliseconds: drawing them every frame cost three frames in four
+// (1310 to 320 FPS, measured in phase 69).
+constexpr std::uint64_t kLightRedrawMs = 80;
 
 // A rectangle of fog-of-war texels waiting to go to the GPU.
 struct WarUpload {
     bool ceiling = false;             // The ceiling texture (2 bytes a texel), else the fog (1).
+    bool lights = false;              // The lights' texture (4 bytes a texel).
+    [[nodiscard]] std::uint32_t texel() const { return lights ? 4u : (ceiling ? 2u : 1u); }
     std::uint32_t x = 0, z = 0, w = 0, d = 0;
     std::vector<std::uint8_t> bytes;  // Row by row, w * d texels.
 };
@@ -184,8 +199,23 @@ SDL_GPUShader* make_shader(SDL_GPUDevice* device, const std::uint8_t* code, std:
     return shader;
 }
 
+// Whether a material shines at night, by its name: 1 a window, 2 what
+// glows or burns with its own color, 0 the rest.
+float material_glow(std::string_view name) {
+    if (name == "window") {
+        return 1.0f;
+    }
+    for (const std::string_view part : {"glow", "flame", "ember"}) {
+        if (name.find(part) != std::string_view::npos) {
+            return 2.0f;
+        }
+    }
+    return name.ends_with("_fire") ? 2.0f : 0.0f;
+}
+
 struct GpuMaterial {
     float base_color[4] = {1, 1, 1, 1};
+    float glow = 0.0f;  // See material_glow().
     SDL_GPUTexture* texture = nullptr;  // Not owned; points into GpuModel::textures or the white texture.
 };
 
@@ -484,15 +514,95 @@ struct SceneRenderer::Impl {
     float war_meters = 1.0f;  // Meters both textures span per side.
     float war_band = 0.0f;
     std::vector<WarUpload> war_uploads;
+    // The lights of the night (phase 69).
+    SDL_GPUTexture* light_tex = nullptr;
+    std::vector<PointLight> lights;
+    float light_strength = 0.0f;
+    std::int32_t light_x = 0, light_z = 0;  // The texture's corner, in texels of the world.
+    std::int32_t light_want_x = 0, light_want_z = 0;  // Where the next drawing puts it.
+    bool lights_dirty = false;
+    std::uint64_t lights_drawn_ms = 0;
+    std::vector<float> light_sum;
+
+    // Draws the lights into their texture, to go with the next frame.
+    void draw_lights() {
+        lights_dirty = false;
+        lights_drawn_ms = SDL_GetTicks();
+        light_x = light_want_x;
+        light_z = light_want_z;
+        if (light_tex == nullptr) {
+            light_tex = make_war_texture(kLightSide, SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM);
+            if (light_tex == nullptr) {
+                return;
+            }
+        }
+        const auto side = static_cast<std::size_t>(kLightSide);
+        light_sum.assign(side * side * 5, 0.0f);  // Red, green, blue, weight and height times weight.
+        for (const PointLight& l : lights) {
+            if (l.radius <= 0.0f) {
+                continue;
+            }
+            // In texels of the texture; a texel's light is its center's.
+            const float cx = l.position.x / kLightTexel - static_cast<float>(light_x);
+            const float cz = l.position.z / kLightTexel - static_cast<float>(light_z);
+            const float r = l.radius / kLightTexel;
+            const std::int32_t x0 = std::max(0, static_cast<std::int32_t>(std::floor(cx - r)));
+            const std::int32_t x1 = std::min(kLightSide - 1, static_cast<std::int32_t>(std::ceil(cx + r)));
+            const std::int32_t z0 = std::max(0, static_cast<std::int32_t>(std::floor(cz - r)));
+            const std::int32_t z1 = std::min(kLightSide - 1, static_cast<std::int32_t>(std::ceil(cz + r)));
+            for (std::int32_t z = z0; z <= z1; ++z) {
+                for (std::int32_t x = x0; x <= x1; ++x) {
+                    const float dx = (static_cast<float>(x) + 0.5f - cx) / r;
+                    const float dz = (static_cast<float>(z) + 0.5f - cz) / r;
+                    const float f = 1.0f - (dx * dx + dz * dz);
+                    if (f <= 0.0f) {
+                        continue;
+                    }
+                    float* at = &light_sum[(static_cast<std::size_t>(z) * side + static_cast<std::size_t>(x)) * 5];
+                    at[0] += l.color.x * f * f;
+                    at[1] += l.color.y * f * f;
+                    at[2] += l.color.z * f * f;
+                    at[3] += f * f;
+                    at[4] += l.position.y * f * f;
+                }
+            }
+        }
+        std::erase_if(war_uploads, [](const WarUpload& u) { return u.lights; });
+        WarUpload u;
+        u.lights = true;
+        u.w = u.d = static_cast<std::uint32_t>(kLightSide);
+        u.bytes.resize(side * side * 4);
+        for (std::size_t i = 0; i < side * side; ++i) {
+            if (light_sum[i * 5 + 3] <= 0.0f) {
+                continue;  // No light reaches it: zeros, as resized.
+            }
+            for (std::size_t c = 0; c < 3; ++c) {
+                // The square root of a quarter of the light: see point_lights().
+                const float v = std::sqrt(std::min(light_sum[i * 5 + c], 4.0f) * 0.25f);
+                u.bytes[i * 4 + c] = static_cast<std::uint8_t>(v * 255.0f + 0.5f);
+            }
+            // How high the lights of the texel are: see point_lights().
+            const float y = light_sum[i * 5 + 4] / light_sum[i * 5 + 3];
+            u.bytes[i * 4 + 3] = static_cast<std::uint8_t>(std::clamp((y + 64.0f) / 512.0f, 0.0f, 1.0f) * 255.0f + 0.5f);
+        }
+        war_uploads.push_back(std::move(u));
+    }
+
+    void light_params(float out[4]) const {
+        out[0] = static_cast<float>(light_x) * kLightTexel;
+        out[1] = static_cast<float>(light_z) * kLightTexel;
+        out[2] = 1.0f / (static_cast<float>(kLightSide) * kLightTexel);
+        out[3] = light_tex != nullptr ? light_strength : 0.0f;
+    }
 
     void release_war() {
         SDL_ReleaseGPUTexture(device, war_fog);
         SDL_ReleaseGPUTexture(device, war_ceiling);
         war_fog = war_ceiling = nullptr;
+        std::erase_if(war_uploads, [](const WarUpload& u) { return !u.lights; });
         war_mode = 0;
         war_side = war_ceiling_side = 0;
         war_band = 0.0f;
-        war_uploads.clear();
     }
 
     SDL_GPUTexture* make_war_texture(std::int32_t side, SDL_GPUTextureFormat format) {
@@ -512,9 +622,11 @@ struct SceneRenderer::Impl {
 
     // The fog of war and its ceiling for the lit shaders; white (in sight,
     // no ceiling) when there is none.
-    [[nodiscard]] std::array<SDL_GPUTextureSamplerBinding, 2> war_bindings() const {
+    // Third, the lights of the night.
+    [[nodiscard]] std::array<SDL_GPUTextureSamplerBinding, 3> war_bindings() const {
         return {SDL_GPUTextureSamplerBinding{war_fog != nullptr ? war_fog : white, clamp_sampler},
-                SDL_GPUTextureSamplerBinding{war_ceiling != nullptr ? war_ceiling : white, clamp_sampler}};
+                SDL_GPUTextureSamplerBinding{war_ceiling != nullptr ? war_ceiling : white, clamp_sampler},
+                SDL_GPUTextureSamplerBinding{light_tex != nullptr ? light_tex : white, clamp_sampler}};
     }
 
     void war_params(float out[4]) const {
@@ -589,6 +701,9 @@ struct SceneRenderer::Impl {
         release_targets();
         release_pipelines();
         release_war();
+        SDL_ReleaseGPUTexture(device, light_tex);
+        light_tex = nullptr;
+        war_uploads.clear();
         terrain.release();
         for (GpuModel& m : models) {
             SDL_ReleaseGPUBuffer(device, m.vertices);
@@ -774,7 +889,7 @@ struct SceneRenderer::Impl {
     bool create_pipelines() {
         release_pipelines();
         SDL_GPUShader* mesh_vs = make_shader(device, kMeshVertDxil, kMeshVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 2, 2);
-        SDL_GPUShader* mesh_fs = make_shader(device, kMeshFragDxil, kMeshFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 4, 0, 2);
+        SDL_GPUShader* mesh_fs = make_shader(device, kMeshFragDxil, kMeshFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 5, 0, 2);
         SDL_GPUShader* sky_vs = make_shader(device, kSkyVertDxil, kSkyVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0);
         SDL_GPUShader* sky_fs = make_shader(device, kSkyFragDxil, kSkyFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 1);
         SDL_GPUShader* shadow_vs = make_shader(device, kShadowVertDxil, kShadowVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 1);
@@ -1403,6 +1518,7 @@ bool SceneRenderer::add_model(const ModelData& data, ModelId& id) {
     for (const ModelMaterial& mat : data.materials) {
         GpuMaterial g;
         std::copy(std::begin(mat.base_color), std::end(mat.base_color), g.base_color);
+        g.glow = material_glow(mat.name);
         g.texture = (mat.texture >= 0 && static_cast<std::size_t>(mat.texture) < m.textures.size() &&
                      m.textures[static_cast<std::size_t>(mat.texture)] != nullptr)
                         ? m.textures[static_cast<std::size_t>(mat.texture)]
@@ -1709,6 +1825,37 @@ void SceneRenderer::clear_instances() {
     }
 }
 
+void SceneRenderer::set_lights(std::span<const PointLight> lights, float strength, const math::Vec3& center) {
+    Impl& d = *impl_;
+    if (d.device == nullptr) {
+        return;
+    }
+    d.light_strength = std::clamp(strength, 0.0f, 1.0f);
+    if (d.light_strength <= 0.0f) {
+        return;  // Nothing shows them: they are drawn when the night comes.
+    }
+    const auto corner = [](float at) {
+        const auto texel = static_cast<std::int32_t>(std::floor(at / kLightTexel)) - kLightSide / 2;
+        return static_cast<std::int32_t>(std::floor(static_cast<float>(texel) / static_cast<float>(kLightStep) + 0.5f)) *
+               kLightStep;
+    };
+    const std::int32_t x = corner(center.x);
+    const std::int32_t z = corner(center.z);
+    const auto same = [](const PointLight& a, const PointLight& b) {
+        return a.position.x == b.position.x && a.position.y == b.position.y && a.position.z == b.position.z &&
+               a.radius == b.radius &&
+               a.color.x == b.color.x && a.color.y == b.color.y && a.color.z == b.color.z;
+    };
+    if (d.light_tex != nullptr && x == d.light_want_x && z == d.light_want_z &&
+        std::equal(lights.begin(), lights.end(), d.lights.begin(), d.lights.end(), same)) {
+        return;
+    }
+    d.light_want_x = x;
+    d.light_want_z = z;
+    d.lights.assign(lights.begin(), lights.end());
+    d.lights_dirty = true;
+}
+
 bool SceneRenderer::set_war_fog(int mode, std::int32_t side, float cell) {
     Impl& d = *impl_;
     if (d.device == nullptr) {
@@ -1919,9 +2066,12 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const auto building_palette_bytes = static_cast<std::uint32_t>(d.building_palette_data.size() * sizeof(float));
     // Fog of war rectangles: rows padded to 256 bytes and each one starting
     // on 512 bytes, as Direct3D 12 wants for texture uploads.
+    if (d.lights_dirty && (d.light_tex == nullptr || SDL_GetTicks() - d.lights_drawn_ms >= kLightRedrawMs)) {
+        d.draw_lights();
+    }
     std::uint32_t war_bytes = 0;
     for (const WarUpload& u : d.war_uploads) {
-        const std::uint32_t texel = u.ceiling ? 2u : 1u;
+        const std::uint32_t texel = u.texel();
         war_bytes = align_up(war_bytes, 512) + align_up(u.w * texel, 256) * u.d;
     }
     if (!d.war_uploads.empty()) {
@@ -2010,7 +2160,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         }
         std::vector<std::uint32_t> war_offsets;
         for (const WarUpload& u : d.war_uploads) {
-            const std::uint32_t texel = u.ceiling ? 2u : 1u;
+            const std::uint32_t texel = u.texel();
             const std::uint32_t pitch = align_up(u.w * texel, 256);
             offset = align_up(offset, 512);
             war_offsets.push_back(offset);
@@ -2039,11 +2189,11 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         }
         for (std::size_t i = 0; i < d.war_uploads.size(); ++i) {
             const WarUpload& u = d.war_uploads[i];
-            SDL_GPUTexture* texture = u.ceiling ? d.war_ceiling : d.war_fog;
+            SDL_GPUTexture* texture = u.lights ? d.light_tex : (u.ceiling ? d.war_ceiling : d.war_fog);
             if (texture == nullptr) {
                 continue;
             }
-            const std::uint32_t texel = u.ceiling ? 2u : 1u;
+            const std::uint32_t texel = u.texel();
             SDL_GPUTextureTransferInfo src{};
             src.transfer_buffer = d.transfer;
             src.offset = war_offsets[i];
@@ -2074,7 +2224,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         }
     }
 
-    const std::array<SDL_GPUTextureSamplerBinding, 2> war_bind = d.war_bindings();
+    const std::array<SDL_GPUTextureSamplerBinding, 3> war_bind = d.war_bindings();
     // Draws every model's visible instances; `with_materials` binds colors.
     const auto draw_models = [&](SDL_GPURenderPass* pass, const std::vector<DrawRange>& ranges, bool with_materials) {
         SDL_GPUBuffer* storage[2] = {d.instance_buffer, d.building_palette_buffer};
@@ -2098,10 +2248,11 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
                     SDL_PushGPUVertexUniformData(frame.cmd, 1, &du, sizeof(du));
                     MaterialUniforms mu{};
                     std::copy(std::begin(mat.base_color), std::end(mat.base_color), mu.base_color);
+                    mu.base_color[3] = 1.0f + mat.glow;  // See mesh.frag.hlsl.
                     SDL_PushGPUFragmentUniformData(frame.cmd, 1, &mu, sizeof(mu));
-                    const SDL_GPUTextureSamplerBinding bindings[4] = {
-                        {mat.texture, d.base_sampler}, {d.shadow_map, d.shadow_sampler}, war_bind[0], war_bind[1]};
-                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 4);
+                    const SDL_GPUTextureSamplerBinding bindings[5] = {
+                        {mat.texture, d.base_sampler}, {d.shadow_map, d.shadow_sampler}, war_bind[0], war_bind[1], war_bind[2]};
+                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 5);
                 }
                 SDL_DrawGPUIndexedPrimitives(pass, p.index_count, r.count, p.first_index, 0, 0);
                 ++stats_.draw_calls;
@@ -2138,10 +2289,11 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
                     SDL_PushGPUVertexUniformData(frame.cmd, 1, &du, sizeof(du));
                     MaterialUniforms mu{};
                     std::copy(std::begin(mat.base_color), std::end(mat.base_color), mu.base_color);
+                    mu.base_color[3] = 1.0f + mat.glow;  // See mesh.frag.hlsl.
                     SDL_PushGPUFragmentUniformData(frame.cmd, 1, &mu, sizeof(mu));
-                    const SDL_GPUTextureSamplerBinding bindings[4] = {
-                        {mat.texture, d.base_sampler}, {d.shadow_map, d.shadow_sampler}, war_bind[0], war_bind[1]};
-                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 4);
+                    const SDL_GPUTextureSamplerBinding bindings[5] = {
+                        {mat.texture, d.base_sampler}, {d.shadow_map, d.shadow_sampler}, war_bind[0], war_bind[1], war_bind[2]};
+                    SDL_BindGPUFragmentSamplers(pass, 0, bindings, 5);
                 }
                 SDL_DrawGPUIndexedPrimitives(pass, p.index_count, r.count, p.first_index, 0, 0);
                 ++stats_.draw_calls;
@@ -2251,6 +2403,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         su.shadow_params[2] = std::clamp(view.snow, 0.0f, 1.0f);
         su.shadow_params[3] = v.other_camera ? 1.0f : 0.0f;
         d.war_params(su.war_params);
+        d.light_params(su.light_params);
         SDL_PushGPUFragmentUniformData(frame.cmd, 0, &su, sizeof(su));
         d.terrain.draw_ground(frame.cmd, target, v.view_proj, d.white, d.base_sampler, d.shadow_map, d.shadow_sampler,
                               war_bind.data());

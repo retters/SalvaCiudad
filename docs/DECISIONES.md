@@ -2702,3 +2702,32 @@ Reglas 36, protocolo de red 14.
 
 **D-6814. Sin revisar.**
 Se vio en pantalla: día, anochecer, noche con estrellas, amanecer, sombras que giran, agua oscura de noche y el HUD. No se vio la luna (la cámara no se pudo girar desde las pruebas) ni se probó con dos instancias en red: la hora sale de las reglas y del tick, que ya viajan y se comparan. El tono naranja del atardecer es discreto; queda a tu gusto.
+
+## Fase 69: luces de noche (2026-10-03)
+
+**D-6901. Las luces van en una textura, no en una lista por píxel.**
+Cada luz (posición, radio, color) se dibuja en la CPU sobre una textura de 512 × 512 puntos de 2 m centrada en la cámara (1 km de lado); los shaders con luz (terreno, pasto, modelos, personajes) la leen con una sola muestra y la suman a la luz ambiente. Se descartó una lista de luces recorrida por píxel: con cientos de luces a la vista cuesta por píxel y obliga a un tope por calidad. Así el número de luces casi no importa y no hay tope. Limitaciones aceptadas: la luz no tiene dirección (ilumina igual todas las caras), no da sombras y el agua no la recibe. La textura guarda además la altura de las luces: lo que está muy por encima (humo, copas, tejados altos) recibe menos.
+
+**D-6902. Las luces que se mueven se redibujan cada 80 ms como mucho.**
+Dibujar la textura en cada cuadro (las antorchas de los aldeanos se mueven siempre) bajaba de 1310 a 320 FPS. Con el tope de 80 ms: 1402 FPS de día y 1333 a 1358 de noche (−4 %) en un mapa pequeño con 12 aldeanos, `release`, 1280 × 720, calidad alta. El criterio permitía un 15 %. No se midió con 200 luces: el costo por luz es dibujar unos cientos de puntos doce veces por segundo.
+
+**D-6903. Qué da luz.**
+`"light"` en los datos del edificio es el radio en metros (0 a 40) y `"coolLight"` la hace azul pálido. En `core`: centro del pueblo 20, fogata 12 (solo encendida), antorcha 10, farol 14, farol doble 16, braseros 12, arco con estandartes 8, pilar de llamas 14, horno público 6, muro memorial 6, lirios de fuego 4; y en azul, anillo de hadas 6, campanillas y tocón luminosos 5, pétalos flotantes 5, flores de luna 5, loto gigante 4. Son las decoraciones cuyos modelos ya tenían materiales de llama o de brillo. Las casas con habitantes y los talleres con trabajadores (no detenidos) alumbran 6 m más allá de sus paredes sin declararlo. Una obra no alumbra. `Game::light(edificio)` lo decide, y la fase 70 usa lo mismo para la penalización.
+
+**D-6904. Antorcha.**
+Edificio nuevo de Decoración, 1 × 1, 1 tronco, sin mantenimiento ni agrado: es la luz barata para caminos y zonas de trabajo que pidió Salvador. Los faroles de la pestaña Plaza alumbran más y dan agrado, pero cuestan piedra. Se añadieron los modelos de obra de 1 × 1.
+
+**D-6905. Brillo propio por nombre de material.**
+De noche, los materiales llamados `window` se ven como ventanas encendidas (color cálido fijo) y los que llevan `glow`, `flame` o `ember` en el nombre, o terminan en `_fire`, brillan con su propio color. No hubo que regenerar modelos. Todas las ventanas brillan, también las de un edificio vacío: distinguirlo pediría un dato por instancia y no cambia el juego.
+
+**D-6906. Antorcha en mano.**
+Los aldeanos dibujados que están fuera del alcance de la luz de un edificio llevan un charco de luz pequeño (4,5 m). Es solo de la vista y no quita la penalización de la fase 70. No se dibuja el objeto antorcha en la mano.
+
+**D-6907. Versiones.**
+Reglas 37, protocolo de red 15 (edificio nuevo y campo nuevo en los datos).
+
+**D-6908. Tropiezos.**
+(1) Tras cambiar `content.h`, Ninja dejó objetos de las pruebas sin recompilar y 40 suites fallaron con violaciones de acceso; borrar `CMakeFiles/sc_engine.dir` y `salvaciudad_tests.dir` y recompilar lo arregló. (2) `Get-Content`/`Set-Content` de PowerShell 5.1 dañó los acentos de un `.cpp` en UTF-8: editar siempre con Python o con la herramienta de edición. (3) Otra sesión usaba el worktree `verify` (rama `fix-hunger-cost`); mi verificación le cambió el commit dos veces y lo devolví a `aee56c5`. Desde ahora verifico en `.claude/worktrees/verify-dn`.
+
+**D-6909. Sin revisar.**
+Se vio en pantalla: charcos de luz del centro del pueblo, antorchas, fogata y aldeanos; ventanas encendidas; el humo oscuro por encima de las luces; las luces apagadas de día. No se vieron las decoraciones de luz azul ni los faroles de Plaza. En una partida aparecieron de noche unos pocos triángulos blancos en un acantilado oscuro junto al agua; no se repitió en otros dos mapas y no se encontró la causa.

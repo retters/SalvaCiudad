@@ -207,6 +207,9 @@ private:
     ui::Input input_;
     render::SceneRenderer scene_;
     render::Lighting lighting_;
+    // Phase 69: how much of the night there is, 0 (day) to 1, and its lights.
+    float night_ = 0.0f;
+    std::vector<render::PointLight> night_lights_;
     // The villagers' bodies, and the people placed with the developer tools.
     Walkers walkers_;
     MapScene map_scene_;

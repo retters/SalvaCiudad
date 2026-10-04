@@ -41,7 +41,8 @@
           },
           "work": 900
         }
-      ]
+      ],
+      "light": 20
     },
     {
       "type": "building",
@@ -956,6 +957,24 @@
       "buildWork": 30,
       "desirability": 3,
       "warmth": 10,
+      "fireproof": true,
+      "light": 12
+    },
+    {
+      "type": "building",
+      "id": "core:torch",
+      "name": "building.torch",
+      "kind": "decoration",
+      "model": "models/buildings/torch.glb",
+      "size": [
+        1,
+        1
+      ],
+      "cost": {
+        "core:log": 1
+      },
+      "buildWork": 10,
+      "light": 10,
       "fireproof": true
     },
     {
@@ -1328,7 +1347,8 @@
       "buildWork": 30,
       "desirability": 4,
       "fireproof": true,
-      "category": "plaza"
+      "category": "plaza",
+      "light": 14
     },
     {
       "type": "building",
@@ -1480,7 +1500,8 @@
       "buildWork": 40,
       "desirability": 5,
       "fireproof": true,
-      "category": "plaza"
+      "category": "plaza",
+      "light": 16
     },
     {
       "type": "building",
@@ -1592,7 +1613,8 @@
       "buildWork": 35,
       "desirability": 5,
       "fireproof": true,
-      "category": "plaza"
+      "category": "plaza",
+      "light": 12
     },
     {
       "type": "building",
@@ -1685,7 +1707,8 @@
       "buildWork": 85,
       "desirability": 8,
       "fireproof": true,
-      "category": "plaza"
+      "category": "plaza",
+      "light": 8
     },
     {
       "type": "building",
@@ -1704,7 +1727,8 @@
       "buildWork": 100,
       "desirability": 6,
       "fireproof": true,
-      "category": "plaza"
+      "category": "plaza",
+      "light": 6
     },
     {
       "type": "building",
@@ -2314,7 +2338,9 @@
       "buildWork": 80,
       "desirability": 13,
       "fireproof": true,
-      "category": "nature"
+      "category": "nature",
+      "light": 5,
+      "coolLight": true
     },
     {
       "type": "building",
@@ -2593,7 +2619,9 @@
       "buildWork": 80,
       "desirability": 13,
       "fireproof": true,
-      "category": "nature"
+      "category": "nature",
+      "light": 6,
+      "coolLight": true
     },
     {
       "type": "building",
@@ -2611,7 +2639,9 @@
       "buildWork": 90,
       "desirability": 13,
       "fireproof": true,
-      "category": "nature"
+      "category": "nature",
+      "light": 4,
+      "coolLight": true
     },
     {
       "type": "building",
@@ -2629,7 +2659,9 @@
       "buildWork": 70,
       "desirability": 12,
       "fireproof": true,
-      "category": "nature"
+      "category": "nature",
+      "light": 5,
+      "coolLight": true
     },
     {
       "type": "building",
@@ -2813,7 +2845,9 @@
       "buildWork": 90,
       "desirability": 14,
       "fireproof": true,
-      "category": "nature"
+      "category": "nature",
+      "light": 5,
+      "coolLight": true
     },
     {
       "type": "building",
@@ -3019,7 +3053,8 @@
       "buildWork": 90,
       "desirability": 13,
       "fireproof": true,
-      "category": "nature"
+      "category": "nature",
+      "light": 4
     },
     {
       "type": "building",
@@ -3056,7 +3091,9 @@
       "buildWork": 90,
       "desirability": 14,
       "fireproof": true,
-      "category": "nature"
+      "category": "nature",
+      "light": 5,
+      "coolLight": true
     },
     {
       "type": "building",
@@ -3511,7 +3548,8 @@
       "buildWork": 100,
       "desirability": 12,
       "fireproof": true,
-      "category": "monuments"
+      "category": "monuments",
+      "light": 14
     },
     {
       "type": "building",
@@ -3529,7 +3567,8 @@
       "buildWork": 140,
       "desirability": 14,
       "fireproof": true,
-      "category": "monuments"
+      "category": "monuments",
+      "light": 6
     },
     {
       "type": "building",

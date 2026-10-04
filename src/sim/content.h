@@ -94,6 +94,9 @@ struct LevelDef {
     std::string models_mod;           // Mod whose folder holds them.
 };
 
+// The farthest a building may light (its def's "light").
+inline constexpr std::int32_t kMaxLight = 40;
+
 struct BuildingDef {
     std::string id;
     std::string name_key;
@@ -140,6 +143,11 @@ struct BuildingDef {
     bool trains = false;            // A barracks: turns villagers into soldiers (phase 16).
     std::int32_t worker_sight = 0;  // Phase 66: meters its workers see, if more than their own.
     std::int32_t warmth = 0;        // A campfire: villagers this many meters around it do not get cold while it burns.
+    // Phase 69: a lamp, a brazier, the town center: it lights this many
+    // meters around it at night (a campfire, while it burns). `cool_light`:
+    // the pale blue of what glows by magic, not the color of fire.
+    std::int32_t light = 0;
+    bool cool_light = false;
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.

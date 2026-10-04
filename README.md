@@ -601,6 +601,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 69 (luces de noche)
+
+- [ ] De noche el pueblo se ve por sus luces: el centro del pueblo, las casas con gente y los talleres con trabajadores alumbran a su alrededor, y sus ventanas brillan.
+- [ ] En Decoración está «Antorcha» (1 tronco, 1 × 1): recién construida alumbra unos 10 m. Su ventana lo dice.
+- [ ] La fogata alumbra mientras está encendida; los faroles, braseros y demás decoraciones con fuego, también; las plantas luminosas dan luz azul.
+- [ ] Los aldeanos lejos de las luces llevan un charco de luz pequeño que los sigue.
+- [ ] Al amanecer las luces se apagan poco a poco; de día no se ven.
+- [ ] **Tu opinión:** el alcance y la fuerza de cada luz, y si quieres ver la antorcha en la mano del aldeano.
+- [ ] **A vigilar:** triángulos blancos de noche en acantilados oscuros (D-6909).
+
 ### Fase 68 (día y noche: el ciclo y el cielo)
 
 - [ ] En Personalizado, bajo «El año»: la casilla «Día y noche» y, marcada, las barras «Duración del día» y «Duración de la noche» (1 a 30 min). El formulario las recuerda.

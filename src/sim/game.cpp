@@ -4738,6 +4738,21 @@ std::int32_t Game::sight(const Building& b) const {
     return content_->buildings[b.def].sight + std::max(b.width, b.depth) / 2;
 }
 
+std::int32_t Game::light(const Building& b) const {
+    if (b.state != BuildingState::Complete) {
+        return 0;
+    }
+    const BuildingDef& d = content_->buildings[b.def];
+    if (d.light > 0) {
+        // A campfire gives light while it burns.
+        return d.warmth > 0 && !b.heated ? 0 : d.light;
+    }
+    if (b.residents.empty() && (b.workers.empty() || b.stopped)) {
+        return 0;
+    }
+    return village::kOccupiedLight + std::max(b.width, b.depth) / 2;
+}
+
 std::int32_t Game::sight(const Villager& v) const {
     std::int32_t own = v.race < content_->races.size() ? content_->races[v.race].sight : 12;
     // An explorer sees as far as its building says (phase 66).

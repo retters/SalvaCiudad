@@ -798,6 +798,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     if (d.trap && b->state == sim::BuildingState::Complete) {
         lines.push_back(tr(b->rearm > 0 ? "hud.building.trapRearming" : "hud.building.trapArmed"));
     }
+    if (d.light > 0 && b->state == sim::BuildingState::Complete && game.rules().day_night.enabled()) {
+        lines.push_back(tr("hud.building.light", d.light));
+    }
     if (d.warmth > 0 && b->state == sim::BuildingState::Complete) {
         lines.push_back(tr("hud.building.campfire", d.warmth));
         if (!b->heated) {

@@ -1385,6 +1385,48 @@ math::Vec3 VillageView::building_top(const sim::Game& game, const sim::Building&
     return {base.x, floor_y(game, b.def, b.x, b.z, b.width, b.depth, b.rotation) + h + 1.0f, base.z};
 }
 
+void VillageView::lights(const sim::Game& game, bool torches, std::vector<render::PointLight>& out) const {
+    // Fire, and what glows by magic.
+    constexpr math::Vec3 kWarm{1.0f, 0.68f, 0.36f};
+    constexpr math::Vec3 kCool{0.36f, 0.62f, 1.0f};
+    // A torch in the hand: a small pool of light.
+    constexpr float kTorchRadius = 4.5f;
+    constexpr math::Vec3 kTorch{0.55f, 0.36f, 0.18f};
+    const std::size_t first = out.size();
+    for (const sim::Building& b : game.buildings().data()) {
+        const std::int32_t radius = game.light(b);
+        if (radius <= 0) {
+            continue;
+        }
+        const float cx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
+        const float cz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
+        if (!mover_shown(game, false, b.owner, cx, cz)) {
+            continue;  // Out of sight under the fog of war.
+        }
+        render::PointLight l;
+        l.position = {cx, floor_y(game, b.def, b.x, b.z, b.width, b.depth, b.rotation) + 2.0f, cz};
+        l.radius = static_cast<float>(radius);
+        l.color = game.content().buildings[b.def].cool_light ? kCool : kWarm;
+        out.push_back(l);
+    }
+    if (!torches) {
+        return;
+    }
+    const std::size_t buildings = out.size();
+    for (const render::CharacterInstance& c : characters_) {
+        bool lit = false;
+        for (std::size_t i = first; i < buildings && !lit; ++i) {
+            const float dx = c.position.x - out[i].position.x;
+            const float dz = c.position.z - out[i].position.z;
+            const float reach = out[i].radius * 0.8f;
+            lit = dx * dx + dz * dz < reach * reach;
+        }
+        if (!lit) {
+            out.push_back({c.position, kTorchRadius, kTorch});
+        }
+    }
+}
+
 void VillageView::update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,
                                     float speed) {
     characters_.clear();

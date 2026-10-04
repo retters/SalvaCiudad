@@ -96,6 +96,16 @@ struct Lighting {
     float water = 1.0f;
 };
 
+// A light of the night (phase 69): it lights the ground and what stands on
+// it up to `radius` meters around, fading out. No shadows.
+struct PointLight {
+    math::Vec3 position;
+    float radius = 8.0f;
+    math::Vec3 color{1.0f, 0.72f, 0.42f};
+};
+// The lights reach this far from the middle of the view, in meters.
+inline constexpr float kLightReach = 512.0f;
+
 struct SceneView {
     math::Mat4 view;
     math::Vec3 eye;
@@ -241,6 +251,11 @@ public:
     // `side` texels over the same area as the fog) shows through the fog,
     // fully `band` meters over it. Empty turns it off.
     bool set_war_ceiling(std::span<const std::uint16_t> heights, std::int32_t side, float band);
+
+    // The lights of the night (phase 69): those within kLightReach of
+    // `center` light the lit shaders, times `strength` (0 by day, which
+    // also puts out the windows and what glows). Call when they change.
+    void set_lights(std::span<const PointLight> lights, float strength, const math::Vec3& center);
 
     // Draws inset `slot` (0 to kInsets - 1) with the next render(), after
     // the main view. One inset a frame: the last one asked for.

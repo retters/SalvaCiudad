@@ -3,7 +3,7 @@
 // the position), so the ground reads as a patchwork of lit facets.
 #include "lighting.hlsli"
 
-StructuredBuffer<uint> face_colors : register(t4, space2);  // After the four sampled textures.
+StructuredBuffer<uint> face_colors : register(t5, space2);  // After the five sampled textures.
 
 cbuffer FacetDraw : register(b2, space3)
 {

@@ -691,6 +691,48 @@ TEST_SUITE("village") {
         CHECK(a.rejected_commands() == 3);
     }
 
+    TEST_CASE("what gives light at night: the town center, a torch once built, a home with people") {
+        CHECK(content()->buildings[building("torch")].light == 10);
+        CHECK(content()->buildings[building("town_center")].light == 20);
+        CHECK(content()->buildings[building("decor_lamp_post")].light > 0);
+        CHECK(content()->buildings[building("decor_glow_bells")].cool_light);
+        CHECK(content()->buildings[building("house")].light == 0);
+        GameSetup setup{1, 7, false, GameRules{}};
+        setup.rules.raiders = Threat::None;
+        setup.rules.wildlife = Threat::None;
+        setup.rules.fires = Threat::None;
+        setup.rules.diseases = Threat::None;
+        Game g(content(), small_map(27), setup);
+        const Building* tc = g.buildings().get(g.player(0).town_center);
+        REQUIRE(tc != nullptr);
+        CHECK(g.light(*tc) == 20);
+        REQUIRE(place(g, building("torch")));
+        REQUIRE(place(g, building("house")));
+        const auto light_of = [&](std::string_view id) {
+            for (const Building& b : g.buildings().data()) {
+                if (b.def == building(id)) {
+                    return g.light(b);
+                }
+            }
+            return -1;
+        };
+        // Sites give none.
+        CHECK(light_of("torch") == 0);
+        CHECK(light_of("house") == 0);
+        for (int i = 0; i < 6000 && (complete_count(g, building("torch")) == 0 || complete_count(g, building("house")) == 0);
+             ++i) {
+            g.step();
+        }
+        REQUIRE(complete_count(g, building("torch")) == 1);
+        REQUIRE(complete_count(g, building("house")) == 1);
+        CHECK(light_of("torch") == 10);
+        // The house, once someone lives in it: its windows, a little beyond its walls.
+        for (int i = 0; i < 3000 && light_of("house") == 0; ++i) {
+            g.step();
+        }
+        CHECK(light_of("house") > village::kOccupiedLight);
+    }
+
     TEST_CASE("a campfire burns the town's firewood on cold days and keeps those near it warm") {
         const DefIndex fire = building("campfire");
         CHECK(content()->buildings[fire].warmth == 10);

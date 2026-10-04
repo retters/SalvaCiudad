@@ -217,7 +217,7 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
 
     SDL_GPUShader* ground_vs = make_shader(device_, kFacetVertDxil, kFacetVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 1);
     SDL_GPUShader* ground_fs =
-        make_shader(device_, kFacetFragDxil, kFacetFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 4, 1, 3);
+        make_shader(device_, kFacetFragDxil, kFacetFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 5, 1, 3);
     SDL_GPUShader* water_vs = make_shader(device_, kWaterVertDxil, kWaterVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 3, 1);
     SDL_GPUShader* water_fs =
         make_shader(device_, kWaterFragDxil, kWaterFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 1);
@@ -666,8 +666,8 @@ void TerrainLayer::draw_ground(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pas
     fu.view_proj = view_proj;
     fu.map[0] = static_cast<float>(cells_);
     SDL_PushGPUVertexUniformData(cmd, 0, &fu, sizeof(fu));
-    const SDL_GPUTextureSamplerBinding fragment[4] = {{white, sampler}, {shadow_map, shadow_sampler}, war[0], war[1]};
-    SDL_BindGPUFragmentSamplers(pass, 0, fragment, 4);
+    const SDL_GPUTextureSamplerBinding fragment[5] = {{white, sampler}, {shadow_map, shadow_sampler}, war[0], war[1], war[2]};
+    SDL_BindGPUFragmentSamplers(pass, 0, fragment, 5);
     SDL_BindGPUFragmentStorageBuffers(pass, 0, &facet_colors_, 1);
     const MaterialUniforms mu{{1.0f, 1.0f, 1.0f, 1.0f}};
     SDL_PushGPUFragmentUniformData(cmd, 1, &mu, sizeof(mu));
@@ -733,8 +733,8 @@ void TerrainLayer::draw_grass(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass
     SDL_BindGPUVertexSamplers(pass, 0, &color_binding, 1);
     SDL_GPUBuffer* storage[2] = {heights_, water_};
     SDL_BindGPUVertexStorageBuffers(pass, 0, storage, 2);
-    const SDL_GPUTextureSamplerBinding fragment[4] = {{white, sampler}, {shadow_map, shadow_sampler}, war[0], war[1]};
-    SDL_BindGPUFragmentSamplers(pass, 0, fragment, 4);
+    const SDL_GPUTextureSamplerBinding fragment[5] = {{white, sampler}, {shadow_map, shadow_sampler}, war[0], war[1], war[2]};
+    SDL_BindGPUFragmentSamplers(pass, 0, fragment, 5);
     const MaterialUniforms mu{{1.0f, 1.0f, 1.0f, 1.0f}};
     SDL_PushGPUFragmentUniformData(cmd, 1, &mu, sizeof(mu));
     const SDL_GPUBufferBinding vb{grass_mesh_.vertices, 0};

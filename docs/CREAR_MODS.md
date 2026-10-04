@@ -87,6 +87,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `storage`, `stores` | Capacidad y categorías que guarda. Un `storage` que guarda `gold` y no es el puesto de comercio es una bóveda: ahí van los peones a dejar el oro que sobra. |
 | `tier`, `desirability`, `unique` | Nivel del centro del pueblo necesario, efecto en la deseabilidad y si solo puede haber uno. |
 | `levels` | Mejoras (casas y centro del pueblo): `residents`, `cost`, `work`, `needs`, `tier`, `population` y, si se ve distinto, `models`. |
+| `light`, `coolLight` | Metros que alumbra de noche a su alrededor (0 a 40; por omisión 0) y si su luz es azul pálido en vez de color de fuego. Una fogata solo alumbra encendida. Las casas con gente y los talleres con trabajadores alumbran sin declararlo. En el modelo, los materiales llamados `window` y los que llevan `glow`, `flame` o `ember` en el nombre (o terminan en `_fire`) brillan de noche. |
 | `sight` | Metros que ve desde su centro con niebla de guerra (1 a 200; por omisión 12). En `core`, el centro del pueblo ve 48 y la atalaya 45. |
 | `workerSight` | Metros que ven sus trabajadores, si es más que lo de su raza (0 a 200; por omisión 0). En `core`, el del Explorador ve 30. |
 | `landmark` | `true`: su silueta se ve a través de la niebla de guerra aunque no sobresalga del techo de la niebla (por omisión `false`). |

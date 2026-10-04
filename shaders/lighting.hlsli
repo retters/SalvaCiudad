@@ -12,6 +12,10 @@ Texture2D<float> war_fog_tex : register(t2, space2);
 Texture2D<float> war_ceiling_tex : register(t3, space2);
 SamplerState war_sampler : register(s2, space2);
 SamplerState war_ceiling_sampler : register(s3, space2);
+// The lights of the night (phase 69): what they add at each point of the
+// ground around the camera.
+Texture2D<float4> light_tex : register(t4, space2);
+SamplerState light_sampler : register(s4, space2);
 
 cbuffer SceneUniforms : register(b0, space3)
 {
@@ -26,7 +30,29 @@ cbuffer SceneUniforms : register(b0, space3)
     float4 shadow_params;       // x = texel size, y = depth bias, z = snow cover (0..1),
                                 // w = 1: the cascades were fitted to another camera (a camera window).
     float4 war_params;          // Fog of war: see apply_war_fog().
+    float4 light_params;        // Lights: xy = the world corner of light_tex, z = 1 / the meters it spans,
+                                // w = how strong they are (0 by day).
 };
+
+// What the lights near a point add to it. The texture keeps the square
+// root of a quarter of the light, to tell the dim from the dark, and in its
+// alpha how high the lights are ((y + 64) / 512): what is well over them
+// (smoke, treetops, a tower's roof) gets less.
+float3 point_lights(float3 world_pos)
+{
+    if (light_params.w <= 0.0)
+    {
+        return float3(0.0, 0.0, 0.0);
+    }
+    float2 uv = (world_pos.xz - light_params.xy) * light_params.z;
+    if (any(uv < 0.0) || any(uv > 1.0))
+    {
+        return float3(0.0, 0.0, 0.0);
+    }
+    float4 v = light_tex.SampleLevel(light_sampler, uv, 0.0);
+    float over = world_pos.y - (v.a * 512.0 - 64.0);
+    return v.rgb * v.rgb * (4.0 * light_params.w * saturate(1.0 - (over - 3.0) / 9.0));
+}
 
 // Snow settles on what faces up, more the deeper it is.
 float3 apply_snow(float3 albedo, float3 n, float settle_from)
@@ -111,8 +137,9 @@ float sample_shadow(float3 world_pos, float view_distance, float3 normal)
 }
 
 // Lit, fogged color for the swapchain from a linear albedo. A landmark
-// (1) shows through the fog of war as if it stood over its ceiling.
-float4 shade(float3 albedo, float3 n, float3 world_pos, float landmark = 0.0)
+// (1) shows through the fog of war as if it stood over its ceiling. `glow`:
+// what shines by itself at night, 1 a lit window, 2 its own color.
+float4 shade(float3 albedo, float3 n, float3 world_pos, float landmark = 0.0, float glow = 0.0)
 {
     float3 to_camera = camera_position.xyz - world_pos;
     float distance = length(to_camera);
@@ -121,7 +148,12 @@ float4 shade(float3 albedo, float3 n, float3 world_pos, float landmark = 0.0)
     float n_dot_l = saturate(dot(n, l));
     float shadow = n_dot_l > 0.0 ? sample_shadow(world_pos, distance, n) : 0.0;
     float3 ambient = lerp(ground_ambient.rgb, sky_ambient.rgb, n.y * 0.5 + 0.5);
-    float3 color = albedo * (sun_color.rgb * n_dot_l * shadow + ambient);
+    float3 color = albedo * (sun_color.rgb * n_dot_l * shadow + ambient + point_lights(world_pos));
+    if (glow > 0.5 && light_params.w > 0.0)
+    {
+        float3 own = glow > 1.5 ? albedo * 2.6 : float3(1.25, 0.82, 0.36);
+        color = lerp(color, own, light_params.w);
+    }
 
     float fog = 1.0 - exp2(-fog_color.a * distance * distance);
     color = lerp(color, fog_color.rgb, saturate(fog));

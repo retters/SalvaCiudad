@@ -68,7 +68,7 @@ public:
 
     // Draws the faceted ground in the current pass. The scene's fragment
     // uniforms (slot 0) must already be pushed. `war` is the fog of war and
-    // its ceiling (two bindings; phase 32).
+    // its ceiling, and the lights of the night (three bindings; phases 32 and 69).
     void draw_ground(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,
                      SDL_GPUTexture* white, SDL_GPUSampler* sampler, SDL_GPUTexture* shadow_map,
                      SDL_GPUSampler* shadow_sampler, const SDL_GPUTextureSamplerBinding* war);

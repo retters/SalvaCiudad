@@ -38,9 +38,12 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 36;
+inline constexpr std::uint32_t kGameRulesVersion = 37;
 
 namespace village {
+// A house with people or a workplace with workers lights this far beyond
+// its walls (its windows), if its def says nothing.
+inline constexpr std::int32_t kOccupiedLight = 6;
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
 inline constexpr std::int32_t kEatBelow = 500;           // Goes to eat under this.
 inline constexpr std::uint32_t kTicksPerFoodPoint = 4;   // Hunger: one meter point per 4 ticks.
@@ -561,6 +564,9 @@ public:
     [[nodiscard]] std::uint8_t vision_group(std::uint8_t player) const { return town_group(town_of(player)); }
     // Meters a building, a villager or a soldier sees (0: it gives no sight).
     [[nodiscard]] std::int32_t sight(const Building& b) const;
+    // Phase 69: how many meters around its middle a building lights at
+    // night; 0 if it gives no light now.
+    [[nodiscard]] std::int32_t light(const Building& b) const;
     [[nodiscard]] std::int32_t sight(const Villager& v) const;
     [[nodiscard]] std::int32_t sight(const Creature& a) const;
     // Explores around every town's people and buildings; step() does it

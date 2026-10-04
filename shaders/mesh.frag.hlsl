@@ -30,5 +30,8 @@ float4 main(PixelInput input) : SV_Target0
     // The texture's format is sRGB, so the sample is already linear.
     float3 albedo = texel.rgb * base_color.rgb * input.tint.rgb;
     float3 n = normalize(input.normal);
-    return shade(apply_snow(albedo, n, 0.55), n, input.world_pos, input.tint.a > 1.9 ? 1.0 : 0.0);
+    // The material's alpha says whether it shines: 1 no, 2 a window, 3 itself.
+    float glow = max(0.0, round(base_color.a) - 1.0);
+    return shade(glow > 0.5 ? albedo : apply_snow(albedo, n, 0.55), n, input.world_pos, input.tint.a > 1.9 ? 1.0 : 0.0,
+                 glow);
 }

@@ -990,6 +990,7 @@
     "hud.walker.title": "Persona de prueba",
     "hud.walker.note": "Puesta con las herramientas de desarrollo: solo pasea.",
     "hud.walker.model": "Modelo: {0:name}",
+    "hud.building.light": "Da luz de noche a {0:meters} m a su alrededor.",
     "hud.building.campfire": "Fogata: abriga a quien está a {0:meters} m. Gasta 1 de leña por día frío.",
     "hud.building.campfireOut": "Apagada: no hay leña en los almacenes.",
     "hud.window.camera": "Cámara",

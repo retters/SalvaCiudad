@@ -890,11 +890,11 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - HUD: junto a la fecha, si es de día o de noche y cuánto falta para el cambio.
    - *Criterios:* con año de 10 min, día 5 y noche 10, la prueba da día en la primera mitad del año 1 y noche hasta la mitad del año 2, y se repite; apagado, siempre es de día y el juego se ve como antes; dos instancias en red ven la misma hora; guardar y cargar la conserva; el formulario recuerda los valores; suben las versiones de reglas y de red; español e inglés.
 69. **Luces de noche.**
-   - Luces puntuales reales en el motor: iluminan terreno, edificios, personas y árboles cercanos; sin sombras propias. Tope por calidad gráfica, eligiendo las más cercanas a la cámara.
+   - Luces puntuales reales en el motor: iluminan terreno, edificios, personas y árboles cercanos; sin sombras propias. Se dibujan en una textura de luz alrededor de la cámara (1 km de lado, 2 m por punto), así que su número casi no cuesta y no hace falta un tope por calidad gráfica.
    - Dan luz: el centro del pueblo, las casas y talleres con gente (ventanas que brillan), las fogatas encendidas, y las decoraciones que por naturaleza alumbran (faroles, braseros, antorchas, linternas, velas…), declarado en los datos con `"light"` (radio en metros) y los puntos de luz del modelo.
-   - Farol construible barato (madera) para iluminar caminos y zonas de trabajo, sin mantenimiento.
+   - Antorcha construible barata (1 tronco, 1 × 1, en Decoración) para iluminar caminos y zonas de trabajo, sin mantenimiento.
    - De noche, los aldeanos fuera de zonas iluminadas llevan una antorcha en la mano (solo de la vista).
-   - *Criterios:* de noche un pueblo se ve por sus luces y lo demás queda oscuro; un farol recién construido ilumina su alrededor; las luces se apagan de día; con 200 luces a la vista el juego pierde como mucho un 15 % de FPS de noche en la partida de referencia, medido y anotado.
+   - *Criterios:* de noche un pueblo se ve por sus luces y lo demás queda oscuro; un farol recién construido ilumina su alrededor; las luces se apagan de día; el juego pierde como mucho un 15 % de FPS de noche frente al día, medido y anotado.
 70. **Oscuridad en la simulación.**
    - Mapa de luz de la simulación (por celda, entero): lo que da luz en la fase 69 ilumina su radio. Se actualiza al construir, demoler, ocupar o apagarse.
    - De noche, fuera de la luz, los aldeanos trabajan y caminan al 75 %. Las razas con visión nocturna (gatunos) no tienen penalización: el rasgo `nightVision` por fin hace algo (reemplaza D-1904).
