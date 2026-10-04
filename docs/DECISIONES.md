@@ -2864,3 +2864,35 @@ En un jugador la simulación da un paso por cuadro mientras espera, a cualquier 
 
 **D-7410. Lo revisado en pantalla.**
 En una copia portable en ventana: elegir con luz de día, la pregunta, fundar, el carro con su ventana (sin botón de demoler), la obra del centro, la barra de recursos que aparece al fundar, y con niebla estática la pantalla negra con marcas y silueta. No se probó a mano con dos instancias (lo cubren las pruebas de la suite `net`); queda en la lista de verificación. Durante estas pruebas el guion de capturas mandó por error cuatro clics y un Enter a otra ventana de SalvaCiudad abierta en el equipo (la de `J:\Back`); se corrigió para que solo toque la copia de su propia carpeta.
+
+## Fase 75: pueblos y asientos que cambian durante la partida (2026-10-03)
+
+**D-7501. Un pueblo se llama como el asiento que lo funda.**
+La simulación ya indexaba todo lo de un pueblo (edificios, aldeanos, cachés) con un número de 0 a 11 que coincidía con el del jugador. Se conserva: el pueblo *t* es el del asiento *t*, su fundador. Cada asiento guarda a qué pueblo pertenece: al suyo (lo haya fundado o no) o al de otro asiento. Así «quién fundó el pueblo» no necesita guardarse aparte y casi ninguna regla cambió; `shared_town` dejó de ser un modo de la partida y pasó a ser una pregunta («¿algún pueblo tiene más de un asiento?»). Se descartó separar los índices de pueblo y de asiento: habría tocado cada regla de la simulación para el mismo resultado.
+
+**D-7502. «Sin pueblo» es el pueblo propio sin fundar.**
+No hay un valor especial para «ninguno». Un asiento nuevo pertenece a su propio pueblo, que no existe hasta que lo funde; mientras tanto solo puede fundar, o ser admitido en otro.
+
+**D-7503. El anfitrión es un asiento de la simulación.**
+`Game::host()` (asiento 0 por omisión) forma parte del estado y de las partidas guardadas. Solo ese asiento puede dar la orden de agregar asientos. Hace falta en el estado porque al cargar una partida como anfitrión (fase 78) quien hospeda puede no ser el asiento 0.
+
+**D-7504. Los nombres y colores de los asientos viven en la simulación.**
+Antes solo los conocía la sala de la red. Ahora viajan en `GameSetup` y en la orden de agregar asiento, se guardan con la partida y entran en el hash. Es lo que permitirá devolver su asiento por nombre a quien vuelva a una partida guardada. Hasta 32 bytes, con las reglas de los nombres de aldeanos; vacío vale («Pueblo N» en la interfaz).
+
+**D-7505. Unir un asiento a un pueblo es, por ahora, una orden de su fundador.**
+`JoinTown`: solo el fundador del pueblo, y solo para un asiento sin pueblo fundado y sin nadie más en él. La fase 77 le pone delante la solicitud del que quiere entrar. Un asiento que se une ya no puede fundar.
+
+**D-7506. Un pueblo común ya no reserva los doce asientos.**
+Antes la simulación activaba los doce desde el principio para que alguien pudiera entrar después. Ahora la partida tiene los asientos de quienes juegan y los demás llegan con la orden de agregar. En esta fase, quien entra a un pueblo común creado en la sala recibe su asiento y es unido al pueblo en el mismo turno, sin pedir permiso, como hasta ahora; las fases 76 y 77 lo cambian.
+
+**D-7507. Los grupos de visión cuentan el pueblo propio de cada asiento.**
+Con visión separada por pueblo, cada asiento tiene reservado el grupo del pueblo que podría fundar, además del grupo del pueblo en el que está. El conjunto no cambia cuando alguien se une a otro pueblo, y la comprobación al cargar sigue valiendo. Con visión compartida entre aliados (lo normal en cooperativo) todos están en el grupo 0, así que quien llega ve lo que los demás ya exploraron.
+
+**D-7508. Mapas separados: sin región no hay dónde fundar.**
+En una partida de mapas separados cada pueblo tiene su región del mundo. Un asiento que llegue cuando ya no quedan regiones no puede fundar (todo le queda «fuera del mapa»); puede unirse a un pueblo. Para dejar lugar hay que pedir más «sitios para pueblos» al crear la partida.
+
+**D-7509. Versiones.**
+Reglas 42, protocolo de red 20.
+
+**D-7510. Sin revisar.**
+Todo por pruebas (suite `seats`, y las de red, que siguen pasando con el pueblo común de doce y los cuatro pueblos separados). En pantalla no cambia nada todavía, salvo que los pueblos se llaman por el nombre del jugador también en un jugador.

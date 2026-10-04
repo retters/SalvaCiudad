@@ -39,6 +39,17 @@ void Vision::reset(std::int32_t map_size, std::uint16_t groups) {
     }
 }
 
+void Vision::add_group(std::uint8_t group) {
+    if (side_ <= 0 || group >= kVisionGroups || used(group)) {
+        return;
+    }
+    groups_ = static_cast<std::uint16_t>(groups_ | (1u << group));
+    explored_[group].reset(side_);
+    count_[group] = 0;
+    sum_[group] = 0;
+    ghosts_[group].clear();
+}
+
 bool Vision::explored_at(std::uint8_t group, std::int32_t x, std::int32_t z) const {
     if (!used(group) || x < 0 || z < 0) {
         return false;

@@ -42,6 +42,8 @@ enum class CommandType : std::uint8_t {
     DevFeature = 33,      // Developer tools: a natural feature at `position`: type `def`, species `def2`,
                           // size `count`, scale `value` (raw fixed point), rotation `value2`.
     FoundTown = 34,       // Phase 73: the seat's town, its center's corner cell at `position`, rotation `value` (0..3).
+    AddSeat = 35,         // Phase 75, the host only: a new seat without a town; `text` its name, `count` its color.
+    JoinTown = 36,        // Phase 75, a town's founder only: seat `count`, which has no town, joins the sender's.
 
 };
 
@@ -62,6 +64,11 @@ inline constexpr std::int32_t kMaxRule = 100000;
 // characters, no space at either end. "" is valid: no name of its own.
 inline constexpr std::size_t kMaxNameBytes = 24;
 [[nodiscard]] bool valid_villager_name(std::string_view name);
+// A seat's name (the player's): the same rules, up to this many bytes; ""
+// is valid (the interface then calls it by its number).
+inline constexpr std::size_t kMaxSeatNameBytes = 32;
+[[nodiscard]] bool valid_seat_name(std::string_view name);
+inline constexpr std::uint8_t kMaxSeatColor = 15;
 
 struct Command {
     CommandType type = CommandType::PlaceBuilding;
@@ -73,7 +80,7 @@ struct Command {
     std::int32_t value = 0;    // Rotation, worker count...
     std::uint16_t def2 = 0;    // A second definition (trade offers).
     std::int32_t value2 = 0;
-    std::string text;          // A name (RenameVillager); empty in every other command.
+    std::string text;          // A name (RenameVillager, AddSeat); empty in every other command.
 
     void write(BinaryWriter& w) const;
     // Reads and validates the shape of a command (not whether its target

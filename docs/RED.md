@@ -61,7 +61,7 @@ Si un jugador queda más de 30 ticks detrás del anfitrión (3 s; por encima de 
 
 ## Entrar a una partida empezada y reconectar
 
-- Un jugador que vuelve con **el mismo nombre** recupera su asiento. En un pueblo común también se puede ocupar un asiento libre, y en pueblos separados el de un jugador que se fue.
+- Un jugador que vuelve con **el mismo nombre** recupera su asiento. En un pueblo común creado en la sala, un jugador nuevo recibe un asiento nuevo (orden `AddSeat` del anfitrión) y queda unido al pueblo (orden `JoinTown`); en pueblos separados puede ocupar el de un jugador que se fue.
 - El anfitrión le manda la instantánea del juego (la misma serialización que las partidas guardadas, comprimida con zstd) y los turnos ya cerrados desde ese tick. Mientras tanto los demás siguen jugando.
 - Un jugador desconectado deja su pueblo trabajando solo hasta que vuelva.
 

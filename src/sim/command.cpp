@@ -13,8 +13,22 @@ bool coordinate_ok(Fixed v) {
 
 }  // namespace
 
+namespace {
+bool valid_name_text(std::string_view name, std::size_t max_bytes);
+}
+
 bool valid_villager_name(std::string_view name) {
-    if (name.size() > kMaxNameBytes) {
+    return valid_name_text(name, kMaxNameBytes);
+}
+
+bool valid_seat_name(std::string_view name) {
+    return valid_name_text(name, kMaxSeatNameBytes);
+}
+
+namespace {
+
+bool valid_name_text(std::string_view name, std::size_t max_bytes) {
+    if (name.size() > max_bytes) {
         return false;
     }
     if (!name.empty() && (name.front() == ' ' || name.back() == ' ')) {
@@ -62,6 +76,8 @@ bool valid_villager_name(std::string_view name) {
     return true;
 }
 
+}  // namespace
+
 void Command::write(BinaryWriter& w) const {
     w.u8(static_cast<std::uint8_t>(type));
     w.u8(player);
@@ -81,12 +97,13 @@ bool Command::read(BinaryReader& r, Command& out) {
     Command c;
     if (!r.u8(type) || !r.u8(c.player) || !r.u32(c.entity.index) || !r.u32(c.entity.generation) ||
         !r.vec2(c.position) || !r.u16(c.count) || !r.u16(c.def) || !r.i32(c.value) || !r.u16(c.def2) ||
-        !r.i32(c.value2) || !r.string(kMaxNameBytes, c.text)) {
+        !r.i32(c.value2) || !r.string(kMaxSeatNameBytes, c.text)) {
         return false;
     }
     bool ok = c.player < kMaxPlayers && coordinate_ok(c.position.x) && coordinate_ok(c.position.z);
-    // Only a rename carries text.
-    ok = ok && (static_cast<CommandType>(type) == CommandType::RenameVillager || c.text.empty());
+    // Only a rename and a new seat carry text.
+    ok = ok && (static_cast<CommandType>(type) == CommandType::RenameVillager ||
+                static_cast<CommandType>(type) == CommandType::AddSeat || c.text.empty());
     switch (static_cast<CommandType>(type)) {
         case CommandType::PlaceBuilding:
         case CommandType::FoundTown:
@@ -150,6 +167,12 @@ bool Command::read(BinaryReader& r, Command& out) {
             break;
         case CommandType::RenameVillager:
             ok = ok && c.entity.valid() && valid_villager_name(c.text);
+            break;
+        case CommandType::AddSeat:
+            ok = ok && valid_seat_name(c.text) && c.count <= kMaxSeatColor;
+            break;
+        case CommandType::JoinTown:
+            ok = ok && c.count < kMaxPlayers && c.count != c.player;
             break;
         case CommandType::SetProduction:
             ok = ok && c.entity.valid() && (c.value == 0 || c.value == 1);

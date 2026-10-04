@@ -765,7 +765,7 @@ void UiHost::end_panel(ui::Context& ctx) {
     const float gap = ctx.s(10.0f);
     std::vector<std::uint8_t> towns;
     for (std::uint8_t p = 0; p < game.player_count(); ++p) {
-        if (game.town_of(p) == p && game.player(p).active) {
+        if (game.town_exists(p)) {
             towns.push_back(p);
         }
     }

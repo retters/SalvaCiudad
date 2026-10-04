@@ -353,7 +353,7 @@ void GameHud::dock(ui::Context& ctx, GameSession& s) {
     bool others = false;
     bool barracks = false;
     for (std::uint8_t p = 0; p < game.player_count(); ++p) {
-        others = others || (game.town_of(p) == p && p != s.town() && game.player(p).active);
+        others = others || (game.town_exists(p) && p != s.town());
     }
     for (const sim::Building& b : game.buildings().data()) {
         barracks = barracks || (b.owner == s.town() && game.content().buildings[b.def].trains);

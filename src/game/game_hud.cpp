@@ -574,7 +574,7 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     // Trade with other towns.
     bool others = false;
     for (std::uint8_t p = 0; p < game.player_count(); ++p) {
-        others = others || (game.town_of(p) == p && p != s.town() && game.player(p).active);
+        others = others || (game.town_exists(p) && p != s.town());
     }
     const std::string pop_text = tr("hud.population", pop);
     const float pw = ctx.text().measure(st, pop_text) + ctx.s(24.0f);
@@ -1182,7 +1182,7 @@ void GameHud::army_window(ui::Context& ctx, GameSession& s) {
     std::vector<std::string> enemy_names;
     std::vector<std::uint8_t> towns;
     for (std::uint8_t p = 0; p < game.player_count(); ++p) {
-        if (game.town_of(p) != p || !game.player(p).active) {
+        if (!game.town_exists(p)) {
             continue;
         }
         towns.push_back(p);
@@ -1270,6 +1270,12 @@ void GameHud::army_window(ui::Context& ctx, GameSession& s) {
 }
 
 std::string GameHud::town_name(std::uint8_t player) const {
+    // The name the seat has in the game (phase 75), then the lobby's.
+    if (GameSession* s = services_.session()) {
+        if (player < s->game().player_count() && !s->game().player(player).name.empty()) {
+            return s->game().player(player).name;
+        }
+    }
     if (net::NetSession* net = services_.net()) {
         for (const net::LobbyPlayer& p : net->lobby().players) {
             if (p.slot == player) {
@@ -1502,7 +1508,7 @@ void GameHud::trade_window(ui::Context& ctx, GameSession& s) {
     std::vector<std::uint8_t> towns;
     std::vector<std::string> town_names;
     for (std::uint8_t p = 0; p < game.player_count(); ++p) {
-        if (game.town_of(p) == p && p != town && game.player(p).active) {
+        if (game.town_exists(p) && p != town) {
             towns.push_back(p);
             town_names.push_back(town_name(p));
         }

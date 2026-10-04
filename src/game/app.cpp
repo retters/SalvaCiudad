@@ -1359,10 +1359,16 @@ bool App::enter_generated_map() {
     if (net_start_ && net_) {
         const net::Start st = *net_start_;
         net_start_.reset();
-        // Nobody has a town yet: each seat founds its own (phase 74).
-        auto session = std::make_unique<GameSession>(
-            content, *map, sim::GameSetup{st.players, st.config.seed, st.config.shared_town, st.config.rules, false},
-            net_->local_slot());
+        // Nobody has a town yet: each seat founds its own (phase 74). The
+        // seats carry their players' names and colors (phase 75).
+        sim::GameSetup setup{st.players, st.config.seed, st.config.shared_town, st.config.rules, false, {}};
+        setup.seats.resize(st.players);
+        for (const net::LobbyPlayer& p : net_->lobby().players) {
+            if (p.slot < setup.seats.size() && sim::valid_seat_name(p.name)) {
+                setup.seats[p.slot] = {p.name, std::min<std::uint8_t>(p.color, sim::kMaxSeatColor)};
+            }
+        }
+        auto session = std::make_unique<GameSession>(content, *map, setup, net_->local_slot());
         session->attach(net_.get());
         session->game().set_dev_commands(false);  // Not in network games (decision D-910).
         start_session(std::move(session));
@@ -1372,7 +1378,8 @@ bool App::enter_generated_map() {
     // The tutorial and the reports start with the town standing.
     start_session(std::make_unique<GameSession>(
         content, *map,
-        sim::GameSetup{1, map->settings.seed ^ 0x5A17C1DAull, false, pending_rules_, pending_start_towns_ || replay_}));
+        sim::GameSetup{1, map->settings.seed ^ 0x5A17C1DAull, false, pending_rules_, pending_start_towns_ || replay_,
+                       {sim::SeatInfo{sim::valid_seat_name(player_name()) ? player_name() : std::string(), 0}}}));
     return true;
 }
 
@@ -2257,6 +2264,9 @@ void App::apply_snapshot(std::vector<std::uint8_t> state) {
 }
 
 std::string App::town_name(std::uint8_t player) const {
+    if (session_ && player < session_->game().player_count() && !session_->game().player(player).name.empty()) {
+        return session_->game().player(player).name;
+    }
     if (net_) {
         for (const net::LobbyPlayer& p : net_->lobby().players) {
             if (p.slot == player) {

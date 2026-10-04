@@ -165,6 +165,8 @@ private:
     std::map<PeerId, std::uint8_t> peers_;  // Peers that were welcomed.
     std::vector<TurnCommand> pending_;
     std::uint64_t horizon_ = 0;  // Turns before this one are closed.
+    // Seats of the simulation, counting those whose AddSeat order is on its way.
+    std::uint8_t sim_seats_ = 0;
     std::map<std::uint64_t, Turn> history_;   // Recent turns, for players who join.
     std::map<std::uint64_t, PartHashes> checks_;  // The host's own state checks.
     std::uint64_t host_map_hash_ = 0;

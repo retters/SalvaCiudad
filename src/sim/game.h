@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 41;
+inline constexpr std::uint32_t kGameRulesVersion = 42;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -297,6 +297,10 @@ enum class Outcome : std::uint8_t { Playing, Won, Lost, Count };
 
 struct PlayerState {
     bool active = false;
+    // Phase 75: who sits here (the player's name and color, for the
+    // interface and to give the seat back to whoever returns with the name).
+    std::string name;
+    std::uint8_t color = 0;
     // Phase 73: the seat's town exists (it was founded). Until then the
     // seat owns nothing and may only found. `cart`: the wagon the settlers
     // came with, which keeps their goods until the town center is built.
@@ -406,6 +410,12 @@ inline constexpr std::int32_t kMaxSlopeCm = 400;
 inline constexpr std::int32_t kMaxWallSlopeCm = 180;  // What follows the ground (walls...).
 inline constexpr std::int32_t kMaxBuriedCm = 200;
 
+// A seat's player, as the lobby knows it.
+struct SeatInfo {
+    std::string name;
+    std::uint8_t color = 0;
+};
+
 // How a game is set up besides its map.
 struct GameSetup {
     std::uint8_t players = 1;
@@ -417,6 +427,9 @@ struct GameSetup {
     // phases and the reference town). False, as the game does it: nobody
     // has a town until they found it, and time waits for all of them.
     bool start_towns = true;
+    // Phase 75: the names and colors of the seats, in order (may be shorter
+    // than `players`: the rest have no name).
+    std::vector<SeatInfo> seats;
 };
 
 class Game {
@@ -477,9 +490,23 @@ public:
     // Whether the developer tools' commands are accepted (single player,
     // or a multiplayer game that allows them). Part of the state.
     [[nodiscard]] bool dev_commands() const { return dev_commands_; }
-    // The town a player runs: their own, or the common one.
-    [[nodiscard]] std::uint8_t town_of(std::uint8_t player) const { return shared_town_ ? 0 : player; }
-    [[nodiscard]] bool shared_town() const { return shared_town_; }
+    // The town a player runs (phase 75): each seat belongs to a town, its
+    // own or another seat's. A town is known by the seat that founds it;
+    // a seat that has not joined anybody's is its own town, founded or not.
+    [[nodiscard]] std::uint8_t town_of(std::uint8_t player) const {
+        return player < kMaxPlayers ? seat_town_[player] : player;
+    }
+    // Whether some town has more than one seat.
+    [[nodiscard]] bool shared_town() const;
+    // The seat whose machine hosts the game: the only one that adds seats.
+    [[nodiscard]] std::uint8_t host() const { return host_seat_; }
+    void set_host(std::uint8_t seat) { host_seat_ = seat < kMaxPlayers ? seat : 0; }
+    // Whether `town` is a town that exists: a seat's own, already founded.
+    [[nodiscard]] bool town_exists(std::uint8_t town) const {
+        return town < player_count_ && players_[town].active && town_of(town) == town && players_[town].founded;
+    }
+    // How many seats run a town.
+    [[nodiscard]] std::int32_t seats_of(std::uint8_t town) const;
 
     // Time and weather (phase 10).
     [[nodiscard]] const GameRules& rules() const { return rules_; }
@@ -567,6 +594,8 @@ public:
             AutoTrade,       // Phase 29: the merchant left; `tally` is what automatic trade did.
             ExplorerBack,    // Phase 66: an explorer turns back; `value`: 0 low on food, 1 cold.
             TownFounded,     // Phase 73: `owner` founded its town at `at`.
+            SeatAdded,       // Phase 75: seat `owner` came into the game, without a town.
+            TownJoined,      // Phase 75: seat `owner` joined town `other`.
             GameStarted,     // Phase 73: every town is founded; time runs.
         };
         Kind kind = Kind::FireStarted;
@@ -707,7 +736,8 @@ private:
     std::uint32_t rejected_ = 0;
     std::uint32_t interrupted_ = 0;  // Not saved: a count for the tests.
     bool dev_commands_ = true;
-    bool shared_town_ = false;
+    std::array<std::uint8_t, kMaxPlayers> seat_town_{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    std::uint8_t host_seat_ = 0;
     bool started_ = true;          // Phase 73: false while it waits for the founders.
     std::uint64_t waited_ = 0;     // Steps taken while waiting.
     DefIndex town_center_def_ = kNoDef;

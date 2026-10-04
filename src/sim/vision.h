@@ -104,6 +104,9 @@ public:
     // A grid per group whose bit is set in `groups`, all unexplored.
     void reset(std::int32_t map_size, std::uint16_t groups);
     [[nodiscard]] bool active() const { return side_ > 0; }
+    // Phase 75: a group that comes later (a seat added to the game) gets
+    // its grid, unexplored. Nothing if the fog is off or it has one.
+    void add_group(std::uint8_t group);
     // Phase 60: every cell counts as explored for every group (the cells
     // themselves, their count and their sum go on as the groups walk, so
     // nothing more is saved or compared). Set after reset() or read().

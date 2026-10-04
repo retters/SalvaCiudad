@@ -306,6 +306,7 @@ void NetHost::hello(PeerId peer, const Hello& h) {
     // back (same name), a free seat of a common town, or a town left alone.
     std::optional<std::uint8_t> seat;
     bool rejoin = false;
+    bool new_seat = false;
     if (state_ == State::Lobby) {
         for (std::uint8_t i = 1; i < seats_.size() && !seat; ++i) {
             if (!seats_[i].used) {
@@ -319,10 +320,10 @@ void NetHost::hello(PeerId peer, const Hello& h) {
                 rejoin = true;
             }
         }
-        for (std::uint8_t i = 1; i < seats_.size() && !seat && lobby_.config.shared_town; ++i) {
-            if (!seats_[i].used) {
-                seat = i;
-            }
+        // Phase 75: a common town takes a newcomer in a seat made for them.
+        if (!seat && lobby_.config.shared_town && sim_seats_ < sim::kMaxPlayers && !seats_[sim_seats_].used) {
+            seat = sim_seats_;
+            new_seat = true;
         }
         for (std::uint8_t i = 1; i < seats_.size() && !seat && !lobby_.config.shared_town; ++i) {
             if (seats_[i].used && seats_[i].in_game && !seats_[i].connected && i < game_->player_count()) {
@@ -342,6 +343,20 @@ void NetHost::hello(PeerId peer, const Hello& h) {
     s.ready = false;
     peers_[peer] = *seat;
     link_.send(peer, encode(Welcome{*seat}));
+    if (new_seat) {
+        // The seat comes into the simulation by an order of the host, on
+        // every machine at the same turn; then it joins the common town.
+        sim::Command add;
+        add.type = sim::CommandType::AddSeat;
+        add.text = sim::valid_seat_name(s.name) ? s.name : std::string();
+        add.count = std::min<std::uint8_t>(s.color, sim::kMaxSeatColor);
+        issue(add);
+        sim::Command join;
+        join.type = sim::CommandType::JoinTown;
+        join.count = *seat;
+        issue(join);
+        ++sim_seats_;
+    }
     if (state_ == State::Playing) {
         s.in_game = true;
         s.loaded = true;
@@ -447,6 +462,7 @@ void NetHost::maybe_begin() {
     }
     state_ = State::Playing;
     horizon_ = game_->turn();
+    sim_seats_ = game_->player_count();
     send_lobby();
 }
 
