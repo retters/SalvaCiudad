@@ -184,6 +184,7 @@ private:
     void write_save(const std::string& stem, const std::string& name, bool quiet);
     void draw_scene_markers(std::uint32_t width, std::uint32_t height);
     void draw_start_markers(std::uint32_t width, std::uint32_t height);
+    void draw_supply_markers(std::uint32_t width, std::uint32_t height);
     void draw_marker(std::uint32_t width, std::uint32_t height, math::Vec3 at, ui::Color color);
     [[nodiscard]] DevContext dev_context(std::uint32_t width, std::uint32_t height);
     // The map behind the menus (phase 50).

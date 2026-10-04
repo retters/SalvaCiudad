@@ -602,6 +602,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 81 (avisos de recursos agotados)
+
+- [ ] Un cantero que acaba con la roca a su alcance: aparece la notificación «Cantero: ya no queda nada que recoger a su alcance», y al hacer clic la cámara va al edificio.
+- [ ] Sobre ese cantero queda un cuadro rojo con «!» mientras siga sin roca; desaparece si se detiene su producción o se le quitan los trabajadores.
+- [ ] La ventana del cantero y la de cada uno de sus trabajadores dicen «Sin recursos a su alcance».
+- [ ] Un recolector con los arbustos vacíos dice «Esperando que rebrote lo que recoge», sin notificación ni cuadro rojo; en invierno pasa lo mismo.
+- [ ] Un pescador con el agua helada dice «Sin pesca: agua helada o fuera de su alcance»; un cazador sin presas, «Sin presas a su alcance».
+- [ ] **Sin revisar en pantalla por Claude:** el cuadro rojo, la notificación y las líneas de estado se comprobaron por pruebas y leyendo el código, no en una partida.
+- [ ] **Tu opinión:** si el cuadro rojo con «!» basta como ícono o prefieres un dibujo propio.
+
 ### Fase 80 (los animales ya no brillan de noche)
 
 - [ ] De noche, un ciervo, un jabalí, un lobo o un oso lejos del pueblo se ve tan oscuro como el suelo que pisa, sin un charco de luz a sus pies.

@@ -50,6 +50,19 @@ void meter(ui::Context& ctx, const ui::Rect& r, float fraction, ui::Color fill) 
 
 }  // namespace
 
+const char* supply_key(const sim::BuildingDef& def, const sim::Building& b) {
+    if (b.supply == sim::Supply::Fine || b.stopped || b.state != sim::BuildingState::Complete) {
+        return nullptr;
+    }
+    if (def.work == sim::WorkKind::Hunt) {
+        return "hud.supply.noGame";
+    }
+    if (def.work == sim::WorkKind::Fish) {
+        return "hud.supply.noFish";
+    }
+    return b.supply == sim::Supply::Exhausted ? "hud.supply.exhausted" : "hud.supply.waiting";
+}
+
 const char* need_text_key(std::uint8_t need) {
     static constexpr const char* kKeys[] = {"need.food",   "need.water",   "need.clothes", "need.shoes",
                                             "need.religion", "need.entertainment", "need.heating", "need.beauty",
@@ -887,6 +900,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
                 }
             }
         }
+    }
+    if (const char* key = supply_key(d, *b)) {
+        lines.push_back(tr(key));
     }
     const bool mine = b->owner == s.town();
     const bool has_workers = d.workers > 0 && b->state == sim::BuildingState::Complete;
@@ -2026,6 +2042,8 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
     lines.push_back(tr("hud.villager.task", tr(v->order == sim::Order::Returning ? "task.scoutBack" : task_text_key(v->task))));
     if (job == nullptr) {
         lines.push_back(tr(game.adult(*v) ? "hud.villager.laborer" : "hud.villager.child"));
+    } else if (const char* key = supply_key(content.buildings[job->def], *job)) {
+        lines.push_back(tr(key));
     }
     // Phase 66: an explorer goes where a right click sends it.
     if (job != nullptr && mine && content.buildings[job->def].work == sim::WorkKind::Explore) {

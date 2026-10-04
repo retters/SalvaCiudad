@@ -3071,3 +3071,20 @@ Ya la tenían y nadie la reportó como falla. Es solo de la vista: para la simul
 
 **D-8013. Lo medido y lo no revisado.**
 Prueba nueva: ningún material de los modelos de `models/animals` cuenta como brillo (cubre la otra forma de que un animal brille). La regla de quién lleva antorcha no tiene prueba propia: vive en la vista, que no se puede actualizar sin dispositivo gráfico. No se tomó la captura de antes y después que pedía el criterio: queda en la lista manual del README.
+
+## Fase 81: avisos de recursos agotados (2026-10-04)
+
+**D-8101. El estado lo calcula el trabajador al buscar.**
+Cada edificio que vive de la tierra guarda un estado (`Supply`: con recursos, esperando, agotado) que se actualiza cuando uno de sus trabajadores busca qué recoger; no hay un barrido aparte. Consecuencias: un edificio sin trabajadores conserva el último estado, y el aviso llega cuando el primer trabajador vuelve con las manos vacías, no en el tick exacto en que se gastó la última roca. Es lo más barato y no añade trabajo por tick.
+
+**D-8102. Qué cuenta como «con recursos».**
+Un recurso a su alcance que otro trabajador tiene reservado cuenta: el edificio no está agotado, solo le sobra gente. Lo que rebrota y hoy está vacío o helado deja al edificio «esperando». «Agotado» es que no queda nada de lo que no rebrota. «A su alcance» es el mismo alcance por camino que usa la recolección (fuera queda la otra orilla de un río).
+
+**D-8103. Cazador y pescador nunca quedan «agotados».**
+Sin presas o sin agua abierta quedan «esperando», con su propio texto y sin notificación, como pide la especificación.
+
+**D-8104. El ícono es un cuadro rojo con «!».**
+Dibujado por la interfaz sobre el edificio, como las marcas de los sitios sugeridos; no es un modelo ni una textura nueva. Solo se muestra en edificios propios, terminados, con trabajadores y sin detener. La notificación nombra el edificio («Cantero: ya no queda nada que recoger a su alcance») en lugar de tener un texto por recurso: sirve igual para edificios de mods.
+
+**D-8105. Versiones y lo medido.**
+Reglas 46 (el estado se guarda con la partida y entra en el hash). Suite nueva `resources`: un cantero con dos rocas las agota, queda agotado y lo dice una sola vez aunque sus trabajadores sigan buscando; la roca fuera de su alcance no cuenta; guardar y cargar da la misma partida; un recolector con arbustos vacíos queda esperando sin evento. El texto del cazador y del pescador no tiene prueba propia. Nada se vio en pantalla.

@@ -25,6 +25,9 @@ namespace sc {
 [[nodiscard]] const char* need_text_key(std::uint8_t need);
 // Text keys of the villagers' tasks, by sim::Task.
 [[nodiscard]] const char* task_text_key(sim::Task task);
+// Phase 81: the text key of what a workplace lacks to take from the land,
+// or null when it has it (or does not work).
+[[nodiscard]] const char* supply_key(const sim::BuildingDef& def, const sim::Building& b);
 // "Year 2, month 3, day 4" parts from a tick.
 struct GameDate {
     std::int32_t year = 1;

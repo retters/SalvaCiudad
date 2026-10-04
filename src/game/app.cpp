@@ -1050,6 +1050,7 @@ void App::render_frame(float dt) {
             }
         }
         if (!still && scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map) {
+            draw_supply_markers(frame.width, frame.height);
             draw_scene_markers(frame.width, frame.height);
         }
         if (!still && scene_drawn) {
@@ -1493,6 +1494,41 @@ void App::draw_start_markers(std::uint32_t width, std::uint32_t height) {
         const float th = ui_.text().line_height(st);
         ui_.text().draw(dl, st, std::round(sx - tw * 0.5f), std::round(sy - th * 0.5f), number,
                         ui::Color::rgb(0x1E1A14));
+    }
+}
+
+void App::draw_supply_markers(std::uint32_t width, std::uint32_t height) {
+    if (!session_ || replay_) {
+        return;
+    }
+    // Phase 81: a sign over each of the town's workplaces with nothing left
+    // to take, until it finds something again.
+    const sim::Game& g = session_->game();
+    ui::DrawList& dl = ui_.draw();
+    const math::Mat4 view_proj = camera_view_proj(width, height);
+    const ui::TextStyle st = ui_.style(ui_.theme().body, ui::FontRole::Bold);
+    const float r = ui_.s(10.0f);
+    for (const sim::Building& b : g.buildings().data()) {
+        if (b.supply != sim::Supply::Exhausted || b.stopped || b.workers.empty() || b.owner != session_->town() ||
+            b.state != sim::BuildingState::Complete) {
+            continue;
+        }
+        const math::Vec3 p = village_.building_top(g, b);
+        const math::Vec4 clip = view_proj * math::Vec4{p.x, p.y, p.z, 1.0f};
+        if (clip.w <= 0.01f) {
+            continue;
+        }
+        const float sx = std::round((clip.x / clip.w * 0.5f + 0.5f) * static_cast<float>(width));
+        const float sy = std::round((0.5f - clip.y / clip.w * 0.5f) * static_cast<float>(height)) - r * 2.2f;
+        if (sx < -r || sy < -r || sx > static_cast<float>(width) + r || sy > static_cast<float>(height) + r) {
+            continue;
+        }
+        dl.rect({sx - r - 2, sy - r - 2, 2 * r + 4, 2 * r + 4}, ui::Color::rgb(0x000000, 150));
+        dl.rect({sx - r, sy - r, 2 * r, 2 * r}, ui_.theme().danger);
+        const std::string sign = "!";
+        const float tw = ui_.text().measure(st, sign);
+        const float th = ui_.text().line_height(st);
+        ui_.text().draw(dl, st, std::round(sx - tw * 0.5f), std::round(sy - th * 0.5f), sign, ui::Color::rgb(0xFFFFFF));
     }
 }
 
@@ -2667,6 +2703,7 @@ void App::report_game_events() {
             case sim::Game::Event::Kind::ExplorerBack:
                 text = tr(e.value == 0 ? "event.explorerBack.food" : "event.explorerBack.cold");
                 break;
+            case sim::Game::Event::Kind::Exhausted: text = tr("event.exhausted", place); break;
             case sim::Game::Event::Kind::Born: text = tr("event.born"); break;
             case sim::Game::Event::Kind::Died: text = tr("event.died"); break;
             case sim::Game::Event::Kind::TownFounded:

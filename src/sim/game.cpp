@@ -768,11 +768,13 @@ public:
             if (d.work == WorkKind::Farm && start_farming(v, *job)) {
                 return;
             }
-            if (d.work == WorkKind::Hunt && start_hunting(v, *job)) {
-                return;
-            }
-            if (d.work == WorkKind::Fish && start_fishing(v, *job)) {
-                return;
+            if (d.work == WorkKind::Hunt || d.work == WorkKind::Fish) {
+                // No game or no open water is of the season: never Exhausted.
+                const bool found = d.work == WorkKind::Hunt ? start_hunting(v, *job) : start_fishing(v, *job);
+                set_supply(*job, v.job, found ? Supply::Fine : Supply::Waiting);
+                if (found) {
+                    return;
+                }
             }
             if (d.kind == BuildingKind::Market && start_restocking(v, *job)) {
                 return;
@@ -808,7 +810,18 @@ public:
         return static_cast<std::uint16_t>(std::clamp(d.work_radius * 5 * 3 / 2, 10, 60000));
     }
 
-    bool start_gathering(Villager& v, const Building& job) {
+    // Phase 81: what a workplace found to take; running out is told once.
+    void set_supply(Building& b, EntityId id, Supply supply) {
+        if (b.supply == supply) {
+            return;
+        }
+        b.supply = supply;
+        if (supply == Supply::Exhausted) {
+            g_.events_.push_back({Game::Event::Kind::Exhausted, b.owner, id, center_of(b), 0, 0});
+        }
+    }
+
+    bool start_gathering(Villager& v, Building& job) {
         const BuildingDef& d = def(job);
         const NavGrid::Area& area = work_area(v.job, job);
         if (area.side == 0) {
@@ -825,16 +838,19 @@ public:
         const std::int32_t cz1 = std::min(side - 1, (mz + reach) / kNodeCell);
         std::uint32_t best = 0;
         std::uint32_t best_cost = 0xFFFF;
+        bool busy = false;     // Something to take, in other hands now.
+        bool waiting = false;  // Something that will grow back, or thaw.
         for (std::int32_t cz = cz0; cz <= cz1; ++cz) {
             for (std::int32_t cx = cx0; cx <= cx1; ++cx) {
                 for (const std::uint32_t i : g_.node_cells_[static_cast<std::size_t>(cz * side + cx)]) {
                     const Node& n = g_.nodes_[i];
                     const MapFeature& f = g_.map_.features[i];
-                    if (n.amount <= 0 || n.reserved != 0 || ((d.gathers >> static_cast<unsigned>(f.type)) & 1u) == 0) {
+                    if (((d.gathers >> static_cast<unsigned>(f.type)) & 1u) == 0) {
                         continue;
                     }
-                    if (g_.frozen() && regrows(f)) {
-                        continue;  // Frozen bushes and herbs.
+                    const bool grows = regrows(f);
+                    if (n.amount <= 0 && !grows) {
+                        continue;  // Gone for good.
                     }
                     // The cheapest cell next to the node (rocks may sit on steep ones).
                     const std::int32_t nx = g_.nav_.cell_of(f.x);
@@ -845,6 +861,17 @@ public:
                             cost = std::min<std::uint32_t>(cost, area.at(nx + dx, nz + dz));
                         }
                     }
+                    if (cost >= 0xFFFF) {
+                        continue;  // Out of reach.
+                    }
+                    if (n.amount <= 0 || (grows && g_.frozen())) {
+                        waiting = true;  // Empty or frozen bushes and herbs.
+                        continue;
+                    }
+                    if (n.reserved != 0) {
+                        busy = true;
+                        continue;
+                    }
                     if (cost < best_cost) {
                         best_cost = cost;
                         best = i + 1;
@@ -853,8 +880,10 @@ public:
             }
         }
         if (best == 0) {
+            set_supply(job, v.job, busy ? Supply::Fine : waiting ? Supply::Waiting : Supply::Exhausted);
             return false;
         }
+        set_supply(job, v.job, Supply::Fine);
         const MapFeature& f = g_.map_.features[best - 1];
         v.task = Task::GoGather;
         v.node = best;
@@ -6397,6 +6426,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         }
         w.i32(b.train_progress);
         w.u8(b.stopped ? 1 : 0);
+        w.u8(static_cast<std::uint8_t>(b.supply));
         w.u32(static_cast<std::uint32_t>(b.fields.size()));
         for (const Field& f : b.fields) {
             w.i32(f.x);
@@ -6789,11 +6819,14 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             }
         }
         std::uint8_t stopped = 0;
-        if (!r.i32(b.train_progress) || b.train_progress < 0 || !r.u8(stopped) || stopped > 1) {
+        std::uint8_t supply = 0;
+        if (!r.i32(b.train_progress) || b.train_progress < 0 || !r.u8(stopped) || stopped > 1 || !r.u8(supply) ||
+            supply >= static_cast<std::uint8_t>(Supply::Count)) {
             r.fail();
             return false;
         }
         b.stopped = stopped != 0;
+        b.supply = static_cast<Supply>(supply);
         b.upgrading = upgrading != 0;
         g.fires_ += b.fire > 0 ? 1 : 0;
         std::uint32_t nf = 0;

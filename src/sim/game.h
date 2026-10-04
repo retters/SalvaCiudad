@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 45;
+inline constexpr std::uint32_t kGameRulesVersion = 46;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -104,6 +104,12 @@ struct Node {
 };
 
 enum class BuildingState : std::uint8_t { Construction, Complete };
+
+// Phase 81: whether a workplace that lives off the land has something to
+// take within its reach. Waiting: only what grows back is left, empty or
+// frozen today (or, for hunters and fishers, no game or no open water).
+// Exhausted: nothing is left of what does not grow back.
+enum class Supply : std::uint8_t { Fine, Waiting, Exhausted, Count };
 
 // A farm's field (phase 11): a rectangle of cells, a plan of three years
 // (a crop or fallow each), and this year's progress.
@@ -177,6 +183,8 @@ struct Building {
     // Phase 63: stopped by the player. Its workers go back to laboring and
     // `wanted_workers` is kept for when it works again.
     bool stopped = false;
+    // Phase 81: set when one of its workers looks for something to take.
+    Supply supply = Supply::Fine;
     bool operator==(const Building&) const = default;
 };
 
@@ -623,6 +631,7 @@ public:
             JoinRefused,     // Phase 77: town `other`'s founder refused seat `owner`.
             JoinCancelled,   // Phase 77: seat `owner` withdrew its request to town `other`.
             GameStarted,     // Phase 73: every town is founded; time runs.
+            Exhausted,       // Phase 81: workplace `entity` has nothing left to take within its reach.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
