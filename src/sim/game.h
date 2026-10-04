@@ -9,6 +9,7 @@
 #include <map>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -38,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 49;
+inline constexpr std::uint32_t kGameRulesVersion = 50;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -103,8 +104,30 @@ struct Node {
     // Phase 84, fruit trees: the fruit picked in the year `fruit_year`.
     std::uint32_t fruit_year = 0;
     std::int32_t fruit_picked = 0;
+    // Phase 86, trees: the day (counted from the first of year 1, 120 a
+    // year) it goes up a size; kNeverGrows if it is as large as its species
+    // gets. A sprout (a tree with nothing to fell that waits in `regrow_tick`)
+    // becomes its species' smallest size at that tick.
+    std::uint32_t grow_day = 0;
     bool operator==(const Node&) const = default;
 };
+
+// Phase 86: trees grow. A tree goes up a size a year after reaching the
+// one it has, and from large to huge in two; a sprout is a tree in a year.
+inline constexpr std::uint32_t kNeverGrows = 0xFFFFFFFFu;
+inline constexpr std::uint32_t kDaysPerYear = 120;
+[[nodiscard]] constexpr std::uint32_t growth_years(TreeSize from) {
+    return from == TreeSize::Large ? 2 : 1;
+}
+// The day of the year (0..119) a tree has its birthday, by where it stands:
+// the forest does not grow all on one day.
+[[nodiscard]] constexpr std::uint32_t tree_birthday(const MapFeature& f) {
+    std::uint32_t k = static_cast<std::uint32_t>(f.x.raw()) * 0x9E3779B1u ^ static_cast<std::uint32_t>(f.z.raw()) * 0x85EBCA77u;
+    k ^= k >> 15;
+    k *= 0x2C1B3C6Du;
+    k ^= k >> 12;
+    return k % kDaysPerYear;
+}
 
 enum class BuildingState : std::uint8_t { Construction, Complete };
 
@@ -579,6 +602,18 @@ public:
     // lost when autumn ends.
     [[nodiscard]] std::int32_t fruit_on(std::uint32_t node) const { return fruit_on(node, calendar()); }
     [[nodiscard]] std::int32_t fruit_on(std::uint32_t node, const Calendar& when) const;
+    // Phase 86: today as days since the first of year 1 (120 a year).
+    [[nodiscard]] std::uint32_t day_number() const {
+        const Calendar c = calendar();
+        return (c.year - 1) * kDaysPerYear + (c.month - 1) * 10 + (c.day - 1);
+    }
+    // The size a tree of this species grows into from `size`, if any.
+    [[nodiscard]] std::optional<TreeSize> next_size(const MapFeature& tree) const;
+    // Whether a tree is a sprout: planted, not yet a tree to fell.
+    [[nodiscard]] bool sprout(std::uint32_t node) const {
+        return node < nodes_.size() && map_.features[node].type == FeatureType::Tree && nodes_[node].amount <= 0 &&
+               nodes_[node].regrow_tick != 0;
+    }
     [[nodiscard]] DayTime day_time() const { return sim::day_time(rules_.day_night, tick_); }
     [[nodiscard]] std::int32_t temperature() const { return temperature_; }
     [[nodiscard]] std::int32_t snow() const { return snow_; }

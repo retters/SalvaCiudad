@@ -602,6 +602,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 86 (los árboles crecen)
+
+- [ ] En una partida larga, los árboles pequeños del mapa pasan a medianos durante el segundo año, y los medianos a grandes (según la especie), cada uno en un día distinto: el bosque no cambia de golpe.
+- [ ] La ventana de un árbol que todavía puede crecer dice «Sigue creciendo»; la de uno que ya llegó a su tamaño mayor, no.
+- [ ] Un árbol que creció da más madera al talarlo, y un frutal que llegó a mediano empieza a dar fruta.
+- [ ] Los árboles gigantes no cambian.
+- [ ] En un mapa colosal, a velocidad alta, no se nota ningún tirón nuevo al pasar los días.
+- [ ] **Sin revisar en pantalla por Claude:** el cambio de tamaño de un árbol a la vista, ni los FPS en el colosal (se midió el costo por tick de la simulación, no el dibujo).
+- [ ] **Tu opinión:** el ritmo (un tamaño por año; de grande a enorme, dos años). Casi ninguna especie del juego llega a «enorme»: ese tamaño hoy es de los gigantes.
+
 ### Fase 85 (el leñador y los frutales)
 
 - [ ] La ventana de un leñador terminado tiene el botón «Talar frutales: no»; al hacer clic pasa a «Talar frutales: sí» y vuelve.

@@ -609,6 +609,120 @@ TEST_SUITE("resources") {
         CHECK(held(g, "core:fruit") == fruit + cleared * 6);
     }
 
+    TEST_CASE("trees grow a size a year, up to what their species reaches, each on its own day") {
+        // A small oak (small, medium and large), a small apple tree (small and
+        // medium) and a medium oak, far from any woodcutter.
+        Land l;
+        const std::uint32_t apple = orchard_land(l);
+        const int oak = content()->flora.find_species("core:oak");
+        l.map.features[apple].species = static_cast<std::uint8_t>(oak);
+        l.map.features[apple].size = static_cast<std::uint8_t>(TreeSize::Small);
+        const SpeciesDef& sp = content()->flora.species[static_cast<std::size_t>(oak)];
+        GameSetup s = setup();
+        s.rules.climate.seasons = 0b1111;
+        Game g(content(), l.map, s);
+        const std::uint32_t year = 12 * g.calendar_month_ticks();
+        const auto size = [&](std::uint32_t i) { return static_cast<TreeSize>(g.map().features[i].size); };
+        REQUIRE(size(apple) == TreeSize::Small);
+        CHECK(g.nodes()[apple].amount == sp.logs[0]);
+        CHECK(g.nodes()[apple + 1].grow_day != kNeverGrows);
+        // Within its first year nothing changes.
+        run(g, year - 10);
+        CHECK(size(apple) == TreeSize::Small);
+        CHECK(size(apple + 1) == TreeSize::Small);
+        (void)g.take_changed_nodes();
+        // By the end of the second, each has had its birthday: one size up.
+        run(g, year);
+        CHECK(size(apple) == TreeSize::Medium);
+        CHECK(g.nodes()[apple].amount == sp.logs[1]);
+        CHECK(size(apple + 1) == TreeSize::Medium);  // The apple tree: as large as it gets.
+        CHECK(g.nodes()[apple + 1].grow_day == kNeverGrows);
+        CHECK(g.fruit_on(apple + 1, Calendar{3, 6, 1, Season::Summer, 0}) == 6);  // Grown, it bears fruit.
+        CHECK(size(apple + 2) == TreeSize::Large);
+        const std::vector<std::uint32_t> changed = g.take_changed_nodes();
+        CHECK(std::find(changed.begin(), changed.end(), apple) != changed.end());
+        // Saved in the middle of its growing and loaded, it is the same game.
+        BinaryWriter w;
+        g.save(w);
+        Game back(content(), l.map, s);
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.hash() == g.hash());
+        CHECK(back.map().features[apple].size == g.map().features[apple].size);
+        // A year more: the oak is large; the others stay (no core species but the giants is huge).
+        run(g, year);
+        run(back, year);
+        CHECK(back.hash() == g.hash());
+        CHECK(size(apple) == TreeSize::Large);
+        CHECK(g.nodes()[apple].amount == sp.logs[2]);
+        CHECK(size(apple + 1) == TreeSize::Medium);
+        run(g, 2 * year);
+        CHECK(size(apple) == TreeSize::Large);
+        CHECK(g.nodes()[apple].grow_day == kNeverGrows);
+    }
+
+    TEST_CASE("the forest does not grow in one day, a giant does not grow, and a huge size takes two years more") {
+        MapSettings ms;
+        ms.seed = 4242;
+        ms.size = MapSize::Small;
+        ms.sea = Sea::None;
+        std::optional<MapData> m = generate_map(ms, *content());
+        REQUIRE(m.has_value());
+        // A species that reaches huge, for this test.
+        auto modded = std::make_shared<Content>(sc::test::core_content());
+        const int oak = modded->flora.find_species("core:oak");
+        REQUIRE(oak >= 0);
+        modded->flora.species[static_cast<std::size_t>(oak)].sizes = 0b1111;
+        GameSetup s = setup();
+        s.players = 0;  // Nobody fells anything.
+        s.rules.climate.seasons = 0b1111;
+        Game g(modded, *m, s);
+        const std::uint32_t year = 12 * g.calendar_month_ticks();
+        int growing = 0;
+        std::vector<std::uint32_t> oaks;
+        for (std::uint32_t i = 0; i < g.nodes().size(); ++i) {
+            const MapFeature& f = g.map().features[i];
+            if (f.type != FeatureType::Tree) {
+                continue;
+            }
+            growing += g.nodes()[i].grow_day != kNeverGrows ? 1 : 0;
+            if (modded->flora.species[f.species].giant_biome >= 0) {
+                CHECK(g.nodes()[i].grow_day == kNeverGrows);
+            }
+            if (f.species == oak && f.size == static_cast<std::uint8_t>(TreeSize::Large)) {
+                oaks.push_back(i);
+            }
+        }
+        REQUIRE(growing > 200);
+        REQUIRE(!oaks.empty());
+        // The second year, day by day: how many grew on each.
+        run(g, year);
+        (void)g.take_changed_nodes();
+        std::size_t most = 0;
+        std::size_t total = 0;
+        int days_with_growth = 0;
+        for (int day = 0; day < 120; ++day) {
+            run(g, g.calendar_day_ticks());
+            const std::size_t n = g.take_changed_nodes().size();
+            most = std::max(most, n);
+            total += n;
+            days_with_growth += n > 0 ? 1 : 0;
+        }
+        MESSAGE(growing << " trees to grow; " << total << " grew in the second year, at most " << most << " in a day, on "
+                        << days_with_growth << " days");
+        CHECK(total >= static_cast<std::size_t>(growing) * 8 / 10);
+        CHECK(most * 10 < total);  // No day has a tenth of the year's growth.
+        CHECK(days_with_growth > 100);
+        // The large oaks took two years: none is huge after one, all after two.
+        for (const std::uint32_t i : oaks) {
+            CHECK(g.map().features[i].size == static_cast<std::uint8_t>(TreeSize::Large));
+        }
+        run(g, year + g.calendar_day_ticks() * 2);
+        for (const std::uint32_t i : oaks) {
+            CHECK(g.map().features[i].size == static_cast<std::uint8_t>(TreeSize::Huge));
+        }
+    }
+
     TEST_CASE("a forager whose bushes are picked clean waits for them, without a word") {
         // Two bushes of one berry each; they grow back in a month.
         const Land l = land(21, {FeatureType::BerryBush, FeatureType::Herbs}, FeatureType::BerryBush, 2,

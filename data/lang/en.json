@@ -1128,6 +1128,8 @@
     "hud.node.noFruit": "Fruit tree: no fruit now (it bears in summer and autumn)",
     "hud.node.youngFruit": "Fruit tree: still too young to bear fruit",
     "hud.node.empty": "Empty: it will grow back",
+    "hud.node.sprout": "A sprout: a tree in a year",
+    "hud.node.growing": "Still growing",
     "hud.node.busy": "Someone is working it",
     "hud.creature.deer": "Deer",
     "hud.creature.boar": "Boar",

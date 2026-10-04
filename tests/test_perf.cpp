@@ -293,3 +293,33 @@ TEST_SUITE("sim_perf") {
         }
     }
 }
+
+TEST_SUITE("sim_perf") {
+    // Phase 86: what the growing of the trees costs a tick, on a map with no
+    // towns (only the world's own work). Several minutes on the largest.
+    TEST_CASE("the trees' growth on the largest maps" * doctest::skip()) {
+        for (const MapSize size : {MapSize::Huge, MapSize::Colossal}) {
+            MapSettings ms;
+            ms.seed = 12345;
+            ms.size = size;
+            std::optional<MapData> map = generate_map(ms, sc::test::core_content());
+            REQUIRE(map.has_value());
+            std::size_t trees = 0;
+            for (const MapFeature& f : map->features) {
+                trees += f.type == FeatureType::Tree ? 1u : 0u;
+            }
+            GameSetup setup = rules(1);
+            setup.players = 0;
+            Game g(core(), *map, setup);
+            map.reset();
+            const std::uint32_t year = 12 * g.calendar_month_ticks();
+            const Timing first = measure(g, year);      // Nothing grows in the first year.
+            (void)g.take_changed_nodes();
+            const Timing second = measure(g, year);     // Most trees grow in the second.
+            MESSAGE(map_cells(size) << " m, " << trees << " trees, " << g.calendar_day_ticks() << " ticks a day: tick "
+                                    << first.mean_ms << " ms mean and " << first.worst_ms << " ms worst while nothing grows; "
+                                    << second.mean_ms << " ms mean and " << second.worst_ms << " ms worst while "
+                                    << g.take_changed_nodes().size() << " trees grow");
+        }
+    }
+}

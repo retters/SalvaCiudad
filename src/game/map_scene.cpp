@@ -566,6 +566,8 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
     }
     if (look == FeatureLook::Gone) {
         inst.scale = 0.0f;
+    } else if (look == FeatureLook::Empty && f.type == sim::FeatureType::Tree) {
+        inst.scale *= 0.3f;  // A sprout (phase 86): its tree, small.
     } else if (look == FeatureLook::Empty) {
         // A picked bush: smaller and duller until it grows back.
         inst.scale *= 0.8f;

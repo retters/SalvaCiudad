@@ -1128,6 +1128,8 @@
     "hud.node.noFruit": "Frutal: sin fruta ahora (da en verano y otoño)",
     "hud.node.youngFruit": "Frutal: aún es muy joven para dar fruta",
     "hud.node.empty": "Vacío: volverá a crecer",
+    "hud.node.sprout": "Brote: será un árbol en un año",
+    "hud.node.growing": "Sigue creciendo",
     "hud.node.busy": "Alguien lo está trabajando",
     "hud.creature.deer": "Venado",
     "hud.creature.boar": "Jabalí",

@@ -755,13 +755,14 @@ TEST_SUITE("village") {
     TEST_CASE("an hour of play: a tended village grows") {
         const auto start = std::chrono::steady_clock::now();
         // The economy alone: no raids (the "wildlife" suite has those).
-        GameSetup setup{1, 81, false, GameRules{}};
+        GameSetup setup{1, 86, false, GameRules{}};
         setup.rules.raiders = Threat::None;
         // A map where this scripted player does well (maps changed in phases
         // 27 and 49; it prospers on 9 of the first 20 seeds, D-4906), and a
         // game seed where the newcomers of phase 57's peoples suit it (7 of
         // the 10 from 77 on do; 6 of the 8 from 77 on after the hunger rule of
-        // phase 66 was made cheap).
+        // phase 66 was made cheap; 11 of the 16 from 77 on with the trees
+        // growing, phase 86: on 80, 84 and 90 no house gets built, D-8604).
         Game g(content(), small_map(1), setup);
         tended_hour(g);
         const Game& end = g;

@@ -4332,6 +4332,41 @@ public:
         return v.health > 0;
     }
 
+    // Phase 86: the trees whose day has come go up a size. Every tick looks
+    // at one slice of the map's features, so that all of them are seen once
+    // in the ticks of an average day and the work is the same every tick.
+    void grow_trees() {
+        const std::uint64_t day_ticks = std::max<std::uint32_t>(1, g_.calendar_day_ticks());
+        const std::uint64_t slice = g_.tick_ % day_ticks;
+        const std::uint64_t count = g_.map_.features.size();
+        const auto from = static_cast<std::size_t>(count * slice / day_ticks);
+        const auto to = static_cast<std::size_t>(count * (slice + 1) / day_ticks);
+        if (from >= to) {
+            return;
+        }
+        const std::uint32_t today = g_.day_number();
+        for (std::size_t i = from; i < to; ++i) {
+            Node& n = g_.nodes_[i];
+            if (n.grow_day > today || n.amount <= 0) {
+                continue;  // Not its day yet; or felled, or a sprout.
+            }
+            MapFeature& f = g_.map_.features[i];
+            if (f.type != FeatureType::Tree) {
+                continue;  // (What is not a tree has no day: 0.)
+            }
+            const std::optional<TreeSize> next = g_.next_size(f);
+            if (!next) {
+                n.grow_day = kNeverGrows;
+                continue;
+            }
+            const SpeciesDef& sp = c_.flora.species[f.species];
+            n.amount += std::max(0, sp.logs[static_cast<std::size_t>(*next)] - sp.logs[f.size]);
+            f.size = static_cast<std::uint8_t>(*next);
+            n.grow_day = g_.next_size(f) ? today + growth_years(*next) * kDaysPerYear : kNeverGrows;
+            g_.changed_nodes_.push_back(static_cast<std::uint32_t>(i));
+        }
+    }
+
     void step() {
         ++g_.tick_;
         const bool calendar_day = g_.tick_ % g_.calendar_day_ticks() == 0;
@@ -4348,13 +4383,19 @@ public:
             const std::uint32_t i = g_.regrow_.front().second;
             g_.regrow_.erase(g_.regrow_.begin());
             Node& n = g_.nodes_[i];
-            const FeatureDef* fd = c_.feature(g_.map_.features[i].type);
-            if (fd != nullptr && n.regrow_tick != 0) {
-                n.amount = std::max(1, (fd->amount * g_.map_.features[i].scale.raw()) >> 16);
+            const MapFeature& f = g_.map_.features[i];
+            if (c_.feature(f.type) != nullptr && n.regrow_tick != 0) {
+                n.amount = feature_amount(c_, f);
                 n.regrow_tick = 0;
+                if (f.type == FeatureType::Tree) {
+                    // A sprout is a tree now (phase 86), with its years to grow ahead.
+                    n.grow_day = g_.next_size(f) ? g_.day_number() + growth_years(static_cast<TreeSize>(f.size)) * kDaysPerYear
+                                                 : kNeverGrows;
+                }
                 g_.changed_nodes_.push_back(i);
             }
         }
+        grow_trees();
         if (g_.tick_ % kJobEvery == 0) {
             assign_jobs();
             assign_homes();
@@ -4965,6 +5006,10 @@ public:
                 // A resource like any other: with its node, and where gatherers look.
                 Node node;
                 node.amount = feature_amount(c_, f);
+                if (tree) {
+                    node.grow_day = g_.next_size(f) ? g_.day_number() + growth_years(static_cast<TreeSize>(f.size)) * kDaysPerYear
+                                                    : kNeverGrows;
+                }
                 if (type == FeatureType::StoneDeposit && node.amount > 0) {
                     g_.block_deposit(f, true);
                 }
@@ -5227,7 +5272,13 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     build_indexes();
     nodes_.assign(map_.features.size(), Node{});
     for (std::size_t i = 0; i < map_.features.size(); ++i) {
-        nodes_[i].amount = feature_amount(*content_, map_.features[i]);
+        const MapFeature& f = map_.features[i];
+        nodes_[i].amount = feature_amount(*content_, f);
+        if (f.type == FeatureType::Tree) {
+            // Its birthday of the year after next's turn (phase 86).
+            nodes_[i].grow_day = next_size(f) ? growth_years(static_cast<TreeSize>(f.size)) * kDaysPerYear + tree_birthday(f)
+                                              : kNeverGrows;
+        }
     }
     block_deposits();
     VillageRules(*this).setup(players, setup.start_towns, setup.shared_town);
@@ -5266,6 +5317,22 @@ void Game::build_indexes() {
         const std::int32_t cz = std::clamp(f.z.floor_int() / kNodeCell, 0, node_cells_side_ - 1);
         node_cells_[static_cast<std::size_t>(cz * node_cells_side_ + cx)].push_back(static_cast<std::uint32_t>(i));
     }
+}
+
+std::optional<TreeSize> Game::next_size(const MapFeature& tree) const {
+    if (tree.type != FeatureType::Tree || tree.species >= content_->flora.species.size()) {
+        return std::nullopt;
+    }
+    const SpeciesDef& sp = content_->flora.species[tree.species];
+    if (sp.giant_biome >= 0) {
+        return std::nullopt;  // The giants are as they are.
+    }
+    for (std::size_t s = static_cast<std::size_t>(tree.size) + 1; s < kTreeSizes; ++s) {
+        if ((sp.sizes >> s) & 1u) {
+            return static_cast<TreeSize>(s);
+        }
+    }
+    return std::nullopt;
 }
 
 std::int32_t Game::fruit_on(std::uint32_t node, const Calendar& when) const {
@@ -6539,6 +6606,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u64(n.regrow_tick);
         w.u32(n.fruit_year);
         w.i32(n.fruit_picked);
+        w.u32(n.grow_day);
     }
     w.u32(static_cast<std::uint32_t>(regrow.size()));
     for (const auto& [t, i] : regrow) {
@@ -6908,14 +6976,14 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         return false;
     }
     std::uint32_t n = 0;
-    if (!r.count(kMaxMapFeatures, 24, n) || n != g.map_.features.size()) {
+    if (!r.count(kMaxMapFeatures, 28, n) || n != g.map_.features.size()) {
         r.fail();
         return false;
     }
     g.nodes_.resize(n);
     for (Node& node : g.nodes_) {
         if (!r.i32(node.amount) || !r.u32(node.reserved) || !r.u64(node.regrow_tick) || !r.u32(node.fruit_year) ||
-            !r.i32(node.fruit_picked) || node.fruit_picked < 0) {
+            !r.i32(node.fruit_picked) || node.fruit_picked < 0 || !r.u32(node.grow_day)) {
             r.fail();
             return false;
         }

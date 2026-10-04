@@ -2250,7 +2250,10 @@ void GameHud::node_window(ui::Context& ctx, GameSession& s, const WindowList::Ob
     if (n.amount > 0 && resource < content.resources.size()) {
         lines.push_back(tr("hud.thing.gives", tr("hud.amount", tr(content.resources[resource].name_key), n.amount)));
     } else if (n.amount <= 0) {
-        lines.push_back(tr("hud.node.empty"));
+        lines.push_back(tr(tree ? "hud.node.sprout" : "hud.node.empty"));
+    }
+    if (tree && n.amount > 0 && n.grow_day != sim::kNeverGrows) {
+        lines.push_back(tr("hud.node.growing"));
     }
     if (n.reserved != 0) {
         lines.push_back(tr("hud.node.busy"));
