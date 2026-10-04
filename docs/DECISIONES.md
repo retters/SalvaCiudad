@@ -3021,3 +3021,42 @@ Reglas 45 (una bandera más en el acceso), protocolo de red 24.
 
 **D-7913. Lo revisado en pantalla.**
 Con dos instancias: la 1 abre su partida con las tres casillas; la 2 entra y queda mirando (franja «Mirando: Todo el mapa», ventana con Fundar, Pedir unirme y Solo mirar), cambia a «Como Jugador 2», y desde «Jugar…» elige fundar: recibe asiento y pasa a elegir sitio. No se probó a mano: pasar de jugador a espectador y volver, la sala con la casilla de espectadores, ocho espectadores, ni un espectador detenido (lo cubren las pruebas de `net` y `spectator`).
+
+## Ronda de recursos: fases 80 a 85 (2026-10-03)
+
+**D-8001. De dónde sale la ronda.**
+Salvador pidió por el chat cinco cambios y reportó una falla, y respondió las preguntas ahí mismo; no se usó el registro de revisión. Quedaron como fases 80 a 85 y el pulido pasó a ser la 86. Se numeraron después de las fases 73 a 79 (fundar el pueblo, multijugador abierto), que otra sesión tenía escritas sin commit en la especificación.
+
+**D-8002. Avisar, no ir más lejos.**
+Un edificio sin recursos a su alcance avisa (notificación una vez, ícono y línea de estado) y sus trabajadores quedan sin tarea. No se amplía el radio ni se los manda a buscar más lejos: el radio es lo que hace que importe dónde se construye. Lo que rebrota solo muestra «esperando», para no llenar la lista de avisos cada invierno.
+
+**D-8003. Más recursos solo al generar el mapa.**
+Cerca del doble de roca, bayas y hierbas, con el porcentaje «Recursos» de siempre. Se descartó un porcentaje aparte por recurso (más controles en un formulario ya largo) y que broten arbustos nuevos durante la partida (toca la simulación y el determinismo en red por poca ganancia).
+
+**D-8004. La mina de roca es un yacimiento, no un edificio.**
+Un objeto natural grande que trabaja el cantero de siempre. Se descartaron el edificio nuevo junto al yacimiento y el edificio sin yacimiento. Finito, en tres tamaños (800, 2 000 y 5 000), elegido por Salvador en lugar de un tamaño único o de una mina infinita. Al gastarse usa el modelo del tamaño menor: no hace falta arte aparte para las etapas.
+
+**D-8005. Frutales: una bandera de la especie y el recurso «fruta» de hoy.**
+Salvador: todos los frutales dan «fruta» aunque técnicamente no lo sea, y la dieta no cambia por ahora (podría ampliarse más adelante). La lista inicial (manzano, cerezo, palma, baobab) es propuesta de Claude; robles y pinos quedan fuera para que el leñador, que no tala frutales por omisión, no se quede sin bosque. Una cosecha al año, de verano a fin de otoño, solo en árboles medianos o mayores. Sin fruta visible en el modelo (sería una fase de arte).
+
+**D-8006. Talar un frutal.**
+Entrega la madera y la fruta que tenía en ese momento; fuera de temporada, solo madera. El interruptor «Talar frutales» es por leñador y empieza apagado. Despejar una obra tala el frutal sin mirar el interruptor: el jugador ya eligió construir ahí.
+
+**D-8007. Los animales que brillan de noche son una corrección.**
+Va como fase 80, primero, por ser lo más barato. La causa no se buscó al planear.
+
+**D-8008. Replantar obliga a que los árboles crezcan (fases 86 y 87; pedido del 2026-10-03, después del resto de la ronda).**
+Hasta ahora cada árbol tenía un tamaño fijo. Salvador eligió que crezcan todos los árboles del mapa, no solo los replantados, para que «solo maduros» sirva también sin replantar. Ritmo: de brote a grande en unos 3 años de juego (un tamaño por año) y a enorme dos años después. Se descartó un ritmo por especie (más datos que balancear sin pedirlo). El crecimiento va en fase propia, antes de los interruptores, porque es lo arriesgado: toca todo el bosque, el rendimiento en mapas colosales y los hashes de red. El pulido pasa a ser la fase 88.
+
+**D-8009. Maduro es grande o enorme.**
+Elegido por Salvador. Para una especie que no llega a grande cuenta su tamaño mayor; si no, nunca se talaría. Los dos interruptores son independientes y empiezan apagados, así las partidas y pruebas de antes no cambian.
+
+**D-8010. El brote.**
+Un tamaño nuevo debajo del pequeño: sin madera, no se tala, no estorba el paso ni la construcción. Replantar no cuesta materiales (no hay semillas), solo trabajo; es lo más simple. Lo talado para despejar una obra no se replanta: el brote quedaría debajo del edificio.
+
+---
+
+## Petición del usuario: menos corridas de pruebas (2026-10-04)
+
+**D-014. Las tres configuraciones solo al cerrar la fase.**
+Salvador notó que las corridas de `debug` y `debug-asan` tardan mucho. Mientras se trabaja en una fase se compila solo `debug` y se corren solo los grupos de pruebas que toca el cambio. Al cerrar la fase se compilan y prueban `debug`, `release` y `debug-asan` completas, una sola vez. No se quita ninguna configuración: `release` es lo que se juega y muestra fallas de optimización y de determinismo, y `debug-asan` atrapa errores de memoria que las otras dejan pasar. Se descartó por ahora dejar `debug-asan` solo para antes de unir a `main` o para fases que tocan memoria: ahorra más, pero un error de memoria se descubriría varias fases después. Se revisa con Salvador cuando se vea cómo quedan los tiempos.
