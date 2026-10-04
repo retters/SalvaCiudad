@@ -888,6 +888,7 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
                 c.scale = 1.05f;
                 c.palette = people::Cast::palette(body, bits);
                 characters_.push_back(c);
+                torches_.push_back(c.position);
             }
             render::Instance mark;
             mark.position = {at.x, at.y + 0.02f, at.z};
@@ -1309,6 +1310,7 @@ void VillageView::update_props(render::SceneRenderer& renderer, const sim::Game&
                 c.yaw = std::atan2(-away.x, -away.z);
                 c.palette = people::Cast::palette(body, static_cast<std::uint32_t>(k) * 2654435761u + 11u);
                 characters_.push_back(c);
+                torches_.push_back(c.position);
             }
         }
     }
@@ -1413,16 +1415,18 @@ void VillageView::lights(const sim::Game& game, bool torches, std::vector<render
         return;
     }
     const std::size_t buildings = out.size();
-    for (const render::CharacterInstance& c : characters_) {
+    // People only: animals, their corpses and the camera's ghost are
+    // characters too, and carry nothing.
+    for (const math::Vec3& at : torches_) {
         bool lit = false;
         for (std::size_t i = first; i < buildings && !lit; ++i) {
-            const float dx = c.position.x - out[i].position.x;
-            const float dz = c.position.z - out[i].position.z;
+            const float dx = at.x - out[i].position.x;
+            const float dz = at.z - out[i].position.z;
             const float reach = out[i].radius * 0.8f;
             lit = dx * dx + dz * dz < reach * reach;
         }
         if (!lit) {
-            out.push_back({c.position, kTorchRadius, kTorch});
+            out.push_back({at, kTorchRadius, kTorch});
         }
     }
 }
@@ -1430,6 +1434,7 @@ void VillageView::lights(const sim::Game& game, bool torches, std::vector<render
 void VillageView::update_characters(render::SceneRenderer& renderer, const sim::Game& game, float alpha, float dt,
                                     float speed) {
     characters_.clear();
+    torches_.clear();
     if (cast_ == nullptr || !cast_->loaded()) {
         renderer.set_characters({});
         return;
@@ -1488,6 +1493,7 @@ void VillageView::update_characters(render::SceneRenderer& renderer, const sim::
         c.scale = scale;
         c.palette = people::Cast::palette(body, v.appearance);
         characters_.push_back(c);
+        torches_.push_back(c.position);
     }
     // The ghost of the camera's anchor walks when the anchor moves; it is
     // the camera's, so it goes by real time whatever the game's speed.

@@ -103,6 +103,9 @@ struct PointLight {
     float radius = 8.0f;
     math::Vec3 color{1.0f, 0.72f, 0.42f};
 };
+// Whether a material shines at night, by its name: 1 a window, 2 what
+// glows or burns with its own color, 0 the rest.
+[[nodiscard]] float material_glow(std::string_view name);
 // The lights reach this far from the middle of the view, in meters.
 inline constexpr float kLightReach = 512.0f;
 

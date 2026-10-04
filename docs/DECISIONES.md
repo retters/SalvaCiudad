@@ -3060,3 +3060,14 @@ Un tamaño nuevo debajo del pequeño: sin madera, no se tala, no estorba el paso
 
 **D-014. Las tres configuraciones solo al cerrar la fase.**
 Salvador notó que las corridas de `debug` y `debug-asan` tardan mucho. Mientras se trabaja en una fase se compila solo `debug` y se corren solo los grupos de pruebas que toca el cambio. Al cerrar la fase se compilan y prueban `debug`, `release` y `debug-asan` completas, una sola vez. No se quita ninguna configuración: `release` es lo que se juega y muestra fallas de optimización y de determinismo, y `debug-asan` atrapa errores de memoria que las otras dejan pasar. Se descartó por ahora dejar `debug-asan` solo para antes de unir a `main` o para fases que tocan memoria: ahorra más, pero un error de memoria se descubriría varias fases después. Se revisa con Salvador cuando se vea cómo quedan los tiempos.
+
+## Fase 80: los animales brillaban de noche (2026-10-04)
+
+**D-8011. La causa: una antorcha por animal.**
+No era el material: ningún material de los animales tiene nombre de brillo. La vista le ponía una antorcha de noche (fase 69) a todo lo que se dibuja como personaje animado, y desde la fase 47 los animales y sus cadáveres son personajes animados; también la recibía el fantasma del ancla de la cámara. Ahora la vista guarda aparte dónde están las personas (aldeanos, soldados, asaltantes y el mercader junto al puesto) y solo ellas llevan antorcha. Vale igual para el fondo de los menús, que usa la misma vista.
+
+**D-8012. Los asaltantes conservan la antorcha.**
+Ya la tenían y nadie la reportó como falla. Es solo de la vista: para la simulación siguen «a oscuras» (D-7204).
+
+**D-8013. Lo medido y lo no revisado.**
+Prueba nueva: ningún material de los modelos de `models/animals` cuenta como brillo (cubre la otra forma de que un animal brille). La regla de quién lleva antorcha no tiene prueba propia: vive en la vista, que no se puede actualizar sin dispositivo gráfico. No se tomó la captura de antes y después que pedía el criterio: queda en la lista manual del README.

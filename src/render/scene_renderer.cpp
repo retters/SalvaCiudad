@@ -199,20 +199,6 @@ SDL_GPUShader* make_shader(SDL_GPUDevice* device, const std::uint8_t* code, std:
     return shader;
 }
 
-// Whether a material shines at night, by its name: 1 a window, 2 what
-// glows or burns with its own color, 0 the rest.
-float material_glow(std::string_view name) {
-    if (name == "window") {
-        return 1.0f;
-    }
-    for (const std::string_view part : {"glow", "flame", "ember"}) {
-        if (name.find(part) != std::string_view::npos) {
-            return 2.0f;
-        }
-    }
-    return name.ends_with("_fire") ? 2.0f : 0.0f;
-}
-
 struct GpuMaterial {
     float base_color[4] = {1, 1, 1, 1};
     float glow = 0.0f;  // See material_glow().
@@ -316,6 +302,18 @@ struct GpuSkinned {
 };
 
 }  // namespace
+
+float material_glow(std::string_view name) {
+    if (name == "window") {
+        return 1.0f;
+    }
+    for (const std::string_view part : {"glow", "flame", "ember"}) {
+        if (name.find(part) != std::string_view::npos) {
+            return 2.0f;
+        }
+    }
+    return name.ends_with("_fire") ? 2.0f : 0.0f;
+}
 
 float draw_distance_for_level(int level) {
     constexpr float kDistances[] = {300.0f, 600.0f, 1200.0f, 2500.0f};

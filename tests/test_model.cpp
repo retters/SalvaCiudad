@@ -6,6 +6,7 @@
 
 #include "core/file_io.h"
 #include "render/model.h"
+#include "render/scene_renderer.h"
 #include "test_util.h"
 
 using namespace sc;
@@ -290,6 +291,27 @@ TEST_SUITE("model") {
             CHECK(run > walk * 2.0f);
             CHECK(m.bounds_min.y == doctest::Approx(0.0f).epsilon(0.001));
         }
+    }
+
+    TEST_CASE("no material of an animal shines at night") {
+        // Phase 80: animals looked lit at night. It was a torch (see
+        // VillageView::lights), but a material named like a glow would do it too.
+        CHECK(material_glow("window") == 1.0f);
+        CHECK(material_glow("ember_glow") == 2.0f);
+        int files = 0;
+        for (const auto& entry : std::filesystem::directory_iterator(kData / "animals")) {
+            if (entry.path().extension() != ".glb") {
+                continue;
+            }
+            ++files;
+            const std::string file = "animals/" + entry.path().filename().string();
+            const ModelLoadResult r = load_data(file);
+            REQUIRE_MESSAGE(r.ok, file << ": " << r.error);
+            for (const ModelMaterial& mat : r.model.materials) {
+                CHECK_MESSAGE(material_glow(mat.name) == 0.0f, file << " " << mat.name);
+            }
+        }
+        CHECK(files >= 4);
     }
 
     TEST_CASE("a tree's far version is the same tree in about 300 triangles") {

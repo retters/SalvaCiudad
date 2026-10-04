@@ -602,6 +602,13 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 80 (los animales ya no brillan de noche)
+
+- [ ] De noche, un ciervo, un jabalí, un lobo o un oso lejos del pueblo se ve tan oscuro como el suelo que pisa, sin un charco de luz a sus pies.
+- [ ] Un animal que pasa junto a una antorcha o a una casa con gente se ilumina como un aldeano.
+- [ ] Los aldeanos, los soldados y los asaltantes siguen llevando su antorcha de noche.
+- [ ] **Sin revisar en pantalla por Claude:** la corrección se comprobó leyendo el código y con pruebas, no con una captura de noche.
+
 ### Fase 79 (modo espectador)
 
 - [ ] "Abrir a multijugador" tiene una tercera casilla, "Permitir espectadores". Con ella marcada, la ventana 2 (`--instance 2 --loopback`) entra **mirando**: arriba al centro dice "Mirando: Todo el mapa" y ve todo sin niebla; la 1 sigue en "Jugadores 1" y al pasar el cursor por ahí aparece el nombre de la 2 con "(mirando)".

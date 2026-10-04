@@ -136,8 +136,9 @@ public:
     // Where a villager is drawn (feet), for markers and the camera.
     [[nodiscard]] math::Vec3 villager_position(const sim::Game& game, const sim::Villager& v, float alpha) const;
     // The lights of the night (phase 69), added to `out`: the buildings
-    // that give light and, when `torches`, the torch of each villager drawn
-    // by the last update() who is out of their reach.
+    // that give light and, when `torches`, the torch of each person drawn
+    // by the last update() (villagers, soldiers, raiders, the merchant) who
+    // is out of their reach. Animals carry none.
     void lights(const sim::Game& game, bool torches, std::vector<render::PointLight>& out) const;
     // Top of a building, for its marker.
     [[nodiscard]] math::Vec3 building_top(const sim::Game& game, const sim::Building& b) const;
@@ -174,6 +175,7 @@ private:
     };
     std::vector<Look> looks_;  // By villager entity index.
     std::vector<render::CharacterInstance> characters_;
+    std::vector<math::Vec3> torches_;  // Where each person of characters_ stands; see lights().
     const people::Cast* cast_ = nullptr;
     sim::EntityId hidden_villager_;
     std::optional<AnchorGhost> anchor_ghost_;
