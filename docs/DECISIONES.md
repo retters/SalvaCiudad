@@ -2832,3 +2832,35 @@ Reglas 41, protocolo de red 19. El formato de las partidas guardadas cambia con 
 
 **D-7311. Sin revisar.**
 Nada de esta fase se ve todavía en el juego, que sigue creando las partidas con los pueblos en pie hasta la fase 74. Todo por pruebas (suite `founding`).
+
+## Fase 74: elegir el sitio en pantalla (2026-10-03)
+
+**D-7401. «Sitios para pueblos» ya existía: es el control «Posiciones de inicio».**
+El formulario de partida nueva ya tenía una barra de 1 a 12 que le dice al generador cuántos inicios preparar, recordada en `newGame.players`. Solo cambió su nombre y su explicación. En red, al empezar, el mapa lleva los sitios que pidió el anfitrión o uno por pueblo a fundar, lo que sea mayor (antes el anfitrión no elegía: era siempre uno por jugador).
+
+**D-7402. Mientras se elige, es de día.**
+El tick 0 es el amanecer y con el ciclo de día y noche la pantalla empieza casi a oscuras. Mientras el juego espera a los fundadores se dibuja con la luz plena de la estación; al fundar el último, empieza el amanecer. Sin esto nadie veía dónde ponía el centro.
+
+**D-7403. Con niebla se elige de verdad a ciegas.**
+Es lo que eligió Salvador. La vista 3D está negra y la silueta del centro bajo el cursor no se distingue; lo que guía es el texto del cartel (dice por qué no se puede ahí), las marcas de los sitios sugeridos y el minimapa, que mientras no hay pueblo muestra bajo la niebla la forma de la tierra y del agua en dos tonos oscuros. Esa silueta desaparece al fundar.
+
+**D-7404. La confirmación y el pedido que se pierde.**
+El clic fija el sitio y aparece la pregunta «¿Fundar el pueblo aquí?» con «Fundar aquí» y «Cancelar» (también Esc y clic derecho). Si en ese rato otro jugador ocupa el lugar, la pregunta se retira sola. Si la orden salió y a los 50 turnos el pueblo no existe (otro fundó ahí en el mismo instante), se avisa y se vuelve a elegir.
+
+**D-7405. Tecla del siguiente sitio sugerido: Tabulador.**
+Acción nueva `game.nextSite`, reasignable como las demás. Salta los sitios ya ocupados.
+
+**D-7406. En un jugador no hay avisos de fundación.**
+«X fundó su pueblo» y «empieza el tiempo» solo se muestran en red. El aviso del pueblo de otro no lleva lugar: con niebla, un clic en él revelaría dónde está.
+
+**D-7407. El tutorial y los reportes empiezan con el pueblo en pie.**
+El tutorial enseña a construir desde un centro terminado y sus pasos no hablan de fundar; `--reporte` debe volver a dibujar la misma vista que cuando se guardó. Los dos crean la partida con `start_towns`. Queda como posible mejora un primer paso del tutorial que enseñe a fundar.
+
+**D-7408. Pausa y velocidad mientras se funda.**
+En un jugador la simulación da un paso por cuadro mientras espera, a cualquier velocidad y en pausa, para que la orden de fundar se aplique; el tiempo no corre. En red el anfitrión ignora pausas y votos de velocidad hasta que todos fundaron: sin turnos, la orden de fundar no llegaría.
+
+**D-7409. El modelo del carro.**
+`props.py` gana `wagon()`: la carreta del mercader alargada a cuatro ruedas, con lanza, la carga a la vista por los extremos y un toldo de lona sobre arcos. Sale un poco de su huella de 2 × 2 m. Solo se generó ese archivo (`models/props/wagon.glb`); los demás modelos no se tocaron.
+
+**D-7410. Lo revisado en pantalla.**
+En una copia portable en ventana: elegir con luz de día, la pregunta, fundar, el carro con su ventana (sin botón de demoler), la obra del centro, la barra de recursos que aparece al fundar, y con niebla estática la pantalla negra con marcas y silueta. No se probó a mano con dos instancias (lo cubren las pruebas de la suite `net`); queda en la lista de verificación. Durante estas pruebas el guion de capturas mandó por error cuatro clics y un Enter a otra ventana de SalvaCiudad abierta en el equipo (la de `J:\Back`); se corrigió para que solo toque la copia de su propia carpeta.

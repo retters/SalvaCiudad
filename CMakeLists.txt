@@ -272,6 +272,7 @@ set(SC_ENGINE_SOURCES
     src/game/game_clock.cpp
     src/game/game_hud.cpp
     src/game/hud_windows.cpp
+    src/game/hud_founding.cpp
     src/game/hud_minimap.cpp
     src/game/minimap.cpp
     src/game/people.cpp

@@ -71,7 +71,8 @@ public:
     void open_mods_folder() override;
     const sim::Content* content() const override { return pack_ ? &pack_->content : nullptr; }
     void request_quit() override { running_ = false; }
-    void start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules) override;
+    void start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules,
+                              bool start_towns = false) override;
     MapGenStatus map_generation_status() const override { return map_job_.status(); }
     void cancel_map_generation() override { map_job_.cancel(); }
     bool enter_generated_map() override;
@@ -109,6 +110,7 @@ private:
     void handle_scene_click(std::uint32_t width, std::uint32_t height);
     // A village game: the ghost of the building being placed, and clicks.
     void update_placement(std::uint32_t width, std::uint32_t height);
+    void update_founding(std::uint32_t width, std::uint32_t height);
     void handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec3 origin, math::Vec3 dir);
     // The mouse ray into the world; false when the mouse is outside.
     bool mouse_ray(std::uint32_t width, std::uint32_t height, math::Vec3& origin, math::Vec3& dir) const;
@@ -230,6 +232,7 @@ private:
     std::unique_ptr<net::NetSession> net_;
     std::optional<net::Start> net_start_;  // The network game whose map is being generated.
     sim::GameRules pending_rules_;         // Rules of the single-player game being generated.
+    bool pending_start_towns_ = false;     // Whether it begins with its town standing (the tutorial).
     VillageView village_;
     std::uint64_t next_autosave_tick_ = 0;
     int autosave_slot_ = 0;

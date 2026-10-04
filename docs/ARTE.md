@@ -29,7 +29,7 @@ blender --background --factory-startup --python art/blender/build_all.py -- tmp/
 | Script | Genera |
 |---|---|
 | `common.py` | Utilidades: escena vacía, materiales, `MeshBuilder` (piezas con material y peso de hueso), exportación con opciones fijas |
-| `props.py` | `props/rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb`, con sus variantes; desde la fase 67, las pilas `pile_<qué>_<nivel>.glb` y la carreta `cart.glb` |
+| `props.py` | `props/rock.glb`, `ore_rock.glb`, `berry_bush.glb`, `herb.glb`, `house_small.glb` y `cloud.glb`, con sus variantes; desde la fase 67, las pilas `pile_<qué>_<nivel>.glb` y la carreta `cart.glb`; desde la fase 74, el carro de los colonos `wagon.glb` |
 | `lowpoly_trees/*.py` | `trees/<árbol>_<estado>.glb` y su versión lejana `_far.glb`: los 32 árboles y 8 gigantes del juego (ver `docs/ARBOLES.md`). `build_all.py ... trees [nombres]` los construye |
 | `buildings.py` | `buildings/<id>.glb`: un modelo por edificio de `core` (46), cada uno del tamaño de su terreno; desde la fase 67, las obras `site_<ancho>x<fondo>_<etapa>.glb`, por tamaño de terreno |
 | `build_all.py` | Ejecuta todo; los animales del juego (`animals/deer.glb`, `boar.glb`, `wolf.glb` y `bear.glb`) salen de `zoo/`, con esqueleto y animaciones (fase 47); los personajes (`characters/<personaje>.glb` y su versión lejana `_far.glb`, 17 de `people/`) y las herramientas (`tools/axe.glb`, `bow.glb`, `rod.glb`, `hammer.glb`, de `weapons/`), desde la fase 57; la flecha (`tools/arrow.glb`) y las cargas (`loads/*.glb`, de `loads/`), desde la fase 67 |

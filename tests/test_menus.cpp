@@ -47,7 +47,7 @@ public:
     const sim::Content* content() const override { return &sc::test::core_content(); }
     mods::ModLibrary library;
     std::vector<std::string> applied_mods;
-    void start_map_generation(const sim::MapSettings& settings, const sim::GameRules&) override {
+    void start_map_generation(const sim::MapSettings& settings, const sim::GameRules&, bool) override {
         generation_started = true;
         last_map_settings = settings;
     }

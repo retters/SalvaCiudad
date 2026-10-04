@@ -52,6 +52,13 @@ Si un jugador queda más de 30 ticks detrás del anfitrión (3 s; por encima de 
    - un mapa distinto se detecta y se desconecta a ese jugador;
    - el juego empieza cuando todos terminaron.
 
+## Fundar los pueblos (fase 74)
+
+- La partida empieza sin pueblos. Cada jugador con pueblo propio elige dónde fundarlo; en un pueblo común funda el anfitrión.
+- Mientras falte alguien, el tiempo no corre (el tick se queda en 0), pero los turnos siguen: llevan las órdenes de fundar. Los turnos se numeran con `Game::turn()` (tick más pasos de espera), no con el tick.
+- En esa espera el anfitrión ignora las pausas y los votos de velocidad.
+- Al empezar, el mapa se genera con los sitios sugeridos que pidió el anfitrión, y al menos uno por pueblo a fundar.
+
 ## Entrar a una partida empezada y reconectar
 
 - Un jugador que vuelve con **el mismo nombre** recupera su asiento. En un pueblo común también se puede ocupar un asiento libre, y en pueblos separados el de un jugador que se fue.
@@ -110,6 +117,7 @@ La suite `net` (`tests/test_net.cpp`) corre varias máquinas en un proceso con u
 - cuatro pueblos separados;
 - un jugador que se cae y vuelve;
 - una desincronización provocada que se detecta y se repara;
+- pueblos por fundar: el tiempo espera a todos, solo el anfitrión funda el pueblo común, y quien entra durante la espera recibe la misma partida;
 - votos de velocidad;
 - rechazos por versión y por mods.
 

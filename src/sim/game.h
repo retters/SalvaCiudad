@@ -451,6 +451,10 @@ public:
     // wagon (kNoDef: the mods have none, and the center is built at once).
     [[nodiscard]] DefIndex town_center_def() const { return town_center_def_; }
     [[nodiscard]] DefIndex cart_def() const { return cart_def_; }
+    // Phase 74. The map's start positions are only suggestions; one with a
+    // town center this close is not offered any more.
+    static constexpr std::int32_t kSiteTakenMeters = 60;
+    [[nodiscard]] bool site_taken(std::size_t site) const;
     // Whether `player` may found its town with the center's corner at
     // (x, z): the usual rules of the ground, anywhere on the map, explored
     // or not, plus room for the wagon nearby.

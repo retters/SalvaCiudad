@@ -78,7 +78,7 @@ std::vector<std::uint8_t> render(const sim::MapData& map) {
     return out;
 }
 
-void apply_fog(std::vector<std::uint8_t>& rgba, std::int32_t map_size, const FogView& fog) {
+void apply_fog(std::vector<std::uint8_t>& rgba, std::int32_t map_size, const FogView& fog, bool silhouette) {
     if (fog.mode() == sim::FogMode::None || map_size <= 0 ||
         rgba.size() != static_cast<std::size_t>(kImageSize) * kImageSize * 4) {
         return;
@@ -90,9 +90,12 @@ void apply_fog(std::vector<std::uint8_t>& rgba, std::int32_t map_size, const Fog
             const float z = (static_cast<float>(ty) + 0.5f) * meters;
             std::uint8_t* px = &rgba[(static_cast<std::size_t>(ty) * kImageSize + static_cast<std::size_t>(tx)) * 4];
             if (!fog.explored(x, z)) {
-                px[0] = 14;
-                px[1] = 15;
-                px[2] = 20;
+                // Water is the only thing drawn bluer than green.
+                const bool water = silhouette && px[2] > px[1];
+                const bool land = silhouette && !water;
+                px[0] = land ? 46 : water ? 22 : 14;
+                px[1] = land ? 48 : water ? 30 : 15;
+                px[2] = land ? 50 : water ? 46 : 20;
             } else if (fog.mode() == sim::FogMode::Dynamic && !fog.in_sight(x, z)) {
                 // Dim and grey, as on the ground.
                 const int luma = (px[0] * 54 + px[1] * 183 + px[2] * 19) >> 8;

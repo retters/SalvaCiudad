@@ -610,7 +610,7 @@ void UiHost::start_tutorial(std::size_t index) {
             }
         }
     }
-    services_.start_map_generation(map, rules);
+    services_.start_map_generation(map, rules, true);  // The tutorial's town stands from the start.
     screen_ = Screen::Generating;
 }
 

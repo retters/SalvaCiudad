@@ -53,7 +53,10 @@ public:
     [[nodiscard]] virtual CameraMode camera_mode() const = 0;
 
     // A new map is generated in the background; the screens poll its state.
-    virtual void start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules) = 0;
+    // `start_towns`: the game on it begins with its town standing (the
+    // tutorial); otherwise the player founds it (phase 74).
+    virtual void start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules,
+                                      bool start_towns = false) = 0;
     [[nodiscard]] virtual MapGenStatus map_generation_status() const = 0;
     virtual void cancel_map_generation() = 0;
     // Shows the generated map in the 3D view; false if it could not.

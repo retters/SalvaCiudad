@@ -101,6 +101,14 @@ public:
             float distance = 12.0f;
         };
         std::array<CameraWindow, kCameraWindows> camera_windows;
+        // Phase 74: founding the town. The site clicked, while the player is
+        // asked to confirm (`found_asked`) and after the order left
+        // (`found_sent`: the game's turn then, plus one; 0: not sent).
+        bool found_asked = false;
+        std::int32_t found_x = 0;
+        std::int32_t found_z = 0;
+        std::uint8_t found_rotation = 0;
+        std::uint64_t found_sent = 0;
         // Marking out a field for this farm: dragged from one corner cell.
         sim::EntityId field_farm;
         bool field_dragging = false;

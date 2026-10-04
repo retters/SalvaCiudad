@@ -2,7 +2,8 @@
 an herb plant and a small half-timbered house with architectural details
 (beams, window frames, shutters, door, chimney, roof tiles in rows).
 Since phase 67 also the piles of goods shown at construction sites and
-storages (pile_<what>_<level>) and the merchant's hand cart."""
+storages (pile_<what>_<level>), the merchant's hand cart and the settlers'
+wagon."""
 
 import math
 import os
@@ -413,6 +414,78 @@ def cart(folder):
     common.export_glb(os.path.join(folder, "cart.glb"), [obj])
 
 
+def wagon(folder):
+    """The settlers' wagon (phase 74), made from the merchant's cart: four
+    wheels, a pole toward -Y (its front), the goods a new town starts with
+    under a canvas cover on hoops, open at both ends. 2.6 m long without
+    the pole, 1.5 m wide over the wheels, 2.1 m tall, standing on Z = 0. In
+    the game it is a building of 2 x 2 m: it sticks out a little."""
+    common.reset_scene()
+    mb = MeshBuilder()
+    bed = 0.7             # Height of the floor of the wagon.
+    y0, y1 = -1.2, 1.2    # The bed, front to back.
+    half = 0.55           # Half width of the bed.
+    mid = (y0 + y1) / 2
+    mb.box((0, mid, bed - 0.04), (2 * half, y1 - y0, 0.08), "plank")
+    for x in (-half, half):
+        mb.box((x, mid, bed + 0.17), (0.05, y1 - y0, 0.34), "plank_dark")
+    for y in (y0, y1):
+        mb.box((0, y, bed + 0.17), (2 * half, 0.05, 0.34), "plank_dark")
+    # The pole the oxen pull it by, resting on the ground.
+    mb.cylinder((0, y0 + 0.2, bed - 0.14), (0, y0 - 1.1, 0.12), 0.045, 0.035, "timber", segments=5)
+    mb.cylinder((-0.4, y0 - 0.95, 0.2), (0.4, y0 - 0.95, 0.2), 0.03, 0.03, "timber", segments=5)
+    # Two axles: smaller wheels at the front.
+    for wy, wr in ((y0 + 0.45, 0.4), (y1 - 0.5, 0.5)):
+        mb.cylinder((-0.68, wy, wr), (0.68, wy, wr), 0.04, 0.04, "iron", segments=6)
+        mb.box((0, wy, (bed - 0.08 + wr) / 2), (0.9, 0.1, bed - 0.08 - wr), "timber")
+        for x in (-0.69, 0.69):
+            mb.cylinder((x - 0.03, wy, wr), (x + 0.03, wy, wr), wr, wr, "timber", segments=12)
+            mb.cylinder((x - 0.04, wy, wr), (x + 0.04, wy, wr), wr * 0.8, wr * 0.8, "plank", segments=12)
+            mb.cylinder((x - 0.05, wy, wr), (x + 0.05, wy, wr), 0.08, 0.08, "iron", segments=6)
+    # The load, seen through the open ends.
+    pile_crate(mb, -0.22, 0.85, bed, 0.5)
+    pile_crate(mb, 0.26, 0.9, bed, 0.38, math.radians(10))
+    pile_crate(mb, -0.2, 0.84, bed + 0.5, 0.34, math.radians(-14))
+    pile_sack(mb, -0.15, -0.85, bed, math.radians(95), 0.4)
+    pile_sack(mb, 0.2, -0.8, bed, math.radians(70), 1.3, "sack_dark")
+    pile_sack(mb, 0.0, -0.78, bed + 0.2, math.radians(85), 1.9)
+    bx, by, br, bh = 0.25, 0.25, 0.2, 0.55
+    mb.cylinder((bx, by, bed), (bx, by, bed + bh / 2), br * 0.85, br, "plank_dark", segments=8)
+    mb.cylinder((bx, by, bed + bh / 2), (bx, by, bed + bh), br, br * 0.85, "plank_dark", segments=8)
+    for z in (bed + bh * 0.2, bed + bh * 0.8):
+        mb.cylinder((bx, by, z - 0.02), (bx, by, z + 0.02), br * 0.97, br * 0.97, "iron", segments=8)
+    # The cover: an arch of canvas from side to side, in three lengths with
+    # a hoop of wood showing between them and at the ends.
+    base = bed + 0.34
+    top = 2.1
+
+    def arch(radius_x, height, steps=6):
+        """Half an ellipse as a polygon of (x, z), counter-clockwise."""
+        points = []
+        for i in range(steps + 1):
+            a = math.pi * i / steps
+            points.append((radius_x * math.cos(a), base + height * math.sin(a)))
+        return points
+
+    def span(ya, yb, radius_x, height, mat):
+        # A prism stands along Z: laid down along Y (a quarter turn about X).
+        verts = mb.prism(arch(radius_x, height), 0.0, yb - ya, mat)
+        for v in verts:
+            x, depth, up = v.co.x, v.co.z, v.co.y
+            v.co.x, v.co.y, v.co.z = x, yb - depth, up
+
+    cover_y0, cover_y1 = y0 + 0.1, y1 - 0.1
+    third = (cover_y1 - cover_y0) / 3
+    for i in range(3):
+        ya = cover_y0 + third * i
+        span(ya + 0.03, ya + third - 0.03, half + 0.06, top - base, "canvas" if i != 1 else "canvas_light")
+    for i in range(4):
+        y = cover_y0 + third * i
+        span(y - 0.03, y + 0.03, half + 0.09, top - base + 0.03, "timber")
+    obj = mb.to_object("wagon", dict(COLORS, canvas=common.rgb(0xD8CBAA), canvas_light=common.rgb(0xE6DCC0)))
+    common.export_glb(os.path.join(folder, "wagon.glb"), [obj])
+
+
 def arrow_flight(folder):
     """An arrow as it flies (phase 67): lying along Y with its head toward
     -Y (the front), centered on the origin, so the game only has to turn it
@@ -440,6 +513,7 @@ def make_all(folder):
     variants(folder)
     piles(folder)
     cart(folder)
+    wagon(folder)
     arrow_flight(folder)
 
 

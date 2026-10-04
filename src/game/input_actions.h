@@ -33,6 +33,7 @@ enum class Action : std::uint8_t {
     GameQuickSave,
     GameQuickLoad,
     GameRotateBuilding,
+    GameNextSite,  // Phase 74: founding, the camera goes to the next suggested site.
     UiToggleFullscreen,
     UiScreenshot,
     UiDebugOverlay,

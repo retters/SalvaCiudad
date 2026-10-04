@@ -54,7 +54,7 @@
       "kind": "storage",
       "cart": true,
       "sight": 48,
-      "model": "models/props/cart.glb",
+      "model": "models/props/wagon.glb",
       "size": [
         2,
         2

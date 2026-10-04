@@ -935,7 +935,10 @@ void App::render_frame(float dt) {
                 map_scene_.update_sky(scene_, dt * static_cast<float>(host_->game_paused() ? 0 : 1));
                 lighting_ = seasonal_lighting(season);
                 night_ = 0.0f;
-                if (const sim::DayNightSettings& cycle = g.rules().day_night; cycle.enabled() && !replay_) {
+                // While the towns are being founded (phase 74) it is plain day:
+                // nobody chooses a site in the dark of the first dawn.
+                if (const sim::DayNightSettings& cycle = g.rules().day_night;
+                    cycle.enabled() && !replay_ && !g.awaiting_founders()) {
                     const bool night = g.day_time().night;
                     const float progress = day_progress(cycle, g.tick(), static_cast<float>(clock_.interpolation()));
                     lighting_ = day_lighting(lighting_, night, progress);
@@ -1022,7 +1025,9 @@ void App::render_frame(float dt) {
             // Only the world, and the strokes over it while marking.
             update_marking();
             draw_marking();
-        } else if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map && !session_) {
+        } else if (scene_drawn && host_->scene_mode() == UiHost::SceneMode::Map &&
+                   (!session_ || (!replay_ && !session_->game().founded(session_->local_player())))) {
+            // The map alone, or a town to found (phase 74): the suggested sites.
             draw_start_markers(frame.width, frame.height);
         }
         if (!still && scene_drawn && session_ && host_->scene_mode() == UiHost::SceneMode::Map) {
@@ -1174,8 +1179,14 @@ void App::frame() {
     } else if (session_) {
         // A menu over a single-player game stops it.
         if (host_ && !host_->game_paused()) {
-            for (int i = 0; i < ticks; ++i) {
+            if (session_->game().awaiting_founders()) {
+                // Phase 74: no time goes by until the town is founded, at
+                // any speed and in pause; the step only runs the orders.
                 session_->step();
+            } else {
+                for (int i = 0; i < ticks; ++i) {
+                    session_->step();
+                }
             }
             autosave_if_due();
         }
@@ -1294,8 +1305,9 @@ void App::hide_menu_background() {
     menu_map_.reset();
 }
 
-void App::start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules) {
+void App::start_map_generation(const sim::MapSettings& settings, const sim::GameRules& rules, bool start_towns) {
     pending_rules_ = rules;
+    pending_start_towns_ = start_towns;
     log::info("map: generating seed {} size {} with {} start(s)", settings.seed, sim::map_cells(settings.size),
               settings.players);
     map_job_.start(settings, pack_);
@@ -1333,8 +1345,10 @@ bool App::enter_generated_map() {
     camera_.set_bounds(0.0f, 0.0f, size, size);
     // For now the camera can back off until the whole map fits (D-615).
     camera_.set_max_distance_override(size * 1.6f);
-    const float sx = map->starts.empty() ? size * 0.5f : static_cast<float>(map->starts[0].x.raw()) / 65536.0f;
-    const float sz = map->starts.empty() ? size * 0.5f : static_cast<float>(map->starts[0].z.raw()) / 65536.0f;
+    // Over a suggested site: each seat its own, to begin with.
+    const std::size_t site = map->starts.empty() || !net_start_ || !net_ ? 0 : net_->local_slot() % map->starts.size();
+    const float sx = map->starts.empty() ? size * 0.5f : static_cast<float>(map->starts[site].x.raw()) / 65536.0f;
+    const float sz = map->starts.empty() ? size * 0.5f : static_cast<float>(map->starts[site].z.raw()) / 65536.0f;
     camera_.set_target({sx, map_surface_height(*map, sx, sz), sz});
     camera_.set_yaw(0.6f);
     camera_.set_distance(110.0f);
@@ -1345,8 +1359,9 @@ bool App::enter_generated_map() {
     if (net_start_ && net_) {
         const net::Start st = *net_start_;
         net_start_.reset();
+        // Nobody has a town yet: each seat founds its own (phase 74).
         auto session = std::make_unique<GameSession>(
-            content, *map, sim::GameSetup{st.players, st.config.seed, st.config.shared_town, st.config.rules},
+            content, *map, sim::GameSetup{st.players, st.config.seed, st.config.shared_town, st.config.rules, false},
             net_->local_slot());
         session->attach(net_.get());
         session->game().set_dev_commands(false);  // Not in network games (decision D-910).
@@ -1354,8 +1369,10 @@ bool App::enter_generated_map() {
         net_->game_built(&session_->game(), net::map_hash(*map));
         return true;
     }
+    // The tutorial and the reports start with the town standing.
     start_session(std::make_unique<GameSession>(
-        content, *map, sim::GameSetup{1, map->settings.seed ^ 0x5A17C1DAull, false, pending_rules_}));
+        content, *map,
+        sim::GameSetup{1, map->settings.seed ^ 0x5A17C1DAull, false, pending_rules_, pending_start_towns_ || replay_}));
     return true;
 }
 
@@ -1438,6 +1455,9 @@ void App::draw_start_markers(std::uint32_t width, std::uint32_t height) {
     const ui::TextStyle st = ui_.style(ui_.theme().body, ui::FontRole::Bold);
     const float r = ui_.s(13.0f);
     for (std::size_t i = 0; i < map_->map.starts.size(); ++i) {
+        if (session_ && session_->game().site_taken(i)) {
+            continue;  // Somebody founded there.
+        }
         const sim::StartPosition& s = map_->map.starts[i];
         const float x = static_cast<float>(s.x.raw()) / 65536.0f;
         const float z = static_cast<float>(s.z.raw()) / 65536.0f;
@@ -1581,10 +1601,84 @@ void App::update_cursor_info(std::uint32_t width, std::uint32_t height) {
     debug_info_.cursor = describe_lines(cursor_names_.describe(map_->map, key.cx, key.cz), pack_ ? &pack_->content : nullptr);
 }
 
+// Phase 74. The town is not founded yet: the center follows the cursor as
+// a ghost; a click fixes the site and the interface asks to confirm.
+void App::update_founding(std::uint32_t width, std::uint32_t height) {
+    GameSession::Interaction& ui = session_->ui();
+    const sim::Game& game = session_->game();
+    const std::uint8_t local = session_->local_player();
+    ui.placing = sim::kNoDef;
+    ui.field_farm = {};
+    village_.set_field_ghost(std::nullopt);
+    const sim::DefIndex center = game.town_center_def();
+    if (!game.founder(local) || center == sim::kNoDef) {
+        village_.set_ghost(std::nullopt);  // The town's first seat founds it.
+        return;
+    }
+    // An order that never arrived (the site was taken meanwhile): again.
+    constexpr std::uint64_t kLostAfterTurns = 50;
+    if (ui.found_sent != 0 && game.turn() > ui.found_sent + kLostAfterTurns) {
+        ui.found_sent = 0;
+        if (host_) {
+            host_->toast(tr("hud.found.failed"));
+        }
+    }
+    if (right_clicked_ && ui.found_sent == 0) {
+        ui.found_asked = false;
+    }
+    VillageView::Ghost ghost;
+    ghost.def = center;
+    if (ui.found_asked || ui.found_sent != 0) {
+        const sim::PlaceError error = game.can_found(local, ui.found_x, ui.found_z, ui.found_rotation);
+        if (error != sim::PlaceError::None && ui.found_sent == 0) {
+            ui.found_asked = false;  // Somebody took it while the player thought.
+        }
+        ghost.x = ui.found_x;
+        ghost.z = ui.found_z;
+        ghost.rotation = ui.found_rotation;
+        ghost.allowed = error == sim::PlaceError::None;
+        village_.set_ghost(ghost);
+        return;
+    }
+    math::Vec3 origin;
+    math::Vec3 dir;
+    if (!interactive_scene() || !mouse_ray(width, height, origin, dir) || ui.over_hud(input_.mouse_x, input_.mouse_y)) {
+        village_.set_ghost(std::nullopt);
+        return;
+    }
+    const std::optional<math::Vec3> hit = ground_hit(game.map(), origin, dir);
+    if (!hit) {
+        village_.set_ghost(std::nullopt);
+        return;
+    }
+    std::int32_t w = 0;
+    std::int32_t d = 0;
+    sim::Game::footprint(game.content().buildings[center], ui.rotation, w, d);
+    ui.hover_valid = true;
+    ui.hover_x = static_cast<std::int32_t>(std::lround(hit->x - static_cast<float>(w) * 0.5f));
+    ui.hover_z = static_cast<std::int32_t>(std::lround(hit->z - static_cast<float>(d) * 0.5f));
+    ui.hover_error = game.can_found(local, ui.hover_x, ui.hover_z, ui.rotation);
+    ghost.x = ui.hover_x;
+    ghost.z = ui.hover_z;
+    ghost.rotation = ui.rotation;
+    ghost.allowed = ui.hover_error == sim::PlaceError::None;
+    village_.set_ghost(ghost);
+}
+
 void App::update_placement(std::uint32_t width, std::uint32_t height) {
     GameSession::Interaction& ui = session_->ui();
     const sim::Game& game = session_->game();
     ui.hover_valid = false;
+    if (!game.founded(session_->local_player())) {
+        update_founding(width, height);
+        return;
+    }
+    if (ui.found_asked || ui.found_sent != 0) {
+        // Founded: the ghost of the site goes.
+        ui.found_asked = false;
+        ui.found_sent = 0;
+        village_.set_ghost(std::nullopt);
+    }
     if (right_clicked_ && ui.placing != sim::kNoDef) {
         ui.placing = sim::kNoDef;  // Right click cancels.
     } else if (right_clicked_ && !ui.field_farm.valid()) {
@@ -1726,6 +1820,17 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
         return;  // Fields are marked by dragging (update_placement).
     }
     const sim::Game& game = session_->game();
+    if (!game.founded(session_->local_player())) {
+        // Phase 74: the click chooses the site; the interface asks.
+        if (game.founder(session_->local_player()) && !ui.found_asked && ui.found_sent == 0 && ui.hover_valid &&
+            ui.hover_error == sim::PlaceError::None) {
+            ui.found_asked = true;
+            ui.found_x = ui.hover_x;
+            ui.found_z = ui.hover_z;
+            ui.found_rotation = ui.rotation;
+        }
+        return;
+    }
     if (ui.rally_mode) {
         ui.rally_mode = false;
         if (const std::optional<math::Vec3> hit = ground_hit(game.map(), origin, dir)) {
@@ -2107,7 +2212,7 @@ void App::update_network(std::uint64_t now_ms) {
     if (std::optional<net::Start> st = net_->take_start()) {
         net_start_ = *st;
         leave_map();
-        start_map_generation(st->config.map, st->config.rules);
+        start_map_generation(st->config.map, st->config.rules, false);
     }
     if (std::optional<std::vector<std::uint8_t>> snap = net_->take_snapshot()) {
         apply_snapshot(std::move(*snap));
@@ -2221,7 +2326,30 @@ void App::report_game_events() {
     const sim::Content& content = game.content();
     for (const sim::Game::Event& e : game.take_events()) {
         if (e.owner != session_->town() && e.kind != sim::Game::Event::Kind::TownLost &&
-            e.kind != sim::Game::Event::Kind::GameOver) {
+            e.kind != sim::Game::Event::Kind::GameOver && e.kind != sim::Game::Event::Kind::TownFounded &&
+            e.kind != sim::Game::Event::Kind::GameStarted) {
+            continue;
+        }
+        if (e.kind == sim::Game::Event::Kind::TownFounded || e.kind == sim::Game::Event::Kind::GameStarted) {
+            // Phase 74. A town founded: everybody is told, and those who
+            // share it go there; where others' towns are stays under the fog.
+            const bool mine = e.kind == sim::Game::Event::Kind::TownFounded && e.owner == session_->town();
+            const float x = static_cast<float>(e.at.x.raw()) / 65536.0f;
+            const float z = static_cast<float>(e.at.z.raw()) / 65536.0f;
+            if (mine && e.owner != session_->local_player()) {
+                focus_camera(x, z);
+            }
+            if (mine) {
+                const sim::Game::Region r = game.region(session_->town());
+                camera_.set_bounds(static_cast<float>(r.x), static_cast<float>(r.z), static_cast<float>(r.x + r.size),
+                                   static_cast<float>(r.z + r.size));
+            }
+            // Alone, the player knows: nothing to tell.
+            if (session_->networked() && !(mine && e.owner == session_->local_player())) {
+                host_->notify(e.kind == sim::Game::Event::Kind::GameStarted ? tr("event.gameStarted")
+                                                                            : tr("event.townFounded", town_name(e.owner)),
+                              mine, x, z, game.calendar(), SDL_GetTicksNS());
+            }
             continue;
         }
         const std::string place = e.entity.valid() && game.buildings().get(e.entity) != nullptr
@@ -2265,6 +2393,8 @@ void App::report_game_events() {
                 break;
             case sim::Game::Event::Kind::Born: text = tr("event.born"); break;
             case sim::Game::Event::Kind::Died: text = tr("event.died"); break;
+            case sim::Game::Event::Kind::TownFounded:
+            case sim::Game::Event::Kind::GameStarted: break;  // Told above.
         }
         if (e.kind != sim::Game::Event::Kind::GameOver) {
             sound_.event(e.kind);

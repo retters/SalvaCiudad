@@ -19,6 +19,8 @@ namespace sc {
 // A speed as text: "0.25", "0.5", "1" ... "9" (the decimal mark by language).
 [[nodiscard]] std::string speed_text(int quarters);
 
+// Text key explaining why a building (or a town) cannot go somewhere.
+[[nodiscard]] const char* place_error_text_key(sim::PlaceError e);
 // Text key of a need (sim::Need).
 [[nodiscard]] const char* need_text_key(std::uint8_t need);
 // Text keys of the villagers' tasks, by sim::Task.
@@ -100,6 +102,10 @@ private:
     void farm_fields(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
                      float row_h);
     void placement_hint(ui::Context& ctx, GameSession& s);
+    // Phase 74: choosing where to found the town, and waiting for the others.
+    void founding(ui::Context& ctx, GameSession& s);
+    std::size_t next_site_ = 0;  // The suggested site the camera last went to.
+    bool minimap_silhouette_ = false;  // The minimap shows the land's shape under the fog.
     // Phase 14: the merchant at a trading post, and trade with other towns.
     [[nodiscard]] std::vector<sim::DefIndex> merchant_rows(const sim::Game& game, std::uint8_t town) const;
     void merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h);

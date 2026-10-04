@@ -274,7 +274,9 @@ void NetHost::receive(PeerId peer, std::span<const std::uint8_t> data) {
             }
         }
     } else if (const SpeedPropose* p = std::get_if<SpeedPropose>(&*m)) {
-        if (state_ == State::Playing && seat.in_game) {
+        // Not while the game waits for its founders (phase 74): the turns
+        // must keep going for their orders to arrive.
+        if (state_ == State::Playing && seat.in_game && !game_->awaiting_founders()) {
             if (p->speed == 0) {
                 set_speed(0, slot, SpeedReason::Pause);
             } else {
@@ -344,7 +346,7 @@ void NetHost::hello(PeerId peer, const Hello& h) {
         s.in_game = true;
         s.loaded = true;
         event({rejoin ? NetEvent::Kind::PlayerRejoined : NetEvent::Kind::PlayerJoined, *seat});
-        broadcast(Notice{rejoin ? NoticeKind::Rejoined : NoticeKind::Joined, *seat, game_->tick()}, false);
+        broadcast(Notice{rejoin ? NoticeKind::Rejoined : NoticeKind::Joined, *seat, game_->turn()}, false);
         send_lobby();
         send_snapshot(*seat);
     } else {
@@ -367,7 +369,7 @@ void NetHost::lost(PeerId peer) {
     }
     answers_.erase(slot);
     event({NetEvent::Kind::PlayerLeft, slot});
-    broadcast(Notice{NoticeKind::Left, slot, game_ != nullptr ? game_->tick() : 0}, false);
+    broadcast(Notice{NoticeKind::Left, slot, game_ != nullptr ? game_->turn() : 0}, false);
     send_lobby();
     if (vote_) {
         settle_vote(false);
@@ -412,7 +414,9 @@ bool NetHost::start() {
     }
     Start st;
     st.config = lobby_.config;
-    st.config.map.players = lobby_.config.shared_town ? std::uint8_t{1} : n;
+    // Phase 74: the map has the sites the host asked for, and at least one
+    // for each town that will be founded.
+    st.config.map.players = std::max(lobby_.config.map.players, lobby_.config.shared_town ? std::uint8_t{1} : n);
     st.config.map.separate = st.config.map.separate && !lobby_.config.shared_town;
     st.players = n;
     lobby_.config = st.config;
@@ -442,7 +446,7 @@ void NetHost::maybe_begin() {
         }
     }
     state_ = State::Playing;
-    horizon_ = game_->tick();
+    horizon_ = game_->turn();
     send_lobby();
 }
 
@@ -477,7 +481,7 @@ int NetHost::advance(int ticks, std::uint64_t now_ms) {
     }
     int ran = 0;
     for (; ran < ticks; ++ran) {
-        const std::uint64_t t = game_->tick();
+        const std::uint64_t t = game_->turn();
         // Wait for the slowest connected player.
         for (std::uint8_t i = 1; i < seats_.size(); ++i) {
             const Seat& s = seats_[i];
@@ -498,8 +502,8 @@ int NetHost::advance(int ticks, std::uint64_t now_ms) {
         const int turn_speed = it->second.speed;
         run_turn(it->second);
         turns_.erase(it);
-        if (game_->tick() % hash_interval(turn_speed) == 0) {
-            checks_[game_->tick()] = parts_of(*game_);
+        if (game_->turn() % hash_interval(turn_speed) == 0) {
+            checks_[game_->turn()] = parts_of(*game_);
             while (checks_.size() > kChecksKept) {
                 checks_.erase(checks_.begin());
             }
@@ -540,7 +544,7 @@ void NetHost::send_snapshot(std::uint8_t slot) {
     }
     sim::BinaryWriter w;
     game_->save(w);
-    const std::uint64_t tick = game_->tick();
+    const std::uint64_t tick = game_->turn();
     send(slot, pack_snapshot(tick, w.bytes()));
     // The turns already closed after it, so it can follow.
     for (auto it = history_.lower_bound(tick); it != history_.end(); ++it) {
@@ -550,7 +554,8 @@ void NetHost::send_snapshot(std::uint8_t slot) {
 }
 
 void NetHost::request_speed(int speed) {
-    if (state_ != State::Playing || !speed::valid(speed) || speed > speed::kMaxNetwork) {
+    if (state_ != State::Playing || !speed::valid(speed) || speed > speed::kMaxNetwork ||
+        (game_ != nullptr && game_->awaiting_founders())) {
         return;
     }
     if (speed == 0) {
@@ -696,7 +701,7 @@ void NetClient::receive(std::span<const std::uint8_t> data) {
             state_ = State::Loading;
         }
     } else if (const Turn* t = std::get_if<Turn>(&*m)) {
-        if (turns_.size() < 100'000 && (game_ == nullptr || t->tick >= game_->tick())) {
+        if (turns_.size() < 100'000 && (game_ == nullptr || t->tick >= game_->turn())) {
             turns_[t->tick] = *t;
         }
     } else if (const Snapshot* snap = std::get_if<Snapshot>(&*m)) {
@@ -772,7 +777,7 @@ int NetClient::advance(int ticks, std::uint64_t now_ms) {
         return 0;  // A snapshot waits to be loaded first.
     }
     // Behind the host: catch up a little faster.
-    const std::uint64_t t0 = game_->tick();
+    const std::uint64_t t0 = game_->turn();
     std::uint64_t available = 0;
     while (turns_.contains(t0 + available)) {
         ++available;
@@ -783,7 +788,7 @@ int NetClient::advance(int ticks, std::uint64_t now_ms) {
     }
     int ran = 0;
     for (; ran < budget; ++ran) {
-        const auto it = turns_.find(game_->tick());
+        const auto it = turns_.find(game_->turn());
         if (it == turns_.end()) {
             break;
         }
@@ -791,7 +796,7 @@ int NetClient::advance(int ticks, std::uint64_t now_ms) {
         const int turn_speed = speed_;
         run_turn(it->second);
         turns_.erase(it);
-        const std::uint64_t t = game_->tick();
+        const std::uint64_t t = game_->turn();
         if (t % hash_interval(turn_speed) == 0) {
             send(Ack{t, true, parts_of(*game_)});
         } else if (t % kAckEvery == 0) {

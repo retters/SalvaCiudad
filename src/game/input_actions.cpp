@@ -29,6 +29,7 @@ constexpr ActionInfo kActions[] = {
     {Action::GameQuickSave, "game.quickSave", ActionGroup::Game, {SDL_SCANCODE_F5, kNone}},
     {Action::GameQuickLoad, "game.quickLoad", ActionGroup::Game, {SDL_SCANCODE_F9, kNone}},
     {Action::GameRotateBuilding, "game.rotateBuilding", ActionGroup::Game, {SDL_SCANCODE_R, kNone}},
+    {Action::GameNextSite, "game.nextSite", ActionGroup::Game, {SDL_SCANCODE_TAB, kNone}},
     {Action::UiToggleFullscreen, "ui.toggleFullscreen", ActionGroup::Interface, {SDL_SCANCODE_F11, kNone}},
     {Action::UiScreenshot, "ui.screenshot", ActionGroup::Interface, {SDL_SCANCODE_F12, kNone}},
     {Action::UiDebugOverlay, "ui.debugOverlay", ActionGroup::Interface, {SDL_SCANCODE_F3, kNone}},

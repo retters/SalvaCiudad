@@ -100,6 +100,10 @@ GameDate game_date(std::uint64_t tick) {
     return d;
 }
 
+const char* place_error_text_key(sim::PlaceError e) {
+    return place_error_key(e);
+}
+
 std::string speed_text(int quarters) {
     if (quarters == 1) {
         return tr("speed.quarter");
@@ -255,13 +259,17 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
 
     bool open_menu = false;
     if (!blocked) {
-        if (pressed(ctx, Action::GameRotateBuilding) && ui.placing != sim::kNoDef) {
+        // A building being placed, or the town center being founded.
+        const bool choosing_site = !game.founded(s->local_player()) && !ui.found_asked && ui.found_sent == 0;
+        if (pressed(ctx, Action::GameRotateBuilding) && (ui.placing != sim::kNoDef || choosing_site)) {
             ui.rotation = static_cast<std::uint8_t>((ui.rotation + 1) & 3u);
         }
         if (ctx.input().key(SDL_SCANCODE_ESCAPE) && ctx.typing()) {
             rename_id_.clear();  // Esc while typing a name: only the typing ends.
         } else if (ctx.input().key(SDL_SCANCODE_ESCAPE)) {
-            if (ui.field_farm.valid()) {
+            if (ui.found_asked) {
+                ui.found_asked = false;  // The site again.
+            } else if (ui.field_farm.valid()) {
                 ui.field_farm = {};
                 ui.field_dragging = false;
             } else if (ui.placing != sim::kNoDef) {
@@ -281,7 +289,16 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     const bool covered = !hover_top_.empty();
     ctx.set_input_blocked(blocked || covered);
     top_bar(ctx, *s);
-    build_bar(ctx, *s);
+    // Phase 74: with no town yet there is nothing to build with.
+    const bool has_town = game.founded(s->local_player());
+    if (has_town) {
+        build_bar(ctx, *s);
+    } else {
+        build_bar_top_ = ctx.height();
+    }
+    if (!has_town || game.awaiting_founders()) {
+        founding(ctx, *s);
+    }
     minimap(ctx, *s, blocked);  // It knows by itself what lies over it.
     if (ui.placing != sim::kNoDef || ui.field_farm.valid()) {
         placement_hint(ctx, *s);
@@ -529,6 +546,9 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
         ctx.label({right, bar.y + half2, w, half2 - ctx.s(3.0f)}, bottom, small2, bottom_color);
         ctx.tooltip_area(ctx.id(id), {right, bar.y, w, bar.h}, tooltip);
     };
+    if (!game.founded(s.local_player())) {
+        return;  // Phase 74: no town yet, no goods or people to count.
+    }
     // Happiness over the town's gold, and where the gold is.
     const std::int32_t joy = game.happiness(s.town());
     const sim::Game::GoldPlaces places = game.gold_places(s.town());
@@ -685,7 +705,7 @@ void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
     std::vector<sim::DefIndex> defs;
     for (std::size_t i = 0; i < content.buildings.size(); ++i) {
         const sim::BuildingDef& d = content.buildings[i];
-        if (d.kind != sim::BuildingKind::TownCenter && d.category % kCategories == category_ % kCategories) {
+        if (d.kind != sim::BuildingKind::TownCenter && !d.cart && d.category % kCategories == category_ % kCategories) {
             defs.push_back(static_cast<sim::DefIndex>(i));
         }
     }
@@ -872,7 +892,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     if (has_workers) {
         h += button_h + pad * 0.5f;
     }
-    const bool removable = window_entity_ != game.player(s.town()).town_center;
+    const bool removable = window_entity_ != game.player(s.town()).town_center && !d.cart;
     if (removable) {
         h += button_h + pad * 0.5f;
     }

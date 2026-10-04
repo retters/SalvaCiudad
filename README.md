@@ -52,6 +52,7 @@ Todas se cambian en Configuración → Controles, salvo Alt+Enter.
 | Espacio | Pausa y reanuda la partida |
 | 1 / 2 / 3 | Velocidad normal, doble o triple |
 | R | Girar el edificio que se está colocando |
+| Tabulador | Al fundar el pueblo: ir al siguiente sitio sugerido |
 | Mayús + clic | Colocar varios edificios iguales |
 | Clic derecho o Esc | Cancelar la colocación, o quitar la selección |
 | F5 / F9 | Guardado rápido / cargar la partida más reciente |
@@ -600,6 +601,23 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Al salir y volver a entrar, el formulario recuerda lo elegido (el botón "Restablecer" de antes ya no existe: "Partir de Variado" hace su trabajo).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
+
+### Fases 73 y 74 (fundar el pueblo)
+
+- [ ] "Un jugador" y "Generar": la partida empieza sobre el mapa vacío, de día, con el cartel "Elige dónde fundar tu pueblo" y el número de cada sitio sugerido (también en el minimapa). No hay barra de construcción ni de recursos, y el reloj no avanza aunque se cambie la velocidad.
+- [ ] El centro sigue al cursor como silueta: verde donde se puede, roja con el motivo en el cartel donde no (agua, pendiente, borde del mapa). R lo gira; Tabulador lleva la cámara al siguiente sitio sugerido.
+- [ ] Un clic en un sitio válido pregunta "¿Fundar el pueblo aquí?". "Cancelar", Esc o clic derecho vuelven a elegir; "Fundar aquí" crea el pueblo y el tiempo empieza a correr (amanece).
+- [ ] Al fundar aparecen 12 aldeanos, el carro de los colonos y el centro en obra. Clic en el carro: su ventana lista los bienes y el oro, y no tiene botón de demoler. Los aldeanos llevan materiales del carro a la obra.
+- [ ] Antes de que el centro esté listo se puede colocar una casa o un leñador; lo de niveles mayores sigue bloqueado.
+- [ ] Al terminarse el centro, el carro desaparece y sus bienes y el oro están en el centro (misma cantidad en la barra de arriba).
+- [ ] Se puede fundar lejos de todo sitio sugerido, y sobre árboles (se quitan).
+- [ ] Con niebla estática: la pantalla está negra al elegir, se ven las marcas de los sitios y el minimapa muestra la silueta de tierra y agua; al fundar se ve el entorno del pueblo.
+- [ ] Guardar (F5) antes de fundar y con el centro a medias, y cargar: todo sigue igual.
+- [ ] Dos ventanas (`--instance 1 --loopback` y `--instance 2 --loopback`), "un pueblo por jugador": cada una elige su sitio; el cartel dice a quién se espera y el tiempo no corre hasta que las dos fundaron.
+- [ ] Lo mismo con "pueblo común": solo el anfitrión coloca el centro; la otra ventana ve "Esperando a que … funde el pueblo" con la cámara libre, y al fundarse la cámara va al pueblo.
+- [ ] El tutorial empieza, como antes, con el pueblo ya en pie.
+- [ ] En Partida nueva la barra se llama "Sitios para pueblos"; su valor se recuerda.
+- [ ] **Tu opinión:** el modelo del carro; cuánto tarda el centro en construirse (unos 50 s a ×1); si con niebla quieres ver algo más que la silueta del minimapa al elegir.
 
 ### Fase 72 (amenazas de noche)
 

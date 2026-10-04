@@ -40,6 +40,12 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
         redraw = true;
     }
     const int fog_mode = static_cast<int>(fog.mode());
+    // Phase 74: with no town yet, the fog lets the shape of the land show.
+    const bool silhouette = !game.founded(s.local_player());
+    if (silhouette != minimap_silhouette_) {
+        minimap_silhouette_ = silhouette;
+        redraw = true;
+    }
     if (fog_mode != minimap_fog_mode_ || fog.generation() != minimap_fog_generation_) {
         redraw = true;
     } else if (fog.revision() != minimap_fog_revision_ && ctx.now_ns() - minimap_fog_ns_ > 250'000'000ull) {
@@ -47,7 +53,7 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
     }
     if (redraw) {
         std::vector<std::uint8_t> image = minimap_base_;
-        minimap::apply_fog(image, map.size, fog);
+        minimap::apply_fog(image, map.size, fog, silhouette);
         services_.set_ui_image(minimap::kImageId, minimap::kImageSize, minimap::kImageSize, std::move(image));
         minimap_fog_mode_ = fog_mode;
         minimap_fog_generation_ = fog.generation();
@@ -82,6 +88,20 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
         const float w = std::max(dot, static_cast<float>(b.width) * scale);
         const float h = std::max(dot, static_cast<float>(b.depth) * scale);
         ctx.draw().rect({std::floor(x), std::floor(y), w, h}, player_color(b.owner));
+    }
+    // Phase 74: with a town to found, the suggested sites, fog or no fog.
+    if (!game.founded(s.local_player())) {
+        const float mark = std::max(5.0f, std::round(ctx.s(6.0f)));
+        for (std::size_t i = 0; i < map.starts.size(); ++i) {
+            if (game.site_taken(i)) {
+                continue;
+            }
+            const auto [x, y] = to_screen(static_cast<float>(map.starts[i].x.raw()) / 65536.0f,
+                                          static_cast<float>(map.starts[i].z.raw()) / 65536.0f);
+            const ui::Rect r{std::round(x - mark * 0.5f), std::round(y - mark * 0.5f), mark, mark};
+            ctx.draw().rect(r.inset(-1.0f), ui::Color::rgb(0x000000, 200));
+            ctx.draw().rect(r, theme.accent);
+        }
     }
     // Dynamic fog: others' buildings out of sight as last seen (phase 33).
     if (fog.mode() == sim::FogMode::Dynamic) {

@@ -58,6 +58,8 @@ public:
     MemoryNetwork net;
     std::vector<Machine> m;
     std::uint64_t now = 1000;
+    // As the game makes them (phase 74): nobody has a town until they found it.
+    bool towns_to_found = false;
 
     Cluster() {
         Machine host;
@@ -92,7 +94,7 @@ public:
             if (std::optional<Start> s = x.session->take_start()) {
                 x.game = std::make_unique<sim::Game>(content(), map_for(s->config.map),
                                                      sim::GameSetup{s->players, s->config.seed, s->config.shared_town,
-                                                                    s->config.rules});
+                                                                    s->config.rules, !towns_to_found});
                 x.session->game_built(x.game.get(), map_hash(x.game->map()));
             }
             if (std::optional<std::vector<std::uint8_t>> snap = x.session->take_snapshot()) {
@@ -159,6 +161,16 @@ std::optional<sim::Command> place_near(const sim::Game& g, std::uint8_t player, 
         }
     }
     return std::nullopt;
+}
+
+// The order to found a town on one of the map's suggested sites.
+sim::Command found_on_site(const sim::Game& g, std::size_t site) {
+    const sim::BuildingDef& d = g.content().buildings[g.town_center_def()];
+    const sim::StartPosition& s = g.map().starts[site];
+    sim::Command c;
+    c.type = sim::CommandType::FoundTown;
+    c.position = {sim::Fixed::from_int(s.x.floor_int() - d.width / 2), sim::Fixed::from_int(s.z.floor_int() - d.depth / 2)};
+    return c;
 }
 
 GameConfig config(std::uint64_t seed, bool shared) {
@@ -352,6 +364,113 @@ TEST_SUITE("net") {
         CHECK(c.m[again].session->state() == NetSession::State::Playing);
         CHECK(c.m[again].session->local_slot() == 2);
         c.m[2].game.reset();  // The old machine is gone.
+        expect_same_games(c);
+    }
+
+    TEST_CASE("towns to found: time waits for every founder, on every machine") {
+        Cluster c;
+        c.towns_to_found = true;
+        c.join("Ana");
+        c.frames(3, 0);
+        c.host().set_config(config(31, false));
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(40, 1);
+        REQUIRE(c.m[0].game != nullptr);
+        REQUIRE(c.m[1].game != nullptr);
+        REQUIRE(c.m[0].game->map().starts.size() == 2);  // A site for each town.
+        for (const Machine& x : c.m) {
+            CHECK(x.game->awaiting_founders());
+            CHECK(x.game->tick() == 0);
+            CHECK(x.game->turn() > 20);  // The turns go on: orders can arrive.
+            CHECK(x.game->buildings().size() == 0);
+        }
+        // Nobody pauses or changes the speed while founding.
+        c.host().request_speed(0);
+        c.client(1).request_speed(8);
+        c.frames(5, 1);
+        CHECK(c.host().speed() == speed::kNormal);
+        CHECK_FALSE(c.host().vote().has_value());
+        // The host founds; the game still waits for Ana.
+        c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
+        c.frames(30, 1);
+        c.settle();
+        for (const Machine& x : c.m) {
+            CHECK(x.game->founded(0));
+            CHECK_FALSE(x.game->founded(1));
+            CHECK(x.game->awaiting_founders());
+            CHECK(x.game->tick() == 0);
+            CHECK(x.game->population(0) == sim::village::kStartVillagers);
+        }
+        // Ana founds: time starts for both.
+        c.m[1].session->issue(found_on_site(*c.m[1].game, 1));
+        c.frames(120, 1);
+        c.settle();
+        for (const Machine& x : c.m) {
+            CHECK_FALSE(x.game->awaiting_founders());
+            CHECK(x.game->tick() > 50);
+            CHECK(x.game->population(1) == sim::village::kStartVillagers);
+            CHECK(x.game->rejected_commands() == 0);
+        }
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+        // Now the speed can be paused again.
+        c.host().request_speed(0);
+        c.frames(3, 1);
+        CHECK(c.host().speed() == 0);
+    }
+
+    TEST_CASE("towns to found: in a common town only the host places the center") {
+        Cluster c;
+        c.towns_to_found = true;
+        c.join("Ana");
+        c.frames(3, 0);
+        c.host().set_config(config(32, true));
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(20, 1);
+        REQUIRE(c.m[1].game != nullptr);
+        // Ana's order is refused on every machine alike.
+        c.m[1].session->issue(found_on_site(*c.m[1].game, 0));
+        c.frames(30, 1);
+        c.settle();
+        for (const Machine& x : c.m) {
+            CHECK(x.game->rejected_commands() == 1);
+            CHECK(x.game->awaiting_founders());
+            CHECK_FALSE(x.game->founded(1));
+        }
+        c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
+        c.frames(120, 1);
+        c.settle();
+        for (const Machine& x : c.m) {
+            CHECK(x.game->founded(0));
+            CHECK(x.game->founded(1));  // The common town is hers too.
+            CHECK(x.game->tick() > 50);
+        }
+        expect_same_games(c);
+    }
+
+    TEST_CASE("towns to found: a player who joins while the others choose gets the same waiting game") {
+        Cluster c;
+        c.towns_to_found = true;
+        c.join("Ana");
+        c.frames(3, 0);
+        c.host().set_config(config(33, true));
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(30, 1);
+        // Somebody comes into the common town before it is founded.
+        const std::size_t late = c.join("Bea");
+        c.frames(30, 1);
+        c.settle();
+        REQUIRE(c.m[late].game != nullptr);
+        CHECK(c.m[late].game->awaiting_founders());
+        CHECK(c.m[late].game->tick() == 0);
+        CHECK(c.m[late].game->turn() + NetSession::kMaxDelay + 2 >= c.m[0].game->turn());
+        c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
+        c.frames(120, 1);
+        c.settle();
+        CHECK(c.m[late].game->founded(c.m[late].session->local_slot()));
         expect_same_games(c);
     }
 

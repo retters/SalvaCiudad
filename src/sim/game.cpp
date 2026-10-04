@@ -5323,6 +5323,24 @@ PlaceError Game::can_found(std::uint8_t player, std::int32_t x, std::int32_t z, 
     return PlaceError::None;
 }
 
+bool Game::site_taken(std::size_t site) const {
+    if (site >= map_.starts.size()) {
+        return true;
+    }
+    const StartPosition& s = map_.starts[site];
+    for (const Building& b : buildings_.data()) {
+        if (content_->buildings[b.def].kind != BuildingKind::TownCenter) {
+            continue;
+        }
+        const std::int64_t dx = b.x + b.width / 2 - s.x.floor_int();
+        const std::int64_t dz = b.z + b.depth / 2 - s.z.floor_int();
+        if (dx * dx + dz * dz < static_cast<std::int64_t>(kSiteTakenMeters) * kSiteTakenMeters) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Game::cart_spot(std::uint8_t town, std::int32_t x, std::int32_t z, std::uint8_t rotation, std::int32_t& cart_x,
                      std::int32_t& cart_z) const {
     const BuildingDef& center = content_->buildings[town_center_def_];
