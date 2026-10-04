@@ -174,6 +174,9 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::JoinTown:
             ok = ok && c.count < kMaxPlayers && c.count != c.player;
             break;
+        case CommandType::SetAccess:
+            ok = ok && c.value >= 0 && c.value <= access::kAll;
+            break;
         case CommandType::SetProduction:
             ok = ok && c.entity.valid() && (c.value == 0 || c.value == 1);
             break;

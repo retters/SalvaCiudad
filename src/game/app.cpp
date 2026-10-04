@@ -1362,6 +1362,7 @@ bool App::enter_generated_map() {
         // Nobody has a town yet: each seat founds its own (phase 74). The
         // seats carry their players' names and colors (phase 75).
         sim::GameSetup setup{st.players, st.config.seed, st.config.shared_town, st.config.rules, false, {}};
+        setup.access = net::lobby_access(st.config);
         setup.seats.resize(st.players);
         for (const net::LobbyPlayer& p : net_->lobby().players) {
             if (p.slot < setup.seats.size() && sim::valid_seat_name(p.name)) {
@@ -1370,7 +1371,7 @@ bool App::enter_generated_map() {
         }
         auto session = std::make_unique<GameSession>(content, *map, setup, net_->local_slot());
         session->attach(net_.get());
-        session->game().set_dev_commands(false);  // Not in network games (decision D-910).
+        // The developer tools stay on in network games for now (D-7603, in place of D-910).
         start_session(std::move(session));
         net_->game_built(&session_->game(), net::map_hash(*map));
         return true;
@@ -2090,7 +2091,8 @@ void App::set_game_speed(int speed) {
 }
 
 int App::max_game_speed() const {
-    return net_ && session_ && session_->networked() ? speed::kMaxNetwork : speed::kMax;
+    // Up to x5 with other players: on the network, or a game of several seats.
+    return session_ && (session_->networked() || session_->game().player_count() > 1) ? speed::kMaxNetwork : speed::kMax;
 }
 
 std::string App::player_name() const {
@@ -2142,6 +2144,53 @@ bool App::host_game(const sim::MapSettings& map, const sim::GameRules& rules) {
     }
     log::info("net: hosting on port {}", game_port());
     return true;
+}
+
+bool App::open_game(std::uint8_t access) {
+    if (!session_ || session_->networked() || replay_) {
+        return false;
+    }
+    close_network();  // A lobby left behind, if any; the game stays.
+    if (!ensure_enet()) {
+        return false;
+    }
+    link_ = std::make_unique<net::EnetLink>();
+    if (!link_->listen(game_port(), sim::kMaxPlayers - 1, loopback_)) {
+        link_.reset();
+        return false;
+    }
+    sim::Game& game = session_->game();
+    auto host = std::make_unique<net::NetHost>(*link_, local_info());
+    net::GameConfig config;
+    config.map = game.map().settings;
+    config.shared_town = false;
+    config.rules = game.rules();
+    // The speed of now, up to the network's fastest (x5).
+    host->adopt(&game, config, clock_.speed());
+    net_ = std::move(host);
+    session_->attach(net_.get());
+    clock_.set_speed(net_->speed());
+    if (!loopback_) {
+        lan_announce_ = std::make_unique<net::LanDiscovery>();
+        (void)lan_announce_->announce(game_port());
+    }
+    set_access(access);
+    log::info("net: the game is open to other players on port {}", game_port());
+    return true;
+}
+
+void App::set_access(std::uint8_t access) {
+    if (!hosting()) {
+        return;
+    }
+    sim::Command c;
+    c.type = sim::CommandType::SetAccess;
+    c.value = access & sim::access::kAll;
+    session_->issue(c);
+}
+
+bool App::hosting() const {
+    return net_ && session_ && session_->networked() && net_->role() == net::NetSession::Role::Host;
 }
 
 bool App::join_game(const std::string& address, std::uint16_t port) {
@@ -2337,8 +2386,19 @@ void App::report_game_events() {
     for (const sim::Game::Event& e : game.take_events()) {
         if (e.owner != session_->town() && e.kind != sim::Game::Event::Kind::TownLost &&
             e.kind != sim::Game::Event::Kind::GameOver && e.kind != sim::Game::Event::Kind::TownFounded &&
-            e.kind != sim::Game::Event::Kind::GameStarted) {
+            e.kind != sim::Game::Event::Kind::GameStarted && e.kind != sim::Game::Event::Kind::AccessChanged &&
+            e.kind != sim::Game::Event::Kind::SeatAdded && e.kind != sim::Game::Event::Kind::TownJoined) {
             continue;
+        }
+        if (e.kind == sim::Game::Event::Kind::AccessChanged) {
+            // Phase 76: everybody hears whether newcomers may come in.
+            if (session_->networked()) {
+                host_->toast(tr((e.value & sim::access::kOpen) != 0 ? "event.access.open" : "event.access.closed"));
+            }
+            continue;
+        }
+        if (e.kind == sim::Game::Event::Kind::SeatAdded || e.kind == sim::Game::Event::Kind::TownJoined) {
+            continue;  // The network tells who came; phase 77 tells who joined whom.
         }
         if (e.kind == sim::Game::Event::Kind::TownFounded || e.kind == sim::Game::Event::Kind::GameStarted) {
             // Phase 74. A town founded: everybody is told, and those who
@@ -2404,7 +2464,10 @@ void App::report_game_events() {
             case sim::Game::Event::Kind::Born: text = tr("event.born"); break;
             case sim::Game::Event::Kind::Died: text = tr("event.died"); break;
             case sim::Game::Event::Kind::TownFounded:
-            case sim::Game::Event::Kind::GameStarted: break;  // Told above.
+            case sim::Game::Event::Kind::GameStarted:
+            case sim::Game::Event::Kind::SeatAdded:
+            case sim::Game::Event::Kind::TownJoined:
+            case sim::Game::Event::Kind::AccessChanged: break;  // Told above.
         }
         if (e.kind != sim::Game::Event::Kind::GameOver) {
             sound_.event(e.kind);
@@ -2476,6 +2539,7 @@ void App::handle_net_event(const net::NetEvent& e) {
                 }
                 case net::RejectReason::Full: body = tr("net.rejected.full"); break;
                 case net::RejectReason::BadName: body = tr("net.rejected.name"); break;
+                case net::RejectReason::Closed: body = tr("net.rejected.closed"); break;
                 default: body = tr("net.rejected.protocol"); break;
             }
             host_->show_message(tr("net.rejected.title"), body);

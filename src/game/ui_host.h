@@ -103,6 +103,12 @@ private:
     void draw_logo(ui::Context& ctx, float center_x, float y, float max_width, float max_height, float& height_out,
                    bool draw);
     void message_dialog(ui::Context& ctx);
+    // Phase 76: who may come into the game (in the game menu).
+    void access_dialog(ui::Context& ctx);
+    bool access_dialog_ = false;
+    bool access_open_ = true;
+    bool access_join_ = true;
+    bool access_found_ = true;
     void display_confirm_dialog(ui::Context& ctx);
     [[nodiscard]] bool modal_open() const;
 

@@ -20,7 +20,7 @@
 
 namespace sc::net {
 
-inline constexpr std::uint32_t kProtocolVersion = 20;
+inline constexpr std::uint32_t kProtocolVersion = 21;
 inline constexpr std::uint16_t kDefaultPort = 47800;
 inline constexpr std::uint16_t kDiscoveryPort = 47799;
 inline constexpr std::size_t kMaxNameBytes = 32;
@@ -55,7 +55,8 @@ struct GameConfig {
     bool operator==(const GameConfig&) const = default;
 };
 
-enum class RejectReason : std::uint8_t { Protocol, Version, Mods, Full, BadName, Count };
+// `Closed` (phase 76): the game takes no new players (those with a seat may come back).
+enum class RejectReason : std::uint8_t { Protocol, Version, Mods, Full, BadName, Closed, Count };
 enum class LobbyPhase : std::uint8_t { Lobby, Loading, Playing, Count };
 enum class SpeedReason : std::uint8_t { Vote, Pause, SlowPlayer, Count };
 enum class NoticeKind : std::uint8_t { Joined, Left, Rejoined, Desync, WrongMap, Count };

@@ -36,7 +36,7 @@ public:
     GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_player);
 
     // Multiplayer: commands go to the network, which runs the turns.
-    void attach(net::NetSession* net) { net_ = net; }
+    void attach(net::NetSession* net);
     [[nodiscard]] bool networked() const { return net_ != nullptr; }
     // The host's state replaces this machine's (a resynchronization).
     void replace_game(std::unique_ptr<sim::Game> game) {

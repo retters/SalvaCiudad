@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 42;
+inline constexpr std::uint32_t kGameRulesVersion = 43;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -301,6 +301,9 @@ struct PlayerState {
     // interface and to give the seat back to whoever returns with the name).
     std::string name;
     std::uint8_t color = 0;
+    // Phase 76: the seat came after the game began (by AddSeat). What it
+    // may do without a town depends on the game's access.
+    bool late = false;
     // Phase 73: the seat's town exists (it was founded). Until then the
     // seat owns nothing and may only found. `cart`: the wagon the settlers
     // came with, which keeps their goods until the town center is built.
@@ -430,6 +433,8 @@ struct GameSetup {
     // Phase 75: the names and colors of the seats, in order (may be shorter
     // than `players`: the rest have no name).
     std::vector<SeatInfo> seats;
+    // Phase 76: what newcomers may do (sim::access bits); 0: closed.
+    std::uint8_t access = 0;
 };
 
 class Game {
@@ -504,6 +509,15 @@ public:
     // Whether `town` is a town that exists: a seat's own, already founded.
     [[nodiscard]] bool town_exists(std::uint8_t town) const {
         return town < player_count_ && players_[town].active && town_of(town) == town && players_[town].founded;
+    }
+    // Phase 76: whether new players get a seat, and what they may do with
+    // it (sim::access bits). Changed by the host's SetAccess order.
+    [[nodiscard]] std::uint8_t access() const { return access_; }
+    [[nodiscard]] bool open() const { return (access_ & access::kOpen) != 0; }
+    // Whether a seat without a town may found one: those who began the
+    // game always; those who came later, if the game lets them.
+    [[nodiscard]] bool may_found(std::uint8_t player) const {
+        return player < player_count_ && (!players_[player].late || (access_ & access::kFound) != 0);
     }
     // How many seats run a town.
     [[nodiscard]] std::int32_t seats_of(std::uint8_t town) const;
@@ -596,6 +610,7 @@ public:
             TownFounded,     // Phase 73: `owner` founded its town at `at`.
             SeatAdded,       // Phase 75: seat `owner` came into the game, without a town.
             TownJoined,      // Phase 75: seat `owner` joined town `other`.
+            AccessChanged,   // Phase 76: `value`: the new access bits.
             GameStarted,     // Phase 73: every town is founded; time runs.
         };
         Kind kind = Kind::FireStarted;
@@ -738,6 +753,7 @@ private:
     bool dev_commands_ = true;
     std::array<std::uint8_t, kMaxPlayers> seat_town_{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     std::uint8_t host_seat_ = 0;
+    std::uint8_t access_ = 0;
     bool started_ = true;          // Phase 73: false while it waits for the founders.
     std::uint64_t waited_ = 0;     // Steps taken while waiting.
     DefIndex town_center_def_ = kNoDef;

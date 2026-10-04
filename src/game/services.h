@@ -96,6 +96,13 @@ public:
     // Connects to a host; the lobby shows once it answers.
     virtual bool join_game(const std::string& address, std::uint16_t port) = 0;
     virtual void leave_network() = 0;
+    // Phase 76. The single-player game being played becomes a network game
+    // hosted here, open to newcomers as `access` says (sim::access bits);
+    // false if the port is busy. Then, as host: change who may come in.
+    virtual bool open_game(std::uint8_t access) = 0;
+    virtual void set_access(std::uint8_t access) = 0;
+    // Whether this machine hosts the game being played.
+    [[nodiscard]] virtual bool hosting() const = 0;
     [[nodiscard]] virtual net::NetSession* net() = 0;
     virtual void set_lan_search(bool on) = 0;
     [[nodiscard]] virtual std::vector<net::LanGame> lan_games() = 0;

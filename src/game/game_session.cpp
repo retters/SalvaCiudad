@@ -41,6 +41,17 @@ GameSession::GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_pla
     fog_.begin(*game_, game_->vision_group(local_player_));
 }
 
+void GameSession::attach(net::NetSession* net) {
+    net_ = net;
+    // Orders not run yet (a game opened to others, phase 76) go on the network.
+    if (net_ != nullptr) {
+        for (const sim::Command& c : pending_) {
+            net_->issue(c);
+        }
+        pending_.clear();
+    }
+}
+
 void GameSession::issue(sim::Command command) {
     command.player = local_player();
     if (net_ != nullptr) {

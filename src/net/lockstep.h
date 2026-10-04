@@ -137,6 +137,13 @@ public:
     [[nodiscard]] bool can_start() const;
     bool start();
 
+    // Phase 76. A game already going on this machine (one player's) becomes
+    // a network game hosted here, at `speed` (cut to the network's fastest):
+    // no lobby, no loading. Its seats keep the names they have in the game,
+    // so whoever comes back with one gets that seat; new players get a new
+    // seat while the game is open (sim::Game::open()).
+    void adopt(sim::Game* game, const GameConfig& config, int speed);
+
     void game_built(sim::Game* game, std::uint64_t map_hash) override;
     void snapshot_loaded(sim::Game* game) override { game_ = game; }
     void issue(const sim::Command& command) override;
@@ -226,6 +233,13 @@ private:
     void receive(std::span<const std::uint8_t> data);
     void send(const Message& m);
 };
+
+// Phase 76. What a game made in the lobby lets newcomers do (sim::access
+// bits), the same on every machine: it is open, to join the common town or
+// to found a town of their own.
+[[nodiscard]] inline std::uint8_t lobby_access(const GameConfig& config) {
+    return static_cast<std::uint8_t>(sim::access::kOpen | (config.shared_town ? sim::access::kJoin : sim::access::kFound));
+}
 
 // Hash of a map, to check that every machine generated the same one.
 [[nodiscard]] std::uint64_t map_hash(const sim::MapData& map);

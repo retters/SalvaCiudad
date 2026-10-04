@@ -65,6 +65,7 @@ Game one_seat(std::uint64_t seed, FogMode fog = FogMode::None) {
     setup.rules.fog = fog;
     setup.rules.shared_vision = false;  // Each town sees for itself.
     setup.start_towns = false;
+    setup.access = access::kAll;  // Whoever comes later may found or join.
     setup.seats = {{"Ana", 2}};
     Game g(content(), small_map(seed, 3), setup);
     g.apply(found_on_site(g, 0, 0));
@@ -367,6 +368,58 @@ TEST_SUITE("seats") {
         Game back(content(), MapData{}, 0, 0);
         REQUIRE(reload(g, back));
         CHECK(back.hash() == g.hash());
+    }
+
+    TEST_CASE("access: the host says who comes in, and latecomers found only if the game lets them") {
+        GameSetup setup;
+        setup.players = 1;
+        setup.seed = 26;
+        setup.start_towns = false;
+        Game g(content(), small_map(26, 3), setup);
+        CHECK(g.access() == 0);
+        CHECK_FALSE(g.open());
+        CHECK(g.may_found(0));  // The seats the game began with always may.
+        g.apply(found_on_site(g, 0, 0));
+        g.apply(add_seat(0, "Beto"));
+        REQUIRE(g.rejected_commands() == 0);
+        CHECK(g.player(1).late);
+        CHECK_FALSE(g.may_found(1));
+        CHECK(g.can_found(1, 40, 40, 0) == PlaceError::NotYours);
+        g.apply(found_on_site(g, 1, 1));
+        CHECK(g.rejected_commands() == 1);
+        Command access;
+        access.type = CommandType::SetAccess;
+        access.player = 1;  // Not the host.
+        access.value = access::kAll;
+        g.apply(access);
+        CHECK(g.rejected_commands() == 2);
+        CHECK(g.access() == 0);
+        access.player = 0;
+        g.apply(access);
+        CHECK(g.rejected_commands() == 2);
+        CHECK(g.access() == access::kAll);
+        CHECK(g.open());
+        bool told = false;
+        for (const Game::Event& e : g.take_events()) {
+            told = told || (e.kind == Game::Event::Kind::AccessChanged && e.value == access::kAll);
+        }
+        CHECK(told);
+        g.apply(found_on_site(g, 1, 1));
+        CHECK(g.rejected_commands() == 2);
+        CHECK(g.town_exists(1));
+        // Saved and loaded with the game.
+        Game back(content(), MapData{}, 0, 0);
+        REQUIRE(reload(g, back));
+        CHECK(back.access() == access::kAll);
+        CHECK(back.player(1).late);
+        CHECK(back.hash() == g.hash());
+        // Out of range, a command is refused when read.
+        access.value = 99;
+        BinaryWriter w;
+        access.write(w);
+        BinaryReader r(w.bytes());
+        Command read_back;
+        CHECK_FALSE(Command::read(r, read_back));
     }
 
     TEST_CASE("the lobby's two kinds of game are seats and towns too") {

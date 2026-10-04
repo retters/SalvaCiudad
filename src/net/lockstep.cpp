@@ -105,6 +105,42 @@ NetHost::NetHost(Link& link, LocalInfo local) : link_(link), local_(std::move(lo
     send_lobby();
 }
 
+void NetHost::adopt(sim::Game* game, const GameConfig& config, int speed) {
+    game_ = game;
+    lobby_.config = config;
+    for (std::size_t i = 0; i < seats_.size(); ++i) {
+        if (i != slot_) {
+            seats_[i] = Seat{};
+        }
+    }
+    for (std::uint8_t p = 0; p < game->player_count(); ++p) {
+        Seat& s = seats_[p];
+        s.used = true;
+        s.in_game = true;
+        s.loaded = true;
+        s.ready = true;
+        s.connected = p == slot_;
+        if (!game->player(p).name.empty()) {
+            s.name = game->player(p).name;
+        } else if (p != slot_) {
+            s.name.clear();  // Nobody can come back to a seat without a name.
+        }
+        s.color = game->player(p).color;
+    }
+    peers_.clear();
+    pending_.clear();
+    turns_.clear();
+    history_.clear();
+    checks_.clear();
+    vote_.reset();
+    host_loaded_ = true;
+    state_ = State::Playing;
+    horizon_ = game->turn();
+    sim_seats_ = game->player_count();
+    speed_ = speed <= 0 ? 0 : speed::snap(std::min(speed, speed::kMaxNetwork), speed::kMaxNetwork);
+    send_lobby();
+}
+
 void NetHost::set_config(const GameConfig& config) {
     if (state_ != State::Lobby) {
         return;
@@ -314,21 +350,22 @@ void NetHost::hello(PeerId peer, const Hello& h) {
             }
         }
     } else if (state_ == State::Playing && game_ != nullptr) {
-        for (std::uint8_t i = 1; i < seats_.size() && !seat; ++i) {
-            if (seats_[i].used && seats_[i].in_game && !seats_[i].connected && seats_[i].name == h.name) {
+        for (std::uint8_t i = 0; i < seats_.size() && !seat; ++i) {
+            if (i != slot_ && seats_[i].used && seats_[i].in_game && !seats_[i].connected && !seats_[i].name.empty() &&
+                seats_[i].name == h.name) {
                 seat = i;
                 rejoin = true;
             }
         }
-        // Phase 75: a common town takes a newcomer in a seat made for them.
-        if (!seat && lobby_.config.shared_town && sim_seats_ < sim::kMaxPlayers && !seats_[sim_seats_].used) {
+        // Phase 76: somebody new gets a seat made for them, without a
+        // town, if the game is open.
+        if (!seat && !game_->open()) {
+            reject(peer, RejectReason::Closed);
+            return;
+        }
+        if (!seat && sim_seats_ < sim::kMaxPlayers && !seats_[sim_seats_].used) {
             seat = sim_seats_;
             new_seat = true;
-        }
-        for (std::uint8_t i = 1; i < seats_.size() && !seat && !lobby_.config.shared_town; ++i) {
-            if (seats_[i].used && seats_[i].in_game && !seats_[i].connected && i < game_->player_count()) {
-                seat = i;
-            }
         }
     }
     if (!seat) {
@@ -345,16 +382,12 @@ void NetHost::hello(PeerId peer, const Hello& h) {
     link_.send(peer, encode(Welcome{*seat}));
     if (new_seat) {
         // The seat comes into the simulation by an order of the host, on
-        // every machine at the same turn; then it joins the common town.
+        // every machine at the same turn.
         sim::Command add;
         add.type = sim::CommandType::AddSeat;
         add.text = sim::valid_seat_name(s.name) ? s.name : std::string();
         add.count = std::min<std::uint8_t>(s.color, sim::kMaxSeatColor);
         issue(add);
-        sim::Command join;
-        join.type = sim::CommandType::JoinTown;
-        join.count = *seat;
-        issue(join);
         ++sim_seats_;
     }
     if (state_ == State::Playing) {

@@ -88,6 +88,9 @@ public:
     bool host_game(const sim::MapSettings& map, const sim::GameRules& rules) override;
     bool join_game(const std::string& address, std::uint16_t port) override;
     void leave_network() override;
+    bool open_game(std::uint8_t access) override;
+    void set_access(std::uint8_t access) override;
+    [[nodiscard]] bool hosting() const override;
     net::NetSession* net() override { return net_.get(); }
     void set_lan_search(bool on) override;
     std::vector<net::LanGame> lan_games() override;

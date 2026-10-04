@@ -94,7 +94,8 @@ public:
             if (std::optional<Start> s = x.session->take_start()) {
                 x.game = std::make_unique<sim::Game>(content(), map_for(s->config.map),
                                                      sim::GameSetup{s->players, s->config.seed, s->config.shared_town,
-                                                                    s->config.rules, !towns_to_found});
+                                                                    s->config.rules, !towns_to_found, {},
+                                                                    lobby_access(s->config)});
                 x.session->game_built(x.game.get(), map_hash(x.game->map()));
             }
             if (std::optional<std::vector<std::uint8_t>> snap = x.session->take_snapshot()) {
@@ -171,6 +172,50 @@ sim::Command found_on_site(const sim::Game& g, std::size_t site) {
     c.type = sim::CommandType::FoundTown;
     c.position = {sim::Fixed::from_int(s.x.floor_int() - d.width / 2), sim::Fixed::from_int(s.z.floor_int() - d.depth / 2)};
     return c;
+}
+
+// Why the host refused a machine, if it did.
+RejectReason refusal(const Machine& m) {
+    for (const NetEvent& e : m.events) {
+        if (e.kind == NetEvent::Kind::Rejected) {
+            return e.reject.reason;
+        }
+    }
+    return RejectReason::Count;
+}
+
+sim::Command set_access(std::uint8_t bits) {
+    sim::Command c;
+    c.type = sim::CommandType::SetAccess;
+    c.value = bits;
+    return c;
+}
+
+GameConfig config(std::uint64_t seed, bool shared);
+
+// A cluster whose host has a single-player game already going (its town
+// founded, `ticks` played alone), adopted as a network game at `speed`.
+void open_single_player(Cluster& c, std::uint64_t seed, int ticks, int speed) {
+    sim::MapSettings ms;
+    ms.seed = seed;
+    ms.size = sim::MapSize::Small;
+    ms.sea = sim::Sea::None;
+    ms.players = 3;
+    sim::GameSetup setup;
+    setup.players = 1;
+    setup.seed = seed * 7 + 1;
+    setup.start_towns = false;
+    setup.seats = {{"Host", 0}};
+    auto game = std::make_unique<sim::Game>(content(), map_for(ms), setup);
+    game->apply(found_on_site(*game, 0));
+    REQUIRE(game->founded(0));
+    for (int i = 0; i < ticks; ++i) {
+        game->step();
+    }
+    c.m[0].game = std::move(game);
+    GameConfig cfg = config(seed, false);
+    cfg.map = ms;
+    c.host().adopt(c.m[0].game.get(), cfg, speed);
 }
 
 GameConfig config(std::uint64_t seed, bool shared) {
@@ -470,7 +515,142 @@ TEST_SUITE("net") {
         c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
         c.frames(120, 1);
         c.settle();
-        CHECK(c.m[late].game->founded(c.m[late].session->local_slot()));
+        // The town is founded and time runs: nobody waits for a latecomer,
+        // who has a seat but no town until the founder takes her in.
+        const std::uint8_t bea = c.m[late].session->local_slot();
+        for (const Machine& x : c.m) {
+            CHECK_FALSE(x.game->awaiting_founders());
+            CHECK(x.game->player_count() == 3);
+            CHECK(x.game->player(bea).late);
+            CHECK_FALSE(x.game->founded(bea));
+        }
+        sim::Command join;
+        join.type = sim::CommandType::JoinTown;
+        join.count = bea;
+        c.m[0].session->issue(join);
+        c.frames(30, 1);
+        c.settle();
+        CHECK(c.m[late].game->founded(bea));
+        CHECK(c.m[late].game->town_of(bea) == 0);
+        expect_same_games(c);
+    }
+
+    TEST_CASE("a single-player game is opened: the speed comes down, a newcomer gets the state and a seat") {
+        Cluster c;
+        open_single_player(c, 41, 3000, speed::kMax);  // Played alone five minutes, at x9.
+        CHECK(c.host().state() == NetSession::State::Playing);
+        CHECK(c.host().speed() == speed::kMaxNetwork);  // x5 at most with others.
+        CHECK(c.host().lobby().players.size() == 1);
+        CHECK(c.host().lobby().players[0].name == "Host");
+        // The host goes on playing by turns, alone.
+        c.frames(20, 1);
+        CHECK(c.m[0].game->tick() == 3020);
+        // Not open yet: nobody new comes in.
+        const std::size_t early = c.join("Ana");
+        c.frames(4, 1);
+        CHECK(refusal(c.m[early]) == RejectReason::Closed);
+        CHECK(c.m[0].game->player_count() == 1);
+        // The host opens it.
+        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.frames(15, 1);
+        REQUIRE(c.m[0].game->open());
+        const std::size_t ana = c.join("Ana");
+        c.frames(60, 1);
+        c.settle();
+        REQUIRE(c.m[ana].game != nullptr);
+        CHECK(c.m[ana].session->state() == NetSession::State::Playing);
+        CHECK(c.m[ana].session->local_slot() == 1);
+        CHECK(refusal(c.m[ana]) == RejectReason::Count);
+        for (const Machine* x : {&c.m[0], &c.m[ana]}) {
+            CHECK(x->game->player_count() == 2);
+            CHECK(x->game->player(1).name == "Ana");
+            CHECK(x->game->player(1).late);
+            CHECK_FALSE(x->game->founded(1));
+            CHECK(x->game->population(0) >= sim::village::kStartVillagers - 1);
+            CHECK(x->game->dev_commands());  // The developer tools stay (D-7603).
+        }
+        c.m[early].session.reset();  // The refused machine is gone.
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+        // She founds her town while the host's goes on.
+        c.m[ana].session->issue(found_on_site(*c.m[ana].game, 1));
+        c.frames(100, 1);
+        c.settle();
+        CHECK(c.m[0].game->town_exists(1));
+        CHECK(c.m[ana].game->population(1) == sim::village::kStartVillagers);
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("an opened game: whoever leaves comes back to their seat; closed, nobody new comes in") {
+        Cluster c;
+        open_single_player(c, 42, 600, speed::kNormal);
+        c.m[0].session->issue(set_access(sim::access::kOpen | sim::access::kFound));
+        c.frames(15, 1);
+        const std::size_t ana = c.join("Ana");
+        c.frames(40, 1);
+        REQUIRE(c.m[ana].session->local_slot() == 1);
+        // Ana's game closes by force.
+        const PeerId gone = c.m[ana].link->self_id();
+        c.net.cut(gone);
+        c.m[0].link->disconnect(gone);
+        c.m[ana].session.reset();
+        c.m[ana].game.reset();
+        c.frames(50, 1);
+        // The host closes the game to new players.
+        c.m[0].session->issue(set_access(0));
+        c.frames(15, 1);
+        CHECK_FALSE(c.m[0].game->open());
+        const std::size_t bea = c.join("Bea");
+        c.frames(6, 1);
+        CHECK(refusal(c.m[bea]) == RejectReason::Closed);
+        CHECK(c.m[0].game->player_count() == 2);
+        c.m[bea].session.reset();
+        // Ana comes back with her name: her seat, closed or not.
+        const std::size_t again = c.join("Ana");
+        c.frames(60, 1);
+        c.settle();
+        CHECK(refusal(c.m[again]) == RejectReason::Count);
+        CHECK(c.m[again].session->state() == NetSession::State::Playing);
+        CHECK(c.m[again].session->local_slot() == 1);
+        CHECK(c.m[0].game->player_count() == 2);
+        expect_same_games(c);
+        // Open again: Bea gets the third seat.
+        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.frames(15, 1);
+        const std::size_t bea2 = c.join("Bea");
+        c.frames(60, 1);
+        c.settle();
+        CHECK(c.m[bea2].session->local_slot() == 2);
+        CHECK(c.m[0].game->player_count() == 3);
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+        // Only the host changes who comes in.
+        c.m[again].session->issue(set_access(0));
+        c.frames(30, 1);
+        c.settle();
+        CHECK(c.m[0].game->open());
+        CHECK(c.m[0].game->rejected_commands() == c.m[again].game->rejected_commands());
+        CHECK(c.m[0].game->rejected_commands() >= 1);
+    }
+
+    TEST_CASE("an opened game that lets nobody found: a newcomer's town is refused on every machine") {
+        Cluster c;
+        open_single_player(c, 43, 300, speed::kNormal);
+        c.m[0].session->issue(set_access(sim::access::kOpen | sim::access::kJoin));
+        c.frames(15, 1);
+        const std::size_t ana = c.join("Ana");
+        c.frames(40, 1);
+        c.settle();
+        REQUIRE(c.m[ana].game != nullptr);
+        CHECK_FALSE(c.m[ana].game->may_found(1));
+        c.m[ana].session->issue(found_on_site(*c.m[ana].game, 1));
+        c.frames(40, 1);
+        c.settle();
+        for (const Machine* x : {&c.m[0], &c.m[ana]}) {
+            CHECK_FALSE(x->game->founded(1));
+            CHECK(x->game->rejected_commands() == 1);
+        }
         expect_same_games(c);
     }
 

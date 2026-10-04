@@ -2896,3 +2896,35 @@ Reglas 42, protocolo de red 20.
 
 **D-7510. Sin revisar.**
 Todo por pruebas (suite `seats`, y las de red, que siguen pasando con el pueblo común de doce y los cuatro pueblos separados). En pantalla no cambia nada todavía, salvo que los pueblos se llaman por el nombre del jugador también en un jugador.
+
+## Fase 76: abrir la partida a otros jugadores (2026-10-03)
+
+**D-7601. Lo que la partida permite es estado de la simulación.**
+Tres banderas (`sim::access`): abierta (quien llega recibe asiento), puede pedir unirse a un pueblo, puede fundar el suyo. Las cambia solo el anfitrión con la orden `SetAccess`, así todas las máquinas lo saben en el mismo turno, se guarda con la partida y lo ven quienes entran después. Una partida de un jugador nace cerrada (0).
+
+**D-7602. Los asientos que llegan tarde llevan una marca.**
+`PlayerState::late`. Los que empezaron la partida fundan siempre; los que llegaron después, solo si la partida lo permite. Tampoco se les espera: una partida que aún aguarda a sus fundadores arranca aunque un recién llegado no tenga pueblo.
+
+**D-7603. Las herramientas de desarrollo quedan encendidas en red (reemplaza a D-910 por ahora).**
+Salvador, 2026-10-03: «por ahora se quedan aún en multiplayer, en release se ocultará de alguna forma». Una partida abierta las conserva y las creadas en la sala ya no las apagan. Cómo ocultarlas en la versión final queda pendiente (sección 14 de la especificación).
+
+**D-7604. Abrir no pasa por la sala.**
+`NetHost::adopt` toma la partida en curso y queda jugando de inmediato: los turnos empiezan en el turno actual, la velocidad es la que había (con tope ×5; en pausa sigue en pausa) y los asientos conservan el nombre que tienen en la partida. Las órdenes dadas y aún no ejecutadas pasan a la red. Un asiento sin nombre no se puede recuperar.
+
+**D-7605. Quien llega siempre recibe un asiento nuevo; ya no se ocupa el de otro.**
+Antes, en pueblos separados, un jugador nuevo podía quedarse con el pueblo de alguien que se había ido, y en un pueblo común entraba directo. Ahora un asiento solo se recupera con el nombre de su dueño, y los nuevos entran sin pueblo si la partida está abierta. Con la partida cerrada el motivo del rechazo es nuevo («no acepta jugadores nuevos»); con los doce asientos usados, «sin lugares libres».
+
+**D-7606. Las partidas creadas en la sala nacen abiertas.**
+Para no perder lo que ya hacían: en pueblo común permiten pedir unirse, en pueblos separados fundar el propio (`net::lobby_access`). El anfitrión lo cambia desde el menú de pausa («Jugadores nuevos…»). La fase 79 llevará estas casillas a la sala.
+
+**D-7607. El tope de ×5 también vale para una partida de varios asientos jugada a solas.**
+Lo pide la especificación («abierta o con más de un asiento»). La red ya lo aplicaba; ahora también `max_game_speed` cuando la partida tiene más de un asiento aunque nadie esté conectado.
+
+**D-7608. El diálogo.**
+«Abrir a multijugador» en el menú de pausa (no en el tutorial) pregunta qué se permite, con las dos casillas marcadas; hay que dejar al menos una. Una vez abierta, la misma ventana («Jugadores nuevos…») agrega la casilla «Aceptar jugadores nuevos», que es la manera de cerrarla y volver a abrirla.
+
+**D-7609. Versiones.**
+Reglas 43, protocolo de red 21.
+
+**D-7610. Sin revisar.**
+Todo por pruebas (suite `net`: abrir a ×9 y quedar en ×5, entrar con el estado, fundar, salir y volver por nombre, cerrar y reabrir, solo el anfitrión cambia el acceso; suite `seats` para las reglas). La prueba a mano con dos ventanas se hace al cerrar la fase 77, cuando quien llega ya tiene su ventana.

@@ -44,6 +44,7 @@ enum class CommandType : std::uint8_t {
     FoundTown = 34,       // Phase 73: the seat's town, its center's corner cell at `position`, rotation `value` (0..3).
     AddSeat = 35,         // Phase 75, the host only: a new seat without a town; `text` its name, `count` its color.
     JoinTown = 36,        // Phase 75, a town's founder only: seat `count`, which has no town, joins the sender's.
+    SetAccess = 37,       // Phase 76, the host only: who may come into the game, `value` as access bits.
 
 };
 
@@ -69,6 +70,14 @@ inline constexpr std::size_t kMaxNameBytes = 24;
 inline constexpr std::size_t kMaxSeatNameBytes = 32;
 [[nodiscard]] bool valid_seat_name(std::string_view name);
 inline constexpr std::uint8_t kMaxSeatColor = 15;
+// Phase 76: what a game lets newcomers do. Closed, nobody new gets a seat
+// (those who have one may always come back).
+namespace access {
+inline constexpr std::uint8_t kOpen = 1;   // New players get a seat.
+inline constexpr std::uint8_t kJoin = 2;   // They may ask to join a town.
+inline constexpr std::uint8_t kFound = 4;  // They may found a town of their own.
+inline constexpr std::uint8_t kAll = kOpen | kJoin | kFound;
+}  // namespace access
 
 struct Command {
     CommandType type = CommandType::PlaceBuilding;

@@ -4447,6 +4447,7 @@ public:
         g_.players_[seat].active = true;
         g_.players_[seat].name = c.text;
         g_.players_[seat].color = static_cast<std::uint8_t>(c.count);
+        g_.players_[seat].late = true;
         g_.seat_town_[seat] = seat;
         if (g_.vision_.active()) {
             g_.vision_.add_group(g_.town_group(seat));
@@ -4477,6 +4478,16 @@ public:
         // The host's seat need not have a town to bring others in.
         if (command.type == CommandType::AddSeat) {
             add_seat(command);
+            return;
+        }
+        if (command.type == CommandType::SetAccess) {
+            if (command.player != g_.host_seat_ || command.value < 0 || command.value > access::kAll) {
+                ++g_.rejected_;
+                return;
+            }
+            g_.access_ = static_cast<std::uint8_t>(command.value);
+            g_.events_.push_back({Game::Event::Kind::AccessChanged, command.player, {}, {},
+                                  static_cast<std::uint16_t>(command.value), 0});
             return;
         }
         if (command.player >= g_.player_count_ || !g_.players_[command.player].active) {
@@ -4979,6 +4990,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
       map_(std::move(map)),
       seed_(setup.seed),
       rng_(setup.seed, 21),
+      access_(static_cast<std::uint8_t>(setup.access & access::kAll)),
       rules_(setup.rules) {
     const std::uint8_t players = setup.players;
     firewood_ = content_->find_resource("core:firewood");
@@ -5027,7 +5039,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     // Phase 73: with towns to found, time waits for them.
     started_ = true;
     for (std::uint8_t p = 0; p < player_count_; ++p) {
-        if (players_[p].active && town_of(p) == p && !players_[p].founded) {
+        if (players_[p].active && town_of(p) == p && !players_[p].founded && !players_[p].late) {
             started_ = false;
         }
     }
@@ -5080,8 +5092,9 @@ void Game::check_started() {
     if (started_) {
         return;
     }
+    // Those who came later (phase 76) are not waited for.
     for (std::uint8_t p = 0; p < player_count_; ++p) {
-        if (players_[p].active && town_of(p) == p && !players_[p].founded) {
+        if (players_[p].active && town_of(p) == p && !players_[p].founded && !players_[p].late) {
             return;
         }
     }
@@ -5379,6 +5392,9 @@ PlaceError Game::can_found(std::uint8_t player, std::int32_t x, std::int32_t z, 
     }
     if (players_[player].founded) {
         return PlaceError::Unique;
+    }
+    if (!may_found(player)) {
+        return PlaceError::NotYours;  // The game does not let newcomers found (phase 76).
     }
     if (town_center_def_ == kNoDef) {
         return PlaceError::UnknownBuilding;
@@ -6180,6 +6196,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
     w.u32(rejected);
     w.u8(g.dev_commands() ? 1 : 0);
     w.u8(g.host());
+    w.u8(g.access());
     w.u8(g.awaiting_founders() ? 0 : 1);
     w.u64(g.waited());
     g.rules().write(w);
@@ -6192,6 +6209,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(g.town_of(p));
         w.string(ps.name);
         w.u8(ps.color);
+        w.u8(ps.late ? 1 : 0);
         w.u8(ps.founded ? 1 : 0);
         w.u32(ps.cart.index);
         w.u32(ps.cart.generation);
@@ -6499,7 +6517,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
     std::uint8_t host = 0;
     std::uint8_t started = 0;
     if (!r.u64(g.tick_) || !r.u64(g.seed_) || !r.u32(rejected) || !r.u8(dev) || dev > 1 || !r.u8(host) ||
-        host >= kMaxPlayers || !r.u8(started) || started > 1 || !r.u64(g.waited_) || (started == 0 && g.tick_ != 0) ||
+        host >= kMaxPlayers || !r.u8(g.access_) || g.access_ > access::kAll || !r.u8(started) || started > 1 || !r.u64(g.waited_) || (started == 0 && g.tick_ != 0) ||
         !GameRules::read(r, g.rules_) || !r.i32(g.snow_) || g.snow_ < 0 || g.snow_ > village::kMaxSnow ||
         !r.u8(pc) || pc > kMaxPlayers) {
         r.fail();
@@ -6518,9 +6536,10 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         PlayerState& ps = g.players_[p];
         std::uint8_t active = 0;
         std::uint8_t founded = 0;
+        std::uint8_t late = 0;
         if (!r.u8(active) || !r.u8(g.seat_town_[p]) || g.seat_town_[p] >= pc ||
             !r.string(kMaxSeatNameBytes, ps.name) || !valid_seat_name(ps.name) || !r.u8(ps.color) ||
-            ps.color > kMaxSeatColor || !r.u8(founded) || founded > 1 || !r.u32(ps.cart.index) || !r.u32(ps.cart.generation) ||
+            ps.color > kMaxSeatColor || !r.u8(late) || late > 1 || !r.u8(founded) || founded > 1 || !r.u32(ps.cart.index) || !r.u32(ps.cart.generation) ||
             !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
             !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures) ||
             !r.i32(ps.burned_down) || !r.u64(ps.merchant_arrives) ||
@@ -6539,6 +6558,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         ps.alarm = alarm != 0;
         ps.active = active != 0;
         ps.founded = founded != 0;
+        ps.late = late != 0;
         std::uint32_t goods = 0;
         if (!r.count(1024, 14, goods)) {
             return false;

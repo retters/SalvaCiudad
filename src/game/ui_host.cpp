@@ -817,17 +817,28 @@ void UiHost::game_menu(ui::Context& ctx) {
         {"resume", "gameMenu.resume", "gameMenu.resume.tooltip"},
         {"save", "gameMenu.save", "gameMenu.save.tooltip"},
         {"load", "menu.main.loadGame", "menu.main.loadGame.tooltip"},
+        {"open", "gameMenu.open", "gameMenu.open.tooltip"},
+        {"access", "gameMenu.access", "gameMenu.access.tooltip"},
         {"settings", "menu.main.settings", "menu.main.settings.tooltip"},
         {"leave", "gameMenu.leave", "gameMenu.leave.tooltip"},
         {"quit", "gameMenu.quit", "menu.main.quit.tooltip"},
     };
     const bool playing = services_.session() != nullptr;
     const bool networked = playing && services_.session()->networked();
+    if (access_dialog_) {
+        access_dialog(ctx);
+        return;
+    }
     std::vector<const Entry*> entries;
     for (const Entry& e : kEntries) {
         const std::string_view id = e.id;
-        // Loading a saved game is for single player only.
-        if ((id != "save" && id != "load") || (id == "save" && playing) || (id == "load" && playing && !networked)) {
+        // Loading a saved game is for single player only. Opening the game
+        // to others too (phase 76), and not the tutorial's; once open, its
+        // host changes who may come in.
+        if (id == "open" ? playing && !networked && !tutorial_
+            : id == "access" ? services_.hosting()
+                             : (id != "save" && id != "load") || (id == "save" && playing) ||
+                                   (id == "load" && playing && !networked)) {
             entries.push_back(&e);
         }
     }
@@ -847,6 +858,13 @@ void UiHost::game_menu(ui::Context& ctx) {
                 saves_ = services_.list_saves();
                 load_return_ = Screen::MapView;
                 screen_ = Screen::Load;
+            } else if (id == "open" || id == "access") {
+                // What the game allows now; a game never opened offers both.
+                const std::uint8_t now = services_.session()->game().access();
+                access_dialog_ = true;
+                access_open_ = id == "open" || (now & sim::access::kOpen) != 0;
+                access_join_ = id == "open" || (now & sim::access::kJoin) != 0;
+                access_found_ = id == "open" || (now & sim::access::kFound) != 0;
             } else if (id == "settings") {
                 settings_return_ = Screen::MapView;
                 screen_ = Screen::Settings;
@@ -864,6 +882,72 @@ void UiHost::game_menu(ui::Context& ctx) {
     }
     if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
         game_menu_open_ = false;
+    }
+}
+
+// Phase 76. Who may come into the game: opening a single-player game to
+// others, or changing it as the host.
+void UiHost::access_dialog(ui::Context& ctx) {
+    const bool hosting = services_.hosting();
+    const float button_h = ctx.s(48.0f);
+    const float row_h = ctx.s(40.0f);
+    const float gap = ctx.s(10.0f);
+    const ui::TextStyle body = ctx.style(ctx.theme().body);
+    struct Row {
+        const char* id;
+        const char* label;
+        bool* value;
+        bool shown;
+        bool enabled;
+    };
+    const Row rows[] = {
+        {"open", "access.open", &access_open_, hosting, true},
+        {"join", "access.join", &access_join_, true, access_open_},
+        {"found", "access.found", &access_found_, true, access_open_},
+    };
+    int shown = 0;
+    for (const Row& r : rows) {
+        shown += r.shown ? 1 : 0;
+    }
+    const float note_h = ctx.text().line_height(body) * 2.0f;
+    const float content_h = static_cast<float>(shown) * (row_h + gap) + note_h + gap + button_h;
+    float y = 0.0f;
+    const ui::Rect content = dialog_frame(ctx, content_h, tr(hosting ? "access.title.change" : "access.title.open"), y);
+    const float check = std::round(ctx.s(28.0f));
+    for (const Row& r : rows) {
+        if (!r.shown) {
+            continue;
+        }
+        const std::string tip = tr(std::string(r.label) + ".tooltip");
+        const ui::Rect box{content.x, std::round(y + (row_h - check) * 0.5f), check, check};
+        (void)ctx.checkbox(ctx.id(std::string("access_") + r.id), box, *r.value, tip, r.enabled);
+        ctx.label({content.x + check + gap, std::round(y), content.w - check - gap, row_h}, tr(r.label), body,
+                  r.enabled ? ctx.theme().text : ctx.theme().text_dim);
+        y += row_h + gap;
+    }
+    ctx.label({content.x, std::round(y), content.w, note_h}, tr(hosting ? "access.note.change" : "access.note.open"),
+              ctx.style(ctx.theme().small), ctx.theme().text_dim);
+    y += note_h + gap;
+    // Open to nobody's use is no use: one of the two things at least.
+    const bool valid = !access_open_ || access_join_ || access_found_;
+    const float bw = (content.w - gap) * 0.5f;
+    const std::uint8_t access = static_cast<std::uint8_t>((access_open_ ? sim::access::kOpen : 0) |
+                                                         (access_join_ ? sim::access::kJoin : 0) |
+                                                         (access_found_ ? sim::access::kFound : 0));
+    if (ctx.button(ctx.id("access_ok"), {content.x, std::round(y), bw, button_h},
+                   tr(hosting ? "access.apply" : "access.confirm"), {}, valid, true)) {
+        if (hosting) {
+            services_.set_access(access);
+        } else if (!services_.open_game(access)) {
+            show_message(tr("access.failed.title"), tr("lobby.hostFailed.body"));
+        }
+        access_dialog_ = false;
+        game_menu_open_ = false;
+        return;
+    }
+    if (ctx.button(ctx.id("access_back"), {content.x + bw + gap, std::round(y), bw, button_h}, tr("access.back")) ||
+        (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open())) {
+        access_dialog_ = false;
     }
 }
 

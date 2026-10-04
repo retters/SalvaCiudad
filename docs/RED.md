@@ -59,9 +59,16 @@ Si un jugador queda más de 30 ticks detrás del anfitrión (3 s; por encima de 
 - En esa espera el anfitrión ignora las pausas y los votos de velocidad.
 - Al empezar, el mapa se genera con los sitios sugeridos que pidió el anfitrión, y al menos uno por pueblo a fundar.
 
+## Abrir una partida (fase 76)
+
+- Una partida de un jugador se abre desde el menú de pausa («Abrir a multijugador»). Quien la abre es el anfitrión; no hay sala: la partida sigue en el turno en que estaba (`NetHost::adopt`).
+- Lo que se permite a quien llega es estado de la simulación (`sim::access`): **abierta** (recibe asiento), **unirse** a un pueblo, **fundar** el suyo. Solo el anfitrión lo cambia (orden `SetAccess`), también para cerrarla a jugadores nuevos y volver a abrirla.
+- Al abrir, la velocidad baja a ×5 si era mayor.
+
 ## Entrar a una partida empezada y reconectar
 
-- Un jugador que vuelve con **el mismo nombre** recupera su asiento. En un pueblo común creado en la sala, un jugador nuevo recibe un asiento nuevo (orden `AddSeat` del anfitrión) y queda unido al pueblo (orden `JoinTown`); en pueblos separados puede ocupar el de un jugador que se fue.
+- Un jugador que vuelve con **el mismo nombre** recupera su asiento, esté la partida abierta o cerrada.
+- Un jugador nuevo, si la partida está abierta y queda lugar (12 asientos), recibe un asiento nuevo sin pueblo (orden `AddSeat` del anfitrión). Con la partida cerrada se le rechaza con el motivo `Closed`. Nadie ocupa el asiento de otro.
 - El anfitrión le manda la instantánea del juego (la misma serialización que las partidas guardadas, comprimida con zstd) y los turnos ya cerrados desde ese tick. Mientras tanto los demás siguen jugando.
 - Un jugador desconectado deja su pueblo trabajando solo hasta que vuelva.
 
@@ -73,7 +80,7 @@ Cada mensaje es un byte de tipo y sus campos en little-endian (`src/net/protocol
 |---|---|---|
 | Hello | cliente → anfitrión | protocolo, versión, hash del contenido, mods, nombre |
 | Welcome | anfitrión → cliente | asiento |
-| Reject | anfitrión → cliente | motivo, versión y mods del anfitrión |
+| Reject | anfitrión → cliente | motivo (protocolo, versión, mods, sin lugar, nombre, cerrada), versión y mods del anfitrión |
 | Lobby | anfitrión → todos | configuración, fase, asientos |
 | SetInfo | cliente → anfitrión | nombre, color, listo |
 | Start | anfitrión → todos | configuración y asientos en juego |
@@ -117,6 +124,7 @@ La suite `net` (`tests/test_net.cpp`) corre varias máquinas en un proceso con u
 - cuatro pueblos separados;
 - un jugador que se cae y vuelve;
 - una desincronización provocada que se detecta y se repara;
+- una partida de un jugador que se abre, recibe a otro, lo deja volver por su nombre y se cierra a los nuevos;
 - pueblos por fundar: el tiempo espera a todos, solo el anfitrión funda el pueblo común, y quien entra durante la espera recibe la misma partida;
 - votos de velocidad;
 - rechazos por versión y por mods.
