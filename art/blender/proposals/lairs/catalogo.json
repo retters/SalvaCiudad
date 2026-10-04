@@ -1,0 +1,416 @@
+{
+ "familia": "lairs",
+ "grupos": [
+  {
+   "id": "lair_goblin_camp",
+   "nombre": "Campamento goblin",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Claro de 10 m con tres chozas de pieles, hoguera con asador, estandarte rojo, una jaula de palos, botín robado y estacas con calaveras.",
+   "propuestas": [
+    {
+     "titulo": "De dónde salen las incursiones",
+     "detalle": "Las incursiones dejan de aparecer en el borde del mapa: salen de un campamento concreto, que el explorador puede encontrar. Destruirlo con el ejército corta las incursiones de esa zona y devuelve el botín que guardaba."
+    },
+    {
+     "titulo": "Crece si se le deja",
+     "detalle": "Cada cierto tiempo sin ser atacado gana una choza y sus incursiones son mayores: da una razón para salir a pelear en vez de solo defender."
+    },
+    {
+     "titulo": "Rescate de prisioneros",
+     "detalle": "Los aldeanos que se llevan en una incursión quedan en la jaula: rescatarlos antes de un plazo los devuelve al pueblo."
+    },
+    {
+     "titulo": "Trato",
+     "detalle": "Con comida o cerveza se puede pagar un tributo para que no ataquen esa estación; algunos mercaderes son goblins de un campamento con el que hay paz."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_goblin_camp",
+     "nombre": "Campamento",
+     "animaciones": {
+      "idle": "Arde la hoguera y ondea el estandarte."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "lair_goblin_hut",
+   "nombre": "Choza goblin",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Choza suelta de pieles sobre palos de 2,8 m, o un hongo gigante vaciado de 3,8 m, con una calavera en una estaca.",
+   "propuestas": [
+    {
+     "titulo": "Puesto de avanzada",
+     "detalle": "Una sola choza cerca del pueblo es un puesto de espías: desde ahí salen ladrones que roban del almacén de noche. Se elimina con la milicia."
+    },
+    {
+     "titulo": "Pieza de un campamento que crece",
+     "detalle": "Cada choza es un nivel del campamento goblin: se añaden alrededor de la hoguera según pasa el tiempo."
+    },
+    {
+     "titulo": "Vivienda de una raza jugable",
+     "detalle": "Si los goblins llegan a ser raza jugable, estas son sus casas de nivel 1: baratas y pequeñas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_goblin_hut",
+     "nombre": "De pieles",
+     "material": "cuero"
+    },
+    {
+     "id": "lair_goblin_hut_mushroom",
+     "nombre": "En un hongo gigante"
+    }
+   ]
+  },
+  {
+   "id": "lair_bandit_hideout",
+   "nombre": "Escondite de bandidos",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Cobertizo de pieles entre rocas con petates, cajas y un cofre robados, fogata, un tronco para sentarse, lanzas y un palo con un trapo rojo. Ocupa 8 × 7 m.",
+   "propuestas": [
+    {
+     "titulo": "Asaltantes de caminos",
+     "detalle": "No atacan el pueblo: asaltan a los mercaderes y caravanas que pasan cerca. Mientras exista, llegan menos mercaderes y con menos mercancía; limpiarlo recupera lo robado."
+    },
+    {
+     "titulo": "Origen de los asaltantes actuales",
+     "detalle": "Los asaltantes del juego, que hoy son aldeanos con marca de color, salen de aquí en vez del borde del mapa."
+    },
+    {
+     "titulo": "Desertores",
+     "detalle": "Si la felicidad cae mucho, algunos aldeanos se van y fundan un escondite; se les puede perdonar (vuelven) o combatir."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_bandit_hideout",
+     "nombre": "Entre rocas",
+     "animaciones": {
+      "idle": "Arde la fogata y se mueve el trapo del palo."
+     }
+    }
+   ]
+  },
+  {
+   "id": "lair_orc_war_camp",
+   "nombre": "Campamento de guerra orco",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Recinto de 14 m con la tienda del jefe entre colmillos, hoguera grande, dos estandartes, tambores de guerra, un armero de hachas, tramos de empalizada con púas y una pila de huesos.",
+   "propuestas": [
+    {
+     "titulo": "Amenaza de nivel alto",
+     "detalle": "Aparece cuando el nivel de amenaza sube: desde él salen las incursiones más duras, con ariete. Destruirlo exige un ejército de verdad y baja la amenaza durante años."
+    },
+    {
+     "titulo": "Los tambores avisan",
+     "detalle": "Antes de cada incursión suenan los tambores: el jugador los oye y sabe de qué lado viene el ataque."
+    },
+    {
+     "titulo": "Campamento de un jugador orco",
+     "detalle": "Para un pueblo orco jugable es su cuartel: barato, de pieles y hueso, y sube la moral de sus tropas."
+    },
+    {
+     "titulo": "Mercenarios",
+     "detalle": "Con oro suficiente, el campamento orco se alquila: sus guerreros pelean por ti una temporada."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_orc_war_camp",
+     "nombre": "Campamento",
+     "animaciones": {
+      "idle": "Arde la hoguera, ondean los estandartes y suenan los tambores."
+     }
+    }
+   ]
+  },
+  {
+   "id": "lair_spider_nest",
+   "nombre": "Nido de arañas",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Telaraña grande con capullos colgando, huevos y huesos: entre tres árboles secos (5 m de alto) o en la boca de una cueva.",
+   "propuestas": [
+    {
+     "titulo": "De dónde salen las arañas gigantes",
+     "detalle": "Las arañas salen del nido de noche y cazan en un radio; los leñadores y recolectores que trabajan dentro corren peligro. Se destruye con fuego o con soldados."
+    },
+    {
+     "titulo": "Se reproduce",
+     "detalle": "Si se ignora, los huevos eclosionan y aparece otro nido cerca: una amenaza que se extiende por el bosque."
+    },
+    {
+     "titulo": "Seda",
+     "detalle": "Un nido limpiado da seda de araña: un tejido fino que el tejedor convierte en ropa de lujo o cuerda muy resistente."
+    },
+    {
+     "titulo": "Rescate",
+     "detalle": "Un aldeano atrapado queda en un capullo: se le puede rescatar si se llega a tiempo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_spider_nest",
+     "nombre": "En el bosque",
+     "animaciones": {
+      "sway": "Los capullos se mecen."
+     }
+    },
+    {
+     "id": "lair_spider_nest_cave",
+     "nombre": "En una cueva",
+     "animaciones": {
+      "sway": "Los capullos se mecen."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "lair_necromancer_altar",
+   "nombre": "Altar del nigromante",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Plataforma de piedra oscura de 8 m con un pentágono que brilla, altar con calaveras y un libro, dos braseros de llama verde, cinco piedras con runas, un cristal que flota y dos tumbas abiertas.",
+   "propuestas": [
+    {
+     "titulo": "De dónde salen los no-muertos",
+     "detalle": "De noche levanta esqueletos que marchan al pueblo; cuantos más muertos sin enterrar haya dejado el pueblo (epidemias, batallas), más esqueletos. Destruir el altar los deshace a todos."
+    },
+    {
+     "titulo": "Razón para tener cementerio",
+     "detalle": "Los muertos enterrados en un cementerio consagrado no se levantan: el altar castiga a los pueblos que descuidan a sus muertos."
+    },
+    {
+     "titulo": "Altar de un jugador elfo oscuro",
+     "detalle": "Para los elfos oscuros jugables es un edificio propio: sus caídos vuelven como guardias esqueleto que no comen ni duermen, a cambio de felicidad."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_necromancer_altar",
+     "nombre": "Piedra oscura",
+     "animaciones": {
+      "idle": "Arden las llamas verdes y gira el cristal."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "lair_dragon_hoard",
+   "nombre": "Guarida del dragón",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Boca de cueva entre rocas de 13 m con un tesoro de oro, cofre, corona, una espada clavada, suelo quemado, árboles calcinados y restos de caballeros; sale humo de la cueva.",
+   "propuestas": [
+    {
+     "titulo": "El jefe del mapa",
+     "detalle": "Un dragón (ya hay modelo en el zoológico) duerme en ella y sale pocas veces: quema campos y se lleva ganado. Matarlo, con balistas y un ejército, es el gran objetivo de una partida larga y entrega el tesoro."
+    },
+    {
+     "titulo": "Tributo",
+     "detalle": "Mientras se le deje oro o ganado cada año, no ataca: una decisión entre pagar o prepararse para pelear."
+    },
+    {
+     "titulo": "Tesoro custodiado",
+     "detalle": "Sin dragón jugable, es un tesoro guardado por bestias: el explorador lo encuentra y el ejército decide si vale el riesgo."
+    },
+    {
+     "titulo": "Aliado",
+     "detalle": "Una raza (¿la gente lagarto?) puede pactar con el dragón: defiende su pueblo a cambio de comida."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_dragon_hoard",
+     "nombre": "Cueva con tesoro",
+     "animaciones": {
+      "smoke": "Sale humo de la cueva."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "lair_troll_cave",
+   "nombre": "Cueva del trol",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Cueva bajo un montículo con musgo, un caldero sobre el fuego, un garrote con pincho, montones de huesos y un letrero tachado. Ocupa 9 × 8 m.",
+   "propuestas": [
+    {
+     "titulo": "Guardián de un paso",
+     "detalle": "El trol vive junto a un puente o un paso de montaña y cobra o ataca a quien cruza: los mercaderes dan un rodeo hasta que se le vence, se le paga o se construye otro paso."
+    },
+    {
+     "titulo": "Monstruo solitario",
+     "detalle": "No hace incursiones: ataca a quien entra en su radio. Se puede dejar en paz marcando la zona con una señal de advertencia."
+    },
+    {
+     "titulo": "Piedra de día",
+     "detalle": "El trol no sale de día: los trabajos cerca de la cueva solo son seguros con sol. De noche, con antorchas, se mantiene lejos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_troll_cave",
+     "nombre": "Cueva",
+     "animaciones": {
+      "idle": "Arde el fuego del caldero."
+     }
+    }
+   ]
+  },
+  {
+   "id": "lair_slime_pool",
+   "nombre": "Charca de limo",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Charca verde de 6 m que brilla, con burbujas, rocas cubiertas de limo y un esqueleto a medio disolver.",
+   "propuestas": [
+    {
+     "titulo": "De dónde salen los limos",
+     "detalle": "Cada cierto tiempo sale un limo que va hacia la comida más cercana (campos, granero) y la estropea. Son débiles pero constantes: conviene secar la charca con peones."
+    },
+    {
+     "titulo": "Recurso raro",
+     "detalle": "El limo recogido es un ingrediente: pegamento para el arquero, ácido para el curtidor o remedio del herbolario."
+    },
+    {
+     "titulo": "Aparece por la suciedad",
+     "detalle": "Las charcas nacen donde se acumula basura o cadáveres: un pueblo limpio no las tiene."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_slime_pool",
+     "nombre": "Charca",
+     "animaciones": {
+      "bubble": "Suben burbujas de limo."
+     }
+    }
+   ]
+  },
+  {
+   "id": "lair_portal",
+   "nombre": "Portal",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Arco de piedra oscura de 4,4 m sobre una plataforma con escalones, con un remolino de luz violeta que gira y esquirlas flotando.",
+   "propuestas": [
+    {
+     "titulo": "Incursiones de otro mundo",
+     "detalle": "Se abre en un lugar del mapa a partir de cierto nivel de amenaza y de él salen criaturas de fantasía (espectros, elementales). Se cierra destruyendo sus runas o con un mago."
+    },
+    {
+     "titulo": "Viaje entre mapas",
+     "detalle": "Une dos regiones del mundo: los mapas separados que hoy existen como regiones quedan conectados por portales que cruzan aldeanos y mercaderes."
+    },
+    {
+     "titulo": "Portal del pueblo",
+     "detalle": "Edificio tardío de las razas mágicas: dos portales propios mueven aldeanos y mercancía al instante entre barrios lejanos o islas."
+    },
+    {
+     "titulo": "Suceso",
+     "detalle": "Aparece una noche y hay que decidir: cerrarlo (seguro) o estudiarlo (riesgo de incursión, premio en cristales)."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_portal",
+     "nombre": "Piedra oscura",
+     "animaciones": {
+      "swirl": "El remolino gira en tres capas y flotan las esquirlas."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "lair_rat_burrow",
+   "nombre": "Madriguera de ratas",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Montón de basura de 4 m con bocas de madriguera, un saco roído con grano derramado y tres ratas que corretean.",
+   "propuestas": [
+    {
+     "titulo": "Plaga de los graneros",
+     "detalle": "Aparece junto a un granero o almacén con comida estropeada: cada día se pierde comida y sube el riesgo de enfermedad. La quitan los gatos, un cazador de ratas o un aldeano con trabajo."
+    },
+    {
+     "titulo": "Mide la limpieza",
+     "detalle": "Cuantas más madrigueras, peor está el pueblo de basura: un indicador visible de higiene antes de que llegue la epidemia."
+    },
+    {
+     "titulo": "Origen de las ratas gigantes",
+     "detalle": "Si se ignora mucho tiempo, de ella salen ratas gigantes que atacan a los aldeanos de noche."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_rat_burrow",
+     "nombre": "Basura y ratas",
+     "animaciones": {
+      "scurry": "Las ratas corretean."
+     }
+    }
+   ]
+  },
+  {
+   "id": "lair_whirlpool",
+   "nombre": "Remolino del kraken",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Remolino de 10 m en el mar con cinco tentáculos que asoman y restos de naufragio girando. Su línea de agua es la altura 0.",
+   "propuestas": [
+    {
+     "titulo": "Peligro en el mar",
+     "detalle": "En los mapas de islas, cierra una ruta: los barcos de mercaderes y las tropas que cruzan por ahí se pierden. Hay que rodearlo o vencerlo con barcos de guerra y balistas."
+    },
+    {
+     "titulo": "Se mueve",
+     "detalle": "Cambia de lugar cada estación: las rutas seguras de hoy no lo son mañana, y un faro o una boya lo señala."
+    },
+    {
+     "titulo": "Pesca arruinada",
+     "detalle": "Los pescadores cuyo radio lo incluye no pescan y huyen a tierra."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_whirlpool",
+     "nombre": "Remolino",
+     "animaciones": {
+      "churn": "El agua gira en anillos y los tentáculos se mecen."
+     }
+    }
+   ]
+  },
+  {
+   "id": "lair_haunted_tree",
+   "nombre": "Árbol embrujado",
+   "categoria": "Enemigos y criaturas",
+   "descripcion": "Árbol seco de 6 m con una cara en la corteza, cinco fuegos fatuos que giran a su alrededor y dos lápidas viejas al pie.",
+   "propuestas": [
+    {
+     "titulo": "De dónde salen los espectros",
+     "detalle": "De noche salen de él espectros que no hacen daño físico: asustan a quien encuentran (pierde energía y felicidad) y los aldeanos evitan la zona. La luz y las capillas los mantienen lejos."
+    },
+    {
+     "titulo": "Se calma con un rito",
+     "detalle": "Un clérigo, o enterrar bien a quienes yacen al pie, lo apacigua: queda como un árbol viejo que sube el entorno."
+    },
+    {
+     "titulo": "Guía de los perdidos",
+     "detalle": "Sus fuegos fatuos llevan a los viajeros nocturnos hacia él: los aldeanos sorprendidos por la noche cerca se desvían y tardan en volver."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "lair_haunted_tree",
+     "nombre": "Árbol seco",
+     "animaciones": {
+      "haunt": "Los fuegos fatuos giran y flotan."
+     }
+    }
+   ]
+  }
+ ]
+}

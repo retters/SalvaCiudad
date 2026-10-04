@@ -1,0 +1,233 @@
+{
+  "familia": "biomes",
+  "grupos": [
+    {
+      "id": "biome_mountain",
+      "nombre": "Montaña: risco, pedregal y flores alpinas",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Para el bioma de montaña: un risco de 5,5 m con nieve y un nido de águila, un pedregal de 5 m con líquenes y una mata de flores alpinas que se mece.",
+      "propuestas": [
+        {"titulo": "Que la montaña se vea distinta", "detalle": "Hoy los biomas se distinguen sobre todo por sus árboles. El generador siembra estos elementos solo en montaña: se reconoce el bioma por el suelo, también donde no hay árboles."},
+        {"titulo": "Piedra a la vista", "detalle": "El pedregal es piedra suelta que se recoge sin cantera; el risco señala dónde una cantera rinde más."},
+        {"titulo": "Huevos y plumas", "detalle": "El nido del risco da huevos o plumas (para flechas) al recolector que se atreva a subir; a veces el águila se defiende."},
+        {"titulo": "Hierbas de altura", "detalle": "Las flores alpinas son una hierba medicinal más fuerte que la común: el herbolario la busca lejos."}
+      ],
+      "modelos": [
+        {"id": "biome_mountain_crag", "nombre": "Risco con nido"},
+        {"id": "biome_mountain_scree", "nombre": "Pedregal"},
+        {"id": "biome_mountain_alpine_flowers", "nombre": "Flores alpinas", "animaciones": {"sway": "Las flores se mecen."}}
+      ]
+    },
+    {
+      "id": "biome_boreal",
+      "nombre": "Bosque boreal: charca helada, tronco nevado y arándanos",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Para el bosque boreal: una charca helada de 4,5 m con grietas y nieve, un tronco caído con nieve y setas rojas, y matas bajas de arándanos.",
+      "propuestas": [
+        {"titulo": "Recolección del norte", "detalle": "Los arándanos son las bayas del bosque boreal: dan menos que las del sur pero aguantan el frío, y con ellos se hace un tinte azul."},
+        {"titulo": "Pesca en el hielo", "detalle": "La charca helada deja pescar en invierno abriendo un agujero: poco, pero cuando no hay otra comida fresca."},
+        {"titulo": "Invierno más largo", "detalle": "Donde aparecen, la nieve dura más: el bioma boreal tiene inviernos más duros y veranos cortos."}
+      ],
+      "modelos": [
+        {"id": "biome_boreal_frozen_pond", "nombre": "Charca helada"},
+        {"id": "biome_boreal_snowy_log", "nombre": "Tronco nevado con setas"},
+        {"id": "biome_boreal_blueberries", "nombre": "Arándanos"}
+      ]
+    },
+    {
+      "id": "biome_temperate",
+      "nombre": "Bosque templado y huertos: zarzas y manzano silvestre",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Un zarzal con moras, para el bosque templado, y un manzano silvestre con la fruta caída y un cesto, para el bioma de huertos.",
+      "propuestas": [
+        {"titulo": "Fruta silvestre con espinas", "detalle": "El zarzal da moras en otoño, pero quien recoge sin guantes o sin cesto tarda el doble; además frena a quien lo cruza, como una cerca natural."},
+        {"titulo": "Injertos", "detalle": "De un manzano silvestre se sacan los plantones del huerto de frutales: sin encontrar uno, el huerto cuesta más."},
+        {"titulo": "Comida para la fauna", "detalle": "La fruta caída atrae jabalíes y ciervos: buen lugar para cazar."}
+      ],
+      "modelos": [
+        {"id": "biome_temperate_brambles", "nombre": "Zarzal"},
+        {"id": "biome_orchard_wild_apple", "nombre": "Manzano silvestre"}
+      ]
+    },
+    {
+      "id": "biome_flowering",
+      "nombre": "Bosque en flor: alfombra de pétalos",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Pétalos caídos en el suelo, con algunos todavía en el aire: rosados o morados.",
+      "propuestas": [
+        {"titulo": "La primavera del bioma", "detalle": "Aparecen bajo los cerezos, jacarandas y glicinas mientras florecen, y desaparecen después: el bosque en flor se ve de verdad en primavera."},
+        {"titulo": "Entorno", "detalle": "Las casas con pétalos cerca son más felices mientras dura la floración: una ventaja de fundar en este bioma."},
+        {"titulo": "Perfume y tinte", "detalle": "Los pétalos se recogen como un bien menor: perfume para vender o tinte rosado."}
+      ],
+      "modelos": [
+        {"id": "biome_flowering_petals", "nombre": "Rosados", "animaciones": {"drift": "Los pétalos del aire giran y bajan."}},
+        {"id": "biome_flowering_petals_purple", "nombre": "Morados", "animaciones": {"drift": "Los pétalos del aire giran y bajan."}}
+      ]
+    },
+    {
+      "id": "biome_riverside",
+      "nombre": "Ribera: orilla de juncos y presa de castores",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Un tramo de orilla de 5 m con espadañas, juncos y piedras, y una presa de castores de 7 m con su madriguera, tocones roídos y un castor nadando.",
+      "propuestas": [
+        {"titulo": "Castores que cambian el río", "detalle": "Una presa de castores embalsa el río: aguas arriba hay un estanque (más pesca, tierra anegada) y aguas abajo menos caudal para molinos. Se puede dejar, o romperla y cazar a los castores por su piel."},
+        {"titulo": "Orillas vivas", "detalle": "Las orillas con juncos son donde hay peces, ranas y patos: el pescador rinde más junto a ellas."},
+        {"titulo": "Juncos como material", "detalle": "Se cortan para cestos, techos de caña y cercas de cañas."},
+        {"titulo": "Paso natural", "detalle": "La presa sirve de puente a pie mientras nadie la rompa."}
+      ],
+      "modelos": [
+        {"id": "biome_riverside_reed_bank", "nombre": "Orilla de juncos", "animaciones": {"sway": "Los juncos se mecen."}},
+        {"id": "biome_riverside_beaver_dam", "nombre": "Presa de castores", "animaciones": {"swim": "El castor nada junto a la presa."}}
+      ]
+    },
+    {
+      "id": "biome_mediterranean",
+      "nombre": "Mediterráneo: olivo, lavanda y agave",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Un olivo viejo de tronco retorcido de 3,5 m con aceitunas, y un pedregal claro con matas de lavanda y un agave.",
+      "propuestas": [
+        {"titulo": "Aceite", "detalle": "El olivo es un árbol nuevo que da aceitunas: aceite para lámparas (luz sin leña) y alimento que no se estropea. Tarda años en dar, pero vive siglos."},
+        {"titulo": "Plantas del secano", "detalle": "La lavanda y el agave crecen sin riego: perfume, remedios y fibra para cuerdas en un bioma con poca agua."},
+        {"titulo": "Especie de árbol para el bioma", "detalle": "El olivo entra a la lista de especies del mediterráneo, con sus tres estados como los demás árboles."}
+      ],
+      "modelos": [
+        {"id": "biome_mediterranean_olive_tree", "nombre": "Olivo"},
+        {"id": "biome_mediterranean_lavender", "nombre": "Lavanda y agave", "animaciones": {"sway": "La lavanda se mece."}}
+      ]
+    },
+    {
+      "id": "biome_savanna",
+      "nombre": "Sabana y trópico seco: pasto alto, rocas, aguada y termitero",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Pasto dorado de 1,5 m que se mece, un berrocal de rocas redondeadas de 6 m con un árbol seco, una aguada con el barro cuarteado y huellas, y un termitero de 2,6 m con un espino.",
+      "propuestas": [
+        {"titulo": "Agua escasa", "detalle": "En la sabana el agua está solo en las aguadas: los animales van a ellas (buena caza) y un pueblo lejos de una necesita pozos profundos."},
+        {"titulo": "Incendios de pasto", "detalle": "El pasto alto y seco arde rápido en verano: los incendios corren por la sabana y hay que hacer cortafuegos."},
+        {"titulo": "Pasto para el ganado", "detalle": "Es el mejor bioma para rebaños: el pasto alto alimenta al doble de animales."},
+        {"titulo": "Mirador natural", "detalle": "El berrocal da vista lejana a quien sube: una atalaya gratis para el explorador."}
+      ],
+      "modelos": [
+        {"id": "biome_savanna_tall_grass", "nombre": "Pasto alto", "animaciones": {"sway": "El pasto se mece."}},
+        {"id": "biome_savanna_kopje", "nombre": "Berrocal"},
+        {"id": "biome_savanna_waterhole", "nombre": "Aguada"},
+        {"id": "biome_dry_termite_mound", "nombre": "Termitero"}
+      ]
+    },
+    {
+      "id": "biome_coast",
+      "nombre": "Costa tropical: manglar y nido de tortuga",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Un mangle de 4,5 m con sus raíces en arco dentro del agua (línea de agua en la altura 0) y un nido de tortuga en la arena con sus huellas hacia el mar.",
+      "propuestas": [
+        {"titulo": "Manglar que protege la costa", "detalle": "Las orillas con manglar no se inundan con las tormentas y crían peces y cangrejos: talarlo da madera pero deja la costa expuesta."},
+        {"titulo": "Huevos de tortuga", "detalle": "Una vez al año aparecen nidos: se pueden recoger los huevos (comida) o dejarlos, y entonces vuelven más tortugas."},
+        {"titulo": "Barrera para barcos", "detalle": "Los barcos no atracan donde hay manglar: decide dónde va el muelle."}
+      ],
+      "modelos": [
+        {"id": "biome_coast_mangrove", "nombre": "Mangle"},
+        {"id": "biome_coast_turtle_nest", "nombre": "Nido de tortuga"}
+      ]
+    },
+    {
+      "id": "biome_enchanted",
+      "nombre": "Bosque encantado: hongos luminosos y piedras flotantes",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Un grupo de hongos de hasta 2 m que brillan en azul verdoso junto a un tronco con musgo, y un círculo de seis piedras con runas que flotan y giran sobre un pedestal.",
+      "propuestas": [
+        {"titulo": "Luz propia de noche", "detalle": "El bosque encantado no está a oscuras: sus hongos alumbran, así que quien vive o trabaja ahí no sufre la penalización nocturna."},
+        {"titulo": "Magia que se cosecha", "detalle": "Los hongos y las piedras dan esencia, el recurso de los edificios y remedios mágicos."},
+        {"titulo": "Lugar con voluntad", "detalle": "Talar mucho cerca de las piedras flotantes las apaga y enfada al bosque: salen treants o espectros. Respetarlo da buenas cosechas."},
+        {"titulo": "Punto de viaje", "detalle": "Las piedras flotantes son una parada de la red de portales o de las piedras de camino."}
+      ],
+      "modelos": [
+        {"id": "biome_enchanted_glow_mushrooms", "nombre": "Hongos luminosos"},
+        {"id": "biome_enchanted_fairy_stones", "nombre": "Piedras flotantes", "animaciones": {"float": "Las piedras giran y flotan."}}
+      ]
+    },
+    {
+      "id": "biome_swamp",
+      "nombre": "Bioma nuevo: pantano",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Un árbol muerto de 4,2 m con musgo colgante y raíces que salen del agua verdosa, y una poza de ciénaga con burbujas de gas que brillan.",
+      "propuestas": [
+        {"titulo": "Un bioma difícil y rico", "detalle": "Pantano: caliente y muy húmedo, junto a agua dulce. Mucha pesca, juncos, turba y hierbas raras; a cambio, más enfermedad, caminos lentos y pocos lugares firmes para construir."},
+        {"titulo": "Hogar de la gente rana y lagarto", "detalle": "Para esas razas el pantano no tiene penalizaciones: es su mejor bioma, y construyen sobre pilotes."},
+        {"titulo": "Turba", "detalle": "Un combustible que se corta en el pantano y sustituye a la leña donde no hay bosque."},
+        {"titulo": "Fuegos fatuos", "detalle": "De noche, las burbujas de gas encendidas confunden a los caminantes: sin faroles, se pierden."}
+      ],
+      "modelos": [
+        {"id": "biome_swamp_dead_tree", "nombre": "Árbol con musgo colgante", "animaciones": {"sway": "El musgo se mece."}},
+        {"id": "biome_swamp_bog_pool", "nombre": "Poza de ciénaga", "animaciones": {"bubble": "Suben burbujas de gas."}}
+      ]
+    },
+    {
+      "id": "biome_desert",
+      "nombre": "Bioma nuevo: desierto",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Una duna de 7 m con su cresta, un oasis con tres palmeras y una charca, y los huesos de una bestia medio enterrados junto a un cactus.",
+      "propuestas": [
+        {"titulo": "Un bioma de oasis", "detalle": "Desierto: muy caliente y seco. Casi nada crece fuera de los oasis, donde hay agua, palmeras y tierra fértil: los pueblos nacen en ellos y comercian para todo lo demás."},
+        {"titulo": "Rutas de caravanas", "detalle": "Cruzar el desierto pide agua: las caravanas van de oasis en oasis y quien controla uno cobra por el paso."},
+        {"titulo": "Calor y noche fría", "detalle": "De día se trabaja menos por el calor; de noche hace frío y hace falta leña, que hay que traer."},
+        {"titulo": "Arena, sal y vidrio", "detalle": "El desierto da arena para vidrio y sal para conservar: dos bienes que los demás biomas compran."}
+      ],
+      "modelos": [
+        {"id": "biome_desert_dune", "nombre": "Duna"},
+        {"id": "biome_desert_oasis", "nombre": "Oasis", "animaciones": {"sway": "Las palmeras se mecen."}},
+        {"id": "biome_desert_bones", "nombre": "Huesos y cactus"}
+      ]
+    },
+    {
+      "id": "biome_tundra",
+      "nombre": "Bioma nuevo: tundra helada",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Un grupo de agujas de hielo de hasta 4 m sobre nieve, y una bestia peluda de otra era atrapada en el hielo hasta el lomo, con sus colmillos.",
+      "propuestas": [
+        {"titulo": "El norte extremo", "detalle": "Tundra: sin árboles, invierno casi todo el año. Se vive de la caza, la pesca en el hielo y lo que se traiga; la leña es el recurso más valioso."},
+        {"titulo": "Hielo como recurso", "detalle": "El hielo se corta y se vende a los pueblos del sur para conservar comida: un bien de exportación."},
+        {"titulo": "La bestia del hielo", "detalle": "Hallazgo único: desenterrarla da marfil y pieles antiguas... o la despierta. Decide el jugador."},
+        {"titulo": "Reto para expertos", "detalle": "Un tipo de mapa difícil para quien ya domina el juego."}
+      ],
+      "modelos": [
+        {"id": "biome_tundra_ice_spikes", "nombre": "Agujas de hielo"},
+        {"id": "biome_tundra_frozen_beast", "nombre": "Bestia en el hielo"}
+      ]
+    },
+    {
+      "id": "biome_volcanic",
+      "nombre": "Bioma nuevo: tierras volcánicas",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Un afloramiento de obsidiana negra con grietas de lava, y un grupo de columnas de basalto de seis lados de hasta 3 m.",
+      "propuestas": [
+        {"titulo": "Suelo fértil y peligroso", "detalle": "Tierras volcánicas: la ceniza hace el suelo muy fértil, pero hay incendios espontáneos, temblores y, rara vez, una erupción que obliga a evacuar."},
+        {"titulo": "Obsidiana", "detalle": "Un material nuevo: herramientas y armas muy afiladas que se hacen sin hierro ni fundición, pero duran poco."},
+        {"titulo": "Piedra ya cortada", "detalle": "Las columnas de basalto son piedra de construcción que casi no hay que labrar: la cantera rinde el doble."},
+        {"titulo": "Hogar de los enanos", "detalle": "Los enanos aprovechan el calor para sus forjas: en este bioma no gastan carbón."}
+      ],
+      "modelos": [
+        {"id": "biome_volcanic_obsidian", "nombre": "Obsidiana"},
+        {"id": "biome_volcanic_basalt_columns", "nombre": "Columnas de basalto"}
+      ]
+    },
+    {
+      "id": "biome_jungle",
+      "nombre": "Bioma nuevo: selva",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Un ídolo de piedra de 3,2 m con cara, ojos que brillan, musgo, lianas y hojas gigantes al pie; y un grupo de hojas gigantes de hasta 2,6 m con flores grandes.",
+      "propuestas": [
+        {"titulo": "Abundancia y enfermedad", "detalle": "Selva: caliente y húmeda todo el año. Fruta y madera de sobra y sin invierno, pero mucha enfermedad, todo se pudre rápido y el bosque vuelve a crecer donde se taló."},
+        {"titulo": "Ruinas de una civilización", "detalle": "Los ídolos marcan templos perdidos: tesoros, trampas y algo que los guarda."},
+        {"titulo": "Plantas únicas", "detalle": "Flores y hojas gigantes dan tintes, remedios y venenos (para flechas) que solo hay aquí."},
+        {"titulo": "Hogar de la gente lagarto", "detalle": "Su mejor bioma: no sufren el calor ni las fiebres."}
+      ],
+      "modelos": [
+        {"id": "biome_jungle_idol", "nombre": "Ídolo cubierto de selva"},
+        {"id": "biome_jungle_plants", "nombre": "Hojas y flores gigantes", "animaciones": {"sway": "Las hojas se mecen."}}
+      ]
+    }
+  ]
+}

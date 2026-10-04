@@ -1,0 +1,1470 @@
+{
+  "familia": "bridges",
+  "grupos": [
+    {
+      "id": "bridge_log_foot",
+      "nombre": "Pasarela de tronco",
+      "categoria": "Puentes",
+      "descripcion": "Un tronco talado de 9 m tendido de orilla a orilla, con la cara de arriba aplanada y un pasamanos; 1,5 m de ancho. Corre a lo largo de X y se apoya en las dos orillas (Z = 0). La variante doble lleva dos troncos y tablas.",
+      "propuestas": [
+        {"titulo": "Primer cruce, barato y solo a pie", "detalle": "Cuesta 4 troncos y lo levanta un solo aldeano en poco tiempo. Cruza ríos de hasta 8 m. Solo pasan aldeanos a pie, de uno en uno y a media velocidad; las carretas, los mercaderes y los soldados con carga no pueden usarlo."},
+        {"titulo": "Lo hace el leñador al talar junto al río", "detalle": "Si un leñador tala un árbol grande a menos de 3 m de un río angosto, el jugador puede marcarlo para que caiga atravesado: se convierte en pasarela sin costo de troncos. Dura unos años y se pudre; hay que reemplazarla."},
+        {"titulo": "Se lo lleva la crecida", "detalle": "En primavera, con el deshielo, cada pasarela de tronco tiene una probabilidad de ser arrastrada. Es la razón para invertir después en un puente de caballetes o de piedra."}
+      ],
+      "modelos": [
+        {"id": "bridge_log_foot", "nombre": "Un tronco", "material": "troncos"},
+        {"id": "bridge_log_foot_double", "nombre": "Dos troncos con tablas", "material": "troncos", "nota": "Con pasamanos a los dos lados; podría dejar pasar a dos aldeanos a la vez."}
+      ]
+    },
+    {
+      "id": "bridge_plank_trestle",
+      "nombre": "Puente de tablones sobre caballetes",
+      "categoria": "Puentes",
+      "descripcion": "Puente de madera de 10 m de largo y 3 m de ancho sobre caballetes de pilotes que bajan 3 m bajo la orilla. Corre a lo largo de X; el tablero queda 0,3 m sobre las orillas, con una rampa corta en cada extremo.",
+      "propuestas": [
+        {"titulo": "El puente normal del pueblo", "detalle": "Cuesta 30 troncos y lo construyen los constructores como cualquier obra. Pasan aldeanos, carretas y mercaderes. En la rejilla de caminos cuenta como camino de tierra (velocidad x2), así que acorta de verdad las rutas de acarreo hacia la otra orilla."},
+        {"titulo": "Mantenimiento con brea", "detalle": "La madera sobre el agua se desgasta: cada año pide 4 troncos de reparación o pierde capacidad (primero deja de aguantar carretas, luego se cierra). La variante embreada cuesta además carbón vegetal y dura el triple."},
+        {"titulo": "Punto débil ante los asaltantes", "detalle": "Los asaltantes pueden quemarlo para aislar una parte del pueblo, y el jugador puede derribarlo a propósito con la alarma para cortarles el paso."}
+      ],
+      "modelos": [
+        {"id": "bridge_plank_trestle", "nombre": "Madera", "material": "troncos"},
+        {"id": "bridge_plank_trestle_tarred", "nombre": "Madera embreada", "material": "troncos y brea"},
+        {"id": "bridge_plank_trestle_short", "nombre": "Corto de 6 m, sin barandas", "material": "troncos"},
+        {"id": "bridge_plank_trestle_site", "nombre": "En obra", "material": "troncos", "animaciones": {"drive": "El martinete sube despacio y cae sobre el pilote"}, "nota": "Etapa de obra: los tres caballetes hincados, el tablero tendido desde una orilla y un martinete de trípode trabajando."},
+        {"id": "bridge_plank_trestle_burnt", "nombre": "Quemado", "material": "troncos", "nota": "Estado tras un incendio o un asalto: el centro caído, los extremos chamuscados y brasas. Se repararía por la mitad del costo."}
+      ]
+    },
+    {
+      "id": "bridge_rope",
+      "nombre": "Puente colgante de cuerdas",
+      "categoria": "Puentes",
+      "descripcion": "Puente colgante de 12 m de largo y 1,4 m de ancho: en cada orilla, un zócalo de piedra con dos escalones y un pórtico de postes; entre ellos, 9 m de cuerdas y tablas sueltas, cada una con su hueso para que el puente se meza. El tablero cuelga entre 0,1 y 0,7 m sobre las orillas. Corre a lo largo de X. No lleva apoyos intermedios, así que sirve donde no se puede pilotar: cañones y ríos hondos.",
+      "propuestas": [
+        {"titulo": "Cruzar cañones y ríos hondos", "detalle": "Es el único puente que no necesita pilotes: salva los cañones con río en el fondo y los estrechos de agua profunda, hasta 18 m. Cuesta 10 troncos y 12 de lino (cuerda). Solo pasan aldeanos a pie, sin carreta."},
+        {"titulo": "Obra del explorador", "detalle": "Lo tiende el explorador en vez de los constructores: así se abre el paso a mesetas e islotes cercanos antes de tener un pueblo capaz de hacer un puente de verdad."},
+        {"titulo": "Se cierra con viento y tormenta", "detalle": "Con tormenta nadie lo cruza (los aldeanos esperan o dan la vuelta). El clip sway se reproduce más rápido con mal tiempo."}
+      ],
+      "modelos": [
+        {"id": "bridge_rope", "nombre": "12 m", "material": "troncos y lino", "animaciones": {"sway": "El tablero se mece de lado y ondula"}},
+        {"id": "bridge_rope_long", "nombre": "18 m", "material": "troncos y lino", "animaciones": {"sway": "El tablero se mece de lado y ondula"}}
+      ]
+    },
+    {
+      "id": "bridge_stone_arch",
+      "nombre": "Puente de un arco",
+      "categoria": "Puentes",
+      "descripcion": "Puente de mampostería de un solo arco de 7 m de luz: 12 m de largo, 4 m de ancho, lomo de 1,7 m, pretiles con albardilla y pilastras en los extremos. Corre a lo largo de X; los estribos bajan 3 m bajo la orilla. El mismo generador lo hace en piedra, en ladrillo y viejo con musgo.",
+      "propuestas": [
+        {"titulo": "Puente definitivo para ríos angostos", "detalle": "Cuesta 60 de piedra (o 80 ladrillos y 20 de piedra) y mucho trabajo de obra. No se quema, no se lo lleva la crecida y no pide mantenimiento. Cuenta como camino de piedra (velocidad x3) y pasan carretas cargadas."},
+        {"titulo": "Peaje a los mercaderes", "detalle": "Un mercader que cruza un puente de piedra del jugador paga unas monedas de oro que llegan al puesto de comercio. Con rutas de mercaderes entre pueblos, quien tiene el puente cobra a los que comercian con los demás."},
+        {"titulo": "Mejora el entorno", "detalle": "Como la estatua o el jardín: las casas a menos de 15 m ganan un punto de entorno, porque un puente de piedra es de lo más vistoso del pueblo."}
+      ],
+      "modelos": [
+        {"id": "bridge_stone_arch", "nombre": "Piedra", "material": "piedra"},
+        {"id": "bridge_stone_arch_brick", "nombre": "Ladrillo", "material": "ladrillo"},
+        {"id": "bridge_stone_arch_mossy", "nombre": "Piedra vieja con musgo", "material": "piedra", "nota": "Para puentes que ya estaban en el mapa al llegar."},
+        {"id": "bridge_stone_arch_shrine", "nombre": "Con hornacina", "material": "piedra y oro", "nota": "Una hornacina con una figura dorada, velas y flores sobre el pretil: daría un poco de felicidad a quien cruza, como una capilla pequeña."}
+      ]
+    },
+    {
+      "id": "bridge_stone_multi",
+      "nombre": "Puente largo de varios arcos",
+      "categoria": "Puentes",
+      "descripcion": "El puente de la imagen de referencia: 24 m de largo y 4 m de ancho (las pilas, con sus tajamares, sobresalen 1,5 m a cada lado por debajo de la calzada), cuatro arcos de 4,5 m sobre pilas con tajamar a los dos lados, lomo suave de 2,2 m, pretiles y faroles en los extremos. Corre a lo largo de X; las pilas bajan 3 m. Variantes de 3 arcos (19 m) y 5 arcos (30 m), y en ladrillo.",
+      "propuestas": [
+        {"titulo": "Cruzar ríos anchos y estrechos de mar", "detalle": "Para los ríos anchos, los estuarios y los estrechos entre un islote y la costa, donde hoy solo queda rodear o no pasar. Cuesta 40 de piedra por arco y solo se puede construir donde el agua tiene menos de 3 m de fondo."},
+        {"titulo": "Obra por etapas", "detalle": "Se construye arco por arco, como las obras de la fase 67: cada arco terminado ya se ve, y el puente abre cuando se cierra el último. Una obra así ocupa a los constructores toda una estación."},
+        {"titulo": "Requisito del centro del pueblo", "detalle": "Tener un puente de piedra de 3 arcos o más cuenta como requisito para subir el centro del pueblo a su último nivel, igual que otros edificios emblemáticos."},
+        {"titulo": "Cuello de botella defensivo", "detalle": "Los asaltantes que llegan del otro lado tienen que pasar por él en fila: una torre de vigía junto a la entrada los alcanza a todos."}
+      ],
+      "modelos": [
+        {"id": "bridge_stone_multi", "nombre": "4 arcos, 24 m", "material": "piedra"},
+        {"id": "bridge_stone_multi_3", "nombre": "3 arcos, 19 m", "material": "piedra"},
+        {"id": "bridge_stone_multi_5", "nombre": "5 arcos, 30 m", "material": "piedra"},
+        {"id": "bridge_stone_multi_brick", "nombre": "4 arcos de ladrillo", "material": "ladrillo"},
+        {"id": "bridge_stone_multi_level", "nombre": "Calzada a nivel, 4 arcos iguales, 30 m", "material": "piedra", "nota": "El más parecido al de la imagen de referencia: calzada horizontal a 2,4 m entre dos rampas de 4,5 m y cuatro arcos iguales casi de medio punto; deja pasar botes."},
+        {"id": "bridge_stone_multi_level_brick", "nombre": "Calzada a nivel, de ladrillo", "material": "ladrillo"}
+      ]
+    },
+    {
+      "id": "bridge_ruined",
+      "nombre": "Puente en ruinas",
+      "categoria": "Puentes",
+      "descripcion": "El puente de varios arcos con los dos arcos centrales caídos, piedras en el lecho y musgo; y el de un arco, partido por la mitad. Mismas medidas que los puentes enteros (24 x 4 m y 12 x 4 m), para poder cambiarlos por el puente reparado en el mismo lugar.",
+      "propuestas": [
+        {"titulo": "Hallazgo del mapa que se puede reparar", "detalle": "El generador coloca uno o dos por mapa sobre ríos anchos. Repararlo cuesta la mitad de piedra que construir uno nuevo y deja el puente de varios arcos en su lugar. Un buen motivo para explorar río arriba."},
+        {"titulo": "Estado de daño de los puentes de piedra", "detalle": "Es el modelo que toma un puente de piedra cuando lo derriban los asaltantes con un ariete o una crecida excepcional: se corta el paso y la obra de reparación trae la piedra faltante."},
+        {"titulo": "Cantera de piedra labrada", "detalle": "En vez de repararlo, el jugador puede desmontarlo: da de una vez 40 de piedra sin necesidad de cantero, y el paso se pierde para siempre."}
+      ],
+      "modelos": [
+        {"id": "bridge_ruined", "nombre": "Varios arcos, dos caídos", "material": "piedra"},
+        {"id": "bridge_ruined_single", "nombre": "Un arco partido", "material": "piedra"}
+      ]
+    },
+    {
+      "id": "bridge_covered",
+      "nombre": "Puente cubierto",
+      "categoria": "Puentes",
+      "descripcion": "Puente de madera de 10 m de largo y 4 m de ancho con paredes de tablas, armadura en cruz y tejado a dos aguas, sobre dos estribos y una pila de piedra con tajamar. Corre a lo largo de X. Tejado de tablillas, de paja o de tejas.",
+      "propuestas": [
+        {"titulo": "Madera que no se pudre", "detalle": "Cuesta 45 troncos, 15 de piedra y el material del tejado. El techo protege el tablero: no pide el mantenimiento anual del puente de caballetes y no se cierra con lluvia ni nieve."},
+        {"titulo": "Refugio en el camino", "detalle": "Los aldeanos que cruzan con lluvia o nevada se secan y entran en calor: baja la probabilidad de resfriarse en los trayectos largos hacia campos y bosques del otro lado."},
+        {"titulo": "Mercado bajo techo", "detalle": "Con los mercaderes de visita, uno de ellos pone su puesto dentro del puente: sirve como segundo punto de venta sin construir otro puesto de comercio en la otra orilla."}
+      ],
+      "modelos": [
+        {"id": "bridge_covered", "nombre": "Tablillas", "material": "troncos y piedra"},
+        {"id": "bridge_covered_thatch", "nombre": "Paja", "material": "troncos, piedra y paja"},
+        {"id": "bridge_covered_tile", "nombre": "Tejas", "material": "troncos, piedra y tejas"}
+      ]
+    },
+    {
+      "id": "bridge_draw",
+      "nombre": "Puente levadizo",
+      "categoria": "Puentes",
+      "descripcion": "Puente basculante de 10 m de largo y 4 m de ancho: dos estribos de mampostería con pretil y, entre ellos, una hoja de tablones de 5 m que se levanta con vigas de balancín, contrapeso de piedra y cadenas. Corre a lo largo de X. En reposo está bajado.",
+      "propuestas": [
+        {"titulo": "Defensa: se cierra con la alarma", "detalle": "Al sonar la alarma por una incursión, la hoja se levanta y corta el paso: los asaltantes del otro lado tienen que rodear o quedan a tiro de las torres. Cuesta 30 de piedra, 20 troncos y 6 de hierro (cadenas)."},
+        {"titulo": "Deja pasar a los barcos", "detalle": "Es el único puente bajo el que pasan barcas y barcazas: se abre cuando llega una, y los aldeanos esperan. Con puentes fijos, el río queda cortado para los barcos río arriba."},
+        {"titulo": "Portero", "detalle": "Necesita un trabajador asignado (portero) para abrir y cerrar; sin él se queda como esté. De noche puede quedar levantado por orden del jugador."}
+      ],
+      "modelos": [
+        {"id": "bridge_draw", "nombre": "Piedra", "material": "piedra, troncos y hierro", "animaciones": {"open": "La hoja se levanta 72 grados con el balancín", "close": "La hoja baja hasta cerrar el paso"}},
+        {"id": "bridge_draw_brick", "nombre": "Ladrillo", "material": "ladrillo, troncos y hierro", "animaciones": {"open": "La hoja se levanta 72 grados con el balancín", "close": "La hoja baja hasta cerrar el paso"}}
+      ]
+    },
+    {
+      "id": "bridge_pontoon",
+      "nombre": "Puente de pontones",
+      "categoria": "Puentes",
+      "descripcion": "Puente flotante de 12 m de largo y 3 m de ancho: cuatro tramos de tablones sobre barriles (o sobre bateas), con barandas de cuerda y amarrado a postes en las dos orillas. Corre a lo largo de X. Cada tramo tiene su hueso y sube y baja con el agua.",
+      "propuestas": [
+        {"titulo": "Puente rápido sobre agua honda", "detalle": "No necesita pilotes, así que se puede tender sobre lagos y brazos de mar hondos, tramo a tramo, hasta 40 m. Cuesta 8 troncos y 4 barriles por tramo (los barriles piden un tonelero o se compran al mercader)."},
+        {"titulo": "Se retira en invierno", "detalle": "Cuando el río se congela, el puente queda inservible y hay que guardarlo; a cambio, sobre el hielo se cruza a pie. En primavera los constructores lo vuelven a tender."},
+        {"titulo": "Puente de campaña del ejército", "detalle": "Los soldados lo montan en pocos minutos para cruzar hacia otro pueblo y lo desmontan al volver: alternativa terrestre al cruce por mar."}
+      ],
+      "modelos": [
+        {"id": "bridge_pontoon", "nombre": "Sobre barriles", "material": "troncos y barriles", "animaciones": {"bob": "Los tramos suben, bajan y se ladean con el agua"}},
+        {"id": "bridge_pontoon_boats", "nombre": "Sobre bateas", "material": "troncos", "animaciones": {"bob": "Los tramos suben, bajan y se ladean con el agua"}}
+      ]
+    },
+    {
+      "id": "bridge_stepping_stones",
+      "nombre": "Pasaderas y vado",
+      "categoria": "Puentes",
+      "descripcion": "Dos formas de cruzar sin puente, de 8 m de largo: una hilera de piedras planas en zigzag (1,5 m de ancho) y un vado empedrado de 4 m de ancho, hundido en el centro y marcado con cuatro estacas y cuerdas. A lo largo de X; las piedras bajan hasta el lecho.",
+      "propuestas": [
+        {"titulo": "Cruce sin costo de madera", "detalle": "Las pasaderas cuestan 6 de piedra y las pone un solo aldeano. Solo a pie y despacio (un cuarto de la velocidad). Solo donde el río tiene menos de 1 m de fondo."},
+        {"titulo": "Vado para carretas", "detalle": "El vado cuesta 20 de piedra y deja pasar carretas y mercaderes, despacio y mojándose: quien lo cruza en otoño o invierno tiene más probabilidad de enfermar."},
+        {"titulo": "Se cierra con la crecida", "detalle": "Con el deshielo de primavera y tras varios días de lluvia el agua los tapa y nadie cruza; en verano siempre están abiertos."},
+        {"titulo": "Vados naturales del mapa", "detalle": "El generador deja algunos vados naturales en los ríos: lugares de cruce desde el primer día, y por lo mismo el camino por donde llegan los asaltantes."}
+      ],
+      "modelos": [
+        {"id": "bridge_stepping_stones", "nombre": "Pasaderas", "material": "piedra"},
+        {"id": "bridge_ford", "nombre": "Vado empedrado", "material": "piedra"}
+      ]
+    },
+    {
+      "id": "bridge_living_root",
+      "nombre": "Puente de raíces vivas",
+      "categoria": "Puentes",
+      "descripcion": "Puente de 9 m que crece de dos árboles, uno en cada orilla: raíces trenzadas forman el tablero (2,4 m de ancho), cubierto de musgo y lajas, y otras hacen de barandas; cuelgan lianas y raíces aéreas que buscan el agua. A lo largo de X.",
+      "propuestas": [
+        {"titulo": "Puente de los elfos del bosque", "detalle": "Solo lo puede plantar un pueblo con elfos. No cuesta materiales: un herbolario lo planta y tarda dos años en crecer (se ve crecer por etapas). Después no pide mantenimiento y se repara solo."},
+        {"titulo": "Solo en bosque", "detalle": "Necesita bosque en las dos orillas y no puede hacerse en biomas fríos o secos. Los leñadores no talan sus dos árboles."},
+        {"titulo": "Mejora el entorno y da hierbas", "detalle": "Cuenta como jardín para las casas cercanas y un recolector puede recoger hierbas en él una vez por estación."}
+      ],
+      "modelos": [
+        {"id": "bridge_living_root", "nombre": "Raíces vivas", "material": "árboles vivos"}
+      ]
+    },
+    {
+      "id": "bridge_elven",
+      "nombre": "Arco élfico y puente de cristal",
+      "categoria": "Puentes",
+      "descripcion": "Puente esbelto de 10 m de largo y 3 m de ancho, de un solo arco muy rebajado sobre dos nervios, con un segundo arco que nace del agua, baranda calada de arcos apuntados y cuatro farolas curvas. A lo largo de X. En mármol blanco con remates de oro, o en cristal con racimos de cristales.",
+      "propuestas": [
+        {"titulo": "Puente de prestigio de los elfos", "detalle": "Cuesta 50 de piedra y 10 de oro; solo con elfos en el pueblo. Las farolas dan luz de noche sin gastar combustible y las casas a menos de 20 m ganan dos puntos de entorno."},
+        {"titulo": "Puente de cristal de los enanos", "detalle": "La variante de cristal pide cristales, un recurso nuevo que saldría de la mina profunda. De noche brilla y ahuyenta a la fauna peligrosa en un radio de 15 m."},
+        {"titulo": "Regalo diplomático", "detalle": "Un pueblo aliado de otra raza puede construirlo en el territorio del jugador como parte de un trato: una forma visible de alianza entre pueblos."}
+      ],
+      "modelos": [
+        {"id": "bridge_elven", "nombre": "Mármol y oro", "material": "piedra y oro"},
+        {"id": "bridge_crystal", "nombre": "Cristal", "material": "cristal", "nota": "Usa colores de cristal que el juego todavía no tiene como material."}
+      ]
+    },
+    {
+      "id": "bridge_kit_wood",
+      "nombre": "Kit modular de puente: madera",
+      "categoria": "Puentes",
+      "descripcion": "Piezas para que un algoritmo arme puentes de cualquier largo par. Módulo: 2 m a lo largo de X, 4 m de ancho, tablero a 1 m sobre las orillas; cada pieza tiene el origen en el centro de su planta. Regla para L metros (par, 10 o más): un estribo-rampa de 4 m en cada extremo (el segundo girado 180 grados); entre ellos, tramos de 4 m, más uno de 2 m, puesto primero, si (L - 8) no es múltiplo de 4; una pila bajo cada junta entre dos tramos (baja hasta Z = -4, para agua honda); un par de postes con farol al pie de cada rampa. La demostración mide 18 m: rampa, tramo de 2, dos tramos de 4 y rampa.",
+      "propuestas": [
+        {"titulo": "El jugador arrastra de orilla a orilla", "detalle": "Con la herramienta de puente se marca un punto en cada orilla y el juego arma el puente con estas piezas, del largo que haga falta. El costo sale por pieza: 6 troncos por tramo de 2 m, 10 por pila y 12 por rampa."},
+        {"titulo": "Obra que avanza por tramos", "detalle": "Los constructores levantan pila y tramo desde una orilla; cada pieza terminada aparece, así se ve avanzar el puente sobre el agua."},
+        {"titulo": "Límite por profundidad", "detalle": "Las pilas de madera llegan a 4 m de fondo: sirve para ríos y lagunas, no para mar abierto. Si el agua es más honda, la herramienta lo dice y propone pontones o balsa."}
+      ],
+      "modelos": [
+        {"id": "bridge_kit_wood_demo", "nombre": "Demostración de 18 m", "material": "troncos"},
+        {"id": "bridge_kit_wood_abutment", "nombre": "Estribo con rampa (4 m)", "material": "troncos"},
+        {"id": "bridge_kit_wood_span2", "nombre": "Tramo de 2 m", "material": "troncos"},
+        {"id": "bridge_kit_wood_span4", "nombre": "Tramo de 4 m", "material": "troncos"},
+        {"id": "bridge_kit_wood_pier", "nombre": "Pila de caballetes con rompehielos", "material": "troncos"},
+        {"id": "bridge_kit_wood_posts", "nombre": "Postes de entrada con farol", "material": "troncos"},
+        {"id": "bridge_kit_wood_covered_demo", "nombre": "Demostración cubierta de 20 m", "material": "troncos", "nota": "Dos rampas y tres tramos cubiertos: un puente cubierto del largo que haga falta."},
+        {"id": "bridge_kit_wood_covered_shingle", "nombre": "Tramo cubierto de 4 m, tablillas", "material": "troncos"},
+        {"id": "bridge_kit_wood_covered_thatch", "nombre": "Tramo cubierto de 4 m, paja", "material": "troncos y paja"},
+        {"id": "bridge_kit_wood_covered_tile", "nombre": "Tramo cubierto de 4 m, tejas", "material": "troncos y tejas"},
+        {"id": "bridge_kit_wood_draw", "nombre": "Tramo levadizo de 4 m", "material": "troncos, piedra y hierro", "animaciones": {"open": "La hoja se levanta 70 grados con el balancín", "close": "La hoja baja"}, "nota": "Opcional: sustituye a cualquier tramo de 4 m (también en los kits de piedra y ladrillo) para dejar pasar barcos por el canal. Trae sus propios pilotes en los dos extremos."}
+      ]
+    },
+    {
+      "id": "bridge_kit_stone",
+      "nombre": "Kit modular de puente: piedra",
+      "categoria": "Puentes",
+      "descripcion": "Las mismas piezas del kit en mampostería de piedra. Módulo: 2 m a lo largo de X, 4 m de ancho, calzada a 1 m sobre las orillas. Regla para L metros (par, 10 o más): un estribo-rampa de 4 m en cada extremo (el segundo girado 180 grados); tramos de arco de 4 m, más uno de 2 m, puesto primero, si (L - 8) no es múltiplo de 4; una pila con tajamares bajo cada junta entre dos tramos (baja hasta Z = -4); un par de pilastras con farol al pie de cada rampa. Cada tramo trae medio grosor de pila en cada extremo, de donde arranca su arco. Hay una demostración de 18 m y otra de 28 m.",
+      "propuestas": [
+        {"titulo": "Puentes de piedra a medida", "detalle": "La misma herramienta de arrastrar de orilla a orilla, con piedra: 15 de piedra por tramo de 2 m, 20 por pila y 25 por rampa. Cuenta como camino de piedra (velocidad x3) y pasan carretas."},
+        {"titulo": "Mejora del puente de madera", "detalle": "Un puente del kit de madera se puede mejorar a piedra pieza por pieza sin cerrar el paso: los constructores cambian una pieza a la vez, como subir de nivel una casa."},
+        {"titulo": "Reparación por pieza", "detalle": "Los daños (asalto, crecida) afectan a una pieza concreta: se cae un tramo y solo ese tramo se repara, en vez de perder el puente entero."}
+      ],
+      "modelos": [
+        {"id": "bridge_kit_stone_demo", "nombre": "Demostración de 18 m", "material": "piedra"},
+        {"id": "bridge_kit_stone_demo_long", "nombre": "Demostración de 28 m", "material": "piedra"},
+        {"id": "bridge_kit_stone_abutment", "nombre": "Estribo con rampa (4 m)", "material": "piedra"},
+        {"id": "bridge_kit_stone_span2", "nombre": "Tramo de 2 m", "material": "piedra"},
+        {"id": "bridge_kit_stone_span4", "nombre": "Tramo de 4 m con arco", "material": "piedra"},
+        {"id": "bridge_kit_stone_pier", "nombre": "Pila con tajamares", "material": "piedra"},
+        {"id": "bridge_kit_stone_posts", "nombre": "Pilastras de entrada con farol", "material": "piedra y hierro"}
+      ]
+    },
+    {
+      "id": "bridge_kit_brick",
+      "nombre": "Kit modular de puente: ladrillo",
+      "categoria": "Puentes",
+      "descripcion": "El kit modular en ladrillo, con albardillas y claves de piedra. Mismo módulo y misma regla que el de piedra: 2 m a lo largo de X, 4 m de ancho, calzada a 1 m; rampas de 4 m en los extremos, tramos de 4 m (más uno de 2 m, puesto primero, si hace falta), una pila bajo cada junta entre tramos y pilastras con farol al pie de cada rampa. Las piezas de piedra y de ladrillo encajan entre sí.",
+      "propuestas": [
+        {"titulo": "Puentes donde no hay piedra", "detalle": "Para mapas con arcilla y poca piedra: 20 ladrillos por tramo de 2 m, 25 por pila y 30 por rampa, más 5 de piedra por pieza para albardillas. Da trabajo al horno de ladrillos."},
+        {"titulo": "Estilo por raza", "detalle": "Cada raza prefiere un material para sus puentes (humanos ladrillo, enanos piedra, elfos madera): el kit se elige solo según la raza mayoritaria del pueblo, con la misma regla de armado."}
+      ],
+      "modelos": [
+        {"id": "bridge_kit_brick_demo", "nombre": "Demostración de 18 m", "material": "ladrillo"},
+        {"id": "bridge_kit_brick_abutment", "nombre": "Estribo con rampa (4 m)", "material": "ladrillo"},
+        {"id": "bridge_kit_brick_span2", "nombre": "Tramo de 2 m", "material": "ladrillo"},
+        {"id": "bridge_kit_brick_span4", "nombre": "Tramo de 4 m con arco", "material": "ladrillo"},
+        {"id": "bridge_kit_brick_pier", "nombre": "Pila con tajamares", "material": "ladrillo"},
+        {"id": "bridge_kit_brick_posts", "nombre": "Pilastras de entrada con farol", "material": "ladrillo y hierro"}
+      ]
+    },
+    {
+      "id": "dock_pier",
+      "nombre": "Muelle modular de madera",
+      "categoria": "Edificios",
+      "descripcion": "Muelle de tablones sobre pilotes, de 2 m de ancho, en piezas: recto de 4 m, esquina de 2 x 2 m con poste de amarre, final de 2 x 2 m con dos postes de amarre, escalera y farol, y rampa de 2 m desde la orilla. Corre a lo largo de Y: la orilla queda en +Y y el agua en -Y. El tablero está a 0,3 m sobre la orilla y los pilotes bajan 3 m. La demostración arma un muelle en L de 13 m.",
+      "propuestas": [
+        {"titulo": "Donde atracan los barcos", "detalle": "Cada pieza final con postes de amarre es un atracadero: un barco propio, un mercader o la balsa necesitan uno libre. El jugador traza el muelle por piezas sobre el agua, como un camino; 4 troncos por metro."},
+        {"titulo": "Pescar desde el muelle", "detalle": "Un pescador puede pescar desde cualquier pieza del muelle y alcanza agua más honda que desde la orilla: rinde un 25 % más de pescado que la orilla."},
+        {"titulo": "Paso a las islas", "detalle": "Dos muelles en islas distintas quedan unidos por una ruta de barca: los aldeanos la usan para ir a trabajar, talar o recolectar en la otra isla. Es la respuesta a la pregunta abierta de los barcos y muelles."}
+      ],
+      "modelos": [
+        {"id": "dock_pier_demo", "nombre": "Demostración en L", "material": "troncos"},
+        {"id": "dock_pier_straight", "nombre": "Recto de 4 m", "material": "troncos"},
+        {"id": "dock_pier_corner", "nombre": "Esquina", "material": "troncos"},
+        {"id": "dock_pier_end", "nombre": "Final con amarres", "material": "troncos"},
+        {"id": "dock_pier_ramp", "nombre": "Rampa desde la orilla", "material": "troncos"},
+        {"id": "dock_pier_light", "nombre": "Final con luz", "material": "troncos y hierro", "animaciones": {"flicker": "Tiembla la llama del cesto"}, "nota": "Pieza de 2 x 2 m con un poste de 4 m y un cesto de fuego: marca la punta del muelle de noche."}
+      ]
+    },
+    {
+      "id": "dock_quay",
+      "nombre": "Muelle modular de piedra",
+      "categoria": "Edificios",
+      "descripcion": "Las mismas piezas del muelle en mampostería maciza con losas: recto de 4 m, esquina con noray de hierro, final con dos norays, argollas y escalones que bajan al agua, y escalones desde la orilla. 2 m de ancho, a lo largo de Y (orilla en +Y, agua en -Y), losas a 0,3 m sobre la orilla y muro hasta 3 m de fondo.",
+      "propuestas": [
+        {"titulo": "Puerto para barcos grandes", "detalle": "El barco mercante y la barcaza solo atracan en muelle de piedra; las barcas y la balsa, en cualquiera. 10 de piedra por metro. No se pudre ni lo rompe el hielo."},
+        {"titulo": "Paseo del puerto", "detalle": "Cuenta como camino de piedra y mejora el entorno de las casas frente al agua: el barrio del puerto sube de nivel con más facilidad."},
+        {"titulo": "Defensa de la costa", "detalle": "Un ejército que llega por mar desembarca más despacio frente a un muelle de piedra con guardias: da tiempo a que suene la alarma."}
+      ],
+      "modelos": [
+        {"id": "dock_quay_demo", "nombre": "Demostración en L", "material": "piedra"},
+        {"id": "dock_quay_straight", "nombre": "Recto de 4 m", "material": "piedra"},
+        {"id": "dock_quay_corner", "nombre": "Esquina con noray", "material": "piedra y hierro"},
+        {"id": "dock_quay_end", "nombre": "Final con escalones al agua", "material": "piedra y hierro"},
+        {"id": "dock_quay_ramp", "nombre": "Escalones desde la orilla", "material": "piedra"},
+        {"id": "dock_quay_light", "nombre": "Final con fanal de piedra", "material": "piedra y hierro", "animaciones": {"flicker": "Tiembla la llama del fanal"}, "nota": "Pieza de 2 x 2 m con una columna de 3 m y un fanal cubierto."},
+        {"id": "dock_quay_brick_demo", "nombre": "Ladrillo: demostración en L", "material": "ladrillo"},
+        {"id": "dock_quay_brick_straight", "nombre": "Ladrillo: recto de 4 m", "material": "ladrillo"},
+        {"id": "dock_quay_brick_corner", "nombre": "Ladrillo: esquina con noray", "material": "ladrillo y hierro"},
+        {"id": "dock_quay_brick_end", "nombre": "Ladrillo: final con escalones al agua", "material": "ladrillo y hierro"},
+        {"id": "dock_quay_brick_ramp", "nombre": "Ladrillo: escalones desde la orilla", "material": "ladrillo"}
+      ]
+    },
+    {
+      "id": "dock_fishing",
+      "nombre": "Muelle de pesca",
+      "categoria": "Edificios",
+      "descripcion": "Plataforma de 6 x 4 m sobre pilotes con un muelle de 2 x 4 m que entra al agua (planta total de 6 x 8 m; orilla en +Y, agua en -Y). Tiene una red tendida a secar, un secadero con pescados colgados, barriles, cajas, una canasta de pescado, banco de limpieza, cañas, postes de amarre, escalera, farol y un bote amarrado.",
+      "propuestas": [
+        {"titulo": "Mejora de la cabaña del pescador", "detalle": "Segundo nivel del pescador actual (10 troncos, 2 trabajadores, radio 40): por 25 troncos y 5 de lino pasa a 4 trabajadores, radio 80 con el bote, y 80 de almacén. Debe tocar el agua."},
+        {"titulo": "Pesca con red y con bote", "detalle": "Dos trabajadores pescan desde el muelle con caña y dos salen en el bote con red: el bote llega a los bancos de peces del lago o del mar, que la orilla no alcanza."},
+        {"titulo": "Secadero incluido", "detalle": "El pescado colgado se seca solo en verano y otoño: una parte de la pesca sale ya como pescado seco, que dura todo el invierno, sin pasar por el ahumadero."},
+        {"titulo": "Pesca en el hielo", "detalle": "En invierno, con el agua helada, hoy el pescador se queda sin trabajo; con muelle puede abrir un agujero en el hielo junto al final del muelle y pescar a un tercio del ritmo."}
+      ],
+      "modelos": [
+        {"id": "dock_fishing", "nombre": "Muelle de pesca", "material": "troncos y lino"}
+      ]
+    },
+    {
+      "id": "dock_crane",
+      "nombre": "Grúa de puerto con rueda de pisar",
+      "categoria": "Edificios",
+      "descripcion": "Grúa medieval sobre un muelle de piedra de 5 x 5 m: plataforma giratoria, poste rey, rueda de pisar de 2,6 m entre dos caballetes, pluma triangular y una caja colgada del gancho. El agua queda en -Y. Con mercancías esperando en el muelle.",
+      "propuestas": [
+        {"titulo": "Descarga rápida de barcos", "detalle": "Con grúa, un barco mercante o una barcaza se carga y descarga en la cuarta parte del tiempo: el mercader por barco trae el doble de mercancía en cada visita. Cuesta 25 troncos, 20 de piedra y 5 de hierro; un trabajador pisa la rueda."},
+        {"titulo": "Requisito para cargas pesadas", "detalle": "Sin grúa no se puede embarcar piedra, mineral de hierro ni troncos en cantidad: es lo que permite traer piedra de la isla vecina en barcaza."},
+        {"titulo": "Grúa de obra", "detalle": "El mismo modelo, sin muelle, serviría junto a las obras grandes (puente de varios arcos, faro, castillo): con grúa, la obra avanza un 30 % más rápido."}
+      ],
+      "modelos": [
+        {"id": "dock_crane", "nombre": "Muelle de piedra", "material": "troncos, piedra y hierro", "animaciones": {"lift": "La rueda gira, la pluma sube la carga y la grúa gira sobre su plataforma"}},
+        {"id": "dock_crane_brick", "nombre": "Muelle de ladrillo", "material": "troncos, ladrillo y hierro", "animaciones": {"lift": "La rueda gira, la pluma sube la carga y la grúa gira sobre su plataforma"}}
+      ]
+    },
+    {
+      "id": "dock_ferry_landing",
+      "nombre": "Embarcadero de la balsa",
+      "categoria": "Edificios",
+      "descripcion": "Rampa de tablones de 4 m de ancho y 5 m de largo que baja de la orilla (+Y) al agua (-Y), con dos postes altos que sostienen la cuerda guía de la balsa, un cabrestante para tensarla, campana para llamar al balsero, letrero, farol y carga esperando. Planta de 5 x 6 m.",
+      "propuestas": [
+        {"titulo": "Cruce de ríos anchos sin puente", "detalle": "Se construyen dos, uno en cada orilla, hasta 60 m de distancia; entre ellos va la balsa de paso por su cuerda. Cada uno cuesta 15 troncos y 6 de lino. Un balsero (oficio nuevo) hace los viajes."},
+        {"titulo": "Capacidad y espera", "detalle": "La balsa lleva 6 aldeanos o una carreta por viaje; los demás esperan en el embarcadero. El camino por la balsa entra en la búsqueda de rutas con su tiempo de espera, así que un puente sigue valiendo la pena."},
+        {"titulo": "Paso de mercaderes y pasaje", "detalle": "Los mercaderes que vienen por tierra pagan pasaje al cruzar: unas monedas de oro al puesto de comercio en cada visita."}
+      ],
+      "modelos": [
+        {"id": "dock_ferry_landing", "nombre": "Embarcadero", "material": "troncos y lino"}
+      ]
+    },
+    {
+      "id": "dock_boathouse",
+      "nombre": "Casa de botes",
+      "categoria": "Edificios",
+      "descripcion": "Cobertizo de 6 x 8 m sobre pilotes, abierto hacia el agua (-Y): dos pasarelas laterales con una cala de agua en medio donde entra el bote, paredes de tablas con ventanas, puerta a la orilla (+Y) y tejado a dos aguas. Dentro hay un bote, remos, cuerda, un barril y una caja. Tejado de tablillas, paja o tejas.",
+      "propuestas": [
+        {"titulo": "Astillero del pueblo", "detalle": "Aquí se construyen los barcos: bote de remos (8 troncos), barca de pesca (20 troncos y 6 de lino) y, con el nivel siguiente, barcaza y mercante. Un carpintero de ribera trabaja en él. Cuesta 35 troncos y el tejado."},
+        {"titulo": "Los botes no se pudren", "detalle": "Los barcos guardados aquí en invierno no se dañan con el hielo; los que quedan amarrados fuera pierden parte de su vida útil cada invierno."},
+        {"titulo": "Base de los barqueros", "detalle": "Es el lugar de trabajo de los barqueros que llevan aldeanos y carga a las otras islas: cada casa de botes mantiene dos rutas de barca."}
+      ],
+      "modelos": [
+        {"id": "dock_boathouse", "nombre": "Tablillas", "material": "troncos"},
+        {"id": "dock_boathouse_thatch", "nombre": "Paja", "material": "troncos y paja"},
+        {"id": "dock_boathouse_tile", "nombre": "Tejas", "material": "troncos y tejas"}
+      ]
+    },
+    {
+      "id": "dock_lighthouse",
+      "nombre": "Faro",
+      "categoria": "Edificios",
+      "descripcion": "Torre octogonal de 15 m sobre un promontorio de rocas (planta de unos 7 x 7 m): cuerpo en franjas, puerta con escalones hacia -Y, ventanas, galería con baranda de hierro y linterna con brasero, un espejo dorado que gira alrededor del fuego y tejado cónico. En piedra, encalado con franjas rojas, o en ladrillo.",
+      "propuestas": [
+        {"titulo": "Trae más mercaderes por mar", "detalle": "Con faro encendido, los barcos mercantes llegan también de noche y con niebla: una visita más por año y mejores precios. Cuesta 80 de piedra, 20 troncos y 5 de hierro, y gasta leña o carbón cada noche."},
+        {"titulo": "Visión sobre el mar", "detalle": "Tiene el radio de visión más grande del juego (sight de 120 m): descubre la costa y avisa de los ejércitos que cruzan por mar mucho antes de que desembarquen."},
+        {"titulo": "Barcos seguros", "detalle": "Los barcos del pueblo que navegan de noche o con tormenta a la vista del faro no naufragan; sin faro, cada viaje nocturno tiene un riesgo pequeño de perder la carga."}
+      ],
+      "modelos": [
+        {"id": "dock_lighthouse", "nombre": "Piedra", "material": "piedra", "animaciones": {"flicker": "La llama tiembla", "turn": "El espejo da una vuelta alrededor del fuego"}},
+        {"id": "dock_lighthouse_white", "nombre": "Encalado con franjas rojas", "material": "piedra y cal", "animaciones": {"flicker": "La llama tiembla", "turn": "El espejo da una vuelta alrededor del fuego"}},
+        {"id": "dock_lighthouse_brick", "nombre": "Ladrillo", "material": "ladrillo", "animaciones": {"flicker": "La llama tiembla", "turn": "El espejo da una vuelta alrededor del fuego"}}
+      ]
+    },
+    {
+      "id": "dock_beacon",
+      "nombre": "Torre de almenara",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de madera de 3 x 3 m y 7 m de alto, de cuatro patas con cruces de arriostrado, escalera por el frente (-Y), plataforma con baranda y un cesto de hierro con fuego sobre un hogar de piedra.",
+      "propuestas": [
+        {"titulo": "Faro barato de madera", "detalle": "La versión temprana del faro: 20 troncos y 2 de hierro. Marca la entrada del puerto o un vado; los barcos y las balsas pueden cruzar de noche si ven una almenara en cada orilla."},
+        {"titulo": "Cadena de aviso", "detalle": "Un vigía enciende la suya al ver asaltantes o un ejército por mar; las almenaras a la vista se encienden en cadena y la alarma llega al pueblo desde muy lejos, antes de que el enemigo esté cerca."},
+        {"titulo": "Luz contra la fauna", "detalle": "Encendida de noche, los lobos y osos evitan su radio: protege un muelle o un campamento alejado del pueblo."}
+      ],
+      "modelos": [
+        {"id": "dock_beacon", "nombre": "Madera", "material": "troncos y hierro", "animaciones": {"flicker": "Las llamas tiemblan"}}
+      ]
+    },
+    {
+      "id": "boat_rowboat",
+      "nombre": "Bote de remos",
+      "categoria": "Transporte",
+      "descripcion": "Bote de 4,2 m de eslora y 1,5 m de manga, con bancos, tablas de fondo y dos remos animados. Flota con la línea de agua en Z = 0 (el casco baja 0,28 m) y la proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "Barca de paso entre islas", "detalle": "Un barquero lleva hasta 3 aldeanos (o 1 con su carga) entre dos muelles. Cuesta 8 troncos en la casa de botes. Es lo mínimo para que los aldeanos trabajen en una isla secundaria del archipiélago."},
+        {"titulo": "Bote del pescador", "detalle": "Asignado a un muelle de pesca, duplica el radio de pesca y deja alcanzar los bancos de peces lejos de la orilla."},
+        {"titulo": "Exploración por agua", "detalle": "El explorador puede usarlo para costear y remontar ríos: revela la niebla de guerra a lo largo de la costa y encuentra islotes y ruinas."}
+      ],
+      "modelos": [
+        {"id": "boat_rowboat", "nombre": "Madera", "material": "troncos", "animaciones": {"bob": "Se mece en el agua", "row": "Los dos remos bogan (avanza a 1,4 m/s)"}},
+        {"id": "boat_rowboat_painted", "nombre": "Pintado de azul", "material": "troncos", "animaciones": {"bob": "Se mece en el agua", "row": "Los dos remos bogan (avanza a 1,4 m/s)"}},
+        {"id": "boat_rowboat_beached", "nombre": "Varado en la orilla", "material": "troncos", "nota": "Estado sin animación, apoyado en Z = 0 (el suelo): tumbado sobre un costado, con los remos dentro y amarrado a una estaca. Para playas sin muelle."}
+      ]
+    },
+    {
+      "id": "boat_fishing",
+      "nombre": "Barca de pesca",
+      "categoria": "Transporte",
+      "descripcion": "Barca de 6,6 m de eslora y 2,3 m de manga con una vela pequeña, cubierta de proa, timón, redes amontonadas con flotadores, un barril y una canasta de pescado. Línea de agua en Z = 0 (el casco baja 0,5 m) y proa hacia -Y. La vela es de tres franjas rígidas que flamean.",
+      "propuestas": [
+        {"titulo": "Pesca de altura", "detalle": "Sale del muelle de pesca con 2 pescadores, pesca con red en lagos grandes y en el mar y vuelve con 30 de pescado por viaje. Cuesta 20 troncos y 6 de lino (vela y redes)."},
+        {"titulo": "No sale con hielo ni tormenta", "detalle": "En invierno, con el agua helada, se queda amarrada; con tormenta vuelve a puerto. La pesca de orilla sigue como hoy."},
+        {"titulo": "Los bancos se agotan", "detalle": "Cada zona de pesca tiene un banco que baja si se pesca de más y se recupera con el tiempo, como la fauna de caza: obliga a repartir barcas por la costa."}
+      ],
+      "modelos": [
+        {"id": "boat_fishing", "nombre": "Vela cruda", "material": "troncos y lino", "animaciones": {"bob": "Se mece amarrada", "sail": "Navega: balanceo suave y la vela flamea (2 m/s)"}},
+        {"id": "boat_fishing_red", "nombre": "Vela roja, casco verde", "material": "troncos y lino", "animaciones": {"bob": "Se mece amarrada", "sail": "Navega: balanceo suave y la vela flamea (2 m/s)"}},
+        {"id": "boat_fishing_furled", "nombre": "Vela recogida (amarrada)", "material": "troncos y lino", "animaciones": {"bob": "Se mece amarrada", "sail": "Solo el balanceo: la vela va recogida en la verga"}}
+      ]
+    },
+    {
+      "id": "boat_raft_ferry",
+      "nombre": "Balsa de paso",
+      "categoria": "Transporte",
+      "descripcion": "Balsa de troncos de 4 m de ancho y 5 m de largo con tablero de tablas, barandas a los lados, dos rodillos por donde pasa la cuerda guía, la pértiga del balsero y carga (cajas, un barril y sacos). Los troncos flotan con la línea de agua en Z = 0 y avanza hacia -Y. La cuerda guía (8 m de muestra) no se mueve con la balsa.",
+      "propuestas": [
+        {"titulo": "Cruce por cuerda entre dos embarcaderos", "detalle": "Va y viene entre dos embarcaderos, hasta 60 m. Lleva 6 aldeanos o una carreta por viaje. Cuesta 12 troncos y 4 de lino. Es el paso barato para ríos demasiado anchos u hondos para un puente."},
+        {"titulo": "Paso a la isla vecina", "detalle": "En el archipiélago, une la isla principal con una secundaria cercana: los aldeanos cruzan a talar, cazar y recolectar, y vuelven con la carga."},
+        {"titulo": "Se detiene con hielo", "detalle": "Con el río helado no cruza; a cambio, se camina sobre el hielo. En el deshielo queda cerrada unos días por la crecida."}
+      ],
+      "modelos": [
+        {"id": "boat_raft_ferry", "nombre": "Con carga", "material": "troncos y lino", "animaciones": {"bob": "Se mece amarrada", "cross": "Cruza: los rodillos giran sobre la cuerda (1,2 m/s)"}},
+        {"id": "boat_raft_ferry_cart", "nombre": "Con una carreta", "material": "troncos y lino", "animaciones": {"bob": "Se mece amarrada", "cross": "Cruza: los rodillos giran sobre la cuerda (1,2 m/s)"}},
+        {"id": "boat_raft_ferry_empty", "nombre": "Vacía", "material": "troncos y lino", "animaciones": {"bob": "Se mece amarrada", "cross": "Cruza: los rodillos giran sobre la cuerda (1,2 m/s)"}, "nota": "Para que el juego ponga encima a los pasajeros o la carreta."}
+      ]
+    },
+    {
+      "id": "boat_merchant",
+      "nombre": "Barco mercante",
+      "categoria": "Transporte",
+      "descripcion": "Coca pequeña como la de la imagen de referencia: 12 m de eslora y 4,2 m de manga, castillo de popa con baranda, puerta y farol, castillo de proa triangular con bauprés, un palo de 9 m con cofa, vela cuadra a rayas de tres franjas que flamean, obenques, gallardete, timón, escotilla, carga en cubierta y ancla. Línea de agua en Z = 0 (el casco baja 1,1 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "Mercaderes que llegan por mar", "detalle": "En mapas con costa, parte de los mercaderes llega en barco y atraca en un muelle de piedra en vez de venir a pie al puesto de comercio: trae el triple de mercancía y géneros que no llegan por tierra. Sin muelle, pasa de largo."},
+        {"titulo": "Comercio propio con otros pueblos", "detalle": "Construido en la casa de botes (60 troncos, 15 de lino, 5 de hierro), hace de caravana por mar entre pueblos de jugadores en islas distintas: lleva 200 de carga por viaje."},
+        {"titulo": "Colonos a otra isla", "detalle": "Como el carro de los colonos de la fase 74, pero por mar: lleva un grupo de aldeanos y materiales para fundar un asentamiento en otra isla."}
+      ],
+      "modelos": [
+        {"id": "boat_merchant", "nombre": "Rojo y blanco", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece anclado", "sail": "Navega: balanceo suave, la vela flamea y ondea el gallardete (2,5 m/s)"}},
+        {"id": "boat_merchant_blue", "nombre": "Azul y blanco", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece anclado", "sail": "Navega: balanceo suave, la vela flamea y ondea el gallardete (2,5 m/s)"}},
+        {"id": "boat_merchant_white", "nombre": "Vela blanca", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece anclado", "sail": "Navega: balanceo suave, la vela flamea y ondea el gallardete (2,5 m/s)"}},
+        {"id": "boat_merchant_furled", "nombre": "Vela recogida (atracado)", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece atracado", "sail": "Solo el balanceo: la vela va recogida en la verga"}, "nota": "Para mostrarlo en el muelle mientras dura la visita del mercader."}
+      ]
+    },
+    {
+      "id": "boat_barge",
+      "nombre": "Barcaza de río",
+      "categoria": "Transporte",
+      "descripcion": "Barcaza de fondo plano de 10 m de eslora y 3,2 m de manga, con un cobertizo de paja a popa, un largo remo de gobierno animado y bitas de amarre. Con carga variada (cajas, barriles y sacos), con troncos o con sillares de piedra. Línea de agua en Z = 0 (el casco baja 0,4 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "Acarreo pesado por el río", "detalle": "Lleva 120 de carga río abajo entre dos muelles: lo que diez aldeanos cargan en muchos viajes. Sirve para traer troncos del bosque lejano o piedra de un yacimiento río arriba. Cuesta 30 troncos."},
+        {"titulo": "Río arriba, a la sirga", "detalle": "Río abajo va sola con un barquero; río arriba la remolca un aldeano desde la orilla, a paso lento. Los puentes fijos le cortan el paso: solo pasa bajo el levadizo."},
+        {"titulo": "Mercader de río", "detalle": "En mapas sin mar, el mercader de mercancía pesada (piedra, hierro, ladrillos) llega en barcaza por el río, si hay muelle."}
+      ],
+      "modelos": [
+        {"id": "boat_barge", "nombre": "Carga variada", "material": "troncos", "animaciones": {"bob": "Se mece y el remo de gobierno barre el agua"}},
+        {"id": "boat_barge_logs", "nombre": "Cargada de troncos", "material": "troncos", "animaciones": {"bob": "Se mece y el remo de gobierno barre el agua"}},
+        {"id": "boat_barge_stone", "nombre": "Cargada de piedra", "material": "troncos y piedra", "animaciones": {"bob": "Se mece y el remo de gobierno barre el agua"}},
+        {"id": "boat_barge_empty", "nombre": "Vacía", "material": "troncos", "animaciones": {"bob": "Se mece y el remo de gobierno barre el agua"}, "nota": "Para que el juego ponga encima la carga real que lleve."}
+      ]
+    },
+    {
+      "id": "boat_canoe",
+      "nombre": "Canoa",
+      "categoria": "Transporte",
+      "descripcion": "Dos canoas con un remo de pala animado y un fardo: una piragua vaciada en un tronco, de 4,8 m y 0,85 m de manga, y una canoa de corteza de abedul, de 5 m, con cuadernas y puntas levantadas. Línea de agua en Z = 0 y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "La primera embarcación, sin astillero", "detalle": "La piragua la hace un leñador con un solo tronco grande, sin casa de botes. Lleva a un aldeano con su carga. Es la forma de cruzar a un islote desde el primer año."},
+        {"titulo": "Canoa del explorador y del cazador", "detalle": "La de corteza es ligera: el explorador la carga a la espalda entre un río y otro (porteo) y sigue explorando. El cazador la usa para cazar aves y castores en lagos."},
+        {"titulo": "Razas del bosque", "detalle": "Los pueblos de elfos y de hombres bestia empiezan con dos canoas en lugar del carro: su ventaja inicial en mapas de islas."}
+      ],
+      "modelos": [
+        {"id": "boat_canoe", "nombre": "Piragua de tronco", "material": "troncos", "animaciones": {"bob": "Se mece en el agua", "row": "El remo palea por estribor (1,8 m/s)"}},
+        {"id": "boat_canoe_bark", "nombre": "Canoa de corteza", "material": "corteza y troncos", "animaciones": {"bob": "Se mece en el agua", "row": "El remo palea por estribor (1,8 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_longship",
+      "nombre": "Barco largo de guerra",
+      "categoria": "Transporte",
+      "descripcion": "Barco largo de 16 m de eslora y 3,4 m de manga, de dos puntas: roda curva con cabeza de dragón, codaste enroscado, ocho remos por banda (cada uno con su hueso), escudos en la borda, palo de 8 m con vela cuadra a rayas, gallardete y remo de gobierno a estribor. Línea de agua en Z = 0 (el casco baja 0,6 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "El barco de los ejércitos", "detalle": "Hoy los ejércitos cruzan el mar sin barco: este sería el modelo que se ve durante el cruce. Lleva 20 soldados; un ejército mayor forma una flota. Cuesta 50 troncos, 10 de lino y 8 de hierro en la casa de botes."},
+        {"titulo": "Asaltantes por mar", "detalle": "En mapas de islas, las incursiones llegan en uno o dos barcos largos que varan en la playa: el faro y las almenaras los ven venir y el muelle de piedra los frena."},
+        {"titulo": "Patrulla de la costa", "detalle": "Asignado a un tramo de costa, intercepta a los barcos de asaltantes antes de que desembarquen; necesita 16 remeros de los barracones."}
+      ],
+      "modelos": [
+        {"id": "boat_longship", "nombre": "Vela roja", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece varado o anclado", "sail": "Navega a vela: balanceo y la vela flamea (3 m/s)", "row": "Los dieciséis remos bogan a la vez (2,2 m/s)"}},
+        {"id": "boat_longship_blue", "nombre": "Vela azul", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece varado o anclado", "sail": "Navega a vela: balanceo y la vela flamea (3 m/s)", "row": "Los dieciséis remos bogan a la vez (2,2 m/s)"}},
+        {"id": "boat_longship_beached", "nombre": "Varado en la playa", "material": "troncos, lino y hierro", "nota": "Estado sin animación, apoyado en Z = 0 (el suelo): escorado, con los remos guardados, la vela recogida, una plancha para bajar y el ancla en la arena. Es como se vería durante una incursión."},
+        {"id": "boat_longship_furled", "nombre": "Vela recogida (a remo)", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece varado o anclado", "sail": "Solo el balanceo: la vela va recogida en la verga", "row": "Los dieciséis remos bogan a la vez (2,2 m/s)"}}
+      ]
+    },
+    {
+      "id": "bridge_fortified",
+      "nombre": "Puente fortificado con torre",
+      "categoria": "Puentes",
+      "descripcion": "Puente de piedra de dos arcos de 6 m (19 m de largo, 4 m de ancho) con una torre-puerta de 7 m sobre la pila central: paso de 2,6 m con rastrillo de hierro, almenas, saeteras, estandartes y tejado de pizarra. A lo largo de X. En reposo el rastrillo está bajado (paso cerrado).",
+      "propuestas": [
+        {"titulo": "Puerta sobre el río", "detalle": "Funciona como la puerta de la muralla, pero en el puente: el rastrillo baja con la alarma y los asaltantes tienen que derribarlo o rodear el río. Cuesta 120 de piedra, 20 troncos y 10 de hierro."},
+        {"titulo": "Guarnición con arqueros", "detalle": "La torre admite 2 arqueros como una torre de vigía: dispara sobre el puente y sobre los barcos de asaltantes que pasan por debajo."},
+        {"titulo": "Aduana", "detalle": "Todo mercader que entra por tierra pasa por aquí y paga peaje; el jugador puede cerrarle el paso a los mercaderes de un pueblo enemigo."}
+      ],
+      "modelos": [
+        {"id": "bridge_fortified", "nombre": "Piedra", "material": "piedra y hierro", "animaciones": {"open": "El rastrillo sube 3 m y deja el paso libre", "close": "El rastrillo cae"}},
+        {"id": "bridge_fortified_brick", "nombre": "Ladrillo", "material": "ladrillo y hierro", "animaciones": {"open": "El rastrillo sube 3 m y deja el paso libre", "close": "El rastrillo cae"}}
+      ]
+    },
+    {
+      "id": "bridge_inhabited",
+      "nombre": "Puente habitado",
+      "categoria": "Puentes",
+      "descripcion": "Puente de piedra de tres arcos, de 19 m de largo y 6 m de ancho, con cinco tiendas de entramado de madera colgadas de sus costados sobre jabalcones: cada una con puerta, mostrador con toldo, ventana al río y tejado de un color; dos pórticos con farol marcan las entradas. A lo largo de X; queda una calle de casi 4 m entre las tiendas.",
+      "propuestas": [
+        {"titulo": "Mercado sobre el río", "detalle": "Hace de mercado (reparte bienes a las casas de las dos orillas) y de puente a la vez, sin gastar terreno llano. Cuesta 100 de piedra, 60 troncos y 20 tejas. Cinco puestos: cinco tenderos."},
+        {"titulo": "Casas para artesanos", "detalle": "Cada tienda es además vivienda de una familia de artesanos (sastre, zapatero, tejedor): suma 5 casas pequeñas de nivel 2 con buen entorno, por estar sobre el agua."},
+        {"titulo": "Riesgo de incendio", "detalle": "Las tiendas son de madera: si una se incendia, el fuego pasa a las vecinas y el puente queda cerrado hasta apagarlo. El agua está a mano: se apaga el doble de rápido."}
+      ],
+      "modelos": [
+        {"id": "bridge_inhabited", "nombre": "Piedra y entramado", "material": "piedra, troncos y tejas"},
+        {"id": "bridge_inhabited_brick", "nombre": "Ladrillo y entramado", "material": "ladrillo, troncos y tejas"}
+      ]
+    },
+    {
+      "id": "bridge_toll_gate",
+      "nombre": "Caseta de peaje",
+      "categoria": "Puentes",
+      "descripcion": "Caseta de 2 x 2 m con ventanilla, mostrador, letrero con moneda de oro y arca, junto a una barrera de pértiga con contrapeso de piedra que cruza un camino de 3 m. El camino pasa a lo largo de X; planta de 4 x 7 m. Para poner en la cabecera de un puente o en un vado.",
+      "propuestas": [
+        {"titulo": "Cobra a quien no es del pueblo", "detalle": "Los mercaderes y las caravanas de otros jugadores que pasan pagan oro, que queda en el arca hasta que un aldeano lo lleva al puesto de comercio o a la bóveda. Cuesta 15 troncos y 5 de piedra, con un cobrador."},
+        {"titulo": "Tarifa a elección", "detalle": "El jugador elige la tarifa: baja atrae más mercaderes, alta deja más oro por visita pero algunos dan la vuelta por otro pueblo."},
+        {"titulo": "Control en tiempos de peste", "detalle": "Con una epidemia en la región, la barrera cerrada impide entrar a mercaderes e inmigrantes y reduce el contagio que llega de fuera."}
+      ],
+      "modelos": [
+        {"id": "bridge_toll_gate", "nombre": "Caseta y barrera", "material": "troncos, piedra y tejas", "animaciones": {"open": "La barrera se levanta", "close": "La barrera baja"}}
+      ]
+    },
+    {
+      "id": "bridge_clapper",
+      "nombre": "Puente de losas",
+      "categoria": "Puentes",
+      "descripcion": "Puente primitivo de 8 m de largo y 2 m de ancho: cuatro grandes losas tendidas sobre cinco pilas de piedras apiladas en seco, sin pretiles, con musgo. A lo largo de X; las pilas bajan 2,2 m.",
+      "propuestas": [
+        {"titulo": "Piedra sin cantero ni mortero", "detalle": "Cuesta 20 de piedra suelta de la que se recoge del suelo, sin pasar por el cantero. Solo a pie, pero no se quema ni se pudre: el paso intermedio entre el tronco y el puente de arco."},
+        {"titulo": "Resto de los antiguos", "detalle": "El generador deja alguno en los ríos del mapa: un cruce ya hecho que marca dónde hubo un camino viejo y, cerca, unas ruinas que explorar."}
+      ],
+      "modelos": [
+        {"id": "bridge_clapper", "nombre": "Losas de piedra", "material": "piedra"}
+      ]
+    },
+    {
+      "id": "bridge_moon",
+      "nombre": "Puente de luna",
+      "categoria": "Puentes",
+      "descripcion": "Pasarela de madera muy arqueada, de 8 m de largo y 2,4 m de ancho, con el lomo a 1,5 m, vigas curvas lacadas, barandas de tres largueros con remates dorados y cuatro postes con bola dorada sobre zapatas de piedra; dos caballetes en el agua. A lo largo de X. En rojo o en verde.",
+      "propuestas": [
+        {"titulo": "Puente de jardín", "detalle": "Decorativo y útil: cruza arroyos y estanques de hasta 6 m, solo a pie, y da entorno a las casas cercanas como un jardín. Cuesta 20 troncos y 2 de oro (los remates)."},
+        {"titulo": "Estilo de los hombres bestia", "detalle": "Los pueblos de zorros y gatos (como los de la imagen de referencia) construyen sus puentes así: la misma función que el de caballetes, con su estética."},
+        {"titulo": "Deja pasar botes", "detalle": "Por su arco alto, los botes de remos y las canoas pasan por debajo; las barcazas no."}
+      ],
+      "modelos": [
+        {"id": "bridge_moon", "nombre": "Lacado rojo", "material": "troncos y oro"},
+        {"id": "bridge_moon_green", "nombre": "Lacado verde", "material": "troncos y oro"}
+      ]
+    },
+    {
+      "id": "bridge_dwarven",
+      "nombre": "Puente enano",
+      "categoria": "Puentes",
+      "descripcion": "Puente macizo de piedra oscura de 12 m de largo y 4 m de ancho, con un arco de tres dovelas enormes (medio hexágono) de 7 m, calzada de pizarra, cuatro pilones de 3,2 m con zunchos de hierro, runa dorada y brasero encendido, y un escudo de hierro con martillos sobre la clave. A lo largo de X.",
+      "propuestas": [
+        {"titulo": "El puente de los enanos", "detalle": "Solo con enanos en el pueblo. Cuesta 90 de piedra, 10 de hierro y 2 de oro. Aguanta el paso de carretas de mineral sin desgaste y no lo derriba ningún ariete: los asaltantes ni lo intentan."},
+        {"titulo": "Braseros que alumbran y calientan", "detalle": "Sus cuatro braseros gastan carbón y dan luz de noche; los aldeanos que cruzan en invierno recuperan algo de calor, como junto a una hoguera."},
+        {"titulo": "Paso a la mina", "detalle": "Colocado en el camino entre la mina y la fundición, da un 10 % más de velocidad a quien lleva mineral o hierro, por la calzada de pizarra."}
+      ],
+      "modelos": [
+        {"id": "bridge_dwarven", "nombre": "Piedra, hierro y oro", "material": "piedra, hierro y oro", "animaciones": {"flicker": "Tiemblan las llamas de los cuatro braseros"}}
+      ]
+    },
+    {
+      "id": "bridge_orc",
+      "nombre": "Puente orco",
+      "categoria": "Puentes",
+      "descripcion": "Puente de caballetes de madera embreada, de 10 m de largo y 3 m de ancho, sin barandas: en su lugar, estacas afiladas que se abren hacia el agua, y en cada esquina un tótem de 3 m con un cráneo con cuernos, ataduras de cuero y un estandarte rojo raído. A lo largo de X.",
+      "propuestas": [
+        {"titulo": "El puente de los orcos", "detalle": "Solo con orcos en el pueblo. Cuesta 30 troncos y 5 de cuero y se levanta en la mitad del tiempo que el puente de caballetes. Sin barandas: con tormenta o al huir, algún aldeano puede caer al agua."},
+        {"titulo": "Intimida", "detalle": "Los asaltantes y la fauna peligrosa dudan antes de cruzarlo: llegan más tarde y con la moral baja. A cambio, baja un punto el entorno de las casas vecinas que no son de orcos."},
+        {"titulo": "Puente de los asaltantes", "detalle": "Es el puente que tienden los asaltantes cuando un río les corta el paso: aparece durante la incursión y el jugador puede quemarlo o quedárselo."}
+      ],
+      "modelos": [
+        {"id": "bridge_orc", "nombre": "Madera embreada y cuero", "material": "troncos y cuero"}
+      ]
+    },
+    {
+      "id": "dock_shipyard",
+      "nombre": "Astillero",
+      "categoria": "Edificios",
+      "descripcion": "Grada de astillero de 7 x 14 m: dos carriles de madera sobre durmientes que bajan de la orilla (+Y) al agua (-Y) y, encima, un casco de 9 m a medio hacer sobre picaderos y puntales, con la popa ya forrada y la proa todavía en cuadernas; andamio con escalera a un lado, pila de tablones, caballete con una viga, barril y caldero de brea.",
+      "propuestas": [
+        {"titulo": "Donde se hacen los barcos grandes", "detalle": "La casa de botes hace botes y barcas; el astillero, la barcaza, el mercante y el barco de guerra. Cuesta 50 troncos y 10 de hierro, con 3 carpinteros de ribera. El casco se ve crecer por etapas, como una obra."},
+        {"titulo": "Consume madera, lino y brea", "detalle": "Cada barco pide troncos, lino para la vela y brea (del horno de carbón): da salida a esas cadenas cuando el pueblo ya tiene de sobra."},
+        {"titulo": "Reparar y carenar", "detalle": "Los barcos pierden estado con los viajes y las tormentas; subidos a la grada se reparan por una fracción del costo de uno nuevo."}
+      ],
+      "modelos": [
+        {"id": "dock_shipyard", "nombre": "Grada con casco en obra", "material": "troncos y hierro"}
+      ]
+    },
+    {
+      "id": "dock_fish_weir",
+      "nombre": "Corral de pesca",
+      "categoria": "Edificios",
+      "descripcion": "Trampa fija para peces de 8 x 10 m: dos cercas de estacas y zarzo que se cierran en V hacia una jaula con red (hacia -Y, aguas abajo), con peces dentro, y un pequeño embarcadero en la orilla (+Y) con canasta y salabre.",
+      "propuestas": [
+        {"titulo": "Pesca sin pescador", "detalle": "Da pescado poco a poco sin trabajador fijo: un aldeano pasa a vaciarlo una vez al día. Cuesta 12 troncos. Rinde un tercio de lo que un pescador, pero libera dos trabajadores."},
+        {"titulo": "Solo en río con corriente", "detalle": "Se coloca en ríos, no en lagos ni en el mar, y rinde más en primavera y otoño, cuando los peces suben y bajan. En invierno, con hielo, no da nada."},
+        {"titulo": "Corta el paso a los botes", "detalle": "Ocupa el cauce: los botes y barcazas no pasan por ahí. El jugador elige entre pesca fácil y río navegable."}
+      ],
+      "modelos": [
+        {"id": "dock_fish_weir", "nombre": "Estacas y zarzo", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "dock_breakwater",
+      "nombre": "Rompeolas",
+      "categoria": "Edificios",
+      "descripcion": "Espigón de escollera de 12 m de largo y unos 4 m de ancho que entra al agua hacia -Y: rocas apiladas hasta 3 m de fondo, un sendero de losas por la cresta, dos norays y, en la punta, un poste con farol sobre una base de piedra.",
+      "propuestas": [
+        {"titulo": "Puerto abrigado", "detalle": "Los muelles a menos de 30 m detrás de un rompeolas no sufren con las tormentas: los barcos amarrados no se dañan y la pesca y la carga siguen con mal tiempo. Cuesta 80 de piedra sin labrar."},
+        {"titulo": "Se construye por tramos", "detalle": "Se traza como un camino sobre el agua, de 12 en 12 m, hasta donde el fondo pase de 3 m. Da trabajo al cantero cuando ya no hay más que construir."},
+        {"titulo": "Pesca de roca", "detalle": "Entre las rocas se crían mariscos: un recolector puede recogerlos en marea baja, una fuente pequeña de comida variada."}
+      ],
+      "modelos": [
+        {"id": "dock_breakwater", "nombre": "Escollera", "material": "piedra"}
+      ]
+    },
+    {
+      "id": "dock_washing",
+      "nombre": "Lavadero",
+      "categoria": "Edificios",
+      "descripcion": "Lavadero cubierto de 4 x 3 m sobre pilotes al borde del agua: un escalón bajo con tres losas inclinadas para restregar (hacia -Y), techo sobre cuatro postes, dos tinas con agua, una canasta de ropa, un banco y, detrás, un tendedero con seis prendas. Techo de paja o de tejas.",
+      "propuestas": [
+        {"titulo": "Ropa limpia, menos enfermedades", "detalle": "Las casas a menos de 40 m con lavadero tienen menos riesgo de enfermedades de la piel y de piojos, como el baño pero más barato. Cuesta 12 troncos y 4 de piedra; no necesita trabajador: cada familia va una vez por semana."},
+        {"titulo": "La ropa dura más", "detalle": "La ropa y el calzado lavados y remendados se gastan un 20 % más despacio: menos trabajo para el tejedor y el sastre."},
+        {"titulo": "Lugar de encuentro", "detalle": "Cuenta como servicio social: sube un poco la felicidad de quienes lo usan. Río abajo de una curtiduría no sirve: el agua llega sucia."}
+      ],
+      "modelos": [
+        {"id": "dock_washing", "nombre": "Techo de paja", "material": "troncos, piedra y paja"},
+        {"id": "dock_washing_tile", "nombre": "Techo de tejas", "material": "troncos, piedra y tejas"}
+      ]
+    },
+    {
+      "id": "boat_wreck",
+      "nombre": "Naufragio",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Casco de un mercante de 11 m varado y escorado entre rocas: la popa todavía forrada, la proa reducida a cuadernas, el palo partido con un jirón de vela, musgo, un cofre con herrajes dorados en la bodega y un barril y una caja en la playa. Es un objeto de la orilla, apoyado en Z = 0, no un barco que flote.",
+      "propuestas": [
+        {"titulo": "Hallazgo para el explorador", "detalle": "Aparece en algunas costas. Explorarlo da de una vez algo de oro, hierro, lino o bienes de lujo, y revela en el mapa el rumbo de donde venía: otra isla o un pueblo."},
+        {"titulo": "Madera y hierro de desguace", "detalle": "Después de explorado se puede desguazar: 25 troncos y 5 de hierro (clavos), sin talar ni minar."},
+        {"titulo": "Lo que queda de un barco perdido", "detalle": "Cuando un barco del jugador naufraga en una tormenta, queda así en la costa más cercana, con parte de su carga: se puede ir a recuperarla."}
+      ],
+      "modelos": [
+        {"id": "boat_wreck", "nombre": "Mercante varado", "material": "troncos"},
+        {"id": "boat_wreck_sunk", "nombre": "Hundido en aguas bajas", "material": "troncos", "animaciones": {"bob": "Un barril, una caja y tablas flotan a la deriva"}, "nota": "Este sí está en el agua, con la superficie en Z = 0: asoman el castillo de popa, el palo con un jirón de vela y la borda de proa; el resto del casco queda hasta 2,8 m bajo el agua."}
+      ]
+    },
+    {
+      "id": "boat_war_cog",
+      "nombre": "Coca de guerra",
+      "categoria": "Transporte",
+      "descripcion": "El casco del mercante de 12 m armado para la guerra: castillos con almenas, escudos en la borda, una balista en el castillo de proa y vela oscura. Línea de agua en Z = 0 (el casco baja 1,1 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "Escolta y combate naval", "detalle": "Lleva 12 soldados y una balista: escolta a los mercantes propios y combate a los barcos de asaltantes. Cuesta lo que el mercante más 10 de hierro y un arco pesado de la armería."},
+        {"titulo": "Bloqueo de un puerto", "detalle": "Frente al muelle de otro jugador, impide que le lleguen mercaderes por mar hasta que la echen: una forma de presión sin asaltar el pueblo."},
+        {"titulo": "Mercante reconvertido", "detalle": "Un mercante se arma en el astillero y se desarma después; armado lleva la mitad de carga."}
+      ],
+      "modelos": [
+        {"id": "boat_war_cog", "nombre": "Vela oscura", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece anclada", "sail": "Navega: balanceo suave, la vela flamea y ondea el gallardete (2,5 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_swan",
+      "nombre": "Barca cisne élfica",
+      "categoria": "Transporte",
+      "descripcion": "Barca blanca de 6 m de eslora y 1,9 m de manga con la proa en forma de cuello y cabeza de cisne, borda dorada, tres plumas a cada lado como alas (con hueso), bancos con cojines azules y un farol de cristal en un poste curvo a popa. Línea de agua en Z = 0 y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "La barca de los elfos", "detalle": "Solo con elfos en el pueblo. No necesita remeros ni viento: se desliza sola y en silencio, a la velocidad de la barca de pesca. Lleva 4 pasajeros. Cuesta 15 troncos, 4 de lino y 3 de oro."},
+        {"titulo": "No espanta la fauna", "detalle": "Desde ella, el cazador y el herbolario se acercan a aves e islotes sin espantar a los animales; la pesca cerca de ella no baja."},
+        {"titulo": "Visitas de embajada", "detalle": "Es el modelo con que llega por agua una embajada élfica: un mercader especial que trae hierbas raras y semillas."}
+      ],
+      "modelos": [
+        {"id": "boat_swan", "nombre": "Blanca y oro", "material": "troncos, lino y oro", "animaciones": {"bob": "Se mece en el agua", "sail": "Se desliza: balanceo leve y las alas aletean (2 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_orc_raft",
+      "nombre": "Balsa de guerra orca",
+      "categoria": "Transporte",
+      "descripcion": "Balsa de 5 m de ancho y 7 m de largo, de troncos oscuros con las puntas afiladas y herradas hacia proa (-Y), un muro de cuatro escudos de cuero, un palo torcido con vela raída roja y negra, cráneos con cuernos, un tambor de guerra y dos remos largos con hueso. Los troncos flotan con la línea de agua en Z = 0.",
+      "propuestas": [
+        {"titulo": "Desembarco de los asaltantes", "detalle": "En mapas de islas y con ríos anchos, los asaltantes orcos llegan en estas balsas: lentas (se las ve venir desde el faro) y con 10 guerreros cada una. Al desembarcar la abandonan en la playa."},
+        {"titulo": "Botín", "detalle": "Una balsa abandonada se puede quedar (sirve de balsa de paso sin costo) o desguazar por 15 troncos y 3 de cuero."},
+        {"titulo": "Transporte de tropas de un pueblo orco", "detalle": "Un jugador con orcos la construye sin astillero, por 20 troncos y 4 de cuero: es su forma barata de cruzar soldados."}
+      ],
+      "modelos": [
+        {"id": "boat_orc_raft", "nombre": "Troncos y cuero", "material": "troncos, cuero y hierro", "animaciones": {"bob": "Se mece varada", "sail": "Navega con la vela raída (1,8 m/s)", "row": "Los dos remos bogan (1,4 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_dwarf_paddle",
+      "nombre": "Barco de paletas enano",
+      "categoria": "Transporte",
+      "descripcion": "Barco de 9 m de eslora y 3,2 m de manga (5 m con las ruedas) con la borda chapada en hierro, espolón a proa, yunque dorado de mascarón, caseta de máquinas con ojos de buey y chimenea, y dos ruedas de paletas de 2,7 m con guardas rojas y doradas, movidas desde dentro por una rueda de pisar. Lleva cajas de mineral, rueda de timón y dos faroles. Línea de agua en Z = 0 y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "Remonta el río sin viento", "detalle": "Solo con enanos. Va río arriba y contra el viento a la misma velocidad, con 4 tripulantes que pisan la rueda. Lleva 100 de carga: ideal para mineral, piedra y hierro. Cuesta 40 troncos y 25 de hierro."},
+        {"titulo": "Rompehielos", "detalle": "Con su espolón de hierro navega con hielo delgado: mantiene abierta la ruta del río en el comienzo y el final del invierno."},
+        {"titulo": "Remolcador", "detalle": "Puede remolcar una barcaza río arriba: sustituye al aldeano que la lleva a la sirga."}
+      ],
+      "modelos": [
+        {"id": "boat_dwarf_paddle", "nombre": "Hierro y madera", "material": "troncos, hierro y oro", "animaciones": {"bob": "Se mece atracado", "paddle": "Giran las dos ruedas de paletas (2 m/s)"}}
+      ]
+    },
+    {
+      "id": "bridge_site",
+      "nombre": "Puente de piedra en obra",
+      "categoria": "Puentes",
+      "descripcion": "El puente de un arco (12 x 4 m) a medio construir: los dos estribos hechos, las primeras dovelas colocadas a cada lado y, entre ellas, la cimbra de madera (tres cerchas con tablas encima, sobre pilotes) que sostiene el arco hasta cerrarlo; andamio a un lado, sillares esperando y una cabria con un sillar colgado. Mismas medidas que el puente terminado.",
+      "propuestas": [
+        {"titulo": "Etapa de obra de los puentes de piedra", "detalle": "Como las obras por etapas de la fase 67: primero estribos, luego cimbra, luego el arco. Mientras está la cimbra, el puente todavía no se puede cruzar y los botes no pasan por debajo."},
+        {"titulo": "La cimbra cuesta madera y se recupera", "detalle": "Además de la piedra, la obra pide 15 troncos para la cimbra, que vuelven al almacén al terminar. Sin madera suficiente, la obra se detiene con los estribos hechos."},
+        {"titulo": "Riesgo con la crecida", "detalle": "Si llega el deshielo con la cimbra puesta, la crecida puede llevársela y se pierde el arco: conviene empezar los puentes de piedra en verano."}
+      ],
+      "modelos": [
+        {"id": "bridge_stone_arch_site", "nombre": "Arco sobre cimbra", "material": "piedra y troncos"}
+      ]
+    },
+    {
+      "id": "bridge_aqueduct",
+      "nombre": "Acueducto",
+      "categoria": "Puentes",
+      "descripcion": "Tramo de acueducto de 20 m de largo, 1,6 m de ancho y 6 m de alto: cinco arcos de medio punto de 3,2 m sobre pilas con imposta y zócalo, y arriba un canal con agua entre dos muretes. A lo largo de X; los tramos se encadenan y las pilas bajan 3 m para cruzar ríos. En piedra o en ladrillo.",
+      "propuestas": [
+        {"titulo": "Agua corriente en el pueblo", "detalle": "Trae agua de un río o lago lejano hasta una fuente: las casas a menos de 30 m de la fuente no necesitan pozo y los incendios cercanos se apagan el doble de rápido. Cuesta 50 de piedra por tramo de 20 m."},
+        {"titulo": "Riego", "detalle": "Los campos y huertos a menos de 20 m de un acueducto no sufren la sequía del verano y rinden un 15 % más; no cambia la fertilidad del suelo."},
+        {"titulo": "Requisito de la casa de baños y del último nivel de vivienda", "detalle": "Las casas del nivel más alto y la casa de baños piden agua corriente: el acueducto es la obra pública que lo permite."},
+        {"titulo": "Paso bajo los arcos", "detalle": "No corta caminos: aldeanos y carretas pasan bajo los arcos. Los asaltantes pueden romper un tramo para dejar el pueblo sin agua."}
+      ],
+      "modelos": [
+        {"id": "bridge_aqueduct", "nombre": "Piedra", "material": "piedra"},
+        {"id": "bridge_aqueduct_brick", "nombre": "Ladrillo", "material": "ladrillo"}
+      ]
+    },
+    {
+      "id": "dock_sluice",
+      "nombre": "Compuerta y azud",
+      "categoria": "Edificios",
+      "descripcion": "Azud de 8 m a lo largo de X: dos muros de mampostería, un umbral bajo entre ellos y una compuerta de tablones con herrajes que sube por un marco de madera con torno y cadenas; por encima pasa una pasarela de tablas con baranda. Los muros bajan 3 m. En reposo la compuerta está cerrada.",
+      "propuestas": [
+        {"titulo": "Embalse para el molino y el riego", "detalle": "Cerrada, retiene el agua río arriba: el molino de agua trabaja también en verano y los campos de las dos orillas se riegan. Abierta, deja pasar la crecida. Cuesta 40 de piedra, 15 troncos y 4 de hierro."},
+        {"titulo": "Control de inundaciones", "detalle": "Con el deshielo, un encargado la abre: los vados, pasaderas y puentes de madera río abajo no se pierden con la crecida."},
+        {"titulo": "También es un cruce", "detalle": "Su pasarela sirve de puente peatonal. Corta el río a los botes: es un punto para cobrar el paso o detener barcas enemigas."}
+      ],
+      "modelos": [
+        {"id": "dock_sluice", "nombre": "Piedra y madera", "material": "piedra, troncos y hierro", "animaciones": {"open": "La compuerta sube 1,5 m", "close": "La compuerta baja"}},
+        {"id": "dock_sluice_brick", "nombre": "Ladrillo y madera", "material": "ladrillo, troncos y hierro", "animaciones": {"open": "La compuerta sube 1,5 m", "close": "La compuerta baja"}}
+      ]
+    },
+    {
+      "id": "dock_harbor_chain",
+      "nombre": "Cadena del puerto",
+      "categoria": "Muros y defensas",
+      "descripcion": "Dos torres redondas almenadas de 5 m, separadas 12 m a lo largo de X, con una cadena gruesa tendida entre ellas a ras del agua, sostenida por tres flotadores de tronco. Cada torre tiene puerta, saeteras, la tronera por donde sale la cadena y un banderín. En reposo la cadena está levantada (puerto cerrado).",
+      "propuestas": [
+        {"titulo": "Cierra la boca del puerto o del río", "detalle": "Con la alarma, la cadena sube y ningún barco pasa: los barcos largos de asaltantes y las flotas enemigas tienen que desembarcar fuera, lejos de los muelles. Cuesta 60 de piedra y 20 de hierro."},
+        {"titulo": "Paso solo para amigos", "detalle": "Se baja para los barcos propios, los aliados y los mercaderes; el jugador decide a quién se le abre."},
+        {"titulo": "Peaje fluvial", "detalle": "En un río, cobra el paso a las barcazas de mercaderes que van a otros pueblos."}
+      ],
+      "modelos": [
+        {"id": "dock_harbor_chain", "nombre": "Piedra y hierro", "material": "piedra y hierro", "animaciones": {"lower": "La cadena se hunde 1,8 m y deja pasar", "raise": "La cadena sube y cierra el paso"}},
+        {"id": "dock_harbor_chain_brick", "nombre": "Ladrillo y hierro", "material": "ladrillo y hierro", "animaciones": {"lower": "La cadena se hunde 1,8 m y deja pasar", "raise": "La cadena sube y cierra el paso"}}
+      ]
+    },
+    {
+      "id": "dock_warehouse",
+      "nombre": "Almacén del puerto",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de tablas de 6 x 6 m sobre pilotes con un andén de 2 m hacia el agua (-Y; planta total de 6 x 8 m): portón doble, puerta de altillo bajo una viga con polea de la que cuelga una caja, postes de amarre, farol y mercancía en el andén. Tejado de tablillas o de tejas.",
+      "propuestas": [
+        {"titulo": "Segundo puesto de comercio, por agua", "detalle": "Guarda 400 como el puesto de comercio y comercia con los mercaderes que llegan en barco: el oro de las ventas entra aquí. Deja de ser único el comercio del pueblo: uno por tierra y otro por mar."},
+        {"titulo": "Destino de las rutas de barca", "detalle": "Lo que traen las barcazas y las barcas de otras islas se descarga aquí, y de aquí lo reparten los aldeanos: sin almacén, la carga queda en el muelle a la intemperie y se estropea."},
+        {"titulo": "Reservas para el comercio automático", "detalle": "Las reglas de compra y venta automáticas (fase del oro) se pueden aplicar por separado a este almacén: vender por mar lo que sobra sin tocar las reservas del puesto de tierra."}
+      ],
+      "modelos": [
+        {"id": "dock_warehouse", "nombre": "Tablillas", "material": "troncos", "animaciones": {"lift": "La caja sube al altillo y vuelve a bajar"}},
+        {"id": "dock_warehouse_tile", "nombre": "Tejas", "material": "troncos y tejas", "animaciones": {"lift": "La caja sube al altillo y vuelve a bajar"}}
+      ]
+    },
+    {
+      "id": "dock_saltworks",
+      "nombre": "Salinas",
+      "categoria": "Edificios",
+      "descripcion": "Salina de 8 x 9 m en la orilla del mar: seis eras de arcilla en distintas etapas (con agua, a medio secar y con montones de sal), un dique con dos tablas de paso hacia el agua (-Y), un cigoñal con contrapeso que sube la salmuera, un cobertizo de paja con sacos de sal, rastrillos y barriles.",
+      "propuestas": [
+        {"titulo": "Sal para conservar", "detalle": "Produce sal, un recurso nuevo: con sal, el ahumadero y la carnicería hacen pescado y carne en salazón que duran tres veces más. Solo en la costa del mar. Cuesta 15 de arcilla y 10 troncos; 2 salineros."},
+        {"titulo": "Solo con sol", "detalle": "Rinde en verano, la mitad en primavera y otoño y nada en invierno ni con lluvia: hay que almacenar sal para todo el año."},
+        {"titulo": "Mercancía valiosa", "detalle": "La sal se vende cara a los mercaderes de tierra adentro: da una exportación propia a los pueblos de costa, que suelen tener poca tierra fértil."}
+      ],
+      "modelos": [
+        {"id": "dock_saltworks", "nombre": "Eras de arcilla", "material": "arcilla y troncos", "animaciones": {"dip": "El cigoñal baja el cubo al agua y lo sube"}}
+      ]
+    },
+    {
+      "id": "dock_stilt_house",
+      "nombre": "Palafito",
+      "categoria": "Edificios",
+      "descripcion": "Casa sobre pilotes en el agua: plataforma de 6 x 5,5 m a 0,9 m sobre la orilla, con una casa de 4,2 x 3,4 m (puerta hacia -Y), baranda, pasarela en rampa desde la orilla (+Y), escalera de mano hasta un bote amarrado, redes, un barril y un farol. Planta total de 6 x 9 m. Con paredes encaladas y techo de paja, o de tablas con tablillas.",
+      "propuestas": [
+        {"titulo": "Vivienda donde no hay tierra", "detalle": "Una casa de nivel 1 que se construye sobre el agua baja, pegada a la orilla: en islas pequeñas deja la tierra llana para campos. Cuesta 25 troncos. Aloja a una familia."},
+        {"titulo": "Casa de pescadores", "detalle": "Sus habitantes pescan desde casa: cada palafito da un poco de pescado sin ocupar un puesto de trabajo, y sus vecinos pescadores caminan menos."},
+        {"titulo": "A salvo de fieras, expuesta a la crecida", "detalle": "Los lobos y osos no entran; con la pasarela levantada tampoco los asaltantes a pie. En cambio la crecida y las tormentas la dañan, y la humedad da más resfriados en invierno."}
+      ],
+      "modelos": [
+        {"id": "dock_stilt_house", "nombre": "Encalada con techo de paja", "material": "troncos y paja"},
+        {"id": "dock_stilt_house_wood", "nombre": "De tablas con tablillas", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "dock_buoy",
+      "nombre": "Boya de canal",
+      "categoria": "Transporte",
+      "descripcion": "Boya de tonel de 0,85 m de diámetro, pintada, con un mástil de 2 m, banderín y remate dorado, anclada con una cadena a un muerto de piedra a 2,7 m de fondo. Flota con la línea de agua en Z = 0. En rojo o en verde.",
+      "propuestas": [
+        {"titulo": "Marca las rutas de barca", "detalle": "El jugador traza una ruta entre dos muelles y el juego la marca con boyas: los barcos que la siguen van un 20 % más rápido y no encallan en los bajos. 2 troncos y 1 de hierro por boya."},
+        {"titulo": "Aviso de bajos y rocas", "detalle": "Una boya roja sobre un bajo evita que los barcos propios y los mercaderes naufraguen ahí con tormenta."},
+        {"titulo": "Límite de pesca", "detalle": "Boyas verdes delimitan la zona de pesca de cada muelle: se ve qué aguas explota cada pescador y cuáles quedan libres."}
+      ],
+      "modelos": [
+        {"id": "dock_buoy", "nombre": "Roja", "material": "troncos y hierro", "animaciones": {"bob": "Se balancea con las olas"}},
+        {"id": "dock_buoy_green", "nombre": "Verde", "material": "troncos y hierro", "animaciones": {"bob": "Se balancea con las olas"}}
+      ]
+    },
+    {
+      "id": "boat_coracle",
+      "nombre": "Coracle de cuero",
+      "categoria": "Transporte",
+      "descripcion": "Barquilla redonda de 1,9 x 1,6 m: armazón de varas, forro de cuero, borde y fondo de mimbre, un banco y un remo de pala animado. Línea de agua en Z = 0 (baja 0,26 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "El bote que se lleva a la espalda", "detalle": "Lo hace el curtidor con 2 de cuero y 1 tronco. Un aldeano lo carga a la espalda y lo echa al agua donde haga falta: cruza ríos y lagunas sin puente ni muelle, él solo y sin carga pesada."},
+        {"titulo": "Equipo del explorador y del cazador", "detalle": "Con coracle, el explorador y el cazador no rodean los ríos: su radio de trabajo real se amplía a la otra orilla."},
+        {"titulo": "Pesca de laguna", "detalle": "Dos pescadores en coracle con una red entre ambos rinden como tres de orilla, solo en aguas quietas."}
+      ],
+      "modelos": [
+        {"id": "boat_coracle", "nombre": "Cuero y mimbre", "material": "cuero y troncos", "animaciones": {"bob": "Se mece mucho, por ligero", "row": "El remo palea por la proa (0,9 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_punt",
+      "nombre": "Batea",
+      "categoria": "Transporte",
+      "descripcion": "Barca de fondo plano y extremos cuadrados, de 5,6 m de eslora y 1,25 m de manga, que se impulsa con una pértiga (con hueso); lleva haces de carrizo o carga de cajas y sacos. Línea de agua en Z = 0 (baja 0,2 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "Transporte por marismas y aguas bajas", "detalle": "Navega donde el agua tiene menos de 1 m, por donde no pasan los botes: marismas, orillas de lago y canales. Lleva 20 de carga y un batelero. Cuesta 10 troncos."},
+        {"titulo": "Cosecha de carrizo", "detalle": "Con batea, el recolector corta carrizo en las orillas: sirve como paja para techos y para el suelo de los establos, sin gastar campo de cultivo."},
+        {"titulo": "Reparto por canales", "detalle": "Si el pueblo crece junto a un río con varios brazos, las bateas hacen de carretas: reparten del almacén a los muelles de cada barrio."}
+      ],
+      "modelos": [
+        {"id": "boat_punt", "nombre": "Con carrizo", "material": "troncos", "animaciones": {"bob": "Se mece en el agua", "row": "La pértiga empuja contra el fondo (1 m/s)"}},
+        {"id": "boat_punt_cargo", "nombre": "Con carga", "material": "troncos", "animaciones": {"bob": "Se mece en el agua", "row": "La pértiga empuja contra el fondo (1 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_houseboat",
+      "nombre": "Casa flotante",
+      "categoria": "Transporte",
+      "descripcion": "Barcaza de 9 m de eslora y 3,4 m de manga con una caseta de 2,5 x 4,6 m con ventanas, jardineras, tejado a dos aguas y chimenea; en la proa (-Y), un tendedero, una silla y un barril; en la popa, una caña de pescar. Línea de agua en Z = 0 (baja 0,45 m). Con tablillas o con tejas.",
+      "propuestas": [
+        {"titulo": "Vivienda que se muda", "detalle": "Una casa para una familia que no ocupa terreno: se amarra a cualquier muelle y el jugador puede moverla a otro, por ejemplo junto a la isla donde se trabaja esta temporada. Cuesta 40 troncos."},
+        {"titulo": "Gente del río", "detalle": "A veces llega una familia de inmigrantes en su casa flotante: si hay un amarre libre se quedan, con su casa puesta, sin esperar a que se construya una."},
+        {"titulo": "Mercader que se queda", "detalle": "Un mercader de río puede invernar amarrado en el pueblo: mientras está, se le compra y se le vende a diario como en un puesto."}
+      ],
+      "modelos": [
+        {"id": "boat_houseboat", "nombre": "Tablillas, casco verde", "material": "troncos", "animaciones": {"bob": "Se mece amarrada"}},
+        {"id": "boat_houseboat_tile", "nombre": "Tejas, paredes blancas", "material": "troncos y tejas", "animaciones": {"bob": "Se mece amarrada"}}
+      ]
+    },
+    {
+      "id": "bridge_truss",
+      "nombre": "Puente de celosía de madera",
+      "categoria": "Puentes",
+      "descripcion": "Puente de 12 m de largo y 3,6 m de ancho que salva el río de una sola vez, sin apoyos en el agua: dos cerchas de madera de 2,6 m de alto (cordones, montantes y diagonales, con herrajes de hierro en los nudos), arriostradas por arriba, sobre dos estribos de piedra. A lo largo de X; tablero a 0,3 m con rampas cortas.",
+      "propuestas": [
+        {"titulo": "Carretas sobre agua honda", "detalle": "El puente de caballetes necesita pilotes y no sirve con más de 3 m de fondo; este cruza hasta 12 m sin tocar el agua y aguanta carretas. Cuesta 45 troncos, 12 de piedra y 6 de hierro."},
+        {"titulo": "No estorba al río", "detalle": "Sin pilas, no lo dañan la crecida ni el hielo, y los botes y barcazas pasan por debajo si las orillas son altas."},
+        {"titulo": "Necesita un carpintero experto", "detalle": "Solo se puede construir con un taller de carpintería en el pueblo: es el primer puente que pide un oficio, no solo materiales."}
+      ],
+      "modelos": [
+        {"id": "bridge_truss", "nombre": "Madera y hierro", "material": "troncos, piedra y hierro"},
+        {"id": "bridge_truss_tarred", "nombre": "Madera embreada", "material": "troncos, brea, piedra y hierro"}
+      ]
+    },
+    {
+      "id": "bridge_chain",
+      "nombre": "Puente colgante de cadenas",
+      "categoria": "Puentes",
+      "descripcion": "Puente colgante para carretas de 20 m de largo y 3,4 m de ancho: dos torres de mampostería de 6,7 m (dos pilares unidos por un dintel con farol), cadenas de hierro de las que cuelga, con una varilla por metro, un tablero rígido de tablones, barandas, y un macizo de anclaje en cada esquina. Entre las torres hay 14 m sin ningún apoyo en el agua. A lo largo de X; las torres bajan 3 m. En piedra o en ladrillo.",
+      "propuestas": [
+        {"titulo": "El gran puente del final del juego", "detalle": "Cruza ríos anchos y hondos, estuarios y cañones de hasta 14 m sin pilas, con carretas. Cuesta 80 de piedra, 30 troncos y 40 de hierro: da destino a la producción del herrero cuando el pueblo ya está armado."},
+        {"titulo": "Deja el río libre", "detalle": "Barcas, barcazas y hasta la balandra pasan por debajo: es la alternativa al levadizo donde hay mucho tráfico por agua y por tierra a la vez."},
+        {"titulo": "Obra de enanos", "detalle": "Con enanos en el pueblo cuesta un 25 % menos de hierro y se levanta más rápido; sin herrero no se puede construir."},
+        {"titulo": "Mantenimiento con hierro", "detalle": "Cada pocos años pide 4 de hierro para las cadenas; sin eso, primero deja de admitir carretas y luego se cierra."}
+      ],
+      "modelos": [
+        {"id": "bridge_chain", "nombre": "Torres de piedra", "material": "piedra, hierro y troncos"},
+        {"id": "bridge_chain_brick", "nombre": "Torres de ladrillo", "material": "ladrillo, hierro y troncos"}
+      ]
+    },
+    {
+      "id": "bridge_stone_foot",
+      "nombre": "Pasarela de piedra",
+      "categoria": "Puentes",
+      "descripcion": "Puente peatonal de piedra de un arco de 5 m: 8 m de largo, solo 2 m de ancho, lomo empinado de 1,6 m y pretiles. A lo largo de X; los estribos bajan 3 m. En piedra o en ladrillo.",
+      "propuestas": [
+        {"titulo": "Piedra para caminantes", "detalle": "Cuesta 25 de piedra, menos de la mitad que el puente de un arco. Solo a pie (aldeanos, soldados, mercaderes sin carreta). No se quema ni se pudre: el reemplazo definitivo del tronco y de las pasaderas."},
+        {"titulo": "Pasan los botes", "detalle": "Por su lomo alto, los botes y canoas pasan por debajo: sirve en los canales y brazos de río de un pueblo con rutas de barca."},
+        {"titulo": "Mejora de barrio", "detalle": "En los barrios de casas de nivel alto, cambia las pasarelas de madera por piedra: cuenta para el entorno como un adorno."}
+      ],
+      "modelos": [
+        {"id": "bridge_stone_foot", "nombre": "Piedra", "material": "piedra"},
+        {"id": "bridge_stone_foot_brick", "nombre": "Ladrillo", "material": "ladrillo"}
+      ]
+    },
+    {
+      "id": "bridge_bone",
+      "nombre": "Puente de huesos",
+      "categoria": "Puentes",
+      "descripcion": "El espinazo de una bestia gigante tendido sobre el río: catorce vértebras de 1,5 m de ancho hacen el piso (9 m, con una leve comba), siete pares de costillas suben a los lados como pasamanos, unidas por cuerdas; en un extremo, el cráneo con cuernos, y en el otro, los huesos de la cola; tres pares de huesos largos lo apoyan en el lecho. A lo largo de X.",
+      "propuestas": [
+        {"titulo": "Hallazgo de las tierras salvajes", "detalle": "El generador lo pone en biomas áridos o fríos, donde murió la bestia: un cruce ya hecho, solo a pie, que no se puede construir ni reparar. Explorarlo da hueso (para herramientas y adornos) una sola vez."},
+        {"titulo": "Trofeo de los orcos y los hombres bestia", "detalle": "Un pueblo con orcos puede levantarlo tras cazar una bestia gigante: no cuesta materiales, sube la moral de sus guerreros y baja el entorno para las demás razas."},
+        {"titulo": "Señal de peligro", "detalle": "Cerca de uno suele haber fauna peligrosa: avisa al jugador de que al otro lado empieza territorio de bestias."}
+      ],
+      "modelos": [
+        {"id": "bridge_bone", "nombre": "Espinazo y costillas", "material": "hueso y lino"}
+      ]
+    },
+    {
+      "id": "bridge_mushroom",
+      "nombre": "Paso de hongos gigantes",
+      "categoria": "Puentes",
+      "descripcion": "Cinco hongos gigantes cuyos sombreros, de 2,2 a 2,6 m, hacen de plataformas a distinta altura (0,4 a 1 m) para cruzar un arroyo de 9 m; hongos pequeños de escalón en las orillas y otros brotando alrededor. A lo largo de X; los pies bajan 2,5 m. Rojos con motas blancas, o azules que brillan.",
+      "propuestas": [
+        {"titulo": "Cruce del bosque encantado", "detalle": "Aparece solo en el bioma del bosque encantado, cerca del hongo gigante. Solo a pie y despacio, saltando de sombrero en sombrero. No se construye: es parte del mapa."},
+        {"titulo": "Se cultiva", "detalle": "Un herbolario con esporas del hongo gigante puede plantar uno en otro arroyo sombrío: tarda un año en crecer y da además hongos comestibles cada otoño."},
+        {"titulo": "Luz y hierbas", "detalle": "La variante azul brilla de noche (los aldeanos lo cruzan sin antorcha) y a su alrededor crecen hierbas raras que el herbolario recoge."}
+      ],
+      "modelos": [
+        {"id": "bridge_mushroom", "nombre": "Rojos con motas", "material": "hongos vivos"},
+        {"id": "bridge_mushroom_glow", "nombre": "Azules que brillan", "material": "hongos vivos"}
+      ]
+    },
+    {
+      "id": "dock_dolphins",
+      "nombre": "Duques de alba",
+      "categoria": "Edificios",
+      "descripcion": "Dos haces de cinco pilotes inclinados y zunchados con hierro, separados 8 m, con cuerdas de amarre, un farol en uno de ellos, una línea con flotadores entre ambos y una estaca con banderín. Los pilotes bajan 3 m y sobresalen 2,3 m.",
+      "propuestas": [
+        {"titulo": "Amarre sin muelle para barcos grandes", "detalle": "Un barco mercante o una barcaza pueden fondear amarrados a ellos, lejos de la orilla, donde hay fondo; la carga va y viene en botes. Cuesta 12 troncos y 2 de hierro: mucho menos que un muelle de piedra, pero la descarga tarda el triple."},
+        {"titulo": "Segundo atracadero", "detalle": "Cuando el muelle está ocupado, el siguiente barco espera aquí en vez de pasar de largo: no se pierde la visita del mercader."},
+        {"titulo": "Defensa del muelle", "detalle": "Puestos delante de un muelle lo protegen de los golpes de los barcos con tormenta y del hielo a la deriva en el deshielo."}
+      ],
+      "modelos": [
+        {"id": "dock_dolphins", "nombre": "Pilotes y hierro", "material": "troncos y hierro"}
+      ]
+    },
+    {
+      "id": "bridge_crib",
+      "nombre": "Puente de cajones de troncos",
+      "categoria": "Puentes",
+      "descripcion": "Puente rústico de 10 m de largo y 3 m de ancho: tres cajones de troncos encajados y rellenos de piedra (uno en cada orilla y uno en el centro, que baja 2,2 m), cuatro troncos largos de viga, tablero de tablones, troncos de bordillo y una rampa de tablas en cada extremo. A lo largo de X.",
+      "propuestas": [
+        {"titulo": "Fuerte sin cantero", "detalle": "Aguanta carretas y crecidas casi como uno de piedra, pero solo pide 35 troncos y 15 de piedra suelta sin labrar: el puente serio de un pueblo que todavía no tiene cantero."},
+        {"titulo": "Solo en aguas someras", "detalle": "Los cajones se asientan en el lecho: hasta 2 m de fondo. Con hielo y deshielo aguanta mejor que los pilotes."},
+        {"titulo": "Se pudre despacio", "detalle": "Dura el doble que el puente de caballetes; al final se puede forrar de piedra y pasa a ser el puente de arco sin cerrar el paso."}
+      ],
+      "modelos": [
+        {"id": "bridge_crib", "nombre": "Troncos y piedra", "material": "troncos y piedra"}
+      ]
+    },
+    {
+      "id": "dock_crib_pier",
+      "nombre": "Muelle de cajones de troncos",
+      "categoria": "Edificios",
+      "descripcion": "Muelle macizo de 3 x 6 m (orilla en +Y): dos cajones de troncos encajados y rellenos de piedra, de 2 m de fondo, con tablero de tablones, dos postes de amarre en la punta (-Y) y una rampa de tablas desde la orilla.",
+      "propuestas": [
+        {"titulo": "El primer muelle del pueblo", "detalle": "Sin pilotes ni cantero: 20 troncos y 10 de piedra suelta. Un amarre para botes, barcas y la balsa. Es el paso previo al muelle modular."},
+        {"titulo": "Resiste el hielo", "detalle": "Por macizo, no lo rompe el hielo ni se lo lleva la crecida, a diferencia del muelle de pilotes; a cambio solo sirve en fondos de hasta 2 m."},
+        {"titulo": "Base para la grúa", "detalle": "Sobre un muelle de cajones se puede montar la grúa de rueda, sin esperar al muelle de piedra."}
+      ],
+      "modelos": [
+        {"id": "dock_crib_pier", "nombre": "Troncos y piedra", "material": "troncos y piedra"}
+      ]
+    },
+    {
+      "id": "bridge_log_cart",
+      "nombre": "Puente de troncos para carretas",
+      "categoria": "Puentes",
+      "descripcion": "Puente rústico de 8 m de largo y 3 m de ancho: siete troncos juntos, tendidos de orilla a orilla sobre dos durmientes, con tierra y grava apisonadas encima, dos troncos de bordillo atados con cuerda y cuatro pilotes de refuerzo en el centro. A lo largo de X, sin barandas.",
+      "propuestas": [
+        {"titulo": "El primer puente para carretas", "detalle": "Cuesta 14 troncos y poco trabajo: deja pasar carretas y mercaderes desde el primer año, a paso lento (cuenta como suelo normal, no como camino). Solo en ríos de hasta 7 m."},
+        {"titulo": "Corta vida", "detalle": "La tierra retiene la humedad y los troncos se pudren en unos 5 años; el juego avisa un año antes. Mejorarlo a caballetes o a piedra aprovecha los durmientes."},
+        {"titulo": "Paso para ganado", "detalle": "Sin huecos entre tablas, es el único puente de madera que cruzan los rebaños sin asustarse: une los pastos de las dos orillas."}
+      ],
+      "modelos": [
+        {"id": "bridge_log_cart", "nombre": "Troncos y tierra", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "bridge_causeway",
+      "nombre": "Calzada elevada con alcantarilla",
+      "categoria": "Caminos",
+      "descripcion": "Tramo de calzada de 4 m de largo y 4 m de ancho, levantado 0,6 m sobre el terreno con muros de mampostería, bordillo, mojones y una alcantarilla de arco de 0,9 m en el centro que deja pasar el agua; piedras sueltas al pie. A lo largo de X; los tramos se encadenan. En piedra o en ladrillo.",
+      "propuestas": [
+        {"titulo": "Camino sobre marismas y vados anchos", "detalle": "Sobre suelo mojado (el más lento de la tabla de suelos) y agua de menos de 0,5 m, da un camino de piedra seco. 12 de piedra por tramo. Deja pasar el agua, así que no inunda río arriba."},
+        {"titulo": "Acceso a los puentes", "detalle": "Los puentes con lomo necesitan orillas firmes: la calzada une el puente con el camino cuando la orilla es pantanosa o se inunda en primavera."},
+        {"titulo": "Dique", "detalle": "Sin la alcantarilla (una variante cerrada) serviría de dique: protege campos bajos de la crecida y gana tierra al agua en islas pequeñas."}
+      ],
+      "modelos": [
+        {"id": "bridge_causeway", "nombre": "Piedra", "material": "piedra"},
+        {"id": "bridge_causeway_brick", "nombre": "Ladrillo", "material": "ladrillo"}
+      ]
+    },
+    {
+      "id": "bridge_ice_crossing",
+      "nombre": "Paso sobre el hielo",
+      "categoria": "Caminos",
+      "descripcion": "Cruce de invierno de 10 m de largo y 3 m de ancho sobre un río helado: una rampa de tablas en cada orilla que baja al hielo (0,4 m bajo la orilla), un sendero de paja, una grieta salvada con tablones, dos filas de estacas con trapos rojos unidas por cuerdas y un brasero sobre un trineo. A lo largo de X.",
+      "propuestas": [
+        {"titulo": "Los ríos helados se cruzan", "detalle": "En invierno el agua se congela: marcar un paso cuesta 4 troncos y 2 de paja y deja cruzar a pie y con trineo por ahí, sin riesgo. Fuera del paso marcado, cruzar el hielo tiene una probabilidad de romperlo."},
+        {"titulo": "Solo en invierno", "detalle": "Aparece solo con hielo firme y se retira solo con el deshielo; el juego lo vuelve a montar cada invierno en el mismo lugar si quedó marcado."},
+        {"titulo": "Camino de los asaltantes de invierno", "detalle": "Con el río helado, los asaltantes ya no necesitan el puente: el levadizo y la torre del puente dejan de proteger. Romper el hielo frente al pueblo sería una orden de defensa."}
+      ],
+      "modelos": [
+        {"id": "bridge_ice_crossing", "nombre": "Estacas, paja y tablas", "material": "troncos y paja", "animaciones": {"flicker": "Tiembla la llama del brasero"}, "nota": "Casi todo queda 0,4 m por debajo de Z = 0, a la altura del hielo."}
+      ]
+    },
+    {
+      "id": "dock_boat_ramp",
+      "nombre": "Varadero",
+      "categoria": "Edificios",
+      "descripcion": "Rampa de 3 x 7 m de dos carriles con rodillos de tronco que baja de la orilla (+Y) al agua (-Y), con un bote sobre ella, un cabrestante con cuerda para sacarlo, otro bote boca abajo sobre caballetes, remos apoyados y un barril de brea. Planta de 6 x 9 m.",
+      "propuestas": [
+        {"titulo": "Amarre barato sin muelle", "detalle": "Cuesta 8 troncos y guarda 2 botes o canoas: es el punto de salida y llegada de las barcas pequeñas antes de tener muelle. No sirve para barcas con vela ni barcos."},
+        {"titulo": "Invernada", "detalle": "Los botes sacados del agua no sufren con el hielo y se calafatean aquí con brea una vez al año: duran el doble."},
+        {"titulo": "Porteo", "detalle": "Dos varaderos, uno a cada lado de una presa, un vado o un puente bajo, dejan pasar los botes por tierra de un tramo del río al otro."}
+      ],
+      "modelos": [
+        {"id": "dock_boat_ramp", "nombre": "Rampa con cabrestante", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "dock_mussel_farm",
+      "nombre": "Criadero de mejillones",
+      "categoria": "Edificios",
+      "descripcion": "Cultivo de 8 x 8 m en agua somera: cuatro filas de cinco estacas unidas por cuerdas de las que cuelgan ristras de mejillones bajo el agua, y una balsa de trabajo de troncos con dos canastas llenas. Las estacas bajan 2,5 m.",
+      "propuestas": [
+        {"titulo": "Comida del mar que no se agota", "detalle": "Da mariscos todo el año salvo con hielo, sin gastar los bancos de peces: un tipo más de comida para la dieta variada. Cuesta 15 troncos y 6 de lino; 1 trabajador con bote."},
+        {"titulo": "Tarda en dar", "detalle": "La primera cosecha llega al segundo año; después rinde cada estación. Una tormenta fuerte sin rompeolas se lleva parte de las cuerdas."},
+        {"titulo": "Cal de las conchas", "detalle": "Las conchas sobrantes van al horno: dan cal para encalar casas (sube un nivel el entorno) y para abonar campos de suelo ácido."}
+      ],
+      "modelos": [
+        {"id": "dock_mussel_farm", "nombre": "Estacas y cuerdas", "material": "troncos y lino"}
+      ]
+    },
+    {
+      "id": "dock_fish_pen",
+      "nombre": "Vivero de peces",
+      "categoria": "Edificios",
+      "descripcion": "Corral de red de 5 x 5 m en el agua, de estacas con paños de red hasta 1,9 m de fondo y peces nadando dentro, con una pasarela en T desde la orilla (+Y), baranda, una plataforma para dar de comer, un barril, una canasta y un salabre. Planta de 6 x 8 m.",
+      "propuestas": [
+        {"titulo": "Pescado fresco en invierno", "detalle": "El pescador mete aquí parte de la pesca viva de verano y otoño: es una despensa de hasta 60 de pescado que no se estropea y se saca cuando el hielo impide pescar."},
+        {"titulo": "Cría", "detalle": "Alimentados con sobras de grano y de la carnicería, los peces se multiplican despacio: convierte desperdicios en comida. Necesita 1 trabajador a media jornada."},
+        {"titulo": "Riesgo", "detalle": "Una nutria, una tormenta o una red rota pueden vaciarlo: pide 2 de lino de mantenimiento al año."}
+      ],
+      "modelos": [
+        {"id": "dock_fish_pen", "nombre": "Estacas y red", "material": "troncos y lino"}
+      ]
+    },
+    {
+      "id": "dock_signal_mast",
+      "nombre": "Mástil de señales",
+      "categoria": "Edificios",
+      "descripcion": "Mástil de 10 m sobre una base de piedra de 2,6 m de diámetro, con verga, cofa, cuatro vientos, tres banderas de señales en una driza y una bola negra en la otra, y un arcón para las banderas. En reposo las banderas están arriba y la bola abajo.",
+      "propuestas": [
+        {"titulo": "Órdenes a los barcos", "detalle": "Con mástil, los barcos del pueblo a la vista obedecen al instante: volver a puerto con tormenta o con la alarma. Sin él, cada barco solo se entera al atracar. Cuesta 12 troncos, 5 de piedra y 3 de lino."},
+        {"titulo": "Aviso de tormenta", "detalle": "La bola negra arriba avisa de mal tiempo: los pescadores no salen y no se pierden barcas. Lo atiende el vigía del faro o un aldeano del puerto."},
+        {"titulo": "Señales entre pueblos aliados", "detalle": "Dos mástiles a la vista comparten la alarma entre pueblos aliados, como la visión compartida."}
+      ],
+      "modelos": [
+        {"id": "dock_signal_mast", "nombre": "Mástil con banderas", "material": "troncos, piedra y lino", "animaciones": {"raise": "Suben las banderas y baja la bola", "lower": "Bajan las banderas y sube la bola de tormenta", "wave": "Las banderas ondean"}}
+      ]
+    },
+    {
+      "id": "dock_fish_market",
+      "nombre": "Lonja de pescado",
+      "categoria": "Edificios",
+      "descripcion": "Plataforma de 8 x 5 m sobre pilotes con tres puestos con toldo de colores: mostrador con pescado sobre paños o losa, canasta, pescados colgados de una vara; además una balanza, barriles de salazón, cajas con hielo, postes de amarre y escalera al agua (-Y).",
+      "propuestas": [
+        {"titulo": "Mercado junto al muelle", "detalle": "Reparte pescado y marisco a las casas en 40 m como el mercado, directamente desde las barcas: el pescado llega fresco y cuenta más para la dieta variada. Cuesta 30 troncos y 6 de lino; 3 vendedores."},
+        {"titulo": "Venta a los mercaderes", "detalle": "Los mercaderes que llegan por mar compran aquí el pescado seco y salado a mejor precio que en el puesto de comercio."},
+        {"titulo": "Olor", "detalle": "Baja un punto el entorno de las casas a menos de 10 m: conviene ponerla en el muelle y no en el centro."}
+      ],
+      "modelos": [
+        {"id": "dock_fish_market", "nombre": "Tres puestos", "material": "troncos y lino"}
+      ]
+    },
+    {
+      "id": "boat_junk",
+      "nombre": "Junco",
+      "categoria": "Transporte",
+      "descripcion": "Barco de 11 m de eslora y 3,6 m de manga, de proa roma y popa alta con cabina, baranda y dos faroles rojos; dos palos (8 m y 5,6 m, el de proa inclinado) con velas de sables: seis y cuatro franjas rígidas con una vara cada una; un ojo pintado en cada amura, timón grande y carga en cubierta. Línea de agua en Z = 0 (baja 0,9 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "El mercante de los hombres bestia", "detalle": "Como el puente de luna: el barco de los pueblos de zorros y gatos. Misma función que el mercante (200 de carga), pero navega bien con viento de costado: tarda un 20 % menos en sus rutas."},
+        {"titulo": "Mercader exótico", "detalle": "Una vez cada pocos años llega un junco de lejos con mercancías que nadie más trae (especias, seda, té) que suben mucho la felicidad; solo atraca en muelle de piedra con faro."},
+        {"titulo": "Velas que no se rasgan", "detalle": "Las velas de sables aguantan las tormentas: no pierde viajes por mal tiempo."}
+      ],
+      "modelos": [
+        {"id": "boat_junk", "nombre": "Velas rojas", "material": "troncos y lino", "animaciones": {"bob": "Se mece anclado", "sail": "Navega: balanceo suave y las velas de sables ondulan (2,5 m/s)"}},
+        {"id": "boat_junk_gold", "nombre": "Velas doradas, casco verde", "material": "troncos y lino", "animaciones": {"bob": "Se mece anclado", "sail": "Navega: balanceo suave y las velas de sables ondulan (2,5 m/s)"}}
+      ]
+    },
+    {
+      "id": "bridge_plank_ditch",
+      "nombre": "Tablón sobre el arroyo",
+      "categoria": "Puentes",
+      "descripcion": "El cruce más pequeño: dos tablones de 4 m (1 m de ancho) con travesaños, apoyados en una piedra en cada orilla, con dos estacas y una cuerda de pasamanos. A lo largo de X.",
+      "propuestas": [
+        {"titulo": "Arroyos y acequias", "detalle": "Para cauces de hasta 3 m: arroyos, acequias de riego y zanjas. Cuesta 2 troncos y lo pone un aldeano en un momento. Solo a pie."},
+        {"titulo": "Los aldeanos lo ponen solos", "detalle": "Si un camino muy usado cruza un arroyo, los aldeanos acaban tendiendo un tablón sin que el jugador lo ordene, igual que los caminos de tierra que se forman por el paso."}
+      ],
+      "modelos": [
+        {"id": "bridge_plank_ditch", "nombre": "Dos tablones", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "dock_reed_blind",
+      "nombre": "Puesto de caza de aves acuáticas",
+      "categoria": "Edificios",
+      "descripcion": "Escondite de carrizo de 3 x 3 m sobre una plataforma de pilotes entre los juncos, con una rendija hacia el agua (-Y), techo inclinado, pasarela de 2 m desde la orilla (+Y), tres señuelos de madera flotando, un arco y la caza del día colgada. Planta de 4 x 7 m con los juncos.",
+      "propuestas": [
+        {"titulo": "Caza de patos y gansos", "detalle": "Un puesto de trabajo más para la cabaña del cazador, en la orilla de lagos y marismas: da carne y plumas (para flechas y para ropa de abrigo) sin gastar la fauna del bosque. Cuesta 6 troncos y 4 de paja."},
+        {"titulo": "De temporada", "detalle": "Rinde mucho en otoño y primavera, con el paso de las aves, poco en verano y nada con el agua helada: complementa a la pesca, que falla en invierno."},
+        {"titulo": "Puesto de vigía discreto", "detalle": "Un vigía escondido aquí ve llegar barcas y balsas de asaltantes sin ser visto: da aviso sin dar visión al enemigo de dónde está."}
+      ],
+      "modelos": [
+        {"id": "dock_reed_blind", "nombre": "Carrizo", "material": "troncos y paja"}
+      ]
+    },
+    {
+      "id": "dock_ice_house",
+      "nombre": "Nevero",
+      "categoria": "Edificios",
+      "descripcion": "Bodega de piedra de 4 x 5 m medio enterrada bajo un montículo de césped, con un pórtico y una puerta gruesa hacia -Y; fuera, un trineo cargado de bloques de hielo, una pila de bloques bajo paja y una sierra de hielo. Planta de 8 x 6 m.",
+      "propuestas": [
+        {"titulo": "El hielo del invierno conserva la comida del verano", "detalle": "En invierno, dos aldeanos cortan hielo del río o del lago helado y lo guardan aquí. Mientras quede hielo, la carne, el pescado y la leche de los almacenes a menos de 30 m se estropean a la mitad de velocidad. Cuesta 30 de piedra y 10 troncos."},
+        {"titulo": "Trabajo para el invierno", "detalle": "Da ocupación en la estación en que campesinos y pescadores están parados; solo se puede llenar con el agua helada."},
+        {"titulo": "Pescado fresco para vender", "detalle": "Con hielo, el pescado fresco aguanta el viaje: se puede vender a los mercaderes al precio del fresco, no solo seco o salado."}
+      ],
+      "modelos": [
+        {"id": "dock_ice_house", "nombre": "Piedra y césped", "material": "piedra y troncos"}
+      ]
+    },
+    {
+      "id": "dock_watering_place",
+      "nombre": "Abrevadero",
+      "categoria": "Edificios",
+      "descripcion": "Rampa empedrada de 5 m de ancho y 6 m de largo que entra al agua (-Y) entre dos barandas de estacas, y en la orilla (+Y) un pesebre de tronco vaciado con agua, alimentado por una canaleta, una barra para atar animales y un fardo de heno. Planta de 7 x 8 m.",
+      "propuestas": [
+        {"titulo": "Agua para el ganado", "detalle": "Los pastos a menos de 50 m no necesitan que un aldeano acarree agua: el ganado baja solo a beber y rinde un 10 % más. Cuesta 10 de piedra y 6 troncos."},
+        {"titulo": "Parada de carretas y mercaderes", "detalle": "Los mercaderes con carreta paran aquí a dar de beber a sus bestias: se quedan un día más en el pueblo, con más tiempo para comerciar."},
+        {"titulo": "Vado para animales", "detalle": "Donde el río es bajo, dos abrevaderos enfrentados hacen de vado para los rebaños, que no cruzan los puentes de tablas."}
+      ],
+      "modelos": [
+        {"id": "dock_watering_place", "nombre": "Empedrado", "material": "piedra y troncos"}
+      ]
+    },
+    {
+      "id": "dock_noria",
+      "nombre": "Noria de riego",
+      "categoria": "Edificios",
+      "descripcion": "Rueda de 4,6 m de diámetro en la orilla, que gira con la corriente: palas de tabla, doce cangilones de barro que se llenan abajo y se vacían arriba en una canaleta de madera sobre caballetes que lleva el agua 6 m tierra adentro (+Y). Dos caballetes sostienen el eje, uno en la orilla y otro sobre pilotes en el agua. Planta de 5 x 9 m.",
+      "propuestas": [
+        {"titulo": "Riego sin trabajadores", "detalle": "Sube agua del río día y noche: los campos y huertos a menos de 25 m del final de la canaleta no sufren sequía y rinden un 15 % más. Solo en ríos con corriente; parada con hielo. Cuesta 25 troncos y 6 de arcilla (cangilones)."},
+        {"titulo": "Alimenta acequias", "detalle": "Desde la canaleta el jugador traza acequias (como caminos) que llevan el riego más lejos, con tablones para cruzarlas."},
+        {"titulo": "Agua para oficios", "detalle": "La curtiduría, la cervecería y la casa de baños junto a una noria no necesitan aguadores: trabajan un 10 % más rápido."}
+      ],
+      "modelos": [
+        {"id": "dock_noria", "nombre": "Madera y barro", "material": "troncos y arcilla", "animaciones": {"turn": "La rueda da una vuelta con la corriente"}}
+      ]
+    },
+    {
+      "id": "dock_sea_shrine",
+      "nombre": "Santuario del mar",
+      "categoria": "Edificios",
+      "descripcion": "Templete lacado sobre un peñasco de 5 m junto a la orilla: cuatro postes, tejado de pizarra con aleros levantados y remates dorados, una figura dorada sobre un pedestal, cuenco de ofrendas, campana con cuerda (con hueso), tiras de papel y escalones hasta una piedra de desembarco; delante, hacia -Y, un pórtico rojo de 3,6 m de alto plantado en el agua. Planta de 5 x 8 m.",
+      "propuestas": [
+        {"titulo": "Protección de los navegantes", "detalle": "Como la capilla, pero para la gente del mar: los pescadores y barqueros que pasan a menos de 40 m ganan felicidad y sus barcos tienen menos probabilidad de naufragar con tormenta. Cuesta 20 de piedra, 10 troncos y 2 de oro."},
+        {"titulo": "Estilo de los hombres bestia", "detalle": "Es la capilla de los pueblos de zorros y gatos, a juego con el puente de luna y el junco; a los demás les sirve igual, con menos efecto."},
+        {"titulo": "Ofrendas antes de zarpar", "detalle": "Un barco que zarpa después de una ofrenda (1 de comida) hace su primer viaje sin riesgo; la campana suena cuando vuelve un barco que se daba por perdido."}
+      ],
+      "modelos": [
+        {"id": "dock_sea_shrine", "nombre": "Lacado rojo", "material": "piedra, troncos y oro", "animaciones": {"ring": "La campana se balancea y se va deteniendo"}}
+      ]
+    },
+    {
+      "id": "boat_outrigger",
+      "nombre": "Canoa con balancín",
+      "categoria": "Transporte",
+      "descripcion": "Canoa larga y angosta de 7 m con un flotador a estribor unido por dos brazos curvos, una plataforma de tablas con fardos entre los dos cascos, un palo corto con vela triangular de estera entre dos perchas (con hueso), gallardete y remo de gobierno. 3,2 m de ancho en total. Línea de agua en Z = 0 y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "El barco de los archipiélagos", "detalle": "Rápida y estable en mar abierto sin necesidad de muelle: vara en cualquier playa. Lleva 4 aldeanos o 30 de carga entre islas. Cuesta 12 troncos y 4 de paja (la vela es de estera, no de lino)."},
+        {"titulo": "Colonizar islas sin puerto", "detalle": "Con ella se puede fundar un puesto en una isla secundaria antes de tener casa de botes: basta una playa. Es el paso entre la canoa y la barca de pesca."},
+        {"titulo": "Pesca de altura ligera", "detalle": "Dos pescadores con sedal en mar abierto: menos pesca que la barca con red, pero sin gastar lino."}
+      ],
+      "modelos": [
+        {"id": "boat_outrigger", "nombre": "Madera y estera", "material": "troncos y paja", "animaciones": {"bob": "Se mece en el agua", "sail": "Navega: la vela se mueve con el viento (3 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_reed",
+      "nombre": "Balsa de totora",
+      "categoria": "Transporte",
+      "descripcion": "Barquilla de 4,4 m hecha con tres haces de carrizo atados, con las puntas levantadas, una estera para sentarse, un fardo y un remo de pala animado. Flota con la línea de agua en Z = 0 y la proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "Embarcación sin madera", "detalle": "Se hace con 6 de paja o carrizo y nada de troncos: la primera barca en mapas con poco bosque o en marismas. Lleva a un aldeano y poca carga."},
+        {"titulo": "Se empapa", "detalle": "Dura una sola temporada: en otoño hay que rehacerla. A cambio no necesita casa de botes ni varadero."},
+        {"titulo": "Pesca y caza en la laguna", "detalle": "Silenciosa y baja: sirve al pescador de laguna y al cazador de aves acuáticas para llegar a los carrizales."}
+      ],
+      "modelos": [
+        {"id": "boat_reed", "nombre": "Carrizo", "material": "paja", "animaciones": {"bob": "Se mece en el agua", "row": "El remo palea por estribor (1,1 m/s)"}}
+      ]
+    },
+    {
+      "id": "dock_harbor_tavern",
+      "nombre": "Taberna del puerto",
+      "categoria": "Edificios",
+      "descripcion": "Taberna sobre pilotes: plataforma de 9 x 7 m a 0,6 m sobre la orilla, con una casa de entramado de 6,4 x 4,2 m con chimenea y puerta hacia el agua (-Y), y una terraza con dos mesas hechas con barriles, bancos, baranda, una guirnalda de cinco faroles de colores, letrero, postes de amarre, escalera y un bote amarrado; escalones desde la orilla (+Y). Con tejas rojas o pizarra.",
+      "propuestas": [
+        {"titulo": "Segunda taberna, para la gente del mar", "detalle": "La taberna actual es única: esta sería otra, solo junto al agua. Da felicidad a pescadores, barqueros y trabajadores del puerto sin que crucen el pueblo. Cuesta 40 troncos, 10 de piedra y tejas; consume cerveza y pescado."},
+        {"titulo": "Atrae y retiene mercaderes", "detalle": "Los mercaderes que llegan por barco se quedan un día más si hay taberna en el puerto, y pagan por la cerveza: oro que entra aunque no compren nada más."},
+        {"titulo": "Rumores", "detalle": "Los marineros traen noticias: de vez en cuando revelan en el mapa un naufragio, una isla o los precios del próximo mercader antes de que llegue."}
+      ],
+      "modelos": [
+        {"id": "dock_harbor_tavern", "nombre": "Tejas rojas", "material": "troncos, piedra y tejas"},
+        {"id": "dock_harbor_tavern_slate", "nombre": "Pizarra", "material": "troncos y piedra"}
+      ]
+    },
+    {
+      "id": "dock_rope_walk",
+      "nombre": "Cordelería",
+      "categoria": "Edificios",
+      "descripcion": "Cobertizo largo y abierto de 3 x 14 m con tejado de tablillas: en un extremo, la rueda de torcer con sus cuatro ganchos (con hueso); a lo largo, los cuatro cabos tendidos sobre caballetes hasta un carro lastrado con una piedra; rollos de cuerda terminada y haces de lino.",
+      "propuestas": [
+        {"titulo": "Cuerda, un bien nuevo", "detalle": "Convierte lino en cuerda (2 de lino dan 1 de cuerda). La cuerda la piden el puente colgante, la balsa de paso, las velas y jarcias de todos los barcos, la grúa y las redes: hoy esas recetas usarían lino directamente. Cuesta 25 troncos; 2 cordeleros."},
+        {"titulo": "Da salida al lino", "detalle": "Cuando el tejedor ya viste a todo el pueblo, el lino sobrante se vuelve cuerda, que además se vende bien a los mercaderes de mar."},
+        {"titulo": "Mantenimiento de barcos y puentes", "detalle": "Con cuerda en el almacén, los puentes de cuerda y los barcos se reparan solos; sin ella se van cerrando por desgaste."}
+      ],
+      "modelos": [
+        {"id": "dock_rope_walk", "nombre": "Cobertizo de madera", "material": "troncos", "animaciones": {"turn": "Gira la rueda de torcer"}}
+      ]
+    },
+    {
+      "id": "dock_seawall",
+      "nombre": "Malecón",
+      "categoria": "Muros y defensas",
+      "descripcion": "Tramo de 4 m de muro de costa a lo largo de X: el mar queda en -Y y la tierra en +Y. Muro de 1,2 m de ancho con cara en talud hacia el mar, cimientos hasta 3 m de fondo, paseo enlosado a 1,3 m con pretil, argollas de amarre y un farol, un talud de tierra por detrás y rocas al pie. Hay un tramo con escalera que baja al agua, y una variante de ladrillo. Los tramos se encadenan.",
+      "propuestas": [
+        {"titulo": "Protege la costa de las tormentas", "detalle": "Las casas y campos a menos de 20 m detrás de un malecón no se inundan con las tormentas ni con la crecida. 15 de piedra por tramo."},
+        {"titulo": "Muralla hacia el mar", "detalle": "Cierra el pueblo por el agua igual que la muralla por tierra: un ejército que llega por mar no puede desembarcar frente a un malecón y tiene que buscar playa."},
+        {"titulo": "Paseo y amarre", "detalle": "El paseo cuenta como camino de piedra y mejora el entorno; en los tramos con escalera amarran botes y canoas, sin construir muelle."}
+      ],
+      "modelos": [
+        {"id": "dock_seawall", "nombre": "Tramo recto de piedra", "material": "piedra"},
+        {"id": "dock_seawall_stairs", "nombre": "Tramo con escalera al agua", "material": "piedra y hierro"},
+        {"id": "dock_seawall_brick", "nombre": "Tramo recto de ladrillo", "material": "ladrillo"}
+      ]
+    },
+    {
+      "id": "dock_crab_pots",
+      "nombre": "Nasas para cangrejos",
+      "categoria": "Edificios",
+      "descripcion": "Plataforma de 3 x 3 m sobre pilotes con ocho nasas de aros y red apiladas en pirámide, una ristra de flotadores rojos y amarillos, un rollo de cuerda, una canasta de cangrejos y un poste de amarre.",
+      "propuestas": [
+        {"titulo": "Marisco sin ir a pescar", "detalle": "Un pescador echa las nasas por la mañana y las recoge por la tarde: da cangrejos (otro tipo de comida para la dieta variada) y el resto del día pesca con caña. Cuesta 6 troncos y 3 de lino."},
+        {"titulo": "Anexo del muelle de pesca", "detalle": "Se pega a cualquier pieza de muelle y sube un 15 % la producción del muelle de pesca vecino, como los patios de trabajo de otros edificios."},
+        {"titulo": "Solo en el mar y estuarios", "detalle": "En agua dulce no da nada: da una razón para llevar el pueblo hasta la costa o el estuario."}
+      ],
+      "modelos": [
+        {"id": "dock_crab_pots", "nombre": "Nasas apiladas", "material": "troncos y lino"}
+      ]
+    },
+    {
+      "id": "dock_stockfish_racks",
+      "nombre": "Secadero de bacalao",
+      "categoria": "Edificios",
+      "descripcion": "Tres filas de secaderos en A de 6 m de largo y 2,6 m de alto, cada una con cinco varas cargadas de pescado abierto colgando por la cola, sobre un patio de 7 x 5 m con barriles, una caja y una pértiga con gancho.",
+      "propuestas": [
+        {"titulo": "Conserva la pesca con viento y frío", "detalle": "Convierte pescado fresco en pescado seco, que dura tres veces más, sin leña (el ahumadero la gasta). Trabaja en otoño, invierno y primavera; en verano el pescado se pudre antes de secarse. Cuesta 15 troncos; 1 trabajador."},
+        {"titulo": "Reserva para el invierno", "detalle": "Guarda en las propias varas hasta 150 de pescado: hace de almacén visible, se ve lleno o vacío."},
+        {"titulo": "Exportación", "detalle": "El pescado seco pesa la mitad: las caravanas y los barcos llevan el doble, y los mercaderes de tierra adentro lo pagan bien."},
+        {"titulo": "Atrae gaviotas y osos", "detalle": "Sin cerca o sin perro, los animales se llevan una parte; cerca del bosque puede atraer osos al pueblo."}
+      ],
+      "modelos": [
+        {"id": "dock_stockfish_racks", "nombre": "Secaderos en A", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "dock_net_yard",
+      "nombre": "Tendedero de redes",
+      "categoria": "Edificios",
+      "descripcion": "Patio de 7 x 5 m con tres redes tendidas entre postes de 2,9 m, con flotadores arriba y pesos de piedra abajo, un banco con una red a medio remendar, un caldero de brea sobre piedras y un barril.",
+      "propuestas": [
+        {"titulo": "Redes, la herramienta del pescador", "detalle": "Hace y repara redes con lino y brea. Con redes, cada pescador de muelle o de barca rinde un 50 % más que con caña; las redes se gastan y hay que reponerlas. Cuesta 10 troncos; 1 redero."},
+        {"titulo": "Trabajo para los días de mal tiempo", "detalle": "Con tormenta o hielo, los pescadores no se quedan parados: vienen aquí a remendar, y la siguiente salida rinde más."},
+        {"titulo": "Redes para la caza y los huertos", "detalle": "Las redes sobrantes sirven al cazador (aves) y protegen los huertos de los pájaros: un 10 % menos de fruta perdida."}
+      ],
+      "modelos": [
+        {"id": "dock_net_yard", "nombre": "Redes al sol", "material": "troncos y lino"}
+      ]
+    },
+    {
+      "id": "dock_elven_pier",
+      "nombre": "Muelle élfico",
+      "categoria": "Edificios",
+      "descripcion": "Muelle esbelto de mármol de 2,4 m de ancho y 9 m de largo (orilla en +Y), sobre columnas finas con arquillos, con baranda de remates dorados y cuatro farolas curvas, que termina en una terraza redonda de 4 m con un racimo de cristales que alumbra y escalones hasta el agua (-Y).",
+      "propuestas": [
+        {"titulo": "El muelle de los elfos", "detalle": "Solo con elfos. Hace de muelle para barcas (un amarre) y de jardín a la vez: las casas a menos de 20 m ganan entorno. Cuesta 40 de piedra y 5 de oro. El cristal alumbra sin gastar combustible y vale como luz de puerto."},
+        {"titulo": "Embarcadero de la barca cisne", "detalle": "La barca cisne solo atraca aquí; con muelle élfico llega por agua la embajada élfica (hierbas raras y semillas)."},
+        {"titulo": "Lugar de descanso", "detalle": "Los aldeanos sin tarea vienen a la terraza al atardecer: sube la felicidad como una visita a la taberna, sin gastar cerveza."}
+      ],
+      "modelos": [
+        {"id": "dock_elven_pier", "nombre": "Mármol, oro y cristal", "material": "piedra, oro y cristal"}
+      ]
+    },
+    {
+      "id": "dock_orc_pier",
+      "nombre": "Muelle orco",
+      "categoria": "Edificios",
+      "descripcion": "Muelle basto de madera embreada de 2,6 x 7 m (orilla en +Y) con cuatro postes torcidos rematados con cráneos con cuernos y ataduras de cuero, estacas afiladas que erizan la punta (-Y), un toldo de cuero, un tambor de guerra, un barril y un cuenco de hierro con fuego.",
+      "propuestas": [
+        {"titulo": "El muelle de los orcos", "detalle": "Solo con orcos. Un amarre para balsas de guerra y botes, barato (15 troncos y 4 de cuero) y rápido de levantar. Las estacas impiden que los enemigos aborden por la punta."},
+        {"titulo": "Tambor de aviso", "detalle": "El tambor hace de alarma en la costa: suena cuando un vigía ve barcos enemigos, sin necesidad de torre."},
+        {"titulo": "Campamento de asaltantes", "detalle": "En mapas de islas, es lo que montan los asaltantes en una isla vecina antes de atacar: el jugador puede destruirlo para cortar las incursiones por mar."}
+      ],
+      "modelos": [
+        {"id": "dock_orc_pier", "nombre": "Madera embreada y cuero", "material": "troncos, cuero y hierro", "animaciones": {"flicker": "Tiembla la llama del cuenco"}}
+      ]
+    },
+    {
+      "id": "dock_ice_fishing",
+      "nombre": "Caseta de pesca en el hielo",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Caseta de tablas de 1,6 x 2 m sobre patines de trineo, con cortina de cuero, tubo de estufa y nieve en el tejado; delante (-Y), un agujero en el hielo con trozos de hielo alrededor, una caña de aviso con banderín, cuatro peces, una canasta y una barra para romper el hielo. Se apoya en Z = 0, que aquí es el hielo.",
+      "propuestas": [
+        {"titulo": "Pesca de invierno", "detalle": "Hoy el pescador se queda sin trabajo con el agua helada: con una caseta (6 troncos y 1 de cuero) pesca en el lago helado a la mitad del ritmo de verano, y no se enfría."},
+        {"titulo": "Se mueve y se guarda", "detalle": "El pescador la arrastra adonde haya peces y la retira antes del deshielo; si se olvida, se pierde con el hielo."},
+        {"titulo": "Solo con hielo firme", "detalle": "Al principio y al final del invierno el hielo no aguanta: el juego lo indica en la línea de estado del pescador."}
+      ],
+      "modelos": [
+        {"id": "dock_ice_fishing", "nombre": "Caseta sobre patines", "material": "troncos y cuero"}
+      ]
+    },
+    {
+      "id": "boat_ship_mill",
+      "nombre": "Molino flotante",
+      "categoria": "Transporte",
+      "descripcion": "Molino sobre un casco de 10 m amarrado en la corriente: caseta de entramado de 2,6 x 5 m con tejado a dos aguas, una rueda de paletas de 3,5 m a estribor entre el casco y un flotador, dos cadenas a dos pilotes río arriba, una plancha a la orilla de babor, sacos y un barril en la proa (-Y). Línea de agua en Z = 0. Con tablillas o con paja.",
+      "propuestas": [
+        {"titulo": "Molino sin presa ni colina", "detalle": "El molino actual necesita su lugar; este se amarra en cualquier río con corriente y muele igual, sin ocupar terreno ni construir azud. Cuesta 40 troncos y 5 de hierro; 1 molinero."},
+        {"titulo": "Sube y baja con el río", "detalle": "Como flota, la crecida no lo daña y la sequía no lo deja en seco; con hielo se detiene y hay que protegerlo en un remanso."},
+        {"titulo": "Estorba la navegación", "detalle": "Ocupa medio cauce: las barcazas pasan despacio a su lado. En ríos angostos hay que elegir entre molino y ruta de barcas."}
+      ],
+      "modelos": [
+        {"id": "boat_ship_mill", "nombre": "Tablillas", "material": "troncos y hierro", "animaciones": {"turn": "La rueda gira con la corriente y el casco se mece apenas"}},
+        {"id": "boat_ship_mill_thatch", "nombre": "Paja", "material": "troncos, paja y hierro", "animaciones": {"turn": "La rueda gira con la corriente y el casco se mece apenas"}}
+      ]
+    },
+    {
+      "id": "dock_ruined_pier",
+      "nombre": "Muelle abandonado",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Restos de un muelle viejo de 2 x 7 m (orilla en +Y): ocho pilotes torcidos, algunos ya bajo el agua, un trozo de tablero con musgo junto a la orilla, tablas colgando y caídas, un poste de amarre con su cuerda, juncos y, al lado, un bote hundido del que asoma la proa.",
+      "propuestas": [
+        {"titulo": "Hallazgo que ahorra trabajo", "detalle": "El generador deja alguno en costas y lagos. Repararlo cuesta la mitad que un muelle nuevo y da el primer amarre del pueblo; el explorador lo marca en el mapa."},
+        {"titulo": "Pista de otros", "detalle": "Donde hay un muelle abandonado hubo gente: cerca suele haber un naufragio, unas ruinas o un vado. Explorarlo revela el más cercano."},
+        {"titulo": "Estado de abandono", "detalle": "Es como queda un muelle de pilotes del jugador si pasa años sin mantenimiento o tras una tormenta sin rompeolas."}
+      ],
+      "modelos": [
+        {"id": "dock_ruined_pier", "nombre": "Pilotes y tablas", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "boat_galley",
+      "nombre": "Galera de guerra",
+      "categoria": "Transporte",
+      "descripcion": "Galera de 22 m de eslora y 4,4 m de manga (unos 10 m con los remos): espolón herrado a flor de agua, un ojo pintado en cada amura, crujía central, doce remos por banda (cada uno con su hueso), escudos, castillo de popa almenado con farol, timón, un palo de 9 m con vela cuadra a rayas y gallardete. Línea de agua en Z = 0 (el casco baja 0,8 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "El barco de guerra de los reinos", "detalle": "El escalón por encima del barco largo: lleva 40 soldados y embiste con el espolón a los barcos enemigos. No depende del viento. Cuesta 120 troncos, 20 de lino y 20 de hierro en el astillero, y pide 24 remeros."},
+        {"titulo": "Dominio del mar", "detalle": "Con una galera patrullando, los barcos largos de asaltantes no se acercan y los mercaderes llegan sin pérdidas; mantenerla cuesta comida para la tripulación todo el año."},
+        {"titulo": "Asedio por mar", "detalle": "Varias galeras bloquean el puerto de un pueblo enemigo y desembarcan un ejército en su muelle, si no hay cadena que lo cierre."}
+      ],
+      "modelos": [
+        {"id": "boat_galley", "nombre": "Azul y blanco", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece anclada", "sail": "Navega a vela: balanceo y la vela flamea (3 m/s)", "row": "Los veinticuatro remos bogan a la vez (2,8 m/s)"}},
+        {"id": "boat_galley_red", "nombre": "Rojo y blanco", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece anclada", "sail": "Navega a vela: balanceo y la vela flamea (3 m/s)", "row": "Los veinticuatro remos bogan a la vez (2,8 m/s)"}},
+        {"id": "boat_galley_furled", "nombre": "Vela recogida (a remo)", "material": "troncos, lino y hierro", "animaciones": {"bob": "Se mece anclada", "sail": "Solo el balanceo: la vela va recogida en la verga", "row": "Los veinticuatro remos bogan a la vez (2,8 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_market",
+      "nombre": "Barca mercado",
+      "categoria": "Transporte",
+      "descripcion": "Barcaza de 10 m de eslora y 3,4 m de manga con dos puestos bajo toldos de colores: mostradores a las dos bandas con cántaros, telas y panes, pescados y embutidos colgados, faroles, un arcón con herrajes dorados, carga a proa (-Y) y un remo de gobierno a popa. Línea de agua en Z = 0 (el casco baja 0,45 m).",
+      "propuestas": [
+        {"titulo": "El mercader vende desde el agua", "detalle": "En mapas con río, el mercader llega en esta barca y vende atracado en cualquier muelle, sin que exista el puesto de comercio: el pueblo puede comerciar desde el primer año con solo un muelle."},
+        {"titulo": "Mercado ambulante propio", "detalle": "Construida en la casa de botes (35 troncos y 6 de lino), recorre los muelles del pueblo repartiendo bienes a las casas de cada orilla e isla: un mercado que va adonde vive la gente."},
+        {"titulo": "Feria del río", "detalle": "Una vez al año llegan varias a la vez: durante unos días hay más variedad y mejores precios, y sube la felicidad de todo el pueblo."}
+      ],
+      "modelos": [
+        {"id": "boat_market", "nombre": "Dos puestos", "material": "troncos y lino", "animaciones": {"bob": "Se mece atracada"}}
+      ]
+    },
+    {
+      "id": "boat_sloop",
+      "nombre": "Balandra",
+      "categoria": "Transporte",
+      "descripcion": "Velero pequeño como el de la imagen de referencia: 8 m de eslora y 2,7 m de manga, con una caseta baja, un palo de 8 m, vela mayor triangular con botavara y foque hasta el bauprés (cada una con su hueso), timón, gallardete y algo de carga. Línea de agua en Z = 0 (el casco baja 0,7 m) y proa hacia -Y.",
+      "propuestas": [
+        {"titulo": "Mensajero y mercader ligero", "detalle": "El barco más rápido del juego: lleva solo 40 de carga, pero hace las rutas en la mitad de tiempo. Sirve para bienes caros y ligeros (oro, hierbas, ropa) entre pueblos. Cuesta 30 troncos y 10 de lino."},
+        {"titulo": "Mercader menor por mar", "detalle": "Los mercaderes pequeños llegan en balandra y pueden atracar en un muelle de madera, sin puerto de piedra: es la primera forma de comercio marítimo de un pueblo."},
+        {"titulo": "Exploración de la costa", "detalle": "Con dos exploradores a bordo recorre toda la costa del mapa y descubre islas, naufragios y otros pueblos mucho antes que a pie."}
+      ],
+      "modelos": [
+        {"id": "boat_sloop", "nombre": "Velas blancas, casco azul", "material": "troncos y lino", "animaciones": {"bob": "Se mece anclada", "sail": "Navega escorada: la mayor y el foque se mueven con el viento (2,8 m/s)"}},
+        {"id": "boat_sloop_red", "nombre": "Velas rojas", "material": "troncos y lino", "animaciones": {"bob": "Se mece anclada", "sail": "Navega escorada: la mayor y el foque se mueven con el viento (2,8 m/s)"}}
+      ]
+    },
+    {
+      "id": "boat_ice_yacht",
+      "nombre": "Trineo de vela",
+      "categoria": "Transporte",
+      "descripcion": "Trineo para el hielo de 5,4 m de largo y 3,4 m de ancho: un tablón largo, un travesaño con dos patines de hierro y un patín de gobierno a popa (con hueso), una caja con banco y carga, palo de 5,6 m con vela triangular de tres franjas y gallardete. Se apoya en Z = 0 (el hielo) y avanza hacia -Y.",
+      "propuestas": [
+        {"titulo": "Transporte de invierno", "detalle": "Cuando lagos y ríos se hielan y los barcos quedan amarrados, el trineo de vela lleva 15 de carga o 2 aldeanos sobre el hielo, tres veces más rápido que un bote. Cuesta 8 troncos, 3 de lino y 2 de hierro."},
+        {"titulo": "Rutas que solo existen en invierno", "detalle": "Une por el lago helado el pueblo con islas y orillas lejanas: el invierno deja de ser la estación en que no se puede comerciar."},
+        {"titulo": "Peligro al final de la estación", "detalle": "Con hielo delgado (principio y fin del invierno) puede romperlo y perderse con su carga: el juego avisa del estado del hielo."}
+      ],
+      "modelos": [
+        {"id": "boat_ice_yacht", "nombre": "Madera, hierro y lino", "material": "troncos, hierro y lino", "animaciones": {"sail": "Corre sobre el hielo: la vela flamea y el patín de popa corrige el rumbo (6 m/s)"}}
+      ]
+    }
+  ]
+}

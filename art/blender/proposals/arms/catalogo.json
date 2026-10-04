@@ -1,0 +1,73 @@
+{
+  "familia": "arms",
+  "grupos": [
+    {
+      "id": "arms_weapon",
+      "nombre": "Arma propia de cada raza",
+      "categoria": "Armas y herramientas",
+      "destacado": true,
+      "descripcion": "Un arma de mano distinta para cada una de las nueve razas: espada recta (humanos), jopesh de bronce (gatos), hacha barbada con runas (enanos), hoja de hoja con nervio de jade (elfos), hoja dentada de obsidiana (elfos oscuros), sable curvo de empuñadura larga (zorros), arpón de hueso con cabo (ranas), maza de madera con filos de obsidiana y plumas (lagartos) y cuchilla tosca (orcos). Empuñadura en el origen, hoja hacia arriba.",
+      "propuestas": [
+        {"titulo": "Solo aspecto", "detalle": "La milicia y los guardias de cada raza llevan su arma en vez de la espada común: mismo daño, pero un pueblo de zorros no se confunde con uno de enanos."},
+        {"titulo": "Rasgo de raza", "detalle": "Cada arma da una pequeña ventaja propia: el hacha enana rompe escudos y puertas, el arpón alcanza a 3 m y sirve para pescar, el sable ataca más rápido, la cuchilla orca hace más daño y se gasta antes, la maza de obsidiana no necesita hierro."},
+        {"titulo": "Mercancía entre razas", "detalle": "Solo el herrero de esa raza sabe hacerla; las demás la consiguen comerciando o acogiendo a un maestro inmigrante. Da motivo al comercio entre pueblos distintos."},
+        {"titulo": "Trofeos", "detalle": "Las armas capturadas en una incursión se exhiben o se funden: dan prestigio o devuelven su metal."}
+      ],
+      "modelos": [
+        {"id": "arms_human_sword", "nombre": "Humanos: espada recta", "material": "hierro"},
+        {"id": "arms_catfolk_khopesh", "nombre": "Gatos: jopesh", "material": "bronce"},
+        {"id": "arms_dwarf_axe", "nombre": "Enanos: hacha barbada", "material": "hierro"},
+        {"id": "arms_elf_blade", "nombre": "Elfos: hoja de hoja", "material": "hierro"},
+        {"id": "arms_dark_elf_blade", "nombre": "Elfos oscuros: hoja dentada", "material": "obsidiana"},
+        {"id": "arms_foxfolk_katana", "nombre": "Zorros: sable curvo", "material": "hierro"},
+        {"id": "arms_frogfolk_harpoon", "nombre": "Ranas: arpón", "material": "hueso y caña"},
+        {"id": "arms_lizardfolk_macuahuitl", "nombre": "Lagartos: maza de obsidiana", "material": "troncos y obsidiana"},
+        {"id": "arms_orc_cleaver", "nombre": "Orcos: cuchilla", "material": "hierro"}
+      ]
+    },
+    {
+      "id": "arms_shield",
+      "nombre": "Escudo propio de cada raza",
+      "categoria": "Armas y herramientas",
+      "descripcion": "Escudo de cada raza, con el frente hacia −Y: de lágrima azul con torre (humanos), redondo con sol (gatos), cuadrado de acero con cruz de bronce y runas (enanos), de hoja blanco y verde (elfos), disco de obsidiana con un mordisco para golpear por el hueco (elfos oscuros), pavés lacado con llama blanca y puntal (zorros), concha (ranas), redondo de cuero con sol y plumas (lagartos) y tablones con púas y una calavera (orcos).",
+      "propuestas": [
+        {"titulo": "Solo aspecto", "detalle": "El escudo que llevan milicianos y guardias de esa raza."},
+        {"titulo": "Material según la raza", "detalle": "Cada escudo se fabrica con lo que su raza tiene a mano: madera y cuero (orcos, lagartos), concha (ranas, sin metal), acero (enanos, el más caro y el que más protege). Permite armar una milicia sin hierro."},
+        {"titulo": "El pavés se planta", "detalle": "El escudo de los zorros se apoya en el suelo: los arqueros disparan tras él. Los demás solo protegen a quien los lleva."}
+      ],
+      "modelos": [
+        {"id": "arms_human_shield", "nombre": "Humanos", "material": "troncos y hierro"},
+        {"id": "arms_catfolk_shield", "nombre": "Gatos", "material": "bronce"},
+        {"id": "arms_dwarf_shield", "nombre": "Enanos", "material": "hierro"},
+        {"id": "arms_elf_shield", "nombre": "Elfos", "material": "troncos y oro"},
+        {"id": "arms_dark_elf_shield", "nombre": "Elfos oscuros", "material": "obsidiana"},
+        {"id": "arms_foxfolk_shield", "nombre": "Zorros", "material": "troncos"},
+        {"id": "arms_frogfolk_shield", "nombre": "Ranas", "material": "concha"},
+        {"id": "arms_lizardfolk_shield", "nombre": "Lagartos", "material": "cuero"},
+        {"id": "arms_orc_shield", "nombre": "Orcos", "material": "troncos y hierro"}
+      ]
+    },
+    {
+      "id": "arms_helmet",
+      "nombre": "Casco propio de cada raza",
+      "categoria": "Armas y herramientas",
+      "descripcion": "Casco de cada raza, centrado en el origen a la altura de la frente: capacete con nasal (humanos), casco con turbante y fundas para las orejas (gatos), yelmo con cresta de bronce y cuernos (enanos), diadema con alas (elfos), máscara lisa con una rendija de luz y púas (elfos oscuros), casco lacado con cubrenuca, media luna y orejas (zorros), concha con agujeros para los ojos (ranas), cráneo de bestia con abanico de plumas (lagartos) y casco de hierro con colmillos y cuernos (orcos).",
+      "propuestas": [
+        {"titulo": "Distinguir a los combatientes", "detalle": "Quien toma las armas se pone el casco de su raza: se ve quién es milicia y quién no, sin cambiar de modelo de personaje."},
+        {"titulo": "Rangos", "detalle": "El casco marca al capitán o al veterano de cada grupo; los reclutas van sin él."},
+        {"titulo": "Protección por niveles", "detalle": "Tener cascos en la armería reduce las bajas en una incursión; cada raza los hace con su material (hueso, concha, cuero, hierro)."}
+      ],
+      "modelos": [
+        {"id": "arms_human_helmet", "nombre": "Humanos", "material": "hierro"},
+        {"id": "arms_catfolk_helmet", "nombre": "Gatos", "material": "bronce y lino"},
+        {"id": "arms_dwarf_helmet", "nombre": "Enanos", "material": "hierro"},
+        {"id": "arms_elf_helmet", "nombre": "Elfos", "material": "oro"},
+        {"id": "arms_dark_elf_helmet", "nombre": "Elfos oscuros", "material": "obsidiana"},
+        {"id": "arms_foxfolk_helmet", "nombre": "Zorros", "material": "troncos lacados"},
+        {"id": "arms_frogfolk_helmet", "nombre": "Ranas", "material": "concha"},
+        {"id": "arms_lizardfolk_helmet", "nombre": "Lagartos", "material": "hueso"},
+        {"id": "arms_orc_helmet", "nombre": "Orcos", "material": "hierro"}
+      ]
+    }
+  ]
+}

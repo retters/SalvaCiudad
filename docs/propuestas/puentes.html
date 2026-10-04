@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SalvaCiudad · Probar puentes y acueductos modulares</title>
+<style>
+:root { --bg: #14171c; --panel: #1c2128; --panel2: #232a33; --line: #323b47; --text: #e6e9ee; --dim: #9aa4b2; --accent: #5aa9e6; --accent-ink: #0b1620; --stage: #2a323d; }
+:root[data-theme="light"] { --bg: #f3f1ec; --panel: #ffffff; --panel2: #f0ede6; --line: #d6d1c6; --text: #1f242b; --dim: #5f6875; --accent: #1f6fb0; --accent-ink: #ffffff; --stage: #dfe6ec; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+button, select { font: inherit; color: inherit; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 11px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); }
+header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header h1 { font-size: 17px; margin: 0 8px 0 0; }
+header .grow { flex: 1; }
+input[type=range] { width: 260px; accent-color: var(--accent); }
+#length { min-width: 48px; font-weight: 600; }
+#wrap { position: relative; flex: 1; min-height: 0; background: var(--stage); }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#info { position: absolute; left: 14px; top: 12px; font-size: 13px; color: var(--dim); max-width: 560px; pointer-events: none; }
+#rule { padding: 8px 18px; font-size: 13.5px; color: var(--dim); background: var(--panel); border-top: 1px solid var(--line); }
+#rule b { color: var(--text); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Probar puentes y acueductos modulares</h1>
+  <label for="kit">Material:</label>
+  <select id="kit"></select>
+  <label for="span">Largo:</label>
+  <input type="range" id="span" min="10" max="60" step="2" value="18">
+  <span id="length"></span>
+  <span class="grow"></span>
+  <a href="muros.html">Probar muros</a>
+  <a href="index.html">← Volver a los modelos</a>
+  <button id="theme">Tema</button>
+</header>
+<div id="wrap"><canvas id="stage"></canvas><div id="info">Mueve el control de largo: el puente se arma solo con las piezas del kit. Arrastra para girar la vista, botón derecho para moverla, rueda para acercar.<br><span id="count"></span></div></div>
+<div id="rule"><b>Regla</b> para un puente de L metros (par, de 10 en adelante): un estribo con rampa de 4 m en cada orilla (el segundo, girado 180°); entre ellos, tramos de 4 m, y uno de 2 m puesto primero si (L − 8) no es múltiplo de 4; una pila bajo cada junta entre dos tramos; y un par de postes con farol al pie de cada rampa. Las piezas miden 4 m de ancho y la calzada queda a 1 m sobre las orillas.</div>
+
+<script src="vendor/three/three.min.js"></script>
+<script src="vendor/three/GLTFLoader.js"></script>
+<script src="vendor/three/OrbitControls.js"></script>
+<script src="datos/catalogo.js"></script>
+<script>
+'use strict';
+// A playground for the modular bridge kits: a length, and the pieces that make it.
+
+const CAT = window.PROPUESTAS_CATALOGO || {grupos: []};
+const $ = sel => document.querySelector(sel);
+const PIECES = ['abutment', 'span2', 'span4', 'pier', 'posts'];
+
+const kits = [];
+for (const g of CAT.grupos) {
+  const first = g.modelos.find(m => m.id.endsWith('_abutment'));
+  if (!first) continue;
+  const prefix = first.id.slice(0, -'_abutment'.length);
+  const pieces = {};
+  for (const p of PIECES) pieces[p] = g.modelos.find(m => m.id === prefix + '_' + p);
+  if (PIECES.every(p => pieces[p])) kits.push({name: g.nombre, group: g, pieces, parts: PIECES});
+}
+// The aqueducts: a span every 4 m, a pier under every joint, and the end where the water falls.
+const AQUEDUCT = ['span', 'pier', 'end'];
+for (const g of CAT.grupos) {
+  for (const first of g.modelos.filter(m => /^aqueduct_.*_span$/.test(m.id))) {
+    const prefix = first.id.slice(0, -'_span'.length);
+    const pieces = {};
+    for (const p of AQUEDUCT) pieces[p] = g.modelos.find(m => m.id === prefix + '_' + p);
+    if (AQUEDUCT.every(p => pieces[p])) kits.push({name: 'Acueducto: ' + first.nombre.split(':')[0].toLowerCase(), group: g, pieces, parts: AQUEDUCT, aqueduct: true, key: prefix});
+  }
+}
+
+const waiting = new Map();
+window.PROPUESTAS_MODELO = (key, b64) => { const w = waiting.get(key); if (w) { waiting.delete(key); w(b64); } };
+
+function loadGltf(group, model) {
+  const key = group.familia + '/' + model.id;
+  return new Promise((resolve, reject) => {
+    waiting.set(key, b64 => {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      new THREE.GLTFLoader().parse(bytes.buffer, '', resolve, reject);
+    });
+    const s = document.createElement('script');
+    s.src = model.archivo + '?' + model.hash;
+    s.onload = () => s.remove();
+    s.onerror = () => { s.remove(); waiting.delete(key); reject(new Error('no se pudo leer ' + model.archivo)); };
+    document.head.append(s);
+  });
+}
+
+const renderer = new THREE.WebGLRenderer({canvas: $('#stage'), antialias: true, alpha: true});
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 900);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.12;
+scene.add(new THREE.HemisphereLight(0xe4eeff, 0x80705c, 0.95));
+const sun = new THREE.DirectionalLight(0xfff1d8, 1.25);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.03;
+scene.add(sun, sun.target);
+const land = new THREE.Group(), bridge = new THREE.Group();
+scene.add(land, bridge);
+
+function resize() {
+  const w = $('#wrap').clientWidth, h = $('#wrap').clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe($('#wrap'));
+(function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+
+/** The spans between the two ramps of a bridge of `length` meters. */
+function spansFor(length) {
+  const between = length - 8;
+  const spans = [];
+  if (between % 4) spans.push(2);
+  for (let i = 0; i < Math.floor(between / 4); i++) spans.push(4);
+  return spans;
+}
+
+let kit = null, parts = {}, token = 0, lastFramed = 0;
+
+async function useKit(index) {
+  const mine = ++token;
+  kit = kits[index];
+  parts = {};
+  $('#count').textContent = 'Cargando las piezas…';
+  for (const p of kit.parts) {
+    const gltf = await loadGltf(kit.group, kit.pieces[p]);
+    if (mine !== token) return;
+    gltf.scene.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
+    parts[p] = gltf.scene;
+  }
+  rebuild(true);
+}
+
+function put(piece, x, half) {
+  const obj = parts[piece].clone(true);
+  obj.position.x = x;
+  if (half) obj.rotation.y = Math.PI;
+  bridge.add(obj);
+}
+
+function rebuildAqueduct(reframe) {
+  const length = Math.max(8, Math.floor(Number($('#span').value) / 4) * 4);
+  const spans = length / 4;
+  bridge.clear();
+  for (let k = 0; k < spans; k++) {
+    const x = -length / 2 + 4 * k;
+    put('pier', x, false);
+    put(k === spans - 1 ? 'end' : 'span', x + 2, false);
+  }
+  land.clear();
+  const ground = new THREE.Mesh(new THREE.BoxGeometry(length + 30, 0.4, 30), new THREE.MeshStandardMaterial({color: 0x47632e, roughness: 1}));
+  ground.position.y = -0.2;
+  ground.receiveShadow = true;
+  land.add(ground);
+  $('#length').textContent = length + ' m';
+  $('#count').textContent = 'Acueducto de ' + length + ' m: ' + (spans - 1) + ' tramo' + (spans === 2 ? '' : 's') + ' de arco, ' + spans + ' pilas y el final con su pila de agua. Va de 4 en 4 m.';
+  frameIt(length, reframe);
+}
+
+function frameIt(length, reframe) {
+  if (!reframe && Math.abs(length - lastFramed) < 12) return;
+  lastFramed = length;
+  const d = length * 1.25 + 14;
+  camera.position.set(d * 0.55, d * 0.42, d * 0.8);
+  controls.target.set(0, 0, 0);
+  sun.position.set(-length * 0.5, length * 0.9 + 20, length * 0.6 + 10);
+  const cam = sun.shadow.camera;
+  cam.left = cam.bottom = -length * 0.7 - 12; cam.right = cam.top = length * 0.7 + 12;
+  cam.near = 1; cam.far = length * 3 + 80;
+  cam.updateProjectionMatrix();
+}
+
+function rebuild(reframe) {
+  if (kit && kit.aqueduct) { if (parts.end) rebuildAqueduct(reframe); return; }
+  if (!parts.posts) return;
+  const length = Number($('#span').value);
+  const spans = spansFor(length);
+  bridge.clear();
+  let x = -length / 2;
+  put('abutment', x + 2, false);
+  put('posts', x + 0.3, false);
+  x += 4;
+  spans.forEach((size, i) => {
+    put(size === 2 ? 'span2' : 'span4', x + size / 2, false);
+    if (i > 0) put('pier', x, false);
+    x += size;
+  });
+  put('abutment', x + 2, true);
+  put('posts', length / 2 - 0.3, false);
+
+  land.clear();   // Two banks and the river between them.
+  const edge = length / 2 - 3.6, depth = 30;
+  const bank = new THREE.MeshStandardMaterial({color: 0x47632e, roughness: 1});
+  for (const side of [-1, 1]) {
+    const box = new THREE.Mesh(new THREE.BoxGeometry(12, 4.4, depth), bank);
+    box.position.set(side * (edge + 6), -2.2, 0);
+    box.receiveShadow = true;
+    land.add(box);
+  }
+  const bed = new THREE.Mesh(new THREE.BoxGeometry(edge * 2, 0.4, depth), new THREE.MeshStandardMaterial({color: 0x4a4436, roughness: 1}));
+  bed.position.y = -4.2;
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(edge * 2, depth), new THREE.MeshBasicMaterial({color: 0x3f86c4, transparent: true, opacity: 0.55, side: THREE.DoubleSide}));
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = -0.7;
+  land.add(bed, water);
+
+  $('#length').textContent = length + ' m';
+  const count = n => spans.filter(s => s === n).length;
+  $('#count').textContent = 'Río de ' + (length - 8) + ' m: 2 estribos con rampa' + (count(2) ? ', 1 tramo de 2 m' : '') + (count(4) ? ', ' + count(4) + ' tramo' + (count(4) > 1 ? 's' : '') + ' de 4 m' : '')
+    + (spans.length > 1 ? ', ' + (spans.length - 1) + ' pila' + (spans.length > 2 ? 's' : '') : '') + ' y 2 pares de postes.';
+  frameIt(length, reframe);
+  try { localStorage.setItem('propuestas.puentes', JSON.stringify({largo: length, tipo: kit.group.clave})); } catch (e) { /* Not kept. */ }
+}
+
+$('#span').addEventListener('input', () => rebuild(false));
+$('#kit').addEventListener('change', e => useKit(Number(e.target.value)));
+$('#theme').addEventListener('click', () => {
+  const root = document.documentElement;
+  root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
+  try { localStorage.setItem('propuestas.tema', root.dataset.theme); } catch (e) { /* Not kept. */ }
+});
+try { document.documentElement.dataset.theme = localStorage.getItem('propuestas.tema') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); } catch (e) { /* Dark. */ }
+
+if (!kits.length) {
+  $('#count').textContent = 'No hay juegos de piezas de puente empaquetados todavía.';
+} else {
+  kits.forEach((k, i) => { const o = document.createElement('option'); o.value = i; o.textContent = k.name; $('#kit').append(o); });
+  let first = 0;
+  try {
+    const kept = JSON.parse(localStorage.getItem('propuestas.puentes') || '{}');
+    first = Math.max(0, kits.findIndex(k => k.group.clave === kept.tipo));
+    if (Number.isInteger(kept.largo) && kept.largo >= 10 && kept.largo <= 60 && kept.largo % 2 === 0) $('#span').value = kept.largo;
+  } catch (e) { /* The first kit, 18 m. */ }
+  $('#kit').value = first;
+  useKit(first);
+}
+resize();
+</script>
+</body>
+</html>

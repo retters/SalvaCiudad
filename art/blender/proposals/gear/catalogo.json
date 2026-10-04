@@ -1,0 +1,706 @@
+{
+ "familia": "gear",
+ "grupos": [
+  {
+   "id": "tool_pickaxe",
+   "nombre": "Pico",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Pico de dos puntas de 0,9 m, en tres calidades: cabeza de piedra atada con cuerda, de hierro y de acero.",
+   "propuestas": [
+    {
+     "titulo": "Herramienta visible del minero y el cantero",
+     "detalle": "El aldeano la lleva en la mano al picar, como hoy el hacha del leñador. Sin efecto en las reglas: solo se ve."
+    },
+    {
+     "titulo": "Calidades de herramienta",
+     "detalle": "Las herramientas dejan de ser un solo recurso: de piedra (se hacen sin herrero, rinden poco y duran poco), de hierro (lo de hoy) y de acero (hierro más carbón: rinden y duran más). Cada trabajador usa la mejor que haya en el almacén."
+    },
+    {
+     "titulo": "Requisito por material",
+     "detalle": "La piedra se saca con pico de piedra; el hierro y el oro piden pico de hierro; los cristales, de acero."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_pickaxe_stone",
+     "nombre": "Piedra",
+     "material": "piedra"
+    },
+    {
+     "id": "tool_pickaxe_iron",
+     "nombre": "Hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_pickaxe_steel",
+     "nombre": "Acero",
+     "material": "acero"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "tool_shovel",
+   "nombre": "Pala",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Pala de 1,3 m con mango en D, en piedra, hierro y acero.",
+   "propuestas": [
+    {
+     "titulo": "Herramienta del pozo de arcilla, el compost y las obras",
+     "detalle": "Se ve en la mano de quien cava arcilla, voltea compost o hace cimientos."
+    },
+    {
+     "titulo": "Trabajos de tierra",
+     "detalle": "Permite órdenes nuevas hechas por peones con pala: allanar una ladera, cavar un foso o una acequia, enterrar a los muertos de una epidemia."
+    },
+    {
+     "titulo": "Palear nieve",
+     "detalle": "En invierno, los peones con pala despejan caminos y entradas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_shovel_stone",
+     "nombre": "Piedra",
+     "material": "piedra"
+    },
+    {
+     "id": "tool_shovel_iron",
+     "nombre": "Hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_shovel_steel",
+     "nombre": "Acero",
+     "material": "acero"
+    }
+   ]
+  },
+  {
+   "id": "tool_hoe",
+   "nombre": "Azada",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Azada de 1,3 m, en piedra, hierro y acero.",
+   "propuestas": [
+    {
+     "titulo": "Herramienta del granjero",
+     "detalle": "El granjero la lleva al preparar y desyerbar el campo."
+    },
+    {
+     "titulo": "Rendimiento del campo por calidad",
+     "detalle": "Con azada de piedra el campo se prepara despacio; con hierro, al ritmo de hoy; con acero, un granjero atiende más celdas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_hoe_stone",
+     "nombre": "Piedra",
+     "material": "piedra"
+    },
+    {
+     "id": "tool_hoe_iron",
+     "nombre": "Hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_hoe_steel",
+     "nombre": "Acero",
+     "material": "acero"
+    }
+   ]
+  },
+  {
+   "id": "tool_scythe",
+   "nombre": "Guadaña y hoz",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Guadaña de 1,6 m con dos agarres y hoz de mano de 0,45 m, cada una en piedra, hierro y acero.",
+   "propuestas": [
+    {
+     "titulo": "Cosecha",
+     "detalle": "La hoz cosecha poco a poco (trigo, cebada, lino); la guadaña, una franja ancha por pasada: la cosecha termina antes de las primeras heladas."
+    },
+    {
+     "titulo": "Heno",
+     "detalle": "La guadaña siega la hierba alta para heno, alimento de invierno del ganado y de los animales de tiro."
+    },
+    {
+     "titulo": "Arma de la milicia",
+     "detalle": "Los aldeanos llamados a la campana sin armas pelean con lo que tienen: la guadaña pega más que el puño."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_scythe_stone",
+     "nombre": "Guadaña de piedra",
+     "material": "piedra"
+    },
+    {
+     "id": "tool_scythe_iron",
+     "nombre": "Guadaña de hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_scythe_steel",
+     "nombre": "Guadaña de acero",
+     "material": "acero"
+    },
+    {
+     "id": "tool_sickle_stone",
+     "nombre": "Hoz de piedra",
+     "material": "piedra"
+    },
+    {
+     "id": "tool_sickle_iron",
+     "nombre": "Hoz de hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_sickle_steel",
+     "nombre": "Hoz de acero",
+     "material": "acero"
+    }
+   ]
+  },
+  {
+   "id": "tool_pitchfork",
+   "nombre": "Horca y rastrillo",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Horca de tres dientes de 1,55 m en piedra (madera endurecida), hierro y acero, y un rastrillo de madera de 1,4 m.",
+   "propuestas": [
+    {
+     "titulo": "Herramientas del heno y el compost",
+     "detalle": "Se ven en la mano de quien carga heno, voltea el compost o limpia el establo."
+    },
+    {
+     "titulo": "Arma de la turba",
+     "detalle": "Cuando la felicidad cae muy bajo, los aldeanos se amotinan con horcas y antorchas frente al centro del pueblo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_pitchfork_stone",
+     "nombre": "Horca rústica",
+     "material": "madera"
+    },
+    {
+     "id": "tool_pitchfork_iron",
+     "nombre": "Horca de hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_pitchfork_steel",
+     "nombre": "Horca de acero",
+     "material": "acero"
+    },
+    {
+     "id": "tool_rake",
+     "nombre": "Rastrillo",
+     "material": "madera"
+    }
+   ]
+  },
+  {
+   "id": "tool_sledge",
+   "nombre": "Mazo y tenazas",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Mazo de 0,85 m en piedra, hierro y acero, y unas tenazas de herrero con una pieza al rojo.",
+   "propuestas": [
+    {
+     "titulo": "Herramientas del herrero y el cantero",
+     "detalle": "El herrero trabaja con mazo y tenazas en el yunque; el cantero parte bloques con el mazo."
+    },
+    {
+     "titulo": "Demolición",
+     "detalle": "Con mazos, demoler un edificio es más rápido y recupera más material."
+    },
+    {
+     "titulo": "Arma pesada",
+     "detalle": "Arma de la milicia enana: lenta, pero rompe escudos y daña a esqueletos y gólems, que resisten los filos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_sledge_stone",
+     "nombre": "Mazo de piedra",
+     "material": "piedra"
+    },
+    {
+     "id": "tool_sledge_iron",
+     "nombre": "Mazo de hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_sledge_steel",
+     "nombre": "Mazo de acero",
+     "material": "acero"
+    },
+    {
+     "id": "tool_tongs",
+     "nombre": "Tenazas",
+     "material": "hierro"
+    }
+   ]
+  },
+  {
+   "id": "tool_saw",
+   "nombre": "Sierra de arco",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Sierra de bastidor de 0,6 m con cuerda tensora y hoja dentada, en piedra (dientes de sílex), hierro y acero.",
+   "propuestas": [
+    {
+     "titulo": "Tablas",
+     "detalle": "Abre un recurso nuevo: con sierra, un carpintero convierte troncos en tablas, que rinden más por tronco en las obras y son requisito de los edificios de nivel alto."
+    },
+    {
+     "titulo": "Tala más limpia",
+     "detalle": "Con sierra el leñador saca más troncos por árbol que con hacha."
+    },
+    {
+     "titulo": "Herramienta visible del carpintero",
+     "detalle": "Se ve en la mano de quien construye en la etapa de armazón."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_saw_stone",
+     "nombre": "Sílex",
+     "material": "piedra"
+    },
+    {
+     "id": "tool_saw_iron",
+     "nombre": "Hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_saw_steel",
+     "nombre": "Acero",
+     "material": "acero"
+    }
+   ]
+  },
+  {
+   "id": "tool_shears",
+   "nombre": "Tijeras de esquilar",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Tijeras de muelle de 0,36 m con un vellón de lana.",
+   "propuestas": [
+    {
+     "titulo": "Lana",
+     "detalle": "Con ovejas y tijeras aparece la lana: otra fibra para el tejedor además del lino, que da ropa de abrigo para el invierno."
+    },
+    {
+     "titulo": "Esquila anual",
+     "detalle": "Cada primavera el pastor esquila el rebaño: un trabajo de temporada, como la cosecha."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_shears",
+     "nombre": "Hierro",
+     "material": "hierro"
+    }
+   ]
+  },
+  {
+   "id": "tool_net",
+   "nombre": "Red de mano",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Salabre de 2 m: aro con red en una pértiga, con un pez dentro.",
+   "propuestas": [
+    {
+     "titulo": "Pesca de orilla",
+     "detalle": "Alternativa a la caña: pesca más por jornada en aguas con muchos peces, pero agota el banco antes."
+    },
+    {
+     "titulo": "Atrapar animales vivos",
+     "detalle": "Sirve para traer vivos conejos, aves o ranas y empezar una cría."
+    },
+    {
+     "titulo": "Recolectar insectos",
+     "detalle": "El herbolario atrapa mariposas y luciérnagas para remedios o faroles."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_net",
+     "nombre": "Madera y cuerda",
+     "material": "madera y lino"
+    }
+   ]
+  },
+  {
+   "id": "tool_bucket",
+   "nombre": "Cubo y balancín",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Cubo de duelas con aros de hierro y asa de cuerda, y un balancín de hombros con dos cubos. 0,55 y 1,1 m de alto.",
+   "propuestas": [
+    {
+     "titulo": "Acarreo de agua visible",
+     "detalle": "Quien apaga un incendio o riega lleva el cubo en la mano; con balancín lleva el doble por viaje."
+    },
+    {
+     "titulo": "Cadena de cubos",
+     "detalle": "Ante un incendio, los vecinos forman fila entre el pozo y el fuego y se pasan los cubos: apaga mucho más rápido que ir y venir."
+    },
+    {
+     "titulo": "Aguador",
+     "detalle": "Un oficio que reparte agua con balancín a las casas sin pozo cercano."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_bucket",
+     "nombre": "Cubo",
+     "material": "madera y hierro"
+    },
+    {
+     "id": "tool_bucket_yoke",
+     "nombre": "Balancín con dos cubos",
+     "material": "madera y hierro"
+    }
+   ]
+  },
+  {
+   "id": "tool_watering_can",
+   "nombre": "Regadera",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Regadera de cobre de 0,33 m con alcachofa de latón.",
+   "propuestas": [
+    {
+     "titulo": "Riego de huertos y jardines",
+     "detalle": "Los huertos y jardines regados rinden más y aguantan la sequía; es trabajo de los ratos libres de la familia."
+    },
+    {
+     "titulo": "Jardinero",
+     "detalle": "Un oficio que mantiene las decoraciones vivas (arriates, setos, macetas): sin él se marchitan y dejan de mejorar el entorno."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_watering_can",
+     "nombre": "Cobre",
+     "material": "cobre"
+    }
+   ]
+  },
+  {
+   "id": "tool_basket",
+   "nombre": "Canasta y cuévano",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Canasta de mimbre con asa llena de fruta, y un cuévano de espalda con correas lleno de hongos. 0,4 y 0,75 m.",
+   "propuestas": [
+    {
+     "titulo": "Carga del recolector",
+     "detalle": "Con cuévano, el recolector y el herbolario traen el doble por viaje; la canasta es lo que llevan los aldeanos al mercado."
+    },
+    {
+     "titulo": "Cestero",
+     "detalle": "Un oficio menor que hace cestos con juncos: un bien nuevo que las casas piden y los mercaderes compran."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_basket",
+     "nombre": "Canasta de mano",
+     "material": "mimbre"
+    },
+    {
+     "id": "tool_basket_back",
+     "nombre": "Cuévano",
+     "material": "mimbre y cuero"
+    }
+   ]
+  },
+  {
+   "id": "tool_lantern",
+   "nombre": "Farol de mano y catalejo",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Farol de hierro con asa (0,43 m) y catalejo de latón de tres tramos (0,56 m).",
+   "propuestas": [
+    {
+     "titulo": "Trabajar de noche",
+     "detalle": "Un aldeano con farol no sufre la penalización de la oscuridad y espanta a las bestias pequeñas; gasta sebo o aceite."
+    },
+    {
+     "titulo": "Equipo del explorador y del vigía",
+     "detalle": "Con catalejo, el explorador y las torres ven más lejos; el farol deja explorar de noche."
+    },
+    {
+     "titulo": "Sereno",
+     "detalle": "Un guardia nocturno recorre el pueblo con farol: menos robos e incendios detectados al empezar."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_lantern",
+     "nombre": "Farol",
+     "material": "hierro"
+    },
+    {
+     "id": "tool_spyglass",
+     "nombre": "Catalejo",
+     "material": "latón"
+    }
+   ]
+  },
+  {
+   "id": "gear_instruments",
+   "nombre": "Instrumentos",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Laúd de 0,9 m, tambor de guerra con baquetas y cuerno de señales.",
+   "propuestas": [
+    {
+     "titulo": "Música en la taberna",
+     "detalle": "Un músico con laúd en la taberna sube más la felicidad y atrae visitantes; es un oficio."
+    },
+    {
+     "titulo": "Señales del ejército",
+     "detalle": "El cuerno llama a la milicia desde lejos sin campana; el tambor hace marchar más rápido a las tropas y sube su moral."
+    },
+    {
+     "titulo": "Fiestas",
+     "detalle": "Las fiestas de temporada necesitan músicos: sin instrumentos, la fiesta rinde la mitad."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "gear_lute",
+     "nombre": "Laúd",
+     "material": "madera"
+    },
+    {
+     "id": "gear_drum",
+     "nombre": "Tambor",
+     "material": "madera y cuero"
+    },
+    {
+     "id": "gear_horn",
+     "nombre": "Cuerno",
+     "material": "cuerno y latón"
+    }
+   ]
+  },
+  {
+   "id": "weapon_polearms",
+   "nombre": "Armas de asta",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Alabarda de 2,25 m, pica de 3,6 m con gallardete y jabalina de 1,75 m.",
+   "propuestas": [
+    {
+     "titulo": "Nuevas unidades",
+     "detalle": "Alabardero (bueno contra caballería y monstruos grandes), piquero (línea que frena cargas, lento) y escaramuzador con jabalinas (corto alcance, mucho daño, pocas municiones)."
+    },
+    {
+     "titulo": "Mejoras del lancero",
+     "detalle": "El lancero de hoy sube de nivel: lanza, luego pica, luego alabarda, cada una con más hierro."
+    },
+    {
+     "titulo": "Guardia de puertas",
+     "detalle": "Los guardias apostados en puertas y garitas llevan alabarda: se distinguen de la tropa de campaña."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "weapon_halberd",
+     "nombre": "Alabarda",
+     "material": "acero"
+    },
+    {
+     "id": "weapon_pike",
+     "nombre": "Pica",
+     "material": "acero"
+    },
+    {
+     "id": "weapon_javelin",
+     "nombre": "Jabalina",
+     "material": "acero"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "weapon_blunt",
+   "nombre": "Mangual, maza y hacha arrojadiza",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Mangual de bola con púas en cadena (1,1 m), maza de aletas (0,87 m) y hacha arrojadiza (0,42 m).",
+   "propuestas": [
+    {
+     "titulo": "Armas contra armadura",
+     "detalle": "Las armas contundentes ignoran parte de la armadura: son la respuesta a enemigos acorazados, esqueletos y gólems."
+    },
+    {
+     "titulo": "Armas por raza",
+     "detalle": "Cada raza prefiere un arma: orcos con mangual, enanos con maza y hachas arrojadizas; sus soldados salen con ella y un pequeño bono."
+    },
+    {
+     "titulo": "Botín",
+     "detalle": "Los asaltantes las dejan caer; recogerlas da armas sin gastar hierro."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "weapon_flail",
+     "nombre": "Mangual",
+     "material": "hierro",
+     "animaciones": {
+      "swing": "La cadena y la bola giran."
+     }
+    },
+    {
+     "id": "weapon_mace",
+     "nombre": "Maza",
+     "material": "acero"
+    },
+    {
+     "id": "weapon_throwing_axe",
+     "nombre": "Hacha arrojadiza",
+     "material": "acero"
+    }
+   ]
+  },
+  {
+   "id": "armor_shields",
+   "nombre": "Escudo del lobo y rodela",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Escudo de cometa azul de 1 m con la cabeza de lobo del estandarte, y rodela de acero de 0,4 m.",
+   "propuestas": [
+    {
+     "titulo": "Emblema del pueblo en los soldados",
+     "detalle": "Los escudos llevan el emblema y el color que eligió el jugador: en una batalla se distingue de quién es cada tropa."
+    },
+    {
+     "titulo": "Escudo como equipo",
+     "detalle": "El escudo es una pieza aparte del arma: con escudo, menos daño de flechas; la rodela deja usar arma de dos manos a medias."
+    },
+    {
+     "titulo": "Muro de escudos",
+     "detalle": "Una formación de lanceros con escudo de cometa resiste las flechas mientras no se mueva."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "armor_shield_kite_wolf",
+     "nombre": "Cometa con lobo",
+     "material": "madera, lino y acero"
+    },
+    {
+     "id": "armor_shield_buckler",
+     "nombre": "Rodela",
+     "material": "acero"
+    }
+   ]
+  },
+  {
+   "id": "armor_helmets",
+   "nombre": "Cascos",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Tres cascos: gorro de cuero con orejeras, capacete de hierro de ala ancha y yelmo cerrado de acero con penacho.",
+   "propuestas": [
+    {
+     "titulo": "Niveles de armadura",
+     "detalle": "Los soldados se ven distintos según lo que el pueblo puede darles: cuero (curtiduría), hierro (herrero) o acero (herrero con carbón). Cada nivel resiste más."
+    },
+    {
+     "titulo": "Rangos",
+     "detalle": "El yelmo con penacho marca al capitán de cada grupo: si cae, la tropa pierde moral."
+    },
+    {
+     "titulo": "Casco de minero",
+     "detalle": "Los mineros y canteros con casco sufren menos accidentes."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "armor_helmet_leather",
+     "nombre": "Cuero",
+     "material": "cuero"
+    },
+    {
+     "id": "armor_helmet_kettle",
+     "nombre": "Capacete de hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "armor_helmet_great",
+     "nombre": "Yelmo de acero",
+     "material": "acero"
+    }
+   ]
+  },
+  {
+   "id": "armor_stand",
+   "nombre": "Armaduras en su percha",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Percha de madera de 1,8 m con una armadura completa: de cuero, de hierro o de acero con capa azul.",
+   "propuestas": [
+    {
+     "titulo": "Reserva de la armería",
+     "detalle": "Se ven en la armería y el cuartel según lo que hay guardado: de un vistazo se sabe cuántas armaduras quedan y de qué calidad."
+    },
+    {
+     "titulo": "Armadura como bien",
+     "detalle": "Un recurso nuevo que hace el herrero o el curtidor; reclutar un soldado gasta una, y con mejor armadura el soldado aguanta más."
+    },
+    {
+     "titulo": "Trofeo",
+     "detalle": "La de acero con capa es un adorno para el salón del centro del pueblo que sube el prestigio."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "armor_stand_leather",
+     "nombre": "Cuero",
+     "material": "cuero"
+    },
+    {
+     "id": "armor_stand_iron",
+     "nombre": "Hierro",
+     "material": "hierro"
+    },
+    {
+     "id": "armor_stand_steel",
+     "nombre": "Acero",
+     "material": "acero"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "magic_items",
+   "nombre": "Libro de hechizos y varita",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Libro abierto que flota a 1,2 m con runas que brillan, una página que pasa y motas de luz girando; y una varita de 0,5 m con una chispa en la punta.",
+   "propuestas": [
+    {
+     "titulo": "Magos como oficio",
+     "detalle": "Los personajes mago y clérigo, que hoy son aldeanos comunes, pasan a ser un oficio de la torre del mago: con libro y varita hacen hechizos lentos y caros (lluvia en sequía, apagar un incendio, curar una epidemia)."
+    },
+    {
+     "titulo": "Unidad de apoyo",
+     "detalle": "En el ejército, un mago con varita ataca a distancia con poco daño y mucho alcance, y espanta a los no-muertos."
+    },
+    {
+     "titulo": "Investigación",
+     "detalle": "El libro flota en la biblioteca o la escuela: un lugar donde se desbloquean mejoras con oro y tiempo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "magic_spellbook",
+     "nombre": "Libro de hechizos",
+     "animaciones": {
+      "hover": "Flota, mueve las tapas, pasa una página y giran las motas."
+     }
+    },
+    {
+     "id": "magic_wand",
+     "nombre": "Varita",
+     "animaciones": {
+      "glow": "Gira la chispa de la punta."
+     }
+    }
+   ],
+   "destacado": true
+  }
+ ]
+}

@@ -1,0 +1,615 @@
+{
+ "familia": "roads",
+ "grupos": [
+  {
+   "id": "road_signpost",
+   "nombre": "Poste indicador",
+   "categoria": "Caminos",
+   "descripcion": "Poste de 2,9 m con tablas que señalan direcciones y un tejadillo; de dos brazos o de cruce, con cuatro. Ocupa 1 × 1 m.",
+   "propuestas": [
+    {
+     "titulo": "Los aldeanos caminan más rápido por rutas señaladas",
+     "detalle": "Un poste en un cruce da un pequeño aumento de velocidad a quien pase por los caminos que salen de él, y los visitantes (mercaderes, inmigrantes) ya no se desvían."
+    },
+    {
+     "titulo": "Nombres en el mapa",
+     "detalle": "Cada tabla muestra el nombre real de lo que hay en esa dirección (otro pueblo, la mina, el puerto): al pasar el cursor se lee, y sirve de marcador para saltar la cámara."
+    },
+    {
+     "titulo": "Punto de encuentro de caravanas",
+     "detalle": "Las caravanas entre pueblos y los mercaderes entran al mapa por el indicador más cercano al borde, en vez de por cualquier lado."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_signpost",
+     "nombre": "Dos brazos",
+     "material": "madera"
+    },
+    {
+     "id": "road_signpost_cross",
+     "nombre": "Cruce de cuatro brazos",
+     "material": "madera"
+    }
+   ]
+  },
+  {
+   "id": "road_warning",
+   "nombre": "Señales de advertencia",
+   "categoria": "Caminos",
+   "descripcion": "Señal pintada sobre un poste de 2,5 m, con una tablilla debajo: bestias (lobo), asaltantes (calavera), derrumbes y crecidas. Ocupa 1 × 1 m.",
+   "propuestas": [
+    {
+     "titulo": "Zona prohibida para aldeanos",
+     "detalle": "Plantas la señal y los aldeanos dejan de entrar en un radio: nadie va a recoger bayas junto a una guarida de lobos ni cruza el vado en época de crecidas. Solo el ejército y los cazadores la ignoran."
+    },
+    {
+     "titulo": "Aviso automático de peligros",
+     "detalle": "El explorador coloca solo la señal que corresponde cuando descubre una guarida, un campamento de asaltantes o una ladera inestable; así el peligro queda marcado en el mapa."
+    },
+    {
+     "titulo": "Menos miedo",
+     "detalle": "Los peligros señalados afectan menos a la felicidad de las casas cercanas que los que nadie marcó."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_warning_wolf",
+     "nombre": "Bestias"
+    },
+    {
+     "id": "road_warning_skull",
+     "nombre": "Asaltantes"
+    },
+    {
+     "id": "road_warning_rockfall",
+     "nombre": "Derrumbes"
+    },
+    {
+     "id": "road_warning_flood",
+     "nombre": "Crecidas"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "road_warning_totem",
+   "nombre": "Tótem de calaveras",
+   "categoria": "Caminos",
+   "descripcion": "Poste seco de 3,3 m con un travesaño, tres calaveras, trapos rojos, plumas y huesos al pie. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Frontera de un territorio hostil",
+     "detalle": "Marca el borde de la zona de una tribu enemiga o de un monstruo: cruzarla provoca un ataque, respetarla no. El explorador los descubre y los dibuja en el mapa."
+    },
+    {
+     "titulo": "Espantar a los asaltantes débiles",
+     "detalle": "Los orcos y las razas guerreras pueden plantarlo: las incursiones pequeñas dan media vuelta, a cambio de que las casas cercanas pierdan algo de felicidad."
+    },
+    {
+     "titulo": "Trofeo",
+     "detalle": "Aparece solo tras vencer una incursión grande y sube la moral de la milicia."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_warning_totem",
+     "nombre": "Madera y hueso",
+     "animaciones": {
+      "sway": "Se mecen las calaveras colgadas y los trapos."
+     }
+    }
+   ]
+  },
+  {
+   "id": "road_lantern",
+   "nombre": "Faroles de camino",
+   "categoria": "Caminos",
+   "descripcion": "Cuatro faroles de unos 3,5 m: poste de madera con farol colgante, poste de hierro con dos faroles sobre base de piedra, pilar de piedra con llama y un báculo retorcido con un cristal que flota. Ocupan 1 × 1 m.",
+   "propuestas": [
+    {
+     "titulo": "Caminos seguros de noche",
+     "detalle": "Iluminan un tramo de camino: quien camina de noche bajo su luz no pierde velocidad ni es atacado por las bestias. El de madera cuesta poco y alumbra poco; el de hierro, el doble; el de piedra resiste ataques e incendios."
+    },
+    {
+     "titulo": "Consumo y farolero",
+     "detalle": "Gastan un poco de carbón o de sebo por noche y un farolero los enciende al anochecer; sin combustible se quedan apagados."
+    },
+    {
+     "titulo": "El cristal, luz sin combustible",
+     "detalle": "El farol de cristal es de las razas mágicas (elfos, elfos oscuros): no consume nada, da luz fría y cuesta oro o cristales encontrados al explorar."
+    },
+    {
+     "titulo": "Entorno",
+     "detalle": "Además de luz, suben el atractivo de las casas vecinas, más el de hierro y el de cristal."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_lantern_wood",
+     "nombre": "Madera",
+     "material": "troncos",
+     "animaciones": {
+      "swing": "El farol se mece."
+     }
+    },
+    {
+     "id": "road_lantern_iron",
+     "nombre": "Hierro, doble",
+     "material": "hierro y piedra",
+     "animaciones": {
+      "swing": "Los dos faroles se mecen."
+     }
+    },
+    {
+     "id": "road_lantern_stone",
+     "nombre": "Pilar de piedra",
+     "material": "piedra",
+     "animaciones": {
+      "burn": "Tiembla la llama."
+     }
+    },
+    {
+     "id": "road_lantern_crystal",
+     "nombre": "Cristal flotante",
+     "material": "madera y cristal",
+     "animaciones": {
+      "float": "El cristal gira y flota."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "road_town_arch",
+   "nombre": "Arco de entrada al pueblo",
+   "categoria": "Caminos",
+   "descripcion": "Arco sobre el camino, con 5 m libres y 4 m de alto: letrero colgante con el emblema y el nombre del pueblo, y dos faroles. De troncos o con pilares de piedra.",
+   "propuestas": [
+    {
+     "titulo": "Entrada oficial",
+     "detalle": "Marca por dónde llegan mercaderes, inmigrantes y visitantes: entran por el arco, y el pueblo gana fama (más visitas) por tener una entrada cuidada."
+    },
+    {
+     "titulo": "Nombre y emblema",
+     "detalle": "Muestra el nombre y el emblema del pueblo que eligió el jugador; en partidas de varios jugadores señala dónde empieza cada pueblo."
+    },
+    {
+     "titulo": "Límite del pueblo",
+     "detalle": "Los arcos definen el casco del pueblo: dentro, las casas tienen mejor entorno y los guardias patrullan; fuera, es campo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_town_arch",
+     "nombre": "Troncos",
+     "material": "troncos",
+     "animaciones": {
+      "swing": "Se mecen el letrero y los faroles."
+     }
+    },
+    {
+     "id": "road_town_arch_stone",
+     "nombre": "Pilares de piedra",
+     "material": "piedra",
+     "animaciones": {
+      "swing": "Se mecen el letrero y los faroles."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "road_toll_gate",
+   "nombre": "Peaje con barrera",
+   "categoria": "Caminos",
+   "descripcion": "Barrera de 5 m a rayas con contrapeso de piedra y poste de apoyo, y la caseta del cobrador con su ventanilla, un cofre y un letrero. Ocupa 7 × 4 m.",
+   "propuestas": [
+    {
+     "titulo": "Peaje a mercaderes y caravanas",
+     "detalle": "Cada mercader o caravana ajena que pasa paga unas monedas. Demasiados peajes hacen que vengan menos mercaderes."
+    },
+    {
+     "titulo": "Control de entrada",
+     "detalle": "Un guardia en la caseta detiene a enfermos en época de epidemia y a forasteros sospechosos: baja el contagio que traen los visitantes y los robos."
+    },
+    {
+     "titulo": "Cerrar el camino",
+     "detalle": "Se puede bajar la barrera para cerrar un camino: los aldeanos dejan de usar esa ruta sin tener que demolerla."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_toll_gate",
+     "nombre": "Madera",
+     "animaciones": {
+      "open": "Sube la barrera (no se repite).",
+      "close": "Baja la barrera (no se repite)."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "road_fallen_tree",
+   "nombre": "Árbol caído",
+   "categoria": "Caminos",
+   "descripcion": "Tronco de 7 m atravesado en el camino con su raíz arrancada: recién caído con hojas, seco y con musgo, o ya serrado y apartado con los tocones apilados.",
+   "propuestas": [
+    {
+     "titulo": "Obstáculo tras una tormenta",
+     "detalle": "Las tormentas derriban árboles sobre los caminos: carros y carretas no pasan hasta que un leñador lo despeja, y al hacerlo da troncos."
+    },
+    {
+     "titulo": "Barricada improvisada",
+     "detalle": "Se puede ordenar derribar un árbol sobre un camino para frenar una incursión o una máquina de asedio."
+    },
+    {
+     "titulo": "Madera fácil",
+     "detalle": "Los árboles caídos del mapa dan troncos sin talar: los primeros días son la madera más rápida de conseguir. El seco da leña en vez de troncos."
+    },
+    {
+     "titulo": "Refugio de fauna",
+     "detalle": "El tronco seco con musgo atrae hongos, bayas y animales pequeños: un punto de recolección que se regenera."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_fallen_tree",
+     "nombre": "Recién caído"
+    },
+    {
+     "id": "road_fallen_tree_dead",
+     "nombre": "Seco, con musgo"
+    },
+    {
+     "id": "road_fallen_tree_cleared",
+     "nombre": "Serrado y despejado"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "road_rockslide",
+   "nombre": "Derrumbe de rocas",
+   "categoria": "Caminos",
+   "descripcion": "Montón de rocas sobre un lecho de tierra, de 4 o de 6 m de ancho; el grande arrastró un tronco seco.",
+   "propuestas": [
+    {
+     "titulo": "Caminos cortados en la montaña",
+     "detalle": "Con lluvias fuertes o en el deshielo, los caminos junto a acantilados pueden quedar cortados; despejarlo da piedra."
+    },
+    {
+     "titulo": "Pasos bloqueados que abrir",
+     "detalle": "El mapa trae pasos de montaña tapados: abrirlos con canteros descubre una zona nueva o un atajo."
+    },
+    {
+     "titulo": "Piedra suelta",
+     "detalle": "Una fuente de piedra que se recoge sin cantera, como las rocas sueltas de hoy pero con más cantidad."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_rockslide",
+     "nombre": "Pequeño"
+    },
+    {
+     "id": "road_rockslide_big",
+     "nombre": "Grande"
+    }
+   ]
+  },
+  {
+   "id": "road_sentry_box",
+   "nombre": "Garita de guardia",
+   "categoria": "Caminos",
+   "descripcion": "Garita de tablas a rayas azules y blancas con techo a cuatro aguas, una lanza y un brasero encendido. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Puesto de guardia",
+     "detalle": "Un soldado apostado vigila un radio pequeño día y noche: da la alarma, ahuyenta bestias y reduce los robos; mucho más barata que una torre."
+    },
+    {
+     "titulo": "Patrullas",
+     "detalle": "Varias garitas unidas por camino forman una ruta de patrulla que los guardias recorren."
+    },
+    {
+     "titulo": "Guardia nocturna",
+     "detalle": "El brasero da luz y el guardia no sufre la penalización por oscuridad."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_sentry_box",
+     "nombre": "Azul y blanca",
+     "material": "madera",
+     "animaciones": {
+      "burn": "Arde el brasero."
+     }
+    }
+   ]
+  },
+  {
+   "id": "road_waystone",
+   "nombre": "Piedra de camino con runas",
+   "categoria": "Caminos",
+   "descripcion": "Monolito de 3,5 m con runas que brillan en sus caras y cuatro esquirlas de cristal que flotan a su alrededor, sobre una base de piedra. Ocupa 3 × 3 m.",
+   "propuestas": [
+    {
+     "titulo": "Viaje rápido",
+     "detalle": "Dos piedras activadas quedan unidas: un aldeano que entra en una sale por la otra. Activarlas cuesta oro o cristales, y solo se encuentran explorando."
+    },
+    {
+     "titulo": "Hallazgo del explorador",
+     "detalle": "Están repartidas por el mapa; cada una que el explorador encuentra revela un trozo grande de mapa a su alrededor."
+    },
+    {
+     "titulo": "Protección mágica",
+     "detalle": "Dentro de su radio no entran los no-muertos ni los espectros de noche."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_waystone",
+     "nombre": "Piedra y cristal",
+     "animaciones": {
+      "hum": "Las esquirlas giran y flotan."
+     }
+    }
+   ]
+  },
+  {
+   "id": "road_trough",
+   "nombre": "Abrevadero con bomba",
+   "categoria": "Caminos",
+   "descripcion": "Tronco vaciado lleno de agua, bomba de hierro de mano, barandal para atar animales y un cubo. Ocupa 5 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Parada de animales de tiro",
+     "detalle": "Los caballos y bueyes de carros y carretas necesitan beber: con abrevaderos en los caminos largos no pierden velocidad."
+    },
+    {
+     "titulo": "Agua contra incendios",
+     "detalle": "Cuenta como punto de agua para apagar incendios, con menos alcance que un pozo."
+    },
+    {
+     "titulo": "Estancia de mercaderes",
+     "detalle": "Junto al puesto de comercio, los mercaderes que llegan en carro se quedan más tiempo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_trough",
+     "nombre": "Madera y hierro",
+     "animaciones": {
+      "pump": "Sube y baja la palanca de la bomba."
+     }
+    }
+   ]
+  },
+  {
+   "id": "road_rest_shelter",
+   "nombre": "Refugio de caminantes",
+   "categoria": "Caminos",
+   "descripcion": "Techo de paja a dos aguas sobre cuatro postes, con banca, mesa, un farol colgado y un indicador. Ocupa 4 × 3 m.",
+   "propuestas": [
+    {
+     "titulo": "Descanso en ruta",
+     "detalle": "Los aldeanos cansados o sorprendidos por la lluvia o la noche lejos de casa descansan aquí en vez de volver: útil junto a lugares de trabajo lejanos."
+    },
+    {
+     "titulo": "Parada de caravanas",
+     "detalle": "Las caravanas entre pueblos necesitan un refugio cada cierta distancia: con ellos llegan más lejos y más seguido."
+    },
+    {
+     "titulo": "Punto de almuerzo",
+     "detalle": "Los trabajadores comen aquí lo que llevan sin volver a casa, lo que ahorra viajes."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_rest_shelter",
+     "nombre": "Troncos y paja",
+     "animaciones": {
+      "swing": "El farol se mece."
+     }
+    }
+   ]
+  },
+  {
+   "id": "road_weathervane",
+   "nombre": "Veleta y manga de viento",
+   "categoria": "Caminos",
+   "descripcion": "Mástil de 5,7 m con los cuatro rumbos, una veleta con un gallo dorado y una manga de viento a rayas. Ocupa 1 × 1 m.",
+   "propuestas": [
+    {
+     "titulo": "Pronóstico del tiempo",
+     "detalle": "Con una veleta, el juego avisa con un día de ventaja de lluvia, helada, tormenta o sequía: da tiempo de cosechar o de guardar leña."
+    },
+    {
+     "titulo": "Dirección del fuego",
+     "detalle": "Muestra hacia dónde sopla el viento, que es hacia donde se propagan los incendios."
+    },
+    {
+     "titulo": "Molinos de viento",
+     "detalle": "Los molinos de viento rinden según el viento; la veleta enseña dónde y cuándo rinden más."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_weathervane",
+     "nombre": "Madera y hierro",
+     "animaciones": {
+      "turn": "La veleta y la manga giran con el viento."
+     }
+    }
+   ]
+  },
+  {
+   "id": "road_bell_post",
+   "nombre": "Campana de aviso",
+   "categoria": "Caminos",
+   "descripcion": "Campana de bronce bajo un tejadillo, colgada entre dos postes de 3 m, con su cuerda. Ocupa 3 × 1 m.",
+   "propuestas": [
+    {
+     "titulo": "Campana de barrio",
+     "detalle": "Repite el toque de la campana del centro: los aldeanos de barrios lejanos se refugian o se arman sin esperar a oír la principal."
+    },
+    {
+     "titulo": "Alarma de incendio",
+     "detalle": "Quien ve un incendio corre a tocarla y los vecinos llegan antes con agua."
+    },
+    {
+     "titulo": "Horario de trabajo",
+     "detalle": "Marca el inicio y el fin de la jornada: los trabajadores cercanos salen y vuelven a la vez, antes de la noche."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_bell_post",
+     "nombre": "Troncos y bronce",
+     "animaciones": {
+      "ring": "La campana se balancea y el badajo la golpea."
+     }
+    }
+   ]
+  },
+  {
+   "id": "road_tile",
+   "nombre": "Pavimentos de camino",
+   "categoria": "Caminos",
+   "descripcion": "Tramos de 4 × 4 m de camino: tierra con rodadas, grava, adoquín con bordillo y losas de piedra con bordillo y cuneta.",
+   "propuestas": [
+    {
+     "titulo": "Niveles de camino",
+     "detalle": "El camino se mejora por tramos: tierra (gratis, se embarra con lluvia), grava (piedra, sin barro), adoquín (más piedra, más velocidad y deja pasar carros) y losas (ladrillo o piedra labrada, lo más rápido y sube el entorno)."
+    },
+    {
+     "titulo": "Los caminos se hacen al andar",
+     "detalle": "Donde los aldeanos pasan mucho aparece solo un camino de tierra; tú decides cuáles mejorar."
+    },
+    {
+     "titulo": "Desgaste",
+     "detalle": "Los caminos de tierra y grava se estropean con el uso y la lluvia y un peón caminero los repara; el adoquín y las losas no."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_tile_dirt",
+     "nombre": "Tierra",
+     "material": "tierra"
+    },
+    {
+     "id": "road_tile_gravel",
+     "nombre": "Grava",
+     "material": "piedra"
+    },
+    {
+     "id": "road_tile_cobble",
+     "nombre": "Adoquín",
+     "material": "piedra"
+    },
+    {
+     "id": "road_tile_flagstone",
+     "nombre": "Losas",
+     "material": "piedra labrada"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "road_stairs",
+   "nombre": "Escalones para laderas",
+   "categoria": "Caminos",
+   "descripcion": "Escalera de 2 m de ancho que sube 1 m en 2,5 m: de piedra con muretes, o de tierra contenida con troncos y pasamanos.",
+   "propuestas": [
+    {
+     "titulo": "Caminos en pendiente",
+     "detalle": "Donde un camino sube una ladera fuerte se colocan escalones: los aldeanos suben sin perder velocidad. Los carros no pueden usarlos, así que hay que elegir entre escalera corta o rampa larga."
+    },
+    {
+     "titulo": "Acceso a edificios en ladera",
+     "detalle": "Se colocan solos frente a la puerta de un edificio construido en pendiente, en vez del desnivel de cimientos que se ve hoy."
+    },
+    {
+     "titulo": "Subida al adarve",
+     "detalle": "La versión de piedra sirve para subir a murallas y terrazas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_stairs_stone",
+     "nombre": "Piedra",
+     "material": "piedra"
+    },
+    {
+     "id": "road_stairs_log",
+     "nombre": "Troncos y tierra",
+     "material": "troncos"
+    }
+   ]
+  },
+  {
+   "id": "road_culvert",
+   "nombre": "Alcantarilla de losa",
+   "categoria": "Caminos",
+   "descripcion": "Paso de losa de piedra con bordillos donde un arroyo cruza bajo el camino: 4 m de camino de 3 m de ancho sobre un canal de 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Cruzar arroyos y acequias",
+     "detalle": "El puente más pequeño y barato: para arroyos y canales de riego de hasta 2 m. Deja pasar carros."
+    },
+    {
+     "titulo": "Drenaje",
+     "detalle": "Un camino con alcantarillas no se inunda ni se embarra con las lluvias fuertes."
+    },
+    {
+     "titulo": "Canales de riego",
+     "detalle": "Permite que una acequia cruce un camino sin cortarlo: abre la puerta a un sistema de riego para los campos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_culvert",
+     "nombre": "Piedra",
+     "material": "piedra"
+    }
+   ]
+  },
+  {
+   "id": "road_cairn",
+   "nombre": "Mojón de piedras",
+   "categoria": "Caminos",
+   "descripcion": "Pila de seis piedras de 1,7 m; la variante con un asta de 3,4 m y un gallardete rojo se ve de lejos y en la nieve.",
+   "propuestas": [
+    {
+     "titulo": "Marcas del explorador",
+     "detalle": "El explorador los deja al avanzar: lo que queda dentro de la vista de un mojón no vuelve a cubrirse de niebla."
+    },
+    {
+     "titulo": "Senderos de montaña y de nieve",
+     "detalle": "Una fila de mojones con gallardete marca una senda segura: en ventisca o niebla los aldeanos no se pierden."
+    },
+    {
+     "titulo": "Lindero",
+     "detalle": "Marca el límite entre el territorio de dos pueblos en partidas de varios jugadores."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "road_cairn",
+     "nombre": "Solo piedras",
+     "material": "piedra"
+    },
+    {
+     "id": "road_cairn_flag",
+     "nombre": "Con gallardete",
+     "material": "piedra y lino",
+     "animaciones": {
+      "wave": "Ondea el gallardete."
+     }
+    }
+   ]
+  }
+ ]
+}

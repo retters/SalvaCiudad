@@ -1,0 +1,189 @@
+{
+  "familia": "crafts",
+  "grupos": [
+    {
+      "id": "craft_loom",
+      "nombre": "Telar",
+      "categoria": "Anexos de casas",
+      "destacado": true,
+      "descripcion": "Telar vertical de 2 m con la urdimbre tensada por pesas de piedra, el lizo que va y viene, la lanzadera cruzando, la tela ya tejida enrollada abajo con tres franjas de color, un banco y una cesta de ovillos. Ocupa 3 × 2,4 m.",
+      "propuestas": [
+        {"titulo": "Industria casera", "detalle": "Anexo de una casa: quien vive en ella teje lino o lana en sus horas libres, sin edificio de taller. Poco por casa, pero muchas casas visten al pueblo."},
+        {"titulo": "Puesto de trabajo del tejedor", "detalle": "Dentro o junto al taller textil: cada telar añadido es un puesto más de tejedor. El taller crece por piezas."},
+        {"titulo": "Telas de color", "detalle": "Con tintes del tintorero el telar hace tela teñida, que vale más y sube la felicidad de quien la viste."}
+      ],
+      "modelos": [
+        {"id": "craft_loom", "nombre": "Telar", "material": "troncos y lino", "animaciones": {"weave": "Cruza la lanzadera y se mueve el lizo."}}
+      ]
+    },
+    {
+      "id": "craft_potter",
+      "nombre": "Alfarero",
+      "categoria": "Anexos de casas",
+      "descripcion": "Cobertizo de paja de 3,2 × 2,6 m con un torno de pie donde gira una vasija a medio hacer, estante de cacharros secándose, un horno pequeño de ladrillo, barro y un cubo de agua.",
+      "propuestas": [
+        {"titulo": "Vasijas", "detalle": "Convierte arcilla en vasijas: con ellas los almacenes guardan más comida y se estropea menos; también son mercancía."},
+        {"titulo": "Tejas y ladrillos pequeños", "detalle": "Variante temprana del horno de tejas: produce poco, pero basta para los primeros tejados."},
+        {"titulo": "Anexo de la casa", "detalle": "Como industria casera: la familia vende cacharros en el mercado y la casa sube de nivel antes."}
+      ],
+      "modelos": [
+        {"id": "craft_potter", "nombre": "Alfarero", "material": "arcilla", "animaciones": {"turn": "Gira el torno."}}
+      ]
+    },
+    {
+      "id": "craft_tanner",
+      "nombre": "Curtidor",
+      "categoria": "Anexos de casas",
+      "descripcion": "Dos tinas de remojo con zunchos de hierro, dos bastidores con pieles atadas secándose, el caballete donde se raspa una piel con la cuchilla de dos mangos, un barril y un saco de corteza. 4 × 3 m.",
+      "propuestas": [
+        {"titulo": "Pieles en cuero", "detalle": "Convierte las pieles del cazador y del ganadero en cuero (ya existe como recurso) usando corteza de roble y agua."},
+        {"titulo": "Huele", "detalle": "Baja el atractivo de las casas de alrededor y ensucia el agua río abajo: va en las afueras y aguas abajo de los pozos."},
+        {"titulo": "Armadura ligera", "detalle": "Con curtidor, la milicia puede equiparse con cuero sin gastar hierro."}
+      ],
+      "modelos": [
+        {"id": "craft_tanner", "nombre": "Curtidor", "material": "cuero", "animaciones": {"scrape": "La cuchilla raspa la piel."}}
+      ]
+    },
+    {
+      "id": "craft_cooper",
+      "nombre": "Tonelero",
+      "categoria": "Anexos de casas",
+      "descripcion": "Un barril a medio armar, con las duelas abiertas, un fuego dentro para curvarlas y el aro de hierro que baja a golpes; banco con aros, dos barriles terminados y duelas apoyadas. 3,4 × 2,6 m.",
+      "propuestas": [
+        {"titulo": "Barriles", "detalle": "Recurso intermedio: sin barriles no hay cerveza, vino, pescado en salazón ni agua para los barcos y las carretas aguadoras."},
+        {"titulo": "Conserva", "detalle": "La comida guardada en barriles dura el doble: reduce las pérdidas de invierno."},
+        {"titulo": "Comercio", "detalle": "Los mercaderes por agua compran y venden por barriles: con tonelero caben más mercancías por barco."}
+      ],
+      "modelos": [
+        {"id": "craft_cooper", "nombre": "Tonelero", "material": "troncos y hierro", "animaciones": {"drive": "El aro baja y sube."}}
+      ]
+    },
+    {
+      "id": "craft_wheelwright",
+      "nombre": "Carretero",
+      "categoria": "Anexos de casas",
+      "descripcion": "Cobertizo de tablillas de 3,6 × 2,8 m con una rueda tumbada sobre su banco para ponerle los radios, dos ruedas terminadas, banco con radios, pinas a medio curvar y un tronco.",
+      "propuestas": [
+        {"titulo": "Carretas", "detalle": "Hace falta para construir carretas, carros de bueyes y máquinas de asedio; también repara las que se rompen en el camino."},
+        {"titulo": "Carretas más rápidas", "detalle": "Sin edificio nuevo: con un carretero en el pueblo, las carretas llevan más carga y se averían menos."}
+      ],
+      "modelos": [
+        {"id": "craft_wheelwright", "nombre": "Carretero", "material": "troncos", "animaciones": {"turn": "La rueda gira un octavo de vuelta, radio a radio."}}
+      ]
+    },
+    {
+      "id": "craft_chandler",
+      "nombre": "Cerero",
+      "categoria": "Anexos de casas",
+      "descripcion": "Hornillo de ladrillo con una caldera de sebo y, encima, una rueda de la que cuelgan ocho velas que se van bañando; banco con velas terminadas y un cajón. 2,8 × 2,4 m.",
+      "propuestas": [
+        {"titulo": "Velas", "detalle": "Con sebo del carnicero o cera de las colmenas hace velas: las casas con velas trabajan una hora más en invierno y son más felices."},
+        {"titulo": "Luz para minas y templos", "detalle": "Las minas profundas y las iglesias consumen velas; sin ellas rinden menos."},
+        {"titulo": "Faroles", "detalle": "Sustituye el aceite de las farolas: abarata el alumbrado del pueblo."}
+      ],
+      "modelos": [
+        {"id": "craft_chandler", "nombre": "Cerero", "animaciones": {"dip": "Gira la rueda de velas."}}
+      ]
+    },
+    {
+      "id": "craft_glassblower",
+      "nombre": "Vidriero",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Horno redondo de ladrillo de 2,5 m con cúpula y chimenea, la boca encendida, la caña con una bola de vidrio al rojo que gira sobre los brazos del banco, estante de botellas, tina de agua y arena. 3,6 × 2,8 m.",
+      "propuestas": [
+        {"titulo": "Vidrio", "detalle": "Recurso nuevo a partir de arena y mucha leña o carbón: ventanas para las casas de nivel alto (menos leña en invierno, más felicidad), frascos para el alquimista, vidrieras para la catedral."},
+        {"titulo": "Mercancía de lujo", "detalle": "Sin recurso nuevo: produce cristalería, que solo sirve para vender cara a los mercaderes."},
+        {"titulo": "Lentes", "detalle": "Desbloquea el catalejo de los vigías y el observatorio."}
+      ],
+      "modelos": [
+        {"id": "craft_glassblower", "nombre": "Vidriero", "material": "ladrillo", "animaciones": {"gather": "La caña gira con el vidrio al rojo."}}
+      ]
+    },
+    {
+      "id": "craft_press",
+      "nombre": "Prensa de husillo",
+      "categoria": "Granja y riego",
+      "descripcion": "Prensa de madera de 2,6 m con un husillo que baja al girar la barra: de sidra (capas de manzana entre telas, cesto de manzanas y barril), de aceite (aceitunas, tinajas) y de queso (dos moldes, quesos en el banco y una lechera). 3,2 × 2,6 m.",
+      "propuestas": [
+        {"titulo": "Transformar la cosecha", "detalle": "Convierte fruta en sidra, aceitunas en aceite y leche en queso: productos que duran mucho más que lo fresco y valen más."},
+        {"titulo": "Un edificio, tres recetas", "detalle": "La misma prensa hace lo que el pueblo tenga: se elige la receta como en cualquier taller y cambia lo que se ve bajo el husillo."},
+        {"titulo": "Aceite para faroles", "detalle": "El aceite alimenta farolas y cocinas; la sidra y el queso suben la felicidad en la taberna."}
+      ],
+      "modelos": [
+        {"id": "craft_press_cider", "nombre": "De sidra", "material": "troncos", "animaciones": {"press": "El husillo baja girando y vuelve a subir."}},
+        {"id": "craft_press_oil", "nombre": "De aceite", "material": "troncos", "animaciones": {"press": "El husillo baja girando y vuelve a subir."}},
+        {"id": "craft_press_cheese", "nombre": "De queso", "material": "troncos", "animaciones": {"press": "El husillo baja girando y vuelve a subir."}}
+      ]
+    },
+    {
+      "id": "craft_fletcher",
+      "nombre": "Arquero y flechero",
+      "categoria": "Armas y herramientas",
+      "descripcion": "Poste de templar con un arco que se tensa y se suelta, banco con flechas a medio emplumar, aljaba llena, varas de tejo apoyadas y un cajón. 3,4 × 2,4 m.",
+      "propuestas": [
+        {"titulo": "Arcos y flechas", "detalle": "Los cazadores y los arqueros de la milicia necesitan flechas, que se gastan: el flechero las repone con madera, plumas (gansos, gallinas) y un poco de hierro."},
+        {"titulo": "Mejor caza", "detalle": "Con flechero, la cabaña del cazador rinde más y la torre de vigía dispara más lejos."},
+        {"titulo": "Arcos de cada raza", "detalle": "Un maestro élfico hace arcos largos; uno de los zorros, arcos cortos de jinete: ventaja propia de pueblos mixtos."}
+      ],
+      "modelos": [
+        {"id": "craft_fletcher", "nombre": "Arquero y flechero", "material": "troncos", "animaciones": {"tiller": "El arco se tensa y se suelta."}}
+      ]
+    },
+    {
+      "id": "craft_basketmaker",
+      "nombre": "Cestero",
+      "categoria": "Anexos de casas",
+      "descripcion": "Una cesta a medio tejer con las varas en pie, que gira mientras se trabaja, cuatro cestas terminadas, haces de mimbre y un tocón para sentarse. 3 × 2,4 m.",
+      "propuestas": [
+        {"titulo": "Cestas", "detalle": "Con juncos o mimbre de la orilla: recolectores, pescadores y porteadores llevan más por viaje con cesta."},
+        {"titulo": "Oficio para quien no puede otro", "detalle": "Trabajo sentado: lo hacen ancianos y heridos, que así siguen produciendo."},
+        {"titulo": "Zarzos y colmenas", "detalle": "También teje los zarzos de las cercas y las colmenas de paja, que dejan de costar madera."}
+      ],
+      "modelos": [
+        {"id": "craft_basketmaker", "nombre": "Cestero", "animaciones": {"weave": "La cesta gira mientras se teje."}}
+      ]
+    },
+    {
+      "id": "craft_scribe",
+      "nombre": "Escribano",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Pupitre inclinado bajo un tejadillo de 2,6 × 2,2 m, con un pergamino a medio escribir, la pluma que avanza, tintero, vela, taburete y un arcón de rollos.",
+      "propuestas": [
+        {"titulo": "Contratos y cartas", "detalle": "Con escribano se pueden firmar tratos duraderos con mercaderes y con otros pueblos (suministro fijo cada estación) en vez de trueques sueltos."},
+        {"titulo": "Registro del pueblo", "detalle": "Guarda la historia: desbloquea las gráficas de población y producción y el registro de sucesos."},
+        {"titulo": "Escuela", "detalle": "Enseña a leer a los niños mientras no haya escuela: de adultos aprenden un oficio más rápido."}
+      ],
+      "modelos": [
+        {"id": "craft_scribe", "nombre": "Escribano", "animaciones": {"write": "La pluma avanza por el renglón."}}
+      ]
+    },
+    {
+      "id": "craft_butcher",
+      "nombre": "Carnicero",
+      "categoria": "Anexos de casas",
+      "descripcion": "Tajo de tronco con la cuchilla que sube y cae, una barra de ganchos con piezas y ristras de embutido, mostrador con cortes y un barril, bajo un tejadillo de 3,2 × 2,4 m.",
+      "propuestas": [
+        {"titulo": "Aprovechar el animal entero", "detalle": "Sin carnicero, una res da solo carne; con él da además cuero, sebo (velas, jabón) y hueso."},
+        {"titulo": "Embutidos", "detalle": "Con sal y ahumadero hace embutido, que no se estropea en todo el invierno."},
+        {"titulo": "Puesto de la plaza", "detalle": "Es el puesto de carne del mercado con alguien trabajando: las casas de su radio comen variado."}
+      ],
+      "modelos": [
+        {"id": "craft_butcher", "nombre": "Carnicero", "animaciones": {"chop": "La cuchilla sube y cae."}}
+      ]
+    },
+    {
+      "id": "craft_soap_boiler",
+      "nombre": "Jabonero",
+      "categoria": "Anexos de casas",
+      "descripcion": "Caldero de hierro de 1,2 m sobre un fuego entre piedras, con la pala que remueve, banco con pastillas de jabón, barril de lejía, ceniza y un cubo. 3 × 2,4 m.",
+      "propuestas": [
+        {"titulo": "Menos enfermedades", "detalle": "Con sebo y ceniza hace jabón: las casas que lo reciben y los lavaderos y baños que lo usan reducen mucho las epidemias."},
+        {"titulo": "Mejora de la casa de baños", "detalle": "Sin recurso nuevo: un jabonero junto a los baños dobla su efecto."}
+      ],
+      "modelos": [
+        {"id": "craft_soap_boiler", "nombre": "Jabonero", "animaciones": {"stir": "La pala remueve el caldero."}}
+      ]
+    }
+  ]
+}

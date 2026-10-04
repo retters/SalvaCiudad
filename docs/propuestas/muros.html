@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SalvaCiudad · Probar muros y trazados modulares</title>
+<style>
+:root { --bg: #14171c; --panel: #1c2128; --panel2: #232a33; --line: #323b47; --text: #e6e9ee; --dim: #9aa4b2; --accent: #5aa9e6; --accent-ink: #0b1620; --stage: #2a323d; }
+:root[data-theme="light"] { --bg: #f3f1ec; --panel: #ffffff; --panel2: #f0ede6; --line: #d6d1c6; --text: #1f242b; --dim: #5f6875; --accent: #1f6fb0; --accent-ink: #ffffff; --stage: #dfe6ec; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+button, select { font: inherit; color: inherit; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 11px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); }
+header { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header h1 { font-size: 17px; margin: 0 8px 0 0; }
+header .grow { flex: 1; }
+header .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+#wrap { position: relative; flex: 1; min-height: 0; background: var(--stage); }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#info { position: absolute; left: 14px; top: 12px; font-size: 13px; color: var(--dim); max-width: 560px; pointer-events: none; }
+#info b { color: var(--text); }
+#rule { padding: 8px 18px; font-size: 13.5px; color: var(--dim); background: var(--panel); border-top: 1px solid var(--line); }
+#rule b { color: var(--text); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Probar muros y trazados modulares</h1>
+  <label for="kit">Tipo:</label>
+  <select id="kit"></select>
+  <span class="sep"></span>
+  <button data-tool="wall" class="on" title="Clic en una celda: pone o quita un tramo de muro">Muro</button>
+  <button data-tool="gate" title="Clic en una celda: pone o quita una puerta. Una sola es un postigo de 2 m; dos seguidas, una puerta de 4 m">Puerta</button>
+  <button data-tool="tower" title="Clic en una celda: pone o quita una torre de 4 × 4 m sobre ese nudo del muro">Torre</button>
+  <span class="sep"></span>
+  <button id="doors" title="Abre o cierra todas las puertas">Abrir puertas</button>
+  <button id="sample">Ejemplo</button>
+  <button id="clear">Borrar</button>
+  <span class="grow"></span>
+  <a href="index.html">← Volver a los modelos</a>
+  <button id="theme">Tema</button>
+</header>
+<div id="wrap"><canvas id="stage"></canvas>
+  <div id="info">Elige <b>Muro</b>, <b>Puerta</b> o <b>Torre</b> y haz <b>clic</b> en una celda para poner o quitar. Cada celda mide 2 × 2 m. Arrastra para girar la vista, botón derecho para moverla, rueda para acercar.<br><span id="count"></span></div>
+</div>
+<div id="rule"><b>Regla:</b> cada celda mira a sus 4 vecinas. Sin vecinas usa «pilar»; con 1, «remate»; con 2 opuestas, «recto»; con 2 en ángulo, «esquina»; con 3, «unión en T»; con 4, «cruce». La pieza se gira en pasos de 90°. Una celda de puerta suelta es un postigo de 2 m y dos seguidas forman una puerta de 4 m; una torre ocupa su celda y el muro vecino entra 1 m en ella. Es la regla que usaría el juego al trazar un muro arrastrando.</div>
+
+<script src="vendor/three/three.min.js"></script>
+<script src="vendor/three/GLTFLoader.js"></script>
+<script src="vendor/three/OrbitControls.js"></script>
+<script src="datos/catalogo.js"></script>
+<script>
+'use strict';
+// A playground for the modular wall kits: cells on a 2 m grid, and for each cell the
+// piece and the turn that its four neighbors ask for, plus gates and towers.
+
+const CAT = window.PROPUESTAS_CATALOGO || {grupos: []};
+const $ = sel => document.querySelector(sel);
+const CELL = 2, SIZE = 16;   // Meters per cell; cells per side.
+const PIECES = ['straight', 'corner', 'tee', 'cross', 'end', 'pillar'];
+const WOODEN = ['palisade', 'plank', 'orc', 'reed', 'hedge'];
+
+const byId = new Map();   // Model id -> {group, model}.
+for (const g of CAT.grupos) for (const m of g.modelos) byId.set(m.id, {group: g, model: m});
+
+// The kits: every group that has the five connecting pieces under one prefix.
+const kits = [];
+for (const g of CAT.grupos) {
+  const straight = g.modelos.find(m => m.id.endsWith('_straight'));
+  if (!straight) continue;
+  const prefix = straight.id.slice(0, -'_straight'.length);
+  const ids = {};
+  for (const p of PIECES) ids[p] = prefix + '_' + p;
+  if (!['straight', 'corner', 'tee', 'cross', 'end'].every(p => byId.has(ids[p]))) continue;
+  const type = prefix.replace(/^(wall|fence)_/, '');
+  if (prefix.startsWith('fence_')) {
+    ids.gate = ids.postern = prefix + '_gate';
+  } else if (prefix.startsWith('wall_')) {
+    ids.gate = 'gate_' + type;
+    ids.postern = 'gate_' + type + '_postern';
+    ids.tower = ['tower_' + type + '_square', WOODEN.includes(type) ? 'tower_wood_square' : 'tower_stone_square'].find(id => byId.has(id));
+  } else if (byId.has(prefix + '_sluice')) {
+    ids.gate = ids.postern = prefix + '_sluice';   // A line kit (rails, canals, streets) has no towers; a canal's gate is its sluice.
+  }
+  kits.push({name: g.nombre, key: g.clave, ids, rank: prefix.startsWith('wall_') ? 0 : prefix.startsWith('fence_') ? 1 : 2});
+}
+kits.sort((a, b) => a.rank - b.rank);   // Walls first, then fences, then the line kits (rails, canals, streets).
+
+const waiting = new Map();
+window.PROPUESTAS_MODELO = (key, b64) => { const w = waiting.get(key); if (w) { waiting.delete(key); w(b64); } };
+
+/** The bytes of a model's .glb, read from its script. */
+function loadBytes(id) {
+  const {group, model} = byId.get(id);
+  const key = group.familia + '/' + model.id;
+  return new Promise((resolve, reject) => {
+    waiting.set(key, b64 => {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      resolve(bytes.buffer);
+    });
+    const s = document.createElement('script');
+    s.src = model.archivo + '?' + model.hash;
+    s.onload = () => s.remove();
+    s.onerror = () => { s.remove(); waiting.delete(key); reject(new Error('no se pudo leer ' + model.archivo)); };
+    document.head.append(s);
+  });
+}
+const parse = buffer => new Promise((resolve, reject) => new THREE.GLTFLoader().parse(buffer, '', resolve, reject));
+
+// --- Scene -------------------------------------------------------------------------------------
+
+const renderer = new THREE.WebGLRenderer({canvas: $('#stage'), antialias: true, alpha: true});
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 600);
+camera.position.set(24, 34, 42);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.12;
+controls.maxPolarAngle = Math.PI / 2 - 0.05;
+scene.add(new THREE.HemisphereLight(0xe4eeff, 0x80705c, 0.95));
+const sun = new THREE.DirectionalLight(0xfff1d8, 1.25);
+sun.position.set(-18, 34, 22);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.03;
+Object.assign(sun.shadow.camera, {left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120});
+scene.add(sun);
+const span = CELL * SIZE;
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(span, span), new THREE.MeshStandardMaterial({color: 0x47632e, roughness: 1}));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(span, SIZE, 0x1f2a18, 0x35482a);
+grid.position.y = 0.01;
+grid.material.transparent = true;
+grid.material.opacity = 0.7;
+scene.add(grid);
+const hover = new THREE.Mesh(new THREE.PlaneGeometry(CELL, CELL), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.25}));
+hover.rotation.x = -Math.PI / 2;
+hover.visible = false;
+scene.add(hover);
+const walls = new THREE.Group();
+scene.add(walls);
+let mixers = [];
+const clock = new THREE.Clock();
+
+function resize() {
+  const w = $('#wrap').clientWidth, h = $('#wrap').clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe($('#wrap'));
+(function loop() {
+  requestAnimationFrame(loop);
+  const dt = clock.getDelta();
+  for (const m of mixers) m.mixer.update(dt);
+  controls.update();
+  renderer.render(scene, camera);
+})();
+
+// --- Cells and the rule -------------------------------------------------------------------------
+
+// "column,row" keys; the column grows to the east (+X), the row to the north.
+let cells = new Set(), gates = new Set(), towers = new Set();
+const valid = list => new Set((Array.isArray(list) ? list : []).filter(k => /^\d+,\d+$/.test(k)));
+try {
+  const kept = JSON.parse(localStorage.getItem('propuestas.muros') || '{}');
+  cells = valid(kept.cells); gates = valid(kept.gates); towers = valid(kept.towers);
+} catch (e) { /* Starts empty. */ }
+const has = (c, r) => cells.has(c + ',' + r);
+
+/** The piece and its turn (degrees, counterclockwise seen from above) for a cell.
+ *  At rest: straight joins east and west, corner east and north, tee all but south,
+ *  end reaches west. */
+function pieceFor(c, r) {
+  const e = has(c + 1, r), n = has(c, r + 1), w = has(c - 1, r), s = has(c, r - 1);
+  const count = e + n + w + s;
+  if (count === 0) return ['pillar', 0];
+  if (count === 1) return ['end', w ? 0 : s ? 90 : e ? 180 : 270];
+  if (count === 4) return ['cross', 0];
+  if (count === 3) return ['tee', !s ? 0 : !e ? 90 : !n ? 180 : 270];
+  if (e && w) return ['straight', 0];
+  if (n && s) return ['straight', 90];
+  return ['corner', e && n ? 0 : n && w ? 90 : w && s ? 180 : 270];
+}
+
+let kit = null, buffers = {}, statics = {}, kitToken = 0, buildToken = 0, ready = false, open = false;
+
+async function useKit(index) {
+  const token = ++kitToken;
+  ready = false;
+  kit = kits[index];
+  buffers = {};
+  statics = {};
+  $('#count').textContent = 'Cargando las piezas…';
+  for (const [piece, id] of Object.entries(kit.ids)) {
+    if (!id || !byId.has(id) || buffers[id]) continue;
+    const buffer = await loadBytes(id);
+    if (token !== kitToken) return;
+    buffers[id] = buffer;
+    if (PIECES.includes(piece)) {
+      const gltf = await parse(buffer);
+      if (token !== kitToken) return;
+      shade(gltf.scene);
+      statics[piece] = gltf.scene;
+    }
+  }
+  for (const b of document.querySelectorAll('[data-tool]')) b.disabled = (b.dataset.tool === 'tower' && !kit.ids.tower) || (b.dataset.tool === 'gate' && !byId.has(kit.ids.postern));
+  ready = true;
+  await rebuild();
+}
+
+function shade(root) {
+  root.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
+}
+
+function place(obj, x, z, turn) {
+  // Blender +Y (north) is -Z here; a turn around Blender's Z is a turn around Y.
+  obj.position.set(x, 0, z);
+  obj.rotation.y = THREE.MathUtils.degToRad(turn);
+  walls.add(obj);
+}
+const cx = c => (c - SIZE / 2 + 0.5) * CELL, cz = r => -(r - SIZE / 2 + 0.5) * CELL;
+
+/** A fresh copy of an animated model (a skinned model cannot simply be cloned). */
+async function animated(id, x, z, turn, isGate) {
+  const gltf = await parse(buffers[id]);
+  shade(gltf.scene);
+  place(gltf.scene, x, z, turn);
+  if (gltf.animations.length) mixers.push({mixer: new THREE.AnimationMixer(gltf.scene), clips: gltf.animations, gate: isGate});
+}
+
+async function rebuild() {
+  if (!ready) return;
+  const token = ++buildToken;
+  walls.clear();
+  mixers = [];
+  const used = {};
+  const done = new Set();
+  const jobs = [];
+  for (const key of cells) {
+    const [c, r] = key.split(',').map(Number);
+    if (towers.has(key) && kit.ids.tower && buffers[kit.ids.tower]) {
+      jobs.push(() => animated(kit.ids.tower, cx(c), cz(r), 0, false));
+      used.tower = (used.tower || 0) + 1;
+      continue;
+    }
+    if (gates.has(key) && buffers[kit.ids.postern]) {
+      if (done.has(key)) continue;
+      const alongX = has(c + 1, r) || has(c - 1, r) || !(has(c, r + 1) || has(c, r - 1));
+      const next = alongX ? (c + 1) + ',' + r : c + ',' + (r + 1);
+      const wide = kit.ids.gate !== kit.ids.postern && buffers[kit.ids.gate] && gates.has(next) && !towers.has(next) && !done.has(next);
+      if (wide) {   // Two gate cells in a row: one gate of 4 m between them.
+        done.add(next);
+        jobs.push(() => animated(kit.ids.gate, cx(c) + (alongX ? CELL / 2 : 0), cz(r) - (alongX ? 0 : CELL / 2), alongX ? 0 : 90, true));
+        used.gate = (used.gate || 0) + 1;
+      } else {
+        jobs.push(() => animated(kit.ids.postern, cx(c), cz(r), alongX ? 0 : 90, true));
+        used.postern = (used.postern || 0) + 1;
+      }
+      continue;
+    }
+    let [piece, turn] = pieceFor(c, r);
+    if (!statics[piece]) piece = 'end';   // A kit without a pillar stands its end piece alone.
+    place(statics[piece].clone(true), cx(c), cz(r), turn);
+    used[piece] = (used[piece] || 0) + 1;
+  }
+  for (const job of jobs) {
+    await job();
+    if (token !== buildToken) return;
+  }
+  playDoors();
+  const names = {straight: 'rectos', corner: 'esquinas', tee: 'uniones en T', cross: 'cruces', end: 'remates', pillar: 'pilares', gate: 'puertas de 4 m',
+    postern: 'postigos', tower: 'torres'};
+  const list = Object.keys(names).filter(p => used[p]).map(p => used[p] + ' ' + names[p]).join(', ');
+  $('#count').textContent = cells.size ? cells.size + ' celdas (' + cells.size * CELL + ' m): ' + list + '.' : 'Sin muro todavía.';
+  try { localStorage.setItem('propuestas.muros', JSON.stringify({cells: [...cells], gates: [...gates], towers: [...towers]})); } catch (e) { /* Not kept. */ }
+}
+
+/** Plays every animated piece: gates open or close once, the rest loop (flames, flags). */
+function playDoors() {
+  for (const m of mixers) {
+    m.mixer.stopAllAction();
+    for (const clip of m.clips) {
+      const door = clip.name === 'open' || clip.name === 'close';
+      if (door && clip.name !== (open ? 'open' : 'close')) continue;
+      const action = m.mixer.clipAction(clip);
+      if (door) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
+      action.reset().play();
+    }
+  }
+  $('#doors').textContent = open ? 'Cerrar puertas' : 'Abrir puertas';
+}
+
+function sample() {
+  cells = new Set(); gates = new Set(); towers = new Set();
+  const put = (c, r) => cells.add(c + ',' + r);
+  for (let c = 2; c <= 13; c++) { put(c, 2); put(c, 12); }
+  for (let r = 2; r <= 12; r++) { put(2, r); put(13, r); }
+  for (let r = 2; r <= 12; r++) put(8, r);          // An inner wall: two tees.
+  for (let c = 2; c <= 8; c++) put(c, 7);           // And a cross where they meet.
+  for (const k of ['5,2', '6,2']) gates.add(k);     // The main gate, 4 m.
+  gates.add('8,10');                                // A postern in the inner wall.
+  for (const k of ['2,2', '13,2', '2,12', '13,12']) towers.add(k);
+  put(15, 7);                                       // A lone pillar.
+  for (let c = 9; c <= 10; c++) put(c, 7);          // A spur that ends.
+  return rebuild();
+}
+
+// --- Input --------------------------------------------------------------------------------------
+
+let tool = 'wall';
+for (const b of document.querySelectorAll('[data-tool]')) b.addEventListener('click', () => {
+  tool = b.dataset.tool;
+  for (const o of document.querySelectorAll('[data-tool]')) o.classList.toggle('on', o === b);
+});
+
+const ray = new THREE.Raycaster();
+function cellAt(event) {
+  const box = renderer.domElement.getBoundingClientRect();
+  ray.setFromCamera({x: (event.clientX - box.left) / box.width * 2 - 1, y: -(event.clientY - box.top) / box.height * 2 + 1}, camera);
+  const hit = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
+  if (!hit) return null;
+  const c = Math.floor(hit.x / CELL + SIZE / 2), r = Math.floor(-hit.z / CELL + SIZE / 2);
+  return c >= 0 && r >= 0 && c < SIZE && r < SIZE ? [c, r] : null;
+}
+
+function click(key) {
+  if (tool === 'wall') {
+    if (cells.delete(key)) { gates.delete(key); towers.delete(key); } else cells.add(key);
+  } else {
+    const mine = tool === 'gate' ? gates : towers, other = tool === 'gate' ? towers : gates;
+    if (!mine.delete(key)) { mine.add(key); other.delete(key); cells.add(key); }
+  }
+  rebuild();
+}
+
+let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = e.button === 0 ? [e.clientX, e.clientY] : null; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;   // A drag turned the view.
+  const cell = cellAt(e);
+  if (cell && ready) click(cell.join(','));
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  const cell = cellAt(e);
+  hover.visible = !!cell;
+  if (cell) hover.position.set(cx(cell[0]), 0.02, cz(cell[1]));
+});
+renderer.domElement.addEventListener('pointerleave', () => { hover.visible = false; });
+
+$('#sample').addEventListener('click', sample);
+$('#clear').addEventListener('click', () => { cells = new Set(); gates = new Set(); towers = new Set(); rebuild(); });
+$('#doors').addEventListener('click', () => { open = !open; playDoors(); });
+$('#kit').addEventListener('change', e => {
+  try { localStorage.setItem('propuestas.muros.tipo', kits[e.target.value].key); } catch (err) { /* Not kept. */ }
+  useKit(Number(e.target.value));
+});
+$('#theme').addEventListener('click', () => {
+  const root = document.documentElement;
+  root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
+  try { localStorage.setItem('propuestas.tema', root.dataset.theme); } catch (e) { /* Not kept. */ }
+});
+try { document.documentElement.dataset.theme = localStorage.getItem('propuestas.tema') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); } catch (e) { /* Dark. */ }
+
+if (!kits.length) {
+  $('#count').textContent = 'No hay juegos de piezas de muro empaquetados todavía.';
+} else {
+  kits.forEach((k, i) => { const o = document.createElement('option'); o.value = i; o.textContent = k.name; $('#kit').append(o); });
+  let first = 0;
+  try { first = Math.max(0, kits.findIndex(k => k.key === localStorage.getItem('propuestas.muros.tipo'))); } catch (e) { /* The first one. */ }
+  $('#kit').value = first;
+  if (!cells.size) { useKit(first).then(sample); } else useKit(first);
+}
+resize();
+</script>
+</body>
+</html>

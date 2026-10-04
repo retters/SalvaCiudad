@@ -1,0 +1,134 @@
+{
+  "familia": "water",
+  "grupos": [
+    {
+      "id": "well_roofed",
+      "nombre": "Pozo con torno",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Pozo de brocal redondo de 1,6 m con tejadillo y un torno de manivela que baja y sube el cubo: de piedra con tablillas, de ladrillo con tejas y de troncos con paja. Ocupa 3 × 3 m.",
+      "propuestas": [
+        {"titulo": "Pozos por material", "detalle": "El pozo actual pasa a tener tres calidades: el de troncos es barato y se seca en verano; el de piedra aguanta la sequía; el de ladrillo llega más hondo y da más alcance. Se mejora uno sobre otro."},
+        {"titulo": "El pozo se ve trabajar", "detalle": "El torno gira cuando alguien saca agua: de un vistazo se ve qué pozos se usan y cuáles están de más."},
+        {"titulo": "Agua limpia", "detalle": "El tejadillo evita que el pozo se ensucie: los pozos sin techo cerca de letrinas o establos enferman a quien bebe."}
+      ],
+      "modelos": [
+        {"id": "well_stone", "nombre": "Piedra y tablillas", "material": "piedra", "animaciones": {"draw": "Gira el torno y el cubo baja y sube."}},
+        {"id": "well_brick", "nombre": "Ladrillo y tejas", "material": "ladrillo", "animaciones": {"draw": "Gira el torno y el cubo baja y sube."}},
+        {"id": "well_log", "nombre": "Troncos y paja", "material": "troncos", "animaciones": {"draw": "Gira el torno y el cubo baja y sube."}}
+      ]
+    },
+    {
+      "id": "well_special",
+      "nombre": "Bomba de hierro y pozo de malacate",
+      "categoria": "Edificios",
+      "descripcion": "Una bomba de hierro y bronce con palanca larga sobre una pila de piedra, y un pozo hondo con castillete cuya cuerda mueve un caballo que da vueltas a un malacate. El segundo ocupa 7 × 9 m.",
+      "propuestas": [
+        {"titulo": "Agua donde un pozo normal no llega", "detalle": "En montaña, sabana o desierto el agua está honda: el pozo de malacate la alcanza a cambio de un caballo y de mucho terreno. Es el pozo de los biomas secos."},
+        {"titulo": "Bomba de los enanos", "detalle": "Mejora tardía con hierro: saca agua el doble de rápido (apaga incendios antes) y no necesita cubo ni cuerda."},
+        {"titulo": "Desaguar minas", "detalle": "El malacate también sube mineral y saca el agua de una mina profunda: sin él, las minas hondas se inundan."}
+      ],
+      "modelos": [
+        {"id": "well_pump", "nombre": "Bomba de palanca", "material": "hierro", "animaciones": {"pump": "Sube y baja la palanca y sale el chorro."}},
+        {"id": "well_horse_gin", "nombre": "Pozo de malacate", "animaciones": {"turn": "El caballo camina en círculo y gira el malacate."}}
+      ]
+    },
+    {
+      "id": "water_cistern",
+      "nombre": "Aljibe",
+      "categoria": "Edificios",
+      "descripcion": "Depósito abovedado de 6 × 5 m, medio enterrado, con puerta a la escalera, brocal con tapa y canalones que traen la lluvia: de piedra o de ladrillo.",
+      "propuestas": [
+        {"titulo": "Agua guardada", "detalle": "Se llena con la lluvia y con lo que sobra de los pozos: da agua en sequía y, sobre todo, en un asedio, cuando no se puede salir al río."},
+        {"titulo": "Reserva contra incendios", "detalle": "Un aljibe lleno apaga un incendio grande que los pozos no alcanzan a cubrir."},
+        {"titulo": "Pueblos sin agua cerca", "detalle": "Permite fundar lejos de ríos, en un cerro defendible: el aljibe y la lluvia sustituyen al pozo."}
+      ],
+      "modelos": [
+        {"id": "water_cistern", "nombre": "Piedra", "material": "piedra", "animaciones": {"open": "Se abre la tapa del brocal (no se repite).", "close": "Se cierra la tapa (no se repite)."}},
+        {"id": "water_cistern_brick", "nombre": "Ladrillo", "material": "ladrillo", "animaciones": {"open": "Se abre la tapa del brocal (no se repite).", "close": "Se cierra la tapa (no se repite)."}}
+      ]
+    },
+    {
+      "id": "water_tower",
+      "nombre": "Depósito elevado",
+      "categoria": "Edificios",
+      "descripcion": "Cuba de duelas de 2,8 m con aros de hierro y techo cónico, sobre una torre de troncos de 4,6 m, con caño, cadena y escalera. 7,5 m de alto.",
+      "propuestas": [
+        {"titulo": "Presión para el barrio", "detalle": "Con tuberías de troncos lleva agua a grifos públicos: todas las casas a su alrededor tienen agua sin pozo ni aguador."},
+        {"titulo": "Agua para carros y animales", "detalle": "Junto al camino, llena en un momento el carro aguador y los abrevaderos."},
+        {"titulo": "Se llena con bomba o noria", "detalle": "No da agua por sí solo: necesita una noria, un molino de bombeo o gente que lo llene."}
+      ],
+      "modelos": [
+        {"id": "water_tower", "nombre": "Madera y hierro", "material": "troncos y hierro"}
+      ]
+    },
+    {
+      "id": "aqueduct_kit",
+      "nombre": "Acueducto modular",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Piezas de 4 m a lo largo de X con el canal a 5 m de alto: tramo de arco, pila (va bajo cada junta y baja 2 m bajo el suelo) y final con caída a una pila redonda; en piedra o en ladrillo, con una demostración de 16 m de cada una. Regla: un tramo cada 4 m, una pila en cada junta y un final donde termina.",
+      "propuestas": [
+        {"titulo": "Traer agua de lejos", "detalle": "Se traza como un muro desde un río, un lago o un manantial de la montaña hasta el pueblo: donde termina hay agua como junto a un río (pozos que no se secan, molinos, riego). La obra grande de un pueblo sin agua."},
+        {"titulo": "Prestigio", "detalle": "Un acueducto terminado es un monumento: sube el prestigio y el atractivo de lo que tiene alrededor."},
+        {"titulo": "Punto débil", "detalle": "Un enemigo puede cortarlo: en un asedio, quien depende del acueducto necesita aljibes."},
+        {"titulo": "Cruza por encima", "detalle": "Los caminos y los muros pasan bajo sus arcos: no corta el pueblo."}
+      ],
+      "modelos": [
+        {"id": "aqueduct_stone_demo", "nombre": "Piedra: demostración de 16 m", "material": "piedra"},
+        {"id": "aqueduct_stone_span", "nombre": "Piedra: tramo de arco (4 m)", "material": "piedra"},
+        {"id": "aqueduct_stone_pier", "nombre": "Piedra: pila", "material": "piedra"},
+        {"id": "aqueduct_stone_end", "nombre": "Piedra: final con pila", "material": "piedra"},
+        {"id": "aqueduct_brick_demo", "nombre": "Ladrillo: demostración de 16 m", "material": "ladrillo"},
+        {"id": "aqueduct_brick_span", "nombre": "Ladrillo: tramo de arco (4 m)", "material": "ladrillo"},
+        {"id": "aqueduct_brick_pier", "nombre": "Ladrillo: pila", "material": "ladrillo"},
+        {"id": "aqueduct_brick_end", "nombre": "Ladrillo: final con pila", "material": "ladrillo"}
+      ]
+    },
+    {
+      "id": "water_pipe",
+      "nombre": "Tubería de troncos",
+      "categoria": "Edificios",
+      "descripcion": "Tramos de 4 m de tronco perforado con zunchos de hierro sobre caballetes, a 1,3 m: recto, esquina con arqueta y final con pilar de piedra, grifo de bronce y pila.",
+      "propuestas": [
+        {"titulo": "Red de agua", "detalle": "Se traza desde un depósito elevado, un acueducto o un manantial: cada grifo público da agua a las casas de su radio. Es la forma barata de repartir agua, antes del acueducto."},
+        {"titulo": "Mantenimiento", "detalle": "Los troncos se pudren: cada pocos años un carpintero cambia tramos, o empiezan a perder agua."},
+        {"titulo": "Se hiela", "detalle": "En invierno la tubería se congela y deja de dar agua salvo que el pueblo esté en clima templado."}
+      ],
+      "modelos": [
+        {"id": "water_pipe_straight", "nombre": "Recto (4 m)", "material": "troncos"},
+        {"id": "water_pipe_corner", "nombre": "Esquina", "material": "troncos"},
+        {"id": "water_pipe_tap", "nombre": "Grifo público", "material": "troncos y piedra"}
+      ]
+    },
+    {
+      "id": "water_wall_fountain",
+      "nombre": "Fuente de pared",
+      "categoria": "Edificios",
+      "descripcion": "Frontón de piedra de 2,4 m con una cabeza de león de bronce que echa agua a una pila semicircular.",
+      "propuestas": [
+        {"titulo": "Final de la red", "detalle": "Es donde termina una tubería o un acueducto dentro del pueblo: punto de agua para las casas y contra incendios, y además adorno."},
+        {"titulo": "Agua corriente, agua sana", "detalle": "El agua que corre no se estanca: las casas que beben de fuente enferman menos que las de pozo."}
+      ],
+      "modelos": [
+        {"id": "water_wall_fountain", "nombre": "Piedra y bronce", "animaciones": {"flow": "Cae el chorro."}}
+      ]
+    },
+    {
+      "id": "water_fire_post",
+      "nombre": "Puesto contra incendios",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Cobertizo rojo de 3,2 m con seis cubos de cuero colgados, garfios para derribar techos, una escalera, dos toneles llenos y una campana de alarma.",
+      "propuestas": [
+        {"titulo": "Cubos a mano", "detalle": "Quien acude a un incendio toma el cubo del puesto más cercano en vez de ir a su casa por uno: se empieza a apagar mucho antes."},
+        {"titulo": "Cortar el fuego", "detalle": "Con los garfios se derriba el techo de paja de la casa vecina para que el fuego no pase: se pierde un techo y se salva la calle."},
+        {"titulo": "Alarma de barrio", "detalle": "La campana avisa a los vecinos de alrededor: acuden más y más rápido que con la campana del centro."},
+        {"titulo": "Requisito de barrios densos", "detalle": "A partir de cierto número de casas juntas, sin puesto contra incendios un fuego arrasa el barrio."}
+      ],
+      "modelos": [
+        {"id": "water_fire_post", "nombre": "Madera roja", "animaciones": {"ring": "Suena la campana (no se repite)."}}
+      ]
+    }
+  ]
+}

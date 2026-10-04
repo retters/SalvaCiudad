@@ -1,0 +1,863 @@
+{
+  "familia": "creatures",
+  "grupos": [
+    {
+      "id": "pet_dog",
+      "nombre": "Perro",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Perro de pueblo con collar, en cuatro razas hechas con el mismo generador: mestizo marrón con cascabel, pastor de lomo negro, mastín con collar de púas y terrier pequeño. Miden de 0,35 a 0,65 m a la cruz.",
+      "propuestas": [
+        {"titulo": "Perro del cazador", "detalle": "La cabaña del cazador puede tener un perro (cuesta 2 de carne al año). Sale con el cazador, levanta las presas y este rinde un 25 % más de carne y cuero; además avisa de lobos y osos: el cazador ya no es sorprendido de noche."},
+        {"titulo": "Guardián de la casa", "detalle": "La caseta (la decoración «kennel» que ya existe) pasa a alojar un perro que vigila un radio de 12 m: ladra cuando un lobo, un oso o un asaltante entra en el radio, los aldeanos cercanos se refugian antes y el perro ataca a los lobos (el mastín aguanta a uno solo; el terrier solo avisa)."},
+        {"titulo": "Perro pastor", "detalle": "Con un pastor en el pueblo, las ovejas y cabras de un corral pueden pastar fuera sin que los lobos se las lleven mientras el perro esté cerca; sin perro, cada ataque de lobos mata una res."},
+        {"titulo": "Compañía", "detalle": "Un perro adoptado por una casa sube la felicidad de esa familia (+3) y sigue a los niños por el pueblo; es solo ambiente y entorno, sin coste de mantenimiento más que un poco de comida."}
+      ],
+      "modelos": [
+        {"id": "pet_dog", "nombre": "Mestizo marrón", "material": "pelo marrón, collar rojo",
+         "animaciones": {"idle": "De pie, mira a los lados y mueve la cola", "walk": "Camina", "run": "Galopa", "eat": "Baja la cabeza y come", "die": "Cae de lado", "attack": "Se agazapa y lanza un mordisco", "sit": "Sentado, mueve la cola", "sleep": "Echado sobre la panza, respira"}},
+        {"id": "pet_dog_shepherd", "nombre": "Pastor", "material": "pelo leonado y lomo negro"},
+        {"id": "pet_dog_mastiff", "nombre": "Mastín", "material": "pelo leonado, collar de púas", "nota": "El más grande y ancho; pensado como perro de guarda."},
+        {"id": "pet_dog_terrier", "nombre": "Terrier", "material": "pelo blanco con manchas", "nota": "Patas cortas: sentado, la grupa se hunde 1 cm en el suelo."},
+        {"id": "pet_puppy", "nombre": "Cachorro", "material": "pelo leonado, collar azul", "nota": "0,25 m a la cruz, cabeza grande: para las camadas y para los niños del pueblo."}
+      ]
+    },
+    {
+      "id": "pet_cat",
+      "nombre": "Gato",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Gato doméstico de 0,3 m de alto, cabeza redonda y cola larga en alto. Cuatro pelajes: gris (el del gatuno de la referencia), atigrado naranja, negro de ojos amarillos y blanco de ojos azules.",
+      "propuestas": [
+        {"titulo": "Cazador de ratas del granero", "detalle": "Cada granero o almacén puede tener un gato. Con gato, la comida guardada se estropea la mitad por ratas y baja el riesgo de enfermedad por ratas en las casas a 15 m (la especificación ya cuenta las ratas como vía de contagio)."},
+        {"titulo": "Gato de casa", "detalle": "Una casa con gato gana entorno (+2 de belleza) y sus vecinos gatunos, +2 de felicidad extra. El gato aparece solo cuando el pueblo tiene comida de sobra: no se construye, llega."},
+        {"titulo": "Mala suerte o buena suerte", "detalle": "Evento de mercader: ofrece un gato negro por unas monedas. Si se compra, las plagas de ratas no ocurren durante 3 años; si se rechaza, nada cambia. Da uso a los mercaderes más allá de los recursos."}
+      ],
+      "modelos": [
+        {"id": "pet_cat", "nombre": "Gris", "material": "pelo gris, pecho blanco",
+         "animaciones": {"idle": "De pie, mira a los lados", "walk": "Camina", "run": "Corre", "eat": "Come del suelo", "die": "Cae de lado", "attack": "Zarpazo con la pata delantera derecha", "sit": "Sentado, la cola se mueve", "sleep": "Echado, respira"}},
+        {"id": "pet_cat_tabby", "nombre": "Atigrado", "material": "naranja con rayas"},
+        {"id": "pet_cat_black", "nombre": "Negro", "material": "negro, ojos amarillos"},
+        {"id": "pet_cat_white", "nombre": "Blanco", "material": "blanco, ojos azules"},
+        {"id": "pet_kitten", "nombre": "Gatito", "material": "atigrado naranja", "nota": "0,17 m de alto, cabeza grande."}
+      ]
+    },
+    {
+      "id": "animal_lynx",
+      "nombre": "Lince y gato montés",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Felinos salvajes hechos con el generador del gato: lince de 0,6 m a la cruz, moteado, con pinceles negros en las orejas, patillas y cola corta de punta negra; y gato montés atigrado de 0,4 m con cola larga.",
+      "propuestas": [
+        {"titulo": "Depredador de caza menor", "detalle": "Fauna que no ataca a los aldeanos: caza conejos, gallinas sueltas y corderos. Donde vive un lince, el cazador encuentra menos conejos pero no hay plagas de ellos en los campos. Su piel vale el doble que la de zorro."},
+        {"titulo": "Compañero de los gatunos", "detalle": "Un pueblo con mayoría de gatunos no es atacado por linces y puede adoptar uno como guardián de la casa del jefe: hace de perro guardián con visión nocturna (sin penalización de noche)."},
+        {"titulo": "Gato montés en el granero", "detalle": "Si el pueblo no tiene gatos y sí muchas ratas, un gato montés se instala solo en un granero apartado: hace el trabajo del gato, pero araña a quien entra de noche (pequeña pérdida de salud)."}
+      ],
+      "modelos": [
+        {"id": "animal_lynx", "nombre": "Lince", "material": "pelo leonado moteado",
+         "animaciones": {"idle": "De pie, atento", "walk": "Camina", "run": "Corre", "eat": "Come del suelo", "die": "Cae de lado", "attack": "Zarpazo", "sit": "Sentado", "sleep": "Echado"}},
+        {"id": "animal_wildcat", "nombre": "Gato montés", "material": "pelo pardo atigrado"}
+      ]
+    },
+    {
+      "id": "enemy_skeleton_warrior",
+      "nombre": "Esqueleto guerrero",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Esqueleto de 1,8 m con casco oxidado, espada mellada y escudo redondo de madera. Hecho de huesos rígidos, uno por pieza; al morir se desarma en un montón de huesos. El campeón lleva peto y hombreras, hueso verdoso y ojos de brasa.",
+      "propuestas": [
+        {"titulo": "Se levantan de noche en las ruinas", "detalle": "Las decoraciones de ruina que ya existen (capilla o muro en ruinas, torre caída, casa quemada, campamento abandonado) pasan a ser, con la fauna peligrosa en nivel medio o más, focos de esqueletos: cada noche sale de 1 a 3 y vuelven a caer al amanecer. No entran en zonas iluminadas (faroles y antorchas de la fase 69)."},
+        {"titulo": "Cementerio sin capilla", "detalle": "Si el pueblo entierra muertos y no tiene capilla con clérigo, cada 10 muertos hay una probabilidad de que una noche se levanten como esqueletos junto al cementerio. La capilla lo evita: da a la religión una función defensiva."},
+        {"titulo": "Guardianes de tesoros", "detalle": "El explorador encuentra ruinas custodiadas: para saquearlas (oro, hierro, herramientas) hay que mandar una leva o lanceros que derroten a 3 esqueletos y un campeón. Recompensa a tener cuartel."},
+        {"titulo": "Incursión de no muertos", "detalle": "Tipo de asalto nocturno alternativo a los asaltantes en niveles alto y brutal: no roban, solo atacan aldeanos; son lentos y las flechas de los arqueros les hacen la mitad de daño, las lanzas el normal."}
+      ],
+      "modelos": [
+        {"id": "enemy_skeleton_warrior", "nombre": "Guerrero", "material": "hueso, hierro oxidado, madera",
+         "animaciones": {"idle": "En guardia, gira el cráneo y castañetea", "walk": "Camina rígido con espada y escudo", "attack": "Tajo de arriba abajo", "die": "Se desarma y los huesos caen al suelo"}},
+        {"id": "enemy_skeleton_champion", "nombre": "Campeón acorazado", "material": "hueso verdoso, hierro oscuro"}
+      ]
+    },
+    {
+      "id": "enemy_armor",
+      "nombre": "Armadura animada",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Armadura completa de 1,8 m que camina vacía: placas sueltas con huecos en las articulaciones, un resplandor en el yelmo y en el cuello, penacho, espada larga y escudo de cometa. Usa el esqueleto y las animaciones del esqueleto guerrero. Acero, negra de resplandor rojo y oxidada.",
+      "propuestas": [
+        {"titulo": "Guardia que no come", "detalle": "Construible en la armería a fin de partida: 6 de hierro, 1 de oro y una espada. Es un guardia fijo en una puerta, torre o bóveda: no come, no duerme y no cuenta como población, pero solo defiende un radio de 8 m y no persigue."},
+        {"titulo": "Trofeos que despiertan", "detalle": "El perchero del herrero y la estatua del héroe (decoraciones) pueden cobrar vida una noche en nivel brutal y atacar al pueblo desde dentro de los muros: obliga a tener algún soldado en casa y no solo en las murallas."},
+        {"titulo": "Guardia del castillo en ruinas", "detalle": "Las ruinas de torre del mapa tienen de 2 a 4 armaduras que solo atacan a quien entra. Al vencerlas, cada una deja su hierro (recuperable en la fundición) y una espada para el cuartel."}
+      ],
+      "modelos": [
+        {"id": "enemy_armor", "nombre": "Acero", "material": "hierro",
+         "animaciones": {"idle": "En guardia, gira el yelmo", "walk": "Camina rígida con espada y escudo", "attack": "Tajo de arriba abajo", "die": "Las placas se sueltan y caen"}},
+        {"id": "enemy_armor_black", "nombre": "Negra", "material": "hierro negro, resplandor rojo"},
+        {"id": "enemy_armor_rust", "nombre": "Oxidada", "material": "hierro oxidado, resplandor verde"}
+      ]
+    },
+    {
+      "id": "monster_golem_stone",
+      "nombre": "Gólem",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Coloso de 2,5 m hecho de peñascos sujetos con aros de hierro, con una runa que brilla en el pecho y musgo en los hombros. Lento y pesado; ataca golpeando el suelo con los dos puños y al morir se desmorona en escombros.",
+      "propuestas": [
+        {"titulo": "Defensor de fin de partida", "detalle": "Se construye en la herrería o en un taller nuevo junto al cuartel: 40 de piedra, 10 de hierro y 2 de oro (la runa). No come ni duerme ni baja la población libre; patrulla junto a una puerta o atalaya y vale por unos 4 lanceros, pero es tan lento que no persigue."},
+        {"titulo": "Peón de cantera", "detalle": "Variante civil: asignado a la cantera o a la mina de hierro, acarrea 6 veces la carga de un aldeano entre la cantera y el almacén. Cuesta piedra y hierro y necesita 1 de carbón vegetal al mes para seguir encendido."},
+        {"titulo": "Guardián dormido", "detalle": "Algunos montones de peñascos del mapa (los depósitos de piedra de la fase 83) son un gólem dormido: al picarlos por debajo de la mitad se levanta y ataca a los canteros. Riesgo de sacar piedra lejos del pueblo, con el nivel de fauna peligrosa alto o brutal."},
+        {"titulo": "Tres materiales", "detalle": "El modelo sale del material con que se construye: piedra (equilibrado), arcilla cocida del horno (más barato, la mitad de vida) y basalto con aros dorados (jefe enemigo de las ruinas)."}
+      ],
+      "modelos": [
+        {"id": "monster_golem_stone", "nombre": "Piedra", "material": "piedra",
+         "animaciones": {"idle": "Respira despacio y gira la cabeza", "walk": "Paso lento y pesado", "attack": "Levanta los dos puños y golpea el suelo", "die": "Se desmorona en peñascos"},
+         "nota": "En el golpe los puños entran 4 cm en el suelo."},
+        {"id": "monster_golem_clay", "nombre": "Arcilla", "material": "arcilla"},
+        {"id": "monster_golem_basalt", "nombre": "Basalto", "material": "basalto y aros dorados"},
+        {"id": "monster_golem_servant", "nombre": "Sirviente", "material": "piedra", "nota": "El mismo modelo a 1,4 m: el peón de cantera de la segunda propuesta."}
+      ]
+    },
+    {
+      "id": "enemy_spider_giant",
+      "nombre": "Araña gigante",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Araña de 1,5 m de cuerpo y 2,6 m de envergadura, con ocho patas articuladas que pisan sin patinar, ocho ojos, colmillos y una marca en el abdomen. Tres variantes: negra de marca roja, parda de bosque y pálida de cueva.",
+      "propuestas": [
+        {"titulo": "Nidos en el bosque viejo", "detalle": "Especie de fauna peligrosa nueva, con guarida propia (un nido de telaraña entre árboles gigantes). Ataca a leñadores y recolectores que trabajan a menos de 20 m del nido; destruir el nido con soldados da lino (seda) como botín."},
+        {"titulo": "Plaga de la mina", "detalle": "La araña pálida aparece en la mina de hierro cuando la veta baja de la mitad: la mina se detiene hasta que una leva limpia la entrada. Convierte el agotamiento de la mina en un evento, no solo en un número."},
+        {"titulo": "Veneno", "detalle": "Su mordisco no mata de golpe: el aldeano mordido queda envenenado y pierde salud hasta que lo trata el herborista o el médico. Da trabajo a la cadena de salud fuera de las epidemias."}
+      ],
+      "modelos": [
+        {"id": "enemy_spider_giant", "nombre": "Negra", "material": "negro con marca roja",
+         "animaciones": {"idle": "Se mece y mueve los colmillos", "walk": "Camina alternando cuatro patas y cuatro", "attack": "Se alza sobre las patas traseras y cae con las delanteras y los colmillos", "die": "Se vuelca boca arriba y encoge las patas"}},
+        {"id": "enemy_spider_forest", "nombre": "De bosque", "material": "pardo con marca amarilla"},
+        {"id": "enemy_spider_cave", "nombre": "De cueva", "material": "pálida, ojos azules"},
+        {"id": "enemy_spiderling", "nombre": "Cría", "material": "parda", "nota": "El mismo modelo a 0,45 m de cuerpo: para nidos y enjambres de crías."},
+        {"id": "monster_spider_queen", "nombre": "Reina", "material": "morada, marca dorada, ojos verdes", "nota": "2,5 m de cuerpo: la jefa del nido."}
+      ]
+    },
+    {
+      "id": "monster_mimic",
+      "nombre": "Mímico (cofre monstruo)",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Cofre de tablas y flejes de 1 × 0,6 m que cerrado no se distingue de un cofre normal. Abierto enseña dientes en los dos bordes, la boca roja, dos ojos y una lengua larga. Camina a saltos.",
+      "propuestas": [
+        {"titulo": "Trampa del explorador", "detalle": "Entre los hallazgos del explorador (cofres en ruinas y campamentos abandonados), uno de cada diez es un mímico: muerde al aldeano que lo abre (pierde media vida) y hay que matarlo; al morir suelta el doble de oro que un cofre normal."},
+        {"titulo": "Señuelo para asaltantes", "detalle": "Decoración construible de fin de partida (cuesta 5 de oro): un mímico domado junto a la bóveda. Los asaltantes que vienen a robar lo abren primero y pierden a un hombre; así la bóveda gana una defensa sin soldados."},
+        {"titulo": "Cofre que se escapa", "detalle": "Evento: un cofre aparece cerca del pueblo de noche. Si nadie lo recoge antes del amanecer, se va saltando. Si se recoge de día es oro; de noche, mímico. Usa el ciclo de día y noche de la fase 68."}
+      ],
+      "modelos": [
+        {"id": "monster_mimic", "nombre": "Roble y hierro", "material": "madera y hierro",
+         "animaciones": {"idle": "Cerrado; a ratos tiembla y levanta la tapa una rendija", "open": "Abre la boca de par en par, se lanza y muerde", "walk": "Avanza a saltos con la tapa batiendo", "die": "La tapa cae abierta y la lengua cuelga fuera"},
+         "nota": "El salto no guarda velocidad (no tiene pies que comprobar); se sugiere 1 m/s."},
+        {"id": "monster_mimic_dark", "nombre": "Madera oscura y oro", "material": "madera oscura y oro"},
+        {"id": "monster_mimic_small", "nombre": "Cofre pequeño", "material": "madera y hierro", "nota": "El mismo modelo a 0,55 m de ancho."}
+      ]
+    },
+    {
+      "id": "enemy_goblin",
+      "nombre": "Goblin",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Humanoide verde de 1,1 m, cabezón, de orejas largas y nariz ganchuda, con taparrabos de cuero y un puñal mellado. El bruto mide 1,4 m, es más oscuro y lleva un garrote con púas.",
+      "propuestas": [
+        {"titulo": "Ladrones de almacén", "detalle": "Asalto menor y frecuente (niveles bajo y medio): un grupo de 3 a 6 goblins llega de noche, no ataca casas ni mata, corre al almacén o al granero más cercano y se lleva comida y herramientas. Una empalizada con puerta cerrada o un perro guardián los frena."},
+        {"titulo": "Campamento goblin", "detalle": "Guarida en el mapa (como las de lobos): mientras exista, salen partidas cada pocos días. El explorador la descubre y una leva puede arrasarla; da cuero, hierro viejo y monedas."},
+        {"titulo": "Saboteadores de trampas", "detalle": "Los goblins desarman las trampas que pisan en vez de caer en ellas (los brutos sí caen). Obliga a combinar trampas con atalayas de arqueros en lugar de sembrar el camino de trampas."},
+        {"titulo": "Raza jugable futura", "detalle": "Como los orcos del arte de personajes, un clan goblin puede ser un pueblo rival o aliado en multijugador: construyen barato y rápido, cargan la mitad y de noche no tienen penalización."}
+      ],
+      "modelos": [
+        {"id": "enemy_goblin", "nombre": "Explorador", "material": "piel verde, cuero, puñal",
+         "animaciones": {"idle": "Encorvado, mira a los lados", "walk": "Camina agachado", "run": "Corre inclinado", "attack": "Puñalada hacia delante", "die": "Se tambalea y cae de espaldas"}},
+        {"id": "enemy_goblin_brute", "nombre": "Bruto", "material": "piel verde oscura, garrote con púas"},
+        {"id": "enemy_goblin_shaman", "nombre": "Chamán", "material": "piel verde azulada, báculo con calavera, plumas", "nota": "Mismo ataque que el explorador (estocada con el báculo); un clip de conjuro queda pendiente."}
+      ]
+    },
+    {
+      "id": "monster_troll",
+      "nombre": "Trol y ogro",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Gigantes de 2,5 m, encorvados, de brazos largos, colmillos y barriga, con un tronco con púas por garrote. Tres variantes: trol de bosque verde con musgo, ogro gordo de piel tostada y trol de escarcha.",
+      "propuestas": [
+        {"titulo": "Rompemuros", "detalle": "Unidad pesada de los asaltos en nivel alto y brutal: va directo a la empalizada o a la puerta y la derriba en pocos golpes (daño ×5 contra muros de troncos, ×2 contra piedra). Es la razón para pasar de empalizada a muro de piedra y poner atalayas."},
+        {"titulo": "Trol del puente", "detalle": "Se instala bajo un puente del mapa y cobra peaje: los mercaderes dejan de venir por ese camino hasta que se le paga (comida cada estación) o se le mata con soldados. Une comercio, caminos y defensa."},
+        {"titulo": "Ogro hambriento", "detalle": "Fauna peligrosa solitaria: no ataca al pueblo, pero se come el ganado de los corrales y las reses que pastan lejos. Un corral dentro de la empalizada está a salvo."},
+        {"titulo": "Trol de escarcha", "detalle": "Solo aparece en invierno y se retira en primavera; de día es lento (la mitad de velocidad) y de noche, normal. Usa estaciones y ciclo de día y noche juntos."}
+      ],
+      "modelos": [
+        {"id": "monster_troll", "nombre": "Trol de bosque", "material": "piel verde gris, musgo",
+         "animaciones": {"idle": "Encorvado, respira y mira", "walk": "Paso lento", "attack": "Levanta el garrote y lo descarga contra el suelo", "die": "Cae de espaldas con el garrote al lado"},
+         "nota": "En el golpe el garrote entra 3 cm en el suelo."},
+        {"id": "monster_ogre", "nombre": "Ogro", "material": "piel tostada"},
+        {"id": "monster_troll_frost", "nombre": "Trol de escarcha", "material": "piel azulada, pelo blanco"},
+        {"id": "monster_cyclops", "nombre": "Cíclope", "material": "piel clara, un ojo azul", "nota": "2,8 m, con un cuerno y un tronco liso por garrote; mismo esqueleto."}
+      ]
+    },
+    {
+      "id": "enemy_werewolf",
+      "nombre": "Hombre lobo",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Licántropo de 1,9 m: cabeza de lobo con hocico, orejas y colmillos, garras en las manos, crin de púas de pelo en la espalda, cola y calzón roto. Usa el esqueleto rápido del goblin (camina, corre). Gris pardo y negro de ojos rojos.",
+      "propuestas": [
+        {"titulo": "El aldeano mordido", "detalle": "Un aldeano que sobrevive al ataque de un lobo terrible tiene una pequeña probabilidad de quedar maldito: de día trabaja normal; en las noches de luna (una de cada cuatro) se transforma y ataca a sus vecinos. Se cura en la capilla o con el herborista (hierba rara) antes de la primera transformación."},
+        {"titulo": "Jefe nocturno de la manada", "detalle": "En nivel brutal, las manadas de lobos las guía un hombre lobo que solo aparece de noche: abre las puertas de las empalizadas (los lobos no pueden) y entra al pueblo."},
+        {"titulo": "Raza oculta", "detalle": "Evento de inmigración: llega un forastero muy buen cazador (+50 % de caza). Si el pueblo lo acepta, gana ese bono; cada cierto tiempo desaparece una oveja. El jugador decide si lo expulsa."}
+      ],
+      "modelos": [
+        {"id": "enemy_werewolf", "nombre": "Gris", "material": "pelo gris pardo",
+         "animaciones": {"idle": "Encorvado, husmea", "walk": "Camina agachado", "run": "Corre inclinado", "attack": "Zarpazo hacia delante", "die": "Cae de espaldas"}},
+        {"id": "enemy_werewolf_black", "nombre": "Negro", "material": "pelo negro, ojos rojos"}
+      ]
+    },
+    {
+      "id": "enemy_zombie",
+      "nombre": "Zombi",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Muerto andante de 1,75 m: piel verdosa, ojos hundidos con un punto de luz, mandíbula caída, mechones de pelo y una túnica rota de borde deshilachado. Lento. Verde y de plaga (piel violácea).",
+      "propuestas": [
+        {"titulo": "Epidemia mal enterrada", "detalle": "Si durante una epidemia mueren más aldeanos de los que el pueblo puede enterrar (sin capilla o sin sepulturero), los cuerpos se levantan como zombis: cada mordisco contagia la enfermedad. Une las mecánicas de enfermedad y defensa: la casa de baños y el médico también son defensa."},
+        {"titulo": "Horda lenta", "detalle": "Asalto nocturno alternativo: muchos, lentos y sin armas. No rompen muros de piedra, pero se amontonan contra la empalizada hasta tumbarla. Las trampas y el fuego (antorchas, braseros) los frenan bien; las flechas, mal."},
+        {"titulo": "Siervos del liche", "detalle": "El liche de las ruinas levanta zombis de los aldeanos caídos en combate: cada baja propia es un enemigo más, lo que premia retirarse a tiempo."}
+      ],
+      "modelos": [
+        {"id": "enemy_zombie", "nombre": "Verde", "material": "piel verdosa, túnica parda",
+         "animaciones": {"idle": "Se balancea encorvado", "walk": "Arrastra los pies", "attack": "Levanta un brazo y lo descarga", "die": "Cae de espaldas"}},
+        {"id": "enemy_zombie_plague", "nombre": "De plaga", "material": "piel violácea, túnica verde"}
+      ]
+    },
+    {
+      "id": "enemy_giant_rat",
+      "nombre": "Rata gigante",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Rata del tamaño de un perro pequeño (0,9 m sin la cola), gorda, de hocico rosado, incisivos, bigotes y cola pelada. Variante de plaga, verdosa y de ojos amarillos.",
+      "propuestas": [
+        {"titulo": "Plaga del granero", "detalle": "Cuando un granero supera cierta cantidad de comida y no hay gato, aparecen ratas gigantes que se comen parte del grano cada mes. Se van con un gato, o las mata un aldeano con herramienta. Hace visible la pérdida por ratas que hoy es solo un porcentaje."},
+        {"titulo": "Portadora de enfermedad", "detalle": "La rata de plaga llega con los desechos: si el pueblo no tiene pozo ni casa de baños y hay basura (patio de compost lleno), cada rata viva sube el riesgo de epidemia en las casas cercanas."},
+        {"titulo": "Enemigo de sótano", "detalle": "Primer enemigo de la bóveda y de la mina: débil (un aldeano con hacha lo mata), sirve para enseñar el combate antes de los lobos."}
+      ],
+      "modelos": [
+        {"id": "enemy_giant_rat", "nombre": "Parda", "material": "pelo pardo",
+         "animaciones": {"idle": "Olfatea y mira", "walk": "Camina pegada al suelo", "run": "Corre", "eat": "Roe en el suelo", "die": "Cae de lado", "attack": "Mordisco"}},
+        {"id": "enemy_giant_rat_plague", "nombre": "De plaga", "material": "pelo verdoso"}
+      ]
+    },
+    {
+      "id": "enemy_dire_wolf",
+      "nombre": "Lobo terrible y huargo",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Lobo un tercio más grande que el del juego (1,1 m a la cruz), oscuro, de ojos amarillos, colmillos fuera y púas de hueso a lo largo del lomo. El huargo es aún mayor, pardo y sin púas.",
+      "propuestas": [
+        {"titulo": "Jefe de manada", "detalle": "Con la fauna peligrosa en nivel alto o brutal, cada manada de lobos tiene un lobo terrible: el doble de vida y de daño, y mientras vive la manada no huye. Al matarlo, los demás se dispersan. Su piel vale 3 de cuero."},
+        {"titulo": "Cazador nocturno", "detalle": "Solo sale de noche y, al contrario que los lobos comunes (fase 72), sí entra en zonas iluminadas: obliga a tener atalaya o perros, no solo faroles."},
+        {"titulo": "Montura de asaltantes", "detalle": "El huargo, sin púas, sirve de montura a goblins u orcos en los asaltos: jinetes rápidos que rodean la empalizada buscando una puerta abierta."}
+      ],
+      "modelos": [
+        {"id": "enemy_dire_wolf", "nombre": "Lobo terrible", "material": "pelo negro azulado, púas de hueso",
+         "animaciones": {"idle": "De pie, mira a los lados", "walk": "Camina", "run": "Galopa", "eat": "Come del suelo", "die": "Cae de lado", "attack": "Mordisco con embestida", "howl": "Levanta el hocico y aúlla"}},
+        {"id": "enemy_warg", "nombre": "Huargo", "material": "pelo pardo, ojos rojos"},
+        {"id": "enemy_winter_wolf", "nombre": "Lobo de invierno", "material": "pelo blanco, ojos azules", "nota": "Solo aparece en invierno o en mapas nevados."}
+      ]
+    },
+    {
+      "id": "animal_fox",
+      "nombre": "Zorro",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Zorro de 0,45 m a la cruz, orejas grandes, hocico fino y cola de cepillo. Rojo con calcetines negros y punta blanca, y zorro ártico blanco.",
+      "propuestas": [
+        {"titulo": "Ladrón de gallineros", "detalle": "Fauna menor: de noche entra en los gallineros (la decoración «chicken coop» y el corral de gallinas propuesto) que no estén dentro de una cerca y se lleva una gallina. Un perro lo espanta."},
+        {"titulo": "Caza menor", "detalle": "Presa nueva para el cazador: poca carne y 1 de cuero fino que la sastrería convierte en ropa de invierno mejor (abriga más que la de lino)."},
+        {"titulo": "Ambiente por bioma", "detalle": "El rojo en bosques templados y el ártico en mapas nevados; no ataca a los aldeanos y huye de ellos, da vida al mapa."}
+      ],
+      "modelos": [
+        {"id": "animal_fox", "nombre": "Rojo", "material": "pelo naranja",
+         "animaciones": {"idle": "De pie, atento", "walk": "Camina", "run": "Corre", "eat": "Come del suelo", "die": "Cae de lado", "attack": "Mordisco", "sit": "Sentado", "sleep": "Echado"}},
+        {"id": "animal_fox_arctic", "nombre": "Ártico", "material": "pelo blanco"}
+      ]
+    },
+    {
+      "id": "enemy_bat_giant",
+      "nombre": "Murciélago gigante",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Murciélago de 2,4 m de envergadura, orejas grandes, ojos rojos y colmillos. Modelado a 1 m de altura; el juego le da la altura de vuelo. Tres variantes: pardo, vampiro negro de alas rojas y pálido de cueva.",
+      "propuestas": [
+        {"titulo": "Enjambre de la mina", "detalle": "Al abrir una mina de hierro o la entrada de mina en ruinas, de noche salen murciélagos que atacan a quien trabaje sin luz cerca. Una antorcha junto a la entrada los mantiene dentro."},
+        {"titulo": "Amenaza que salta los muros", "detalle": "Primer enemigo volador: la empalizada no lo detiene, solo los arqueros y las atalayas. Da valor a la arquería frente a tener solo lanceros."},
+        {"titulo": "Vampiro", "detalle": "La variante negra no mata: chupa sangre y el aldeano queda enfermo (anemia) hasta que lo atiende el médico. Aparece solo de noche y huye al amanecer."}
+      ],
+      "modelos": [
+        {"id": "enemy_bat_giant", "nombre": "Pardo", "material": "pelo pardo",
+         "animaciones": {"idle": "Se mantiene en el aire aleteando", "fly": "Vuelo de avance", "attack": "Se lanza en picado y muerde", "die": "Cae girando y queda boca arriba"}},
+        {"id": "enemy_bat_vampire", "nombre": "Vampiro", "material": "negro, alas rojas"},
+        {"id": "enemy_bat_cave", "nombre": "De cueva", "material": "pálido"},
+        {"id": "animal_bat", "nombre": "Murciélago común", "material": "pelo pardo", "nota": "El mismo modelo a 0,5 m de envergadura: ambiente de noche, inofensivo."}
+      ]
+    },
+    {
+      "id": "monster_wyvern",
+      "nombre": "Guiverno",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Dragón de dos patas de 4,5 m de largo y 5 m de envergadura: alas por brazos, cuello largo, cabeza con cuernos y mandíbula articulada, espinas en el lomo y cola con aguijón de arpón. Camina con los pies plantados y vuela. Verde, rojo y negro de alas moradas.",
+      "propuestas": [
+        {"titulo": "Azote del ganado", "detalle": "Amenaza voladora de fin de partida (fauna peligrosa en nivel brutal): anida en una montaña del mapa y cada estación baja a llevarse una res de un corral. No ataca aldeanos salvo que le disparen. Lo ahuyentan 3 o más atalayas con arqueros a la vista."},
+        {"titulo": "Cacería", "detalle": "El nido se puede asaltar con un grupo grande de soldados y arqueros: es el combate más difícil del juego, y deja escamas (armadura que no se oxida), el aguijón (veneno para flechas) y huevos."},
+        {"titulo": "Cría domada", "detalle": "Un huevo incubado junto a la fragua da, tras varios años, un guiverno del pueblo: una unidad voladora única que explora el mapa sin niebla de guerra y espanta a los asaltantes una vez por asalto. Come mucha carne."},
+        {"titulo": "Hermano menor del dragón", "detalle": "El dragón del zoológico queda como jefe final; el guiverno, más pequeño y sin fuego, es el enemigo volador normal que anuncia que hay un dragón en el mapa."}
+      ],
+      "modelos": [
+        {"id": "monster_wyvern", "nombre": "Verde", "material": "escamas verdes, alas rojizas",
+         "animaciones": {"idle": "De pie con las alas medio plegadas, mueve el cuello y la cola", "walk": "Camina sobre las dos patas", "fly": "Vuela batiendo las alas", "attack": "Echa el cuello atrás y lanza un mordisco", "die": "Las patas ceden y cae de lado"}},
+        {"id": "monster_wyvern_red", "nombre": "Rojo", "material": "escamas rojas"},
+        {"id": "monster_wyvern_black", "nombre": "Negro", "material": "escamas negras, alas moradas"},
+        {"id": "monster_wyvern_hatchling", "nombre": "Cría", "material": "escamas verdes", "nota": "El mismo modelo a 1,4 m de largo: la cría que sale del huevo incubado."}
+      ]
+    },
+    {
+      "id": "monster_slime",
+      "nombre": "Limo",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Cúpula de gelatina de 1 m de ancho con dos ojos y, asomando, un hueso y la empuñadura de una espada que se tragó. Se aplasta y se estira de verdad (la malla se deforma, sin escalado). Verde, de hielo, de fuego y uno pequeño de 0,5 m.",
+      "propuestas": [
+        {"titulo": "Plaga del agua sucia", "detalle": "Sale de pozos sin mantenimiento y de charcas: si el pueblo crece sin casa de baños ni pozos suficientes, aparecen limos junto al agua que ensucian el pozo (sube el contagio por agua sucia) hasta que se matan."},
+        {"titulo": "Se divide", "detalle": "Al morir un limo grande deja dos pequeños. Con armas de filo se divide; con fuego (antorcha, brasero) muere del todo. Enseña a usar la luz como defensa."},
+        {"titulo": "Limo de fuego y de hielo", "detalle": "El de fuego prende lo que toca (enlaza con los incendios); el de hielo aparece en invierno y congela los cultivos del campo que pisa. Los dos dejan al morir un recurso raro para comerciar."},
+        {"titulo": "Recolector de desechos", "detalle": "Uso amistoso: un limo pequeño domado en el patio de compost convierte los desechos en abono el doble de rápido."}
+      ],
+      "modelos": [
+        {"id": "monster_slime", "nombre": "Verde", "material": "gelatina verde",
+         "animaciones": {"idle": "Tiembla y se mece", "walk": "Se aplasta, salta y cae", "attack": "Se encoge y se estira hacia delante", "die": "Se aplasta hasta quedar en un charco"},
+         "nota": "El salto no guarda velocidad; se sugiere 0,8 m/s."},
+        {"id": "monster_slime_ice", "nombre": "De hielo", "material": "gelatina azul"},
+        {"id": "monster_slime_fire", "nombre": "De fuego", "material": "gelatina naranja"},
+        {"id": "monster_slime_small", "nombre": "Pequeño", "material": "gelatina verde clara"},
+        {"id": "monster_slime_king", "nombre": "Rey limo", "material": "gelatina morada, corona de oro", "nota": "2,2 m de ancho; jefe que al morir se divide en cuatro limos normales."}
+      ]
+    },
+    {
+      "id": "animal_donkey_pack",
+      "nombre": "Burro y mula de carga",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Burro gris de 1,15 m a la cruz, de orejas largas, hocico claro, raya en el lomo y crin corta. Con albarda: manta roja, armazón de madera, un cesto a cada lado y un saco encima. También sin carga, y una mula parda más grande con la misma albarda.",
+      "propuestas": [
+        {"titulo": "Acarreo de larga distancia", "detalle": "Un establo pequeño (o el poste de amarre que ya existe como decoración) aloja hasta 2 burros. Cada burro va con un porteador y lleva 4 veces la carga de un aldeano entre un edificio de extracción lejano (cantera, mina, leñador) y el almacén. Cuesta 1 de comida (heno o grano) por estación."},
+        {"titulo": "Caravana propia", "detalle": "El puesto de comercio puede mandar una recua de mulas a vender excedentes al pueblo vecino en lugar de esperar al mercader: vuelve en una estación con oro o con lo pedido. De camino la pueden asaltar lobos o goblins si no lleva escolta."},
+        {"titulo": "Animal del explorador", "detalle": "El explorador con burro trae el doble de hallazgos por viaje y puede recoger los cofres de las ruinas sin volver al pueblo."},
+        {"titulo": "Mula de obra", "detalle": "La mula, más cara (se compra al mercader, no se cría), acarrea piedra y troncos a las obras: las construcciones grandes (muro de piedra, atalaya) se terminan un 30 % antes."}
+      ],
+      "modelos": [
+        {"id": "animal_donkey_pack", "nombre": "Burro con albarda", "material": "pelo gris; manta, cestos y saco",
+         "animaciones": {"idle": "De pie, mueve las orejas y la cola", "walk": "Camina", "run": "Trota", "eat": "Baja la cabeza y pasta", "die": "Cae de lado"}},
+        {"id": "animal_donkey", "nombre": "Burro", "material": "pelo gris"},
+        {"id": "animal_mule_pack", "nombre": "Mula con albarda", "material": "pelo pardo oscuro"}
+      ]
+    },
+    {
+      "id": "animal_ox",
+      "nombre": "Buey",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Buey de 1,3 m a la cruz, ancho, de cuernos largos, anillo en la nariz y yugo de madera sobre el cuello con argollas para los tiros. Pardo rojizo y negro.",
+      "propuestas": [
+        {"titulo": "Arado", "detalle": "Una granja con un buey ara el doble de rápido y la fertilidad baja un 20 % menos por cosecha (labra más hondo). El buey come heno del propio campo en barbecho: encaja con la rotación de cultivos de la especificación."},
+        {"titulo": "Carreta pesada", "detalle": "La carreta que ya existe (core:cart) pasa a necesitar un buey para llevar cargas grandes: tirada por un aldeano lleva lo de hoy; con buey, el triple y puede cargar troncos de árboles gigantes."},
+        {"titulo": "Molino y noria de sangre", "detalle": "Donde no hay río ni viento, un buey dando vueltas mueve el molino o una noria que riega los campos en sequía (uno de los enemigos del entorno)."},
+        {"titulo": "Carne y cuero al final", "detalle": "Un buey viejo (más de 12 años) se sacrifica: da 4 veces la carne de un jabalí y 3 de cuero para la curtiduría."}
+      ],
+      "modelos": [
+        {"id": "animal_ox", "nombre": "Pardo", "material": "pelo pardo rojizo, yugo de madera",
+         "animaciones": {"idle": "De pie, mueve la cola", "walk": "Camina despacio", "run": "Trota", "eat": "Pasta", "die": "Cae de lado"}},
+        {"id": "animal_ox_black", "nombre": "Negro", "material": "pelo negro"}
+      ]
+    },
+    {
+      "id": "animal_goat",
+      "nombre": "Cabra",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Cabra de 0,6 m a la cruz con cuernos hacia atrás, barba, orejas de lado, cola corta en alto y pezuñas. Blanca, parda y pía (blanca con cabeza y grupa negras).",
+      "propuestas": [
+        {"titulo": "Leche y queso", "detalle": "Corral de cabras: ganado barato que produce leche todo el año; una quesería la convierte en queso, alimento que no se estropea en el granero y cuenta como comida variada para la felicidad."},
+        {"titulo": "Ganado de terreno malo", "detalle": "A diferencia de vacas y ovejas, las cabras pastan en ladera y en suelo pedregoso donde no se puede cultivar: dan uso a las zonas del mapa con piedras."},
+        {"titulo": "Limpia malas hierbas", "detalle": "Un campo en barbecho con cabras recupera fertilidad más rápido y queda sin malas hierbas (mecánica de agricultura de la especificación); a cambio, si se escapan a un huerto se comen los brotes."}
+      ],
+      "modelos": [
+        {"id": "animal_goat", "nombre": "Blanca", "material": "pelo blanco",
+         "animaciones": {"idle": "De pie, mira a los lados", "walk": "Camina", "run": "Trota", "eat": "Pasta", "die": "Cae de lado", "attack": "Baja la cabeza y embiste"}},
+        {"id": "animal_goat_brown", "nombre": "Parda", "material": "pelo pardo"},
+        {"id": "animal_goat_pied", "nombre": "Pía", "material": "blanca y negra"}
+      ]
+    },
+    {
+      "id": "animal_hen",
+      "nombre": "Gallina y pollitos",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Gallina de 0,4 m con cresta, barbas y cola en abanico, parda de pechuga clara o blanca, y un pollito amarillo de 0,15 m para ponerle una fila detrás. Hechos con la técnica del gallo del zoológico.",
+      "propuestas": [
+        {"titulo": "Gallinero productivo", "detalle": "El gallinero que hoy es decoración pasa a edificio: 4 gallinas dan huevos cada pocos días (comida variada, poca cantidad) y comen sobras de grano del granero. Sin cerca ni perro, el zorro se lleva una gallina cada tanto."},
+        {"titulo": "Crianza visible", "detalle": "Cada primavera una gallina echada (clip sit) saca 3 pollitos que la siguen por el corral; en otoño son gallinas nuevas o carne. Muestra el paso de las estaciones sin leer números."},
+        {"titulo": "Aves sueltas por el pueblo", "detalle": "Las casas de nivel bajo tienen gallinas picoteando alrededor: sube un poco la comida de esa casa y baja 1 punto la belleza del entorno de los vecinos de nivel alto."}
+      ],
+      "modelos": [
+        {"id": "animal_hen", "nombre": "Gallina parda", "material": "plumas pardas",
+         "animaciones": {"idle": "Mira a los lados con golpes de cabeza", "walk": "Camina moviendo la cabeza", "run": "Corre", "eat": "Picotea el suelo", "die": "Cae de lado", "fly": "Aletea", "sit": "Echada, empollando"}},
+        {"id": "animal_hen_white", "nombre": "Gallina blanca", "material": "plumas blancas"},
+        {"id": "animal_chick", "nombre": "Pollito", "material": "plumón amarillo", "nota": "Sin clip sit; mismo esqueleto que la gallina."}
+      ]
+    },
+    {
+      "id": "animal_duck",
+      "nombre": "Pato",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Pato de 0,35 m con pico plano y patas palmeadas. Ánade real (cabeza verde, collar blanco, pecho pardo, espejo azul en el ala) y pato blanco de granja. Camina balanceándose.",
+      "propuestas": [
+        {"titulo": "Vida en el estanque", "detalle": "El estanque decorativo y los ríos tienen patos: suben la belleza del entorno de las casas cercanas (+2) y se van si el agua se ensucia; sirven de aviso visible del agua sucia antes de la epidemia."},
+        {"titulo": "Caza y pesca menor", "detalle": "El pescador junto a agua con patos trae además huevos y, en otoño, patos: comida variada sin edificio nuevo."},
+        {"titulo": "Control de plagas del campo", "detalle": "Patos blancos sueltos en una granja se comen caracoles e insectos: la probabilidad de plaga en ese campo baja a la mitad."}
+      ],
+      "modelos": [
+        {"id": "animal_duck", "nombre": "Ánade real", "material": "plumas grises, cabeza verde",
+         "animaciones": {"idle": "Mira a los lados", "walk": "Camina balanceándose", "run": "Corre con las alas un poco abiertas", "eat": "Picotea el suelo", "die": "Cae de lado", "fly": "Vuela", "sit": "Echado"},
+         "nota": "Las alas del vuelo son pequeñas: están escondidas dentro del cuerpo en reposo."},
+        {"id": "animal_duck_white", "nombre": "Blanco", "material": "plumas blancas"}
+      ]
+    },
+    {
+      "id": "animal_goose",
+      "nombre": "Ganso",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Ganso de 0,75 m de cuello largo, pico plano y patas palmeadas. Blanco de granja y gris silvestre de cuello oscuro. Tiene ataque: estira el cuello y abre las alas.",
+      "propuestas": [
+        {"titulo": "Alarma del pueblo", "detalle": "Una bandada de gansos junto a una puerta o al almacén grazna cuando se acercan goblins, zorros o asaltantes de noche: avisa como una atalaya de radio corto, sin soldado y por el precio de un poco de grano."},
+        {"titulo": "Plumas", "detalle": "Dan plumas para el arquero (flechas mejores: +10 % de daño) y para la sastrería (ropa de invierno). Recurso nuevo pequeño que enlaza ganado y defensa."},
+        {"titulo": "Ganso bravo", "detalle": "Ataca a los niños y a los mercaderes que pasan cerca: es solo ambiente y una línea en el registro de sucesos, para dar humor al pueblo."}
+      ],
+      "modelos": [
+        {"id": "animal_goose", "nombre": "Blanco", "material": "plumas blancas",
+         "animaciones": {"idle": "Mira a los lados", "walk": "Camina balanceándose", "run": "Corre", "eat": "Baja el cuello y picotea", "die": "Cae de lado", "fly": "Vuela", "attack": "Estira el cuello, abre las alas y pica"}},
+        {"id": "animal_goose_gray", "nombre": "Gris silvestre", "material": "plumas grises, cuello oscuro"}
+      ]
+    },
+    {
+      "id": "enemy_ghost",
+      "nombre": "Fantasma, espectro y liche",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Túnica con capucha que flota a 20 cm del suelo, sin piernas: un vacío oscuro por cara con dos ojos que brillan y manos de hueso saliendo de las mangas. Fantasma pálido, espectro negro de ojos rojos y liche morado con corona, estola dorada y báculo con gema.",
+      "propuestas": [
+        {"titulo": "Muertos sin enterrar", "detalle": "Un aldeano que muere fuera del pueblo (lobos, frío, asalto) y no es recogido se vuelve fantasma: ronda de noche el lugar donde cayó y baja la felicidad de quien pasa cerca. Se va cuando un clérigo de la capilla va al sitio. Da sentido a recoger a los muertos."},
+        {"titulo": "Espectro que apaga las luces", "detalle": "Enemigo nocturno que no hace daño directo: apaga las antorchas y faroles por donde pasa (fase 69), y con la luz apagada los lobos y esqueletos vuelven a entrar. Solo lo dañan los arqueros con flechas untadas en la herboristería."},
+        {"titulo": "Liche, jefe de las ruinas", "detalle": "En nivel brutal, una de las ruinas grandes del mapa aloja un liche: mientras viva, cada noche levanta esqueletos (clip cast) que marchan al pueblo. Derrotarlo con el ejército termina la amenaza de no muertos de la partida y da el oro de su tesoro."},
+        {"titulo": "Casa encantada", "detalle": "La casa quemada o la casa invadida por la maleza (decoraciones de ruina) pueden tener un fantasma inofensivo: decoración viva que da un toque de cuento, visible solo de noche."}
+      ],
+      "modelos": [
+        {"id": "enemy_ghost", "nombre": "Fantasma", "material": "túnica pálida",
+         "animaciones": {"idle": "Flota, sube y baja, la túnica ondea", "walk": "Se desliza inclinado hacia delante", "attack": "Alza las dos garras y las lanza al frente", "die": "La túnica vacía cae al suelo en un montón"},
+         "nota": "El desplazamiento no guarda velocidad (no tiene pies); se sugiere 1,5 m/s."},
+        {"id": "enemy_wraith", "nombre": "Espectro", "material": "túnica negra, ojos rojos"},
+        {"id": "enemy_lich", "nombre": "Liche", "material": "túnica morada, oro, báculo",
+         "animaciones": {"cast": "Se eleva y levanta el báculo para conjurar"}}
+      ]
+    },
+    {
+      "id": "monster_treant",
+      "nombre": "Árbol andante",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Árbol de 3,6 m (4,2 con la copa) que camina: tronco con cara (ojos huecos que brillan, boca), brazos de rama con dedos de ramitas, pies de raíces, hongos de repisa y copa de follaje. Verde, de otoño y uno seco sin hojas.",
+      "propuestas": [
+        {"titulo": "Venganza del bosque", "detalle": "Si el pueblo tala demasiado sin replantar (por debajo de cierta cantidad de árboles en un radio grande), un árbol del borde del claro se levanta y ataca a los leñadores y su cabaña. Con replantación (o perdonando los frutales, fase 85) no ocurre. Convierte la deforestación en una amenaza que se ve."},
+        {"titulo": "Guardián de los árboles gigantes", "detalle": "Cada arboleda de árboles gigantes del mapa tiene un árbol andante dormido entre ellos: talar uno gigante lo despierta. Es lento y el fuego le hace daño doble (antorchas, brasero)."},
+        {"titulo": "Aliado de los elfos", "detalle": "Un pueblo con mayoría de elfos puede pactar con él: deja de atacar y protege a los recolectores del bosque de lobos y osos, a cambio de no talar en su arboleda."},
+        {"titulo": "Estaciones", "detalle": "El modelo cambia con la estación como los árboles del juego (verde, otoño, seco en invierno); en invierno duerme y no ataca."}
+      ],
+      "modelos": [
+        {"id": "monster_treant", "nombre": "Verde", "material": "corteza y hojas verdes",
+         "animaciones": {"idle": "Se mece como con viento", "walk": "Paso lento, balanceándose", "attack": "Levanta una rama y la descarga al frente", "die": "Cruje y cae de frente como un árbol talado"},
+         "nota": "Al atacar, los dedos de la rama entran unos centímetros en el suelo; al morir las raíces quedan bajo tierra."},
+        {"id": "monster_treant_autumn", "nombre": "De otoño", "material": "hojas naranjas"},
+        {"id": "monster_treant_dead", "nombre": "Seco", "material": "corteza gris, sin hojas"},
+        {"id": "monster_treant_sapling", "nombre": "Retoño", "material": "corteza y hojas verdes", "nota": "El mismo modelo a 1,6 m: retoños que acompañan al árbol andante."}
+      ]
+    },
+    {
+      "id": "enemy_scorpion",
+      "nombre": "Escorpión gigante",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Escorpión de 1,6 m con ocho patas, dos pinzas grandes y cola de cinco segmentos curvada sobre el lomo con aguijón. Color arena, negro de ojos rojos y rojo.",
+      "propuestas": [
+        {"titulo": "Fauna del desierto", "detalle": "Especie peligrosa propia de los mapas áridos, donde no hay lobos ni osos: vive bajo las rocas sueltas y los depósitos de piedra, y pica al cantero o recolector que las recoge."},
+        {"titulo": "Veneno que mata despacio", "detalle": "Su picadura envenena: el aldeano sigue trabajando pero muere en dos días si no llega al herborista (antídoto de hierbas) o al médico. Hace valiosas las hierbas de la fase 82."},
+        {"titulo": "Coraza para la armería", "detalle": "Al matarlo deja quitina: la armería hace con ella armadura ligera (la mitad de protección que el hierro, sin gastar hierro), útil en mapas sin mina."}
+      ],
+      "modelos": [
+        {"id": "enemy_scorpion", "nombre": "Arena", "material": "coraza color arena",
+         "animaciones": {"idle": "Abre y cierra las pinzas, la cola se mece", "walk": "Camina alternando cuatro patas y cuatro", "attack": "Recoge la cola y descarga el aguijón por encima de la cabeza", "die": "Encoge las patas y la cola cae hacia atrás"}},
+        {"id": "enemy_scorpion_black", "nombre": "Negro", "material": "coraza negra"},
+        {"id": "enemy_scorpion_red", "nombre": "Rojo", "material": "coraza roja"},
+        {"id": "animal_scorpion", "nombre": "Escorpión común", "material": "color arena", "nota": "El mismo modelo a 0,2 m: bicho de ambiente bajo las piedras."}
+      ]
+    },
+    {
+      "id": "enemy_snake_giant",
+      "nombre": "Serpiente gigante y basilisco",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Serpiente de 14 segmentos que ondula de verdad (cada segmento va sobre su hueso y se coloca a lo largo de una onda), con el cuello erguido, colmillos y lengua bífida. Gigante de 4 m, basilisco de 6,5 m con cresta de espinas y corona de cuernos, y una víbora pequeña de 1,2 m.",
+      "propuestas": [
+        {"titulo": "El basilisco petrifica", "detalle": "Las estatuas de aldeanos petrificados que ya existen como decoración pasan a tener origen: donde hay un grupo de ellas, hay una guarida de basilisco. Su mirada convierte en estatua al aldeano que se acerque de día; de noche, o con los ojos vendados (unidad nueva o soldados con escudo), se le puede matar. Al morir, las estatuas cercanas vuelven a ser aldeanos y se unen al pueblo."},
+        {"titulo": "Víbora en la hierba", "detalle": "Ambiente con riesgo: al recolectar bayas o hierbas (fase 82) hay una pequeña probabilidad de mordedura; el herborista la cura. Los gatos y las gallinas del pueblo las ahuyentan del entorno de las casas."},
+        {"titulo": "Serpiente del pantano", "detalle": "La gigante vive en zonas de agua y ataca a pescadores solitarios; un muelle con antorcha o un perro la mantiene lejos."}
+      ],
+      "modelos": [
+        {"id": "enemy_snake_giant", "nombre": "Serpiente gigante", "material": "escamas verde oliva",
+         "animaciones": {"idle": "Cuello erguido, se mece y saca la lengua", "walk": "Repta ondulando", "attack": "Echa la cabeza atrás y la lanza al frente con la boca abierta", "die": "Se retuerce y queda de lado"},
+         "nota": "La onda es lateral: se aprecia desde arriba, que es como la ve la cámara del juego. No guarda velocidad; se sugiere 1,2 m/s."},
+        {"id": "monster_basilisk", "nombre": "Basilisco", "material": "escamas verdes, cresta dorada"},
+        {"id": "animal_viper", "nombre": "Víbora", "material": "escamas pardas"}
+      ]
+    },
+    {
+      "id": "monster_minotaur",
+      "nombre": "Minotauro",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Gigante de 2,3 m con cabeza de toro, cuernos, anillo en la nariz, melena sobre los hombros, faldón de cuero y un hacha de doble hoja de 1,5 m. Comparte esqueleto y animaciones con el trol. Pardo, negro de ojos rojos y blanco.",
+      "propuestas": [
+        {"titulo": "Guardián de la mina abandonada", "detalle": "La entrada de mina en ruinas (decoración que ya existe) es su laberinto: si el explorador la abre, hay hierro y oro dentro, pero sale un minotauro que hay que vencer con al menos 6 soldados. Un solo jefe por mapa, con recompensa grande."},
+        {"titulo": "Campeón de los asaltantes", "detalle": "En nivel brutal, cada tercer asalto trae un minotauro al frente: aguanta 10 veces lo que un asaltante y carga contra la puerta. Las trampas le hacen daño triple (pesa mucho): da uso a las trampas contra un enemigo grande."},
+        {"titulo": "Mercenario", "detalle": "Un mercader raro ofrece un minotauro a sueldo: cuesta oro cada estación y come por cuatro, pero vale por una guarnición entera mientras se le pague; si falta el oro, se va rompiendo algo."}
+      ],
+      "modelos": [
+        {"id": "monster_minotaur", "nombre": "Pardo", "material": "piel parda, hacha de hierro",
+         "animaciones": {"idle": "Respira, mira a los lados", "walk": "Paso pesado con el hacha al frente", "attack": "Levanta el hacha y la descarga", "die": "Cae de espaldas"}},
+        {"id": "monster_minotaur_black", "nombre": "Negro", "material": "piel negra, ojos rojos"},
+        {"id": "monster_minotaur_white", "nombre": "Blanco", "material": "piel clara"}
+      ]
+    },
+    {
+      "id": "monster_elemental_fire",
+      "nombre": "Elemental",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Cuerpo flotante de 2 m hecho de trozos sueltos (base, vientre, pecho, cabeza, hombros, brazos y puños), cada uno en su hueso para que floten y tiemblen por separado, con chispas alrededor. De fuego (llamas sobre un núcleo de brasa), de escarcha y de tierra con cristales.",
+      "propuestas": [
+        {"titulo": "El incendio que camina", "detalle": "Cuando un incendio (uno de los enemigos del entorno) arde más de cierto tiempo sin apagarse, nace de él un elemental de fuego que camina hacia el edificio de madera más cercano y lo prende. Se apaga con cubos del pozo: da urgencia a tener pozos cerca."},
+        {"titulo": "Helada viva", "detalle": "El de escarcha aparece en los inviernos duros: las casas sin leña a su paso pierden calefacción el doble de rápido y los cultivos de invierno mueren. Lo ahuyentan las fogatas y braseros encendidos."},
+        {"titulo": "Guardián del círculo de runas", "detalle": "El círculo de runas, el portal y el monolito (decoraciones) pueden invocar uno de cristal que defiende el pueblo una noche, a cambio de oro o de cristales: defensa de emergencia de un solo uso por año."},
+        {"titulo": "Fragua viva", "detalle": "Un elemental de fuego domado en la fundición o la herrería: no gasta carbón vegetal, pero cada estación hay una pequeña probabilidad de que se escape y cause un incendio."}
+      ],
+      "modelos": [
+        {"id": "monster_elemental_fire", "nombre": "Fuego", "material": "llamas y brasa",
+         "animaciones": {"idle": "Los trozos flotan y tiemblan a destiempo", "walk": "Se desliza inclinado", "attack": "Lanza los dos puños al frente y se aviva", "die": "Se apaga: los trozos se hunden en el suelo"},
+         "nota": "Los trozos no se tocan entre sí a propósito. No guarda velocidad; se sugiere 1,2 m/s."},
+        {"id": "monster_elemental_frost", "nombre": "Escarcha", "material": "hielo"},
+        {"id": "monster_elemental_crystal", "nombre": "Tierra y cristal", "material": "roca y cristal morado"}
+      ]
+    },
+    {
+      "id": "enemy_harpy",
+      "nombre": "Arpía",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Mujer pájaro de 1,5 m y 3 m de envergadura: torso humano, cabeza de pelo erizado con pico por nariz, alas con dos filas de plumas en lugar de brazos y patas de ave con garras. Modelada en vuelo. Parda, negra de pelo rojo y blanca.",
+      "propuestas": [
+        {"titulo": "Ladronas de comida", "detalle": "Bandada que anida en riscos o árboles gigantes: cada pocos días baja al mercado, al ahumadero o al secadero de pescado y se lleva comida volando. No las detienen los muros; sí los arqueros de las atalayas y el espantapájaros reforzado."},
+        {"titulo": "Azote de los caminos", "detalle": "Atacan a los porteadores y a las caravanas en campo abierto y les hacen soltar la carga, que queda tirada en el camino hasta que alguien la recoge."},
+        {"titulo": "Nido con botín", "detalle": "El explorador puede subir al nido cuando están fuera: hay objetos brillantes (monedas, herramientas robadas). Si vuelven mientras está arriba, pelea."}
+      ],
+      "modelos": [
+        {"id": "enemy_harpy", "nombre": "Parda", "material": "plumas pardas",
+         "animaciones": {"idle": "Se mantiene en el aire aleteando", "fly": "Vuelo de avance, tendida", "attack": "Se echa atrás y lanza las dos garras", "die": "Cae y queda boca arriba con las alas abiertas"}},
+        {"id": "enemy_harpy_black", "nombre": "Negra", "material": "plumas negras, pelo rojo"},
+        {"id": "enemy_harpy_white", "nombre": "Blanca", "material": "plumas blancas"}
+      ]
+    },
+    {
+      "id": "monster_gargoyle",
+      "nombre": "Gárgola",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "La arpía tallada en piedra gris con ojos de brasa: misma forma, esqueleto y animaciones, para estatuas que cobran vida.",
+      "propuestas": [
+        {"titulo": "Estatuas que despiertan", "detalle": "El ángel, los leones guardianes y la estatua del dragón (decoraciones) tienen una versión maldita que el explorador puede traer de unas ruinas: de día es una estatua que sube mucho la belleza; algunas noches despierta y ataca. El jugador elige el riesgo."},
+        {"titulo": "Guardiana de la capilla", "detalle": "Construible sobre la capilla o la atalaya de piedra (10 de piedra, 1 de oro): de día no hace nada; de noche vuela en un radio de 20 m y ataca a esqueletos, murciélagos y espectros. Defensa nocturna sin soldados."},
+        {"titulo": "Inmune a las flechas", "detalle": "Como enemiga, solo la dañan las mazas y los picos (canteros y enanos le hacen daño doble): da un papel de combate a los oficios de piedra."}
+      ],
+      "modelos": [
+        {"id": "monster_gargoyle", "nombre": "Piedra", "material": "piedra",
+         "animaciones": {"idle": "Se mantiene en el aire aleteando", "fly": "Vuelo de avance", "attack": "Lanza las dos garras", "die": "Cae y queda en el suelo con las alas abiertas"}}
+      ]
+    },
+    {
+      "id": "monster_kraken_tentacle",
+      "nombre": "Tentáculo de kraken",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Brazo de 4,2 m que sale del agua en nueve segmentos, con una fila de ventosas, punta en pala y un anillo de espuma donde rompe la superficie. El origen del modelo está en la superficie del agua (la base queda sumergida). Rojo, azul oscuro y un palpo pequeño de 1,4 m.",
+      "propuestas": [
+        {"titulo": "Peligro de la costa", "detalle": "En mapas con mar, con la fauna peligrosa en nivel alto, un kraken ronda la costa: los tentáculos emergen junto a muelles y barcas de pesca y destruyen la cabaña del pescador si no hay defensa. Se le ahuyenta con arqueros en una atalaya costera."},
+        {"titulo": "Pesca prohibida", "detalle": "Mientras hay tentáculos a la vista, los pescadores no salen (pierden esa jornada). Dura unos días por estación: obliga a no depender solo del pescado."},
+        {"titulo": "Ruta marítima", "detalle": "Los mercaderes que llegan por mar pueden perder el barco; un faro (edificio nuevo) reduce la probabilidad a casi cero."}
+      ],
+      "modelos": [
+        {"id": "monster_kraken_tentacle", "nombre": "Rojo", "material": "piel roja",
+         "animaciones": {"idle": "Se mece fuera del agua", "attack": "Se echa atrás y cae de plano al frente", "emerge": "Sale del agua (una vez)", "die": "Se sacude y se hunde (una vez)"},
+         "nota": "La base está 0,4 m bajo el origen a propósito: va sumergida."},
+        {"id": "monster_kraken_tentacle_blue", "nombre": "Azul", "material": "piel azul oscura"},
+        {"id": "monster_kraken_feeler", "nombre": "Palpo pequeño", "material": "piel verde pálida"}
+      ]
+    },
+    {
+      "id": "enemy_crocodile",
+      "nombre": "Cocodrilo",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Cocodrilo de 3,6 m, bajo y de patas abiertas, con filas de escudos en el lomo, hocico largo con mandíbula articulada llena de dientes y cola de seis segmentos que ondula al caminar. Verde de río, oscuro de pantano y pálido.",
+      "propuestas": [
+        {"titulo": "Fauna de río y pantano", "detalle": "Especie peligrosa de las orillas en mapas cálidos: ataca a pescadores, a quien recoge arcilla en el pozo de arcilla junto al agua y al ganado que baja a beber. De noche se acerca más (regla de la fase 72)."},
+        {"titulo": "Vado peligroso", "detalle": "Donde no hay puente, cruzar el río a pie tiene riesgo si hay cocodrilos: razón práctica para construir puentes pronto."},
+        {"titulo": "Cuero grueso", "detalle": "El cazador experto puede cazarlo: da mucho cuero y de mejor calidad (la curtiduría saca armadura de cuero reforzado)."}
+      ],
+      "modelos": [
+        {"id": "enemy_crocodile", "nombre": "De río", "material": "piel verde",
+         "animaciones": {"idle": "Quieto; a ratos abre la boca", "walk": "Camina con el cuerpo y la cola serpenteando", "attack": "Abre la boca, se lanza y cierra", "die": "Se revuelve y queda panza arriba"}},
+        {"id": "enemy_crocodile_swamp", "nombre": "De pantano", "material": "piel oscura"},
+        {"id": "enemy_crocodile_pale", "nombre": "Pálido", "material": "piel clara, ojos rojos"}
+      ]
+    },
+    {
+      "id": "animal_crow",
+      "nombre": "Cuervo y buitre",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Aves carroñeras con la técnica de las aves del zoológico: cuervo negro de 0,25 m, corneja grande de 0,35 m y buitre de 0,65 m, pardo, con cabeza y cuello pelados y gorguera blanca. Todos con vuelo.",
+      "propuestas": [
+        {"titulo": "Aviso de muerte", "detalle": "Los buitres vuelan en círculo sobre un aldeano o animal muerto fuera del pueblo: el jugador ve desde lejos dónde ha pasado algo, sin mirar el registro."},
+        {"titulo": "Plaga de los campos", "detalle": "Bandadas de cuervos se comen parte de la siembra de un campo sin espantapájaros (la decoración que ya existe gana función: protege un radio de campos)."},
+        {"titulo": "Ambiente de ruinas y de campo de batalla", "detalle": "Tras un asalto, cuervos sobre los caídos hasta que se entierran; en las ruinas, un cuervo posado. Puro ambiente con significado."}
+      ],
+      "modelos": [
+        {"id": "animal_crow", "nombre": "Cuervo", "material": "plumas negras",
+         "animaciones": {"idle": "Mira a los lados", "walk": "Camina", "run": "Corre", "eat": "Picotea", "die": "Cae de lado", "fly": "Vuela"}},
+        {"id": "animal_raven", "nombre": "Corneja grande", "material": "plumas negras"},
+        {"id": "animal_vulture", "nombre": "Buitre", "material": "plumas pardas, cabeza pelada",
+         "animaciones": {"attack": "Estira el cuello y pica con las alas abiertas"}}
+      ]
+    },
+    {
+      "id": "pet_falcon",
+      "nombre": "Halcón y azor de cetrería",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Rapaces de 0,3 a 0,4 m con capucha oscura, pecho claro barrado y pico y patas amarillos. Halcón gris pardo y azor rojizo más grande. Con vuelo y ataque.",
+      "propuestas": [
+        {"titulo": "Cetrería", "detalle": "Mejora de la cabaña del cazador a partir del nivel 3 del centro del pueblo: un cazador con halcón trae además caza menor (conejos, perdices, patos) sin gastar flechas: +30 % de carne en mapas con poca caza mayor."},
+        {"titulo": "Espanta cuervos y palomas", "detalle": "Un halcón en la atalaya ahuyenta las bandadas de cuervos de los campos en un radio de 30 m: hace el trabajo de varios espantapájaros."},
+        {"titulo": "Regalo de mercader", "detalle": "Bien de lujo que traen los mercaderes: el azor en casa del jefe sube la deseabilidad del pueblo (llegan más inmigrantes) y la felicidad de las casas de nivel alto."}
+      ],
+      "modelos": [
+        {"id": "pet_falcon", "nombre": "Halcón", "material": "plumas gris pardas",
+         "animaciones": {"idle": "Mira a los lados con golpes de cabeza", "walk": "Camina", "run": "Corre", "eat": "Despedaza en el suelo", "die": "Cae de lado", "fly": "Vuela", "attack": "Se lanza con el pico y las alas abiertas"}},
+        {"id": "pet_hawk", "nombre": "Azor", "material": "plumas rojizas"}
+      ]
+    },
+    {
+      "id": "animal_dove",
+      "nombre": "Paloma",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Paloma de 0,2 m con cola en abanico: blanca y gris bravía de pecho morado. Con vuelo.",
+      "propuestas": [
+        {"titulo": "Palomar con función", "detalle": "El palomar (decoración «dovecote») pasa a dar algo: carne de pichón en poca cantidad todo el año y palomina, abono para el patio de compost."},
+        {"titulo": "Palomas mensajeras", "detalle": "Con palomar, el pueblo recibe aviso de los asaltos y de la llegada de mercaderes con un día más de antelación, y en multijugador los mensajes entre aliados llegan al instante."},
+        {"titulo": "Plaza viva", "detalle": "Bandadas en la fuente, la cruz de mercado y el escenario: sube la belleza de las plazas; se van si hay un halcón."}
+      ],
+      "modelos": [
+        {"id": "animal_dove", "nombre": "Blanca", "material": "plumas blancas",
+         "animaciones": {"idle": "Mira a los lados", "walk": "Camina moviendo la cabeza", "run": "Corre", "eat": "Picotea", "die": "Cae de lado", "fly": "Vuela"}},
+        {"id": "animal_pigeon", "nombre": "Bravía", "material": "gris, pecho morado"}
+      ]
+    },
+    {
+      "id": "animal_owl",
+      "nombre": "Búho",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Búho de 0,35 m de cabeza grande con disco facial claro y ojos amarillos. Pardo y nival.",
+      "propuestas": [
+        {"titulo": "Cazador de ratas nocturno", "detalle": "Un búho en un árbol junto al granero o en la torre en ruinas reduce las ratas de noche como medio gato; solo aparece si quedan árboles viejos cerca del pueblo (premia no talar todo)."},
+        {"titulo": "Ambiente de la noche", "detalle": "Visible solo de noche, posado en ramas, tejados y lápidas; ulula. Da vida al ciclo de día y noche."},
+        {"titulo": "Mensajero del mago", "detalle": "El personaje mago del juego puede tener un búho nival como familiar: explora un radio pequeño de niebla de guerra por la noche."}
+      ],
+      "modelos": [
+        {"id": "animal_owl", "nombre": "Pardo", "material": "plumas pardas",
+         "animaciones": {"idle": "Gira la cabeza", "walk": "Camina", "run": "Corre", "eat": "Picotea", "die": "Cae de lado", "fly": "Vuela"}},
+        {"id": "animal_owl_snowy", "nombre": "Nival", "material": "plumas blancas"}
+      ]
+    },
+    {
+      "id": "animal_sparrow",
+      "nombre": "Pájaros pequeños",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Pájaros de 0,12 m: gorrión pardo, petirrojo de pecho naranja y azulejo. Mismo esqueleto que la gallina, con vuelo.",
+      "propuestas": [
+        {"titulo": "Medidor de entorno", "detalle": "Aparecen solos en jardines, árboles podados, bebederos de pájaros y huertos: cuantos más pájaros tiene un barrio, mejor es su belleza de entorno. El jugador lee la calidad del barrio de un vistazo."},
+        {"titulo": "Estaciones", "detalle": "Se van en otoño y vuelven en primavera; el petirrojo se queda en invierno. Refuerza el paso del año."},
+        {"titulo": "Comen plagas", "detalle": "Un palomar o bebedero cerca de un campo baja un poco la probabilidad de plaga de insectos en él."}
+      ],
+      "modelos": [
+        {"id": "animal_sparrow", "nombre": "Gorrión", "material": "pardo",
+         "animaciones": {"idle": "Mira a los lados", "walk": "Da saltitos", "run": "Corre", "eat": "Picotea", "die": "Cae de lado", "fly": "Vuela"}},
+        {"id": "animal_robin", "nombre": "Petirrojo", "material": "pecho naranja"},
+        {"id": "animal_bluebird", "nombre": "Azulejo", "material": "azul"}
+      ]
+    },
+    {
+      "id": "animal_squirrel",
+      "nombre": "Ardilla",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Ardilla de 0,2 m con cola gruesa en alto, orejas puntiagudas y panza blanca. Roja y gris.",
+      "propuestas": [
+        {"titulo": "Vida en los frutales", "detalle": "Vive en los frutales silvestres (fase 84) y en los árboles con fruto seco: un árbol con ardilla da un poco menos de fruta, pero la ardilla planta árboles nuevos alrededor con los años (el bosque se regenera solo cerca de ellos)."},
+        {"titulo": "Ambiente", "detalle": "Corre por el suelo entre árboles y se sienta a comer; huye de los aldeanos y de los perros. Sin efecto en la simulación."}
+      ],
+      "modelos": [
+        {"id": "animal_squirrel", "nombre": "Roja", "material": "pelo rojizo",
+         "animaciones": {"idle": "Atenta", "walk": "Camina", "run": "Corre", "eat": "Come del suelo", "die": "Cae de lado", "sit": "Sentada"}},
+        {"id": "animal_squirrel_gray", "nombre": "Gris", "material": "pelo gris"}
+      ]
+    },
+    {
+      "id": "animal_hedgehog",
+      "nombre": "Erizo",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Erizo de 0,3 m (agrandado para verse) con 46 púas claras y oscuras sobre el lomo, cara y panza claras y patas cortas.",
+      "propuestas": [
+        {"titulo": "Amigo del huerto", "detalle": "Aparece en huertos de verduras, jardines y setos (decoraciones existentes) al anochecer: un huerto con erizo no sufre plaga de babosas, y da +1 de belleza a las casas vecinas."},
+        {"titulo": "Indicador de entorno sano", "detalle": "Solo vive donde hay setos o maleza cerca y no hay perros sueltos: su presencia indica un barrio verde; ayuda a leer el entorno sin abrir paneles."}
+      ],
+      "modelos": [
+        {"id": "animal_hedgehog", "nombre": "Erizo", "material": "púas pardas y claras",
+         "animaciones": {"idle": "Olfatea", "walk": "Camina a pasitos", "run": "Corre", "eat": "Hoza en el suelo", "die": "Cae de lado"}}
+      ]
+    },
+    {
+      "id": "animal_beaver",
+      "nombre": "Castor",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Castor de 0,35 m a la cruz, rechoncho, con incisivos naranjas y cola plana de pala.",
+      "propuestas": [
+        {"titulo": "Presas en el río", "detalle": "Una familia de castores en un tramo de río levanta una presa: aguas arriba se forma un estanque (más pesca y agua para regar en sequía) y aguas abajo baja el caudal (el molino de agua rinde menos). El jugador decide si los deja o los caza."},
+        {"titulo": "Competencia por la madera", "detalle": "Talan los árboles jóvenes junto al agua: el leñador de ribera encuentra menos, pero deja troncos ya cortados que cualquier aldeano puede recoger."},
+        {"titulo": "Pieles finas", "detalle": "Caza menor de alto valor: su piel es el bien que mejor pagan los mercaderes; cazar demasiados hace que desaparezcan del mapa."}
+      ],
+      "modelos": [
+        {"id": "animal_beaver", "nombre": "Castor", "material": "pelo pardo",
+         "animaciones": {"idle": "Atento", "walk": "Camina", "run": "Corre", "eat": "Roe en el suelo", "die": "Cae de lado"},
+         "nota": "La colita soldada asoma sobre la cola de pala; pendiente de quitar."}
+      ]
+    },
+    {
+      "id": "animal_swan",
+      "nombre": "Cisne y gaviota",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Aves de agua para estanques y costas: cisne blanco y cisne negro de 1,1 m de alto con cuello muy largo, y gaviota de 0,3 m de lomo gris y patas palmeadas.",
+      "propuestas": [
+        {"titulo": "Lujo del estanque", "detalle": "Un estanque o cascada decorativos con cisnes dan el doble de belleza a las casas de nivel alto; llegan solos cuando el entorno ya es muy bueno. El cisne negro es un regalo raro de mercader."},
+        {"titulo": "Gaviotas en la costa", "detalle": "Sobre muelles, cabañas de pescador y secaderos de pescado: indican dónde hay bancos de peces (el pescador junto a gaviotas rinde más) y roban un poco de pescado del secadero sin techo."},
+        {"titulo": "Cisne bravo", "detalle": "Defiende su estanque: ataca a zorros y ahuyenta a los patos domésticos; humor de ambiente."}
+      ],
+      "modelos": [
+        {"id": "animal_swan", "nombre": "Cisne blanco", "material": "plumas blancas",
+         "animaciones": {"idle": "Mira a los lados", "walk": "Camina balanceándose", "run": "Corre", "eat": "Baja el cuello", "die": "Cae de lado", "fly": "Vuela", "attack": "Estira el cuello y abre las alas", "sit": "Echado"}},
+        {"id": "animal_swan_black", "nombre": "Cisne negro", "material": "plumas negras, pico rojo"},
+        {"id": "animal_seagull", "nombre": "Gaviota", "material": "blanca, lomo gris", "nota": "Sin ataque ni echarse."}
+      ]
+    },
+    {
+      "id": "animal_frog",
+      "nombre": "Rana",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Rana de 0,2 m (más grande que al natural, para que se vea desde la cámara): cuerpo en cuña, ojos saltones, garganta clara que late y patas traseras plegadas que se estiran al saltar. Verde, sapo pardo y rana venenosa azul.",
+      "propuestas": [
+        {"titulo": "Señal de agua limpia", "detalle": "Hay ranas en estanques, pozos viejos y orillas mientras el agua está limpia; desaparecen cuando se ensucia. Con los patos, es el aviso visible antes de una epidemia por agua sucia."},
+        {"titulo": "Croar de noche", "detalle": "De noche croan cerca del agua (sonido de ambiente ligado al ciclo de día y noche)."},
+        {"titulo": "Ingrediente del herborista", "detalle": "La rana azul es rara y venenosa: el herborista saca de ella veneno para las flechas de los arqueros (+daño) o un remedio contra la fiebre."}
+      ],
+      "modelos": [
+        {"id": "animal_frog", "nombre": "Verde", "material": "piel verde",
+         "animaciones": {"idle": "La garganta late", "walk": "Salta estirando las patas traseras", "attack": "Se encoge y embiste", "die": "Salta y cae panza arriba"}},
+        {"id": "animal_toad", "nombre": "Sapo", "material": "piel parda"},
+        {"id": "animal_frog_poison", "nombre": "Venenosa", "material": "piel azul"}
+      ]
+    },
+    {
+      "id": "monster_giant_toad",
+      "nombre": "Sapo gigante",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "El mismo sapo a 1,4 m de largo: un monstruo de pantano que salta 80 cm y embiste con la boca.",
+      "propuestas": [
+        {"titulo": "Monstruo del pantano", "detalle": "Vive en charcas grandes y pozos de arcilla abandonados; se traga gallinas, patos y perros pequeños y asusta a los niños (baja la felicidad de las casas a 15 m). Un cazador con perro lo mata; su piel da cuero resistente al agua para botas (calzado que dura el doble)."},
+        {"titulo": "Señal de pozo podrido", "detalle": "Aparece cuando un pozo o estanque lleva mucho tiempo sucio: es el último aviso antes de la epidemia y a la vez el castigo. Limpiar el agua (casa de baños, pozo nuevo) evita que vuelva."},
+        {"titulo": "Montura de goblins", "detalle": "En los asaltos de goblins en zonas húmedas, algunos llegan montados en sapos que saltan la empalizada baja (no el muro de piedra)."}
+      ],
+      "modelos": [
+        {"id": "monster_giant_toad", "nombre": "Sapo gigante", "material": "piel verde parda",
+         "animaciones": {"idle": "La garganta late", "walk": "Salta", "attack": "Se encoge y embiste hacia delante", "die": "Salta y cae panza arriba"}}
+      ]
+    },
+    {
+      "id": "animal_butterfly",
+      "nombre": "Mariposa",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Mariposa de 0,25 m de envergadura (agrandada para verse). El clip de vuelo recorre un ocho de 0,7 m aleteando; posada, abre y cierra las alas. Naranja, azul y blanca.",
+      "propuestas": [
+        {"titulo": "Sobre las flores", "detalle": "Aparecen sobre las camas de flores, jardines, lavanda y girasoles (decoraciones existentes) en primavera y verano y de día: una decoración de flores con mariposas da +1 de belleza extra."},
+        {"titulo": "Polinizadoras", "detalle": "Con colmenas o muchas flores cerca, los huertos y frutales rinden un poco más; las mariposas son la señal visible de ese bono."}
+      ],
+      "modelos": [
+        {"id": "animal_butterfly", "nombre": "Naranja", "material": "alas naranjas y negras",
+         "animaciones": {"fly": "Revolotea en un ocho", "idle": "Posada, abre y cierra las alas"}},
+        {"id": "animal_butterfly_blue", "nombre": "Azul", "material": "alas azules"},
+        {"id": "animal_butterfly_white", "nombre": "Blanca", "material": "alas blancas"}
+      ]
+    },
+    {
+      "id": "animal_dragonfly",
+      "nombre": "Libélula",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Libélula de 0,3 m de envergadura con cuatro alas y cola segmentada. El vuelo es quieto con saltos bruscos a un lado y vuelta; posada, deja las alas planas. Azul y roja.",
+      "propuestas": [
+        {"titulo": "Sobre el agua", "detalle": "Ambiente de estanques, ríos y pozos de arcilla en verano; come mosquitos: una charca con libélulas no da el pequeño riesgo de fiebre que da una charca sin ellas."},
+        {"titulo": "Señal de verano", "detalle": "Solo en verano y de día; ayuda a leer la estación sin mirar el calendario."}
+      ],
+      "modelos": [
+        {"id": "animal_dragonfly", "nombre": "Azul", "material": "cuerpo azul",
+         "animaciones": {"fly": "Se cierne y da saltos laterales", "idle": "Posada"}},
+        {"id": "animal_dragonfly_red", "nombre": "Roja", "material": "cuerpo rojo"}
+      ]
+    },
+    {
+      "id": "animal_fireflies",
+      "nombre": "Enjambre de luciérnagas",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Nueve puntos de luz, cada uno en su hueso y con su propio recorrido en bucle dentro de una esfera de 1,6 m. Amarillo verdoso y azul.",
+      "propuestas": [
+        {"titulo": "Luz de la noche", "detalle": "De noche, sobre prados, jardines y junto al agua. Cada enjambre cuenta como una luz muy débil: no quita la penalización de trabajo nocturno, pero marca los caminos y hace bonita la noche de la fase 69."},
+        {"titulo": "Faroles de luciérnagas", "detalle": "Los elfos (o el herborista) pueden encerrarlas en un farol que no gasta leña ni aceite: luz gratis que solo funciona de primavera a otoño."},
+        {"titulo": "Las azules señalan magia", "detalle": "Luciérnagas azules alrededor de un anillo de hadas, un árbol de cristal o una ruina indican que ahí hay algo que el explorador puede investigar."}
+      ],
+      "modelos": [
+        {"id": "animal_fireflies", "nombre": "Amarillas", "material": "luz amarilla verdosa",
+         "animaciones": {"idle": "Cada luz recorre su propio bucle"}},
+        {"id": "animal_fireflies_blue", "nombre": "Azules", "material": "luz azul"}
+      ]
+    },
+    {
+      "id": "animal_bees",
+      "nombre": "Enjambre de abejas",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Nueve abejas grandes (5 cm, para que se vean), cada una en su hueso y con su recorrido en bucle dentro de una esfera de 1 m.",
+      "propuestas": [
+        {"titulo": "Colmenas vivas", "detalle": "Sobre las colmenas (decoraciones «beehives» y «beehive») cuando producen: si el enjambre se ve, hay miel ese mes. Las colmenas pasan a dar miel (comida variada y materia para la cervecería: hidromiel) si tienen flores a 15 m."},
+        {"titulo": "Polinización", "detalle": "Huertos y frutales a 20 m de una colmena con enjambre rinden un 15 % más."},
+        {"titulo": "Defensa de pobres", "detalle": "Colmenas junto a la empalizada: los asaltantes que pasan a su lado son picados y pelean peor un rato. Barato y sin soldados."}
+      ],
+      "modelos": [
+        {"id": "animal_bees", "nombre": "Enjambre", "material": "amarillo y negro",
+         "animaciones": {"idle": "Cada abeja recorre su propio bucle"}}
+      ]
+    },
+    {
+      "id": "enemy_bat_swarm",
+      "nombre": "Bandada de murciélagos",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Siete murciélagos pequeños (0,4 m de envergadura) que vuelan cada uno su ocho dentro de un espacio de 2,5 m, aleteando a distinto ritmo. Un solo modelo con 21 huesos.",
+      "propuestas": [
+        {"titulo": "Salen al anochecer", "detalle": "De las ruinas, la entrada de mina y los árboles gigantes sale una bandada al ponerse el sol y vuelve al amanecer: marca el cambio de día a noche de la fase 68 sin mirar el HUD."},
+        {"titulo": "Molestia, no enemigo", "detalle": "Un aldeano sin antorcha que cruza una bandada se asusta y pierde un rato; con antorcha no pasa nada. Sin daño."},
+        {"titulo": "Guano", "detalle": "Una cueva con murciélagos da guano: abono excelente para el patio de compost (la fertilidad de un campo sube el doble por carga)."}
+      ],
+      "modelos": [
+        {"id": "enemy_bat_swarm", "nombre": "Bandada", "material": "pelo oscuro",
+         "animaciones": {"fly": "Cada murciélago vuela su ocho", "attack": "La bandada se cierra y baja", "die": "Caen al suelo"}}
+      ]
+    }
+  ]
+}

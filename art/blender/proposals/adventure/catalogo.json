@@ -1,0 +1,123 @@
+{
+  "familia": "adventure",
+  "grupos": [
+    {
+      "id": "loot_chest",
+      "nombre": "Cofres",
+      "categoria": "Campamento y exploración",
+      "destacado": true,
+      "descripcion": "Cofre de 0,95 m con tapa abombada que se abre y deja ver oro y gemas: de madera con herrajes, de hierro y forrado de rojo con oro.",
+      "propuestas": [
+        {"titulo": "Premio de la exploración", "detalle": "Repartidos por el mapa (ruinas, cuevas, guaridas vencidas): el explorador o el ejército los abre y lleva el contenido al pueblo. La calidad del cofre dice lo que guarda: materiales, herramientas u oro."},
+        {"titulo": "Botín de las incursiones vencidas", "detalle": "Al derrotar una incursión o destruir un campamento enemigo queda un cofre con parte de lo que habían robado."},
+        {"titulo": "Arca del pueblo", "detalle": "El cofre dorado es lo que se ve dentro de la bóveda o del centro del pueblo: se abre cuando entra oro y los ladrones van por él."},
+        {"titulo": "Regalo de un mercader o de otro jugador", "detalle": "Las ofertas y regalos entre pueblos llegan como un cofre que hay que recoger."}
+      ],
+      "modelos": [
+        {"id": "loot_chest", "nombre": "Madera y hierro", "material": "troncos y hierro", "animaciones": {"open": "Se abre la tapa (no se repite).", "close": "Se cierra la tapa (no se repite)."}},
+        {"id": "loot_chest_iron", "nombre": "Hierro", "material": "hierro", "animaciones": {"open": "Se abre la tapa (no se repite).", "close": "Se cierra la tapa (no se repite)."}},
+        {"id": "loot_chest_gold", "nombre": "Rojo y oro", "material": "oro", "animaciones": {"open": "Se abre la tapa (no se repite).", "close": "Se cierra la tapa (no se repite)."}}
+      ]
+    },
+    {
+      "id": "loot_finds",
+      "nombre": "Hallazgos",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Cinco cosas que encontrar: un cofre a medio desenterrar con su pala, el mapa y la X; una caja fuerte de hierro con candado; ánforas antiguas, una rota con monedas; la mochila de un viajero junto a su esqueleto; y un cajón varado en la playa con una botella con mensaje.",
+      "propuestas": [
+        {"titulo": "Puntos de interés para el explorador", "detalle": "Cada hallazgo da algo distinto al registrarlo: el cofre enterrado, oro; la caja fuerte, herramientas o armas; las ánforas, un bien de lujo que los mercaderes pagan caro; la mochila, un mapa que revela una zona; el cajón, mercancía al azar."},
+        {"titulo": "Mapas del tesoro", "detalle": "Los mercaderes venden mapas: al comprarlo aparece una X en el mapa y hay que mandar a alguien con pala."},
+        {"titulo": "Mensajes y misiones", "detalle": "La botella o la mochila traen un encargo (encontrar a alguien, llevar algo a otro pueblo) con premio."},
+        {"titulo": "Señal de peligro", "detalle": "El esqueleto del viajero avisa de lo que lo mató: cerca hay una guarida."}
+      ],
+      "modelos": [
+        {"id": "loot_buried", "nombre": "Cofre enterrado"},
+        {"id": "loot_strongbox", "nombre": "Caja fuerte", "material": "hierro"},
+        {"id": "loot_urns", "nombre": "Ánforas antiguas", "material": "arcilla"},
+        {"id": "loot_lost_backpack", "nombre": "Mochila perdida"},
+        {"id": "loot_washed_crate", "nombre": "Cajón varado"}
+      ]
+    },
+    {
+      "id": "loot_relic",
+      "nombre": "Reliquia",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Pedestal de piedra de 1,3 m con una gema dorada que flota y gira, rodeada de tres esquirlas y runas que brillan.",
+      "propuestas": [
+        {"titulo": "Objeto único con efecto", "detalle": "Hay unas pocas en el mapa: quien la lleva a su pueblo y la coloca gana un efecto permanente (cosechas, salud, moral o comercio, según la reliquia). Otros jugadores pueden intentar robarla."},
+        {"titulo": "Objetivo de victoria", "detalle": "Reunir todas las reliquias del mapa es una forma de ganar sin guerra."},
+        {"titulo": "Custodiada", "detalle": "Cada una está en una ruina o guarida con su guardián: hay que vencerlo o negociar."}
+      ],
+      "modelos": [
+        {"id": "loot_relic", "nombre": "Gema dorada", "animaciones": {"float": "La gema y las esquirlas giran y flotan."}}
+      ]
+    },
+    {
+      "id": "trap_hunting",
+      "nombre": "Trampas del cazador",
+      "categoria": "Muros y defensas",
+      "destacado": true,
+      "descripcion": "Cepo de hierro con cadena y cebo, lazo en un arbolillo doblado, jaula de palos con puerta de guillotina y nasa de mimbre tras una V de estacas en el agua.",
+      "propuestas": [
+        {"titulo": "Caza sin cazador presente", "detalle": "El cazador coloca trampas en su zona y las revisa cada día: dan caza menor (lazo), mayor (cepo) o animales vivos para criar (jaula) aunque él esté en otra cosa. La nasa hace lo mismo para el pescador."},
+        {"titulo": "Proteger el ganado y los campos", "detalle": "Cepos alrededor del redil y lazos junto al huerto frenan a lobos, zorros y conejos."},
+        {"titulo": "Peligro para los tuyos", "detalle": "Un cepo sin señalar hiere al aldeano que lo pisa: hay que ponerlos fuera de los caminos."},
+        {"titulo": "Capturar para domesticar", "detalle": "La jaula trae vivos a los animales que luego se crían: jabalíes que serán cerdos, lobeznos que serán perros."}
+      ],
+      "modelos": [
+        {"id": "trap_bear", "nombre": "Cepo", "material": "hierro", "animaciones": {"snap": "Se cierran las mandíbulas (no se repite)."}},
+        {"id": "trap_snare", "nombre": "Lazo", "animaciones": {"spring": "El arbolillo se endereza de golpe (no se repite)."}},
+        {"id": "trap_cage", "nombre": "Jaula", "animaciones": {"drop": "Cae la puerta (no se repite)."}},
+        {"id": "trap_fish", "nombre": "Nasa", "material": "mimbre"}
+      ]
+    },
+    {
+      "id": "trap_defense",
+      "nombre": "Trampas de defensa",
+      "categoria": "Muros y defensas",
+      "descripcion": "Red oculta bajo hojas que sube a un árbol, tronco con púas colgado de un pórtico de 3,6 m con su cuerda de disparo, y un cordel de alarma con campanillas y latas entre estacas.",
+      "propuestas": [
+        {"titulo": "Variantes de la trampa actual", "detalle": "La trampa del juego es de un solo tipo. Estas hacen cosas distintas: la red atrapa a uno sin matarlo (prisionero o animal vivo), el tronco golpea a todo un grupo en un paso estrecho y el cordel no daña pero avisa."},
+        {"titulo": "Alarma barata", "detalle": "El cordel de campanillas da la alerta de noche sin torre ni vigía: cuesta cuerda y unas latas, y hay que rearmarlo."},
+        {"titulo": "De un solo uso", "detalle": "Todas se disparan una vez y un aldeano tiene que volver a armarlas, lo que cuesta trabajo y algo de material."}
+      ],
+      "modelos": [
+        {"id": "trap_net", "nombre": "Red", "animaciones": {"lift": "La red sube al árbol (no se repite)."}},
+        {"id": "trap_log_swing", "nombre": "Tronco con púas", "animaciones": {"swing": "El tronco se balancea."}},
+        {"id": "trap_alarm_wire", "nombre": "Cordel de alarma", "animaciones": {"ring": "Se sacuden las campanillas (no se repite)."}}
+      ]
+    },
+    {
+      "id": "health_quarantine",
+      "nombre": "Cuarentena y enfermería",
+      "categoria": "Vida del pueblo",
+      "destacado": true,
+      "descripcion": "Tienda de cuarentena con dos catres, cercada con una cuerda y con bandera amarilla; y enfermería de 5,4 m bajo un cobertizo de paja, con tres catres, mesa de remedios y hierbas colgadas.",
+      "propuestas": [
+        {"titulo": "Aislar a los enfermos", "detalle": "En una epidemia, los enfermos van a la tienda de cuarentena en vez de quedarse en su casa: dejan de contagiar a su familia y a quien pasa. Sin ella, la enfermedad corre por el barrio."},
+        {"titulo": "Camas extra del sanador", "detalle": "La enfermería añade camas al sanador o al médico sin ampliar el edificio: se monta rápido cuando hay muchos heridos tras una batalla y se desmonta después."},
+        {"titulo": "Hospital de campaña", "detalle": "Junto al campamento del ejército, los soldados heridos se curan sin volver al pueblo."},
+        {"titulo": "Miedo", "detalle": "La bandera amarilla baja la felicidad de las casas que la ven y espanta a los mercaderes mientras dura."}
+      ],
+      "modelos": [
+        {"id": "health_quarantine_tent", "nombre": "Tienda de cuarentena", "animaciones": {"wave": "Ondea la bandera amarilla."}},
+        {"id": "health_infirmary", "nombre": "Enfermería"}
+      ]
+    },
+    {
+      "id": "health_care",
+      "nombre": "Sahumerio y tina de baño",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Brasero de hierro donde se queman hierbas, con humo y dos postes de manojos; y una tina de madera con agua caliente y vapor, biombo, toallas y jabón.",
+      "propuestas": [
+        {"titulo": "Sahumar contra el contagio", "detalle": "Encendido en una calle, reduce el contagio en un radio mientras tenga hierbas: una medida de emergencia del herbolario cuando empieza una epidemia."},
+        {"titulo": "Baño en casa", "detalle": "La tina es un anexo de higiene para las casas lejos de la casa de baños: menos enfermedad, a cambio de agua y leña."},
+        {"titulo": "Contra plagas de insectos", "detalle": "El humo de hierbas aleja mosquitos y moscas de una ciénaga o un basurero cercano."}
+      ],
+      "modelos": [
+        {"id": "health_fumigation", "nombre": "Sahumerio", "animaciones": {"smoke": "Sube el humo."}},
+        {"id": "health_bath_tub", "nombre": "Tina de baño", "animaciones": {"steam": "Sube el vapor."}}
+      ]
+    }
+  ]
+}

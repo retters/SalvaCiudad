@@ -1,0 +1,620 @@
+{
+ "familia": "nature",
+ "grupos": [
+  {
+   "id": "nature_waterfall",
+   "nombre": "Cascada",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Pared de roca de 8 m de ancho con una cascada que cae por una hendidura a una poza con piedras; de 6 m o de 10 m de alto. Como la de la imagen de referencia.",
+   "propuestas": [
+    {
+     "titulo": "Accidente del mapa",
+     "detalle": "El generador las pone donde un río cruza un escalón del terreno. Dan agua (cuenta como río para pozos, pesca y molinos de agua) y suben mucho el atractivo de las casas que la ven."
+    },
+    {
+     "titulo": "Fuerza para molinos y aserraderos",
+     "detalle": "Un molino de agua o un aserradero junto a una cascada rinde el doble que en un río llano."
+    },
+    {
+     "titulo": "Lugar sagrado o de descanso",
+     "detalle": "Los aldeanos de un pueblo con una cascada cerca la visitan en su tiempo libre: recuperan energía y ánimo. Algunas razas (elfos, ranas) la piden como necesidad."
+    },
+    {
+     "titulo": "Cueva detrás de la cascada",
+     "detalle": "El explorador puede hallar una cueva oculta detrás: un tesoro, un yacimiento o la guarida de algo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_waterfall",
+     "nombre": "6 m",
+     "animaciones": {
+      "flow": "Bajan las vetas de espuma y se agita la base."
+     }
+    },
+    {
+     "id": "nature_waterfall_tall",
+     "nombre": "10 m",
+     "animaciones": {
+      "flow": "Bajan las vetas de espuma y se agita la base."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "nature_cliff",
+   "nombre": "Paredes de acantilado",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Tramo de pared de roca de 6 m de ancho y 4 m de alto con pasto arriba, y su pieza de esquina. Para vestir los escalones fuertes del terreno.",
+   "propuestas": [
+    {
+     "titulo": "Terreno con escalones",
+     "detalle": "El generador las coloca donde la pendiente es demasiado fuerte, en vez de estirar el suelo: los acantilados se ven como roca y no como pasto inclinado, y queda claro por dónde no se pasa."
+    },
+    {
+     "titulo": "Defensa natural",
+     "detalle": "Un pueblo junto a un acantilado no necesita muralla por ese lado: los asaltantes tienen que rodear."
+    },
+    {
+     "titulo": "Cantera en la pared",
+     "detalle": "La cantera puesta contra una pared de roca rinde más y no agota un yacimiento."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_cliff",
+     "nombre": "Tramo recto"
+    },
+    {
+     "id": "nature_cliff_corner",
+     "nombre": "Esquina"
+    }
+   ]
+  },
+  {
+   "id": "nature_hot_spring",
+   "nombre": "Aguas termales",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Poza de agua caliente de 4 m rodeada de piedras claras y azufre, con vapor que sube.",
+   "propuestas": [
+    {
+     "titulo": "Baños naturales",
+     "detalle": "Hace de casa de baños gratis para las casas cercanas: higiene y menos enfermedades sin construir nada. Se puede edificar una casa de baños encima para ampliar su alcance."
+    },
+    {
+     "titulo": "Calor en invierno",
+     "detalle": "Las casas a su alrededor gastan menos leña y los cultivos cercanos aguantan las heladas."
+    },
+    {
+     "titulo": "Curación",
+     "detalle": "Los enfermos y heridos que descansan ahí sanan más rápido, como en un sanador."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_hot_spring",
+     "nombre": "Poza",
+     "animaciones": {
+      "steam": "Sube el vapor."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "nature_geyser",
+   "nombre": "Géiser",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Cono de piedra y azufre de 4 m de ancho que lanza un chorro de agua de 5 m cada pocos segundos.",
+   "propuestas": [
+    {
+     "titulo": "Maravilla natural",
+     "detalle": "Sube el atractivo de la zona y atrae visitantes y mercaderes; construir pegado a él es mala idea, porque moja y enfría lo que tiene alrededor."
+    },
+    {
+     "titulo": "Peligro en el camino",
+     "detalle": "Quien pasa junto cuando estalla sale herido: conviene señalarlo o rodearlo."
+    },
+    {
+     "titulo": "Fuente de azufre y sal",
+     "detalle": "Alrededor se recogen azufre y sales minerales, ingredientes para medicinas, curtidos o pólvora de fantasía."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_geyser",
+     "nombre": "Géiser",
+     "animaciones": {
+      "erupt": "El chorro sube, se mantiene y vuelve a caer."
+     }
+    }
+   ]
+  },
+  {
+   "id": "nature_lava_vent",
+   "nombre": "Fumarola de lava",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Cono de roca negra de 3 m con lava que brilla, grietas incandescentes, humo y chispas.",
+   "propuestas": [
+    {
+     "titulo": "Zona volcánica",
+     "detalle": "Un bioma nuevo: suelo muy fértil alrededor, pero incendios espontáneos y calor que cansa a los trabajadores."
+    },
+    {
+     "titulo": "Fragua natural",
+     "detalle": "Una fundición o una herrería junto a una fumarola no gasta carbón. Para los enanos es el sitio ideal para una forja."
+    },
+    {
+     "titulo": "Guarida de criaturas de fuego",
+     "detalle": "De noche salen de ella elementales o salamandras de fuego que hay que contener."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_lava_vent",
+     "nombre": "Fumarola",
+     "animaciones": {
+      "smoke": "Sube el humo y saltan chispas."
+     }
+    }
+   ]
+  },
+  {
+   "id": "nature_mud_pit",
+   "nombre": "Ciénaga",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Charca de lodo de 4,5 m con burbujas, juncos y un hueso que asoma.",
+   "propuestas": [
+    {
+     "titulo": "Terreno lento",
+     "detalle": "Los pantanos tienen ciénagas: quien las cruza va a un tercio de la velocidad y los carros se atascan. Un camino o una pasarela las evita."
+    },
+    {
+     "titulo": "Trampa natural contra incursiones",
+     "detalle": "Los asaltantes que pasan por ellas quedan frenados y son blanco fácil de los arqueros."
+    },
+    {
+     "titulo": "Turba y arcilla",
+     "detalle": "Se puede extraer turba (combustible como la leña) o arcilla sin un pozo de arcilla."
+    },
+    {
+     "titulo": "Foco de enfermedad",
+     "detalle": "Las casas cercanas enferman más por los mosquitos; drenarla (trabajo de peones) lo resuelve y deja tierra fértil."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_mud_pit",
+     "nombre": "Ciénaga",
+     "animaciones": {
+      "bubble": "Suben y revientan burbujas de lodo."
+     }
+    }
+   ]
+  },
+  {
+   "id": "nature_grass",
+   "nombre": "Hierba, juncos y helechos",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Matas pequeñas para vestir el suelo: hierba baja, hierba alta con espigas, juncos con espadañas sobre agua y helechos. De 1 a 2 m de ancho.",
+   "propuestas": [
+    {
+     "titulo": "Vestir el terreno",
+     "detalle": "El generador las reparte por bioma (hierba en praderas, helechos en bosque, juncos en orillas) y se mecen con el viento. No estorban: se pisan y se construye encima."
+    },
+    {
+     "titulo": "Pasto para animales",
+     "detalle": "La hierba alta es alimento: los ciervos y el ganado van donde hay más, y un corral necesita pasto dentro. Se agota y vuelve a crecer."
+    },
+    {
+     "titulo": "Recursos menores",
+     "detalle": "Los juncos dan fibra para cestos y techos de paja; la hierba alta se siega como heno para el invierno."
+    },
+    {
+     "titulo": "Indicador de fertilidad",
+     "detalle": "La hierba crece más alta y verde donde el suelo es fértil: se ve dónde conviene sembrar sin abrir la capa del mapa."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_grass_tuft",
+     "nombre": "Hierba baja",
+     "animaciones": {
+      "sway": "Se mece con el viento."
+     }
+    },
+    {
+     "id": "nature_grass_tall",
+     "nombre": "Hierba alta",
+     "animaciones": {
+      "sway": "Se mece con el viento."
+     }
+    },
+    {
+     "id": "nature_grass_reeds",
+     "nombre": "Juncos",
+     "animaciones": {
+      "sway": "Se mecen con el viento."
+     }
+    },
+    {
+     "id": "nature_grass_fern",
+     "nombre": "Helechos",
+     "animaciones": {
+      "sway": "Se mecen con el viento."
+     }
+    }
+   ]
+  },
+  {
+   "id": "nature_insects",
+   "nombre": "Insectos",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Grupos pequeños de insectos que vuelan en círculos: mariposas sobre flores, luciérnagas que brillan, abejas junto a un tronco con miel y libélulas sobre una charca. Se dibujan más grandes de lo real para verse desde la cámara.",
+   "propuestas": [
+    {
+     "titulo": "Vida del mapa",
+     "detalle": "Aparecen solos según el lugar y la hora: mariposas de día en praderas y jardines, luciérnagas de noche en verano, libélulas junto al agua. Solo ambiente, sin costo."
+    },
+    {
+     "titulo": "Indicadores",
+     "detalle": "Dicen algo sin abrir paneles: mariposas donde el entorno es bueno, moscas donde hay basura o cadáveres, luciérnagas donde el agua es limpia."
+    },
+    {
+     "titulo": "Polinización",
+     "detalle": "Los huertos y campos con abejas o mariposas cerca rinden más; las colmenas dejan de ser solo decoración."
+    },
+    {
+     "titulo": "Luz de luciérnagas",
+     "detalle": "Las razas del bosque pueden usar faroles de luciérnagas: luz tenue sin combustible."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_insects_butterflies",
+     "nombre": "Mariposas",
+     "animaciones": {
+      "fly": "Vuelan en círculos batiendo las alas."
+     }
+    },
+    {
+     "id": "nature_insects_fireflies",
+     "nombre": "Luciérnagas",
+     "animaciones": {
+      "fly": "Flotan y giran; su material brilla de noche."
+     }
+    },
+    {
+     "id": "nature_insects_bees",
+     "nombre": "Abejas",
+     "animaciones": {
+      "fly": "Zumban alrededor del tronco."
+     }
+    },
+    {
+     "id": "nature_insects_dragonflies",
+     "nombre": "Libélulas",
+     "animaciones": {
+      "fly": "Vuelan sobre la charca."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "nature_anthill",
+   "nombre": "Hormiguero",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Montículo de tierra de 1,8 m con dos filas de hormigas que van y vienen, unas cargando hojas.",
+   "propuestas": [
+    {
+     "titulo": "Plaga de los graneros",
+     "detalle": "Un hormiguero cerca de un granero o almacén de comida hace que se pierda algo cada día; un aldeano lo quita con trabajo, o los gatos y gallinas lo controlan."
+    },
+    {
+     "titulo": "Suelo fértil",
+     "detalle": "Marca tierra buena: el campo sembrado donde hubo hormigueros rinde más."
+    },
+    {
+     "titulo": "Solo ambiente",
+     "detalle": "Aparece en praderas y bosques sin efecto."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_anthill",
+     "nombre": "Hormiguero",
+     "animaciones": {
+      "march": "Las hormigas marchan en dos filas."
+     }
+    }
+   ]
+  },
+  {
+   "id": "nature_bee_tree",
+   "nombre": "Árbol con panal",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Tronco hueco y seco de 3,4 m con un panal dentro y abejas alrededor.",
+   "propuestas": [
+    {
+     "titulo": "Miel silvestre",
+     "detalle": "El recolector saca miel, un alimento nuevo que no se echa a perder y sube la felicidad; se agota y se recupera cada año."
+    },
+    {
+     "titulo": "Origen de las colmenas",
+     "detalle": "Para tener colmenas propias hay que encontrar antes un árbol con panal y traer el enjambre."
+    },
+    {
+     "titulo": "Hidromiel",
+     "detalle": "La cervecería puede hacer hidromiel con miel en vez de cebada: otra bebida para la taberna."
+    },
+    {
+     "titulo": "Cera",
+     "detalle": "Da cera para velas: luz interior que deja trabajar de noche en los talleres."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_bee_tree",
+     "nombre": "Tronco hueco",
+     "animaciones": {
+      "buzz": "Las abejas zumban alrededor del panal."
+     }
+    }
+   ]
+  },
+  {
+   "id": "nature_deposit",
+   "nombre": "Yacimientos",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Afloramientos de unos 3 a 4 m: veta de oro en roca clara, capa de carbón, banco de arcilla cortado en escalones, cristales que brillan y azufre.",
+   "propuestas": [
+    {
+     "titulo": "Recursos que hoy no tienen lugar en el mapa",
+     "detalle": "El oro, el carbón y la arcilla dejan de salir de un edificio puesto en cualquier parte: la mina, la carbonera o el pozo de arcilla tienen que estar junto a su yacimiento, como ya pasa con el hierro y la piedra."
+    },
+    {
+     "titulo": "Hallazgos del explorador",
+     "detalle": "No se ven hasta que el explorador los descubre; encontrarlos es un objetivo y decide hacia dónde crece el pueblo."
+    },
+    {
+     "titulo": "Cristales y azufre, recursos nuevos",
+     "detalle": "Los cristales sirven para la luz mágica y los edificios de las razas mágicas; el azufre, para medicinas y para defensas con fuego."
+    },
+    {
+     "titulo": "Se agotan",
+     "detalle": "Cada yacimiento tiene una cantidad; el modelo se va reduciendo y al acabarse hay que buscar otro o comerciar."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_deposit_gold",
+     "nombre": "Oro",
+     "material": "oro"
+    },
+    {
+     "id": "nature_deposit_coal",
+     "nombre": "Carbón",
+     "material": "carbón"
+    },
+    {
+     "id": "nature_deposit_clay",
+     "nombre": "Arcilla",
+     "material": "arcilla"
+    },
+    {
+     "id": "nature_deposit_crystal",
+     "nombre": "Cristal",
+     "material": "cristal"
+    },
+    {
+     "id": "nature_deposit_sulfur",
+     "nombre": "Azufre",
+     "material": "azufre"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "nature_den",
+   "nombre": "Guaridas",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Guarida de lobos y cueva de oso (bocas de cueva entre rocas con huesos delante, de 4 y 6 m) y madriguera de conejos (montículos de pasto con tres bocas).",
+   "propuestas": [
+    {
+     "titulo": "De dónde salen los animales",
+     "detalle": "Los lobos, osos y conejos viven en su guarida: salen de ahí, vuelven a dormir y se reproducen. Destruir la guarida acaba con el peligro (o con la caza) de la zona."
+    },
+    {
+     "titulo": "Objetivo para cazadores y milicia",
+     "detalle": "Se puede ordenar limpiar una guarida: un trabajo peligroso que da pieles y carne y deja la zona segura."
+    },
+    {
+     "titulo": "Caza sostenible",
+     "detalle": "Si no se destruye la madriguera, los conejos siguen saliendo: caza menor para siempre. Si se cazan demasiados, queda vacía."
+    },
+    {
+     "titulo": "Domesticar",
+     "detalle": "De una guarida de lobos se puede traer un cachorro que crece como perro guardián."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_den_wolf",
+     "nombre": "Guarida de lobos"
+    },
+    {
+     "id": "nature_den_bear",
+     "nombre": "Cueva de oso"
+    },
+    {
+     "id": "nature_den_rabbit",
+     "nombre": "Madriguera de conejos"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "nature_stump",
+   "nombre": "Tocones y tronco hueco",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Tocón con hongos, tocón con un retoño y un hacha clavada, y tronco hueco con musgo de 2,8 m.",
+   "propuestas": [
+    {
+     "titulo": "Lo que deja la tala",
+     "detalle": "Al talar un árbol queda su tocón: estorba para construir y sembrar hasta que un leñador lo arranca (da leña). Si se deja, retoña y el árbol vuelve a crecer en el mismo lugar."
+    },
+    {
+     "titulo": "Hongos",
+     "detalle": "En los tocones viejos y troncos huecos crecen hongos que el recolector junta en otoño."
+    },
+    {
+     "titulo": "Refugio de animales pequeños",
+     "detalle": "Del tronco hueco salen conejos, zorros o ardillas: caza menor, o una mascota."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_stump_mushrooms",
+     "nombre": "Tocón con hongos"
+    },
+    {
+     "id": "nature_stump_sprout",
+     "nombre": "Tocón con retoño"
+    },
+    {
+     "id": "nature_stump_hollow_log",
+     "nombre": "Tronco hueco"
+    }
+   ]
+  },
+  {
+   "id": "nature_nest",
+   "nombre": "Nido con huevos",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Nido de ramas con tres huevos sobre una roca, con una pluma al lado. 1,5 m.",
+   "propuestas": [
+    {
+     "titulo": "Huevos silvestres",
+     "detalle": "El recolector junta huevos en primavera: un alimento más para la dieta variada."
+    },
+    {
+     "titulo": "Origen de las gallinas",
+     "detalle": "De un nido se traen las primeras aves para un gallinero."
+    },
+    {
+     "titulo": "Nido de una criatura grande",
+     "detalle": "En las montañas, un nido grande es de águila, grifo o wyvern: robar los huevos tiene premio y riesgo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_nest",
+     "nombre": "Nido"
+    }
+   ]
+  },
+  {
+   "id": "nature_beach",
+   "nombre": "Detalles de playa",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Parches de arena de 2,5 m: madera de deriva, conchas con estrellas de mar y coral, y una poza de marea.",
+   "propuestas": [
+    {
+     "titulo": "Vestir las costas",
+     "detalle": "El generador los reparte por las playas, que hoy son arena lisa."
+    },
+    {
+     "titulo": "Recolección en la costa",
+     "detalle": "Mariscos de las pozas (alimento), conchas (cal para argamasa, o adorno que los mercaderes compran) y madera de deriva (leña sin talar)."
+    },
+    {
+     "titulo": "Restos de naufragio",
+     "detalle": "Tras una tormenta el mar deja madera y, a veces, un cajón con mercancía."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_beach_driftwood",
+     "nombre": "Madera de deriva"
+    },
+    {
+     "id": "nature_beach_shells",
+     "nombre": "Conchas y estrellas"
+    },
+    {
+     "id": "nature_beach_tide_pool",
+     "nombre": "Poza de marea"
+    }
+   ]
+  },
+  {
+   "id": "nature_winter",
+   "nombre": "Detalles de invierno",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Ventisquero con una roca nevada, témpano flotante de 3,7 m (su línea de agua en la altura 0) y un muñeco de nieve con sombrero y bufanda.",
+   "propuestas": [
+    {
+     "titulo": "El invierno se ve",
+     "detalle": "Con nieve aparecen ventisqueros junto a muros y casas y témpanos en el agua, y los niños hacen muñecos de nieve en las plazas; todo desaparece en primavera."
+    },
+    {
+     "titulo": "Nieve que estorba",
+     "detalle": "Los ventisqueros frenan los caminos hasta que alguien los palea; los témpanos impiden pescar y navegar."
+    },
+    {
+     "titulo": "Hielo como recurso",
+     "detalle": "El hielo cortado en invierno se guarda en una nevera bajo tierra y conserva la carne y el pescado en verano."
+    },
+    {
+     "titulo": "Ánimo de invierno",
+     "detalle": "Cada muñeco de nieve sube un poco la felicidad de las casas vecinas mientras dura."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_winter_drift",
+     "nombre": "Ventisquero"
+    },
+    {
+     "id": "nature_winter_floe",
+     "nombre": "Témpano"
+    },
+    {
+     "id": "nature_winter_snowman",
+     "nombre": "Muñeco de nieve"
+    }
+   ]
+  },
+  {
+   "id": "nature_meteorite",
+   "nombre": "Meteorito",
+   "categoria": "Naturaleza y terreno",
+   "descripcion": "Cráter de 5 m con una roca negra en el centro, vetas que brillan en verde y esquirlas que flotan.",
+   "propuestas": [
+    {
+     "titulo": "Suceso raro",
+     "detalle": "Una noche cae un meteorito: se ve la estela, incendia lo que toca y deja un cráter con metal del cielo, que el herrero convierte en herramientas o armas mejores que las de hierro."
+    },
+    {
+     "titulo": "Punto de interés del mapa",
+     "detalle": "Ya está ahí al empezar; el explorador lo encuentra y decide si vale la pena llevar un camino hasta él."
+    },
+    {
+     "titulo": "Fuente de magia",
+     "detalle": "Las razas mágicas levantan su torre junto a él; para las demás, quien vive cerca enferma poco a poco."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "nature_meteorite",
+     "nombre": "Cráter",
+     "animaciones": {
+      "hum": "Las esquirlas giran y flotan."
+     }
+    }
+   ]
+  }
+ ]
+}

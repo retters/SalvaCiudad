@@ -1,0 +1,350 @@
+{
+  "familia": "heraldry",
+  "grupos": [
+    {
+      "id": "banner_flag",
+      "nombre": "Bandera de pueblo",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Mástil de 6,6 m con una bandera de 2,7 × 1,7 m que ondea, con el emblema de la raza por las dos caras, dos franjas del segundo color y un remate propio (punta dorada, sol, cubo de bronce, hoja, púa, borla, gota, plumas, calavera). Una por cada raza del juego.",
+      "propuestas": [
+        {
+          "titulo": "De quién es cada pueblo",
+          "detalle": "En multijugador, la bandera del centro dice de un vistazo qué raza (o qué jugador, si la tela toma su color) gobierna el pueblo. Se iza sola al fundar."
+        },
+        {
+          "titulo": "Reclamar territorio",
+          "detalle": "Plantar una bandera en un puesto avanzado extiende el territorio del pueblo unos metros a su alrededor; el enemigo la puede arriar para quitarlo."
+        },
+        {
+          "titulo": "Moral",
+          "detalle": "Los defensores a la vista de su bandera luchan mejor; si la bandera cae en una incursión, baja la felicidad hasta que se vuelve a izar."
+        },
+        {
+          "titulo": "Barrios de un pueblo mixto",
+          "detalle": "En un pueblo con varias razas, cada barrio iza la suya: los inmigrantes de esa raza prefieren instalarse cerca."
+        }
+      ],
+      "destacado": true,
+      "modelos": [
+        {
+          "id": "banner_human_flag",
+          "nombre": "Humanos: azul con torre dorada",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        },
+        {
+          "id": "banner_catfolk_flag",
+          "nombre": "Gatos: naranja con sol",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        },
+        {
+          "id": "banner_dwarf_flag",
+          "nombre": "Enanos: rojo oscuro con martillo",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        },
+        {
+          "id": "banner_elf_flag",
+          "nombre": "Elfos: verde con hoja blanca",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        },
+        {
+          "id": "banner_dark_elf_flag",
+          "nombre": "Elfos oscuros: violeta con luna",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        },
+        {
+          "id": "banner_foxfolk_flag",
+          "nombre": "Zorros: rojo con llama blanca",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        },
+        {
+          "id": "banner_frogfolk_flag",
+          "nombre": "Ranas: verde azulado con nenúfar",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        },
+        {
+          "id": "banner_lizardfolk_flag",
+          "nombre": "Lagartos: jade con pirámide dorada",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        },
+        {
+          "id": "banner_orc_flag",
+          "nombre": "Orcos: negro con colmillos",
+          "animaciones": {
+            "wave": "La bandera ondea."
+          }
+        }
+      ]
+    },
+    {
+      "id": "banner_standard",
+      "nombre": "Estandarte de guerra",
+      "categoria": "Armas y herramientas",
+      "descripcion": "Asta de 4,3 m con travesaño y un paño colgante de 1,1 × 2,3 m acabado en dos puntas, con el emblema por las dos caras, borlas y el remate de la raza. Se lleva o se clava.",
+      "propuestas": [
+        {
+          "titulo": "Punto de reunión",
+          "detalle": "Se clava donde el jugador quiere reunir a la milicia: los que toman las armas acuden al estandarte en vez de a la campana."
+        },
+        {
+          "titulo": "Portaestandarte",
+          "detalle": "Una unidad lo lleva: los combatientes a su alrededor no huyen. Si cae el portaestandarte, el grupo se desbanda."
+        },
+        {
+          "titulo": "Trofeo",
+          "detalle": "Capturar el estandarte de una incursión o de otro jugador da prestigio; se exhibe en el ayuntamiento o en la taberna."
+        }
+      ],
+      "modelos": [
+        {
+          "id": "banner_human_standard",
+          "nombre": "Humanos: azul con torre dorada",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        },
+        {
+          "id": "banner_catfolk_standard",
+          "nombre": "Gatos: naranja con sol",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        },
+        {
+          "id": "banner_dwarf_standard",
+          "nombre": "Enanos: rojo oscuro con martillo",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        },
+        {
+          "id": "banner_elf_standard",
+          "nombre": "Elfos: verde con hoja blanca",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        },
+        {
+          "id": "banner_dark_elf_standard",
+          "nombre": "Elfos oscuros: violeta con luna",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        },
+        {
+          "id": "banner_foxfolk_standard",
+          "nombre": "Zorros: rojo con llama blanca",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        },
+        {
+          "id": "banner_frogfolk_standard",
+          "nombre": "Ranas: verde azulado con nenúfar",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        },
+        {
+          "id": "banner_lizardfolk_standard",
+          "nombre": "Lagartos: jade con pirámide dorada",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        },
+        {
+          "id": "banner_orc_standard",
+          "nombre": "Orcos: negro con colmillos",
+          "animaciones": {
+            "sway": "El paño se mece."
+          }
+        }
+      ]
+    },
+    {
+      "id": "banner_wall",
+      "nombre": "Pendón de muro",
+      "categoria": "Muros y defensas",
+      "descripcion": "Pendón largo de 1,2 × 3,4 m que cuelga de una barra con ménsulas de hierro a 4,5 m; se arrima a un muro, una torre o una puerta (el muro queda detrás).",
+      "propuestas": [
+        {
+          "titulo": "Adorno de murallas y puertas",
+          "detalle": "Se cuelga en puertas, torres y edificios públicos: sube el prestigio del pueblo y el atractivo de la calle. Cuesta lino y tinte."
+        },
+        {
+          "titulo": "Días de fiesta",
+          "detalle": "Aparecen solos en las fachadas durante fiestas, bodas y visitas de mercaderes, y se retiran después."
+        },
+        {
+          "titulo": "Marca de edificio mejorado",
+          "detalle": "Señal visual de que un edificio ha subido de nivel o tiene un maestro del oficio."
+        }
+      ],
+      "modelos": [
+        {
+          "id": "banner_human_wall",
+          "nombre": "Humanos: azul con torre dorada",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        },
+        {
+          "id": "banner_catfolk_wall",
+          "nombre": "Gatos: naranja con sol",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        },
+        {
+          "id": "banner_dwarf_wall",
+          "nombre": "Enanos: rojo oscuro con martillo",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        },
+        {
+          "id": "banner_elf_wall",
+          "nombre": "Elfos: verde con hoja blanca",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        },
+        {
+          "id": "banner_dark_elf_wall",
+          "nombre": "Elfos oscuros: violeta con luna",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        },
+        {
+          "id": "banner_foxfolk_wall",
+          "nombre": "Zorros: rojo con llama blanca",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        },
+        {
+          "id": "banner_frogfolk_wall",
+          "nombre": "Ranas: verde azulado con nenúfar",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        },
+        {
+          "id": "banner_lizardfolk_wall",
+          "nombre": "Lagartos: jade con pirámide dorada",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        },
+        {
+          "id": "banner_orc_wall",
+          "nombre": "Orcos: negro con colmillos",
+          "animaciones": {
+            "sway": "El pendón se mece."
+          }
+        }
+      ]
+    },
+    {
+      "id": "banner_border",
+      "nombre": "Mojón de frontera",
+      "categoria": "Caminos",
+      "descripcion": "Mojón de 1,5 m con el emblema de la raza en la cara y un banderín en un palo de 2,6 m: piedra para humanos, gatos, enanos, elfos oscuros, ranas y lagartos; poste tallado para elfos, zorros y orcos.",
+      "propuestas": [
+        {
+          "titulo": "Frontera visible",
+          "detalle": "El límite del territorio de cada pueblo se marca con mojones cada tantos metros en los caminos: se ve dónde empieza la tierra de otro jugador."
+        },
+        {
+          "titulo": "Puesto de peaje o de paso",
+          "detalle": "Donde un camino cruza la frontera, el mojón cobra a los mercaderes ajenos o los deja pasar según el trato entre pueblos."
+        },
+        {
+          "titulo": "Reclamar a mano",
+          "detalle": "El jugador coloca mojones para ampliar su territorio poco a poco; cada uno cuesta piedra y solo vale si queda unido a los anteriores."
+        }
+      ],
+      "modelos": [
+        {
+          "id": "banner_human_border",
+          "nombre": "Humanos: azul con torre dorada",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        },
+        {
+          "id": "banner_catfolk_border",
+          "nombre": "Gatos: naranja con sol",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        },
+        {
+          "id": "banner_dwarf_border",
+          "nombre": "Enanos: rojo oscuro con martillo",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        },
+        {
+          "id": "banner_elf_border",
+          "nombre": "Elfos: verde con hoja blanca",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        },
+        {
+          "id": "banner_dark_elf_border",
+          "nombre": "Elfos oscuros: violeta con luna",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        },
+        {
+          "id": "banner_foxfolk_border",
+          "nombre": "Zorros: rojo con llama blanca",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        },
+        {
+          "id": "banner_frogfolk_border",
+          "nombre": "Ranas: verde azulado con nenúfar",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        },
+        {
+          "id": "banner_lizardfolk_border",
+          "nombre": "Lagartos: jade con pirámide dorada",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        },
+        {
+          "id": "banner_orc_border",
+          "nombre": "Orcos: negro con colmillos",
+          "animaciones": {
+            "flutter": "El banderín ondea."
+          }
+        }
+      ]
+    }
+  ]
+}

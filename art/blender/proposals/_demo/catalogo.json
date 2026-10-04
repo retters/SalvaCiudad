@@ -1,0 +1,27 @@
+{
+  "familia": "_demo",
+  "grupos": [
+    {
+      "id": "demo_crate",
+      "nombre": "Cajón de prueba",
+      "categoria": "Caminos",
+      "descripcion": "Un cajón de 0,6 m, para probar la página.",
+      "propuestas": [
+        {"titulo": "Prueba uno", "detalle": "Solo existe para probar la página."},
+        {"titulo": "Prueba dos", "detalle": "Otra propuesta de prueba."}
+      ],
+      "modelos": [{"id": "demo_crate", "nombre": "Madera", "material": "madera"}]
+    },
+    {
+      "id": "demo_swing_sign",
+      "nombre": "Letrero de prueba",
+      "categoria": "Caminos",
+      "descripcion": "Un poste con un letrero que se mece, para probar las animaciones.",
+      "propuestas": [
+        {"titulo": "Prueba", "detalle": "Solo existe para probar la página."}
+      ],
+      "modelos": [{"id": "demo_swing_sign", "nombre": "Madera", "material": "madera",
+                   "animaciones": {"swing": "El letrero se mece con el viento."}}]
+    }
+  ]
+}

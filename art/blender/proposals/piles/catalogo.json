@@ -1,0 +1,511 @@
+{
+ "familia": "piles",
+ "grupos": [
+  {
+   "id": "pile_construction",
+   "nombre": "Pilas de materiales de obra",
+   "categoria": "Pilas de recursos",
+   "descripcion": "Pilas de 1,5 × 1,5 m en tres niveles (poco, a medias, lleno), como las que el juego ya tiene para troncos y piedra: ladrillos, tejas, arcilla, tablas, lingotes de hierro y cajones de herramientas.",
+   "propuestas": [
+    {
+     "titulo": "Las obras muestran lo que tienen",
+     "detalle": "Hoy las obras solo enseñan troncos y piedra. Con estas pilas se ve cada material que ya llegó a la obra: se sabe de un vistazo qué falta para terminar un edificio de ladrillo y teja."
+    },
+    {
+     "titulo": "Patio del almacén",
+     "detalle": "El almacén muestra fuera lo que guarda dentro: sin abrir su ventana se ve que sobran ladrillos y no queda hierro."
+    },
+    {
+     "titulo": "Salida de los talleres",
+     "detalle": "El horno, el pozo de arcilla, la fundición y el herrero apilan su producción junto a la puerta hasta que alguien la recoge: se ve cuáles están atascados por falta de acarreo."
+    },
+    {
+     "titulo": "Tablas como recurso nuevo",
+     "detalle": "La pila de tablas es para un material nuevo, entre el tronco y el edificio, que haría un aserradero."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "pile_bricks_1",
+     "nombre": "Ladrillos, poco"
+    },
+    {
+     "id": "pile_bricks_2",
+     "nombre": "Ladrillos, a medias"
+    },
+    {
+     "id": "pile_bricks_3",
+     "nombre": "Ladrillos, lleno"
+    },
+    {
+     "id": "pile_roof_tiles_1",
+     "nombre": "Tejas, poco"
+    },
+    {
+     "id": "pile_roof_tiles_2",
+     "nombre": "Tejas, a medias"
+    },
+    {
+     "id": "pile_roof_tiles_3",
+     "nombre": "Tejas, lleno"
+    },
+    {
+     "id": "pile_clay_1",
+     "nombre": "Arcilla, poco"
+    },
+    {
+     "id": "pile_clay_2",
+     "nombre": "Arcilla, a medias"
+    },
+    {
+     "id": "pile_clay_3",
+     "nombre": "Arcilla, lleno"
+    },
+    {
+     "id": "pile_planks_1",
+     "nombre": "Tablas, poco"
+    },
+    {
+     "id": "pile_planks_2",
+     "nombre": "Tablas, a medias"
+    },
+    {
+     "id": "pile_planks_3",
+     "nombre": "Tablas, lleno"
+    },
+    {
+     "id": "pile_iron_1",
+     "nombre": "Lingotes de hierro, poco"
+    },
+    {
+     "id": "pile_iron_2",
+     "nombre": "Lingotes de hierro, a medias"
+    },
+    {
+     "id": "pile_iron_3",
+     "nombre": "Lingotes de hierro, lleno"
+    },
+    {
+     "id": "pile_tools_1",
+     "nombre": "Herramientas, poco"
+    },
+    {
+     "id": "pile_tools_2",
+     "nombre": "Herramientas, a medias"
+    },
+    {
+     "id": "pile_tools_3",
+     "nombre": "Herramientas, lleno"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "pile_fuel",
+   "nombre": "Pilas de combustible y minerales",
+   "categoria": "Pilas de recursos",
+   "descripcion": "Leña en hileras, carbón en su cajón, mineral de hierro y lingotes de oro con un cofre, en tres niveles.",
+   "propuestas": [
+    {
+     "titulo": "Leñera y carbonera que se ven",
+     "detalle": "El partidor de leña, la carbonera y la mina apilan fuera lo que producen; en invierno se ve cómo baja la leña del pueblo."
+    },
+    {
+     "titulo": "El oro de la bóveda",
+     "detalle": "La bóveda muestra el oro que guarda: mucho oro a la vista atrae incursiones mayores, lo que da sentido a protegerla."
+    },
+    {
+     "titulo": "Reserva de invierno",
+     "detalle": "El jugador fija una reserva de leña; la pila cambia de color o de señal cuando no se alcanza antes del frío."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "pile_firewood_1",
+     "nombre": "Leña, poco"
+    },
+    {
+     "id": "pile_firewood_2",
+     "nombre": "Leña, a medias"
+    },
+    {
+     "id": "pile_firewood_3",
+     "nombre": "Leña, lleno"
+    },
+    {
+     "id": "pile_coal_1",
+     "nombre": "Carbón, poco"
+    },
+    {
+     "id": "pile_coal_2",
+     "nombre": "Carbón, a medias"
+    },
+    {
+     "id": "pile_coal_3",
+     "nombre": "Carbón, lleno"
+    },
+    {
+     "id": "pile_iron_ore_1",
+     "nombre": "Mineral de hierro, poco"
+    },
+    {
+     "id": "pile_iron_ore_2",
+     "nombre": "Mineral de hierro, a medias"
+    },
+    {
+     "id": "pile_iron_ore_3",
+     "nombre": "Mineral de hierro, lleno"
+    },
+    {
+     "id": "pile_gold_1",
+     "nombre": "Oro, poco"
+    },
+    {
+     "id": "pile_gold_2",
+     "nombre": "Oro, a medias"
+    },
+    {
+     "id": "pile_gold_3",
+     "nombre": "Oro, lleno"
+    }
+   ]
+  },
+  {
+   "id": "pile_food",
+   "nombre": "Pilas de comida",
+   "categoria": "Pilas de recursos",
+   "descripcion": "Gavillas de trigo, cebada y lino, bandejas de pan, cajones de verduras y raíces, canastas de fruta y bayas, colgaderos de carne, ahumados, pescado y hierbas, barriles de cerveza, quesos y lecheras, tarros de miel y pacas de heno, en tres niveles.",
+   "propuestas": [
+    {
+     "titulo": "El granero y el mercado enseñan su surtido",
+     "detalle": "Cada alimento distinto que haya aparece como su pila: la dieta variada se ve, y se nota qué falta antes de que baje la salud."
+    },
+    {
+     "titulo": "Puestos del mercado",
+     "detalle": "Los puestos se llenan con las pilas de lo que de verdad venden y se vacían cuando el mercado se queda sin género."
+    },
+    {
+     "titulo": "Lo que trae el mercader",
+     "detalle": "El mercader descarga sus pilas junto al puesto de comercio: se ve qué ofrece sin abrir su ventana."
+    },
+    {
+     "titulo": "Comida que se estropea",
+     "detalle": "La pila pasa a un tono apagado cuando la comida está por echarse a perder: hay que comerla o venderla ya."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "pile_wheat_1",
+     "nombre": "Trigo, poco"
+    },
+    {
+     "id": "pile_wheat_2",
+     "nombre": "Trigo, a medias"
+    },
+    {
+     "id": "pile_wheat_3",
+     "nombre": "Trigo, lleno"
+    },
+    {
+     "id": "pile_barley_1",
+     "nombre": "Cebada, poco"
+    },
+    {
+     "id": "pile_barley_2",
+     "nombre": "Cebada, a medias"
+    },
+    {
+     "id": "pile_barley_3",
+     "nombre": "Cebada, lleno"
+    },
+    {
+     "id": "pile_flax_1",
+     "nombre": "Lino en rama, poco"
+    },
+    {
+     "id": "pile_flax_2",
+     "nombre": "Lino en rama, a medias"
+    },
+    {
+     "id": "pile_flax_3",
+     "nombre": "Lino en rama, lleno"
+    },
+    {
+     "id": "pile_bread_1",
+     "nombre": "Pan, poco"
+    },
+    {
+     "id": "pile_bread_2",
+     "nombre": "Pan, a medias"
+    },
+    {
+     "id": "pile_bread_3",
+     "nombre": "Pan, lleno"
+    },
+    {
+     "id": "pile_vegetables_1",
+     "nombre": "Verduras, poco"
+    },
+    {
+     "id": "pile_vegetables_2",
+     "nombre": "Verduras, a medias"
+    },
+    {
+     "id": "pile_vegetables_3",
+     "nombre": "Verduras, lleno"
+    },
+    {
+     "id": "pile_fruit_1",
+     "nombre": "Fruta, poco"
+    },
+    {
+     "id": "pile_fruit_2",
+     "nombre": "Fruta, a medias"
+    },
+    {
+     "id": "pile_fruit_3",
+     "nombre": "Fruta, lleno"
+    },
+    {
+     "id": "pile_berries_1",
+     "nombre": "Bayas, poco"
+    },
+    {
+     "id": "pile_berries_2",
+     "nombre": "Bayas, a medias"
+    },
+    {
+     "id": "pile_berries_3",
+     "nombre": "Bayas, lleno"
+    },
+    {
+     "id": "pile_roots_1",
+     "nombre": "Raíces, poco"
+    },
+    {
+     "id": "pile_roots_2",
+     "nombre": "Raíces, a medias"
+    },
+    {
+     "id": "pile_roots_3",
+     "nombre": "Raíces, lleno"
+    },
+    {
+     "id": "pile_meat_1",
+     "nombre": "Carne, poco"
+    },
+    {
+     "id": "pile_meat_2",
+     "nombre": "Carne, a medias"
+    },
+    {
+     "id": "pile_meat_3",
+     "nombre": "Carne, lleno"
+    },
+    {
+     "id": "pile_smoked_1",
+     "nombre": "Ahumados, poco"
+    },
+    {
+     "id": "pile_smoked_2",
+     "nombre": "Ahumados, a medias"
+    },
+    {
+     "id": "pile_smoked_3",
+     "nombre": "Ahumados, lleno"
+    },
+    {
+     "id": "pile_fish_1",
+     "nombre": "Pescado, poco"
+    },
+    {
+     "id": "pile_fish_2",
+     "nombre": "Pescado, a medias"
+    },
+    {
+     "id": "pile_fish_3",
+     "nombre": "Pescado, lleno"
+    },
+    {
+     "id": "pile_herbs_1",
+     "nombre": "Hierbas, poco"
+    },
+    {
+     "id": "pile_herbs_2",
+     "nombre": "Hierbas, a medias"
+    },
+    {
+     "id": "pile_herbs_3",
+     "nombre": "Hierbas, lleno"
+    },
+    {
+     "id": "pile_beer_1",
+     "nombre": "Cerveza, poco"
+    },
+    {
+     "id": "pile_beer_2",
+     "nombre": "Cerveza, a medias"
+    },
+    {
+     "id": "pile_beer_3",
+     "nombre": "Cerveza, lleno"
+    },
+    {
+     "id": "pile_cheese_1",
+     "nombre": "Queso y leche, poco"
+    },
+    {
+     "id": "pile_cheese_2",
+     "nombre": "Queso y leche, a medias"
+    },
+    {
+     "id": "pile_cheese_3",
+     "nombre": "Queso y leche, lleno"
+    },
+    {
+     "id": "pile_honey_1",
+     "nombre": "Miel, poco"
+    },
+    {
+     "id": "pile_honey_2",
+     "nombre": "Miel, a medias"
+    },
+    {
+     "id": "pile_honey_3",
+     "nombre": "Miel, lleno"
+    },
+    {
+     "id": "pile_hay_1",
+     "nombre": "Heno, poco"
+    },
+    {
+     "id": "pile_hay_2",
+     "nombre": "Heno, a medias"
+    },
+    {
+     "id": "pile_hay_3",
+     "nombre": "Heno, lleno"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "pile_goods",
+   "nombre": "Pilas de bienes",
+   "categoria": "Pilas de recursos",
+   "descripcion": "Pieles apiladas, rollos de cuero, rollos de tela, ropa doblada de colores, un estante de zapatos, armeros de arcos y de armas con escudos, y fardos de lana, en tres niveles.",
+   "propuestas": [
+    {
+     "titulo": "Talleres y almacén",
+     "detalle": "La curtiduría, el tejedor, el sastre, el zapatero, el arquero y la armería muestran su producción, y el almacén sus existencias."
+    },
+    {
+     "titulo": "Armería a la vista",
+     "detalle": "Los armeros llenos o vacíos junto al cuartel dicen cuántos soldados más se pueden armar."
+    },
+    {
+     "titulo": "Carga de las caravanas",
+     "detalle": "Las ofertas a otros pueblos y lo que traen los mercaderes se ven como estas pilas sobre el carro o junto al puesto."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "pile_hides_1",
+     "nombre": "Pieles, poco"
+    },
+    {
+     "id": "pile_hides_2",
+     "nombre": "Pieles, a medias"
+    },
+    {
+     "id": "pile_hides_3",
+     "nombre": "Pieles, lleno"
+    },
+    {
+     "id": "pile_leather_1",
+     "nombre": "Cuero, poco"
+    },
+    {
+     "id": "pile_leather_2",
+     "nombre": "Cuero, a medias"
+    },
+    {
+     "id": "pile_leather_3",
+     "nombre": "Cuero, lleno"
+    },
+    {
+     "id": "pile_linen_1",
+     "nombre": "Tela de lino, poco"
+    },
+    {
+     "id": "pile_linen_2",
+     "nombre": "Tela de lino, a medias"
+    },
+    {
+     "id": "pile_linen_3",
+     "nombre": "Tela de lino, lleno"
+    },
+    {
+     "id": "pile_clothes_1",
+     "nombre": "Ropa, poco"
+    },
+    {
+     "id": "pile_clothes_2",
+     "nombre": "Ropa, a medias"
+    },
+    {
+     "id": "pile_clothes_3",
+     "nombre": "Ropa, lleno"
+    },
+    {
+     "id": "pile_shoes_1",
+     "nombre": "Zapatos, poco"
+    },
+    {
+     "id": "pile_shoes_2",
+     "nombre": "Zapatos, a medias"
+    },
+    {
+     "id": "pile_shoes_3",
+     "nombre": "Zapatos, lleno"
+    },
+    {
+     "id": "pile_bows_1",
+     "nombre": "Arcos, poco"
+    },
+    {
+     "id": "pile_bows_2",
+     "nombre": "Arcos, a medias"
+    },
+    {
+     "id": "pile_bows_3",
+     "nombre": "Arcos, lleno"
+    },
+    {
+     "id": "pile_weapons_1",
+     "nombre": "Armas, poco"
+    },
+    {
+     "id": "pile_weapons_2",
+     "nombre": "Armas, a medias"
+    },
+    {
+     "id": "pile_weapons_3",
+     "nombre": "Armas, lleno"
+    },
+    {
+     "id": "pile_wool_1",
+     "nombre": "Lana, poco"
+    },
+    {
+     "id": "pile_wool_2",
+     "nombre": "Lana, a medias"
+    },
+    {
+     "id": "pile_wool_3",
+     "nombre": "Lana, lleno"
+    }
+   ]
+  }
+ ]
+}

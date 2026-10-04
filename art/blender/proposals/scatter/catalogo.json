@@ -1,0 +1,153 @@
+{
+  "familia": "scatter",
+  "grupos": [
+    {
+      "id": "scatter_rocks",
+      "nombre": "Rocas en tres tamaños y tres piedras",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Un juego de rocas para sembrar el terreno: piedras sueltas (2 m), peñasco con sus lascas (2,6 m) y afloramiento más alto que una persona (4 m, 2,9 m de alto); cada uno en piedra gris, piedra con musgo y arenisca.",
+      "propuestas": [
+        {"titulo": "Variedad del terreno generado", "detalle": "El generador las reparte según el bioma (arenisca en desierto y sabana, musgo en bosque húmedo, gris en montaña): rompen la repetición de las rocas actuales sin función nueva."},
+        {"titulo": "Piedra de superficie", "detalle": "Las sueltas se recogen a mano (un poco de piedra sin cantera, para los primeros días); el peñasco necesita picapedrero; el afloramiento marca dónde una cantera rinde más."},
+        {"titulo": "Estorbo que se despeja", "detalle": "Ocupan celdas: para construir o arar hay que retirarlas (trabajo de peón, da piedra). El afloramiento no se puede quitar: obliga a construir alrededor."},
+        {"titulo": "Cobertura", "detalle": "En combate, los peñascos y afloramientos tapan la línea de tiro: arqueros y enemigos se cubren tras ellos."}
+      ],
+      "modelos": [
+        {"id": "scatter_rocks_stone_small", "nombre": "Gris: piedras sueltas", "material": "piedra"},
+        {"id": "scatter_rocks_stone_boulder", "nombre": "Gris: peñasco", "material": "piedra"},
+        {"id": "scatter_rocks_stone_outcrop", "nombre": "Gris: afloramiento", "material": "piedra"},
+        {"id": "scatter_rocks_mossy_small", "nombre": "Con musgo: piedras sueltas", "material": "piedra"},
+        {"id": "scatter_rocks_mossy_boulder", "nombre": "Con musgo: peñasco", "material": "piedra"},
+        {"id": "scatter_rocks_mossy_outcrop", "nombre": "Con musgo: afloramiento", "material": "piedra"},
+        {"id": "scatter_rocks_sandstone_small", "nombre": "Arenisca: piedras sueltas", "material": "arenisca"},
+        {"id": "scatter_rocks_sandstone_boulder", "nombre": "Arenisca: peñasco", "material": "arenisca"},
+        {"id": "scatter_rocks_sandstone_outcrop", "nombre": "Arenisca: afloramiento", "material": "arenisca"}
+      ]
+    },
+    {
+      "id": "scatter_rock_forms",
+      "nombre": "Arco de roca y agujas",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Dos formaciones de arenisca: un arco natural de 6,5 m de ancho y 5 m de alto bajo el que se puede pasar, y un grupo de cuatro agujas en capas de hasta 4,5 m con su sombrero de roca dura.",
+      "propuestas": [
+        {"titulo": "Hitos del bioma seco", "detalle": "Aparecen en desierto, sabana y cañones: dan carácter al mapa y sirven de referencia para orientarse."},
+        {"titulo": "Paso natural", "detalle": "Los caminos pueden pasar bajo el arco; un pueblo que lo tenga en su entrada gana atractivo sin construir un arco."},
+        {"titulo": "Atalaya", "detalle": "Sobre la aguja mayor cabe un puesto de vigía barato (una escalera y una plataforma)."}
+      ],
+      "modelos": [
+        {"id": "scatter_rock_arch", "nombre": "Arco natural", "material": "arenisca"},
+        {"id": "scatter_rock_spires", "nombre": "Agujas", "material": "arenisca"}
+      ]
+    },
+    {
+      "id": "scatter_grass",
+      "nombre": "Hierbas",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Seis parches de hierba que se mecen con el viento: mata verde, mata seca, hierba alta (1,1 m), juncos con sus mazas en un charco, helecho y trébol con flores blancas. Ocupan de 1,5 a 2 m.",
+      "propuestas": [
+        {"titulo": "El suelo deja de ser liso", "detalle": "Se siembran solos por bioma y estación (verde en primavera, seca en verano y otoño): el terreno se ve vivo. Desaparecen bajo edificios, caminos y donde pasta el ganado."},
+        {"titulo": "Pasto", "detalle": "La hierba alta es lo que come el ganado suelto: un prado se agota si hay demasiados animales y rebrota con el tiempo. Se siega con guadaña para hacer heno."},
+        {"titulo": "Indicadores del terreno", "detalle": "Cada una dice algo de la celda: juncos = agua a poca profundidad (buen sitio para un pozo), trébol = tierra fértil, helecho = sombra y humedad, mata seca = tierra pobre."},
+        {"titulo": "Materiales", "detalle": "Los juncos dan fibra para techos de paja, cestas y esteras sin cultivar nada."}
+      ],
+      "modelos": [
+        {"id": "scatter_grass_tuft", "nombre": "Mata verde", "animaciones": {"sway": "Se mece con el viento."}},
+        {"id": "scatter_grass_dry", "nombre": "Mata seca", "animaciones": {"sway": "Se mece con el viento."}},
+        {"id": "scatter_grass_tall", "nombre": "Hierba alta", "animaciones": {"sway": "Se mece con el viento."}},
+        {"id": "scatter_reeds", "nombre": "Juncos", "animaciones": {"sway": "Se mecen con el viento."}},
+        {"id": "scatter_fern", "nombre": "Helecho", "animaciones": {"sway": "Se mece con el viento."}},
+        {"id": "scatter_clover", "nombre": "Trébol", "animaciones": {"sway": "Se mece con el viento."}}
+      ]
+    },
+    {
+      "id": "scatter_flowers",
+      "nombre": "Flores silvestres",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Parches de 1,6 m de flores entre la hierba: rojas, amarillas, azules y violetas, blancas, mezcladas, y un grupo de girasoles de hasta 1,9 m. Se mecen con el viento.",
+      "propuestas": [
+        {"titulo": "Primavera", "detalle": "Brotan solas en primavera y se van en otoño: marcan la estación en el mapa sin mirar el calendario."},
+        {"titulo": "Miel", "detalle": "Las colmenas rinden según cuántas flores haya en su radio: conviene no arar todos los prados."},
+        {"titulo": "Entorno", "detalle": "Suben el atractivo de las casas vecinas igual que un jardín, gratis, mientras no se pisen."},
+        {"titulo": "Tintes y girasoles", "detalle": "Cada color da un tinte para el tintorero; los girasoles dan aceite para faroles y cocina."}
+      ],
+      "modelos": [
+        {"id": "scatter_flowers_red", "nombre": "Rojas", "animaciones": {"sway": "Se mecen con el viento."}},
+        {"id": "scatter_flowers_yellow", "nombre": "Amarillas", "animaciones": {"sway": "Se mecen con el viento."}},
+        {"id": "scatter_flowers_blue", "nombre": "Azules y violetas", "animaciones": {"sway": "Se mecen con el viento."}},
+        {"id": "scatter_flowers_white", "nombre": "Blancas", "animaciones": {"sway": "Se mecen con el viento."}},
+        {"id": "scatter_flowers_mixed", "nombre": "Mezcladas", "animaciones": {"sway": "Se mecen con el viento."}},
+        {"id": "scatter_sunflowers", "nombre": "Girasoles", "animaciones": {"sway": "Se mecen con el viento."}}
+      ]
+    },
+    {
+      "id": "scatter_bush",
+      "nombre": "Arbustos",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Arbusto de 2 m en cinco estados o especies: verde, en flor, con bayas rojas, con arándanos y zarza de espinas.",
+      "propuestas": [
+        {"titulo": "Bayas por temporada", "detalle": "El mismo arbusto pasa de verde a flor y a fruto a lo largo del año; el recolector solo saca bayas cuando están maduras. Sustituye al arbusto de bayas fijo."},
+        {"titulo": "Zarzal defensivo", "detalle": "La zarza frena y hiere a quien la cruza: plantada en hilera es la cerca más barata contra lobos y saqueadores, pero tarda en crecer."},
+        {"titulo": "Refugio de fauna", "detalle": "Donde hay arbustos hay conejos y pájaros: más caza menor para el cazador en ese radio."}
+      ],
+      "modelos": [
+        {"id": "scatter_bush", "nombre": "Verde"},
+        {"id": "scatter_bush_flowers", "nombre": "En flor"},
+        {"id": "scatter_bush_berries", "nombre": "Con bayas rojas"},
+        {"id": "scatter_bush_blueberries", "nombre": "Con arándanos"},
+        {"id": "scatter_bush_thorn", "nombre": "Zarza"}
+      ]
+    },
+    {
+      "id": "scatter_ground",
+      "nombre": "Lo que hay por el suelo",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Seis detalles de suelo: montón de hojas de otoño con un rastrillo, charcos con ondas, toperas de las que asoma un topo, tronco hueco con musgo y setas, raíces que afloran alrededor de un tocón y placa de hielo con carámbanos.",
+      "propuestas": [
+        {"titulo": "Estaciones y tiempo a la vista", "detalle": "Hojas en otoño, charcos después de llover, hielo en invierno: aparecen y desaparecen solos y cuentan qué tiempo hace."},
+        {"titulo": "Efectos pequeños", "detalle": "Los charcos y el hielo frenan a quien los cruza (y a las carretas); las toperas bajan un poco la cosecha del campo donde salen, hasta que un gato o un trampero se ocupa."},
+        {"titulo": "Recolección", "detalle": "El tronco con musgo da setas y leña; las hojas, abono para el estercolero."}
+      ],
+      "modelos": [
+        {"id": "scatter_leaves_pile", "nombre": "Montón de hojas"},
+        {"id": "scatter_puddle", "nombre": "Charcos", "animaciones": {"drip": "Ondas en el agua."}},
+        {"id": "scatter_molehills", "nombre": "Toperas", "animaciones": {"peek": "El topo se asoma."}},
+        {"id": "scatter_log_mossy", "nombre": "Tronco con musgo"},
+        {"id": "scatter_roots", "nombre": "Raíces"},
+        {"id": "scatter_ice_patch", "nombre": "Placa de hielo"}
+      ]
+    },
+    {
+      "id": "scatter_mushrooms",
+      "nombre": "Setas",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Corros de siete setas entre la hierba, de 1,2 m: pardas (comestibles) y rojas con pintas blancas (venenosas).",
+      "propuestas": [
+        {"titulo": "Comida de otoño", "detalle": "Salen tras la lluvia en bosque; el recolector las recoge. Las rojas enferman a quien las come salvo que haya un sanador o un recolector experto que las distinga."},
+        {"titulo": "Ingrediente", "detalle": "Las rojas son ingrediente de pociones y de veneno para flechas."}
+      ],
+      "modelos": [
+        {"id": "scatter_mushrooms_brown", "nombre": "Pardas"},
+        {"id": "scatter_mushrooms_red", "nombre": "Rojas con pintas"}
+      ]
+    },
+    {
+      "id": "scatter_tracks",
+      "nombre": "Huellas",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Rastros de 3,5 m impresos en el suelo: de lobo (almohadilla y cuatro dedos), de botas y de una bestia grande de tres garras.",
+      "propuestas": [
+        {"titulo": "Aviso de lo que anda cerca", "detalle": "Antes de un ataque de lobos, de bandidos o de un monstruo aparecen sus huellas cerca del pueblo, apuntando de dónde vienen: quien las ve a tiempo se prepara."},
+        {"titulo": "Rastrear", "detalle": "Un cazador o un explorador sigue el rastro hasta la guarida: es la forma de encontrarla sin explorar a ciegas."},
+        {"titulo": "Caza", "detalle": "Las huellas de animales marcan dónde hay caza: el cazador rinde más si su cabaña está cerca de un rastro."}
+      ],
+      "modelos": [
+        {"id": "scatter_tracks_wolf", "nombre": "De lobo"},
+        {"id": "scatter_tracks_boot", "nombre": "De botas"},
+        {"id": "scatter_tracks_beast", "nombre": "De bestia grande"}
+      ]
+    }
+  ]
+}

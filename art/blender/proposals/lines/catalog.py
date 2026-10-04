@@ -1,0 +1,103 @@
+"""Writes catalogo.json for the line kits: python art/blender/proposals/lines/catalog.py"""
+
+import io
+import json
+import os
+
+PIECES = [("straight", "Recto"), ("corner", "Esquina"), ("tee", "Unión en T"), ("cross", "Cruce"), ("end", "Final"), ("pillar", "Suelto")]
+RULE = (" Juego de seis piezas sobre el módulo de 2 m, con la misma regla que los muros: sin vecinos, la pieza suelta; con uno, el final; con dos opuestos,"
+        " el recto; con dos contiguos, la esquina; con tres, la T; con cuatro, el cruce; girando de 90° en 90°. Se prueba en \"Probar muros modulares\".")
+
+KITS = [
+    {
+        "prefix": "rail_wood", "nombre": "Raíles de madera", "categoria": "Transporte", "material": "troncos", "destacado": True,
+        "descripcion": "Tranvía de mina con raíles y traviesas de madera, de 0,6 m de vía; donde se juntan dos líneas hay una placa giratoria y los finales tienen tope." + RULE,
+        "propuestas": [
+            {"titulo": "Vagonetas de la mina al almacén", "detalle": "Se traza como un camino desde una mina, una cantera o un bosque: una vagoneta empujada por un aldeano lleva cuatro veces lo que un porteador. Los de madera son baratos y hay que reponerlos cada pocos años."},
+            {"titulo": "Solo dentro de la mina", "detalle": "Parte del edificio: una mina con raíles hasta la bocamina rinde más, sin trazado libre por el mapa."},
+            {"titulo": "Red de un pueblo industrial", "detalle": "Varios edificios unidos por raíles se pasan material sin porteadores: la placa giratoria reparte según lo que pide cada uno."}
+        ],
+    },
+    {
+        "prefix": "rail_iron", "nombre": "Raíles de hierro", "categoria": "Transporte", "material": "hierro",
+        "descripcion": "Vía de raíles de hierro sobre traviesas y balasto de grava, con placas giratorias de hierro en las uniones y topes en los finales." + RULE,
+        "propuestas": [
+            {"titulo": "Mejora de los de madera", "detalle": "Cuestan hierro, no se gastan y admiten vagonetas tiradas por un poni o un buey: el doble de carga y de velocidad."},
+            {"titulo": "Línea entre pueblos", "detalle": "Tardío: una vía entre dos pueblos propios o aliados mueve mercancía a granel sin caravanas ni bandidos."}
+        ],
+    },
+    {
+        "prefix": "rail_dwarf", "nombre": "Raíles enanos", "categoria": "Transporte", "material": "piedra y bronce",
+        "descripcion": "Vía de los enanos: lecho de piedra labrada, raíles de bronce y marcas rúnicas que brillan de noche a los lados." + RULE,
+        "propuestas": [
+            {"titulo": "Propios de los enanos", "detalle": "Solo los construye un pueblo enano (o con ingeniero enano): las vagonetas ruedan solas cuesta abajo y las runas las frenan, sin aldeano que empuje."},
+            {"titulo": "Vía subterránea", "detalle": "Pueden ir bajo tierra entre dos bocaminas: un atajo bajo la montaña para mercancía y, en un apuro, para evacuar."},
+            {"titulo": "Iluminan", "detalle": "Las runas alumbran el trazado de noche como una hilera de farolas bajas."}
+        ],
+    },
+    {
+        "prefix": "canal_stone", "nombre": "Canal de piedra", "categoria": "Granja y riego", "material": "piedra", "destacado": True,
+        "descripcion": "Canal de 1 m de agua entre dos muretes de piedra de 0,34 m con albardilla; la pieza suelta es un pilón cuadrado. Incluye una compuerta de tajadera con volante que sube y baja." + RULE,
+        "propuestas": [
+            {"titulo": "Riego trazado a mano", "detalle": "Se traza desde un río, un lago, un acueducto o una noria: los campos a 2 celdas de cualquier tramo cuentan como regados. Las compuertas cortan un ramal para no malgastar en sequía."},
+            {"titulo": "Agua dentro del pueblo", "detalle": "Un canal que cruza el barrio da agua a las casas (como un pozo en cada tramo) y a los talleres que la piden: curtidor, tintorero, lavadero, molino pequeño."},
+            {"titulo": "Foso", "detalle": "Rodeando la muralla hace de foso estrecho: frena a quien cruza y apaga los fuegos junto al muro."},
+            {"titulo": "Desagüe", "detalle": "En pantano o tras una inundación, un canal hacia el río seca el terreno: las celdas a su lado dejan de ser barro."}
+        ],
+        "extra": [{"id": "canal_stone_sluice", "nombre": "Compuerta", "material": "piedra y troncos", "animaciones": {"open": "Sube la tajadera (no se repite).", "close": "Baja la tajadera (no se repite)."}}],
+    },
+    {
+        "prefix": "canal_dirt", "nombre": "Acequia de tierra", "categoria": "Granja y riego", "material": "",
+        "descripcion": "Acequia excavada, con el agua entre dos caballones de tierra con hierba; la pieza suelta es una charca cuadrada." + RULE,
+        "propuestas": [
+            {"titulo": "Riego barato", "detalle": "Solo cuesta trabajo de peón, sin piedra: riega igual que el canal pero pierde agua (llega menos lejos de la fuente) y hay que limpiarla cada año o se ciega."},
+            {"titulo": "Primer nivel del canal", "detalle": "Se traza en tierra y después se reviste de piedra tramo a tramo, cuando hay material."}
+        ],
+    },
+    {
+        "prefix": "street_cobble", "nombre": "Calle empedrada", "categoria": "Caminos", "material": "piedra", "destacado": True,
+        "descripcion": "Calle de 1,6 m de adoquines de tres tonos con bordillo de piedra en los lados cerrados; la pieza suelta es una placita con el pie de una farola." + RULE,
+        "propuestas": [
+            {"titulo": "Camino de nivel 2", "detalle": "Mejora del camino de tierra: se camina más rápido, las carretas no se atascan con la lluvia y sube el atractivo de las casas que dan a ella. Cuesta piedra por tramo."},
+            {"titulo": "Piezas de verdad en vez de textura", "detalle": "Si los caminos pasan a ser modelos, este juego de seis piezas cubre cualquier trazado con bordillos correctos en esquinas y cruces."},
+            {"titulo": "Plazas", "detalle": "Varias piezas juntas forman una plaza empedrada: mercados y fiestas rinden más sobre empedrado."}
+        ],
+    },
+    {
+        "prefix": "street_plank", "nombre": "Pasarela de tablones", "categoria": "Caminos", "material": "troncos",
+        "descripcion": "Pasarela de 1,3 m de tablones sobre largueros, levantada 0,3 m sobre el barro, con postes en las esquinas y cuerda en los lados cerrados." + RULE,
+        "propuestas": [
+            {"titulo": "Caminar sobre pantano y barro", "detalle": "El único camino posible en pantano, marisma y orilla inundable: sin ella esas celdas no se cruzan o se cruzan muy lento. Barata en troncos."},
+            {"titulo": "Calles de los pueblos de ranas", "detalle": "Es el camino propio de los pueblos sobre el agua: une palafitos y muelles."},
+            {"titulo": "Temporal", "detalle": "Se tiende rápido sobre una calle embarrada por la lluvia o una inundación y se retira después."}
+        ],
+    },
+    {
+        "prefix": "street_dirt", "nombre": "Camino de tierra con rodadas", "categoria": "Caminos", "material": "",
+        "descripcion": "Camino de tierra de 1,5 m con las rodadas de los carros y la hierba entrando por los lados." + RULE,
+        "propuestas": [
+            {"titulo": "El camino que se hace solo", "detalle": "No se construye: aparece donde los aldeanos pasan mucho. Muestra por dónde va de verdad el tráfico y dónde conviene empedrar."},
+            {"titulo": "Camino de nivel 1", "detalle": "El básico: gratis, algo más rápido que campo a través, y se embarra con la lluvia."}
+        ],
+    },
+]
+
+
+def main():
+    groups = []
+    for k in KITS:
+        group = {"id": k["prefix"], "nombre": k["nombre"], "categoria": k["categoria"], "descripcion": k["descripcion"], "propuestas": k["propuestas"]}
+        if k.get("destacado"):
+            group["destacado"] = True
+        group["modelos"] = [dict({"id": "%s_%s" % (k["prefix"], piece), "nombre": name}, **({"material": k["material"]} if k["material"] else {})) for piece, name in PIECES]
+        group["modelos"] += k.get("extra", [])
+        groups.append(group)
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "catalogo.json")
+    with io.open(path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump({"familia": "lines", "grupos": groups}, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    print("wrote", path)
+
+
+if __name__ == "__main__":
+    main()

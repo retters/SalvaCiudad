@@ -1,0 +1,705 @@
+{
+  "familia": "races",
+  "grupos": [
+    {
+      "id": "race_dwarf_house",
+      "nombre": "Enanos: casa",
+      "categoria": "Edificios",
+      "descripcion": "La vivienda enana en tres niveles, siempre de sillería con los costados en talud y fuego tras las ventanas: choza de 4 × 4 m con losas y tepe; casa de 6 × 5 m con contrafuertes, greca de oro y chimenea; casona de 8 × 6 m con pórtico de pilares, planta alta retranqueada bajo bronce, braseros y estandartes.",
+      "propuestas": [
+        {"titulo": "Los tres niveles de la casa enana", "detalle": "Las casas de un pueblo enano suben de nivel igual que las humanas, pero cuestan piedra en vez de troncos (20 / 45 / 90 de piedra, y 10 de hierro y 5 de oro la tercera). Alojan 3 / 5 / 8 enanos. No arden y gastan la mitad de leña; a cambio tardan el doble en construirse."},
+        {"titulo": "Lo que pide un enano para quedarse", "detalle": "En un pueblo mixto, un inmigrante enano solo se instala si hay una casa de piedra libre y cerveza en la taberna. Si vive en una casa de madera humana pierde felicidad cada estación."},
+        {"titulo": "Solo junto a la roca", "detalle": "El nivel 3 solo se puede construir a menos de 15 m de un yacimiento de piedra o de una ladera: obliga a que el barrio enano crezca hacia el monte y deja el llano para los demás."}
+      ],
+      "modelos": [
+        {"id": "race_dwarf_house_1", "nombre": "Nivel 1: choza de piedra", "material": "piedra"},
+        {"id": "race_dwarf_house_2", "nombre": "Nivel 2: casa con contrafuertes", "material": "piedra y oro", "animaciones": {"smoke": "Sale humo de la chimenea"}},
+        {"id": "race_dwarf_house_3", "nombre": "Nivel 3: casona de dos cuerpos", "material": "piedra, hierro y oro", "animaciones": {"burn": "Arden los braseros", "smoke": "Sale humo de la chimenea", "wave": "Se mecen los estandartes"}}
+      ]
+    },
+    {
+      "id": "race_dwarf_center",
+      "nombre": "Enanos: salón del clan",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Centro del pueblo enano, de 14 × 12 m y 9 m de alto, adosado a un peñasco: fachada de dos cuerpos con portón de arco y escalinata, dos torres con braseros, dos estatuas de enanos de 4 m (martillo y hacha), grecas de oro, estandartes, chimeneas que salen de la roca y una vagoneta con oro.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de los enanos", "detalle": "Sustituye al centro humano cuando la raza inicial es enana. Almacena el doble de piedra, mineral e hierro, no arde, y sus dos braseros iluminan 25 m a la redonda (de noche se trabaja ahí sin penalización)."},
+        {"titulo": "Segundo centro en un pueblo mixto", "detalle": "Un pueblo humano con 15 enanos o más puede levantar este salón (150 de piedra, 30 de hierro, 20 de oro): sube la felicidad de todos los enanos y abre la inmigración enana aunque la partida la tuviera al mínimo."},
+        {"titulo": "Refugio en los asaltos", "detalle": "Al tocar la alarma, hasta 40 aldeanos se encierran dentro; los asaltantes no pueden quemarlo y tardan el triple en derribar el portón."}
+      ],
+      "modelos": [
+        {"id": "race_dwarf_center", "nombre": "Sillería, bronce y oro", "material": "piedra, hierro y oro", "animaciones": {"burn": "Arden los braseros de las torres", "wave": "Se mecen los estandartes", "smoke": "Humean las chimeneas"}}
+      ]
+    },
+    {
+      "id": "race_dwarf_workshop",
+      "nombre": "Enanos: fragua",
+      "categoria": "Edificios",
+      "descripcion": "Taller de 6 × 6 m: nave de sillería con un gran arco abierto al hogar encendido, chimenea de 5 m con zuncho de bronce, martillo pilón sobre un poste, yunque, pila de temple y lingotes.",
+      "propuestas": [
+        {"titulo": "Herrería enana", "detalle": "Versión enana de la herrería: 2 trabajadores, un 30 % más rápida (se suma al 145 % de la raza en metal) y gasta un 20 % menos de carbón. Solo la pueden atender enanos."},
+        {"titulo": "Herramientas de calidad", "detalle": "Las herramientas forjadas aquí duran el doble. En un pueblo mixto basta una fragua enana para que todos los oficios gasten menos hierro."},
+        {"titulo": "Martillo pilón", "detalle": "Mejora de la herrería normal (40 de piedra, 15 de hierro): con el martillo (clip strike) un solo herrero hace el trabajo de dos."}
+      ],
+      "modelos": [
+        {"id": "race_dwarf_workshop", "nombre": "Sillería y bronce", "material": "piedra y hierro", "animaciones": {"strike": "Golpea el martillo pilón", "smoke": "Humea la chimenea"}}
+      ]
+    },
+    {
+      "id": "race_dwarf_storehouse",
+      "nombre": "Enanos: cámara acorazada",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de 6 × 6 m: bóveda de cañón de piedra con contrafuertes y una puerta redonda de bronce y oro, como la de una caja fuerte, que gira sobre su gozne; lingotes, cajas y un barril delante.",
+      "propuestas": [
+        {"titulo": "Almacén a prueba de asaltos", "detalle": "Almacén enano de 600 de capacidad: lo que guarda (oro, hierro, herramientas, armas) no se puede robar ni quemar en una incursión. Cuesta 80 de piedra y 20 de hierro."},
+        {"titulo": "Tesoro del pueblo", "detalle": "Edificio único: el oro guardado aquí cuenta doble para el comercio con mercaderes (mejores precios) y para la puntuación."},
+        {"titulo": "Bodega fresca", "detalle": "Bajo la bóveda la comida y la cerveza no se estropean en verano: sirve de despensa de larga duración para cualquier raza."}
+      ],
+      "modelos": [
+        {"id": "race_dwarf_storehouse", "nombre": "Bóveda de piedra y bronce", "material": "piedra, hierro y oro", "animaciones": {"open": "Se abre la puerta redonda", "close": "Se cierra"}}
+      ]
+    },
+    {
+      "id": "race_dwarf_brewery",
+      "nombre": "Enanos: cervecería de la fragua",
+      "categoria": "Edificios",
+      "descripcion": "Edificio propio de los enanos, de 8 × 6 m: nave de sillería con tepe en la cubierta y, al lado, un gran alambique de cobre de 4 m sobre su hogar de piedra, con cuello de cisne que entra en la nave; barriles tumbados, banco con jarras, sacos de grano y un letrero con una jarra que se balancea.",
+      "propuestas": [
+        {"titulo": "Cervecería enana", "detalle": "Solo la construyen pueblos con enanos. Hace cerveza con la mitad de grano que la cervecería normal y 2 trabajadores; su cerveza cuenta doble para la felicidad de los enanos."},
+        {"titulo": "Un fuego, dos oficios", "detalle": "El hogar del alambique calienta también una fragua: colocada pegada a una herrería o a la fragua enana, las dos comparten carbón (un 30 % menos entre ambas)."},
+        {"titulo": "Cerveza para vender", "detalle": "La cerveza enana es un bien de exportación: los mercaderes la pagan al doble y, si el pueblo la vende tres estaciones seguidas, llega un inmigrante enano."}
+      ],
+      "modelos": [
+        {"id": "race_dwarf_brewery", "nombre": "Sillería y cobre", "material": "piedra, hierro y troncos", "animaciones": {"smoke": "Humea la chimenea y el alambique echa vapor", "swing": "Se balancea el letrero"}}
+      ]
+    },
+    {
+      "id": "race_dwarf_tower",
+      "nombre": "Enanos: torre del fuego",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de vigilancia de 4 × 4 m y 8 m de alto: fuste de sillería en talud con greca y runas de oro, cuatro pilares con remates de bronce, un brasero encendido bajo una cubierta de bronce y estandartes a los lados.",
+      "propuestas": [
+        {"titulo": "Torre de vigilancia enana", "detalle": "Más baja que la humana (ve 10 m menos) pero el doble de resistente, y su brasero ilumina 20 m. Cuesta 60 de piedra y 5 de hierro. 2 ballesteros."},
+        {"titulo": "Fuegos de aviso", "detalle": "Las torres enanas a la vista unas de otras se pasan la alarma: al encenderse una, todas avisan y la milicia sale antes."},
+        {"titulo": "Torre de mina", "detalle": "Junto a una cantera o mina, protege a sus trabajadores: en un asalto se refugian dentro en vez de huir al centro."}
+      ],
+      "modelos": [
+        {"id": "race_dwarf_tower", "nombre": "Sillería y bronce", "material": "piedra, hierro y oro", "animaciones": {"burn": "Arde el brasero", "wave": "Se mecen los estandartes"}}
+      ]
+    },
+    {
+      "id": "race_elf_house",
+      "nombre": "Elfos: casa",
+      "categoria": "Edificios",
+      "descripcion": "La vivienda élfica en tres niveles, de piedra blanca entre postes de madera viva y tejados verdigrís: casita redonda de 4 × 4 m con tejado de campánula y farol; casa de 6 × 5 m de dos cuerpos redondos; casa señorial de 8 × 6 m con nave bajo un tejado en forma de hoja, torre con balcón y faroles.",
+      "propuestas": [
+        {"titulo": "Los tres niveles de la casa élfica", "detalle": "Alojan 2 / 4 / 6 elfos. Cuestan pocos troncos y nada de piedra en los dos primeros niveles (la madera es viva: se construyen despacio pero no consumen tablas), y el tercero pide 20 de piedra y 10 de cobre o tejas."},
+        {"titulo": "Piden bosque, no mercado", "detalle": "El entorno de una casa élfica se mide por los árboles a 20 m en vez de por decoraciones: talar a su alrededor les baja la felicidad y replantar se la sube. Resisten mejor las enfermedades (rasgo de la raza)."},
+        {"titulo": "Barrio que embellece", "detalle": "Cada casa élfica de nivel 2 o 3 suma atractivo de entorno a las casas de cualquier raza a 12 m, como una decoración grande."}
+      ],
+      "modelos": [
+        {"id": "race_elf_house_1", "nombre": "Nivel 1: casita de campánula", "material": "troncos y arcilla", "animaciones": {"sway": "Se mece el farol"}},
+        {"id": "race_elf_house_2", "nombre": "Nivel 2: casa de dos cuerpos", "material": "troncos y arcilla", "animaciones": {"sway": "Se mece el farol"}},
+        {"id": "race_elf_house_3", "nombre": "Nivel 3: casa de la hoja con torre", "material": "troncos, piedra y tejas", "animaciones": {"sway": "Se mecen los faroles"}}
+      ]
+    },
+    {
+      "id": "race_elf_center",
+      "nombre": "Elfos: salón de la luna",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Centro del pueblo élfico, de 14 × 13 m y 13 m de alto: sala redonda de piedra blanca con ventanales, rodeada por una columnata de doce columnas bajo una gran cubierta de campánula; sobre la punta flota una luna de cristal. Dos alas con tejado de hoja, faroles, estandartes, estanque y árboles.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de los elfos", "detalle": "Sustituye al centro humano cuando la raza inicial es elfa. No hay que talar para colocarlo: admite árboles dentro de su terreno. Da entorno alto a 30 m y hace de punto de reunión y almacén inicial."},
+        {"titulo": "La luna alumbra la noche", "detalle": "La luna de cristal ilumina 40 m: de noche, lo que quede dentro se ve con niebla de guerra y allí se trabaja sin la penalización del 75 %."},
+        {"titulo": "Consejo de un pueblo mixto", "detalle": "Con 15 elfos o más, un pueblo de otra raza puede construirlo (60 de troncos, 80 de piedra, 15 de oro): los recolectores y cazadores de todo el pueblo rinden un 10 % más."}
+      ],
+      "modelos": [
+        {"id": "race_elf_center", "nombre": "Piedra blanca y verdigrís", "material": "piedra, troncos y oro", "animaciones": {"float": "La luna gira y flota", "sway": "Se mecen los faroles", "wave": "Ondean los estandartes"}}
+      ]
+    },
+    {
+      "id": "race_elf_workshop",
+      "nombre": "Elfos: pabellón de arcos y telares",
+      "categoria": "Edificios",
+      "descripcion": "Taller abierto de 6 × 5 m: seis postes de rama curvada sostienen un tejado en forma de hoja; debajo, un telar con la tela a medio tejer, el banco del arquero y un armero con arcos; cestos y faroles.",
+      "propuestas": [
+        {"titulo": "Arquería", "detalle": "Taller élfico: 2 artesanos hacen arcos con troncos y lino. Los cazadores con arco élfico traen un 25 % más de carne y los arqueros de las torres alcanzan 5 m más."},
+        {"titulo": "Telar al aire libre", "detalle": "Versión élfica del telar: produce ropa de lino igual que el humano pero cuenta como decoración (sube el entorno) en vez de bajarlo como un taller."},
+        {"titulo": "Solo de día", "detalle": "Al no tener paredes no gasta leña ni velas, pero se para con lluvia y en invierno: empuja al jugador a acumular ropa antes del frío."}
+      ],
+      "modelos": [
+        {"id": "race_elf_workshop", "nombre": "Ramas y hoja verdigrís", "material": "troncos y lino", "animaciones": {"sway": "Se mecen los faroles"}}
+      ]
+    },
+    {
+      "id": "race_elf_storehouse",
+      "nombre": "Elfos: despensa del tocón",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de 6 × 6 m dentro de un tocón gigante hueco con raíces, puerta redonda verde, ventanas redondas, setas de repisa, un tejado de campánula y cestos de fruta; farol en una rama.",
+      "propuestas": [
+        {"titulo": "Despensa de fruta y forraje", "detalle": "Almacén élfico de 300 de capacidad solo para comida: bayas, setas, fruta y hierbas duran el doble sin estropearse. Encaja con los rasgos de la raza (recolección 130 %, frutales 145 %)."},
+        {"titulo": "Se construye sobre un tocón", "detalle": "Solo se puede colocar donde se taló un árbol gigante (o cuesta 60 troncos en terreno libre): aprovecha el hueco que deja la tala."},
+        {"titulo": "Botica", "detalle": "Guardar hierbas aquí cubre la necesidad de medicina de las casas a 40 m: menos días de enfermedad."}
+      ],
+      "modelos": [
+        {"id": "race_elf_storehouse", "nombre": "Tocón vivo", "material": "troncos", "animaciones": {"sway": "Se mece el farol"}}
+      ]
+    },
+    {
+      "id": "race_elf_moon_pool",
+      "nombre": "Elfos: estanque de la luna",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Edificio propio de los elfos, de 8 × 8 m: estanque redondo de piedra blanca con tres gradas y el reflejo de la luna en el agua, bajo tres costillas de piedra con hojas y faroles; una media luna de cristal flota sobre el agua. Piedras hincadas con una marca de luz, bancos, nenúfares, flores y un árbol.",
+      "propuestas": [
+        {"titulo": "Santuario de los elfos", "detalle": "Edificio religioso élfico, equivalente a la capilla: cubre la fe en 60 m sin sacerdote; solo pide que nadie tale a 15 m. Sube el entorno de las casas vecinas más que cualquier decoración."},
+        {"titulo": "Aguas que curan", "detalle": "Los enfermos que viven a 40 m sanan en la mitad de tiempo (se suma al rasgo de resistencia a enfermedades de la raza). Funciona también para vecinos de otras razas."},
+        {"titulo": "Noches de luna", "detalle": "Las noches despejadas da +3 de felicidad a quienes viven cerca y los frutales a 30 m crecen un 10 % más rápido."}
+      ],
+      "modelos": [
+        {"id": "race_elf_moon_pool", "nombre": "Piedra blanca y agua", "material": "piedra y oro", "animaciones": {"float": "La media luna gira y flota", "sway": "Se mecen los faroles"}}
+      ]
+    },
+    {
+      "id": "race_elf_tower",
+      "nombre": "Elfos: atalaya",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de vigilancia de 3 × 3 m y 11 m de alto: fuste esbelto de piedra blanca entre postes de madera viva y enredaderas, galería de madera en lo alto con cinco ventanales, tejado de campánula, faroles y un banderín.",
+      "propuestas": [
+        {"titulo": "Torre de arqueros élfica", "detalle": "Más alta y frágil que la humana: 10 m más de visión y de alcance, la mitad de resistencia. Cuesta 30 de troncos y 20 de piedra. 2 arqueros (los elfos cazan al 130 %: aquí disparan un 20 % más rápido)."},
+        {"titulo": "Guarda del bosque", "detalle": "Desde ella un guardabosques avisa de incendios forestales y fieras a 80 m; con ella, los fuegos del bosque se detectan antes de llegar al pueblo."},
+        {"titulo": "Faro de caminantes", "detalle": "Sus faroles guían a mercaderes e inmigrantes de noche: llegan sin perderse aunque no haya camino."}
+      ],
+      "modelos": [
+        {"id": "race_elf_tower", "nombre": "Piedra blanca y verdigrís", "material": "piedra y troncos", "animaciones": {"sway": "Se mecen los faroles", "wave": "Ondea el banderín"}}
+      ]
+    },
+    {
+      "id": "race_dark_elf_house",
+      "nombre": "Elfos oscuros: casa",
+      "categoria": "Edificios",
+      "descripcion": "La vivienda de los elfos oscuros en tres niveles, de esquirlas de obsidiana de seis caras que acaban en aguja, con luz violeta en puertas ojivales y grietas, espinas y setas: una esquirla de 4 × 4 m; dos esquirlas con collar de púas en 6 × 5 m; cuatro esquirlas con balcón, pasarelas, estandartes y cristales flotantes en 8 × 6 m.",
+      "propuestas": [
+        {"titulo": "Los tres niveles de la casa oscura", "detalle": "Alojan 2 / 4 / 7 elfos oscuros en muy poco suelo, porque crecen en altura (7, 9 y 11 m). Cuestan piedra y, desde el nivel 2, cristal o hierro. No piden luz: sus vecinos trabajan de noche al 100 %."},
+        {"titulo": "Turno de noche", "detalle": "Los residentes de estas casas duermen de día y trabajan de noche. En un pueblo mixto, los talleres con un elfo oscuro producen las 24 horas."},
+        {"titulo": "Vecinos incómodos", "detalle": "Restan entorno a las casas de otras razas a 10 m y lo suman a las suyas: conviene darles su propio barrio."}
+      ],
+      "modelos": [
+        {"id": "race_dark_elf_house_1", "nombre": "Nivel 1: una esquirla", "material": "piedra", "animaciones": {"sway": "Se mece el cristal colgante"}},
+        {"id": "race_dark_elf_house_2", "nombre": "Nivel 2: dos esquirlas", "material": "piedra", "animaciones": {"float": "Giran los cristales sobre la punta"}},
+        {"id": "race_dark_elf_house_3", "nombre": "Nivel 3: cuatro esquirlas y balcón", "material": "piedra y hierro", "animaciones": {"float": "Giran los cristales sobre la punta", "wave": "Ondean los estandartes"}}
+      ]
+    },
+    {
+      "id": "race_dark_elf_center",
+      "nombre": "Elfos oscuros: corte de obsidiana",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Centro del pueblo de los elfos oscuros, de 13 × 13 m y 19 m de alto: una gran aguja de obsidiana con portal ojival luminoso y collar de púas, en un anillo de seis agujas menores unidas por pasarelas, sobre un estrado con un círculo violeta; un cristal corazón flota sobre la punta rodeado de esquirlas.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de los elfos oscuros", "detalle": "Sustituye al centro humano cuando la raza inicial es elfa oscura. Ocupa poco y se ve desde lejos: da 60 m de visión con niebla de guerra, de día y de noche."},
+        {"titulo": "El corazón de cristal", "detalle": "Mientras el corazón gira (clip float), las torres y murallas a 50 m disparan de noche con el alcance del día. Consume 1 cristal o 2 de carbón por noche."},
+        {"titulo": "Embajada en un pueblo mixto", "detalle": "Con 10 elfos oscuros o más, cualquier pueblo puede levantarla (120 de piedra, 30 de hierro): los mercaderes llegan también de noche y traen bienes raros (cristal, setas, seda)."}
+      ],
+      "modelos": [
+        {"id": "race_dark_elf_center", "nombre": "Obsidiana y cristal violeta", "material": "piedra y hierro", "animaciones": {"float": "El corazón y las esquirlas giran y flotan", "wave": "Ondean los estandartes"}}
+      ]
+    },
+    {
+      "id": "race_dark_elf_workshop",
+      "nombre": "Elfos oscuros: taller del sombrero",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Taller de 6 × 6 m bajo una seta gigante de 5,5 m: puerta ojival en el pie, láminas que brillan bajo el sombrero, banco de frascos, caldero que borbotea, bastidor de seda de araña y cristales colgantes.",
+      "propuestas": [
+        {"titulo": "Botica de setas", "detalle": "Taller de los elfos oscuros: 2 trabajadores convierten setas en medicina y en tinte. No necesita leña ni luz, y funciona de noche."},
+        {"titulo": "Seda de araña", "detalle": "Receta propia: produce seda (equivale a lino, sin necesidad de campos). Con ella el sastre hace ropa que cuenta como de lujo para el nivel 3 de las casas."},
+        {"titulo": "Crece solo", "detalle": "No se construye: se planta (10 de setas) en terreno con sombra y tarda dos estaciones en crecer. No cuesta troncos ni piedra."}
+      ],
+      "modelos": [
+        {"id": "race_dark_elf_workshop", "nombre": "Seta gigante violeta", "material": "setas y piedra", "animaciones": {"brew": "Borbotea el caldero", "sway": "Se mecen los cristales"}}
+      ]
+    },
+    {
+      "id": "race_dark_elf_storehouse",
+      "nombre": "Elfos oscuros: cámara de la garra",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de 6 × 6 m: cámara de seis caras de obsidiana con puerta ojival de hierro y cerradura violeta, bajo cuatro garras curvas de las que cuelgan capullos de seda con provisiones; arcones, setas y un cristal en la cumbre.",
+      "propuestas": [
+        {"titulo": "Almacén que no se saquea", "detalle": "Almacén de 400 de capacidad. De noche está vigilado por sus dueños: los ladrones y asaltantes que se acercan a 10 m son detectados aunque haya niebla de guerra."},
+        {"titulo": "Capullos de conserva", "detalle": "La carne y el pescado envueltos en seda duran todo el año sin sal ni ahumadero: sirve de despensa para un pueblo sin salina."},
+        {"titulo": "Cámara de cristal", "detalle": "Único sitio donde se guarda el cristal mágico de la familia de magia; sin ella el cristal se pierde al sol."}
+      ],
+      "modelos": [
+        {"id": "race_dark_elf_storehouse", "nombre": "Obsidiana y seda", "material": "piedra y hierro", "animaciones": {"sway": "Se mecen los capullos"}}
+      ]
+    },
+    {
+      "id": "race_dark_elf_mushroom_cave",
+      "nombre": "Elfos oscuros: cueva de setas",
+      "categoria": "Granja y riego",
+      "descripcion": "Edificio propio de los elfos oscuros, de 8 × 8 m: boca de cueva ojival en un peñasco de obsidiana entre dos setas gigantes, y delante tres bancales con setas luminosas en tres edades (recién sembradas, creciendo y maduras); cesto con la cosecha, esporas flotando y dos cristales colgantes.",
+      "propuestas": [
+        {"titulo": "Granja sin sol", "detalle": "Granja de los elfos oscuros: produce setas (comida) todo el año, también en invierno y de noche, sin depender de la estación ni de la fertilidad del suelo. Rinde la mitad que un campo de trigo en verano, pero no para nunca. 2 trabajadores."},
+        {"titulo": "Solo a la sombra", "detalle": "Se construye pegada a una ladera, una cantera agotada o un bosque denso. Aprovecha terreno que no sirve para cultivar."},
+        {"titulo": "Setas de botica y de luz", "detalle": "Parte de la cosecha son setas medicinales (para la botica) y luminosas: con ellas se fabrican faroles que no gastan aceite."}
+      ],
+      "modelos": [
+        {"id": "race_dark_elf_mushroom_cave", "nombre": "Obsidiana y setas violetas", "material": "piedra y setas", "animaciones": {"float": "Flotan las esporas", "sway": "Se mecen los cristales"}}
+      ]
+    },
+    {
+      "id": "race_dark_elf_tower",
+      "nombre": "Elfos oscuros: aguja del ojo",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de vigilancia de 3 × 3 m y 13 m de alto: una esquirla delgada de obsidiana con portal ojival, grietas de luz, un anillo de púas donde hacer guardia, un banderín y, sobre la punta, un ojo de cristal violeta que gira dentro de un aro.",
+      "propuestas": [
+        {"titulo": "Torre que ve de noche", "detalle": "De noche ve lo mismo que de día (40 m) y revela a los asaltantes aunque haya niebla de guerra; de día ve la mitad. Cuesta 50 de piedra y 5 de hierro."},
+        {"titulo": "Rayo del ojo", "detalle": "En vez de arqueros, el ojo dispara solo cada 6 s a un enemigo a 25 m si está atendida por 1 hechicero y consume 1 de cristal por asalto."},
+        {"titulo": "Vigía de ladrones", "detalle": "Los almacenes a 30 m no sufren robos nocturnos."}
+      ],
+      "modelos": [
+        {"id": "race_dark_elf_tower", "nombre": "Obsidiana y cristal", "material": "piedra", "animaciones": {"float": "El ojo gira y flota", "wave": "Ondea el banderín"}}
+      ]
+    },
+    {
+      "id": "race_orc_house",
+      "nombre": "Orcos: casa",
+      "categoria": "Edificios",
+      "descripcion": "La vivienda orca en tres niveles, de troncos sin desbastar y pieles remendadas con colmillos y huesos: tienda de pieles de 4 × 4 m sobre tres pares de palos; cabaña de troncos de 6 × 5 m con tejado de pieles, escudos y estacas; casa larga de 8 × 6 m sobre zócalo de piedra con pórtico de dos colmillos y cráneo, banderas, tambor y hoguera.",
+      "propuestas": [
+        {"titulo": "Los tres niveles de la casa orca", "detalle": "Alojan 3 / 6 / 10 orcos: son las casas con más residentes por coste (15 troncos y 5 de cuero / 35 y 12 / 70, 25 y 20 de piedra). Se construyen el doble de rápido, pero arden con facilidad."},
+        {"titulo": "Carne y fuego", "detalle": "No piden ropa ni mercado: su entorno se mide por tener una hoguera encendida a 10 m y carne en la despensa. Sin carne, pierden felicidad el doble de rápido."},
+        {"titulo": "Barrio que se defiende solo", "detalle": "Las estacas no son adorno: un asaltante que ataca una casa orca recibe daño, y sus residentes adultos pelean como milicia sin pasar por el cuartel."}
+      ],
+      "modelos": [
+        {"id": "race_orc_house_1", "nombre": "Nivel 1: tienda de pieles", "material": "cuero y troncos", "animaciones": {"burn": "Arde la hoguera"}},
+        {"id": "race_orc_house_2", "nombre": "Nivel 2: cabaña de troncos", "material": "cuero y troncos", "animaciones": {"burn": "Arde la hoguera"}},
+        {"id": "race_orc_house_3", "nombre": "Nivel 3: casa larga con colmillos", "material": "cuero, troncos y piedra", "animaciones": {"burn": "Arde la hoguera", "smoke": "Sale humo por el tejado", "wave": "Ondean las banderas"}}
+      ]
+    },
+    {
+      "id": "race_orc_center",
+      "nombre": "Orcos: salón del caudillo",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Centro del pueblo orco, de 14 × 12 m y 8 m de alto: gran casa larga de troncos sobre zócalo de piedra, con tejado de pieles remendadas bajo un costillar de cinco pares de colmillos gigantes; puerta entre colmillos de 5 m bajo un cráneo con cuernos, empalizadas, estacas, cuatro banderas, dos tambores de guerra y una hoguera.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de los orcos", "detalle": "Sustituye al centro humano cuando la raza inicial es orca. Cuesta solo troncos y cuero y hace además de cuartel: desde el primer día se pueden entrenar guerreros."},
+        {"titulo": "Tambores de guerra", "detalle": "Tocar los tambores llama a todos los adultos a las armas, como la campana, y durante un día pelean un 20 % mejor. Después, todo el pueblo trabaja un 10 % menos durante dos días."},
+        {"titulo": "Trofeos", "detalle": "Cada guarida de fieras o campamento de asaltantes destruido cuelga un trofeo en el salón: +1 de felicidad permanente para los orcos del pueblo, hasta 10."}
+      ],
+      "modelos": [
+        {"id": "race_orc_center", "nombre": "Troncos, pieles y colmillos", "material": "troncos, cuero y piedra", "animaciones": {"burn": "Arde la hoguera", "smoke": "Sale humo por el tejado", "wave": "Ondean las banderas"}}
+      ]
+    },
+    {
+      "id": "race_orc_workshop",
+      "nombre": "Orcos: fragua de chatarra",
+      "categoria": "Edificios",
+      "descripcion": "Taller de 6 × 5 m: cobertizo de troncos con pieles sobre los cabios y una empalizada detrás, hogar de piedra con llama, un peñasco por yunque, muela de afilar que gira, armero de hachas toscas y un montón de chatarra.",
+      "propuestas": [
+        {"titulo": "Armería orca", "detalle": "Hace armas con la mitad de hierro que la herrería (las refunde de chatarra), pero solo armas cuerpo a cuerpo y de calidad normal. 2 trabajadores."},
+        {"titulo": "Botín a hierro", "detalle": "Convierte el botín de las incursiones rechazadas (armas rotas de los asaltantes) en hierro: cada asaltante abatido deja 2 de chatarra que este taller refunde."},
+        {"titulo": "Muela del pueblo", "detalle": "Con la muela (clip turn) las herramientas de leñadores y canteros a 40 m duran un 25 % más; cualquier raza puede usarla."}
+      ],
+      "modelos": [
+        {"id": "race_orc_workshop", "nombre": "Troncos, pieles y hierro", "material": "troncos, cuero e hierro", "animaciones": {"burn": "Arde el hogar", "turn": "Gira la muela"}}
+      ]
+    },
+    {
+      "id": "race_orc_storehouse",
+      "nombre": "Orcos: secadero en alto",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de 6 × 5 m: plataforma de troncos sobre cuatro postes a 1,5 m del suelo, con tejado de pieles y colmillos cruzados; jamones y piezas de caza colgando de una viga, barriles, sacos, escalera de mano, huesos debajo y estacas alrededor.",
+      "propuestas": [
+        {"titulo": "Despensa de carne", "detalle": "Almacén orco de 250 de capacidad solo para carne, pescado y cuero: la carne colgada se seca sola (cuenta como ahumada) y dura todo el invierno."},
+        {"titulo": "A salvo de las fieras", "detalle": "Lobos, osos y ratas no alcanzan lo que guarda. Un almacén normal cerca del bosque pierde comida con las fieras; este no."},
+        {"titulo": "Reparto del cazador", "detalle": "Los cazadores a 60 m dejan aquí la caza en vez de ir al almacén central: un 30 % más de viajes útiles."}
+      ],
+      "modelos": [
+        {"id": "race_orc_storehouse", "nombre": "Troncos y pieles", "material": "troncos y cuero", "animaciones": {"sway": "Se mecen las piezas colgadas"}}
+      ]
+    },
+    {
+      "id": "race_orc_fighting_pit",
+      "nombre": "Orcos: foso de lucha",
+      "categoria": "Vida del pueblo",
+      "destacado": true,
+      "descripcion": "Edificio propio de los orcos, de 10 × 10 m: ruedo de arena cercado por estacas afiladas, con puerta entre dos colmillos bajo un cráneo con cuernos, poste con cadena en el centro, dos gradas de troncos al fondo, braseros, cuatro banderas, cráneos en picas, tambor y armero.",
+      "propuestas": [
+        {"titulo": "Entretenimiento de los orcos", "detalle": "Cubre la necesidad de entretenimiento de los orcos en 60 m sin cerveza ni taberna. A las otras razas vecinas les baja el entorno."},
+        {"titulo": "Entrenamiento", "detalle": "Los orcos que luchan aquí (2 a la vez, sin armas de verdad) ganan experiencia de combate sin pasar por el cuartel; a cambio, cada estación uno acaba herido unos días."},
+        {"titulo": "Duelo por el mando", "detalle": "Una vez al año se puede retar al caudillo: el pueblo gana +10 de felicidad orca y un bono de combate durante una estación."}
+      ],
+      "modelos": [
+        {"id": "race_orc_fighting_pit", "nombre": "Estacas, colmillos y arena", "material": "troncos y cuero", "animaciones": {"burn": "Arden los braseros", "wave": "Ondean las banderas"}}
+      ]
+    },
+    {
+      "id": "race_orc_tower",
+      "nombre": "Orcos: atalaya del tambor",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de vigilancia de 4 × 4 m y 9 m de alto: cuatro troncos inclinados con riostras, plataforma de troncos con baranda y escudos, tejado de pieles con colmillos cruzados, tambor de alarma, escalera de mano, bandera y estacas alrededor.",
+      "propuestas": [
+        {"titulo": "Torre de vigilancia barata", "detalle": "Cuesta solo 25 de troncos y 5 de cuero y se levanta en un día, pero arde y aguanta la mitad que la de piedra. 2 lanzadores de jabalinas (alcance corto, mucho daño)."},
+        {"titulo": "Tambor de alarma", "detalle": "Al ver enemigos toca el tambor: los orcos a 50 m dejan el trabajo y acuden armados sin que el jugador lo ordene."},
+        {"titulo": "Puesto avanzado", "detalle": "Se puede construir fuera del territorio del pueblo, a un día de camino: reclama el terreno a 30 m para talar y cazar."}
+      ],
+      "modelos": [
+        {"id": "race_orc_tower", "nombre": "Troncos y pieles", "material": "troncos y cuero", "animaciones": {"wave": "Ondea la bandera"}}
+      ]
+    },
+    {
+      "id": "race_cat_house",
+      "nombre": "Gatunos: casa",
+      "categoria": "Edificios",
+      "descripcion": "La vivienda gatuna en tres niveles, de cubos de estuco cálido con azotea para tumbarse al sol, toldos de rayas y vigas que asoman: cubo de 4 × 4 m con azotea, toldo y escalera; casa de 6 × 5 m con segundo cuerpo, pérgola y torrecilla de cúpula verde; casa de 8 × 6 m con logia de tres arcos, dos terrazas, torreón con cúpula de cebolla y poste de trepar.",
+      "propuestas": [
+        {"titulo": "Los tres niveles de la casa gatuna", "detalle": "Alojan 3 / 5 / 8 gatunos. Cuestan arcilla y pocos troncos (15 de arcilla y 5 troncos / 35 y 10 / 70, 20 y 10 de lino para los toldos). Frescas en verano; en invierno gastan un 20 % más de leña (rasgo de frío de la raza)."},
+        {"titulo": "Sitio al sol", "detalle": "La azotea cuenta como entorno: una casa gatuna sin edificio más alto pegado al sur tiene +2 de felicidad. Obliga a escalonar el barrio."},
+        {"titulo": "Pescado en la azotea", "detalle": "Desde el nivel 1 secan su propio pescado arriba: cubren la comida variada sin ahumadero si hay un pescador en la casa."}
+      ],
+      "modelos": [
+        {"id": "race_cat_house_1", "nombre": "Nivel 1: cubo con azotea", "material": "arcilla y lino"},
+        {"id": "race_cat_house_2", "nombre": "Nivel 2: dos cuerpos y pérgola", "material": "arcilla, troncos y lino", "animaciones": {"sway": "Se mece el farol"}},
+        {"id": "race_cat_house_3", "nombre": "Nivel 3: terrazas y torreón", "material": "arcilla, troncos y lino", "animaciones": {"sway": "Se mecen los faroles"}}
+      ]
+    },
+    {
+      "id": "race_cat_center",
+      "nombre": "Gatunos: palacio del sol",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Centro del pueblo gatuno, de 12 × 12 m y 17 m de alto: cuerpo de estuco con arcada de cinco arcos y escalinata, salón alto con terrazas, tambor con ventanas y una gran cúpula de cebolla verde rematada por un sol de oro que gira; cuatro torreones con cúpulas, toldos, pérgolas con cojines, postes de trepar, faroles y una fuente con un pez dorado.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de los gatunos", "detalle": "Sustituye al centro humano cuando la raza inicial es gatuna. Su arcada hace de mercado cubierto desde el primer día (2 puestos) y sus terrazas dan entorno alto a 25 m."},
+        {"titulo": "Vigía de noche", "detalle": "Los gatunos ven de noche (rasgo nightVision): desde los torreones el pueblo mantiene de noche la misma distancia de visión que de día."},
+        {"titulo": "Bazar de un pueblo mixto", "detalle": "Con 15 gatunos o más, cualquier pueblo puede construirlo (100 de arcilla, 40 de troncos, 20 de lino, 15 de oro): llega un mercader más por estación y paga un 10 % mejor el pescado y las telas."}
+      ],
+      "modelos": [
+        {"id": "race_cat_center", "nombre": "Estuco y cúpulas verdes", "material": "arcilla, troncos, lino y oro", "animaciones": {"turn": "Gira el sol de la cúpula", "wave": "Ondean las banderas", "sway": "Se mecen los faroles"}}
+      ]
+    },
+    {
+      "id": "race_cat_workshop",
+      "nombre": "Gatunos: casa de hilanderas",
+      "categoria": "Edificios",
+      "descripcion": "Taller de 6 × 6 m: cubo de estuco con un gran toldo sobre postes que da sombra al trabajo; ovillos de lana de colores, una rueca que gira, tendederos de pescado abajo y en la azotea, tina con la pesca del día y poste de trepar.",
+      "propuestas": [
+        {"titulo": "Hilandería", "detalle": "Convierte lana o lino en hilo y en ropa en un solo edificio (hilandería + sastre), con 2 trabajadores. Los gatunos son lentos construyendo (90 %) pero aquí rinden un 20 % más."},
+        {"titulo": "Secadero de pescado", "detalle": "Los tendederos son un segundo oficio del edificio: 1 trabajador seca pescado (dura un año). Aprovecha que la raza pesca al 125 %."},
+        {"titulo": "Toldos para el pueblo", "detalle": "Fabrica toldos: una mejora barata (5 de lino) para puestos y casas de cualquier raza que sube su entorno en verano."}
+      ],
+      "modelos": [
+        {"id": "race_cat_workshop", "nombre": "Estuco y toldo", "material": "arcilla, troncos y lino", "animaciones": {"turn": "Gira la rueca"}}
+      ]
+    },
+    {
+      "id": "race_cat_storehouse",
+      "nombre": "Gatunos: granero sin ratones",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de 5 × 5 m: tinaja redonda de estuco de 6 m con cúpula verde, levantada sobre seis pilares con sombrerete de piedra que un ratón no puede trepar; portillo alto con escalera de mano, tinajas alrededor y un gato de oro en lo alto que mueve la pata.",
+      "propuestas": [
+        {"titulo": "Granero sin plagas", "detalle": "Almacén de 300 de capacidad para grano, harina y pan: nunca sufre plaga de ratas (suceso que en un granero normal destruye parte del grano). Cuesta 40 de arcilla y 10 de piedra."},
+        {"titulo": "Cazarratones del barrio", "detalle": "Mientras viva un gatuno a 30 m, los almacenes y casas de cualquier raza en ese radio tampoco sufren ratas ni la enfermedad que traen."},
+        {"titulo": "Gato de la suerte", "detalle": "El gato de oro atrae a los mercaderes: uno de cada tres deja una propina de monedas al pueblo cuando comercia a menos de 20 m."}
+      ],
+      "modelos": [
+        {"id": "race_cat_storehouse", "nombre": "Estuco y cúpula verde", "material": "arcilla, piedra y oro", "animaciones": {"wave": "El gato de oro mueve la pata"}}
+      ]
+    },
+    {
+      "id": "race_cat_sun_terrace",
+      "nombre": "Gatunos: terraza del sol",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Edificio propio de los gatunos, de 8 × 6 m: tres terrazas escalonadas de estuco con suelo de barro cocido, llenas de cojines, alfombras, mesitas con pescado, tres sombrillas de rayas (la de arriba gira), una fuente con un pez dorado, postes de trepar, macetas, ovillos y nichos frescos para la siesta.",
+      "propuestas": [
+        {"titulo": "Descanso de los gatunos", "detalle": "Cubre a la vez entretenimiento y descanso de los gatunos en 50 m: los que la tienen cerca recuperan el cansancio el doble de rápido (compensa que construyen al 90 %)."},
+        {"titulo": "Solo con sol", "detalle": "No funciona con lluvia, nieve ni de noche, ni si tiene un edificio más alto pegado al sur. En biomas cálidos funciona todo el año."},
+        {"titulo": "Plaza para todos", "detalle": "Cuenta como plaza: da entorno alto a las casas de cualquier raza a 20 m y sitio para 2 puestos de mercado en su terraza baja."}
+      ],
+      "modelos": [
+        {"id": "race_cat_sun_terrace", "nombre": "Estuco, cojines y sombrillas", "material": "arcilla y lino", "animaciones": {"turn": "Gira la sombrilla alta y mana la fuente"}}
+      ]
+    },
+    {
+      "id": "race_cat_tower",
+      "nombre": "Gatunos: alminar del vigía",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de vigilancia de 3 × 3 m y 12 m de alto: fuste redondo de estuco con dos cinchos y ventanas redondas, balcón volado con baranda, toldo y cojines, torrecilla con cúpula de cebolla verde, bandera y faroles; al pie, un poste de trepar.",
+      "propuestas": [
+        {"titulo": "Vigía que ve de noche", "detalle": "Atendida por un gatuno, ve de noche lo mismo que de día (rasgo nightVision). Cuesta 40 de arcilla y 10 de troncos. 1 vigía y 1 hondero."},
+        {"titulo": "Pregonero", "detalle": "Desde el balcón se anuncian los mercaderes: el pueblo sabe con un día de antelación qué traen y qué buscan."},
+        {"titulo": "Mirador de pesca", "detalle": "Junto al agua, señala los bancos de peces: los pescadores a 50 m pescan un 15 % más."}
+      ],
+      "modelos": [
+        {"id": "race_cat_tower", "nombre": "Estuco y cúpula verde", "material": "arcilla, troncos y lino", "animaciones": {"wave": "Ondea la bandera", "sway": "Se mecen los faroles"}}
+      ]
+    },
+    {
+      "id": "race_fox_house",
+      "nombre": "Zorros: casa",
+      "categoria": "Edificios",
+      "descripcion": "La vivienda de los zorros en tres niveles, de yeso blanco entre postes rojos sobre zócalo de piedra, con tejados de teja oscura de aleros levantados, biombos de papel, puerta redonda roja y farolillos: casita de 4 × 4 m a cuatro aguas; casa de 6 × 5 m con galería de madera y tejado a dos aguas combado; casa de 8 × 6 m de dos plantas con tejadillo intermedio, balcón, ristra de farolillos, linternas de piedra y arces.",
+      "propuestas": [
+        {"titulo": "Los tres niveles de la casa de los zorros", "detalle": "Alojan 2 / 4 / 7 zorros. Cuestan troncos, arcilla y tejas (el nivel 1 ya pide 5 de tejas; el 3, 25). Son las casas que más entorno propio tienen: suman +1 de felicidad por nivel sin necesidad de decoraciones."},
+        {"titulo": "Farolillos", "detalle": "De noche cada casa ilumina 8 m (los zorros no ven a oscuras): un barrio de zorros hace de alumbrado del pueblo sin gastar antorchas, a cambio de 1 de lino al año por casa (papel)."},
+        {"titulo": "Paredes de papel", "detalle": "Arden como la madera y aguantan mal el frío: en invierno duro gastan un 30 % más de leña, salvo junto a la casa de té o un baño caliente."}
+      ],
+      "modelos": [
+        {"id": "race_fox_house_1", "nombre": "Nivel 1: casita a cuatro aguas", "material": "troncos, arcilla y tejas", "animaciones": {"sway": "Se mece el farolillo"}},
+        {"id": "race_fox_house_2", "nombre": "Nivel 2: casa con galería", "material": "troncos, arcilla y tejas", "animaciones": {"sway": "Se mecen los farolillos"}},
+        {"id": "race_fox_house_3", "nombre": "Nivel 3: casa de dos plantas", "material": "troncos, arcilla y tejas", "animaciones": {"sway": "Se mece la ristra de farolillos"}}
+      ]
+    },
+    {
+      "id": "race_fox_center",
+      "nombre": "Zorros: salón de los farolillos",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Centro del pueblo de los zorros, de 12 × 13 m y 15 m de alto: pagoda de tres cuerpos sobre un estrado de piedra, con tres tejados de aleros levantados y una aguja dorada de anillos; puerta redonda roja, biombos de papel, balcones; delante, un torii de 4,5 m, dos zorros de piedra con babero rojo, ristras de farolillos, linternas de piedra, estandartes verticales y arces.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de los zorros", "detalle": "Sustituye al centro humano cuando la raza inicial es zorra. Cuenta además como edificio religioso pequeño (el torii y los zorros de piedra): cubre la necesidad de fe en 40 m desde el primer día."},
+        {"titulo": "Fiesta de los farolillos", "detalle": "Una vez al año, en otoño, el pueblo puede celebrar la fiesta (20 de comida, 5 de lino): +15 de felicidad durante una estación y un inmigrante zorro seguro."},
+        {"titulo": "Casa de trato", "detalle": "Los zorros son comerciantes: con este salón, los precios de compra a mercaderes bajan un 10 % para todo el pueblo, sea de la raza que sea."}
+      ],
+      "modelos": [
+        {"id": "race_fox_center", "nombre": "Postes rojos y teja oscura", "material": "troncos, arcilla, tejas, piedra y oro", "animaciones": {"sway": "Se mecen los farolillos", "wave": "Se mecen los estandartes"}}
+      ]
+    },
+    {
+      "id": "race_fox_workshop",
+      "nombre": "Zorros: alfar",
+      "categoria": "Edificios",
+      "descripcion": "Taller de 8 × 5 m: cobertizo de postes rojos y teja con cortina azul de tres paños en la entrada, torno con una vasija que gira, estantes de loza, y al lado un horno de cúpula con chimenea que humea y leña apilada.",
+      "propuestas": [
+        {"titulo": "Alfarería fina", "detalle": "Versión de los zorros del alfar: con arcilla y leña produce loza, un bien de lujo que las casas de nivel 3 de cualquier raza piden y que los mercaderes pagan al triple que la arcilla."},
+        {"titulo": "Tejas", "detalle": "El mismo horno cuece tejas un 25 % más rápido que el tejar humano: un pueblo mixto con zorros techa antes."},
+        {"titulo": "Cortina de tienda", "detalle": "La cortina indica venta directa: los vecinos compran la loza en el taller sin pasar por el mercado."}
+      ],
+      "modelos": [
+        {"id": "race_fox_workshop", "nombre": "Postes rojos, teja y horno", "material": "troncos, arcilla y tejas", "animaciones": {"turn": "Gira el torno", "smoke": "Humea el horno", "wave": "Se mueve la cortina", "sway": "Se mece el farolillo"}}
+      ]
+    },
+    {
+      "id": "race_fox_storehouse",
+      "nombre": "Zorros: almacén de yeso",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de 5 × 4 m y 6 m de alto: muros gruesos de yeso blanco con zócalo de teja oscura y juntas blancas en diagonal, puerta doble pesada con herrajes dorados que se abre, ventanuco con reja, tejado combado con remates dorados; balas de arroz, barriles y farolillos.",
+      "propuestas": [
+        {"titulo": "Almacén ignífugo", "detalle": "Almacén de 350 de capacidad cuyos muros de yeso no arden: en un barrio de casas de papel es el único sitio donde lo guardado sobrevive a un incendio. Cuesta 30 de arcilla, 20 de troncos y 15 de tejas."},
+        {"titulo": "Arroz", "detalle": "Guarda el arroz (cultivo nuevo de terreno inundado, propio de zorros y ranas) sin que se pudra con la humedad."},
+        {"titulo": "Depósito de mercaderes", "detalle": "Los mercaderes dejan aquí género en consigna: se puede comprar su mercancía hasta una estación después de que se marchen."}
+      ],
+      "modelos": [
+        {"id": "race_fox_storehouse", "nombre": "Yeso blanco y teja", "material": "arcilla, troncos y tejas", "animaciones": {"open": "Se abre la puerta doble", "close": "Se cierra", "sway": "Se mecen los farolillos"}}
+      ]
+    },
+    {
+      "id": "race_fox_tea_house",
+      "nombre": "Zorros: casa de té",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Edificio propio de los zorros, de 8 × 8 m: pabellón de postes rojos y biombos de papel sobre una tarima, con tejado de aleros levantados; en la galería, la mesa baja con la tetera humeando, tazas y cojines. Jardín con torii de entrada, piedras de paso, estanque con nenúfares, pila de agua con caña, hilera de matas de té, linternas de piedra, arce y dos ristras de farolillos.",
+      "propuestas": [
+        {"titulo": "Taberna sin cerveza", "detalle": "Cubre el entretenimiento en 60 m consumiendo té (cultivo nuevo de ladera) en vez de cerveza: sirve a zorros y a cualquier raza, y no provoca peleas."},
+        {"titulo": "Calor en invierno", "detalle": "Las casas de papel de los zorros a 20 m no sufren la penalización de frío: los vecinos pasan aquí las tardes de invierno."},
+        {"titulo": "Trato con mercaderes", "detalle": "Los mercaderes que toman té se quedan un día más y aceptan un 10 % menos de precio."}
+      ],
+      "modelos": [
+        {"id": "race_fox_tea_house", "nombre": "Pabellón, jardín y torii", "material": "troncos, arcilla, tejas y piedra", "animaciones": {"smoke": "Humea la tetera", "sway": "Se mecen los farolillos"}}
+      ]
+    },
+    {
+      "id": "race_fox_tower",
+      "nombre": "Zorros: torre de la campana",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de vigilancia de 3 × 3 m y 10 m de alto: cuatro postes rojos inclinados con travesaños y riostras sobre un zócalo de piedra, plataforma con baranda roja, campana de bronce bajo un tejadillo de aleros levantados con remate dorado, escalera de mano y farolillos.",
+      "propuestas": [
+        {"titulo": "Torre de incendios", "detalle": "Vigila el fuego más que al enemigo: los incendios a 60 m se detectan al instante y los vecinos acuden con cubos el doble de rápido. Imprescindible en un barrio de casas de papel."},
+        {"titulo": "Campana del pueblo", "detalle": "Hace de campana de alarma (llama a la milicia) sin necesidad del centro del pueblo. Cuesta 30 de troncos, 10 de tejas y 5 de hierro."},
+        {"titulo": "Horas", "detalle": "Marca las horas: los trabajadores a 80 m empiezan y acaban la jornada a la vez y pierden menos tiempo (+5 % de producción)."}
+      ],
+      "modelos": [
+        {"id": "race_fox_tower", "nombre": "Postes rojos y campana", "material": "troncos, tejas e hierro", "animaciones": {"ring": "Se balancea la campana", "sway": "Se mecen los farolillos"}}
+      ]
+    },
+    {
+      "id": "race_lizard_house",
+      "nombre": "Lagartos: casa",
+      "categoria": "Edificios",
+      "descripcion": "La vivienda de los lagartos en tres niveles, sobre basamentos de arenisca en talud con una losa caliente para tomar el sol: choza de cañas de 4 × 4 m con tejado de palma muy inclinado; casa de piedra de 6 × 5 m con puerta trapezoidal, greca pintada, disco solar y tejado de palma; casa de 8 × 6 m sobre dos cuerpos con escalinata entre alfardas y cabezas de serpiente, cresta de piedra con plumas, braseros, estandartes de plumas y un ala de cañas.",
+      "propuestas": [
+        {"titulo": "Los tres niveles de la casa de los lagartos", "detalle": "Alojan 3 / 5 / 8 lagartos. El nivel 1 cuesta cañas y paja; el 2 y el 3, piedra (30 / 70) y algo de oro para el disco solar. El basamento las libra de inundaciones y de la humedad."},
+        {"titulo": "Sangre fría", "detalle": "Sus residentes rinden según la temperatura: +15 % en verano y en biomas cálidos, −15 % en invierno. La losa caliente de cada casa anula la penalización los días despejados."},
+        {"titulo": "Sin leña en verano", "detalle": "No gastan leña de primavera a otoño; en invierno gastan el doble. Empuja a construirlas en desierto, selva y pantano."}
+      ],
+      "modelos": [
+        {"id": "race_lizard_house_1", "nombre": "Nivel 1: choza de cañas", "material": "paja y troncos"},
+        {"id": "race_lizard_house_2", "nombre": "Nivel 2: casa de piedra y palma", "material": "piedra y paja"},
+        {"id": "race_lizard_house_3", "nombre": "Nivel 3: casa con cresta y escalinata", "material": "piedra, paja y oro", "animaciones": {"burn": "Arden los braseros"}}
+      ]
+    },
+    {
+      "id": "race_lizard_center",
+      "nombre": "Lagartos: palacio del sol",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Centro del pueblo de los lagartos, de 14 × 12 m y 8 m de alto: patio sobre dos cuerpos escalonados con escalinata y cabezas de serpiente emplumada; al fondo, una sala larga de cinco vanos con greca pintada y cresta con un gran disco solar de oro que gira; a los lados, dos santuarios sobre su propio basamento con tejado de palma; trono de jade, losas para tomar el sol, braseros, estandartes y palmeras.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de los lagartos", "detalle": "Sustituye al centro humano cuando la raza inicial es lagarta. El patio elevado sirve de almacén inicial y no se inunda; los braseros dan luz y calor a 20 m (los lagartos trabajan ahí al 100 % en invierno)."},
+        {"titulo": "Disco solar", "detalle": "Mientras gira (clip turn), los cultivos a 60 m maduran un 10 % antes. Se para en invierno y con lluvia."},
+        {"titulo": "Juicio del sol", "detalle": "En un pueblo mixto con 15 lagartos o más (150 de piedra, 20 de oro): los delitos y peleas del pueblo se resuelven aquí y la felicidad no baja por hacinamiento hasta un 20 % más de población."}
+      ],
+      "modelos": [
+        {"id": "race_lizard_center", "nombre": "Arenisca, jade y oro", "material": "piedra, paja y oro", "animaciones": {"turn": "Gira el disco solar", "burn": "Arden los braseros", "wave": "Se mecen los estandartes"}}
+      ]
+    },
+    {
+      "id": "race_lizard_workshop",
+      "nombre": "Lagartos: taller de jade",
+      "categoria": "Edificios",
+      "descripcion": "Taller de 6 × 5 m sobre un basamento: cuatro pilares pintados sostienen un tejado de palma a cuatro aguas; banco de piedra con bloques de jade en bruto y tallados, rueda de pulir que gira, navajas de obsidiana puestas a secar, tinajas, una losa caliente y un estandarte de plumas.",
+      "propuestas": [
+        {"titulo": "Lapidario", "detalle": "Convierte piedra y oro en joyas de jade, un bien de lujo para las casas de nivel 3 y el que mejor pagan los mercaderes. 2 trabajadores; el jade en bruto sale de la cantera con una probabilidad baja."},
+        {"titulo": "Herramientas sin hierro", "detalle": "Hace herramientas de obsidiana con solo piedra: duran la mitad pero no gastan hierro. Permite a un pueblo arrancar en un mapa sin mineral."},
+        {"titulo": "Ofrendas", "detalle": "Sus joyas, entregadas en la pirámide o en el palacio, valen como ofrenda en vez de comida: la fe no compite con la despensa."}
+      ],
+      "modelos": [
+        {"id": "race_lizard_workshop", "nombre": "Pilares pintados y palma", "material": "piedra y paja", "animaciones": {"turn": "Gira la rueda de pulir"}}
+      ]
+    },
+    {
+      "id": "race_lizard_storehouse",
+      "nombre": "Lagartos: graneros de tinaja",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de 6 × 5 m sobre un basamento: dos graneros de barro en forma de tinaja (4,8 y 3,4 m) con banda pintada, portillo alto y sombrero cónico de palma; escalera de mano, cestos de mazorcas, una tinaja y un estandarte de plumas.",
+      "propuestas": [
+        {"titulo": "Granero de maíz", "detalle": "Almacén de 300 de capacidad para grano: el barro lo mantiene seco en biomas húmedos, donde un granero de madera pierde un 15 % al año. Cuesta 40 de arcilla y 10 de paja."},
+        {"titulo": "Maíz", "detalle": "Introduce el maíz, cultivo de calor que rinde el doble que el trigo en biomas cálidos y nada en los fríos; solo se guarda bien aquí."},
+        {"titulo": "Uno por barrio", "detalle": "Es barato y pequeño: pensado para repartir varios por el pueblo. Cada uno acorta los viajes a por comida de las casas a 30 m."}
+      ],
+      "modelos": [
+        {"id": "race_lizard_storehouse", "nombre": "Barro pintado y palma", "material": "arcilla, piedra y paja"}
+      ]
+    },
+    {
+      "id": "race_lizard_hatchery",
+      "nombre": "Lagartos: criadero de piedras calientes",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Edificio propio de los lagartos, de 8 × 6 m sobre un basamento: lecho de arena en su bordillo con cinco losas calientes, cada una con su nidada de huevos (uno está eclosionando y se mueve), un hogar encendido en el centro, sombra de palma al fondo y un espejo solar de oro en un poste que oscila para llevar el sol a los huevos.",
+      "propuestas": [
+        {"titulo": "Nacimientos de los lagartos", "detalle": "Los lagartos no crían en casa: ponen aquí. Con criadero atendido (1 cuidador), nacen el doble de lagartos al año y todos sobreviven; sin él, la mitad de las nidadas se pierde con el frío."},
+        {"titulo": "Pide calor", "detalle": "Consume 1 de leña al día en otoño e invierno para mantener las piedras calientes; en verano y en biomas cálidos no consume nada."},
+        {"titulo": "Huevos de corral", "detalle": "Alternativa para cualquier raza: criadero de aves (gallinas, patos) que da huevos como comida con 1 trabajador y grano."}
+      ],
+      "modelos": [
+        {"id": "race_lizard_hatchery", "nombre": "Arena, losas y palma", "material": "piedra, paja y oro", "animaciones": {"burn": "Arde el hogar", "hatch": "Se mueve el huevo que eclosiona", "turn": "Oscila el espejo solar"}}
+      ]
+    },
+    {
+      "id": "race_lizard_tower",
+      "nombre": "Lagartos: pilón del espejo",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de vigilancia de 4 × 4 m y 8 m de alto: pilón de tres cuerpos escalonados con grecas pintadas, caseta de guardia en lo alto con cresta de plumas y un espejo solar de oro que oscila; puerta trapezoidal, braseros y estandartes de plumas al pie.",
+      "propuestas": [
+        {"titulo": "Torre de señales", "detalle": "Con sol, dos pilones a la vista se pasan avisos al instante a cualquier distancia: la alarma de un puesto lejano llega al pueblo sin mensajero. De noche usan los braseros (alcance 60 m)."},
+        {"titulo": "Torre de piedra maciza", "detalle": "La más resistente de las torres de raza: aguanta el triple, pero solo aloja 2 honderos y cuesta 90 de piedra."},
+        {"titulo": "Deslumbrar", "detalle": "A mediodía el espejo ciega a los asaltantes que se acercan por el sur: fallan la mitad de sus disparos."}
+      ],
+      "modelos": [
+        {"id": "race_lizard_tower", "nombre": "Arenisca pintada y oro", "material": "piedra y oro", "animaciones": {"turn": "Oscila el espejo", "burn": "Arden los braseros"}}
+      ]
+    },
+    {
+      "id": "race_frog_house",
+      "nombre": "Ranas: casa",
+      "categoria": "Edificios",
+      "descripcion": "La vivienda de las ranas en tres niveles, siempre en su propia charca: choza redonda de juncos de 4 × 4 m sobre pilotes con cúpula de paja y musgo y rampa; casa de 6 × 5 m con una segunda tarima baja para pescar; casa de 8 × 6 m de dos alturas (un cuarto alto sobre la cúpula cortada) con una choza aneja unida por pasarela. Nenúfares, espadañas que se mecen y faroles de calabaza.",
+      "propuestas": [
+        {"titulo": "Los tres niveles de la casa de las ranas", "detalle": "Alojan 2 / 4 / 7 ranas. Cuestan paja (juncos) y pocos troncos: 15 de paja y 5 troncos / 30 y 12 / 60 y 25. Solo se construyen sobre agua somera, orilla o pantano: no quitan suelo de cultivo a nadie."},
+        {"titulo": "Agua y pesca en casa", "detalle": "No necesitan pozo y cada casa pesca por sí misma 1 / 2 / 3 raciones al día si la charca no está helada."},
+        {"titulo": "Invierno bajo el hielo", "detalle": "Con la charca helada sus residentes trabajan al 50 %, salvo en biomas templados o si hay un baño caliente a 30 m. No arden: los incendios se paran en el agua."}
+      ],
+      "modelos": [
+        {"id": "race_frog_house_1", "nombre": "Nivel 1: choza en la charca", "material": "paja y troncos", "animaciones": {"sway": "Se mecen las espadañas y el farol"}},
+        {"id": "race_frog_house_2", "nombre": "Nivel 2: casa con tarima de pesca", "material": "paja y troncos", "animaciones": {"sway": "Se mecen las espadañas y el farol"}},
+        {"id": "race_frog_house_3", "nombre": "Nivel 3: casa de dos alturas", "material": "paja y troncos", "animaciones": {"sway": "Se mecen las espadañas y los faroles"}}
+      ]
+    },
+    {
+      "id": "race_frog_center",
+      "nombre": "Ranas: gran cabaña de la charca",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Centro del pueblo de las ranas, en una charca de 12 × 12 m: gran cabaña redonda de juncos sobre pilotes con cúpula de musgo y un cuarto del farol en lo alto, del que flota una luz; cuatro chozas en las diagonales sobre sus tarimas, pasarelas, rampa ancha de entrada entre dos tótems de ranas, faroles de calabaza, nenúfares y espadañas.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de las ranas", "detalle": "Sustituye al centro humano cuando la raza inicial es rana. Se coloca sobre agua somera o crea su propia charca en terreno llano junto a un río; hace de almacén inicial y de pozo para todo el pueblo."},
+        {"titulo": "Coro de la noche", "detalle": "De noche las ranas cantan: el pueblo se entera de cualquier asaltante o fiera que cruce agua a 60 m, aunque haya niebla de guerra."},
+        {"titulo": "Humedal del pueblo", "detalle": "En un pueblo mixto con 15 ranas o más (60 de paja, 40 de troncos): limpia el agua aguas abajo (menos contagio) y los huertos a 30 m no sufren sequía."}
+      ],
+      "modelos": [
+        {"id": "race_frog_center", "nombre": "Juncos, musgo y tarimas", "material": "paja y troncos", "animaciones": {"float": "Flota la luz del farol", "sway": "Se mecen espadañas y faroles"}}
+      ]
+    },
+    {
+      "id": "race_frog_workshop",
+      "nombre": "Ranas: tarima de las redes",
+      "categoria": "Edificios",
+      "descripcion": "Taller en una charca de 6 × 6 m: tarima rectangular sobre pilotes con cobertizo de esteras de junco, caseta del cordel, redes tendidas a secar que se mecen, nasas de junco, tinaja, rampa y una barca de juncos amarrada que cabecea.",
+      "propuestas": [
+        {"titulo": "Redes y nasas", "detalle": "Taller de las ranas: con paja y lino hace redes. Un pescador con red pesca un 40 % más; con nasas, la pesca sigue aunque el pescador duerma."},
+        {"titulo": "Barcas de junco", "detalle": "Construye la barca de juncos (familia de transporte): la más barata del juego, sin troncos, para cruzar lagos y pescar lejos de la orilla."},
+        {"titulo": "Esteras", "detalle": "Teje esteras de junco: sustituyen a la paja de los tejados en casas de cualquier raza y duran el doble."}
+      ],
+      "modelos": [
+        {"id": "race_frog_workshop", "nombre": "Tarima, esteras y barca", "material": "paja, troncos y lino", "animaciones": {"sway": "Se mecen las redes, las espadañas y el farol", "float": "Cabecea la barca"}}
+      ]
+    },
+    {
+      "id": "race_frog_storehouse",
+      "nombre": "Ranas: tinajero de la charca",
+      "categoria": "Edificios",
+      "descripcion": "Almacén en una charca de 6 × 6 m: tarima redonda sobre pilotes bajo una cúpula de juncos y musgo sin paredes, con tinajas selladas, calabazas colgadas del alero, rampa, y cestos que flotan atados a los pilotes para guardar el género en fresco.",
+      "propuestas": [
+        {"titulo": "Fresquera", "detalle": "Almacén de 250 de capacidad: el pescado y la fruta guardados en los cestos del agua duran el triple en verano. En invierno, con hielo, conserva como una nevera."},
+        {"titulo": "Sobre el agua", "detalle": "Como las casas de las ranas, se construye en agua somera: los pescadores descargan sin salir a tierra y hacen un 25 % más de viajes."},
+        {"titulo": "A salvo del fuego", "detalle": "No arde ni lo alcanzan las ratas; pero una crecida del río se lleva un 10 % de lo guardado."}
+      ],
+      "modelos": [
+        {"id": "race_frog_storehouse", "nombre": "Cúpula de juncos y tinajas", "material": "paja, troncos y arcilla", "animaciones": {"sway": "Se mecen las calabazas y las espadañas", "float": "Flotan los cestos"}}
+      ]
+    },
+    {
+      "id": "race_frog_lily_market",
+      "nombre": "Ranas: mercado de los nenúfares",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Edificio propio de las ranas, en una charca de 10 × 8 m: una pasarela de tablas con seis puestos que flotan sobre nenúfares gigantes, cada uno con su género (tinajas, cestos de pescado, calabazas, esteras, flores, tarros de luz) y una hoja por sombrilla; caseta del peso al fondo, faroles de calabaza, tótem, espadañas y la barca de un cliente.",
+      "propuestas": [
+        {"titulo": "Mercado sobre el agua", "detalle": "Mercado de las ranas: 6 puestos en terreno que nadie más puede usar (agua somera). Reparte comida y bienes a las casas a 70 m, y los pescadores venden directamente desde la barca."},
+        {"titulo": "Puerto de mercaderes", "detalle": "Si el pueblo tiene río o lago, los mercaderes pueden llegar en barca hasta aquí: una visita más por estación, aunque no haya camino."},
+        {"titulo": "Género fresco", "detalle": "Lo que se vende aquí no se estropea mientras está en el puesto: menos comida perdida en verano."}
+      ],
+      "modelos": [
+        {"id": "race_frog_lily_market", "nombre": "Nenúfares, tablas y hojas", "material": "paja y troncos", "animaciones": {"float": "Los nenúfares y la barca se mecen en el agua", "sway": "Se mecen espadañas y faroles"}}
+      ]
+    },
+    {
+      "id": "race_frog_tower",
+      "nombre": "Ranas: mirador de zancos",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre de vigilancia en una charca de 4 × 4 m, de 9 m de alto: cuatro zancos largos con riostras, tarima redonda con baranda, cúpula de juncos y musgo sobre postes, abierta todo alrededor, una caracola de alarma colgada, escalera de mano y faroles de calabaza.",
+      "propuestas": [
+        {"titulo": "Vigía del agua", "detalle": "Se construye en agua somera u orilla. Detecta a quien cruza ríos y pantanos a 70 m (los asaltantes suelen entrar por ahí sin ser vistos). Cuesta 20 de troncos y 15 de paja. 2 cerbataneros: poco daño, pero envenenan y frenan."},
+        {"titulo": "Aviso de crecidas", "detalle": "Avisa con un día de antelación de las crecidas del río: da tiempo a vaciar los almacenes de la orilla."},
+        {"titulo": "Caracola", "detalle": "La caracola llama a la milicia como la campana, y se oye el doble de lejos sobre el agua."}
+      ],
+      "modelos": [
+        {"id": "race_frog_tower", "nombre": "Zancos y cúpula de juncos", "material": "paja y troncos", "animaciones": {"sway": "Se mecen la caracola, las espadañas y los faroles"}}
+      ]
+    }
+  ]
+}

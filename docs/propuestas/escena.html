@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SalvaCiudad · Escena de muestra</title>
+<style>
+:root { --panel: #1c2128; --panel2: #232a33; --line: #323b47; --text: #e6e9ee; --dim: #9aa4b2; --accent: #5aa9e6; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: #14171c; color: var(--text); font: 15px/1.45 "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+button { font: inherit; color: inherit; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 11px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); }
+header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header h1 { font-size: 17px; margin: 0 8px 0 0; }
+header .grow { flex: 1; }
+#note { font-size: 13px; color: var(--dim); }
+#wrap { position: relative; flex: 1; min-height: 0; background: linear-gradient(#7fb4e6 0%, #b9d8f0 45%, #f3dcb8 62%, #f3dcb8 100%); }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#list { position: absolute; left: 14px; bottom: 12px; font-size: 12.5px; color: #1f242b; background: rgba(255, 255, 255, .72); border-radius: 8px; padding: 6px 10px; max-width: 520px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Escena de muestra</h1>
+  <span id="note">Cargando…</span>
+  <span class="grow"></span>
+  <button id="view">Vista del campamento</button>
+  <button id="top">Vista de pájaro</button>
+  <a href="index.html">← Volver a los modelos</a>
+</header>
+<div id="wrap"><canvas id="stage"></canvas><div id="list">Los modelos en propuesta puestos juntos y a su escala, como en la imagen de referencia: el castillo sobre el risco, la cascada, el puente de arcos, el molino, la posada, los barcos y el campamento con el estandarte del lobo. Arrastra para girar, botón derecho para mover, rueda para acercar.</div></div>
+
+<script src="vendor/three/three.min.js"></script>
+<script src="vendor/three/GLTFLoader.js"></script>
+<script src="vendor/three/OrbitControls.js"></script>
+<script src="datos/catalogo.js"></script>
+<script src="escena_arboles.js"></script>
+<script>
+'use strict';
+// A showcase: the proposal models placed together on a small valley, each playing a clip.
+// Positions are map coordinates (x east, n north, meters); the scene's Z is -n.
+
+const CAT = window.PROPUESTAS_CATALOGO || {grupos: []};
+const TREES = window.ESCENA_ARBOLES || {};
+const $ = sel => document.querySelector(sel);
+const byId = new Map();
+for (const g of CAT.grupos) for (const m of g.modelos) byId.set(m.id, {group: g, model: m});
+
+// [model id, x, n, height, turn in degrees (counterclockwise from above), clip, scale]
+const PLACES = [
+  ['castle_great_stone', 26, 62, 10, 0, 'wave'],
+  ['bld_wizard_tower', -32, 60, 10, 20, 'float'],
+  ['nature_waterfall_tall', -8, 34.4, 0, 0, 'flow'],
+  ['nature_cliff', -38, 33.6, 0, 0, '', 2.5],
+  ['nature_cliff', -22.5, 33.6, 0, 0, '', 2.5],
+  ['nature_cliff', 4.5, 33.6, 0, 0, '', 2.5],
+  ['nature_cliff', 19.5, 33.6, 0, 0, '', 2.5],
+  ['nature_cliff', 34.5, 33.6, 0, 0, '', 2.5],
+  ['nature_cliff', 49.5, 33.6, 0, 0, '', 2.5],
+  ['bridge_stone_multi', -8, -8, 0, 0, ''],
+  ['wagon_merchant', 16, -8, 0, 90, 'roll'],
+  ['bld_watermill_timber_tiles', 6, 14, 0, 90, 'turn'],
+  ['bld_inn_timber_tiles', 24, 6, 0, 0, 'swing'],
+  ['bld_town_hall_timber', 42, 12, 0, 0, 'wave'],
+  ['bld_market_hall_timber', 40, -10, 0, 0, 'turn'],
+  ['bld_church_stone', 62, 4, 0, 0, 'ring'],
+  ['bld_manor_brick', 62, -24, 0, 180, ''],
+  ['bld_forge_stone', 22, -24, 0, 180, 'pump'],
+  ['bld_stable_plank_thatch', 40, -32, 0, 180, ''],
+  ['bld_guard_house_stone', 10, 2, 0, -90, 'wave'],
+  ['bld_windmill_tower_stone', -48, 6, 0, -30, 'turn'],
+  ['bld_sawmill_water', -22, 16, 0, -90, 'turn'],
+  ['dock_fishing', -19.5, -30, 0, 90, ''],
+  ['boat_merchant', -8, -44, 0, 170, 'sail'],
+  ['boat_rowboat', -6, -24, 0, 30, 'row'],
+  ['boat_fishing', -11, 14, 0, 200, 'sail'],
+  ['camp_explorer', -52, -58, 0, 215, 'idle'],
+  ['pet_dog', -46, -52, 0, 150, 'sit'],
+  ['road_signpost_cross', -22, -6, 0, 0, ''],
+  ['road_lantern_iron', 6, -12, 0, 0, 'swing'],
+  ['road_town_arch_stone', 12, -8, 0, 90, 'swing'],
+];
+
+const renderer = new THREE.WebGLRenderer({canvas: $('#stage'), antialias: true, alpha: true});
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.setClearColor(0x000000, 0);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xcfdbe6, 240, 950);
+const camera = new THREE.PerspectiveCamera(38, 1, 1, 1200);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.12;
+controls.maxPolarAngle = Math.PI / 2 - 0.03;
+scene.add(new THREE.HemisphereLight(0xdcebff, 0x7a6a50, 0.9));
+const sun = new THREE.DirectionalLight(0xffe8c0, 1.35);
+sun.position.set(120, 90, -40);
+sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.bias = -0.0005;
+sun.shadow.normalBias = 0.05;
+Object.assign(sun.shadow.camera, {left: -110, right: 110, top: 110, bottom: -110, near: 10, far: 400});
+scene.add(sun);
+
+const flat = color => new THREE.MeshStandardMaterial({color, roughness: 1, flatShading: true});
+function block(w, h, d, color, x, y, n, shadow) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color));
+  m.position.set(x, y, -n);
+  m.receiveShadow = true;
+  m.castShadow = !!shadow;
+  scene.add(m);
+  return m;
+}
+block(700, 2, 700, 0x3f6f2a, 0, -1, 0);                      // The valley floor.
+block(100, 10, 60, 0x6e6a62, 5, 5, 66, true);                // The plateau under the castle...
+block(100, 0.3, 60, 0x3f6f2a, 5, 10.1, 66);                  // ...with grass on top.
+const water = new THREE.MeshStandardMaterial({color: 0x3f86c4, roughness: 0.35, transparent: true, opacity: 0.9});
+function pool(w, d, x, n, y) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), water);
+  m.rotation.x = -Math.PI / 2;
+  m.position.set(x, y, -n);
+  m.receiveShadow = true;
+  scene.add(m);
+}
+pool(16, 150, -8, -41, 0.04);                                // The river, south from the falls.
+pool(10, 30, -8, 51, 10.3);                                  // And its course on the plateau.
+block(3, 0.5, 150, 0x587a3a, -17.5, 0.2, -41);               // Low banks.
+block(3, 0.5, 150, 0x587a3a, 1.5, 0.2, -41);
+block(10, 0.12, 70, 0x9a8a68, 34, 0.06, -8);                 // The village street, toward the bridge...
+block(70, 0.12, 8, 0x9a8a68, 34, 0.06, -8);
+block(40, 0.12, 6, 0x9a8a68, -40, 0.06, -8);                 // ...and the road west of it.
+
+let seed = 7;
+const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+for (let i = 0; i < 7; i++) {                                // Mountains behind everything.
+  const h = 70 + rnd() * 70, r = 60 + rnd() * 50;
+  const peak = new THREE.Mesh(new THREE.ConeGeometry(r, h, 6, 1), flat(0x66707e));
+  peak.position.set(-260 + i * 85 + rnd() * 30, h / 2 - 2, -(190 + rnd() * 90));
+  peak.rotation.y = rnd() * 3;
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.36, h * 0.36, 6, 1), flat(0xf2f5f8));
+  cap.position.set(peak.position.x, h * 0.82 - 2 + 0.3, peak.position.z);
+  cap.rotation.y = peak.rotation.y;
+  scene.add(peak, cap);
+}
+
+function resize() {
+  const w = $('#wrap').clientWidth, h = $('#wrap').clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe($('#wrap'));
+const mixers = [], clock = new THREE.Clock();
+(function loop() {
+  requestAnimationFrame(loop);
+  const dt = clock.getDelta();
+  for (const m of mixers) m.update(dt);
+  controls.update();
+  renderer.render(scene, camera);
+})();
+
+function look(from, to) {
+  camera.position.set(from[0], from[1], -from[2]);
+  controls.target.set(to[0], to[1], -to[2]);
+  controls.update();
+}
+const campView = () => look([-82, 25, -100], [0, 3, 10]);
+$('#view').addEventListener('click', campView);
+$('#top').addEventListener('click', () => look([20, 190, -150], [8, 0, 10]));
+campView();
+
+const waiting = new Map();
+window.PROPUESTAS_MODELO = (key, b64) => { const w = waiting.get(key); if (w) { waiting.delete(key); w(b64); } };
+function bytesOf(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+const buffers = new Map();
+function loadBytes(id) {
+  if (buffers.has(id)) return buffers.get(id);
+  const {group, model} = byId.get(id);
+  const key = group.familia + '/' + model.id;
+  const promise = new Promise((resolve, reject) => {
+    waiting.set(key, b64 => resolve(bytesOf(b64)));
+    const s = document.createElement('script');
+    s.src = model.archivo + '?' + model.hash;
+    s.onload = () => s.remove();
+    s.onerror = () => { s.remove(); waiting.delete(key); reject(new Error('no se pudo leer ' + model.archivo)); };
+    document.head.append(s);
+  });
+  buffers.set(id, promise);
+  return promise;
+}
+const parse = buffer => new Promise((resolve, reject) => new THREE.GLTFLoader().parse(buffer, '', resolve, reject));
+
+function shade(root) {
+  root.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
+}
+
+(async () => {
+  let shown = 0, missing = 0;
+  for (const [id, x, n, y, turn, clip, scale] of PLACES) {
+    if (!byId.has(id)) { missing++; continue; }
+    try {
+      const gltf = await parse(await loadBytes(id));
+      shade(gltf.scene);
+      gltf.scene.position.set(x, y, -n);
+      gltf.scene.rotation.y = THREE.MathUtils.degToRad(turn);
+      if (scale) gltf.scene.scale.setScalar(scale);
+      scene.add(gltf.scene);
+      const found = clip && gltf.animations.find(c => c.name === clip);
+      if (found) {
+        const mixer = new THREE.AnimationMixer(gltf.scene);
+        mixer.clipAction(found).play();
+        mixers.push(mixer);
+      }
+      shown++;
+      $('#note').textContent = 'Cargando… ' + shown + ' de ' + PLACES.length;
+    } catch (e) { missing++; }
+  }
+
+  // Trees from the game, scattered where nothing else stands.
+  const kinds = [];
+  for (const name of Object.keys(TREES)) {
+    try { const gltf = await parse(bytesOf(TREES[name])); shade(gltf.scene); kinds.push(gltf.scene); } catch (e) { /* One tree less. */ }
+  }
+  const taken = PLACES.map(p => [p[1], p[2], 9]);
+  const free = (x, n) => !(x > -19 && x < 3 && n < 36) && !(Math.abs(n + 8) < 6 && x > -62 && x < 70) && !(x > 28 && x < 40 && n > -44 && n < 28)
+    && taken.every(([tx, tn, r]) => Math.hypot(x - tx, n - tn) > r) && !(x > -1 && x < 53 && n > 40 && n < 84);
+  let trees = 0;
+  for (let i = 0; i < 900 && trees < 150 && kinds.length; i++) {
+    const x = -110 + rnd() * 230, n = -95 + rnd() * 185;
+    if (!free(x, n)) continue;
+    const high = n > 36.5 && n < 95 && x > -44 && x < 54;
+    if (n > 33 && n < 37) continue;
+    if (n >= 95 && x > -45 && x < 55) continue;
+    const tree = kinds[Math.floor(rnd() * kinds.length * 0.999)].clone(true);
+    tree.position.set(x, high ? 10.2 : 0, -n);
+    tree.rotation.y = rnd() * 6.28;
+    tree.scale.setScalar(0.8 + rnd() * 0.5);
+    scene.add(tree);
+    trees++;
+  }
+  $('#note').textContent = shown + ' modelos en propuesta' + (trees ? ' y ' + trees + ' árboles del juego' : '') + (missing ? ' (' + missing + ' no están empaquetados)' : '') + '.';
+})();
+resize();
+</script>
+</body>
+</html>

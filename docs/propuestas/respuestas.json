@@ -1,0 +1,379 @@
+{
+ "version": 1,
+ "grupos": {
+  "walls/wall_hedge": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Adorno que da entorno y bayas",
+   "fecha": "2026-10-04T20:37:16.309Z"
+  },
+  "bridges/dock_beacon": {
+   "eleccion": "propuesta",
+   "indice": 2,
+   "titulo": "Luz contra la fauna",
+   "fecha": "2026-10-04T20:38:49.328Z"
+  },
+  "walls/wall_palisade": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Primer muro, barato y rápido",
+   "fecha": "2026-10-04T20:50:28.152Z"
+  },
+  "creatures/animal_squirrel": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Ambiente",
+   "fecha": "2026-10-04T21:05:49.200Z"
+  },
+  "creatures/animal_sparrow": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Estaciones",
+   "nota": "Además de las estaciones, que aparescan solos en jardines, árboles podados, bebederos de pájaros y huertos",
+   "fecha": "2026-10-04T21:07:50.066Z"
+  },
+  "creatures/animal_owl": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Ambiente de la noche",
+   "fecha": "2026-10-04T21:08:12.823Z"
+  },
+  "creatures/animal_crow": {
+   "eleccion": "propuesta",
+   "indice": 2,
+   "titulo": "Ambiente de ruinas y de campo de batalla",
+   "fecha": "2026-10-04T21:08:42.290Z"
+  },
+  "beasts/sea_whale": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Paso de las ballenas",
+   "fecha": "2026-10-04T21:09:53.863Z"
+  },
+  "beasts/sea_giant_turtle": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Desove en la playa",
+   "fecha": "2026-10-04T21:11:11.865Z"
+  },
+  "beasts/sea_fish_school": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Dónde pescar",
+   "fecha": "2026-10-04T21:11:36.120Z"
+  },
+  "biomes/biome_mountain": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Que la montaña se vea distinta",
+   "fecha": "2026-10-04T21:12:17.388Z"
+  },
+  "biomes/biome_flowering": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "La primavera del bioma",
+   "fecha": "2026-10-04T21:13:25.706Z"
+  },
+  "biomes/biome_riverside": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Orillas vivas",
+   "fecha": "2026-10-04T21:14:09.285Z"
+  },
+  "nature/nature_grass": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Vestir el terreno",
+   "fecha": "2026-10-04T21:15:24.525Z"
+  },
+  "nature/nature_insects": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Vida del mapa",
+   "fecha": "2026-10-04T21:15:40.252Z"
+  },
+  "nature/nature_bee_tree": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Miel silvestre",
+   "fecha": "2026-10-04T21:16:10.437Z"
+  },
+  "nature/nature_deposit": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Recursos que hoy no tienen lugar en el mapa",
+   "nota": "También se agotan como el hierro y la piedra",
+   "fecha": "2026-10-04T21:17:30.257Z"
+  },
+  "nature/nature_stump": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Hongos",
+   "fecha": "2026-10-04T21:18:03.672Z"
+  },
+  "nature/nature_nest": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Huevos silvestres",
+   "fecha": "2026-10-04T21:18:11.701Z"
+  },
+  "nature/nature_beach": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Vestir las costas",
+   "fecha": "2026-10-04T21:18:40.717Z"
+  },
+  "nature/nature_winter": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "El invierno se ve",
+   "fecha": "2026-10-04T21:19:07.635Z"
+  },
+  "scatter/scatter_rocks": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Piedra de superficie",
+   "fecha": "2026-10-04T21:20:02.967Z"
+  },
+  "scatter/scatter_grass": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "El suelo deja de ser liso",
+   "fecha": "2026-10-04T21:20:22.936Z"
+  },
+  "scatter/scatter_flowers": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Primavera",
+   "nota": "Me gustan las opciones 1, 2 y 3.",
+   "fecha": "2026-10-04T21:21:30.566Z"
+  },
+  "scatter/scatter_bush": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Bayas por temporada",
+   "fecha": "2026-10-04T21:21:41.539Z"
+  },
+  "scatter/scatter_mushrooms": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Comida de otoño",
+   "fecha": "2026-10-04T21:22:07.937Z"
+  },
+  "lines/street_dirt": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Camino de nivel 1",
+   "fecha": "2026-10-04T21:25:35.316Z"
+  },
+  "lines/street_cobble": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Camino de nivel 2",
+   "fecha": "2026-10-04T21:25:40.568Z"
+  },
+  "roads/road_lantern": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Caminos seguros de noche",
+   "fecha": "2026-10-04T21:26:33.391Z"
+  },
+  "annexes/annex_clothesline": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Mejora del entorno",
+   "fecha": "2026-10-04T21:27:44.522Z"
+  },
+  "annexes/annex_woodshed": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Reserva de leña de la casa",
+   "fecha": "2026-10-04T21:28:01.938Z"
+  },
+  "annexes/annex_rain_barrel": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Agua contra incendios en casa",
+   "fecha": "2026-10-04T21:28:29.762Z"
+  },
+  "annexes/annex_playground": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Felicidad de las familias",
+   "fecha": "2026-10-04T21:29:16.404Z"
+  },
+  "annexes/annex_home_shrine": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Fe sin capilla",
+   "fecha": "2026-10-04T21:29:49.918Z"
+  },
+  "walls/fence_boxhedge": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Jardín formal",
+   "fecha": "2026-10-04T21:30:28.254Z"
+  },
+  "walls/fence_picket": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Jardín de casa",
+   "fecha": "2026-10-04T21:30:35.745Z"
+  },
+  "farm/farm_crop_wheat": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "El campo se ve crecer",
+   "fecha": "2026-10-04T21:32:33.484Z"
+  },
+  "farm/farm_crop_barley": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Distinguir los cultivos",
+   "fecha": "2026-10-04T21:32:41.577Z"
+  },
+  "farm/farm_crop_flax": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Distinguir los cultivos",
+   "fecha": "2026-10-04T21:32:46.121Z"
+  },
+  "farm/farm_crop_vegetables": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "El campo se ve crecer",
+   "fecha": "2026-10-04T21:32:51.934Z"
+  },
+  "farm/farm_crop_beans": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "El campo se ve crecer",
+   "fecha": "2026-10-04T21:32:59.568Z"
+  },
+  "farm/farm_crop_roots": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Cultivar lo que hoy solo se recolecta",
+   "fecha": "2026-10-04T21:33:10.987Z"
+  },
+  "farm/farm_vineyard": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Uvas y vino",
+   "fecha": "2026-10-04T21:33:23.037Z"
+  },
+  "sky/sky_lanterns": {
+   "eleccion": "propuesta",
+   "indice": 2,
+   "titulo": "Costumbre de los zorros",
+   "nota": "Que aparezca aleatoriamente en los pueblos que tengan al menos dos integrantes de raza zorros.",
+   "fecha": "2026-10-04T21:35:30.672Z"
+  },
+  "piles/pile_goods": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Talleres y almacén",
+   "fecha": "2026-10-04T21:37:55.278Z"
+  },
+  "piles/pile_food": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "El granero y el mercado enseñan su surtido",
+   "fecha": "2026-10-04T21:38:08.250Z"
+  },
+  "piles/pile_fuel": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Leñera y carbonera que se ven",
+   "fecha": "2026-10-04T21:38:13.859Z"
+  },
+  "piles/pile_construction": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Las obras muestran lo que tienen",
+   "fecha": "2026-10-04T21:38:19.664Z"
+  },
+  "folk/folk_race_villagers": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Aspecto de trabajo por raza",
+   "fecha": "2026-10-04T21:40:04.631Z"
+  },
+  "folk/folk_race_guards": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Tropa según la raza del pueblo",
+   "fecha": "2026-10-04T21:40:10.166Z"
+  },
+  "beasts/mythic_unicorn": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Visitante del bosque sagrado",
+   "fecha": "2026-10-04T21:41:40.334Z"
+  },
+  "beasts/pet_rabbit": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Vida del prado",
+   "fecha": "2026-10-04T21:42:27.179Z"
+  },
+  "beasts/animal_ram": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Semental del rebaño",
+   "fecha": "2026-10-04T21:42:57.646Z"
+  },
+  "beasts/animal_mammoth": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Manada salvaje",
+   "fecha": "2026-10-04T21:43:43.102Z"
+  },
+  "creatures/pet_dog": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Guardián de la casa",
+   "fecha": "2026-10-04T21:45:12.060Z"
+  },
+  "creatures/pet_cat": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Gato de casa",
+   "fecha": "2026-10-04T21:45:32.473Z"
+  },
+  "creatures/animal_lynx": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Depredador de caza menor",
+   "fecha": "2026-10-04T21:45:58.972Z"
+  },
+  "creatures/animal_fox": {
+   "eleccion": "propuesta",
+   "indice": 2,
+   "titulo": "Ambiente por bioma",
+   "fecha": "2026-10-04T21:46:11.712Z"
+  },
+  "creatures/animal_goat": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Ganado de terreno malo",
+   "fecha": "2026-10-04T21:47:02.820Z"
+  },
+  "creatures/animal_hen": {
+   "eleccion": "propuesta",
+   "indice": 0,
+   "titulo": "Gallinero productivo",
+   "fecha": "2026-10-04T21:47:15.439Z"
+  },
+  "creatures/animal_duck": {
+   "eleccion": "propuesta",
+   "indice": 1,
+   "titulo": "Caza y pesca menor",
+   "fecha": "2026-10-04T21:47:30.883Z"
+  },
+  "decor/decor_home_animals": {
+   "nota": "Usar gallinero y caseta del perro, función 1 y 2.",
+   "fecha": "2026-10-04T21:49:51.553Z"
+  }
+ }
+}

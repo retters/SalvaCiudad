@@ -1,0 +1,494 @@
+{
+ "familia": "camp",
+ "grupos": [
+  {
+   "id": "camp_explorer",
+   "nombre": "Campamento de exploradores",
+   "categoria": "Campamento y exploración",
+   "descripcion": "El campamento de la imagen de referencia en un terreno de unos 9 × 10 m (con los vientos de la tienda): tienda, fogata con asientos de tronco, estandarte del lobo, provisiones bajo una lona y un armero.",
+   "propuestas": [
+    {
+     "titulo": "Puesto avanzado del explorador",
+     "detalle": "El explorador lo levanta lejos del pueblo con unos troncos y lino. Desde ahí explora otro radio sin volver a casa: come y duerme en el campamento, así que ya no interrumpe los viajes largos por hambre o cansancio."
+    },
+    {
+     "titulo": "Campamento de inicio",
+     "detalle": "Al fundar el pueblo, la carreta de los colonos se despliega en este campamento: da techo y descanso provisional a todos hasta que haya casas, y luego se desmonta y devuelve sus materiales."
+    },
+    {
+     "titulo": "Campamento del ejército",
+     "detalle": "Un ejército en campaña lo planta al detenerse de noche: los soldados descansan y recuperan energía fuera del pueblo, y la fogata ilumina el entorno contra los peligros nocturnos."
+    },
+    {
+     "titulo": "Campamento de cazadores o recolectores",
+     "detalle": "Anexo lejano de un oficio: amplía la zona de trabajo del cazador, el leñador o el recolector a un bosque distante y guarda ahí lo recogido hasta que una carreta lo lleva al almacén."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_explorer",
+     "nombre": "Lona y estandarte azul",
+     "material": "lino",
+     "animaciones": {
+      "idle": "Arden las llamas de la fogata y ondea el estandarte."
+     }
+    },
+    {
+     "id": "camp_explorer_hide",
+     "nombre": "Pieles y estandarte rojo",
+     "material": "cuero",
+     "animaciones": {
+      "idle": "Arden las llamas de la fogata y ondea el estandarte."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "camp_tent",
+   "nombre": "Tienda de campaña",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Tienda de dos aguas de 3 × 3,6 m y 2,2 m de alto, abierta al frente, con vientos y estacas; dentro, un petate, un cajón con farol y un saco.",
+   "propuestas": [
+    {
+     "titulo": "Vivienda provisional",
+     "detalle": "Se monta en segundos por unas piezas de lino o cuero y aloja a dos aldeanos sin casa. Descansan como en casa pero con más frío en invierno; sirve para recibir inmigrantes antes de tener viviendas."
+    },
+    {
+     "titulo": "Refugio tras un incendio o una incursión",
+     "detalle": "Cuando una casa se quema o es destruida, sus habitantes levantan solos una tienda en el solar y no quedan sin hogar mientras se reconstruye."
+    },
+    {
+     "titulo": "Tienda de soldado",
+     "detalle": "Cada tienda junto al cuartel añade plazas de tropa sin ampliar el edificio; el color dice de qué pueblo es."
+    },
+    {
+     "titulo": "Puesto de mercader ambulante",
+     "detalle": "Los mercaderes que llegan cuando el puesto de comercio está ocupado acampan a las afueras y comercian desde su tienda durante su estancia."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_tent",
+     "nombre": "Lona de lino",
+     "material": "lino"
+    },
+    {
+     "id": "camp_tent_hide",
+     "nombre": "Pieles curtidas",
+     "material": "cuero"
+    },
+    {
+     "id": "camp_tent_blue",
+     "nombre": "Tela azul con emblema",
+     "material": "lino teñido"
+    },
+    {
+     "id": "camp_tent_red",
+     "nombre": "Tela roja con emblema",
+     "material": "lino teñido"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "camp_command_tent",
+   "nombre": "Tienda de mando",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Tienda grande de paredes rectas, de 5 × 6 m y 3,3 m de alto, con cenefa dorada, mesa de mapas dentro y un estandarte a la entrada.",
+   "propuestas": [
+    {
+     "titulo": "Cuartel de campaña",
+     "detalle": "Edificio militar barato y desmontable: permite reclutar y dar órdenes al ejército lejos del cuartel, y las tropas a su alrededor pelean con mejor moral."
+    },
+    {
+     "titulo": "Tienda del fundador",
+     "detalle": "Es el centro del pueblo en su primer nivel, antes de construir el edificio: almacena lo poco que traen los colonos y marca el lugar del futuro centro."
+    },
+    {
+     "titulo": "Embajada o tienda de tratos",
+     "detalle": "En partidas de varios jugadores, se planta junto a otro pueblo para abrir comercio directo o pactos con él."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_command_tent",
+     "nombre": "Azul y lona",
+     "material": "lino",
+     "animaciones": {
+      "wave": "Ondea el estandarte de la entrada."
+     }
+    }
+   ]
+  },
+  {
+   "id": "camp_banner_wolf",
+   "nombre": "Estandarte del lobo",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Asta de 3,4 m con travesaño y un estandarte colgante de dos puntas con una cabeza de lobo, como el de la imagen de referencia. Ocupa 1 × 1 m.",
+   "propuestas": [
+    {
+     "titulo": "Marca de territorio",
+     "detalle": "Plantarlo reclama los alrededores para tu pueblo: dentro de su radio solo tú puedes construir. Otros jugadores ven de quién es la zona por el color."
+    },
+    {
+     "titulo": "Punto de reunión",
+     "detalle": "La milicia y el ejército se reúnen en el estandarte al tocar la campana, en vez de en el centro del pueblo; puedes moverlo para elegir dónde defender."
+    },
+    {
+     "titulo": "Moral",
+     "detalle": "Los soldados que pelean a la vista de su estandarte hacen más daño; si el enemigo lo derriba, la moral baja un rato."
+    },
+    {
+     "titulo": "Emblema del pueblo",
+     "detalle": "Cada jugador elige emblema y color al crear la partida, y el estandarte aparece solo en el centro, las puertas y las torres."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_banner_wolf_blue",
+     "nombre": "Azul, lobo blanco",
+     "animaciones": {
+      "wave": "El paño ondea con el viento."
+     }
+    },
+    {
+     "id": "camp_banner_wolf_red",
+     "nombre": "Rojo, lobo dorado",
+     "animaciones": {
+      "wave": "El paño ondea con el viento."
+     }
+    },
+    {
+     "id": "camp_banner_wolf_green",
+     "nombre": "Verde, lobo blanco",
+     "animaciones": {
+      "wave": "El paño ondea con el viento."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "camp_fire",
+   "nombre": "Fogata y hoguera con asador",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Fogata con anillo de piedras (2 × 2 m) y una hoguera mayor con asador y tres troncos para sentarse (6 × 6 m). Las llamas usan materiales que brillan de noche.",
+   "propuestas": [
+    {
+     "titulo": "Comida caliente al aire libre",
+     "detalle": "La hoguera con asador convierte carne cruda en carne asada sin edificio: rinde menos que el ahumadero pero no pide construcción, ideal al principio y en campamentos."
+    },
+    {
+     "titulo": "Luz y calor de noche",
+     "detalle": "Ilumina un radio mayor que la antorcha y calienta a quien esté cerca: los aldeanos sin casa descansan junto a ella sin enfriarse. Consume leña."
+    },
+    {
+     "titulo": "Fiesta del pueblo",
+     "detalle": "Una vez por estación se puede encender una hoguera grande en la plaza: gasta leña, carne y cerveza, y sube la felicidad de todos durante unos días."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_fire_ring",
+     "nombre": "Fogata con piedras",
+     "animaciones": {
+      "burn": "Las llamas tiemblan y suben chispas."
+     }
+    },
+    {
+     "id": "camp_bonfire_spit",
+     "nombre": "Hoguera con asador",
+     "animaciones": {
+      "burn": "Las llamas arden y el asador gira."
+     }
+    }
+   ]
+  },
+  {
+   "id": "camp_cooking_tripod",
+   "nombre": "Olla sobre trípode",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Trípode de palos con una olla de hierro colgada sobre una fogata pequeña, un tocón y un cajón con un cuenco. Ocupa 3 × 3 m.",
+   "propuestas": [
+    {
+     "titulo": "Olla común",
+     "detalle": "Mezcla dos alimentos distintos (verduras, raíces, carne, pescado) en un guiso que cuenta como dieta variada: mejora la salud aunque el pueblo tenga pocos tipos de comida."
+    },
+    {
+     "titulo": "Cocina del campamento",
+     "detalle": "Alimenta a exploradores, cazadores y soldados que estén lejos, tomando comida de las provisiones del campamento."
+    },
+    {
+     "titulo": "Remedios del herbolario",
+     "detalle": "Como anexo del herbolario, hierve hierbas y dobla lo que rinde cada una."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_cooking_tripod",
+     "nombre": "Hierro y madera",
+     "animaciones": {
+      "burn": "Las llamas arden y la olla se mece."
+     }
+    }
+   ]
+  },
+  {
+   "id": "camp_signal_beacon",
+   "nombre": "Almenara de señales",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Base de piedra de 3 m con escalones, cuatro postes y un cesto de hierro a 3,5 m donde arde una hoguera; leña apilada al lado. Ocupa 5 × 5 m.",
+   "propuestas": [
+    {
+     "titulo": "Aviso de incursiones",
+     "detalle": "Un vigía la enciende al ver enemigos: el aviso llega antes que con la torre sola y da tiempo de tocar la campana. Varias almenaras en cadena pasan la señal a lo largo de un mapa grande."
+    },
+    {
+     "titulo": "Faro para mercaderes",
+     "detalle": "Encendida de noche, los mercaderes y caravanas encuentran el pueblo aunque llegue la oscuridad, y no se pierden ni se retrasan."
+    },
+    {
+     "titulo": "Luz de gran alcance",
+     "detalle": "Ilumina un radio muy grande a cambio de mucha leña: protege de las bestias nocturnas a quienes trabajan en las afueras."
+    },
+    {
+     "titulo": "Señal entre jugadores",
+     "detalle": "En partidas de varios jugadores, encenderla pide ayuda a los aliados y marca el lugar en su mapa."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_signal_beacon",
+     "nombre": "Piedra y hierro",
+     "material": "piedra",
+     "animaciones": {
+      "burn": "Arde la hoguera del cesto."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "camp_lookout",
+   "nombre": "Atalaya de troncos",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Plataforma a 4,2 m sobre cuatro troncos inclinados con riostras, barandal y escalera de mano; con techo de paja o descubierta. Ocupa 4 × 4 m.",
+   "propuestas": [
+    {
+     "titulo": "Vista lejana barata",
+     "detalle": "Cuesta solo troncos y da mucho alcance de visión para despejar la niebla, pero no dispara ni resiste: la torre de vigía sigue siendo la defensa."
+    },
+    {
+     "titulo": "Puesto del cazador",
+     "detalle": "El cazador sube a acechar: ve la caza de más lejos y dispara desde arriba sin que el animal huya ni lo ataque."
+    },
+    {
+     "titulo": "Vigía contra incendios",
+     "detalle": "Un aldeano en la atalaya detecta los incendios al empezar y los demás llegan antes con agua."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_lookout",
+     "nombre": "Con techo de paja",
+     "material": "troncos y paja"
+    },
+    {
+     "id": "camp_lookout_open",
+     "nombre": "Descubierta",
+     "material": "troncos"
+    }
+   ]
+  },
+  {
+   "id": "camp_lean_to",
+   "nombre": "Cobertizo de ramas",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Refugio de una sola agua hecho de palos, paja y hojas sobre dos horcones, con un lecho de hojas y un petate. Ocupa 4 × 3 m.",
+   "propuestas": [
+    {
+     "titulo": "Refugio de emergencia",
+     "detalle": "Un aldeano sin casa lo levanta solo con ramas, sin costo: descansa mejor que a la intemperie pero peor que en una tienda, y no protege del frío."
+    },
+    {
+     "titulo": "Parada de descanso",
+     "detalle": "Colocado junto a un lugar de trabajo lejano (mina, cantera), los trabajadores descansan ahí y no pierden el viaje hasta su casa."
+    },
+    {
+     "titulo": "Refugio de pastor",
+     "detalle": "Junto a un corral lejano, deja a un aldeano cuidando los animales de noche contra los lobos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_lean_to",
+     "nombre": "Ramas y paja",
+     "material": "ramas"
+    }
+   ]
+  },
+  {
+   "id": "camp_supplies",
+   "nombre": "Provisiones bajo lona",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Cajones, un barril y sacos apilados con una lona atada encima. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Depósito de campaña",
+     "detalle": "Almacén pequeño sin edificio: guarda comida y materiales lejos del pueblo, para obras distantes y campamentos. Sin techo, lo guardado se estropea más rápido."
+    },
+    {
+     "titulo": "Botín que dejan los enemigos",
+     "detalle": "Los campamentos de asaltantes y las ruinas tienen provisiones que el explorador o el ejército pueden traer al pueblo."
+    },
+    {
+     "titulo": "Carga de la caravana",
+     "detalle": "Lo que un mercader o una caravana descarga al llegar; va desapareciendo según se vende."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_supplies",
+     "nombre": "Madera y lona",
+     "material": "madera"
+    }
+   ]
+  },
+  {
+   "id": "camp_bedrolls",
+   "nombre": "Petates",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Un petate tendido sobre una piel, con almohada, y dos enrollados con correas. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Descanso sin casa",
+     "detalle": "Un aldeano con petate (hecho por el sastre con lino o pieles) descansa en la mitad de tiempo cuando duerme fuera de casa."
+    },
+    {
+     "titulo": "Equipo del explorador y del soldado",
+     "detalle": "Quien lo lleva puede pasar la noche fuera del pueblo sin la penalización por cansancio."
+    },
+    {
+     "titulo": "Camas extra en la taberna o el sanador",
+     "detalle": "Petates en el suelo dan plazas adicionales baratas para visitantes o enfermos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_bedrolls",
+     "nombre": "Lana y pieles",
+     "material": "lino y pieles"
+    }
+   ]
+  },
+  {
+   "id": "camp_log_seats",
+   "nombre": "Asientos de tronco",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Un tronco tumbado con la cara superior alisada y dos tocones, uno con una jarra. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Lugar de reunión",
+     "detalle": "Junto a una fogata, los aldeanos se sientan a descansar y conversar al anochecer: sube un poco la felicidad de las casas cercanas."
+    },
+    {
+     "titulo": "Descanso en el trabajo",
+     "detalle": "Cerca de un lugar de trabajo, los trabajadores recuperan algo de energía sin ir a casa."
+    },
+    {
+     "titulo": "Solo decoración del campamento",
+     "detalle": "Se coloca solo, sin costo, alrededor de las fogatas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_log_seats",
+     "nombre": "Troncos",
+     "material": "troncos"
+    }
+   ]
+  },
+  {
+   "id": "camp_weapon_rack",
+   "nombre": "Armero de campaña",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Caballete con cuatro lanzas apoyadas y dos escudos redondos, y un hacha en el suelo. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Armas a mano para la milicia",
+     "detalle": "Guarda unas pocas armas cerca de las murallas o las puertas: al tocar la campana, la milicia se arma ahí en vez de ir hasta la armería."
+    },
+    {
+     "titulo": "Indicador del cuartel",
+     "detalle": "Aparece junto al cuartel y muestra cuántas armas quedan en reserva: lleno, a medias o vacío."
+    },
+    {
+     "titulo": "Campo de entrenamiento",
+     "detalle": "Con unos armeros y muñecos de paja, los reclutas entrenan y salen con más experiencia."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_weapon_rack",
+     "nombre": "Lanzas y escudos",
+     "material": "madera y hierro"
+    }
+   ]
+  },
+  {
+   "id": "camp_map_table",
+   "nombre": "Mesa de mapas",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Mesa con un mapa extendido, tintero con pluma, farol, un mapa enrollado y dos tocones para sentarse. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Mejora del explorador",
+     "detalle": "Anexo del edificio del explorador: lo ya explorado queda dibujado y se puede compartir el mapa con jugadores aliados."
+    },
+    {
+     "titulo": "Planear expediciones",
+     "detalle": "Desde la mesa se marcan destinos lejanos (ruinas, yacimientos, otros pueblos) y el explorador los visita en orden."
+    },
+    {
+     "titulo": "Cartógrafo",
+     "detalle": "Un oficio nuevo que produce mapas, un bien que los mercaderes compran caro."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_map_table",
+     "nombre": "Madera",
+     "material": "madera"
+    }
+   ]
+  },
+  {
+   "id": "camp_drying_rack",
+   "nombre": "Secadero de pieles y carne",
+   "categoria": "Campamento y exploración",
+   "descripcion": "Dos caballetes con travesaños: tres pieles tensadas arriba y tiras de carne abajo. Ocupa 3 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Anexo del cazador",
+     "detalle": "Junto a la cabaña del cazador, seca la carne para que dure más sin ahumadero y cura las pieles, que llegan a la curtiduría ya listas y rinden más cuero."
+    },
+    {
+     "titulo": "Conserva sin leña",
+     "detalle": "Alternativa lenta al ahumadero: conserva carne y pescado con sol y viento, solo en verano y sin lluvia."
+    },
+    {
+     "titulo": "Señal de un campamento enemigo o neutral",
+     "detalle": "Los campamentos de cazadores nómadas del mapa lo tienen; se puede comerciar con ellos o saquearlos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "camp_drying_rack",
+     "nombre": "Palos y pieles",
+     "material": "madera y pieles"
+    }
+   ]
+  }
+ ]
+}

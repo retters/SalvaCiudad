@@ -1,0 +1,655 @@
+{
+ "familia": "transport",
+ "grupos": [
+  {
+   "id": "wagon_merchant",
+   "nombre": "Carro de mercader con caballo",
+   "categoria": "Transporte",
+   "descripcion": "Carro de cuatro ruedas tirado por un caballo, de 6,6 m de largo con el animal: toldo de tela sobre arcos, pescante, farol y carga atrás; o descubierto, con cajones, barriles y sacos atados.",
+   "propuestas": [
+    {
+     "titulo": "El mercader llega en carro",
+     "detalle": "Sustituye a los mercaderes a pie que llegan al puesto de comercio: el carro entra por el camino, se estaciona junto al puesto y trae y se lleva mucha más mercancía por visita. Si no hay camino hasta el puesto, llega el mercader de siempre con su carreta de mano."
+    },
+    {
+     "titulo": "Caravana propia",
+     "detalle": "Tus ofertas a otros pueblos viajan en un carro tuyo: cuesta troncos, hierro y un caballo, carga diez veces lo de un aldeano y va más rápido por camino."
+    },
+    {
+     "titulo": "Acarreo dentro del pueblo",
+     "detalle": "Un carretero mueve cargas grandes entre almacenes, minas y obras lejanas; solo circula por caminos, lo que da una razón para trazarlos."
+    },
+    {
+     "titulo": "Colonos y nuevos pueblos",
+     "detalle": "El carro de los colonos que funda un pueblo y, más adelante, el que envías a fundar un segundo asentamiento."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "wagon_merchant",
+     "nombre": "Toldo de lino",
+     "material": "madera y lino",
+     "animaciones": {
+      "idle": "El caballo descansa: mueve la cabeza y la cola.",
+      "roll": "El caballo camina y las ruedas giran a la velocidad guardada."
+     }
+    },
+    {
+     "id": "wagon_merchant_blue",
+     "nombre": "Toldo azul",
+     "material": "madera y lino teñido",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "roll": "El caballo camina y las ruedas giran."
+     }
+    },
+    {
+     "id": "wagon_merchant_red",
+     "nombre": "Toldo rojo",
+     "material": "madera y lino teñido",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "roll": "El caballo camina y las ruedas giran."
+     }
+    },
+    {
+     "id": "wagon_merchant_open",
+     "nombre": "Descubierto con carga",
+     "material": "madera",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "roll": "El caballo camina y las ruedas giran."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "cart_ox",
+   "nombre": "Carreta de bueyes",
+   "categoria": "Transporte",
+   "descripcion": "Carreta pesada de dos ruedas con adrales, tirada por un buey con yugo; de 6 m de largo. Variantes según la carga: troncos, piedra, heno, barriles o vacía.",
+   "propuestas": [
+    {
+     "titulo": "Transporte de materiales pesados",
+     "detalle": "Los leñadores, canteros y mineros lejanos cargan la carreta en vez de hacer muchos viajes a pie: lenta, pero lleva veinte cargas. La carga que se ve es la que lleva de verdad."
+    },
+    {
+     "titulo": "Abastecer obras",
+     "detalle": "Una obra grande (castillo, muralla, puente) pide una carreta que le trae todo el material de una vez; sin ella se construye igual, más despacio."
+    },
+    {
+     "titulo": "Cosecha",
+     "detalle": "En la cosecha, la carreta recorre los campos y lleva el grano y el heno al granero; menos cosecha se pierde por el invierno."
+    },
+    {
+     "titulo": "El buey como animal de granja",
+     "detalle": "Los bueyes se crían en un establo: tiran de carretas y arados y, al final, dan carne y cuero."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "cart_ox_logs",
+     "nombre": "Con troncos",
+     "animaciones": {
+      "idle": "El buey descansa.",
+      "roll": "El buey camina y las ruedas giran."
+     }
+    },
+    {
+     "id": "cart_ox_stone",
+     "nombre": "Con piedra",
+     "animaciones": {
+      "idle": "El buey descansa.",
+      "roll": "El buey camina y las ruedas giran."
+     }
+    },
+    {
+     "id": "cart_ox_hay",
+     "nombre": "Con heno",
+     "animaciones": {
+      "idle": "El buey descansa.",
+      "roll": "El buey camina y las ruedas giran."
+     }
+    },
+    {
+     "id": "cart_ox_barrels",
+     "nombre": "Con barriles",
+     "animaciones": {
+      "idle": "El buey descansa.",
+      "roll": "El buey camina y las ruedas giran."
+     }
+    },
+    {
+     "id": "cart_ox_empty",
+     "nombre": "Vacía",
+     "animaciones": {
+      "idle": "El buey descansa.",
+      "roll": "El buey camina y las ruedas giran."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "wagon_carriage",
+   "nombre": "Diligencia",
+   "categoria": "Transporte",
+   "descripcion": "Coche cerrado de pasajeros con dos caballos, de 6,5 m de largo: ventanas, faroles, equipaje en el techo, baúl trasero y pescante alto.",
+   "propuestas": [
+    {
+     "titulo": "Llegada de inmigrantes",
+     "detalle": "Los inmigrantes llegan en diligencia por el camino en vez de aparecer a pie en el borde del mapa: llegan antes, en grupo y sin pasar hambre en el viaje. Requiere una posada o una parada."
+    },
+    {
+     "titulo": "Viaje rápido entre pueblos",
+     "detalle": "En mapas con varios pueblos, lleva aldeanos de uno a otro (para mudarlos o prestar trabajadores) mucho más rápido que a pie."
+    },
+    {
+     "titulo": "Visitantes ricos",
+     "detalle": "De vez en cuando llega un noble de visita: si el pueblo tiene taberna, mercado y buen entorno, deja oro; si no, se va y baja un poco la fama del pueblo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "wagon_carriage",
+     "nombre": "Granate, dos caballos",
+     "material": "madera y hierro",
+     "animaciones": {
+      "idle": "Los caballos descansan.",
+      "roll": "Los caballos trotan y las ruedas giran."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "wagon_vardo",
+   "nombre": "Carromato del buhonero",
+   "categoria": "Transporte",
+   "descripcion": "Casa sobre ruedas pintada de verde y amarillo, con techo curvo, chimenea, ventanas con postigos y flores, puerta trasera con escalones y cacharros colgando; la tira un caballo. 6,8 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Mercader raro",
+     "detalle": "Un buhonero que aparece pocas veces al año y acampa en la plaza: vende lo que el pueblo no puede hacer todavía (herramientas, semillas de otro clima, una mascota) y compra de todo, a precios peores que el mercader normal."
+    },
+    {
+     "titulo": "Feria ambulante",
+     "detalle": "Mientras está en el pueblo sube la felicidad de las casas cercanas, como una taberna temporal."
+    },
+    {
+     "titulo": "Curandero o adivino ambulante",
+     "detalle": "Llega cuando hay una epidemia y cura por oro, o anuncia la próxima incursión o el clima de la siguiente estación."
+    },
+    {
+     "titulo": "Vivienda móvil",
+     "detalle": "Un hogar para una familia que no ocupa terreno fijo: se puede mover a donde haga falta trabajo (una mina nueva, un campamento de leñadores)."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "wagon_vardo",
+     "nombre": "Verde y amarillo",
+     "material": "madera pintada",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "roll": "El caballo camina y las ruedas giran."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "cart_water",
+   "nombre": "Carro aguador",
+   "categoria": "Transporte",
+   "descripcion": "Gran tonel acostado sobre dos ruedas, con grifo y cubos colgando, tirado por un caballo. 5,6 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Bomberos",
+     "detalle": "Al declararse un incendio sale del pozo y llega con agua para muchos cubos: los incendios lejos de un pozo dejan de ser una condena. Necesita un caballo y un aldeano asignado."
+    },
+    {
+     "titulo": "Riego en sequía",
+     "detalle": "En veranos secos riega los campos y huertos más alejados del agua, que así no pierden la cosecha."
+    },
+    {
+     "titulo": "Agua para barrios sin pozo",
+     "detalle": "Lleva agua a las casas que no tienen pozo cerca: cuenta como cobertura de agua mientras el aguador haga su ronda."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "cart_water",
+     "nombre": "Tonel de roble",
+     "material": "madera y hierro",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "roll": "El caballo trota y las ruedas giran."
+     }
+    }
+   ]
+  },
+  {
+   "id": "sled_horse",
+   "nombre": "Trineo de carga",
+   "categoria": "Transporte",
+   "descripcion": "Trineo de patines herrados cargado de leña, tirado por un caballo. 5,5 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Transporte de invierno",
+     "detalle": "Con nieve, las carretas y carros se vuelven lentos y el trineo los reemplaza sin perder velocidad; sin nieve no se usa."
+    },
+    {
+     "titulo": "Reparto de leña",
+     "detalle": "En invierno reparte leña casa por casa desde el leñero, para que nadie pase frío por vivir lejos."
+    },
+    {
+     "titulo": "Cruzar agua helada",
+     "detalle": "Con los ríos y lagos congelados, el trineo los cruza y abre rutas que el resto del año no existen."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "sled_horse",
+     "nombre": "Con leña",
+     "material": "madera y hierro",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "slide": "El caballo camina tirando del trineo."
+     }
+    }
+   ]
+  },
+  {
+   "id": "cart_wheelbarrow",
+   "nombre": "Carretilla",
+   "categoria": "Transporte",
+   "descripcion": "Carretilla de madera de una rueda, de 2 m de largo, cargada de piedra o de tierra con una pala.",
+   "propuestas": [
+    {
+     "titulo": "Mejora de los cargadores",
+     "detalle": "Una herramienta que fabrica el carpintero o el herrero: quien la tiene lleva el triple de piedra, arcilla, mineral o tierra por viaje. Se gasta con el uso, como las demás herramientas."
+    },
+    {
+     "titulo": "Obras y minas",
+     "detalle": "Las obras, la cantera, el pozo de arcilla y la mina la usan sola si hay alguna en el almacén, y se ve estacionada junto al edificio."
+    },
+    {
+     "titulo": "Allanar terreno",
+     "detalle": "Permite un trabajo nuevo: nivelar una ladera antes de construir, moviendo tierra con carretillas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "cart_wheelbarrow_stone",
+     "nombre": "Con piedra",
+     "animaciones": {
+      "roll": "La rueda gira."
+     }
+    },
+    {
+     "id": "cart_wheelbarrow_soil",
+     "nombre": "Con tierra y pala",
+     "animaciones": {
+      "roll": "La rueda gira."
+     }
+    }
+   ]
+  },
+  {
+   "id": "cart_mine",
+   "nombre": "Vagoneta de mina",
+   "categoria": "Transporte",
+   "descripcion": "Vagoneta de madera con herrajes, llena de mineral, sobre un tramo de vía de 6 m con durmientes y un tope.",
+   "propuestas": [
+    {
+     "titulo": "Mejora de la mina",
+     "detalle": "Con vía y vagoneta (hierro y troncos) la mina de hierro y la cantera sacan más por trabajador, porque ya no cargan el mineral a la espalda hasta la boca."
+    },
+    {
+     "titulo": "Vías entre edificios",
+     "detalle": "Tramos de vía que se trazan como un camino entre la mina y la fundición: la vagoneta lleva el mineral sola, cuesta abajo, y un aldeano la sube vacía."
+    },
+    {
+     "titulo": "Indicador de producción",
+     "detalle": "Se mueve solo cuando la mina trabaja: de un vistazo se ve si está parada."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "cart_mine",
+     "nombre": "Madera y hierro",
+     "material": "madera y hierro",
+     "animaciones": {
+      "roll": "La vagoneta va y vuelve por la vía, con las ruedas girando."
+     }
+    }
+   ]
+  },
+  {
+   "id": "tool_plough_ox",
+   "nombre": "Arado con buey",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Arado de reja de hierro con una rueda delantera y dos manceras, tirado por un buey con yugo; deja un surco detrás. 5,8 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Campos más grandes y fértiles",
+     "detalle": "Un campo arado con buey se prepara en una fracción del tiempo y rinde más; sin arado, los granjeros siguen cavando a mano como hoy."
+    },
+    {
+     "titulo": "Mejora de la granja",
+     "detalle": "El segundo nivel de la granja incluye arado y buey (hierro, troncos y un buey del establo) y permite cultivar más celdas por granjero."
+    },
+    {
+     "titulo": "Roturar tierra nueva",
+     "detalle": "Convierte pradera o bosque talado en tierra de cultivo de buena fertilidad, algo que hoy depende solo del terreno."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "tool_plough_ox",
+     "nombre": "Hierro y madera",
+     "material": "madera y hierro",
+     "animaciones": {
+      "idle": "El buey descansa.",
+      "pull": "El buey tira del arado y la rueda gira."
+     }
+    }
+   ]
+  },
+  {
+   "id": "siege_ram",
+   "nombre": "Ariete",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Ariete de tronco con cabeza de hierro, colgado bajo un techo de pieles sobre un bastidor de cuatro ruedas. 6,4 m de largo y 3,5 m de alto.",
+   "propuestas": [
+    {
+     "titulo": "Romper puertas",
+     "detalle": "Unidad de asedio del cuartel (troncos, hierro, pieles): la empujan cuatro soldados, es lenta y solo daña puertas y murallas, pero mucho más que las tropas. El techo de pieles la protege de flechas."
+    },
+    {
+     "titulo": "Arma de los asaltantes",
+     "detalle": "A partir de cierto nivel de amenaza, las incursiones grandes traen un ariete: si no lo destruyes antes de que llegue a la puerta, entran."
+    },
+    {
+     "titulo": "Derribar edificios propios",
+     "detalle": "En tiempo de paz, sirve para demoler rápido un edificio de piedra recuperando más material."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "siege_ram",
+     "nombre": "Madera, hierro y pieles",
+     "animaciones": {
+      "roll": "Avanza: giran las ruedas.",
+      "ram": "El tronco se balancea y golpea hacia el frente."
+     }
+    }
+   ]
+  },
+  {
+   "id": "siege_catapult",
+   "nombre": "Catapulta",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Catapulta de torsión sobre cuatro ruedas, con brazo de cuchara, travesaño acolchado, torno y piedras de munición. 4 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Asedio a distancia",
+     "detalle": "Dispara piedras desde fuera del alcance de las torres: daña murallas y edificios en un área, falla mucho contra tropas. Gasta piedra del almacén por disparo."
+    },
+    {
+     "titulo": "Defensa fija",
+     "detalle": "Colocada tras la muralla, dispara por encima contra arietes, torres de asedio y grupos de asaltantes."
+    },
+    {
+     "titulo": "Arma de los asaltantes de alto nivel",
+     "detalle": "Las incursiones más duras traen una catapulta que bombardea desde lejos: obliga a salir a destruirla."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "siege_catapult",
+     "nombre": "Madera y cuerda",
+     "animaciones": {
+      "roll": "Avanza: giran las ruedas.",
+      "fire": "El brazo dispara la piedra, que cae 15 m adelante, y se vuelve a tensar."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "siege_ballista",
+   "nombre": "Balista",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Balista sobre dos ruedas con cola de apoyo: arco de dos brazos con madejas de cuerda, un virote de 2 m y repuestos al lado. 4 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Arma de las torres",
+     "detalle": "Mejora de la torre de vigía o de la torre de muralla: un disparo lento que atraviesa a varios enemigos en línea y daña mucho a las máquinas de asedio y a los monstruos grandes."
+    },
+    {
+     "titulo": "Cazar bestias grandes",
+     "detalle": "La única forma segura de matar un trol, un wyvern o un dragón: las flechas apenas les hacen daño."
+    },
+    {
+     "titulo": "Unidad de campaña",
+     "detalle": "Unidad lenta del cuartel que acompaña al ejército; necesita dos soldados y gasta virotes que hace el arquero."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "siege_ballista",
+     "nombre": "Madera, cuerda y hierro",
+     "animaciones": {
+      "roll": "Avanza: giran las ruedas.",
+      "fire": "Suelta el virote, que vuela 18 m, y se vuelve a tensar."
+     }
+    }
+   ]
+  },
+  {
+   "id": "siege_tower",
+   "nombre": "Torre de asedio",
+   "categoria": "Armas y herramientas",
+   "descripcion": "Torre de madera de tres pisos y 9,8 m de alto sobre cuatro ruedas, con el frente forrado de pieles, escalera interior, parapeto y un puente que cae desde 5,4 m.",
+   "propuestas": [
+    {
+     "titulo": "Asaltar murallas con adarve",
+     "detalle": "Llega a la muralla, baja el puente y las tropas entran por arriba sin romper la puerta. Solo sirve contra murallas de hasta su altura; un foso la detiene."
+    },
+    {
+     "titulo": "Arma de los asaltantes",
+     "detalle": "En las incursiones mayores, da una razón para tener arqueros en el adarve, fosos y balistas."
+    },
+    {
+     "titulo": "Torre de vigía móvil",
+     "detalle": "En campaña, estacionada da visión lejana y una plataforma de tiro para arqueros."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "siege_tower",
+     "nombre": "Madera y pieles",
+     "animaciones": {
+      "roll": "Avanza: giran las ruedas.",
+      "drop": "Cae el puente sobre la muralla (no se repite)."
+     }
+    }
+   ]
+  },
+  {
+   "id": "balloon_airship",
+   "nombre": "Globo de aire caliente",
+   "categoria": "Transporte",
+   "descripcion": "Globo de gajos rojos y crema de 10 m de alto, con cesta de mimbre, quemador, sacos de lastre y una estaca de amarre.",
+   "propuestas": [
+    {
+     "titulo": "Exploración desde el aire",
+     "detalle": "Mejora tardía del explorador: sube amarrado y despeja la niebla en un radio enorme; con viento, viaja y explora sin importar ríos, mar o montañas."
+    },
+    {
+     "titulo": "Comercio entre islas",
+     "detalle": "En mapas de islas y archipiélagos, lleva mercancía ligera y valiosa (oro, herramientas, ropa) entre pueblos sin barcos."
+    },
+    {
+     "titulo": "Mercader de fantasía",
+     "detalle": "Un mercader gnomo que llega del cielo a cualquier pueblo, tenga o no camino, con mercancía rara."
+    },
+    {
+     "titulo": "Vigía contra incursiones",
+     "detalle": "Amarrado sobre el pueblo, avisa de incursiones, incendios y bestias mucho antes que una torre; de noche no ve."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "balloon_airship",
+     "nombre": "Rojo y crema",
+     "material": "lino, mimbre y hierro",
+     "animaciones": {
+      "float": "Se eleva de su amarre y se mece en el aire."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "mount_horse",
+   "nombre": "Caballo de monta",
+   "categoria": "Transporte",
+   "destacado": true,
+   "descripcion": "Caballo ensillado, con manta, estribos, riendas y un petate detrás, en tres pelajes. 2,4 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Montura para viajes largos",
+     "detalle": "Un aldeano a caballo va tres veces más rápido: el explorador, el mensajero y quien trabaja lejos lo usan si hay establo con caballos. El caballo come heno."
+    },
+    {
+     "titulo": "Caballería",
+     "detalle": "Una unidad nueva del cuartel, rápida y cara: persigue asaltantes que huyen y llega a tiempo a defender puntos lejanos."
+    },
+    {
+     "titulo": "Mensajeros entre pueblos",
+     "detalle": "Las ofertas de comercio y los avisos entre jugadores viajan a caballo en vez de ser instantáneos o ir a pie."
+    },
+    {
+     "titulo": "Animal que se cría y se compra",
+     "detalle": "Los caballos vienen de un establo de cría o se compran a mercaderes: son también lo que tira de carros y diligencias."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "mount_horse",
+     "nombre": "Castaño, manta azul",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "walk": "El caballo camina."
+     }
+    },
+    {
+     "id": "mount_horse_grey",
+     "nombre": "Tordo, manta roja",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "walk": "El caballo camina."
+     }
+    },
+    {
+     "id": "mount_horse_black",
+     "nombre": "Negro, manta de lona",
+     "animaciones": {
+      "idle": "El caballo descansa.",
+      "walk": "El caballo camina."
+     }
+    }
+   ]
+  },
+  {
+   "id": "wagon_passenger",
+   "nombre": "Carro de pasajeros",
+   "categoria": "Transporte",
+   "descripcion": "Carro abierto de cuatro ruedas con tres bancas, toldo a rayas sobre cuatro postes, escalones atrás y dos caballos. 6,9 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Llevar trabajadores lejos",
+     "detalle": "Sale del centro al amanecer con los aldeanos que trabajan en la mina o el campamento de leñadores y los trae al anochecer: los lugares de trabajo lejanos dejan de perder media jornada en el camino."
+    },
+    {
+     "titulo": "Inmigrantes en grupo",
+     "detalle": "Los inmigrantes llegan juntos en un carro en vez de entrar a pie uno por uno."
+    },
+    {
+     "titulo": "Evacuación",
+     "detalle": "Al sonar la campana recoge a quienes están lejos y los lleva al refugio."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "wagon_passenger",
+     "nombre": "Con toldo",
+     "animaciones": {
+      "idle": "Los caballos descansan.",
+      "roll": "Los caballos trotan y las ruedas giran."
+     }
+    }
+   ]
+  },
+  {
+   "id": "litter_sedan_chair",
+   "nombre": "Silla de manos",
+   "categoria": "Transporte",
+   "descripcion": "Silla cubierta granate con ventanas, cortinas y techo en punta, sobre dos varas de 3,8 m para dos porteadores.",
+   "propuestas": [
+    {
+     "titulo": "Traslado de enfermos y heridos",
+     "detalle": "Dos aldeanos llevan al enfermo hasta el sanador: los enfermos que hoy caminan solos, y contagian por el camino, llegan antes y sin contagiar."
+    },
+    {
+     "titulo": "Visitante noble",
+     "detalle": "Un noble de visita recorre el pueblo en silla de manos: según lo que vea (entorno, mercado, taberna) deja oro o se va decepcionado."
+    },
+    {
+     "titulo": "Lujo de las casas ricas",
+     "detalle": "Las casas del último nivel piden servicio de sillas: da trabajo a porteadores y sube su felicidad."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "litter_sedan_chair",
+     "nombre": "Granate"
+    }
+   ]
+  },
+  {
+   "id": "chariot_war",
+   "nombre": "Carro de guerra",
+   "categoria": "Transporte",
+   "descripcion": "Carro ligero de dos ruedas con frente curvo de cuero, jabalinas, un escudo y dos caballos. 4,5 m de largo.",
+   "propuestas": [
+    {
+     "titulo": "Unidad rápida",
+     "detalle": "Lleva a un conductor y un tirador: hostiga a distancia y huye; inútil en bosque y en ladera, temible en llano."
+    },
+    {
+     "titulo": "Carro del jefe",
+     "detalle": "El capitán del ejército va en carro: las tropas cerca de él se mueven más rápido."
+    },
+    {
+     "titulo": "Carreras",
+     "detalle": "En fiestas, carreras de carros en la liza: felicidad y apuestas en oro."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "chariot_war",
+     "nombre": "Dos caballos",
+     "animaciones": {
+      "idle": "Los caballos descansan.",
+      "roll": "Los caballos trotan y las ruedas giran."
+     }
+    }
+   ]
+  }
+ ]
+}

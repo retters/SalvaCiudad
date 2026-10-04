@@ -1,0 +1,1274 @@
+{
+ "familia": "decor",
+ "grupos": [
+  {
+   "id": "decor_clothesline",
+   "nombre": "Tendedero",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "El tendedero que hoy solo sube el entorno (3 × 3 m). Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Anexo que mejora la casa vecina",
+     "detalle": "Deja de contar para todo su radio y pasa a ser un anexo: la casa que lo tiene a 3 m o menos gana higiene (menos enfermedad) y su ropa dura más. Una casa solo aprovecha un tendedero."
+    },
+    {
+     "titulo": "Requisito para subir de nivel",
+     "detalle": "La casa de nivel 2 pide un anexo de servicio cerca (tendedero, leñera o barril de lluvia): el barrio se ve vivido antes de mejorar."
+    },
+    {
+     "titulo": "Indicador de ropa",
+     "detalle": "La ropa tendida aparece solo cuando la casa vecina tiene ropa suficiente; vacío avisa de que falta."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_clothesline",
+     "nombre": "Tendedero"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "decor_service_annexes",
+   "nombre": "Leñera y rincón del barril de lluvia",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Dos adornos de patio de 2 × 2 m. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Reserva de leña de la casa",
+     "detalle": "La leñera junto a una casa le guarda leña para el invierno: sus habitantes hacen un acarreo grande en otoño y no pasan frío si el almacén se vacía."
+    },
+    {
+     "titulo": "Agua contra incendios",
+     "detalle": "El barril de lluvia apaga o frena un incendio que empieza en la casa de al lado; se llena cuando llueve."
+    },
+    {
+     "titulo": "Anexos de servicio",
+     "detalle": "Los dos cuentan como el anexo que pide la casa para subir de nivel."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_firewood_rack",
+     "nombre": "Leñera"
+    },
+    {
+     "id": "decor_tool_corner",
+     "nombre": "Rincón del barril de lluvia"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_home_animals",
+   "nombre": "Gallinero, caseta del perro y palomar",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Tres adornos de patio con animales. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Gallinero: huevos",
+     "detalle": "Da huevos a las casas vecinas, un alimento más para la dieta variada, a cambio de un poco de grano; las gallinas también reducen los insectos del huerto."
+    },
+    {
+     "titulo": "Caseta del perro: guardián",
+     "detalle": "La casa con caseta tiene perro: ladra ante lobos, zorros y ladrones de noche y defiende el gallinero y el huerto."
+    },
+    {
+     "titulo": "Palomar: mensajes",
+     "detalle": "Las palomas llevan avisos: con palomar, las órdenes al ejército y las noticias de otros pueblos (ofertas, incursiones) llegan al instante y no a paso de mensajero."
+    },
+    {
+     "titulo": "Palomar: abono y carne",
+     "detalle": "Además da pichones (carne) y palomina, el mejor abono para los huertos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_chicken_coop",
+     "nombre": "Gallinero"
+    },
+    {
+     "id": "decor_kennel",
+     "nombre": "Caseta del perro"
+    },
+    {
+     "id": "decor_dovecote",
+     "nombre": "Palomar"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "decor_beehives",
+   "nombre": "Colmenas",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Colmenas de paja en su banco y una colmena entre flores. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Miel",
+     "detalle": "Producen miel sin trabajador: un alimento que no se estropea y sube la felicidad. Rinden según las flores que tengan cerca (arriates, huertos, pradera)."
+    },
+    {
+     "titulo": "Polinización",
+     "detalle": "Los huertos, frutales y campos dentro de su radio rinden más."
+    },
+    {
+     "titulo": "Cera e hidromiel",
+     "detalle": "La cera da velas (luz dentro de los talleres para trabajar de noche) y la miel, hidromiel para la taberna."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_beehives",
+     "nombre": "Colmenas"
+    },
+    {
+     "id": "decor_beehive",
+     "nombre": "Colmena entre flores"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "decor_kitchen_gardens",
+   "nombre": "Huertos y parras",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Huerto con carretilla, huerto de calabazas, espiral de hierbas, parral de uvas y espaldera con enredadera. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Huerto de la casa",
+     "detalle": "Junto a una casa, le da verdura propia en temporada: sus habitantes van menos al mercado. Lo cuida la familia en sus ratos libres."
+    },
+    {
+     "titulo": "Hierbas para el herbolario",
+     "detalle": "La espiral de hierbas produce hierbas medicinales cerca del pueblo, sin salir a recolectar."
+    },
+    {
+     "titulo": "Uvas y vino",
+     "detalle": "El parral da uvas (fruta) y, con la prensa de vino, vino: otra bebida para la taberna y un bien caro para vender."
+    },
+    {
+     "titulo": "Calabazas de otoño",
+     "detalle": "El huerto de calabazas da una cosecha tardía que aguanta todo el invierno sin estropearse."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_vegetable_patch",
+     "nombre": "Huerto con carretilla"
+    },
+    {
+     "id": "decor_pumpkin_patch",
+     "nombre": "Huerto de calabazas"
+    },
+    {
+     "id": "decor_herb_spiral",
+     "nombre": "Espiral de hierbas"
+    },
+    {
+     "id": "decor_grape_trellis",
+     "nombre": "Parral de uvas"
+    },
+    {
+     "id": "decor_vine_trellis",
+     "nombre": "Espaldera con enredadera"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_market_stalls",
+   "nombre": "Puestos y mercancía",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Puesto de mercado, de alfarería, tienda de alfombras, balanza, carrito de flores, muestrario del herrero, carreta de mano y barriles y cajas. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Extienden el mercado",
+     "detalle": "Cada puesto colocado lejos del mercado reparte bienes a las casas de su alrededor: el mercado deja de ser un solo edificio y se vuelve una red de puestos."
+    },
+    {
+     "titulo": "Puesto especializado",
+     "detalle": "Cada uno vende una cosa: alfarería (vasijas, un bien nuevo), alfombras y ropa, herramientas (muestrario del herrero), flores (felicidad). Atiende un vendedor."
+    },
+    {
+     "titulo": "Puestos de los mercaderes",
+     "detalle": "Cuando llega un mercader monta uno de estos puestos junto al puesto de comercio; se ve qué trae."
+    },
+    {
+     "titulo": "Balanza: precios justos",
+     "detalle": "Con un puesto de balanza en el mercado, los mercaderes pagan un poco mejor y se evitan disputas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_market_stall",
+     "nombre": "Puesto de mercado"
+    },
+    {
+     "id": "decor_pottery_stall",
+     "nombre": "Puesto de alfarería"
+    },
+    {
+     "id": "decor_rug_tent",
+     "nombre": "Tienda de alfombras"
+    },
+    {
+     "id": "decor_scale_stand",
+     "nombre": "Puesto de la balanza"
+    },
+    {
+     "id": "decor_flower_cart",
+     "nombre": "Carrito de flores"
+    },
+    {
+     "id": "decor_smith_rack",
+     "nombre": "Muestrario del herrero"
+    },
+    {
+     "id": "decor_cart_stand",
+     "nombre": "Carreta de mano"
+    },
+    {
+     "id": "decor_barrel_stack",
+     "nombre": "Barriles y cajas"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "decor_farm_helpers",
+   "nombre": "Cosas de granja",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Carreta de heno, almiares, espantapájaros, secadero de pescado y prensa de vino. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Espantapájaros: protege la cosecha",
+     "detalle": "Los campos dentro de su radio pierden menos grano por los pájaros."
+    },
+    {
+     "titulo": "Almiares y carreta: heno",
+     "detalle": "Guardan heno para el invierno: alimento del ganado y de los animales de tiro, y cama para establos."
+    },
+    {
+     "titulo": "Secadero de pescado: conserva",
+     "detalle": "Junto a la cabaña del pescador, seca el pescado para que dure más sin ahumadero."
+    },
+    {
+     "titulo": "Prensa de vino: oficio",
+     "detalle": "Convierte uvas o fruta en vino o sidra con un trabajador."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_hay_cart",
+     "nombre": "Carreta de heno"
+    },
+    {
+     "id": "decor_haystacks",
+     "nombre": "Almiares"
+    },
+    {
+     "id": "decor_scarecrow",
+     "nombre": "Espantapájaros"
+    },
+    {
+     "id": "decor_fish_rack",
+     "nombre": "Secadero de pescado"
+    },
+    {
+     "id": "decor_wine_press",
+     "nombre": "Prensa de vino"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_garden_structures",
+   "nombre": "Jardines y parques",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Glorieta, pérgolas, arcos de rosas, setos, arbustos y árboles ornamentales, bonsái, bambú, jardín formal y molinillo. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Parque",
+     "detalle": "Varias piezas juntas forman un parque: los aldeanos pasean en su tiempo libre y recuperan ánimo y energía. Un pueblo grande sin parques pierde felicidad."
+    },
+    {
+     "titulo": "Necesitan jardinero",
+     "detalle": "Para no marchitarse piden un jardinero cada cierto tiempo; descuidadas dejan de mejorar el entorno."
+    },
+    {
+     "titulo": "Sombra en verano",
+     "detalle": "Las pérgolas y la glorieta refrescan: quien descansa bajo ellas en verano se recupera antes del calor."
+    },
+    {
+     "titulo": "Bodas y fiestas",
+     "detalle": "La glorieta es el lugar de las bodas: con una, las parejas se forman antes y nacen más niños."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_gazebo",
+     "nombre": "Glorieta de madera"
+    },
+    {
+     "id": "decor_pergola",
+     "nombre": "Pérgola con parra"
+    },
+    {
+     "id": "decor_wisteria_pergola",
+     "nombre": "Pérgola de glicinas"
+    },
+    {
+     "id": "decor_garden_arch",
+     "nombre": "Arco de rosas"
+    },
+    {
+     "id": "decor_rose_arch",
+     "nombre": "Arco de rosas"
+    },
+    {
+     "id": "decor_hedge_square",
+     "nombre": "Seto recortado"
+    },
+    {
+     "id": "decor_topiary",
+     "nombre": "Arbusto ornamental"
+    },
+    {
+     "id": "decor_topiary_pot",
+     "nombre": "Topiario"
+    },
+    {
+     "id": "decor_potted_tree",
+     "nombre": "Árbol en maceta"
+    },
+    {
+     "id": "decor_parterre",
+     "nombre": "Jardín formal"
+    },
+    {
+     "id": "decor_bonsai_rock",
+     "nombre": "Bonsái sobre roca"
+    },
+    {
+     "id": "decor_bamboo",
+     "nombre": "Bambú"
+    },
+    {
+     "id": "decor_windmill_small",
+     "nombre": "Molinillo decorativo"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_flower_beds",
+   "nombre": "Flores",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Rosales, tulipanes, girasoles, lavanda, margaritas, lirios, amapolas, hortensias, orquídeas, flores silvestres, arbusto en flor y cactus. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Alimento de las abejas",
+     "detalle": "Las colmenas rinden según las flores que tienen cerca: las flores pasan a ser parte de la producción de miel."
+    },
+    {
+     "titulo": "Ingredientes",
+     "detalle": "Lavanda y amapolas para el herbolario (remedios), girasoles para aceite (lámparas), rosas y otras para tintes de ropa."
+    },
+    {
+     "titulo": "Floración por estación",
+     "detalle": "Cada flor mejora el entorno solo cuando florece: tulipanes en primavera, girasoles en verano, hortensias en otoño. Hay que combinarlas para tener color todo el año."
+    },
+    {
+     "titulo": "Regalos y funerales",
+     "detalle": "Las flores se usan en bodas, fiestas y entierros: suben la felicidad de esos días."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_rose_bed",
+     "nombre": "Rosal en arriate"
+    },
+    {
+     "id": "decor_tulip_bed",
+     "nombre": "Arriate de tulipanes"
+    },
+    {
+     "id": "decor_sunflowers",
+     "nombre": "Girasoles"
+    },
+    {
+     "id": "decor_lavender",
+     "nombre": "Lavanda"
+    },
+    {
+     "id": "decor_daisies",
+     "nombre": "Margaritas"
+    },
+    {
+     "id": "decor_lilies",
+     "nombre": "Lirios"
+    },
+    {
+     "id": "decor_poppies",
+     "nombre": "Amapolas"
+    },
+    {
+     "id": "decor_hydrangeas",
+     "nombre": "Hortensias"
+    },
+    {
+     "id": "decor_orchids",
+     "nombre": "Orquídeas"
+    },
+    {
+     "id": "decor_wildflowers",
+     "nombre": "Flores silvestres"
+    },
+    {
+     "id": "decor_flowering_shrub",
+     "nombre": "Arbusto en flor"
+    },
+    {
+     "id": "decor_cacti",
+     "nombre": "Cactus"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_magic_flora",
+   "nombre": "Flora mágica",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Campanillas, tocón y flores luminosas, hongos flor, flores y árbol de cristal, loto gigante, corro de hadas, pétalos flotantes, dientes de león gigantes, lirios de fuego, flores de luna y geoda. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Luz sin combustible",
+     "detalle": "Las que brillan iluminan de noche como un farol pequeño, sin gastar nada: son la luz de las razas del bosque."
+    },
+    {
+     "titulo": "Recurso mágico",
+     "detalle": "Dan esencia o cristal en pequeñas cantidades: ingrediente de remedios fuertes, faroles de cristal y edificios mágicos."
+    },
+    {
+     "titulo": "Necesidad de algunas razas",
+     "detalle": "Elfos, elfos oscuros y gente rana piden flora mágica cerca de casa como otros piden capilla."
+    },
+    {
+     "titulo": "Efectos propios",
+     "detalle": "Cada una hace algo: los lirios de fuego calientan, las flores de luna calman (menos peleas), el corro de hadas trae suerte a las cosechas y la geoda sube el valor de la zona."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_glow_bells",
+     "nombre": "Campanillas luminosas"
+    },
+    {
+     "id": "decor_mushroom_flowers",
+     "nombre": "Hongos flor gigantes"
+    },
+    {
+     "id": "decor_crystal_flowers",
+     "nombre": "Flores de cristal"
+    },
+    {
+     "id": "decor_giant_lotus",
+     "nombre": "Loto gigante"
+    },
+    {
+     "id": "decor_glow_stump",
+     "nombre": "Tocón luminoso"
+    },
+    {
+     "id": "decor_fairy_ring",
+     "nombre": "Corro de hadas"
+    },
+    {
+     "id": "decor_floating_petals",
+     "nombre": "Flor de pétalos flotantes"
+    },
+    {
+     "id": "decor_crystal_tree",
+     "nombre": "Árbol de cristal"
+    },
+    {
+     "id": "decor_giant_dandelions",
+     "nombre": "Dientes de león gigantes"
+    },
+    {
+     "id": "decor_fire_lilies",
+     "nombre": "Lirios de fuego"
+    },
+    {
+     "id": "decor_moon_flowers",
+     "nombre": "Flores de luna"
+    },
+    {
+     "id": "decor_geode",
+     "nombre": "Geoda"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_dangerous_flora",
+   "nombre": "Planta carnívora y zarza de ojos",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Dos plantas de fantasía con mala cara. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Defensa viva",
+     "detalle": "La planta carnívora ataca a lo pequeño que pasa a su lado: ratas, conejos que comen el huerto y, con suerte, a un asaltante. Hay que darle carne de vez en cuando."
+    },
+    {
+     "titulo": "Vigía",
+     "detalle": "La zarza de ojos ve en la oscuridad: descubre a enemigos y bestias en un radio corto, de día y de noche, como una torre diminuta."
+    },
+    {
+     "titulo": "Miedo",
+     "detalle": "Bajan la felicidad de las casas vecinas (salvo orcos y elfos oscuros, a quienes les gustan)."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_carnivorous_plant",
+     "nombre": "Planta carnívora gigante"
+    },
+    {
+     "id": "decor_eye_vine",
+     "nombre": "Zarza de ojos"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_water",
+   "nombre": "Fuentes, estanque y cascada",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Fuente de piedra, pozo de la plaza, bebedero de pájaros, estanque con nenúfares y cascada de rocas. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Puntos de agua",
+     "detalle": "La fuente y el pozo de la plaza dan agua como un pozo (con menos alcance) y sirven para apagar incendios."
+    },
+    {
+     "titulo": "Estanque de peces",
+     "detalle": "El estanque cría peces: un poco de pescado sin río, o un criadero para el pescador."
+    },
+    {
+     "titulo": "Frescor",
+     "detalle": "En verano refrescan a las casas vecinas: menos golpes de calor y más ánimo."
+    },
+    {
+     "titulo": "Pájaros contra plagas",
+     "detalle": "El bebedero atrae pájaros que se comen los insectos de huertos y campos cercanos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_fountain",
+     "nombre": "Fuente de piedra"
+    },
+    {
+     "id": "decor_plaza_well",
+     "nombre": "Pozo de la plaza"
+    },
+    {
+     "id": "decor_bird_bath",
+     "nombre": "Bebedero de pájaros"
+    },
+    {
+     "id": "decor_pond",
+     "nombre": "Estanque con nenúfares"
+    },
+    {
+     "id": "decor_waterfall",
+     "nombre": "Cascada de rocas"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_rocks",
+   "nombre": "Rocas y rincones naturales",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Piedra erguida, rocas musgosas, jardín de rocas, rincón de helechos, arco de roca y sendero de piedras. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Sendero de piedras como camino",
+     "detalle": "Es un tramo de camino: quien lo pisa va más rápido y no se embarra. Un camino barato para jardines y barrios."
+    },
+    {
+     "titulo": "Mojones del territorio",
+     "detalle": "Las piedras erguidas marcan el límite del pueblo: dentro de la línea que forman, los guardias patrullan."
+    },
+    {
+     "titulo": "Refugio de fauna útil",
+     "detalle": "Rocas musgosas y helechos alojan sapos y erizos que comen babosas: los huertos vecinos rinden un poco más."
+    },
+    {
+     "titulo": "Piedra de reserva",
+     "detalle": "Se pueden desmontar para recuperar su piedra en una emergencia."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_standing_stone",
+     "nombre": "Piedra erguida"
+    },
+    {
+     "id": "decor_mossy_boulders",
+     "nombre": "Rocas musgosas"
+    },
+    {
+     "id": "decor_rock_garden",
+     "nombre": "Jardín de rocas"
+    },
+    {
+     "id": "decor_fern_log",
+     "nombre": "Rincón de helechos"
+    },
+    {
+     "id": "decor_natural_arch",
+     "nombre": "Arco de roca natural"
+    },
+    {
+     "id": "decor_stepping_stones",
+     "nombre": "Sendero de piedras"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_lights",
+   "nombre": "Faroles y braseros",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Farol, farol doble, par de braseros y pilar de la llama eterna. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Alumbrado con farolero",
+     "detalle": "Ya dan luz; la propuesta es que gasten un poco de combustible (sebo, aceite o carbón) y que un farolero los encienda: sin él se quedan apagados."
+    },
+    {
+     "titulo": "Calles seguras",
+     "detalle": "Las calles alumbradas no tienen robos ni bestias de noche, y quien camina bajo la luz no pierde velocidad."
+    },
+    {
+     "titulo": "Braseros: calor",
+     "detalle": "Los braseros calientan en invierno a quien trabaja o hace guardia cerca."
+    },
+    {
+     "titulo": "Llama eterna: memoria",
+     "detalle": "El pilar de la llama eterna reduce el duelo del pueblo tras una batalla o una epidemia."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_lamp_post",
+     "nombre": "Farol"
+    },
+    {
+     "id": "decor_lamp_double",
+     "nombre": "Farol doble"
+    },
+    {
+     "id": "decor_brazier_pair",
+     "nombre": "Par de braseros"
+    },
+    {
+     "id": "decor_flame_pillar",
+     "nombre": "Pilar de la llama eterna"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_seating",
+   "nombre": "Bancas y jardineras",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Par de bancas, árbol con banca circular, plazoleta y pretil con jardineras y pedestal florido. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Descanso en la calle",
+     "detalle": "Los aldeanos cansados se sientan en la banca más cercana en vez de ir hasta su casa: recuperan menos, pero vuelven antes al trabajo."
+    },
+    {
+     "titulo": "Lugar de los mayores y de encuentro",
+     "detalle": "Los ancianos pasan el día en las bancas; donde hay bancas, las parejas se conocen y la gente conversa: sube la felicidad del barrio."
+    },
+    {
+     "titulo": "Sombra",
+     "detalle": "El árbol con banca da sombra en verano."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_bench_pair",
+     "nombre": "Par de bancas"
+    },
+    {
+     "id": "decor_tree_bench",
+     "nombre": "Árbol con banca circular"
+    },
+    {
+     "id": "decor_plaza_planter",
+     "nombre": "Plazoleta con jardinera"
+    },
+    {
+     "id": "decor_planter_wall",
+     "nombre": "Pretil con jardineras"
+    },
+    {
+     "id": "decor_flower_pedestal",
+     "nombre": "Pedestal florido"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_information",
+   "nombre": "Avisos y señales",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Poste de señales, tablón de anuncios, mojón, estrado del pregonero, asta con estandarte, arco de banderines y cruz del mercado. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Tablón de anuncios: empleo",
+     "detalle": "Los aldeanos sin trabajo y los inmigrantes miran el tablón: los puestos vacantes se cubren antes y los recién llegados encuentran casa más rápido."
+    },
+    {
+     "titulo": "Pregonero: órdenes y noticias",
+     "detalle": "Un pregonero en su estrado difunde los avisos (incursión, incendio, fiesta) por un barrio; sin él, los de lejos tardan en enterarse."
+    },
+    {
+     "titulo": "Señales, mojones y estandartes: caminos e identidad",
+     "detalle": "Las señales y los mojones dan un poco de velocidad en los caminos que marcan y guían a los visitantes; el estandarte y los banderines muestran el color y el emblema del pueblo y se engalanan solos en las fiestas."
+    },
+    {
+     "titulo": "Cruz del mercado: día de mercado",
+     "detalle": "Marca el lugar donde, una vez por estación, se celebra un mercado grande que atrae a varios mercaderes a la vez."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_signpost",
+     "nombre": "Poste de señales"
+    },
+    {
+     "id": "decor_notice_board",
+     "nombre": "Tablón de anuncios"
+    },
+    {
+     "id": "decor_milestone",
+     "nombre": "Mojón"
+    },
+    {
+     "id": "decor_crier_stand",
+     "nombre": "Estrado del pregonero"
+    },
+    {
+     "id": "decor_flagpole",
+     "nombre": "Asta con estandarte"
+    },
+    {
+     "id": "decor_banner_arch",
+     "nombre": "Arco de banderines"
+    },
+    {
+     "id": "decor_market_cross",
+     "nombre": "Cruz del mercado"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_time",
+   "nombre": "Relojes de sol y campana",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Dos relojes de sol y la campana de la plaza. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Horario de trabajo",
+     "detalle": "Con reloj de sol o campana, los trabajadores cercanos salen y vuelven a la vez y regresan antes de que anochezca: se pierde menos jornada."
+    },
+    {
+     "titulo": "Campana de barrio",
+     "detalle": "Repite la alarma de la campana del centro: los barrios lejanos se refugian o se arman sin demora."
+    },
+    {
+     "titulo": "Calendario",
+     "detalle": "El reloj de sol muestra la estación y cuánto falta para el invierno al pasar el cursor."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_sundial_pillar",
+     "nombre": "Reloj de sol"
+    },
+    {
+     "id": "decor_sundial",
+     "nombre": "Reloj de sol"
+    },
+    {
+     "id": "decor_bell_frame",
+     "nombre": "Campana de la plaza"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_pillory",
+   "nombre": "Picota",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "El poste de castigo de la plaza. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Orden público",
+     "detalle": "Si se añaden robos y peleas (pueblos grandes, poca felicidad, mucha cerveza), la picota los reduce; a cambio baja un poco el ánimo de las casas que la ven."
+    },
+    {
+     "titulo": "Castigo a asaltantes capturados",
+     "detalle": "Los asaltantes vencidos pueden acabar ahí: disuade a la siguiente incursión."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_pillory",
+     "nombre": "Picota"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_stage",
+   "nombre": "Tablado",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "El tablado de la plaza. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Fiestas y teatro",
+     "detalle": "Una vez por estación se puede dar una función (cuesta cerveza y comida): sube la felicidad de todo el pueblo unos días."
+    },
+    {
+     "titulo": "Músicos y cómicos ambulantes",
+     "detalle": "De vez en cuando llegan artistas que actúan en el tablado y dejan propina al pueblo; sin tablado pasan de largo."
+    },
+    {
+     "titulo": "Asamblea",
+     "detalle": "En partidas de varios jugadores, ahí se anuncian pactos y se votan decisiones del pueblo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_stage",
+     "nombre": "Tablado"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_hitching_post",
+   "nombre": "Amarradero con abrevadero",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "El amarradero de la plaza. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Parada de animales de tiro",
+     "detalle": "Los caballos y bueyes de carros y carretas descansan y beben ahí: necesario junto al puesto de comercio y los almacenes si llegan carros."
+    },
+    {
+     "titulo": "Estancia de mercaderes",
+     "detalle": "Los mercaderes que llegan en carro se quedan más tiempo si hay amarradero."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_hitching_post",
+     "nombre": "Amarradero con abrevadero"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_public_oven",
+   "nombre": "Horno público",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "El horno de la plaza. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Pan sin panadería",
+     "detalle": "Las casas vecinas hornean su propia harina: rinde menos que la panadería pero no pide trabajador; ideal en barrios lejanos."
+    },
+    {
+     "titulo": "Comida caliente",
+     "detalle": "Las casas con horno cerca gastan menos comida para la misma hambre."
+    },
+    {
+     "titulo": "Riesgo de incendio",
+     "detalle": "Como toda lumbre, puede iniciar un fuego: mejor con un pozo o un barril cerca."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_public_oven",
+     "nombre": "Horno público"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_petrified",
+   "nombre": "Figuras petrificadas",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Quince estatuas de aldeanos, un ciervo y un perro convertidos en piedra. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Una maldición que deshacer",
+     "detalle": "Son gente de verdad: con un remedio caro (herbolario, mago o clérigo) se despetrifica a uno y se suma al pueblo como aldeano agradecido, con su oficio (el herrero, el arquero, el mercader)."
+    },
+    {
+     "titulo": "Rastro de un monstruo",
+     "detalle": "Aparecen en el mapa alrededor de la guarida de un basilisco o una gorgona: avisan del peligro y, al vencerlo, todas despiertan."
+    },
+    {
+     "titulo": "Memoria",
+     "detalle": "Colocadas por el jugador, recuerdan a los caídos: reducen el duelo tras una batalla."
+    },
+    {
+     "titulo": "Solo decoración",
+     "detalle": "Se quedan como adorno con historia."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_petrified_runner",
+     "nombre": "Aldeano petrificado huyendo"
+    },
+    {
+     "id": "decor_petrified_kneeling",
+     "nombre": "Figura petrificada de rodillas"
+    },
+    {
+     "id": "decor_petrified_warrior",
+     "nombre": "Guerrero petrificado"
+    },
+    {
+     "id": "decor_petrified_mother",
+     "nombre": "Madre petrificada con su hijo"
+    },
+    {
+     "id": "decor_petrified_pair",
+     "nombre": "Pareja petrificada"
+    },
+    {
+     "id": "decor_petrified_sunken",
+     "nombre": "Figura petrificada hundida"
+    },
+    {
+     "id": "decor_petrified_child",
+     "nombre": "Niño petrificado con su juguete"
+    },
+    {
+     "id": "decor_petrified_archer",
+     "nombre": "Arquero petrificado"
+    },
+    {
+     "id": "decor_petrified_smith",
+     "nombre": "Herrero petrificado"
+    },
+    {
+     "id": "decor_petrified_dancer",
+     "nombre": "Bailarina petrificada"
+    },
+    {
+     "id": "decor_petrified_merchant",
+     "nombre": "Mercader petrificado"
+    },
+    {
+     "id": "decor_petrified_elder",
+     "nombre": "Anciano petrificado"
+    },
+    {
+     "id": "decor_petrified_deer",
+     "nombre": "Ciervo petrificado"
+    },
+    {
+     "id": "decor_petrified_huddle",
+     "nombre": "Familia petrificada"
+    },
+    {
+     "id": "decor_petrified_dog",
+     "nombre": "Perro petrificado"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "decor_monuments",
+   "nombre": "Monumentos",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Obelisco, arco de piedra, estatua del héroe, muro conmemorativo, ángel, rey en su trono, leones guardianes, estatua de dragón y tótem. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Prestigio",
+     "detalle": "Cada monumento sube el prestigio del pueblo: llegan más inmigrantes y mejores mercaderes. Solo cuenta uno de cada tipo."
+    },
+    {
+     "titulo": "Moral de la tropa",
+     "detalle": "El héroe, los leones y el dragón dan valor: la milicia y los soldados que pelean cerca aguantan más."
+    },
+    {
+     "titulo": "Duelo",
+     "detalle": "El muro conmemorativo y el ángel reducen la tristeza tras muertes en batalla o epidemia."
+    },
+    {
+     "titulo": "Monumento por hazaña",
+     "detalle": "No se compran: se desbloquean al lograr algo (vencer una incursión grande, llegar a 100 habitantes, matar a un dragón)."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_obelisk",
+     "nombre": "Obelisco"
+    },
+    {
+     "id": "decor_stone_arch",
+     "nombre": "Arco de piedra"
+    },
+    {
+     "id": "decor_hero_statue",
+     "nombre": "Estatua del héroe"
+    },
+    {
+     "id": "decor_memorial_wall",
+     "nombre": "Muro conmemorativo"
+    },
+    {
+     "id": "decor_angel",
+     "nombre": "Ángel de piedra"
+    },
+    {
+     "id": "decor_king_throne",
+     "nombre": "Rey en su trono"
+    },
+    {
+     "id": "decor_guardian_lions",
+     "nombre": "Leones guardianes"
+    },
+    {
+     "id": "decor_dragon_statue",
+     "nombre": "Estatua de dragón"
+    },
+    {
+     "id": "decor_totem_pole",
+     "nombre": "Tótem"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_shrines",
+   "nombre": "Capilla y cruz de camino",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Dos altares pequeños para los caminos. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Fe lejos de la capilla",
+     "detalle": "Cubren la necesidad de fe de las casas cercanas, con menos efecto que la capilla: para barrios lejanos y aldeas."
+    },
+    {
+     "titulo": "Protección del camino",
+     "detalle": "Quien pasa junto a una va con mejor ánimo, y de noche su luz ahuyenta a los espectros."
+    },
+    {
+     "titulo": "Descanso del viajero",
+     "detalle": "Los mercaderes y caravanas que encuentran capillas en el camino llegan con mejor disposición y pagan un poco más."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_roadside_shrine",
+     "nombre": "Capilla de camino"
+    },
+    {
+     "id": "decor_wayside_cross",
+     "nombre": "Cruz de camino"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_ruins",
+   "nombre": "Ruinas",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Columnas rotas, arco caído, torre y muro en ruinas, portal del templo, escalera hundida, casa abandonada, cabaña quemada, cobertizo derrumbado, fuente seca, puente roto, mina abandonada y pozo viejo. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Parte del mapa, para explorar",
+     "detalle": "El generador las reparte por el mapa. El explorador las registra: unas dan materiales (piedra labrada, ladrillo), otras un tesoro y otras despiertan algo que vivía dentro."
+    },
+    {
+     "titulo": "Restaurar",
+     "detalle": "Cada ruina se puede reconstruir por menos que un edificio nuevo: la torre vuelve a ser torre de vigía, el puente se repara, la mina se reabre, el pozo se limpia."
+    },
+    {
+     "titulo": "Cantera de piedra labrada",
+     "detalle": "Desmontarlas da piedra y ladrillo ya trabajados, sin cantera ni horno."
+    },
+    {
+     "titulo": "Entradas a lo profundo",
+     "detalle": "El portal, la escalera hundida y la mina son entradas a un subterráneo: de noche pueden salir esqueletos o arañas hasta que se sellan o se limpian."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_broken_columns",
+     "nombre": "Columnas rotas"
+    },
+    {
+     "id": "decor_fallen_arch",
+     "nombre": "Arco caído"
+    },
+    {
+     "id": "decor_tower_stump",
+     "nombre": "Torre en ruinas"
+    },
+    {
+     "id": "decor_ruined_wall",
+     "nombre": "Muro en ruinas"
+    },
+    {
+     "id": "decor_portal_gate",
+     "nombre": "Portal del templo en ruinas"
+    },
+    {
+     "id": "decor_sunken_stairs",
+     "nombre": "Escalera hundida misteriosa"
+    },
+    {
+     "id": "decor_overgrown_house",
+     "nombre": "Fachada de casa abandonada"
+    },
+    {
+     "id": "decor_burnt_cottage",
+     "nombre": "Cabaña quemada"
+    },
+    {
+     "id": "decor_collapsed_shed",
+     "nombre": "Cobertizo derrumbado"
+    },
+    {
+     "id": "decor_dry_fountain",
+     "nombre": "Fuente seca en ruinas"
+    },
+    {
+     "id": "decor_broken_bridge",
+     "nombre": "Puente roto"
+    },
+    {
+     "id": "decor_mine_entrance",
+     "nombre": "Entrada de mina abandonada"
+    },
+    {
+     "id": "decor_old_well",
+     "nombre": "Pozo viejo"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "decor_mysteries",
+   "nombre": "Misterios",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Círculo de runas, cabeza de piedra, monolito, espada gigante, mano del coloso y esqueleto de bestia. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Lugares de poder",
+     "detalle": "Cada uno da un efecto a quien construye cerca: el círculo de runas protege de los no-muertos, el monolito mejora la magia, la espada da valor a la tropa, el esqueleto asusta a las bestias."
+    },
+    {
+     "titulo": "Hallazgos del explorador",
+     "detalle": "Descubrir uno revela un trozo grande de mapa o enseña algo (una receta, un edificio de otra raza)."
+    },
+    {
+     "titulo": "Sucesos",
+     "detalle": "De vez en cuando se activan: el círculo brilla una noche y cura, o la cabeza de piedra habla y pide una ofrenda a cambio de una buena cosecha."
+    },
+    {
+     "titulo": "Piezas de una historia",
+     "detalle": "Son restos del mismo coloso y de la misma guerra: encontrarlos todos desbloquea un monumento único."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_rune_circle",
+     "nombre": "Círculo de runas"
+    },
+    {
+     "id": "decor_stone_head",
+     "nombre": "Cabeza de piedra semienterrada"
+    },
+    {
+     "id": "decor_monolith",
+     "nombre": "Monolito extraño"
+    },
+    {
+     "id": "decor_giant_sword",
+     "nombre": "Espada gigante clavada"
+    },
+    {
+     "id": "decor_colossus_hand",
+     "nombre": "Mano del coloso caído"
+    },
+    {
+     "id": "decor_beast_skeleton",
+     "nombre": "Esqueleto de bestia gigante"
+    }
+   ],
+   "destacado": false
+  },
+  {
+   "id": "decor_wrecks",
+   "nombre": "Restos y abandono",
+   "categoria": "Decoraciones del juego",
+   "descripcion": "Carreta destrozada, barca abandonada, barriles rotos, campamento abandonado y arado oxidado. Ya están en el juego como decoración: hoy solo suben el atractivo de las casas cercanas.",
+   "propuestas": [
+    {
+     "titulo": "Botín para recoger",
+     "detalle": "Repartidos por el mapa, dan al primero que llega unos pocos materiales, comida o herramientas: un empujón al principio de la partida."
+    },
+    {
+     "titulo": "Rastro de peligro",
+     "detalle": "Marcan dónde atacaron asaltantes o bestias: cerca hay una guarida o un campamento enemigo."
+    },
+    {
+     "titulo": "Reparar",
+     "detalle": "La carreta y la barca se pueden reparar por pocos troncos y quedan para el pueblo; el arado, con hierro, mejora una granja."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "decor_wrecked_cart",
+     "nombre": "Carreta destrozada"
+    },
+    {
+     "id": "decor_wrecked_boat",
+     "nombre": "Barca abandonada"
+    },
+    {
+     "id": "decor_broken_barrels",
+     "nombre": "Barriles y cajas rotos"
+    },
+    {
+     "id": "decor_abandoned_camp",
+     "nombre": "Campamento abandonado"
+    },
+    {
+     "id": "decor_rusted_plough",
+     "nombre": "Arado oxidado"
+    }
+   ],
+   "destacado": false
+  }
+ ]
+}

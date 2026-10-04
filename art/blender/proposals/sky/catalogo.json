@@ -1,0 +1,108 @@
+{
+  "familia": "sky",
+  "grupos": [
+    {
+      "id": "sky_airship",
+      "nombre": "Dirigible y torre de amarre",
+      "categoria": "Transporte",
+      "destacado": true,
+      "descripcion": "Dirigible de 22 m: globo de gajos de lona y tela roja con tres aletas, casco de barco de 13 m colgado debajo con camarote, timón, carga y dos hélices; flota a 6 m, amarrado a un bloque de piedra. Y la torre de amarre: armazón de troncos de 9 m con escalera de caracol, plataforma con barandilla, pasarela, anilla a 13 m y manga de viento.",
+      "propuestas": [
+        {"titulo": "Comercio que no necesita camino", "detalle": "Un mercader aéreo llega a cualquier pueblo con torre de amarre, aunque esté aislado por montañas o agua: trae mercancía de lujo y se lleva la del pueblo. Sin torre pasa de largo."},
+        {"titulo": "Línea propia entre pueblos", "detalle": "Muy tardío y caro (lino, madera, hierro): un dirigible propio une dos torres de amarre y mueve pasajeros y carga ligera sin que nadie lo asalte."},
+        {"titulo": "Explorar desde el aire", "detalle": "Enviado a explorar, descubre una franja ancha del mapa en un solo viaje, pero no baja: lo que ve hay que ir a buscarlo a pie."},
+        {"titulo": "Vigía y guerra", "detalle": "Flotando sobre el pueblo ve las incursiones desde muy lejos; armado, deja caer piedras o fuego sobre un asedio, y las ballestas enemigas lo derriban."}
+      ],
+      "modelos": [
+        {"id": "sky_airship", "nombre": "Dirigible", "material": "lino y troncos", "animaciones": {"fly": "Giran las hélices y el casco se mece."}},
+        {"id": "sky_mooring_mast", "nombre": "Torre de amarre", "material": "troncos", "animaciones": {"wind": "Se mueve la manga de viento."}}
+      ]
+    },
+    {
+      "id": "sky_glider",
+      "nombre": "Planeador y su rampa",
+      "categoria": "Transporte",
+      "descripcion": "Ala de tela roja y amarilla de 8,4 m sobre tres largueros, con el trapecio y el arnés del que cuelga quien vuela, sobre una rampa de tablones inclinada de 3 × 4,7 m.",
+      "propuestas": [
+        {"titulo": "Mensajero rápido", "detalle": "Desde una rampa en un sitio alto (cerro, torre, muralla), un mensajero planea hasta otro pueblo o puesto en una fracción del tiempo. Solo de ida y solo cuesta abajo."},
+        {"titulo": "Explorador", "detalle": "Un vuelo descubre el terreno en la dirección elegida hasta donde llegue; después hay que volver andando."},
+        {"titulo": "Cosa de una raza", "detalle": "Propio de gatos o zorros, ligeros: las demás razas no caben en el arnés. Da a esa raza la mejor exploración temprana."}
+      ],
+      "modelos": [
+        {"id": "sky_glider", "nombre": "Planeador", "material": "lino y troncos", "animaciones": {"hover": "El ala se balancea con el viento."}}
+      ]
+    },
+    {
+      "id": "sky_kite_signal",
+      "nombre": "Cometa de señales",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Cometa roja y amarilla de 3 m con cola de lazos, volando a 9 m desde un torno de cuerda sobre una base de tablones.",
+      "propuestas": [
+        {"titulo": "Señales a distancia", "detalle": "Dos puestos que se ven las cometas se avisan al instante: de incursión (roja), de ayuda (amarilla), de todo en calma. Es la almenara de quien no tiene torre."},
+        {"titulo": "Marca para volver", "detalle": "Un campamento de exploradores la sube para que las partidas encuentren el camino de vuelta en bosque o niebla."},
+        {"titulo": "Fiesta", "detalle": "En días de fiesta los niños vuelan cometas: felicidad para las familias con hijos."}
+      ],
+      "modelos": [
+        {"id": "sky_kite_signal", "nombre": "Cometa de señales", "material": "lino", "animaciones": {"fly": "La cometa se mueve y la cola culebrea."}}
+      ]
+    },
+    {
+      "id": "sky_carpet",
+      "nombre": "Alfombra voladora",
+      "categoria": "Transporte",
+      "destacado": true,
+      "descripcion": "Alfombra de 2 × 3 m que flota ondulada a 1,2 m sobre su piedra de aterrizaje, con flecos dorados, un cojín, un farol, un cofre y motas de luz debajo. En rojo y en azul.",
+      "propuestas": [
+        {"titulo": "Transporte de un personaje importante", "detalle": "Lleva a una sola persona (mago, mercader rico, embajador) por encima de ríos y muros, tres veces más rápido que a pie. No lleva carga."},
+        {"titulo": "Visitante raro", "detalle": "Así llega el mercader de lujo de tierras lejanas: aparece, monta su pabellón unos días y se va volando."},
+        {"titulo": "Producto de la magia", "detalle": "Se teje con lino y se encanta en el altar: gasta maná mientras vuela. Es el uso de transporte de la rama mágica."}
+      ],
+      "modelos": [
+        {"id": "sky_carpet_red", "nombre": "Roja", "material": "lino", "animaciones": {"hover": "Flota y se balancea."}},
+        {"id": "sky_carpet_blue", "nombre": "Azul", "material": "lino", "animaciones": {"hover": "Flota y se balancea."}}
+      ]
+    },
+    {
+      "id": "sky_cloud_platform",
+      "nombre": "Nube ascensor",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Una nube domada de 4 m con suelo de tablones y barandilla de latón, que sube y baja 2 m sobre una piedra con marcas que brillan.",
+      "propuestas": [
+        {"titulo": "Ascensor", "detalle": "Sube gente y carga a lo alto de un risco, de una muralla, de una torre de mago o de una isla flotante sin escaleras ni rampas."},
+        {"titulo": "Atalaya móvil", "detalle": "Con un vigía encima se eleva de noche o cuando suena la campana: ve como una torre alta y no hay que construirla."},
+        {"titulo": "Riego", "detalle": "Soltada sobre los campos, llueve sobre ellos: un riego de emergencia que gasta maná."}
+      ],
+      "modelos": [
+        {"id": "sky_cloud_platform", "nombre": "Nube ascensor", "animaciones": {"rise": "Sube, gira un poco y vuelve a bajar."}}
+      ]
+    },
+    {
+      "id": "sky_griffin_roost",
+      "nombre": "Nidal de monturas voladoras",
+      "categoria": "Edificios",
+      "descripcion": "Plataforma redonda de 6 m sobre un tronco de 6 m, con un nido de ramas tejidas lleno de paja y tres huevos, techo cónico de tablillas hasta 10,6 m, percha de aterrizaje, escalera de mano y banderín.",
+      "propuestas": [
+        {"titulo": "Criar grifos, águilas gigantes o guivernos", "detalle": "Un huevo traído de una guarida se incuba aquí y da una montura voladora: el jinete explora, lleva mensajes y combate desde el aire. Come mucha carne."},
+        {"titulo": "Correo aéreo", "detalle": "Dos nidales en pueblos distintos se mandan mensajes y cargas pequeñas en un día."},
+        {"titulo": "Solo para una raza o un héroe", "detalle": "La montura se vincula a un personaje concreto: si muere, el animal se va."}
+      ],
+      "modelos": [
+        {"id": "sky_griffin_roost", "nombre": "Nidal", "material": "troncos", "animaciones": {"flutter": "Ondea el banderín."}}
+      ]
+    },
+    {
+      "id": "sky_lanterns",
+      "nombre": "Farolillos que suben al cielo",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Cinco farolillos de papel con su llama, blancos, rojos y amarillos, subiendo de 2 a 8 m sobre una mesa donde quedan otros tres plegados.",
+      "propuestas": [
+        {"titulo": "Fiesta de las luces", "detalle": "Una noche al año el pueblo suelta farolillos: mucha felicidad, cuesta papel o lino y aceite, y con viento seco puede prender un tejado de paja."},
+        {"titulo": "Recordar a los muertos", "detalle": "Tras una epidemia o una incursión con bajas, soltarlos quita la pena del pueblo antes."},
+        {"titulo": "Costumbre de los zorros", "detalle": "Es la fiesta propia de una raza: un pueblo mixto la gana al acoger a esa raza."}
+      ],
+      "modelos": [
+        {"id": "sky_lanterns", "nombre": "Farolillos", "material": "lino", "animaciones": {"drift": "Los farolillos se mecen en el aire."}}
+      ]
+    }
+  ]
+}

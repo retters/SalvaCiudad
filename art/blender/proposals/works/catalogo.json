@@ -1,0 +1,199 @@
+{
+  "familia": "works",
+  "grupos": [
+    {
+      "id": "works_crane",
+      "nombre": "Grúas de obra",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Tres grúas: la gran grúa de rueda (7,7 m de alto, rueda de 3,2 m en la que caminan dos hombres, sube un sillar 3 m), la cabria de tres palos con torno, y una grúa giratoria pequeña montada sobre un muro en obra, que sube el sillar y lo gira hasta su sitio.",
+      "propuestas": [
+        {"titulo": "Requisito de obras grandes", "detalle": "Castillos, catedrales, torres y maravillas no avanzan de la segunda etapa sin una grúa de rueda junto a la obra. La grúa se construye una vez y se traslada (se desmonta y devuelve su madera)."},
+        {"titulo": "Acelera la construcción", "detalle": "Cualquier obra a menos de 8 m de una grúa se construye más rápido: la cabria +25 % y la de rueda +60 %. Ocupa a uno o dos aldeanos mientras haya obra."},
+        {"titulo": "Solo decorado de obra", "detalle": "Aparece sola junto a las obras de edificios de piedra mientras duran, sin costo ni función: hace que una obra se vea viva."},
+        {"titulo": "Carga y descarga", "detalle": "Junto a un almacén, un muelle o una cantera mueve piedra y troncos: los porteadores cargan el doble por viaje desde ese edificio."}
+      ],
+      "modelos": [
+        {"id": "works_crane_treadwheel", "nombre": "Grúa de rueda", "material": "troncos", "animaciones": {"lift": "La rueda gira y el sillar sube y baja."}},
+        {"id": "works_sheerlegs", "nombre": "Cabria de tres palos", "material": "troncos", "animaciones": {"lift": "Gira el torno y sube la viga."}},
+        {"id": "works_crane_wall", "nombre": "Grúa sobre el muro", "material": "troncos y piedra", "animaciones": {"set_stone": "Sube el sillar, gira y vuelve por otro."}, "nota": "Incluye un tramo de muro de 4 m en obra como base."}
+      ]
+    },
+    {
+      "id": "works_scaffold",
+      "nombre": "Andamio de palos",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Tramo de 4 m de andamio de palos atados con cuerda, con tablones, barandilla, riostras y escaleras; de 1, 2 y 3 pisos (2 m cada uno), y uno de 2 pisos con polea y canasto de piedra. El muro al que sirve queda detrás (+Y).",
+      "propuestas": [
+        {"titulo": "Las obras se ven", "detalle": "Mientras un edificio se construye o se mejora, se le arriman tramos de andamio según su alto: las etapas de obra actuales (2 por huella) ganan altura sin modelar nada nuevo por edificio."},
+        {"titulo": "Reparaciones", "detalle": "Un edificio dañado por incendio, incursión o vejez muestra su andamio mientras lo reparan: se sabe de un vistazo qué se está arreglando."},
+        {"titulo": "Muros más altos", "detalle": "Para subir un muro de nivel hace falta andamio (cuesta troncos y cuerda, y se recupera al terminar): mejorar la muralla entera exige planearlo."}
+      ],
+      "modelos": [
+        {"id": "works_scaffold_1", "nombre": "1 piso", "material": "troncos"},
+        {"id": "works_scaffold_2", "nombre": "2 pisos", "material": "troncos"},
+        {"id": "works_scaffold_3", "nombre": "3 pisos", "material": "troncos"},
+        {"id": "works_scaffold_hoist", "nombre": "2 pisos con polea", "material": "troncos", "animaciones": {"lift": "El canasto de piedra sube y baja."}}
+      ]
+    },
+    {
+      "id": "works_frame",
+      "nombre": "Armazón de madera a medio levantar",
+      "categoria": "Edificios",
+      "descripcion": "Entramado de una casa sobre su zócalo de piedra: postes, riostras, vigas, parte de las cerchas con sus primeros listones, vigas apiladas y una escalera. De 4 × 4 m y de 8 × 5 m.",
+      "propuestas": [
+        {"titulo": "Tercera etapa de obra", "detalle": "Entre la obra a medias y el edificio terminado: las casas y talleres de madera pasan por el armazón antes de cerrarse. Es la etapa en que una tormenta o un incendio hace más daño."},
+        {"titulo": "Casa por terminar", "detalle": "Una casa a la que le faltan materiales se queda en armazón: se ve qué falta sin abrir ningún panel."},
+        {"titulo": "Levantar el armazón entre todos", "detalle": "Evento de pueblo: todos los vecinos libres acuden un día y el armazón se levanta de golpe; sube la felicidad del barrio."}
+      ],
+      "modelos": [
+        {"id": "works_frame_small", "nombre": "4 × 4 m", "material": "troncos"},
+        {"id": "works_frame_long", "nombre": "8 × 5 m", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "works_sawpit",
+      "nombre": "Aserradero de brazo",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Tronco sobre caballetes de 2,1 m y sierra larga de dos hombres (uno arriba y otro abajo), con el montón de aserrín, tablas apiladas a secar y troncos en espera. 6 × 6 m.",
+      "propuestas": [
+        {"titulo": "Tablas antes del aserradero de agua", "detalle": "Convierte troncos en tablas con dos aldeanos, lento y sin río: el paso previo al aserradero hidráulico, que lo sustituye."},
+        {"titulo": "Madera de obra", "detalle": "Los edificios de nivel 2 piden tablas además de troncos: el aserradero de brazo es lo que abre ese nivel."},
+        {"titulo": "Aserrín", "detalle": "Deja aserrín como subproducto: sirve para el ahumadero, para guardar hielo y como cama de establo."}
+      ],
+      "modelos": [
+        {"id": "works_sawpit", "nombre": "Aserradero de brazo", "material": "troncos", "animaciones": {"saw": "La sierra sube y baja."}}
+      ]
+    },
+    {
+      "id": "works_stonecutter",
+      "nombre": "Taller de cantero",
+      "categoria": "Edificios",
+      "descripcion": "Cobertizo de 4 × 2,5 m con el banco de labra y un bloque a medio hacer, maceta y cinceles, lascas por el suelo, sillares apilados, dovelas de un arco cortadas a plantilla y piedra en bruto.",
+      "propuestas": [
+        {"titulo": "De piedra a sillares", "detalle": "Convierte piedra en bruto en sillares, un recurso nuevo que piden las murallas de piedra buena, los puentes de arco y los castillos."},
+        {"titulo": "Junto a la cantera", "detalle": "Como anexo de una cantera, ésta rinde más y saca también piezas grandes (columnas, dinteles) que valen mucho a los mercaderes."},
+        {"titulo": "Mejora la piedra del pueblo", "detalle": "Sin recurso nuevo: con un cantero, las obras de piedra gastan un 20 % menos porque se desperdicia menos."}
+      ],
+      "modelos": [
+        {"id": "works_stonecutter", "nombre": "Taller de cantero", "material": "piedra"}
+      ]
+    },
+    {
+      "id": "works_lodge",
+      "nombre": "Logia de los maestros de obra",
+      "categoria": "Edificios",
+      "descripcion": "Cobertizo cerrado por detrás, de 5 × 3 m, con un suelo de yeso donde el maestro traza los arcos a tamaño real, mesa de planos con compás y escuadra, plantillas colgadas y un capitel de muestra.",
+      "propuestas": [
+        {"titulo": "Maestro de obras", "detalle": "Oficio nuevo: con un maestro, las obras grandes (castillo, catedral, puente de varios arcos, maravillas) se pueden empezar; sin logia no aparecen en el menú."},
+        {"titulo": "Planos", "detalle": "Permite poner en cola varias obras y que los constructores sigan con la siguiente sin esperar órdenes."},
+        {"titulo": "Mejoras de edificios", "detalle": "Es donde se investigan las mejoras de nivel de los edificios existentes."}
+      ],
+      "modelos": [
+        {"id": "works_lodge", "nombre": "Logia", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "works_lime",
+      "nombre": "Calera y poza de mortero",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Horno de cal de piedra, redondo, de 3,8 m de base y 3,2 m de alto, con arco de descarga, rampa de tierra para cargarlo por arriba, piedra caliza y carbón; y la poza donde se apaga la cal y se mezcla el mortero, con arena, criba, barriles de agua y cubos.",
+      "propuestas": [
+        {"titulo": "Cal para construir en piedra", "detalle": "La calera quema piedra y carbón (o leña) y da cal; los muros y edificios de piedra y ladrillo piden cal además de piedra. Sin cal solo se levanta piedra en seco, más débil."},
+        {"titulo": "Encalar", "detalle": "Con cal las casas se blanquean: enferman menos y mejora el entorno. Es lo que da el aspecto de muro encalado."},
+        {"titulo": "Cal para el campo", "detalle": "Los campos abonados con cal rinden más durante unos años."},
+        {"titulo": "Humo", "detalle": "La calera molesta: baja el atractivo de las casas a su alrededor, así que va lejos del centro."}
+      ],
+      "modelos": [
+        {"id": "works_lime_kiln", "nombre": "Calera", "material": "piedra", "animaciones": {"burn": "Arden las llamas de la boca."}},
+        {"id": "works_mortar_pit", "nombre": "Poza de mortero", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "works_brickyard",
+      "nombre": "Tejar",
+      "categoria": "Edificios",
+      "descripcion": "Horno de campaña (ladrillos apilados y cocidos donde están, con sus bocas de fuego), tres hileras de adobes secándose bajo paja, la mesa del moldeador con su gradilla y el montón de barro. 7 × 6 m.",
+      "propuestas": [
+        {"titulo": "Ladrillos sin horno", "detalle": "Versión temprana y barata del horno de ladrillos: cuece arcilla en tandas grandes pero lentas, y pierde una parte de cada tanda."},
+        {"titulo": "Adobe", "detalle": "Las hileras secándose dan adobe (arcilla sin cocer): casas baratas para climas secos que la lluvia va gastando."},
+        {"titulo": "Depende del tiempo", "detalle": "No trabaja con lluvia ni en invierno: los ladrillos crudos se estropean. Obliga a hacer acopio en verano."}
+      ],
+      "modelos": [
+        {"id": "works_brickyard", "nombre": "Tejar", "material": "ladrillo", "animaciones": {"fire": "Sube el humo del horno."}}
+      ]
+    },
+    {
+      "id": "works_carpenter_yard",
+      "nombre": "Patio del carpintero de armar",
+      "categoria": "Edificios",
+      "descripcion": "Viga sobre caballetes a medio escuadrar, con la azuela y las astillas; una cercha de tejado presentada en el suelo para clavijarla; madera escuadrada en pila, el arcón de herramientas y un banco de desbastar. 7 × 7 m.",
+      "propuestas": [
+        {"titulo": "Casas prefabricadas", "detalle": "El carpintero prepara armazones por adelantado: la siguiente casa de madera se levanta en la mitad de tiempo si hay un armazón listo."},
+        {"titulo": "Piezas grandes", "detalle": "Hace las vigas largas que piden puentes, grúas, molinos y barcos: un recurso nuevo (viga) a partir de troncos crecidos."},
+        {"titulo": "Reparar tras el desastre", "detalle": "Tras un incendio o una incursión repara tejados y puertas mucho más rápido que los constructores."}
+      ],
+      "modelos": [
+        {"id": "works_carpenter_yard", "nombre": "Patio del carpintero", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "works_pile_driver",
+      "nombre": "Martinete",
+      "categoria": "Edificios",
+      "descripcion": "Máquina de hincar pilotes: una maza con zunchos de hierro sube entre dos guías de 5,5 m con un torno y cae sobre el pilote. Con pilotes ya hincados y troncos en espera.",
+      "propuestas": [
+        {"titulo": "Construir en el agua", "detalle": "Permite cimentar en río, pantano y costa: muelles, pilas de puente, palafitos y murallas junto al agua piden martinete."},
+        {"titulo": "Terreno blando", "detalle": "En pantano o ribera los edificios pesados se hunden y se agrietan salvo que se pilote antes."},
+        {"titulo": "Etapa de obra de puentes y muelles", "detalle": "Solo visual: aparece mientras se construye un puente o un muelle."}
+      ],
+      "modelos": [
+        {"id": "works_pile_driver", "nombre": "Martinete", "material": "troncos y hierro", "animaciones": {"drive": "La maza sube despacio y cae de golpe."}}
+      ]
+    },
+    {
+      "id": "works_survey",
+      "nombre": "Solar replanteado",
+      "categoria": "Edificios",
+      "descripcion": "Parcela de 4 × 4 m marcada con estacas, banderines y cuerdas, una groma con sus plomadas, la vara de medir pintada, la mesa con el plano, estacas de repuesto y un mazo.",
+      "propuestas": [
+        {"titulo": "Obra planeada", "detalle": "Lo que se ordena construir y aún no tiene materiales ni constructor se ve como solar replanteado en vez de como silueta transparente."},
+        {"titulo": "Reservar terreno", "detalle": "Se puede replantear un solar sin construir: nadie más (aldeanos que se instalan solos, árboles que se replantan) ocupa ese terreno."},
+        {"titulo": "Agrimensor", "detalle": "Oficio que traza caminos y parcelas rectas: las casas que construyen los aldeanos por su cuenta se alinean a lo replanteado."}
+      ],
+      "modelos": [
+        {"id": "works_survey", "nombre": "Solar replanteado"}
+      ]
+    },
+    {
+      "id": "works_paving",
+      "nombre": "Calle en obra",
+      "categoria": "Caminos",
+      "descripcion": "Tramo de 4 × 2 m con la cama de arena, medio empedrado, las cuerdas de guía, el pisón, el montón de adoquines y el de arena.",
+      "propuestas": [
+        {"titulo": "Mejorar caminos", "detalle": "Etapa visible al pasar un camino de tierra a empedrado: mientras dura, por ahí se camina más lento."},
+        {"titulo": "Mantenimiento", "detalle": "Los caminos muy transitados se gastan: cada cierto tiempo aparece un tramo en obra que un peón repara con piedra."}
+      ],
+      "modelos": [
+        {"id": "works_paving", "nombre": "Calle en obra", "material": "piedra"}
+      ]
+    },
+    {
+      "id": "works_demolition",
+      "nombre": "Derribo",
+      "categoria": "Edificios",
+      "descripcion": "Muro de piedra a medio desmontar, apuntalado, con escombros, la piedra aprovechable apilada, vigas rescatadas, pico y palanca.",
+      "propuestas": [
+        {"titulo": "Demoler lleva tiempo y devuelve material", "detalle": "Derribar un edificio pasa por esta etapa: tarda, ocupa constructores y al terminar devuelve parte de la piedra y la madera."},
+        {"titulo": "Cantera de ruinas", "detalle": "Las ruinas del mapa se pueden desmontar para sacar piedra labrada sin cantera."},
+        {"titulo": "Brecha", "detalle": "Es como queda un tramo de muralla que el enemigo ha minado o batido con catapultas, hasta que se repara."}
+      ],
+      "modelos": [
+        {"id": "works_demolition", "nombre": "Derribo", "material": "piedra"}
+      ]
+    }
+  ]
+}

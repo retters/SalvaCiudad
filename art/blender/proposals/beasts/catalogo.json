@@ -1,0 +1,485 @@
+{
+  "familia": "beasts",
+  "grupos": [
+    {
+      "id": "boss_dragon",
+      "nombre": "Gran dragón",
+      "categoria": "Enemigos y criaturas",
+      "destacado": true,
+      "descripcion": "Dragón de cuatro patas, 15 m de la cabeza a la punta de la cola y 16 m de envergadura, con cuernos, cresta, alas de murciélago y cola en pala. Camina a 1,9 m/s y vuela a 11 m/s. El joven mide 6 m.",
+      "propuestas": [
+        {"titulo": "Jefe de incursión", "detalle": "Suceso raro de final de partida: llega volando, se posa junto al pueblo y quema con su aliento los edificios de troncos y paja; los de piedra y ladrillo resisten. Se le vence con balistas, arqueros en las torres y lanceros cuando aterriza. Deja escamas y oro."},
+        {"titulo": "Guarida con tesoro", "detalle": "Duerme en una cueva de montaña que los exploradores descubren. Mientras no se le moleste no ataca; quien mande una expedición bien armada se lleva su tesoro (oro, gemas) o despierta su furia contra el pueblo más cercano."},
+        {"titulo": "Tributo del dragón", "detalle": "En vez de pelear, el pueblo puede pagarle un tributo de ganado y oro cada año: el dragón entonces espanta las incursiones de goblins de la comarca. Dejar de pagar lo vuelve enemigo."},
+        {"titulo": "Dragón joven domado", "detalle": "Un huevo hallado en una ruina se cría en un establo de piedra: el dragón joven es la montura del héroe del pueblo y defiende las murallas; come una res por semana."}
+      ],
+      "modelos": [
+        {"id": "boss_dragon", "nombre": "Rojo", "animaciones": {"idle": "Alas a medio plegar, mueve la cabeza", "walk": "Camina", "fly": "Vuela batiendo las alas", "attack": "Mordisco", "breath": "Se yergue y lanza un chorro de fuego que barre de lado a lado", "die": "Cae de costado"}},
+        {"id": "boss_dragon_green", "nombre": "Verde (aliento de veneno)"},
+        {"id": "boss_dragon_black", "nombre": "Negro (aliento violeta)"},
+        {"id": "boss_dragon_white", "nombre": "Blanco (aliento de hielo)"},
+        {"id": "boss_dragon_young", "nombre": "Joven verde (6 m)", "nota": "El mismo modelo al 40 % del tamaño."}
+      ]
+    },
+    {
+      "id": "boss_hydra",
+      "nombre": "Hidra",
+      "categoria": "Enemigos y criaturas",
+      "destacado": true,
+      "descripcion": "Reptil de pantano de cuerpo pesado, 9 m de largo y 5 m de alto, con cinco cabezas (o tres, más pequeña) sobre cuellos largos que se mueven cada una por su cuenta. Lenta: 1,2 m/s.",
+      "propuestas": [
+        {"titulo": "Jefe del pantano", "detalle": "Vive en una guarida del bioma de pantano y corta los caminos que lo cruzan. Cada cabeza muerde a un defensor distinto; se le vence más rápido con fuego (flechas incendiarias, antorchas), que impide que recupere vida."},
+        {"titulo": "Incursión por el río", "detalle": "En primavera, con el deshielo, sube por el río y ataca muelles, barcas y molinos de agua; los pueblos sin muralla hacia el río son los más expuestos."},
+        {"titulo": "Trofeo alquímico", "detalle": "Al morir deja sangre de hidra, un bien comerciable muy caro con el que el alquimista prepara remedios contra la peste."}
+      ],
+      "modelos": [
+        {"id": "boss_hydra", "nombre": "Cinco cabezas", "animaciones": {"idle": "Las cabezas miran a distintos lados", "walk": "Camina pesada", "attack": "Las cabezas muerden una tras otra", "die": "Cae de costado"}},
+        {"id": "boss_hydra_three", "nombre": "Tres cabezas (joven, 7 m)"}
+      ]
+    },
+    {
+      "id": "boss_cerberus",
+      "nombre": "Cerbero",
+      "categoria": "Enemigos y criaturas",
+      "destacado": true,
+      "descripcion": "Perro negro de tres cabezas, 2,3 m de alto y 4 m de largo, con collares de púas, garras y una brasa en la punta de la cola. Camina a 1,7 m/s y corre.",
+      "propuestas": [
+        {"titulo": "Guardián de la cripta", "detalle": "Custodia la entrada de una cripta o ruina con tesoro: no persigue más allá de unos 20 m de su puesto, así que es un jefe que se elige enfrentar."},
+        {"titulo": "Jefe de incursión nocturna", "detalle": "Encabeza las incursiones de no muertos en las noches de luna nueva: ataca primero a los perros guardianes y a los centinelas, y sus tres mordiscos alcanzan a tres defensores a la vez."},
+        {"titulo": "Perro del señor oscuro domado", "detalle": "Si se le vence sin matarlo (con cadenas del herrero), queda atado a la puerta del pueblo como guardián: ahuyenta ladrones y lobos, pero asusta a los mercaderes."}
+      ],
+      "modelos": [
+        {"id": "boss_cerberus", "nombre": "Cerbero", "animaciones": {"idle": "Las tres cabezas vigilan", "walk": "Camina", "run": "Trota", "attack": "Las tres cabezas muerden", "die": "Cae de costado"}}
+      ]
+    },
+    {
+      "id": "mythic_griffin",
+      "nombre": "Grifo",
+      "categoria": "Enemigos y criaturas",
+      "destacado": true,
+      "descripcion": "Cuerpo de león con cabeza, alas y garras delanteras de águila; 4 m de largo y 7,5 m de envergadura. Camina, corre y vuela a 11 m/s.",
+      "propuestas": [
+        {"titulo": "Montura voladora domable", "detalle": "Anida en los riscos; un halconero experto puede criar un polluelo robado del nido. De adulto lleva a un explorador por encima de ríos y montañas y descubre el mapa tres veces más rápido."},
+        {"titulo": "Ladrón de ganado", "detalle": "Salvaje, baja de la montaña a llevarse ovejas y cabras de los corrales sin techo; lo espantan los arqueros y los perros."},
+        {"titulo": "Emblema y prestigio", "detalle": "Un grifo domado en el pueblo sube el prestigio ante los mercaderes y permite el estandarte del grifo."}
+      ],
+      "modelos": [
+        {"id": "mythic_griffin", "nombre": "Dorado", "animaciones": {"idle": "Quieto, alas plegadas", "walk": "Camina", "run": "Trota", "fly": "Vuela", "attack": "Picotazo", "die": "Cae de costado"}},
+        {"id": "mythic_griffin_snow", "nombre": "De las nieves"}
+      ]
+    },
+    {
+      "id": "monster_manticore",
+      "nombre": "Mantícora",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "León rojizo de 4 m con melena, cuernos, alas de murciélago y cola de escorpión que se arquea sobre el lomo. Camina, corre y vuela.",
+      "propuestas": [
+        {"titulo": "Depredador del desierto", "detalle": "Enemigo del bioma árido: caza caravanas y camellos en las rutas de comercio. Su aguijón envenena (el herido necesita al curandero o muere en unos días)."},
+        {"titulo": "Guarida en ruinas", "detalle": "Vive en ruinas antiguas; quien la mata recupera la carga de las caravanas que devoró."}
+      ],
+      "modelos": [
+        {"id": "monster_manticore", "nombre": "Mantícora", "animaciones": {"idle": "Quieta", "walk": "Camina", "run": "Trota", "fly": "Vuela", "attack": "Muerde y clava el aguijón por encima de la cabeza", "die": "Cae de costado"}}
+      ]
+    },
+    {
+      "id": "monster_chimera",
+      "nombre": "Quimera",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "León de 4 m con una segunda cabeza de cabra que sale del lomo y una serpiente por cola. La cabeza de león escupe fuego.",
+      "propuestas": [
+        {"titulo": "Jefe de las colinas", "detalle": "Ataca granjas apartadas: quema los campos de trigo maduros en verano con su aliento. Se le vence con lanceros; la cabeza de cabra embiste a quien la rodea."},
+        {"titulo": "Suceso de mal augurio", "detalle": "Su aparición anuncia un año de malas cosechas: mientras viva en la comarca, los campos rinden menos."}
+      ],
+      "modelos": [
+        {"id": "monster_chimera", "nombre": "Quimera", "animaciones": {"idle": "Las dos cabezas miran", "walk": "Camina", "run": "Trota", "attack": "Muerden las dos cabezas", "breath": "La cabeza de león lanza fuego", "die": "Cae de costado"}}
+      ]
+    },
+    {
+      "id": "mythic_unicorn",
+      "nombre": "Unicornio",
+      "categoria": "Mascotas y animales",
+      "destacado": true,
+      "descripcion": "Caballo blanco de 1,7 m a la cruz con un cuerno largo que brilla y crin lila. La pesadilla es su versión oscura, con crin y cascos de fuego. Camina a 1,3 m/s y trota a 4 m/s.",
+      "propuestas": [
+        {"titulo": "Visitante del bosque sagrado", "detalle": "Aparece en los claros de bosque viejo que el pueblo no ha talado. Mientras pasta cerca, las casas vecinas ganan entorno y los enfermos sanan antes; talar su bosque lo ahuyenta para siempre."},
+        {"titulo": "Montura de los elfos", "detalle": "Solo los elfos pueden domarlo: es la montura más rápida y no se asusta de los no muertos."},
+        {"titulo": "Pesadilla: montura enemiga", "detalle": "La pesadilla es la montura del jefe de las incursiones de no muertos; quema lo que pisa y espanta al ganado."}
+      ],
+      "modelos": [
+        {"id": "mythic_unicorn", "nombre": "Unicornio", "animaciones": {"idle": "Quieto", "walk": "Camina", "run": "Trota", "eat": "Pasta", "attack": "Embiste con el cuerno", "die": "Cae de costado"}},
+        {"id": "mythic_nightmare", "nombre": "Pesadilla (crin de fuego)"}
+      ]
+    },
+    {
+      "id": "mythic_pegasus",
+      "nombre": "Pegaso",
+      "categoria": "Mascotas y animales",
+      "destacado": true,
+      "descripcion": "Caballo alado de 1,7 m a la cruz y 6 m de envergadura, con alas de plumas. Camina, trota y vuela a 10 m/s.",
+      "propuestas": [
+        {"titulo": "Montura del mensajero", "detalle": "Se cría en un establo en lo alto de una colina. Su jinete lleva mensajes y pequeñas cargas valiosas entre pueblos aliados sin usar los caminos, a salvo de bandidos."},
+        {"titulo": "Explorador aéreo", "detalle": "Revela el mapa desde el aire y avisa de las incursiones un día antes de que lleguen."},
+        {"titulo": "Regalo de alianza", "detalle": "Un potro de pegaso es el regalo que sella una alianza entre dos pueblos de jugadores; no se puede comprar."}
+      ],
+      "modelos": [
+        {"id": "mythic_pegasus", "nombre": "Blanco", "animaciones": {"idle": "Quieto, alas plegadas", "walk": "Camina", "run": "Trota", "eat": "Pasta", "fly": "Vuela", "attack": "Muerde", "die": "Cae de costado"}},
+        {"id": "mythic_pegasus_black", "nombre": "Negro"}
+      ]
+    },
+    {
+      "id": "animal_pony",
+      "nombre": "Poni",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Poni rechoncho de 1,2 m a la cruz, de patas cortas y cabeza grande; suelto, ensillado o con alforjas. Camina a 1 m/s y trota.",
+      "propuestas": [
+        {"titulo": "Montura de enanos y niños", "detalle": "La montura de las razas bajas (enanos, medianos): se cría en el establo con heno y avena, y da a sus exploradores la velocidad de un jinete."},
+        {"titulo": "Animal de carga de mina", "detalle": "Con alforjas saca mineral de la mina hasta el almacén: lleva el doble que un porteador y entra en las galerías donde no cabe una carreta."},
+        {"titulo": "Mascota de la casa", "detalle": "En el corral de una casa acomodada sube la felicidad de la familia y de los niños vecinos."}
+      ],
+      "modelos": [
+        {"id": "animal_pony", "nombre": "Castaño", "animaciones": {"idle": "Quieto", "walk": "Camina", "run": "Trota", "eat": "Pasta", "attack": "Muerde", "die": "Cae de costado"}},
+        {"id": "animal_pony_saddled", "nombre": "Bayo ensillado"},
+        {"id": "animal_pony_pack", "nombre": "Oscuro con alforjas"}
+      ]
+    },
+    {
+      "id": "spirit_stag",
+      "nombre": "Espíritu del bosque",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Gran ciervo de 1,8 m a la cruz (3,5 m con la cornamenta), blanco, con astas y manchas que brillan. La variante de otoño es castaña con astas doradas.",
+      "propuestas": [
+        {"titulo": "Guardián del bosque", "detalle": "Recorre de noche los bosques sin talar. Donde pasa, los árboles crecen más rápido y los replantados prenden siempre; si el pueblo tala más de la cuenta, se marcha y el bosque deja de regenerarse."},
+        {"titulo": "Presagio de buena cosecha", "detalle": "Verlo al amanecer del primer día de primavera es un presagio: ese año los campos rinden más. Cazarlo trae un invierno de enfermedades."},
+        {"titulo": "Aliado de los elfos", "detalle": "En pueblos elfos se le puede llamar con una ofrenda en el santuario del bosque: embiste a los taladores enemigos y a los troles."}
+      ],
+      "modelos": [
+        {"id": "spirit_stag", "nombre": "Blanco de astas verdes", "animaciones": {"idle": "Quieto, mira alrededor", "walk": "Camina", "run": "Trota", "eat": "Pasta", "attack": "Embiste con las astas", "die": "Cae de costado"}},
+        {"id": "spirit_stag_autumn", "nombre": "De otoño, astas doradas"}
+      ]
+    },
+    {
+      "id": "mythic_phoenix",
+      "nombre": "Fénix",
+      "categoria": "Enemigos y criaturas",
+      "destacado": true,
+      "descripcion": "Ave de fuego de 1,8 m de alto y 6 m de envergadura, con cresta de llamas, llamas en el borde de las alas y tres plumas largas en la cola que ondean. Camina y vuela a 12 m/s. Los colores de fuego son materiales claros, pensados para brillar.",
+      "propuestas": [
+        {"titulo": "Presagio que renace", "detalle": "Suceso muy raro: anida un verano en la torre más alta del pueblo. Mientras está, las noches cercanas quedan iluminadas (los no muertos no se acercan) y al irse deja una pluma que el alquimista convierte en un remedio que cura cualquier enfermedad."},
+        {"titulo": "Peligro de incendio", "detalle": "Salvaje, prende fuego a los tejados de paja y a los campos secos por donde pasa volando en verano; se le ahuyenta con arqueros o se le atrae lejos con una hoguera en una colina."},
+        {"titulo": "Guardián del templo del sol", "detalle": "Vive en una ruina del desierto; quien la explora de día lo enfrenta, de noche duerme hecho brasa y el tesoro se puede tomar sin pelear."}
+      ],
+      "modelos": [
+        {"id": "mythic_phoenix", "nombre": "Fénix", "animaciones": {"idle": "Quieto, las plumas de la cola ondean", "walk": "Camina", "fly": "Vuela", "attack": "Picotazo", "die": "Cae de costado"}}
+      ]
+    },
+    {
+      "id": "boss_giant_eagle",
+      "nombre": "Águila gigante",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Águila de cabeza blanca del tamaño de un roc: 2,8 m de alto posada y 10 m de envergadura. Camina a saltos y vuela a 14 m/s.",
+      "propuestas": [
+        {"titulo": "Se lleva el ganado", "detalle": "Anida en los picos; cada pocos días baja y se lleva una oveja, una cabra o un ternero de los corrales abiertos. Se evita con corrales techados o con arqueros de guardia; matar a la pareja acaba con el problema."},
+        {"titulo": "Aliada de los exploradores", "detalle": "Si el pueblo deja una res en su risco cada estación, las águilas avisan de las incursiones que cruzan la montaña y rescatan a un explorador herido una vez al año."},
+        {"titulo": "Nido con huevo", "detalle": "El nido es un lugar que se descubre al explorar: su huevo es un bien de lujo para el comercio o se incuba para tener una montura voladora de las razas pequeñas."}
+      ],
+      "modelos": [
+        {"id": "boss_giant_eagle", "nombre": "Águila gigante", "animaciones": {"idle": "Posada, mira alrededor", "walk": "Camina", "eat": "Desgarra la presa en el suelo", "fly": "Vuela", "attack": "Picotazo", "die": "Cae de costado"}}
+      ]
+    },
+    {
+      "id": "boss_giant",
+      "nombre": "Gigante",
+      "categoria": "Enemigos y criaturas",
+      "destacado": true,
+      "descripcion": "Gigante barbudo de 9,7 m de alto, con manto de pieles y un tronco de árbol por garrote. Camina a unos 5 m/s con zancadas de casi 4 m. El gigante de escarcha es azulado, con un garrote de hielo con púas.",
+      "propuestas": [
+        {"titulo": "Rompe murallas", "detalle": "Jefe de incursión de las montañas: va directo a la muralla y la derriba a garrotazos (daña más a las empalizadas de troncos que a la piedra). Es lento de reflejos: lo frenan las balistas, los fosos y el aceite hirviendo."},
+        {"titulo": "Vecino que cobra peaje", "detalle": "Vive junto a un paso de montaña y exige comida a las caravanas. El pueblo puede alimentarlo (mucho grano y carne cada estación) y a cambio deja pasar a sus mercaderes y aplasta a los bandidos."},
+        {"titulo": "Gigante de escarcha: suceso de invierno", "detalle": "Solo baja en los inviernos más duros; a su paso se hielan los pozos y los campos tardan más en dar la siguiente cosecha. Se retira con el deshielo si el pueblo aguanta."}
+      ],
+      "modelos": [
+        {"id": "boss_giant", "nombre": "Gigante de las colinas", "animaciones": {"idle": "Quieto, mira alrededor", "walk": "Camina", "attack": "Garrotazo de arriba abajo", "die": "Cae de espaldas"}},
+        {"id": "boss_giant_frost", "nombre": "Gigante de escarcha"}
+      ]
+    },
+    {
+      "id": "boss_demon",
+      "nombre": "Demonio de fuego",
+      "categoria": "Enemigos y criaturas",
+      "destacado": true,
+      "descripcion": "Demonio cornudo de 4,6 m, de piel roja con grietas de fuego, alas de murciélago, cola, una hoja de fuego en la mano derecha y un látigo de fuego en la izquierda. Camina a 2,5 m/s.",
+      "propuestas": [
+        {"titulo": "Lo que duerme en la mina profunda", "detalle": "Si los mineros (sobre todo los enanos) cavan la veta más profunda de oro, lo despiertan: sale por la bocamina y hay que cerrar la mina o vencerlo. Su fuego no daña la piedra pero sí todo lo demás."},
+        {"titulo": "Jefe final de las incursiones", "detalle": "Tras varias oleadas de no muertos y goblins, llega él: su látigo alcanza a los defensores de lo alto de la muralla. Se le vence con agua bendita del templo, balistas y héroes."},
+        {"titulo": "Pacto oscuro", "detalle": "Los elfos oscuros pueden invocarlo en un círculo ritual a cambio de un sacrificio de ganado y oro: pelea por el pueblo una noche y luego hay que pagarle otra vez o se vuelve en su contra."}
+      ],
+      "modelos": [
+        {"id": "boss_demon", "nombre": "Demonio de fuego", "animaciones": {"idle": "Las alas y el látigo se mueven", "walk": "Camina", "attack": "Golpea con la hoja y restalla el látigo", "die": "Cae de espaldas"}}
+      ]
+    },
+    {
+      "id": "mythic_centaur_archer",
+      "nombre": "Centauro arquero",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Cuerpo de caballo castaño con torso de hombre barbudo, 2,8 m de alto, con arco, flecha en la mano y carcaj a la espalda. Camina a 1,3 m/s y trota a 4 m/s.",
+      "propuestas": [
+        {"titulo": "Tribu de la estepa", "detalle": "Los centauros son un pueblo neutral de las llanuras: comercian caballos y pieles si se les respeta la pradera, y atacan con flechas a distancia y retirada si el pueblo ara o cerca sus pastos."},
+        {"titulo": "Mercenarios", "detalle": "Se contratan por oro y grano una estación: son arqueros montados que patrullan los caminos y persiguen a los bandidos, más rápidos que cualquier jinete."},
+        {"titulo": "Incursión de saqueo", "detalle": "En otoño bajan a robar el grano recién cosechado de los graneros de las afueras; no asaltan murallas."}
+      ],
+      "modelos": [
+        {"id": "mythic_centaur_archer", "nombre": "Centauro arquero", "animaciones": {"idle": "Quieto con el arco en la mano", "walk": "Camina", "run": "Trota", "shoot": "Gira el torso, tensa el arco y dispara", "attack": "Embiste inclinando el torso", "die": "Cae de costado"}}
+      ]
+    },
+    {
+      "id": "sea_shark",
+      "nombre": "Tiburón",
+      "categoria": "Enemigos y criaturas",
+      "destacado": true,
+      "descripcion": "Tiburón de 4,3 m con aleta dorsal alta, vientre blanco, branquias y una mandíbula con dientes que se abre. Nada a 3 m/s con todo el cuerpo ondulando.",
+      "propuestas": [
+        {"titulo": "La aleta que ronda", "detalle": "Vida del mar abierto: ronda en círculos las barcas de pesca con la aleta fuera del agua. Mientras está cerca, los pescadores recogen menos y un nadador o una barca pequeña pueden ser atacados."},
+        {"titulo": "Presa del arponero", "detalle": "Un barco con arponero lo caza: da mucha carne, aceite de hígado para las lámparas y dientes para adornos que se venden a los mercaderes."},
+        {"titulo": "Señal de banco de peces", "detalle": "Donde hay tiburones hay pesca abundante: sirve de pista para colocar el muelle de pesca."}
+      ],
+      "modelos": [
+        {"id": "sea_shark", "nombre": "Tiburón", "animaciones": {"idle": "Se mece despacio", "swim": "Nada", "attack": "Embiste y abre la mandíbula", "die": "Queda panza arriba"}}
+      ]
+    },
+    {
+      "id": "sea_whale",
+      "nombre": "Ballena",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Ballena azulada de 14 m con vientre claro, surcos en la garganta, aletas y cola horizontal. Nada a 3 m/s y salta fuera del agua.",
+      "propuestas": [
+        {"titulo": "Paso de las ballenas", "detalle": "Suceso de estación: en otoño cruzan frente a la costa y saltan; verlas desde el pueblo sube la felicidad unos días y atrae mercaderes curiosos."},
+        {"titulo": "Caza mayor del mar", "detalle": "Con un barco ballenero se caza una por temporada: aceite para alumbrar todo el invierno, carne y barbas (un bien de lujo). Cazar más de la cuenta hace que dejen de pasar."},
+        {"titulo": "Ballena varada", "detalle": "Rara vez aparece una varada en la playa: mucho alimento y aceite si se aprovecha en pocos días, enfermedad si se deja pudrir."}
+      ],
+      "modelos": [
+        {"id": "sea_whale", "nombre": "Ballena", "animaciones": {"idle": "Flota, mueve las aletas", "swim": "Nada ondulando arriba y abajo", "swim_breach": "Salta fuera del agua y cae", "die": "Queda panza arriba"}}
+      ]
+    },
+    {
+      "id": "sea_dolphin",
+      "nombre": "Delfín",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Delfín gris de 2,7 m con pico, aleta dorsal curva y cola horizontal. Nada a 6 m/s y salta en arco.",
+      "propuestas": [
+        {"titulo": "Compañía de los barcos", "detalle": "Vida ambiental del mar en primavera y verano: saltan junto a los barcos mercantes; un barco acompañado por delfines navega un poco más rápido y no se pierde en la niebla."},
+        {"titulo": "Ayuda a los pescadores", "detalle": "Arrean los bancos de peces hacia las redes: el muelle de pesca rinde más los días que aparecen."},
+        {"titulo": "Aviso de tiburón", "detalle": "Si hay delfines cerca, los tiburones no atacan a las barcas pequeñas."}
+      ],
+      "modelos": [
+        {"id": "sea_dolphin", "nombre": "Delfín", "animaciones": {"idle": "Flota", "swim": "Nada", "swim_jump": "Salta en arco fuera del agua", "die": "Queda panza arriba"}}
+      ]
+    },
+    {
+      "id": "sea_serpent",
+      "nombre": "Serpiente marina",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Serpiente de mar de 18 m, verde azulada con cresta y aletas naranjas: cuello erguido de 4 m, cabeza con cuernos y mandíbula, y el cuerpo en jorobas que asoman del agua. Nada a 4 m/s.",
+      "propuestas": [
+        {"titulo": "Terror de las rutas marítimas", "detalle": "Jefe del mar: hunde barcos mercantes y de pesca en la ruta que ronda, de modo que el comercio por mar se corta hasta vencerla con barcos armados con balistas o pagar a un cazador de monstruos."},
+        {"titulo": "Asalta el puerto", "detalle": "En las tormentas de otoño entra al puerto y destroza muelles y barcas amarradas; una cadena de puerto o una torre con balista la detienen."},
+        {"titulo": "Guardiana de un naufragio", "detalle": "Custodia un pecio con tesoro que se ve desde la costa; quien la venza o la distraiga con cebo se lleva la carga."}
+      ],
+      "modelos": [
+        {"id": "sea_serpent", "nombre": "Serpiente marina", "animaciones": {"idle": "La cabeza se balancea", "swim": "Nada ondulando", "attack": "El cuello se echa atrás y muerde", "die": "Se hunde"}}
+      ]
+    },
+    {
+      "id": "sea_giant_crab",
+      "nombre": "Cangrejo gigante",
+      "categoria": "Enemigos y criaturas",
+      "descripcion": "Cangrejo rojo de 4 m de ancho con las patas, caparazón con púas, ojos en tallos y dos pinzas que se cierran. Camina a 1,4 m/s sobre ocho patas.",
+      "propuestas": [
+        {"titulo": "Enemigo de la playa", "detalle": "Sale del mar con la marea alta y ataca a los recolectores de sal, de almejas y a los pescadores de orilla. Su caparazón resiste las flechas: hacen falta mazas o lanzas."},
+        {"titulo": "Manjar y armadura", "detalle": "Cazarlo da mucha carne de lujo para la posada y un caparazón con el que el armero hace escudos ligeros."},
+        {"titulo": "Plaga de primavera", "detalle": "En primavera suben varios por el río a desovar y rompen las redes y las nasas hasta que pasan."}
+      ],
+      "modelos": [
+        {"id": "sea_giant_crab", "nombre": "Cangrejo gigante", "animaciones": {"idle": "Mueve las pinzas y los ojos", "walk": "Camina (hacia delante; el juego puede girarlo para que ande de lado)", "attack": "Levanta las pinzas y las cierra de golpe", "die": "Se desploma"}}
+      ]
+    },
+    {
+      "id": "sea_giant_turtle",
+      "nombre": "Tortuga marina gigante",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Tortuga de mar de 3,3 m con caparazón de placas, aletas delanteras largas y traseras cortas. Nada a 1,6 m/s remando con las aletas.",
+      "propuestas": [
+        {"titulo": "Desove en la playa", "detalle": "Suceso de verano: salen de noche a desovar en una playa sin construir. Proteger la playa (no construir ni recolectar allí unos días) da felicidad y, al año siguiente, más tortugas; recoger los huevos da comida pero acaba con ellas."},
+        {"titulo": "Balsa viva", "detalle": "Las razas pequeñas (gatos, zorros) pueden domar una para cruzar ríos y bahías con una pequeña carga, sin necesidad de barca."},
+        {"titulo": "Carey para el comercio", "detalle": "Su caparazón es un bien de lujo; cazarla enfada a los elfos vecinos."}
+      ],
+      "modelos": [
+        {"id": "sea_giant_turtle", "nombre": "Tortuga gigante", "animaciones": {"idle": "Posada en el fondo o la arena, mueve la cabeza", "swim": "Nada", "die": "Queda panza arriba"}}
+      ]
+    },
+    {
+      "id": "sea_fish_school",
+      "nombre": "Banco de peces",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Doce peces plateados (o ocho carpas doradas más grandes) en un volumen de 2 × 3 × 1 m, cada uno con su hueso: nadan en grupo sin ir al compás y se dispersan de golpe.",
+      "propuestas": [
+        {"titulo": "Dónde pescar", "detalle": "Marca en el agua los puntos de pesca: el muelle o la barca rinden más cuanto más bancos haya cerca; se agotan si se pesca demasiado y vuelven con las estaciones."},
+        {"titulo": "Vida del río y del estanque", "detalle": "Las carpas doradas son para estanques de jardín: un estanque con peces mejora el entorno de las casas vecinas."},
+        {"titulo": "Reacción al peligro", "detalle": "Se dispersan cuando pasa una barca, un tiburón o cae una piedra: sirve de aviso visual de que algo se mueve bajo el agua."}
+      ],
+      "modelos": [
+        {"id": "sea_fish_school", "nombre": "Plateados (12)", "animaciones": {"swim": "Nadan en grupo", "swim_scatter": "Se dispersan y vuelven a juntarse"}},
+        {"id": "sea_fish_school_gold", "nombre": "Carpas doradas (8)"}
+      ]
+    },
+    {
+      "id": "pet_parrot_perch",
+      "nombre": "Loro en su percha",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Guacamayo de 35 cm sobre una percha de madera de 1,3 m con comedero. No camina: vive en la percha, come, habla y echa a volar.",
+      "propuestas": [
+        {"titulo": "Mascota de la posada", "detalle": "Mueble vivo para la posada o la casa del mercader: sube la felicidad de quien lo visita y repite los rumores, de modo que el jugador se entera antes de los sucesos (mercaderes en camino, incursiones)."},
+        {"titulo": "Regalo de mercader lejano", "detalle": "Solo lo traen los mercaderes de ultramar, muy caro; tenerlo sube el prestigio del pueblo."},
+        {"titulo": "Centinela", "detalle": "Grita cuando un ladrón o un enemigo entra en el edificio donde está, como una alarma barata."}
+      ],
+      "modelos": [
+        {"id": "pet_parrot_perch", "nombre": "Rojo", "animaciones": {"idle": "Mira alrededor", "eat": "Picotea", "talk": "Habla moviendo el pico y la cabeza", "fly": "Echa a volar", "attack": "Picotazo", "die": "Cae de la percha"}},
+        {"id": "pet_parrot_perch_green", "nombre": "Verde"}
+      ]
+    },
+    {
+      "id": "animal_peacock",
+      "nombre": "Pavo real",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Pavo real azul de 1 m de alto con una cola de nueve plumas largas con ojos, cada una con su hueso, que se abre en abanico. Camina a 0,6 m/s.",
+      "propuestas": [
+        {"titulo": "Adorno de jardines", "detalle": "Se suelta en un jardín o una plaza: mejora mucho el entorno de las casas ricas vecinas; despliega la cola de vez en cuando."},
+        {"titulo": "Regalo de prestigio", "detalle": "Bien de lujo que se compra a mercaderes lejanos o se regala a otro pueblo para mejorar la relación."},
+        {"titulo": "Plumas para el sastre", "detalle": "Una vez al año muda las plumas: el sastre las usa para ropa fina de fiesta."}
+      ],
+      "modelos": [
+        {"id": "animal_peacock", "nombre": "Pavo real", "animaciones": {"idle": "Quieto", "walk": "Camina", "eat": "Picotea el suelo", "display": "Levanta la cola y la abre en abanico", "attack": "Picotazo", "die": "Cae de costado"}}
+      ]
+    },
+    {
+      "id": "pet_rabbit",
+      "nombre": "Conejo",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Conejo de 45 cm con orejas largas, patas traseras grandes y cola blanca; pardo o blanco. Corre a saltos cortos.",
+      "propuestas": [
+        {"titulo": "Conejera de la casa", "detalle": "Anexo barato de una casa: unos conejos dan un poco de carne y pieles cada estación con sobras de la huerta, y alegran a los niños."},
+        {"titulo": "Vida del prado", "detalle": "Ambiental de pradera y huertas: aparecen al amanecer y al atardecer; muchos conejos se comen parte de las hortalizas si no hay cerca o perro."},
+        {"titulo": "Caza menor", "detalle": "Presa del cazador y del halconero: carne y piel fina para forros."}
+      ],
+      "modelos": [
+        {"id": "pet_rabbit", "nombre": "Pardo", "animaciones": {"idle": "Mira alrededor", "walk": "Avanza", "run": "Corre", "eat": "Mordisquea", "attack": "Muerde", "die": "Cae de costado"}},
+        {"id": "pet_rabbit_white", "nombre": "Blanco"}
+      ]
+    },
+    {
+      "id": "animal_camel",
+      "nombre": "Camello",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Dromedario de 2,1 m a la joroba y 2,8 m a la cabeza, de cuello largo; suelto, de carga (sacos y tinajas) o con silla de montar. Camina a 1,3 m/s.",
+      "propuestas": [
+        {"titulo": "Caravana del desierto", "detalle": "El animal de carga del bioma árido: cruza el desierto sin agua, donde las mulas y los bueyes no pueden. Los mercaderes del desierto llegan en caravanas de camellos."},
+        {"titulo": "Montura de exploración", "detalle": "Con silla, lleva a un explorador por arena y estepa sin gastar provisiones de agua."},
+        {"titulo": "Leche y lana", "detalle": "En un corral da leche y lana basta cada estación, con menos pasto que una vaca."}
+      ],
+      "modelos": [
+        {"id": "animal_camel", "nombre": "Suelto", "animaciones": {"idle": "Quieto", "walk": "Camina", "run": "Trota", "eat": "Pasta", "attack": "Muerde", "die": "Cae de costado"}},
+        {"id": "animal_camel_pack", "nombre": "De carga"},
+        {"id": "animal_camel_saddled", "nombre": "Claro con silla de montar"}
+      ]
+    },
+    {
+      "id": "animal_truffle_pig",
+      "nombre": "Cerdo trufero",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Cerdo rosado y gordo de 1 m con hocico de disco, orejas caídas, cola rizada y un arnés de cuero con cuerda. Hoza el suelo con el hocico.",
+      "propuestas": [
+        {"titulo": "Buscador de trufas", "detalle": "Acompaña a un recolector por el bosque de robles en otoño: encuentra trufas, un bien de lujo que la posada y los mercaderes pagan muy bien."},
+        {"titulo": "Limpia el bosque", "detalle": "Suelto en un encinar come bellotas y engorda sin gastar grano; a cambio no deja que broten árboles nuevos en esa zona."},
+        {"titulo": "Encuentra lo enterrado", "detalle": "Tiene una pequeña probabilidad de desenterrar monedas o reliquias en ruinas y campos viejos."}
+      ],
+      "modelos": [
+        {"id": "animal_truffle_pig", "nombre": "Cerdo trufero", "animaciones": {"idle": "Quieto, mueve la cola", "walk": "Camina", "run": "Trota", "eat": "Hoza el suelo", "attack": "Muerde", "die": "Cae de costado"}}
+      ]
+    },
+    {
+      "id": "animal_ram",
+      "nombre": "Carnero",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Carnero lanudo de 0,9 m a la cruz con cuernos enroscados; blanco de cara oscura o negro. Camina, trota y embiste con la cabeza baja.",
+      "propuestas": [
+        {"titulo": "Semental del rebaño", "detalle": "Un carnero en el corral hace que las ovejas críen cada primavera: sin él, el rebaño no crece."},
+        {"titulo": "Guardián del rebaño", "detalle": "Embiste a zorros y perros salvajes que entran al corral; no puede con lobos."},
+        {"titulo": "Cuernos y lana", "detalle": "Da más lana que una oveja y, al morir, cuernos para cuernos de señales y mangos de cuchillo."}
+      ],
+      "modelos": [
+        {"id": "animal_ram", "nombre": "Blanco", "animaciones": {"idle": "Quieto", "walk": "Camina", "run": "Trota", "eat": "Pasta", "attack": "Embiste con los cuernos", "die": "Cae de costado"}},
+        {"id": "animal_ram_black", "nombre": "Negro"}
+      ]
+    },
+    {
+      "id": "animal_hounds_pack",
+      "nombre": "Jauría de sabuesos",
+      "categoria": "Mascotas y animales",
+      "destacado": true,
+      "descripcion": "Tres perros de caza (canela, blanco y marrón) en un solo modelo, de 0,65 m a la cruz, con orejas caídas y collar rojo; cada uno tiene sus huesos y se mueve a destiempo. Caminan a 1,3 m/s y corren.",
+      "propuestas": [
+        {"titulo": "Jauría del cazador", "detalle": "Mejora de la cabaña del cazador: con jauría caza presas grandes (ciervos, jabalíes) y trae más carne y pieles; consume carne o sobras cada día."},
+        {"titulo": "Rastreo de bandidos", "detalle": "Tras un robo o una incursión, la jauría sigue el rastro hasta la guarida, que queda descubierta en el mapa."},
+        {"titulo": "Guardia nocturna", "detalle": "Suelta de noche dentro de la muralla, da la alarma y retrasa a ladrones y lobos hasta que llega la guardia."}
+      ],
+      "modelos": [
+        {"id": "animal_hounds_pack", "nombre": "Tres sabuesos", "animaciones": {"idle": "Miran alrededor y mueven la cola", "walk": "Caminan", "run": "Trotan", "attack": "Muerden", "die": "Caen de costado"}}
+      ]
+    },
+    {
+      "id": "animal_mammoth",
+      "nombre": "Mamut",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Mamut lanudo de 3,4 m a la cruz y 3,9 m a la coronilla, con colmillos curvos de 2,5 m, trompa de cinco huesos que se mece y faldón de pelo; suelto o con cajones y fardos de carga. Camina a 1,5 m/s.",
+      "propuestas": [
+        {"titulo": "Gran bestia de carga del norte", "detalle": "Se doma en la tundra con mucho heno: carga lo de cuatro carretas por nieve donde las ruedas no pasan. Come muchísimo, así que solo compensa en rutas largas de madera, piedra o mineral."},
+        {"titulo": "Manada salvaje", "detalle": "Vida de la tundra: la manada cruza en invierno. Cazar uno da carne para todo el pueblo, pieles y marfil, pero exige varios cazadores con lanzas y hay heridos."},
+        {"titulo": "Ariete vivo de los orcos", "detalle": "En las incursiones de orcos, un mamut embiste los portones con los colmillos; se le detiene con fosos, estacas y fuego."}
+      ],
+      "modelos": [
+        {"id": "animal_mammoth", "nombre": "Salvaje", "animaciones": {"idle": "Mece la trompa", "walk": "Camina pesado", "eat": "Baja la cabeza y lleva la trompa al suelo", "attack": "Embiste con los colmillos", "die": "Cae de costado"}},
+        {"id": "animal_mammoth_pack", "nombre": "De carga"}
+      ]
+    },
+    {
+      "id": "spirit_fox_nine_tails",
+      "nombre": "Zorro espíritu de nueve colas",
+      "categoria": "Mascotas y animales",
+      "descripcion": "Zorro blanco de 0,8 m a la cruz con orejas largas, una marca que brilla en la frente y nueve colas en abanico de punta luminosa, cada una con sus huesos. El rojo tiene las puntas de fuego.",
+      "propuestas": [
+        {"titulo": "Favorito del pueblo zorro", "detalle": "Solo aparece en pueblos de la raza zorro con santuario: mientras vive allí, sus mercaderes consiguen mejores precios y los ladrones no entran. Se marcha si el santuario se descuida."},
+        {"titulo": "Guía en la niebla", "detalle": "De noche o con niebla guía a los exploradores perdidos de vuelta al pueblo; quien lo sigue encuentra a veces un lugar oculto del mapa."},
+        {"titulo": "Embaucador", "detalle": "Suceso: roba comida de la despensa por la noche; si se le deja una ofrenda de arroz o pescado deja a cambio una gema, si se le persigue echa a perder una cosecha."}
+      ],
+      "modelos": [
+        {"id": "spirit_fox_nine_tails", "nombre": "Blanco de puntas azules", "animaciones": {"idle": "Las nueve colas ondean", "walk": "Camina", "run": "Trota", "attack": "Muerde", "die": "Cae de costado"}},
+        {"id": "spirit_fox_fire", "nombre": "Rojo de puntas de fuego"}
+      ]
+    },
+    {
+      "id": "spirit_wisp",
+      "nombre": "Fuego fatuo",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Llama flotante de 0,6 m a 1,1 m del suelo, con un anillo de esquirlas que gira y cuatro chispas que la orbitan; verde pálido o ámbar. Flota a 1,5 m/s.",
+      "propuestas": [
+        {"titulo": "Luces del pantano", "detalle": "Vida nocturna del pantano y de los cementerios: los aldeanos que caminan de noche cerca pueden seguirlo y perderse (llegan tarde y cansados). Un farol en el camino lo evita."},
+        {"titulo": "Señal de tesoro o de tumba", "detalle": "Marca por la noche dónde hay algo enterrado: un explorador que cave allí encuentra monedas viejas o despierta a un no muerto."},
+        {"titulo": "Luz mágica domada", "detalle": "El mago lo encierra en un farol: alumbra una calle sin gastar aceite y mejora el entorno de noche."}
+      ],
+      "modelos": [
+        {"id": "spirit_wisp", "nombre": "Verde pálido", "animaciones": {"idle": "Flota, las chispas giran", "fly": "Avanza inclinado", "die": "Se apaga y se hunde"}},
+        {"id": "spirit_wisp_ember", "nombre": "Ámbar"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,572 @@
+{
+ "familia": "annexes",
+ "grupos": [
+  {
+   "id": "annex_clothesline",
+   "nombre": "Tendedero con lavadero",
+   "categoria": "Anexos de casas",
+   "descripcion": "Dos postes con dos cuerdas y ropa tendida que se mece, una tina con tabla de lavar y un cesto. Ocupa 4 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Anexo de higiene",
+     "detalle": "Colocado junto a una casa (a 3 m o menos), sus habitantes lavan la ropa ahí: la ropa dura más y enferman menos. Necesita agua de un pozo cercano."
+    },
+    {
+     "titulo": "Mejora del entorno",
+     "detalle": "Una casa con tendedero se siente habitada: sube un poco su atractivo, lo que ayuda a que suba de nivel."
+    },
+    {
+     "titulo": "Lavandera",
+     "detalle": "Varios tendederos juntos forman un lavadero donde trabaja una lavandera que atiende a todo el barrio; los colores de la ropa dependen de si hay tintorero."
+    },
+    {
+     "titulo": "Indicador",
+     "detalle": "La ropa tendida aparece sola cuando la casa tiene ropa suficiente y desaparece cuando falta: se ve de un vistazo qué casas están bien vestidas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_clothesline",
+     "nombre": "Ropa de lino",
+     "material": "lino",
+     "animaciones": {
+      "sway": "La ropa se mece con el viento."
+     }
+    },
+    {
+     "id": "annex_clothesline_color",
+     "nombre": "Ropa teñida",
+     "material": "lino teñido",
+     "animaciones": {
+      "sway": "La ropa se mece con el viento."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "annex_woodshed",
+   "nombre": "Leñero",
+   "categoria": "Anexos de casas",
+   "descripcion": "Cobertizo de 3,2 × 1,4 m con leña apilada y un tajo con hacha al lado: de palos con techo de paja, o de piedra con tejas.",
+   "propuestas": [
+    {
+     "titulo": "Reserva de leña de la casa",
+     "detalle": "La casa guarda leña para todo el invierno: sus habitantes hacen un solo acarreo grande en otoño en vez de ir cada pocos días, y no pasan frío si el almacén se queda sin leña."
+    },
+    {
+     "titulo": "Leña seca",
+     "detalle": "La leña bajo techo rinde más: la casa gasta menos leña para el mismo calor."
+    },
+    {
+     "titulo": "Partir leña en casa",
+     "detalle": "Con tajo y hacha, la familia convierte troncos en leña en sus ratos libres sin pasar por el leñador."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_woodshed",
+     "nombre": "Palos y paja",
+     "material": "troncos y paja"
+    },
+    {
+     "id": "annex_woodshed_stone",
+     "nombre": "Piedra y tejas",
+     "material": "piedra y tejas"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "annex_outhouse",
+   "nombre": "Letrina",
+   "categoria": "Anexos de casas",
+   "descripcion": "Caseta de 1,4 × 1,4 m con una luna recortada en la puerta y un tubo de ventilación: de tablas, o de ladrillo con tejas.",
+   "propuestas": [
+    {
+     "titulo": "Saneamiento",
+     "detalle": "Cada letrina atiende a las casas vecinas: sin ellas, a partir de cierto tamaño del pueblo aparecen enfermedades. Es el primer escalón de higiene, antes de la casa de baños."
+    },
+    {
+     "titulo": "Abono",
+     "detalle": "Lo que junta se lleva al patio de compost y aumenta el fertilizante que produce."
+    },
+    {
+     "titulo": "Ubicación con consecuencias",
+     "detalle": "Cerca de un pozo contamina el agua (más enfermedad) y pegada a las casas baja el atractivo: hay que ponerla a media distancia."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_outhouse",
+     "nombre": "Tablas",
+     "material": "troncos"
+    },
+    {
+     "id": "annex_outhouse_brick",
+     "nombre": "Ladrillo y tejas",
+     "material": "ladrillo"
+    }
+   ]
+  },
+  {
+   "id": "annex_rain_barrel",
+   "nombre": "Tonel de lluvia",
+   "categoria": "Anexos de casas",
+   "descripcion": "Tonel sobre una losa bajo la esquina de un alero con su canalón, un cubo y dos macetas. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Agua contra incendios en casa",
+     "detalle": "Una casa con tonel apaga sola un incendio que empieza, o lo frena hasta que lleguen del pozo. Se llena con la lluvia: tras una sequía está vacío."
+    },
+    {
+     "titulo": "Agua sin pozo",
+     "detalle": "Cubre la necesidad de agua de la casa mientras llueva de vez en cuando; en verano seco hay que ir al pozo."
+    },
+    {
+     "titulo": "Riego del huerto",
+     "detalle": "El huerto de la casa rinde más con un tonel al lado."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_rain_barrel",
+     "nombre": "Roble",
+     "material": "madera"
+    }
+   ]
+  },
+  {
+   "id": "annex_root_cellar",
+   "nombre": "Bodega bajo tierra",
+   "categoria": "Anexos de casas",
+   "descripcion": "Montículo de tierra con pasto, entrada de piedra con puerta de tablas y un respiradero; cajones, sacos y un barril fuera. Ocupa 5 × 5 m.",
+   "propuestas": [
+    {
+     "titulo": "Despensa de la casa",
+     "detalle": "La casa guarda comida para varias semanas: sus habitantes van menos al mercado y aguantan un desabasto sin pasar hambre."
+    },
+    {
+     "titulo": "La comida dura más",
+     "detalle": "Verduras, raíces, fruta y cerveza se estropean mucho más despacio bajo tierra que en el almacén."
+    },
+    {
+     "titulo": "Refugio",
+     "detalle": "Durante una incursión la familia se esconde ahí con sus cosas: los asaltantes roban menos y no hay heridos en esa casa."
+    },
+    {
+     "titulo": "Nevera",
+     "detalle": "Si en invierno se corta hielo, la bodega conserva también carne y pescado en verano."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_root_cellar",
+     "nombre": "Piedra y tierra",
+     "material": "piedra"
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "annex_pigsty",
+   "nombre": "Pocilga",
+   "categoria": "Anexos de casas",
+   "descripcion": "Corral de 4 × 3 m con cobertizo de paja, lodo, un comedero y un cerdo que hoza.",
+   "propuestas": [
+    {
+     "titulo": "Cerdo de la casa",
+     "detalle": "La familia engorda un cerdo con sus sobras (lo que hoy se pierde de comida estropeada) y en invierno da carne y cuero sin pasar por el cazador."
+    },
+    {
+     "titulo": "Menos desperdicio",
+     "detalle": "La comida que se echa a perder en la casa ya no se tira: baja el riesgo de ratas y enfermedad."
+    },
+    {
+     "titulo": "Mal vecino",
+     "detalle": "Baja el atractivo de las casas de al lado por el olor: sirve en barrios pobres o en las afueras, no junto a casas que quieres subir de nivel."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_pigsty",
+     "nombre": "Palos y paja",
+     "animaciones": {
+      "root": "El cerdo hoza y mueve la cola."
+     }
+    }
+   ]
+  },
+  {
+   "id": "annex_rabbit_hutch",
+   "nombre": "Conejera",
+   "categoria": "Anexos de casas",
+   "descripcion": "Jaula elevada de 2 m con una mitad enrejada, rampa, un conejo dentro y otro fuera, zanahorias y heno.",
+   "propuestas": [
+    {
+     "titulo": "Carne y piel pequeñas pero constantes",
+     "detalle": "Da un poco de carne y de piel cada temporada con muy poca comida (verduras o heno): ideal para casas sin acceso a caza."
+    },
+    {
+     "titulo": "Felicidad de los niños",
+     "detalle": "Las casas con niños que tienen conejera son un poco más felices."
+    },
+    {
+     "titulo": "Cría para vender",
+     "detalle": "Los mercaderes compran conejos vivos; unas pocas conejeras son un ingreso menor sin trabajador asignado."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_rabbit_hutch",
+     "nombre": "Madera",
+     "material": "madera"
+    }
+   ]
+  },
+  {
+   "id": "annex_bread_oven",
+   "nombre": "Horno de pan",
+   "categoria": "Anexos de casas",
+   "descripcion": "Horno de cúpula sobre base de piedra bajo un cobertizo, con fuego en la boca, chimenea que humea, pala, leña y una repisa con panes: de barro con paja, o de ladrillo con tejas. Ocupa 3 × 3 m.",
+   "propuestas": [
+    {
+     "titulo": "Pan hecho en casa",
+     "detalle": "Las casas que lo comparten (hasta cuatro alrededor) convierten harina en pan sin panadería: rinde menos por saco pero ahorra el viaje y un trabajador."
+    },
+    {
+     "titulo": "Comida caliente",
+     "detalle": "La comida cocinada alimenta más: las casas con horno cerca gastan menos comida para la misma hambre."
+    },
+    {
+     "titulo": "Riesgo de incendio",
+     "detalle": "Como toda lumbre, puede iniciar un fuego: más seguro el de ladrillo que el de barro, y mejor con un tonel de lluvia cerca."
+    },
+    {
+     "titulo": "Calor compartido",
+     "detalle": "En invierno calienta a las casas pegadas, que gastan menos leña."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_bread_oven",
+     "nombre": "Barro y paja",
+     "material": "arcilla",
+     "animaciones": {
+      "bake": "Arde el fuego y sale humo por la chimenea."
+     }
+    },
+    {
+     "id": "annex_bread_oven_brick",
+     "nombre": "Ladrillo y tejas",
+     "material": "ladrillo",
+     "animaciones": {
+      "bake": "Arde el fuego y sale humo por la chimenea."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "annex_porch",
+   "nombre": "Porche con mecedora",
+   "categoria": "Anexos de casas",
+   "descripcion": "Tarima techada de 3,4 × 1,8 m adosada a la pared de una casa, con barandal, una mecedora, una mesita y macetas.",
+   "propuestas": [
+    {
+     "titulo": "Descanso mejor",
+     "detalle": "Los habitantes descansan en el porche además de dentro: recuperan la energía más rápido y vuelven antes al trabajo."
+    },
+    {
+     "titulo": "Lugar de los mayores",
+     "detalle": "Los aldeanos ancianos que ya no trabajan se sientan ahí y cuidan a los niños: la casa cría más y los padres trabajan más horas."
+    },
+    {
+     "titulo": "Paso a la casa de nivel alto",
+     "detalle": "Es un requisito visible para subir de nivel la casa, junto con las necesidades de siempre."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_porch",
+     "nombre": "Madera y tejamanil",
+     "material": "madera",
+     "animaciones": {
+      "rock": "La mecedora se mece."
+     }
+    }
+   ]
+  },
+  {
+   "id": "annex_tool_shed",
+   "nombre": "Caseta de herramientas",
+   "categoria": "Anexos de casas",
+   "descripcion": "Caseta de tablas de 2,2 × 1,6 m con la puerta entreabierta, una ventana, pala, rastrillo y azada apoyados, y un banco con macetas.",
+   "propuestas": [
+    {
+     "titulo": "Herramientas a mano",
+     "detalle": "Los habitantes de la casa guardan un juego de herramientas de repuesto: cuando la suya se rompe no pierden el viaje al almacén."
+    },
+    {
+     "titulo": "Mantenimiento",
+     "detalle": "La familia repara su casa sola: la casa no se deteriora ni pide materiales de reparación con tanta frecuencia."
+    },
+    {
+     "titulo": "Oficio en casa",
+     "detalle": "Un habitante sin trabajo hace encargos menores (cestos, mangos, cuerdas) que cuentan como bienes."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_tool_shed",
+     "nombre": "Tablas",
+     "material": "madera"
+    }
+   ]
+  },
+  {
+   "id": "annex_spinning_wheel",
+   "nombre": "Rueca",
+   "categoria": "Anexos de casas",
+   "descripcion": "Rueca de pedal con su rueda de 1 m, un taburete, cestos de lana y ovillos de colores. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Hilado en casa",
+     "detalle": "En sus ratos libres y en invierno, cuando no hay campo que trabajar, la familia convierte lino o lana en hilo: el tejedor produce más con el mismo personal."
+    },
+    {
+     "titulo": "Trabajo de invierno",
+     "detalle": "Da ocupación a los granjeros en invierno, que hoy quedan ociosos."
+    },
+    {
+     "titulo": "Ropa propia",
+     "detalle": "La casa remienda su ropa y la hace durar el doble."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_spinning_wheel",
+     "nombre": "Madera",
+     "material": "madera",
+     "animaciones": {
+      "spin": "Gira la rueda y sube y baja el pedal."
+     }
+    }
+   ]
+  },
+  {
+   "id": "annex_cart_shed",
+   "nombre": "Cochera de carreta",
+   "categoria": "Anexos de casas",
+   "descripcion": "Cobertizo abierto de 3,4 × 2,4 m con techo de paja, una carreta de mano con sacos, arneses en la pared y un barril.",
+   "propuestas": [
+    {
+     "titulo": "Carreta de la casa",
+     "detalle": "Los habitantes acarrean con carreta: llevan varias cargas por viaje al almacén o al mercado."
+    },
+    {
+     "titulo": "Mudanzas y cosecha",
+     "detalle": "Con carreta, la familia que trabaja un campo trae la cosecha en la mitad de viajes."
+    },
+    {
+     "titulo": "Estacionamiento de carros",
+     "detalle": "Los carros y carretas del pueblo necesitan cochera para no deteriorarse; cada una guarda uno."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_cart_shed",
+     "nombre": "Palos y paja",
+     "material": "troncos y paja"
+    }
+   ]
+  },
+  {
+   "id": "annex_playground",
+   "nombre": "Juegos de niños",
+   "categoria": "Anexos de casas",
+   "descripcion": "Columpio doble de troncos de 2,5 m de alto y un sube y baja de tablón de 3,4 m.",
+   "propuestas": [
+    {
+     "titulo": "Felicidad de las familias",
+     "detalle": "Las casas con niños en un radio corto son más felices; el efecto no se acumula con más de un juego."
+    },
+    {
+     "titulo": "Crianza",
+     "detalle": "Los niños que tienen dónde jugar crecen más sanos y llegan a adultos con algo más de vigor."
+    },
+    {
+     "titulo": "Escuela",
+     "detalle": "Es el patio de una futura escuela: junto a ella, los niños aprenden un oficio antes de ser adultos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_playground_swing",
+     "nombre": "Columpio",
+     "animaciones": {
+      "swing": "Los dos asientos se columpian."
+     }
+    },
+    {
+     "id": "annex_playground_seesaw",
+     "nombre": "Sube y baja",
+     "animaciones": {
+      "rock": "El tablón sube y baja."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "annex_home_shrine",
+   "nombre": "Altar doméstico",
+   "categoria": "Anexos de casas",
+   "descripcion": "Hornacina con tejadillo, una figura, dos velas encendidas y ofrendas: sobre un poste de madera, o de piedra. 2,3 m de alto.",
+   "propuestas": [
+    {
+     "titulo": "Fe sin capilla",
+     "detalle": "Cubre la necesidad de fe de las casas pegadas, con menos efecto que la capilla: útil en barrios lejanos o en los primeros años."
+    },
+    {
+     "titulo": "Consuelo",
+     "detalle": "Tras una muerte en la casa, la familia se recupera antes del duelo."
+    },
+    {
+     "titulo": "Protección de noche",
+     "detalle": "Sus velas dan una luz pequeña y, según la raza, ahuyentan a los espectros."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_home_shrine",
+     "nombre": "Madera",
+     "material": "madera",
+     "animaciones": {
+      "burn": "Tiemblan las llamas de las velas."
+     }
+    },
+    {
+     "id": "annex_home_shrine_stone",
+     "nombre": "Piedra",
+     "material": "piedra",
+     "animaciones": {
+      "burn": "Tiemblan las llamas de las velas."
+     }
+    }
+   ]
+  },
+  {
+   "id": "annex_compost_bin",
+   "nombre": "Compostera",
+   "categoria": "Anexos de casas",
+   "descripcion": "Cajón de tablas de tres compartimentos de 3 × 1 m con hojas, tierra y abono, una horca y un cubo.",
+   "propuestas": [
+    {
+     "titulo": "Abono casero",
+     "detalle": "La casa convierte sus desperdicios en un poco de fertilizante para su huerto o para el campo más cercano, sin patio de compost."
+    },
+    {
+     "titulo": "Huerto más rendidor",
+     "detalle": "El huerto de esa casa produce más verdura."
+    },
+    {
+     "titulo": "Limpieza",
+     "detalle": "Menos basura alrededor de la casa: menos ratas y moscas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_compost_bin",
+     "nombre": "Tablas",
+     "material": "madera"
+    }
+   ]
+  },
+  {
+   "id": "annex_grindstone",
+   "nombre": "Piedra de afilar",
+   "categoria": "Anexos de casas",
+   "descripcion": "Muela de 0,85 m con manivela sobre un bastidor, con su pileta de agua, un cubo y herramientas esperando. Ocupa 2 × 2 m.",
+   "propuestas": [
+    {
+     "titulo": "Las herramientas duran más",
+     "detalle": "Quienes viven o trabajan cerca afilan sus herramientas: se gastan más despacio y el pueblo necesita menos hierro."
+    },
+    {
+     "titulo": "Armas afiladas",
+     "detalle": "Junto al cuartel o la armería, la milicia y los soldados hacen algo más de daño."
+    },
+    {
+     "titulo": "Afilador",
+     "detalle": "Un oficio menor: un afilador recorre el pueblo y cobra unas monedas, que entran a la bóveda como impuesto."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_grindstone",
+     "nombre": "Piedra y madera",
+     "animaciones": {
+      "turn": "Gira la muela."
+     }
+    }
+   ]
+  },
+  {
+   "id": "annex_dye_vats",
+   "nombre": "Tinas de tinte",
+   "categoria": "Anexos de casas",
+   "descripcion": "Tres tinas con tinte rojo, azul y amarillo sobre un zócalo de piedra, y un tendedero con paños de colores que se mecen. Ocupa 4 × 3 m.",
+   "propuestas": [
+    {
+     "titulo": "Ropa teñida",
+     "detalle": "Anexo del tejedor o del sastre: con hierbas, bayas o raíces tiñe la ropa. La ropa de color sube la felicidad y se vende más cara."
+    },
+    {
+     "titulo": "Colores del pueblo",
+     "detalle": "Decide los colores de la ropa de los aldeanos, de los estandartes y de los toldos: cada jugador con su paleta."
+    },
+    {
+     "titulo": "Mal olor",
+     "detalle": "Como la curtiduría, molesta a las casas vecinas: conviene apartarla."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_dye_vats",
+     "nombre": "Madera y piedra",
+     "animaciones": {
+      "sway": "Los paños se mecen."
+     }
+    }
+   ]
+  },
+  {
+   "id": "annex_garden_table",
+   "nombre": "Mesa de patio",
+   "categoria": "Anexos de casas",
+   "descripcion": "Mesa larga con dos bancas, mantel, pan, jarra, tazas y fruta, bajo una guirnalda de farolillos entre dos postes. Ocupa 3 × 2,5 m.",
+   "propuestas": [
+    {
+     "titulo": "Comer en compañía",
+     "detalle": "Las casas que la comparten comen juntas: sube la felicidad y se desperdicia menos comida."
+    },
+    {
+     "titulo": "Fiestas",
+     "detalle": "En las fiestas del pueblo (cosecha, solsticio), cada mesa multiplica el efecto de la celebración para sus casas."
+    },
+    {
+     "titulo": "Luz de barrio",
+     "detalle": "Sus farolillos iluminan un poco la calle de noche."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "annex_garden_table",
+     "nombre": "Madera",
+     "material": "madera"
+    }
+   ]
+  }
+ ]
+}

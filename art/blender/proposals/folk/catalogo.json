@@ -1,0 +1,741 @@
+{
+  "familia": "folk",
+  "grupos": [
+    {
+      "id": "folk_farmer",
+      "nombre": "Labradores",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Gente del campo con sombrero de paja: azada al hombro, horca, guadaña, y una labradora de pañuelo rojo con su cesta de semilla. Hechos sobre el cuerpo y el esqueleto de los personajes del juego.",
+      "propuestas": [
+        {"titulo": "Aspecto del oficio de granja", "detalle": "El aldeano asignado a una granja (core:farm) o a un huerto cambia a este modelo mientras trabaja y vuelve al suyo al terminar la jornada. Así se ve de un vistazo quién labra. No cambia ninguna regla."},
+        {"titulo": "Fases del cultivo con su clip", "detalle": "Al arar y desherbar usa `work` de la azada; al sembrar, la labradora usa `work` de esparcir semilla; en la cosecha sale el de la guadaña. El campo se lee desde la cámara sin abrir el panel."},
+        {"titulo": "Milicia de labradores", "detalle": "Cuando suena la campana, los que trabajan la tierra toman la horca: sirve de modelo para la leva (core:levy), que hoy cuesta 3 troncos."}
+      ],
+      "modelos": [
+        {"id": "folk_farmer", "nombre": "Azada", "animaciones": {"idle": "Espera con la azada al hombro", "walk": "Camina con la azada al hombro", "work": "Cava la tierra a dos manos"}},
+        {"id": "folk_farmer_woman", "nombre": "Sembradora", "animaciones": {"idle": "Espera con la cesta", "walk": "Camina con la cesta", "work": "Esparce semilla con la mano derecha"}},
+        {"id": "folk_farmer_pitchfork", "nombre": "Horca", "animaciones": {"idle": "Espera apoyado en la horca", "walk": "Camina con la horca", "work": "Remueve la paja"}},
+        {"id": "folk_reaper", "nombre": "Segador", "animaciones": {"idle": "Espera con la guadaña", "walk": "Camina con la guadaña", "work": "Golpea a ras de suelo"}}
+      ]
+    },
+    {
+      "id": "folk_woodcutter",
+      "nombre": "Leñadores",
+      "categoria": "Personajes",
+      "descripcion": "Leñador de barba y gorro verde y leñadora de coleta, con el hacha al hombro. El clip de talar es el mismo `chop` del juego, con el hacha ya en la mano.",
+      "propuestas": [
+        {"titulo": "Aspecto del oficio de leñador", "detalle": "Modelo de quien trabaja en la cabaña del leñador (core:woodcutter) y en la leñera (core:firewood_splitter). Tala con `work` y, con la fase 87, replanta."},
+        {"titulo": "Guardabosques", "detalle": "Oficio nuevo ligado a la cabaña del leñador mejorada: no tala, replanta y cuida los árboles jóvenes, que crecen un 25 % más rápido en su radio. Usa a la leñadora como aspecto."}
+      ],
+      "modelos": [
+        {"id": "folk_woodcutter", "nombre": "Leñador", "animaciones": {"idle": "Espera con el hacha al hombro", "walk": "Camina", "work": "Tala a dos manos"}},
+        {"id": "folk_woodcutter_woman", "nombre": "Leñadora", "animaciones": {"idle": "Espera con el hacha al hombro", "walk": "Camina", "work": "Tala a dos manos"}}
+      ]
+    },
+    {
+      "id": "folk_hunter",
+      "nombre": "Cazadores",
+      "categoria": "Personajes",
+      "descripcion": "Cazador de capucha y capa verdes y cazadora de gorro con pluma; arco en la mano izquierda y aljaba a la espalda.",
+      "propuestas": [
+        {"titulo": "Aspecto del oficio de cazador", "detalle": "Modelo de quien trabaja en la cabaña del cazador (core:hunter). Dispara con el clip `shoot` del juego, aquí llamado `work`, con el arco ya en la mano."},
+        {"titulo": "Batida contra las fieras", "detalle": "Orden nueva en la cabaña: los cazadores salen en grupo contra lobos y osos que rondan el ganado; cada fiera abatida da carne y cuero y baja el riesgo de ataque una temporada."}
+      ],
+      "modelos": [
+        {"id": "folk_hunter", "nombre": "Cazador", "animaciones": {"idle": "Espera con el arco en pie", "walk": "Camina", "work": "Tensa y dispara"}},
+        {"id": "folk_hunter_woman", "nombre": "Cazadora", "animaciones": {"idle": "Espera con el arco en pie", "walk": "Camina", "work": "Tensa y dispara"}}
+      ]
+    },
+    {
+      "id": "folk_shepherd",
+      "nombre": "Pastores",
+      "categoria": "Personajes",
+      "descripcion": "Pastor con cayado, sombrero de paja y capa corta, y pastora de falda azul.",
+      "propuestas": [
+        {"titulo": "Oficio nuevo: pastor", "detalle": "Con un redil (propuesto en la familia de granja), el pastor saca el rebaño a pastar por el día y lo guarda de noche. Da lana para el tejedor y carne, y el ganado sin pastor queda expuesto a los lobos."},
+        {"titulo": "Trashumancia por estaciones", "detalle": "En invierno el pastor baja el rebaño al pueblo y consume heno; en verano lo aleja y recupera la fertilidad de los campos en barbecho por donde pasa."}
+      ],
+      "modelos": [
+        {"id": "folk_shepherd", "nombre": "Pastor", "animaciones": {"idle": "Espera apoyado en el cayado", "walk": "Camina con el cayado", "work": "Llama al rebaño agitando el cayado"}},
+        {"id": "folk_shepherdess", "nombre": "Pastora", "animaciones": {"idle": "Espera apoyada en el cayado", "walk": "Camina con el cayado", "work": "Llama al rebaño agitando el cayado"}}
+      ]
+    },
+    {
+      "id": "folk_fisher",
+      "nombre": "Pescadores",
+      "categoria": "Personajes",
+      "descripcion": "Pescador descalzo con sombrero de paja, cesta a la espalda y peces al cinto, y pescadora de falda; la caña va en la mano.",
+      "propuestas": [
+        {"titulo": "Aspecto del oficio de pescador", "detalle": "Modelo de quien trabaja en la cabaña del pescador (core:fisher). Lanza con `cast` y espera con `work`, los mismos clips de pesca del juego."},
+        {"titulo": "Pesca según la raza", "detalle": "Sirve de base para mostrar el bono de pesca de gatunos y ranas (races.json): cada raza usa su propio aldeano con caña de la sección de razas."}
+      ],
+      "modelos": [
+        {"id": "folk_fisher", "nombre": "Pescador", "animaciones": {"idle": "Espera con la caña", "walk": "Camina", "work": "Sostiene la caña y da un tirón", "cast": "Lanza el anzuelo (una vez)"}},
+        {"id": "folk_fisher_woman", "nombre": "Pescadora", "animaciones": {"idle": "Espera con la caña", "walk": "Camina", "work": "Sostiene la caña y da un tirón", "cast": "Lanza el anzuelo (una vez)"}}
+      ]
+    },
+    {
+      "id": "folk_miner",
+      "nombre": "Minero",
+      "categoria": "Personajes",
+      "descripcion": "Minero de ropa gris con el pico al hombro y un farol en la otra mano.",
+      "propuestas": [
+        {"titulo": "Aspecto del oficio de minero y cantero", "detalle": "Modelo de quien trabaja en la mina de hierro (core:iron_mine), la cantera (core:stonecutter) y el pozo de arcilla (core:clay_pit). Pica con `work`."},
+        {"titulo": "El farol alumbra de noche", "detalle": "Con día y noche, el minero es de los pocos oficios que sigue trabajando a oscuras: su farol es una luz que se mueve y la mina no para, a cambio de más cansancio."}
+      ],
+      "modelos": [
+        {"id": "folk_miner", "nombre": "Minero", "animaciones": {"idle": "Espera con el pico al hombro y el farol", "walk": "Camina", "work": "Pica a dos manos"}}
+      ]
+    },
+    {
+      "id": "folk_blacksmith",
+      "nombre": "Herreros",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Herrero calvo, de barba negra y brazos al aire, con mandil de cuero, guantes y martillo; y herrera de pañuelo rojo.",
+      "propuestas": [
+        {"titulo": "Aspecto del oficio de herrero", "detalle": "Modelo de quien trabaja en la herrería (core:blacksmith), la fundición (core:smelter) y la armería (core:armory). Martilla con el clip `work` del juego."},
+        {"titulo": "Maestro herrero", "detalle": "Un herrero con años en el oficio pasa a maestro: produce herramientas y armas un 20 % más rápido y puede reparar las armas de la tropa tras una incursión sin gastar hierro."},
+        {"titulo": "Herrador de monturas", "detalle": "Si se aprueban las monturas, la herrería hierra caballos y mulas: las monturas herradas van más rápido por caminos de piedra."}
+      ],
+      "modelos": [
+        {"id": "folk_blacksmith", "nombre": "Herrero", "animaciones": {"idle": "Espera con el martillo en alto", "walk": "Camina", "work": "Martilla sobre el yunque"}},
+        {"id": "folk_blacksmith_woman", "nombre": "Herrera", "animaciones": {"idle": "Espera con el martillo en alto", "walk": "Camina", "work": "Martilla sobre el yunque"}}
+      ]
+    },
+    {
+      "id": "folk_builder",
+      "nombre": "Albañiles y carpinteros",
+      "categoria": "Personajes",
+      "descripcion": "Albañil de gorro blanco con paleta y cubo de mortero, peón de camisa naranja con mazo y carpintero de mandil con serrucho.",
+      "propuestas": [
+        {"titulo": "Aspecto de los peones de obra", "detalle": "Los peones que levantan edificios y caminos toman estos modelos mientras construyen: el albañil en obras de piedra y ladrillo, el carpintero en las de troncos, el del mazo en caminos y empalizadas."},
+        {"titulo": "Oficio nuevo: maestro de obras", "detalle": "Un edificio de gremio de constructores (2 plazas) acelera un 15 % todas las obras en su radio y permite reparar muros dañados por una incursión sin volver a pagar el material."}
+      ],
+      "modelos": [
+        {"id": "folk_mason", "nombre": "Albañil", "animaciones": {"idle": "Espera con paleta y cubo", "walk": "Camina", "work": "Golpea y asienta la piedra"}},
+        {"id": "folk_builder", "nombre": "Peón del mazo", "animaciones": {"idle": "Espera con el mazo", "walk": "Camina", "work": "Clava a golpes"}},
+        {"id": "folk_carpenter", "nombre": "Carpintero", "animaciones": {"idle": "Espera con el serrucho", "walk": "Camina", "work": "Trabaja la madera"}}
+      ]
+    },
+    {
+      "id": "folk_baker",
+      "nombre": "Panaderos y molinero",
+      "categoria": "Personajes",
+      "descripcion": "Panadero barrigón de gorro blanco con la pala y una hogaza, panadera con rodillo y cesta de pan, y molinero enharinado con un saco al hombro.",
+      "propuestas": [
+        {"titulo": "Aspecto de la cadena del pan", "detalle": "El molinero es el modelo del molino (core:mill) y los panaderos, de la panadería (core:bakery): trigo → harina → pan se sigue con la vista de un edificio a otro."},
+        {"titulo": "Reparto de pan a las casas", "detalle": "La panadera con cesta recorre las casas cercanas a la panadería: las que alcanza cuentan como abastecidas de pan sin que el vecino vaya al mercado, lo que sube su felicidad."}
+      ],
+      "modelos": [
+        {"id": "folk_baker", "nombre": "Panadero", "animaciones": {"idle": "Espera con la pala del horno", "walk": "Camina", "work": "Levanta la pala con la hogaza"}},
+        {"id": "folk_baker_woman", "nombre": "Panadera", "animaciones": {"idle": "Espera con el rodillo y la cesta", "walk": "Camina", "work": "Amasa a golpes de rodillo"}},
+        {"id": "folk_miller", "nombre": "Molinero", "animaciones": {"idle": "Espera con el saco al hombro", "walk": "Camina con el saco", "work": "Trabaja en la muela"}}
+      ]
+    },
+    {
+      "id": "folk_innkeeper",
+      "nombre": "Taberneros y cervecero",
+      "categoria": "Personajes",
+      "descripcion": "Tabernero gordo de mandil con una jarra en alto, tabernera con dos jarras y cervecero con cazo y cubo de mosto.",
+      "propuestas": [
+        {"titulo": "Aspecto de taberna y cervecería", "detalle": "El tabernero es el modelo de la taberna (core:tavern) y el cervecero, de la cervecería (core:brewery). El tabernero brinda con `work` cuando hay clientes."},
+        {"titulo": "Posada para viajeros", "detalle": "La taberna mejorada aloja a mercaderes y mensajeros: mientras se quedan pagan oro (core:gold) por noche y consumen cerveza y pan; el tabernero es quien los atiende."}
+      ],
+      "modelos": [
+        {"id": "folk_innkeeper", "nombre": "Tabernero", "animaciones": {"idle": "Espera con la jarra", "walk": "Camina", "work": "Brinda agitando la jarra"}},
+        {"id": "folk_innkeeper_woman", "nombre": "Tabernera", "animaciones": {"idle": "Espera con dos jarras", "walk": "Camina", "work": "Sirve agitando la jarra"}},
+        {"id": "folk_brewer", "nombre": "Cervecero", "animaciones": {"idle": "Espera con cazo y cubo", "walk": "Camina", "work": "Remueve y golpea la cuba"}}
+      ]
+    },
+    {
+      "id": "folk_carrier",
+      "nombre": "Porteadores",
+      "categoria": "Personajes",
+      "descripcion": "Porteador encorvado con armazón a la espalda (caja, saco y fardo) y bastón, y aguadora con cesto y dos cubos.",
+      "propuestas": [
+        {"titulo": "Aspecto del acarreo", "detalle": "El aldeano que lleva recursos entre edificios y almacenes cambia a este modelo cuando va cargado; hoy el juego ya tiene `carry_walk`, pero la carga a la espalda se ve mucho mejor desde arriba."},
+        {"titulo": "Oficio nuevo: mozo de almacén", "detalle": "El almacén (core:storehouse) recibe plazas de porteador: llevan el doble que un aldeano normal y dejan libres a los artesanos, que ya no dejan el taller para acarrear."},
+        {"titulo": "Aguadora", "detalle": "Lleva agua del pozo (core:well) a las casas lejanas y a los incendios: las casas fuera del radio del pozo dejan de sufrir por falta de agua mientras ella las atienda."}
+      ],
+      "modelos": [
+        {"id": "folk_carrier", "nombre": "Porteador", "animaciones": {"idle": "Espera apoyado en el bastón", "walk": "Camina cargado"}},
+        {"id": "folk_carrier_woman", "nombre": "Aguadora", "animaciones": {"idle": "Espera con los cubos", "walk": "Camina con los cubos"}}
+      ]
+    },
+    {
+      "id": "folk_merchant",
+      "nombre": "Mercaderes",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Mercader rico de túnica morada, cuello de piel, gorro con pluma, bolsa de oro y balanza en la mano; y mercadera de verde con diadema.",
+      "propuestas": [
+        {"titulo": "El mercader que visita", "detalle": "Es el visitante que llega al puesto de comercio (core:trading_post) con mercancías y precios que cambian: camina desde el borde del mapa, se queda unos días y pregona con `work`."},
+        {"titulo": "Tendero del mercado", "detalle": "Aspecto de quien atiende el mercado (core:market): con un tendero, las casas del radio reciben comida variada y ropa sin que cada vecino vaya al almacén."},
+        {"titulo": "Mercader propio", "detalle": "Unidad civil que se contrata por oro: sale con una mula a vender excedentes a otro pueblo o al borde del mapa y vuelve con oro; puede ser asaltada por bandidos en el camino."}
+      ],
+      "modelos": [
+        {"id": "folk_merchant", "nombre": "Mercader", "animaciones": {"idle": "Espera con la balanza en alto", "walk": "Camina", "work": "Ofrece su mercancía con un gesto amplio"}},
+        {"id": "folk_merchant_woman", "nombre": "Mercadera", "animaciones": {"idle": "Espera con la balanza en alto", "walk": "Camina", "work": "Ofrece su mercancía con un gesto amplio"}}
+      ]
+    },
+    {
+      "id": "folk_healer",
+      "nombre": "Sanadores",
+      "categoria": "Personajes",
+      "descripcion": "Herborista de verde con cofia, mandil blanco y cesta de hierbas, y médico de capucha con cuenco y cazo.",
+      "propuestas": [
+        {"titulo": "Aspecto de herborista y médico", "detalle": "La herborista es el modelo de la casa de hierbas (core:herbalist) y de la sanadora (core:healer); el médico, del core:physician. Se distinguen por el color y el cuenco."},
+        {"titulo": "Visita a los enfermos", "detalle": "En una epidemia el sanador sale a las casas con enfermos en vez de esperar: cura más rápido pero puede contagiarse; con cofia y mandil se le sigue por el pueblo."}
+      ],
+      "modelos": [
+        {"id": "folk_healer", "nombre": "Herborista", "animaciones": {"idle": "Espera con la cesta", "walk": "Camina", "work": "Reparte hierbas"}},
+        {"id": "folk_healer_man", "nombre": "Médico", "animaciones": {"idle": "Espera con el cuenco", "walk": "Camina", "work": "Prepara el remedio en el cuenco"}}
+      ]
+    },
+    {
+      "id": "folk_priest",
+      "nombre": "Clero",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Sacerdote de blanco con mitra, cuello dorado y báculo con un sol; sacerdotisa de diadema; y monje gordo de hábito marrón con un libro.",
+      "propuestas": [
+        {"titulo": "Aspecto del oficio de capilla", "detalle": "Modelo de quien atiende la capilla (core:chapel): cubre la necesidad de religión del radio. Bendice con `work`, levantando el báculo."},
+        {"titulo": "Entierros y bodas", "detalle": "El sacerdote oficia los sucesos del ciclo de vida: va al cementerio cuando alguien muere (evita la pena prolongada de la familia) y casa a las parejas (sube la natalidad de esa casa)."},
+        {"titulo": "Monje copista", "detalle": "Oficio nuevo en un monasterio o escuela: el monje produce saber, que acelera las mejoras del centro del pueblo. Usa el clip de leer."}
+      ],
+      "modelos": [
+        {"id": "folk_priest", "nombre": "Sacerdote", "animaciones": {"idle": "Espera con el báculo", "walk": "Camina con el báculo", "work": "Bendice alzando el báculo"}},
+        {"id": "folk_priestess", "nombre": "Sacerdotisa", "animaciones": {"idle": "Espera con el báculo", "walk": "Camina con el báculo", "work": "Bendice alzando el báculo"}},
+        {"id": "folk_monk", "nombre": "Monje", "animaciones": {"idle": "Espera con el libro", "walk": "Camina", "work": "Lee y pasa las páginas"}}
+      ]
+    },
+    {
+      "id": "folk_scholar",
+      "nombre": "Sabio y maestra",
+      "categoria": "Personajes",
+      "descripcion": "Sabio de barba blanca y túnica azul con libro y pluma, y maestra de moño gris con libro y puntero.",
+      "propuestas": [
+        {"titulo": "Oficio nuevo: maestro de escuela", "detalle": "Una escuela (edificio nuevo) con una maestra: los niños que pasan por ella trabajan un 10 % mejor de adultos en cualquier oficio. Cuesta pan y ropa mientras estudian."},
+        {"titulo": "Sabio del centro del pueblo", "detalle": "El sabio vive en el centro del pueblo (core:town_center) desde cierto nivel: avisa con antelación de heladas, plagas e incursiones, como un consejero."}
+      ],
+      "modelos": [
+        {"id": "folk_scholar", "nombre": "Sabio", "animaciones": {"idle": "Espera con libro y pluma", "walk": "Camina", "work": "Escribe en el libro"}},
+        {"id": "folk_teacher", "nombre": "Maestra", "animaciones": {"idle": "Espera con libro y puntero", "walk": "Camina", "work": "Señala con el puntero"}}
+      ]
+    },
+    {
+      "id": "folk_tax_collector",
+      "nombre": "Recaudadores",
+      "categoria": "Personajes",
+      "descripcion": "Recaudador de negro con gorro de pluma, pergamino, pluma, llaves y bolsa; y otro con el cofre de la recaudación.",
+      "propuestas": [
+        {"titulo": "Oficio nuevo: recaudador", "detalle": "Sale de la bóveda (core:vault) y recorre las casas: cada casa visitada da oro (core:gold) según su nivel, y pierde un poco de felicidad. El jugador elige cada cuánto pasa."},
+        {"titulo": "Cobrador del rey", "detalle": "Suceso: llega un recaudador de fuera a pedir tributo. Pagar en oro o en bienes evita una penalización de comercio; negarse puede traer soldados."},
+        {"titulo": "Peaje", "detalle": "Apostado en una puerta (core:gate) o un puente, cobra a los mercaderes que pasan."}
+      ],
+      "modelos": [
+        {"id": "folk_tax_collector", "nombre": "Con pergamino", "animaciones": {"idle": "Espera con el pergamino", "walk": "Camina", "work": "Apunta lo cobrado"}},
+        {"id": "folk_tax_collector_chest", "nombre": "Con el cofre", "animaciones": {"idle": "Espera con el cofre", "walk": "Camina con el cofre", "work": "Pide el pago con la mano"}}
+      ]
+    },
+    {
+      "id": "folk_town_crier",
+      "nombre": "Pregonero",
+      "categoria": "Personajes",
+      "descripcion": "Pregonero de casaca roja y capa azul, con una campana dorada en alto y el bando en la otra mano.",
+      "propuestas": [
+        {"titulo": "Avisos del juego en persona", "detalle": "Cada aviso importante (incursión, helada, llegada de mercaderes) lo da el pregonero en la plaza o en su tarima (core:decor_crier_stand): se oye la campana y la cámara puede ir a él."},
+        {"titulo": "Llamada a la milicia", "detalle": "Es quien hace sonar la campana que arma a los aldeanos: con pregonero, la milicia responde desde más lejos y más rápido."}
+      ],
+      "modelos": [
+        {"id": "folk_town_crier", "nombre": "Pregonero", "animaciones": {"idle": "Espera con la campana en alto", "walk": "Camina", "work": "Hace sonar la campana"}}
+      ]
+    },
+    {
+      "id": "folk_bard",
+      "nombre": "Bardos",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Bardo de jubón amarillo, capa verde y gorro con pluma, con el laúd colgado al pecho; y barda de rojo. Tocan y bailan.",
+      "propuestas": [
+        {"titulo": "Entretenimiento ambulante", "detalle": "El bardo cubre la necesidad de entretenimiento: toca en la taberna (core:tavern) o en el escenario (core:decor_stage) y sube la felicidad del radio mientras suena."},
+        {"titulo": "Visitante de fiesta", "detalle": "Suceso: un bardo de paso pide posada. Si se le da pan y cerveza se queda una temporada y atrae inmigrantes al subir la deseabilidad del pueblo."},
+        {"titulo": "Cantar las hazañas", "detalle": "Tras rechazar una incursión, el bardo canta la victoria: la tropa gana moral para el siguiente combate."}
+      ],
+      "modelos": [
+        {"id": "folk_bard", "nombre": "Bardo", "animaciones": {"idle": "Espera con el laúd al pecho", "walk": "Camina", "work": "Toca el laúd", "dance": "Baila a saltos"}},
+        {"id": "folk_bard_woman", "nombre": "Barda", "animaciones": {"idle": "Espera con el laúd al pecho", "walk": "Camina", "work": "Toca el laúd", "dance": "Baila a saltos"}}
+      ]
+    },
+    {
+      "id": "folk_gravedigger",
+      "nombre": "Sepulturero",
+      "categoria": "Personajes",
+      "descripcion": "Sepulturero encorvado, de capucha oscura, con la pala al hombro y un farol.",
+      "propuestas": [
+        {"titulo": "Oficio nuevo: sepulturero", "detalle": "Con un cementerio, recoge a los muertos y los entierra. Sin él, los cuerpos sin enterrar bajan la felicidad y favorecen las enfermedades."},
+        {"titulo": "Tras la incursión", "detalle": "Después de un combate limpia el campo: cada caído enterrado devuelve su equipo (core:weapons, core:bows) al almacén."}
+      ],
+      "modelos": [
+        {"id": "folk_gravedigger", "nombre": "Sepulturero", "animaciones": {"idle": "Espera con la pala al hombro y el farol", "walk": "Camina", "work": "Cava la fosa"}}
+      ]
+    },
+    {
+      "id": "folk_child",
+      "nombre": "Niños",
+      "categoria": "Personajes",
+      "descripcion": "Niño de 1,18 m con espada de madera y niña de 1,14 m con un ramo de flores; cabeza grande, corren y juegan.",
+      "propuestas": [
+        {"titulo": "La niñez del ciclo de vida", "detalle": "Modelo de los aldeanos durante la niñez (hoy no tienen aspecto propio): no trabajan, corretean cerca de casa y juegan con `play`."},
+        {"titulo": "Ayudantes", "detalle": "Desde cierta edad ayudan en tareas ligeras (recoger bayas, llevar agua) a media velocidad, salvo que haya escuela."}
+      ],
+      "modelos": [
+        {"id": "folk_child_boy", "nombre": "Niño", "animaciones": {"idle": "Espera con su espada de madera", "walk": "Camina", "run": "Corre", "play": "Da espadazos al aire"}},
+        {"id": "folk_child_girl", "nombre": "Niña", "animaciones": {"idle": "Espera con sus flores", "walk": "Camina", "run": "Corre", "play": "Baila a saltos"}}
+      ]
+    },
+    {
+      "id": "folk_elder",
+      "nombre": "Ancianos",
+      "categoria": "Personajes",
+      "descripcion": "Anciano encorvado de barba blanca larga con bastón, y anciana de moño y chal, también con bastón.",
+      "propuestas": [
+        {"titulo": "La vejez del ciclo de vida", "detalle": "Modelo de los aldeanos al llegar a la vejez: dejan el trabajo, caminan despacio y pasan el día en la plaza o el banco."},
+        {"titulo": "Consejo de ancianos", "detalle": "Cada anciano vivo da un pequeño bono al oficio que tuvo (enseña a los jóvenes), así que cuidar la salud del pueblo rinde."}
+      ],
+      "modelos": [
+        {"id": "folk_elder", "nombre": "Anciano", "animaciones": {"idle": "Espera apoyado en el bastón", "walk": "Camina con el bastón"}},
+        {"id": "folk_elder_woman", "nombre": "Anciana", "animaciones": {"idle": "Espera apoyada en el bastón", "walk": "Camina con el bastón"}}
+      ]
+    },
+    {
+      "id": "folk_noble",
+      "nombre": "Nobles",
+      "categoria": "Personajes",
+      "descripcion": "Señor de corona, capa roja larga, cuello de armiño, cadena al pecho y espada al cinto; y dama de vestido morado con diadema y capa.",
+      "propuestas": [
+        {"titulo": "El señor del pueblo", "detalle": "Avatar del jugador: aparece cuando el centro del pueblo llega a cierto nivel, vive en él y pasea. En multijugador cada señor viste el color de su jugador."},
+        {"titulo": "Vecinos de casa noble", "detalle": "Las casas del nivel más alto se pueblan con nobles: pagan mucho más oro al recaudador pero exigen belleza del entorno, entretenimiento y ropa."},
+        {"titulo": "Visita del señor vecino", "detalle": "Suceso diplomático: un noble llega con séquito; agasajarlo con cerveza y pan mejora los precios de los mercaderes un año."}
+      ],
+      "modelos": [
+        {"id": "folk_noble", "nombre": "Señor", "animaciones": {"idle": "Espera", "walk": "Camina", "work": "Saluda con la mano en alto"}},
+        {"id": "folk_noble_lady", "nombre": "Dama", "animaciones": {"idle": "Espera con una flor", "walk": "Camina", "work": "Saluda con la mano en alto"}}
+      ]
+    },
+    {
+      "id": "folk_beggar",
+      "nombre": "Mendigos",
+      "categoria": "Personajes",
+      "descripcion": "Mendigo descalzo y encorvado, de capucha y barba, con un cuenco y un palo; y mendiga de pañuelo.",
+      "propuestas": [
+        {"titulo": "Aldeano sin casa", "detalle": "Aspecto de quien se queda sin vivienda o sin comida: deambula y pide; verlos en la plaza avisa al jugador de que falta vivienda antes de mirar los números."},
+        {"titulo": "Vagabundos que llegan", "detalle": "Tras una mala cosecha en el entorno llegan mendigos: acogerlos cuesta comida, pero pasan a ser aldeanos; echarlos baja la felicidad de la capilla."}
+      ],
+      "modelos": [
+        {"id": "folk_beggar", "nombre": "Mendigo", "animaciones": {"idle": "Espera con el cuenco tendido", "walk": "Camina con el palo", "work": "Pide agitando el cuenco"}},
+        {"id": "folk_beggar_woman", "nombre": "Mendiga", "animaciones": {"idle": "Espera con el cuenco tendido", "walk": "Camina", "work": "Pide agitando el cuenco"}}
+      ]
+    },
+    {
+      "id": "folk_militia",
+      "nombre": "Milicia",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Aldeanos armados: lanza y escudo redondo con los colores del pueblo, una miliciana con capacete y un labrador con su horca.",
+      "propuestas": [
+        {"titulo": "Aspecto de la leva", "detalle": "Modelo de core:levy (3 troncos, poder 2): al sonar la campana el aldeano cambia a miliciano y, al acabar la alarma, vuelve a su oficio. El de la horca es la leva sin equipar."},
+        {"titulo": "Aspecto del lancero", "detalle": "El de escudo y capacete sirve para core:spearman (1 de core:weapons, poder 5): misma silueta que la leva pero con hierro, para ver de lejos cuánta tropa buena hay."},
+        {"titulo": "Color del jugador", "detalle": "El tabardo y el centro del escudo usan el material `accent`, que se puede recolorear con el color de cada jugador en multijugador."}
+      ],
+      "modelos": [
+        {"id": "folk_militia", "nombre": "Miliciano", "animaciones": {"idle": "Espera con la lanza en pie", "walk": "Camina", "run": "Corre", "attack": "Estocada a dos manos"}},
+        {"id": "folk_militia_woman", "nombre": "Miliciana", "animaciones": {"idle": "Espera con la lanza en pie", "walk": "Camina", "run": "Corre", "attack": "Estocada a dos manos"}},
+        {"id": "folk_militia_pitchfork", "nombre": "Con horca", "animaciones": {"idle": "Espera con la horca", "walk": "Camina", "run": "Corre", "attack": "Estocada con la horca"}}
+      ]
+    },
+    {
+      "id": "folk_archer",
+      "nombre": "Arqueros",
+      "categoria": "Personajes",
+      "descripcion": "Arquero de capucha azul y tabardo del pueblo con guantes y aljaba, y arquera de gorro con pluma.",
+      "propuestas": [
+        {"titulo": "Aspecto del arquero", "detalle": "Modelo de core:archer (1 de core:bows, alcance 20, poder 3). Dispara con el clip `shoot` del juego."},
+        {"titulo": "Guarnición de torre", "detalle": "Apostado en una atalaya (core:watchtower) gana alcance y vista; la torre sin arquero solo avisa."}
+      ],
+      "modelos": [
+        {"id": "folk_archer", "nombre": "Arquero", "animaciones": {"idle": "Espera con el arco en pie", "walk": "Camina", "run": "Corre", "attack": "Tensa y dispara"}},
+        {"id": "folk_archer_woman", "nombre": "Arquera", "animaciones": {"idle": "Espera con el arco en pie", "walk": "Camina", "run": "Corre", "attack": "Tensa y dispara"}}
+      ]
+    },
+    {
+      "id": "folk_crossbowman",
+      "nombre": "Ballestero",
+      "categoria": "Personajes",
+      "descripcion": "Ballestero de capacete, coleto de cuero y tabardo, con la ballesta apuntando al frente.",
+      "propuestas": [
+        {"titulo": "Unidad nueva: ballestero", "detalle": "Se entrena en el cuartel (core:barracks) por 1 arco, 1 hierro y 2 troncos. Dispara más lento que el arquero pero atraviesa armadura: es la respuesta al jefe de bandidos y a los jinetes."},
+        {"titulo": "Defensor de muralla", "detalle": "Sobre un muro de piedra (core:stone_wall) recarga a cubierto y recibe la mitad de daño de proyectiles."}
+      ],
+      "modelos": [
+        {"id": "folk_crossbowman", "nombre": "Ballestero", "animaciones": {"idle": "Espera con la ballesta lista", "walk": "Camina", "run": "Corre", "attack": "Encara la ballesta, dispara y la baja"}}
+      ]
+    },
+    {
+      "id": "folk_pikeman",
+      "nombre": "Piquero",
+      "categoria": "Personajes",
+      "descripcion": "Piquero de azul con coraza y capacete, pica de 3 m y espada al cinto.",
+      "propuestas": [
+        {"titulo": "Unidad nueva: piquero", "detalle": "Cuartel, 1 de core:weapons y 3 troncos. Lento, con alcance 3: hace doble daño a jinetes y fieras grandes (osos, lobos huargos) y aguanta una puerta abierta."},
+        {"titulo": "Formación en la puerta", "detalle": "Varios piqueros juntos en una puerta (core:gate) forman un erizo: los asaltantes cuerpo a cuerpo no pueden pasar hasta derribarlos."}
+      ],
+      "modelos": [
+        {"id": "folk_pikeman", "nombre": "Piquero", "animaciones": {"idle": "Espera con la pica en pie", "walk": "Camina", "run": "Corre", "attack": "Estocada a dos manos"}}
+      ]
+    },
+    {
+      "id": "folk_town_guard",
+      "nombre": "Guardia del pueblo",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Guardias de yelmo, coraza y tabardo azul: con alabarda (hombre y mujer) y con espada y escudo de cometa.",
+      "propuestas": [
+        {"titulo": "Soldado profesional", "detalle": "Unidad de nivel alto del cuartel (2 de core:weapons y 1 de core:clothes; mantenimiento en pan y oro). No vuelve a su oficio: patrulla siempre, así que protege sin tocar la campana."},
+        {"titulo": "Ronda de noche", "detalle": "Con día y noche, la guardia recorre las calles con antorchas: baja los robos y los incendios en su ruta y da la alarma de incursión antes."},
+        {"titulo": "Guardia de puertas", "detalle": "Apostada en una puerta (core:gate) la cierra a los asaltantes y la abre a los mercaderes; sin guardia la puerta tarda en cerrarse."}
+      ],
+      "modelos": [
+        {"id": "folk_town_guard", "nombre": "Alabardero", "animaciones": {"idle": "Espera con la alabarda en pie", "walk": "Camina", "run": "Corre", "attack": "Estocada a dos manos"}},
+        {"id": "folk_town_guard_woman", "nombre": "Alabardera", "animaciones": {"idle": "Espera con la alabarda en pie", "walk": "Camina", "run": "Corre", "attack": "Estocada a dos manos"}},
+        {"id": "folk_guard_swordsman", "nombre": "Espada y escudo", "animaciones": {"idle": "Espera con el escudo al frente", "walk": "Camina", "run": "Corre", "attack": "Tajo de arriba abajo"}}
+      ]
+    },
+    {
+      "id": "folk_captain",
+      "nombre": "Capitán y abanderado",
+      "categoria": "Personajes",
+      "descripcion": "Capitán de yelmo con penacho rojo, hombreras, capa larga, espada y escudo; y abanderado con el estandarte del pueblo.",
+      "propuestas": [
+        {"titulo": "Unidad única: capitán", "detalle": "Uno por cuartel (5 de oro y 2 de core:weapons). Las tropas cercanas pelean mejor y no huyen; si cae, la tropa pierde moral un rato."},
+        {"titulo": "Abanderado como punto de reunión", "detalle": "La orden «defender aquí» planta al abanderado en el lugar elegido: la tropa se agrupa a su alrededor y el jugador ve dónde está la orden."},
+        {"titulo": "Poder militar visible", "detalle": "En partidas sin combate entre jugadores, capitán y abanderado encabezan el desfile que muestra el poder militar de cada pueblo."}
+      ],
+      "modelos": [
+        {"id": "folk_captain", "nombre": "Capitán", "animaciones": {"idle": "Espera con espada y escudo", "walk": "Camina", "run": "Corre", "attack": "Tajo de arriba abajo", "command": "Da la orden con la espada en alto"}},
+        {"id": "folk_standard_bearer", "nombre": "Abanderado", "animaciones": {"idle": "Espera con el estandarte", "walk": "Camina", "run": "Corre", "attack": "Agita el estandarte"}}
+      ]
+    },
+    {
+      "id": "folk_scout",
+      "nombre": "Exploradores",
+      "categoria": "Personajes",
+      "descripcion": "Explorador de capucha y capa verde oliva con daga, zurrón y manta enrollada; y exploradora con arco.",
+      "propuestas": [
+        {"titulo": "Aspecto del explorador", "detalle": "Modelo de quien sale de la cabaña del explorador (core:explorer) a descubrir el mapa."},
+        {"titulo": "Vigía de incursiones", "detalle": "Apostado lejos del pueblo, avisa de los asaltantes con más tiempo y dice por dónde vienen; no pelea, huye corriendo."}
+      ],
+      "modelos": [
+        {"id": "folk_scout", "nombre": "Explorador", "animaciones": {"idle": "Espera con la daga", "walk": "Camina", "run": "Corre", "attack": "Cuchillada"}},
+        {"id": "folk_scout_woman", "nombre": "Exploradora", "animaciones": {"idle": "Espera con el arco", "walk": "Camina", "run": "Corre", "attack": "Tensa y dispara"}}
+      ]
+    },
+    {
+      "id": "folk_battle_mage",
+      "nombre": "Magos de batalla",
+      "categoria": "Personajes",
+      "descripcion": "Mago de sombrero puntiagudo, túnica morada y bastón con cristal azul; y maga de rojo con cristal de fuego.",
+      "propuestas": [
+        {"titulo": "Unidad nueva: mago de batalla", "detalle": "Se forma en una torre de magos (edificio nuevo) por oro y hierbas. Ataque de área lento a distancia: fuerte contra grupos de bandidos, frágil cuerpo a cuerpo."},
+        {"titulo": "Magia para el pueblo", "detalle": "Fuera del combate el mago apaga incendios o trae lluvia a los campos una vez por estación; la maga de fuego derrite la nieve de los caminos."}
+      ],
+      "modelos": [
+        {"id": "folk_battle_mage", "nombre": "Mago", "animaciones": {"idle": "Espera con el bastón", "walk": "Camina", "run": "Corre", "attack": "Alza el bastón y lanza el conjuro"}},
+        {"id": "folk_battle_mage_woman", "nombre": "Maga de fuego", "animaciones": {"idle": "Espera con el bastón", "walk": "Camina", "run": "Corre", "attack": "Alza el bastón y lanza el conjuro"}}
+      ]
+    },
+    {
+      "id": "folk_war_priest",
+      "nombre": "Sacerdote de guerra",
+      "categoria": "Personajes",
+      "descripcion": "Sacerdote con coraza, faldón y tabardo blancos, maza y escudo con cruz dorada.",
+      "propuestas": [
+        {"titulo": "Unidad de apoyo", "detalle": "Sale de la capilla (core:chapel) mejorada: cura poco a poco a las tropas cercanas con `bless` y pelea con la maza. Uno por capilla."},
+        {"titulo": "Contra los no muertos", "detalle": "Si se aprueban esqueletos y nigromante como enemigos, hace doble daño a no muertos y deshace lo que el nigromante levanta."}
+      ],
+      "modelos": [
+        {"id": "folk_war_priest", "nombre": "Sacerdote de guerra", "animaciones": {"idle": "Espera con maza y escudo", "walk": "Camina", "run": "Corre", "attack": "Mazazo", "bless": "Alza la maza y bendice"}}
+      ]
+    },
+    {
+      "id": "folk_bandit",
+      "nombre": "Bandidos",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Asaltantes humanos con la cara tapada: uno de pañuelo rojo con garrote de clavos, una bandida con dos dagas y un arquero encapuchado.",
+      "propuestas": [
+        {"titulo": "Aspecto de los asaltantes", "detalle": "Son los grupos que aparecen en el borde del mapa (apartado 7.10): el del garrote va a los almacenes, la de las dagas roba y huye, el arquero dispara desde lejos a la milicia."},
+        {"titulo": "Salteadores de caminos", "detalle": "Entre incursiones se apostan en los caminos y asaltan a mercaderes y porteadores: perder un mercader sube los precios; una patrulla los ahuyenta."},
+        {"titulo": "Desertores que se rinden", "detalle": "Un bandido derrotado puede rendirse: el jugador elige entre soltarlo o aceptarlo como aldeano con felicidad baja."}
+      ],
+      "modelos": [
+        {"id": "folk_bandit", "nombre": "Garrote", "animaciones": {"idle": "Espera con el garrote", "walk": "Camina", "run": "Corre", "attack": "Garrotazo"}},
+        {"id": "folk_bandit_woman", "nombre": "Dos dagas", "animaciones": {"idle": "Espera con las dagas", "walk": "Camina", "run": "Corre", "attack": "Cuchillada"}},
+        {"id": "folk_bandit_archer", "nombre": "Arquero", "animaciones": {"idle": "Espera con el arco", "walk": "Camina", "run": "Corre", "attack": "Tensa y dispara"}}
+      ]
+    },
+    {
+      "id": "folk_bandit_chief",
+      "nombre": "Jefe de bandidos",
+      "categoria": "Personajes",
+      "descripcion": "Más alto y ancho que los demás: barba roja, pieles al cuello, hombreras, capa, espada y escudo redondo.",
+      "propuestas": [
+        {"titulo": "Jefe de la incursión", "detalle": "Aparece cuando la riqueza del pueblo pasa cierto umbral: tiene mucha vida y, mientras vive, los bandidos no huyen. Al caer, el resto se retira y deja oro."},
+        {"titulo": "Exige tributo", "detalle": "Antes de atacar se planta en el borde y pide rescate (comida u oro): pagar evita la incursión esta vez, pero vuelve más fuerte."}
+      ],
+      "modelos": [
+        {"id": "folk_bandit_chief", "nombre": "Jefe", "animaciones": {"idle": "Espera con espada y escudo", "walk": "Camina", "run": "Corre", "attack": "Tajo de arriba abajo"}}
+      ]
+    },
+    {
+      "id": "folk_raider",
+      "nombre": "Incendiarios y saqueadores",
+      "categoria": "Personajes",
+      "descripcion": "Saqueador calvo con antorcha encendida y garrote, y saqueador rubio de barba larga con hacha y escudo.",
+      "propuestas": [
+        {"titulo": "El que quema", "detalle": "El de la antorcha no pelea: corre hacia las casas de madera y los almacenes y les prende fuego; hay que abatirlo antes o tener pozos (core:well) cerca."},
+        {"titulo": "Saqueo del norte", "detalle": "Incursión de invierno: llegan por el río helado o la costa, cargan lo que roban y se van; lo robado se recupera si se les alcanza antes del borde del mapa."}
+      ],
+      "modelos": [
+        {"id": "folk_raider_torch", "nombre": "Antorcha", "animaciones": {"idle": "Espera con la antorcha en alto", "walk": "Camina", "run": "Corre", "attack": "Golpea con la antorcha"}},
+        {"id": "folk_raider_axe", "nombre": "Hacha y escudo", "animaciones": {"idle": "Espera con el hacha al hombro", "walk": "Camina", "run": "Corre", "attack": "Hachazo a dos manos"}}
+      ]
+    },
+    {
+      "id": "folk_cultist",
+      "nombre": "Sectario",
+      "categoria": "Personajes",
+      "descripcion": "Encapuchado de túnica granate con la cara tapada, daga, antorcha y un medallón negro.",
+      "propuestas": [
+        {"titulo": "Amenaza desde dentro", "detalle": "Suceso: con felicidad baja y sin capilla, algunos aldeanos se vuelven sectarios de noche; sabotean almacenes hasta que la guardia o el sacerdote los descubren."},
+        {"titulo": "Ritual en las ruinas", "detalle": "Se reúnen en un círculo de runas o unas ruinas del mapa: si el ritual termina aparece una criatura; un grupo de tropa lo interrumpe."}
+      ],
+      "modelos": [
+        {"id": "folk_cultist", "nombre": "Sectario", "animaciones": {"idle": "Espera con daga y antorcha", "walk": "Camina", "run": "Corre", "attack": "Cuchillada", "chant": "Alza los brazos y salmodia"}}
+      ]
+    },
+    {
+      "id": "folk_necromancer",
+      "nombre": "Nigromante",
+      "categoria": "Personajes",
+      "descripcion": "Alto y flaco, de piel verdosa y ojos que brillan, con capucha y túnica negras, capa morada, un libro y un bastón rematado por una calavera con cuernos.",
+      "propuestas": [
+        {"titulo": "Jefe de la incursión de no muertos", "detalle": "Llega con esqueletos (familia de criaturas) y, con `attack`, levanta a los caídos del combate como nuevos esqueletos. Hay que alcanzarlo: es débil cuerpo a cuerpo."},
+        {"titulo": "Amenaza del cementerio", "detalle": "Si el cementerio queda sin sepulturero ni sacerdote, una noche aparece el nigromante y levanta a los enterrados."}
+      ],
+      "modelos": [
+        {"id": "folk_necromancer", "nombre": "Nigromante", "animaciones": {"idle": "Espera con el bastón y el libro", "walk": "Camina", "run": "Corre", "attack": "Alza el bastón y conjura"}}
+      ]
+    },
+    {
+      "id": "folk_race_villagers",
+      "nombre": "Aldeanos de las otras razas",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Los personajes de raza que el juego ya tiene, con ropa de diario y la herramienta de un oficio: gatuno con azada, zorruno cazador, rana pescadora, lagarto minero, orco leñador, enano minero, enana cervecera, elfa recolectora y elfa oscura con farol.",
+      "propuestas": [
+        {"titulo": "Aspecto de trabajo por raza", "detalle": "Hoy cada raza tiene un solo cuerpo, de aventurero. Con estas variantes el aldeano de raza viste de diario y lleva la herramienta del oficio que tenga, como los humanos."},
+        {"titulo": "El oficio en que cada raza destaca", "detalle": "Cada variante es el oficio donde su raza tiene bono en races.json (el gatuno caza y pesca, el enano pica): el panel de raza puede mostrar ese modelo como recomendación."},
+        {"titulo": "Inmigrantes reconocibles", "detalle": "Cuando llegan inmigrantes de otra raza se les ve venir con su herramienta: el jugador sabe qué oficio traen aprendido."}
+      ],
+      "modelos": [
+        {"id": "folk_catfolk_villager", "nombre": "Gatuno labrador", "animaciones": {"idle": "Espera con la azada al hombro", "walk": "Camina", "work": "Cava la tierra"}},
+        {"id": "folk_foxfolk_villager", "nombre": "Zorruno cazador", "animaciones": {"idle": "Espera con el arco", "walk": "Camina", "work": "Tensa y dispara"}},
+        {"id": "folk_frogfolk_villager", "nombre": "Rana pescadora", "animaciones": {"idle": "Espera con la caña", "walk": "Camina", "work": "Sostiene la caña", "cast": "Lanza el anzuelo (una vez)"}},
+        {"id": "folk_lizardfolk_villager", "nombre": "Lagarto minero", "animaciones": {"idle": "Espera con el pico al hombro", "walk": "Camina", "work": "Pica a dos manos"}},
+        {"id": "folk_orc_villager", "nombre": "Orco leñador", "animaciones": {"idle": "Espera con el hacha al hombro", "walk": "Camina", "work": "Tala a dos manos"}},
+        {"id": "folk_dwarf_villager", "nombre": "Enano minero", "animaciones": {"idle": "Espera con el pico y el farol", "walk": "Camina", "work": "Pica a dos manos"}},
+        {"id": "folk_dwarf_villager_woman", "nombre": "Enana cervecera", "animaciones": {"idle": "Espera con la jarra", "walk": "Camina", "work": "Brinda con la jarra"}},
+        {"id": "folk_high_elf_villager", "nombre": "Elfa recolectora", "animaciones": {"idle": "Espera con la cesta", "walk": "Camina", "work": "Reparte lo recogido"}},
+        {"id": "folk_dark_elf_villager", "nombre": "Elfa oscura con farol", "animaciones": {"idle": "Espera con bastón y farol", "walk": "Camina", "work": "Hace señas con el bastón"}}
+      ]
+    },
+    {
+      "id": "folk_race_guards",
+      "nombre": "Guardias de las otras razas",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Los mismos personajes de raza armados: gatuno con lanza y escudo, zorruno de rojo con espada, rana con lanza, lagarto con alabarda, orco con garrote, enano con hacha, elfo con lanza, elfo arquero y elfo oscuro con espada.",
+      "propuestas": [
+        {"titulo": "Tropa según la raza del pueblo", "detalle": "Leva, lancero y arquero toman el modelo de la raza del aldeano que se arma, en vez de un humano genérico: un pueblo de enanos defiende con enanos."},
+        {"titulo": "Unidad propia de cada raza", "detalle": "Cada raza aporta una unidad con su ventaja de races.json: el gatuno ve de noche (centinela nocturno), el orco pega más fuerte, el elfo dispara más lejos."},
+        {"titulo": "Mercenarios", "detalle": "Guardias de otra raza que se contratan por oro en el puesto de comercio durante una temporada, sin gastar aldeanos propios."}
+      ],
+      "modelos": [
+        {"id": "folk_catfolk_guard", "nombre": "Gatuno lancero", "animaciones": {"idle": "Espera con la lanza", "walk": "Camina", "run": "Corre", "attack": "Estocada"}},
+        {"id": "folk_foxfolk_guard", "nombre": "Zorruno de espada", "animaciones": {"idle": "Espera con el escudo al frente", "walk": "Camina", "run": "Corre", "attack": "Tajo"}},
+        {"id": "folk_frogfolk_guard", "nombre": "Rana lancera", "animaciones": {"idle": "Espera con la lanza", "walk": "Camina", "run": "Corre", "attack": "Estocada"}},
+        {"id": "folk_lizardfolk_guard", "nombre": "Lagarto alabardero", "animaciones": {"idle": "Espera con la alabarda", "walk": "Camina", "run": "Corre", "attack": "Estocada"}},
+        {"id": "folk_orc_warrior", "nombre": "Orco guerrero", "animaciones": {"idle": "Espera con el garrote", "walk": "Camina", "run": "Corre", "attack": "Garrotazo"}},
+        {"id": "folk_dwarf_guard", "nombre": "Enano de hacha", "animaciones": {"idle": "Espera con el hacha al hombro", "walk": "Camina", "run": "Corre", "attack": "Hachazo a dos manos"}},
+        {"id": "folk_high_elf_guard", "nombre": "Elfo lancero", "animaciones": {"idle": "Espera con la lanza", "walk": "Camina", "run": "Corre", "attack": "Estocada"}},
+        {"id": "folk_high_elf_archer", "nombre": "Elfo arquero", "animaciones": {"idle": "Espera con el arco", "walk": "Camina", "run": "Corre", "attack": "Tensa y dispara"}},
+        {"id": "folk_dark_elf_guard", "nombre": "Elfo oscuro de espada", "animaciones": {"idle": "Espera con el escudo al frente", "walk": "Camina", "run": "Corre", "attack": "Tajo"}}
+      ]
+    },
+    {
+      "id": "folk_rider_knight",
+      "nombre": "Caballeros a caballo",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Caballero de armadura con penacho, capa, escudo y lanza con pendón, sobre un caballo de guerra con gualdrapa; otro de rojo con espada sobre caballo blanco; y un portaestandarte montado.",
+      "propuestas": [
+        {"titulo": "Unidad nueva: caballería", "detalle": "Se entrena en un establo junto al cuartel: 3 de core:weapons, 1 caballo y mantenimiento en cebada. El doble de rápida que la infantería: alcanza a los que queman y a los que huyen con el botín."},
+        {"titulo": "Carga", "detalle": "El primer golpe tras galopar hace daño triple y derriba; los piqueros y las trampas (core:trap) la frenan."},
+        {"titulo": "Escolta del señor", "detalle": "Dos jinetes acompañan al noble o a la caravana del jugador: los bandidos del camino no atacan a un grupo escoltado."}
+      ],
+      "modelos": [
+        {"id": "folk_rider_knight", "nombre": "Lanza, caballo negro", "animaciones": {"idle": "El caballo mueve cabeza y cola; el jinete mira alrededor", "walk": "Al paso", "gallop": "Al galope, con la capa al viento", "attack": "Golpea con la lanza"}},
+        {"id": "folk_rider_knight_red", "nombre": "Espada, caballo blanco", "animaciones": {"idle": "El caballo mueve cabeza y cola; el jinete mira alrededor", "walk": "Al paso", "gallop": "Al galope, con la capa al viento", "attack": "Tajo desde la silla"}},
+        {"id": "folk_rider_standard", "nombre": "Portaestandarte", "animaciones": {"idle": "Espera con el estandarte", "walk": "Al paso", "gallop": "Al galope"}}
+      ]
+    },
+    {
+      "id": "folk_rider_messenger",
+      "nombre": "Mensajero a caballo",
+      "categoria": "Personajes",
+      "descripcion": "Jinete de verde con capa, zurrón, alforjas y un cuerno de aviso.",
+      "propuestas": [
+        {"titulo": "Avisos entre pueblos", "detalle": "En multijugador, las ofertas de comercio y los tratos viajan con un mensajero visible de un pueblo a otro; llega antes por caminos de piedra."},
+        {"titulo": "Alarma temprana", "detalle": "Con una atalaya lejana, el mensajero galopa al pueblo al ver asaltantes: la campana suena antes de que lleguen."},
+        {"titulo": "Correo del rey", "detalle": "Suceso: trae una petición (madera, pan, soldados) con plazo; cumplirla da oro y favor."}
+      ],
+      "modelos": [
+        {"id": "folk_rider_messenger", "nombre": "Mensajero", "animaciones": {"idle": "Espera en la silla", "walk": "Al paso", "gallop": "Al galope, con la capa al viento"}}
+      ]
+    },
+    {
+      "id": "folk_rider_merchant",
+      "nombre": "Mercader en mula",
+      "categoria": "Personajes",
+      "descripcion": "Mercader de morado con gorro de pluma dorada y bastón, sobre una mula gris cargada con fardos, alforjas y un cofre.",
+      "propuestas": [
+        {"titulo": "Así llega el mercader", "detalle": "El mercader del entorno entra al mapa montado y con la carga a la vista; al llegar al puesto de comercio (core:trading_post) desmonta y atiende a pie."},
+        {"titulo": "Caravana", "detalle": "Con varios jugadores, las caravanas acordadas son una fila de mulas con un mercader al frente: se pueden escoltar y los bandidos las asaltan."},
+        {"titulo": "Buhonero", "detalle": "Mercader menor que recorre las casas alejadas del mercado y les cubre ropa y calzado a cambio de un precio más alto."}
+      ],
+      "modelos": [
+        {"id": "folk_rider_merchant", "nombre": "Mercader en mula", "animaciones": {"idle": "Espera en la silla", "walk": "Al paso", "gallop": "Al trote largo"}}
+      ]
+    },
+    {
+      "id": "folk_rider_races",
+      "nombre": "Jinetes de las otras razas",
+      "categoria": "Personajes",
+      "destacado": true,
+      "descripcion": "Cada raza en su montura: orco sobre lobo huargo, enano sobre carnero y sobre jabalí, elfo arquero sobre alce, elfo oscuro sobre pantera, lagarto sobre lagarto gigante, rana sobre sapo gigante (salta), gatuno sobre felino dientes de sable y zorruno con lanza sobre ave corredora.",
+      "propuestas": [
+        {"titulo": "La caballería de cada raza", "detalle": "La unidad montada toma la montura de la raza del pueblo, con otro terreno favorito: el sapo cruza pantanos y ríos poco hondos, el carnero sube laderas, el alce no se frena en el bosque, el ave es la más rápida en llano."},
+        {"titulo": "Asaltantes montados", "detalle": "Los orcos sobre lobos son una incursión rápida que rodea las empalizadas buscando la puerta abierta: obligan a tener piqueros y puertas con guardia."},
+        {"titulo": "Monturas del bioma", "detalle": "Cada montura se doma donde vive (lagarto en pantano, alce en bosque frío, ave en estepa): explorar el mapa desbloquea la caballería de ese bioma."}
+      ],
+      "modelos": [
+        {"id": "folk_rider_orc_wolf", "nombre": "Orco sobre lobo huargo", "animaciones": {"idle": "Espera", "walk": "Al paso", "gallop": "A la carrera", "attack": "Hachazo desde la silla"}},
+        {"id": "folk_rider_dwarf_ram", "nombre": "Enano sobre carnero", "animaciones": {"idle": "Espera", "walk": "Al paso", "gallop": "A la carrera", "attack": "Hachazo desde la silla"}},
+        {"id": "folk_rider_dwarf_boar", "nombre": "Enano sobre jabalí", "animaciones": {"idle": "Espera", "walk": "Al paso", "gallop": "A la carrera", "attack": "Golpea con la lanza"}},
+        {"id": "folk_rider_elf_elk", "nombre": "Elfo sobre alce", "animaciones": {"idle": "Espera con el arco", "walk": "Al paso", "gallop": "Al galope, con la capa al viento"}},
+        {"id": "folk_rider_dark_elf_cat", "nombre": "Elfo oscuro sobre pantera", "animaciones": {"idle": "Espera", "walk": "Al paso", "gallop": "A la carrera", "attack": "Golpea con la lanza"}},
+        {"id": "folk_rider_lizardfolk_lizard", "nombre": "Lagarto sobre lagarto gigante", "animaciones": {"idle": "Espera", "walk": "Avanza reptando", "gallop": "Corre reptando", "attack": "Golpea con la lanza"}},
+        {"id": "folk_rider_frogfolk_toad", "nombre": "Rana sobre sapo gigante", "animaciones": {"idle": "El sapo hincha la garganta", "walk": "Avanza a saltitos", "gallop": "Salta largo", "attack": "Golpea con la lanza"}},
+        {"id": "folk_rider_catfolk_cat", "nombre": "Gatuno sobre dientes de sable", "animaciones": {"idle": "Espera", "walk": "Al paso", "gallop": "A la carrera", "attack": "Tajo desde la silla"}},
+        {"id": "folk_rider_foxfolk_bird", "nombre": "Zorruno sobre ave corredora", "animaciones": {"idle": "Espera", "walk": "Al paso", "gallop": "A la carrera, aleteando", "attack": "Golpea con la lanza"}}
+      ]
+    },
+    {
+      "id": "folk_mounts",
+      "nombre": "Caballos y mula ensillados",
+      "categoria": "Personajes",
+      "descripcion": "Las monturas solas, con silla y brida: caballo de guerra con gualdrapa y testera, caballo castaño con alforjas, caballo blanco y mula de carga.",
+      "propuestas": [
+        {"titulo": "Recurso nuevo: caballos", "detalle": "Un establo cría caballos con cebada y agua; cada jinete, carreta rápida o mensajero consume uno. Atados al poste (core:decor_hitching_post) cuando su dueño está dentro."},
+        {"titulo": "Mula de carga", "detalle": "Mejora de las carretas (core:cart): una mula lleva la mitad que una carreta pero va por senderos sin camino; es la bestia de las caravanas."},
+        {"titulo": "Botín de la incursión", "detalle": "Los asaltantes montados dejan su montura al caer: capturarla ahorra criarla."}
+      ],
+      "modelos": [
+        {"id": "folk_mount_war_horse", "nombre": "Caballo de guerra", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "Al galope"}},
+        {"id": "folk_mount_horse", "nombre": "Caballo con alforjas", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "Al galope"}},
+        {"id": "folk_mount_horse_white", "nombre": "Caballo blanco", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "Al galope"}},
+        {"id": "folk_mount_mule", "nombre": "Mula de carga", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "Al trote largo"}}
+      ]
+    },
+    {
+      "id": "folk_mounts_exotic",
+      "nombre": "Monturas de las otras razas",
+      "categoria": "Personajes",
+      "descripcion": "Ensilladas y sin jinete: lobo huargo, carnero, jabalí, alce, pantera, dientes de sable, lagarto gigante, ave corredora y sapo gigante.",
+      "propuestas": [
+        {"titulo": "Monturas que se doman", "detalle": "Aparecen salvajes en su bioma; un domador (oficio nuevo del explorador) las trae al pueblo. Cada una da a su jinete la ventaja de terreno de su especie."},
+        {"titulo": "Bestias de tiro y carga", "detalle": "El jabalí y el carnero tiran de carretas pequeñas en pueblos de enanos; el lagarto gigante lleva carga por el pantano, donde la carreta no entra."},
+        {"titulo": "Animales del establo", "detalle": "Sin jinete viven en el establo o el cercado del pueblo y se ven desde la cámara: el tamaño de la caballería se cuenta a ojo."}
+      ],
+      "modelos": [
+        {"id": "folk_mount_dire_wolf", "nombre": "Lobo huargo", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "A la carrera"}},
+        {"id": "folk_mount_ram", "nombre": "Carnero", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "A la carrera"}},
+        {"id": "folk_mount_boar", "nombre": "Jabalí", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "A la carrera"}},
+        {"id": "folk_mount_elk", "nombre": "Alce", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "Al galope"}},
+        {"id": "folk_mount_great_cat", "nombre": "Pantera", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "A la carrera"}},
+        {"id": "folk_mount_sabre_cat", "nombre": "Dientes de sable", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "A la carrera"}},
+        {"id": "folk_mount_giant_lizard", "nombre": "Lagarto gigante", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Avanza reptando", "gallop": "Corre reptando"}},
+        {"id": "folk_mount_giant_bird", "nombre": "Ave corredora", "animaciones": {"idle": "Mueve cabeza y cola", "walk": "Al paso", "gallop": "A la carrera, aleteando"}},
+        {"id": "folk_mount_giant_toad", "nombre": "Sapo gigante", "animaciones": {"idle": "Hincha la garganta", "walk": "Avanza a saltitos", "gallop": "Salta largo"}}
+      ]
+    },
+    {
+      "id": "folk_wedding",
+      "nombre": "Novios",
+      "categoria": "Personajes",
+      "descripcion": "Novia de blanco con velo, diadema y ramo, y novio de azul con capa corta y gorro de pluma. Caminan, saludan y bailan.",
+      "propuestas": [
+        {"titulo": "Suceso de boda", "detalle": "Cuando dos aldeanos forman pareja y hay capilla, se celebra una boda: los novios van a la capilla, los vecinos se reúnen y la felicidad del barrio sube unos días; la pareja ocupa una vivienda libre."},
+        {"titulo": "Gasto de fiesta", "detalle": "La boda consume cerveza y pan del almacén; el jugador puede elegir una boda modesta o grande, con más felicidad y más gasto."}
+      ],
+      "modelos": [
+        {"id": "folk_bride", "nombre": "Novia", "animaciones": {"idle": "Espera con el ramo", "walk": "Camina", "dance": "Baila a saltos", "greet": "Saluda con el ramo"}},
+        {"id": "folk_groom", "nombre": "Novio", "animaciones": {"idle": "Espera", "walk": "Camina", "dance": "Baila a saltos", "greet": "Saluda con la mano en alto"}}
+      ]
+    },
+    {
+      "id": "folk_dancers",
+      "nombre": "Bailarines y bufón",
+      "categoria": "Personajes",
+      "descripcion": "Bailarín de pañuelo, dos bailarinas de falda roja y azul con mandil de colores, y un bufón de rojo y verde con cascabeles.",
+      "propuestas": [
+        {"titulo": "Fiesta de la cosecha", "detalle": "Al cerrar el otoño con el granero lleno se celebra la fiesta: los bailarines ocupan la plaza o el escenario (core:decor_stage) un día y la felicidad sube todo el invierno."},
+        {"titulo": "Compañía ambulante", "detalle": "Visitantes: llegan con el bufón, piden oro por actuar y cubren el entretenimiento de todo el pueblo una temporada."},
+        {"titulo": "Aldeanos de fiesta", "detalle": "Sin modelos nuevos de fondo: en día de fiesta cualquier aldeano cerca de la plaza reproduce el clip `dance`, que usa el esqueleto común."}
+      ],
+      "modelos": [
+        {"id": "folk_dancer", "nombre": "Bailarín", "animaciones": {"idle": "Espera", "walk": "Camina", "dance": "Baila a saltos con los brazos en alto"}},
+        {"id": "folk_dancer_woman", "nombre": "Bailarina de rojo", "animaciones": {"idle": "Espera con una flor", "walk": "Camina", "dance": "Baila a saltos con los brazos en alto"}},
+        {"id": "folk_dancer_woman_blue", "nombre": "Bailarina de azul", "animaciones": {"idle": "Espera", "walk": "Camina", "dance": "Baila a saltos con los brazos en alto"}},
+        {"id": "folk_jester", "nombre": "Bufón", "animaciones": {"idle": "Espera con los cascabeles en alto", "walk": "Camina", "dance": "Baila a saltos", "work": "Agita los cascabeles"}}
+      ]
+    },
+    {
+      "id": "folk_royals",
+      "nombre": "Rey y reina",
+      "categoria": "Personajes",
+      "descripcion": "Rey de corona, barba gris, túnica morada, capa roja con armiño y cetro dorado; y reina de vestido turquesa con corona y capa.",
+      "propuestas": [
+        {"titulo": "Comitiva real", "detalle": "Suceso raro: el rey cruza el mapa con su comitiva (rey, reina, abanderado, jinetes de escolta). Si el pueblo es bello y está bien abastecido concede un privilegio: mercado libre de tributo, o una unidad de caballeros."},
+        {"titulo": "Meta de la partida", "detalle": "Al llevar el centro del pueblo al último nivel, el señor es coronado: el noble pasa a rey y la partida puede seguir en modo libre."}
+      ],
+      "modelos": [
+        {"id": "folk_king", "nombre": "Rey", "animaciones": {"idle": "Espera con el cetro", "walk": "Camina", "greet": "Saluda con el cetro en alto"}},
+        {"id": "folk_queen", "nombre": "Reina", "animaciones": {"idle": "Espera con una flor", "walk": "Camina", "greet": "Saluda con la mano en alto"}}
+      ]
+    }
+  ]
+}

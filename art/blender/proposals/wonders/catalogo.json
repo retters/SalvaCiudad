@@ -1,0 +1,576 @@
+{
+  "familia": "wonders",
+  "grupos": [
+    {
+      "id": "wonder_cathedral",
+      "nombre": "Catedral de dos agujas",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Catedral de piedra con dos torres de aguja de 49 m, rosetón, vitrales de colores, arbotantes, crucero con flecha y ábside con capillas. Ocupa 28 × 46 m. Tres etapas: cimientos y zócalo con la logia de canteros, muros a media altura con andamios y dos grúas, y terminada con las dos campanas que voltean.",
+      "propuestas": [
+        {"titulo": "Maravilla de la fe, en tres etapas", "detalle": "Requiere centro del pueblo al nivel máximo y una capilla. Etapa 1: 600 de piedra y 150 troncos. Etapa 2: 1 200 de piedra, 300 ladrillos y 80 herramientas. Etapa 3: 400 tejas, 60 de hierro y 100 de oro. Cada etapa ocupa a 12 peones durante un año. Terminada, cubre la necesidad de religión de todo el mapa y sube la felicidad de las casas a 30 m."},
+        {"titulo": "Atrae peregrinos", "detalle": "Cada estación llega un grupo de peregrinos por el borde del mapa: compran comida y cerveza en la taberna y el mercado, dejan oro en la bóveda y algunos se quedan como inmigrantes. La deseabilidad del pueblo sube un escalón."},
+        {"titulo": "Refugio en las incursiones", "detalle": "Al sonar la campana, los aldeanos que no son milicia se refugian dentro: los asaltantes no pueden saquearla ni quemarla, pero mientras dure la incursión nadie trabaja."},
+        {"titulo": "Condición de victoria por prestigio", "detalle": "Terminar la catedral da 1 000 puntos de prestigio; en partidas con varios jugadores, el primero que termina una maravilla anuncia la cuenta atrás de la victoria por prestigio."}
+      ],
+      "modelos": [
+        {"id": "wonder_cathedral_stage1", "nombre": "Etapa 1: cimientos", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_cathedral_stage2", "nombre": "Etapa 2: muros y andamios", "animaciones": {"work": "Suben y bajan las cargas de las dos grúas."}},
+        {"id": "wonder_cathedral", "nombre": "Terminada", "material": "piedra", "animaciones": {"ring": "Voltean las dos campanas de las torres."}},
+        {"id": "wonder_cathedral_ruin", "nombre": "En ruinas", "material": "piedra", "nota": "Lo que queda si el pueblo cae o la abandona: muros desmochados sin tejado, ventanas vacías (una conserva su vitral), hiedra, escombros, arbolillos y una aguja caída en la nave. Sirve como ruina que se puede restaurar por la mitad del coste, o como ruina antigua que los exploradores encuentran en el mapa."}
+      ]
+    },
+    {
+      "id": "wonder_clock_tower",
+      "nombre": "Gran torre del reloj",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Torre de piedra de 49 m con cuatro esferas de reloj doradas, campanario abierto con una gran campana de bronce y chapitel de pizarra. Ocupa 14 × 14 m. Etapas: zócalo y arranque, fuste a medias con andamios y una grúa sobre un tablado, y terminada con las agujas que giran.",
+      "propuestas": [
+        {"titulo": "El pueblo trabaja a su hora", "detalle": "Cuesta 500 de piedra, 120 de hierro, 60 herramientas y 40 de oro (la maquinaria). Terminada, todos los aldeanos salen y vuelven del trabajo a la vez: se pierde menos tiempo en caminatas y la producción sube un 10 %."},
+        {"titulo": "Reloj del día y la noche", "detalle": "Las agujas marcan la hora real del ciclo de día y noche de la partida y la campana da las horas: al anochecer llama a recogerse y al amanecer abre los talleres. El jugador ve la hora de un vistazo sin mirar la interfaz."},
+        {"titulo": "Campana de alarma de largo alcance", "detalle": "Sustituye a la campana de la milicia: su toque llega a todo el mapa, así que la milicia se reúne desde cualquier barrio en lugar de solo desde las casas cercanas al centro."},
+        {"titulo": "Prestigio para el comercio", "detalle": "Una maravilla cívica: los mercaderes se quedan un día más y traen una carreta extra, porque la feria abre y cierra a campanadas."}
+      ],
+      "modelos": [
+        {"id": "wonder_clock_tower_stage1", "nombre": "Etapa 1: zócalo", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_clock_tower_stage2", "nombre": "Etapa 2: fuste con andamios", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_clock_tower", "nombre": "Terminada", "material": "piedra", "animaciones": {"idle": "Ondean los dos estandartes de la entrada.", "turn": "Giran las agujas de las cuatro esferas: la horaria da una vuelta y el minutero, doce.", "ring": "Voltea la campana del campanario."}}
+      ]
+    },
+    {
+      "id": "wonder_lighthouse",
+      "nombre": "Faro del mundo",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Faro de mármol blanco de 59 m en tres cuerpos (cuadrado, octogonal y redondo) sobre un zócalo con escalinata, con estatuas de bronce en la terraza, linterna de columnas con hoguera, espejo dorado que gira y una estatua de oro en la cima. Ocupa 22 × 22 m.",
+      "propuestas": [
+        {"titulo": "Maravilla del comercio por agua", "detalle": "Se construye en la orilla. Cuesta 1 500 de piedra, 200 ladrillos, 100 de hierro y 60 de oro en tres etapas. Terminado, los mercaderes llegan el doble de seguido y con mejores precios, y en multijugador las caravanas propias tardan menos en el mapa del mundo."},
+        {"titulo": "Descubre el mapa", "detalle": "Su luz revela todo el mapa (o un radio muy grande) y los exploradores vuelven siempre: ninguna expedición se pierde de noche ni con niebla."},
+        {"titulo": "Ve venir a los asaltantes", "detalle": "Los asaltantes se anuncian medio día antes y se ve por qué borde llegarán. Consume leña cada noche (5 de leña); sin leña, el faro se apaga y pierde el efecto."},
+        {"titulo": "Pesca segura", "detalle": "Los pescadores faenan también de noche y con mal tiempo: las casas de pesca producen un 25 % más."}
+      ],
+      "modelos": [
+        {"id": "wonder_lighthouse_stage1", "nombre": "Etapa 1: zócalo", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_lighthouse_stage2", "nombre": "Etapa 2: primer cuerpo con andamios", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_lighthouse", "nombre": "Terminado", "material": "mármol", "animaciones": {"idle": "Gira el espejo con su haz de luz y arde la hoguera."}}
+      ]
+    },
+    {
+      "id": "wonder_colossus",
+      "nombre": "Coloso del fundador",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Estatua de 30 m del fundador del pueblo, con corona, capa, espada apoyada y una antorcha en alto, a horcajadas sobre dos pedestales de piedra: entre sus piernas pasa un camino, una puerta de muralla o la bocana de un puerto. Ocupa 26 × 12 m y mide 40 m. En bronce, dorado o mármol blanco.",
+      "propuestas": [
+        {"titulo": "Maravilla del metal", "detalle": "Requiere fundición y herrería. Etapa 1: 400 de piedra (pedestales). Etapa 2: 300 de hierro y 200 troncos de andamio. Etapa 3: 200 de hierro más y 50 de oro. La versión dorada cuesta 300 de oro y da el doble de prestigio. Sube la deseabilidad: llegan inmigrantes más a menudo."},
+        {"titulo": "Puerta monumental", "detalle": "Se coloca sobre un camino en la muralla: cuenta como puerta. Los asaltantes que la ven pierden moral (un tercio huye antes de atacar) y la milicia que pelea a su vista aguanta más."},
+        {"titulo": "Recuerda al fundador", "detalle": "Mientras siga en pie, la felicidad de todo el pueblo no baja del 40 % en hambrunas, epidemias o inviernos duros. Si los asaltantes la derriban, la felicidad cae de golpe."},
+        {"titulo": "Faro de puerto", "detalle": "Sobre la bocana, su antorcha guía a las barcas de noche y cuenta como un faro pequeño para pescadores y mercaderes que vienen por agua."}
+      ],
+      "modelos": [
+        {"id": "wonder_colossus_stage1", "nombre": "Etapa 1: pedestales"},
+        {"id": "wonder_colossus_stage2", "nombre": "Etapa 2: las piernas entre andamios", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_colossus", "nombre": "Terminado, bronce", "material": "bronce", "animaciones": {"idle": "Arden la antorcha y los braseros."}},
+        {"id": "wonder_colossus_gold", "nombre": "Terminado, dorado", "material": "oro", "animaciones": {"idle": "Arden la antorcha y los braseros."}},
+        {"id": "wonder_colossus_marble", "nombre": "Terminado, mármol", "material": "mármol", "animaciones": {"idle": "Arden la antorcha y los braseros."}}
+      ]
+    },
+    {
+      "id": "wonder_ziggurat",
+      "nombre": "Gran zigurat del pueblo lagarto",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Pirámide escalonada de arenisca de cinco cuerpos con franjas turquesa, cuatro escalinatas, balaustradas que acaban en cabezas de serpiente de jade, braseros y un santuario con cresta y disco solar de oro en la cima. Ocupa 40 × 40 m y mide 33 m. Etapas: primer cuerpo, dos cuerpos y medio con rampa de tierra y grúa, y terminado.",
+      "propuestas": [
+        {"titulo": "Maravilla del pueblo lagarto", "detalle": "Solo la construye un pueblo con mayoría de lagartos (o cuesta el doble a los demás). Es la más cara en piedra: 800, 1 200 y 600 de piedra por etapa, más 40 de oro al final. Da prestigio y hace que los lagartos trabajen sin penalización de frío en otoño e invierno, al calor de sus braseros."},
+        {"titulo": "Calendario de cosechas", "detalle": "Los sacerdotes leen las estaciones desde la cima: el jugador ve con una estación de adelanto las heladas, sequías y plagas, y los campos rinden un 15 % más."},
+        {"titulo": "Ofrendas contra las desgracias", "detalle": "Se le ofrece comida o ganado cada año (50 de comida): mientras se cumpla, no hay epidemias ni incendios espontáneos. Si un año no se ofrenda, la felicidad baja."},
+        {"titulo": "Fortaleza de último recurso", "detalle": "En una incursión los aldeanos suben a sus terrazas: los asaltantes tardan mucho en subir las escalinatas y los arqueros disparan con ventaja desde arriba."}
+      ],
+      "modelos": [
+        {"id": "wonder_ziggurat_stage1", "nombre": "Etapa 1: primer cuerpo", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_ziggurat_stage2", "nombre": "Etapa 2: a media altura, con rampa", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_ziggurat", "nombre": "Terminado", "material": "piedra", "animaciones": {"idle": "Arden los seis braseros."}}
+      ]
+    },
+    {
+      "id": "wonder_world_tree",
+      "nombre": "Árbol del mundo de los elfos",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Árbol gigante de 44 m con raíces como contrafuertes, puerta y pórtico de mármol en el tronco, escalera de caracol, dos plataformas con barandillas y pabellones, faroles y luces que flotan bajo la copa, dentro de un círculo de piedras cantoras. Ocupa 34 × 34 m. No se construye: se hace crecer. Etapas: árbol joven de 15 m apuntalado, árbol de 29 m con andamio y primera plataforma, y adulto.",
+      "propuestas": [
+        {"titulo": "Maravilla que crece con los años", "detalle": "No pide piedra: pide tiempo y cuidados. Se planta con 50 de fertilizante y 20 de hierbas, y cada etapa tarda tres años en crecer si hay un cuidador elfo asignado y agua cerca. Al final se añaden 300 troncos y 40 de lino para las plataformas. Ningún leñador puede talarlo."},
+        {"titulo": "Bosque que se regenera", "detalle": "Los árboles del mapa crecen el doble de rápido y los replantados no fallan; frutales y recolectores a su alrededor rinden más. Encaja con la ronda de árboles que crecen y se replantan."},
+        {"titulo": "Salud y calma", "detalle": "Cuenta como jardín enorme: belleza del entorno al máximo en 40 m, y los enfermos que descansan a su sombra sanan antes. Para los elfos cubre además la necesidad de religión."},
+        {"titulo": "Lo que más duele perder", "detalle": "Los asaltantes intentan quemarlo: si arde, se pierde para siempre (no se reconstruye, hay que volver a plantarlo) y los elfos del pueblo quedan de luto un año."}
+      ],
+      "modelos": [
+        {"id": "wonder_world_tree_stage1", "nombre": "Etapa 1: árbol joven"},
+        {"id": "wonder_world_tree_stage2", "nombre": "Etapa 2: medio crecido, con andamio", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_world_tree", "nombre": "Adulto", "animaciones": {"idle": "Suben y bajan las luces que flotan bajo la copa."}}
+      ]
+    },
+    {
+      "id": "wonder_dwarf_gate",
+      "nombre": "Puerta del salón de la montaña",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Fachada tallada en un risco de granito: puerta doble de bronce de 14 m con dintel de runas de oro y frontón, entre dos enanos de piedra de 15 m apoyados en sus martillos, con pilares, braseros y escalinata. Ocupa 40 × 20 m y mide 31 m. Etapas: el risco con la cara alisada y andamios, la terraza y el hueco con las estatuas aún en bloque, y terminada.",
+      "propuestas": [
+        {"titulo": "Maravilla de los enanos", "detalle": "Solo se puede tallar junto a un risco o una mina de hierro. No gasta piedra: la da. Cada etapa pide 100 herramientas y 60 de carbón, y deja 500 de piedra de la excavación. Al final, 200 de hierro y 80 de oro para las puertas."},
+        {"titulo": "Salón bajo la montaña", "detalle": "Dentro caben almacén, bóveda y viviendas: suma 40 plazas de vivienda y un almacén grande que no arden, no sufren el invierno (sin gasto de leña) y que los asaltantes no pueden saquear con las puertas cerradas."},
+        {"titulo": "Minas sin fondo", "detalle": "Las minas de hierro y las canteras del mapa dejan de agotarse y producen un 25 % más. Atrae clanes enanos: llegan inmigrantes enanos con oficio de herrero o minero."},
+        {"titulo": "Puertas que se cierran", "detalle": "En una incursión las puertas se cierran (clip close) y el pueblo entero se refugia: los asaltantes solo pueden quemar lo que quede fuera."}
+      ],
+      "modelos": [
+        {"id": "wonder_dwarf_gate_stage1", "nombre": "Etapa 1: el risco alisado", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_dwarf_gate_stage2", "nombre": "Etapa 2: el hueco y las estatuas en bloque", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_dwarf_gate", "nombre": "Terminada", "material": "piedra", "animaciones": {"idle": "Arden los braseros.", "open": "Se abren las dos hojas de bronce.", "close": "Se cierran las dos hojas."}}
+      ]
+    },
+    {
+      "id": "wonder_obsidian_spire",
+      "nombre": "Aguja de obsidiana de los elfos oscuros",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Torre retorcida de vidrio negro de 58 m con vetas que brillan en violeta, cuatro agujas menores unidas por arbotantes, un gran cristal que flota y gira sobre la punta y anillos de cristales y esquirlas en órbita. Ocupa 20 × 20 m. Etapas: estrado y arranque, media torre con andamios y grúa en lo alto, y terminada.",
+      "propuestas": [
+        {"titulo": "Maravilla de los elfos oscuros", "detalle": "Cuesta 900 de piedra, 150 de carbón (para fundir el vidrio negro), 100 de hierro y 120 de oro en tres etapas. Da prestigio, pero baja un poco la felicidad de las casas de otras razas a menos de 20 m: conviene levantarla lejos."},
+        {"titulo": "La noche trabaja para ti", "detalle": "De noche, sus cristales alumbran el pueblo: los elfos oscuros trabajan también de noche sin penalización y nadie necesita antorchas a 40 m."},
+        {"titulo": "Terror de los asaltantes", "detalle": "Hace de torre de vigilancia mágica: dispara rayos a los asaltantes y a las fieras que entren en su radio, sin guarnición. Gasta carbón mientras dispara."},
+        {"titulo": "Ojo que todo lo ve", "detalle": "Revela en el mapa las guaridas, las ruinas y los campamentos de asaltantes sin enviar exploradores."}
+      ],
+      "modelos": [
+        {"id": "wonder_obsidian_spire_stage1", "nombre": "Etapa 1: estrado", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_obsidian_spire_stage2", "nombre": "Etapa 2: media torre", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_obsidian_spire", "nombre": "Terminada", "animaciones": {"idle": "Giran los cristales en órbita en sentidos opuestos, flota y gira el cristal de la punta y arden las llamas violetas."}}
+      ]
+    },
+    {
+      "id": "wonder_sun_temple",
+      "nombre": "Templo del sol del pueblo gato",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Templo de arenisca con pilono de dos torres de 16 m, dos obeliscos de punta dorada, dos gatos de piedra, patio de columnas, sala hipóstila y santuario, y sobre la sala un gran sol de oro de 9 m que gira. Ocupa 30 × 40 m y mide 24 m. Cuatro estandartes ondean ante el pilono.",
+      "propuestas": [
+        {"titulo": "Maravilla del pueblo gato", "detalle": "Cuesta 1 000 de piedra, 300 ladrillos, 60 de lino (estandartes) y 150 de oro en tres etapas. Cubre la religión de todo el mapa para los gatos y a medias para los demás, y da prestigio."},
+        {"titulo": "Días más largos", "detalle": "El sol de oro refleja la luz: el día de trabajo dura una hora más en todo el pueblo y los cultivos que dependen del sol (trigo, lino, frutales) rinden un 10 % más."},
+        {"titulo": "Templo de los gatos sagrados", "detalle": "Los gatos del templo acaban con las ratas: ningún granero ni almacén pierde comida por plagas y baja el riesgo de enfermedades por ratas."},
+        {"titulo": "Tesoro tentador", "detalle": "Su oro atrae incursiones más fuertes: sube la riqueza visible del pueblo. Si los asaltantes llegan al santuario se llevan parte del oro de la bóveda."}
+      ],
+      "modelos": [
+        {"id": "wonder_sun_temple_stage1", "nombre": "Etapa 1: trazado y arranques", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_sun_temple_stage2", "nombre": "Etapa 2: muros con andamios", "animaciones": {"work": "Suben y bajan las cargas de las dos grúas."}},
+        {"id": "wonder_sun_temple", "nombre": "Terminado", "material": "piedra", "animaciones": {"idle": "Gira el sol de oro, ondean los cuatro estandartes y arden los braseros."}},
+        {"id": "wonder_sun_temple_ruin", "nombre": "En ruinas", "material": "piedra", "nota": "El templo saqueado y medio enterrado en arena: pilono y muros rotos, columnas truncadas, un obelisco caído y sillares sueltos, sin el sol de oro. Sirve como ruina del desierto para exploradores (con tesoro o con guarida) o como estado final tras una incursión."}
+      ]
+    },
+    {
+      "id": "wonder_fox_shrine",
+      "nombre": "Gran santuario del pueblo zorro",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Colina amurallada de 6 m a la que se sube por una escalinata bajo siete puertas rojas con faroles de piedra; arriba, dos zorros de mármol, un salón de tejado curvo con cuerda sagrada y faroles de papel, una pagoda de cinco tejados con remate dorado y un cerezo. Ocupa 24 × 44 m y mide 29 m.",
+      "propuestas": [
+        {"titulo": "Maravilla del pueblo zorro", "detalle": "Cuesta 400 de piedra, 700 troncos, 300 tejas, 40 de lino y 60 de oro en tres etapas (es la maravilla de madera). Cubre religión y entretenimiento a la vez y da prestigio."},
+        {"titulo": "Festivales de estación", "detalle": "Al empezar cada estación hay un festival: durante tres días nadie trabaja, pero la felicidad sube mucho y dura toda la estación. El jugador puede cancelarlo si hay urgencia."},
+        {"titulo": "Buena fortuna en el comercio", "detalle": "Los mercaderes dejan ofrendas: cada trato en el puesto comercial sale un 10 % mejor y de vez en cuando un mercader regala un objeto raro."},
+        {"titulo": "Arde con facilidad", "detalle": "Es de madera: los asaltantes la queman antes que la piedra y un incendio cercano la alcanza. Necesita un pozo a menos de 15 m para estar a salvo."}
+      ],
+      "modelos": [
+        {"id": "wonder_fox_shrine_stage1", "nombre": "Etapa 1: la colina y el trazado", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_fox_shrine_stage2", "nombre": "Etapa 2: salón y pagoda en obra", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_fox_shrine", "nombre": "Terminado", "material": "troncos", "animaciones": {"idle": "Se mecen los faroles de papel del salón."}}
+      ]
+    },
+    {
+      "id": "wonder_lily_palace",
+      "nombre": "Palacio del nenúfar del pueblo rana",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Palacio en forma de capullo de loto rosa, con dieciséis pétalos abiertos, columnas de juncos y un surtidor en la cima, sobre un nenúfar gigante en su propio estanque de 33 m; cinco nenúfares menores con pabellones, pasarelas de junco, un puente desde la orilla, ranas doradas y espadañas. Ocupa 36 × 36 m y mide 21 m.",
+      "propuestas": [
+        {"titulo": "Maravilla del pueblo rana", "detalle": "Se construye sobre agua o pantano (o excava su propio estanque en tierra). Cuesta 500 troncos, 300 de arcilla, 200 de lino y 60 de oro en tres etapas. Da prestigio y vivienda de lujo para 12 familias rana."},
+        {"titulo": "Agua limpia para todos", "detalle": "Su estanque cuenta como fuente de agua limpia para todo el pueblo: no hay enfermedades por agua sucia y los pozos no se secan en verano."},
+        {"titulo": "Pesca y riego", "detalle": "Las casas de pesca rinden un 25 % más y los campos a 30 m no sufren sequía. En invierno el estanque se hiela y el efecto se detiene."},
+        {"titulo": "Lluvia a voluntad", "detalle": "Una vez por estación el jugador puede pedir lluvia: apaga todos los incendios del mapa y riega los campos."}
+      ],
+      "modelos": [
+        {"id": "wonder_lily_palace_stage1", "nombre": "Etapa 1: el estanque y el nenúfar"},
+        {"id": "wonder_lily_palace_stage2", "nombre": "Etapa 2: el capullo a medias"},
+        {"id": "wonder_lily_palace", "nombre": "Terminado", "animaciones": {"idle": "Sube y baja el surtidor de la cima y flotan las luciérnagas."}}
+      ]
+    },
+    {
+      "id": "wonder_war_arena",
+      "nombre": "Arena de guerra de los orcos",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Foso ovalado de arena con cuatro gradas de piedra, cerca de troncos con picas, puerta de dos postes enormes bajo el cráneo astado de una gran bestia, sitial del caudillo con trono de hierro y hueso, tambores, braseros y cuatro estandartes rojos. Ocupa 36 × 30 m y mide 17 m.",
+      "propuestas": [
+        {"titulo": "Maravilla de los orcos", "detalle": "Cuesta 600 de piedra, 500 troncos, 100 de hierro y 40 de cuero en tres etapas; el cráneo exige haber cazado una bestia grande (oso o criatura de guarida). Cubre el entretenimiento de todo el mapa."},
+        {"titulo": "Escuela de guerreros", "detalle": "Hace de cuartel mejorado: los soldados y la milicia que entrenan aquí pegan y aguantan más, y el poder militar de la puntuación sube un 25 %."},
+        {"titulo": "Combates con apuestas", "detalle": "Cada estación hay juegos: gastan 20 de cerveza y 10 de carne, dan mucha felicidad y algo de oro por las apuestas; a veces un luchador sale herido y pasa por el sanador."},
+        {"titulo": "Los asaltantes se lo piensan", "detalle": "Un pueblo con arena intimida: las incursiones pequeñas no llegan, solo las grandes."}
+      ],
+      "modelos": [
+        {"id": "wonder_war_arena_stage1", "nombre": "Etapa 1: el óvalo trazado", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_war_arena_stage2", "nombre": "Etapa 2: gradas a medias", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_war_arena", "nombre": "Terminada", "animaciones": {"idle": "Ondean los cuatro estandartes y arden los braseros."}}
+      ]
+    },
+    {
+      "id": "wonder_triumphal_arch",
+      "nombre": "Arco de triunfo",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Arco de tres vanos (el central de 6 m de ancho y 11 de alto) con ocho columnas sobre pedestales, ocho estatuas de bronce, relieves, ático con inscripción dorada y una cuadriga de bronce con auriga de oro en lo alto. Ocupa 22 × 9 m y mide 26 m; un camino lo atraviesa. En mármol blanco o en arenisca.",
+      "propuestas": [
+        {"titulo": "Se gana, no se compra", "detalle": "Solo se puede levantar después de rechazar diez incursiones (o una incursión grande). Cuesta 700 de piedra, 80 de hierro y 60 de oro en tres etapas. Da prestigio y sube el poder militar de la puntuación."},
+        {"titulo": "Puerta de los desfiles", "detalle": "Se coloca sobre un camino. Las tropas que salen o vuelven pasando por debajo ganan moral: pelean mejor durante una estación. Los mercaderes que entran por él pagan de buen grado un pequeño peaje."},
+        {"titulo": "Memoria de la victoria", "detalle": "Tras cada incursión rechazada, la felicidad sube un 10 % durante una estación en lugar de quedarse igual."},
+        {"titulo": "Trofeo codiciado", "detalle": "Los asaltantes lo eligen como objetivo antes que los almacenes: si lo derriban se llevan el prestigio, pero mientras lo atacan dejan en paz las casas."}
+      ],
+      "modelos": [
+        {"id": "wonder_triumphal_arch_stage1", "nombre": "Etapa 1: arranque de los pilares"},
+        {"id": "wonder_triumphal_arch_stage2", "nombre": "Etapa 2: pilares, cimbras y andamios", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_triumphal_arch", "nombre": "Terminado, mármol", "material": "mármol", "animaciones": {"idle": "Ondean las dos banderas del ático."}},
+        {"id": "wonder_triumphal_arch_sand", "nombre": "Terminado, arenisca", "material": "piedra", "animaciones": {"idle": "Ondean las dos banderas del ático."}}
+      ]
+    },
+    {
+      "id": "wonder_library",
+      "nombre": "Gran biblioteca",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Rotonda de ladrillo con tambor de vitrales y cúpula de cobre nervada con linterna, pórtico de seis columnas con frontón, dos alas de dos plantas con ventanas de arco y dos estatuas de sabios con libros. Ocupa 32 × 26 m y mide 29 m.",
+      "propuestas": [
+        {"titulo": "Maravilla del saber", "detalle": "Cuesta 600 de piedra, 900 ladrillos, 300 tejas, 80 de lino (papel) y 60 de oro en tres etapas. Terminada, desbloquea mejoras de oficios: cada año el jugador elige una (mejores herramientas, rotación de cultivos, medicina...) que sube un 10 % la producción de un edificio."},
+        {"titulo": "Universidad", "detalle": "Da empleo a 8 maestros y forma aprendices: los niños que estudian aquí rinden un 25 % más de adultos y los médicos formados curan antes las epidemias."},
+        {"titulo": "Mapas y crónicas", "detalle": "Guarda los hallazgos de los exploradores: cada ruina o guarida descubierta da prestigio, y los mapas hacen que las expediciones y caravanas tarden menos."},
+        {"titulo": "Lo que arde no vuelve", "detalle": "Si se incendia se pierden las mejoras aprendidas ese año. Los asaltantes no la saquean (no hay nada que cargar), pero la queman."}
+      ],
+      "modelos": [
+        {"id": "wonder_library_stage1", "nombre": "Etapa 1: zócalo y arranques", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_library_stage2", "nombre": "Etapa 2: muros con andamios", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_library", "nombre": "Terminada", "material": "ladrillo", "animaciones": {"idle": "Ondean las dos banderas de las alas."}}
+      ]
+    },
+    {
+      "id": "wonder_mausoleum",
+      "nombre": "Mausoleo del fundador",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Tumba de mármol sobre un podio de tres gradas, rodeada por veinticuatro columnas y cubierta por una pirámide escalonada con la estatua de bronce del fundador en la cima; puerta de bronce, braseros, urnas, cipreses y dos estatuas a los lados de la escalinata. Ocupa 22 × 26 m y mide 24 m.",
+      "propuestas": [
+        {"titulo": "Se construye cuando muere el fundador", "detalle": "Se desbloquea al morir de viejo el primer aldeano del pueblo (o el alcalde). Cuesta 1 000 de piedra, 100 de hierro y 80 de oro en tres etapas. Da prestigio y un cementerio de honor."},
+        {"titulo": "El duelo pesa menos", "detalle": "Las muertes (vejez, epidemias, incursiones) quitan la mitad de felicidad: los aldeanos tienen dónde llorar a los suyos. Cubre parte de la necesidad de religión."},
+        {"titulo": "Linaje", "detalle": "Los hijos de familias antiguas heredan un rasgo de sus padres (un oficio en el que rinden más). Cuantas más generaciones enterradas, más prestigio."},
+        {"titulo": "Tumba que tienta", "detalle": "Guarda ofrendas de oro: los asaltantes la buscan. Si la profanan, la felicidad cae durante un año."}
+      ],
+      "modelos": [
+        {"id": "wonder_mausoleum_stage1", "nombre": "Etapa 1: el podio", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_mausoleum_stage2", "nombre": "Etapa 2: cella y columnas a medias", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_mausoleum", "nombre": "Terminado", "material": "mármol", "animaciones": {"idle": "Arden los dos braseros."}}
+      ]
+    },
+    {
+      "id": "wonder_coliseum",
+      "nombre": "Coliseo",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Anfiteatro ovalado de tres pisos de arcos con estatuas, ático con mástiles, siete gradas, foso de arena, palco de honor con toldo púrpura y cuatro grandes banderas. Ocupa 44 × 36 m y mide 22 m (25 con las banderas). Es el más grande y el de más triángulos de la familia (26 000).",
+      "propuestas": [
+        {"titulo": "Maravilla del entretenimiento", "detalle": "Requiere taberna y mercado. Cuesta 2 000 de piedra, 400 ladrillos, 100 de hierro y 60 de lino (toldos) en tres etapas: es la obra que más piedra pide. Cubre el entretenimiento de todo el mapa y sube la deseabilidad dos escalones."},
+        {"titulo": "Días de juegos", "detalle": "El jugador convoca juegos (cuestan 40 de comida y 20 de cerveza): durante tres días la felicidad sube mucho, llegan visitantes que gastan oro en el mercado y vienen más inmigrantes esa estación."},
+        {"titulo": "Torneos entre pueblos", "detalle": "En multijugador, los pueblos mandan campeones por el mapa del mundo: el que gana el torneo se lleva prestigio y un premio en oro que ponen entre todos."},
+        {"titulo": "Cantera a la vista", "detalle": "Tanta piedra tienta: en una incursión los asaltantes no lo dañan, pero si el pueblo queda abandonado se puede desmontar y recuperar la mitad de la piedra."}
+      ],
+      "modelos": [
+        {"id": "wonder_coliseum_stage1", "nombre": "Etapa 1: el óvalo trazado", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_coliseum_stage2", "nombre": "Etapa 2: primer piso y gradas a medias", "animaciones": {"work": "Suben y bajan las cargas de las dos grúas."}},
+        {"id": "wonder_coliseum", "nombre": "Terminado", "material": "piedra", "animaciones": {"idle": "Ondean las cuatro banderas y arden los braseros de la entrada."}},
+        {"id": "wonder_coliseum_ruin", "nombre": "En ruinas", "material": "piedra", "nota": "El coliseo abandonado: el anillo roto a alturas desiguales, arcos vacíos, hiedra, gradas hundidas, hierba en la arena y bloques caídos alrededor. Sirve como cantera (se desmonta para recuperar piedra), como ruina que restaurar o como ruina del mapa donde anidan fieras."}
+      ]
+    },
+    {
+      "id": "wonder_hanging_gardens",
+      "nombre": "Jardines colgantes",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Cuatro terrazas de arenisca con arquerías, cubiertas de árboles, cipreses, arbustos en flor y enredaderas que cuelgan; el agua nace en un pabellón de cúpula dorada y cae de terraza en terraza hasta un estanque. Escaleras en zigzag por el frente. Ocupan 32 × 32 m y miden 28 m.",
+      "propuestas": [
+        {"titulo": "Maravilla de la belleza", "detalle": "Requiere un pozo o un acueducto cerca. Cuesta 900 de piedra, 500 ladrillos, 200 troncos, 100 de fertilizante y 40 de oro en tres etapas. Da belleza del entorno al máximo a todas las casas en 50 m: las viviendas suben de nivel sin jardines propios."},
+        {"titulo": "Huerto del pueblo", "detalle": "Produce fruta, hierbas y verduras todo el año (también en invierno, al abrigo de las terrazas) con 6 jardineros: unas 40 unidades por estación."},
+        {"titulo": "Aire sano", "detalle": "Las enfermedades se propagan la mitad en las casas cercanas y el herborista encuentra aquí cualquier hierba sin salir al bosque."},
+        {"titulo": "Sedientos", "detalle": "Consumen agua: en una sequía compiten con los pozos del pueblo y, si se quedan sin riego una estación entera, se marchitan y pierden el efecto hasta replantarlos."}
+      ],
+      "modelos": [
+        {"id": "wonder_hanging_gardens_stage1", "nombre": "Etapa 1: trazado", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_hanging_gardens_stage2", "nombre": "Etapa 2: terrazas a medias", "animaciones": {"work": "Suben y bajan las cargas de las dos grúas."}},
+        {"id": "wonder_hanging_gardens", "nombre": "Terminados", "material": "piedra", "animaciones": {"idle": "Tiembla el agua de las cascadas y del surtidor."}}
+      ]
+    },
+    {
+      "id": "wonder_great_bell",
+      "nombre": "Pabellón de la gran campana",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Campana de bronce de 5 m colgada bajo un pabellón de cuatro columnas rojas y doble tejado de esquinas alzadas, sobre un estrado de piedra con cuatro escaleras; se toca con un tronco colgado de cuerdas. Ocupa 14 × 14 m y mide 16 m. La etapa 2 muestra el foso de fundición con su molde y su horno.",
+      "propuestas": [
+        {"titulo": "Maravilla pequeña y temprana", "detalle": "La más barata: 200 de piedra, 150 troncos, 100 tejas y 150 de hierro (el bronce de la campana, que se funde en el propio sitio en la etapa 2, con 40 de carbón). Buena primera maravilla para un pueblo mediano."},
+        {"titulo": "Campana de alarma del pueblo", "detalle": "Sustituye a la campana de milicia: se oye en todo el mapa, la milicia se arma el doble de rápido y los aldeanos que están lejos (leñadores, cazadores, exploradores) vuelven a refugiarse."},
+        {"titulo": "Marca las estaciones", "detalle": "Suena al cambiar la estación y en año nuevo: ese día la felicidad sube y los templos cubren más. En invierno avisa de las heladas con un día de adelanto."},
+        {"titulo": "Botín de bronce", "detalle": "Los asaltantes intentan llevársela para fundirla: tardan mucho en descolgarla, lo que da tiempo a la milicia."}
+      ],
+      "modelos": [
+        {"id": "wonder_great_bell_stage1", "nombre": "Etapa 1: el estrado"},
+        {"id": "wonder_great_bell_stage2", "nombre": "Etapa 2: columnas y foso de fundición", "animaciones": {"idle": "Arde el horno de fundición."}},
+        {"id": "wonder_great_bell", "nombre": "Terminado", "material": "hierro", "animaciones": {"ring": "El tronco golpea la campana y esta se mece."}}
+      ]
+    },
+    {
+      "id": "wonder_observatory",
+      "nombre": "Gran observatorio",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Torre redonda con contrafuertes y cúpula de cobre giratoria con un gran telescopio de bronce, torre de escalera con chapitel y, en la terraza, un planetario de bronce con sol dorado, anillos y tres planetas que giran sobre un suelo de estrellas. Ocupa 24 × 24 m y mide 22 m.",
+      "propuestas": [
+        {"titulo": "Maravilla del cielo", "detalle": "Requiere herrería (lentes y engranajes). Cuesta 700 de piedra, 150 de hierro, 60 herramientas y 50 de oro en tres etapas. Da prestigio y el pronóstico del tiempo."},
+        {"titulo": "Pronóstico de las estaciones", "detalle": "El jugador ve con una estación de adelanto si vendrá sequía, helada temprana o invierno duro, y los agricultores siembran en el día justo: las cosechas rinden un 10 % más."},
+        {"titulo": "Calendario exacto", "detalle": "Los eclipses y cometas ya no asustan al pueblo (sin el observatorio bajan la felicidad); con él, se celebran y la suben."},
+        {"titulo": "Navegación", "detalle": "Los exploradores y las caravanas se orientan por las estrellas: viajan también de noche y tardan un 20 % menos en el mapa del mundo."}
+      ],
+      "modelos": [
+        {"id": "wonder_observatory_stage1", "nombre": "Etapa 1: terraza y arranque", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_observatory_stage2", "nombre": "Etapa 2: torre a medias", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_observatory", "nombre": "Terminado", "material": "piedra", "animaciones": {"idle": "Gira la cúpula con el telescopio y dan vueltas los tres planetas, cada uno a su paso."}}
+      ]
+    },
+    {
+      "id": "wonder_portal",
+      "nombre": "Anillo del portal",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Anillo de piedras rúnicas de 14 m de diámetro plantado en un estrado, con un vórtice azul que gira dentro, piedra clave con gema, cuatro pilones con cristales que flotan y braseros de llama azul. Ocupa 18 × 12 m y mide 16 m.",
+      "propuestas": [
+        {"titulo": "Comercio instantáneo", "detalle": "Requiere la academia de magos o haber explorado una ruina con portal. Cuesta 600 de piedra, 100 de hierro y 200 de oro en tres etapas. En multijugador, las caravanas entre dos pueblos con portal llegan al instante; en solitario, llega un mercader lejano cada estación con mercancías que no hay en el mapa."},
+        {"titulo": "Puerta de exploración", "detalle": "Los exploradores pueden cruzarlo hacia regiones lejanas (otro bioma) y volver con recursos raros, semillas o animales nuevos, en lugar de recorrer solo el propio mapa."},
+        {"titulo": "Refuerzos y huida", "detalle": "Las tropas de un aliado llegan por el portal en un día. En una incursión perdida, los aldeanos pueden evacuar por él y volver cuando pase el peligro."},
+        {"titulo": "Lo que entra sin llamar", "detalle": "Riesgo: de tarde en tarde sale del portal una criatura (un evento de incursión pequeña dentro del pueblo) si no hay un mago que lo vigile."}
+      ],
+      "modelos": [
+        {"id": "wonder_portal_stage1", "nombre": "Etapa 1: el estrado"},
+        {"id": "wonder_portal_stage2", "nombre": "Etapa 2: medio anillo sobre cimbras", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_portal", "nombre": "Terminado", "material": "piedra", "animaciones": {"idle": "Gira el vórtice, suben y bajan los cristales y arden las llamas azules."}}
+      ]
+    },
+    {
+      "id": "wonder_mage_academy",
+      "nombre": "Academia de magos",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Salón de ocho lados con cuatro torreones de tejado azul noche y una torre central cuya parte alta está partida: dos pisos flotan separados sobre un núcleo de luz, con un anillo de runas que gira y cinco islotes de roca con árboles y cristales en órbita. Ocupa 22 × 22 m y mide 50 m.",
+      "propuestas": [
+        {"titulo": "Maravilla de la magia", "detalle": "Requiere la gran biblioteca o nivel máximo del centro. Cuesta 1 000 de piedra, 200 ladrillos, 300 tejas, 80 de lino y 200 de oro en tres etapas. Da empleo a 6 magos y desbloquea los hechizos del pueblo."},
+        {"titulo": "Hechizos del pueblo", "detalle": "Una vez por estación el jugador lanza uno: lluvia (apaga incendios y riega), cosecha (madura un campo al instante), niebla (los asaltantes se pierden y llegan tarde) o curación (corta una epidemia). Cada hechizo cuesta oro."},
+        {"titulo": "Escudo contra incursiones", "detalle": "Los magos defienden: cuenta como cuatro torres de vigilancia con alcance largo. Si los asaltantes matan a los magos, la parte flotante cae y hay que reconstruir la etapa 3."},
+        {"titulo": "Aprendices de todas las razas", "detalle": "Atrae inmigrantes de razas que no hay en el pueblo (elfos, elfos oscuros, ranas): uno por año, con un oficio raro."}
+      ],
+      "modelos": [
+        {"id": "wonder_mage_academy_stage1", "nombre": "Etapa 1: estrado y arranques", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_mage_academy_stage2", "nombre": "Etapa 2: salón y torre a medias", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_mage_academy", "nombre": "Terminada", "material": "piedra", "animaciones": {"idle": "Flotan los dos pisos sueltos (el de arriba gira), gira el anillo de runas y orbitan los islotes."}}
+      ]
+    },
+    {
+      "id": "wonder_dragon_bones",
+      "nombre": "Monumento de los huesos del dragón",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "El esqueleto completo de un gran dragón montado sobre puntales de bronce en un estrado de piedra: costillar de 9 pares, alas abiertas de 14 m de alto, patas, cola y el cráneo astado sobre un pedestal, con la espada que lo mató clavada, placa de bronce y braseros. Ocupa 34 × 16 m y mide 15 m.",
+      "propuestas": [
+        {"titulo": "Trofeo de una gesta", "detalle": "No se compra: se desbloquea al matar a un dragón (o a la criatura mayor de una guarida). Los huesos se traen en carretas (etapa 1), se montan con andamios y grúa (etapa 2: 200 troncos, 80 de hierro) y se inaugura (etapa 3: 300 de piedra, 40 de oro)."},
+        {"titulo": "Nadie se atreve", "detalle": "Un pueblo que mató a un dragón asusta: las incursiones llegan con un tercio menos de asaltantes y las fieras (lobos, osos) no se acercan a 60 m."},
+        {"titulo": "Atrae aventureros", "detalle": "Llegan cazadores y mercenarios como inmigrantes con oficio de soldado o cazador, y mercaderes que pagan bien por escamas y colmillos (un ingreso de oro por estación)."},
+        {"titulo": "Museo", "detalle": "Cuenta como entretenimiento para las casas a 30 m y da prestigio; cada criatura nueva cazada añade un cráneo y algo más de prestigio."}
+      ],
+      "modelos": [
+        {"id": "wonder_dragon_bones_stage1", "nombre": "Etapa 1: los huesos recién traídos"},
+        {"id": "wonder_dragon_bones_stage2", "nombre": "Etapa 2: espinazo y medio costillar", "animaciones": {"work": "Sube y baja la carga de la grúa, que iza un hueso."}},
+        {"id": "wonder_dragon_bones", "nombre": "Terminado", "animaciones": {"idle": "Arden los tres braseros."}}
+      ]
+    },
+    {
+      "id": "wonder_royal_palace",
+      "nombre": "Palacio real con jardines",
+      "categoria": "Maravillas y monumentos",
+      "destacado": true,
+      "descripcion": "Palacio de muros claros y tejados de pizarra: cuerpo central con pórtico, balcón, frontón y cúpula de cobre, dos alas de dos plantas, cuatro torres redondas con chapitel y bandera, chimeneas y medio centenar de ventanas iluminadas. Delante, un jardín formal con cuatro parterres de setos y flores, fuente con surtidor, dos estatuas, hileras de cipreses y una verja de hierro con pilares y faroles. Ocupa 48 × 40 m y mide 26 m con las banderas.",
+      "propuestas": [
+        {"titulo": "Último nivel del centro del pueblo", "detalle": "Es la mejora final del centro del pueblo: requiere el nivel máximo, mercado, taberna y una maravilla ya terminada. Cuesta 1 200 de piedra, 800 ladrillos, 500 tejas, 150 de hierro, 100 de lino y 200 de oro en tres etapas. Desbloquea todo lo que quede por desbloquear y da el mayor prestigio de la familia."},
+        {"titulo": "Corte y nobles", "detalle": "Atrae inmigrantes ricos que piden vivienda del nivel más alto y pagan impuestos en oro cada estación. A cambio, consumen ropa, calzado, cerveza y comida variada: si falta algo, se marchan y baja la deseabilidad."},
+        {"titulo": "Embajadas", "detalle": "En multijugador permite acuerdos entre pueblos (precios fijos de caravana, ayuda de tropas, tributos). En solitario llegan embajadores de pueblos lejanos con regalos o peticiones, como eventos de estación."},
+        {"titulo": "El gran botín", "detalle": "La riqueza visible del pueblo sube mucho y las incursiones llegan más fuertes y más a menudo. Si los asaltantes entran, se llevan parte del oro de la bóveda; por eso pide muralla y cuartel antes de construirlo."}
+      ],
+      "modelos": [
+        {"id": "wonder_royal_palace_stage1", "nombre": "Etapa 1: cimientos y solar", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_royal_palace_stage2", "nombre": "Etapa 2: muros con andamios y tres grúas", "animaciones": {"work": "Suben y bajan las cargas de las tres grúas."}},
+        {"id": "wonder_royal_palace", "nombre": "Terminado", "material": "ladrillo", "animaciones": {"idle": "Ondean las cuatro banderas de las torres y sube y baja el surtidor del jardín."}}
+      ]
+    },
+    {
+      "id": "wonder_bazaar",
+      "nombre": "Gran bazar",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Mercado cubierto de arenisca: dos calles con bóveda de teja que se cruzan bajo una cúpula turquesa de 10 m, cuatro cúpulas menores en la azotea almenada, cuatro portadas altas con arco y torrecillas, y veinticuatro puestos con toldos de colores y mercancías alrededor. Ocupa 36 × 28 m y mide 18 m.",
+      "propuestas": [
+        {"titulo": "Maravilla del comercio por tierra", "detalle": "Mejora final del mercado y del puesto comercial: requiere ambos. Cuesta 900 de piedra, 600 ladrillos, 300 tejas y 120 de lino (toldos) en tres etapas. Los mercaderes llegan cada estación en lugar de cada año y pueden ser tres a la vez."},
+        {"titulo": "Mercado para todo el mapa", "detalle": "Hace de mercado con alcance en todo el pueblo: las casas se abastecen de comida, ropa y calzado sin que haya un mercado en cada barrio. Da empleo a 12 tenderos."},
+        {"titulo": "Mejores precios", "detalle": "El pueblo vende un 15 % más caro y compra un 15 % más barato. En multijugador, las caravanas de otros jugadores pagan una pequeña tasa al dueño del bazar por cada trato."},
+        {"titulo": "Saqueo seguro", "detalle": "Es lo primero que buscan los asaltantes después de la bóveda: si lo alcanzan se llevan mercancía de los puestos, y un incendio en los toldos se propaga rápido."}
+      ],
+      "modelos": [
+        {"id": "wonder_bazaar_stage1", "nombre": "Etapa 1: trazado y arranques", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_bazaar_stage2", "nombre": "Etapa 2: muros a medias", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_bazaar", "nombre": "Terminado", "material": "piedra", "animaciones": {"idle": "Ondean las dos banderas de la portada."}}
+      ]
+    },
+    {
+      "id": "wonder_sundial",
+      "nombre": "Plaza del gran reloj de sol",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Plaza redonda de 23 m con el pavimento en veinticuatro gajos, un gnomon de mármol de 10 m con filo de bronce, doce piedras horarias con marcas de oro, un aro dorado en el suelo, bancos y cuatro árboles en las esquinas. Una sombra recorre las horas. Ocupa 24 × 24 m y mide 12 m. Es la maravilla más barata después de la campana.",
+      "propuestas": [
+        {"titulo": "Maravilla de plaza, barata", "detalle": "Cuesta 400 de piedra, 60 de hierro (el filo de bronce) y 20 de oro en tres etapas, sin requisitos de nivel alto. Da prestigio y hace de plaza: belleza del entorno para las casas a 20 m y sitio de reunión en las fiestas."},
+        {"titulo": "La sombra marca la hora de la partida", "detalle": "El clip day se reproduce al ritmo del ciclo de día y noche: la sombra señala la hora real del juego. De noche y con el cielo cubierto no marca nada."},
+        {"titulo": "Jornada ordenada", "detalle": "Los aldeanos a 40 m salen y vuelven del trabajo a su hora: menos tiempo perdido y un 5 % más de producción en los talleres cercanos. Es la versión diurna y barata de la torre del reloj."},
+        {"titulo": "Calendario de siembra", "detalle": "Marca solsticios y equinoccios: los campos del pueblo se siembran en el día justo y la primera cosecha del año rinde un poco más."}
+      ],
+      "modelos": [
+        {"id": "wonder_sundial_stage1", "nombre": "Etapa 1: la plaza a medio pavimentar"},
+        {"id": "wonder_sundial_stage2", "nombre": "Etapa 2: el gnomon a medias, con andamios", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_sundial", "nombre": "Terminada", "material": "mármol", "animaciones": {"day": "La sombra recorre la plaza de un lado a otro, del amanecer al anochecer (no se repite)."}}
+      ]
+    },
+    {
+      "id": "wonder_dam",
+      "nombre": "Gran presa",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Presa de sillería de 40 m de largo y 12 de alto con contrafuertes, tres aliviaderos con sus compuertas de madera y tornos en la coronación, pretil almenado, dos casetas con tejado, el embalse detrás, el cuenco de aguas abajo y un molino con rueda hidráulica y canal de madera. Ocupa 40 × 16 m y mide 19 m. En obra se ve la ataguía de tablas que contiene el río.",
+      "propuestas": [
+        {"titulo": "Maravilla del agua", "detalle": "Solo se construye atravesando un río. Cuesta 1 500 de piedra, 300 troncos (ataguía y compuertas), 100 de hierro y 60 herramientas en tres etapas. Aguas arriba crea un embalse (el río se ensancha) y aguas abajo deja de haber crecidas."},
+        {"titulo": "Riego y sequías", "detalle": "Con las compuertas el jugador decide: cerradas (clip close) guarda agua para el verano y los campos a 60 m no sufren sequía; abiertas (clip open) baja el embalse antes del deshielo para evitar la inundación de primavera."},
+        {"titulo": "Fuerza para los talleres", "detalle": "Su rueda mueve molinos y fraguas: el molino, la herrería y el aserradero a 30 m producen un 50 % más y no necesitan su propia rueda ni estar pegados al río."},
+        {"titulo": "Pesca y paso", "detalle": "El embalse es un caladero nuevo para los pescadores y la coronación sirve de puente para aldeanos y carretas. Si los asaltantes la rompen, la riada arrasa lo que haya aguas abajo."}
+      ],
+      "modelos": [
+        {"id": "wonder_dam_stage1", "nombre": "Etapa 1: cimientos tras la ataguía"},
+        {"id": "wonder_dam_stage2", "nombre": "Etapa 2: a media altura", "animaciones": {"work": "Sube y baja la carga de la grúa."}},
+        {"id": "wonder_dam", "nombre": "Terminada", "material": "piedra", "animaciones": {"idle": "Gira la rueda del molino y tiembla el agua de los aliviaderos.", "open": "Suben las tres compuertas.", "close": "Bajan las tres compuertas."}}
+      ]
+    },
+    {
+      "id": "monument_victory_column",
+      "nombre": "Columna de la victoria",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Columna de 7 m con una banda en espiral, sobre pedestal con placas y cadenas, coronada por una victoria alada que alza una corona. Ocupa 4 × 4 m y mide 16 m. En piedra, mármol con oro, con la figura de bronce o dorada.",
+      "propuestas": [
+        {"titulo": "Monumento a una incursión rechazada", "detalle": "Se puede levantar una por cada incursión grande rechazada. Cuesta 80 de piedra y 10 de hierro (20 de oro la dorada). Da prestigio y belleza del entorno a las casas a 12 m."},
+        {"titulo": "Moral de la milicia", "detalle": "La milicia que se reúne a su pie tarda menos en armarse y aguanta un poco más antes de huir."},
+        {"titulo": "Material = prestigio", "detalle": "La de piedra da poco prestigio y casi no cuesta; la de mármol, el doble; la dorada, el triple, pero los asaltantes van primero a por ella para arrancarle el oro."}
+      ],
+      "modelos": [
+        {"id": "monument_victory_column_stone", "nombre": "Piedra", "material": "piedra"},
+        {"id": "monument_victory_column_marble", "nombre": "Mármol y oro", "material": "mármol"},
+        {"id": "monument_victory_column_bronze", "nombre": "Piedra y bronce", "material": "bronce"},
+        {"id": "monument_victory_column_gold", "nombre": "Mármol y figura dorada", "material": "oro"}
+      ]
+    },
+    {
+      "id": "monument_equestrian",
+      "nombre": "Estatua ecuestre",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Jinete con la espada en alto sobre un caballo que levanta una mano, en un pedestal alto con placas y relieves. Ocupa 4 × 6 m y mide 10 m. En piedra, mármol, bronce o dorada.",
+      "propuestas": [
+        {"titulo": "Estatua del héroe", "detalle": "Mejora cara de la estatua actual (core:statue): 60 de piedra y 40 de hierro (bronce) o 40 de oro (dorada). Da más belleza del entorno y un radio mayor (15 m)."},
+        {"titulo": "Plaza de armas", "detalle": "Colocada junto al cuartel, los soldados entrenan ante ella: suben de nivel un poco más rápido y el poder militar de la puntuación cuenta un 5 % más."},
+        {"titulo": "Un héroe con nombre", "detalle": "Se dedica al aldeano que más asaltantes abatió: lleva su nombre, y sus descendientes tienen más felicidad."}
+      ],
+      "modelos": [
+        {"id": "monument_equestrian_stone", "nombre": "Piedra", "material": "piedra"},
+        {"id": "monument_equestrian_marble", "nombre": "Mármol", "material": "mármol"},
+        {"id": "monument_equestrian_bronze", "nombre": "Bronce", "material": "bronce"},
+        {"id": "monument_equestrian_gold", "nombre": "Dorada", "material": "oro"}
+      ]
+    },
+    {
+      "id": "monument_obelisk",
+      "nombre": "Obelisco de punta dorada",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Aguja de una pieza de 10 m con bandas de signos, punta dorada, pedestal con placas y cuatro guardianes de piedra en las esquinas de la grada. Ocupa 5 × 5 m y mide 13 m. En piedra, mármol u obsidiana con punta de cristal.",
+      "propuestas": [
+        {"titulo": "Hito del centro del pueblo", "detalle": "Versión grande del obelisco decorativo. Cuesta 100 de piedra y 10 de oro. Uno por nivel del centro del pueblo: cada nivel alcanzado se conmemora con un obelisco que da prestigio."},
+        {"titulo": "Reloj de sol", "detalle": "Su sombra marca la hora: los aldeanos a 20 m empiezan y acaban el trabajo sin perder tiempo, como una versión local de la torre del reloj."},
+        {"titulo": "Mojón de fronteras", "detalle": "Colocado en el borde del territorio lo amplía: permite construir un poco más lejos del centro. El de obsidiana, además, ahuyenta a las fieras de noche."}
+      ],
+      "modelos": [
+        {"id": "monument_obelisk_stone", "nombre": "Piedra", "material": "piedra"},
+        {"id": "monument_obelisk_marble", "nombre": "Mármol", "material": "mármol"},
+        {"id": "monument_obelisk_obsidian", "nombre": "Obsidiana y cristal"}
+      ]
+    },
+    {
+      "id": "monument_memorial",
+      "nombre": "Memorial de los caídos",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Muro curvo de cinco losas con escudos de bronce y listas de nombres, un bloque con una espada clavada y un yelmo, dos coronas de laurel y dos pebeteros. Ocupa 8 × 5 m y mide 3,6 m. En piedra o mármol.",
+      "propuestas": [
+        {"titulo": "Consuelo tras una incursión", "detalle": "Cuesta 60 de piedra y 15 de hierro. Las muertes en combate dejan de bajar la felicidad a partir de la segunda estación: el pueblo honra a sus muertos en lugar de temer."},
+        {"titulo": "Nombres de verdad", "detalle": "Al pasar el cursor muestra los nombres de los aldeanos caídos defendiendo el pueblo y en qué incursión. Cada nombre suma un poco de prestigio."},
+        {"titulo": "Junto al cementerio", "detalle": "Vecino a un cementerio, lo mejora: cubre parte de la necesidad de religión de las casas a 15 m."}
+      ],
+      "modelos": [
+        {"id": "monument_memorial_stone", "nombre": "Piedra", "material": "piedra", "animaciones": {"idle": "Arden los dos pebeteros."}},
+        {"id": "monument_memorial_marble", "nombre": "Mármol", "material": "mármol", "animaciones": {"idle": "Arden los dos pebeteros."}}
+      ]
+    },
+    {
+      "id": "monument_founder_stone",
+      "nombre": "Piedra del fundador",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "La roca junto a la que acamparon los primeros colonos, con una placa de bronce, el primer tocón con el hacha clavada, un cerco de piedras, flores y la bandera del pueblo. Ocupa 5 × 5 m.",
+      "propuestas": [
+        {"titulo": "Aparece sola al fundar el pueblo", "detalle": "No se construye: queda donde estuvo la primera hoguera cuando el centro del pueblo sube al nivel 2. Gratis, da un poco de prestigio y de belleza, y no se puede mover."},
+        {"titulo": "Aniversario", "detalle": "Cada año, el día de la fundación, los aldeanos se reúnen aquí: sube la felicidad ese día y la placa muestra los años del pueblo y su población récord."},
+        {"titulo": "Bandera del jugador", "detalle": "La bandera lleva el color del jugador: en multijugador marca de quién es el pueblo en el mapa."}
+      ],
+      "modelos": [
+        {"id": "monument_founder_stone", "nombre": "Piedra del fundador", "animaciones": {"idle": "Ondea la bandera."}}
+      ]
+    },
+    {
+      "id": "monument_fountain",
+      "nombre": "Fuente de los cuatro pueblos",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Pila de ocho lados de 8 m con remates dorados; en el centro, cuatro figuras espalda con espalda (un humano con espada, un enano con martillo, un elfo con báculo y un gato con lanza) bajo una taza con surtidor y cuatro caños. Ocupa 8 × 8 m y mide 6 m. En piedra, mármol o con las figuras de bronce.",
+      "propuestas": [
+        {"titulo": "Fuente de la concordia", "detalle": "Mejora grande de la fuente decorativa. Cuesta 120 de piedra y 20 de hierro, y necesita un pozo a 10 m. En pueblos con varias razas quita la penalización de convivencia y sube la felicidad de las casas a 15 m."},
+        {"titulo": "Agua en la plaza", "detalle": "Cuenta como punto de agua: los vecinos no caminan hasta el pozo, y sirve para apagar incendios en su radio."},
+        {"titulo": "Figuras a elegir", "detalle": "Las cuatro figuras son las cuatro razas más numerosas del pueblo en el momento de construirla (aquí: humano, enano, elfo y gato, como ejemplo)."}
+      ],
+      "modelos": [
+        {"id": "monument_fountain_stone", "nombre": "Piedra", "material": "piedra", "animaciones": {"idle": "Sube y baja el surtidor y caen los cuatro caños."}},
+        {"id": "monument_fountain_marble", "nombre": "Mármol", "material": "mármol", "animaciones": {"idle": "Sube y baja el surtidor y caen los cuatro caños."}},
+        {"id": "monument_fountain_bronze", "nombre": "Piedra y bronce", "material": "bronce", "animaciones": {"idle": "Sube y baja el surtidor y caen los cuatro caños."}}
+      ]
+    },
+    {
+      "id": "monument_eternal_flame",
+      "nombre": "Llama eterna",
+      "categoria": "Maravillas y monumentos",
+      "descripcion": "Gran pebetero sobre tres pilares inclinados con anillas, en un estrado redondo con una cenefa de placas. Ocupa 5 × 5 m y mide 5,5 m. En piedra con bronce, mármol o con el pebetero dorado.",
+      "propuestas": [
+        {"titulo": "Fuego que no se apaga", "detalle": "Cuesta 50 de piedra y 15 de hierro, y consume 1 de leña o carbón al día. Mientras arde, da luz de noche y calor a las casas a 10 m (gastan menos leña en invierno) y un poco de prestigio."},
+        {"titulo": "Si se apaga, mala señal", "detalle": "Si el pueblo se queda sin leña y la llama se apaga, la felicidad baja hasta que se vuelve a encender con una ceremonia (cuesta 10 de leña)."},
+        {"titulo": "Fuego para todos", "detalle": "Los aldeanos encienden de ella sus hogares: baja el riesgo de incendio de las casas cercanas, que ya no guardan brasas."}
+      ],
+      "modelos": [
+        {"id": "monument_eternal_flame_stone", "nombre": "Piedra y bronce", "material": "piedra", "animaciones": {"idle": "Arde la llama."}},
+        {"id": "monument_eternal_flame_marble", "nombre": "Mármol", "material": "mármol", "animaciones": {"idle": "Arde la llama."}},
+        {"id": "monument_eternal_flame_gold", "nombre": "Mármol y oro", "material": "oro", "animaciones": {"idle": "Arde la llama."}}
+      ]
+    }
+  ]
+}

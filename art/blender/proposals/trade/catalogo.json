@@ -1,0 +1,159 @@
+{
+  "familia": "trade",
+  "grupos": [
+    {
+      "id": "trade_stall",
+      "nombre": "Puestos de mercado por mercancía",
+      "categoria": "Vida del pueblo",
+      "destacado": true,
+      "descripcion": "Puesto de 3,2 × 1,9 m con toldo de rayas y mostrador, en ocho versiones que se reconocen por el color del toldo y por lo que venden: pescado sobre hielo, pan, telas en rollos, alfarería, verduras en cajones, carne y embutidos, armas y escudos, y especias y frascos.",
+      "propuestas": [
+        {"titulo": "El mercado muestra lo que hay", "detalle": "El mercado deja de ser un edificio único: en la plaza aparece un puesto por cada tipo de mercancía que el pueblo tiene de sobra. De un vistazo se ve qué se vende y qué falta."},
+        {"titulo": "Cada puesto abastece su radio", "detalle": "Las casas piden variedad: una casa con puesto de pan, pescado y verduras cerca es más feliz que una con solo pan. Cada puesto lo atiende un aldeano y se surte del almacén."},
+        {"titulo": "Días de mercado", "detalle": "Los puestos solo se montan ciertos días: ese día los aldeanos compran, suben la felicidad y los ingresos, y vienen compradores de pueblos vecinos."},
+        {"titulo": "Mercaderes de paso", "detalle": "Cuando llega un mercader monta el puesto de lo que trae (especias, armas, telas): es la interfaz de comercio, visible en la plaza."}
+      ],
+      "modelos": [
+        {"id": "trade_stall_fish", "nombre": "Pescado", "material": "troncos y lino"},
+        {"id": "trade_stall_bread", "nombre": "Pan", "material": "troncos y lino"},
+        {"id": "trade_stall_cloth", "nombre": "Telas", "material": "troncos y lino"},
+        {"id": "trade_stall_pottery", "nombre": "Alfarería", "material": "troncos y lino"},
+        {"id": "trade_stall_vegetables", "nombre": "Verduras", "material": "troncos y lino"},
+        {"id": "trade_stall_meat", "nombre": "Carne", "material": "troncos y lino"},
+        {"id": "trade_stall_weapons", "nombre": "Armas", "material": "troncos y lino"},
+        {"id": "trade_stall_spices", "nombre": "Especias y pociones", "material": "troncos y lino"}
+      ]
+    },
+    {
+      "id": "trade_market_cross",
+      "nombre": "Cruz de mercado",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Cruz de piedra de 5,5 m sobre tres gradas, con una campana: el sitio donde se celebra el mercado. La versión cubierta tiene ocho postes y un tejado de tablillas de 7 m alrededor del fuste, para vender a cubierto.",
+      "propuestas": [
+        {"titulo": "Derecho de mercado", "detalle": "Hasta que no se levanta la cruz no vienen mercaderes: es lo que convierte una aldea en villa. Los puestos solo se montan a su alrededor."},
+        {"titulo": "Precios justos", "detalle": "Con cruz de mercado, los tratos con mercaderes mejoran un poco: se jura ante ella y nadie engaña."},
+        {"titulo": "Punto de reunión", "detalle": "La campana llama a los vecinos: sirve de lugar de avisos y de reunión mientras no haya ayuntamiento."}
+      ],
+      "modelos": [
+        {"id": "trade_market_cross", "nombre": "Cruz con campana", "material": "piedra", "animaciones": {"ring": "Suena la campana (no se repite)."}},
+        {"id": "trade_market_cross_roofed", "nombre": "Cruz cubierta", "material": "piedra y troncos"}
+      ]
+    },
+    {
+      "id": "trade_weigh_house",
+      "nombre": "Peso público",
+      "categoria": "Edificios",
+      "destacado": true,
+      "descripcion": "Cobertizo de 5 × 4 m con una gran balanza de brazos de hierro de 3 m colgada de la viga: en un plato, sacos; en el otro, pesas. Mesa del fiel con su libro, juego de pesas, barril y cajón.",
+      "propuestas": [
+        {"titulo": "Impuesto al comercio", "detalle": "Todo lo que entra o sale con mercaderes pasa por el peso: el pueblo se queda un pequeño porcentaje en monedas. Requiere un fiel (oficio)."},
+        {"titulo": "Mejores tratos", "detalle": "Sin peso público los mercaderes pagan menos (desconfían de las medidas); con él, se vende a precio completo."},
+        {"titulo": "Contabilidad", "detalle": "Desbloquea el panel de producción y consumo por recurso: lo que no se pesa no se sabe."}
+      ],
+      "modelos": [
+        {"id": "trade_weigh_house", "nombre": "Peso público", "material": "troncos y hierro", "animaciones": {"weigh": "La balanza oscila hasta quedar en el fiel."}}
+      ]
+    },
+    {
+      "id": "trade_caravan",
+      "nombre": "Recua de carga",
+      "categoria": "Transporte",
+      "destacado": true,
+      "descripcion": "Caballos de carga atados en fila, cada uno con su manta y su carga (arcones, sacos con una alfombra enrollada, o barriles): recua de 3 (10 m) y de 5 (16 m). Caminan a 1,3 m/s.",
+      "propuestas": [
+        {"titulo": "Comercio entre pueblos", "detalle": "El jugador manda una recua con mercancía a otro pueblo (propio, aliado o de la máquina): tarda según la distancia y vuelve con lo pactado. No necesita camino, a diferencia de la carreta."},
+        {"titulo": "Mercader ambulante", "detalle": "Es la forma en que llegan los mercaderes por tierra: cuantos más animales, más mercancía trae."},
+        {"titulo": "Botín", "detalle": "Las recuas pueden ser asaltadas por bandidos en el camino: conviene escoltarlas o despejar las guaridas de la ruta."},
+        {"titulo": "Abastecer puestos lejanos", "detalle": "Lleva comida y herramientas a una mina o un campamento lejos del pueblo y trae de vuelta lo producido."}
+      ],
+      "modelos": [
+        {"id": "trade_caravan_3", "nombre": "Recua de 3", "animaciones": {"idle": "Los caballos esperan.", "walk": "La recua camina."}},
+        {"id": "trade_caravan_5", "nombre": "Recua de 5", "animaciones": {"idle": "Los caballos esperan.", "walk": "La recua camina."}}
+      ]
+    },
+    {
+      "id": "trade_post",
+      "nombre": "Factoría (puesto comercial)",
+      "categoria": "Edificios",
+      "descripcion": "Casa de troncos escuadrados con porche y mostrador dentro de un patio con estacada de 10 × 9 m, portón, una carreta descargando, barriles, cajones, sacos, barra para atar caballos y un mástil con banderín.",
+      "propuestas": [
+        {"titulo": "Comerciar lejos del pueblo", "detalle": "Se construye en un cruce de caminos o en la frontera: los mercaderes paran ahí aunque no lleguen al pueblo, y el jugador compra y vende desde ese punto."},
+        {"titulo": "Trato con otras razas y con tribus", "detalle": "Junto a un campamento de goblins, orcos o nómadas, abre comercio en vez de guerra: pieles, mineral o mercenarios a cambio de grano y herramientas."},
+        {"titulo": "Primer paso de un pueblo nuevo", "detalle": "Una factoría que prospera atrae colonos y puede convertirse en un segundo pueblo."}
+      ],
+      "modelos": [
+        {"id": "trade_post", "nombre": "Factoría", "material": "troncos", "animaciones": {"idle": "Se mece el cartel y ondea el banderín."}}
+      ]
+    },
+    {
+      "id": "trade_pavilion",
+      "nombre": "Pabellón de mercader rico",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Tienda octogonal de 5,2 m a rayas violeta y doradas, abierta al frente, con alfombras, una mesa de objetos de lujo, arcón de monedas, rollos de tela, cojines, farol y banderín.",
+      "propuestas": [
+        {"titulo": "Mercader de lujo", "detalle": "Llega pocas veces al año y solo a pueblos con prestigio: vende lo que no se puede producir (especias, joyas, objetos encantados) y compra caro lo mejor del pueblo."},
+        {"titulo": "Embajada", "detalle": "Es la tienda de un enviado de otro pueblo o de otra raza: mientras esté plantada se puede negociar alianzas y tratados."},
+        {"titulo": "Feria anual", "detalle": "Durante la feria se plantan varios: suben mucho los ingresos y la felicidad unos días."}
+      ],
+      "modelos": [
+        {"id": "trade_pavilion", "nombre": "Pabellón", "material": "lino", "animaciones": {"flutter": "Ondea el banderín."}}
+      ]
+    },
+    {
+      "id": "trade_money_changer",
+      "nombre": "Cambista",
+      "categoria": "Edificios",
+      "descripcion": "Caseta de 3 × 2,4 m con mostrador enrejado, pilas de monedas, balanza pequeña, caja fuerte de hierro y una moneda dorada como cartel.",
+      "propuestas": [
+        {"titulo": "Vender por monedas", "detalle": "Permite convertir excedentes en monedas y monedas en lo que falte, sin esperar a un mercader, a peor precio."},
+        {"titulo": "Préstamos", "detalle": "El jugador puede pedir monedas adelantadas y devolverlas con interés: sirve para salir de un mal invierno."},
+        {"titulo": "Primer nivel del banco", "detalle": "Versión temprana del banco: guarda poco, pero protege las monedas de los ladrones."}
+      ],
+      "modelos": [
+        {"id": "trade_money_changer", "nombre": "Cambista", "material": "troncos y hierro", "animaciones": {"swing": "Se mece la moneda del cartel."}}
+      ]
+    },
+    {
+      "id": "trade_auction_block",
+      "nombre": "Tarima de subastas",
+      "categoria": "Vida del pueblo",
+      "descripcion": "Tarima de 4 × 3 m con escalones, el pupitre del subastador con su mazo, los lotes (cajón, barril, tinaja), una guirnalda de banderines y una campana.",
+      "propuestas": [
+        {"titulo": "Vender al mejor postor", "detalle": "El jugador pone un lote y los mercaderes presentes pujan: se saca más que en la venta normal, pero tarda un día."},
+        {"titulo": "Subasta entre jugadores", "detalle": "En multijugador, los lotes se anuncian a todos los pueblos y gana quien más ofrece."},
+        {"titulo": "Bienes embargados", "detalle": "Lo capturado a bandidos o a una incursión se subasta aquí."}
+      ],
+      "modelos": [
+        {"id": "trade_auction_block", "nombre": "Tarima de subastas", "material": "troncos", "animaciones": {"ring": "Suena la campana (no se repite)."}}
+      ]
+    },
+    {
+      "id": "trade_peddler_cart",
+      "nombre": "Carro del buhonero",
+      "categoria": "Transporte",
+      "descripcion": "Carrito de mano de dos ruedas con toldo verde y amarillo, del que cuelgan cazos, sartenes, jarras y cintas que se balancean, con frascos y un saco encima.",
+      "propuestas": [
+        {"titulo": "Primer mercader", "detalle": "Antes de tener mercado, de vez en cuando pasa un buhonero: vende poca cosa (herramientas, sal, tela) y compra excedentes. Es el comercio del primer año."},
+        {"titulo": "Vendedor del propio pueblo", "detalle": "Un aldeano recorre los barrios lejanos con el carro: las casas fuera del radio del mercado quedan abastecidas."},
+        {"titulo": "Noticias", "detalle": "El buhonero trae rumores: revela un punto de interés del mapa o avisa de una incursión."}
+      ],
+      "modelos": [
+        {"id": "trade_peddler_cart", "nombre": "Carro del buhonero", "animaciones": {"jingle": "Se balancea lo que cuelga."}}
+      ]
+    },
+    {
+      "id": "trade_courier_post",
+      "nombre": "Casa de postas",
+      "categoria": "Edificios",
+      "descripcion": "Caseta de tablas de 3,6 × 2,6 m con casillero de cartas junto a la puerta y cartel con una carta, un cobertizo de paja con un caballo ensillado y con alforjas, abrevadero, montón de heno y una corneta en un poste.",
+      "propuestas": [
+        {"titulo": "Órdenes más rápidas", "detalle": "Los puestos lejanos (minas, factorías, torres) reciben las órdenes del jugador con retraso salvo que haya postas en el camino."},
+        {"titulo": "Aviso entre pueblos", "detalle": "Dos pueblos unidos por postas se avisan de las incursiones y se mandan ayuda a tiempo."},
+        {"titulo": "Correo de mercaderes", "detalle": "Con postas se puede encargar una mercancía concreta y llega el mercader que la tiene, en vez de esperar al que pase."}
+      ],
+      "modelos": [
+        {"id": "trade_courier_post", "nombre": "Casa de postas", "material": "troncos", "animaciones": {"idle": "El caballo espera y se mece el cartel."}}
+      ]
+    }
+  ]
+}

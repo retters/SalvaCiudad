@@ -1,0 +1,21 @@
+{
+  "walls": [
+    "wall_palisade", "wall_stone", "wall_brick", "wall_elf", "wall_orc", "gate_gatehouse", "gate_drawbridge",
+    "tower_keep", "tower_ballista", "fence_wattle", "defense_moat", "defense_cauldron"
+  ],
+  "bridges": [
+    "bridge_stone_multi", "bridge_covered", "bridge_draw", "bridge_rope", "bridge_kit_stone", "bridge_living_root",
+    "bridge_fortified", "bridge_inhabited", "dock_pier", "dock_crane", "dock_lighthouse", "dock_shipyard",
+    "boat_merchant", "boat_longship", "boat_raft_ferry", "boat_sloop"
+  ],
+  "buildings": [
+    "castle_stone", "castle_motte_bailey", "castle_log_fort", "bld_inn", "bld_watermill", "bld_windmill_tower",
+    "bld_wizard_tower", "bld_cathedral", "bld_town_hall", "bld_house", "bld_dwarf_hall", "bld_elf_tree_house",
+    "bld_market_hall", "bld_monastery", "bld_arena"
+  ],
+  "creatures": [
+    "pet_dog", "pet_cat", "pet_falcon", "animal_hen", "enemy_goblin", "enemy_skeleton_warrior", "enemy_spider_giant",
+    "enemy_dire_wolf", "monster_troll", "monster_wyvern", "monster_golem_stone", "monster_slime", "monster_mimic",
+    "monster_treant", "monster_kraken_tentacle"
+  ]
+}

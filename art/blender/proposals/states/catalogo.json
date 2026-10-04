@@ -1,0 +1,360 @@
+{
+ "familia": "states",
+ "grupos": [
+  {
+   "id": "sign_trade",
+   "nombre": "Letreros de oficio",
+   "categoria": "Edificios",
+   "destacado": true,
+   "descripcion": "Letrero colgante de 0,7 m en un brazo de hierro que sale 1 m de la fachada, a 2,9 m de alto, con el emblema del oficio por las dos caras: uno para cada tipo de edificio. El origen del modelo va pegado a la pared, al nivel del suelo.",
+   "propuestas": [
+    {
+     "titulo": "Saber qué es cada edificio de un vistazo",
+     "detalle": "Muchos edificios son la misma casita con algo distinto en el patio. El juego cuelga el letrero de su oficio en la fachada de cada uno: se reconoce desde lejos sin pasar el cursor."
+    },
+    {
+     "titulo": "Abierto o cerrado",
+     "detalle": "El letrero se mece mientras el edificio trabaja y queda quieto cuando está parado (sin trabajador, sin materia prima, almacén lleno): avisa sin iconos flotantes."
+    },
+    {
+     "titulo": "Mejora del entorno",
+     "detalle": "Una calle con letreros se ve cuidada: cada uno suma un poco al atractivo, y los mercaderes encuentran antes la taberna y el mercado."
+    },
+    {
+     "titulo": "Opción del jugador",
+     "detalle": "Se activan o no en las opciones de la vista, como los nombres de los edificios."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "sign_bakery",
+     "nombre": "Panadería: hogaza",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_tavern",
+     "nombre": "Taberna: jarra",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_brewery",
+     "nombre": "Cervecería: barril",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_blacksmith",
+     "nombre": "Herrería: yunque",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_tailor",
+     "nombre": "Sastre: tijeras",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_cobbler",
+     "nombre": "Zapatero: bota",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_weaver",
+     "nombre": "Tejedor: carrete",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_herbalist",
+     "nombre": "Herbolario: hoja",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_physician",
+     "nombre": "Médico: frasco",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_market",
+     "nombre": "Mercado: balanza",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_trading_post",
+     "nombre": "Puesto de comercio: monedas",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_vault",
+     "nombre": "Bóveda: llave",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_woodcutter",
+     "nombre": "Leñador: hacha",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_stonecutter",
+     "nombre": "Cantero: pico",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_fisher",
+     "nombre": "Pescador: pez",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_hunter",
+     "nombre": "Cazador: arco y flecha",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_farm",
+     "nombre": "Granja: gavilla",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_mill",
+     "nombre": "Molino: aspas",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_smokehouse",
+     "nombre": "Ahumadero: jamón",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_tannery",
+     "nombre": "Curtiduría: piel",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_armory",
+     "nombre": "Armería: escudo y espada",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_bowyer",
+     "nombre": "Arquero: arco",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_bathhouse",
+     "nombre": "Casa de baños: tina",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_chapel",
+     "nombre": "Capilla: campana",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_kiln",
+     "nombre": "Horno: ladrillos",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_smelter",
+     "nombre": "Fundición: lingote y llama",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_inn",
+     "nombre": "Posada: cama",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_stable",
+     "nombre": "Establo: herradura",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    },
+    {
+     "id": "sign_explorer",
+     "nombre": "Explorador: rosa de los vientos",
+     "animaciones": {
+      "swing": "El letrero se mece."
+     }
+    }
+   ]
+  },
+  {
+   "id": "ruin_burnt",
+   "nombre": "Ruinas quemadas por tamaño de terreno",
+   "categoria": "Edificios",
+   "destacado": true,
+   "descripcion": "Lo que queda de un edificio tras un incendio, genérico por tamaño de terreno como las obras del juego: cimientos ennegrecidos con el hueco de la puerta, postes carbonizados, vigas caídas, montones de ceniza con brasas, la chimenea en pie y humo. Uno por cada uno de los 14 tamaños que usan los edificios.",
+   "propuestas": [
+    {
+     "titulo": "El incendio deja huella",
+     "detalle": "Un edificio que se quema del todo no desaparece: queda su ruina, que humea unos días. Baja el atractivo de las casas vecinas hasta que se limpia."
+    },
+    {
+     "titulo": "Reconstruir más barato",
+     "detalle": "Sobre la ruina se puede reconstruir el mismo edificio por parte del costo (los cimientos de piedra se aprovechan), o despejarla para recuperar algo de piedra."
+    },
+    {
+     "titulo": "Tras una incursión",
+     "detalle": "Los edificios destruidos por asaltantes quedan igual: el pueblo muestra sus heridas hasta que se repara."
+    },
+    {
+     "titulo": "Ruinas del mapa",
+     "detalle": "El generador puede sembrar aldeas quemadas con estas ruinas: restos de un pueblo anterior con algo que rescatar."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "ruin_2x2",
+     "nombre": "Terreno de 2 × 2 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_3x3",
+     "nombre": "Terreno de 3 × 3 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_4x2",
+     "nombre": "Terreno de 4 × 2 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_4x4",
+     "nombre": "Terreno de 4 × 4 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_5x4",
+     "nombre": "Terreno de 5 × 4 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_5x5",
+     "nombre": "Terreno de 5 × 5 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_6x5",
+     "nombre": "Terreno de 6 × 5 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_6x6",
+     "nombre": "Terreno de 6 × 6 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_6x8",
+     "nombre": "Terreno de 6 × 8 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_7x6",
+     "nombre": "Terreno de 7 × 6 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_7x7",
+     "nombre": "Terreno de 7 × 7 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_8x6",
+     "nombre": "Terreno de 8 × 6 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_8x7",
+     "nombre": "Terreno de 8 × 7 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    },
+    {
+     "id": "ruin_8x8",
+     "nombre": "Terreno de 8 × 8 m",
+     "animaciones": {
+      "smolder": "Sube el humo."
+     }
+    }
+   ]
+  }
+ ]
+}

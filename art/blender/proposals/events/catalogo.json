@@ -1,0 +1,147 @@
+{
+  "familia": "events",
+  "grupos": [
+    {
+      "id": "event_tornado",
+      "nombre": "Tornado",
+      "categoria": "Sucesos y desastres",
+      "destacado": true,
+      "descripcion": "Remolino de 10 m de alto, de 0,7 m en el suelo a 12 m bajo la nube, hecho de anillos que giran a distinta velocidad, con tablas, paja, ramas y troncos que arrastra y la marca que deja en el suelo.",
+      "propuestas": [
+        {"titulo": "Desastre que cruza el mapa", "detalle": "En primavera y verano, en llanura y sabana, puede formarse uno: recorre una línea y daña los tejados de paja y las cosechas a su paso; los edificios de piedra aguantan. Se anuncia con un día de adelanto si hay veleta o vidente."},
+        {"titulo": "Refugio", "detalle": "Los aldeanos corren a un sótano o a un edificio de piedra: quien tenga bodegas en las casas no pierde gente."},
+        {"titulo": "Hechizo ofensivo", "detalle": "Con magia de tormentas (mástil de tormentas cargado), un pueblo lanza un torbellino pequeño contra una incursión o contra el campamento de asedio."},
+        {"titulo": "Solo espectáculo", "detalle": "Remolinos de polvo pequeños e inofensivos en biomas secos, como ambiente."}
+      ],
+      "modelos": [
+        {"id": "event_tornado", "nombre": "Tornado", "animaciones": {"spin": "Gira y se balancea."}}
+      ]
+    },
+    {
+      "id": "event_storm",
+      "nombre": "Tormenta y árbol partido por un rayo",
+      "categoria": "Sucesos y desastres",
+      "destacado": true,
+      "descripcion": "Nube de tormenta de 9 m a 8 m de altura, con su cortina de lluvia y un rayo que cae dos veces por ciclo; y un árbol partido en dos por un rayo, medio caído, con la hendidura al rojo y llamas.",
+      "propuestas": [
+        {"titulo": "El tiempo se ve", "detalle": "La lluvia deja de ser un efecto de pantalla: nubes que cruzan el mapa y riegan solo lo que tienen debajo. Los campos bajo la nube no necesitan riego ese día."},
+        {"titulo": "Rayos", "detalle": "Cada tormenta tiene una pequeña probabilidad de incendiar un tejado de paja o un árbol; el árbol partido queda como recuerdo y como leña fácil."},
+        {"titulo": "Tormentas llamadas", "detalle": "Un mago o un chamán puede traer una nube sobre sus campos en sequía, o sobre el enemigo: apaga antorchas, embarra los caminos y frena a quien ataca."}
+      ],
+      "modelos": [
+        {"id": "event_storm_cloud", "nombre": "Nube de tormenta", "animaciones": {"storm": "Llueve y cae el rayo."}},
+        {"id": "event_lightning_tree", "nombre": "Árbol partido por un rayo", "animaciones": {"burn": "Arden las llamas."}}
+      ]
+    },
+    {
+      "id": "event_flood",
+      "nombre": "Inundación y sacos terreros",
+      "categoria": "Sucesos y desastres",
+      "destacado": true,
+      "descripcion": "Parcela de 6 × 6 m inundada, con una cerca que apenas asoma, el tejado de un cobertizo, un trozo de techo a la deriva, un barril, un cajón y una tabla flotando; y el muro de sacos terreros en tramo recto de 4 m y en esquina.",
+      "propuestas": [
+        {"titulo": "Crecidas", "detalle": "Tras mucha lluvia o en el deshielo el río sube: las celdas bajas junto al agua se inundan unos días, se pierde lo almacenado a ras de suelo y los cultivos. Obliga a pensar dónde se construye."},
+        {"titulo": "Defenderse con sacos", "detalle": "Con aviso, los aldeanos levantan sacos terreros (lino o cuero + arena) en la orilla: las celdas detrás no se inundan. Se retiran después y se recuperan los sacos."},
+        {"titulo": "Tierra fértil", "detalle": "Lo bueno de la crecida: los campos que se inundaron rinden más el año siguiente."},
+        {"titulo": "Trinchera improvisada", "detalle": "Los sacos terreros también sirven de parapeto rápido contra una incursión: cobertura barata para arqueros."}
+      ],
+      "modelos": [
+        {"id": "event_flood", "nombre": "Parcela inundada", "animaciones": {"float": "Lo que flota se mece."}},
+        {"id": "event_sandbags", "nombre": "Sacos terreros: tramo de 4 m", "material": "lino"},
+        {"id": "event_sandbags_corner", "nombre": "Sacos terreros: esquina", "material": "lino"}
+      ]
+    },
+    {
+      "id": "event_ground",
+      "nombre": "Socavón y grieta",
+      "categoria": "Sucesos y desastres",
+      "descripcion": "Socavón de 6 m con el césped del borde cayendo hacia dentro, una cerca que se hunde, una rueda y tablas; y grieta de terremoto de 9 m, con los labios levantados, brasa en el fondo, humo y un trozo de muro caído.",
+      "propuestas": [
+        {"titulo": "Minas mal apuntaladas", "detalle": "Sacar mucho de una mina sin madera de entibar acaba en un socavón sobre ella: se pierde el edificio que haya encima. La mina avisa antes (grietas)."},
+        {"titulo": "Terremoto", "detalle": "Raro y solo en montaña o zona volcánica: abre una grieta que corta caminos y daña los edificios de piedra altos; los de madera aguantan mejor."},
+        {"titulo": "Entrada a lo de abajo", "detalle": "Un socavón descubre una cueva: se puede explorar (tesoro, mineral, o algo que sube de noche) o rellenar con piedra."},
+        {"titulo": "Grieta de lava", "detalle": "En bioma volcánico la grieta queda abierta y da calor: una forja o una calera junto a ella no gasta combustible."}
+      ],
+      "modelos": [
+        {"id": "event_sinkhole", "nombre": "Socavón"},
+        {"id": "event_fissure", "nombre": "Grieta", "animaciones": {"smoke": "Sube el humo."}}
+      ]
+    },
+    {
+      "id": "event_crops",
+      "nombre": "Sequía y langostas",
+      "categoria": "Sucesos y desastres",
+      "descripcion": "Campo de 4 × 4 m seco, con la tierra cuarteada, tallos marchitos, un cráneo de res y un cubo vacío; y campo de 4 × 4 m medio comido bajo una nube de más de cien langostas que giran.",
+      "propuestas": [
+        {"titulo": "Años malos", "detalle": "Una sequía baja a la mitad la cosecha de los campos sin riego; pozos, canales y aljibes la evitan. El campo seco es su aspecto durante ese tiempo."},
+        {"titulo": "Plaga de langostas", "detalle": "La nube va de campo en campo y se come uno al día. Se combate con humo (hogueras en los lindes), con aves (gallinas, patos) o cosechando antes de tiempo."},
+        {"titulo": "Aviso y reservas", "detalle": "Los dos sucesos premian a quien guarda grano: el granero lleno convierte un desastre en una molestia."}
+      ],
+      "modelos": [
+        {"id": "event_drought_field", "nombre": "Campo en sequía"},
+        {"id": "event_locusts", "nombre": "Plaga de langostas", "animaciones": {"swarm": "La nube gira y sube y baja."}}
+      ]
+    },
+    {
+      "id": "event_wildfire",
+      "nombre": "Incendio forestal y bosque quemado",
+      "categoria": "Sucesos y desastres",
+      "destacado": true,
+      "descripcion": "Rodal de pinos de 8 m ardiendo, con llamas en las copas y en el suelo, brasas y una columna de humo de 9 m; y el mismo rodal después: troncos carbonizados, ceniza, un tronco caído y los primeros brotes.",
+      "propuestas": [
+        {"titulo": "El fuego se propaga", "detalle": "En verano seco, un rayo, una carbonera o una incursión prende el bosque: avanza de árbol en árbol con el viento y puede llegar al pueblo. Se corta con un cortafuegos (talar una franja) o con agua."},
+        {"titulo": "Después del fuego", "detalle": "El bosque quemado no da leña buena pero sí carbón, y la ceniza abona: lo que se siembre ahí rinde más unos años. Rebrota solo con el tiempo."},
+        {"titulo": "Quemar para cultivar", "detalle": "Decisión del jugador: quemar a propósito un trozo de bosque para abrir campos rápido, con riesgo de que se escape."},
+        {"titulo": "Arma", "detalle": "Un atacante puede incendiar el bosque junto a un pueblo de madera; la empalizada arde."}
+      ],
+      "modelos": [
+        {"id": "event_wildfire", "nombre": "Incendio forestal", "animaciones": {"burn": "Tiemblan las llamas y sube el humo."}},
+        {"id": "event_burnt_forest", "nombre": "Bosque quemado"}
+      ]
+    },
+    {
+      "id": "event_snow",
+      "nombre": "Ventisquero y alud",
+      "categoria": "Sucesos y desastres",
+      "descripcion": "Nieve acumulada que corta un camino de 4 m, con un poste indicador hundido hasta el cartel y una rueda de carro que asoma; y lengua de alud de 8 × 9 m con rocas, pinos arrancados y un trozo de tejado.",
+      "propuestas": [
+        {"titulo": "Caminos cortados", "detalle": "En invierno, en montaña y tundra, la nieve corta tramos de camino: las carretas no pasan y los mercaderes no llegan hasta que alguien lo despeja con palas o llega el deshielo."},
+        {"titulo": "Aludes", "detalle": "Los edificios al pie de una ladera sin árboles pueden recibir un alud; los árboles de la ladera lo frenan, así que talarla tiene un costo."},
+        {"titulo": "Paso cerrado", "detalle": "Defensa natural: un puerto de montaña nevado protege al pueblo de incursiones en invierno."}
+      ],
+      "modelos": [
+        {"id": "event_snowdrift", "nombre": "Ventisquero en el camino"},
+        {"id": "event_avalanche", "nombre": "Alud"}
+      ]
+    },
+    {
+      "id": "event_plague",
+      "nombre": "Carro de la peste y ratas en el grano",
+      "categoria": "Sucesos y desastres",
+      "descripcion": "Carro de mano con tres cuerpos amortajados, una campana en un palo, farol, cubo de cal y pala; y sacos de grano roídos con catorce ratas corriendo alrededor.",
+      "propuestas": [
+        {"titulo": "Epidemia visible", "detalle": "Durante una epidemia, el carro recorre las casas afectadas hacia el cementerio: se ve cuánto está golpeando sin abrir estadísticas. Sin enterrador ni cementerio la epidemia dura más."},
+        {"titulo": "Ratas en el almacén", "detalle": "Un granero sin gato pierde grano poco a poco y puede iniciar la peste; el aviso es ver las ratas junto al edificio. Gatos, hurones o un ratonero las quitan."},
+        {"titulo": "Cuarentena", "detalle": "El jugador puede cerrar un barrio: nadie entra ni sale, se frena el contagio y baja la producción."}
+      ],
+      "modelos": [
+        {"id": "event_plague_cart", "nombre": "Carro de la peste", "animaciones": {"ring": "Suena la campana."}},
+        {"id": "event_rats", "nombre": "Ratas en el grano", "animaciones": {"scurry": "Las ratas corren en corro."}}
+      ]
+    },
+    {
+      "id": "event_bounty",
+      "nombre": "Cosecha abundante",
+      "categoria": "Sucesos y desastres",
+      "descripcion": "Mesa de 2,6 m con cestas de fruta y pan, gavillas de trigo, calabazas y dos barriles, bajo una guirnalda de banderines entre dos postes.",
+      "propuestas": [
+        {"titulo": "Año bueno", "detalle": "El suceso contrario al desastre: una cosecha que da el doble. Aparece en la plaza unos días y sube la felicidad de todo el pueblo."},
+        {"titulo": "Fiesta de la cosecha", "detalle": "El jugador puede organizarla cada otoño gastando comida: felicidad para el invierno y más inmigrantes en primavera."},
+        {"titulo": "Ofrenda", "detalle": "Se deja ante el santuario: reduce la probabilidad de desastres el año siguiente."}
+      ],
+      "modelos": [
+        {"id": "event_bounty", "nombre": "Cosecha abundante", "animaciones": {"sway": "Se mece la guirnalda."}}
+      ]
+    }
+  ]
+}

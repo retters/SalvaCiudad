@@ -1,0 +1,575 @@
+{
+ "familia": "farm",
+ "grupos": [
+  {
+   "id": "farm_barn",
+   "nombre": "Granero grande",
+   "categoria": "Granja y riego",
+   "descripcion": "Granero de 10 × 7 m y 6,5 m de alto con portón de dos hojas, ventanas, puerta de pajar con polea en el hastial y un almiar al lado: de tablas pintadas de rojo con techo de paja, o de piedra con tejas.",
+   "propuestas": [
+    {
+     "titulo": "Centro de una granja",
+     "detalle": "Convierte la granja de hoy en un conjunto: el granero guarda la cosecha de sus campos, las herramientas y el heno, y los granjeros dejan de hacer viajes al almacén. Un granero atiende varios campos alrededor."
+    },
+    {
+     "titulo": "Establo de invierno",
+     "detalle": "El ganado (vacas, ovejas, bueyes) pasa el invierno dentro comiendo heno: sin granero ni heno suficiente, parte del rebaño muere de frío."
+    },
+    {
+     "titulo": "Segundo nivel del granero actual",
+     "detalle": "Es la mejora del granero que ya existe: más capacidad y la comida se estropea más despacio; el de piedra además no arde."
+    },
+    {
+     "titulo": "Refugio en incursiones",
+     "detalle": "Los granjeros que trabajan lejos se encierran en él cuando suena la campana, en vez de correr hasta el centro."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_barn",
+     "nombre": "Tablas rojas y paja",
+     "material": "troncos y paja",
+     "animaciones": {
+      "open": "Se abre el portón (no se repite).",
+      "close": "Se cierra el portón (no se repite)."
+     }
+    },
+    {
+     "id": "farm_barn_stone",
+     "nombre": "Piedra y tejas",
+     "material": "piedra y tejas",
+     "animaciones": {
+      "open": "Se abre el portón (no se repite).",
+      "close": "Se cierra el portón (no se repite)."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "farm_cowshed",
+   "nombre": "Vaquería",
+   "categoria": "Granja y riego",
+   "descripcion": "Cobertizo de 9 × 4 m abierto al frente, con tres cuadras, pesebre con heno, dos vacas que comen y cubos de leche.",
+   "propuestas": [
+    {
+     "titulo": "Ganado vacuno",
+     "detalle": "Un edificio nuevo con un vaquero: las vacas dan leche todo el año (un alimento nuevo) y, al final, carne y cuero. Comen heno o pastan en un prado cercado; sin comida dejan de dar leche."
+    },
+    {
+     "titulo": "Estiércol",
+     "detalle": "Produce fertilizante sin patio de compost: los campos vecinos rinden más."
+    },
+    {
+     "titulo": "Cría de bueyes",
+     "detalle": "De aquí salen los bueyes que tiran de carretas y arados."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_cowshed",
+     "nombre": "Tablas y paja",
+     "animaciones": {
+      "feed": "Las vacas bajan la cabeza a comer y mueven la cola."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "farm_sheepfold",
+   "nombre": "Redil de ovejas",
+   "categoria": "Granja y riego",
+   "descripcion": "Corral redondo de piedra seca de 9 m con cancela, un cobertizo bajo, un abrevadero y cinco ovejas que pastan.",
+   "propuestas": [
+    {
+     "titulo": "Lana",
+     "detalle": "Con un pastor, las ovejas dan lana cada primavera (otra fibra para el tejedor, que hace ropa de abrigo) y algo de carne. De día pastan fuera y de noche vuelven al redil."
+    },
+    {
+     "titulo": "Presa de los lobos",
+     "detalle": "Un redil sin perro ni pastor de noche atrae a los lobos: da valor a los perros guardianes y a los faroles."
+    },
+    {
+     "titulo": "Pasto que se agota",
+     "detalle": "El rebaño come la hierba de su radio y hay que rotarlo entre rediles o esperar a que vuelva a crecer."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_sheepfold",
+     "nombre": "Piedra seca",
+     "material": "piedra",
+     "animaciones": {
+      "graze": "Las ovejas pastan."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "farm_hay_barn",
+   "nombre": "Henil",
+   "categoria": "Granja y riego",
+   "descripcion": "Techo de paja a dos aguas sobre seis postes, de 6 × 4 m, con montones de heno y una escalera.",
+   "propuestas": [
+    {
+     "titulo": "Heno para el invierno",
+     "detalle": "El heno segado en verano se guarda aquí: es lo que comen el ganado y los animales de tiro cuando no hay pasto. A la intemperie, el heno se pudre con la lluvia."
+    },
+    {
+     "titulo": "Cama y techos",
+     "detalle": "El heno y la paja sirven también para los techos de paja y las camas de los establos: un material de construcción barato."
+    },
+    {
+     "titulo": "Peligro de incendio",
+     "detalle": "Es lo que más fácil arde del pueblo: conviene alejarlo de hornos y fraguas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_hay_barn",
+     "nombre": "Postes y paja"
+    }
+   ]
+  },
+  {
+   "id": "farm_silo",
+   "nombre": "Silo",
+   "categoria": "Granja y riego",
+   "descripcion": "Torre redonda de 3,3 m de ancho y 8,6 m de alto con techo cónico, puerta, tolva alta y escalera de mano: de piedra, o de duelas con aros de hierro.",
+   "propuestas": [
+    {
+     "titulo": "Grano a salvo de plagas y humedad",
+     "detalle": "Guarda solo grano (trigo, cebada, harina), pero el doble de tiempo sin estropearse y sin ratas: complementa al granero."
+    },
+    {
+     "titulo": "Reserva contra el hambre",
+     "detalle": "El jugador fija una reserva que no se toca salvo en invierno o en un asedio."
+    },
+    {
+     "titulo": "Ocupa poco",
+     "detalle": "Mucha capacidad en 4 × 4 m: para pueblos amurallados sin espacio."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_silo",
+     "nombre": "Piedra",
+     "material": "piedra"
+    },
+    {
+     "id": "farm_silo_wood",
+     "nombre": "Duelas y hierro",
+     "material": "troncos y hierro"
+    }
+   ]
+  },
+  {
+   "id": "farm_dairy",
+   "nombre": "Lechería",
+   "categoria": "Granja y riego",
+   "descripcion": "Casita encalada de 4 × 3,2 m con techo de paja, una repisa de quesos, una mantequera, lecheras y un taburete.",
+   "propuestas": [
+    {
+     "titulo": "Queso y mantequilla",
+     "detalle": "Convierte la leche, que se estropea en un día, en queso, que dura meses: otro alimento para la dieta variada y un buen producto para vender."
+    },
+    {
+     "titulo": "Oficio de invierno",
+     "detalle": "Da trabajo en la estación en que el campo está parado."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_dairy",
+     "nombre": "Encalada con paja",
+     "animaciones": {
+      "churn": "Sube y baja el palo de la mantequera."
+     }
+    }
+   ]
+  },
+  {
+   "id": "farm_threshing_floor",
+   "nombre": "Era de trilla",
+   "categoria": "Granja y riego",
+   "descripcion": "Círculo de losas de 6,5 m con gavillas en pie, el grano trillado en el centro, paja, mayales, un harnero y sacos.",
+   "propuestas": [
+    {
+     "titulo": "Paso entre el campo y el molino",
+     "detalle": "El trigo y la cebada se trillan aquí antes de moler: sin era, parte del grano se pierde. Deja además paja para techos y establos."
+    },
+    {
+     "titulo": "Trabajo de después de la cosecha",
+     "detalle": "Ocupa a los granjeros en otoño, cuando el campo ya está segado."
+    },
+    {
+     "titulo": "Fiesta de la cosecha",
+     "detalle": "Es donde se celebra la fiesta de otoño: con buena cosecha, sube la felicidad de todo el pueblo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_threshing_floor",
+     "nombre": "Losas"
+    }
+   ]
+  },
+  {
+   "id": "farm_feed_trough",
+   "nombre": "Comedero con heno",
+   "categoria": "Granja y riego",
+   "descripcion": "Comedero de tablas con heno, un pesebre en V detrás y un bloque de sal. Ocupa 4 × 3 m.",
+   "propuestas": [
+    {
+     "titulo": "Alimentar al ganado en el prado",
+     "detalle": "Puesto en un prado cercado, el ganado come heno del almacén cuando el pasto se acaba, sin volver al establo."
+    },
+    {
+     "titulo": "Atraer caza",
+     "detalle": "Puesto por el cazador en el bosque, atrae ciervos y jabalíes a un punto: caza más fácil y cerca."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_feed_trough",
+     "nombre": "Madera"
+    }
+   ]
+  },
+  {
+   "id": "farm_greenhouse",
+   "nombre": "Invernadero",
+   "categoria": "Granja y riego",
+   "descripcion": "Invernadero de vidrio de 4 × 6 m sobre un zócalo de piedra, con armazón de madera y jardineras con tomates dentro.",
+   "propuestas": [
+    {
+     "titulo": "Verdura en invierno",
+     "detalle": "Cultiva verduras y hierbas todo el año, también con nieve: rinde poco pero cubre la dieta variada en la estación en que más falta."
+    },
+    {
+     "titulo": "Cultivos de otro clima",
+     "detalle": "Permite plantas que el bioma no admite: fruta en el norte frío o hierbas raras para el herbolario."
+    },
+    {
+     "titulo": "Edificio tardío",
+     "detalle": "Necesita vidrio, un material nuevo que haría el horno con arena y carbón."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_greenhouse",
+     "nombre": "Vidrio y madera"
+    }
+   ]
+  },
+  {
+   "id": "farm_irrigation",
+   "nombre": "Riego: cigoñal, noria y molino de bombeo",
+   "categoria": "Granja y riego",
+   "descripcion": "Tres formas de subir agua: cigoñal de palanca con contrapeso junto a una poza, noria de 3,2 m con cangilones que vierte en un canalón elevado, y molino de viento de 7 m que mueve una bomba.",
+   "propuestas": [
+    {
+     "titulo": "Campos lejos del río",
+     "detalle": "Los campos regados rinden más y no pierden la cosecha en sequía. El cigoñal riega poco y pide un trabajador; la noria riega mucho pero necesita corriente; el molino de bombeo funciona solo donde hay viento."
+    },
+    {
+     "titulo": "Fertilidad por agua",
+     "detalle": "La fertilidad del terreno deja de ser fija: la tierra regada sube de categoría."
+    },
+    {
+     "titulo": "Agua para el pueblo",
+     "detalle": "La noria y el molino de bombeo llenan abrevaderos, lavaderos y fuentes: cuentan como puntos de agua contra incendios."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_shadoof",
+     "nombre": "Cigoñal",
+     "animaciones": {
+      "lift": "La palanca sube y baja el cubo."
+     }
+    },
+    {
+     "id": "farm_noria",
+     "nombre": "Noria",
+     "animaciones": {
+      "turn": "Gira la rueda con sus cangilones."
+     }
+    },
+    {
+     "id": "farm_windpump",
+     "nombre": "Molino de bombeo",
+     "animaciones": {
+      "turn": "Giran las aspas y sube y baja la varilla."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "farm_canal",
+   "nombre": "Acequia",
+   "categoria": "Granja y riego",
+   "descripcion": "Piezas de 2 m de zanja de riego con caballones de tierra: tramo recto, esquina y compuerta de tablón.",
+   "propuestas": [
+    {
+     "titulo": "Red de riego",
+     "detalle": "Se traza como un camino desde un río, una noria o un estanque: los campos a pocos metros de una acequia cuentan como regados."
+    },
+    {
+     "titulo": "Compuertas",
+     "detalle": "Abrir o cerrar la compuerta decide qué campos reciben agua cuando el río baja escaso."
+    },
+    {
+     "titulo": "Foso seco que se llena",
+     "detalle": "Unida a un foso, lo inunda: la defensa del pueblo y el riego comparten obra."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_canal_straight",
+     "nombre": "Recto (2 m)"
+    },
+    {
+     "id": "farm_canal_corner",
+     "nombre": "Esquina"
+    },
+    {
+     "id": "farm_canal_sluice",
+     "nombre": "Compuerta",
+     "animaciones": {
+      "open": "Sube la compuerta (no se repite).",
+      "close": "Baja la compuerta (no se repite)."
+     }
+    }
+   ]
+  },
+  {
+   "id": "farm_crop_wheat",
+   "nombre": "Trigo en tres etapas",
+   "categoria": "Granja y riego",
+   "descripcion": "Parcela de 4 × 4 m con seis surcos: brotes, trigo verde y trigo maduro con espigas doradas.",
+   "propuestas": [
+    {
+     "titulo": "El campo se ve crecer",
+     "detalle": "Cada celda del campo muestra la etapa real del cultivo: brote al sembrar, verde a media temporada, dorado al estar listo. De un vistazo se sabe qué campo hay que cosechar."
+    },
+    {
+     "titulo": "Daños visibles",
+     "detalle": "La helada, la sequía o los pájaros dejan la parcela en la etapa anterior o vacía: se ve dónde se perdió la cosecha."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_crop_wheat_1",
+     "nombre": "Brotes"
+    },
+    {
+     "id": "farm_crop_wheat_2",
+     "nombre": "Creciendo",
+     "animaciones": {
+      "sway": "Se mece con el viento."
+     }
+    },
+    {
+     "id": "farm_crop_wheat_3",
+     "nombre": "Maduro",
+     "animaciones": {
+      "sway": "Se mece con el viento."
+     }
+    }
+   ],
+   "destacado": true
+  },
+  {
+   "id": "farm_crop_barley",
+   "nombre": "Cebada en tres etapas",
+   "categoria": "Granja y riego",
+   "descripcion": "La misma parcela con cebada: brotes, verde y madura, más pálida que el trigo y con las espigas caídas.",
+   "propuestas": [
+    {
+     "titulo": "Distinguir los cultivos",
+     "detalle": "Cada cultivo tiene su forma y su color: se sabe qué hay sembrado sin abrir el panel del campo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_crop_barley_1",
+     "nombre": "Brotes"
+    },
+    {
+     "id": "farm_crop_barley_2",
+     "nombre": "Creciendo",
+     "animaciones": {
+      "sway": "Se mece con el viento."
+     }
+    },
+    {
+     "id": "farm_crop_barley_3",
+     "nombre": "Madura",
+     "animaciones": {
+      "sway": "Se mece con el viento."
+     }
+    }
+   ]
+  },
+  {
+   "id": "farm_crop_flax",
+   "nombre": "Lino en tres etapas",
+   "categoria": "Granja y riego",
+   "descripcion": "Parcela de lino: brotes, tallos verdes y en flor, con flores azules.",
+   "propuestas": [
+    {
+     "titulo": "Distinguir los cultivos",
+     "detalle": "El lino en flor se reconoce por su azul."
+    },
+    {
+     "titulo": "Flores para las abejas",
+     "detalle": "El lino en flor cuenta como flores para las colmenas cercanas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_crop_flax_1",
+     "nombre": "Brotes"
+    },
+    {
+     "id": "farm_crop_flax_2",
+     "nombre": "Creciendo",
+     "animaciones": {
+      "sway": "Se mece con el viento."
+     }
+    },
+    {
+     "id": "farm_crop_flax_3",
+     "nombre": "En flor",
+     "animaciones": {
+      "sway": "Se mece con el viento."
+     }
+    }
+   ]
+  },
+  {
+   "id": "farm_crop_vegetables",
+   "nombre": "Verduras en tres etapas",
+   "categoria": "Granja y riego",
+   "descripcion": "Surcos alternos de coles y zanahorias: brotes, a medio crecer y listas.",
+   "propuestas": [
+    {
+     "titulo": "El campo se ve crecer",
+     "detalle": "Como en el trigo: la etapa que se ve es la del cultivo."
+    },
+    {
+     "titulo": "Conejos y plagas",
+     "detalle": "Las verduras listas atraen conejos: una cerca, un perro o un espantapájaros las protegen."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_crop_vegetables_1",
+     "nombre": "Brotes"
+    },
+    {
+     "id": "farm_crop_vegetables_2",
+     "nombre": "Creciendo"
+    },
+    {
+     "id": "farm_crop_vegetables_3",
+     "nombre": "Listas"
+    }
+   ]
+  },
+  {
+   "id": "farm_crop_beans",
+   "nombre": "Frijoles en tres etapas",
+   "categoria": "Granja y riego",
+   "descripcion": "Tres filas de tipis de varas: recién sembrados, con la mata a media altura y cubiertos, con vainas.",
+   "propuestas": [
+    {
+     "titulo": "El campo se ve crecer",
+     "detalle": "La mata trepa por las varas según avanza la temporada."
+    },
+    {
+     "titulo": "Mejoran la tierra",
+     "detalle": "El campo donde hubo frijoles da más al año siguiente: una razón para rotar cultivos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_crop_beans_1",
+     "nombre": "Recién sembrados"
+    },
+    {
+     "id": "farm_crop_beans_2",
+     "nombre": "Creciendo"
+    },
+    {
+     "id": "farm_crop_beans_3",
+     "nombre": "Con vainas"
+    }
+   ]
+  },
+  {
+   "id": "farm_crop_roots",
+   "nombre": "Raíces en tres etapas",
+   "categoria": "Granja y riego",
+   "descripcion": "Surcos de remolachas y nabos: brotes, hojas y, al final, las raíces asomando de la tierra.",
+   "propuestas": [
+    {
+     "titulo": "Cultivar lo que hoy solo se recolecta",
+     "detalle": "Las raíces, que hoy solo trae el recolector, pasan a ser un cultivo de granja: aguantan el frío y se cosechan tarde."
+    },
+    {
+     "titulo": "Comida de invierno del ganado",
+     "detalle": "Los nabos alimentan al ganado en invierno cuando falta heno."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_crop_roots_1",
+     "nombre": "Brotes"
+    },
+    {
+     "id": "farm_crop_roots_2",
+     "nombre": "Creciendo"
+    },
+    {
+     "id": "farm_crop_roots_3",
+     "nombre": "Listas"
+    }
+   ]
+  },
+  {
+   "id": "farm_vineyard",
+   "nombre": "Viñedo",
+   "categoria": "Granja y riego",
+   "descripcion": "Tres hileras de 6 m de cepas en espaldera: con hojas, racimos y una canasta de uvas, o desnudas en invierno.",
+   "propuestas": [
+    {
+     "titulo": "Uvas y vino",
+     "detalle": "Un cultivo que tarda años en dar pero luego rinde cada otoño sin volver a sembrar: uvas (fruta) y, con una prensa, vino para la taberna y para vender caro."
+    },
+    {
+     "titulo": "Solo en laderas soleadas",
+     "detalle": "Rinde bien en pendientes y climas templados: aprovecha terreno donde no caben campos."
+    },
+    {
+     "titulo": "Estaciones visibles",
+     "detalle": "Con hojas y racimos en verano y otoño; desnudo en invierno."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "farm_vineyard",
+     "nombre": "Con uvas"
+    },
+    {
+     "id": "farm_vineyard_bare",
+     "nombre": "En invierno"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1390 @@
+{
+  "familia": "buildings",
+  "grupos": [
+    {
+      "id": "castle_stone",
+      "nombre": "Castillo de piedra",
+      "categoria": "Castillos y fortalezas",
+      "descripcion": "Castillo de cuento en tres tamaños que pueden ser niveles de mejora: casa torre (9 × 9 m), castillo pequeño (21 × 21 m) y gran castillo (37 × 34 m, 32 m de alto); el castillo pequeño subido a un peñasco con rampa de arcos (31 × 31 m) o rodeado de un foso con puente levadizo (30 × 31 m); y el gran castillo en su peñasco (52 × 49 m). Torre del homenaje con torrecillas, torres redondas y cuadradas con tejados cónicos, muralla almenada con adarve alrededor de un patio, casa de la puerta con rastrillo, gran salón, capilla, cuartel, pozo y estandartes.",
+      "propuestas": [
+        {"titulo": "Último nivel del centro del pueblo", "detalle": "El centro del pueblo gana tres niveles más allá de los dos actuales: casa torre (población 120; ladrillos, piedra y herramientas), castillo pequeño (población 200) y gran castillo (población 350; piedra, tejas, hierro y oro). Cada nivel amplía el almacén, la vista y la luz del centro, desbloquea los edificios de nobles y sube el tope de aldeanos. Como el terreno crece de 8 × 8 a 37 × 34 m, el juego reserva el solar desde el principio o pide despejarlo antes de mejorar."},
+        {"titulo": "Refugio durante las incursiones", "detalle": "Edificio de defensa único. Al sonar la campana, los aldeanos que no son milicia corren al castillo en vez de a sus casas; dentro no pueden ser atacados mientras el castillo tenga vida (5000 a 20 000 según el tamaño, a prueba de fuego). Baja el rastrillo (clip close) cuando hay asaltantes a la vista y lo sube (open) al pasar el peligro. Sus torres disparan como cuatro a ocho torres de vigilancia."},
+        {"titulo": "Sede del señor: nobles e impuestos", "detalle": "Vivienda de nivel 4: aloja a una familia noble y a su guardia. Mientras está habitado cobra un impuesto en oro a cada casa de nivel 3 dentro de su radio de servicio y lo guarda como una bóveda. Los nobles piden lujos (cerveza, ropa, calzado, pan) y, si se les atiende, dan un bono de felicidad y de poder militar a todo el pueblo."},
+        {"titulo": "Guarnición de soldados profesionales", "detalle": "Sustituye o mejora al cuartel: entrena dos unidades a la vez, guarda armas y armaduras y aloja a 20, 40 u 80 soldados según el tamaño. Las variantes de material se eligen por raza o por bioma (arenisca en el desierto, ladrillo donde no hay piedra); la fortaleza oscura sería la guarida de los asaltantes en el mapa: un objetivo que se puede atacar para frenar las incursiones."}
+      ],
+      "modelos": [
+        {"id": "castle_great_stone", "nombre": "Gran castillo · piedra gris y pizarra azul", "material": "piedra y pizarra",
+         "animaciones": {"wave": "Ondean los banderines de las torres", "open": "Sube el rastrillo de la puerta", "close": "Baja el rastrillo"},
+         "nota": "El de la imagen de referencia: 37 × 34 m y unos 40 000 triángulos."},
+        {"id": "castle_great_sandstone", "nombre": "Gran castillo · arenisca y tejas rojas", "material": "piedra y tejas",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_great_brick", "nombre": "Gran castillo · ladrillo y pizarra", "material": "ladrillo y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_great_dark", "nombre": "Gran fortaleza oscura", "material": "piedra negra y hierro",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"},
+         "nota": "Tejados más afilados, púas en las torres y ventanas encendidas en rojo."},
+        {"id": "castle_small_stone", "nombre": "Castillo pequeño · piedra gris y pizarra azul", "material": "piedra y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"},
+         "nota": "21 × 21 m: cuatro torres, puerta fortificada y torre del homenaje."},
+        {"id": "castle_small_sandstone", "nombre": "Castillo pequeño · arenisca y tejas rojas", "material": "piedra y tejas",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_small_brick", "nombre": "Castillo pequeño · ladrillo y pizarra", "material": "ladrillo y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_small_dark", "nombre": "Fortaleza oscura pequeña", "material": "piedra negra y hierro",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_tower_house_stone", "nombre": "Casa torre · piedra gris y pizarra azul", "material": "piedra y pizarra",
+         "animaciones": {"wave": "Ondea el banderín"}, "nota": "9 × 9 m: el primer nivel, una torre fortificada con su torre de escalera."},
+        {"id": "castle_tower_house_sandstone", "nombre": "Casa torre · arenisca y tejas rojas", "material": "piedra y tejas",
+         "animaciones": {"wave": "Ondea el banderín"}},
+        {"id": "castle_tower_house_brick", "nombre": "Casa torre · ladrillo y pizarra", "material": "ladrillo y pizarra",
+         "animaciones": {"wave": "Ondea el banderín"}},
+        {"id": "castle_tower_house_dark", "nombre": "Torre oscura", "material": "piedra negra y hierro",
+         "animaciones": {"wave": "Ondea el banderín"}},
+        {"id": "castle_crag_stone", "nombre": "Castillo en el peñasco · piedra gris y pizarra azul", "material": "piedra y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"},
+         "nota": "El castillo pequeño sobre un peñasco de 6 m, con rampa de arcos hasta la puerta: 31 × 31 m. Como en la imagen de referencia; pensado para colocarse sobre un cerro del mapa."},
+        {"id": "castle_crag_sandstone", "nombre": "Castillo en el peñasco · arenisca y tejas rojas", "material": "piedra y tejas",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_crag_brick", "nombre": "Castillo en el peñasco · ladrillo y pizarra", "material": "ladrillo y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_crag_dark", "nombre": "Fortaleza oscura en el peñasco", "material": "piedra negra y hierro",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_great_crag_stone", "nombre": "Gran castillo en el peñasco · piedra gris y pizarra azul", "material": "piedra y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"},
+         "nota": "La pieza más grande: el gran castillo sobre un peñasco de 8 m con rampa de arcos, 52 × 49 m, 40 m de alto y unos 43 500 triángulos. Lo más parecido a la imagen de referencia."},
+        {"id": "castle_great_crag_sandstone", "nombre": "Gran castillo en el peñasco · arenisca y tejas rojas", "material": "piedra y tejas",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_great_crag_brick", "nombre": "Gran castillo en el peñasco · ladrillo y pizarra", "material": "ladrillo y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_great_crag_dark", "nombre": "Gran fortaleza oscura en el peñasco", "material": "piedra negra y hierro",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo"}},
+        {"id": "castle_moat_stone", "nombre": "Castillo con foso y puente levadizo · piedra gris y pizarra azul", "material": "piedra y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo", "raise": "Se levanta el puente levadizo", "lower": "Baja el puente levadizo"},
+         "nota": "El castillo pequeño en una isla con foso de 3 m: 30 × 31 m. Con el puente levantado, los asaltantes no pueden llegar a la puerta."},
+        {"id": "castle_moat_sandstone", "nombre": "Castillo con foso · arenisca y tejas rojas", "material": "piedra y tejas",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo", "raise": "Se levanta el puente levadizo", "lower": "Baja el puente levadizo"}},
+        {"id": "castle_moat_brick", "nombre": "Castillo con foso · ladrillo y pizarra", "material": "ladrillo y pizarra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo", "raise": "Se levanta el puente levadizo", "lower": "Baja el puente levadizo"}},
+        {"id": "castle_moat_dark", "nombre": "Fortaleza oscura con foso", "material": "piedra negra y hierro",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Sube el rastrillo", "close": "Baja el rastrillo", "raise": "Se levanta el puente levadizo", "lower": "Baja el puente levadizo"}}
+      ]
+    },
+    {
+      "id": "castle_motte_bailey",
+      "nombre": "Castillo de mota y patio",
+      "categoria": "Castillos y fortalezas",
+      "descripcion": "Castillo de madera de 23 × 25 m: torre de troncos con piso volado sobre un montículo de tierra, cerco de estacas arriba, escalera por la ladera, patio con empalizada, torre de la puerta con hojas que se abren, casa de troncos, establo y pozo.",
+      "propuestas": [
+        {"titulo": "Primer castillo, solo con troncos", "detalle": "Nivel de fortaleza anterior al castillo de piedra: se construye con unos 200 troncos y 20 piedras, sin ladrillos ni herramientas, así que está al alcance de un pueblo de nivel 1. Da refugio a 40 aldeanos durante una incursión y su torre dispara como una torre de vigilancia con más alcance (por la altura del montículo). Es de madera: arde, y los asaltantes con antorchas son su punto débil."},
+        {"titulo": "Mejora hacia el castillo de piedra", "detalle": "Es el nivel 0 de la cadena de castillos: mota y patio → castillo pequeño → gran castillo. La mejora conserva lo almacenado y la guarnición."},
+        {"titulo": "Puesto avanzado de exploración", "detalle": "Se puede levantar lejos del pueblo, fuera del radio del centro: da visión (60 m), un pequeño almacén y cama para 6 soldados, y permite reclamar territorio junto a una mina o un paso de montaña."}
+      ],
+      "modelos": [
+        {"id": "castle_motte_bailey", "nombre": "Troncos y paja", "material": "troncos",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Se abren las dos hojas de la puerta", "close": "Se cierran"}},
+        {"id": "castle_motte_bailey_shingles", "nombre": "Troncos y tejamaní", "material": "troncos",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Se abren las dos hojas de la puerta", "close": "Se cierran"}},
+        {"id": "castle_motte_bailey_stone_keep", "nombre": "Con torre de piedra en la mota", "material": "troncos y piedra",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Se abren las dos hojas de la puerta", "close": "Se cierran"},
+         "nota": "Etapa intermedia: la torre de madera se cambia por una torre redonda de piedra y el resto sigue siendo de troncos."}
+      ]
+    },
+    {
+      "id": "castle_log_fort",
+      "nombre": "Fuerte de troncos de frontera",
+      "categoria": "Castillos y fortalezas",
+      "descripcion": "En dos tamaños que pueden ser niveles: una estacada pequeña de 12 × 13 m con un solo blocao, y el fuerte: empalizada cuadrada de 20 × 20 m con cuatro blocaos de troncos en las esquinas (piso alto volado con aspilleras), torre de la puerta, casa fuerte de dos plantas con chimenea de piedra, cobertizo, leña y muñecos de entrenamiento.",
+      "propuestas": [
+        {"titulo": "Cuartel de frontera", "detalle": "Segundo cuartel no único: se construye a más de 150 m del centro y aloja una patrulla de 8 soldados que defiende sola los edificios de su radio (leñadores, minas, cazadores lejanos) de lobos, osos y asaltantes. Cuesta unos 150 troncos y 15 piedras."},
+        {"titulo": "Punto de reunión de la milicia", "detalle": "Al sonar la campana, la milicia de los barrios lejanos se arma aquí en vez de cruzar el pueblo hasta el cuartel: guarda arcos y lanzas (almacén de bienes) y sus cuatro blocaos disparan como torres."},
+        {"titulo": "Puesto de comercio fortificado", "detalle": "Variante del puesto de comercio para mapas peligrosos: los mercaderes entran por la puerta y quedan a salvo de los asaltos mientras comercian; la mercancía no puede ser saqueada mientras el fuerte tenga vida."}
+      ],
+      "modelos": [
+        {"id": "castle_log_fort", "nombre": "Fuerte de cuatro blocaos · tejamaní", "material": "troncos",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Se abre la puerta", "close": "Se cierra la puerta"}},
+        {"id": "castle_log_fort_thatch", "nombre": "Fuerte de cuatro blocaos · paja", "material": "troncos y paja",
+         "animaciones": {"wave": "Ondean los banderines", "open": "Se abre la puerta", "close": "Se cierra la puerta"}},
+        {"id": "castle_stockade", "nombre": "Estacada pequeña con un blocao · tejamaní", "material": "troncos",
+         "animaciones": {"wave": "Ondea el banderín", "open": "Se abre la puerta", "close": "Se cierra la puerta"},
+         "nota": "El escalón anterior al fuerte, de 12 × 13 m: un solo blocao en una esquina, torre de la puerta y una cabaña. El patio queda algo justo con la cabaña dentro."},
+        {"id": "castle_stockade_thatch", "nombre": "Estacada pequeña con un blocao · paja", "material": "troncos y paja",
+         "animaciones": {"wave": "Ondea el banderín", "open": "Se abre la puerta", "close": "Se cierra la puerta"}}
+      ]
+    },
+    {
+      "id": "bld_inn",
+      "nombre": "Posada",
+      "categoria": "Edificios",
+      "descripcion": "Posada de dos plantas en un terreno de 10 × 9 m: planta alta volada con entramado de madera, buhardillas, gran chimenea de piedra, porche con farol, cartel colgante que se balancea, establo adosado con abrevadero, barra para atar caballos, mesas con bancos, barriles y leña.",
+      "propuestas": [
+        {"titulo": "Mejora de la taberna", "detalle": "Nivel 2 de la taberna actual (6 × 6 m, 1 trabajador): pasa a 3 trabajadores, radio de entretenimiento de 70 a 100 m y consume cerveza y pan. Costo de la mejora: ladrillos, tejas y herramientas. Las casas de nivel 3 a su alcance cuentan el entretenimiento como cubierto con el doble de felicidad."},
+        {"titulo": "Los mercaderes pasan la noche", "detalle": "Con una posada, el mercader que llega al puesto de comercio se queda hasta la mañana siguiente en vez de irse al atardecer: hay el doble de tiempo para comerciar, trae un 25 % más de mercancía en la siguiente visita y paga hospedaje en oro (que va a la bóveda)."},
+        {"titulo": "Llegan forasteros que se quedan", "detalle": "Cada estación, la posada atrae a 1 a 3 viajeros (según la felicidad del pueblo). Si hay casa libre, se quedan como aldeanos nuevos, a veces de otra raza o con un oficio ya aprendido. Es la vía de inmigración que no depende de los nacimientos."},
+        {"titulo": "Establo de postas", "detalle": "El establo adosado guarda dos caballos o mulas: las carretas del pueblo que salen de la posada van un 30 % más rápido, y los exploradores que parten de aquí llegan más lejos por día."}
+      ],
+      "modelos": [
+        {"id": "bld_inn_timber_tiles", "nombre": "Entramado y tejas", "material": "arcilla, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_inn_timber_thatch", "nombre": "Entramado y paja", "material": "arcilla, troncos y paja", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_inn_timber_blue", "nombre": "Entramado y pizarra azul", "material": "arcilla, troncos y pizarra", "animaciones": {"swing": "El cartel se balancea"}, "nota": "Con el tejado azul del pueblo de la imagen de referencia."},
+        {"id": "bld_inn_stone_slate", "nombre": "Planta baja de piedra y pizarra", "material": "piedra y pizarra", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_inn_stone_tiles", "nombre": "Planta baja de piedra y tejas", "material": "piedra y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_inn_log_shingles", "nombre": "Troncos y tejamaní", "material": "troncos", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_inn_log_thatch", "nombre": "Troncos y paja", "material": "troncos y paja", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_inn_coaching_tiles", "nombre": "Posada de postas con patio · tejas", "material": "piedra, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"},
+         "nota": "La versión grande, de 15 × 14 m: cuerpo a la calle con arco para carros, dos alas con galerías, establo, pozo y patio."},
+        {"id": "bld_inn_coaching_slate", "nombre": "Posada de postas con patio · pizarra", "material": "piedra, troncos y pizarra", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_inn_coaching_thatch", "nombre": "Posada de postas con patio · paja", "material": "piedra, troncos y paja", "animaciones": {"swing": "El cartel se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_watermill",
+      "nombre": "Molino de agua",
+      "categoria": "Edificios",
+      "descripcion": "Molino de 10 × 8 m con base de piedra y planta alta de entramado, rueda de 4 m que gira en su caz de piedra con compuerta, puentecillo, puerta de carga con polea, sacos, muela y carretilla. Hay versión de rueda de corriente baja y de rueda de admisión superior con canal de madera.",
+      "propuestas": [
+        {"titulo": "Molino que exige río", "detalle": "Solo se puede construir con el lado de la rueda pegado a un río o arroyo (como el pescador exige agua). A cambio muele trigo en harina al triple de velocidad que el molino actual con los mismos 2 trabajadores, y no se detiene los días sin viento si se adopta también el molino de viento."},
+        {"titulo": "Se hiela en invierno", "detalle": "Mientras el río está helado la rueda se detiene (el clip turn se para): hay que moler y guardar harina antes del invierno, lo que da sentido al granero. En el deshielo muele un 20 % más rápido."},
+        {"titulo": "Fuerza para los talleres vecinos", "detalle": "Los talleres a menos de 12 m del molino (herrero, tejedor, batán) trabajan un 25 % más rápido, como si la rueda moviera sus máquinas: el río pasa a organizar un barrio industrial."}
+      ],
+      "modelos": [
+        {"id": "bld_watermill_timber_tiles", "nombre": "Piedra, entramado y tejas", "material": "piedra, troncos y tejas", "animaciones": {"turn": "Gira la rueda"}},
+        {"id": "bld_watermill_timber_blue", "nombre": "Piedra, entramado y pizarra azul", "material": "piedra, troncos y pizarra", "animaciones": {"turn": "Gira la rueda"}},
+        {"id": "bld_watermill_timber_thatch", "nombre": "Piedra, entramado y paja · rueda de admisión superior", "material": "piedra, troncos y paja", "animaciones": {"turn": "Gira la rueda"}, "nota": "El agua llega por un canal de madera sobre la rueda."},
+        {"id": "bld_watermill_stone_slate", "nombre": "Todo de piedra y pizarra", "material": "piedra y pizarra", "animaciones": {"turn": "Gira la rueda"}},
+        {"id": "bld_watermill_log_shingles", "nombre": "Piedra, troncos y tejamaní · rueda de admisión superior", "material": "piedra y troncos", "animaciones": {"turn": "Gira la rueda"}}
+      ]
+    },
+    {
+      "id": "bld_sawmill",
+      "nombre": "Aserradero de agua",
+      "categoria": "Edificios",
+      "descripcion": "Cobertizo abierto de 10 × 7 m sobre pilares de piedra, con una sierra de bastidor que sube y baja movida por la rueda, un tronco a medio aserrar sobre su carro, pila de troncos y tablas apiladas.",
+      "propuestas": [
+        {"titulo": "Troncos en tablas", "detalle": "Recurso nuevo, tablas (core:planks): 1 tronco da 3 tablas. Los niveles 2 y 3 de las casas y los edificios de nivel 2 piden tablas en vez de troncos, de modo que el aserradero ahorra bosque. Necesita río; 2 trabajadores."},
+        {"titulo": "Leña sin leñero", "detalle": "Alternativa al partidor de leña: convierte troncos en leña al doble de velocidad y sin trabajador dedicado (lo atiende el leñador vecino), pero solo junto al agua."},
+        {"titulo": "Mejora del leñador", "detalle": "Nivel 2 del leñador cuando hay río a menos de 20 m: los troncos de su radio llegan flotando, así que el radio de tala sube de 55 a 90 m sin alargar los viajes."}
+      ],
+      "modelos": [
+        {"id": "bld_sawmill_water", "nombre": "Tejamaní", "material": "troncos y hierro", "animaciones": {"turn": "Gira la rueda y la sierra sube y baja"}},
+        {"id": "bld_sawmill_water_thatch", "nombre": "Paja", "material": "troncos, paja y hierro", "animaciones": {"turn": "Gira la rueda y la sierra sube y baja"}}
+      ]
+    },
+    {
+      "id": "bld_windmill_tower",
+      "nombre": "Molino de viento de torre",
+      "categoria": "Edificios",
+      "descripcion": "Torre de molino de 13 m (17 con las aspas) en un terreno de 8 × 8 m: torre que se estrecha hacia arriba, balcón de madera para alcanzar las aspas, escalera, caperuza giratoria con palo de cola y cuatro aspas de celosía con lona de 6 m. Las aspas vuelan por encima de los vecinos.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del molino", "detalle": "Mejora del molino actual (5 × 5 m): con ladrillos, tejas y lino para las lonas (core:linen) pasa a 3 trabajadores y muele el doble. Da +4 de belleza al entorno en vez de restarla: es el edificio que se ve desde todo el pueblo."},
+        {"titulo": "Depende del viento", "detalle": "El clima gana un valor de viento por día. Con calma las aspas se paran y no se muele; con viento fuerte se muele el doble; con tormenta hay que recoger las lonas o se rompen (se reparan con lino). Construirlo en un cerro, lejos de árboles y edificios altos, le da más días de viento."},
+        {"titulo": "Bombea agua a los campos", "detalle": "Segunda receta: en vez de moler, riega. Las granjas a menos de 30 m no pierden cosecha en las sequías y rinden un 15 % más en verano."}
+      ],
+      "modelos": [
+        {"id": "bld_windmill_tower_stone", "nombre": "Piedra y tejamaní", "material": "piedra", "animaciones": {"turn": "Giran las aspas"}},
+        {"id": "bld_windmill_tower_blue", "nombre": "Piedra y caperuza de pizarra azul", "material": "piedra y pizarra", "animaciones": {"turn": "Giran las aspas"}},
+        {"id": "bld_windmill_tower_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo y pizarra", "animaciones": {"turn": "Giran las aspas"}},
+        {"id": "bld_windmill_tower_white", "nombre": "Encalado y tejas rojas", "material": "arcilla y tejas", "animaciones": {"turn": "Giran las aspas"}},
+        {"id": "bld_windmill_smock_wood", "nombre": "Ochavado de tablas sobre base de piedra", "material": "troncos y piedra", "animaciones": {"turn": "Giran las aspas"}},
+        {"id": "bld_windmill_tower_sandstone", "nombre": "Arenisca y tejas rojas", "material": "piedra y tejas", "animaciones": {"turn": "Giran las aspas"}}
+      ]
+    },
+    {
+      "id": "bld_windmill_post",
+      "nombre": "Molino de viento de poste",
+      "categoria": "Edificios",
+      "descripcion": "El molino más antiguo, de 6 × 8 m: una caseta de tablas que gira entera sobre un poste con cruceta y tornapuntas, escalera y palo de cola por detrás, y cuatro aspas de celosía de 4,7 m.",
+      "propuestas": [
+        {"titulo": "Molino de nivel 1, barato", "detalle": "Versión de madera del molino, disponible antes de tener piedra y ladrillo: 25 troncos y 4 de lino, 1 trabajador, muele la mitad que el molino actual. Se mejora al molino de torre."},
+        {"titulo": "Molino de granja", "detalle": "Anexo de la granja: colocado a menos de 10 m de un campo de trigo, el propio granjero muele en invierno, cuando no hay labores, sin ocupar a un molinero."}
+      ],
+      "modelos": [
+        {"id": "bld_windmill_post", "nombre": "Tablas y tejamaní", "material": "troncos", "animaciones": {"turn": "Giran las aspas"}},
+        {"id": "bld_windmill_post_white", "nombre": "Encalado y tejas rojas", "material": "arcilla y tejas", "animaciones": {"turn": "Giran las aspas"}}
+      ]
+    },
+    {
+      "id": "bld_wizard_tower",
+      "nombre": "Torre del mago",
+      "categoria": "Edificios",
+      "descripcion": "Torre esbelta de 21 m en un terreno de 8 × 8 m: fuste que se estrecha, estudio más ancho arriba con ventanales encendidos, sombrero cónico morado con la punta torcida, torrecilla lateral, escalera que sube en espiral por fuera, balcón con telescopio, caldero y un cristal que flota y gira sobre el tejado.",
+      "propuestas": [
+        {"titulo": "Investigación: mejoras para todo el pueblo", "detalle": "Edificio único de nivel 3 con 1 o 2 sabios. Consume oro y hierbas y, cada cierto tiempo, completa una investigación que el jugador elige: +10 % de cosecha, herramientas que duran más, enfermedades que se curan antes, mapa del entorno revelado. Es el árbol de tecnologías del juego, sin menús aparte."},
+        {"titulo": "Pronóstico del tiempo y de las incursiones", "detalle": "Con la torre habitada, el HUD avisa con dos días de antelación de heladas, sequías y tormentas, y con un día de las incursiones (por dónde llegarán). Sin ella, el aviso llega cuando ya están a la vista."},
+        {"titulo": "Defensa mágica", "detalle": "Torre de defensa de largo alcance (50 m) que gasta cristales o hierbas por disparo: daña en área y espanta a la fauna. El cristal deja de girar (clip float) cuando se queda sin suministro."},
+        {"titulo": "Casa de una raza o de un personaje especial", "detalle": "Vivienda del mago errante: un visitante que llega con la posada y, si se le construye la torre, se queda. Vende pociones (curan una enfermedad al instante) al mercado."}
+      ],
+      "modelos": [
+        {"id": "bld_wizard_tower", "nombre": "Piedra y sombrero morado", "material": "piedra y pizarra", "animaciones": {"float": "El cristal flota y gira sobre el tejado"}},
+        {"id": "bld_wizard_tower_blue", "nombre": "Piedra y sombrero azul", "material": "piedra y pizarra", "animaciones": {"float": "El cristal flota y gira sobre el tejado"}},
+        {"id": "bld_wizard_tower_dark", "nombre": "Torre del nigromante", "material": "piedra negra", "animaciones": {"float": "El cristal flota y gira"}, "nota": "Piedra oscura y luces verdes."}
+      ]
+    },
+    {
+      "id": "bld_lighthouse",
+      "nombre": "Faro",
+      "categoria": "Edificios",
+      "descripcion": "Faro de 17 m sobre un zócalo de roca, en un terreno de 8 × 8 m: torre que se estrecha, balcón con barandilla de hierro, linterna con lámpara giratoria, cúpula de cobre y la casita del farero adosada.",
+      "propuestas": [
+        {"titulo": "Más pesca y pesca de noche", "detalle": "Se construye en la orilla. Los pescadores dentro de su radio (120 m) pescan también de noche y con niebla, y su radio de pesca crece un 50 %: un pueblo costero puede vivir del mar."},
+        {"titulo": "Atrae barcos mercantes", "detalle": "Con un faro y un muelle, llegan mercaderes por agua además de por tierra: una visita extra por estación, con mercancías que los de tierra no traen (sal, especias, telas)."},
+        {"titulo": "Luz y vigilancia", "detalle": "Es la torre de vigilancia con más vista del juego (sight 120) y da luz nocturna en un radio de 40 m: los asaltantes que llegan por la costa se ven mucho antes. Consume 1 de carbón o leña por noche; sin combustible, se apaga (el clip turn se detiene)."}
+      ],
+      "modelos": [
+        {"id": "bld_lighthouse_striped", "nombre": "Encalado con franjas rojas", "material": "ladrillo y cal", "animaciones": {"turn": "Gira la lámpara"}},
+        {"id": "bld_lighthouse_stone", "nombre": "Piedra vista", "material": "piedra", "animaciones": {"turn": "Gira la lámpara"}}
+      ]
+    },
+    {
+      "id": "bld_church",
+      "nombre": "Iglesia con campanario",
+      "categoria": "Edificios",
+      "descripcion": "Iglesia de 10 × 18 m: nave con contrafuertes y ventanales de arco, ábside redondo, torre de 9,5 m al frente con campanario abierto, campana que se balancea, aguja y cruz dorada (19 m en total) y un pequeño cementerio.",
+      "propuestas": [
+        {"titulo": "Nivel 2 de la capilla", "detalle": "Mejora de la capilla (6 × 8 m): con piedra, tejas y herramientas pasa a 2 trabajadores, el radio de religión sube de 70 a 120 m y el atractivo del entorno de 10 a 18. Las casas de nivel 3 la exigen para llegar a un cuarto nivel."},
+        {"titulo": "La campana de alarma", "detalle": "La campana que llama a la milicia pasa a ser este edificio: su alcance es el radio en el que los aldeanos oyen la alarma. Un pueblo grande necesita varias iglesias o capillas para que todos se enteren a tiempo. Mientras suena se reproduce el clip ring."},
+        {"titulo": "Bodas, bautizos y funerales", "detalle": "Los nacimientos suben un 15 % en las casas a su alcance, y las muertes restan la mitad de felicidad si hay cementerio (el terreno de al lado se va llenando de lápidas, que añaden un poco de atractivo)."}
+      ],
+      "modelos": [
+        {"id": "bld_church_stone", "nombre": "Piedra gris y pizarra", "material": "piedra y pizarra", "animaciones": {"ring": "La campana se balancea"}},
+        {"id": "bld_church_blue", "nombre": "Piedra gris y pizarra azul", "material": "piedra y pizarra", "animaciones": {"ring": "La campana se balancea"}},
+        {"id": "bld_church_sandstone", "nombre": "Arenisca y tejas rojas", "material": "piedra y tejas", "animaciones": {"ring": "La campana se balancea"}},
+        {"id": "bld_church_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo y pizarra", "animaciones": {"ring": "La campana se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_town_hall",
+      "nombre": "Ayuntamiento con torre del reloj",
+      "categoria": "Edificios",
+      "descripcion": "Casa consistorial de 12 × 10 m: soportal de cuatro arcos, planta noble con ventanales, tejado a cuatro aguas con buhardillas y chimeneas, y al frente una torre de 13 m con balcón, estandarte, reloj en tres caras (la aguja larga gira), campana, almenas, chapitel y bandera.",
+      "propuestas": [
+        {"titulo": "Niveles 2 y 3 del centro del pueblo", "detalle": "El modelo del centro cambia al subir de nivel: hoy es siempre la misma casa con campanario. Este sería el nivel 3 (población 70), antes del castillo. Mantiene almacén y luz, y añade +10 de atractivo."},
+        {"titulo": "Leyes del pueblo", "detalle": "Edificio único con 1 escribano: permite activar edictos que cuestan oro por estación: racionamiento (menos consumo y menos felicidad), jornada larga (+15 % de producción y más enfermedad), festival (felicidad a cambio de cerveza y pan), leva (milicia más numerosa)."},
+        {"titulo": "El reloj ordena la jornada", "detalle": "Con reloj, los aldeanos de su radio (150 m) empiezan y terminan el trabajo a la vez y no pierden tiempo al amanecer: +8 % de horas trabajadas. La campana da las horas del día y la noche del juego."}
+      ],
+      "modelos": [
+        {"id": "bld_town_hall_timber", "nombre": "Entramado y tejas", "material": "piedra, troncos y tejas", "animaciones": {"tick": "Gira la aguja del reloj", "wave": "Ondea la bandera"}},
+        {"id": "bld_town_hall_timber_blue", "nombre": "Entramado y pizarra azul", "material": "piedra, troncos y pizarra", "animaciones": {"tick": "Gira la aguja del reloj", "wave": "Ondea la bandera"}},
+        {"id": "bld_town_hall_stone", "nombre": "Piedra y pizarra", "material": "piedra y pizarra", "animaciones": {"tick": "Gira la aguja del reloj", "wave": "Ondea la bandera"}},
+        {"id": "bld_town_hall_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo y pizarra", "animaciones": {"tick": "Gira la aguja del reloj", "wave": "Ondea la bandera"}}
+      ]
+    },
+    {
+      "id": "bld_manor",
+      "nombre": "Casa señorial",
+      "categoria": "Edificios",
+      "descripcion": "Casona de 18 × 10 m en forma de U: cuerpo central con pórtico de columnas y buhardillas, dos alas con hastial al frente, planta alta volada, tres chimeneas, antepatio con muro bajo, pilares, setos y una fuente.",
+      "propuestas": [
+        {"titulo": "Casa de nivel 4", "detalle": "Cuarto nivel de la vivienda, para pocas familias: 12 residentes ricos que pagan el triple de impuestos y piden todo lo del nivel 3 más cerveza, ropa fina y entorno de 20 o más. Ocupa dos solares de casa unidos."},
+        {"titulo": "Sede de un gremio", "detalle": "Cada casa señorial se asigna a un oficio (herreros, tejedores, cerveceros): los talleres de ese oficio en todo el pueblo producen un 15 % más y forman aprendices el doble de rápido."},
+        {"titulo": "Residencia del alcalde", "detalle": "Única. Mientras está habitada, la felicidad base del pueblo sube 5 puntos y los mercaderes ofrecen mejores precios; si el pueblo pasa hambre, es el primer edificio que los descontentos apedrean."}
+      ],
+      "modelos": [
+        {"id": "bld_manor_brick", "nombre": "Ladrillo, entramado y pizarra", "material": "ladrillo, troncos y pizarra"},
+        {"id": "bld_manor_stone", "nombre": "Piedra y tejas", "material": "piedra y tejas"},
+        {"id": "bld_manor_timber", "nombre": "Piedra, entramado y tejas", "material": "piedra, troncos y tejas"},
+        {"id": "bld_manor_timber_blue", "nombre": "Piedra, entramado y pizarra azul", "material": "piedra, troncos y pizarra"}
+      ]
+    },
+    {
+      "id": "bld_stable",
+      "nombre": "Establo con cuadras",
+      "categoria": "Edificios",
+      "descripcion": "Establo de 10 × 8 m con cuatro cuadras de puerta partida (dos caballos asoman la cabeza), pajar con polea en el hastial, corral cercado con abrevadero, pacas de heno y una horca.",
+      "propuestas": [
+        {"titulo": "Caballos para las carretas", "detalle": "Cada establo mantiene 4 caballos que comen heno o cebada. Las carretas del pueblo cargan el doble y van un 50 % más rápido; sin heno en invierno, los caballos enferman."},
+        {"titulo": "Caballería", "detalle": "Requisito del cuartel para entrenar jinetes: unidad rápida que persigue a los asaltantes que huyen con el botín y patrulla caminos."},
+        {"titulo": "Arado tirado", "detalle": "Las granjas a menos de 60 m aran con caballo: un campo se prepara en la mitad de tiempo y cada granjero atiende un 30 % más de superficie."}
+      ],
+      "modelos": [
+        {"id": "bld_stable_plank_thatch", "nombre": "Tablas y paja", "material": "troncos y paja"},
+        {"id": "bld_stable_stone_tiles", "nombre": "Piedra y tejas", "material": "piedra y tejas"}
+      ]
+    },
+    {
+      "id": "bld_granary_stilts",
+      "nombre": "Granero sobre pilares",
+      "categoria": "Edificios",
+      "descripcion": "Hórreo de 6 × 6 m: caja de tablas con rejillas de ventilación levantada sobre seis pilares de piedra con losa (para que no suban las ratas), tejado de gran alero y escalera de mano.",
+      "propuestas": [
+        {"titulo": "Granero a salvo de ratas", "detalle": "Almacén de comida pequeño (300) cuya comida no se pierde por ratas ni humedad y no propaga la enfermedad de las ratas. El granero actual guarda más, pero pierde un poco cada estación."},
+        {"titulo": "Semillas para la próxima siembra", "detalle": "Guarda la semilla: con un hórreo, la primera siembra de primavera no consume grano del almacén y las cosechas tras una helada se recuperan un año antes."},
+        {"titulo": "Anexo de la granja", "detalle": "Colocado junto a una granja, recibe la cosecha directamente: los granjeros no caminan al granero en plena siega y recogen un 20 % más antes de la primera helada."}
+      ],
+      "modelos": [
+        {"id": "bld_granary_stilts_thatch", "nombre": "Tablas y paja", "material": "troncos, piedra y paja"},
+        {"id": "bld_granary_stilts_tiles", "nombre": "Tablas y tejas", "material": "troncos, piedra y tejas"}
+      ]
+    },
+    {
+      "id": "bld_fishing_hut",
+      "nombre": "Cabaña de pescador sobre pilotes",
+      "categoria": "Edificios",
+      "descripcion": "Plataforma de tablas de 6 × 10 m (con el bote) sobre pilotes, con cabaña, secadero de pescado, redes, barril, farol, escalera a la orilla y un bote de remos amarrado.",
+      "propuestas": [
+        {"titulo": "Pescador sobre el agua", "detalle": "Variante del pescador que se construye con la mitad del terreno dentro del agua: pesca desde el bote, con radio de 40 a 70 m y un 40 % más de capturas, pero no trabaja con el río helado."},
+        {"titulo": "Nivel 2 del pescador", "detalle": "Mejora de la choza actual (tablas, lino para redes): pasa de 2 a 3 trabajadores y seca el pescado en el propio muelle, así que dura tanto como el ahumado sin gastar leña."},
+        {"titulo": "Embarcadero", "detalle": "Punto de cruce: dos cabañas en orillas opuestas enlazan un transbordador de bote, y los aldeanos cruzan el río sin puente (más lento que un puente, mucho más barato)."}
+      ],
+      "modelos": [
+        {"id": "bld_fishing_hut_stilts", "nombre": "Tablas y tejamaní", "material": "troncos"},
+        {"id": "bld_fishing_hut_stilts_thatch", "nombre": "Tablas y paja", "material": "troncos y paja"}
+      ]
+    },
+    {
+      "id": "bld_forge",
+      "nombre": "Fragua con fuelle",
+      "categoria": "Edificios",
+      "descripcion": "Herrería de 8 × 7 m: taller cerrado al fondo y fragua abierta bajo el alero, con hogar de ladrillo y brasas, campana y chimenea, fuelle que bombea, yunque sobre tocón, pila de temple, muela, herramientas, carbón y cartel de herradura.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del herrero", "detalle": "Mejora del herrero (5 × 5 m): con piedra, ladrillos y hierro pasa a 3 trabajadores y añade recetas: herramientas de acero (duran el doble, gastan carbón), clavos y herrajes que piden los edificios de nivel 3."},
+        {"titulo": "Reparaciones", "detalle": "Los aldeanos traen aquí las herramientas gastadas: reparar cuesta un tercio del hierro de una nueva. El consumo de hierro del pueblo baja a la mitad."},
+        {"titulo": "Herrador", "detalle": "Con un establo cerca, hierra caballos: las carretas no se averían en los caminos de piedra y la caballería gana velocidad."}
+      ],
+      "modelos": [
+        {"id": "bld_forge_stone", "nombre": "Piedra y tejas", "material": "piedra, ladrillo y tejas", "animaciones": {"pump": "El fuelle sube y baja", "swing": "El cartel se balancea"}},
+        {"id": "bld_forge_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo y pizarra", "animaciones": {"pump": "El fuelle sube y baja", "swing": "El cartel se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_mine_head",
+      "nombre": "Bocamina con torno",
+      "categoria": "Edificios",
+      "descripcion": "Pozo de mina de 8 × 8 m: brocal de piedra, castillete de madera de 8 m con caseta de la polea, cubo de mineral que sube y baja, torno de manivelas, vagoneta sobre raíles, montón de mineral y caseta de herramientas.",
+      "propuestas": [
+        {"titulo": "Mina profunda", "detalle": "Nivel 2 de la mina de hierro: no depende de las rocas con mineral a la vista (que se agotan) sino de la veta bajo el edificio. Produce más despacio pero sin fin, con 4 mineros; cada nivel de profundidad pide madera para entibar."},
+        {"titulo": "Otros minerales", "detalle": "El mismo edificio, colocado sobre un yacimiento, saca lo que haya debajo: hierro, carbón, oro o piedra. El explorador revela qué hay bajo cada zona del mapa."},
+        {"titulo": "Riesgo de derrumbe", "detalle": "Suceso: sin madera para entibar o con lluvias fuertes, un derrumbe hiere a los mineros y cierra el pozo hasta repararlo. El médico y la posada (descanso) reducen las bajas."}
+      ],
+      "modelos": [
+        {"id": "bld_mine_head", "nombre": "Madera y piedra", "material": "troncos, piedra y hierro", "animaciones": {"lift": "El cubo sube y baja y gira el torno"}}
+      ]
+    },
+    {
+      "id": "bld_guard_house",
+      "nombre": "Cuerpo de guardia",
+      "categoria": "Muros y defensas",
+      "descripcion": "Casa fuerte de 8 × 7 m: bloque de piedra almenado con tejado, torre redonda de 12 m con banderín, puerta de arco, ventana enrejada, armero de lanzas, brasero y garita.",
+      "propuestas": [
+        {"titulo": "Guardia permanente", "detalle": "Aloja a 4 guardias profesionales que patrullan su radio (60 m) día y noche: reaccionan a lobos, ladrones y asaltantes sin esperar a la campana. Cuesta piedra y un sueldo en oro por estación."},
+        {"titulo": "Mejora de la torre de vigilancia", "detalle": "Nivel 2 de la torre (3 × 3 m, de madera): de piedra, a prueba de fuego, con el doble de vida, alcance de 30 a 40 m y dos arqueros."},
+        {"titulo": "Puesto de la muralla", "detalle": "Se encaja en una muralla de piedra como torre con puerta peatonal: los guardias suben al adarve por aquí y los aldeanos entran aunque la puerta grande esté cerrada."}
+      ],
+      "modelos": [
+        {"id": "bld_guard_house_stone", "nombre": "Piedra gris y pizarra azul", "material": "piedra y pizarra", "animaciones": {"wave": "Ondea el banderín"}},
+        {"id": "bld_guard_house_sandstone", "nombre": "Arenisca y tejas rojas", "material": "piedra y tejas", "animaciones": {"wave": "Ondea el banderín"}}
+      ]
+    },
+    {
+      "id": "bld_market_hall",
+      "nombre": "Lonja de mercado",
+      "categoria": "Edificios",
+      "descripcion": "Mercado cubierto de 13 × 9 m: planta baja abierta sobre diez postes con ocho puestos, sala de entramado encima a la que se sube por una escalera exterior, tejado a cuatro aguas y linterna con veleta.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del mercado", "detalle": "Mejora del mercado de puestos (8 × 6 m): el radio de servicio pasa de 80 a 130 m, el almacén de 300 a 600 y la comida no se moja ni se estropea con lluvia o nieve. 4 trabajadores."},
+        {"titulo": "Sala del gremio de mercaderes", "detalle": "La sala de arriba permite fijar precios: una vez por estación el jugador elige un bien que se compra un 20 % más barato o se vende un 20 % más caro a los mercaderes."},
+        {"titulo": "Feria de temporada", "detalle": "Una vez al año celebra una feria: llegan tres mercaderes a la vez y los aldeanos ganan felicidad durante una estación. Consume cerveza y pan."}
+      ],
+      "modelos": [
+        {"id": "bld_market_hall_timber", "nombre": "Entramado y tejas", "material": "troncos, arcilla y tejas", "animaciones": {"turn": "La veleta gira con el viento"}},
+        {"id": "bld_market_hall_timber_blue", "nombre": "Entramado y pizarra azul", "material": "troncos, arcilla y pizarra", "animaciones": {"turn": "La veleta gira con el viento"}},
+        {"id": "bld_market_hall_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo, troncos y pizarra", "animaciones": {"turn": "La veleta gira con el viento"}}
+      ]
+    },
+    {
+      "id": "bld_apothecary",
+      "nombre": "Botica",
+      "categoria": "Edificios",
+      "descripcion": "Casa estrecha de dos plantas en un terreno de 6 × 7 m: planta baja de piedra con escaparate de frascos, planta alta volada de entramado, hastial al frente, manojos de hierbas secándose, cartel colgante, invernadero de vidrio adosado y bancales de plantas medicinales.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del herborista", "detalle": "Mejora del herborista (4 × 4 m): convierte hierbas en remedios (receta nueva, 2 hierbas → 1 remedio). El curandero y el médico curan el doble de rápido si tienen remedios, y las epidemias se cortan antes."},
+        {"titulo": "Hierbas todo el año", "detalle": "El invernadero cultiva hierbas en invierno: produce 1 de hierbas por día sin salir a recolectar, así que el pueblo no se queda sin medicinas cuando nieva."},
+        {"titulo": "Tienda de lujo", "detalle": "Vende jabones y ungüentos en el mercado: cuenta como media necesidad de higiene para las casas de nivel 3 a su alcance y sube 4 puntos el atractivo de su calle."}
+      ],
+      "modelos": [
+        {"id": "bld_apothecary", "nombre": "Tejado verde", "material": "piedra, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_apothecary_red", "nombre": "Tejado de tejas rojas", "material": "piedra, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_bank",
+      "nombre": "Banco y casa de moneda",
+      "categoria": "Edificios",
+      "descripcion": "Edificio de 8 × 8 m de dos plantas con pórtico de cuatro columnas, frontón con una moneda de oro, puerta de hierro, ventanas enrejadas, tejado de pizarra, chimenea del horno de acuñar, arcones y faroles.",
+      "propuestas": [
+        {"titulo": "Acuñar moneda", "detalle": "Receta nueva: mineral de oro + carbón → monedas. Hoy el oro solo se obtiene comerciando; con la casa de moneda, una mina de oro se convierte en ingreso propio. 2 trabajadores, nivel 3."},
+        {"titulo": "Nivel 2 de la bóveda", "detalle": "Mejora de la bóveda: guarda 20 000 de oro, a prueba de fuego y de saqueo, y da un 2 % de interés por estación sobre lo guardado (con tope), para premiar el ahorro."},
+        {"titulo": "Préstamos", "detalle": "Permite pedir oro prestado a los mercaderes cuando falta para una compra urgente (comida en una hambruna): se devuelve con un 20 % más en un año o baja la reputación comercial del pueblo."}
+      ],
+      "modelos": [
+        {"id": "bld_bank_stone", "nombre": "Piedra y pizarra", "material": "piedra, hierro y oro"},
+        {"id": "bld_bank_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo, hierro y oro"}
+      ]
+    },
+    {
+      "id": "bld_library",
+      "nombre": "Biblioteca y escuela",
+      "categoria": "Edificios",
+      "descripcion": "Edificio de 9 × 8 m de dos plantas con ventanales de arco, cuerpo de entrada con su propio hastial, óculo y un libro abierto tallado sobre la puerta, espadaña de madera con la campana de la escuela, bancos, pizarra y reloj de sol.",
+      "propuestas": [
+        {"titulo": "Escuela: aldeanos instruidos", "detalle": "Los niños del radio (80 m) estudian hasta la edad adulta en vez de trabajar antes: tardan más en incorporarse, pero como adultos instruidos producen un 20 % más en los talleres y aprenden un oficio nuevo en la mitad de tiempo. 1 maestro."},
+        {"titulo": "Biblioteca: conocimiento que no se pierde", "detalle": "Guarda los avances del pueblo (rotación de cultivos, remedios, técnicas): si el maestro herrero o el médico mueren, su sucesor no empieza de cero. Sin biblioteca, cada oficio pierde su bono al morir quien lo tenía."},
+        {"titulo": "Necesidad de cultura", "detalle": "Necesidad nueva para las casas de nivel 4 (casa señorial), junto a religión y entretenimiento. Da +6 de atractivo."}
+      ],
+      "modelos": [
+        {"id": "bld_library_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo y pizarra", "animaciones": {"ring": "Suena la campana de la escuela"}},
+        {"id": "bld_library_stone_blue", "nombre": "Piedra y pizarra azul", "material": "piedra y pizarra", "animaciones": {"ring": "Suena la campana de la escuela"}},
+        {"id": "bld_library_stone", "nombre": "Piedra y tejas", "material": "piedra y tejas", "animaciones": {"ring": "Suena la campana de la escuela"}}
+      ]
+    },
+    {
+      "id": "bld_arena",
+      "nombre": "Arena y campo de entrenamiento",
+      "categoria": "Edificios",
+      "descripcion": "Palenque ovalado de 15 × 13 m con suelo de arena y barrera de tablas, puerta con mástiles y estandartes, grada de tres filas bajo un toldo de rayas, liza de justas, muñecos de entrenamiento, dianas de tiro y armero.",
+      "propuestas": [
+        {"titulo": "Entrenamiento de la milicia", "detalle": "Los aldeanos de la milicia entrenan aquí en invierno, cuando no hay labores: ganan experiencia y en la siguiente incursión pegan y aguantan un 30 % más. Sin arena, la milicia siempre pelea como novata."},
+        {"titulo": "Torneos", "detalle": "Una vez por año se celebra un torneo: consume cerveza y pan, da entretenimiento a todo el pueblo (no solo al radio de la taberna) durante una estación y atrae forasteros a la posada."},
+        {"titulo": "Anexo del cuartel", "detalle": "Pegada al cuartel, duplica la velocidad a la que entrena soldados y desbloquea unidades de élite (jinete, ballestero)."}
+      ],
+      "modelos": [
+        {"id": "bld_arena", "nombre": "Toldo rojo y blanco", "material": "troncos y lino", "animaciones": {"wave": "Ondean los banderines"}},
+        {"id": "bld_arena_blue", "nombre": "Toldo azul y blanco", "material": "troncos y lino", "animaciones": {"wave": "Ondean los banderines"}}
+      ]
+    },
+    {
+      "id": "bld_wharf_warehouse",
+      "nombre": "Almacén del muelle",
+      "categoria": "Edificios",
+      "descripcion": "Muelle de 12 × 12 m (con la barcaza): almacén de puerta doble sobre un malecón de piedra, tablado sobre pilotes con norays, grúa de pescante movida por una rueda de andar, cajas, barriles, sacos, farol y una barcaza amarrada con su carga.",
+      "propuestas": [
+        {"titulo": "Comercio por río", "detalle": "Segundo puesto de comercio, solo en la orilla: llegan barcazas mercantes que cargan cuatro veces más que un mercader a pie y compran excedentes al por mayor. La grúa (clip load) trabaja mientras hay barcaza."},
+        {"titulo": "Transporte entre barrios", "detalle": "Dos muelles en el mismo río o lago se envían mercancía por barca: un barrio minero río arriba abastece al pueblo sin carretas ni caminos."},
+        {"titulo": "Almacén grande de mercancías", "detalle": "Almacén de 1200 (el doble que el almacén actual) para materiales pesados: piedra, troncos, ladrillos y hierro, que las carretas dejan aquí."}
+      ],
+      "modelos": [
+        {"id": "bld_wharf_warehouse", "nombre": "Tablas y tejas", "material": "troncos, piedra y tejas", "animaciones": {"load": "La grúa gira con la carga y la rueda da vueltas"}},
+        {"id": "bld_wharf_warehouse_stone", "nombre": "Piedra y pizarra", "material": "piedra y pizarra", "animaciones": {"load": "La grúa gira con la carga y la rueda da vueltas"}}
+      ]
+    },
+    {
+      "id": "bld_pavilion",
+      "nombre": "Pabellón de campaña",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Tienda redonda de 6 × 6 m de paños de dos colores, con faldón, banderín en el mástil, entrada con las lonas recogidas, alfombra, vientos con estacas, escudo en su caballete, lanza, mesa y arcón.",
+      "propuestas": [
+        {"titulo": "Tienda del capitán", "detalle": "Cuartel de campaña: se monta en un día (lino y troncos, sin piedra) en cualquier punto del mapa y sirve de punto de reunión de las tropas lejos del pueblo. Se desmonta y recupera sus materiales."},
+        {"titulo": "Visitante ilustre", "detalle": "Aparece sola cuando llega un caballero errante o un noble de paso: mientras está, ofrece una misión (limpiar una guarida, escoltar un mercader) con recompensa en oro."},
+        {"titulo": "Puesto de feria", "detalle": "Durante los torneos y ferias se montan pabellones junto a la arena o el mercado: cada uno vende un bien de lujo y da felicidad a quien pasa cerca."}
+      ],
+      "modelos": [
+        {"id": "bld_pavilion_red", "nombre": "Rojo y blanco", "material": "lino", "animaciones": {"wave": "Ondea el banderín"}},
+        {"id": "bld_pavilion_blue", "nombre": "Azul y oro", "material": "lino", "animaciones": {"wave": "Ondea el banderín"}},
+        {"id": "bld_pavilion_green", "nombre": "Verde y blanco", "material": "lino", "animaciones": {"wave": "Ondea el banderín"}}
+      ]
+    },
+    {
+      "id": "bld_camp_tent",
+      "nombre": "Tienda de campamento con estandarte",
+      "categoria": "Campamento y exploración",
+      "descripcion": "La tienda de la imagen de referencia, en 6 × 6 m: lona a dos aguas sobre palos cruzados, cajas, barril, petate, trébede con olla sobre el fuego y un estandarte azul con cabeza de lobo que se mece.",
+      "propuestas": [
+        {"titulo": "Campamento del explorador", "detalle": "El explorador lo monta al final de su jornada: desde ahí sigue al día siguiente sin volver al pueblo, así que alcanza el doble de distancia. Cuesta 2 de lino y se recoge solo."},
+        {"titulo": "Refugio de los primeros días", "detalle": "Vivienda provisional de la caravana inicial: 3 residentes, sin calefacción. Permite empezar a talar y cazar antes de tener casas; en invierno enferma a quien duerme en ella."},
+        {"titulo": "Campamento de otro pueblo o de asaltantes", "detalle": "Marca en el mapa un campamento ajeno: con el estandarte del lobo, una compañía de mercenarios que se puede contratar; con el estandarte rojo de pieles, la base de la que salen los asaltantes."}
+      ],
+      "modelos": [
+        {"id": "bld_camp_tent", "nombre": "Lona y estandarte azul", "material": "lino y troncos", "animaciones": {"wave": "El estandarte se mece"}},
+        {"id": "bld_camp_tent_hide", "nombre": "Pieles y estandarte rojo", "material": "cuero y troncos", "animaciones": {"wave": "El estandarte se mece"}}
+      ]
+    },
+    {
+      "id": "bld_fair_tent",
+      "nombre": "Carpa de feria ambulante",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Gran carpa redonda de 12 × 10 m con tejado de dos alturas en paños de rayas, bandera, marquesina de entrada con cartel, guirnaldas de banderines a cuatro mástiles, taquilla y el carromato de los feriantes.",
+      "propuestas": [
+        {"titulo": "Feria que llega y se va", "detalle": "Suceso de temporada: una o dos veces al año llega la feria y pide un terreno libre de 12 × 10 m. Si se le da, durante 10 días todo el pueblo tiene el entretenimiento cubierto y gasta oro; después se marcha. Con mucha felicidad, vuelve antes."},
+        {"titulo": "Mercado de temporada", "detalle": "La versión verde, sin carromato, es un mercado cubierto que el jugador monta en verano y otoño para vender excedentes: cuenta como un mercado más mientras está montado y no ocupa trabajadores en invierno."},
+        {"titulo": "Entretenimiento sin cerveza", "detalle": "Edificio permanente alternativo a la taberna para razas o pueblos que no beben: da entretenimiento con 2 artistas y consume ropa (vestuario) en vez de cerveza."}
+      ],
+      "modelos": [
+        {"id": "bld_fair_tent_red", "nombre": "Circo rojo y blanco", "material": "lino y troncos", "animaciones": {"wave": "Ondea la bandera"}},
+        {"id": "bld_fair_tent_blue", "nombre": "Circo azul y oro", "material": "lino y troncos", "animaciones": {"wave": "Ondea la bandera"}},
+        {"id": "bld_market_tent_green", "nombre": "Carpa de mercado verde", "material": "lino y troncos", "animaciones": {"wave": "Ondea la bandera"}, "nota": "Sin carromato."}
+      ]
+    },
+    {
+      "id": "bld_dwarf_hall",
+      "nombre": "Salón enano tallado en la roca",
+      "categoria": "Edificios",
+      "descripcion": "Fachada escalonada de sillería de 12 × 10 m tallada en un peñasco: portón de arco con herrajes y oro, hachas cruzadas, runas doradas, ventanas encendidas por las forjas, dos pilares con braseros, estandartes, chimeneas que salen de la roca y una vagoneta de oro saliendo de una galería.",
+      "propuestas": [
+        {"titulo": "Centro del pueblo de los enanos", "detalle": "Cada raza tiene su propio centro: el de los enanos es este salón. Solo se construye pegado a una ladera o un yacimiento de piedra; a cambio es a prueba de fuego y almacena el doble de piedra, mineral y hierro."},
+        {"titulo": "Vivienda comunal bajo tierra", "detalle": "Casa de enanos para 20 residentes que no necesita leña (la roca guarda el calor) y no arde; pide cerveza como necesidad básica."},
+        {"titulo": "Mina, fundición y herrería en uno", "detalle": "Taller de nivel 3 exclusivo de los enanos: 4 trabajadores sacan mineral, lo funden y forjan herramientas sin transporte entre edificios, un 30 % más rápido que la cadena separada."}
+      ],
+      "modelos": [
+        {"id": "bld_dwarf_hall", "nombre": "Roca, sillería y oro", "material": "piedra, hierro y oro"},
+        {"id": "bld_dwarf_hall_granite", "nombre": "Granito oscuro y oro", "material": "piedra, hierro y oro"}
+      ]
+    },
+    {
+      "id": "bld_elf_tree_house",
+      "nombre": "Casa élfica en el árbol",
+      "categoria": "Edificios",
+      "descripcion": "Árbol gigante de 16 m en un terreno de 13 × 10 m con dos terrazas: abajo, dos casitas redondas de tejado acampanado; arriba, un templete con un cristal. Escalera en espiral por el tronco, escala, puente colgante a un mirador en un árbol menor y faroles que se mecen.",
+      "propuestas": [
+        {"titulo": "Vivienda de los elfos", "detalle": "Casa de elfos: 6 residentes en un terreno de 10 × 10 m que no hay que talar (se construye alrededor de un árbol gigante que ya exista en el mapa, de los 8 gigantes del juego). Pide belleza del entorno y bosque cerca en vez de mercado."},
+        {"titulo": "Puesto del guardabosques", "detalle": "Oficio nuevo: 2 guardabosques replantan lo que talan los leñadores en su radio (70 m) y vigilan desde el mirador: avisan de lobos, osos y fuegos del bosque. Los frutales silvestres de su radio dan más fruta."},
+        {"titulo": "Torre de arqueros oculta", "detalle": "Defensa élfica: torre de vigilancia que los asaltantes no ven ni atacan hasta que dispara. Alcance 40 m, 3 arqueros."}
+      ],
+      "modelos": [
+        {"id": "bld_elf_tree_house", "nombre": "Verano", "material": "troncos y cobre", "animaciones": {"sway": "Los faroles se mecen"}},
+        {"id": "bld_elf_tree_house_autumn", "nombre": "Otoño", "material": "troncos y cobre", "animaciones": {"sway": "Los faroles se mecen"}, "nota": "El follaje podría cambiar con la estación."}
+      ]
+    },
+    {
+      "id": "bld_orc_war_hut",
+      "nombre": "Choza de guerra orca",
+      "categoria": "Edificios",
+      "descripcion": "Choza redonda de pieles de 8 × 8 m sobre postes, con techo cónico remendado y hueco de humos, entrada entre dos colmillos gigantes bajo un cráneo con cuernos, escudos, estandartes rojos en postes con calaveras, estacas afiladas, tambor de guerra, hoguera con espetón y armero.",
+      "propuestas": [
+        {"titulo": "Cuartel de los orcos", "detalle": "Cuartel de la raza orca: barato (pieles y troncos, sin piedra), entrena guerreros el doble de rápido pero solo cuerpo a cuerpo. El tambor llama a la milicia como la campana."},
+        {"titulo": "Vivienda orca", "detalle": "Casa de orcos para 8 residentes: no pide ropa ni calzado, pide carne (caza) como comida variada y un fuego cerca. Resta atractivo a las casas de otras razas vecinas."},
+        {"titulo": "Campamento de asaltantes", "detalle": "Guarida enemiga en el mapa: de ella salen las incursiones. Destruirla con las tropas detiene los asaltos de esa zona durante un año y deja botín."}
+      ],
+      "modelos": [
+        {"id": "bld_orc_war_hut", "nombre": "Pieles, hueso y troncos", "material": "cuero y troncos", "animaciones": {"wave": "Ondean los estandartes"}}
+      ]
+    },
+    {
+      "id": "bld_fox_burrow",
+      "nombre": "Madriguera de los zorros",
+      "categoria": "Edificios",
+      "descripcion": "Casa excavada en un montículo de hierba de 8 × 8 m: fachada de entramado curvo, puerta redonda roja que se abre, ventanas redondas con jardineras, chimenea y un arbolito sobre la loma, despensa en un segundo montículo, huerto cercado, farol y buzón.",
+      "propuestas": [
+        {"titulo": "Vivienda de los zorros", "detalle": "Casa de la raza zorro: 5 residentes bajo tierra, fresca en verano y templada en invierno (gasta la mitad de leña). No arde y los asaltantes tardan en encontrarla; a cambio no se puede mejorar a dos plantas."},
+        {"titulo": "Despensa enterrada", "detalle": "Anexo de cualquier casa: el segundo montículo es una bodega donde raíces, verduras y fruta duran todo el invierno sin estropearse (como el ahumadero para la carne)."},
+        {"titulo": "Casa con huerto propio", "detalle": "El huerto cercado da a sus residentes verduras propias: cubren por sí mismos la necesidad de comida variada sin ir al mercado."}
+      ],
+      "modelos": [
+        {"id": "bld_fox_burrow", "nombre": "Loma de hierba", "material": "arcilla y troncos", "animaciones": {"open": "Se abre la puerta redonda", "close": "Se cierra"}}
+      ]
+    },
+    {
+      "id": "bld_frog_pond_house",
+      "nombre": "Casa de charca de las ranas",
+      "categoria": "Edificios",
+      "descripcion": "Charca de 8 × 8 m con dos chozas redondas de juncos sobre pilotes, cúpulas de paja y musgo, puertas redondas, pasarelas de tablas, nenúfares, espadañas que se mecen, nasa de pesca, farol y un tótem.",
+      "propuestas": [
+        {"titulo": "Vivienda de las ranas", "detalle": "Casa de la raza rana: solo se construye en la orilla o sobre agua poco profunda (ocupa terreno que nadie más puede usar). 6 residentes que no necesitan pozo y pescan desde casa una parte de su comida."},
+        {"titulo": "Criadero de peces", "detalle": "Edificio de comida: la charca produce pescado todo el año sin depender del río ni del radio de pesca, con 1 trabajador; se hiela en invierno salvo en biomas templados."},
+        {"titulo": "Humedal que limpia el agua", "detalle": "Colocada aguas abajo del pueblo, reduce el contagio por agua sucia en su radio y sube el atractivo del entorno; atrae mosquitos (más enfermedad) si se construye pegada a las casas de otras razas."}
+      ],
+      "modelos": [
+        {"id": "bld_frog_pond_house", "nombre": "Juncos y musgo", "material": "paja y troncos", "animaciones": {"sway": "Las espadañas se mecen"}}
+      ]
+    },
+    {
+      "id": "bld_lizard_pyramid",
+      "nombre": "Pirámide escalonada de los lagartos",
+      "categoria": "Edificios",
+      "descripcion": "Pirámide de cuatro cuerpos de 10 × 13 m y 11 m de alto: escalinata central entre alfardas con cabezas de serpiente, santuario en la cima con braseros y un disco solar de oro que gira, nichos pintados, estandartes y palmeras.",
+      "propuestas": [
+        {"titulo": "Templo de los lagartos", "detalle": "Edificio de religión de la raza lagarto, equivalente a la capilla: radio 90 m, pide ofrendas de comida (fruta o carne) en vez de un sacerdote a sueldo."},
+        {"titulo": "Calendario solar", "detalle": "Mientras está atendida, el pueblo conoce con una estación de antelación las heladas y sequías, y las cosechas de su radio maduran un 10 % antes. El disco gira (clip turn) cuando funciona."},
+        {"titulo": "Maravilla", "detalle": "Monumento único y caro (300 de piedra, 50 de oro) que se construye en cuatro etapas, una por cuerpo: cada etapa terminada sube la felicidad de todo el pueblo y la puntuación de la partida."}
+      ],
+      "modelos": [
+        {"id": "bld_lizard_pyramid", "nombre": "Arenisca", "material": "piedra y oro", "animaciones": {"turn": "Gira el disco solar"}},
+        {"id": "bld_lizard_pyramid_mossy", "nombre": "Piedra de la selva, con musgo", "material": "piedra y oro", "animaciones": {"turn": "Gira el disco solar"}}
+      ]
+    },
+    {
+      "id": "bld_cat_tower_house",
+      "nombre": "Casa torre de los gatos",
+      "categoria": "Edificios",
+      "descripcion": "Casa de entramado de 7 × 7 m y 12 m de alto: tres balcones a distintas alturas con toldos y cojines, rampas de tablas entre ellos, ventanas redondas, azotea con pérgola y un torreón de cúpula de cebolla; secadero de pescado, cestos y farol.",
+      "propuestas": [
+        {"titulo": "Vivienda de los gatos", "detalle": "Casa de la raza gato: 8 residentes en solo 7 × 7 m, porque crece hacia arriba. Piden pescado como comida preferida y sitios al sol (no se puede construir a la sombra de un edificio más alto al sur)."},
+        {"titulo": "Vigía nocturno", "detalle": "Los gatos ven de noche: una casa torre habitada da visión nocturna en 40 m y avisa de ladrones y asaltantes mientras el pueblo duerme, sin gastar antorchas."},
+        {"titulo": "Vivienda densa para el centro", "detalle": "Para cualquier raza: nivel alternativo de casa para solares pequeños junto al mercado, con más residentes por metro pero más riesgo de incendio."}
+      ],
+      "modelos": [
+        {"id": "bld_cat_tower_house", "nombre": "Entramado y cúpula verde", "material": "arcilla, troncos y lino"}
+      ]
+    },
+    {
+      "id": "bld_dark_elf_spire",
+      "nombre": "Aguja de los elfos oscuros",
+      "categoria": "Edificios",
+      "descripcion": "Cuatro agujas de obsidiana de hasta 17 m en un terreno de 9 × 8 m, unidas por pasarelas, con grietas que brillan en violeta, portal ojival luminoso, balcón, estandartes y esquirlas de cristal que flotan girando sobre la punta.",
+      "propuestas": [
+        {"titulo": "Vivienda de los elfos oscuros", "detalle": "Casa de la raza elfo oscuro: 6 residentes que trabajan de noche sin penalización y no piden luz. Resta atractivo a las casas de otras razas vecinas y lo suma a las suyas."},
+        {"titulo": "Torre de hechicería", "detalle": "Defensa mágica nocturna: de noche dispara al doble de alcance que una torre de vigilancia; de día está inactiva. Consume hierbas."},
+        {"titulo": "Guarida enemiga", "detalle": "En el mapa, torre de un nigromante de la que salen no-muertos por la noche (familia de criaturas): destruirla es una misión para el ejército."}
+      ],
+      "modelos": [
+        {"id": "bld_dark_elf_spire", "nombre": "Obsidiana y cristal violeta", "material": "piedra negra", "animaciones": {"float": "Las esquirlas giran y flotan", "wave": "Ondean los estandartes"}}
+      ]
+    },
+    {
+      "id": "bld_cathedral",
+      "nombre": "Catedral",
+      "categoria": "Edificios",
+      "descripcion": "Catedral de 16 × 30 m y 27 m de alto: fachada con dos torres campanario de agujas y pináculos, portada, rosetón y galería; nave con claristorio, naves laterales y arbotantes; crucero con rosetones, cimborrio con aguja y ábside. Las dos campanas se balancean.",
+      "propuestas": [
+        {"titulo": "Maravilla del pueblo", "detalle": "Tercer nivel del edificio religioso (capilla → iglesia → catedral), único. Se construye por etapas durante años de juego (500 de piedra, 100 de tejas, 60 de hierro, 80 de oro): cada etapa terminada sube la felicidad general. Acabada, cubre de religión todo el mapa del jugador."},
+        {"titulo": "Peregrinos", "detalle": "Atrae peregrinos cada estación: llegan como los mercaderes, se alojan en la posada, dejan oro en limosnas y algunos se quedan a vivir. Requiere posada y camino."},
+        {"titulo": "Condición de victoria", "detalle": "En partidas con varios jugadores (sin combate entre ellos), terminar la catedral es una de las metas que dan la victoria o un gran bono de puntuación."}
+      ],
+      "modelos": [
+        {"id": "bld_cathedral_stone", "nombre": "Piedra gris y pizarra", "material": "piedra y pizarra", "animaciones": {"ring": "Las dos campanas se balancean"}},
+        {"id": "bld_cathedral_sandstone", "nombre": "Arenisca y tejas rojas", "material": "piedra y tejas", "animaciones": {"ring": "Las dos campanas se balancean"}},
+        {"id": "bld_cathedral_blue", "nombre": "Piedra clara y pizarra azul", "material": "piedra y pizarra", "animaciones": {"ring": "Las dos campanas se balancean"}}
+      ]
+    },
+    {
+      "id": "bld_dovecote",
+      "nombre": "Palomar",
+      "categoria": "Edificios",
+      "descripcion": "Torre redonda de piedra de 4 × 4 m con tres hileras de nidales y repisas, tejado cónico de tejas con linterna, palomas posadas y una que vuela en círculo batiendo las alas.",
+      "propuestas": [
+        {"titulo": "Palomas mensajeras", "detalle": "Con palomar, el pueblo sabe con un día de antelación qué mercader viene y qué trae, y puede encargarle un bien concreto para la próxima visita. Entre jugadores, permite cerrar tratos de caravana sin esperar al mensajero."},
+        {"titulo": "Carne y abono", "detalle": "Edificio de comida pequeño sin trabajador fijo: da un poco de carne (pichones) y, sobre todo, abono (core:fertilizer) para las granjas vecinas; consume algo de grano."},
+        {"titulo": "Aviso de incursiones", "detalle": "Las torres de vigilancia lejanas enlazadas a un palomar avisan al instante: la campana suena cuando los asaltantes aún están en el borde del mapa."}
+      ],
+      "modelos": [
+        {"id": "bld_dovecote", "nombre": "Piedra y tejas", "material": "piedra y tejas", "animaciones": {"fly": "Una paloma vuela alrededor batiendo las alas"}},
+        {"id": "bld_dovecote_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo y pizarra", "animaciones": {"fly": "Una paloma vuela alrededor batiendo las alas"}},
+        {"id": "bld_dovecote_sandstone", "nombre": "Arenisca y tejas", "material": "piedra y tejas", "animaciones": {"fly": "Una paloma vuela alrededor batiendo las alas"}}
+      ]
+    },
+    {
+      "id": "bld_great_barn",
+      "nombre": "Gran establo con silo",
+      "categoria": "Edificios",
+      "descripcion": "Granero de 12 × 9 m con tejado amansardado, portón doble con aspas, puerta del pajar con polea, veleta, silo redondo de piedra de 9 m con escala, carro de heno, pacas y cerca.",
+      "propuestas": [
+        {"titulo": "Ganadería", "detalle": "Edificio nuevo para ganado (vacas, ovejas, cerdos: ya hay modelos en el zoo): 3 pastores, pasto cercado alrededor. Da carne, cuero, lana (ropa sin lino) y abono; en invierno consume el heno del silo."},
+        {"titulo": "Nivel 2 de la granja", "detalle": "Mejora de la granja: guarda la cosecha en el propio edificio (600) y el silo conserva el grano sin pérdidas, con lo que los granjeros no dejan el campo en plena siega."},
+        {"titulo": "Heno para el invierno", "detalle": "Recurso nuevo, heno: se siega en verano en los prados del radio y mantiene vivos en invierno a caballos y ganado. Sin granero de heno, los animales adelgazan y dan menos."}
+      ],
+      "modelos": [
+        {"id": "bld_great_barn_red", "nombre": "Tablas pintadas de rojo y pizarra", "material": "troncos, piedra y pizarra", "animaciones": {"turn": "La veleta gira con el viento"}},
+        {"id": "bld_great_barn_wood", "nombre": "Tablas al natural y paja", "material": "troncos, piedra y paja", "animaciones": {"turn": "La veleta gira con el viento"}}
+      ]
+    },
+    {
+      "id": "bld_shipyard",
+      "nombre": "Astillero",
+      "categoria": "Edificios",
+      "descripcion": "Grada de 12 × 12 m que baja al agua, con un casco a medio construir (quilla, cuadernas y primeras tracas), puntales, andamio con pasarela, cabria para izar maderos, caseta, tablones, troncos y barriles de brea.",
+      "propuestas": [
+        {"titulo": "Construir barcas", "detalle": "Taller en la orilla: convierte tablas o troncos, lino (velas) y hierro (clavos) en barcas. Cada barca permite un pescador de altura (el triple de pesca) o una barcaza de transporte para el almacén del muelle."},
+        {"titulo": "Expediciones por agua", "detalle": "Con un barco, el explorador recorre ríos y costas: revela el mapa mucho más rápido y encuentra islas, ruinas y yacimientos que por tierra no se alcanzan."},
+        {"titulo": "Obra larga, visible", "detalle": "El casco avanza por etapas como las obras de los edificios (quilla, cuadernas, forro, mástil): el modelo actual sería la segunda etapa."}
+      ],
+      "modelos": [
+        {"id": "bld_shipyard", "nombre": "Grada con casco en cuadernas", "material": "troncos y hierro"}
+      ]
+    },
+    {
+      "id": "bld_brewery",
+      "nombre": "Cervecería",
+      "categoria": "Edificios",
+      "descripcion": "Cervecería de 10 × 9 m: planta baja de piedra con portón, planta alta de entramado con polea de barriles, cobertizo con caldera de cobre sobre su horno y chimenea alta, barriles apilados, carro, sacos de malta, hilera de lúpulo y cartel.",
+      "propuestas": [
+        {"titulo": "Modelo elaborado de la cervecería actual", "detalle": "Sustituye al modelo de casita con barriles (5 × 5 m) sin cambiar reglas: misma receta de cebada a cerveza, mismo costo."},
+        {"titulo": "Nivel 2: cerveza con lúpulo", "detalle": "Mejora con ladrillos y hierro (la caldera): 3 trabajadores y una receta nueva, cerveza fuerte, que da el doble de entretenimiento por barril en la taberna y se vende cara a los mercaderes."},
+        {"titulo": "Agua segura", "detalle": "Mientras hay cerveza en el almacén, las casas del radio beben cerveza floja en vez de agua del pozo: baja el contagio por agua sucia en verano."}
+      ],
+      "modelos": [
+        {"id": "bld_brewery_tiles", "nombre": "Piedra, entramado y tejas", "material": "piedra, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_brewery_slate", "nombre": "Piedra, entramado y pizarra", "material": "piedra, troncos y pizarra", "animaciones": {"swing": "El cartel se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_bakery",
+      "nombre": "Panadería con horno",
+      "categoria": "Edificios",
+      "descripcion": "Panadería de 8 × 7 m: casa de entramado con hastial al frente, mostrador abatible con hogazas bajo un toldo de rayas, horno de cúpula de ladrillo con su chimenea y la pala, leña, sacos de harina y cartel.",
+      "propuestas": [
+        {"titulo": "Modelo elaborado de la panadería actual", "detalle": "Sustituye al modelo de casita con horno (5 × 5 m) sin cambiar reglas: harina y leña a pan."},
+        {"titulo": "Venta directa", "detalle": "El mostrador vende pan a las casas de su radio (40 m) sin pasar por el mercado: un barrio con panadería tiene cubierta parte de la comida variada aunque el mercado quede lejos."},
+        {"titulo": "Riesgo de incendio", "detalle": "El horno es foco de incendios: pide un pozo a menos de 20 m o sube el riesgo de las casas de madera vecinas. A cambio calienta en invierno las casas pegadas a él."}
+      ],
+      "modelos": [
+        {"id": "bld_bakery_tiles", "nombre": "Entramado y tejas", "material": "arcilla, troncos, ladrillo y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_bakery_thatch", "nombre": "Entramado y paja", "material": "arcilla, troncos, ladrillo y paja", "animaciones": {"swing": "El cartel se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_bathhouse",
+      "nombre": "Termas",
+      "categoria": "Edificios",
+      "descripcion": "Casa de baños de 9 × 11 m: bloque de piedra con cúpula de cobre sobre la sala caliente, pórtico de tres arcos, piscina exterior, chimenea del horno con leña, bancos con toallas y macetones.",
+      "propuestas": [
+        {"titulo": "Nivel 2 de la casa de baños", "detalle": "Mejora de la casa de baños (6 × 5 m): radio de higiene de 70 a 110 m, 2 trabajadores, y además cuenta como entretenimiento ligero. Consume leña y necesita un pozo o río a menos de 30 m."},
+        {"titulo": "Menos enfermedad", "detalle": "Las casas a su alcance enferman un 30 % menos y los enfermos se recuperan antes; si falta leña en invierno, cierra y el efecto se pierde."},
+        {"titulo": "Aguas termales", "detalle": "Construida sobre un manantial caliente del mapa (rasgo de terreno nuevo), no gasta leña y atrae visitantes ricos a la posada."}
+      ],
+      "modelos": [
+        {"id": "bld_bathhouse_stone", "nombre": "Piedra gris y cobre", "material": "piedra, tejas y cobre"},
+        {"id": "bld_bathhouse_sandstone", "nombre": "Arenisca y cobre", "material": "piedra, tejas y cobre"}
+      ]
+    },
+    {
+      "id": "bld_hunting_lodge",
+      "nombre": "Pabellón de caza",
+      "categoria": "Edificios",
+      "descripcion": "Cabaña de troncos de 10 × 8 m con porche corrido, chimenea de piedra, cornamenta sobre la entrada, pieles tensadas en bastidores, colgadero de piezas, caseta del perro, diana y leñera.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del cazador", "detalle": "Mejora de la cabaña del cazador (5 × 4 m): 3 cazadores, radio de 110 a 150 m, y curte las pieles en el sitio (da cuero en vez de piel). Con perro, encuentra las presas un 25 % antes."},
+        {"titulo": "Control de fieras", "detalle": "Orden nueva: los cazadores del pabellón salen en batida contra lobos y osos de su radio cuando atacan aldeanos o ganado, sin llamar a la milicia."},
+        {"titulo": "Coto de caza", "detalle": "Declara su radio como coto: los leñadores no talan dentro, la fauna se reproduce más y la caza no se agota; a los nobles del castillo les da entretenimiento."}
+      ],
+      "modelos": [
+        {"id": "bld_hunting_lodge", "nombre": "Troncos y tejamaní", "material": "troncos, piedra y cuero"},
+        {"id": "bld_hunting_lodge_thatch", "nombre": "Troncos y paja", "material": "troncos, piedra, paja y cuero"}
+      ]
+    },
+    {
+      "id": "bld_quarry",
+      "nombre": "Cantera con grúa",
+      "categoria": "Edificios",
+      "descripcion": "Frente de cantera de 13 × 11 m en tres bancos escalonados, con marcas de corte, bloques sueltos, escalas, grúa de pescante que gira con un sillar, bloques labrados, trineo sobre rodillos, cobertizo y herramientas.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del cantero", "detalle": "Mejora del cantero (5 × 5 m) cuando trabaja un yacimiento de piedra grande: 4 trabajadores y el doble de piedra, sin agotar las rocas sueltas del mapa. Se coloca pegada a un yacimiento (los stone_deposit del juego) o a una ladera."},
+        {"titulo": "Sillares", "detalle": "Recurso nuevo, sillares (piedra labrada): los piden el castillo, la catedral, la muralla de piedra de nivel 2 y los edificios de nivel 3. La piedra en bruto sigue sirviendo para cimientos y caminos."},
+        {"titulo": "Deja un hueco en el mapa", "detalle": "Al agotarse, la cantera queda como una hondonada que se llena de agua: un estanque nuevo para pescar o para un molino."}
+      ],
+      "modelos": [
+        {"id": "bld_quarry", "nombre": "Piedra gris", "material": "piedra y troncos", "animaciones": {"load": "La grúa gira con un sillar"}},
+        {"id": "bld_quarry_sandstone", "nombre": "Arenisca", "material": "piedra y troncos", "animaciones": {"load": "La grúa gira con un sillar"}}
+      ]
+    },
+    {
+      "id": "bld_bottle_kiln",
+      "nombre": "Tejar con horno de botella",
+      "categoria": "Edificios",
+      "descripcion": "Horno de ladrillo en forma de botella de 8 m con zunchos de hierro y bocas de fuego, secadero abierto con estantes de ladrillos y tejas, pilas de piezas cocidas, montón de arcilla, carretilla y leña. Terreno de 10 × 8 m.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del horno", "detalle": "Mejora del horno actual (5 × 5 m): cuece ladrillos y tejas en la misma hornada (hoy son recetas separadas) con 3 trabajadores, y gasta carbón en vez de leña con un 50 % más de rendimiento."},
+        {"titulo": "Cerámica", "detalle": "Receta nueva: arcilla → vasijas. Con vasijas, la comida de las casas y del granero se conserva un 25 % más, y es un bien que los mercaderes compran bien."},
+        {"titulo": "Humo", "detalle": "Resta atractivo (−10) y sube la enfermedad en 25 m: hay que ponerlo lejos de las casas y a sotavento, lo que da sentido a un barrio industrial."}
+      ],
+      "modelos": [
+        {"id": "bld_bottle_kiln", "nombre": "Ladrillo y tejas", "material": "ladrillo, arcilla y hierro"}
+      ]
+    },
+    {
+      "id": "bld_blast_furnace",
+      "nombre": "Alto horno con rueda",
+      "categoria": "Edificios",
+      "descripcion": "Horno de piedra de 7,5 m con zunchos de madera y hierro, puente de carga por detrás, nave de colada con el canal de hierro fundido y los lingotes en la arena, fuelle movido por una rueda de agua con su caz, y montones de mineral y carbón. Terreno de 10 × 10 m.",
+      "propuestas": [
+        {"titulo": "Nivel 2 de la fundición", "detalle": "Mejora de la fundición (5 × 5 m): junto a un río, funde el triple de mineral con los mismos 2 trabajadores y la mitad de carbón por lingote. Sin agua corriente (río helado), se para."},
+        {"titulo": "Acero", "detalle": "Receta nueva: hierro + carbón → acero, para herramientas que duran el doble y armas mejores en la armería."},
+        {"titulo": "Colada de campanas y cañerías", "detalle": "Produce piezas grandes que piden otros edificios: la campana de la iglesia o del ayuntamiento, y tuberías para llevar agua de un pozo a una fuente lejana."}
+      ],
+      "modelos": [
+        {"id": "bld_blast_furnace", "nombre": "Piedra y madera", "material": "piedra, troncos y hierro", "animaciones": {"turn": "Gira la rueda y el fuelle bombea"}}
+      ]
+    },
+    {
+      "id": "bld_apiary",
+      "nombre": "Colmenar",
+      "categoria": "Edificios",
+      "descripcion": "Cobertizo de paja de 6 × 6 m con colmenas de paja trenzada en dos estantes, dos colmenas de tronco, prensa de miel, tarros, flores, cerca y abejas que revolotean.",
+      "propuestas": [
+        {"titulo": "Miel y cera", "detalle": "Recursos nuevos con 1 apicultor: miel (comida que no se estropea y cuenta como variedad) y cera (velas: luz en las casas, que da felicidad en invierno)."},
+        {"titulo": "Polinización", "detalle": "Los huertos de frutales y los campos a menos de 40 m rinden un 15 % más. Efecto pasivo, sin trabajador."},
+        {"titulo": "Hidromiel", "detalle": "La cervecería gana una receta, miel → hidromiel, alternativa a la cerveza para pueblos sin cebada."}
+      ],
+      "modelos": [
+        {"id": "bld_apiary", "nombre": "Paja y madera", "material": "paja y troncos", "animaciones": {"fly": "Las abejas revolotean"}}
+      ]
+    },
+    {
+      "id": "bld_fire_station",
+      "nombre": "Puesto de bomberos",
+      "categoria": "Edificios",
+      "descripcion": "Cochera de ladrillo de 8 × 7 m con el carro cuba en su vano, hilera de cubos de cuero, escalera en la pared, torre de vigía de 13 m con mirador, campana de alarma y banderín, pozo y bicheros.",
+      "propuestas": [
+        {"titulo": "Apagar incendios", "detalle": "2 bomberos vigilan su radio (90 m): al declararse un fuego salen con el carro cuba y lo apagan tres veces más rápido que los vecinos con cubos desde el pozo. Sin puesto, un incendio en un barrio de madera se propaga casa a casa."},
+        {"titulo": "Prevención", "detalle": "Baja a la mitad el riesgo de incendio de panaderías, herrerías y hornos de su radio, y permite construirlos más cerca de las casas."},
+        {"titulo": "Segunda campana", "detalle": "Su campana cuenta como campana de alarma para los barrios lejanos del centro (clip ring al sonar)."}
+      ],
+      "modelos": [
+        {"id": "bld_fire_station", "nombre": "Ladrillo y tejas", "material": "ladrillo y tejas", "animaciones": {"ring": "Suena la campana de alarma", "wave": "Ondea el banderín"}}
+      ]
+    },
+    {
+      "id": "bld_infirmary",
+      "nombre": "Hospital",
+      "categoria": "Edificios",
+      "descripcion": "Nave de piedra de 12 × 10 m con galería de cinco arcos al frente donde reposan los enfermos en catres, óculos, espadaña, chimeneas, estandarte con la cruz verde, huerto de plantas medicinales y pozo.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del médico", "detalle": "Mejora de la casa del médico (6 × 6 m): 4 trabajadores y 12 camas. Los enfermos graves ingresan aquí en vez de quedarse en casa, así que no contagian a su familia."},
+        {"titulo": "Cuarentena", "detalle": "En una epidemia, el jugador puede declarar la cuarentena: los enfermos del radio van al hospital y la enfermedad deja de propagarse, a cambio de menos manos trabajando."},
+        {"titulo": "Heridos de guerra", "detalle": "Tras una incursión, los milicianos y soldados heridos se recuperan aquí en días en lugar de semanas; sin hospital, una parte muere."}
+      ],
+      "modelos": [
+        {"id": "bld_infirmary_stone", "nombre": "Piedra y tejas", "material": "piedra y tejas"},
+        {"id": "bld_infirmary_slate", "nombre": "Piedra y pizarra", "material": "piedra y pizarra"}
+      ]
+    },
+    {
+      "id": "bld_monastery",
+      "nombre": "Monasterio",
+      "categoria": "Edificios",
+      "descripcion": "Conjunto de 19 × 19 m alrededor de un claustro: iglesia con ábside y torre campanario, tres alas de dos plantas (dormitorio, refectorio y bodega), galerías de arcos con tejadillo en torno al jardín con pozo, portada con estandartes, huerto, colmena y barriles.",
+      "propuestas": [
+        {"titulo": "Religión, cerveza y remedios en un edificio", "detalle": "Edificio grande de nivel 3 con 6 monjes que no ocupan casa: da religión en 100 m, elabora cerveza y remedios con lo que cultiva su huerto, y copia libros (suma a la biblioteca)."},
+        {"titulo": "Asilo", "detalle": "Acoge a huérfanos, ancianos y viajeros: las muertes en el pueblo restan menos felicidad y los niños sin familia no se pierden. Consume comida del pueblo."},
+        {"titulo": "Fundación lejana", "detalle": "Como el castillo de mota, se puede fundar lejos del centro: un monasterio en el bosque o en la montaña reclama territorio y da un pequeño almacén y visión."}
+      ],
+      "modelos": [
+        {"id": "bld_monastery_stone", "nombre": "Piedra gris y tejas", "material": "piedra y tejas", "animaciones": {"ring": "La campana se balancea"}},
+        {"id": "bld_monastery_sandstone", "nombre": "Arenisca y tejas", "material": "piedra y tejas", "animaciones": {"ring": "La campana se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_theater",
+      "nombre": "Teatro",
+      "categoria": "Edificios",
+      "descripcion": "Corral de comedias redondo de 12 × 12 m: doce paños de entramado en dos plantas con galerías hacia el patio, anillo de tejado de paja, escenario con columnas y techo propio, torreta con bandera, portón, cartelera y antorchas.",
+      "propuestas": [
+        {"titulo": "Entretenimiento de nivel 3", "detalle": "Segundo edificio de entretenimiento, después de la taberna: radio de 150 m con 3 actores, sin consumir cerveza. Las casas de nivel 3 y 4 con taberna y teatro tienen la necesidad cubierta al doble."},
+        {"titulo": "Estrenos", "detalle": "Cada estación hay un estreno: sube la felicidad de todo el pueblo unos días y atrae forasteros a la posada. Cuesta oro (vestuario) y ropa."},
+        {"titulo": "Compañías ambulantes", "detalle": "Si no hay actores propios, una compañía de la feria ambulante puede ocuparlo una estación a cambio de alojamiento en la posada."}
+      ],
+      "modelos": [
+        {"id": "bld_theater", "nombre": "Entramado y paja", "material": "arcilla, troncos y paja", "animaciones": {"wave": "Ondea la bandera"}},
+        {"id": "bld_theater_tiles", "nombre": "Entramado y tejas", "material": "arcilla, troncos y tejas", "animaciones": {"wave": "Ondea la bandera"}}
+      ]
+    },
+    {
+      "id": "bld_caravanserai",
+      "nombre": "Caravasar",
+      "categoria": "Edificios",
+      "descripcion": "Recinto amurallado de 17 × 15 m: puerta monumental almenada con estandartes y bandera, cuatro torreones con cúpula, puestos y cuadras bajo tejadillos en tres lados del patio, fuente central, carros cargados y toldo de mercaderes.",
+      "propuestas": [
+        {"titulo": "Caravanas entre jugadores", "detalle": "Es el edificio de las caravanas que prevé la especificación: cada caravasar puede mantener una ruta fija con el de otro jugador (precios acordados). Las carretas salen y llegan aquí, y la mercancía espera a salvo dentro del muro."},
+        {"titulo": "Nivel 2 del puesto de comercio", "detalle": "Mejora del puesto de comercio: caben dos mercaderes a la vez, se quedan el doble de tiempo y el almacén pasa de 400 a 1000."},
+        {"titulo": "A prueba de saqueo", "detalle": "Lo guardado aquí no puede ser robado en una incursión mientras la puerta resista (vida 3000, a prueba de fuego)."}
+      ],
+      "modelos": [
+        {"id": "bld_caravanserai_sandstone", "nombre": "Arenisca", "material": "piedra, tejas y lino", "animaciones": {"wave": "Ondea la bandera"}},
+        {"id": "bld_caravanserai_stone", "nombre": "Piedra gris", "material": "piedra, tejas y lino", "animaciones": {"wave": "Ondea la bandera"}}
+      ]
+    },
+    {
+      "id": "bld_observatory",
+      "nombre": "Observatorio",
+      "categoria": "Edificios",
+      "descripcion": "Torre redonda de piedra de 8 × 8 m con balcón, cúpula de cobre giratoria con su rendija y un gran telescopio de latón, escalera exterior, esfera armilar, reloj de sol y mesa con carta celeste.",
+      "propuestas": [
+        {"titulo": "Calendario exacto", "detalle": "Con un astrónomo, el HUD muestra los días que faltan para cada cambio de estación y la primera helada: los granjeros siembran y cosechan en la fecha óptima (+10 % de cosecha)."},
+        {"titulo": "Cartografía", "detalle": "Los exploradores que salen de un pueblo con observatorio revelan un 50 % más de mapa por viaje y no se pierden de noche."},
+        {"titulo": "Investigación", "detalle": "Junto con la biblioteca y la torre del mago, forma el grupo de edificios de saber: cada uno acelera las investigaciones de los otros."}
+      ],
+      "modelos": [
+        {"id": "bld_observatory", "nombre": "Piedra y cobre", "material": "piedra y cobre", "animaciones": {"turn": "La cúpula gira con el telescopio"}},
+        {"id": "bld_observatory_sandstone", "nombre": "Arenisca y cobre", "material": "piedra y cobre", "animaciones": {"turn": "La cúpula gira con el telescopio"}}
+      ]
+    },
+    {
+      "id": "bld_house",
+      "nombre": "Casas de entramado del pueblo",
+      "categoria": "Edificios",
+      "descripcion": "Las casas del pueblo de la imagen de referencia, en cuatro niveles y tres formas (alero a la calle, hastial a la calle o con un ala al frente), como las tres variantes por nivel que ya usa el juego, todas pensadas para el solar de 6 × 5 m de la casa actual (los aleros y el torreón vuelan unos centímetros): cabaña de una planta con cobertizo y huerto; casa de dos plantas con porche; casa de planta baja de piedra con mirador, buhardilla y cartel de tienda; y casa de tres plantas con torreón de esquina, balcón y veleta. Cada planta vuela sobre la anterior.",
+      "propuestas": [
+        {"titulo": "Modelos nuevos de los tres niveles de casa", "detalle": "Sustituyen a los nueve modelos actuales (casita de una pieza) sin cambiar reglas ni solar. Tejado, paredes y postigos usan los materiales var_roof, var_walls y var_shutter, así que la paleta por casa del juego (150 combinaciones) sigue funcionando: los colores que se ven aquí son solo de muestra."},
+        {"titulo": "Cuarto nivel de casa", "detalle": "La casa de tres plantas con torreón sería un nivel 4 nuevo: 12 residentes en el mismo solar, pide además cultura (biblioteca o teatro) y posada cerca, y paga más impuestos. Costo: tablas, tejas, ladrillos y herramientas."},
+        {"titulo": "Casa con tienda", "detalle": "La casa de nivel 3 con cartel colgante tiene un taller en la planta baja: sus residentes pueden ejercer de sastre, zapatero o panadero sin edificio aparte, a media producción. Ahorra solares en el centro."},
+        {"titulo": "Barrios con estilo", "detalle": "El jugador elige por barrio la forma (hastial a la calle para calles estrechas, alero a la calle para plazas) y el tejado (paja, tejas, pizarra azul): es solo estética, pero las calles homogéneas suman 2 puntos de atractivo."}
+      ],
+      "modelos": [
+        {"id": "bld_house_l1_wide", "nombre": "Nivel 1 · alero a la calle, paja", "material": "arcilla, troncos y paja"},
+        {"id": "bld_house_l1_gabled", "nombre": "Nivel 1 · hastial a la calle, paja", "material": "arcilla, troncos y paja"},
+        {"id": "bld_house_l2_wide", "nombre": "Nivel 2 · alero a la calle, tejas", "material": "arcilla, troncos y tejas"},
+        {"id": "bld_house_l2_gabled", "nombre": "Nivel 2 · hastial a la calle, tejas", "material": "arcilla, troncos y tejas"},
+        {"id": "bld_house_l2_gabled_blue", "nombre": "Nivel 2 · hastial a la calle, pizarra azul", "material": "arcilla, troncos y pizarra"},
+        {"id": "bld_house_l3_wide", "nombre": "Nivel 3 · alero a la calle, tejas", "material": "piedra, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_house_l3_wide_slate", "nombre": "Nivel 3 · alero a la calle, pizarra", "material": "piedra, troncos y pizarra", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_house_l3_gabled", "nombre": "Nivel 3 · hastial a la calle, tejas", "material": "piedra, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_house_l4_wide", "nombre": "Nivel 4 · con torreón, tejas", "material": "piedra, troncos y tejas"},
+        {"id": "bld_house_l4_gabled", "nombre": "Nivel 4 · hastial y torreón, tejas", "material": "piedra, troncos y tejas"},
+        {"id": "bld_house_l4_wide_blue", "nombre": "Nivel 4 · con torreón, pizarra azul", "material": "piedra, troncos y pizarra", "nota": "Como las casas de la imagen de referencia."},
+        {"id": "bld_house_l4_gabled_blue", "nombre": "Nivel 4 · hastial y torreón, pizarra azul", "material": "piedra, troncos y pizarra"},
+        {"id": "bld_house_l1_wing", "nombre": "Nivel 1 · con ala al frente, paja", "material": "arcilla, troncos y paja"},
+        {"id": "bld_house_l2_wing", "nombre": "Nivel 2 · con ala al frente, tejas", "material": "arcilla, troncos y tejas"},
+        {"id": "bld_house_l3_wing", "nombre": "Nivel 3 · con ala al frente, tejas", "material": "piedra, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_house_l4_wing", "nombre": "Nivel 4 · ala y torreón, tejas", "material": "piedra, troncos y tejas"},
+        {"id": "bld_house_l4_wing_blue", "nombre": "Nivel 4 · ala y torreón, pizarra azul", "material": "piedra, troncos y pizarra"}
+      ]
+    },
+    {
+      "id": "bld_workshop",
+      "nombre": "Talleres de oficio",
+      "categoria": "Edificios",
+      "descripcion": "Seis talleres en un terreno de 8 × 7 m: una casa de entramado de dos plantas (las mismas del pueblo) con el patio de su oficio. Curtiduría con tinas, pila de cal y pieles en bastidores; tejedor con telar bajo cobertizo, tinas de tinte y paños al sol; sastre con maniquíes y toldo; zapatero con la gran bota de reclamo; arquero con arcos, dianas y astiles; armería con lanzas, escudos, armadura y muela.",
+      "propuestas": [
+        {"titulo": "Modelos nuevos de los talleres actuales", "detalle": "Sustituyen a los modelos de casita con accesorios de curtiduría, tejedor, sastre, zapatero, arquero y armería, sin cambiar recetas. El terreno pasa de 5 × 5 a 8 × 7 m, o se recorta el patio para mantener 5 × 5."},
+        {"titulo": "Nivel 2 de cada taller", "detalle": "Son la mejora de los talleres actuales: con ladrillos, tejas y herramientas pasan de 1 a 2 artesanos (maestro y aprendiz) y producen un 50 % más por persona. El aprendiz hereda el oficio si el maestro muere."},
+        {"titulo": "El artesano vive arriba", "detalle": "La planta alta es vivienda: la familia del artesano (4 residentes) no ocupa un solar de casa y no pierde tiempo yendo al trabajo. Pueblos más compactos."},
+        {"titulo": "Venta en la puerta", "detalle": "El cartel colgante indica tienda: ropa, calzado o arcos se venden a las casas de su radio (50 m) sin pasar por el mercado."}
+      ],
+      "modelos": [
+        {"id": "bld_workshop_tannery", "nombre": "Curtiduría", "material": "arcilla, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_workshop_weaver", "nombre": "Tejedor", "material": "arcilla, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_workshop_tailor", "nombre": "Sastre", "material": "piedra, troncos y pizarra", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_workshop_cobbler", "nombre": "Zapatero", "material": "arcilla, troncos y tejamaní", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_workshop_bowyer", "nombre": "Arquero", "material": "arcilla, troncos y paja", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_workshop_armory", "nombre": "Armería", "material": "piedra, troncos y pizarra", "animaciones": {"wave": "Ondea el banderín"}}
+      ]
+    },
+    {
+      "id": "bld_smokehouse_tower",
+      "nombre": "Ahumadero de torre",
+      "categoria": "Edificios",
+      "descripcion": "Torre de piedra de 3 × 3 m y 7,5 m de alto con remate de lamas por donde sale el humo y tejado a cuatro aguas, hogar de ladrillo adosado, colgaderos de pescado y jamones, mesa de salazón, barriles y leña. Terreno de 8 × 7 m.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del ahumadero", "detalle": "Sustituye al modelo actual (5 × 5 m) sin cambiar reglas: carne y pescado más leña dan ahumados que duran todo el invierno."},
+        {"titulo": "Nivel 2: salazón", "detalle": "Añade la receta de salazón que prevé la especificación: con sal comprada a los mercaderes conserva sin gastar leña y el doble de rápido."},
+        {"titulo": "Humo", "detalle": "Resta 4 de atractivo en 20 m: mejor junto al pescador o al cazador que entre las casas."}
+      ],
+      "modelos": [
+        {"id": "bld_smokehouse_tower", "nombre": "Piedra y tejamaní", "material": "piedra, ladrillo y troncos"}
+      ]
+    },
+    {
+      "id": "bld_charcoal_burner",
+      "nombre": "Carbonera",
+      "categoria": "Edificios",
+      "descripcion": "Carbonera de bosque de 9 × 8 m: gran montón de leña cubierto de tierra y tepes con su chimenea y respiraderos encendidos, escala para subir a taparlos, choza cónica del carbonero, pilas de troncos, cestos y sacos de carbón.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo de la carbonera", "detalle": "Sustituye al modelo actual del horno de carbón (5 × 5 m): troncos a carbón con 1 carbonero."},
+        {"titulo": "Se hace en el bosque", "detalle": "Sin costo de piedra: se levanta en cualquier claro con 10 troncos. Rinde un 30 % más si hay leñador a menos de 40 m (no hay que traer la leña al pueblo) y se muda cuando se acaba el bosque cercano."},
+        {"titulo": "Hay que vigilarla", "detalle": "Mientras arde, el carbonero no puede dejarla (duerme en su choza): si se queda sin atender una noche, la hornada se pierde y hay riesgo de incendio forestal."}
+      ],
+      "modelos": [
+        {"id": "bld_charcoal_burner", "nombre": "Tierra y leña", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "bld_lumber_camp",
+      "nombre": "Campamento de leñadores",
+      "categoria": "Edificios",
+      "descripcion": "Cabaña de troncos en un terreno de 11 × 8 m, con chimenea, cobertizo con un tronco sobre caballetes y una sierra de dos manos que va y viene, dos grandes pilas de troncos, carro maderero cargado, tocones, tajo con hacha y herramientas.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del leñador", "detalle": "Mejora de la cabaña del leñador (5 × 5 m): 4 leñadores, radio de 55 a 80 m y un carro propio que lleva los troncos al almacén de seis en seis, en vez de uno por viaje."},
+        {"titulo": "Tala selectiva y replantación", "detalle": "Los leñadores del campamento replantan un árbol por cada dos talados y respetan los frutales y los gigantes: el bosque de su radio no se agota."},
+        {"titulo": "Campamento lejano", "detalle": "Se puede levantar fuera del radio del centro, en pleno bosque: los leñadores duermen en la cabaña (4 camas) y solo el carro viaja al pueblo."}
+      ],
+      "modelos": [
+        {"id": "bld_lumber_camp", "nombre": "Troncos y tejamaní", "material": "troncos y piedra", "animaciones": {"saw": "La sierra va y viene"}},
+        {"id": "bld_lumber_camp_thatch", "nombre": "Troncos y paja", "material": "troncos, piedra y paja", "animaciones": {"saw": "La sierra va y viene"}}
+      ]
+    },
+    {
+      "id": "bld_storehouse_great",
+      "nombre": "Gran almacén",
+      "categoria": "Edificios",
+      "descripcion": "Almacén de 15 × 9 m: planta baja de piedra con dos portones sobre un muelle de carga con escalera y rampa, planta alta volada, buhardilla con polea de la que cuelga una caja, mercancías, sacos y carretilla.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del almacén", "detalle": "Mejora del almacén (7 × 6 m, capacidad 400): con ladrillos, tejas y herramientas guarda 1200 en el mismo sitio y las carretas cargan y descargan el doble de rápido en su muelle."},
+        {"titulo": "Almacén especializado", "detalle": "El jugador elige qué guarda cada almacén (solo materiales, solo bienes, solo lo que se vende): los talleres vecinos se abastecen de él primero y los porteadores caminan menos."},
+        {"titulo": "Reserva contra incendios y saqueos", "detalle": "Planta baja de piedra: lo guardado abajo (la mitad) no arde ni se saquea; lo de arriba, sí."}
+      ],
+      "modelos": [
+        {"id": "bld_storehouse_great_timber", "nombre": "Piedra, entramado y tejas", "material": "piedra, troncos y tejas", "animaciones": {"lift": "La caja se mece en la polea"}},
+        {"id": "bld_storehouse_great_brick", "nombre": "Piedra, ladrillo y pizarra", "material": "piedra, ladrillo y pizarra", "animaciones": {"lift": "La caja se mece en la polea"}}
+      ]
+    },
+    {
+      "id": "bld_barracks_great",
+      "nombre": "Cuartel con patio de armas",
+      "categoria": "Muros y defensas",
+      "descripcion": "Cuartel de piedra de 13 × 11 m: nave larga con dos puertas de arco, buhardillas y chimeneas, y delante un patio de armas tapiado con pilares y braseros en la entrada, mástil con el estandarte, muñecos con escudo, armero de picas, dianas y bancos.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del cuartel", "detalle": "Sustituye al modelo actual (8 × 6 m, casa de piedra con valla) sin cambiar reglas: entrena unidades, único."},
+        {"titulo": "Nivel 2 del cuartel", "detalle": "Aloja a 16 soldados profesionales (hoy viven en casas), entrena dos a la vez y guarda sus armas y armaduras: al sonar la campana salen equipados en la mitad de tiempo."},
+        {"titulo": "Entrenamiento continuo", "detalle": "Los soldados que no están de patrulla entrenan en el patio y ganan experiencia con el tiempo, no solo en combate. Cuesta comida extra."}
+      ],
+      "modelos": [
+        {"id": "bld_barracks_great_stone", "nombre": "Piedra gris y pizarra", "material": "piedra y pizarra", "animaciones": {"wave": "Ondea el estandarte"}},
+        {"id": "bld_barracks_great_blue", "nombre": "Piedra gris y pizarra azul", "material": "piedra y pizarra", "animaciones": {"wave": "Ondea el estandarte"}},
+        {"id": "bld_barracks_great_sandstone", "nombre": "Arenisca y tejas rojas", "material": "piedra y tejas", "animaciones": {"wave": "Ondea el estandarte"}}
+      ]
+    },
+    {
+      "id": "bld_winery",
+      "nombre": "Lagar y bodega",
+      "categoria": "Edificios",
+      "descripcion": "Casa del lagar de piedra en un terreno de 10 × 9 m, con portón, bodega enterrada bajo un montículo, prensa de husillo bajo un templete (el husillo gira), cestos de uva, barricas tumbadas y tres hileras de vides en espaldera.",
+      "propuestas": [
+        {"titulo": "Vino: una cadena nueva", "detalle": "Cultivo nuevo, la vid (como el huerto de frutales: tarda tres años en producir), y receta uva → vino. El vino da entretenimiento en la taberna como la cerveza, pero vale el triple para los mercaderes y mejora con los años en la bodega."},
+        {"titulo": "Alternativa a la cerveza según el bioma", "detalle": "En biomas cálidos y secos la cebada rinde poco y la vid mucho: el lagar sustituye a la cervecería. Las laderas soleadas dan mejor cosecha."},
+        {"titulo": "Bodega fresca", "detalle": "La bodega enterrada sirve también de despensa: fruta, verdura y queso duran el doble guardados aquí."}
+      ],
+      "modelos": [
+        {"id": "bld_winery", "nombre": "Piedra y tejas", "material": "piedra, troncos y tejas", "animaciones": {"turn": "Gira el husillo de la prensa"}},
+        {"id": "bld_winery_slate", "nombre": "Piedra y pizarra", "material": "piedra, troncos y pizarra", "animaciones": {"turn": "Gira el husillo de la prensa"}}
+      ]
+    },
+    {
+      "id": "bld_salt_works",
+      "nombre": "Salinas",
+      "categoria": "Edificios",
+      "descripcion": "Salina de 11 × 9 m: seis balsas de arcilla en distintos puntos de secado, canal con compuerta, cobertizo de cocción con dos calderas de hierro sobre un horno de ladrillo y chimenea, conos de sal escurriendo, sacos, montón de sal, rastrillo y leña.",
+      "propuestas": [
+        {"titulo": "Sal para la salazón", "detalle": "Recurso nuevo, sal: la especificación ya prevé la salazón. Con sal, el ahumadero y el pescador conservan carne y pescado sin leña; un saco de sal conserva diez de comida todo el invierno."},
+        {"titulo": "Solo en la costa o en un manantial salado", "detalle": "Se construye junto al mar o sobre un manantial salado (rasgo de terreno nuevo). En verano las balsas dan sal gratis con el sol; en invierno hay que cocer salmuera con leña."},
+        {"titulo": "Mercancía de exportación", "detalle": "Los pueblos del interior no tienen sal: es el bien que más pagan los mercaderes y las caravanas de otros jugadores."}
+      ],
+      "modelos": [
+        {"id": "bld_salt_works", "nombre": "Arcilla, ladrillo y madera", "material": "arcilla, ladrillo y troncos"}
+      ]
+    },
+    {
+      "id": "bld_ruin",
+      "nombre": "Ruinas",
+      "categoria": "Edificios",
+      "descripcion": "Lo que queda de un edificio: una casa quemada de 7 × 7 m (zócalo de piedra, postes carbonizados, dos paños de pared, vigas caídas, escombros, brasas y la chimenea en pie) y una torre redonda de piedra desmochada de 8 × 7 m, con sillares caídos, hiedra y un arbolillo dentro.",
+      "propuestas": [
+        {"titulo": "Los edificios destruidos dejan ruinas", "detalle": "Hoy un edificio quemado o arrasado desaparece. Con ruinas, queda el solar ocupado hasta que un aldeano lo desescombra (recupera un 25 % de la piedra) o se reconstruye encima por la mitad del costo. Las ruinas restan atractivo y recuerdan dónde atacaron los asaltantes."},
+        {"titulo": "Ruinas antiguas en el mapa", "detalle": "El generador de mapas siembra ruinas de torres en cerros y cruces: el explorador las registra y encuentra un tesoro, un mapa o una emboscada; después sirven de cantera (50 de piedra labrada) o se restauran como torre de vigilancia por un tercio del costo."},
+        {"titulo": "Guarida de fieras o bandidos", "detalle": "Una ruina sin reclamar puede ser ocupada por lobos o asaltantes; limpiarla es una orden para la milicia."}
+      ],
+      "modelos": [
+        {"id": "bld_ruin_burnt_house", "nombre": "Casa quemada", "material": "piedra y troncos"},
+        {"id": "bld_ruin_tower", "nombre": "Torre en ruinas", "material": "piedra"}
+      ]
+    },
+    {
+      "id": "bld_cemetery",
+      "nombre": "Cementerio con cripta",
+      "categoria": "Edificios",
+      "descripcion": "Camposanto tapiado de 9 × 9 m con portal de madera techado, sendero de losas, cripta de piedra con frontón, columnas y puerta de hierro, hileras de lápidas, cruces y losas con flores, un tejo, una tumba recién abierta con su pala y un farol.",
+      "propuestas": [
+        {"titulo": "Entierros", "detalle": "Hoy los aldeanos que mueren desaparecen. Con cementerio, un vecino lleva el cuerpo y lo entierra: sin cementerio (o lleno) los muertos sin enterrar suben la enfermedad y bajan la felicidad de la casa afectada. Cabe un número limitado de tumbas; después hay que ampliarlo."},
+        {"titulo": "Duelo más corto", "detalle": "La familia de un difunto pierde felicidad durante una estación; con cementerio y capilla a menos de 100 m, solo la mitad."},
+        {"titulo": "Memoria del pueblo", "detalle": "Al pulsar el cementerio se listan los aldeanos muertos con su oficio, edad y causa: la crónica de la partida. Los héroes caídos en una incursión dan un bono de moral a la milicia."}
+      ],
+      "modelos": [
+        {"id": "bld_cemetery", "nombre": "Piedra y hierba", "material": "piedra y troncos"},
+        {"id": "bld_cemetery_sandstone", "nombre": "Arenisca y hierba", "material": "piedra y troncos"}
+      ]
+    },
+    {
+      "id": "bld_bell_tower",
+      "nombre": "Torre de la campana",
+      "categoria": "Edificios",
+      "descripcion": "Campanario exento de 3 × 3 m y 22 m de alto sobre una plazoleta de 6 × 6 m: fuste de piedra con ventanas, reloj, campanario abierto con la campana que se balancea, pináculos, aguja y cruz.",
+      "propuestas": [
+        {"titulo": "La campana de alarma, visible", "detalle": "La campana que llama a la milicia hoy no tiene edificio: sería este. Su alcance (150 m) decide qué casas oyen la alarma; un pueblo extendido necesita varias. Mejora de la decoración bell_frame (3 × 3 m)."},
+        {"titulo": "Toque de queda y de trabajo", "detalle": "Marca el inicio y el fin de la jornada: los aldeanos a su alcance entran y salen a la vez, y de noche vuelven a casa antes (menos ataques de lobos a rezagados)."},
+        {"titulo": "Atalaya", "detalle": "Con un vigía arriba cuenta además como torre de vigilancia sin armas: vista de 80 m."}
+      ],
+      "modelos": [
+        {"id": "bld_bell_tower_stone", "nombre": "Piedra gris y pizarra", "material": "piedra y pizarra", "animaciones": {"ring": "La campana se balancea"}},
+        {"id": "bld_bell_tower_brick", "nombre": "Ladrillo y pizarra", "material": "ladrillo y pizarra", "animaciones": {"ring": "La campana se balancea"}},
+        {"id": "bld_bell_tower_blue", "nombre": "Piedra gris y pizarra azul", "material": "piedra y pizarra", "animaciones": {"ring": "La campana se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_farmstead",
+      "nombre": "Granja con corral",
+      "categoria": "Edificios",
+      "descripcion": "Caserío de 12 × 10 m: casa de entramado de dos plantas, establo de tablas con pajar, pocilga con dos cerdos, gallinero sobre patas con gallinas sueltas, estercolero, pozo, arado, carretilla, pacas y cerca.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo de la granja", "detalle": "Sustituye al modelo actual (6 × 5 m, casita con carro) sin cambiar reglas: 3 granjeros y campos en un radio de 45 m."},
+        {"titulo": "Los granjeros viven en la granja", "detalle": "La casa aloja a la familia que trabaja los campos (5 residentes): no ocupan solar en el pueblo y empiezan la jornada en el campo. Permite granjas lejos del centro."},
+        {"titulo": "Animales de corral", "detalle": "Con cerdos y gallinas produce, además de la cosecha, un poco de carne y huevos todo el año y convierte las sobras de comida en abono para sus propios campos (ya no hace falta un estercolero aparte)."}
+      ],
+      "modelos": [
+        {"id": "bld_farmstead", "nombre": "Entramado, tablas y paja", "material": "arcilla, troncos y paja"}
+      ]
+    },
+    {
+      "id": "bld_well_house",
+      "nombre": "Pozo con noria de andar",
+      "categoria": "Edificios",
+      "descripcion": "Pozo profundo de 6 × 5 m bajo un tejado de tejas sobre cuatro postes: brocal de piedra, eje con tambor de cuerda y una rueda de andar que lo hace girar mientras el cubo sube y baja, pilón de piedra con caño, cubos y balancín.",
+      "propuestas": [
+        {"titulo": "Nivel 2 del pozo", "detalle": "Mejora del pozo (2 × 2 m): da agua al doble de casas y nunca se seca en verano. Los aldeanos llenan sus cubos en el pilón sin esperar turno."},
+        {"titulo": "Agua contra incendios", "detalle": "El pilón siempre lleno apaga incendios en su radio el doble de rápido; junto al puesto de bomberos, el carro cuba se rellena aquí."},
+        {"titulo": "Abrevadero", "detalle": "Caballos, mulas y ganado de un radio de 40 m beben aquí: establos y granjas vecinas no necesitan su propio pozo."}
+      ],
+      "modelos": [
+        {"id": "bld_well_house", "nombre": "Piedra, madera y tejas", "material": "piedra, troncos y tejas", "animaciones": {"turn": "Gira la rueda y el cubo sube y baja"}},
+        {"id": "bld_well_house_blue", "nombre": "Piedra, madera y pizarra azul", "material": "piedra, troncos y pizarra", "animaciones": {"turn": "Gira la rueda y el cubo sube y baja"}}
+      ]
+    },
+    {
+      "id": "bld_wash_house",
+      "nombre": "Lavadero",
+      "categoria": "Edificios",
+      "descripcion": "Lavadero cubierto de 9 × 6 m: pila larga de agua corriente con losas inclinadas para frotar, tejado de tejas sobre postes, caño de piedra, tendedero con ropa de colores, tinas con espuma, cestos de ropa y una pala.",
+      "propuestas": [
+        {"titulo": "Higiene barata", "detalle": "Cubre la mitad de la necesidad de higiene de las casas de su radio (60 m) sin trabajador y sin leña: es el paso anterior a la casa de baños. Necesita un pozo, río o arroyo a menos de 15 m."},
+        {"titulo": "La ropa dura más", "detalle": "La ropa de las casas a su alcance dura un 30 % más: menos trabajo para tejedor y sastre."},
+        {"titulo": "Punto de encuentro", "detalle": "Da +3 de atractivo y un poco de felicidad a quienes lo usan; pero aguas abajo ensucia el río: el pozo o el pescador que estén después reciben agua peor."}
+      ],
+      "modelos": [
+        {"id": "bld_wash_house", "nombre": "Piedra, madera y tejas", "material": "piedra, troncos y tejas"},
+        {"id": "bld_wash_house_slate", "nombre": "Piedra, madera y pizarra", "material": "piedra, troncos y pizarra"}
+      ]
+    },
+    {
+      "id": "bld_beacon_tower",
+      "nombre": "Torre de almenara",
+      "categoria": "Muros y defensas",
+      "descripcion": "Torre redonda de piedra de 7 × 6 m y 8 m de alto con almenas y un cesto de hierro donde arde la hoguera de señales (la llama se mueve), escalera exterior, leñera y banderín.",
+      "propuestas": [
+        {"titulo": "Cadena de avisos", "detalle": "Colocadas a la vista unas de otras (hasta 150 m), las almenaras llevan la alarma desde el borde del mapa hasta el pueblo en segundos: la milicia se arma antes de que lleguen los asaltantes. Cada aviso gasta 2 de leña."},
+        {"titulo": "Faro de tierra", "detalle": "Encendida de noche da luz en 30 m y guía a exploradores y mercaderes: llegan aunque haya niebla o ventisca."},
+        {"titulo": "Señales entre jugadores", "detalle": "Dos pueblos aliados con almenaras enlazadas se avisan de las incursiones: el vecino puede mandar tropas a tiempo."}
+      ],
+      "modelos": [
+        {"id": "bld_beacon_tower", "nombre": "Piedra", "material": "piedra, hierro y troncos", "animaciones": {"burn": "La llama se mueve", "wave": "Ondea el banderín"}},
+        {"id": "bld_beacon_tower_sandstone", "nombre": "Arenisca", "material": "piedra, hierro y troncos", "animaciones": {"burn": "La llama se mueve", "wave": "Ondea el banderín"}},
+        {"id": "bld_beacon_tower_brick", "nombre": "Ladrillo", "material": "ladrillo, hierro y troncos", "animaciones": {"burn": "La llama se mueve", "wave": "Ondea el banderín"}}
+      ]
+    },
+    {
+      "id": "bld_wayside_shrine",
+      "nombre": "Ermita del camino",
+      "categoria": "Edificios",
+      "descripcion": "Capillita de piedra de 4 × 5 m con pórtico de dos columnas, espadaña con una campanita que se balancea, cruz dorada, velas y flores en la puerta, banco de piedra y mojón.",
+      "propuestas": [
+        {"titulo": "Religión para las afueras", "detalle": "Cubre la necesidad de religión en un radio pequeño (35 m) sin sacerdote ni costo de mantenimiento: para granjas, minas y barrios lejos de la capilla. 12 de piedra y 6 troncos."},
+        {"titulo": "Descanso en el camino", "detalle": "Los aldeanos y mercaderes que pasan recuperan ánimo: los viajes largos (exploradores, carretas) restan menos felicidad."},
+        {"titulo": "Recuerdo", "detalle": "Se puede levantar donde murió alguien en una incursión o un accidente: quita la pena de su familia y suma 2 de atractivo."}
+      ],
+      "modelos": [
+        {"id": "bld_wayside_shrine", "nombre": "Piedra y tejas", "material": "piedra y tejas", "animaciones": {"ring": "La campanita se balancea"}},
+        {"id": "bld_wayside_shrine_blue", "nombre": "Piedra y pizarra azul", "material": "piedra y pizarra", "animaciones": {"ring": "La campanita se balancea"}},
+        {"id": "bld_wayside_shrine_sandstone", "nombre": "Arenisca y tejas", "material": "piedra y tejas", "animaciones": {"ring": "La campanita se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_forager_hut",
+      "nombre": "Choza del recolector",
+      "categoria": "Edificios",
+      "descripcion": "Choza redonda de zarzo con techo cónico de paja en un terreno de 7 × 7 m, con secaderos de setas y de hierbas, cestos de bayas, raíces y nueces, mesa con tarros y un cayado.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del recolector", "detalle": "Sustituye al modelo actual (5 × 5 m) sin cambiar reglas: 2 recolectores, bayas, raíces y hierbas en 65 m."},
+        {"titulo": "Setas y frutos secos", "detalle": "Dos comidas nuevas de otoño que se secan en la propia choza y duran todo el invierno: más variedad sin granja."},
+        {"titulo": "Conoce el bosque", "detalle": "El recolector marca en el mapa los frutales silvestres, las hierbas raras y las guaridas de lobos de su radio: trabajo previo para el explorador y el cazador."}
+      ],
+      "modelos": [
+        {"id": "bld_forager_hut", "nombre": "Zarzo y paja", "material": "arcilla, troncos y paja"}
+      ]
+    },
+    {
+      "id": "bld_clay_pit",
+      "nombre": "Barrero con amasadora",
+      "categoria": "Edificios",
+      "descripcion": "Barrero de 12 × 9 m: hoyo de arcilla con charco y montones de tierra, amasadora de cuba con un eje que gira movido por una viga larga, mesa de moldear, adobes secándose en hileras, cobertizo y palas.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del barrero", "detalle": "Sustituye al modelo actual (5 × 5 m): 2 trabajadores sacan arcilla."},
+        {"titulo": "Adobes: ladrillo sin horno", "detalle": "Receta nueva: arcilla + paja → adobes, secados al sol en verano. Valen como ladrillos para casas de nivel 2 y graneros, pero no para hornos ni murallas; no gastan leña."},
+        {"titulo": "Tracción animal", "detalle": "Con un buey o un caballo del establo en la viga, la amasadora rinde el doble sin ocupar a un trabajador."}
+      ],
+      "modelos": [
+        {"id": "bld_clay_pit", "nombre": "Arcilla y madera", "material": "arcilla y troncos", "animaciones": {"turn": "Gira la amasadora"}}
+      ]
+    },
+    {
+      "id": "bld_tavern_village",
+      "nombre": "Taberna de pueblo",
+      "categoria": "Edificios",
+      "descripcion": "Taberna en un terreno de 7 × 7 m, a medio camino entre la actual y la posada: casa de dos plantas con planta baja de piedra, ala con hastial al frente, cartel colgante con jarra dorada, dos mesas con bancos, barriles, un tonel tumbado, farol y leña.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo de la taberna", "detalle": "Sustituye al modelo actual (6 × 6 m, casita con dos mesas) sin cambiar reglas: 1 tabernero, entretenimiento en 70 m, consume cerveza. La posada grande sería su nivel 2."},
+        {"titulo": "Punto de rumores", "detalle": "Los aldeanos que pasan por la taberna traen noticias: el jugador ve con un día de antelación la llegada de mercaderes y forasteros, y a veces pistas sobre guaridas de asaltantes."},
+        {"titulo": "Abierta de noche", "detalle": "Es el único edificio de servicio que funciona de noche: con farol y cerveza, los aldeanos que vuelven tarde recuperan ánimo antes de dormir."}
+      ],
+      "modelos": [
+        {"id": "bld_tavern_village", "nombre": "Entramado y tejas", "material": "piedra, troncos y tejas", "animaciones": {"swing": "El cartel se balancea"}},
+        {"id": "bld_tavern_village_blue", "nombre": "Entramado y pizarra azul", "material": "piedra, troncos y pizarra", "animaciones": {"swing": "El cartel se balancea"}}
+      ]
+    },
+    {
+      "id": "bld_healer_hut",
+      "nombre": "Casa del curandero",
+      "categoria": "Edificios",
+      "descripcion": "Cabaña de entramado con ala al frente y tejado de paja en un terreno de 7 × 7 m, con seis bancales de hierbas medicinales, mesa con mortero y frascos, manojos secándose y la bandera blanca de la cruz verde.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del curandero", "detalle": "Sustituye al modelo actual (4 × 4 m) sin cambiar reglas: 1 curandero que atiende con hierbas. La botica y el hospital serían sus niveles siguientes."},
+        {"titulo": "Huerto propio", "detalle": "Los bancales le dan 1 de hierbas cada pocos días: no depende del herborista en invierno ni cuando se agotan las hierbas silvestres cercanas."},
+        {"titulo": "Visitas a domicilio", "detalle": "En vez de esperar al enfermo, el curandero recorre las casas de su radio (60 m): los enfermos no caminan contagiando por el pueblo."}
+      ],
+      "modelos": [
+        {"id": "bld_healer_hut", "nombre": "Entramado y paja", "material": "arcilla, troncos y paja"}
+      ]
+    },
+    {
+      "id": "bld_explorer_lodge",
+      "nombre": "Casa de los exploradores",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Casa de entramado de dos plantas con hastial a la calle en un terreno de 7 × 7 m, con poste de señales de tres flechas, mesa con mapa y brújula, mochilas con petates, catalejo en trípode, cajas y un banderín verde.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del explorador", "detalle": "Sustituye al modelo actual (5 × 4 m) sin cambiar reglas: 1 explorador que revela el mapa."},
+        {"titulo": "Nivel 2: expediciones", "detalle": "Con 3 exploradores permite expediciones de varios días a un punto elegido del mapa (ruinas, cuevas, otro pueblo): vuelven con un hallazgo (recursos, un mapa, un forastero) o no vuelven. Pide comida de viaje y ropa."},
+        {"titulo": "Mapas en venta", "detalle": "Lo explorado se convierte en mapas que los mercaderes compran, y que entre jugadores se pueden intercambiar para ver el territorio del otro."}
+      ],
+      "modelos": [
+        {"id": "bld_explorer_lodge", "nombre": "Entramado y tejamaní", "material": "arcilla, troncos y lino", "animaciones": {"wave": "Ondea el banderín"}}
+      ]
+    },
+    {
+      "id": "bld_firewood_shed",
+      "nombre": "Leñera",
+      "categoria": "Edificios",
+      "descripcion": "Cobertizo de tablas de 6 × 5 m lleno de leña partida apilada hasta el techo, con el tajo y el hacha, astillas alrededor y un burro de aserrar con un tronco y su sierra.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del leñero", "detalle": "Sustituye al modelo actual del partidor de leña (5 × 4 m) sin cambiar reglas: 1 trabajador convierte troncos en leña."},
+        {"titulo": "Almacén de leña (la leñera de la especificación)", "detalle": "La especificación prevé una leñera como almacén: guarda 500 de leña y carbón a cubierto. La leña a la intemperie pierde un 20 % con la lluvia y la nieve; aquí no."},
+        {"titulo": "Reparto de invierno", "detalle": "En invierno un vecino reparte desde aquí la leña casa por casa: nadie pasa frío por vivir lejos del almacén."}
+      ],
+      "modelos": [
+        {"id": "bld_firewood_shed", "nombre": "Tablas y tejamaní", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "bld_orchard_house",
+      "nombre": "Casa del huerto de frutales",
+      "categoria": "Edificios",
+      "descripcion": "Cabaña de entramado y paja en un terreno de 9 × 7 m con tres manzanos cargados, escalera de mano apoyada en uno, cestos de fruta, una prensa pequeña de sidra y un cubo.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del huerto", "detalle": "Sustituye al modelo actual del huerto de frutales (5 × 5 m) sin cambiar reglas: 2 trabajadores, árboles que tardan años en dar fruto."},
+        {"titulo": "Sidra", "detalle": "Receta nueva en la propia casa: fruta → sidra, que la taberna sirve como la cerveza. Aprovecha la fruta que sobra en otoño antes de que se estropee."},
+        {"titulo": "Injertos", "detalle": "Los frutales silvestres del mapa (fase 84) se pueden trasplantar al huerto: dan fruto dos años antes que los plantados de semilla."}
+      ],
+      "modelos": [
+        {"id": "bld_orchard_house", "nombre": "Entramado y paja", "material": "arcilla, troncos y paja"}
+      ]
+    },
+    {
+      "id": "bld_guild_hall",
+      "nombre": "Casa del gremio",
+      "categoria": "Edificios",
+      "descripcion": "Casa gremial de ladrillo de 8 × 8 m y 15 m de alto con hastiales escalonados al frente y al fondo, tres plantas de ventanales de arco, portada, escudos de los oficios, emblema dorado, polea de carga, chimeneas, faroles, tablón de anuncios y bandera.",
+      "propuestas": [
+        {"titulo": "Gremios de artesanos", "detalle": "Edificio de nivel 3: cada casa del gremio se dedica a una cadena (ropa, hierro, comida) y sube un 15 % la producción de todos sus talleres en el pueblo. Requiere al menos tres talleres de esa cadena."},
+        {"titulo": "Maestros y aprendices", "detalle": "Los artesanos ganan experiencia con los años; el gremio la conserva: al morir un maestro, su aprendiz hereda la mitad. Sin gremio, cada taller nuevo empieza de cero."},
+        {"titulo": "Precios del pueblo", "detalle": "El gremio negocia con los mercaderes: los bienes de su cadena se venden un 20 % más caros y sus materias primas se compran más baratas."}
+      ],
+      "modelos": [
+        {"id": "bld_guild_hall_brick", "nombre": "Ladrillo rojo y pizarra", "material": "ladrillo y pizarra", "animaciones": {"wave": "Ondea la bandera"}},
+        {"id": "bld_guild_hall_blue", "nombre": "Ladrillo rojo y pizarra azul", "material": "ladrillo y pizarra", "animaciones": {"wave": "Ondea la bandera"}},
+        {"id": "bld_guild_hall_red", "nombre": "Ladrillo claro y tejas", "material": "ladrillo y tejas", "animaciones": {"wave": "Ondea la bandera"}}
+      ]
+    },
+    {
+      "id": "bld_dwarf_house",
+      "nombre": "Casa enana",
+      "categoria": "Edificios",
+      "descripcion": "Casa baja de grandes sillares de 7 × 6 m con contrafuertes en talud, cubierta de losas con tepe, puerta de arco con herrajes dorados, ventanas iluminadas por la fragua, greca de oro, chimenea, yunque, barriles y banco de piedra.",
+      "propuestas": [
+        {"titulo": "Vivienda de los enanos", "detalle": "Casa de la raza enana para 6 residentes: de piedra (cuesta piedra en vez de troncos), no arde, guarda el calor (la mitad de leña) y resiste los asaltos el doble. Pide cerveza como necesidad."},
+        {"titulo": "Casa con fragua", "detalle": "Cada casa enana tiene un pequeño yunque: sus residentes reparan sus propias herramientas, que así duran un 30 % más."},
+        {"titulo": "Barrio de piedra", "detalle": "Varias casas enanas juntas cuentan como cortafuegos: un incendio no cruza un barrio de piedra."}
+      ],
+      "modelos": [
+        {"id": "bld_dwarf_house", "nombre": "Sillares y oro", "material": "piedra, hierro y oro"}
+      ]
+    },
+    {
+      "id": "bld_lizard_house",
+      "nombre": "Palafito de los lagartos",
+      "categoria": "Edificios",
+      "descripcion": "Casa de cañas sobre pilotes en un terreno de 9 × 8 m, con tejado de palma muy inclinado, puerta con colgaduras y disco solar, terraza con una roca plana para tomar el sol, tinajas, secadero de pescado, rampa, dos tótems con plumas y una palmera.",
+      "propuestas": [
+        {"titulo": "Vivienda de los lagartos", "detalle": "Casa de la raza lagarto para 6 residentes: no sufre inundaciones ni la humedad (los pilotes), no necesita leña en verano pero el doble en invierno, y sus residentes rinden más cuanto más calor hace."},
+        {"titulo": "Solo en biomas cálidos", "detalle": "Se construye barata en pantano, selva y desierto (cañas y palma en vez de troncos); en biomas fríos cuesta el triple."},
+        {"titulo": "Terraza al sol", "detalle": "La roca de la terraza cubre la necesidad de calefacción los días despejados: ahorra leña casi todo el año."}
+      ],
+      "modelos": [
+        {"id": "bld_lizard_house", "nombre": "Cañas y palma", "material": "paja y troncos"}
+      ]
+    },
+    {
+      "id": "bld_meeting_hall",
+      "nombre": "Casa de juntas de los colonos",
+      "categoria": "Edificios",
+      "descripcion": "El primer centro del pueblo, de 10 × 8 m: casa larga de troncos con tejado de paja y maderos cruzados en los hastiales, porche, chimenea, campana en su armazón (se balancea), tablón de avisos, cobertizo con las provisiones de la caravana, barriles y la bandera de los colonos.",
+      "propuestas": [
+        {"titulo": "Nivel 1 del centro del pueblo", "detalle": "Modelo del centro recién fundado (hoy 8 × 8 m, 30 troncos y 10 piedras): mismo costo y reglas. La progresión visible sería casa de juntas → ayuntamiento con torre del reloj → castillo."},
+        {"titulo": "La campana desde el primer día", "detalle": "La campana de alarma está aquí desde el principio (clip ring): no hace falta construirla aparte para llamar a la milicia en los primeros asaltos."},
+        {"titulo": "Asamblea", "detalle": "Una vez por estación los colonos se reúnen: si el jugador atiende la petición que más se repite (más comida, una capilla, una empalizada), gana felicidad durante una estación."}
+      ],
+      "modelos": [
+        {"id": "bld_meeting_hall", "nombre": "Troncos y paja", "material": "troncos, piedra y paja", "animaciones": {"ring": "La campana se balancea", "wave": "Ondea la bandera"}},
+        {"id": "bld_meeting_hall_shingles", "nombre": "Troncos y tejamaní", "material": "troncos y piedra", "animaciones": {"ring": "La campana se balancea", "wave": "Ondea la bandera"}}
+      ]
+    },
+    {
+      "id": "bld_granary_great",
+      "nombre": "Gran granero",
+      "categoria": "Edificios",
+      "descripcion": "Granero de 15 × 9 m: planta baja de piedra con dos portones sobre un muelle de carga con escalera y rampa, planta alta volada, buhardilla con polea, sacos de grano apilados, gavillas de trigo, barriles y carretilla.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del granero", "detalle": "Sustituye al modelo actual (8 × 7 m, capacidad 900) sin cambiar reglas."},
+        {"titulo": "Nivel 2 del granero", "detalle": "Con ladrillos, tejas y herramientas guarda 2000 de comida y la conserva un 30 % más (planta alta ventilada y seca). El hórreo sobre pilares sería la opción pequeña y a salvo de ratas."},
+        {"titulo": "Reserva de hambruna", "detalle": "El jugador fija una reserva mínima que no se reparte salvo en invierno o en hambruna: evita que el pueblo se coma en otoño lo que necesitará en febrero."}
+      ],
+      "modelos": [
+        {"id": "bld_granary_great_thatch", "nombre": "Piedra, entramado y paja", "material": "piedra, troncos y paja", "animaciones": {"lift": "La caja se mece en la polea"}},
+        {"id": "bld_granary_great_tiles", "nombre": "Todo de piedra y tejas", "material": "piedra y tejas", "animaciones": {"lift": "La caja se mece en la polea"}}
+      ]
+    },
+    {
+      "id": "bld_compost_yard",
+      "nombre": "Estercolero de tres cajones",
+      "categoria": "Edificios",
+      "descripcion": "Corral de 8 × 6 m con tres cajones de tablas (restos frescos, a medio hacer y abono listo), perchero techado de horcas y palas, carretilla cargada, montón de estiércol, tonel de agua y cerca.",
+      "propuestas": [
+        {"titulo": "Modelo nuevo del estercolero", "detalle": "Sustituye al modelo actual (5 × 5 m) sin cambiar reglas: 1 trabajador convierte desechos en abono para los campos."},
+        {"titulo": "Recoge los desechos del pueblo", "detalle": "El trabajador pasa por las casas de su radio (60 m) con la carretilla: quita los desechos que hoy causan enfermedad y ratas, y los convierte en abono. Un mismo edificio resuelve higiene y fertilidad."},
+        {"titulo": "Tres etapas visibles", "detalle": "El abono tarda una estación en hacerse: los cajones se van llenando y oscureciendo, así el jugador ve cuánto falta. Huele: −6 de atractivo en 20 m."}
+      ],
+      "modelos": [
+        {"id": "bld_compost_yard", "nombre": "Tablas", "material": "troncos"}
+      ]
+    },
+    {
+      "id": "bld_latrine",
+      "nombre": "Letrinas públicas",
+      "categoria": "Edificios",
+      "descripcion": "Caseta de tablas de 9 × 6 m con cuatro retretes sobre un pozo negro de piedra, escalones, trampilla de limpieza, carro con dos cubas, montón de cal con su pala, pilón para lavarse y farol.",
+      "propuestas": [
+        {"titulo": "Menos enfermedad por desechos", "detalle": "La especificación incluye el contagio por desechos: unas letrinas cubren las casas de su radio (50 m) y quitan esa causa de enfermedad. Sin ellas, un barrio denso enferma en verano. 15 troncos y 10 piedras."},
+        {"titulo": "Hay que vaciarlas", "detalle": "Cada estación un trabajador vacía el pozo con el carro y lleva el contenido al estercolero (da abono). Si nadie lo hace, rebosa y contagia el pozo de agua más cercano."},
+        {"titulo": "Lejos del agua", "detalle": "A menos de 15 m de un pozo o aguas arriba de un pescador ensucia el agua: obliga a pensar dónde se colocan."}
+      ],
+      "modelos": [
+        {"id": "bld_latrine", "nombre": "Tablas y piedra", "material": "troncos y piedra"}
+      ]
+    },
+    {
+      "id": "bld_ratcatcher",
+      "nombre": "Casa del cazador de ratas",
+      "categoria": "Edificios",
+      "descripcion": "Cabaña de entramado de 7 × 7 m con jaulas apiladas, cepos con cebo, la caseta y el terrier, dos gatos sobre la cerca y el cartel de la rata.",
+      "propuestas": [
+        {"titulo": "Control de ratas", "detalle": "Las ratas son una de las causas de enfermedad de la especificación y además se comen el grano. 1 cazador con su perro mantiene sin ratas los graneros, almacenes y casas de su radio (80 m): menos enfermedad y ninguna pérdida de comida almacenada."},
+        {"titulo": "Gatos para los graneros", "detalle": "Cría gatos: cada granero o almacén puede recibir uno, que protege ese edificio para siempre sin ocupar al cazador."},
+        {"titulo": "Avisa de plagas", "detalle": "Cuando sube el número de ratas (muchos desechos, comida a la intemperie), el cazador avisa antes de que empiece la epidemia y da tiempo a reaccionar."}
+      ],
+      "modelos": [
+        {"id": "bld_ratcatcher", "nombre": "Entramado y tejamaní", "material": "arcilla, troncos y hierro", "animaciones": {"swing": "El cartel se balancea"}}
+      ]
+    }
+  ]
+}

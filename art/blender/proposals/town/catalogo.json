@@ -1,0 +1,469 @@
+{
+ "familia": "town",
+ "grupos": [
+  {
+   "id": "grave_plot",
+   "nombre": "Parcelas de cementerio",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Parcela de 6 × 6 m con tumbas, una por raza: lápidas y cruces con túmulos y flores (humanos), sarcófagos con runas y martillo (enanos), un árbol plantado por cada difunto con un amuleto que brilla (elfos) y montones de piedra con calavera y arma clavada (orcos).",
+   "destacado": true,
+   "propuestas": [
+    {
+     "titulo": "Cementerio",
+     "detalle": "Hoy los muertos desaparecen. Con cementerio, un enterrador los lleva a una parcela: sin él, los cadáveres quedan donde cayeron, bajan la felicidad de quien los ve y traen enfermedad. Cada parcela tiene nueve tumbas; al llenarse hay que ampliar."
+    },
+    {
+     "titulo": "Duelo",
+     "detalle": "La familia de un muerto pierde felicidad un tiempo; con una tumba que visitar, el duelo dura la mitad."
+    },
+    {
+     "titulo": "Costumbre de cada raza",
+     "detalle": "Cada raza quiere ser enterrada a su manera: un pueblo mixto necesita parcelas distintas, y la de los elfos, con el tiempo, se vuelve un bosquecillo que sube el entorno."
+    },
+    {
+     "titulo": "Los muertos mal enterrados vuelven",
+     "detalle": "Si hay un altar de nigromante en el mapa, solo los muertos sin tumba se levantan como esqueletos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "grave_plot_human",
+     "nombre": "Humanos",
+     "material": "piedra"
+    },
+    {
+     "id": "grave_plot_dwarf",
+     "nombre": "Enanos",
+     "material": "piedra y hierro"
+    },
+    {
+     "id": "grave_plot_elf",
+     "nombre": "Elfos",
+     "animaciones": {
+      "sway": "Los amuletos se mecen."
+     }
+    },
+    {
+     "id": "grave_plot_orc",
+     "nombre": "Orcos",
+     "material": "piedra y hueso"
+    }
+   ]
+  },
+  {
+   "id": "grave_buildings",
+   "nombre": "Cripta y mausoleo",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Cripta de piedra de 5 × 6 m con columnas, reja de hierro y dos braseros, y mausoleo de 8 × 9 m con pórtico de cuatro columnas, cúpula y dos figuras de duelo.",
+   "propuestas": [
+    {
+     "titulo": "Mucho entierro en poco suelo",
+     "detalle": "La cripta guarda tantos muertos como cuatro parcelas en la cuarta parte del terreno: para pueblos amurallados sin espacio. Cuesta piedra y hierro."
+    },
+    {
+     "titulo": "Tumba de los fundadores",
+     "detalle": "El mausoleo es un monumento único: en él descansan el fundador y los héroes. Sube el prestigio del pueblo y reduce el duelo de todos."
+    },
+    {
+     "titulo": "Punto débil de noche",
+     "detalle": "Si un nigromante o un espectro ronda el mapa, las criptas son por donde entran: necesitan luz o una capilla cerca."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "grave_crypt",
+     "nombre": "Cripta",
+     "material": "piedra",
+     "animaciones": {
+      "burn": "Arden los braseros."
+     }
+    },
+    {
+     "id": "grave_mausoleum",
+     "nombre": "Mausoleo",
+     "material": "piedra"
+    }
+   ]
+  },
+  {
+   "id": "grave_lychgate",
+   "nombre": "Puerta del cementerio",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Puerta techada de 3,6 m con reja de hierro de dos hojas entre pilares de piedra, con dos tramos del muro del camposanto.",
+   "propuestas": [
+    {
+     "titulo": "Camposanto cerrado",
+     "detalle": "Un cementerio cercado y con puerta cuenta como tierra consagrada: los muertos no se levantan y los espectros no salen."
+    },
+    {
+     "titulo": "Entorno",
+     "detalle": "Un cementerio cuidado, con muro y puerta, no baja el atractivo de las casas vecinas como lo hacen las tumbas sueltas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "grave_lychgate",
+     "nombre": "Madera, piedra y hierro",
+     "animaciones": {
+      "open": "Se abre la reja (no se repite).",
+      "close": "Se cierra la reja (no se repite)."
+     }
+    }
+   ]
+  },
+  {
+   "id": "grave_digger",
+   "nombre": "Caseta del enterrador, andas y tumba abierta",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Caseta de 2,6 × 2 m con palas, un ataúd apoyado y un farol; unas andas con ruedas que llevan un ataúd con flores; y una tumba recién abierta con el ataúd al lado.",
+   "propuestas": [
+    {
+     "titulo": "Oficio de enterrador",
+     "detalle": "Un aldeano con su caseta recoge a los muertos con las andas y los entierra: cuanto más lejos el cementerio, más tarda y más tiempo quedan los cadáveres a la vista."
+    },
+    {
+     "titulo": "Epidemias",
+     "detalle": "En una epidemia hacen falta varios enterradores: si no dan abasto, la enfermedad se propaga más."
+    },
+    {
+     "titulo": "Entierro que se ve",
+     "detalle": "La tumba abierta aparece mientras dura el entierro, con la familia alrededor; después queda la lápida."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "grave_digger_shed",
+     "nombre": "Caseta del enterrador",
+     "animaciones": {
+      "swing": "El farol se mece."
+     }
+    },
+    {
+     "id": "grave_bier_cart",
+     "nombre": "Andas con ataúd",
+     "animaciones": {
+      "roll": "Giran las ruedas."
+     }
+    },
+    {
+     "id": "grave_open",
+     "nombre": "Tumba abierta"
+    }
+   ]
+  },
+  {
+   "id": "grave_pyre",
+   "nombre": "Pira funeraria",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Pira de troncos cruzados de 2,6 m con el cuerpo amortajado, su espada y su escudo, y flores alrededor: apagada con una antorcha esperando, o ardiendo.",
+   "propuestas": [
+    {
+     "titulo": "Funeral de los orcos y de los guerreros",
+     "detalle": "Algunas razas no entierran: queman a sus muertos. No ocupa cementerio, gasta leña y da moral a la tropa que lo presencia."
+    },
+    {
+     "titulo": "Contra las plagas",
+     "detalle": "En una epidemia, quemar a los muertos corta el contagio que el entierro no evita, a cambio de más duelo en las familias."
+    },
+    {
+     "titulo": "Contra los no-muertos",
+     "detalle": "Lo que se quema no se levanta: la respuesta barata a un nigromante cuando no hay camposanto."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "grave_pyre",
+     "nombre": "Preparada"
+    },
+    {
+     "id": "grave_pyre_lit",
+     "nombre": "Ardiendo",
+     "animaciones": {
+      "burn": "Arden las llamas y suben chispas."
+     }
+    }
+   ]
+  },
+  {
+   "id": "train_dummy",
+   "nombre": "Muñecos de entrenamiento",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Tres postes de práctica de 2 m: muñeco de paja con casco y escudo, el mismo con una diana en el pecho y un poste desnudo lleno de tajos.",
+   "destacado": true,
+   "propuestas": [
+    {
+     "titulo": "Experiencia de la tropa",
+     "detalle": "Los soldados sin órdenes entrenan en los muñecos junto al cuartel: ganan experiencia poco a poco y pelean mejor sin haber entrado en combate."
+    },
+    {
+     "titulo": "Milicia preparada",
+     "detalle": "Los aldeanos que practican en su tiempo libre responden mejor a la campana: la milicia deja de ser carne de cañón."
+    },
+    {
+     "titulo": "Se gastan",
+     "detalle": "Cada muñeco aguanta un tiempo y hay que rehacerlo con paja y troncos: el entrenamiento cuesta algo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "train_dummy",
+     "nombre": "De paja con escudo",
+     "animaciones": {
+      "hit": "Se sacude al recibir un golpe."
+     }
+    },
+    {
+     "id": "train_dummy_target",
+     "nombre": "Con diana",
+     "animaciones": {
+      "hit": "Se sacude al recibir un golpe."
+     }
+    },
+    {
+     "id": "train_dummy_pell",
+     "nombre": "Poste de tajos",
+     "animaciones": {
+      "hit": "Se sacude al recibir un golpe."
+     }
+    }
+   ]
+  },
+  {
+   "id": "train_archery_butts",
+   "nombre": "Campo de tiro",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Tres dianas de paja sobre trípodes con flechas clavadas, la línea de tiro a 7 m y un cajón de flechas.",
+   "propuestas": [
+    {
+     "titulo": "Entrenar arqueros",
+     "detalle": "Los arqueros y cazadores practican aquí: más alcance y puntería. Gasta flechas del arquero."
+    },
+    {
+     "titulo": "Torneo de tiro",
+     "detalle": "Una vez al año se celebra un torneo: sube la felicidad y el ganador queda como arquero veterano."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "train_archery_butts",
+     "nombre": "Tres dianas"
+    }
+   ]
+  },
+  {
+   "id": "train_quintain",
+   "nombre": "Estafermo",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Poste de 2,6 m con un brazo giratorio: un escudo en un extremo y un saco de arena en el otro, que golpea a quien no pasa rápido.",
+   "propuestas": [
+    {
+     "titulo": "Entrenar jinetes y lanceros",
+     "detalle": "Requisito para tener caballería, si llega a haber caballos de guerra: sin estafermo no hay jinetes."
+    },
+    {
+     "titulo": "Entrenamiento de lanza",
+     "detalle": "Los lanceros que practican en él atacan primero en combate."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "train_quintain",
+     "nombre": "Madera",
+     "animaciones": {
+      "spin": "El brazo gira dos vueltas y se detiene."
+     }
+    }
+   ]
+  },
+  {
+   "id": "train_yard",
+   "nombre": "Palestra y pista de obstáculos",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Palestra de arena de 6 × 6 m con cuerdas, armero de espadas de madera, escudos y banca; y una pista de 13 m con muro para trepar, troncos para saltar, viga de equilibrio y cuerdas.",
+   "propuestas": [
+    {
+     "titulo": "Anexos del cuartel",
+     "detalle": "Cada anexo junto al cuartel mejora algo de sus tropas: la palestra, el daño cuerpo a cuerpo; la pista, la velocidad y el aguante."
+    },
+    {
+     "titulo": "Niveles de unidad",
+     "detalle": "Permiten pasar de leva a soldado veterano sin esperar a que haya combates."
+    },
+    {
+     "titulo": "Espectáculo",
+     "detalle": "Los combates de práctica entretienen: suben un poco la felicidad de las casas cercanas."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "train_sparring_ring",
+     "nombre": "Palestra"
+    },
+    {
+     "id": "train_obstacle_course",
+     "nombre": "Pista de obstáculos"
+    }
+   ]
+  },
+  {
+   "id": "train_joust",
+   "nombre": "Liza de justas y tribuna",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Barrera de justa de 12 m a rayas con dos mástiles con gallardetes y un armero de lanzas, y una tribuna de cuatro gradas de 8 m con toldo a rayas, palco y banderas.",
+   "propuestas": [
+    {
+     "titulo": "Torneo",
+     "detalle": "Un gran evento anual: cuesta oro y comida, atrae visitantes y mercaderes de todo el mapa y sube mucho la felicidad y el prestigio. Necesita liza y tribuna."
+    },
+    {
+     "titulo": "Diversión de nivel alto",
+     "detalle": "Las casas del último nivel piden espectáculos además de taberna: la tribuna cubre esa necesidad."
+    },
+    {
+     "titulo": "Entre jugadores",
+     "detalle": "En partidas de varios jugadores, un torneo entre pueblos decide un premio sin guerra."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "train_jousting_list",
+     "nombre": "Liza",
+     "animaciones": {
+      "wave": "Ondean los gallardetes."
+     }
+    },
+    {
+     "id": "train_grandstand",
+     "nombre": "Tribuna",
+     "animaciones": {
+      "wave": "Ondean las banderas."
+     }
+    }
+   ]
+  },
+  {
+   "id": "fest_maypole",
+   "nombre": "Palo de mayo",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Mástil de 6 m pintado en espiral con una corona de flores y ocho cintas de colores que giran.",
+   "destacado": true,
+   "propuestas": [
+    {
+     "titulo": "Fiesta de primavera",
+     "detalle": "Al llegar la primavera el pueblo baila alrededor: sube la felicidad de todos durante la estación y nacen más niños ese año. Solo cuenta si hay comida de sobra."
+    },
+    {
+     "titulo": "Calendario de fiestas",
+     "detalle": "Cada estación tiene su fiesta con su objeto (palo de mayo, hoguera de verano, era de la cosecha, farolillos de invierno): quien las celebra todas tiene un pueblo más feliz."
+    },
+    {
+     "titulo": "Plaza del pueblo",
+     "detalle": "Marca el centro de la plaza: las decoraciones a su alrededor valen más."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "fest_maypole",
+     "nombre": "Cintas de colores",
+     "animaciones": {
+      "dance": "La corona y las cintas giran."
+     }
+    }
+   ]
+  },
+  {
+   "id": "fest_feast_tent",
+   "nombre": "Carpa de banquete",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Carpa abierta de 6,6 × 8,6 m a rayas rojas y blancas con dos mesas largas servidas, bancas, tres barriles y faroles colgados.",
+   "propuestas": [
+    {
+     "titulo": "Banquete",
+     "detalle": "Se monta para una fiesta, una boda o una victoria: gasta comida y cerveza y da felicidad a todo el pueblo; luego se desmonta."
+    },
+    {
+     "titulo": "Comedor común",
+     "detalle": "Fija en el pueblo, es donde comen los que no tienen casa (inmigrantes, soldados): no pasan hambre mientras esperan vivienda."
+    },
+    {
+     "titulo": "Recibir a los mercaderes",
+     "detalle": "Los mercaderes agasajados dan mejores precios en su siguiente visita."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "fest_feast_tent",
+     "nombre": "Rojo y blanco",
+     "animaciones": {
+      "swing": "Los faroles se mecen."
+     }
+    }
+   ]
+  },
+  {
+   "id": "fest_games",
+   "nombre": "Juegos: títeres, bolos y tiovivo",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Teatrillo de títeres con dos muñecos y bancas para niños, bolera de 9 m con nueve bolos y un tiovivo de 6 m con cuatro caballos de madera bajo un toldo.",
+   "propuestas": [
+    {
+     "titulo": "Diversión además de la taberna",
+     "detalle": "Cada juego cubre la necesidad de ocio de un grupo: los títeres, de los niños; los bolos, de los adultos junto a la taberna; el tiovivo, de todos en días de fiesta."
+    },
+    {
+     "titulo": "Feria ambulante",
+     "detalle": "Llegan con el carromato del buhonero una vez al año y se quedan una semana: mientras tanto suben la felicidad y dejan algo de oro por el alquiler del terreno."
+    },
+    {
+     "titulo": "Niños",
+     "detalle": "Los niños con juegos cerca crecen más sanos y trabajan con mejor ánimo al llegar a adultos."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "fest_puppet_theatre",
+     "nombre": "Teatrillo de títeres",
+     "animaciones": {
+      "show": "Los títeres saltan y se giran."
+     }
+    },
+    {
+     "id": "fest_skittles",
+     "nombre": "Bolera"
+    },
+    {
+     "id": "fest_carousel",
+     "nombre": "Tiovivo",
+     "animaciones": {
+      "turn": "Gira con sus caballos."
+     }
+    }
+   ]
+  },
+  {
+   "id": "fest_lantern_pole",
+   "nombre": "Árbol de farolillos",
+   "categoria": "Vida del pueblo",
+   "descripcion": "Poste de 5 m con diez farolillos de papel de colores colgados en espiral, que se mecen.",
+   "propuestas": [
+    {
+     "titulo": "Fiesta de invierno",
+     "detalle": "En la noche más larga se encienden los farolillos: reduce la tristeza del invierno y el miedo a la oscuridad durante la estación."
+    },
+    {
+     "titulo": "Luz festiva",
+     "detalle": "Ilumina como varios faroles y sube el entorno, pero solo se enciende en fiestas: gasta sebo."
+    }
+   ],
+   "modelos": [
+    {
+     "id": "fest_lantern_pole",
+     "nombre": "Papel de colores",
+     "animaciones": {
+      "sway": "Los farolillos se mecen."
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,180 @@
+{
+  "familia": "sites",
+  "grupos": [
+    {
+      "id": "site_crypt",
+      "nombre": "Cripta",
+      "categoria": "Campamento y exploración",
+      "destacado": true,
+      "descripcion": "Pórtico de piedra de 4,5 m con frontón y cruz, sobre un túmulo de 5 m cubierto de hierba; escalones que bajan a oscuras, una reja de hierro de dos hojas que se abre y dos figuras encapuchadas en sus pedestales.",
+      "propuestas": [
+        {"titulo": "Mazmorra pequeña", "detalle": "Punto del mapa que un grupo de exploradores puede bajar: tarda un día, puede haber bajas y devuelve oro, un objeto antiguo o nada. Cuanto mejor armados, mejor resultado."},
+        {"titulo": "Origen de no muertos", "detalle": "Mientras siga abierta, de noche salen esqueletos hacia el pueblo más cercano. Se sella con piedra y un sacerdote, o se limpia bajando."},
+        {"titulo": "Panteón del pueblo", "detalle": "Como edificio propio: nivel alto del cementerio, donde reposan los fundadores; da prestigio y los aldeanos aceptan mejor las muertes."},
+        {"titulo": "Refugio en un asedio", "detalle": "Una cripta limpia sirve de escondite: los aldeanos que no luchan sobreviven a una incursión dentro."}
+      ],
+      "modelos": [
+        {"id": "site_crypt", "nombre": "Cripta", "material": "piedra", "animaciones": {"open": "Se abre la reja (no se repite).", "close": "Se cierra la reja (no se repite)."}}
+      ]
+    },
+    {
+      "id": "site_cave",
+      "nombre": "Boca de cueva",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Cerro de rocas de 8 m con musgo y una boca oscura de 3 m con estalactitas; huesos y un cráneo en la entrada, y dos ojos que miran desde dentro y se mueven.",
+      "propuestas": [
+        {"titulo": "Guarida genérica", "detalle": "De qué es la cueva no se sabe hasta mandar a alguien: osos, lobos, goblins, un trol o nada más que murciélagos. Sustituye a una guarida distinta por cada enemigo."},
+        {"titulo": "Mina natural", "detalle": "Una cueva limpia se convierte en mina sin excavar: da piedra y mineral desde el primer día."},
+        {"titulo": "Almacén fresco", "detalle": "Dentro la comida no se estropea: sirve de bodega y de nevero para un pueblo cercano."}
+      ],
+      "modelos": [
+        {"id": "site_cave", "nombre": "Boca de cueva", "animaciones": {"watch": "Los ojos se mueven y se asoman."}}
+      ]
+    },
+    {
+      "id": "site_ruined_tower",
+      "nombre": "Torre en ruinas",
+      "categoria": "Campamento y exploración",
+      "destacado": true,
+      "descripcion": "Torre redonda de 5,2 m de diámetro, rota en diagonal de 8 m a menos de 1 m, con vigas de los pisos, un árbol creciendo dentro, hiedra, sillares caídos y tres cuervos que dan vueltas arriba.",
+      "propuestas": [
+        {"titulo": "Se puede restaurar", "detalle": "Reconstruirla cuesta la mitad que una torre nueva y da una atalaya lejos del pueblo: ve venir las incursiones antes."},
+        {"titulo": "Cantera de sillares", "detalle": "O se desmonta: da mucha piedra labrada de una vez, sin cantera."},
+        {"titulo": "Guarida de bandidos", "detalle": "Mientras esté en ruinas, puede instalarse una banda que asalta las caravanas del camino más cercano."},
+        {"titulo": "Torre de un mago", "detalle": "Al explorarla aparece un libro o un objeto mágico; restaurada, atrae a un mago que se instala en ella."}
+      ],
+      "modelos": [
+        {"id": "site_ruined_tower", "nombre": "Torre en ruinas", "material": "piedra", "animaciones": {"circle": "Los cuervos dan vueltas."}}
+      ]
+    },
+    {
+      "id": "site_sunken_temple",
+      "nombre": "Templo hundido",
+      "categoria": "Campamento y exploración",
+      "destacado": true,
+      "descripcion": "Templo de mármol que el pantano se tragó: 12 × 10 m de agua con nenúfares y juncos, una plataforma de tres gradas, ocho columnas (enteras, torcidas, rotas y una caída en el agua), un trozo de arquitrabe, un ídolo de piedra oscura con ojos que brillan y tres fuegos fatuos.",
+      "propuestas": [
+        {"titulo": "Mazmorra de pantano", "detalle": "Propia del bioma de pantano y de las ranas: explorarla da jade, oro o una reliquia; el ídolo puede despertar algo."},
+        {"titulo": "Santuario antiguo", "detalle": "Un pueblo puede adoptarlo como lugar sagrado: da fe y felicidad sin construir templo, pero hay que hacer un camino hasta él y ofrendas."},
+        {"titulo": "Los fuegos fatuos", "detalle": "De noche atraen a los aldeanos que andan cerca: se pierden o enferman. Un sacerdote los apaga."}
+      ],
+      "modelos": [
+        {"id": "site_sunken_temple", "nombre": "Templo hundido", "material": "mármol", "animaciones": {"wisps": "Los fuegos fatuos giran sobre el agua."}}
+      ]
+    },
+    {
+      "id": "site_stone_circle",
+      "nombre": "Círculo de piedras grande",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Crómlech de 13 m: diez menhires de 3 a 3,8 m (uno caído), dos dinteles en su sitio, un altar con marcas que brillan y una columna de luz que sube desde él.",
+      "propuestas": [
+        {"titulo": "Calendario", "detalle": "Quien lo tenga en su territorio conoce con adelanto las estaciones y los eclipses: aviso de heladas y de noches peligrosas."},
+        {"titulo": "Rito de las estaciones", "detalle": "En cada solsticio se puede celebrar un rito (comida y un día de trabajo de todos): bendice las cosechas del año."},
+        {"titulo": "Nodo de magia", "detalle": "Es un punto fuerte de la red de piedras de poder: los edificios mágicos cerca de él rinden el doble."}
+      ],
+      "modelos": [
+        {"id": "site_stone_circle", "nombre": "Círculo de piedras", "material": "piedra", "animaciones": {"awake": "La luz del altar gira y late."}}
+      ]
+    },
+    {
+      "id": "site_abandoned_mine",
+      "nombre": "Mina abandonada",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Bocamina entibada en un cerro de roca de 7 m, cerrada con tablas cruzadas, con un cartel de aviso, raíles que salen 3 m, una vagoneta volcada, mineral suelto (algo de oro) y un pico.",
+      "propuestas": [
+        {"titulo": "Reabrirla", "detalle": "Cuesta madera de entibar y unos días, y da una mina ya profunda. Pero se abandonó por algo: gas, agua o lo que vive abajo; se descubre al reabrirla."},
+        {"titulo": "Veta agotada o no", "detalle": "Un explorador o un enano la evalúa: puede quedar oro en lo hondo. Decide si vale la pena."},
+        {"titulo": "Paso bajo la montaña", "detalle": "Algunas atraviesan el cerro: reabierta, es un atajo para caravanas o una entrada por la que llega una incursión."}
+      ],
+      "modelos": [
+        {"id": "site_abandoned_mine", "nombre": "Mina abandonada"}
+      ]
+    },
+    {
+      "id": "site_giant_bones",
+      "nombre": "Osamenta gigante",
+      "categoria": "Campamento y exploración",
+      "destacado": true,
+      "descripcion": "Esqueleto de 19 m de una bestia antigua: cráneo de 3 m con cuernos y dientes, espinazo arqueado hasta 2,5 m, siete pares de costillas (algunas rotas) y la cola perdiéndose en la hierba.",
+      "propuestas": [
+        {"titulo": "Hito del mapa", "detalle": "Un lugar que da nombre a la región y prestigio a quien lo tenga: los viajeros y mercaderes se desvían para verlo."},
+        {"titulo": "Cantera de hueso", "detalle": "Se puede aprovechar: da hueso para herramientas, armas y adornos de los orcos y lagartos; al aprovecharlo desaparece."},
+        {"titulo": "Los dragones existen", "detalle": "Encontrarlo abre la línea de sucesos de dragones: tiempo después aparece uno vivo. Dejarlo intacto o profanarlo cambia cómo llega."},
+        {"titulo": "Edificio dentro", "detalle": "Los orcos y los goblins construyen bajo las costillas: sirve de armazón gratis para un salón."}
+      ],
+      "modelos": [
+        {"id": "site_giant_bones", "nombre": "Osamenta gigante", "material": "hueso"}
+      ]
+    },
+    {
+      "id": "site_colossal_head",
+      "nombre": "Cabeza colosal enterrada",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Cabeza de piedra de una estatua enorme, enterrada hasta la barbilla: 5 m de ancho y 6,6 m de alto con los restos de la corona, una grieta en la cara, hiedra, y un dedo que asoma del suelo a unos metros.",
+      "propuestas": [
+        {"titulo": "Excavarla", "detalle": "Obra larga para muchos peones: bajo ella hay una estatua entera o la entrada de una ciudad antigua. Mientras se excava da piedra."},
+        {"titulo": "Historia del mundo", "detalle": "Cada cabeza explorada cuenta un trozo de quién vivió antes aquí; reunir varias desbloquea una maravilla."},
+        {"titulo": "Solo hito", "detalle": "Decoración natural rara del mapa generado, sin función."}
+      ],
+      "modelos": [
+        {"id": "site_colossal_head", "nombre": "Cabeza colosal", "material": "piedra"}
+      ]
+    },
+    {
+      "id": "site_battlefield",
+      "nombre": "Campo de batalla antiguo",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Claro de 12 m de tierra removida con lanzas y espadas oxidadas clavadas, escudos, cascos, huesos, un carro roto, tres estandartes rasgados (uno aún ondea) y un cuervo sobre un asta.",
+      "propuestas": [
+        {"titulo": "Chatarra y armas", "detalle": "Recogerlo da hierro viejo y algunas armas usables: la primera milicia se arma con lo que se encuentra."},
+        {"titulo": "Es lo que queda tras una incursión grande", "detalle": "Donde hubo un combate con muchas bajas queda este claro un tiempo; limpiarlo devuelve material y evita enfermedades."},
+        {"titulo": "Lugar maldito", "detalle": "De noche se levantan los caídos hasta que alguien les da sepultura (enterrador + un día)."}
+      ],
+      "modelos": [
+        {"id": "site_battlefield", "nombre": "Campo de batalla", "animaciones": {"idle": "Ondea el estandarte y picotea el cuervo."}}
+      ]
+    },
+    {
+      "id": "site_hermit_hut",
+      "nombre": "Choza del ermitaño",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Choza redonda de varas con techo cónico de paja de 4 m, arrimada a unas rocas, con una piel por puerta, cuatro bancales de hierbas, un tendedero de plantas secándose, un fuego con su olla en un trípode y un tocón.",
+      "propuestas": [
+        {"titulo": "Personaje del mapa", "detalle": "Quien lo visita con un regalo (comida) recibe algo: una receta de pociones, la ubicación de un lugar, la cura de una epidemia."},
+        {"titulo": "Sanador de emergencia", "detalle": "Hasta tener enfermería, los enfermos graves pueden llevarse al ermitaño: cura lento pero gratis."},
+        {"titulo": "Se une al pueblo", "detalle": "Si el pueblo crece cerca y lo trata bien, se muda y pasa a ser el primer sanador o el primer mago."}
+      ],
+      "modelos": [
+        {"id": "site_hermit_hut", "nombre": "Choza del ermitaño", "animaciones": {"idle": "Arde el fuego y sale humo del techo."}}
+      ]
+    },
+    {
+      "id": "site_fairy_ring",
+      "nombre": "Corro de hadas",
+      "categoria": "Naturaleza y terreno",
+      "descripcion": "Círculo de 5 m de trece setas, rojas con pintas y azules que brillan, cuatro de ellas de más de 1 m, sobre musgo, con diez motas de luz que giran dentro.",
+      "propuestas": [
+        {"titulo": "Suerte o desgracia", "detalle": "Un aldeano que entra de noche vuelve con un don (trabaja mejor un mes) o no vuelve en tres días. El jugador puede cercarlo o dejarlo."},
+        {"titulo": "Setas mágicas", "detalle": "Ingrediente de alquimia que solo se recoge aquí, de noche y poco a poco."},
+        {"titulo": "Favor del bosque", "detalle": "Mientras el corro siga intacto, el bosque de alrededor rebrota más rápido; talarlo o pisarlo lo apaga."}
+      ],
+      "modelos": [
+        {"id": "site_fairy_ring", "nombre": "Corro de hadas", "animaciones": {"dance": "Las motas de luz giran."}}
+      ]
+    },
+    {
+      "id": "site_ancient_gate",
+      "nombre": "Puerta antigua",
+      "categoria": "Campamento y exploración",
+      "descripcion": "Puerta monumental de mármol de 7 m de ancho y 9 m de alto que quedó sola: dos pilonos con casetones, un arco al que le falta la clave, los bloques caídos delante, un trozo de calzada medio tapado por la hierba y dos columnas, una rota.",
+      "propuestas": [
+        {"titulo": "Aquí hubo una ciudad", "detalle": "Marca un sitio donde construir es más barato (hay cimientos y piedra labrada bajo la hierba) y donde aparecen hallazgos al cavar."},
+        {"titulo": "Restaurarla como arco de triunfo", "detalle": "Un pueblo que la restaura gana un monumento de mucho prestigio por una fracción de lo que cuesta uno nuevo."},
+        {"titulo": "Calzada antigua", "detalle": "De ella sale un camino de piedra ya hecho que cruza la región: quien se asienta junto a él comercia antes."}
+      ],
+      "modelos": [
+        {"id": "site_ancient_gate", "nombre": "Puerta antigua", "material": "mármol"}
+      ]
+    }
+  ]
+}

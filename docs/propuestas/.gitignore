@@ -1,0 +1,4 @@
+# Written by tools/propuestas/propuestas.py empaquetar from art/studies/propuestas (hundreds of MB).
+/datos/
+# Written by tools/propuestas/escena.py from the game's trees.
+/escena_arboles.js

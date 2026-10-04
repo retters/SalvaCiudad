@@ -1,0 +1,243 @@
+{
+  "familia": "magic",
+  "grupos": [
+    {
+      "id": "magic_ley_stone",
+      "nombre": "Piedra de línea de poder",
+      "categoria": "Magia y alquimia",
+      "destacado": true,
+      "descripcion": "Menhir de 3,7 m con runas que brillan de noche y cuatro esquirlas que giran a su alrededor, sobre un círculo de piedras de 3 m. En cuatro tradiciones: piedra y luz azul, obsidiana y violeta (elfos oscuros), mármol con musgo y verde (elfos), piedra enana y oro.",
+      "propuestas": [
+        {"titulo": "Recurso del mapa: maná", "detalle": "Aparecen en el mundo generado, en línea unas con otras. Un pueblo que tenga una en su territorio puede levantar edificios mágicos cerca de ella; cuanto más lejos, menos rinden."},
+        {"titulo": "Se construye para extender la red", "detalle": "Como los postes de un tendido: cada piedra nueva (piedra y cristales) lleva el maná 20 m más allá de la anterior, hasta donde se quiera poner el taller o el portal."},
+        {"titulo": "Punto de interés a explorar", "detalle": "Los exploradores que la encuentran aprenden un hechizo o una mejora; cada tradición enseña algo distinto, así que conviene buscar las de otras razas."},
+        {"titulo": "Calma o altera lo que la rodea", "detalle": "Los cultivos crecen más rápido a su alrededor, pero también atrae criaturas de fantasía: quien vive cerca necesita guardia."}
+      ],
+      "modelos": [
+        {"id": "magic_ley_stone_stone", "nombre": "Piedra (humanos)", "material": "piedra", "animaciones": {"hum": "Las esquirlas giran y suben y bajan."}},
+        {"id": "magic_ley_stone_obsidian", "nombre": "Obsidiana (elfos oscuros)", "material": "obsidiana", "animaciones": {"hum": "Las esquirlas giran y suben y bajan."}},
+        {"id": "magic_ley_stone_elf", "nombre": "Mármol con musgo (elfos)", "material": "mármol", "animaciones": {"hum": "Las esquirlas giran y suben y bajan."}},
+        {"id": "magic_ley_stone_dwarf", "nombre": "Piedra enana", "material": "piedra", "animaciones": {"hum": "Las esquirlas giran y suben y bajan."}}
+      ]
+    },
+    {
+      "id": "magic_mana_well",
+      "nombre": "Pozo de maná",
+      "categoria": "Magia y alquimia",
+      "destacado": true,
+      "descripcion": "Brocal redondo de 3 m lleno de luz líquida, con una banda de runas, sobre dos escalones; cuatro garras de piedra sostienen un orbe que flota a 2,5 m. 4,4 m de diámetro y 3,5 m de alto.",
+      "propuestas": [
+        {"titulo": "Produce maná", "detalle": "El edificio base de la magia: da maná con el tiempo (más si está sobre una línea de poder) y lo guardan los edificios mágicos de su radio. Lo atiende un mago."},
+        {"titulo": "Curación", "detalle": "Los heridos y enfermos que beben de él sanan más rápido: funciona como una enfermería sin sanador, pero gasta maná."},
+        {"titulo": "Objetivo de las incursiones", "detalle": "Los enemigos de fantasía vienen por él: si lo profanan, deja de dar maná hasta que se limpia."}
+      ],
+      "modelos": [
+        {"id": "magic_mana_well", "nombre": "Pozo de maná", "material": "piedra", "animaciones": {"well_up": "El orbe gira y las gotas de luz suben y bajan."}}
+      ]
+    },
+    {
+      "id": "magic_circle",
+      "nombre": "Círculos mágicos",
+      "categoria": "Magia y alquimia",
+      "destacado": true,
+      "descripcion": "Círculo de 5 m grabado en losas, con una estrella de luz y dos anillos de runas que giran en el aire. El de viaje tiene seis pilones con cristal; el de invocación, cinco candeleros, un brasero, un cráneo y un libro.",
+      "propuestas": [
+        {"titulo": "Viaje entre círculos", "detalle": "Dos círculos de viaje del mismo pueblo se enlazan: aldeanos y porteadores cruzan de uno a otro al instante, gastando maná por viaje. Sirve para unir un puesto lejano (mina, puerto) con el centro."},
+        {"titulo": "Invocar ayudantes", "detalle": "En el círculo de invocación un mago llama a un ser que trabaja unos días: un elemental que carga, un espíritu que vigila, un familiar que explora. Cuesta maná y un ingrediente."},
+        {"titulo": "Riesgo", "detalle": "Una invocación sin mago suficiente o sin protecciones sale mal: aparece un enemigo dentro del pueblo. Los pilones de protección reducen el riesgo."},
+        {"titulo": "Entre jugadores", "detalle": "En multijugador, dos pueblos aliados pueden enlazar sus círculos y comerciar sin caravana."}
+      ],
+      "modelos": [
+        {"id": "magic_circle_teleport", "nombre": "Círculo de viaje", "material": "piedra", "animaciones": {"turn": "Giran los dos anillos de runas."}},
+        {"id": "magic_circle_summon", "nombre": "Círculo de invocación", "material": "obsidiana", "animaciones": {"turn": "Giran los dos anillos de runas."}}
+      ]
+    },
+    {
+      "id": "magic_waygate",
+      "nombre": "Arco de paso",
+      "categoria": "Magia y alquimia",
+      "destacado": true,
+      "descripcion": "Arco de 5,2 × 2,6 m y 6,2 m de alto, con runas en las jambas, un cristal sobre la clave y un velo de luz entre los postes por el que se cruza. En piedra, obsidiana, mármol élfico con hojas y piedra enana con placas de bronce.",
+      "propuestas": [
+        {"titulo": "Camino rápido", "detalle": "Dos arcos enlazados cuentan como un tramo de camino de longitud cero: carretas y aldeanos lo cruzan. Muy caro (piedra, cristales, oro) y gasta maná mientras está abierto."},
+        {"titulo": "Mercaderes de lejos", "detalle": "Por el arco llegan mercaderes de tierras que no están en el mapa, con mercancías que no se consiguen de otra forma. Cada raza abre el suyo hacia su tierra de origen."},
+        {"titulo": "Puerta que hay que defender", "detalle": "Cada cierto tiempo algo intenta cruzar desde el otro lado: es una fuente de incursiones que el jugador decide abrir a cambio de lo que da."},
+        {"titulo": "Evacuación", "detalle": "En un asedio perdido, los aldeanos huyen por el arco a otro pueblo propio en vez de morir."}
+      ],
+      "modelos": [
+        {"id": "magic_waygate_stone", "nombre": "Piedra (humanos)", "material": "piedra", "animaciones": {"open": "Tiembla el velo y giran las motas de luz."}},
+        {"id": "magic_waygate_obsidian", "nombre": "Obsidiana (elfos oscuros)", "material": "obsidiana", "animaciones": {"open": "Tiembla el velo y giran las motas de luz."}},
+        {"id": "magic_waygate_elf", "nombre": "Mármol y hojas (elfos)", "material": "mármol", "animaciones": {"open": "Tiembla el velo y giran las motas de luz."}},
+        {"id": "magic_waygate_dwarf", "nombre": "Piedra y bronce (enanos)", "material": "piedra", "animaciones": {"open": "Tiembla el velo y giran las motas de luz."}}
+      ]
+    },
+    {
+      "id": "magic_crystal_bed",
+      "nombre": "Bancal de cristales",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Bancal de 3 × 3 m con bordillo de piedra donde los cristales crecen como un cultivo, en tres etapas: brotes, racimos medianos y cristales maduros que brillan.",
+      "propuestas": [
+        {"titulo": "Cultivo de cristales", "detalle": "Se siembra con esquirlas y se riega con maná; tarda varias estaciones y da cristales, el recurso con que se construyen farolas, pilones y arcos. Crece también en invierno."},
+        {"titulo": "Solo sobre línea de poder", "detalle": "No crece en cualquier sitio: hay que poner el bancal junto a una piedra de poder, lo que obliga a planear el barrio de los magos."},
+        {"titulo": "Mercancía de lujo", "detalle": "Los cristales maduros se venden muy caros a los mercaderes: un cultivo lento pero el más rentable por metro."}
+      ],
+      "modelos": [
+        {"id": "magic_crystal_bed_1", "nombre": "Etapa 1: brotes"},
+        {"id": "magic_crystal_bed_2", "nombre": "Etapa 2: creciendo"},
+        {"id": "magic_crystal_bed_3", "nombre": "Etapa 3: maduros"}
+      ]
+    },
+    {
+      "id": "magic_alchemy_yard",
+      "nombre": "Patio del alquimista",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Toldo de 5 × 3,4 m con un alambique de cobre sobre su hornillo, un caldero que burbujea colgado de un trípode, banco y estante de frascos de colores, hierbas secándose, barril, saco y trozos de mineral.",
+      "propuestas": [
+        {"titulo": "Pociones", "detalle": "Convierte hierbas, hongos y minerales en pociones: curación (la enfermería cura más rápido), vigor (un aldeano trabaja el doble un día) y antídoto (contra la peste)."},
+        {"titulo": "Transmutar", "detalle": "Cambia un recurso por otro con pérdida: hierro en oro, arcilla en piedra. Caro en maná, pero saca de un apuro."},
+        {"titulo": "Fuego de alquimista", "detalle": "Hace frascos incendiarios para las catapultas y los defensores del muro. Si el taller se incendia, explota y daña lo que tenga cerca."},
+        {"titulo": "Abono y tintes", "detalle": "Versión sin magia: mejora el tintorero y da abono que aumenta la cosecha de un campo por temporada."}
+      ],
+      "modelos": [
+        {"id": "magic_alchemy_yard", "nombre": "Patio del alquimista", "animaciones": {"brew": "Burbujea el caldero y sube el vapor."}}
+      ]
+    },
+    {
+      "id": "magic_golem_works",
+      "nombre": "Taller de gólems",
+      "categoria": "Magia y alquimia",
+      "destacado": true,
+      "descripcion": "Pórtico de madera de 4,8 m sobre una losa de 5 × 4 m: las piernas del gólem ya están en pie y el torso con su núcleo de cristal cuelga encima, a punto de encajar; un brazo en el banco y otro en el suelo, piedra en bruto y una caja de cristales.",
+      "propuestas": [
+        {"titulo": "Trabajadores de piedra", "detalle": "Cada gólem (piedra + un cristal + maná) carga como cuatro porteadores y no come ni duerme, pero gasta maná cada día y se detiene si falta."},
+        {"titulo": "Defensor del pueblo", "detalle": "Un gólem de guardia aguanta lo que diez milicianos; es lento y solo defiende el radio de su taller."},
+        {"titulo": "Construcción pesada", "detalle": "Sustituye a la grúa en las obras grandes: un gólem sube sillares sin andamio."},
+        {"titulo": "Puede volverse en contra", "detalle": "Si el pozo de maná cae o se profana, los gólems quedan sin dueño y atacan lo que tienen cerca."}
+      ],
+      "modelos": [
+        {"id": "magic_golem_works", "nombre": "Taller de gólems", "animaciones": {"fit": "El torso baja hacia las piernas y vuelve a subir."}}
+      ]
+    },
+    {
+      "id": "magic_scrying_pool",
+      "nombre": "Estanque de visiones",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Pila octogonal de mármol de 3,6 m con agua que brilla y tres nervios dorados que se juntan a 3,5 m; dentro flota y gira un espejo redondo de 1,5 m.",
+      "propuestas": [
+        {"titulo": "Ver lejos", "detalle": "Descubre una zona del mapa sin mandar exploradores: el jugador elige dónde mirar y gasta maná según la distancia."},
+        {"titulo": "Aviso de incursiones", "detalle": "Con un vidente atendiéndolo, las incursiones se anuncian con un día de adelanto y se sabe por dónde vienen."},
+        {"titulo": "Pronóstico", "detalle": "Anuncia el tiempo de la próxima estación (sequía, helada, tormenta), para decidir qué sembrar."},
+        {"titulo": "Espiar a otro jugador", "detalle": "En multijugador, muestra durante un momento el pueblo de otro; él lo nota si tiene pilones de protección."}
+      ],
+      "modelos": [
+        {"id": "magic_scrying_pool", "nombre": "Estanque de visiones", "material": "mármol y oro", "animaciones": {"scry": "El espejo gira y flota."}}
+      ]
+    },
+    {
+      "id": "magic_ward",
+      "nombre": "Protecciones",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Tres formas de proteger un lugar: pilón de piedra de 2,5 m con runas y un cristal sostenido por garras de hierro; tótem de madera de 3,2 m con tres caras, alas de plumas y amuletos de hueso; y brasero de hierro que arde con fuego violeta sin leña.",
+      "propuestas": [
+        {"titulo": "Barrera contra lo no natural", "detalle": "Los no muertos, espectros y demonios no cruzan la línea entre dos protecciones a menos de 12 m: se pone un cerco alrededor del pueblo o del cementerio. Los enemigos comunes no lo notan."},
+        {"titulo": "Contra la enfermedad y la mala suerte", "detalle": "Las casas dentro de su radio enferman menos y sufren menos accidentes; el tótem es la versión barata de los pueblos de madera."},
+        {"titulo": "Luz de noche", "detalle": "El brasero alumbra como una farola y no gasta combustible, solo un poco de maná."},
+        {"titulo": "Avisa", "detalle": "Cuando algo hostil cruza, la protección destella y suena: funciona como un vigía que no duerme."}
+      ],
+      "modelos": [
+        {"id": "magic_ward_pylon", "nombre": "Pilón con cristal", "material": "piedra", "animaciones": {"guard": "El cristal gira y flota."}},
+        {"id": "magic_ward_totem", "nombre": "Tótem de madera", "material": "troncos", "animaciones": {"guard": "El cristal gira y flota."}},
+        {"id": "magic_ward_brazier", "nombre": "Brasero de fuego frío", "material": "hierro", "animaciones": {"guard": "Tiemblan las llamas."}}
+      ]
+    },
+    {
+      "id": "magic_enchant_altar",
+      "nombre": "Altar de encantamiento",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Mesa de piedra con runas sobre una base octogonal de 4 m, con una espada sobre un paño, cuatro candeleros y un libro abierto que flota y gira encima.",
+      "propuestas": [
+        {"titulo": "Herramientas y armas encantadas", "detalle": "Una herramienta encantada rinde más (hacha que tala el doble, hoz que no se gasta) y un arma hace más daño a criaturas de fantasía. Cuesta maná y un cristal por pieza."},
+        {"titulo": "Mejora permanente de un oficio", "detalle": "En vez de piezas sueltas: se encanta un taller entero y todos los que trabajan en él rinden un 20 % más."},
+        {"titulo": "Regalos de prestigio", "detalle": "Los objetos encantados son el mejor regalo para otro pueblo o el mejor pago a un mercader."}
+      ],
+      "modelos": [
+        {"id": "magic_enchant_altar", "nombre": "Altar de encantamiento", "material": "piedra", "animaciones": {"float": "El libro flota y gira."}}
+      ]
+    },
+    {
+      "id": "magic_storm_rod",
+      "nombre": "Mástil de tormentas",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Mástil de cobre de 10 m con cinco aros, sobre un pedestal de piedra, sujeto con cuatro vientos; al pie, cuatro vasijas que guardan lo que recoge. Las chispas suben y bajan por el mástil.",
+      "propuestas": [
+        {"titulo": "Pararrayos", "detalle": "Sin magia: las tormentas ya no incendian edificios en un radio grande alrededor del mástil. Barato en cobre o hierro."},
+        {"titulo": "Guardar el rayo", "detalle": "Cada tormenta llena las vasijas: dan maná de golpe, o cargan una defensa que lanza un rayo al primer enemigo que se acerque."},
+        {"titulo": "Llamar la lluvia", "detalle": "Un mago puede gastar lo guardado para provocar lluvia en plena sequía, o disiparla antes de la cosecha."}
+      ],
+      "modelos": [
+        {"id": "magic_storm_rod", "nombre": "Mástil de tormentas", "material": "cobre y piedra", "animaciones": {"charge": "Las chispas giran alrededor del mástil."}}
+      ]
+    },
+    {
+      "id": "magic_lamp",
+      "nombre": "Farola de cristal",
+      "categoria": "Caminos",
+      "descripcion": "Farola de 3,5 m sin aceite: un cristal flota y gira sobre su soporte. De hierro con luz azul, de acero con luz violeta, de rama viva con luz verde (elfos) y de piedra con runas y luz dorada (enanos).",
+      "propuestas": [
+        {"titulo": "Farola que no hay que encender", "detalle": "Alumbra toda la noche sin farolero ni aceite; cuesta un cristal y un poco de maná. Sustituye a la farola normal en pueblos con magia."},
+        {"titulo": "Estilo por raza", "detalle": "Cada pueblo usa la suya: es la misma farola con el aspecto de su raza, sin diferencia de función."},
+        {"titulo": "Calles seguras", "detalle": "Bajo su luz los espectros y las criaturas nocturnas no se acercan: marca los caminos seguros de noche."}
+      ],
+      "modelos": [
+        {"id": "magic_lamp_stone", "nombre": "Hierro, luz azul", "material": "hierro", "animaciones": {"float": "El cristal gira y flota."}},
+        {"id": "magic_lamp_obsidian", "nombre": "Acero, luz violeta", "material": "hierro", "animaciones": {"float": "El cristal gira y flota."}},
+        {"id": "magic_lamp_elf", "nombre": "Rama viva, luz verde", "material": "troncos", "animaciones": {"float": "El cristal gira y flota."}},
+        {"id": "magic_lamp_dwarf", "nombre": "Piedra y runas, luz dorada", "material": "piedra", "animaciones": {"float": "El cristal gira y flota."}}
+      ]
+    },
+    {
+      "id": "magic_floating_island",
+      "nombre": "Isla flotante amarrada",
+      "categoria": "Naturaleza y terreno",
+      "destacado": true,
+      "descripcion": "Un trozo de terreno de 6 m que se soltó y flota a 4 m sobre el hueco que dejó, amarrado con cuatro cadenas a mojones de piedra; arriba, un árbol, un santuario pequeño con un cristal y un manantial que cae por el borde. Cristales bajo la roca. Ocupa 9 × 8 m y mide 8 m de alto.",
+      "propuestas": [
+        {"titulo": "Maravilla natural del mapa", "detalle": "Aparece muy rara vez en el mundo generado. Quien la tenga en su territorio gana prestigio y atrae visitantes; el santuario de arriba da una bendición a quien suba (hace falta una escalera o un globo)."},
+        {"titulo": "Fuente de cristales", "detalle": "Los cristales de la parte de abajo se recogen sin cultivarlos: es la mina de cristal del mapa, pero se agota."},
+        {"titulo": "Si se sueltan las amarras", "detalle": "Evento: una tormenta o un saboteador rompe una cadena y la isla deriva a otra parte del mapa, o cae. Mantener las cadenas cuesta hierro."},
+        {"titulo": "Torre de vigía natural", "detalle": "Con una plataforma arriba, un vigía ve el doble de lejos que desde una torre."}
+      ],
+      "modelos": [
+        {"id": "magic_floating_island", "nombre": "Isla flotante", "animaciones": {"drift": "La isla sube y baja despacio y cae el agua."}}
+      ]
+    },
+    {
+      "id": "magic_herb_dome",
+      "nombre": "Cúpula de hierbas",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Muro redondo de piedra de 5,4 m con una cúpula de nervios de bronce y oro de 3,4 m de alto; dentro crecen plantas que brillan bajo un pequeño sol que gira colgado de la clave.",
+      "propuestas": [
+        {"titulo": "Invernadero mágico", "detalle": "Da hierbas medicinales y ingredientes de alquimia todo el año, también en invierno. Gasta maná en vez de agua."},
+        {"titulo": "Cualquier cultivo fuera de su clima", "detalle": "Dentro crece lo que el bioma no permite (uvas en la tundra, especias en el bosque): poca cantidad, pero abre comercio de lujo."},
+        {"titulo": "Calor en invierno", "detalle": "El sol de dentro calienta las casas que tiene alrededor: gastan menos leña."}
+      ],
+      "modelos": [
+        {"id": "magic_herb_dome", "nombre": "Cúpula de hierbas", "material": "piedra y bronce", "animaciones": {"shine": "El pequeño sol gira."}}
+      ]
+    },
+    {
+      "id": "magic_rune_forge",
+      "nombre": "Forja de runas",
+      "categoria": "Magia y alquimia",
+      "descripcion": "Forja enana sobre una losa de 5 × 4 m: hogar de piedra con chimenea de 3,9 m, un canal de piedra fundida, yunque sobre un bloque con runas, una hoja al rojo, tina de temple, lingotes y un martillo de bronce que golpea solo, colgado de un poste.",
+      "propuestas": [
+        {"titulo": "Mejora de la herrería, propia de los enanos", "detalle": "Nivel 3 de la herrería en pueblos enanos (o con un maestro enano invitado): forja armas y herramientas con runas que duran el triple."},
+        {"titulo": "El martillo trabaja solo", "detalle": "No necesita herrero: produce sin oficio asignado mientras tenga carbón, hierro y maná. Libera un aldeano."},
+        {"titulo": "Solo junto a lava o en montaña", "detalle": "Se alimenta de piedra fundida: hay que construirla junto a una boca de lava o en bioma de montaña, lo que da valor a ese terreno."}
+      ],
+      "modelos": [
+        {"id": "magic_rune_forge", "nombre": "Forja de runas", "material": "piedra y bronce", "animaciones": {"strike": "El martillo sube y golpea."}}
+      ]
+    }
+  ]
+}
