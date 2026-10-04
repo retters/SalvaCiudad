@@ -2004,7 +2004,9 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
                                                        v->carrying.amount)));
     }
     const bool renaming = rename_id_ == o.id && mine;
-    const float bar_block = 3 * (line + ctx.s(10.0f));
+    // Food, warmth and health; energy if the game has it; a line when in the dark.
+    const float bar_block = static_cast<float>(game.rules().rest ? 4 : 3) * (line + ctx.s(10.0f)) +
+                            (game.in_the_dark(*v) ? line : 0.0f);
     const float title_h = ctx.text().line_height(title);
     const float button_h = std::round(ctx.s(34.0f));
     const float link_h = std::round(ctx.s(30.0f));

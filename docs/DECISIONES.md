@@ -2750,7 +2750,7 @@ Es solo de la vista (D-6906): no quita la penalización. La ventana del aldeano 
 Reglas 38, protocolo de red 16.
 
 **D-7006. Lo probado y lo que no.**
-Prueba: humanos de noche dan pasos de 0,20 m por tick en la luz y de 0,15 a oscuras; los gatunos nunca están a oscuras; sin ciclo nadie lo está; la luz rodea al centro del pueblo y es igual tras cargar. La velocidad de trabajo usa la misma condición pero no tiene una prueba propia que mida cuánto tarda un leñador (el criterio lo pedía): queda por medir. No se revisó en pantalla la línea de la ventana del aldeano.
+Prueba: humanos de noche dan pasos de 0,20 m por tick en la luz y de 0,15 a oscuras; los gatunos nunca están a oscuras; sin ciclo nadie lo está; la luz rodea al centro del pueblo y es igual tras cargar. La velocidad de trabajo usa la misma condición pero no tiene una prueba propia que mida cuánto tarda un leñador (el criterio lo pedía): queda por medir. La línea de la ventana del aldeano y la barra de energía se vieron en pantalla al cerrar la fase 72 (la ventana creció para que quepan).
 
 ## Fase 71: energía y descanso (2026-10-03)
 
@@ -2773,7 +2773,7 @@ El resumen del pueblo no cuenta a los que descansan: la ventana de cada aldeano 
 Reglas 39, protocolo de red 17.
 
 **D-7107. Lo medido.**
-Prueba: un descanso completo en casa dura 1200 ticks y sin casa 2400; con casas, el pueblo pasa el 18 % del tiempo descansando; guardar con gente descansando y cargar da la misma partida; sin la regla nadie descansa. El pueblo de referencia de una hora llega a 24 habitantes y 7 casas con cansancio (sin él, la prueba original pide más de 12). No se revisó en pantalla: la barra de energía ni a los aldeanos quietos frente a su casa (se quedan de pie en la puerta; no entran ni se sientan).
+Prueba: un descanso completo en casa dura 1200 ticks y sin casa 2400; con casas, el pueblo pasa el 18 % del tiempo descansando; guardar con gente descansando y cargar da la misma partida; sin la regla nadie descansa. El pueblo de referencia de una hora llega a 24 habitantes y 7 casas con cansancio (sin él, la prueba original pide más de 12). No se revisó en pantalla a los aldeanos quietos frente a su casa (se quedan de pie en la puerta; no entran ni se sientan).
 
 ## Fase 72: amenazas de noche (2026-10-03)
 
