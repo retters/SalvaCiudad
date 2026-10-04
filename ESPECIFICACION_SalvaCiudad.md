@@ -1013,7 +1013,15 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - Solo maduros: tala únicamente árboles grandes y enormes, o del tamaño mayor de su especie si es menor que grande.
    - Avisos (fase 81): si a su alcance solo quedan árboles jóvenes, el leñador queda «esperando que crezcan», con línea de estado y sin notificación; si no queda ningún árbol ni brote, queda agotado.
    - *Criterios:* pruebas: con «Replantar» encendido, cada árbol talado deja un brote de su especie en el mismo sitio, y apagado no deja nada; con «Solo maduros», un leñador rodeado de árboles pequeños y medianos no tala ninguno y muestra «esperando que crezcan», y tala el primero que llega a grande; un leñador con los dos encendidos y 60 árboles grandes a su alcance sigue produciendo madera después de 10 años de juego; despejar una obra no deja brotes; los interruptores se guardan, se cargan y viajan en red; español e inglés; suben las versiones de reglas y de red.
-88. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+88. **Despejar una obra talando** (pedido del 2026-10-04, tras revisar la fase 85).
+   - Los árboles que quedan bajo una obra nueva ya no desaparecen al colocarla: siguen en pie hasta que alguien los tala. Mientras quede uno, la obra puede recibir materiales pero no se construye.
+   - Los talan los **peones** (los aldeanos sin empleo, los mismos que llevan materiales y construyen), antes que cualquier otra cosa de la obra. Talan todo árbol de la obra, sea frutal, joven o maduro, sin mirar los interruptores de ningún leñador, y no replantan.
+   - Cada árbol deja toda su madera, como al talarlo un leñador: el peón la lleva al almacén. Un frutal deja además la fruta que tenía, en el centro del pueblo (o en el carro).
+   - Con los **campos** pasa lo mismo: los árboles del campo siguen en pie, no se siembra hasta que estén talados, y los talan los trabajadores de esa granja.
+   - Rocas sueltas, arbustos, hierbas y brotes bajo la obra o el campo se quitan al colocarlo, como siempre. Un edificio que no se construye (queda terminado al colocarlo) quita sus árboles en el momento y su madera va al centro del pueblo.
+   - La ventana de una obra dice cuántos árboles faltan por talar. Cancelar la obra deja en pie los que queden.
+   - *Criterios:* pruebas: una casa colocada sobre tres árboles no avanza mientras quede uno; los peones los talan y la madera del pueblo sube en lo que tenían los tres; un frutal con fruta deja además su fruta; con un leñador que no tala frutales al lado, el frutal de la obra se tala igual y no queda brote aunque el leñador replante; después la casa se termina; una obra cancelada a medio despejar conserva sus árboles; un campo sobre árboles no se siembra hasta que los trabajadores de la granja los talan; guardar y cargar a medio despejar; español e inglés; sube la versión de reglas.
+89. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 

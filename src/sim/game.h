@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 52;
+inline constexpr std::uint32_t kGameRulesVersion = 53;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -612,6 +612,13 @@ public:
     // lost when autumn ends.
     [[nodiscard]] std::int32_t fruit_on(std::uint32_t node) const { return fruit_on(node, calendar()); }
     [[nodiscard]] std::int32_t fruit_on(std::uint32_t node, const Calendar& when) const;
+    // Phase 88: the trees still standing on the ground of a construction
+    // site; it is not built while there is one.
+    [[nodiscard]] std::int32_t trees_on_site(const Building& site) const;
+    // The first tree standing on a rectangle of ground (index + 1, 0 if
+    // none), one nobody is felling if there is one; `count`, how many stand.
+    [[nodiscard]] std::uint32_t tree_on(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d, std::int32_t margin,
+                                        std::int32_t* count = nullptr) const;
     // Phase 86: today as days since the first of year 1 (120 a year).
     [[nodiscard]] std::uint32_t day_number() const {
         const Calendar c = calendar();

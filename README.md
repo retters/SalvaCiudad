@@ -602,6 +602,23 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 88 (despejar una obra talando)
+
+- [ ] Al poner una casa sobre árboles, los árboles siguen ahí y la ventana de la obra dice «Despejando: falta talar N árboles».
+- [ ] Los peones van a talarlos antes de construir; cada árbol deja su madera (el peón se la lleva al almacén, o directo a una obra que la necesite si no hay sitio donde guardarla). Un frutal deja además su fruta en el centro del pueblo.
+- [ ] La obra no avanza mientras quede un árbol, y después se construye como siempre.
+- [ ] Un frutal bajo la obra se tala aunque el leñador de al lado tenga «Talar frutales: no», y no queda brote aunque tenga «Replantar: sí».
+- [ ] Cancelar la obra a medio despejar deja en pie los árboles que quedaban.
+- [ ] Un campo nuevo sobre árboles: los trabajadores de la granja los talan y solo después siembran.
+- [ ] Rocas, arbustos y hierbas bajo la obra siguen desapareciendo al colocarla.
+- [ ] **Sin revisar en pantalla por Claude:** nada de esta fase; por pruebas sí. En particular, cómo se ve el peón talando un árbol que quedó dentro de la silueta de la obra (se para en el borde).
+- [ ] **Tu opinión:** si rocas y arbustos bajo una obra también deberían recogerse en vez de desaparecer.
+
+### Hambre en viajes con rodeo (corrección)
+
+- [ ] Con una obra muy lejos del pueblo (más de unos 250 m, o con un lago en medio), los peones salen, se dan la vuelta a comer y vuelven a salir; ninguno debe llegar a cero de comida ni morir de hambre por eso.
+- [ ] **Tu opinión:** esas obras no se terminan nunca y el juego no lo avisa (ver D-8812).
+
 ### Fase 87 (el leñador: replantar y talar solo maduros)
 
 - [ ] La ventana del leñador tiene tres botones: «Talar frutales», «Replantar lo talado» y «Solo árboles maduros», los tres en «no» al construirlo.

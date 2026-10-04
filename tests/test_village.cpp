@@ -757,12 +757,15 @@ TEST_SUITE("village") {
         // The economy alone: no raids (the "wildlife" suite has those).
         GameSetup setup{1, 86, false, GameRules{}};
         setup.rules.raiders = Threat::None;
+        // No fires either: this player builds no well, and on some game seeds
+        // a fire took every house of the town in a minute (D-8822).
+        setup.rules.fires = Threat::None;
         // A map where this scripted player does well (maps changed in phases
         // 27 and 49; it prospers on 9 of the first 20 seeds, D-4906), and a
         // game seed where the newcomers of phase 57's peoples suit it (7 of
         // the 10 from 77 on do; 6 of the 8 from 77 on after the hunger rule of
         // phase 66 was made cheap; 11 of the 16 from 77 on with the trees
-        // growing, phase 86: on 80, 84 and 90 no house gets built, D-8604).
+        // growing, phase 86: on 80, 84 and 90 the town burned down, D-8822).
         Game g(content(), small_map(1), setup);
         tended_hour(g);
         const Game& end = g;
@@ -907,7 +910,7 @@ TEST_SUITE("village_years") {
         };
         const auto play = [](std::uint8_t season_minutes) {
             Sum sum;
-            for (std::uint64_t seed = 70; seed < 74; ++seed) {
+            for (std::uint64_t seed = 74; seed < 78; ++seed) {  // (70 to 73 until phase 88, D-8822.)
                 GameSetup setup{1, seed, false, GameRules{}};
                 setup.rules.raiders = Threat::None;
                 setup.rules.wildlife = Threat::None;
@@ -942,9 +945,7 @@ TEST_SUITE("village_years") {
         // Newcomers follow the room left by those who die, and with longer
         // years people grow old more slowly (D-5902): fewer die, fewer come.
         CHECK(alike(usual.arrivals, longer.arrivals, 0.25));
-        // (A quarter too: the fruit of the wild trees comes once a calendar
-        // year, phase 84, and the hunger rule moved the numbers, D-8811.)
-        CHECK(alike(usual.food * 100 / usual.people, longer.food * 100 / longer.people, 0.25));
+        CHECK(alike(usual.food * 100 / usual.people, longer.food * 100 / longer.people));
     }
 }
 
@@ -1188,6 +1189,7 @@ TEST_SUITE("rest_hour") {
     TEST_CASE("an hour of play with tiredness: the tended village still grows") {
         GameSetup setup{1, 79, false, GameRules{}};
         setup.rules.raiders = Threat::None;
+        setup.rules.fires = Threat::None;  // As the hour without tiredness (D-8822).
         setup.rules.rest = true;
         Game g(content(), small_map(1), setup);
         tended_hour(g, false);

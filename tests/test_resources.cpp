@@ -84,12 +84,15 @@ void grant(Game& g, const char* resource, std::int32_t amount) {
     g.apply(c);
 }
 
-// Places `def` as near (x, z) as it fits and waits until it is built.
-EntityId build(Game& g, const char* def, std::int32_t ox, std::int32_t oz) {
+// Places `def` as near (x, z) as it fits and waits until it is built (with
+// materials to spare, unless `granted` is false: the town's own then).
+EntityId build(Game& g, const char* def, std::int32_t ox, std::int32_t oz, bool granted = true) {
     const DefIndex d = content()->find_building(def);
     REQUIRE(d != kNoDef);
-    grant(g, "core:log", 100);
-    grant(g, "core:stone", 30);
+    if (granted) {
+        grant(g, "core:log", 100);
+        grant(g, "core:stone", 30);
+    }
     for (int r = 6; r < 40; r += 2) {
         for (int a = 0; a < 9; ++a) {
             const int x = ox + (a % 3 - 1) * r;
@@ -610,31 +613,151 @@ TEST_SUITE("resources") {
         CHECK(held(g, "core:fruit") <= fruit);
     }
 
-    TEST_CASE("clearing a site over a fruit tree leaves its wood and its fruit with the town") {
+    TEST_CASE("a site over trees is cleared by laborers who fell them, and their wood and fruit come to the town") {
         Land l;
         const std::uint32_t apple = apple_land(l);
-        Game g(content(), l.map, setup());
+        Game g(content(), l.map, setup());  // Summer all year: the trees have fruit.
+        // A woodcutter beside them that spares fruit trees and replants: neither counts on a site.
+        // (Built with the town's own wood, and with a storehouse: a new town's
+        // center is full, and wood with nowhere to go is left on the ground.)
+        (void)build(g, "core:storehouse", l.x, l.z - 20, false);
+        const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 16, false);
+        g.apply(set_option(cutter, 1, true));
         const std::int32_t logs = g.nodes()[apple + 1].amount;
-        const std::int32_t fruit = held(g, "core:fruit");
-        const std::int32_t wood = held(g, "core:log");
+        // All the town's wood, wherever it is: stored, on its sites and in hand.
+        const auto wood = [&] {
+            const DefIndex log = content()->find_resource("core:log");
+            std::int32_t total = held(g, "core:log");
+            for (const Building& b : g.buildings().data()) {
+                for (const Stock& st : b.delivered) {
+                    total += st.resource == log ? st.amount : 0;
+                }
+            }
+            return total;
+        };
         // A house right on the middle tree.
-        const DefIndex house = content()->find_building("core:house");
         const MapFeature& f = g.map().features[apple + 1];
         Command c;
         c.type = CommandType::PlaceBuilding;
-        c.def = house;
+        c.def = content()->find_building("core:house");
         c.position = {Fixed::from_int(f.x.floor_int() - 1), Fixed::from_int(f.z.floor_int() - 1)};
         const std::size_t before = g.buildings().size();
         g.apply(c);
         REQUIRE(g.buildings().size() == before + 1);
-        CHECK(g.nodes()[apple + 1].amount == 0);
-        // (The house is wider than the row is spaced: it may take a neighbor too.)
-        std::int32_t cleared = 0;
+        const EntityId house = g.buildings().entities()[g.buildings().size() - 1];
+        // The trees are still there, and the site says how many.
+        const std::int32_t on_site = g.trees_on_site(*g.buildings().get(house));
+        REQUIRE(on_site >= 1);
+        CHECK(g.nodes()[apple + 1].amount == logs);
+        std::vector<std::uint32_t> there;
         for (std::uint32_t i = apple; i < apple + 3; ++i) {
-            cleared += g.nodes()[i].amount == 0 ? 1 : 0;
+            const MapFeature& t = g.map().features[i];
+            const Building& b = *g.buildings().get(house);
+            if (t.x.floor_int() >= b.x - 1 && t.x.floor_int() < b.x + b.width + 1 && t.z.floor_int() >= b.z - 1 &&
+                t.z.floor_int() < b.z + b.depth + 1) {
+                there.push_back(i);
+            }
         }
-        CHECK(held(g, "core:log") == wood + cleared * logs);
-        CHECK(held(g, "core:fruit") == fruit + cleared * 6);
+        CHECK(static_cast<std::int32_t>(there.size()) == on_site);
+        const std::int32_t wood_before = wood();
+        // Saved before it is cleared and loaded: the same game.
+        BinaryWriter w;
+        g.save(w);
+        Game back(content(), l.map, setup());
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.hash() == g.hash());
+        CHECK(back.trees_on_site(*back.buildings().get(house)) == on_site);
+        // Nothing is built while a tree stands.
+        bool built_early = false;
+        for (int t = 0; t < 400 && g.trees_on_site(*g.buildings().get(house)) > 0; ++t) {
+            run(g, 10);
+            const Building* b = g.buildings().get(house);
+            built_early = built_early || (g.trees_on_site(*b) > 0 && b->work_done > 0);
+        }
+        CHECK_FALSE(built_early);
+        REQUIRE(g.trees_on_site(*g.buildings().get(house)) == 0);
+        for (const std::uint32_t i : there) {
+            CHECK(g.nodes()[i].amount == 0);
+            CHECK_FALSE(g.sprout(i));                 // Nobody replants a site.
+            CHECK(g.nodes()[i].fruit_picked == 6);    // Its fruit was taken, for the town.
+        }
+        // The trees outside the site are the woodcutter's business: it spares them.
+        for (std::uint32_t i = apple; i < apple + 3; ++i) {
+            if (std::find(there.begin(), there.end(), i) == there.end()) {
+                CHECK(g.nodes()[i].amount == logs);
+            }
+        }
+        // Their wood is the town's, all of it (still in the fellers' hands, or stored).
+        CHECK(wood() == wood_before + on_site * logs);
+        // And then the house is built.
+        for (int t = 0; t < 80 && g.buildings().get(house)->state != BuildingState::Complete; ++t) {
+            run(g, 100);
+        }
+        CHECK(g.buildings().get(house)->state == BuildingState::Complete);
+    }
+
+    TEST_CASE("a site cancelled before it is cleared keeps its trees") {
+        Land l;
+        const std::uint32_t apple = apple_land(l);
+        Game g(content(), l.map, setup());
+        const std::int32_t logs = g.nodes()[apple + 1].amount;
+        const MapFeature& f = g.map().features[apple + 1];
+        Command c;
+        c.type = CommandType::PlaceBuilding;
+        c.def = content()->find_building("core:house");
+        c.position = {Fixed::from_int(f.x.floor_int() - 1), Fixed::from_int(f.z.floor_int() - 1)};
+        const std::size_t before = g.buildings().size();
+        g.apply(c);
+        REQUIRE(g.buildings().size() == before + 1);
+        Command cancel;
+        cancel.type = CommandType::RemoveBuilding;
+        cancel.entity = g.buildings().entities()[g.buildings().size() - 1];
+        g.apply(cancel);
+        CHECK(g.buildings().size() == before);
+        for (std::uint32_t i = apple; i < apple + 3; ++i) {
+            CHECK(g.nodes()[i].amount == logs);
+        }
+    }
+
+    TEST_CASE("a field over trees is sown only after the farm's workers fell them") {
+        Land l;
+        const std::uint32_t oaks = oak_land(l, 2, TreeSize::Medium);
+        Game g(content(), l.map, setup());
+        const EntityId farm = build(g, "core:farm", l.x, l.z + 24);
+        // A field around the two oaks.
+        const MapFeature& f = g.map().features[oaks];
+        const std::int32_t fx = f.x.floor_int() - 2;
+        const std::int32_t fz = f.z.floor_int() - 2;
+        REQUIRE(g.can_place_field(0, farm, fx, fz, 10, 10) == PlaceError::None);
+        Command c;
+        c.type = CommandType::PlaceField;
+        c.entity = farm;
+        c.position = {Fixed::from_int(fx), Fixed::from_int(fz)};
+        c.value = 10 | (10 << 8);
+        g.apply(c);
+        REQUIRE(g.buildings().get(farm)->fields.size() == 1);
+        const std::int32_t logs = g.nodes()[oaks].amount;
+        CHECK(logs > 0);                             // Still standing.
+        CHECK(g.tree_on(fx, fz, 10, 10, 0) != 0);
+        bool sown_early = false;
+        for (int t = 0; t < 600 && g.tree_on(fx, fz, 10, 10, 0) != 0; ++t) {
+            run(g, 10);
+            const Field& field = g.buildings().get(farm)->fields[0];
+            sown_early = sown_early || (g.tree_on(fx, fz, 10, 10, 0) != 0 && (field.state != FieldState::Waiting || field.work > 0));
+        }
+        CHECK_FALSE(sown_early);
+        CHECK(g.tree_on(fx, fz, 10, 10, 0) == 0);
+        CHECK(g.nodes()[oaks].amount == 0);
+        CHECK(g.nodes()[oaks + 1].amount == 0);
+        // Then it is sown.
+        bool sown = false;
+        for (int t = 0; t < 400 && !sown; ++t) {
+            run(g, 10);
+            const Field& field = g.buildings().get(farm)->fields[0];
+            sown = field.state != FieldState::Waiting || field.work > 0;
+        }
+        CHECK(sown);
     }
 
 }

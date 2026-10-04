@@ -658,6 +658,7 @@
     "hud.close": "×",
     "hud.close.tooltip": "Cerrar (Esc).",
     "hud.building.construction": "En construcción: {0:percent} %",
+    "hud.building.clearing": {"one": "Despejando: falta talar {0} árbol", "other": "Despejando: falta talar {0} árboles"},
     "hud.building.material": "{0:name}: {1:have} de {2:needed}",
     "hud.building.residents": "Habitantes: {0:count} de {1:max}",
     "hud.building.storage": "Guardado: {0:count} de {1:max}",

@@ -878,6 +878,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     if (b->state == sim::BuildingState::Construction) {
         progress = d.build_work > 0 ? static_cast<float>(b->work_done) / static_cast<float>(d.build_work) : 1.0f;
         lines.push_back(tr("hud.building.construction", static_cast<int>(std::lround(progress * 100.0f))));
+        if (const std::int32_t trees = game.trees_on_site(*b); trees > 0) {
+            lines.push_back(i18n::tr_n("hud.building.clearing", trees));  // Phase 88.
+        }
         for (const sim::ResourceAmount& c : d.cost) {
             std::int32_t have = 0;
             for (const sim::Stock& st : b->delivered) {

@@ -3215,3 +3215,26 @@ Cada aldeano lleva la cuenta de los pasos que caminó desde que comió o desde q
 
 **D-8812. Lo que sigue igual.**
 Una obra más lejos de lo que permite un medidor lleno nunca se termina y el juego no lo dice: los peones salen, se dan la vuelta a medio camino a comer y vuelven a salir (ya estaba en D-6807). Las salidas posibles son un aviso de «obra demasiado lejos de la comida», o que los peones lleven provisiones como el explorador; queda para decidir con Salvador.
+
+## Fase 88: despejar una obra talando (2026-10-04)
+
+**D-8820. Lo que pidió Salvador y cómo quedó.**
+Al revisar la fase 85: «todos los árboles deben dejar la madera que dejarían al talarse normalmente, al ser despejados para una obra», y «deben despejarse talándose por trabajadores/jornaleros». Reemplaza a D-8505. Los árboles bajo una obra ya no se quitan al colocarla. Mientras quede uno en pie dentro de su terreno (el mismo margen de un metro de siempre), la obra recibe materiales pero nadie la construye. Los peones los talan antes que cualquier otra tarea de obra, eligiendo la obra más cercana; talan cualquier árbol, sin mirar las opciones de ningún leñador, y no replantan. La madera sale unidad por unidad como en la tala normal y el peón la lleva al almacén. La fruta de un frutal va al centro del pueblo (o al carro). Un leñador cercano también puede talar esos árboles por su cuenta, con sus propias reglas.
+
+**D-8821. Lo que la especificación no decía.**
+- **Campos:** igual que las obras, pero los talan los trabajadores de esa granja (son quienes ya van al campo) y no se siembra hasta que estén talados.
+- **Lo que no es árbol** (rocas sueltas, arbustos, hierbas, brotes) sigue quitándose al colocar la obra, sin dejar nada. Salvador habló de árboles; queda como pregunta.
+- **Edificios que nacen terminados** (los del pueblo ya fundado de las pruebas, el carro): quitan sus árboles en el momento y la madera va al centro del pueblo.
+- **Sin sitio donde guardar:** en un pueblo recién fundado el centro está lleno (los bienes y el oro iniciales pasan de su capacidad) y lo que un peón no puede guardar se pierde, como siempre. Para que la madera del despeje no se pierda justo al empezar, un peón que no encuentra almacén la lleva directo a una obra que todavía necesite esa cantidad. Vale para cualquier bien que un peón tenga en las manos, no solo madera. Si tampoco hay obra que la quiera, se pierde.
+- **Árboles dentro de la silueta de la obra:** el terreno de la obra ya no se puede pisar, así que el peón tala desde la celda libre más cercana. No se cambió cuándo se bloquea el paso.
+- **Cancelar la obra** deja los árboles que queden, con la madera que les quede.
+- La orden que elige el árbol es la misma en todas las máquinas: el de índice más bajo que nadie esté talando.
+
+**D-8822. Pruebas guionizadas: los pueblos no «dejaban de construir casas», se quemaban.**
+Corrige D-8604. Con la semilla de partida 86 la prueba de «una hora de juego» volvió a terminar con cero casas; siguiéndola minuto a minuto, las casas se construyen bien y en el minuto 36 un incendio se lleva siete edificios (el jugador guionizado no pone pozo). Lo mismo eran las semillas 80, 84 y 90 de D-8604. Las dos pruebas de una hora juegan ahora sin incendios, como ya jugaban sin asaltos: miden la economía. La del año largo pasa de las semillas 70 a 73 a las 74 a 77, donde población, llegadas y comida por habitante quedan dentro de sus márgenes de siempre (se deshace el 25 % de D-8811 para la comida).
+
+**D-8823. Lo observado de paso.**
+En esa misma partida guionizada, la obra del cantero queda a unos 200 m en línea recta pero el camino da un rodeo de más de 80 tramos: los peones salen hacia ella una y otra vez y se dan la vuelta a comer. Es el límite de D-8812, no de esta fase; con el despeje talando se nota antes, porque ahora hay que llegar a la obra también para talar.
+
+**D-8824. Versiones y lo medido.**
+Reglas 53. El pulido pasa a ser la fase 89. Pruebas en `resources`: una casa sobre manzanos no avanza mientras queda uno, los peones los talan (con un leñador al lado que no tala frutales y que replanta: no cuenta ninguna de las dos cosas), toda su madera queda en el pueblo, su fruta se toma, no quedan brotes, y la casa se termina; guardar y cargar antes de despejar; una obra cancelada conserva sus árboles; un campo sobre dos robles no se siembra hasta que los trabajadores de la granja los talan. Nada se vio en pantalla.

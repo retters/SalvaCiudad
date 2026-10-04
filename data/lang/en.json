@@ -658,6 +658,7 @@
     "hud.close": "×",
     "hud.close.tooltip": "Close (Esc).",
     "hud.building.construction": "Under construction: {0:percent} %",
+    "hud.building.clearing": {"one": "Clearing: {0} tree left to fell", "other": "Clearing: {0} trees left to fell"},
     "hud.building.material": "{0:name}: {1:have} of {2:needed}",
     "hud.building.residents": "Residents: {0:count} of {1:max}",
     "hud.building.storage": "Stored: {0:count} of {1:max}",

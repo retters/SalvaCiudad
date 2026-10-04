@@ -192,6 +192,28 @@ public:
         return best;
     }
 
+    // Nearest site of `owner` that still needs all of `load`, counting
+    // what is on its way.
+    EntityId site_wanting(std::uint8_t owner, FixedVec2 from, const Stock& load) const {
+        EntityId best;
+        std::uint64_t best_d = UINT64_MAX;
+        for (const EntityId id : g_.owned(owner)) {
+            const Building& b = *g_.buildings_.get(id);
+            if (!is_site(b)) {
+                continue;
+            }
+            for (const ResourceAmount& cost : site_cost(b)) {
+                const std::int32_t missing = cost.amount - amount_of(b.delivered, cost.resource) - amount_of(b.incoming, cost.resource);
+                const std::uint64_t d = distance2(from, g_.door(b));
+                if (cost.resource == load.resource && missing >= load.amount && d < best_d) {
+                    best_d = d;
+                    best = id;
+                }
+            }
+        }
+        return best;
+    }
+
     // Nearest storage of `owner` holding `resource` (any food if kNoDef);
     // markets restock from the others.
     EntityId storage_with(std::uint8_t owner, FixedVec2 from, DefIndex resource, bool skip_markets = false) const {
@@ -778,6 +800,18 @@ public:
                 go(v, Task::GoDeliver, s);
                 return;
             }
+            // Phase 88: with no room in any storage (a new town's center is
+            // full), what a laborer has in hand goes straight to a site
+            // that still needs that much of it: the wood of the trees
+            // felled to clear a site, most of all.
+            if (!v.job.valid() && v.carrying.resource != g_.gold_) {
+                if (const EntityId site = site_wanting(owner, v.position, v.carrying); site.valid()) {
+                    add_to(g_.buildings_.get(site)->incoming, v.carrying.resource, v.carrying.amount);
+                    v.site = site;
+                    go(v, Task::GoSite, site);
+                    return;
+                }
+            }
             keep_gold(v);
             v.carrying = {};  // Nowhere to put it: dropped (gold goes to the town center).
         }
@@ -981,12 +1015,17 @@ public:
         return fruit;
     }
 
-    // What stood on ground cleared for a building or a field is gone. A
-    // fruit tree leaves its wood and the fruit it had with the town.
-    void clear_node(std::uint32_t i, std::uint8_t town) {
+    // What stood on ground cleared for a building or a field is gone.
+    // Trees are not cleared like this but felled (phase 88), unless
+    // `trees`: under a building that needs no building, where a tree
+    // leaves its wood, and the fruit it had, with the town.
+    void clear_node(std::uint32_t i, std::uint8_t town, bool trees) {
         Node& n = g_.nodes_[i];
         const MapFeature& f = g_.map_.features[i];
-        if (fruit_tree(f)) {
+        if (f.type == FeatureType::Tree && n.amount > 0) {
+            if (!trees) {
+                return;
+            }
             const FeatureDef* fd = c_.feature(f.type);
             if (Building* store = depot(town); store != nullptr && fd != nullptr) {
                 const std::int32_t fruit = take_fruit(i);
@@ -999,6 +1038,19 @@ public:
         n.amount = 0;
         n.regrow_tick = 0;
         g_.changed_nodes_.push_back(i);
+    }
+
+    // Phase 88: to fell tree `node` (index + 1), whatever it is, all of it.
+    bool fell(Villager& v, std::uint32_t node) {
+        const MapFeature& f = g_.map_.features[node - 1];
+        v.task = Task::GoGather;
+        v.node = node;
+        g_.nodes_[node - 1].reserved = v_index_ + 1;
+        const FixedVec2 p{f.x, f.z};
+        if (!walk_to(v, p + (v.position - p).normalized() * Fixed::from_ratio(8, 10))) {
+            fail(v);
+        }
+        return true;
     }
 
     [[nodiscard]] bool regrows(const MapFeature& f) const {
@@ -3067,6 +3119,12 @@ public:
     }
 
     bool start_farming(Villager& v, Building& farm) {
+        // Phase 88: the trees left on a new field are felled before it is sown.
+        for (const Field& f : farm.fields) {
+            if (const std::uint32_t tree = g_.tree_on(f.x, f.z, f.w, f.d, 0); tree != 0 && g_.nodes_[tree - 1].reserved == 0) {
+                return fell(v, tree);
+            }
+        }
         // Harvest first, then compost and sowing.
         for (std::size_t i = 0; i < farm.fields.size(); ++i) {
             if (farm.fields[i].state == FieldState::Ripe && farm.fields[i].pending > 0) {
@@ -3076,7 +3134,7 @@ public:
         }
         for (std::size_t i = 0; i < farm.fields.size(); ++i) {
             const Field& f = farm.fields[i];
-            if (!can_sow(f)) {
+            if (!can_sow(f) || g_.tree_on(f.x, f.z, f.w, f.d, 0) != 0) {
                 continue;
             }
             if (wants_compost(f) && g_.fertilizer_ != kNoDef && amount_of(farm.stock, g_.fertilizer_) == 0) {
@@ -3385,13 +3443,21 @@ public:
         std::uint64_t best_fetch_d = UINT64_MAX;
         EntityId best_build;
         std::uint64_t best_build_d = UINT64_MAX;
+        std::uint32_t best_tree = 0;  // Phase 88: a tree to fell on a site, before anything else.
+        std::uint64_t best_tree_d = UINT64_MAX;
         for (const EntityId id : g_.owned(v.owner)) {
             const Building& b = *g_.buildings_.get(id);
             if (!is_site(b)) {
                 continue;
             }
             const std::uint64_t d = distance2(v.position, g_.door(b));
-            bool all_there = true;
+            const std::uint32_t tree =
+                b.state == BuildingState::Construction ? g_.tree_on(b.x, b.z, b.width, b.depth, 1) : 0;
+            if (tree != 0 && g_.nodes_[tree - 1].reserved == 0 && d < best_tree_d) {
+                best_tree_d = d;
+                best_tree = tree;
+            }
+            bool all_there = tree == 0;
             for (const ResourceAmount& cost : site_cost(b)) {
                 const std::int32_t missing = cost.amount - amount_of(b.delivered, cost.resource);
                 if (missing <= 0) {
@@ -3413,6 +3479,9 @@ public:
                 best_build_d = d;
                 best_build = id;
             }
+        }
+        if (best_tree != 0) {
+            return fell(v, best_tree);
         }
         if (best_fetch_site.valid()) {
             Building& site = *g_.buildings_.get(best_fetch_site);
@@ -3705,8 +3774,11 @@ public:
             // The tree comes down with the fruit it had (phase 85): it is
             // left at the workplace, like a hunter's hides.
             const std::int32_t fruit = take_fruit(v.node - 1);
-            if (Building* job = g_.buildings_.get(v.job); job != nullptr && fruit > 0) {
-                add_to(job->stock, g_.fruit_, fruit);
+            Building* job = g_.buildings_.get(v.job);
+            // (Felled to clear a site or a field, phase 88: to the town's store.)
+            Building* to = job != nullptr && (def(*job).gathers & 1u) != 0 ? job : depot(v.owner);
+            if (to != nullptr && fruit > 0) {
+                add_to(to->stock, g_.fruit_, fruit);
             }
         }
         --n.amount;
@@ -4596,7 +4668,7 @@ public:
                     const std::int32_t fz = f.z.floor_int();
                     if (fx >= x - 1 && fx <= x + b.width && fz >= z - 1 && fz <= z + b.depth &&
                         (g_.nodes_[i].amount > 0 || g_.nodes_[i].regrow_tick != 0)) {
-                        clear_node(i, b.owner);
+                        clear_node(i, b.owner, b.state == BuildingState::Complete);
                     }
                 }
             }
@@ -4654,7 +4726,7 @@ public:
                     const std::int32_t fz = mf.z.floor_int();
                     if (fx >= x && fx < x + w && fz >= z && fz < z + d &&
                         (g_.nodes_[i].amount > 0 || g_.nodes_[i].regrow_tick != 0)) {
-                        clear_node(i, farm.owner);
+                        clear_node(i, farm.owner, false);
                     }
                 }
             }
@@ -5400,6 +5472,46 @@ void Game::build_indexes() {
         const std::int32_t cz = std::clamp(f.z.floor_int() / kNodeCell, 0, node_cells_side_ - 1);
         node_cells_[static_cast<std::size_t>(cz * node_cells_side_ + cx)].push_back(static_cast<std::uint32_t>(i));
     }
+}
+
+std::uint32_t Game::tree_on(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d, std::int32_t margin,
+                            std::int32_t* count) const {
+    std::uint32_t found = 0;
+    bool found_free = false;
+    for (std::int32_t cz = (z - margin) / kNodeCell - 1; cz <= (z + d + margin) / kNodeCell + 1; ++cz) {
+        for (std::int32_t cx = (x - margin) / kNodeCell - 1; cx <= (x + w + margin) / kNodeCell + 1; ++cx) {
+            if (cx < 0 || cz < 0 || cx >= node_cells_side_ || cz >= node_cells_side_) {
+                continue;
+            }
+            for (const std::uint32_t i : node_cells_[static_cast<std::size_t>(cz * node_cells_side_ + cx)]) {
+                const MapFeature& f = map_.features[i];
+                const std::int32_t fx = f.x.floor_int();
+                const std::int32_t fz = f.z.floor_int();
+                if (f.type != FeatureType::Tree || nodes_[i].amount <= 0 || fx < x - margin || fx >= x + w + margin ||
+                    fz < z - margin || fz >= z + d + margin) {
+                    continue;
+                }
+                if (count != nullptr) {
+                    ++*count;
+                }
+                const bool free = nodes_[i].reserved == 0;
+                // The same one on every machine: the lowest index, a free one first.
+                if (found == 0 || (free && !found_free) || (free == found_free && i + 1 < found)) {
+                    found = i + 1;
+                    found_free = free;
+                }
+            }
+        }
+    }
+    return found;
+}
+
+std::int32_t Game::trees_on_site(const Building& site) const {
+    std::int32_t count = 0;
+    if (site.state == BuildingState::Construction) {
+        (void)tree_on(site.x, site.z, site.width, site.depth, 1, &count);
+    }
+    return count;
 }
 
 std::optional<TreeSize> Game::next_size(const MapFeature& tree) const {
