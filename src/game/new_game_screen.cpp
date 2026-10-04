@@ -29,6 +29,8 @@ constexpr std::uint64_t kVariedSeed = 0x5641524945440014ull;
 constexpr std::uint8_t kEvenClimateRange = 12;
 // A season of the usual year, in minutes.
 constexpr std::uint8_t kUsualSeasonMinutes = 5;
+// The usual day, and the usual night, in minutes.
+constexpr std::uint8_t kUsualDayMinutes = 5;
 
 // Digit typed with this key, or -1.
 int digit_for(SDL_Scancode key) {
@@ -174,6 +176,7 @@ sim::GameRules varied_rules() {
     r.fog = sim::FogMode::Static;  // Decision D-3202.
     // The usual year, said in minutes: four seasons of five.
     r.climate.minutes = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
+    r.day_night = {kUsualDayMinutes, kUsualDayMinutes};
     return r;
 }
 
@@ -213,6 +216,9 @@ void NewGameScreen::reset() {
     map_.islands = 3;
     game_ = varied_rules();
     season_minutes_ = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
+    day_night_on_ = true;
+    day_minutes_ = kUsualDayMinutes;
+    night_minutes_ = kUsualDayMinutes;
     giants_on_ = true;
     other_races_ = 100;
 }
@@ -222,6 +228,9 @@ void NewGameScreen::start_from_varied() {
     map_ = varied_map(seed, map_.size, map_.players);
     game_ = varied_rules();
     season_minutes_ = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
+    day_night_on_ = true;
+    day_minutes_ = kUsualDayMinutes;
+    night_minutes_ = kUsualDayMinutes;
     giants_on_ = true;
     other_races_ = 100;
     custom_ = true;
@@ -311,6 +320,9 @@ void NewGameScreen::apply(const NewGameSettings& n) {
     for (std::size_t i = 0; i < 4; ++i) {
         season_minutes_[i] = std::clamp(n.season_minutes[i], 1, static_cast<int>(sim::kMaxSeasonMinutes));
     }
+    day_night_on_ = n.day_night;
+    day_minutes_ = std::clamp(n.day_minutes, 1, static_cast<int>(sim::kMaxDayMinutes));
+    night_minutes_ = std::clamp(n.night_minutes, 1, static_cast<int>(sim::kMaxDayMinutes));
     game_.climate.winter = named(names::kWinters, n.winter, game_.climate.winter);
     game_.start = named(names::kStarts, n.start, game_.start);
     game_.diseases = named(names::kThreats, n.diseases, game_.diseases);
@@ -362,6 +374,9 @@ NewGameSettings NewGameScreen::remembered() const {
     }
     n.seasons = game_.climate.seasons;
     n.season_minutes = season_minutes_;
+    n.day_night = day_night_on_;
+    n.day_minutes = day_minutes_;
+    n.night_minutes = night_minutes_;
     n.winter = name_of(names::kWinters, game_.climate.winter);
     n.start = name_of(names::kStarts, game_.start);
     n.diseases = name_of(names::kThreats, game_.diseases);
@@ -397,6 +412,9 @@ void NewGameScreen::resolve() {
         const bool on = ((rules_.climate.seasons >> i) & 1u) != 0;
         rules_.climate.minutes[i] = on ? static_cast<std::uint8_t>(season_minutes_[i]) : std::uint8_t{0};
     }
+    rules_.day_night = day_night_on_ ? sim::DayNightSettings{static_cast<std::uint8_t>(day_minutes_),
+                                                             static_cast<std::uint8_t>(night_minutes_)}
+                                     : sim::DayNightSettings{};
     rules_.other_races = static_cast<std::uint8_t>(std::clamp(kUsualOtherRaces * other_races_ / 100, 0, 100));
 }
 
@@ -749,6 +767,19 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
         if (ctx.selector(ctx.id("winter"), r.control, index, options, tr("newGame.winter.tooltip"), has_winter)) {
             game_.climate.winter = static_cast<sim::Harshness>(index);
         }
+    }
+
+    {
+        const Row r = row(ctx, x, y, cw, tr("newGame.dayNight"), tr("newGame.dayNight.tooltip"));
+        (void)ctx.checkbox(ctx.id("day_night_on"), r.control, day_night_on_, tr("newGame.dayNight.tooltip"));
+    }
+    if (day_night_on_) {
+        const Row d = row(ctx, x, y, cw, tr("newGame.dayLength"), tr("newGame.dayLength.tooltip"));
+        (void)ctx.slider(ctx.id("day_minutes"), d.control, day_minutes_, 1, sim::kMaxDayMinutes, 1,
+                         [](int m) { return tr("newGame.minutes", m); }, tr("newGame.dayLength.tooltip"));
+        const Row n = row(ctx, x, y, cw, tr("newGame.nightLength"), tr("newGame.dayLength.tooltip"));
+        (void)ctx.slider(ctx.id("night_minutes"), n.control, night_minutes_, 1, sim::kMaxDayMinutes, 1,
+                         [](int m) { return tr("newGame.minutes", m); }, tr("newGame.dayLength.tooltip"));
     }
 
     heading(ctx, x, y, cw, tr("newGame.group.game"));

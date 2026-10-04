@@ -101,6 +101,10 @@ private:
     int other_races_ = 100;  // Percent of the usual share.
     // Minutes of each season; those of the enabled ones make the year.
     std::array<int, 4> season_minutes_{5, 5, 5, 5};
+    // Day and night: whether the game has them, and their minutes.
+    bool day_night_on_ = true;
+    int day_minutes_ = 5;
+    int night_minutes_ = 5;
     // As resolved from the form.
     sim::MapSettings settings_;
     sim::GameRules rules_;

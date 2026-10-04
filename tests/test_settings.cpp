@@ -313,6 +313,9 @@ TEST_SUITE("settings") {
         n.islands = 5;
         n.seasons = 0b1000;
         n.season_minutes = {1, 30, 12, 7};
+        n.day_night = false;
+        n.day_minutes = 30;
+        n.night_minutes = 1;
         n.winter = "harsh";
         n.start = "plenty";
         n.diseases = "none";

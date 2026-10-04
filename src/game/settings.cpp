@@ -465,6 +465,9 @@ void read_new_game(Reader& r, yyjson_mut_val* obj, NewGameSettings& n) {
                                     lim::kMaxSeasonMinutes);
         n.season_minutes = {each, each, each, each};
     }
+    r.read_bool(obj, "dayNight", "newGame.dayNight", n.day_night);
+    r.read_int(obj, "dayMinutes", "newGame.dayMinutes", 1, lim::kMaxDayMinutes, n.day_minutes);
+    r.read_int(obj, "nightMinutes", "newGame.nightMinutes", 1, lim::kMaxDayMinutes, n.night_minutes);
     read_choice(r, obj, "winter", "newGame.winter", names::kWinters, n.winter);
     read_choice(r, obj, "startGoods", "newGame.startGoods", names::kStarts, n.start);
     read_choice(r, obj, "diseases", "newGame.diseases", names::kThreats, n.diseases);
@@ -607,6 +610,9 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_int(doc, ng, "autumnMinutes", n.season_minutes[2]);
     ok = ok && json::set_int(doc, ng, "winterMinutes", n.season_minutes[3]);
     (void)yyjson_mut_obj_remove_key(ng, "year");  // From before phase 59.
+    ok = ok && json::set_bool(doc, ng, "dayNight", n.day_night);
+    ok = ok && json::set_int(doc, ng, "dayMinutes", n.day_minutes);
+    ok = ok && json::set_int(doc, ng, "nightMinutes", n.night_minutes);
     ok = ok && json::set_string(doc, ng, "winter", n.winter);
     ok = ok && json::set_string(doc, ng, "startGoods", n.start);
     ok = ok && json::set_string(doc, ng, "diseases", n.diseases);

@@ -268,6 +268,7 @@ set(SC_ENGINE_SOURCES
     src/game/build_info.cpp
     src/game/dev_tools.cpp
     src/game/camera.cpp
+    src/game/day_light.cpp
     src/game/game_clock.cpp
     src/game/game_hud.cpp
     src/game/hud_windows.cpp

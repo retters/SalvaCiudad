@@ -601,6 +601,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 68 (día y noche: el ciclo y el cielo)
+
+- [ ] En Personalizado, bajo «El año»: la casilla «Día y noche» y, marcada, las barras «Duración del día» y «Duración de la noche» (1 a 30 min). El formulario las recuerda.
+- [ ] Con día de 1 min y noche de 1 min: la barra superior dice «Día» o «Noche» antes de la estación, y su ayuda cuánto falta para el cambio.
+- [ ] Las sombras giran durante el día; al final el sol baja, todo se oscurece y salen las estrellas; la luna cruza el cielo; al amanecer vuelve la luz sin saltos.
+- [ ] De noche el agua, el humo y las nubes también se oscurecen.
+- [ ] Con la casilla desmarcada el juego se ve como antes, siempre de día.
+- [ ] Guardar de noche y cargar: sigue de noche. En red, las dos instancias ven la misma hora.
+- [ ] **Tu opinión:** qué tan oscura es la noche (pediste oscura; las luces llegan en la fase 69) y el color del atardecer.
+
 ### Después de la fase 67 (humo, fogatas, decoraciones)
 
 - [ ] El humo de una chimenea o un incendio sube unos 40 m y se ve desde lejos.

@@ -883,7 +883,35 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - Un mercader con su carreta junto al puesto de comercio mientras dura su visita.
    - Todo es de la vista: la simulación y su hash no cambian.
    - *Criterios:* un leñador vuelve con troncos a la espalda y un recolector con canasta; una obra muestra lo que ya llegó y pasa por sus etapas; el almacén lleno se ve lleno; las flechas se ven al cazar y al defender; el mercader aparece y se va con su visita; con 1000 aldeanos el juego pierde como mucho un 10 % de FPS, medido y anotado.
-68. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+68. **Día y noche: el ciclo y el cielo** (pedido del 2026-10-03).
+   - Regla de partida nueva, como las estaciones: casilla «Día y noche» y dos barras, minutos de día y minutos de noche a ×1 (1 a 30 cada una). Por omisión encendido, 5 y 5. El ciclo es independiente del calendario: con un año de 10 minutos, 5 de día y 10 de noche, medio año es de día y el año siguiente y medio… se repite cada 15 minutos. La partida empieza al amanecer. Apagado: siempre de día, como antes.
+   - La simulación sabe, como función pura de las reglas y del tick, si es de día o de noche y cuánto va de cada uno. Viaja en las reglas (red, partidas guardadas, ajustes `newGame`).
+   - Vista: el sol sale, cruza el cielo y se pone (las sombras giran); de noche lo hace la luna. Amanecer y atardecer anaranjados, noche oscura y azulada, estrellas. El agua, la niebla y las nubes siguen la luz.
+   - HUD: junto a la fecha, si es de día o de noche y cuánto falta para el cambio.
+   - *Criterios:* con año de 10 min, día 5 y noche 10, la prueba da día en la primera mitad del año 1 y noche hasta la mitad del año 2, y se repite; apagado, siempre es de día y el juego se ve como antes; dos instancias en red ven la misma hora; guardar y cargar la conserva; el formulario recuerda los valores; suben las versiones de reglas y de red; español e inglés.
+69. **Luces de noche.**
+   - Luces puntuales reales en el motor: iluminan terreno, edificios, personas y árboles cercanos; sin sombras propias. Tope por calidad gráfica, eligiendo las más cercanas a la cámara.
+   - Dan luz: el centro del pueblo, las casas y talleres con gente (ventanas que brillan), las fogatas encendidas, y las decoraciones que por naturaleza alumbran (faroles, braseros, antorchas, linternas, velas…), declarado en los datos con `"light"` (radio en metros) y los puntos de luz del modelo.
+   - Farol construible barato (madera) para iluminar caminos y zonas de trabajo, sin mantenimiento.
+   - De noche, los aldeanos fuera de zonas iluminadas llevan una antorcha en la mano (solo de la vista).
+   - *Criterios:* de noche un pueblo se ve por sus luces y lo demás queda oscuro; un farol recién construido ilumina su alrededor; las luces se apagan de día; con 200 luces a la vista el juego pierde como mucho un 15 % de FPS de noche en la partida de referencia, medido y anotado.
+70. **Oscuridad en la simulación.**
+   - Mapa de luz de la simulación (por celda, entero): lo que da luz en la fase 69 ilumina su radio. Se actualiza al construir, demoler, ocupar o apagarse.
+   - De noche, fuera de la luz, los aldeanos trabajan y caminan al 75 %. Las razas con visión nocturna (gatunos) no tienen penalización: el rasgo `nightVision` por fin hace algo (reemplaza D-1904).
+   - La ventana del aldeano dice cuando está a oscuras.
+   - *Criterios:* prueba: de noche un leñador lejos del pueblo tarda un tercio más que de día y uno junto a un farol tarda lo mismo; un gatuno tarda lo mismo; de día no hay diferencia; con el ciclo apagado nada cambia; suben las versiones.
+71. **Energía y descanso.**
+   - Cada aldeano tiene energía. Se gasta igual de día y de noche: unos 8 minutos (a ×1) de actividad. Al acabarse deja lo que hace, va a su casa y se queda 2 minutos hasta recuperarla. Sin casa descansa junto al centro del pueblo o una fogata, el doble de lento.
+   - Comer, abrigarse y huir siguen teniendo prioridad sobre descansar; los soldados con una orden y quienes atienden la campana no se van a descansar hasta terminar.
+   - La ventana del aldeano muestra su energía y «Descansando»; el resumen del pueblo cuenta a los que descansan.
+   - *Criterios:* prueba: un aldeano trabaja unos 8 minutos, descansa 2 en su casa y vuelve a su trabajo; uno sin casa tarda el doble; un pueblo de referencia sigue creciendo (no muere de hambre por el descanso); se guarda y carga a medio descanso; suben las versiones.
+72. **Amenazas de noche.**
+   - Los asaltos llegan con el doble de probabilidad de noche que de día.
+   - Lobos y osos atacan desde más lejos de noche y se acercan al pueblo; no entran en zonas iluminadas salvo que ya persigan a alguien.
+   - Con niebla de guerra, de noche se ve a menos distancia (la mitad), salvo lo que está en zonas iluminadas y las razas con visión nocturna.
+   - Torres, arqueros y soldados a oscuras aciertan menos (75 %); los de visión nocturna y los asaltantes, no.
+   - *Criterios:* pruebas de cada regla con el ciclo encendido y sin efecto con el ciclo apagado; suben las versiones.
+73. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 

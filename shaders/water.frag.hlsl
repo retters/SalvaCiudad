@@ -6,7 +6,7 @@
 cbuffer WaterUniforms : register(b0, space3)
 {
     float4 sun_direction;    // xyz: towards the sun.
-    float4 sun_color;
+    float4 sun_color;        // rgb; a = how bright the water's own colors are.
     float4 fog_color;        // rgb; a = density.
     float4 camera_position;  // xyz; w = time in seconds.
     float4 shallow_color;
@@ -49,7 +49,7 @@ float4 main(PixelInput input) : SV_Target0
     float facing = saturate(dot(n, l));
     color *= 0.8 + 0.35 * facing;
     float fresnel = pow(1.0 - saturate(dot(n, v)), 3.0);
-    color = lerp(color, float3(0.85, 0.95, 1.0), fresnel * 0.35);
+    color = lerp(color, float3(0.85, 0.95, 1.0), fresnel * 0.35) * sun_color.a;
     float3 h = normalize(l + v);
     color += sun_color.rgb * pow(saturate(dot(n, h)), 60.0) * 0.35;
 

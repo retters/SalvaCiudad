@@ -48,6 +48,8 @@ void GameRules::write(BinaryWriter& w) const {
     for (const std::uint8_t m : climate.minutes) {
         w.u8(m);
     }
+    w.u8(day_night.day);
+    w.u8(day_night.night);
     w.u8(static_cast<std::uint8_t>(start));
     w.i32(max_population);
     w.u8(static_cast<std::uint8_t>(diseases));
@@ -71,7 +73,8 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
     GameRules g;
     std::uint8_t year = 0, winter = 0, start = 0, diseases = 0, fires = 0, raiders = 0, wildlife = 0;
     if (!r.u8(g.climate.seasons) || !r.u8(year) || !r.u8(winter) || !r.u8(g.climate.minutes[0]) ||
-        !r.u8(g.climate.minutes[1]) || !r.u8(g.climate.minutes[2]) || !r.u8(g.climate.minutes[3]) || !r.u8(start) || !r.i32(g.max_population) ||
+        !r.u8(g.climate.minutes[1]) || !r.u8(g.climate.minutes[2]) || !r.u8(g.climate.minutes[3]) ||
+        !r.u8(g.day_night.day) || !r.u8(g.day_night.night) || !r.u8(start) || !r.i32(g.max_population) ||
         !r.u8(diseases) || !r.u8(fires) || !r.u8(raiders) || !r.u8(wildlife)) {
         return false;
     }
@@ -117,6 +120,12 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
         year % 5 != 0 ||
         winter >= static_cast<std::uint8_t>(Harshness::Count) || start >= static_cast<std::uint8_t>(StartGoods::Count) ||
         g.max_population < kMinPopulationLimit || g.max_population > kMaxPopulationLimit) {
+        r.fail();
+        return false;
+    }
+    // Day and night: both or neither.
+    if (g.day_night.day > kMaxDayMinutes || g.day_night.night > kMaxDayMinutes ||
+        (g.day_night.day != 0) != (g.day_night.night != 0)) {
         r.fail();
         return false;
     }
@@ -234,6 +243,22 @@ std::int32_t temperature(const ClimateSettings& c, std::uint64_t seed, std::uint
     // A little variation from day to day, the same everywhere.
     const std::uint64_t day = tick / (year / (kMonths * kDaysPerMonth));
     t += static_cast<std::int32_t>(mix(seed ^ (day * 0x9E3779B97F4A7C15ull)) % 7) - 3;
+    return t;
+}
+
+DayTime day_time(const DayNightSettings& d, std::uint64_t tick) {
+    DayTime t;
+    if (!d.enabled()) {
+        return t;
+    }
+    const std::uint64_t day = std::uint64_t{d.day} * kTicksPerMinute;
+    const std::uint64_t night = std::uint64_t{d.night} * kTicksPerMinute;
+    const std::uint64_t at = tick % (day + night);
+    t.night = at >= day;
+    const std::uint64_t in = t.night ? at - day : at;
+    const std::uint64_t length = t.night ? night : day;
+    t.progress = static_cast<std::uint32_t>(in * 1000 / length);
+    t.ticks_left = static_cast<std::uint32_t>(length - in);
     return t;
 }
 

@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 
+#include "game/day_light.h"
 #include "sim/climate.h"
 #include "sim/game.h"
 #include "sim/worldgen.h"
@@ -167,6 +168,96 @@ TEST_SUITE("climate") {
             CHECK(calendar(usual, t).season_progress == calendar(ClimateSettings{}, t).season_progress);
             CHECK(temperature(usual, 9, t) == temperature(ClimateSettings{}, 9, t));
         }
+    }
+
+    TEST_CASE("day and night take turns by their own minutes, whatever the year") {
+        // A year of 10 minutes, a day of 5 and a night of 10: the first half
+        // of year 1 is day, then it is night until the middle of year 2.
+        ClimateSettings c;
+        c.seasons = 0b0011;
+        c.minutes = {5, 5, 0, 0};
+        REQUIRE(year_ticks(c) == 10 * kTicksPerMinute);
+        const DayNightSettings d{5, 10};
+        const auto at = [&](std::uint32_t year, std::uint32_t thousandths) {
+            return std::uint64_t{year - 1} * year_ticks(c) + std::uint64_t{year_ticks(c)} * thousandths / 1000;
+        };
+        CHECK_FALSE(day_time(d, at(1, 0)).night);
+        CHECK_FALSE(day_time(d, at(1, 499)).night);
+        CHECK(day_time(d, at(1, 500)).night);
+        CHECK(day_time(d, at(1, 999)).night);
+        CHECK(day_time(d, at(2, 0)).night);
+        CHECK(day_time(d, at(2, 499)).night);
+        CHECK_FALSE(day_time(d, at(2, 500)).night);
+        CHECK_FALSE(day_time(d, at(2, 999)).night);
+        CHECK(day_time(d, at(3, 0)).night);
+        // Progress and what is left.
+        CHECK(day_time(d, 0).progress == 0);
+        CHECK(day_time(d, 0).ticks_left == 5 * kTicksPerMinute);
+        CHECK(day_time(d, 5 * kTicksPerMinute - 1).ticks_left == 1);
+        CHECK(day_time(d, 10 * kTicksPerMinute).progress == 500);
+        CHECK(day_time(d, 10 * kTicksPerMinute).ticks_left == 5 * kTicksPerMinute);
+        // No cycle: always day.
+        for (const std::uint64_t tick : {std::uint64_t{0}, std::uint64_t{4000}, std::uint64_t{123456}}) {
+            CHECK_FALSE(day_time(DayNightSettings{}, tick).night);
+        }
+        // A game tells it, and keeps it through a save.
+        GameSetup s = setup(c);
+        s.rules.day_night = d;
+        Game game(content(), small_map(31), s);
+        CHECK_FALSE(game.day_time().night);
+        run(game, 5 * kTicksPerMinute);
+        CHECK(game.day_time().night);
+    }
+
+    TEST_CASE("day and night in the rules: both or neither, up to 30 minutes") {
+        const auto round_trip = [](DayNightSettings d) {
+            GameRules rules;
+            rules.day_night = d;
+            BinaryWriter w;
+            rules.write(w);
+            GameRules back;
+            BinaryReader r(w.bytes());
+            return GameRules::read(r, back) && back == rules;
+        };
+        CHECK(round_trip({}));
+        CHECK(round_trip({5, 10}));
+        CHECK(round_trip({30, 1}));
+        CHECK_FALSE(round_trip({5, 0}));
+        CHECK_FALSE(round_trip({0, 5}));
+        CHECK_FALSE(round_trip({31, 5}));
+    }
+
+    TEST_CASE("the light of day and night") {
+        const sc::render::Lighting day;
+        // Noon is the season's own light; the sun is high.
+        const sc::render::Lighting noon = sc::day_lighting(day, false, 0.5f);
+        CHECK(noon.sun_color.x == doctest::Approx(day.sun_color.x));
+        CHECK(noon.sky_ambient.z == doctest::Approx(day.sky_ambient.z));
+        CHECK(noon.sun_direction.y > 0.9f);
+        CHECK(noon.stars == doctest::Approx(0.0f));
+        // Midnight is dark, with stars and a faint moon.
+        const sc::render::Lighting midnight = sc::day_lighting(day, true, 0.5f);
+        CHECK(midnight.sky_ambient.z < day.sky_ambient.z * 0.2f);
+        CHECK(midnight.sun_color.z < 0.5f);
+        CHECK(midnight.stars == doctest::Approx(1.0f));
+        // Dusk and dawn meet the night with no jump, and the sun never
+        // drops under the horizon (the shadows stay sane).
+        const sc::render::Lighting dusk = sc::day_lighting(day, false, 1.0f);
+        const sc::render::Lighting nightfall = sc::day_lighting(day, true, 0.0f);
+        CHECK(dusk.sun_color.x == doctest::Approx(0.0f));
+        CHECK(nightfall.sun_color.x == doctest::Approx(0.0f));
+        CHECK(dusk.sky_ambient.x == doctest::Approx(nightfall.sky_ambient.x));
+        CHECK(dusk.horizon_color.x == doctest::Approx(nightfall.horizon_color.x));
+        CHECK(dusk.stars == doctest::Approx(nightfall.stars));
+        CHECK(dusk.sun_direction.y > 0.1f);
+        // The sun rises in the east and sets in the west.
+        CHECK(sc::day_lighting(day, false, 0.1f).sun_direction.x > 0.5f);
+        CHECK(sc::day_lighting(day, false, 0.9f).sun_direction.x < -0.5f);
+        // Progress within the part, with the tick's fraction.
+        CHECK(sc::day_progress({5, 10}, 0) == doctest::Approx(0.0f));
+        CHECK(sc::day_progress({5, 10}, 1500) == doctest::Approx(0.5f));
+        CHECK(sc::day_progress({5, 10}, 3000 + 3000) == doctest::Approx(0.5f));
+        CHECK(sc::day_progress({}, 777) == doctest::Approx(0.5f));
     }
 
     TEST_CASE("temperatures follow the seasons and the winter's harshness") {

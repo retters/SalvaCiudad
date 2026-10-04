@@ -2225,10 +2225,10 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const auto draw_view = [&](SDL_GPURenderPass* target, const ViewDraw& v) {
         SkyUniforms sky{};
         sky.inverse_view_proj = math::inverse(v.view_proj);
-        set4(sky.sun_direction, sun, 0.0f);
+        set4(sky.sun_direction, sun, lighting.stars);
         set4(sky.zenith_color, lighting.zenith_color, 1.0f);
         set4(sky.horizon_color, lighting.horizon_color, 1.0f);
-        set4(sky.sun_color, lighting.sun_color, 1.0f);
+        set4(sky.sun_color, lighting.sun_color, lighting.disc);
         SDL_BindGPUGraphicsPipeline(target, d.sky_pipeline);
         SDL_PushGPUFragmentUniformData(frame.cmd, 0, &sky, sizeof(sky));
         SDL_DrawGPUPrimitives(target, 3, 1, 0, 0);
@@ -2271,6 +2271,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         TerrainLayer::WaterLook water;
         water.sun_direction = sun;
         water.sun_color = lighting.sun_color;
+        water.light = lighting.water;
         water.fog_color = lighting.horizon_color;
         water.fog_density = su.fog_color[3];
         water.eye = v.eye;

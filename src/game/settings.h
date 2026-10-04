@@ -135,6 +135,10 @@ struct NewGameSettings {
     // Minutes of each season at normal speed, 1 to 30 (phase 59): spring,
     // summer, autumn, winter. The year is the sum of the enabled ones.
     std::array<int, 4> season_minutes{5, 5, 5, 5};
+    // Day and night (phase 68), in minutes at normal speed, 1 to 30 each.
+    bool day_night = true;
+    int day_minutes = 5;
+    int night_minutes = 5;
     std::string winter = "normal";  // new_game_names::kWinters
     std::string start = "normal";   // new_game_names::kStarts
     std::string diseases = "medium";  // new_game_names::kThreats
@@ -190,6 +194,7 @@ inline constexpr int kMinFpsLimit = 30;
 inline constexpr int kMaxFpsLimit = 500;
 inline constexpr double kMinUiScale = 0.75;
 inline constexpr int kMaxSeasonMinutes = 30;  // As sim::kMaxSeasonMinutes.
+inline constexpr int kMaxDayMinutes = 30;     // As sim::kMaxDayMinutes.
 inline constexpr double kMaxUiScale = 2.0;
 inline constexpr double kMinCameraSpeed = 0.25;
 inline constexpr double kMaxCameraSpeed = 4.0;

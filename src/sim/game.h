@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 35;
+inline constexpr std::uint32_t kGameRulesVersion = 36;
 
 namespace village {
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
@@ -437,6 +437,7 @@ public:
     }
     [[nodiscard]] std::uint32_t day_ticks() const { return kTicksPerDay; }
     [[nodiscard]] Calendar calendar() const { return sim::calendar(rules_.climate, tick_); }
+    [[nodiscard]] DayTime day_time() const { return sim::day_time(rules_.day_night, tick_); }
     [[nodiscard]] std::int32_t temperature() const { return temperature_; }
     [[nodiscard]] std::int32_t snow() const { return snow_; }
     // Freezing: bushes and herbs neither grow back nor can be picked.

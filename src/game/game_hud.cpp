@@ -490,8 +490,14 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     // Season and weather, then the date.
     static constexpr const char* kSeasonKeys[] = {"hud.season.spring", "hud.season.summer", "hud.season.autumn",
                                                   "hud.season.winter"};
-    const std::string weather = tr("hud.weather", tr(kSeasonKeys[static_cast<std::size_t>(cal.season) % 4]),
-                                   game.temperature());
+    std::string weather = tr("hud.weather", tr(kSeasonKeys[static_cast<std::size_t>(cal.season) % 4]),
+                             game.temperature());
+    // Day or night first, when the game has them.
+    const bool cycle = game.rules().day_night.enabled();
+    const sim::DayTime day_time = game.day_time();
+    if (cycle) {
+        weather = tr("hud.dayTime", tr(day_time.night ? "hud.night" : "hud.day"), weather);
+    }
     const std::string date_text = tr("hud.date", static_cast<int>(cal.year), static_cast<int>(cal.month),
                                      static_cast<int>(cal.day));
     // Weather over the date, in two small lines.
@@ -502,8 +508,14 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     ctx.label({right, bar.y + ctx.s(3.0f), ww, half - ctx.s(3.0f)}, weather, two,
               game.temperature() < 0 ? ui::Color::rgb(0x9CC7F0) : ctx.theme().text);
     ctx.label({right, bar.y + half, ww, half - ctx.s(3.0f)}, date_text, two, ctx.theme().text_dim);
-    ctx.tooltip_area(ctx.id("hud_weather"), {right, bar.y, ww, bar.h},
-                     tr(game.frozen() ? "hud.weather.frozen" : "hud.weather.tooltip", game.snow()));
+    std::string weather_tip = tr(game.frozen() ? "hud.weather.frozen" : "hud.weather.tooltip", game.snow());
+    if (cycle) {
+        // Ten ticks a second at normal speed.
+        const int seconds = static_cast<int>((day_time.ticks_left + 9) / 10);
+        const std::string s2 = (seconds % 60 < 10 ? "0" : "") + std::to_string(seconds % 60);
+        weather_tip = tr(day_time.night ? "hud.night.tooltip" : "hud.day.tooltip", seconds / 60, s2) + "\n" + weather_tip;
+    }
+    ctx.tooltip_area(ctx.id("hud_weather"), {right, bar.y, ww, bar.h}, weather_tip);
     // Two small lines in one slot of the bar.
     const ui::TextStyle small2 = ctx.style(ctx.theme().small);
     const float half2 = std::round(bar.h * 0.5f);

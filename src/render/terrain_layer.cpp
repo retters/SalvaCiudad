@@ -765,7 +765,7 @@ void TerrainLayer::draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass
     SDL_BindGPUVertexStorageBuffers(pass, 0, storage, 3);
     WaterUniforms wu{};
     set4(wu.sun_direction, look.sun_direction, 0.0f);
-    set4(wu.sun_color, look.sun_color, 1.0f);
+    set4(wu.sun_color, look.sun_color, look.light);
     set4(wu.fog_color, look.fog_color, look.fog_density);
     // Ice stops the waves where they are.
     const float ice = std::clamp(look.ice, 0.0f, 1.0f);

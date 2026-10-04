@@ -76,6 +76,7 @@ public:
     struct WaterLook {
         math::Vec3 sun_direction;
         math::Vec3 sun_color;
+        float light = 1.0f;  // How bright the water's own colors are (the night darkens them).
         math::Vec3 fog_color;
         float fog_density = 0.0f;
         math::Vec3 eye;

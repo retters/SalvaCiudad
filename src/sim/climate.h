@@ -59,6 +59,18 @@ struct ClimateSettings {
     bool operator==(const ClimateSettings&) const = default;
 };
 
+// Phase 68: day and night, each with its minutes at x1. The cycle does not
+// follow the calendar: it starts at dawn on the first tick and repeats.
+// Both 0: no cycle, always day.
+inline constexpr std::uint8_t kMaxDayMinutes = 30;
+struct DayNightSettings {
+    std::uint8_t day = 0;    // Minutes of day, 1..kMaxDayMinutes; or 0.
+    std::uint8_t night = 0;  // Minutes of night, the same.
+
+    [[nodiscard]] bool enabled() const { return day != 0 && night != 0; }
+    bool operator==(const DayNightSettings&) const = default;
+};
+
 // Everything chosen for a game besides the map.
 struct GameRules {
     ClimateSettings climate;
@@ -85,6 +97,8 @@ struct GameRules {
     // decision D-3202) and whether allies share what they see.
     FogMode fog = FogMode::None;
     bool shared_vision = true;
+    // Phase 68: day and night.
+    DayNightSettings day_night;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, GameRules& out);
@@ -128,5 +142,13 @@ struct Calendar {
 // The day's temperature in whole degrees Celsius: each season's base,
 // easing in from the previous one, plus a small daily variation.
 [[nodiscard]] std::int32_t temperature(const ClimateSettings& c, std::uint64_t seed, std::uint64_t tick);
+
+// The time of day at a tick (phase 68).
+struct DayTime {
+    bool night = false;
+    std::uint32_t progress = 0;    // Of the day or of the night, 0..999.
+    std::uint32_t ticks_left = 0;  // Until the other one starts; 0 with no cycle.
+};
+[[nodiscard]] DayTime day_time(const DayNightSettings& d, std::uint64_t tick);
 
 }  // namespace sc::sim

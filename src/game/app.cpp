@@ -1,5 +1,7 @@
 #include "game/app.h"
 
+#include "game/day_light.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -932,6 +934,10 @@ void App::render_frame(float dt) {
                 map_scene_.set_season(scene_, g.map(), g.content(), when, snowy);
                 map_scene_.update_sky(scene_, dt * static_cast<float>(host_->game_paused() ? 0 : 1));
                 lighting_ = seasonal_lighting(season);
+                if (const sim::DayNightSettings& cycle = g.rules().day_night; cycle.enabled() && !replay_) {
+                    lighting_ = day_lighting(lighting_, g.day_time().night,
+                                             day_progress(cycle, g.tick(), static_cast<float>(clock_.interpolation())));
+                }
                 if (!still) {
                     update_placement(frame.width, frame.height);
                 }

@@ -88,6 +88,12 @@ struct Lighting {
     math::Vec3 ground_ambient{0.18f, 0.16f, 0.12f};
     math::Vec3 zenith_color{0.04f, 0.38f, 0.90f};
     math::Vec3 horizon_color{0.50f, 0.78f, 0.95f};
+    // Phase 68: stars in the sky, 0..1, and how bright the disc of the sun
+    // (or of the moon, whose light is faint) is drawn, times its color.
+    float stars = 0.0f;
+    float disc = 1.0f;
+    // How bright the water is, which has its own colors: 1 by day.
+    float water = 1.0f;
 };
 
 struct SceneView {

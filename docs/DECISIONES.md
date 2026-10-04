@@ -2683,3 +2683,22 @@ Reglas 35, protocolo de red 13.
 
 **D-6806. Sin revisar.**
 Cada modelo se miró en una imagen de Blender, no uno por uno en el juego (en el juego se vieron tres construidos y las pestañas). Los brillos de runas y flores de fantasía son solo color. No se probó en pantalla la selección de lo creado con las herramientas (sí por pruebas la orden nueva). La verificación en debug y asan de este cambio queda pendiente.
+
+## Fase 68: día y noche, el ciclo y el cielo (2026-10-03)
+
+Pedido de Salvador: un ciclo de día y noche configurable como las estaciones. Respondió antes de empezar: efectos jugables (más lento a oscuras salvo con luz cerca, más amenazas, y energía con descanso en casa en vez de dormir de noche), encendido por omisión con 5 + 5 minutos, noche oscura, sol y luna que recorren el cielo, estrellas, ventanas y antorchas que brillan y luces puntuales reales; penalización del 75 % al trabajar y caminar; energía igual de día y de noche, 8 minutos de actividad y 2 de descanso; dan luz los edificios con gente, las decoraciones que por naturaleza alumbran, faroles construibles y, solo a la vista, la antorcha en mano de los aldeanos; todas las amenazas nocturnas propuestas. Fases 68 a 72, seguidas y sin pausa; el pulido pasa a ser la 73.
+
+**D-6810. El ciclo no sigue al calendario.**
+Como en el ejemplo de Salvador (año de 10 min, día de 5 y noche de 10: medio año de día y año y medio... de noche hasta la mitad del año 2), el día y la noche tienen sus propios minutos y se repiten desde el tick 0, que es el amanecer. Los «días» del calendario (10 por mes) siguen siendo la unidad de la fecha y no tienen que ver con esto. `sim::day_time(reglas, tick)` es una función pura, como `calendar`: no hay estado nuevo en la partida.
+
+**D-6811. Reglas: los dos minutos o ninguno.**
+`GameRules::day_night` lleva minutos de día y de noche (1 a 30, como las estaciones). 0 y 0 es «sin ciclo» (siempre de día); uno solo en 0 se rechaza al leer. Las reglas por omisión de la simulación (pruebas, fondo del menú) no tienen ciclo; el formulario sí lo enciende por omisión (5 + 5), también en «Variado». Se descartó un tercer valor «encendido» aparte: sería un estado inválido más que validar.
+
+**D-6812. La luz es solo de la vista.**
+`src/game/day_light.*` toma la luz de la estación y la hora: el sol va de este a oeste por el sur y la luna por el norte, ninguno baja de unos 9° (sombras cortas y sanas); en el primer y último 12 % del día el sol sale de la oscuridad y vuelve a ella, con tono cálido; la noche es oscura y azulada con luna tenue. El amanecer y el anochecer coinciden exactamente con la noche (sol en 0), así que no hay salto. Las estrellas van en el shader del cielo. El agua, que tiene colores propios, se oscurece con un factor aparte.
+
+**D-6813. Versiones.**
+Reglas 36, protocolo de red 14.
+
+**D-6814. Sin revisar.**
+Se vio en pantalla: día, anochecer, noche con estrellas, amanecer, sombras que giran, agua oscura de noche y el HUD. No se vio la luna (la cámara no se pudo girar desde las pruebas) ni se probó con dos instancias en red: la hora sale de las reglas y del tick, que ya viajan y se comparan. El tono naranja del atardecer es discreto; queda a tu gusto.
