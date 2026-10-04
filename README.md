@@ -602,6 +602,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 87 (el leñador: replantar y talar solo maduros)
+
+- [ ] La ventana del leñador tiene tres botones: «Talar frutales», «Replantar lo talado» y «Solo árboles maduros», los tres en «no» al construirlo.
+- [ ] Con «Replantar: sí», donde cae un árbol queda un brote pequeño de la misma especie y el trabajador se queda un momento plantándolo; al año es un árbol pequeño. Con «no», no queda nada.
+- [ ] Con «Solo árboles maduros: sí», el leñador deja los árboles pequeños y medianos (salvo los de especies que no crecen más) y tala los grandes.
+- [ ] Si solo le quedan árboles jóvenes o brotes, su ventana dice «Esperando que crezcan los árboles», sin notificación ni cuadro rojo.
+- [ ] Con los dos encendidos, un leñador junto a un bosque sigue trayendo madera año tras año (tala unos dos años y espera uno).
+- [ ] Poner un edificio sobre un brote lo quita.
+- [ ] **Sin revisar en pantalla por Claude:** los botones, el brote dibujado y la espera del trabajador al plantar.
+- [ ] **Tu opinión:** si «esperando que crezcan» debería avisar con notificación; y si al encender «Solo maduros» el trabajador debe soltar de inmediato el árbol joven que ya estaba talando (hoy termina esa carga).
+
 ### Fase 86 (los árboles crecen)
 
 - [ ] En una partida larga, los árboles pequeños del mapa pasan a medianos durante el segundo año, y los medianos a grandes (según la especie), cada uno en un día distinto: el bosque no cambia de golpe.

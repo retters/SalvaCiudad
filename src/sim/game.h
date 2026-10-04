@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 50;
+inline constexpr std::uint32_t kGameRulesVersion = 51;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -137,17 +137,23 @@ enum class BuildingState : std::uint8_t { Construction, Complete };
 // Exhausted: nothing is left of what does not grow back.
 // OnlyFruit (phase 85): a woodcutter told to spare the fruit trees has
 // nothing else left; it is told like Exhausted, in its own words.
-enum class Supply : std::uint8_t { Fine, Waiting, Exhausted, OnlyFruit, Count };
+// Growing (phase 87): a woodcutter has only sprouts, or trees too young
+// for one told to fell the grown ones; it waits, without a word.
+enum class Supply : std::uint8_t { Fine, Waiting, Exhausted, OnlyFruit, Growing, Count };
 
 // Phase 85: what the player lets a workplace do, as bits of
 // Building::options; the SetOption command names one by its number.
 namespace option {
-inline constexpr std::uint8_t kFellFruit = 1u << 0;  // A woodcutter fells the fruit trees too.
-inline constexpr std::uint8_t kCount = 1;
+inline constexpr std::uint8_t kFellFruit = 1u << 0;   // A woodcutter fells the fruit trees too.
+inline constexpr std::uint8_t kReplant = 1u << 1;     // Phase 87: it plants a sprout where it felled a tree.
+inline constexpr std::uint8_t kMatureOnly = 1u << 2;  // Phase 87: it fells only the grown trees.
+inline constexpr std::uint8_t kCount = 3;
 }  // namespace option
 // The options a workplace of this kind has.
 [[nodiscard]] constexpr std::uint8_t workplace_options(const BuildingDef& d) {
-    return d.work == WorkKind::Gather && (d.gathers & 1u) != 0 ? option::kFellFruit : std::uint8_t{0};
+    return d.work == WorkKind::Gather && (d.gathers & 1u) != 0
+               ? static_cast<std::uint8_t>(option::kFellFruit | option::kReplant | option::kMatureOnly)
+               : std::uint8_t{0};
 }
 
 // A farm's field (phase 11): a rectangle of cells, a plan of three years
@@ -609,6 +615,10 @@ public:
     }
     // The size a tree of this species grows into from `size`, if any.
     [[nodiscard]] std::optional<TreeSize> next_size(const MapFeature& tree) const;
+    // Phase 87: a grown tree is large or huge, or as large as its species gets.
+    [[nodiscard]] bool mature(const MapFeature& tree) const {
+        return tree.size >= static_cast<std::uint8_t>(TreeSize::Large) || !next_size(tree);
+    }
     // Whether a tree is a sprout: planted, not yet a tree to fell.
     [[nodiscard]] bool sprout(std::uint32_t node) const {
         return node < nodes_.size() && map_.features[node].type == FeatureType::Tree && nodes_[node].amount <= 0 &&

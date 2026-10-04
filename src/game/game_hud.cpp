@@ -62,12 +62,15 @@ const char* supply_key(const sim::BuildingDef& def, const sim::Building& b) {
     }
     return b.supply == sim::Supply::Exhausted   ? "hud.supply.exhausted"
            : b.supply == sim::Supply::OnlyFruit ? "hud.supply.onlyFruit"
+           : b.supply == sim::Supply::Growing   ? "hud.supply.growing"
                                                 : "hud.supply.waiting";
 }
 
 std::span<const WorkplaceOption> workplace_option_list() {
     static constexpr WorkplaceOption kOptions[] = {
         {sim::option::kFellFruit, 0, "hud.option.fellFruit.on", "hud.option.fellFruit.off", "hud.option.fellFruit.tooltip"},
+        {sim::option::kReplant, 1, "hud.option.replant.on", "hud.option.replant.off", "hud.option.replant.tooltip"},
+        {sim::option::kMatureOnly, 2, "hud.option.matureOnly.on", "hud.option.matureOnly.off", "hud.option.matureOnly.tooltip"},
     };
     return kOptions;
 }

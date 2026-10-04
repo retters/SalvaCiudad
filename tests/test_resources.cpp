@@ -154,6 +154,34 @@ std::uint32_t apple_land(Land& l) {
     return static_cast<std::uint32_t>(first);
 }
 
+// A land without trees near the start and a grove of `count` oaks of one
+// size there, 5 m apart, in rows of ten. Returns the index of the first.
+std::uint32_t oak_land(Land& l, int count, TreeSize size) {
+    l = land(21, {FeatureType::BerryBush, FeatureType::Herbs, FeatureType::Tree}, FeatureType::Tree, 0, Fixed::one());
+    const int oak = content()->flora.find_species("core:oak");
+    REQUIRE(oak >= 0);
+    const std::int32_t dir = l.x > l.map.starts[0].x.floor_int() ? 1 : -1;
+    const auto first = static_cast<std::uint32_t>(l.map.features.size());
+    for (int i = 0; i < count; ++i) {
+        MapFeature f;
+        f.type = FeatureType::Tree;
+        f.species = static_cast<std::uint8_t>(oak);
+        f.size = static_cast<std::uint8_t>(size);
+        f.x = Fixed::from_int(l.x + dir * (i / 10) * 5);
+        f.z = Fixed::from_int(l.z - 22 + (i % 10) * 5);
+        l.map.features.push_back(f);
+    }
+    return first;
+}
+
+int sprouts(const Game& g, std::uint32_t first, int count) {
+    int n = 0;
+    for (std::uint32_t i = first; i < first + static_cast<std::uint32_t>(count); ++i) {
+        n += g.sprout(i) ? 1 : 0;
+    }
+    return n;
+}
+
 Command set_option(EntityId workplace, std::uint8_t number, bool on) {
     Command c;
     c.type = CommandType::SetOption;
@@ -609,6 +637,10 @@ TEST_SUITE("resources") {
         CHECK(held(g, "core:fruit") == fruit + cleared * 6);
     }
 
+}
+
+// Years of game: in a suite of their own, to fit the time of a debug run.
+TEST_SUITE("resources_years") {
     TEST_CASE("trees grow a size a year, up to what their species reaches, each on its own day") {
         // A small oak (small, medium and large), a small apple tree (small and
         // medium) and a medium oak, far from any woodcutter.
@@ -723,6 +755,189 @@ TEST_SUITE("resources") {
         }
     }
 
+    TEST_CASE("a woodcutter told to replant leaves a sprout of the species where each tree stood; one not told leaves nothing") {
+        Land l;
+        const std::uint32_t oaks = oak_land(l, 4, TreeSize::Medium);
+        const std::uint8_t species = l.map.features[oaks].species;
+        for (const bool replant : {false, true}) {
+            Game g(content(), l.map, setup());
+            const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 16);
+            if (replant) {
+                g.apply(set_option(cutter, 1, true));
+                CHECK((g.buildings().get(cutter)->options & option::kReplant) != 0);
+            }
+            const auto standing = [&] {
+                int n = 0;
+                for (std::uint32_t i = oaks; i < oaks + 4; ++i) {
+                    n += g.nodes()[i].amount > 0 ? 1 : 0;
+                }
+                return n;
+            };
+            for (int t = 0; t < 80 && standing() > 0; ++t) {
+                run(g, 50);
+            }
+            REQUIRE(standing() == 0);
+            CHECK(sprouts(g, oaks, 4) == (replant ? 4 : 0));
+            if (!replant) {
+                continue;
+            }
+            // Each sprout is of the species, of its smallest size, where the tree was.
+            for (std::uint32_t i = oaks; i < oaks + 4; ++i) {
+                CHECK(g.map().features[i].species == species);
+                CHECK(g.map().features[i].size == static_cast<std::uint8_t>(TreeSize::Small));
+                CHECK(g.map().features[i].x == l.map.features[i].x);
+                CHECK(g.nodes()[i].amount == 0);
+            }
+            // With only sprouts to look at, it waits for them, without a word.
+            (void)g.take_events();
+            run(g, 300);
+            CHECK(g.buildings().get(cutter)->supply == Supply::Growing);
+            CHECK(exhausted_events(g, cutter) == 0);
+            const Building* b = g.buildings().get(cutter);
+            CHECK(std::string_view(sc::supply_key(content()->buildings[b->def], *b)) == "hud.supply.growing");
+            // Saved with sprouts and loaded: the same game; a year on, they are small trees.
+            BinaryWriter w;
+            g.save(w);
+            Game back(content(), l.map, setup());
+            BinaryReader r(w.bytes());
+            REQUIRE(back.load(r, content()));
+            CHECK(back.hash() == g.hash());
+            CHECK(sprouts(back, oaks, 4) == 4);
+            // A site cleared over a sprout leaves no sprout.
+            Command c;
+            c.type = CommandType::PlaceBuilding;
+            c.def = content()->find_building("core:house");
+            const MapFeature& f = g.map().features[oaks + 1];
+            c.position = {Fixed::from_int(f.x.floor_int() - 1), Fixed::from_int(f.z.floor_int() - 1)};
+            const std::size_t before = g.buildings().size();
+            back.apply(c);
+            REQUIRE(back.buildings().size() == before + 1);
+            CHECK_FALSE(back.sprout(oaks + 1));
+            CHECK(back.nodes()[oaks + 1].amount == 0);
+            // (Stopped, so that it does not fell them again as they come of age.)
+            Command stop;
+            stop.type = CommandType::SetProduction;
+            stop.entity = cutter;
+            stop.value = 0;
+            g.apply(stop);
+            for (std::uint32_t t = 0; t < 13 * g.calendar_month_ticks(); t += 100) {
+                grant(g, "core:roots", 2);
+                run(g, 100);
+            }
+            CHECK(sprouts(g, oaks, 4) == 0);
+            const SpeciesDef& sp = content()->flora.species[species];
+            for (std::uint32_t i = oaks; i < oaks + 4; ++i) {
+                CHECK(g.nodes()[i].amount == sp.logs[0]);
+                CHECK(g.nodes()[i].grow_day != kNeverGrows);
+            }
+        }
+    }
+
+    TEST_CASE("a woodcutter told to fell only the grown trees waits for the young ones, and fells the first to come of age") {
+        Land l;
+        const std::uint32_t oaks = oak_land(l, 6, TreeSize::Medium);
+        GameSetup s = setup();
+        Game g(content(), l.map, s);
+        CHECK_FALSE(g.mature(g.map().features[oaks]));
+        const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 16);
+        g.apply(set_option(cutter, 2, true));
+        // (Its workers may have started on a tree before the order; they finish that load.)
+        run(g, 500);
+        (void)g.take_events();
+        std::int32_t wood[6];
+        for (std::uint32_t i = 0; i < 6; ++i) {
+            wood[i] = g.nodes()[oaks + i].amount;
+            CHECK(wood[i] > 0);
+        }
+        int told = 0;
+        for (int t = 0; t < 30; ++t) {
+            run(g, 50);
+            told += exhausted_events(g, cutter);
+        }
+        for (std::uint32_t i = 0; i < 6; ++i) {
+            CHECK(g.nodes()[oaks + i].amount == wood[i]);  // None touched.
+        }
+        CHECK(g.buildings().get(cutter)->supply == Supply::Growing);
+        CHECK(told == 0);
+        // In their second year they are large one by one, and are felled as they are.
+        bool felled_young = false;
+        int felled = 0;
+        for (std::uint32_t t = 0; t < 26 * g.calendar_month_ticks() && felled < 6; t += 20) {
+            if (t % 200 == 0) {
+                grant(g, "core:roots", 1);
+            }
+            std::int32_t before[6];
+            std::uint8_t size[6];
+            for (std::uint32_t i = 0; i < 6; ++i) {
+                before[i] = g.nodes()[oaks + i].amount;
+                size[i] = g.map().features[oaks + i].size;
+            }
+            run(g, 20);
+            felled = 0;
+            for (std::uint32_t i = 0; i < 6; ++i) {
+                const std::int32_t now = g.nodes()[oaks + i].amount;
+                // Wood taken from a tree that was not large.
+                felled_young = felled_young || (now < before[i] && size[i] < static_cast<std::uint8_t>(TreeSize::Large));
+                felled += now == 0 ? 1 : 0;
+            }
+        }
+        CHECK_FALSE(felled_young);
+        CHECK(felled == 6);
+        CHECK(g.mature(MapFeature{FeatureType::Tree, l.map.features[oaks].species, static_cast<std::uint8_t>(TreeSize::Large)}));
+        // An apple tree is grown at medium: its species gets no larger.
+        const int apple = content()->flora.find_species("core:apple");
+        CHECK(g.mature(MapFeature{FeatureType::Tree, static_cast<std::uint8_t>(apple), static_cast<std::uint8_t>(TreeSize::Medium)}));
+        CHECK_FALSE(g.mature(MapFeature{FeatureType::Tree, static_cast<std::uint8_t>(apple), static_cast<std::uint8_t>(TreeSize::Small)}));
+    }
+
+    TEST_CASE("replanting and felling only the grown, a woodcutter with sixty large trees still brings wood ten years on") {
+        Land l;
+        const std::uint32_t oaks = oak_land(l, 60, TreeSize::Large);
+        Game g(content(), l.map, setup());
+        const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 30);
+        g.apply(set_option(cutter, 1, true));
+        g.apply(set_option(cutter, 2, true));
+        const std::uint32_t year = 12 * g.calendar_month_ticks();
+        int felled_by_year[10] = {};
+        std::int32_t taken_by_year[10] = {};
+        for (int y = 0; y < 10; ++y) {
+            for (std::uint32_t t = 0; t < year; t += 100) {
+                grant(g, "core:roots", 3);
+                grant(g, "core:firewood", 1);
+                // The town's stores do not fill up: the wood is taken away.
+                std::int32_t before[60];
+                for (std::uint32_t i = 0; i < 60; ++i) {
+                    before[i] = g.nodes()[oaks + i].amount;
+                }
+                run(g, 100);
+                for (std::uint32_t i = 0; i < 60; ++i) {
+                    const std::int32_t now = g.nodes()[oaks + i].amount;
+                    felled_by_year[y] += before[i] > 0 && now == 0 ? 1 : 0;
+                    taken_by_year[y] += now < before[i] ? before[i] - now : 0;
+                }
+            }
+        }
+        std::string line;
+        for (int y = 0; y < 10; ++y) {
+            line += std::to_string(felled_by_year[y]) + " ";
+        }
+        MESSAGE("trees felled each year: " << line << "; people " << g.population(0) << ", sprouts now "
+                                            << sprouts(g, oaks, 60));
+        CHECK(felled_by_year[0] > 0);
+        // The grove comes back: wood in the last three years too.
+        CHECK(taken_by_year[7] + taken_by_year[8] + taken_by_year[9] > 0);
+        CHECK(felled_by_year[7] + felled_by_year[8] + felled_by_year[9] > 0);
+        // Nothing is lost: every tree is standing, growing or a sprout.
+        int there = 0;
+        for (std::uint32_t i = oaks; i < oaks + 60; ++i) {
+            there += g.nodes()[i].amount > 0 || g.sprout(i) ? 1 : 0;
+        }
+        CHECK(there == 60);
+    }
+
+}
+
+TEST_SUITE("resources") {
     TEST_CASE("a forager whose bushes are picked clean waits for them, without a word") {
         // Two bushes of one berry each; they grow back in a month.
         const Land l = land(21, {FeatureType::BerryBush, FeatureType::Herbs}, FeatureType::BerryBush, 2,

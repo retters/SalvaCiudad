@@ -858,7 +858,9 @@ public:
         bool busy = false;     // Something to take, in other hands now.
         bool waiting = false;  // Something that will grow back, or thaw.
         bool spared = false;   // A fruit tree the woodcutter is told to leave (phase 85).
+        bool young = false;    // A sprout, or a tree too young for one that fells the grown (phase 87).
         const bool fells_fruit = (job.options & option::kFellFruit) != 0;
+        const bool mature_only = (job.options & option::kMatureOnly) != 0;
         const Calendar today = g_.calendar();
         for (std::int32_t cz = cz0; cz <= cz1; ++cz) {
             for (std::int32_t cx = cx0; cx <= cx1; ++cx) {
@@ -871,7 +873,8 @@ public:
                         continue;
                     }
                     const bool grows = picking || regrows(f);
-                    if (n.amount <= 0 && (picking || !grows)) {
+                    const bool sprout = !picking && f.type == FeatureType::Tree && n.amount <= 0 && n.regrow_tick != 0;
+                    if (n.amount <= 0 && (picking || !grows) && !sprout) {
                         continue;  // Gone for good.
                     }
                     // The cheapest cell next to the node (rocks may sit on steep
@@ -888,6 +891,10 @@ public:
                     }
                     if (cost >= 0xFFFF) {
                         continue;  // Out of reach.
+                    }
+                    if (sprout || (!picking && mature_only && f.type == FeatureType::Tree && !g_.mature(f))) {
+                        young = true;
+                        continue;
                     }
                     if (!picking && !fells_fruit && fruit_tree(f)) {
                         spared = true;
@@ -910,7 +917,11 @@ public:
         }
         if (best == 0) {
             set_supply(job, v.job,
-                       busy ? Supply::Fine : waiting ? Supply::Waiting : spared ? Supply::OnlyFruit : Supply::Exhausted);
+                       busy      ? Supply::Fine
+                       : waiting ? Supply::Waiting
+                       : young   ? Supply::Growing
+                       : spared  ? Supply::OnlyFruit
+                                 : Supply::Exhausted);
             return false;
         }
         set_supply(job, v.job, Supply::Fine);
@@ -3675,6 +3686,13 @@ public:
                 }
             }
         }
+        bool planted = false;
+        if (n.amount <= 0 && f.type == FeatureType::Tree) {
+            if (const Building* job = g_.buildings_.get(v.job); job != nullptr && (job->options & option::kReplant) != 0) {
+                plant(v.node - 1);
+                planted = true;
+            }
+        }
         if (n.amount <= 0) {
             g_.changed_nodes_.push_back(v.node - 1);
             if (fd->regrow_days > 0) {
@@ -3687,7 +3705,32 @@ public:
         if (n.amount <= 0 || v.carrying.amount >= carry_capacity(c_, fd->resource)) {
             release(v);
             v.task = Task::Idle;  // Decides to deliver next.
+            if (planted) {
+                v.idle_ticks = kPlantTicks;  // Planting takes a while.
+            }
         }
+    }
+
+    // Phase 87: a sprout of the same species where a tree was felled; in a
+    // year it is a tree of its species' smallest size.
+    static constexpr std::int32_t kPlantTicks = 40;
+    void plant(std::uint32_t node) {
+        Node& n = g_.nodes_[node];
+        MapFeature& f = g_.map_.features[node];
+        if (f.species >= c_.flora.species.size()) {
+            return;
+        }
+        const std::uint8_t sizes = c_.flora.species[f.species].sizes;
+        for (std::uint8_t s = 0; s < kTreeSizes; ++s) {
+            if ((sizes >> s) & 1u) {
+                f.size = s;
+                break;
+            }
+        }
+        n.regrow_tick = g_.tick_ + g_.year_ticks();
+        n.grow_day = kNeverGrows;  // Set when it is a tree.
+        const std::pair<std::uint64_t, std::uint32_t> item{n.regrow_tick, node};
+        g_.regrow_.insert(std::upper_bound(g_.regrow_.begin(), g_.regrow_.end(), item), item);
     }
 
     // Phase 84: fruit from a tree, one at a time; the tree stays.
@@ -4513,7 +4556,8 @@ public:
                     const MapFeature& f = g_.map_.features[i];
                     const std::int32_t fx = f.x.floor_int();
                     const std::int32_t fz = f.z.floor_int();
-                    if (fx >= x - 1 && fx <= x + b.width && fz >= z - 1 && fz <= z + b.depth && g_.nodes_[i].amount > 0) {
+                    if (fx >= x - 1 && fx <= x + b.width && fz >= z - 1 && fz <= z + b.depth &&
+                        (g_.nodes_[i].amount > 0 || g_.nodes_[i].regrow_tick != 0)) {
                         clear_node(i, b.owner);
                     }
                 }
@@ -4570,7 +4614,8 @@ public:
                     const MapFeature& mf = g_.map_.features[i];
                     const std::int32_t fx = mf.x.floor_int();
                     const std::int32_t fz = mf.z.floor_int();
-                    if (fx >= x && fx < x + w && fz >= z && fz < z + d && g_.nodes_[i].amount > 0) {
+                    if (fx >= x && fx < x + w && fz >= z && fz < z + d &&
+                        (g_.nodes_[i].amount > 0 || g_.nodes_[i].regrow_tick != 0)) {
                         clear_node(i, farm.owner);
                     }
                 }

@@ -3173,3 +3173,20 @@ La prueba «una hora de juego: un pueblo atendido crece» pasa de la semilla de 
 
 **D-8605. Versiones y lo medido.**
 Reglas 50 (un campo más por objeto natural). Pruebas en `resources`: un roble pequeño es mediano al segundo año y grande al tercero, con la madera de cada tamaño; un manzano se queda en mediano y entonces da fruta; guardar y cargar a mitad da la misma partida y sigue igual un año después; en un mapa pequeño, 882 de 887 árboles crecen en el segundo año, en los 120 días y nunca más de 16 el mismo día; los gigantes no crecen; con una especie que admite «enorme», de grande a enorme tarda dos años. Costo medido en release, en un mapa sin pueblos (prueba `sim_perf` «the trees' growth», se salta por omisión): colosal, 1 149 616 árboles, 100 ticks por día: 1,83 ms por tick de media el primer año (nada crece) y 1,89 ms el segundo (crecen 988 552), peor tick 4,2 ms; mapa enorme de 4 km, 89 031 árboles: 0,10 ms en los dos años. No se midieron los FPS con `--reporte` como pedía el criterio: hace falta la ventana del juego. Sin prueba de dos instancias en red (sí de dos partidas con el mismo hash tras guardar y cargar). Pendiente menor: la lista de árboles cambiados que la vista consume crece sin límite en una partida sin vista (pruebas largas); son 4 bytes por árbol crecido.
+
+## Fase 87: el leñador replanta y tala solo maduros (2026-10-04)
+
+**D-8701. Dos opciones más del leñador.**
+`option::kReplant` (número 1) y `option::kMatureOnly` (número 2), con la misma orden `SetOption` de la fase 85; el protocolo de red no cambia. Las dos empiezan apagadas.
+
+**D-8702. Replantar.**
+Cuando el trabajador saca la última madera de un árbol y su leñador tiene «Replantar», el mismo objeto del mapa pasa a ser un brote de su especie (D-8603), en el mismo sitio, y el trabajador se queda 4 segundos de juego sin hacer otra cosa: eso es «plantar». No cuesta materiales. Si el trabajador deja el árbol a medias (se va a comer, cambia de empleo), no hay brote hasta que alguien lo termine de talar. Lo despejado por una obra o un campo no se replanta, y un brote bajo una obra nueva se quita; de paso se corrige que un arbusto vacío bajo un edificio nuevo rebrotara dentro del edificio.
+
+**D-8703. Maduro.**
+Grande o enorme, o del tamaño mayor de su especie (un manzano mediano ya es maduro). Con la opción encendida el leñador ni mira los demás. Al encenderla, quien ya estaba talando un árbol joven termina esa carga: la opción decide qué árbol se elige, no interrumpe.
+
+**D-8704. «Esperando que crezcan».**
+`Supply::Growing`: a su alcance solo hay brotes, o árboles jóvenes con «Solo maduros». Línea de estado y nada más (sin notificación ni cuadro rojo), como pide la especificación. Vale también sin «Solo maduros» cuando solo quedan brotes. Si no hay ni árboles ni brotes, «agotado».
+
+**D-8705. Versiones y lo medido.**
+Reglas 51. Suite nueva `resources_years` para las pruebas de años (con las de la fase 86), aparte de `resources`, para caber en el tiempo de un debug. Pruebas: con «Replantar», cuatro robles talados dejan cuatro brotes de roble en su sitio y sin él ninguno; el leñador queda «esperando que crezcan» sin evento; guardar y cargar con brotes; una casa sobre un brote lo quita; al año los brotes son robles pequeños con su madera. Con «Solo maduros», seis robles medianos no se tocan, y durante su segundo año se talan los seis sin sacar madera de ninguno que no fuera grande. Con los dos encendidos y 60 robles grandes, árboles talados por año en diez años: 32, 28, 0, 28, 32, 0, 26, 33, 1, 24; al final los 60 siguen ahí, en pie o como brote. Los interruptores viajan con la misma orden probada en la fase 85; no se probó con dos instancias reales. Nada se vio en pantalla.
