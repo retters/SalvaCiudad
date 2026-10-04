@@ -49,6 +49,19 @@ public:
     [[nodiscard]] std::uint8_t local_player() const { return local_player_; }
     // A loaded game is played from another seat (phase 78).
     void set_local_player(std::uint8_t player);
+    // Phase 79: watching. No order leaves this machine. `seat()` is the
+    // seat this player owns (kNoSeat: a spectator, with none) and
+    // `local_player()` the seat whose town is being looked at; with
+    // `view_all()` the whole map shows, without fog.
+    static constexpr std::uint8_t kNoSeat = 0xFF;
+    [[nodiscard]] bool spectating() const { return spectating_; }
+    [[nodiscard]] bool view_all() const { return view_all_; }
+    [[nodiscard]] std::uint8_t seat() const { return seat_; }
+    // Watches as seat `as` sees (or everything). `own_seat`: the seat this
+    // player keeps meanwhile, kNoSeat for a spectator.
+    void watch(std::uint8_t as, bool all, std::uint8_t own_seat);
+    // Plays seat `seat` (its own again, or the one a spectator was given).
+    void play(std::uint8_t seat);
     // The town the local player runs (their own, or the common one).
     [[nodiscard]] std::uint8_t town() const { return game_->town_of(local_player_); }
 
@@ -109,6 +122,8 @@ public:
         // `found_mode` (phase 77): a seat that came later chose to found its
         // town (those who began the game always are choosing).
         bool found_mode = false;
+        // Phase 79: a spectator's window with what it may do to play.
+        bool arrival_open = true;
         bool found_asked = false;
         std::int32_t found_x = 0;
         std::int32_t found_z = 0;
@@ -162,6 +177,9 @@ private:
     std::unique_ptr<sim::Game> game_;
     std::vector<sim::Command> pending_;
     std::uint8_t local_player_ = 0;
+    std::uint8_t seat_ = 0;
+    bool spectating_ = false;
+    bool view_all_ = false;
     net::NetSession* net_ = nullptr;
     Interaction ui_;
     FogView fog_;

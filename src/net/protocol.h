@@ -20,7 +20,7 @@
 
 namespace sc::net {
 
-inline constexpr std::uint32_t kProtocolVersion = 23;
+inline constexpr std::uint32_t kProtocolVersion = 24;
 inline constexpr std::uint16_t kDefaultPort = 47800;
 inline constexpr std::uint16_t kDiscoveryPort = 47799;
 inline constexpr std::size_t kMaxNameBytes = 32;
@@ -31,6 +31,10 @@ inline constexpr std::size_t kMaxMessageBytes = 256u * 1024u;          // Everyt
 // Unpacked: a colossal map's game is about 1.9 GiB (phase 21).
 inline constexpr std::size_t kMaxSnapshotBytes = 3u * 1024u * 1024u * 1024u;
 inline constexpr std::uint8_t kColors = 12;
+// Phase 79: spectators. They have no seat (their "slot" is kNoSeat), and a
+// game takes this many at most, besides its players.
+inline constexpr std::uint8_t kNoSeat = 0xFF;
+inline constexpr std::size_t kMaxWatchers = 8;
 // Ticks between state checks (5 s at x1).
 inline constexpr std::uint64_t kHashInterval = 50;
 // The check comes every kHashInterval ticks up to x1 and as often in real
@@ -52,13 +56,25 @@ struct GameConfig {
     bool shared_town = false;  // Cooperative: one town for everybody (section 7.7).
     std::uint64_t seed = 1;    // The game's own random numbers.
     sim::GameRules rules;      // Climate, starting goods, population limit.
+    bool spectators = false;   // Phase 79: people may come in to watch (the lobby's checkbox).
     bool operator==(const GameConfig&) const = default;
 };
 
 // `Closed` (phase 76): the game takes no new players (those with a seat may
 // come back). `NotStarted` (phase 78): a saved game still in its lobby, where
 // only those who had a seat come in.
-enum class RejectReason : std::uint8_t { Protocol, Version, Mods, Full, BadName, Closed, NotStarted, Count };
+// `WatchersFull` (phase 79): no room for one more spectator.
+enum class RejectReason : std::uint8_t {
+    Protocol,
+    Version,
+    Mods,
+    Full,
+    BadName,
+    Closed,
+    NotStarted,
+    WatchersFull,
+    Count
+};
 enum class LobbyPhase : std::uint8_t { Lobby, Loading, Playing, Count };
 enum class SpeedReason : std::uint8_t { Vote, Pause, SlowPlayer, Count };
 enum class NoticeKind : std::uint8_t { Joined, Left, Rejoined, Desync, WrongMap, Count };
@@ -70,6 +86,9 @@ struct LobbyPlayer {
     bool ready = false;
     bool connected = false;
     bool loaded = false;
+    // Phase 79: the seat's player is only watching (in the lobby: wants to
+    // watch the game instead of playing it).
+    bool watching = false;
     bool operator==(const LobbyPlayer&) const = default;
 };
 
@@ -95,7 +114,7 @@ struct Hello {  // Client to host, first thing after connecting.
     std::string name;
     bool operator==(const Hello&) const = default;
 };
-struct Welcome {  // Host to client: accepted, in this seat.
+struct Welcome {  // Host to client: accepted, in this seat (kNoSeat: to watch, phase 79).
     std::uint8_t slot = 0;
     bool operator==(const Welcome&) const = default;
 };
@@ -112,12 +131,15 @@ struct Lobby {  // Host to all.
     // Phase 78: the lobby of a saved game. Its seats are the game's, kept
     // for their players by name; nothing of the game can be changed.
     bool saved = false;
+    // Phase 79: who watches without a seat.
+    std::vector<std::string> watchers;
     bool operator==(const Lobby&) const = default;
 };
 struct SetInfo {  // Client to host.
     std::string name;
     std::uint8_t color = 0;
     bool ready = false;
+    bool watch = false;  // Phase 79, in the lobby: to watch the game, not to play it.
     bool operator==(const SetInfo&) const = default;
 };
 struct Start {  // Host to all: generate the map and build the game.
@@ -183,8 +205,16 @@ struct Notice {  // Host to all.
     bool operator==(const Notice&) const = default;
 };
 
+// Phase 79. Client to host, in a game: `play` true asks for a seat (a
+// spectator who wants to play) or to play its own again (a player who was
+// watching); false, to go on watching and leave its town working alone.
+struct SeatRequest {
+    bool play = false;
+    bool operator==(const SeatRequest&) const = default;
+};
+
 using Message = std::variant<Hello, Welcome, Reject, Lobby, SetInfo, Start, Loaded, Commands, Turn, Ack, Snapshot,
-                             SpeedPropose, SpeedVote, SpeedAnswer, SpeedSet, VoteEnded, Notice>;
+                             SpeedPropose, SpeedVote, SpeedAnswer, SpeedSet, VoteEnded, Notice, SeatRequest>;
 
 [[nodiscard]] std::vector<std::uint8_t> encode(const Message& message);
 // Nothing if the bytes are not a valid message.

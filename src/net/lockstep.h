@@ -46,6 +46,7 @@ struct NetEvent {
         Rejected,        // `reject` says why.
         ConnectionLost,
         Resynced,        // A snapshot from the host was loaded.
+        SeatChanged,     // Phase 79: this machine got a seat (`slot`), or none (kNoSeat): it watches.
     };
     Kind kind = Kind::PlayerJoined;
     std::uint8_t slot = 0;
@@ -66,6 +67,8 @@ public:
     static constexpr std::uint32_t kMaxDelay = 10;
     static constexpr std::uint64_t kVoteTimeoutMs = 15'000;
     static constexpr std::uint64_t kSlowPlayerMs = 3'000;
+    // Phase 79: a spectator this many turns behind gets the whole state again.
+    static constexpr std::uint64_t kWatcherResyncTurns = 600;
 
     virtual ~NetSession() = default;
 
@@ -73,6 +76,14 @@ public:
     [[nodiscard]] State state() const { return state_; }
     [[nodiscard]] const Lobby& lobby() const { return lobby_; }
     [[nodiscard]] std::uint8_t local_slot() const { return slot_; }
+    // Phase 79. Whether this machine only watches: it has no seat, or left
+    // its town working alone. A watcher gives no orders, does not pause
+    // or vote, and nobody waits for it.
+    [[nodiscard]] bool watching() const;
+    // Asks the host for a seat to play (a spectator), or for its own seat
+    // back (a player who was watching); and to go and watch.
+    virtual void request_seat() = 0;
+    virtual void request_watch() = 0;
     [[nodiscard]] int speed() const { return speed_; }
 
     // Handles what arrived; call every frame.
@@ -149,6 +160,10 @@ public:
     // there (the others may come later, by name). No new players until then.
     void adopt_lobby(sim::Game* game, const GameConfig& config, std::uint8_t host_seat);
     [[nodiscard]] bool saved() const { return saved_; }
+    void request_seat() override;
+    void request_watch() override;
+    // What spectators sent that they may not (orders, pauses, votes): ignored and counted.
+    [[nodiscard]] std::uint64_t ignored() const { return ignored_; }
 
     void game_built(sim::Game* game, std::uint64_t map_hash) override;
     void snapshot_loaded(sim::Game* game) override { game_ = game; }
@@ -171,7 +186,25 @@ private:
         std::string name;
         std::uint8_t color = 0;
         std::uint64_t acked = 0;
+        // Phase 79: in the lobby, wants to watch; in the game, its player
+        // watches and the town works alone (the seat stays theirs).
+        bool watching = false;
     };
+    // Phase 79: a spectator, a connection without a seat.
+    struct Watcher {
+        bool used = false;
+        PeerId peer = 0;
+        std::string name;
+        std::uint64_t acked = 0;
+        std::uint64_t resynced_ms = 0;
+    };
+    std::array<Watcher, kMaxWatchers> watchers_{};
+    std::map<PeerId, std::uint8_t> watching_peers_;
+    std::uint64_t ignored_ = 0;
+    void receive_watcher(PeerId peer, std::uint8_t index, const Message& m);
+    void snapshot_to(PeerId peer);
+    [[nodiscard]] bool add_watcher(PeerId peer, const std::string& name);
+    void issue_as_host(const sim::Command& command);
     Link& link_;
     LocalInfo local_;
     std::array<Seat, sim::kMaxPlayers> seats_{};
@@ -221,8 +254,10 @@ public:
 
     [[nodiscard]] Role role() const override { return Role::Client; }
     void poll(std::uint64_t now_ms) override;
-    void set_info(const std::string& name, std::uint8_t color, bool ready);
+    void set_info(const std::string& name, std::uint8_t color, bool ready, bool watch = false);
     [[nodiscard]] bool ready() const { return ready_; }
+    void request_seat() override;
+    void request_watch() override;
 
     void game_built(sim::Game* game, std::uint64_t map_hash) override;
     void snapshot_loaded(sim::Game* game) override;
@@ -236,6 +271,7 @@ private:
     PeerId host_;
     LocalInfo local_;
     bool ready_ = false;
+    bool watch_ = false;  // In the lobby: wants to watch.
     bool hello_sent_ = false;
     std::vector<sim::Command> outbox_;
     std::uint64_t snapshot_tick_ = 0;
@@ -248,7 +284,8 @@ private:
 // bits), the same on every machine: it is open, to join the common town or
 // to found a town of their own.
 [[nodiscard]] inline std::uint8_t lobby_access(const GameConfig& config) {
-    return static_cast<std::uint8_t>(sim::access::kOpen | (config.shared_town ? sim::access::kJoin : sim::access::kFound));
+    return static_cast<std::uint8_t>(sim::access::kOpen | (config.shared_town ? sim::access::kJoin : sim::access::kFound) |
+                                     (config.spectators ? sim::access::kWatch : 0));
 }
 
 // Hash of a map, to check that every machine generated the same one.

@@ -2980,3 +2980,44 @@ Una partida que estaba abierta sigue igual. Una de un solo jugador que nunca se 
 
 **D-7807. Lo revisado en pantalla.**
 Con una instancia: guardar con F5, la lista con los dos botones, la sala de partida guardada con sus casillas y el asiento propio, «Empezar» y la partida en marcha como anfitrión. Con dos instancias no se probó a mano: lo cubren las pruebas de `net` (volver por nombre y seguir en el mismo tick con los mismos hashes; empezar sin alguien que entra después; hospedar desde el asiento 1; un nombre nuevo rechazado en la sala y admitido al empezar).
+
+## Fase 79: modo espectador (2026-10-04)
+
+**D-7901. Un espectador es una conexión; la simulación no sabe que existe.**
+No tiene asiento, no está en el estado ni en sus hashes y no se guarda. Lo único que la simulación guarda es la casilla: `sim::access::kWatch`, una bandera más del acceso (fase 76). Así una partida con espectadores y sin ellos da el mismo estado, turno por turno (hay una prueba que lo compara).
+
+**D-7902. Donde se puede mirar, quien llega entra mirando.**
+Con «Permitir espectadores» marcado, un nombre nuevo entra a una partida empezada como espectador, sin asiento, y el asiento se crea recién cuando elige jugar («Fundar mi pueblo» o «Pedir unirme»): pide el asiento al anfitrión, y con él en la mano funda o hace la solicitud. Sin esa casilla todo sigue como en la fase 76: recibe asiento al entrar. Se descartó dar asiento a todos y dejar que algunos «solo miren» desde él: ocuparían uno de los doce para siempre, porque los asientos no se quitan.
+
+**D-7903. Hasta 8, aparte de los 12 jugadores.**
+Con los ocho ocupados, si la partida además está abierta el que llega recibe asiento como antes; si solo se podía mirar, se le rechaza con «ya tiene todos sus espectadores».
+
+**D-7904. Un jugador que pasa a espectador conserva su asiento.**
+Es una marca en su conexión, no un cambio en la partida: el anfitrión ignora sus órdenes, pausas y votos, nadie lo espera y su pueblo trabaja solo o con sus compañeros, igual que cuando alguien se desconecta. «Volver a mi pueblo» la quita sin pedir permiso. Si se desconecta mientras mira, al volver juega. El anfitrión también puede mirar y sigue hospedando.
+
+**D-7905. Lo que no puede hacer un espectador se corta en dos lados.**
+Su propio programa no manda órdenes, pausas ni votos; y si llegaran (un programa modificado), el anfitrión los ignora y los cuenta. Los votos de velocidad se resuelven sin quienes miran.
+
+**D-7906. Nadie espera a un espectador.**
+No entra en la cuenta del jugador más lento. Recibe todos los turnos y se pone al día a su ritmo (hasta 8 por cuadro). Si se atrasa más de 600 turnos, o sus hashes no coinciden, el anfitrión le manda la instantánea (a lo sumo cada 10 s).
+
+**D-7907. La vista.**
+«Todo el mapa» apaga la niebla en esa máquina (como la casilla de las herramientas de desarrollo). «Como X» toma el grupo de visión del pueblo X: su niebla, y con ella sus recursos en la barra y sus avisos, porque la interfaz pasa a tratar ese asiento como el propio. Se elige en una franja arriba al centro. La barra de construcción no se muestra.
+
+**D-7908. «Solo lectura» significa que las órdenes no salen.**
+Las ventanas de edificios y aldeanos se abren con sus botones de siempre; pulsarlos no hace nada porque la sesión no envía órdenes mientras mira. No se rehicieron las ventanas para esconder cada botón.
+
+**D-7909. Un fundador que mira ve la solicitud, pero responde desde su pueblo.**
+El cuadro le muestra «X quiere unirse a tu pueblo» con un solo botón, «Volver a mi pueblo para responder».
+
+**D-7910. En la sala.**
+La sala de una partida nueva tiene la fila «Espectadores»: el anfitrión marca si se permiten (viaja en la configuración de la partida) y cada jugador puede marcar «Entrar a mirar, sin jugar». Al empezar, esos no reciben asiento: generan el mapa como todos y siguen los turnos. El anfitrión no puede entrar mirando (alguien tiene que fundar); puede pasar a mirar después. En la sala de una partida guardada y al abrir una partida, es la cuarta casilla del acceso. En una sala de partida guardada solo entran los dueños de asiento; los espectadores, cuando empiece.
+
+**D-7911. Quién mira.**
+La lista de jugadores (la cuenta de la barra de arriba, con los nombres al pasar el cursor) marca «(mirando)» a los que miran y agrega a los espectadores sin asiento. Un aviso dice cuando alguien empieza a mirar o vuelve a jugar. Los espectadores no cuentan en «Jugadores N».
+
+**D-7912. Versiones.**
+Reglas 45 (una bandera más en el acceso), protocolo de red 24.
+
+**D-7913. Lo revisado en pantalla.**
+Con dos instancias: la 1 abre su partida con las tres casillas; la 2 entra y queda mirando (franja «Mirando: Todo el mapa», ventana con Fundar, Pedir unirme y Solo mirar), cambia a «Como Jugador 2», y desde «Jugar…» elige fundar: recibe asiento y pasa a elegir sitio. No se probó a mano: pasar de jugador a espectador y volver, la sala con la casilla de espectadores, ocho espectadores, ni un espectador detenido (lo cubren las pruebas de `net` y `spectator`).

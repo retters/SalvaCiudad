@@ -43,6 +43,7 @@ private:
     std::uint8_t color_ = 0;
     bool color_chosen_ = false;
     bool ready_ = false;
+    bool watch_ = false;  // Phase 79: to watch the game instead of playing it.
     void send_info();
 };
 

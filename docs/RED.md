@@ -77,6 +77,15 @@ Si un jugador queda más de 30 ticks detrás del anfitrión (3 s; por encima de 
 - Al empezar, cada conectado recibe la partida como instantánea. Los asientos de los que faltan esperan: su pueblo trabaja solo y pueden entrar después.
 - El anfitrión es el asiento de quien carga (por nombre); no tiene por qué ser el 0.
 
+## Espectadores (fase 79)
+
+- Si la partida lo permite (`sim::access::kWatch`), quien llega con un nombre nuevo entra **a mirar**: una conexión sin asiento (`Welcome` con asiento `0xFF`). Hasta 8, aparte de los 12 jugadores.
+- Un espectador recibe la instantánea y todos los turnos, y simula como cualquiera. El anfitrión no lo espera, ignora lo que mande salvo sus confirmaciones, y le reenvía la instantánea si se atrasa más de 600 turnos o sus hashes no coinciden.
+- Para jugar manda `SeatRequest{play}`: si la partida está abierta y queda lugar, el anfitrión crea su asiento (`AddSeat`) y le responde con `Welcome` y su número.
+- Un jugador puede pasar a mirar (`SeatRequest` sin `play`): conserva su asiento, el anfitrión deja de aceptar sus órdenes y de esperarlo, y vuelve cuando quiere.
+- En la sala de una partida nueva, quien marca que quiere mirar no recibe asiento al empezar.
+- La simulación no sabe nada de los espectadores: el estado y sus hashes son los mismos con ellos y sin ellos.
+
 ## Entrar a una partida empezada y reconectar
 
 - Un jugador que vuelve con **el mismo nombre** recupera su asiento, esté la partida abierta o cerrada.
@@ -91,10 +100,11 @@ Cada mensaje es un byte de tipo y sus campos en little-endian (`src/net/protocol
 | Tipo | Dirección | Contenido |
 |---|---|---|
 | Hello | cliente → anfitrión | protocolo, versión, hash del contenido, mods, nombre |
-| Welcome | anfitrión → cliente | asiento |
+| Welcome | anfitrión → cliente | asiento, o ninguno (espectador) |
 | Reject | anfitrión → cliente | motivo (protocolo, versión, mods, sin lugar, nombre, cerrada), versión y mods del anfitrión |
-| Lobby | anfitrión → todos | configuración, fase, asientos, si es la sala de una partida guardada |
-| SetInfo | cliente → anfitrión | nombre, color, listo |
+| Lobby | anfitrión → todos | configuración, fase, asientos (y quién mira), si es la sala de una partida guardada, espectadores |
+| SetInfo | cliente → anfitrión | nombre, color, listo, si quiere mirar en vez de jugar |
+| SeatRequest | cliente → anfitrión | pide un asiento para jugar (o volver al suyo), o pasar a mirar |
 | Start | anfitrión → todos | configuración y asientos en juego |
 | Loaded | cliente → anfitrión | hash del mapa generado |
 | Commands | cliente → anfitrión | órdenes (hasta 256) |
@@ -137,6 +147,7 @@ La suite `net` (`tests/test_net.cpp`) corre varias máquinas en un proceso con u
 - un jugador que se cae y vuelve;
 - una desincronización provocada que se detecta y se repara;
 - una partida de un jugador que se abre, recibe a otro, lo deja volver por su nombre y se cierra a los nuevos;
+- espectadores: entran sin asiento y nada de lo que mandan toca la partida; ocho como máximo; uno detenido no frena a nadie; uno pide asiento y funda; un jugador pasa a mirar y vuelve; el estado es el mismo con y sin ellos;
 - una partida guardada hospedada desde su sala: asientos por nombre, empezar sin alguien, anfitrión en otro asiento;
 - pedir unirse: solo el fundador responde, y la solicitud lo espera si se fue y vuelve;
 - pueblos por fundar: el tiempo espera a todos, solo el anfitrión funda el pueblo común, y quien entra durante la espera recibe la misma partida;

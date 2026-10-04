@@ -602,6 +602,20 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 79 (modo espectador)
+
+- [ ] "Abrir a multijugador" tiene una tercera casilla, "Permitir espectadores". Con ella marcada, la ventana 2 (`--instance 2 --loopback`) entra **mirando**: arriba al centro dice "Mirando: Todo el mapa" y ve todo sin niebla; la 1 sigue en "Jugadores 1" y al pasar el cursor por ahí aparece el nombre de la 2 con "(mirando)".
+- [ ] Con las flechas de esa franja, "Como …" muestra lo que ve ese pueblo: su niebla y sus recursos en la barra de arriba. "Todo el mapa" vuelve a mostrar todo.
+- [ ] El espectador puede abrir ventanas de edificios y aldeanos; sus botones no hacen nada. No tiene barra de construcción, y pausar o cambiar la velocidad no tiene efecto.
+- [ ] "Solo mirar" cierra la ventana de llegada; "Jugar…" la vuelve a abrir. "Fundar mi pueblo" le da asiento (la 1 pasa a "Jugadores 2") y lo deja eligiendo sitio; "Pedir unirme" le da asiento y manda la solicitud.
+- [ ] En una partida de dos jugadores con espectadores permitidos, la 2 elige "Pasar a espectador" en el menú de pausa: ve todo, su pueblo sigue trabajando, y la 1 ve el aviso "… está mirando". "Volver a mi pueblo" (menú o franja) la devuelve sin pedir permiso.
+- [ ] Mientras la 2 mira, mover su ventana o dejarla sin responder unos segundos no detiene a la 1.
+- [ ] Un fundador que está mirando y recibe una solicitud de unión ve el cuadro con "Volver a mi pueblo para responder".
+- [ ] En "Crear partida multijugador", la sala tiene la fila "Espectadores": el anfitrión marca "Permitir espectadores" y otra ventana marca "Entrar a mirar, sin jugar"; al empezar, esa ventana no funda nada y mira.
+- [ ] Sin la casilla, "Pasar a espectador" no aparece en el menú y quien llega recibe asiento como antes.
+- [ ] Con 8 espectadores y la partida solo para mirar, el noveno recibe "ya tiene todos sus espectadores".
+- [ ] **Tu opinión:** el lugar y el tamaño de la franja "Mirando"; si "Como …" debería cambiar también la cámara al pueblo; si quieres que las ventanas escondan los botones para quien mira.
+
 ### Fase 78 (cargar como anfitrión)
 
 - [ ] En "Cargar partida" cada fila tiene "Como anfitrión" y "Cargar". "Cargar" funciona como antes.

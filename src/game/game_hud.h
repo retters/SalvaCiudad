@@ -108,6 +108,9 @@ private:
     // the founder's answer to somebody who asks to join the town.
     void arrival(ui::Context& ctx, GameSession& s);
     void join_requests(ui::Context& ctx, GameSession& s);
+    // Phase 79: what a spectator looks at (everything, or as one town
+    // sees), and the way back to play.
+    void spectator(ui::Context& ctx, GameSession& s);
     std::uint8_t answered_seat_ = 0xFF;  // The request answered last, and when (in turns).
     std::uint64_t answered_turn_ = 0;
     std::size_t next_site_ = 0;  // The suggested site the camera last went to.

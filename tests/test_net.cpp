@@ -1,6 +1,7 @@
 #include <doctest.h>
 
 #include <memory>
+#include <set>
 
 #include <SDL3/SDL_timer.h>
 #include <optional>
@@ -61,6 +62,8 @@ public:
     std::uint64_t now = 1000;
     // As the game makes them (phase 74): nobody has a town until they found it.
     bool towns_to_found = false;
+    // Machines that do nothing for now (a program that stopped answering).
+    std::set<std::size_t> frozen;
 
     explicit Cluster(const std::string& host_name = "Host") {
         Machine host;
@@ -88,7 +91,7 @@ public:
         now += 100;
         for (std::size_t i = 0; i < m.size(); ++i) {
             Machine& x = m[i];
-            if (!x.session) {
+            if (!x.session || frozen.contains(i)) {
                 continue;
             }
             x.session->poll(now);
@@ -139,7 +142,7 @@ public:
         for (int i = 0; i < 40; ++i) {
             now += 100;
             for (std::size_t k = 1; k < m.size(); ++k) {
-                if (m[k].session) {
+                if (m[k].session && !frozen.contains(k)) {
                     m[k].session->poll(now);
                     (void)m[k].session->advance(0, now);
                     (void)m[k].session->advance(8, now);
@@ -191,6 +194,10 @@ RejectReason refusal(const Machine& m) {
     }
     return RejectReason::Count;
 }
+
+// Open to play (to join a town or to found one), not to watch: whoever
+// comes gets a seat at once.
+constexpr std::uint8_t kPlay = sim::access::kOpen | sim::access::kJoin | sim::access::kFound;
 
 sim::Command set_access(std::uint8_t bits) {
     sim::Command c;
@@ -302,7 +309,9 @@ TEST_SUITE("net") {
         Lobby lobby;
         lobby.config = config(5, true);
         lobby.phase = LobbyPhase::Playing;
-        lobby.players = {{0, "Ana", 3, true, true, true}, {4, "Ñandú", 11, false, false, true}};
+        lobby.players = {{0, "Ana", 3, true, true, true}, {4, "Ñandú", 11, false, false, true, true}};
+        lobby.watchers = {"Zoe", "Ñu"};
+        lobby.saved = true;
         Turn turn;
         turn.tick = 99;
         turn.speed = 8;
@@ -335,6 +344,7 @@ TEST_SUITE("net") {
             SpeedSet{0, 2, SpeedReason::Pause},
             VoteEnded{4},
             Notice{NoticeKind::Rejoined, 3, 77},
+            SeatRequest{true},
         };
         CHECK(all.size() == std::variant_size_v<Message>);
         for (const Message& msg : all) {
@@ -350,6 +360,12 @@ TEST_SUITE("net") {
         }
         // Out of range values.
         CHECK_FALSE(decode(encode(Welcome{12})).has_value());
+        CHECK(decode(encode(Welcome{kNoSeat})).has_value());  // A spectator has no seat.
+        {
+            Lobby crowded;
+            crowded.watchers.assign(kMaxWatchers + 1, "x");
+            CHECK_FALSE(decode(encode(crowded)).has_value());
+        }
         CHECK_FALSE(decode(encode(SetInfo{"", 1, false})).has_value());
         CHECK_FALSE(decode(encode(SetInfo{"a\nb", 1, false})).has_value());
         CHECK_FALSE(decode(encode(SpeedPropose{3})).has_value());   // Not a step.
@@ -595,7 +611,7 @@ TEST_SUITE("net") {
         CHECK(refusal(c.m[early]) == RejectReason::Closed);
         CHECK(c.m[0].game->player_count() == 1);
         // The host opens it.
-        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.m[0].session->issue(set_access(kPlay));
         c.frames(15, 1);
         REQUIRE(c.m[0].game->open());
         const std::size_t ana = c.join("Ana");
@@ -660,7 +676,7 @@ TEST_SUITE("net") {
         CHECK(c.m[0].game->player_count() == 2);
         expect_same_games(c);
         // Open again: Bea gets the third seat.
-        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.m[0].session->issue(set_access(kPlay));
         c.frames(15, 1);
         const std::size_t bea2 = c.join("Bea");
         c.frames(60, 1);
@@ -701,7 +717,7 @@ TEST_SUITE("net") {
     TEST_CASE("asking to join a town: only its founder answers, and the request waits for him") {
         Cluster c;
         open_single_player(c, 44, 300, speed::kNormal);
-        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.m[0].session->issue(set_access(kPlay));
         c.frames(15, 1);
         const std::size_t ana = c.join("Ana");
         c.frames(40, 1);
@@ -768,7 +784,7 @@ TEST_SUITE("net") {
         c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
         c.m[1].session->issue(found_on_site(*c.m[1].game, 1));
         c.frames(60, 1);
-        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.m[0].session->issue(set_access(kPlay));
         c.frames(15, 1);
         REQUIRE(c.m[0].game->town_exists(1));
         const std::string ana_name = c.m[1].session->lobby().players[1].name;
@@ -947,6 +963,358 @@ TEST_SUITE("net") {
         c.m[old_host].session->request_speed(0);
         c.frames(5, 1);
         CHECK(c.host().speed() == 0);
+    }
+
+    TEST_CASE("spectators: no seat, the whole game to follow, and nothing they send touches it") {
+        Cluster c;
+        open_single_player(c, 61, 300, speed::kNormal);
+        c.m[0].session->issue(set_access(sim::access::kAll));  // Open, and to watch.
+        c.frames(15, 1);
+        const std::size_t zoe = c.join("Zoe");
+        c.frames(40, 1);
+        c.settle();
+        REQUIRE(c.m[zoe].game != nullptr);
+        CHECK(c.m[zoe].session->state() == NetSession::State::Playing);
+        CHECK(c.m[zoe].session->local_slot() == kNoSeat);
+        CHECK(c.m[zoe].session->watching());
+        CHECK_FALSE(c.host().watching());
+        // Not a seat: the game has the one it had.
+        CHECK(c.m[0].game->player_count() == 1);
+        REQUIRE(c.host().lobby().watchers.size() == 1);
+        CHECK(c.host().lobby().watchers[0] == "Zoe");
+        CHECK(c.host().lobby().players.size() == 1);
+        expect_same_games(c);
+        // Through the program, a spectator's orders do not even leave.
+        const std::size_t buildings = c.m[0].game->buildings().size();
+        const std::uint32_t rejected = c.m[0].game->rejected_commands();
+        std::optional<sim::Command> house = place_near(*c.m[0].game, 0, "core:house", 0);
+        REQUIRE(house.has_value());
+        c.m[zoe].session->issue(*house);
+        c.m[zoe].session->request_speed(0);
+        c.frames(20, 1);
+        CHECK(c.host().ignored() == 0);
+        CHECK(c.host().speed() == speed::kNormal);
+        // Forced onto the wire, the host ignores them: orders, a pause, a vote, an answer.
+        const PeerId host = c.m[0].link->self_id();
+        c.m[zoe].link->send(host, encode(Commands{{*house}}));
+        c.m[zoe].link->send(host, encode(SpeedPropose{0}));
+        c.m[zoe].link->send(host, encode(SpeedPropose{8}));
+        c.m[zoe].link->send(host, encode(SpeedAnswer{1, true}));
+        c.frames(30, 1);
+        c.settle();
+        CHECK(c.host().ignored() == 4);
+        CHECK(c.host().speed() == speed::kNormal);
+        CHECK_FALSE(c.host().vote().has_value());
+        CHECK(c.m[0].game->buildings().size() == buildings);
+        CHECK(c.m[0].game->rejected_commands() == rejected);
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+        // The same game without anybody watching gives the same state.
+        Cluster alone;
+        open_single_player(alone, 61, 300, speed::kNormal);
+        alone.m[0].session->issue(set_access(sim::access::kAll));
+        const std::uint64_t turns = c.m[0].game->turn() - alone.m[0].game->turn();
+        alone.frames(static_cast<int>(turns), 1);
+        REQUIRE(alone.m[0].game->turn() == c.m[0].game->turn());
+        CHECK(alone.m[0].game->hash() == c.m[0].game->hash());
+    }
+
+    TEST_CASE("spectators: one that stops for ten seconds holds nobody up, and catches up") {
+        Cluster c;
+        open_single_player(c, 62, 100, speed::kNormal);
+        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.frames(15, 1);
+        const std::size_t ana = c.join("Ana");
+        c.frames(40, 1);
+        const std::size_t zoe = c.join("Zoe");
+        c.frames(40, 1);
+        c.settle();
+        REQUIRE(c.m[zoe].session->local_slot() == kNoSeat);
+        // Ana wanted to play: she asks for a seat and gets the second.
+        CHECK(c.m[ana].session->local_slot() == kNoSeat);
+        c.m[ana].session->request_seat();
+        c.frames(30, 1);
+        REQUIRE(c.m[ana].session->local_slot() == 1);
+        const std::uint64_t before = c.m[0].game->tick();
+        c.frozen.insert(zoe);
+        c.frames(100, 1);  // Ten seconds at x1.
+        CHECK(c.m[0].game->tick() == before + 100);
+        CHECK_FALSE(c.host().waiting_for().has_value());
+        CHECK(c.m[zoe].game->tick() < before + 20);
+        c.frozen.clear();
+        c.frames(40, 1);
+        c.settle();
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("spectators: eight at most besides the players, and none where the game does not let them") {
+        Cluster c;
+        open_single_player(c, 63, 100, speed::kNormal);
+        c.m[0].session->issue(set_access(sim::access::kWatch));  // To watch only: no new seats.
+        c.frames(15, 1);
+        std::vector<std::size_t> watchers;
+        for (int i = 0; i < static_cast<int>(kMaxWatchers); ++i) {
+            watchers.push_back(c.join("W" + std::to_string(i)));
+        }
+        c.frames(40, 1);
+        c.settle();
+        for (const std::size_t w : watchers) {
+            CHECK(refusal(c.m[w]) == RejectReason::Count);
+            CHECK(c.m[w].session->local_slot() == kNoSeat);
+            CHECK(c.m[w].game != nullptr);
+        }
+        CHECK(c.host().lobby().watchers.size() == kMaxWatchers);
+        const std::size_t ninth = c.join("W9");
+        c.frames(6, 1);
+        CHECK(refusal(c.m[ninth]) == RejectReason::WatchersFull);
+        c.m[ninth].session.reset();
+        // Closed to play: a spectator asking for a seat stays a spectator.
+        c.m[watchers[0]].session->request_seat();
+        c.frames(30, 1);
+        CHECK(c.m[watchers[0]].session->local_slot() == kNoSeat);
+        CHECK(c.m[0].game->player_count() == 1);
+        // One leaves: there is room for another.
+        const PeerId gone = c.m[watchers[1]].link->self_id();
+        c.net.cut(gone);
+        c.m[0].link->disconnect(gone);
+        c.m[watchers[1]].session.reset();
+        c.frames(5, 1);
+        CHECK(c.host().lobby().watchers.size() == kMaxWatchers - 1);
+        const std::size_t late = c.join("Late");
+        c.frames(40, 1);
+        c.settle();
+        CHECK(c.m[late].session->local_slot() == kNoSeat);
+        expect_same_games(c);
+        // The host stops letting people watch: nobody new, and the game closed to players refuses them.
+        c.m[0].session->issue(set_access(0));
+        c.frames(15, 1);
+        const std::size_t nobody = c.join("Nobody");
+        c.frames(6, 1);
+        CHECK(refusal(c.m[nobody]) == RejectReason::Closed);
+    }
+
+    TEST_CASE("spectators: twelve players and eight spectators fit in one game") {
+        Cluster c;
+        c.towns_to_found = true;
+        for (int i = 1; i < sim::kMaxPlayers; ++i) {
+            c.join("P" + std::to_string(i));
+        }
+        c.frames(3, 0);
+        GameConfig cfg = config(69, true);
+        cfg.spectators = true;
+        c.host().set_config(cfg);
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(20, 1);
+        c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
+        c.frames(40, 1);
+        REQUIRE(c.m[0].game->player_count() == sim::kMaxPlayers);
+        std::vector<std::size_t> watchers;
+        for (int i = 0; i < static_cast<int>(kMaxWatchers); ++i) {
+            watchers.push_back(c.join("W" + std::to_string(i)));
+        }
+        c.frames(60, 1);
+        c.settle();
+        for (const std::size_t w : watchers) {
+            REQUIRE(c.m[w].game != nullptr);
+            CHECK(c.m[w].session->local_slot() == kNoSeat);
+            CHECK(c.m[w].session->watching());
+        }
+        CHECK(c.host().lobby().players.size() == sim::kMaxPlayers);
+        CHECK(c.host().lobby().watchers.size() == kMaxWatchers);
+        CHECK(c.m[0].game->player_count() == sim::kMaxPlayers);
+        // One more: no room to watch, and no seat left to play.
+        const std::size_t extra = c.join("Extra");
+        c.frames(6, 1);
+        CHECK(refusal(c.m[extra]) == RejectReason::Full);
+        c.m[extra].session.reset();
+        c.frames(40, 1);
+        c.settle();
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("spectators: one asks for a seat and founds its town") {
+        Cluster c;
+        open_single_player(c, 64, 100, speed::kNormal);
+        c.m[0].session->issue(set_access(sim::access::kAll));
+        c.frames(15, 1);
+        const std::size_t zoe = c.join("Zoe");
+        c.frames(40, 1);
+        c.settle();
+        REQUIRE(c.m[zoe].session->local_slot() == kNoSeat);
+        c.m[zoe].events.clear();
+        c.m[zoe].session->request_seat();
+        c.frames(30, 1);
+        c.settle();
+        REQUIRE(c.m[zoe].session->local_slot() == 1);
+        CHECK_FALSE(c.m[zoe].session->watching());
+        bool told = false;
+        for (const NetEvent& e : c.m[zoe].events) {
+            told = told || (e.kind == NetEvent::Kind::SeatChanged && e.slot == 1);
+        }
+        CHECK(told);
+        CHECK(c.host().lobby().watchers.empty());
+        REQUIRE(c.host().lobby().players.size() == 2);
+        CHECK(c.host().lobby().players[1].name == "Zoe");
+        for (const Machine* x : {&c.m[0], &c.m[zoe]}) {
+            CHECK(x->game->player_count() == 2);
+            CHECK(x->game->player(1).name == "Zoe");
+        }
+        c.m[zoe].session->issue(found_on_site(*c.m[zoe].game, 1));
+        c.frames(60, 1);
+        c.settle();
+        CHECK(c.m[0].game->town_exists(1));
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("a player goes to watch: the town works alone, and comes back without asking anybody") {
+        Cluster c;
+        c.towns_to_found = true;
+        c.join("Ana");
+        c.frames(3, 0);
+        GameConfig cfg = config(65, false);
+        cfg.spectators = true;
+        c.host().set_config(cfg);
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(20, 1);
+        c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
+        c.m[1].session->issue(found_on_site(*c.m[1].game, 1));
+        c.frames(60, 1);
+        REQUIRE(c.m[0].game->town_exists(1));
+        REQUIRE((c.m[0].game->access() & sim::access::kWatch) != 0);
+        c.m[1].session->request_watch();
+        c.frames(10, 1);
+        CHECK(c.m[1].session->watching());
+        CHECK(c.m[1].session->local_slot() == 1);  // The seat is still hers.
+        REQUIRE(c.host().lobby().players.size() == 2);
+        CHECK(c.host().lobby().players[1].watching);
+        // Her orders stay home; forced, the host ignores them. Nobody waits for her.
+        const std::size_t buildings = c.m[0].game->buildings().size();
+        std::optional<sim::Command> house = place_near(*c.m[1].game, 1, "core:house", 0);
+        REQUIRE(house.has_value());
+        c.m[1].session->issue(*house);
+        c.m[1].link->send(c.m[0].link->self_id(), encode(Commands{{*house}}));
+        c.m[1].link->send(c.m[0].link->self_id(), encode(SpeedPropose{0}));
+        c.frames(20, 1);
+        CHECK(c.host().ignored() == 2);
+        CHECK(c.host().speed() == speed::kNormal);
+        CHECK(c.m[0].game->buildings().size() == buildings);
+        const std::uint64_t before = c.m[0].game->tick();
+        c.frozen.insert(1);
+        c.frames(100, 1);
+        CHECK(c.m[0].game->tick() == before + 100);
+        CHECK_FALSE(c.host().waiting_for().has_value());
+        c.frozen.clear();
+        c.frames(40, 1);
+        c.settle();
+        CHECK(c.m[0].game->population(1) >= sim::village::kStartVillagers - 1);  // The town lived on.
+        // A speed vote passes without her.
+        c.host().request_speed(8);
+        c.frames(5, 1);
+        CHECK(c.host().speed() == 8);
+        // Back to her town: no permission needed, and her orders run again.
+        c.m[1].session->request_seat();
+        c.frames(10, 1);
+        CHECK_FALSE(c.m[1].session->watching());
+        CHECK_FALSE(c.host().lobby().players[1].watching);
+        c.m[1].session->issue(*house);
+        c.frames(40, 1);
+        c.settle();
+        CHECK(c.m[0].game->buildings().size() == buildings + 1);
+        // The host may watch too, and is still the host.
+        c.host().request_watch();
+        CHECK(c.host().watching());
+        const std::uint64_t ignored = c.host().ignored();
+        if (auto mine = place_near(*c.m[0].game, 0, "core:house", 0)) {
+            c.m[0].session->issue(*mine);
+        }
+        c.frames(20, 1);
+        CHECK(c.host().ignored() == ignored + 1);
+        CHECK(c.m[0].game->buildings().size() == buildings + 1);
+        c.host().request_seat();
+        CHECK_FALSE(c.host().watching());
+        c.frames(20, 1);
+        c.settle();
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("where the game does not let people watch, a player who asks to goes on playing") {
+        Cluster c;
+        c.towns_to_found = true;
+        c.join("Ana");
+        c.frames(3, 0);
+        c.host().set_config(config(66, false));  // No spectators.
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(20, 1);
+        REQUIRE((c.m[0].game->access() & sim::access::kWatch) == 0);
+        c.m[1].session->request_watch();
+        c.host().request_watch();
+        c.frames(10, 1);
+        CHECK_FALSE(c.m[1].session->watching());
+        CHECK_FALSE(c.host().watching());
+        CHECK_FALSE(c.host().lobby().players[1].watching);
+        // And somebody new gets a seat at once, as before: there is nobody watching.
+        const std::size_t bea = c.join("Bea");
+        c.frames(40, 1);
+        c.settle();
+        CHECK(c.m[bea].session->local_slot() == 2);
+        CHECK(c.host().lobby().watchers.empty());
+    }
+
+    TEST_CASE("in the lobby, whoever chooses to watch gets no seat when the game starts") {
+        Cluster c;
+        c.towns_to_found = true;
+        c.join("Ana");
+        c.join("Zoe");
+        c.frames(3, 0);
+        GameConfig cfg = config(67, false);
+        cfg.spectators = true;
+        c.host().set_config(cfg);
+        c.client(1).set_info("Ana", 1, true);
+        c.client(2).set_info("Zoe", 2, true, true);
+        c.frames(3, 0);
+        REQUIRE(c.host().lobby().players.size() == 3);
+        CHECK(c.host().lobby().players[2].watching);
+        REQUIRE(c.host().start());
+        c.frames(30, 1);
+        c.settle();
+        for (const Machine& x : c.m) {
+            REQUIRE(x.game != nullptr);
+            CHECK(x.game->player_count() == 2);
+            CHECK(x.game->map().starts.size() == 2);
+        }
+        CHECK(c.m[1].session->local_slot() == 1);
+        CHECK(c.m[2].session->local_slot() == kNoSeat);
+        CHECK(c.m[2].session->watching());
+        CHECK(c.host().lobby().players.size() == 2);
+        REQUIRE(c.host().lobby().watchers.size() == 1);
+        CHECK(c.host().lobby().watchers[0] == "Zoe");
+        c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
+        c.m[1].session->issue(found_on_site(*c.m[1].game, 1));
+        c.frames(100, 1);
+        c.settle();
+        CHECK(c.m[2].game->tick() > 20);
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+        // Without the lobby's checkbox the mark is ignored: everybody plays.
+        Cluster d;
+        d.towns_to_found = true;
+        d.join("Ana");
+        d.frames(3, 0);
+        d.host().set_config(config(68, false));
+        d.client(1).set_info("Ana", 1, true, true);
+        d.frames(3, 0);
+        CHECK_FALSE(d.host().lobby().players[1].watching);
+        REQUIRE(d.host().start());
+        d.frames(20, 1);
+        CHECK(d.m[1].session->local_slot() == 1);
+        CHECK(d.m[0].game->player_count() == 2);
     }
 
     TEST_CASE("at x5 the game keeps in step: the margins follow the speed") {

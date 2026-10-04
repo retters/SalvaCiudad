@@ -109,6 +109,7 @@ private:
     bool access_open_ = true;
     bool access_join_ = true;
     bool access_found_ = true;
+    bool access_watch_ = true;
     void display_confirm_dialog(ui::Context& ctx);
     [[nodiscard]] bool modal_open() const;
 

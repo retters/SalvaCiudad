@@ -292,13 +292,19 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     ctx.set_input_blocked(blocked || covered);
     top_bar(ctx, *s);
     // Phase 74: with no town yet there is nothing to build with.
-    const bool has_town = game.founded(s->local_player());
+    // Phase 79: nor for whoever watches.
+    const bool has_town = game.founded(s->local_player()) && !s->spectating();
     if (has_town) {
         build_bar(ctx, *s);
     } else {
         build_bar_top_ = ctx.height();
     }
-    if (!has_town || game.awaiting_founders()) {
+    if (s->spectating()) {
+        spectator(ctx, *s);
+        if (s->seat() == GameSession::kNoSeat && ui.arrival_open) {
+            arrival(ctx, *s);
+        }
+    } else if (!has_town || game.awaiting_founders()) {
         founding(ctx, *s);
     }
     join_requests(ctx, *s);
@@ -645,10 +651,15 @@ void GameHud::network(ui::Context& ctx, GameSession& s, float& right) {
     std::string waiting;
     for (const net::LobbyPlayer& p : net->lobby().players) {
         connected += p.connected ? 1 : 0;
-        names += (names.empty() ? "" : "\n") + tr(p.connected ? "hud.net.player" : "hud.net.playerAway", p.name);
+        names += (names.empty() ? "" : "\n") + tr(p.connected ? "hud.net.player" : "hud.net.playerAway", p.name) +
+                 (p.watching && p.connected ? " " + tr("hud.net.watching") : std::string());
         if (net->waiting_for() && *net->waiting_for() == p.slot && p.slot != net->local_slot()) {
             waiting = p.name;
         }
+    }
+    // Phase 79: and who watches without a seat.
+    for (const std::string& w : net->lobby().watchers) {
+        names += (names.empty() ? "" : "\n") + tr("hud.net.player", w) + " " + tr("hud.net.watching");
     }
     const std::string text = tr("hud.net.players", connected);
     const float w = ctx.text().measure(st, text) + ctx.s(24.0f);

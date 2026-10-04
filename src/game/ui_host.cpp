@@ -819,6 +819,8 @@ void UiHost::game_menu(ui::Context& ctx) {
         {"load", "menu.main.loadGame", "menu.main.loadGame.tooltip"},
         {"open", "gameMenu.open", "gameMenu.open.tooltip"},
         {"access", "gameMenu.access", "gameMenu.access.tooltip"},
+        {"watch", "gameMenu.watch", "gameMenu.watch.tooltip"},
+        {"play", "gameMenu.play", "gameMenu.play.tooltip"},
         {"settings", "menu.main.settings", "menu.main.settings.tooltip"},
         {"leave", "gameMenu.leave", "gameMenu.leave.tooltip"},
         {"quit", "gameMenu.quit", "menu.main.quit.tooltip"},
@@ -835,7 +837,13 @@ void UiHost::game_menu(ui::Context& ctx) {
         // Loading a saved game is for single player only. Opening the game
         // to others too (phase 76), and not the tutorial's; once open, its
         // host changes who may come in.
-        if (id == "open" ? playing && !networked && !tutorial_
+        // Phase 79: a player goes to watch, where the game lets people
+        // watch, and comes back to its town.
+        const GameSession* session = services_.session();
+        const bool seated = networked && session->seat() != GameSession::kNoSeat;
+        if (id == "watch" ? seated && !session->spectating() && (session->game().access() & sim::access::kWatch) != 0
+            : id == "play" ? seated && session->spectating()
+            : id == "open" ? playing && !networked && !tutorial_
             : id == "access" ? services_.hosting()
                              : (id != "save" && id != "load") || (id == "save" && playing) ||
                                    (id == "load" && playing && !networked)) {
@@ -858,6 +866,12 @@ void UiHost::game_menu(ui::Context& ctx) {
                 saves_ = services_.list_saves();
                 load_return_ = Screen::MapView;
                 screen_ = Screen::Load;
+            } else if (id == "watch") {
+                services_.watch_game();
+                game_menu_open_ = false;
+            } else if (id == "play") {
+                services_.play_game(0);
+                game_menu_open_ = false;
             } else if (id == "open" || id == "access") {
                 // What the game allows now; a game never opened offers both.
                 const std::uint8_t now = services_.session()->game().access();
@@ -865,6 +879,7 @@ void UiHost::game_menu(ui::Context& ctx) {
                 access_open_ = id == "open" || (now & sim::access::kOpen) != 0;
                 access_join_ = id == "open" || (now & sim::access::kJoin) != 0;
                 access_found_ = id == "open" || (now & sim::access::kFound) != 0;
+                access_watch_ = id == "open" || (now & sim::access::kWatch) != 0;
             } else if (id == "settings") {
                 settings_return_ = Screen::MapView;
                 screen_ = Screen::Settings;
@@ -902,8 +917,9 @@ void UiHost::access_dialog(ui::Context& ctx) {
     };
     const Row rows[] = {
         {"open", "access.open", &access_open_, hosting, true},
-        {"join", "access.join", &access_join_, true, access_open_},
-        {"found", "access.found", &access_found_, true, access_open_},
+        {"join", "access.join", &access_join_, true, access_open_ || !hosting},
+        {"found", "access.found", &access_found_, true, access_open_ || !hosting},
+        {"watch", "access.watch", &access_watch_, true, true},
     };
     int shown = 0;
     for (const Row& r : rows) {
@@ -928,12 +944,17 @@ void UiHost::access_dialog(ui::Context& ctx) {
     ctx.label({content.x, std::round(y), content.w, note_h}, tr(hosting ? "access.note.change" : "access.note.open"),
               ctx.style(ctx.theme().small), ctx.theme().text_dim);
     y += note_h + gap;
-    // Open to nobody's use is no use: one of the two things at least.
-    const bool valid = !access_open_ || access_join_ || access_found_;
+    // Opening the game (not hosting yet): open to play if it lets people
+    // join or found; it may also be only to watch. Open to nobody's use is
+    // no use: one thing at least.
+    const bool open = hosting ? access_open_ : access_join_ || access_found_;
+    const bool valid = hosting ? !access_open_ || access_join_ || access_found_
+                               : access_join_ || access_found_ || access_watch_;
     const float bw = (content.w - gap) * 0.5f;
-    const std::uint8_t access = static_cast<std::uint8_t>((access_open_ ? sim::access::kOpen : 0) |
+    const std::uint8_t access = static_cast<std::uint8_t>((open ? sim::access::kOpen : 0) |
                                                          (access_join_ ? sim::access::kJoin : 0) |
-                                                         (access_found_ ? sim::access::kFound : 0));
+                                                         (access_found_ ? sim::access::kFound : 0) |
+                                                         (access_watch_ ? sim::access::kWatch : 0));
     if (ctx.button(ctx.id("access_ok"), {content.x, std::round(y), bw, button_h},
                    tr(hosting ? "access.apply" : "access.confirm"), {}, valid, true)) {
         if (hosting) {

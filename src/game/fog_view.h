@@ -42,7 +42,10 @@ public:
 
     // The fog shown: None when the game has none or when the developer
     // tools reveal everything.
-    [[nodiscard]] sim::FogMode mode() const { return revealed_ ? sim::FogMode::None : mode_; }
+    [[nodiscard]] sim::FogMode mode() const { return revealed_ || watch_all_ ? sim::FogMode::None : mode_; }
+    // Phase 79: a spectator looking at everything sees no fog either.
+    [[nodiscard]] bool watch_all() const { return watch_all_; }
+    void set_watch_all(bool all);
     [[nodiscard]] sim::FogMode game_mode() const { return game_mode_; }
     [[nodiscard]] bool revealed() const { return revealed_; }
     void set_revealed(bool revealed);
@@ -85,6 +88,7 @@ private:
     sim::FogMode mode_ = sim::FogMode::None;
     sim::FogMode game_mode_ = sim::FogMode::None;
     bool revealed_ = false;
+    bool watch_all_ = false;
     std::uint8_t group_ = 0;
     std::int32_t side_ = 0;
     std::uint64_t tick_ = ~0ull;

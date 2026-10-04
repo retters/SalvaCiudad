@@ -127,6 +127,13 @@ void FogView::set_revealed(bool revealed) {
     }
 }
 
+void FogView::set_watch_all(bool all) {
+    if (all != watch_all_) {
+        watch_all_ = all;
+        ++revision_;
+    }
+}
+
 void FogView::stamp(std::int32_t x, std::int32_t z, std::int32_t radius) {
     sim::for_each_disc_row(side_, x, z, radius, [&](std::int32_t cz, std::int32_t cx0, std::int32_t cx1) {
         visible_.set_span(cz, cx0, cx1);

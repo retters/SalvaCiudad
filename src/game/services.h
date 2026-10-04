@@ -103,6 +103,12 @@ public:
     virtual void set_access(std::uint8_t access) = 0;
     // Whether this machine hosts the game being played.
     [[nodiscard]] virtual bool hosting() const = 0;
+    // Phase 79. To go and watch (a player's town then works alone), and to
+    // play: a spectator asks the host for a seat and, once it has it,
+    // founds a town (`then` -1) or asks to join the town `then`; a player
+    // who was watching just takes its seat back.
+    virtual void watch_game() = 0;
+    virtual void play_game(int then) = 0;
     // Phase 78. Loads a saved game and opens its lobby as host: its seats
     // wait for their players by name. On failure the player is told why.
     virtual bool load_game_as_host(const std::filesystem::path& file) = 0;

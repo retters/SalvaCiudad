@@ -91,6 +91,18 @@ PartHashes NetSession::parts_of(const sim::Game& game) {
     return h;
 }
 
+bool NetSession::watching() const {
+    if (slot_ == kNoSeat) {
+        return true;
+    }
+    for (const LobbyPlayer& p : lobby_.players) {
+        if (p.slot == slot_) {
+            return p.watching && lobby_.phase == LobbyPhase::Playing;
+        }
+    }
+    return false;
+}
+
 // --- NetHost -------------------------------------------------------------------
 
 NetHost::NetHost(Link& link, LocalInfo local) : link_(link), local_(std::move(local)) {
@@ -200,7 +212,14 @@ void NetHost::send_lobby() {
     for (std::size_t i = 0; i < seats_.size(); ++i) {
         const Seat& s = seats_[i];
         if (s.used) {
-            lobby_.players.push_back({static_cast<std::uint8_t>(i), s.name, s.color, s.ready, s.connected, s.loaded});
+            lobby_.players.push_back(
+                {static_cast<std::uint8_t>(i), s.name, s.color, s.ready, s.connected, s.loaded, s.watching});
+        }
+    }
+    lobby_.watchers.clear();
+    for (const Watcher& w : watchers_) {
+        if (w.used) {
+            lobby_.watchers.push_back(w.name);
         }
     }
     lobby_.phase = state_ == State::Playing ? LobbyPhase::Playing
@@ -215,6 +234,12 @@ void NetHost::broadcast(const Message& m, bool in_game_only) {
         const Seat& s = seats_[i];
         if (i != slot_ && s.used && s.connected && (!in_game_only || s.in_game)) {
             link_.send(s.peer, bytes);
+        }
+    }
+    // Spectators hear everything (they exist only once the game does).
+    for (const Watcher& w : watchers_) {
+        if (w.used) {
+            link_.send(w.peer, bytes);
         }
     }
 }
@@ -281,7 +306,9 @@ void NetHost::receive(PeerId peer, std::span<const std::uint8_t> data) {
         return;
     }
     if (known == peers_.end()) {
-        if (const Hello* h = std::get_if<Hello>(&*m)) {
+        if (const auto watcher = watching_peers_.find(peer); watcher != watching_peers_.end()) {
+            receive_watcher(peer, watcher->second, *m);
+        } else if (const Hello* h = std::get_if<Hello>(&*m)) {
             hello(peer, *h);
         } else {
             link_.disconnect(peer);  // Anything before Hello is wrong.
@@ -290,11 +317,34 @@ void NetHost::receive(PeerId peer, std::span<const std::uint8_t> data) {
     }
     const std::uint8_t slot = known->second;
     Seat& seat = seats_[slot];
+    if (const SeatRequest* want = std::get_if<SeatRequest>(&*m)) {
+        // Phase 79: a player goes to watch (if the game lets people watch),
+        // or comes back to the seat, which was theirs all along.
+        if (state_ == State::Playing && seat.in_game) {
+            const bool watch = !want->play && (game_->access() & sim::access::kWatch) != 0;
+            if (watch != seat.watching) {
+                seat.watching = watch;
+                answers_.erase(slot);
+                send_lobby();
+                if (vote_) {
+                    settle_vote(false);
+                }
+            }
+        }
+        return;
+    }
+    if (seat.watching && state_ == State::Playing &&
+        (std::holds_alternative<Commands>(*m) || std::holds_alternative<SpeedPropose>(*m) ||
+         std::holds_alternative<SpeedAnswer>(*m))) {
+        ++ignored_;  // Watching: no orders, no pause, no vote.
+        return;
+    }
     if (const SetInfo* info = std::get_if<SetInfo>(&*m)) {
         if (state_ == State::Lobby) {
             if (!saved_) {  // In a saved game the seats keep their names.
                 seat.name = unique_name(info->name, slot);
                 seat.color = info->color;
+                seat.watching = info->watch && lobby_.config.spectators;
             }
             seat.ready = info->ready;
             send_lobby();
@@ -348,6 +398,81 @@ void NetHost::receive(PeerId peer, std::span<const std::uint8_t> data) {
     }
 }
 
+// Phase 79. What a spectator may send: how far it got, and that it wants
+// to play. Anything else is ignored and counted.
+void NetHost::receive_watcher(PeerId peer, std::uint8_t index, const Message& m) {
+    Watcher& w = watchers_[index];
+    if (const Ack* ack = std::get_if<Ack>(&m)) {
+        w.acked = std::max(w.acked, ack->tick);
+        if (state_ != State::Playing || game_ == nullptr) {
+            return;
+        }
+        // Not the same game as the host's any more, or too far behind for
+        // the turns kept: the whole state again (at most every ten seconds).
+        bool differs = false;
+        if (ack->has_hashes) {
+            const auto it = checks_.find(ack->tick);
+            differs = it != checks_.end() && !(it->second == ack->hashes);
+        }
+        const bool behind = game_->turn() > w.acked + kWatcherResyncTurns;
+        if ((differs || behind) && (w.resynced_ms == 0 || now_ms_ >= w.resynced_ms + 10'000)) {
+            w.resynced_ms = std::max<std::uint64_t>(now_ms_, 1);
+            snapshot_to(peer);
+            w.acked = game_->turn();
+        }
+        return;
+    }
+    if (const SeatRequest* want = std::get_if<SeatRequest>(&m)) {
+        // A seat to play, made for them, if the game is open and has room.
+        if (want->play && state_ == State::Playing && game_ != nullptr && game_->open() &&
+            sim_seats_ < sim::kMaxPlayers && !seats_[sim_seats_].used) {
+            const std::uint8_t slot = sim_seats_;
+            Seat& s = seats_[slot];
+            s = Seat{};
+            s.used = true;
+            s.connected = true;
+            s.in_game = true;
+            s.loaded = true;
+            s.peer = peer;
+            s.name = unique_name(w.name, slot);
+            s.acked = w.acked;
+            w = Watcher{};
+            watching_peers_.erase(peer);
+            peers_[peer] = slot;
+            sim::Command add;
+            add.type = sim::CommandType::AddSeat;
+            add.text = sim::valid_seat_name(s.name) ? s.name : std::string();
+            issue_as_host(add);
+            ++sim_seats_;
+            link_.send(peer, encode(Welcome{slot}));
+            event({NetEvent::Kind::PlayerJoined, slot});
+            broadcast(Notice{NoticeKind::Joined, slot, game_->turn()}, false);
+            send_lobby();
+        } else {
+            link_.send(peer, encode(Welcome{kNoSeat}));  // Still watching.
+        }
+        return;
+    }
+    if (std::holds_alternative<Loaded>(m)) {
+        return;  // It built the game: nothing to check, nobody waits for it.
+    }
+    ++ignored_;
+}
+
+bool NetHost::add_watcher(PeerId peer, const std::string& name) {
+    for (std::uint8_t i = 0; i < watchers_.size(); ++i) {
+        if (!watchers_[i].used) {
+            watchers_[i] = Watcher{};
+            watchers_[i].used = true;
+            watchers_[i].peer = peer;
+            watchers_[i].name = name;
+            watching_peers_[peer] = i;
+            return true;
+        }
+    }
+    return false;
+}
+
 void NetHost::hello(PeerId peer, const Hello& h) {
     if (h.game_version != local_.game_version) {
         reject(peer, RejectReason::Version);
@@ -388,6 +513,38 @@ void NetHost::hello(PeerId peer, const Hello& h) {
                 rejoin = true;
             }
         }
+        // Phase 79: where people may watch, somebody new comes in as a
+        // spectator, without a seat, and asks for one if they want to play.
+        if (!seat && (game_->access() & sim::access::kWatch) != 0) {
+            std::string name = h.name;
+            for (int n = 2; n < 100; ++n) {
+                bool taken = false;
+                for (const Seat& s : seats_) {
+                    taken = taken || (s.used && s.name == name);
+                }
+                for (const Watcher& w : watchers_) {
+                    taken = taken || (w.used && w.name == name);
+                }
+                if (!taken) {
+                    break;
+                }
+                name = h.name.substr(0, kMaxNameBytes - 5) + " (" + std::to_string(n) + ")";
+            }
+            if (!valid_name(name)) {
+                name = h.name;
+            }
+            if (add_watcher(peer, name)) {
+                link_.send(peer, encode(Welcome{kNoSeat}));
+                send_lobby();
+                snapshot_to(peer);
+                watchers_[watching_peers_[peer]].acked = game_->turn();
+                return;
+            }
+            if (!game_->open()) {
+                reject(peer, RejectReason::WatchersFull);
+                return;
+            }
+        }
         // Phase 76: somebody new gets a seat made for them, without a
         // town, if the game is open.
         if (!seat && !game_->open()) {
@@ -420,7 +577,7 @@ void NetHost::hello(PeerId peer, const Hello& h) {
         add.type = sim::CommandType::AddSeat;
         add.text = sim::valid_seat_name(s.name) ? s.name : std::string();
         add.count = std::min<std::uint8_t>(s.color, sim::kMaxSeatColor);
-        issue(add);
+        issue_as_host(add);
         ++sim_seats_;
     }
     if (state_ == State::Playing) {
@@ -437,6 +594,12 @@ void NetHost::hello(PeerId peer, const Hello& h) {
 }
 
 void NetHost::lost(PeerId peer) {
+    if (const auto watcher = watching_peers_.find(peer); watcher != watching_peers_.end()) {
+        watchers_[watcher->second] = Watcher{};
+        watching_peers_.erase(watcher);
+        send_lobby();
+        return;
+    }
     const auto it = peers_.find(peer);
     if (it == peers_.end()) {
         return;
@@ -449,6 +612,7 @@ void NetHost::lost(PeerId peer) {
         s = Seat{};  // The seat is free again.
     }
     s.ready = false;
+    s.watching = false;  // Back, it plays.
     answers_.erase(slot);
     event({NetEvent::Kind::PlayerLeft, slot});
     broadcast(Notice{NoticeKind::Left, slot, game_ != nullptr ? game_->turn() : 0}, false);
@@ -499,13 +663,21 @@ bool NetHost::start() {
     // Seats are packed so the towns are 0..n-1.
     std::array<Seat, sim::kMaxPlayers> packed{};
     std::uint8_t n = 0;
-    for (const Seat& s : seats_) {
-        if (s.used && s.connected) {
-            packed[n++] = s;
+    peers_.clear();
+    for (std::size_t i = 0; i < seats_.size(); ++i) {
+        const Seat& s = seats_[i];
+        if (!s.used || !s.connected) {
+            continue;
         }
+        // Phase 79: whoever chose to watch gets no seat (while there is room to watch).
+        if (i != slot_ && s.watching && lobby_.config.spectators && add_watcher(s.peer, s.name)) {
+            link_.send(s.peer, encode(Welcome{kNoSeat}));
+            continue;
+        }
+        packed[n] = s;
+        packed[n++].watching = false;
     }
     seats_ = packed;
-    peers_.clear();
     for (std::uint8_t i = 0; i < n; ++i) {
         seats_[i].in_game = true;
         seats_[i].loaded = false;
@@ -555,12 +727,39 @@ void NetHost::maybe_begin() {
 }
 
 void NetHost::issue(const sim::Command& command) {
+    if (seats_[slot_].watching) {
+        ++ignored_;  // The host watches: its town works alone too (phase 79).
+        return;
+    }
+    issue_as_host(command);
+}
+
+void NetHost::issue_as_host(const sim::Command& command) {
     if (state_ != State::Playing || pending_.size() >= kMaxCommandsPerTurn) {
         return;
     }
     sim::Command c = command;
     c.player = slot_;
     pending_.push_back({slot_, c});
+}
+
+void NetHost::request_seat() {
+    if (state_ == State::Playing && seats_[slot_].watching) {
+        seats_[slot_].watching = false;
+        send_lobby();
+    }
+}
+
+void NetHost::request_watch() {
+    if (state_ == State::Playing && game_ != nullptr && (game_->access() & sim::access::kWatch) != 0 &&
+        !seats_[slot_].watching) {
+        seats_[slot_].watching = true;
+        answers_.erase(slot_);
+        send_lobby();
+        if (vote_) {
+            settle_vote(false);
+        }
+    }
 }
 
 void NetHost::close_turn(std::uint64_t tick) {
@@ -589,8 +788,8 @@ int NetHost::advance(int ticks, std::uint64_t now_ms) {
         // Wait for the slowest connected player.
         for (std::uint8_t i = 0; i < seats_.size(); ++i) {
             const Seat& s = seats_[i];
-            if (i != slot_ && s.in_game && s.connected && s.acked + lag_ticks(speed_) < t) {
-                waiting_for_ = i;
+            if (i != slot_ && s.in_game && s.connected && !s.watching && s.acked + lag_ticks(speed_) < t) {
+                waiting_for_ = i;  // Nobody waits for those who watch (phase 79).
             }
         }
         if (waiting_for_) {
@@ -643,23 +842,30 @@ void NetHost::check(std::uint8_t slot, const Ack& ack) {
 }
 
 void NetHost::send_snapshot(std::uint8_t slot) {
+    if (game_ == nullptr || slot == slot_ || slot >= seats_.size() || !seats_[slot].connected) {
+        return;
+    }
+    snapshot_to(seats_[slot].peer);
+    seats_[slot].acked = game_->turn();
+}
+
+void NetHost::snapshot_to(PeerId peer) {
     if (game_ == nullptr) {
         return;
     }
     sim::BinaryWriter w;
     game_->save(w);
     const std::uint64_t tick = game_->turn();
-    send(slot, pack_snapshot(tick, w.bytes()));
+    link_.send(peer, encode(pack_snapshot(tick, w.bytes())));
     // The turns already closed after it, so it can follow.
     for (auto it = history_.lower_bound(tick); it != history_.end(); ++it) {
-        send(slot, it->second);
+        link_.send(peer, encode(it->second));
     }
-    seats_[slot].acked = tick;
 }
 
 void NetHost::request_speed(int speed) {
     if (state_ != State::Playing || !speed::valid(speed) || speed > speed::kMaxNetwork ||
-        (game_ != nullptr && game_->awaiting_founders())) {
+        (game_ != nullptr && game_->awaiting_founders()) || seats_[slot_].watching) {
         return;
     }
     if (speed == 0) {
@@ -696,8 +902,8 @@ void NetHost::settle_vote(bool force_fail) {
     bool refused = false;
     for (std::uint8_t i = 0; i < seats_.size(); ++i) {
         const Seat& s = seats_[i];
-        if (!s.in_game || !s.connected) {
-            continue;
+        if (!s.in_game || !s.connected || s.watching) {
+            continue;  // Those who watch do not vote.
         }
         const auto it = answers_.find(i);
         all = all && it != answers_.end() && it->second;
@@ -732,15 +938,29 @@ void NetClient::send(const Message& m) {
     link_.send(host_, encode(m));
 }
 
-void NetClient::set_info(const std::string& name, std::uint8_t color, bool ready) {
+void NetClient::set_info(const std::string& name, std::uint8_t color, bool ready, bool watch) {
     if (!valid_name(name) || color >= kColors) {
         return;
     }
     local_.name = name;
     local_.color = color;
     ready_ = ready;
+    watch_ = watch;
     if (state_ == State::Lobby) {
-        send(SetInfo{name, color, ready});
+        send(SetInfo{name, color, ready, watch});
+    }
+}
+
+void NetClient::request_seat() {
+    if (state_ == State::Playing) {
+        send(SeatRequest{true});
+    }
+}
+
+void NetClient::request_watch() {
+    if (state_ == State::Playing && slot_ != kNoSeat) {
+        outbox_.clear();
+        send(SeatRequest{false});
     }
 }
 
@@ -786,10 +1006,15 @@ void NetClient::receive(std::span<const std::uint8_t> data) {
         return;
     }
     if (const Welcome* w = std::get_if<Welcome>(&*m)) {
+        const bool changed = slot_ != w->slot || state_ == State::Playing;
         slot_ = w->slot;
         if (state_ == State::Connecting) {
             state_ = State::Lobby;
-            send(SetInfo{local_.name, local_.color, ready_});
+            if (slot_ != kNoSeat) {
+                send(SetInfo{local_.name, local_.color, ready_, watch_});
+            }
+        } else if (changed) {
+            event({NetEvent::Kind::SeatChanged, slot_});  // A seat to play, or still none.
         }
     } else if (const Reject* r = std::get_if<Reject>(&*m)) {
         NetEvent e{NetEvent::Kind::Rejected, 0};
@@ -868,6 +1093,9 @@ void NetClient::snapshot_loaded(sim::Game* game) {
 }
 
 void NetClient::issue(const sim::Command& command) {
+    if (watching()) {
+        return;  // Spectators give no orders (the host would ignore them anyway).
+    }
     if (state_ == State::Playing && outbox_.size() < kMaxCommandsPerTurn) {
         sim::Command c = command;
         c.player = slot_;
@@ -915,12 +1143,16 @@ int NetClient::advance(int ticks, std::uint64_t now_ms) {
 }
 
 void NetClient::request_speed(int speed) {
-    if (state_ == State::Playing && speed::valid(speed) && speed <= speed::kMaxNetwork) {
+    if (state_ == State::Playing && speed::valid(speed) && speed <= speed::kMaxNetwork && !watching()) {
         send(SpeedPropose{static_cast<std::uint8_t>(speed)});
     }
 }
 
 void NetClient::answer_vote(bool accept) {
+    if (vote_ && watching()) {
+        vote_.reset();  // Not theirs to answer.
+        return;
+    }
     if (vote_) {
         send(SpeedAnswer{vote_->id, accept});
         if (vote_->from != slot_) {

@@ -150,6 +150,7 @@ void LobbyScreen::open() {
     color_ = 0;
     color_chosen_ = false;
     ready_ = false;
+    watch_ = false;
 }
 
 void LobbyScreen::send_info() {
@@ -160,7 +161,7 @@ void LobbyScreen::send_info() {
     if (net->role() == net::NetSession::Role::Host) {
         static_cast<net::NetHost*>(net)->set_local(name_, color_);
     } else {
-        static_cast<net::NetClient*>(net)->set_info(name_, color_, ready_);
+        static_cast<net::NetClient*>(net)->set_info(name_, color_, ready_, watch_);
     }
     services_.settings().gameplay.player_name = name_;
     services_.settings_changed();
@@ -188,7 +189,7 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
     // Many villagers in all: a warning (phase 20, docs/RENDIMIENTO.md).
     const std::int32_t seats = static_cast<std::int32_t>(lobby.players.size());
     const bool heavy = seats * lobby.config.rules.max_population > sim::kPopulationWarning;
-    const float content_h = line * (heavy ? 3 : 2) + gap + row_h * 5 + gap * 5 + list_h + gap + button_h;
+    const float content_h = line * (heavy ? 3 : 2) + gap + row_h * 6 + gap * 6 + list_h + gap + button_h;
     float y = 0.0f;
     const ui::Rect c = frame_panel(ctx, 760.0f, content_h, tr(host ? "lobby.title.host" : "lobby.title.client"), y);
     Result result = Result::None;
@@ -217,7 +218,8 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
             const bool open = (now & sim::access::kOpen) != 0;
             const Row rows[] = {{"open", "access.open", sim::access::kOpen, true},
                                 {"join", "access.join", sim::access::kJoin, open},
-                                {"found", "access.found", sim::access::kFound, open}};
+                                {"found", "access.found", sim::access::kFound, open},
+                                {"watch", "access.watch", sim::access::kWatch, true}};
             const float check = std::round(ctx.s(28.0f));
             for (const Row& r : rows) {
                 bool value = (now & r.bit) != 0;
@@ -232,7 +234,7 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
             }
         }
         // The seats start where they do in a new game's lobby.
-        y = std::max(y, rows_top + 5 * (row_h + gap) - 2 * line);
+        y = std::max(y, rows_top + 6 * (row_h + gap) - 2 * line);
         const float col_w = (c.w - gap) * 0.5f;
         for (std::size_t i = 0; i < lobby.players.size(); ++i) {
             const net::LobbyPlayer& p = lobby.players[i];
@@ -339,6 +341,32 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
             y += row_h + gap;
         }
 
+        // Phase 79: spectators. The host says whether people may watch;
+        // each of the others, whether to watch instead of playing.
+        {
+            const float check = std::round(ctx.s(28.0f));
+            ctx.label({c.x, y, label_w, row_h}, tr("lobby.watch"), body, ctx.theme().text);
+            const ui::Rect box{c.x + label_w, std::round(y + (row_h - check) * 0.5f), check, check};
+            const ui::Rect text{box.right() + gap, y, c.w - label_w - check - gap, row_h};
+            if (host) {
+                bool allowed = lobby.config.spectators;
+                if (ctx.checkbox(ctx.id("lobby_watch_allow"), box, allowed, tr("access.watch.tooltip"))) {
+                    net::GameConfig cfg = lobby.config;
+                    cfg.spectators = allowed;
+                    static_cast<net::NetHost*>(net)->set_config(cfg);
+                }
+                ctx.label(text, tr("access.watch"), body, ctx.theme().text);
+            } else if (lobby.config.spectators) {
+                if (ctx.checkbox(ctx.id("lobby_watch_me"), box, watch_, tr("lobby.watch.me.tooltip"))) {
+                    send_info();
+                }
+                ctx.label(text, tr("lobby.watch.me"), body, ctx.theme().text);
+            } else {
+                ctx.label({c.x + label_w, y, c.w - label_w, row_h}, tr("lobby.watch.off"), body, ctx.theme().text_dim);
+            }
+            y += row_h + gap;
+        }
+
         // This player's name and color.
         const float name_w = std::round((c.w - label_w) * 0.6f);
         ctx.label({c.x, y, label_w, row_h}, tr("lobby.you"), body, ctx.theme().text);
@@ -369,7 +397,9 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
             if (p.slot == net->local_slot()) {
                 name = tr("lobby.player.you", p.name);
             }
-            const char* state = !p.connected ? "lobby.player.away" : (p.ready ? "lobby.player.ready" : "lobby.player.notReady");
+            const char* state = !p.connected ? "lobby.player.away"
+                                : p.watching ? "lobby.player.watching"
+                                             : (p.ready ? "lobby.player.ready" : "lobby.player.notReady");
             ctx.label({row.x + row_h, row.y, row.w - row_h - gap, row.h}, name, body, ctx.theme().text);
             ctx.label({row.x + row_h, row.y, row.w - row_h - gap, row.h}, tr(state), body,
                       p.ready ? ctx.theme().accent : ctx.theme().text_dim, ui::Align::Right);

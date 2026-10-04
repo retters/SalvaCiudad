@@ -91,6 +91,8 @@ public:
     bool open_game(std::uint8_t access) override;
     void set_access(std::uint8_t access) override;
     [[nodiscard]] bool hosting() const override;
+    void watch_game() override;
+    void play_game(int then) override;
     bool load_game_as_host(const std::filesystem::path& file) override;
     [[nodiscard]] int saved_access() const override;
     net::NetSession* net() override { return net_.get(); }
@@ -236,6 +238,16 @@ private:
     std::unique_ptr<net::LanDiscovery> lan_announce_;
     std::unique_ptr<net::NetSession> net_;
     std::optional<net::Start> net_start_;  // The network game whose map is being generated.
+    // Phase 79. What a spectator wants once it has a seat (kThenNothing:
+    // nothing; -1: to found; else the town to ask), the town whose founder
+    // it still has to ask, and what the lobby last said about who watches.
+    static constexpr int kThenNothing = -2;
+    int play_then_ = kThenNothing;
+    int ask_town_ = -1;
+    std::vector<std::string> shown_watchers_;
+    std::uint16_t shown_watching_ = 0;
+    bool watch_shown_ = false;
+    void follow_watching();
     // Phase 78: a saved game loaded to be hosted, while its lobby is open.
     std::unique_ptr<GameSession> saved_session_;
     [[nodiscard]] GameSession::LoadResult read_save(const std::filesystem::path& file, std::unique_ptr<GameSession>& out);

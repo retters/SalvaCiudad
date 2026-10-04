@@ -79,7 +79,11 @@ namespace access {
 inline constexpr std::uint8_t kOpen = 1;   // New players get a seat.
 inline constexpr std::uint8_t kJoin = 2;   // They may ask to join a town.
 inline constexpr std::uint8_t kFound = 4;  // They may found a town of their own.
-inline constexpr std::uint8_t kAll = kOpen | kJoin | kFound;
+// Phase 79: people may come in to watch, without a seat. They are
+// connections, not part of the game: nothing else of the simulation knows
+// about them.
+inline constexpr std::uint8_t kWatch = 8;
+inline constexpr std::uint8_t kAll = kOpen | kJoin | kFound | kWatch;
 }  // namespace access
 
 struct Command {

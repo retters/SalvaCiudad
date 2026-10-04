@@ -1369,7 +1369,12 @@ bool App::enter_generated_map() {
                 setup.seats[p.slot] = {p.name, std::min<std::uint8_t>(p.color, sim::kMaxSeatColor)};
             }
         }
-        auto session = std::make_unique<GameSession>(content, *map, setup, net_->local_slot());
+        // Phase 79: without a seat, it watches everything from the start.
+        const std::uint8_t slot = net_->local_slot();
+        auto session = std::make_unique<GameSession>(content, *map, setup, slot == net::kNoSeat ? std::uint8_t{0} : slot);
+        if (slot == net::kNoSeat) {
+            session->watch(0, true, GameSession::kNoSeat);
+        }
         session->attach(net_.get());
         // The developer tools stay on in network games for now (D-7603, in place of D-910).
         start_session(std::move(session));
@@ -1900,7 +1905,8 @@ void App::update_war_fog() {
     FogView& fog = session_->fog();
     // The seat joined a town, or got its seat (phases 75 to 77): it sees
     // with that town's eyes from now on.
-    if (const std::uint8_t group = session_->game().vision_group(session_->local_player()); group != fog.group()) {
+    if (const std::uint8_t group = session_->game().vision_group(session_->local_player());
+        group != fog.group() && !session_->view_all()) {
         fog.begin(session_->game(), group);
     }
     fog.update(session_->game());
@@ -2251,6 +2257,72 @@ bool App::open_game(std::uint8_t access) {
     return true;
 }
 
+void App::watch_game() {
+    if (net_ && session_ && session_->networked() && !session_->spectating()) {
+        net_->request_watch();  // The lobby's answer turns the view (follow_watching).
+    }
+}
+
+void App::play_game(int then) {
+    if (!net_ || !session_ || !session_->networked() || !session_->spectating()) {
+        return;
+    }
+    play_then_ = session_->seat() == GameSession::kNoSeat ? then : kThenNothing;
+    net_->request_seat();
+}
+
+// Phase 79. Each frame: the view follows what the host says about this
+// machine (a player who watches, or plays again), a spectator who got its
+// seat asks the founder it chose, and everybody hears who watches.
+void App::follow_watching() {
+    if (!net_ || !session_ || !session_->networked() || !host_) {
+        shown_watchers_.clear();
+        shown_watching_ = 0;
+        watch_shown_ = false;
+        return;
+    }
+    sim::Game& game = session_->game();
+    const std::uint8_t seat = session_->seat();
+    if (seat != GameSession::kNoSeat && seat == net_->local_slot()) {
+        if (net_->watching() && !session_->spectating()) {
+            session_->watch(seat, true, seat);
+        } else if (!net_->watching() && session_->spectating()) {
+            session_->play(seat);
+        }
+    }
+    if (ask_town_ >= 0 && seat != GameSession::kNoSeat && !session_->spectating() && seat < game.player_count()) {
+        if (game.may_request(seat, static_cast<std::uint8_t>(ask_town_))) {
+            sim::Command c;
+            c.type = sim::CommandType::RequestJoin;
+            c.count = static_cast<std::uint16_t>(ask_town_);
+            session_->issue(c);
+        }
+        ask_town_ = -1;
+    }
+    // Who watches, as the lobby tells it.
+    const net::Lobby& lobby = net_->lobby();
+    std::uint16_t watching = 0;
+    for (const net::LobbyPlayer& p : lobby.players) {
+        watching = static_cast<std::uint16_t>(watching | (p.watching && p.slot < sim::kMaxPlayers ? 1u << p.slot : 0u));
+    }
+    if (watch_shown_) {
+        for (const std::string& name : lobby.watchers) {
+            if (std::find(shown_watchers_.begin(), shown_watchers_.end(), name) == shown_watchers_.end()) {
+                host_->toast(tr("net.watching", name));
+            }
+        }
+        for (const net::LobbyPlayer& p : lobby.players) {
+            const std::uint16_t bit = p.slot < sim::kMaxPlayers ? static_cast<std::uint16_t>(1u << p.slot) : 0;
+            if ((watching & bit) != (shown_watching_ & bit)) {
+                host_->toast(tr((watching & bit) != 0 ? "net.watching" : "net.playing", p.name));
+            }
+        }
+    }
+    shown_watchers_ = lobby.watchers;
+    shown_watching_ = watching;
+    watch_shown_ = true;
+}
+
 void App::set_access(std::uint8_t access) {
     sim::Command c;
     c.type = sim::CommandType::SetAccess;
@@ -2295,6 +2367,8 @@ void App::close_network() {
     net_.reset();
     net_start_.reset();
     saved_session_.reset();
+    play_then_ = kThenNothing;
+    ask_town_ = -1;
     if (link_) {
         link_->close();
         link_.reset();
@@ -2373,6 +2447,7 @@ void App::update_network(std::uint64_t now_ms) {
             return;  // The event closed the network.
         }
     }
+    follow_watching();
 }
 
 void App::apply_snapshot(std::vector<std::uint8_t> state) {
@@ -2399,7 +2474,15 @@ void App::apply_snapshot(std::vector<std::uint8_t> state) {
             close_network();
             return;
         }
-        auto session = std::make_unique<GameSession>(std::move(game), net_->local_slot());
+        // Phase 79: a spectator has no seat; it looks at everything, by
+        // the first town there is.
+        const std::uint8_t slot = net_->local_slot();
+        const std::uint8_t view = slot == net::kNoSeat ? seat_for(*game, {}) : slot;
+        auto session = std::make_unique<GameSession>(std::move(game), view);
+        if (slot == net::kNoSeat) {
+            session->watch(view, true, GameSession::kNoSeat);
+            session->ui().arrival_open = session->game().open();
+        }
         session->attach(net_.get());
         start_session(std::move(session));
     }
@@ -2609,6 +2692,21 @@ void App::report_game_events() {
 void App::handle_net_event(const net::NetEvent& e) {
     using Kind = net::NetEvent::Kind;
     switch (e.kind) {
+        case Kind::SeatChanged:
+            // Phase 79: a spectator asked to play. With a seat, it plays;
+            // without, the game had no room or does not take players.
+            if (session_ && e.slot != net::kNoSeat) {
+                session_->play(e.slot);
+                if (play_then_ == -1) {
+                    session_->ui().found_mode = true;
+                } else if (play_then_ >= 0) {
+                    ask_town_ = play_then_;
+                }
+            } else if (session_ && play_then_ != kThenNothing) {
+                host_->toast(tr("net.noSeat"));
+            }
+            play_then_ = kThenNothing;
+            break;
         case Kind::PlayerJoined: host_->toast(tr("net.joined", seat_name(e.slot))); break;
         case Kind::PlayerLeft: host_->toast(tr("net.left", seat_name(e.slot))); break;
         case Kind::PlayerRejoined: host_->toast(tr("net.rejoined", seat_name(e.slot))); break;
@@ -2667,6 +2765,7 @@ void App::handle_net_event(const net::NetEvent& e) {
                 case net::RejectReason::BadName: body = tr("net.rejected.name"); break;
                 case net::RejectReason::Closed: body = tr("net.rejected.closed"); break;
                 case net::RejectReason::NotStarted: body = tr("net.rejected.notStarted"); break;
+                case net::RejectReason::WatchersFull: body = tr("net.rejected.watchersFull"); break;
                 default: body = tr("net.rejected.protocol"); break;
             }
             host_->show_message(tr("net.rejected.title"), body);

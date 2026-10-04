@@ -82,6 +82,8 @@ public:
         return true;
     }
     [[nodiscard]] int saved_access() const override { return -1; }
+    void watch_game() override {}
+    void play_game(int) override {}
     std::filesystem::path hosted;
     int opened_access = -1;
     net::NetSession* net() override { return nullptr; }

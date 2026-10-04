@@ -101,7 +101,17 @@ bool read(BinaryReader& r, Hello& m) {
 }
 
 void write(BinaryWriter& w, const Welcome& m) { w.u8(m.slot); }
-bool read(BinaryReader& r, Welcome& m) { return read_slot(r, m.slot); }
+bool read(BinaryReader& r, Welcome& m) {
+    // A seat, or none: a spectator (phase 79).
+    if (!r.u8(m.slot) || (m.slot >= kMaxPlayers && m.slot != kNoSeat)) {
+        r.fail();
+        return false;
+    }
+    return true;
+}
+
+void write(BinaryWriter& w, const SeatRequest& m) { w.u8(m.play ? 1 : 0); }
+bool read(BinaryReader& r, SeatRequest& m) { return read_bool(r, m.play); }
 
 void write(BinaryWriter& w, const Reject& m) {
     w.u8(static_cast<std::uint8_t>(m.reason));
@@ -123,8 +133,13 @@ void write(BinaryWriter& w, const Lobby& m) {
         w.u8(p.ready ? 1 : 0);
         w.u8(p.connected ? 1 : 0);
         w.u8(p.loaded ? 1 : 0);
+        w.u8(p.watching ? 1 : 0);
     }
     w.u8(m.saved ? 1 : 0);
+    w.u8(static_cast<std::uint8_t>(m.watchers.size()));
+    for (const std::string& name : m.watchers) {
+        w.string(name);
+    }
 }
 bool read(BinaryReader& r, Lobby& m) {
     std::uint8_t n = 0;
@@ -135,21 +150,35 @@ bool read(BinaryReader& r, Lobby& m) {
     m.players.resize(n);
     for (LobbyPlayer& p : m.players) {
         if (!read_slot(r, p.slot) || !read_name(r, p.name) || !r.u8(p.color) || p.color >= kColors ||
-            !read_bool(r, p.ready) || !read_bool(r, p.connected) || !read_bool(r, p.loaded)) {
+            !read_bool(r, p.ready) || !read_bool(r, p.connected) || !read_bool(r, p.loaded) ||
+            !read_bool(r, p.watching)) {
             r.fail();
             return false;
         }
     }
-    return read_bool(r, m.saved);
+    std::uint8_t watchers = 0;
+    if (!read_bool(r, m.saved) || !r.u8(watchers) || watchers > kMaxWatchers) {
+        r.fail();
+        return false;
+    }
+    m.watchers.resize(watchers);
+    for (std::string& name : m.watchers) {
+        if (!read_name(r, name)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void write(BinaryWriter& w, const SetInfo& m) {
     w.string(m.name);
     w.u8(m.color);
     w.u8(m.ready ? 1 : 0);
+    w.u8(m.watch ? 1 : 0);
 }
 bool read(BinaryReader& r, SetInfo& m) {
-    if (!read_name(r, m.name) || !r.u8(m.color) || m.color >= kColors || !read_bool(r, m.ready)) {
+    if (!read_name(r, m.name) || !r.u8(m.color) || m.color >= kColors || !read_bool(r, m.ready) ||
+        !read_bool(r, m.watch)) {
         r.fail();
         return false;
     }
@@ -333,11 +362,12 @@ void write_config(BinaryWriter& w, const GameConfig& c) {
     w.u8(c.shared_town ? 1 : 0);
     w.u64(c.seed);
     c.rules.write(w);
+    w.u8(c.spectators ? 1 : 0);
 }
 
 bool read_config(BinaryReader& r, GameConfig& c) {
     return sim::MapSettings::read(r, c.map) && read_bool(r, c.shared_town) && r.u64(c.seed) &&
-           sim::GameRules::read(r, c.rules);
+           sim::GameRules::read(r, c.rules) && read_bool(r, c.spectators);
 }
 
 std::vector<std::uint8_t> encode(const Message& message) {

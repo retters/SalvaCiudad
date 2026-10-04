@@ -32,18 +32,49 @@ std::string now_iso() {
 
 GameSession::GameSession(std::shared_ptr<const sim::Content> content, sim::MapData map, const sim::GameSetup& setup,
                          std::uint8_t local_player)
-    : game_(std::make_unique<sim::Game>(std::move(content), std::move(map), setup)), local_player_(local_player) {
+    : game_(std::make_unique<sim::Game>(std::move(content), std::move(map), setup)),
+      local_player_(local_player),
+      seat_(local_player) {
     fog_.begin(*game_, game_->vision_group(local_player_));
 }
 
 GameSession::GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_player)
-    : game_(std::move(game)), local_player_(local_player) {
+    : game_(std::move(game)), local_player_(local_player), seat_(local_player) {
     fog_.begin(*game_, game_->vision_group(local_player_));
 }
 
 void GameSession::set_local_player(std::uint8_t player) {
     local_player_ = player;
+    seat_ = player;
     fog_.begin(*game_, game_->vision_group(local_player_));
+}
+
+void GameSession::watch(std::uint8_t as, bool all, std::uint8_t own_seat) {
+    spectating_ = true;
+    view_all_ = all;
+    seat_ = own_seat;
+    local_player_ = as < sim::kMaxPlayers ? as : std::uint8_t{0};
+    pending_.clear();
+    ui_.placing = sim::kNoDef;
+    ui_.field_farm = {};
+    ui_.found_mode = false;
+    ui_.found_asked = false;
+    ui_.found_sent = 0;
+    fog_.set_watch_all(all);
+    if (const std::uint8_t group = game_->vision_group(local_player_); group != fog_.group()) {
+        fog_.begin(*game_, group);
+    }
+}
+
+void GameSession::play(std::uint8_t seat) {
+    spectating_ = false;
+    view_all_ = false;
+    seat_ = seat;
+    local_player_ = seat;
+    fog_.set_watch_all(false);
+    if (const std::uint8_t group = game_->vision_group(local_player_); group != fog_.group()) {
+        fog_.begin(*game_, group);
+    }
 }
 
 std::uint8_t seat_for(const sim::Game& game, std::string_view name) {
@@ -72,6 +103,9 @@ void GameSession::attach(net::NetSession* net) {
 }
 
 void GameSession::issue(sim::Command command) {
+    if (spectating_) {
+        return;  // Whoever watches gives no orders (phase 79).
+    }
     command.player = local_player();
     if (net_ != nullptr) {
         net_->issue(command);
