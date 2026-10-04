@@ -2024,23 +2024,85 @@ std::vector<save::Entry> App::list_saves() {
     return paths_ ? save::list(paths_->saves_dir()) : std::vector<save::Entry>{};
 }
 
-bool App::load_game(const std::filesystem::path& file) {
-    if (!scene_ok_ || !host_) {
-        return false;
-    }
+GameSession::LoadResult App::read_save(const std::filesystem::path& file, std::unique_ptr<GameSession>& out) {
     save::SaveData data;
     const save::LoadError err = save::read_file(file, data);
     const std::shared_ptr<const sim::Content> content(pack_, &pack_->content);
-    std::unique_ptr<GameSession> loaded;
     GameSession::LoadResult result = GameSession::LoadResult::Unreadable;
     if (err == save::LoadError::NewerSchema) {
         result = GameSession::LoadResult::OtherVersion;
     } else if (err == save::LoadError::None) {
-        result = GameSession::load(data, content, loaded);
+        result = GameSession::load(data, content, out);
     }
     if (result != GameSession::LoadResult::Ok) {
         log::warn("save: cannot load a game (error {}, result {})", static_cast<int>(err), static_cast<int>(result));
         host_->show_message(tr("load.failed.title"), tr(load_result_key(result)));
+    } else {
+        // The player's own seat, by name (phase 78).
+        out->set_local_player(seat_for(out->game(), player_name()));
+    }
+    return result;
+}
+
+bool App::load_game_as_host(const std::filesystem::path& file) {
+    if (!scene_ok_ || !host_) {
+        return false;
+    }
+    std::unique_ptr<GameSession> loaded;
+    if (read_save(file, loaded) != GameSession::LoadResult::Ok) {
+        return false;
+    }
+    leave_map();
+    close_network();
+    if (!ensure_enet()) {
+        return false;
+    }
+    link_ = std::make_unique<net::EnetLink>();
+    if (!link_->listen(game_port(), sim::kMaxPlayers - 1, loopback_)) {
+        link_.reset();
+        host_->show_message(tr("lobby.hostFailed.title"), tr("lobby.hostFailed.body"));
+        return false;
+    }
+    sim::Game& game = loaded->game();
+    // Whoever loads it hosts it: the only seat that brings others in.
+    game.set_host(loaded->local_player());
+    // A game of one player that was never opened: hosting it opens it, to
+    // join or to found. One that was open keeps what it allowed, and one
+    // of several players that its host closed stays closed.
+    if (game.access() == 0 && game.player_count() == 1) {
+        sim::Command open;
+        open.type = sim::CommandType::SetAccess;
+        open.player = game.host();
+        open.value = sim::access::kAll;
+        game.apply(open);
+        (void)game.take_events();
+    }
+    auto host = std::make_unique<net::NetHost>(*link_, local_info());
+    net::GameConfig config;
+    config.map = game.map().settings;
+    config.shared_town = game.shared_town();
+    config.rules = game.rules();
+    host->adopt_lobby(&game, config, loaded->local_player());
+    net_ = std::move(host);
+    saved_session_ = std::move(loaded);
+    if (!loopback_) {
+        lan_announce_ = std::make_unique<net::LanDiscovery>();
+        (void)lan_announce_->announce(game_port());
+    }
+    log::info("net: hosting a saved game on port {}, as seat {}", game_port(), saved_session_->local_player());
+    return true;
+}
+
+int App::saved_access() const {
+    return saved_session_ ? static_cast<int>(saved_session_->game().access()) : -1;
+}
+
+bool App::load_game(const std::filesystem::path& file) {
+    if (!scene_ok_ || !host_) {
+        return false;
+    }
+    std::unique_ptr<GameSession> loaded;
+    if (read_save(file, loaded) != GameSession::LoadResult::Ok) {
         return false;
     }
     if (session_ && session_->networked()) {
@@ -2168,13 +2230,15 @@ bool App::open_game(std::uint8_t access) {
         return false;
     }
     sim::Game& game = session_->game();
+    // Whoever opens it hosts it, from the seat it plays.
+    game.set_host(session_->local_player());
     auto host = std::make_unique<net::NetHost>(*link_, local_info());
     net::GameConfig config;
     config.map = game.map().settings;
-    config.shared_town = false;
+    config.shared_town = game.shared_town();
     config.rules = game.rules();
     // The speed of now, up to the network's fastest (x5).
-    host->adopt(&game, config, clock_.speed());
+    host->adopt(&game, config, clock_.speed(), session_->local_player());
     net_ = std::move(host);
     session_->attach(net_.get());
     clock_.set_speed(net_->speed());
@@ -2188,12 +2252,19 @@ bool App::open_game(std::uint8_t access) {
 }
 
 void App::set_access(std::uint8_t access) {
-    if (!hosting()) {
-        return;
-    }
     sim::Command c;
     c.type = sim::CommandType::SetAccess;
     c.value = access & sim::access::kAll;
+    if (saved_session_) {
+        // In the lobby of a saved game nobody else has the game yet.
+        c.player = saved_session_->game().host();
+        saved_session_->game().apply(c);
+        (void)saved_session_->game().take_events();
+        return;
+    }
+    if (!hosting()) {
+        return;
+    }
     session_->issue(c);
 }
 
@@ -2223,6 +2294,7 @@ void App::close_network() {
     }
     net_.reset();
     net_start_.reset();
+    saved_session_.reset();
     if (link_) {
         link_->close();
         link_.reset();
@@ -2280,6 +2352,20 @@ void App::update_network(std::uint64_t now_ms) {
     }
     if (std::optional<std::vector<std::uint8_t>> snap = net_->take_snapshot()) {
         apply_snapshot(std::move(*snap));
+    }
+    // Phase 78: the host started the saved game from its lobby.
+    if (saved_session_ && net_->state() == net::NetSession::State::Playing) {
+        std::unique_ptr<GameSession> session = std::move(saved_session_);
+        leave_map();
+        if (!show_map_of(session->game().map())) {
+            host_->show_message(tr("load.failed.title"), tr("load.error.damaged"));
+            close_network();
+            return;
+        }
+        session->attach(net_.get());
+        start_session(std::move(session));
+        clock_.set_speed(net_->speed());
+        host_->show_game();
     }
     for (const net::NetEvent& e : net_->take_events()) {
         handle_net_event(e);
@@ -2580,6 +2666,7 @@ void App::handle_net_event(const net::NetEvent& e) {
                 case net::RejectReason::Full: body = tr("net.rejected.full"); break;
                 case net::RejectReason::BadName: body = tr("net.rejected.name"); break;
                 case net::RejectReason::Closed: body = tr("net.rejected.closed"); break;
+                case net::RejectReason::NotStarted: body = tr("net.rejected.notStarted"); break;
                 default: body = tr("net.rejected.protocol"); break;
             }
             host_->show_message(tr("net.rejected.title"), body);

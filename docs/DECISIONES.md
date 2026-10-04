@@ -2957,3 +2957,26 @@ Reglas 44, protocolo de red 22.
 
 **D-7709. Lo revisado en pantalla.**
 Con dos instancias (`--instance 1 --loopback` y `--instance 2 --loopback`) en una copia portable: la 1 funda sola, abre la partida desde el menú de pausa (ventana con las dos casillas), la 2 entra por 127.0.0.1:47801, ve su ventana de llegada, pide unirse, la 1 ve el cuadro y acepta, y la 2 queda en el pueblo con su barra de construcción y la cámara sobre el centro. No se probó a mano: rechazar, cancelar, fundar el propio desde la ventana, ni salir y volver (lo cubren las pruebas de `net` y `seats`).
+
+## Fase 78: cargar una partida guardada como anfitrión (2026-10-04)
+
+**D-7801. Reemplaza lo pendiente de D-672.**
+En la lista de partidas guardadas cada fila tiene «Cargar» (como hasta ahora) y «Como anfitrión». La segunda carga la partida sin mostrarla, abre el puerto y entra a la sala de siempre en un modo «partida guardada»: no se puede cambiar nada del juego; solo se ven los asientos, quién llegó y las casillas de acceso.
+
+**D-7802. Los asientos se guardan para sus dueños, por nombre.**
+En esa sala solo entra quien trae el nombre de un asiento libre de la partida. A un nombre nuevo se le rechaza con un motivo propio («todavía está en la sala; entra cuando haya empezado»): admitir asientos nuevos antes de empezar obligaba a llevar la cuenta de asientos que aún no existen en la simulación, y un recién llegado puede entrar igual en cuanto arranca. En una sala de partida guardada no se cambian nombres ni colores.
+
+**D-7803. Empezar no espera a nadie.**
+El anfitrión empieza cuando quiere (si los que están marcaron «listo»). Cada conectado recibe la partida como instantánea, la misma vía de quien entra a una partida empezada; no se genera el mapa de nuevo. Los asientos de los que faltan quedan esperando: su pueblo trabaja solo y ellos entran después con su nombre. En la sala no corre ningún tick.
+
+**D-7804. El anfitrión es el asiento de quien carga.**
+Se busca su nombre entre los asientos; si no está, toma el del fundador del primer pueblo que exista (asiento 0 si no hay ninguno). `Game::set_host` lo deja en el estado antes de que nadie más lo reciba. El anfitrión de red dejó de suponer que es el asiento 0: quien fue cliente puede hospedar la misma partida otro día. «Cargar» normal también toma el asiento por nombre, y «Abrir a multijugador» hospeda desde el asiento que se esté jugando.
+
+**D-7805. El acceso al cargar.**
+Una partida que estaba abierta sigue igual. Una de un solo jugador que nunca se abrió se abre al cargarla como anfitrión (unirse y fundar), que es lo que la especificación llama «equivale a cargarla y abrirla». Una de varios jugadores que su anfitrión cerró se queda cerrada. En la sala las casillas cambian el acceso aplicando la orden directamente: nadie más tiene la partida todavía.
+
+**D-7806. La sala lleva una marca en su mensaje.**
+`Lobby::saved`, para que los clientes muestren la sala de partida guardada. Protocolo de red 23. Las reglas no cambian (44).
+
+**D-7807. Lo revisado en pantalla.**
+Con una instancia: guardar con F5, la lista con los dos botones, la sala de partida guardada con sus casillas y el asiento propio, «Empezar» y la partida en marcha como anfitrión. Con dos instancias no se probó a mano: lo cubren las pruebas de `net` (volver por nombre y seguir en el mismo tick con los mismos hashes; empezar sin alguien que entra después; hospedar desde el asiento 1; un nombre nuevo rechazado en la sala y admitido al empezar).

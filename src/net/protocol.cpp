@@ -124,6 +124,7 @@ void write(BinaryWriter& w, const Lobby& m) {
         w.u8(p.connected ? 1 : 0);
         w.u8(p.loaded ? 1 : 0);
     }
+    w.u8(m.saved ? 1 : 0);
 }
 bool read(BinaryReader& r, Lobby& m) {
     std::uint8_t n = 0;
@@ -139,7 +140,7 @@ bool read(BinaryReader& r, Lobby& m) {
             return false;
         }
     }
-    return true;
+    return read_bool(r, m.saved);
 }
 
 void write(BinaryWriter& w, const SetInfo& m) {

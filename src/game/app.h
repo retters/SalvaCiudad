@@ -91,6 +91,8 @@ public:
     bool open_game(std::uint8_t access) override;
     void set_access(std::uint8_t access) override;
     [[nodiscard]] bool hosting() const override;
+    bool load_game_as_host(const std::filesystem::path& file) override;
+    [[nodiscard]] int saved_access() const override;
     net::NetSession* net() override { return net_.get(); }
     void set_lan_search(bool on) override;
     std::vector<net::LanGame> lan_games() override;
@@ -234,6 +236,9 @@ private:
     std::unique_ptr<net::LanDiscovery> lan_announce_;
     std::unique_ptr<net::NetSession> net_;
     std::optional<net::Start> net_start_;  // The network game whose map is being generated.
+    // Phase 78: a saved game loaded to be hosted, while its lobby is open.
+    std::unique_ptr<GameSession> saved_session_;
+    [[nodiscard]] GameSession::LoadResult read_save(const std::filesystem::path& file, std::unique_ptr<GameSession>& out);
     sim::GameRules pending_rules_;         // Rules of the single-player game being generated.
     bool pending_start_towns_ = false;     // Whether it begins with its town standing (the tutorial).
     VillageView village_;

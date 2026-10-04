@@ -77,6 +77,12 @@ public:
     }
     void set_access(std::uint8_t access) override { opened_access = access; }
     [[nodiscard]] bool hosting() const override { return false; }
+    bool load_game_as_host(const std::filesystem::path& file) override {
+        hosted = file;
+        return true;
+    }
+    [[nodiscard]] int saved_access() const override { return -1; }
+    std::filesystem::path hosted;
     int opened_access = -1;
     net::NetSession* net() override { return nullptr; }
     void set_lan_search(bool) override {}

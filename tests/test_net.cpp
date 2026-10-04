@@ -8,6 +8,7 @@
 
 #include "core/speed.h"
 #include "game/build_info.h"
+#include "game/game_session.h"
 #include "net/enet_link.h"
 #include "net/lockstep.h"
 #include "net/protocol.h"
@@ -61,10 +62,10 @@ public:
     // As the game makes them (phase 74): nobody has a town until they found it.
     bool towns_to_found = false;
 
-    Cluster() {
+    explicit Cluster(const std::string& host_name = "Host") {
         Machine host;
         host.link = &net.add();
-        host.session = std::make_unique<NetHost>(*host.link, info("Host"));
+        host.session = std::make_unique<NetHost>(*host.link, info(host_name));
         m.push_back(std::move(host));
     }
     NetHost& host() { return static_cast<NetHost&>(*m[0].session); }
@@ -92,9 +93,16 @@ public:
             }
             x.session->poll(now);
             if (std::optional<Start> s = x.session->take_start()) {
+                // As the game does it: the seats carry the lobby's names.
+                std::vector<sim::SeatInfo> seats(s->players);
+                for (const LobbyPlayer& p : x.session->lobby().players) {
+                    if (p.slot < seats.size()) {
+                        seats[p.slot] = {p.name, p.color};
+                    }
+                }
                 x.game = std::make_unique<sim::Game>(content(), map_for(s->config.map),
                                                      sim::GameSetup{s->players, s->config.seed, s->config.shared_town,
-                                                                    s->config.rules, !towns_to_found, {},
+                                                                    s->config.rules, !towns_to_found, seats,
                                                                     lobby_access(s->config)});
                 x.session->game_built(x.game.get(), map_hash(x.game->map()));
             }
@@ -192,6 +200,37 @@ sim::Command set_access(std::uint8_t bits) {
 }
 
 GameConfig config(std::uint64_t seed, bool shared);
+
+// Two players, each with a town founded, after `ticks` of play: the bytes
+// of the game saved, as a saved game file carries them.
+std::vector<std::uint8_t> saved_two_towns(std::uint64_t seed, int ticks, std::string& client_name) {
+    Cluster c;
+    c.towns_to_found = true;
+    c.join("Ana");
+    c.frames(3, 0);
+    c.host().set_config(config(seed, false));
+    c.ready_all();
+    REQUIRE(c.host().start());
+    c.frames(20, 1);
+    c.m[0].session->issue(found_on_site(*c.m[0].game, 0));
+    c.m[1].session->issue(found_on_site(*c.m[1].game, 1));
+    c.frames(ticks, 1);
+    c.settle();
+    REQUIRE(c.m[0].game->town_exists(1));
+    client_name = c.m[0].game->player(1).name;
+    REQUIRE(c.m[0].game->player(0).name == "Host");
+    REQUIRE(!client_name.empty());
+    sim::BinaryWriter w;
+    c.m[0].game->save(w);
+    return w.bytes();
+}
+
+std::unique_ptr<sim::Game> load_saved(const std::vector<std::uint8_t>& bytes) {
+    auto g = std::make_unique<sim::Game>(content(), sim::MapData{}, 0, 0);
+    sim::BinaryReader r(bytes);
+    REQUIRE(g->load(r, content()));
+    return g;
+}
 
 // A cluster whose host has a single-player game already going (its town
 // founded, `ticks` played alone), adopted as a network game at `speed`.
@@ -773,6 +812,141 @@ TEST_SUITE("net") {
         CHECK(c.m[beto].game->founded(seat));
         expect_same_games(c);
         CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("a saved game hosted from its lobby: seats come back by name, and it goes on from the same tick") {
+        std::string ana;
+        const std::vector<std::uint8_t> bytes = saved_two_towns(51, 300, ana);
+        Cluster c;
+        c.m[0].game = load_saved(bytes);
+        const std::uint64_t tick = c.m[0].game->tick();
+        const std::uint64_t hash = c.m[0].game->hash();
+        REQUIRE(tick > 200);
+        CHECK(seat_for(*c.m[0].game, "Host") == 0);
+        CHECK(seat_for(*c.m[0].game, ana) == 1);
+        CHECK(seat_for(*c.m[0].game, "Nobody") == 0);  // The founder of the first town.
+        c.host().adopt_lobby(c.m[0].game.get(), config(51, false), 0);
+        CHECK(c.host().state() == NetSession::State::Lobby);
+        CHECK(c.host().saved());
+        REQUIRE(c.host().lobby().players.size() == 2);
+        CHECK(c.host().lobby().saved);
+        CHECK(c.host().lobby().players[1].name == ana);
+        CHECK_FALSE(c.host().lobby().players[1].connected);
+        // Somebody new waits until it has started; Ana gets her seat.
+        const std::size_t zed = c.join("Zed");
+        const std::size_t back = c.join(ana, info(ana));
+        c.frames(4, 0);
+        CHECK(refusal(c.m[zed]) == RejectReason::NotStarted);
+        c.m[zed].session.reset();
+        CHECK(c.m[back].session->local_slot() == 1);
+        CHECK(c.m[back].session->lobby().saved);
+        CHECK(c.host().lobby().players[1].connected);
+        CHECK_FALSE(c.host().can_start());  // She is not ready yet.
+        c.client(back).set_info("Other name", 3, true);
+        c.frames(3, 0);
+        CHECK(c.host().lobby().players[1].name == ana);  // A saved seat keeps its name.
+        REQUIRE(c.host().can_start());
+        // Nothing has run while in the lobby.
+        CHECK(c.m[0].game->tick() == tick);
+        CHECK(c.m[0].game->hash() == hash);
+        REQUIRE(c.host().start());
+        c.frames(3, 0);
+        REQUIRE(c.m[back].game != nullptr);
+        CHECK(c.m[back].session->state() == NetSession::State::Playing);
+        CHECK(c.m[back].game->tick() == tick);
+        CHECK(c.m[back].game->hash() == hash);
+        c.frames(200, 1);
+        c.settle();
+        CHECK(c.m[0].game->tick() >= tick + 200);
+        // Both give orders to their own towns, as before.
+        for (std::size_t i : {std::size_t{0}, back}) {
+            if (auto house = place_near(*c.m[i].game, c.m[i].session->local_slot(), "core:house", 0)) {
+                c.m[i].session->issue(*house);
+            }
+        }
+        const std::size_t buildings = c.m[0].game->buildings().size();
+        c.frames(40, 1);
+        c.settle();
+        CHECK(c.m[0].game->buildings().size() == buildings + 2);
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("a saved game started without somebody: the town works alone and its player comes in later") {
+        std::string ana;
+        const std::vector<std::uint8_t> bytes = saved_two_towns(52, 200, ana);
+        Cluster c;
+        c.m[0].game = load_saved(bytes);
+        const std::uint64_t tick = c.m[0].game->tick();
+        c.host().adopt_lobby(c.m[0].game.get(), config(52, false), 0);
+        REQUIRE(c.host().can_start());  // Nobody to wait for.
+        REQUIRE(c.host().start());
+        c.frames(300, 1);
+        CHECK(c.m[0].game->tick() == tick + 300);
+        CHECK(c.m[0].game->population(1) >= sim::village::kStartVillagers - 1);  // Ana's town lives on.
+        // She comes in later, with her name.
+        const std::size_t back = c.join(ana, info(ana));
+        c.frames(60, 1);
+        c.settle();
+        REQUIRE(c.m[back].game != nullptr);
+        CHECK(c.m[back].session->local_slot() == 1);
+        CHECK(c.m[0].game->player_count() == 2);
+        expect_same_games(c);
+        // The game was open to found (it came from the lobby): somebody new gets a third seat now.
+        const std::size_t zed = c.join("Zed");
+        c.frames(60, 1);
+        c.settle();
+        CHECK(c.m[zed].session->local_slot() == 2);
+        CHECK(c.m[0].game->player_count() == 3);
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+    }
+
+    TEST_CASE("a saved game hosted by the player who was not its host: the host is a seat of the game") {
+        std::string ana;
+        const std::vector<std::uint8_t> bytes = saved_two_towns(53, 200, ana);
+        Cluster c(ana);  // Ana's machine hosts this time.
+        c.m[0].game = load_saved(bytes);
+        const std::uint8_t seat = seat_for(*c.m[0].game, ana);
+        REQUIRE(seat == 1);
+        c.m[0].game->set_host(seat);
+        c.host().adopt_lobby(c.m[0].game.get(), config(53, false), seat);
+        CHECK(c.host().local_slot() == 1);
+        const std::size_t old_host = c.join("Host");
+        c.frames(4, 0);
+        REQUIRE(c.m[old_host].session->local_slot() == 0);
+        c.client(old_host).set_info("Host", 0, true);
+        c.frames(3, 0);
+        REQUIRE(c.host().start());
+        c.frames(100, 1);
+        c.settle();
+        REQUIRE(c.m[old_host].game != nullptr);
+        CHECK(c.m[old_host].game->host() == 1);
+        expect_same_games(c);
+        // Only the new host changes the access; each still runs its own town.
+        c.m[old_host].session->issue(set_access(0));
+        c.frames(30, 1);
+        c.settle();
+        CHECK(c.m[0].game->open());
+        c.m[0].session->issue(set_access(0));
+        c.frames(30, 1);
+        c.settle();
+        CHECK_FALSE(c.m[old_host].game->open());
+        for (std::size_t i : {std::size_t{0}, old_host}) {
+            if (auto house = place_near(*c.m[i].game, c.m[i].session->local_slot(), "core:house", 0)) {
+                c.m[i].session->issue(*house);
+            }
+        }
+        const std::size_t buildings = c.m[0].game->buildings().size();
+        c.frames(40, 1);
+        c.settle();
+        CHECK(c.m[0].game->buildings().size() == buildings + 2);
+        expect_same_games(c);
+        CHECK(c.host().desyncs() == 0);
+        // The pause works with the host in seat 1.
+        c.m[old_host].session->request_speed(0);
+        c.frames(5, 1);
+        CHECK(c.host().speed() == 0);
     }
 
     TEST_CASE("at x5 the game keeps in step: the margins follow the speed") {

@@ -47,6 +47,8 @@ public:
     [[nodiscard]] sim::Game& game() { return *game_; }
     [[nodiscard]] const sim::Game& game() const { return *game_; }
     [[nodiscard]] std::uint8_t local_player() const { return local_player_; }
+    // A loaded game is played from another seat (phase 78).
+    void set_local_player(std::uint8_t player);
     // The town the local player runs (their own, or the common one).
     [[nodiscard]] std::uint8_t town() const { return game_->town_of(local_player_); }
 
@@ -168,6 +170,10 @@ private:
 // Phase 77. Whether the local player is choosing where to found its town:
 // it has none, may found one, and (if it came later) said it wants to.
 [[nodiscard]] bool choosing_site(const sim::Game& game, const GameSession::Interaction& ui, std::uint8_t local);
+
+// Phase 78. The seat a player called `name` has in a saved game; if none
+// has that name, the founder of the first town there is (else seat 0).
+[[nodiscard]] std::uint8_t seat_for(const sim::Game& game, std::string_view name);
 
 // Text key explaining a load result to the player.
 [[nodiscard]] const char* load_result_key(GameSession::LoadResult r);

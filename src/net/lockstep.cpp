@@ -105,28 +105,45 @@ NetHost::NetHost(Link& link, LocalInfo local) : link_(link), local_(std::move(lo
     send_lobby();
 }
 
-void NetHost::adopt(sim::Game* game, const GameConfig& config, int speed) {
-    game_ = game;
-    lobby_.config = config;
-    for (std::size_t i = 0; i < seats_.size(); ++i) {
-        if (i != slot_) {
-            seats_[i] = Seat{};
-        }
-    }
-    for (std::uint8_t p = 0; p < game->player_count(); ++p) {
+void NetHost::take_seats(const sim::Game& game, std::uint8_t host_seat, bool in_game) {
+    const Seat me = seats_[slot_];
+    seats_.fill(Seat{});
+    slot_ = host_seat < game.player_count() ? host_seat : std::uint8_t{0};
+    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
         Seat& s = seats_[p];
         s.used = true;
-        s.in_game = true;
-        s.loaded = true;
-        s.ready = true;
+        s.in_game = in_game;
+        s.loaded = in_game;
         s.connected = p == slot_;
-        if (!game->player(p).name.empty()) {
-            s.name = game->player(p).name;
-        } else if (p != slot_) {
-            s.name.clear();  // Nobody can come back to a seat without a name.
-        }
-        s.color = game->player(p).color;
+        s.ready = p == slot_;
+        // Nobody can come back to a seat without a name.
+        s.name = !game.player(p).name.empty() ? game.player(p).name : p == slot_ ? me.name : std::string();
+        s.color = static_cast<std::uint8_t>(game.player(p).color % kColors);
     }
+    seats_[slot_].used = true;
+    seats_[slot_].connected = true;
+    seats_[slot_].ready = true;
+    if (seats_[slot_].name.empty()) {
+        seats_[slot_].name = me.name;
+    }
+}
+
+void NetHost::adopt_lobby(sim::Game* game, const GameConfig& config, std::uint8_t host_seat) {
+    game_ = game;
+    lobby_.config = config;
+    lobby_.saved = true;
+    saved_ = true;
+    take_seats(*game, host_seat, false);
+    peers_.clear();
+    state_ = State::Lobby;
+    sim_seats_ = game->player_count();
+    send_lobby();
+}
+
+void NetHost::adopt(sim::Game* game, const GameConfig& config, int speed, std::uint8_t host_seat) {
+    game_ = game;
+    lobby_.config = config;
+    take_seats(*game, host_seat, true);
     peers_.clear();
     pending_.clear();
     turns_.clear();
@@ -150,11 +167,11 @@ void NetHost::set_config(const GameConfig& config) {
 }
 
 void NetHost::set_local(const std::string& name, std::uint8_t color) {
-    if (!valid_name(name) || color >= kColors) {
-        return;
+    if (!valid_name(name) || color >= kColors || saved_) {
+        return;  // In a saved game the seats keep their names.
     }
-    seats_[0].name = unique_name(name, 0);
-    seats_[0].color = color;
+    seats_[slot_].name = unique_name(name, slot_);
+    seats_[slot_].color = color;
     send_lobby();
 }
 
@@ -194,16 +211,16 @@ void NetHost::send_lobby() {
 
 void NetHost::broadcast(const Message& m, bool in_game_only) {
     const std::vector<std::uint8_t> bytes = encode(m);
-    for (std::size_t i = 1; i < seats_.size(); ++i) {
+    for (std::size_t i = 0; i < seats_.size(); ++i) {
         const Seat& s = seats_[i];
-        if (s.used && s.connected && (!in_game_only || s.in_game)) {
+        if (i != slot_ && s.used && s.connected && (!in_game_only || s.in_game)) {
             link_.send(s.peer, bytes);
         }
     }
 }
 
 void NetHost::send(std::uint8_t slot, const Message& m) {
-    if (slot > 0 && slot < seats_.size() && seats_[slot].connected) {
+    if (slot != slot_ && slot < seats_.size() && seats_[slot].connected) {
         link_.send(seats_[slot].peer, encode(m));
     }
 }
@@ -239,8 +256,8 @@ void NetHost::poll(std::uint64_t now_ms) {
 void NetHost::update_delay() {
     // Half the slowest round trip, plus a margin, in ticks at this speed.
     std::uint32_t rtt = 0;
-    for (std::size_t i = 1; i < seats_.size(); ++i) {
-        if (seats_[i].connected && seats_[i].in_game) {
+    for (std::size_t i = 0; i < seats_.size(); ++i) {
+        if (i != slot_ && seats_[i].connected && seats_[i].in_game) {
             rtt = std::max(rtt, link_.round_trip_ms(seats_[i].peer));
         }
     }
@@ -275,8 +292,10 @@ void NetHost::receive(PeerId peer, std::span<const std::uint8_t> data) {
     Seat& seat = seats_[slot];
     if (const SetInfo* info = std::get_if<SetInfo>(&*m)) {
         if (state_ == State::Lobby) {
-            seat.name = unique_name(info->name, slot);
-            seat.color = info->color;
+            if (!saved_) {  // In a saved game the seats keep their names.
+                seat.name = unique_name(info->name, slot);
+                seat.color = info->color;
+            }
             seat.ready = info->ready;
             send_lobby();
         }
@@ -343,7 +362,19 @@ void NetHost::hello(PeerId peer, const Hello& h) {
     std::optional<std::uint8_t> seat;
     bool rejoin = false;
     bool new_seat = false;
-    if (state_ == State::Lobby) {
+    if (state_ == State::Lobby && saved_) {
+        // Phase 78: the lobby of a saved game keeps each seat for its player.
+        for (std::uint8_t i = 0; i < seats_.size() && !seat; ++i) {
+            if (i != slot_ && seats_[i].used && !seats_[i].connected && !seats_[i].name.empty() &&
+                seats_[i].name == h.name) {
+                seat = i;
+            }
+        }
+        if (!seat) {
+            reject(peer, RejectReason::NotStarted);
+            return;
+        }
+    } else if (state_ == State::Lobby) {
         for (std::uint8_t i = 1; i < seats_.size() && !seat; ++i) {
             if (!seats_[i].used) {
                 seat = i;
@@ -376,7 +407,9 @@ void NetHost::hello(PeerId peer, const Hello& h) {
     s.used = true;
     s.connected = true;
     s.peer = peer;
-    s.name = unique_name(h.name, *seat);
+    if (!rejoin && !(saved_ && state_ == State::Lobby)) {
+        s.name = unique_name(h.name, *seat);
+    }
     s.ready = false;
     peers_[peer] = *seat;
     link_.send(peer, encode(Welcome{*seat}));
@@ -412,9 +445,10 @@ void NetHost::lost(PeerId peer) {
     peers_.erase(it);
     Seat& s = seats_[slot];
     s.connected = false;
-    if (state_ == State::Lobby) {
+    if (state_ == State::Lobby && !saved_) {
         s = Seat{};  // The seat is free again.
     }
+    s.ready = false;
     answers_.erase(slot);
     event({NetEvent::Kind::PlayerLeft, slot});
     broadcast(Notice{NoticeKind::Left, slot, game_ != nullptr ? game_->turn() : 0}, false);
@@ -429,8 +463,8 @@ bool NetHost::can_start() const {
     if (state_ != State::Lobby) {
         return false;
     }
-    for (std::size_t i = 1; i < seats_.size(); ++i) {
-        if (seats_[i].used && seats_[i].connected && !seats_[i].ready) {
+    for (std::size_t i = 0; i < seats_.size(); ++i) {
+        if (i != slot_ && seats_[i].used && seats_[i].connected && !seats_[i].ready) {
             return false;
         }
     }
@@ -440,6 +474,27 @@ bool NetHost::can_start() const {
 bool NetHost::start() {
     if (!can_start()) {
         return false;
+    }
+    if (saved_) {
+        // Phase 78: the game exists already. It starts with whoever is
+        // here; each gets it as a snapshot. The seats of the others wait.
+        state_ = State::Playing;
+        horizon_ = game_->turn();
+        sim_seats_ = game_->player_count();
+        host_loaded_ = true;
+        for (std::uint8_t i = 0; i < seats_.size(); ++i) {
+            if (seats_[i].used) {
+                seats_[i].in_game = true;
+                seats_[i].loaded = true;
+            }
+        }
+        send_lobby();
+        for (std::uint8_t i = 0; i < seats_.size(); ++i) {
+            if (i != slot_ && seats_[i].used && seats_[i].connected) {
+                send_snapshot(i);
+            }
+        }
+        return true;
     }
     // Seats are packed so the towns are 0..n-1.
     std::array<Seat, sim::kMaxPlayers> packed{};
@@ -479,7 +534,7 @@ void NetHost::game_built(sim::Game* game, std::uint64_t map_hash) {
     game_ = game;
     host_map_hash_ = map_hash;
     host_loaded_ = true;
-    seats_[0].loaded = true;
+    seats_[slot_].loaded = true;
     send_lobby();
     maybe_begin();
 }
@@ -532,9 +587,9 @@ int NetHost::advance(int ticks, std::uint64_t now_ms) {
     for (; ran < ticks; ++ran) {
         const std::uint64_t t = game_->turn();
         // Wait for the slowest connected player.
-        for (std::uint8_t i = 1; i < seats_.size(); ++i) {
+        for (std::uint8_t i = 0; i < seats_.size(); ++i) {
             const Seat& s = seats_[i];
-            if (s.in_game && s.connected && s.acked + lag_ticks(speed_) < t) {
+            if (i != slot_ && s.in_game && s.connected && s.acked + lag_ticks(speed_) < t) {
                 waiting_for_ = i;
             }
         }
@@ -854,7 +909,7 @@ int NetClient::advance(int ticks, std::uint64_t now_ms) {
     }
     waiting_for_.reset();
     if (ran < ticks && speed_ > 0) {
-        waiting_for_ = std::uint8_t{0};  // Waiting for the host's turns.
+        waiting_for_ = game_->host();  // Waiting for the host's turns.
     }
     return ran;
 }

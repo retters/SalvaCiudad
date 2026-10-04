@@ -71,6 +71,12 @@ Si un jugador queda más de 30 ticks detrás del anfitrión (3 s; por encima de 
 - La solicitud llega solo al **fundador** de ese pueblo. No caduca; si el fundador no está, espera. Nadie más puede responderla. Quien pidió puede retirarla.
 - Son órdenes de la simulación (`RequestJoin`, `CancelJoin`, `JoinTown`, `RefuseJoin`): viajan por los turnos y se guardan con la partida.
 
+## Cargar una partida guardada como anfitrión (fase 78)
+
+- «Como anfitrión», en la lista de partidas guardadas, abre una sala con los asientos de la partida (`NetHost::adopt_lobby`). Cada jugador recupera el suyo entrando con el mismo nombre; un nombre nuevo se rechaza (`NotStarted`) hasta que la partida empiece.
+- Al empezar, cada conectado recibe la partida como instantánea. Los asientos de los que faltan esperan: su pueblo trabaja solo y pueden entrar después.
+- El anfitrión es el asiento de quien carga (por nombre); no tiene por qué ser el 0.
+
 ## Entrar a una partida empezada y reconectar
 
 - Un jugador que vuelve con **el mismo nombre** recupera su asiento, esté la partida abierta o cerrada.
@@ -87,7 +93,7 @@ Cada mensaje es un byte de tipo y sus campos en little-endian (`src/net/protocol
 | Hello | cliente → anfitrión | protocolo, versión, hash del contenido, mods, nombre |
 | Welcome | anfitrión → cliente | asiento |
 | Reject | anfitrión → cliente | motivo (protocolo, versión, mods, sin lugar, nombre, cerrada), versión y mods del anfitrión |
-| Lobby | anfitrión → todos | configuración, fase, asientos |
+| Lobby | anfitrión → todos | configuración, fase, asientos, si es la sala de una partida guardada |
 | SetInfo | cliente → anfitrión | nombre, color, listo |
 | Start | anfitrión → todos | configuración y asientos en juego |
 | Loaded | cliente → anfitrión | hash del mapa generado |
@@ -131,6 +137,7 @@ La suite `net` (`tests/test_net.cpp`) corre varias máquinas en un proceso con u
 - un jugador que se cae y vuelve;
 - una desincronización provocada que se detecta y se repara;
 - una partida de un jugador que se abre, recibe a otro, lo deja volver por su nombre y se cierra a los nuevos;
+- una partida guardada hospedada desde su sala: asientos por nombre, empezar sin alguien, anfitrión en otro asiento;
 - pedir unirse: solo el fundador responde, y la solicitud lo espera si se fue y vuelve;
 - pueblos por fundar: el tiempo espera a todos, solo el anfitrión funda el pueblo común, y quien entra durante la espera recibe la misma partida;
 - votos de velocidad;

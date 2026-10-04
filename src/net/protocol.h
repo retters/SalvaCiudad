@@ -20,7 +20,7 @@
 
 namespace sc::net {
 
-inline constexpr std::uint32_t kProtocolVersion = 22;
+inline constexpr std::uint32_t kProtocolVersion = 23;
 inline constexpr std::uint16_t kDefaultPort = 47800;
 inline constexpr std::uint16_t kDiscoveryPort = 47799;
 inline constexpr std::size_t kMaxNameBytes = 32;
@@ -55,8 +55,10 @@ struct GameConfig {
     bool operator==(const GameConfig&) const = default;
 };
 
-// `Closed` (phase 76): the game takes no new players (those with a seat may come back).
-enum class RejectReason : std::uint8_t { Protocol, Version, Mods, Full, BadName, Closed, Count };
+// `Closed` (phase 76): the game takes no new players (those with a seat may
+// come back). `NotStarted` (phase 78): a saved game still in its lobby, where
+// only those who had a seat come in.
+enum class RejectReason : std::uint8_t { Protocol, Version, Mods, Full, BadName, Closed, NotStarted, Count };
 enum class LobbyPhase : std::uint8_t { Lobby, Loading, Playing, Count };
 enum class SpeedReason : std::uint8_t { Vote, Pause, SlowPlayer, Count };
 enum class NoticeKind : std::uint8_t { Joined, Left, Rejoined, Desync, WrongMap, Count };
@@ -107,6 +109,9 @@ struct Lobby {  // Host to all.
     GameConfig config;
     LobbyPhase phase = LobbyPhase::Lobby;
     std::vector<LobbyPlayer> players;
+    // Phase 78: the lobby of a saved game. Its seats are the game's, kept
+    // for their players by name; nothing of the game can be changed.
+    bool saved = false;
     bool operator==(const Lobby&) const = default;
 };
 struct SetInfo {  // Client to host.

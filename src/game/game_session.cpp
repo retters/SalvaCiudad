@@ -41,6 +41,25 @@ GameSession::GameSession(std::unique_ptr<sim::Game> game, std::uint8_t local_pla
     fog_.begin(*game_, game_->vision_group(local_player_));
 }
 
+void GameSession::set_local_player(std::uint8_t player) {
+    local_player_ = player;
+    fog_.begin(*game_, game_->vision_group(local_player_));
+}
+
+std::uint8_t seat_for(const sim::Game& game, std::string_view name) {
+    for (std::uint8_t p = 0; p < game.player_count() && !name.empty(); ++p) {
+        if (game.player(p).active && game.player(p).name == name) {
+            return p;
+        }
+    }
+    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
+        if (game.town_exists(p)) {
+            return p;
+        }
+    }
+    return 0;
+}
+
 void GameSession::attach(net::NetSession* net) {
     net_ = net;
     // Orders not run yet (a game opened to others, phase 76) go on the network.

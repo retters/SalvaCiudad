@@ -602,6 +602,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 78 (cargar como anfitrión)
+
+- [ ] En "Cargar partida" cada fila tiene "Como anfitrión" y "Cargar". "Cargar" funciona como antes.
+- [ ] "Como anfitrión" en una partida de un jugador: abre la sala "Partida guardada" con tu asiento y las tres casillas de acceso marcadas. "Empezar" te deja en la partida, como anfitrión ("Jugadores 1").
+- [ ] Dos ventanas (`--instance 1 --loopback`, `--instance 2 --loopback`): jugar juntas, guardar en la 1 (F5), salir las dos. La 1 carga "Como anfitrión"; la 2 entra con "Unirse a partida" y el mismo nombre: aparece en su asiento. Marca "Listo", la 1 empieza y las dos siguen donde estaban.
+- [ ] Lo mismo, pero la 1 empieza sin esperar a la 2: el pueblo de la 2 sigue trabajando solo; la 2 entra después y lo recupera.
+- [ ] En la sala de la partida guardada, una ventana con otro nombre es rechazada con el aviso de que entre cuando haya empezado; una vez empezada (y abierta) entra con asiento nuevo.
+- [ ] La 2 carga "Como anfitrión" la partida que guardó la 1 (copiando el archivo a su carpeta de partidas): hospeda desde su propio asiento y la 1 entra como cliente al suyo.
+- [ ] Una solicitud de unión que estaba pendiente al guardar sigue pendiente al cargar.
+- [ ] Una partida guardada con otros mods u otra versión se rechaza con su mensaje, igual que con "Cargar".
+
 ### Fases 75 a 77 (abrir la partida, llegar, unirse)
 
 Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --instance 2 --loopback`.

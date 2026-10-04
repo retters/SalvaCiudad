@@ -142,7 +142,13 @@ public:
     // no lobby, no loading. Its seats keep the names they have in the game,
     // so whoever comes back with one gets that seat; new players get a new
     // seat while the game is open (sim::Game::open()).
-    void adopt(sim::Game* game, const GameConfig& config, int speed);
+    // `host_seat`: the seat of the game this machine plays (and hosts from).
+    void adopt(sim::Game* game, const GameConfig& config, int speed, std::uint8_t host_seat = 0);
+    // Phase 78. A saved game is hosted from a lobby: its seats wait, by
+    // name, for their players, and start() gives the game to whoever is
+    // there (the others may come later, by name). No new players until then.
+    void adopt_lobby(sim::Game* game, const GameConfig& config, std::uint8_t host_seat);
+    [[nodiscard]] bool saved() const { return saved_; }
 
     void game_built(sim::Game* game, std::uint64_t map_hash) override;
     void snapshot_loaded(sim::Game* game) override { game_ = game; }
@@ -174,6 +180,10 @@ private:
     std::uint64_t horizon_ = 0;  // Turns before this one are closed.
     // Seats of the simulation, counting those whose AddSeat order is on its way.
     std::uint8_t sim_seats_ = 0;
+    bool saved_ = false;  // Phase 78: the lobby of a saved game.
+    // Takes this machine's seat to `host_seat` and gives every seat of the
+    // game its name, waiting for its player.
+    void take_seats(const sim::Game& game, std::uint8_t host_seat, bool in_game);
     std::map<std::uint64_t, Turn> history_;   // Recent turns, for players who join.
     std::map<std::uint64_t, PartHashes> checks_;  // The host's own state checks.
     std::uint64_t host_map_hash_ = 0;

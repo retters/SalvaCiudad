@@ -973,14 +973,28 @@ void UiHost::load_screen(ui::Context& ctx, bool modal) {
             const ui::Rect row{content.x, ry, content.w - ctx.s(12.0f), row_h};
             ctx.draw().rect(row, ctx.theme().button_active.with_alpha(0.6f));
             const float line = ctx.text().line_height(body);
-            ctx.label({row.x + gap, row.y + gap, row.w - bw - 3 * gap, line}, e.header.name, body,
+            // Phase 78: two buttons, to play it or to host it for others.
+            const float host_w = std::min(ctx.s(170.0f), content.w * 0.3f);
+            ctx.label({row.x + gap, row.y + gap, row.w - bw - host_w - 4 * gap, line}, e.header.name, body,
                       e.readable ? ctx.theme().text : ctx.theme().text_disabled);
             const std::string detail = e.readable ? tr("load.detail", e.header.saved_at, static_cast<int>(e.header.population),
                                                        e.header.game_version)
                                                   : tr("load.unreadable");
-            ctx.label({row.x + gap, row.y + gap + line, row.w - bw - 3 * gap, ctx.text().line_height(small)}, detail, small,
-                      ctx.theme().text_dim);
+            ctx.label({row.x + gap, row.y + gap + line, row.w - bw - host_w - 4 * gap, ctx.text().line_height(small)}, detail,
+                      small, ctx.theme().text_dim);
             ctx.push_id("load_row");
+            if (ctx.button(ctx.id("host" + std::to_string(i)),
+                           {row.right() - bw - host_w - 2 * gap, row.y + (row_h - button_h) * 0.5f, host_w, button_h},
+                           tr("load.host"), tr("load.host.tooltip"), e.readable && services_.scene_available())) {
+                if (services_.load_game_as_host(e.file)) {
+                    lobby_screen_.open();
+                    screen_ = Screen::Lobby;
+                    game_menu_open_ = false;
+                    ctx.pop_id();
+                    ctx.end_scroll(static_cast<float>(saves_.size()) * (row_h + gap));
+                    return;
+                }
+            }
             if (ctx.button(ctx.id(std::to_string(i)), {row.right() - bw - gap, row.y + (row_h - button_h) * 0.5f, bw, button_h},
                            tr("load.load"), tr("load.load.tooltip"), e.readable)) {
                 if (services_.load_game(e.file)) {

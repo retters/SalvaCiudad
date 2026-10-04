@@ -195,6 +195,59 @@ LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
 
     if (net->state() == net::NetSession::State::Connecting) {
         ctx.label({c.x, y, c.w, line}, tr("lobby.connecting"), body, ctx.theme().text);
+    } else if (lobby.saved) {
+        // Phase 78: a saved game. Nothing of it can be changed here; each
+        // seat is its player's, by name. The host says who else may come.
+        const ui::TextStyle small = ctx.style(ctx.theme().small);
+        ctx.label({c.x, y, c.w, line}, tr("lobby.saved.title"), body, ctx.theme().text);
+        y += line + gap;
+        ctx.label({c.x, y, c.w, line}, tr("lobby.saved.note"), small, ctx.theme().text_dim);
+        y += line;
+        ctx.label({c.x, y, c.w, line}, tr(host ? "lobby.saved.note.host" : "lobby.saved.note.client"), small,
+                  ctx.theme().text_dim);
+        y += line + gap;
+        const float rows_top = y;
+        if (const int now = services_.saved_access(); host && now >= 0) {
+            struct Row {
+                const char* id;
+                const char* label;
+                std::uint8_t bit;
+                bool enabled;
+            };
+            const bool open = (now & sim::access::kOpen) != 0;
+            const Row rows[] = {{"open", "access.open", sim::access::kOpen, true},
+                                {"join", "access.join", sim::access::kJoin, open},
+                                {"found", "access.found", sim::access::kFound, open}};
+            const float check = std::round(ctx.s(28.0f));
+            for (const Row& r : rows) {
+                bool value = (now & r.bit) != 0;
+                const ui::Rect box{c.x, std::round(y + (row_h - check) * 0.5f), check, check};
+                if (ctx.checkbox(ctx.id(std::string("saved_access_") + r.id), box, value,
+                                 tr(std::string(r.label) + ".tooltip"), r.enabled)) {
+                    services_.set_access(static_cast<std::uint8_t>(value ? now | r.bit : now & ~r.bit));
+                }
+                ctx.label({c.x + check + gap, std::round(y), c.w - check - gap, row_h}, tr(r.label), body,
+                          r.enabled ? ctx.theme().text : ctx.theme().text_dim);
+                y += row_h + gap;
+            }
+        }
+        // The seats start where they do in a new game's lobby.
+        y = std::max(y, rows_top + 5 * (row_h + gap) - 2 * line);
+        const float col_w = (c.w - gap) * 0.5f;
+        for (std::size_t i = 0; i < lobby.players.size(); ++i) {
+            const net::LobbyPlayer& p = lobby.players[i];
+            const float x = c.x + static_cast<float>(i % 2) * (col_w + gap);
+            const float ry = y + static_cast<float>(i / 2) * (row_h + gap);
+            const ui::Rect row{x, ry, col_w, row_h};
+            ctx.draw().rect(row, ctx.theme().button_active.with_alpha(0.7f));
+            ctx.draw().rect({row.x + gap, row.y + gap, row_h - 2 * gap, row_h - 2 * gap}, player_color(p.color));
+            const std::string name = p.slot == net->local_slot() ? tr("lobby.player.you", p.name) : p.name;
+            // Whoever is not here yet may come later: the town works alone.
+            const char* state = !p.connected ? "lobby.player.saved" : (p.ready ? "lobby.player.ready" : "lobby.player.notReady");
+            ctx.label({row.x + row_h, row.y, row.w - row_h - gap, row.h}, name, body, ctx.theme().text);
+            ctx.label({row.x + row_h, row.y, row.w - row_h - gap, row.h}, tr(state), body,
+                      p.connected && p.ready ? ctx.theme().accent : ctx.theme().text_dim, ui::Align::Right);
+        }
     } else {
         // The map and the world mode.
         ctx.label({c.x, y, c.w, line},
