@@ -3238,3 +3238,77 @@ En esa misma partida guionizada, la obra del cantero queda a unos 200 m en líne
 
 **D-8824. Versiones y lo medido.**
 Reglas 53. El pulido pasa a ser la fase 89. Pruebas en `resources`: una casa sobre manzanos no avanza mientras queda uno, los peones los talan (con un leñador al lado que no tala frutales y que replanta: no cuenta ninguna de las dos cosas), toda su madera queda en el pueblo, su fruta se toma, no quedan brotes, y la casa se termina; guardar y cargar antes de despejar; una obra cancelada conserva sus árboles; un campo sobre dos robles no se siembra hasta que los trabajadores de la granja los talan. Nada se vio en pantalla.
+
+## Ronda de propuestas: fases 89 a 116 (2026-10-04)
+
+**D-8901. De dónde sale la ronda.**
+Salvador eligió función para 62 de los 773 grupos de la página de propuestas (`docs/propuestas/respuestas.json`) y pidió el plan por fases, revisando qué le falta al juego. El análisis se publicó en el registro de revisión como diez bloques (`prop-a-vista` a `prop-j-personajes`, ideas con autor Claude) y 28 preguntas (`q-prop-*`); los marcó todos «para el plan» y respondió todo el 2026-10-04. Quedan como fases 89 a 116 y el pulido pasa a ser la 117. Los 711 grupos sin responder no entran.
+
+**D-8902. Ritmo, git y arte en paralelo (respuestas de Salvador).**
+Todas las fases seguidas, sin pausa, con un resumen por fase. Las propuestas (scripts, página, herramienta y respuestas) entran a git en un commit propio antes de la fase 89; los `.glb` y `datos/` siguen fuera. Un agente de arte a la vez puede preparar los modelos de la fase siguiente en su copia de trabajo; se revisa antes de unirlo.
+
+**D-8903. Lo que el juego no tenía y la ronda crea.**
+Caminos, trazado por arrastre, lluvia, anexos de casa, ganado, sucesos con ánimo temporal y avisos con decisión. Se anota porque cada uno es un sistema nuevo, no un ajuste: su fase lleva sus propias pruebas de guardado, red y rendimiento.
+
+**D-8904. Lo que dicen las funciones elegidas y queda sin efecto.**
+«La miel no se echa a perder» (nada se echa a perder en el juego); «las gallinas reducen los insectos del huerto» (no hay plagas); «las carretas no se atascan» en el empedrado (no hay carretas que caminen); «el muelle o la barca rinden más» (no hay muelles ni barcas: aplica a la cabaña del pescador); «hasta que se entierran» y «en las ruinas» de los cuervos (no hay entierros ni ruinas). No se crean esos sistemas en esta ronda: son la opción más simple y Salvador lo confirmó para los cuervos.
+
+**D-8905. Trazado: cuadrícula de 2 m con diagonales a 45° en los muros (respuesta de Salvador; cierra I-012).**
+Eligió la cuadrícula con diagonales sobre el trazado de punto a punto en cualquier ángulo, que pedía rehacer las piezas. Vallas, setos bajos y caminos no tienen pieza diagonal: solo 90°. Cada módulo sigue siendo un edificio, como la empalizada de hoy; el trazo es una orden que coloca varios.
+
+**D-8906. Puertas y muro de piedra.**
+Se suman la puerta de dos hojas y la poterna en su variante de empalizada (grupos que Salvador no había respondido; lo aceptó en la pregunta). El muro de piedra y su puerta conservan su modelo hasta que elija su kit.
+
+**D-8907. Setos y vallas cierran el paso (respuesta de Salvador).**
+A aldeanos y animales; se cruzan por cancela o arco. No son defensa. Las reglas del zorro y de los conejos miran módulos cercanos, no un recinto cerrado: comprobar recintos es caro y frustrante en laderas, y Salvador eligió «6 módulos o más a 3 m» para el jardín de casa.
+
+**D-8908. Los caminos son una capa del terreno, no edificios.**
+Se construyen como obras, tramo por tramo, y al terminarse pasan a un valor por celda. Se descartó dejarlos como edificios (miles de entidades en un pueblo grande) y ponerlos al instante (el empedrado cuesta piedra, que alguien tiene que llevar). Velocidades propuestas por Claude: tierra 115 %, empedrado 130 %.
+
+**D-8909. Solo faroles de camino y almenara ahuyentan a las bestias (respuesta de Salvador).**
+Si toda luz lo hiciera, una antorcha de un tronco anularía la fase 72. El farol de cristal queda fuera: no hay recurso para él.
+
+**D-8910. Lluvia en la simulación, y frena los incendios (respuesta de Salvador).**
+Se calcula como la temperatura, sin estado. Por omisión las reglas no tienen lluvia, como se hizo con el día y la noche, para no tocar las pruebas de fases anteriores; el formulario de partida nueva la enciende. No riega campos ni inunda.
+
+**D-8911. Cada elemento nuevo del mapa usa su propia secuencia de azar.**
+Panales, nidos, tocones, corros de setas, yacimientos, piedras sueltas, bancos de peces, juncos, patos y las zonas nuevas se colocan sin mover lo que ya había: así los mapas de las pruebas guionizadas no cambian en cada fase. La versión del generador sube igual.
+
+**D-8912. Comida nueva sin cambiar la dieta.**
+Miel, huevos, setas y queso cuentan como un alimento más para la dieta variada, que sigue pidiendo tres tipos al mes. Subir la exigencia es un cambio de equilibrio que nadie pidió. La miel no da felicidad aparte.
+
+**D-8913. Setas rojas: el curandero hace de «recolector experto».**
+La función elegida habla de un sanador o un recolector experto; no existen recolectores expertos. Con curandero o médico en el pueblo solo llegan setas buenas; sin ellos, una de cada cinco intoxica.
+
+**D-8914. Bayas por temporada, con compensación (respuesta de Salvador).**
+Huevos y hierbas en primavera, miel en verano, setas en otoño, y un 25 % más de provisiones iniciales. Se mide con las pruebas de un año de juego.
+
+**D-8915. El vino sale de la prensa, de cualquier fruta (respuesta de Salvador sobre la prensa).**
+La función elegida dice que las uvas son «fruta»; por eso la prensa no distingue uvas de manzanas. Un recurso «uvas» aparte sería más fiel y más caro; queda como idea.
+
+**D-8916. Yacimientos (respuestas de Salvador).**
+Oro: la mina saca monedas, poco a poco. Carbón: mina nueva y la carbonera sigue, más lenta, para mapas sin yacimiento cerca. Arcilla: la arcillera pasa a depender de los bancos. Todos se agotan (su nota). Rocas: tres escalones; las piedras sueltas las recoge cualquier peón. Cristal y azufre quedan fuera. Las minas usan el modelo de la mina de hierro hasta que elija otro.
+
+**D-8917. Anexos (respuestas de Salvador).**
+Sirven a las casas que tocan y reemplazan a las decoraciones parecidas. El altar da la felicidad de la fe pero no deja subir a nivel 3. Los números (+6, +5, 80 de leña, 10 días secos) son propuesta de Claude.
+
+**D-8918. Colmenas, gallinero, caseta y prensa: decoraciones que pasan a producir.**
+Sin trabajador fijo salvo la prensa; los peones llevan y traen. El palomar sigue de decoración (Salvador pidió solo gallinero y caseta).
+
+**D-8919. Perro: una caseta, la raza es solo aspecto (respuesta de Salvador).**
+Todos avisan y todos retienen a un lobo. El perro no es una criatura de la simulación: es la caseta la que guarda el radio, y la vista dibuja al perro.
+
+**D-8920. Ganado sencillo: ovejas y cabras; lana, carne y pieles, queso (respuestas de Salvador).**
+Sin vacas, sin heno. Se usa el grupo «Redil de ovejas», que no había respondido. La simulación guarda cuántos animales hay, no cada animal. Comprar un carnero de reemplazo cuesta oro: es la salida más simple cuando el rebaño lo pierde.
+
+**D-8921. Fauna (respuestas de Salvador).**
+El cazador caza conejos; zorro y lince no se cazan. Pesca: el agua sola da la mitad y bancos y juncos el resto, hasta vez y media. Mamut: zona en biomas fríos, solo en invierno, con armas y dos cazadores; sin bioma de tundra. El marfil solo sirve para vender. Conejos, linces y mamuts se apoyan en las zonas de animales de hoy, no en animales simulados uno por uno.
+
+**D-8922. Sucesos (respuestas de Salvador).**
+Farolillos: una noche al azar por año en pueblos con dos zorrunos o más, con ánimo unos días. Tortugas: aviso con dos botones. Sin respuesta, el suceso pasa sin efecto (Claude: lo más simple y lo que menos castiga a quien no está mirando).
+
+**D-8923. Personajes (respuestas de Salvador).**
+Un cuerpo de diario más por raza, al azar. Un cuerpo de guardia por raza y el arma según la unidad, como pieza aparte. Los modelos de propuesta se rehacen con las 10 animaciones del juego.
+
+**D-8924. Fauna de ambiente y adornos del terreno, fuera de la simulación.**
+Los coloca la vista con reglas fijas por celda. No entran al estado, a los hashes ni a las partidas guardadas, salvo la función que dice dónde hay flores, que es entera y sin estado porque la miel y el entorno dependen de ella.
