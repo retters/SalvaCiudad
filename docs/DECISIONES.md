@@ -3122,3 +3122,17 @@ Los yacimientos tiran sus dados aparte (otra secuencia de la misma semilla). As�
 
 **D-8307. Versiones, lo medido y lo que no.**
 Generador 7 (suma del mapa pequeño `0xcef750f665d22845`), reglas 47. Pruebas en la suite `resources`: los dos canteros pican a la vez; un yacimiento chico se trabaja hasta la última unidad, libera su terreno y el cantero avisa una vez; guardar y cargar con uno a medio gastar; no se construye ni se camina encima; cada inicio tiene el suyo y se llega caminando; nada más ocupa su terreno. Sin prueba propia: el paso de grande a mediano y de mediano a chico dentro de una partida (sí la función que decide el tamaño), y que entregue exactamente 800 unidades (lo que no cabe en los almacenes se pierde, así que solo se comprueba que el nodo llega a cero). Las herramientas de desarrollo no ganaron un botón para crear yacimientos (la orden `DevFeature` sí los acepta).
+
+## Fase 84: frutales silvestres (2026-10-04)
+
+**D-8401. Frutal es la especie que declara fruta.**
+Una especie es frutal si su JSON trae `"fruit"`: cuatro números, la fruta al año de un árbol de cada tamaño (pequeño, mediano, grande, enorme). En `core`: manzano, cerezo, palma y baobab, con `[0, 6, 10, 14]`. El pequeño no da. Ojo: manzano, cerezo y palma solo existen en pequeño y mediano, así que hoy dan 6; el baobab, en mediano y grande, da 6 o 10. Todo es el recurso «fruta» de siempre (lo busca por `core:fruit`), como pidió Salvador; la dieta no cambia.
+
+**D-8402. La fruta se calcula, no se reparte.**
+No hay un barrido del bosque al empezar el verano ni al terminar el otoño. Cada árbol guarda solo cuánta fruta se le recogió y en qué año; lo que cuelga hoy es «lo que da su tamaño menos lo recogido este año» si es verano u otoño, y cero si no. Así no cuesta nada por tick ni por día, aun en un mapa colosal, y lo no recogido «se pierde» solo. En una partida con una sola estación de verano, la cosecha vuelve al cambiar el año.
+
+**D-8403. Quién la recoge.**
+Los edificios de recolección con `"picksFruit": true` (el recolector). El árbol queda en pie y no se toca su madera. Cada fruta cuesta lo que una baya (15 pasos de trabajo) y cuenta para la habilidad de recolección. Un árbol lo trabaja una persona a la vez, sea para fruta o para leña. Para los avisos de la fase 81 un frutal sin fruta hoy cuenta como algo que rebrota: el recolector queda «esperando», sin notificación.
+
+**D-8404. Versiones y lo medido.**
+Reglas 48 (dos campos más por objeto natural en la partida guardada). Pruebas en `resources`: un manzano mediano sin fruta en primavera, con 6 en verano y otoño, sin nada en invierno y con 6 al verano siguiente; el pequeño y el roble, nunca; un roble marcado como frutal por el contenido (lo que haría un mod) da fruta; el recolector trae la fruta, el árbol y el roble de al lado siguen en pie, queda «esperando» sin evento, guardar y cargar da la misma partida y al año siguiente se vuelve a recoger. La ventana del árbol no tiene prueba y nada se vio en pantalla.

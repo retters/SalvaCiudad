@@ -856,16 +856,19 @@ public:
         std::uint32_t best_cost = 0xFFFF;
         bool busy = false;     // Something to take, in other hands now.
         bool waiting = false;  // Something that will grow back, or thaw.
+        const Calendar today = g_.calendar();
         for (std::int32_t cz = cz0; cz <= cz1; ++cz) {
             for (std::int32_t cx = cx0; cx <= cx1; ++cx) {
                 for (const std::uint32_t i : g_.node_cells_[static_cast<std::size_t>(cz * side + cx)]) {
                     const Node& n = g_.nodes_[i];
                     const MapFeature& f = g_.map_.features[i];
-                    if (((d.gathers >> static_cast<unsigned>(f.type)) & 1u) == 0) {
+                    // A fruit tree, for those who pick its fruit and leave it standing.
+                    const bool picking = picks_fruit(d, f);
+                    if (!picking && ((d.gathers >> static_cast<unsigned>(f.type)) & 1u) == 0) {
                         continue;
                     }
-                    const bool grows = regrows(f);
-                    if (n.amount <= 0 && !grows) {
+                    const bool grows = picking || regrows(f);
+                    if (n.amount <= 0 && (picking || !grows)) {
                         continue;  // Gone for good.
                     }
                     // The cheapest cell next to the node (rocks may sit on steep
@@ -883,8 +886,8 @@ public:
                     if (cost >= 0xFFFF) {
                         continue;  // Out of reach.
                     }
-                    if (n.amount <= 0 || (grows && g_.frozen())) {
-                        waiting = true;  // Empty or frozen bushes and herbs.
+                    if (picking ? g_.fruit_on(i, today) <= 0 : n.amount <= 0 || (grows && g_.frozen())) {
+                        waiting = true;  // Empty or frozen bushes and herbs; a tree without fruit today.
                         continue;
                     }
                     if (n.reserved != 0 && !deposit) {
@@ -919,6 +922,13 @@ public:
             fail(v);
         }
         return true;
+    }
+
+    // Phase 84: whether a worker of a workplace like `d` takes the fruit of
+    // `f` (a fruit tree) instead of felling it.
+    [[nodiscard]] bool picks_fruit(const BuildingDef& d, const MapFeature& f) const {
+        return d.picks_fruit && f.type == FeatureType::Tree && (d.gathers & 1u) == 0 &&
+               f.species < c_.flora.species.size() && c_.flora.species[f.species].fruit_tree();
     }
 
     [[nodiscard]] bool regrows(const MapFeature& f) const {
@@ -3592,6 +3602,10 @@ public:
             v.task = Task::Idle;
             return;
         }
+        if (const Building* job = g_.buildings_.get(v.job); job != nullptr && picks_fruit(def(*job), f)) {
+            pick_fruit(v, n);
+            return;
+        }
         if ((v.timer += steps(v, gather_skill(f.type))) < fd->work) {
             return;
         }
@@ -3621,6 +3635,32 @@ public:
             }
         }
         if (n.amount <= 0 || v.carrying.amount >= carry_capacity(c_, fd->resource)) {
+            release(v);
+            v.task = Task::Idle;  // Decides to deliver next.
+        }
+    }
+
+    // Phase 84: fruit from a tree, one at a time; the tree stays.
+    void pick_fruit(Villager& v, Node& n) {
+        constexpr std::int32_t kFruitWork = 15;  // Worker-ticks per fruit, as a berry.
+        const Calendar today = g_.calendar();
+        if (g_.fruit_ == kNoDef || g_.fruit_on(v.node - 1, today) <= 0) {
+            release(v);
+            v.task = Task::Idle;
+            return;
+        }
+        if ((v.timer += steps(v, Skill::Forage)) < kFruitWork) {
+            return;
+        }
+        v.timer = 0;
+        if (n.fruit_year != today.year) {
+            n.fruit_year = today.year;
+            n.fruit_picked = 0;
+        }
+        ++n.fruit_picked;
+        v.carrying.resource = g_.fruit_;
+        ++v.carrying.amount;
+        if (g_.fruit_on(v.node - 1, today) <= 0 || v.carrying.amount >= carry_capacity(c_, g_.fruit_)) {
             release(v);
             v.task = Task::Idle;  // Decides to deliver next.
         }
@@ -5111,6 +5151,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     meat_ = content_->find_resource("core:meat");
     hide_ = content_->find_resource("core:hide");
     fish_ = content_->find_resource("core:fish");
+    fruit_ = content_->find_resource("core:fruit");
     shoes_ = content_->find_resource("core:shoes");
     gold_ = content_->find_resource("core:gold");
     for (std::size_t i = 0; i < content_->buildings.size(); ++i) {
@@ -5169,6 +5210,19 @@ void Game::build_indexes() {
         const std::int32_t cz = std::clamp(f.z.floor_int() / kNodeCell, 0, node_cells_side_ - 1);
         node_cells_[static_cast<std::size_t>(cz * node_cells_side_ + cx)].push_back(static_cast<std::uint32_t>(i));
     }
+}
+
+std::int32_t Game::fruit_on(std::uint32_t node, const Calendar& when) const {
+    if (node >= nodes_.size() || (when.season != Season::Summer && when.season != Season::Autumn)) {
+        return 0;
+    }
+    const MapFeature& f = map_.features[node];
+    const Node& n = nodes_[node];
+    if (f.type != FeatureType::Tree || n.amount <= 0 || f.species >= content_->flora.species.size() || f.size >= kTreeSizes) {
+        return 0;
+    }
+    const std::int32_t borne = content_->flora.species[f.species].fruit[f.size];
+    return std::max(0, borne - (n.fruit_year == when.year ? n.fruit_picked : 0));
 }
 
 void Game::block_deposit(const MapFeature& f, bool blocked) {
@@ -6427,6 +6481,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(n.amount);
         w.u32(n.reserved);
         w.u64(n.regrow_tick);
+        w.u32(n.fruit_year);
+        w.i32(n.fruit_picked);
     }
     w.u32(static_cast<std::uint32_t>(regrow.size()));
     for (const auto& [t, i] : regrow) {
@@ -6795,13 +6851,15 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         return false;
     }
     std::uint32_t n = 0;
-    if (!r.count(kMaxMapFeatures, 16, n) || n != g.map_.features.size()) {
+    if (!r.count(kMaxMapFeatures, 24, n) || n != g.map_.features.size()) {
         r.fail();
         return false;
     }
     g.nodes_.resize(n);
     for (Node& node : g.nodes_) {
-        if (!r.i32(node.amount) || !r.u32(node.reserved) || !r.u64(node.regrow_tick)) {
+        if (!r.i32(node.amount) || !r.u32(node.reserved) || !r.u64(node.regrow_tick) || !r.u32(node.fruit_year) ||
+            !r.i32(node.fruit_picked) || node.fruit_picked < 0) {
+            r.fail();
             return false;
         }
     }

@@ -2199,6 +2199,13 @@ void GameHud::node_window(ui::Context& ctx, GameSession& s, const WindowList::Ob
             name = tr(content.flora.species[f.species].name_key);
         }
         lines.push_back(tr("hud.node.tree", static_cast<int>((sim::MapData::tree_height_cm(f) + 50) / 100)));
+        // Phase 84: a fruit tree says what hangs from it.
+        if (f.species < content.flora.species.size() && content.flora.species[f.species].fruit_tree() && n.amount > 0) {
+            const std::int32_t fruit = game.fruit_on(index);
+            lines.push_back(fruit > 0 ? tr("hud.node.fruit", fruit)
+                            : content.flora.species[f.species].fruit[f.size] > 0 ? tr("hud.node.noFruit")
+                                                                                   : tr("hud.node.youngFruit"));
+        }
     }
     sim::DefIndex resource = sim::kNoDef;
     for (const sim::FeatureDef& d : content.features) {

@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 47;
+inline constexpr std::uint32_t kGameRulesVersion = 48;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -100,6 +100,9 @@ struct Node {
     std::int32_t amount = 0;        // Units left; 0 = gone (trees, stones) or empty (bushes).
     std::uint32_t reserved = 0;     // Villager entity index + 1 working it, or 0.
     std::uint64_t regrow_tick = 0;  // Bushes refill at this tick; 0 = not waiting.
+    // Phase 84, fruit trees: the fruit picked in the year `fruit_year`.
+    std::uint32_t fruit_year = 0;
+    std::int32_t fruit_picked = 0;
     bool operator==(const Node&) const = default;
 };
 
@@ -557,6 +560,11 @@ public:
     }
     [[nodiscard]] std::uint32_t day_ticks() const { return kTicksPerDay; }
     [[nodiscard]] Calendar calendar() const { return sim::calendar(rules_.climate, tick_); }
+    // Phase 84: the fruit hanging from tree `node` today. A fruit tree
+    // bears its year's fruit at the start of summer; what nobody picked is
+    // lost when autumn ends.
+    [[nodiscard]] std::int32_t fruit_on(std::uint32_t node) const { return fruit_on(node, calendar()); }
+    [[nodiscard]] std::int32_t fruit_on(std::uint32_t node, const Calendar& when) const;
     [[nodiscard]] DayTime day_time() const { return sim::day_time(rules_.day_night, tick_); }
     [[nodiscard]] std::int32_t temperature() const { return temperature_; }
     [[nodiscard]] std::int32_t snow() const { return snow_; }
@@ -802,6 +810,7 @@ private:
     DefIndex meat_ = kNoDef;
     DefIndex hide_ = kNoDef;
     DefIndex fish_ = kNoDef;
+    DefIndex fruit_ = kNoDef;
     DefIndex shoes_ = kNoDef;
     DefIndex gold_ = kNoDef;
     std::vector<std::int32_t> zone_animals_;

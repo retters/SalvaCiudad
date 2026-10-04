@@ -111,6 +111,7 @@ struct BuildingDef {
     WorkKind work = WorkKind::None;
     std::uint8_t gathers = 0;       // FeatureKind bits, for Gather.
     std::int32_t work_radius = 0;   // Meters, for Gather/Hunt/Fish.
+    bool picks_fruit = false;       // Phase 84, for Gather: its workers pick the fruit of the fruit trees too.
     std::int32_t residents = 0;     // Houses.
     std::int32_t storage = 0;       // Units it can store.
     std::uint8_t stores = 0;        // ResourceCategory bits it accepts.

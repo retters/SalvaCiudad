@@ -82,6 +82,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `buildWork` | Trabajo para construirlo (ticks de trabajador; 10 por segundo a x1). |
 | `workers`, `work` | Trabajadores y tipo de trabajo: `gather`, `produce`, `haul`, `farm`, `hunt`, `fish`, `explore` (su trabajador va adonde el jugador lo manda con clic derecho). |
 | `gathers`, `radius` | Para `gather`: `tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, y el radio en metros. |
+| `picksFruit` | Para `gather` (sin `tree` en `gathers`): sus trabajadores recogen también la fruta de los frutales, sin talarlos. |
 | `recipes` | Para `produce`: lista de recetas. |
 | `residents` | Para casas. |
 | `storage`, `stores` | Capacidad y categorías que guarda. Un `storage` que guarda `gold` y no es el puesto de comercio es una bóveda: ahí van los peones a dejar el oro que sobra. |

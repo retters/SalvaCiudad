@@ -602,6 +602,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 84 (frutales silvestres)
+
+- [ ] La ventana de un manzano, cerezo, palma o baobab mediano o grande dice «Fruta en el árbol: N» en verano y otoño, y «sin fruta ahora» en invierno y primavera; la de uno pequeño, «aún es muy joven para dar fruta».
+- [ ] Un recolector con frutales a su alcance trae «fruta» al almacén además de bayas y hierbas, y los árboles siguen en pie.
+- [ ] Recogida toda la fruta, el recolector dice «Esperando que rebrote lo que recoge», sin notificación; al verano siguiente los árboles vuelven a tener fruta.
+- [ ] Un roble o un pino no dicen nada de fruta.
+- [ ] **Sin revisar en pantalla por Claude:** todo se comprobó por pruebas.
+- [ ] **Tu opinión:** qué especies son frutales (hoy manzano, cerezo, palma y baobab) y cuánta fruta dan (6 el mediano, 10 el grande, 14 el enorme, una vez al año).
+
 ### Fase 83 (yacimientos de roca)
 
 - [ ] En una partida nueva hay un yacimiento de roca mediano o grande a un paseo del pueblo (hasta unos 200 m), y unos pocos más por el mapa; se distinguen los tres tamaños.

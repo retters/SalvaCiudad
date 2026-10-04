@@ -49,6 +49,17 @@ struct SpeciesDef {
     std::uint8_t sizes = 0;  // Bit per TreeSize the species can have.
     std::int32_t logs[kTreeSizes] = {2, 5, 10, 20};  // Wood per tree of each size.
     bool landmark = false;   // Phase 34: its silhouette shows through the fog of war.
+    // Phase 84: the fruit a tree of each size bears a year (all 0: not a
+    // fruit tree). It hangs from the start of summer to the end of autumn.
+    std::int32_t fruit[kTreeSizes] = {0, 0, 0, 0};
+    [[nodiscard]] bool fruit_tree() const {
+        for (const std::int32_t n : fruit) {
+            if (n > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
     // Phase 55: a giant, placed a few per map as a landmark, each in a
     // clearing of this biome (-1: not a giant) and, if `giant_water_m` is
     // not 0, within that many meters of the water its biome asks for.

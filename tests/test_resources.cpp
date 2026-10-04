@@ -121,6 +121,33 @@ EntityId build(Game& g, const char* def, std::int32_t ox, std::int32_t oz) {
     return {};
 }
 
+// A land without bushes, herbs or trees near the start, and three trees in
+// a row there: a medium apple tree, a small one and a medium oak. Returns
+// the index of the first.
+std::uint32_t orchard_land(Land& l) {
+    l = land(21, {FeatureType::BerryBush, FeatureType::Herbs, FeatureType::Tree}, FeatureType::Tree, 3, Fixed::one());
+    const auto apple = content()->flora.find_species("core:apple");
+    const auto oak = content()->flora.find_species("core:oak");
+    REQUIRE(apple >= 0);
+    REQUIRE(oak >= 0);
+    const std::size_t first = l.map.features.size() - 3;
+    l.map.features[first].species = static_cast<std::uint8_t>(apple);
+    l.map.features[first].size = static_cast<std::uint8_t>(TreeSize::Medium);
+    l.map.features[first + 1].species = static_cast<std::uint8_t>(apple);
+    l.map.features[first + 1].size = static_cast<std::uint8_t>(TreeSize::Small);
+    l.map.features[first + 2].species = static_cast<std::uint8_t>(oak);
+    l.map.features[first + 2].size = static_cast<std::uint8_t>(TreeSize::Medium);
+    return static_cast<std::uint32_t>(first);
+}
+
+// Steps until the calendar says `season` (at most two years).
+void run_to(Game& g, Season season) {
+    for (std::uint32_t t = 0; t < 24 * g.calendar_month_ticks() && g.calendar().season != season; t += 20) {
+        run(g, 20);
+    }
+    REQUIRE(g.calendar().season == season);
+}
+
 int exhausted_events(Game& g, EntityId of) {
     int n = 0;
     for (const Game::Event& e : g.take_events()) {
@@ -342,6 +369,88 @@ TEST_SUITE("resources") {
                 }
             }
         }
+    }
+
+    TEST_CASE("a fruit tree bears once a year: in summer, until autumn ends, and only when it is grown") {
+        Land l;
+        const std::uint32_t apple = orchard_land(l);
+        GameSetup s = setup();
+        s.rules.climate.seasons = 0b1111;
+        Game g(content(), l.map, s);
+        REQUIRE(g.calendar().season == Season::Spring);
+        CHECK(g.fruit_on(apple) == 0);
+        run_to(g, Season::Summer);
+        CHECK(g.fruit_on(apple) == 6);
+        CHECK(g.fruit_on(apple + 1) == 0);  // A small one never has any.
+        CHECK(g.fruit_on(apple + 2) == 0);  // Nor an oak.
+        run_to(g, Season::Autumn);
+        CHECK(g.fruit_on(apple) == 6);
+        run_to(g, Season::Winter);
+        CHECK(g.fruit_on(apple) == 0);  // What nobody picked is lost.
+        const std::uint32_t year = g.calendar().year;
+        run_to(g, Season::Summer);
+        CHECK(g.calendar().year == year + 1);
+        CHECK(g.fruit_on(apple) == 6);
+
+        // A species a mod marks as a fruit tree is one.
+        auto modded = std::make_shared<Content>(sc::test::core_content());
+        const auto oak = modded->flora.find_species("core:oak");
+        REQUIRE(oak >= 0);
+        modded->flora.species[static_cast<std::size_t>(oak)].fruit[static_cast<std::size_t>(TreeSize::Medium)] = 9;
+        GameSetup summer = setup();
+        Game m(modded, l.map, summer);
+        CHECK(m.fruit_on(apple + 2) == 9);
+    }
+
+    TEST_CASE("a forager picks the fruit of the fruit trees as food, and the tree stays") {
+        Land l;
+        const std::uint32_t apple = orchard_land(l);
+        Game g(content(), l.map, setup());  // Summer all year.
+        const std::int32_t logs = g.nodes()[apple].amount;
+        REQUIRE(g.fruit_on(apple) == 6);
+        const DefIndex fruit = content()->find_resource("core:fruit");
+        REQUIRE(fruit != kNoDef);
+        const std::int32_t before = g.stored(0)[fruit];
+        const EntityId forager = build(g, "core:forager", l.x, l.z + 14);
+        (void)g.take_events();
+        int told = 0;
+        std::int32_t most = before;
+        for (int t = 0; t < 200 && g.fruit_on(apple) > 0; ++t) {
+            run(g, 20);
+            told += exhausted_events(g, forager);
+            most = std::max(most, g.stored(0)[fruit]);
+        }
+        CHECK(g.fruit_on(apple) == 0);
+        for (int t = 0; t < 60; ++t) {
+            run(g, 20);
+            told += exhausted_events(g, forager);
+            most = std::max(most, g.stored(0)[fruit]);
+        }
+        CHECK(most > before);                       // Brought in as fruit.
+        CHECK(g.nodes()[apple].amount == logs);     // The tree was not felled.
+        CHECK(g.nodes()[apple + 2].amount > 0);     // Nor the oak beside it.
+        CHECK(g.nodes()[apple].fruit_picked == 6);
+        // With nothing more to pick this year it waits, without a word.
+        CHECK(g.buildings().get(forager)->supply == Supply::Waiting);
+        CHECK(told == 0);
+
+        BinaryWriter w;
+        g.save(w);
+        Game back(content(), l.map, setup());
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.hash() == g.hash());
+        CHECK(back.fruit_on(apple) == 0);
+
+        // Next year it bears again, and is picked again.
+        const std::uint32_t year = g.calendar().year;
+        for (std::uint32_t t = 0; t < 13 * g.calendar_month_ticks() && g.nodes()[apple].fruit_year <= year; t += 100) {
+            grant(g, "core:roots", 2);
+            run(g, 100);
+        }
+        CHECK(g.calendar().year > year);
+        CHECK(g.nodes()[apple].fruit_year == g.calendar().year);
+        CHECK(g.nodes()[apple].amount == logs);
     }
 
     TEST_CASE("a forager whose bushes are picked clean waits for them, without a word") {

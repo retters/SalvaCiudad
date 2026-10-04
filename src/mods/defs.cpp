@@ -814,6 +814,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.work = static_cast<sim::WorkKind>(r.choice("work", kWorkKinds, 0));
         def.gathers = r.choices("gathers", kFeatureKinds);
         def.work_radius = r.integer("radius", 0, 500, 0);
+        def.picks_fruit = r.flag("picksFruit");
         def.residents = r.integer("residents", 0, 50, 0);
         def.storage = r.integer("storage", 0, 100000, 0);
         def.stores = r.choices("stores", kCategories);
@@ -936,6 +937,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("\"sizes\" needs at least one size");
         }
         r.numbers("logs", def.logs, sim::kTreeSizes, 0, 1000);
+        r.numbers("fruit", def.fruit, sim::kTreeSizes, 0, 1000);
         def.landmark = r.flag("landmark");
         // Phase 55: a giant names the biome it stands in (found once the
         // biomes are read) and how near its water it must be.

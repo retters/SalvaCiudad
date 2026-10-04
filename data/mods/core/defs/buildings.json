@@ -208,6 +208,7 @@
         "berryBush",
         "herbs"
       ],
+      "picksFruit": true,
       "radius": 65,
       "storage": 40,
       "stores": [
