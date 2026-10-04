@@ -601,6 +601,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 72 (amenazas de noche)
+
+- [ ] Con asaltantes en «Brutal» y día y noche iguales, la mayoría de los asaltos llega de noche.
+- [ ] De noche, un lobo o un oso ataca a un aldeano que pasa más lejos que de día, pero no al que está junto a una antorcha.
+- [ ] Con niebla dinámica, de noche lo que está a la vista se encoge alrededor de aldeanos y edificios; un pueblo de gatunos ve igual que de día.
+- [ ] Una torre tarda más en abatir a un asaltante que viene por lo oscuro que a uno que cruza una zona iluminada.
+- [ ] Con «Día y noche» desmarcado nada de esto cambia.
+- [ ] **Tu opinión:** si quieres que los soldados tengan raza (y visión nocturna) y que los jabalíes también cambien de noche.
+
 ### Fase 71 (energía y descanso)
 
 - [ ] En Personalizado, bajo «La partida», la casilla «Cansancio y descanso» (marcada).

@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 39;
+inline constexpr std::uint32_t kGameRulesVersion = 40;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -52,6 +52,13 @@ inline constexpr std::int32_t kLightCell = 4;
 // Phase 71: energy. A point a tick while up and about: eight minutes at
 // x1. Resting at home gives it back in two; with no home, by a campfire or
 // the town center, in four.
+// Phase 72: the night's dangers. Wolves and bears notice villagers from
+// half again as far and roam this much farther from their dens; towers,
+// soldiers and the militia do this percent of their damage to what stands
+// in the dark; with fog of war, everybody sees half as far.
+inline constexpr std::int32_t kNightAggroPercent = 150;
+inline constexpr std::int32_t kNightRoamMeters = 15;
+inline constexpr std::int32_t kDarkAimPercent = 75;
 inline constexpr std::int32_t kEnergyMax = 4800;
 inline constexpr std::int32_t kRestGain = 4;
 inline constexpr std::int32_t kRestGainOutside = 2;

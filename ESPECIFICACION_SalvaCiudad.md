@@ -908,9 +908,9 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - *Criterios:* prueba: un aldeano trabaja unos 8 minutos, descansa 2 en su casa y vuelve a su trabajo; uno sin casa tarda el doble; un pueblo de referencia sigue creciendo (no muere de hambre por el descanso); se guarda y carga a medio descanso; suben las versiones.
 72. **Amenazas de noche.**
    - Los asaltos llegan con el doble de probabilidad de noche que de día.
-   - Lobos y osos atacan desde más lejos de noche y se acercan al pueblo; no entran en zonas iluminadas salvo que ya persigan a alguien.
+   - Lobos y osos notan a los aldeanos desde un 50 % más lejos de noche y se alejan 15 m más de su guarida; no van tras quien está en una zona iluminada (si ya lo perseguían, siguen).
    - Con niebla de guerra, de noche se ve a menos distancia (la mitad), salvo lo que está en zonas iluminadas y las razas con visión nocturna.
-   - Torres, arqueros y soldados a oscuras aciertan menos (75 %); los de visión nocturna y los asaltantes, no.
+   - Torres, soldados y milicia hacen el 75 % del daño a lo que está a oscuras (fuera de la luz); la milicia con visión nocturna y los asaltantes, no.
    - *Criterios:* pruebas de cada regla con el ciclo encendido y sin efecto con el ciclo apagado; suben las versiones.
 73. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 

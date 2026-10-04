@@ -2774,3 +2774,23 @@ Reglas 39, protocolo de red 17.
 
 **D-7107. Lo medido.**
 Prueba: un descanso completo en casa dura 1200 ticks y sin casa 2400; con casas, el pueblo pasa el 18 % del tiempo descansando; guardar con gente descansando y cargar da la misma partida; sin la regla nadie descansa. El pueblo de referencia de una hora llega a 24 habitantes y 7 casas con cansancio (sin él, la prueba original pide más de 12). No se revisó en pantalla: la barra de energía ni a los aldeanos quietos frente a su casa (se quedan de pie en la puerta; no entran ni se sientan).
+
+## Fase 72: amenazas de noche (2026-10-03)
+
+**D-7201. Asaltos: el doble de probables por hora de noche que de día.**
+Los asaltos ya tenían su fecha; cuando a uno le toca de día, espera al anochecer con probabilidad noche / (día + 2 × noche) (un tercio con día y noche iguales). Así una hora de noche recibe el doble de asaltos que una de día sin cambiar cuántos hay por año. El dado solo se tira con el ciclo encendido: las partidas sin ciclo son idénticas a antes. Prueba: 11 de noche y 5 de día en 16 asaltos.
+
+**D-7202. Fieras.**
+De noche, lobos y osos notan a un aldeano desde un 50 % más lejos y se alejan 15 m más de su guarida. No van tras un aldeano que está en una celda iluminada; si ya lo perseguían, siguen (la persecución no vuelve a mirar la luz: es lo más simple y evita que un aldeano «apague» a un lobo pisando la luz). Los jabalíes no cambian. Sin prueba propia.
+
+**D-7203. Se ve menos lejos.**
+Con niebla de guerra, de noche los aldeanos y los soldados ven la mitad (mínimo 4 m) y los edificios la mitad, pero nunca menos de lo que alumbran. Las razas con visión nocturna ven igual que de día. «Lo que está en zonas iluminadas se ve» queda cubierto porque todo lo que da luz es un edificio propio, que ve al menos su radio de luz.
+
+**D-7204. Acertar a oscuras depende del blanco, no del que dispara.**
+La especificación decía «defensores a oscuras»; se decidió por dónde está el blanco: una torre casi siempre está iluminada por sus propios trabajadores, y lo que tiene sentido es que cueste acertarle a lo que no se ve. Torres, soldados y milicia hacen el 75 % del daño a un enemigo que está fuera de la luz de noche; la milicia de una raza con visión nocturna, el 100 %. Los soldados no tienen raza en la simulación, así que no se benefician de la visión nocturna. Las trampas, los asaltantes y los animales no cambian. Iluminar los accesos al pueblo ahora sirve para defenderlo.
+
+**D-7205. Versiones.**
+Reglas 40, protocolo de red 18.
+
+**D-7206. Sin revisar.**
+Nada de esta fase se vio en pantalla; todo por pruebas (visión, daño de la torre, reparto de asaltos), salvo las fieras (D-7202).

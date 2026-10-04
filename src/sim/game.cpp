@@ -1222,6 +1222,16 @@ public:
     [[nodiscard]] const UnitDef* unit_of(const Creature& a) const {
         return a.kind == CreatureKind::Soldier && a.unit < c_.units.size() ? &c_.units[a.unit] : nullptr;
     }
+    // Phase 72: what a defender's blow or shot does to something at `at`:
+    // less if it stands in the dark of the night, unless the defender sees
+    // in it.
+    [[nodiscard]] std::int32_t aimed(std::int32_t damage, FixedVec2 at, bool night_vision = false) const {
+        if (night_vision || !g_.night() || g_.lit(at.x.floor_int(), at.z.floor_int())) {
+            return damage;
+        }
+        return damage * village::kDarkAimPercent / 100;
+    }
+
     [[nodiscard]] std::int32_t damage_of(const Creature& a) const {
         const UnitDef* u = unit_of(a);
         return u != nullptr ? u->damage : stats(a.kind).damage;
@@ -1267,7 +1277,9 @@ public:
     void animal_think(Creature& a) {
         const CreatureStats& st = stats(a.kind);
         const Zone& zone = g_.map_.zones[std::min<std::size_t>(a.zone, g_.map_.zones.size() - 1)];
-        const std::int32_t territory = zone.radius.floor_int() + 20;
+        // At night the beasts roam farther and notice people from farther.
+        const bool night = g_.night();
+        const std::int32_t territory = zone.radius.floor_int() + 20 + (night ? village::kNightRoamMeters : 0);
         const std::int32_t threat = threat_percent(g_.rules_.wildlife);
         if (a.kind == CreatureKind::Deer) {
             const EntityId near = villager_near(a.position, st.aggro);
@@ -1282,8 +1294,16 @@ public:
                 }
             }
         } else if (a.state != CreatureState::Chase && threat > 0) {
-            const std::int32_t reach = a.kind == CreatureKind::Boar ? st.aggro : st.aggro * std::min(threat, 200) / 100;
-            const EntityId near = villager_near(a.position, reach);
+            std::int32_t reach = a.kind == CreatureKind::Boar ? st.aggro : st.aggro * std::min(threat, 200) / 100;
+            if (night && a.kind != CreatureKind::Boar) {
+                reach = reach * village::kNightAggroPercent / 100;
+            }
+            EntityId near = villager_near(a.position, reach);
+            // But they keep out of the light: nobody standing in it is gone after.
+            if (const Villager* seen = night ? g_.villagers_.get(near) : nullptr;
+                seen != nullptr && g_.lit(seen->position.x.floor_int(), seen->position.z.floor_int())) {
+                near = {};
+            }
             if (near.valid() && distance2(a.position, a.home) <= meters2(territory) &&
                 (a.kind != CreatureKind::Boar || g_.rng_.below(2) == 0)) {
                 a.state = CreatureState::Chase;
@@ -1605,7 +1625,8 @@ public:
         if (++a.timer % every_of(a) != 0) {
             return;
         }
-        o->health -= damage_of(a);
+        // Soldiers aim worse at what is in the dark; raiders and beasts do not care.
+        o->health -= a.kind == CreatureKind::Soldier ? aimed(damage_of(a), o->position) : damage_of(a);
         // Whoever is hit fights back (deer run).
         if (o->kind != CreatureKind::Deer && o->state != CreatureState::Chase && o->state != CreatureState::Travel &&
             o->state != CreatureState::Leave) {
@@ -2053,7 +2074,7 @@ public:
                 }
             }
             if (aim != nullptr) {
-                aim->health -= d.attack_damage;
+                aim->health -= aimed(d.attack_damage, aim->position);
             }
         }
     }
@@ -2073,6 +2094,14 @@ public:
             if (ps.next_raid == 0) {
                 ps.next_raid = g_.tick_ + interval + kTicksPerYear;  // A year of grace (of the usual length).
             } else if (g_.tick_ >= ps.next_raid) {
+                // Phase 72: raiders like the night: twice as likely an hour
+                // of night as an hour of day. A raid due by day waits for
+                // nightfall with a chance of night / (day + 2 night).
+                if (const DayNightSettings& dn = g_.rules_.day_night; dn.enabled() && !g_.night() &&
+                    g_.rng_.below(static_cast<std::uint32_t>(dn.day) + 2u * dn.night) < dn.night) {
+                    ps.next_raid = g_.tick_ + g_.day_time().ticks_left;
+                    continue;
+                }
                 ps.next_raid = g_.tick_ + interval * 3 / 4 + g_.rng_.below(static_cast<std::uint32_t>(interval / 2 + 1));
                 start_raid(p, scale);
             }
@@ -2218,7 +2247,8 @@ public:
             return;
         }
         if (++v.timer % 10 == 0) {
-            a->health -= 35;
+            const RaceDef* r = race_of(v);
+            a->health -= aimed(35, a->position, r != nullptr && r->night_vision);
             // An animal that is hit turns on its attacker.
             if (a->kind != CreatureKind::Raider && a->kind != CreatureKind::Deer && a->state != CreatureState::Chase) {
                 a->state = CreatureState::Chase;
@@ -4839,8 +4869,10 @@ std::uint16_t Game::vision_groups() const {
 }
 
 std::int32_t Game::sight(const Building& b) const {
-    // From the middle, so the whole footprint is inside.
-    return content_->buildings[b.def].sight + std::max(b.width, b.depth) / 2;
+    // From the middle, so the whole footprint is inside. At night it sees
+    // half as far, but never less than its own light reaches (phase 72).
+    const std::int32_t own = content_->buildings[b.def].sight;
+    return (night() ? std::max(own / 2, light(b)) : own) + std::max(b.width, b.depth) / 2;
 }
 
 std::int32_t Game::light(const Building& b) const {
@@ -4932,6 +4964,10 @@ std::int32_t Game::sight(const Villager& v) const {
     if (const Building* job = buildings_.get(v.job)) {
         own = std::max(own, content_->buildings[job->def].worker_sight);
     }
+    // Half as far at night, except for those who see in it (phase 72).
+    if (night() && !(v.race < content_->races.size() && content_->races[v.race].night_vision)) {
+        own = std::max(4, own / 2);
+    }
     return own;
 }
 
@@ -4939,7 +4975,8 @@ std::int32_t Game::sight(const Creature& a) const {
     if (a.kind != CreatureKind::Soldier || a.state == CreatureState::Travel) {
         return 0;  // Animals and raiders give nobody sight; soldiers away on the world map neither.
     }
-    return a.unit < content_->units.size() ? content_->units[a.unit].sight : 16;
+    const std::int32_t own = a.unit < content_->units.size() ? content_->units[a.unit].sight : 16;
+    return night() ? std::max(4, own / 2) : own;
 }
 
 void Game::update_vision() {

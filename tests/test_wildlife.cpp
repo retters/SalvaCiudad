@@ -1,10 +1,12 @@
 #include <doctest.h>
 
 #include <cmath>
+#include <array>
 #include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <set>
 
 #include "game/animal_motion.h"
 #include "sim/game.h"
@@ -241,6 +243,93 @@ TEST_SUITE("wildlife") {
         }
         CHECK(raided);
         CHECK(g.tick() >= g.year_ticks());
+    }
+
+    TEST_CASE("at night everybody sees half as far, except those who see in the dark") {
+        const auto sights = [](const char* race, DayNightSettings cycle) {
+            GameSetup s = setup(Threat::None);
+            const auto& races = sc::test::core_content().races;
+            for (std::size_t i = 0; i < races.size(); ++i) {
+                if (races[i].id == race) {
+                    s.rules.races.fill(static_cast<std::uint8_t>(i));
+                }
+            }
+            s.rules.other_races = 0;
+            s.rules.day_night = cycle;
+            Game g(core(), map_for(94), s);
+            const Building* tc = g.buildings().get(g.player(0).town_center);
+            REQUIRE(tc != nullptr);
+            REQUIRE(g.villagers().size() > 0);
+            const std::array<std::int32_t, 2> day{g.sight(g.villagers().data()[0]), g.sight(*tc)};
+            run(g, kTicksPerMinute + 1);
+            return std::array<std::int32_t, 4>{day[0], day[1], g.sight(g.villagers().data()[0]), g.sight(*tc)};
+        };
+        const auto humans = sights("core:human", {1, 30});
+        CHECK(humans[2] == std::max(4, humans[0] / 2));
+        CHECK(humans[3] < humans[1]);
+        CHECK(humans[3] >= core()->buildings[core()->find_building("core:town_center")].light);
+        const auto cats = sights("core:catfolk", {1, 30});
+        CHECK(cats[2] == cats[0]);
+        const auto always_day = sights("core:human", {});
+        CHECK(always_day[2] == always_day[0]);
+        CHECK(always_day[3] == always_day[1]);
+    }
+
+    TEST_CASE("a watchtower hits what is in the dark of the night for less") {
+        const std::int32_t shot = core()->buildings[core()->find_building("core:watchtower")].attack_damage;
+        REQUIRE(shot > 0);
+        // The smallest and the largest wound a raider takes in one tick.
+        const auto wounds = [&](DayNightSettings cycle) {
+            GameSetup s = setup(Threat::Medium);
+            s.rules.day_night = cycle;
+            Game g(core(), map_for(94), s);
+            const Building* tc = g.buildings().get(g.player(0).town_center);
+            (void)build(g, "core:watchtower", tc->x + 8, tc->z + 8);
+            raid_now(g);
+            std::set<std::int32_t> seen;
+            std::map<std::uint32_t, std::int32_t> health;
+            for (int t = 0; t < 3000; ++t) {
+                g.step();
+                for (std::size_t k = 0; k < g.creatures().size(); ++k) {
+                    const Creature& a = g.creatures().data()[k];
+                    if (a.kind != CreatureKind::Raider) {
+                        continue;
+                    }
+                    const std::uint32_t id = g.creatures().entities()[k].index;
+                    if (const auto it = health.find(id); it != health.end() && it->second > a.health) {
+                        seen.insert(it->second - a.health);
+                    }
+                    health[id] = a.health;
+                }
+            }
+            return seen;
+        };
+        // The tower is built by day (a minute) and the raid comes at night.
+        const std::set<std::int32_t> night = wounds({1, 30});
+        const std::set<std::int32_t> day = wounds({});
+        CHECK(day.contains(shot));
+        CHECK_FALSE(day.contains(shot * village::kDarkAimPercent / 100));
+        CHECK(night.contains(shot * village::kDarkAimPercent / 100));
+    }
+
+    TEST_CASE("raiders like the night") {
+        GameSetup s = setup(Threat::Brutal);
+        s.rules.day_night = {5, 5};
+        Game g(core(), map_for(95), s);
+        int by_night = 0;
+        int by_day = 0;
+        for (int t = 0; t < 1200 && by_night + by_day < 16; ++t) {
+            // A day of the village at a time, as the raids are planned.
+            run(g, 100);
+            for (const Game::Event& e : g.take_events()) {
+                if (e.kind == Game::Event::Kind::RaidStarted) {
+                    ++(g.night() ? by_night : by_day);
+                }
+            }
+        }
+        MESSAGE("raids: " << by_night << " by night, " << by_day << " by day");
+        CHECK(by_night + by_day >= 6);
+        CHECK(by_night > by_day);
     }
 
     TEST_CASE("the dev raid needs the developer tools") {
