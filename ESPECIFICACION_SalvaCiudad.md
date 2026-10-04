@@ -903,7 +903,8 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
 71. **Energía y descanso.**
    - Cada aldeano tiene energía. Se gasta igual de día y de noche: unos 8 minutos (a ×1) de actividad. Al acabarse deja lo que hace, va a su casa y se queda 2 minutos hasta recuperarla. Sin casa descansa junto al centro del pueblo o una fogata, el doble de lento.
    - Comer, abrigarse y huir siguen teniendo prioridad sobre descansar; los soldados con una orden y quienes atienden la campana no se van a descansar hasta terminar.
-   - La ventana del aldeano muestra su energía y «Descansando»; el resumen del pueblo cuenta a los que descansan.
+   - Regla de partida «Cansancio y descanso» (casilla, encendida por omisión), para poder jugar sin ella.
+   - La ventana del aldeano muestra su energía y «descansando».
    - *Criterios:* prueba: un aldeano trabaja unos 8 minutos, descansa 2 en su casa y vuelve a su trabajo; uno sin casa tarda el doble; un pueblo de referencia sigue creciendo (no muere de hambre por el descanso); se guarda y carga a medio descanso; suben las versiones.
 72. **Amenazas de noche.**
    - Los asaltos llegan con el doble de probabilidad de noche que de día.

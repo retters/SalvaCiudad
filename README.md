@@ -601,6 +601,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 71 (energía y descanso)
+
+- [ ] En Personalizado, bajo «La partida», la casilla «Cansancio y descanso» (marcada).
+- [ ] La ventana de un aldeano muestra la barra «Energía», que baja mientras está activo.
+- [ ] Al vaciarse deja lo que hace, va a su casa («yendo a descansar») y se queda unos 2 minutos («descansando»); luego vuelve a su trabajo.
+- [ ] Un aldeano sin casa descansa junto a una fogata encendida o el centro del pueblo y tarda unos 4 minutos.
+- [ ] Con hambre come antes de descansar; con la campana nadie descansa.
+- [ ] Con la casilla desmarcada no hay barra de energía ni descansos.
+- [ ] **Tu opinión:** si los descansos frenan demasiado al pueblo, y si quieres que el aldeano entre a la casa o se siente mientras descansa.
+
 ### Fase 70 (oscuridad en la simulación)
 
 - [ ] De noche, un aldeano lejos de las luces camina visiblemente más lento; su ventana dice «A oscuras: camina y trabaja al 75 %».

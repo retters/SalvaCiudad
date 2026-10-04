@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <bit>
 #include <optional>
 
@@ -615,6 +616,82 @@ public:
         }
     }
 
+    // Phase 71. Where a tired villager rests: its home; with none, the
+    // nearest campfire that burns, or the town center.
+    [[nodiscard]] EntityId resting_place(const Villager& v) const {
+        if (g_.buildings_.get(v.home) != nullptr) {
+            return v.home;
+        }
+        EntityId best = g_.players_[v.owner].town_center;
+        std::uint64_t best_d = std::numeric_limits<std::uint64_t>::max();
+        if (const Building* tc = g_.buildings_.get(best)) {
+            best_d = distance2(g_.door(*tc), v.position);
+        }
+        const auto& store = g_.buildings_;
+        for (std::size_t k = 0; k < store.size(); ++k) {
+            const Building& b = store.data()[k];
+            if (b.owner != v.owner || def(b).warmth <= 0 || !complete(b) || !b.heated) {
+                continue;
+            }
+            if (const std::uint64_t d = distance2(g_.door(b), v.position); d < best_d) {
+                best_d = d;
+                best = store.entities()[k];
+            }
+        }
+        return best;
+    }
+
+    bool start_rest(Villager& v) {
+        const EntityId place = resting_place(v);
+        if (!place.valid()) {
+            return false;
+        }
+        go(v, Task::GoRest, place);
+        return v.task == Task::GoRest;
+    }
+
+    // Out of energy in the middle of something: it leaves it and goes to
+    // rest. Not while fighting, fleeing, at a fire or on its way to eat,
+    // and not while the bell rings.
+    void rest_now(Villager& v) {
+        if (!g_.rules_.rest || v.energy > 0 || g_.players_[v.owner].alarm) {
+            return;
+        }
+        switch (v.task) {
+            case Task::GoRest:
+            case Task::Rest:
+            case Task::GoEat:
+            case Task::GoFight:
+            case Task::Fight:
+            case Task::GoFire:
+            case Task::FightFire:
+            case Task::Flee:
+            case Task::Idle:    // Idle and strolling villagers decide to rest by themselves.
+            case Task::Wander:
+                return;
+            default: break;
+        }
+        release(v);
+        stop(v);
+        if (!start_rest(v)) {
+            v.task = Task::Idle;
+        }
+    }
+
+    // A tick of rest.
+    void rest(Villager& v) {
+        if (g_.buildings_.get(v.target) == nullptr || g_.players_[v.owner].alarm || v.food < village::kHungryFood) {
+            v.task = Task::Idle;  // The place is gone, the bell rings or it is starving.
+            return;
+        }
+        v.energy = std::min(village::kEnergyMax,
+                            v.energy + (v.target == v.home ? village::kRestGain : village::kRestGainOutside));
+        if (v.energy >= village::kEnergyMax) {
+            v.task = Task::Idle;
+            v.target = {};
+        }
+    }
+
     void decide(Villager& v) {
         const std::uint8_t owner = v.owner;
         // 0. An explorer under orders goes on with them (after fleeing, say).
@@ -651,6 +728,10 @@ public:
                 wander(v, g_.door(home != nullptr ? *home : *tc));
                 return;
             }
+        }
+        // 1a'. Out of energy: to rest (phase 71).
+        if (g_.rules_.rest && v.energy <= 0 && start_rest(v)) {
+            return;
         }
         // 1b. The sick rest at home.
         if (v.disease != 0) {
@@ -3228,6 +3309,9 @@ public:
                 v.task = Task::Idle;
                 break;
             case Task::GoProvision: take_provisions(v); break;
+            case Task::GoRest:
+                v.task = Task::Rest;
+                break;
             case Task::Scout:
                 if (v.order == Order::Returning) {
                     v.order = Order::None;  // Home: an ordinary day again.
@@ -3541,6 +3625,9 @@ public:
         v.position = at;
         v.previous = at;
         v.food = 700 + static_cast<std::int32_t>(g_.rng_.below(300));
+        // Not everybody tires at the same time (from its looks: no draw of the dice).
+        v.energy = village::kEnergyMax / 2 +
+                   static_cast<std::int32_t>(v.appearance % static_cast<std::uint32_t>(village::kEnergyMax / 2));
         v.idle_ticks = static_cast<std::int32_t>(g_.rng_.below(40));
         g_.villagers_.add(id, v);
         g_.villagers_changed();
@@ -4094,7 +4181,12 @@ public:
                     scout_check(v);
                 } else {
                     eat_now(v);
+                    rest_now(v);
                 }
+            }
+            // Phase 71: being up and about tires.
+            if (g_.rules_.rest && v.task != Task::Rest && v.energy > 0) {
+                --v.energy;
             }
             if (moving(v)) {
                 move(v);
@@ -4103,6 +4195,8 @@ public:
                 }
             } else if (v.task == Task::ScoutWait && v.order == Order::Waiting) {
                 // Waits for another order.
+            } else if (v.task == Task::Rest) {
+                rest(v);
             } else if (v.task == Task::Gather || v.task == Task::Build || v.task == Task::Produce || v.task == Task::Farm ||
                        v.task == Task::Hunt || v.task == Task::Fish || v.task == Task::FightFire || v.task == Task::Fight) {
                 work(v);
@@ -5899,6 +5993,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(static_cast<std::uint8_t>(v.order));
         w.vec2(v.order_point);
         w.i32(v.provisions);
+        w.i32(v.energy);
         w.u32(static_cast<std::uint32_t>(v.path.size()));
         for (const FixedVec2& p : v.path) {
             w.vec2(p);
@@ -6277,7 +6372,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t order = 0;
         if (!r.string(kMaxNameBytes, v.name) || !valid_villager_name(v.name) || !r.u8(order) ||
             order >= static_cast<std::uint8_t>(Order::Count) || !r.vec2(v.order_point) || !r.i32(v.provisions) ||
-            v.provisions < 0 || v.provisions > village::kProvisions) {
+            v.provisions < 0 || v.provisions > village::kProvisions || !r.i32(v.energy) || v.energy < 0 ||
+            v.energy > village::kEnergyMax) {
             r.fail();
             return false;
         }

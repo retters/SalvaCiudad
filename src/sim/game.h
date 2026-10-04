@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 38;
+inline constexpr std::uint32_t kGameRulesVersion = 39;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -49,6 +49,12 @@ inline constexpr std::int32_t kOccupiedLight = 6;
 inline constexpr std::int32_t kDarkPercent = 75;
 // The light of the simulation is kept in cells of this many meters.
 inline constexpr std::int32_t kLightCell = 4;
+// Phase 71: energy. A point a tick while up and about: eight minutes at
+// x1. Resting at home gives it back in two; with no home, by a campfire or
+// the town center, in four.
+inline constexpr std::int32_t kEnergyMax = 4800;
+inline constexpr std::int32_t kRestGain = 4;
+inline constexpr std::int32_t kRestGainOutside = 2;
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
 inline constexpr std::int32_t kEatBelow = 500;           // Goes to eat under this.
 inline constexpr std::uint32_t kTicksPerFoodPoint = 4;   // Hunger: one meter point per 4 ticks.
@@ -195,6 +201,9 @@ enum class Task : std::uint8_t {
     GoProvision,   // Walking to a storage for provisions.
     Scout,         // Walking where it was sent, or back home.
     ScoutWait,     // Waiting where it was sent.
+    // Phase 71: out of energy.
+    GoRest,        // Walking home (or to a campfire or the town center) to rest.
+    Rest,          // Staying there until the energy is back.
     Count
 };
 
@@ -238,6 +247,8 @@ struct Villager {
     Order order = Order::None;
     FixedVec2 order_point;
     std::int32_t provisions = 0;
+    // Phase 71: 0..kEnergyMax; at 0 it goes to rest (if the rules say so).
+    std::int32_t energy = village::kEnergyMax;
     bool operator==(const Villager&) const = default;
 };
 

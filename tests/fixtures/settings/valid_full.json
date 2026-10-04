@@ -50,6 +50,7 @@
     "dayNight": true,
     "dayMinutes": 5,
     "nightMinutes": 5,
+    "rest": true,
     "winter": "mild",
     "startGoods": "normal",
     "diseases": "medium",

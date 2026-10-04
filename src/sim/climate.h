@@ -99,6 +99,8 @@ struct GameRules {
     bool shared_vision = true;
     // Phase 68: day and night.
     DayNightSettings day_night;
+    // Phase 71: villagers get tired and go home to rest.
+    bool rest = false;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, GameRules& out);

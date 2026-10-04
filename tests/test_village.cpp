@@ -927,6 +927,98 @@ TEST_SUITE("village") {
         CHECK(complete_count(end, building("house")) >= 4);
     }
 
+    TEST_CASE("tired villagers go home to rest, and those with no home take twice as long") {
+        // How long the rests that ran from start to end took, in ticks, and
+        // how much of everybody's time went into resting.
+        struct Rests {
+            std::vector<int> ticks;
+            double share = 0.0;
+            bool saved_alike = false;
+        };
+        const auto play = [&](bool homes, bool tired) {
+            GameSetup setup{1, 7, false, GameRules{}};
+            setup.rules.climate.seasons = 0b0010;
+            setup.rules.raiders = Threat::None;
+            setup.rules.wildlife = Threat::None;
+            setup.rules.fires = Threat::None;
+            setup.rules.diseases = Threat::None;
+            setup.rules.rest = tired;
+            Game g(content(), small_map(27), setup);
+            CHECK(place_for(g, building("forager"), FeatureType::BerryBush));
+            if (homes) {
+                for (int i = 0; i < 4; ++i) {
+                    CHECK(place(g, building("house")));
+                }
+            }
+            Rests out;
+            std::map<std::uint32_t, int> since;  // Villager -> ticks resting, from an empty meter.
+            std::int64_t resting = 0;
+            std::int64_t all = 0;
+            for (int t = 0; t < 20 * static_cast<int>(kTicksPerMinute); ++t) {
+                g.step();
+                for (std::size_t k = 0; k < g.villagers().size(); ++k) {
+                    const Villager& v = g.villagers().data()[k];
+                    const std::uint32_t id = g.villagers().entities()[k].index;
+                    ++all;
+                    if (v.task == Task::Rest) {
+                        ++resting;
+                        if (since.contains(id)) {
+                            ++since[id];
+                        } else if (v.energy <= village::kRestGain) {
+                            since[id] = 1;
+                        }
+                    } else if (since.contains(id)) {
+                        if (v.energy >= village::kEnergyMax) {
+                            out.ticks.push_back(since[id]);
+                        }
+                        since.erase(id);
+                    }
+                }
+                if (t == 9 * static_cast<int>(kTicksPerMinute)) {
+                    // Saved with people at rest: the same game comes back.
+                    BinaryWriter w;
+                    g.save(w);
+                    Game back(content(), small_map(1), 1, 1);
+                    BinaryReader r(w.bytes());
+                    out.saved_alike = back.load(r, content()) && back.hash() == g.hash();
+                }
+            }
+            out.share = all > 0 ? static_cast<double>(resting) / static_cast<double>(all) : 0.0;
+            return out;
+        };
+        const Rests housed = play(true, true);
+        REQUIRE_FALSE(housed.ticks.empty());
+        const int at_home = *std::min_element(housed.ticks.begin(), housed.ticks.end());
+        MESSAGE("with homes: " << housed.ticks.size() << " whole rests, the shortest " << at_home << " ticks; "
+                               << housed.share * 100.0 << " % of the time resting");
+        // Two minutes at home.
+        CHECK(at_home == doctest::Approx(village::kEnergyMax / village::kRestGain).epsilon(0.02));
+        CHECK(housed.share > 0.08);
+        CHECK(housed.share < 0.35);
+        CHECK(housed.saved_alike);
+        // Four with no home.
+        const Rests homeless = play(false, true);
+        REQUIRE_FALSE(homeless.ticks.empty());
+        const int outside = *std::min_element(homeless.ticks.begin(), homeless.ticks.end());
+        MESSAGE("with no homes: the shortest whole rest " << outside << " ticks");
+        CHECK(outside == doctest::Approx(village::kEnergyMax / village::kRestGainOutside).epsilon(0.02));
+        // The rule off: nobody rests.
+        const Rests tireless = play(true, false);
+        CHECK(tireless.ticks.empty());
+        CHECK(tireless.share == 0.0);
+    }
+
+    TEST_CASE("an hour of play with tiredness: the tended village still grows") {
+        GameSetup setup{1, 79, false, GameRules{}};
+        setup.rules.raiders = Threat::None;
+        setup.rules.rest = true;
+        Game g(content(), small_map(1), setup);
+        tended_hour(g, false);
+        MESSAGE("after an hour, resting: population " << g.population(0) << ", deaths " << g.player(0).deaths
+                                                      << ", houses " << complete_count(g, building("house")));
+        CHECK(g.population(0) > village::kStartVillagers);
+    }
+
     TEST_CASE("an untended village fades away") {
         // No buildings: berries run out and nobody gathers more.
         Game g(content(), small_map(20), 1, 5);

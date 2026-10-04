@@ -139,6 +139,7 @@ struct NewGameSettings {
     bool day_night = true;
     int day_minutes = 5;
     int night_minutes = 5;
+    bool rest = true;               // Villagers get tired and rest (phase 71).
     std::string winter = "normal";  // new_game_names::kWinters
     std::string start = "normal";   // new_game_names::kStarts
     std::string diseases = "medium";  // new_game_names::kThreats

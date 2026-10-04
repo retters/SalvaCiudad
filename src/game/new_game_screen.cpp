@@ -177,6 +177,7 @@ sim::GameRules varied_rules() {
     // The usual year, said in minutes: four seasons of five.
     r.climate.minutes = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
     r.day_night = {kUsualDayMinutes, kUsualDayMinutes};
+    r.rest = true;
     return r;
 }
 
@@ -320,6 +321,7 @@ void NewGameScreen::apply(const NewGameSettings& n) {
     for (std::size_t i = 0; i < 4; ++i) {
         season_minutes_[i] = std::clamp(n.season_minutes[i], 1, static_cast<int>(sim::kMaxSeasonMinutes));
     }
+    game_.rest = n.rest;
     day_night_on_ = n.day_night;
     day_minutes_ = std::clamp(n.day_minutes, 1, static_cast<int>(sim::kMaxDayMinutes));
     night_minutes_ = std::clamp(n.night_minutes, 1, static_cast<int>(sim::kMaxDayMinutes));
@@ -374,6 +376,7 @@ NewGameSettings NewGameScreen::remembered() const {
     }
     n.seasons = game_.climate.seasons;
     n.season_minutes = season_minutes_;
+    n.rest = game_.rest;
     n.day_night = day_night_on_;
     n.day_minutes = day_minutes_;
     n.night_minutes = night_minutes_;
@@ -783,6 +786,10 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
     }
 
     heading(ctx, x, y, cw, tr("newGame.group.game"));
+    {
+        const Row r = row(ctx, x, y, cw, tr("newGame.rest"), tr("newGame.rest.tooltip"));
+        (void)ctx.checkbox(ctx.id("rest_on"), r.control, game_.rest, tr("newGame.rest.tooltip"));
+    }
     {
         const std::vector<std::string> options = {tr("newGame.start.scarce"), tr("newGame.start.normal"),
                                                   tr("newGame.start.plenty")};

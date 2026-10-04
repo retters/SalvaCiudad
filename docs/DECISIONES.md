@@ -2751,3 +2751,26 @@ Reglas 38, protocolo de red 16.
 
 **D-7006. Lo probado y lo que no.**
 Prueba: humanos de noche dan pasos de 0,20 m por tick en la luz y de 0,15 a oscuras; los gatunos nunca están a oscuras; sin ciclo nadie lo está; la luz rodea al centro del pueblo y es igual tras cargar. La velocidad de trabajo usa la misma condición pero no tiene una prueba propia que mida cuánto tarda un leñador (el criterio lo pedía): queda por medir. No se revisó en pantalla la línea de la ventana del aldeano.
+
+## Fase 71: energía y descanso (2026-10-03)
+
+**D-7101. Energía: un punto por tick despierto.**
+Cada aldeano tiene 4800 puntos de energía (8 minutos a ×1) y gasta uno por tick mientras no descansa, haga lo que haga, de día o de noche, como eligió Salvador. Se descartó gastar distinto según la tarea: no se pidió y haría difícil de explicar cuándo se cansa cada quien. Al nacer o llegar empieza entre la mitad y el total (según su apariencia, sin tirar dados), para que el pueblo no se vaya a descansar todo a la vez.
+
+**D-7102. Descansar.**
+A 0 de energía, deja lo que hace (suelta su reserva, como cuando va a comer; lo que lleva en las manos lo entrega después) y va a su casa; ahí recupera 4 puntos por tick: 2 minutos. Sin casa va a la fogata encendida más cercana o al centro del pueblo y recupera 2 por tick: 4 minutos. Dos tareas nuevas, «yendo a descansar» y «descansando». No duerme de noche: descansa cuando le toca.
+
+**D-7103. Lo que va antes del descanso.**
+Comer (va antes en la decisión, y un hambre extrema interrumpe el descanso), la campana, pelear, apagar incendios y huir. El explorador con una orden no descansa hasta volver. Los soldados no son aldeanos y no se cansan.
+
+**D-7104. Es una regla de partida.**
+`GameRules::rest`, casilla «Cansancio y descanso» en Personalizado, encendida por omisión (también en «Variado»). Las reglas por omisión de la simulación no la tienen: las pruebas de fases anteriores, calibradas sin descanso, siguen como estaban. Salvador eligió un ritmo fijo y no barras para ajustarlo; la casilla solo permite apagarlo.
+
+**D-7105. Quitado de la especificación.**
+El resumen del pueblo no cuenta a los que descansan: la ventana de cada aldeano ya lo dice, y la lista de estadísticas no tiene hoy conteos por tarea.
+
+**D-7106. Versiones.**
+Reglas 39, protocolo de red 17.
+
+**D-7107. Lo medido.**
+Prueba: un descanso completo en casa dura 1200 ticks y sin casa 2400; con casas, el pueblo pasa el 18 % del tiempo descansando; guardar con gente descansando y cargar da la misma partida; sin la regla nadie descansa. El pueblo de referencia de una hora llega a 24 habitantes y 7 casas con cansancio (sin él, la prueba original pide más de 12). No se revisó en pantalla: la barra de energía ni a los aldeanos quietos frente a su casa (se quedan de pie en la puerta; no entran ni se sientan).
