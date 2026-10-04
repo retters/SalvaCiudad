@@ -36,6 +36,10 @@ std::string race_body_file(std::string_view body) {
     return "models/characters/" + std::string(body) + ".glb";
 }
 
+std::string pile_file(std::string_view pile, int level) {
+    return std::string(pile) + "_" + std::to_string(level) + ".glb";
+}
+
 const FeatureDef* Content::feature(FeatureKind kind) const {
     for (const FeatureDef& f : features) {
         if (f.kind == kind) {

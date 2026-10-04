@@ -815,7 +815,8 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Acercar la cámara a un leñador que vuelve: lleva troncos a la espalda. Un recolector, una canasta. Con poca carga la lleva en brazos y camina sosteniéndola.
 - [ ] Al alejar la cámara las cargas dejan de verse (a unas cuatro veces la distancia en que el personaje se simplifica).
 - [ ] Una obra nueva: primero cimientos de piedra con estacas, luego un armazón con andamio, al final el edificio. Junto a la puerta se apila lo que van trayendo.
-- [ ] Junto al centro del pueblo y a los almacenes hay pilas (troncos, piedra, sacos, cajones, canastas) que crecen o bajan con lo guardado.
+- [ ] Junto al centro del pueblo, a los almacenes y a los talleres hay una pila por cada recurso que guardan (hasta 6, las de lo que más hay), que crece o baja con lo guardado: en un granero con cinco alimentos se distinguen los cinco; el oro, los troncos y la piedra usan las pilas de siempre.
+- [ ] Una obra de ladrillo y teja (una panadería) muestra a la izquierda de su puerta las pilas de ladrillos y de troncos que ya llegaron.
 - [ ] Un cazador trabajando: sale una flecha cada vez que dispara. Una atalaya o un arquero con enemigos cerca: flechas hacia ellos.
 - [ ] Cuando llega un mercader: una carreta y una persona junto al puesto de comercio; se van con él.
 - [ ] En pausa nada de esto se mueve; al guardar y cargar todo sigue igual.

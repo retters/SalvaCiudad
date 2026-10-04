@@ -385,6 +385,42 @@
     {
      "id": "pile_hay_3",
      "nombre": "Heno, lleno"
+    },
+    {
+     "id": "pile_beans_1",
+     "nombre": "Frijoles, poco"
+    },
+    {
+     "id": "pile_beans_2",
+     "nombre": "Frijoles, a medias"
+    },
+    {
+     "id": "pile_beans_3",
+     "nombre": "Frijoles, lleno"
+    },
+    {
+     "id": "pile_flour_1",
+     "nombre": "Harina, poco"
+    },
+    {
+     "id": "pile_flour_2",
+     "nombre": "Harina, a medias"
+    },
+    {
+     "id": "pile_flour_3",
+     "nombre": "Harina, lleno"
+    },
+    {
+     "id": "pile_fertilizer_1",
+     "nombre": "Abono, poco"
+    },
+    {
+     "id": "pile_fertilizer_2",
+     "nombre": "Abono, a medias"
+    },
+    {
+     "id": "pile_fertilizer_3",
+     "nombre": "Abono, lleno"
     }
    ],
    "destacado": true

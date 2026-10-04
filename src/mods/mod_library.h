@@ -47,7 +47,7 @@ struct ModScript {
 // A model file a definition uses, found or not (for the model viewer,
 // phase 30).
 struct ModelRef {
-    std::string def_type;  // "building", "mapFeature", "species" or "race".
+    std::string def_type;  // "building", "mapFeature", "species", "race" or "resource" (its piles).
     std::string def_id;
     std::string name_key;  // The definition's name, if it has one.
     std::string mod;       // Mod whose folder holds the file.

@@ -31,6 +31,7 @@ COLORS = {
     "linen": C(0xECE6D6), "linen_shade": C(0xD0C8B4), "cloth_red": C(0xB8423A), "cloth_blue": C(0x3F5E8C), "cloth_green": C(0x4F7A44),
     "shoe": C(0x5A3B24), "wicker": C(0xB08A4A), "wicker_dark": C(0x8A6A34), "bow_wood": C(0x8A6038), "string": C(0xE8E0C8), "water": C(0x4A8FC0),
     "cloth_yellow": C(0xE0B840), "cheese": C(0xE8C050), "milk": C(0xF4F0E4), "honey": C(0xE0A030), "wool": C(0xF0ECE0),
+    "bean": C(0xC9B79A), "bean_dark": C(0x8A4A34), "flour": C(0xF2EEE2), "compost": C(0x4A3A2A), "compost_dark": C(0x36291C),
 }
 
 
@@ -145,12 +146,16 @@ def tools(rnd):
 
 
 def firewood(rnd):
+    # Billets of five sides with their cut ends: 33 whole logs would be the
+    # heaviest pile of all (the game's limit for a pile is 1200 triangles).
     out = []
     for row in range(5):
         for k in range(7 - row % 2):
             def put(mb, row=row, k=k):
                 x = -0.6 + 0.2 * k + (0.1 if row % 2 else 0)
-                log(mb, (x, -0.35, 0.09 + 0.17 * row), (x, 0.35, 0.09 + 0.17 * row), 0.09)
+                z = 0.09 + 0.17 * row
+                mb.cylinder((x, -0.35, z), (x, 0.35, z), 0.09, 0.085, "bark", segments=5)
+                mb.cylinder((x, -0.356, z), (x, -0.34, z), 0.07, 0.07, "log_end", segments=4)
             out.append(put)
     return out
 
@@ -222,7 +227,58 @@ def fruit(rnd):
 
 def berries(rnd):
     spots = ((-0.4, -0.35, 0.0), (0.4, -0.3, 0.0), (0.0, 0.4, 0.0), (-0.4, 0.42, 0.0), (0.42, 0.42, 0.0), (0.0, -0.05, 0.3))
-    return [basket(x, y, z, 0.24, "berry", 9, i) for i, (x, y, z) in enumerate(spots)]
+    return [basket(x, y, z, 0.24, "berry", 7, i) for i, (x, y, z) in enumerate(spots)]
+
+
+def beans(rnd):
+    """Open sacks with the beans showing, and a scoop."""
+    out = []
+    for i, (x, y, z) in enumerate(((-0.38, -0.3, 0.0), (0.38, -0.3, 0.0), (0.0, 0.35, 0.0), (-0.42, 0.42, 0.0), (0.42, 0.42, 0.0), (0.0, -0.05, 0.38))):
+        def put(mb, x=x, y=y, z=z, i=i):
+            r2 = random.Random(40 + i)
+            mb.cylinder((x, y, z), (x, y, z + 0.42), 0.2, 0.25, "sack", segments=7)
+            mb.cylinder((x, y, z + 0.42), (x, y, z + 0.47), 0.27, 0.25, "rope", segments=7)
+            mb.cylinder((x, y, z + 0.4), (x, y, z + 0.46), 0.22, 0.2, "bean", segments=7)
+            for _ in range(4):
+                a, d = r2.uniform(0, TAU), r2.uniform(0, 0.14)
+                mb.sphere((x + math.cos(a) * d, y + math.sin(a) * d, z + 0.47), 0.05, "bean_dark", segments=4, rings=3)
+        out.append(put)
+    return out
+
+
+def flour(rnd):
+    """Tied sacks dusted white, lying in two layers."""
+    out = []
+    for i, (x, y, z, turn) in enumerate(((-0.36, -0.3, 0.0, 0.0), (0.36, -0.3, 0.0, 0.0), (-0.36, 0.34, 0.0, 0.0), (0.36, 0.34, 0.0, 0.0),
+                                         (0.0, -0.3, 0.22, 1.0), (0.0, 0.34, 0.22, 1.0), (0.0, 0.02, 0.44, 0.0))):
+        def put(mb, x=x, y=y, z=z, turn=turn):
+            long, short = (0.34, 0.26) if turn else (0.26, 0.34)
+            mb.sphere((x, y, z + 0.17), 1.0, "sack", segments=7, rings=5, scale=(long, short, 0.17))
+            mb.sphere((x, y, z + 0.3), 1.0, "flour", segments=6, rings=3, scale=(long * 0.6, short * 0.6, 0.07))
+            tip = (x + long, y, z + 0.17) if turn else (x, y + short, z + 0.17)
+            mb.sphere(tip, 0.06, "rope", segments=4, rings=3)
+        out.append(put)
+    return out
+
+
+def fertilizer(rnd):
+    """A bin of planks with the compost heaped in it, and a fork stuck in."""
+    out = [lambda mb: [mb.box((sx * 0.7, 0, 0.22), (0.06, 1.4, 0.44), "plank_dark") for sx in (-1, 1)] + [mb.box((0, 0.7, 0.22), (1.4, 0.06, 0.44), "plank_dark")]]
+    for i in range(12):
+        def put(mb, i=i):
+            r2 = random.Random(70 + i)
+            layer = i // 5
+            a, d = r2.uniform(0, TAU), r2.uniform(0, 0.42 - 0.14 * layer)
+            mb.sphere((math.cos(a) * d, math.sin(a) * d, 0.22 + 0.2 * layer), r2.uniform(0.22, 0.3), "compost" if i % 3 else "compost_dark",
+                      segments=6, rings=4, scale=(1.0, 1.0, 0.7))
+        out.append(put)
+
+    def fork(mb):
+        mb.cylinder((0.35, -0.5, 0.0), (0.2, -0.3, 1.1), 0.022, 0.022, "pole", segments=5)
+        for k in (-0.06, 0.0, 0.06):
+            mb.cylinder((0.36 + k, -0.52, 0.0), (0.36 + k, -0.5, 0.2), 0.012, 0.012, "steel", segments=4)
+    out.append(fork)
+    return out
 
 
 def roots(rnd):
@@ -395,6 +451,7 @@ KINDS = {
     "wheat": sheaves("wheat", "wheat_dark"), "barley": sheaves("barley", "wheat_dark"), "flax": sheaves("flax", "herb"), "bread": bread, "vegetables": vegetables,
     "fruit": fruit, "berries": berries, "roots": roots, "meat": hanging("meat"), "smoked": hanging("smoked"), "fish": hanging("fish"), "herbs": hanging("herbs"),
     "beer": beer, "cheese": dairy, "honey": honey, "hay": hay,
+    "beans": beans, "flour": flour, "fertilizer": fertilizer,
     "hides": hides, "leather": rolls(("leather_roll", "hide_dark")), "linen": rolls(("linen", "linen_shade", "cloth_blue", "cloth_red"), 0.11, 0.9),
     "clothes": folded(("linen", "cloth_blue", "cloth_red", "cloth_green", "cloth_yellow")), "shoes": shoes, "bows": bows, "weapons": weapons, "wool": wool,
 }
@@ -404,7 +461,7 @@ def pile(kind, level):
     def build():
         mb = kit.begin()
         pieces = KINDS[kind](random.Random(1))
-        fixed = 1 if kind in ("meat", "smoked", "fish", "herbs", "bows", "weapons", "coal", "shoes", "cheese") else 0   # The rack or bin is there from the start.
+        fixed = 1 if kind in ("meat", "smoked", "fish", "herbs", "bows", "weapons", "coal", "shoes", "cheese", "fertilizer") else 0   # The rack or bin is there from the start.
         rest = len(pieces) - fixed
         count = fixed + max(1, math.ceil(rest * (0.34, 0.67, 1.0)[level - 1]))
         for put in pieces[:count]:

@@ -283,6 +283,16 @@ private:
     // the arrows of hunters, archers and towers.
     std::map<std::pair<std::int32_t, std::int32_t>, std::array<Model, 2>> sites_;
     std::array<std::array<Model, 3>, static_cast<std::size_t>(sim::LoadKind::Count)> piles_{};
+    // Phase 89: a pile per resource. Each resource's three sizes as places
+    // in `pile_ids_` (kNoPile: nothing to draw): its own models, or those
+    // of its kind of load. `pile_ids_` holds every pile model once, and
+    // `pile_lists_` the instances of each while the piles are rebuilt.
+    static constexpr std::size_t kNoPile = ~std::size_t{0};
+    std::vector<std::array<std::size_t, 3>> resource_piles_;
+    std::vector<render::ModelId> pile_ids_;
+    std::vector<std::vector<render::Instance>> pile_lists_;
+    std::vector<std::int32_t> pile_amounts_;  // Per resource, of the building at hand.
+    std::vector<std::int32_t> pile_full_;
     Model cart_;
     Model arrow_;
     std::vector<render::ModelId> prop_models_;  // Piles, cart and arrow: set apart from the buildings.

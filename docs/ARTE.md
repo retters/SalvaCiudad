@@ -12,7 +12,7 @@ blender --background --factory-startup --python art/blender/build_all.py -- data
 
 - `--background` no abre la interfaz ni toca tus escenas abiertas.
 - `--factory-startup` ignora tus preferencias y complementos, para que el resultado no dependa del equipo.
-- Se puede limitar a un grupo: `characters`, `tools`, `loads`, `props`, `trees` (y después, las especies: `trees oak elm`), `buildings` o `animals`, por ejemplo `... -- data/mods/core/models buildings`. `buildings sites` genera solo las obras (fase 67).
+- Se puede limitar a un grupo: `characters`, `tools`, `loads`, `props`, `trees` (y después, las especies: `trees oak elm`), `buildings`, `animals` o `proposals` (y después, las familias: `proposals piles`), por ejemplo `... -- data/mods/core/models buildings`. `buildings sites` genera solo las obras (fase 67).
 - Los `.glb` generados se guardan en el repositorio, así compilar el juego no requiere Blender.
 
 **Reproducible:** generar dos veces da archivos idénticos byte a byte. El exportador de Blender cambia el orden de los triángulos entre ejecuciones, así que `common.export_glb` los ordena después de exportar (D-402). Para comprobarlo, genera en dos carpetas y compáralas:
@@ -246,9 +246,29 @@ Las cargas de la espalda no traen las correas de los hombros: dependerían del c
 
 Las muñecas quedan en `(±0,16, −0,30, 1,12)` de un cuerpo de 1,8 m (`CARRY_HAND`), fijas respecto del hueso `chest`, así que la carga no se separa de las manos. No llevan `<clip>_prop`: el juego elige la carga. Para una carga en la espalda sirven los clips normales (`walk`, `idle`).
 
-### Pilas (`props.py`)
+### Pilas (`props.py` y `proposals/piles`)
 
-`props/pile_<qué>_<nivel>.glb`, con `<qué>` = `logs`, `stone`, `sacks`, `crates` o `baskets` y `<nivel>` = `1` (unas pocas piezas), `2` (media pila) o `3` (llena). Cada una ocupa cerca de 1,5 × 1,5 m, con el origen en el centro de la base. Un nivel contiene las piezas del anterior en el mismo lugar, así que al cambiar de nivel la pila crece sin saltos.
+`props/pile_<qué>_<nivel>.glb`, con `<nivel>` = `1` (unas pocas piezas), `2` (media pila) o `3` (llena). Cada una ocupa cerca de 1,5 × 1,5 m, con el origen en el centro de la base. Un nivel contiene las piezas del anterior en el mismo lugar, así que al cambiar de nivel la pila crece sin saltos.
+
+- **Genéricas** (`props.py`, fase 67): `<qué>` = `logs`, `stone`, `sacks`, `crates` o `baskets`, una por tipo de carga. Las usan los troncos, la piedra, el oro y cualquier recurso sin pila propia.
+- **Por recurso** (`proposals/piles/build.py`, fase 89): una por recurso (`pile_wheat`, `pile_bricks`, `pile_firewood`…). Cada recurso dice cuál es la suya con `"pile"` en `resources.json`. Tope: 1 200 triángulos, quietas, sin materiales que brillen de noche.
+
+Junto a un edificio se ven hasta 6 pilas, las de lo que más tiene: las primeras sobre la pared de la puerta, a su derecha y sin taparla, y las demás a lo largo de la pared derecha (`props::pile_spot`). Las obras apilan a la izquierda.
+
+## Modelos de propuesta que entran al juego (fase 89)
+
+Los modelos de `art/blender/proposals` (los de la página `docs/propuestas`) no están en el juego hasta que una fase los usa. `art/blender/proposals/game.json` lista los que sí:
+
+```json
+{"family": "piles", "class": "pile", "to": "props", "each": ["_1", "_2", "_3"], "ids": ["pile_wheat", "pile_bricks"]}
+```
+
+- `family`: la carpeta de la familia, cuyo `build.py` construye el modelo en `art/studies/propuestas/<familia>/`.
+- `ids`: los modelos; con `each`, cada id se multiplica por esos sufijos (los tres niveles de una pila).
+- `to`: la carpeta de `data/mods/core/models` adonde se copia, con el mismo nombre.
+- `class`: su clase, que fija el tope de triángulos (`limits`, en el mismo archivo): `pile` 1 200, `line` (pieza de muro, valla o camino) 800, `ground` (adorno del terreno) 400, `crop` (parcela de cultivo) 700, `animal` 2 000, `building` 6 000.
+
+`build_all.py ... proposals` los construye y copia; el que pasa de su tope no se copia y el comando termina con error (`PROPOSAL PROBLEM`). Un modelo que pasa del tope se aligera en su propio script, no en el juego.
 
 ### Obras (`buildings.py`)
 

@@ -14,6 +14,7 @@ NAMES = {
     "firewood": "Leña", "coal": "Carbón", "iron_ore": "Mineral de hierro", "gold": "Oro",
     "wheat": "Trigo", "barley": "Cebada", "flax": "Lino en rama", "bread": "Pan", "vegetables": "Verduras", "fruit": "Fruta", "berries": "Bayas", "roots": "Raíces",
     "meat": "Carne", "smoked": "Ahumados", "fish": "Pescado", "herbs": "Hierbas", "beer": "Cerveza", "cheese": "Queso y leche", "honey": "Miel", "hay": "Heno",
+    "beans": "Frijoles", "flour": "Harina", "fertilizer": "Abono",
     "hides": "Pieles", "leather": "Cuero", "linen": "Tela de lino", "clothes": "Ropa", "shoes": "Zapatos", "bows": "Arcos", "weapons": "Armas", "wool": "Lana",
 }
 
@@ -37,7 +38,7 @@ GROUPS = [
       ("Puestos del mercado", "Los puestos se llenan con las pilas de lo que de verdad venden y se vacían cuando el mercado se queda sin género."),
       ("Lo que trae el mercader", "El mercader descarga sus pilas junto al puesto de comercio: se ve qué ofrece sin abrir su ventana."),
       ("Comida que se estropea", "La pila pasa a un tono apagado cuando la comida está por echarse a perder: hay que comerla o venderla ya.")],
-     ["wheat", "barley", "flax", "bread", "vegetables", "fruit", "berries", "roots", "meat", "smoked", "fish", "herbs", "beer", "cheese", "honey", "hay"]),
+     ["wheat", "barley", "flax", "bread", "vegetables", "fruit", "berries", "roots", "meat", "smoked", "fish", "herbs", "beer", "cheese", "honey", "hay", "beans", "flour", "fertilizer"]),
     ("pile_goods", "Pilas de bienes", False,
      "Pieles apiladas, rollos de cuero, rollos de tela, ropa doblada de colores, un estante de zapatos, armeros de arcos y de armas con escudos, y fardos de lana, en tres niveles.",
      [("Talleres y almacén", "La curtiduría, el tejedor, el sastre, el zapatero, el arquero y la armería muestran su producción, y el almacén sus existencias."),

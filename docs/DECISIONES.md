@@ -3312,3 +3312,29 @@ Un cuerpo de diario más por raza, al azar. Un cuerpo de guardia por raza y el a
 
 **D-8924. Fauna de ambiente y adornos del terreno, fuera de la simulación.**
 Los coloca la vista con reglas fijas por celda. No entran al estado, a los hashes ni a las partidas guardadas, salvo la función que dice dónde hay flores, que es entera y sin estado porque la miel y el entorno dependen de ella.
+
+## Fase 89: modelos de propuesta en el juego y pilas por recurso (2026-10-04)
+
+**D-8930. El tope de una pila es 1 200 triángulos, no 500.**
+El plan decía 500, puesto a ojo. Las pilas que el juego ya tenía llegan a 1 056 (sacos llenos), así que 500 habría obligado a rehacer las viejas. Con 1 200 solo hubo que aligerar la leña (de 2 376 a 924: leños de cinco lados con una sola cara de corte) y las bayas (de 1 416 a 1 176). Los demás topes del plan no se tocaron; se revisan en la fase que estrene cada clase.
+
+**D-8931. La lista de modelos que entran es `art/blender/proposals/game.json`.**
+El plan la llamaba `juego.json`; los nombres de archivo van en inglés. Cada entrada dice familia, clase, carpeta de destino e ids. `build_all.py proposals` corre el `build.py` de la familia con esos ids (`_kit.SELECT`), comprueba el tope de la clase y copia. Un modelo sobre el tope no se copia y el comando falla: se aligera en su script, no hay decimado automático. El decimado se descartó para las pilas porque a tan pocos triángulos deforma las piezas; se volverá a mirar en la fase 90, donde las parcelas de cultivo pasan mucho del tope.
+
+**D-8932. La pila es un campo del recurso: `"pile"`.**
+Cada recurso nombra el comienzo de sus tres archivos (`<pile>_1.glb` a `_3.glb`); los tres tienen que existir o el recurso se rechaza, como cualquier modelo que falta. Se descartó una tabla fija en el código (como la de las pilas genéricas): un mod que agrega un recurso puede traer su pila. Si un mod cambia la pila de un recurso ajeno, los archivos se buscan en ese mod. Es presentación: la simulación no lo lee. El visor de modelos las lista bajo el recurso.
+
+**D-8933. Qué recursos tienen pila propia.**
+32 de los 35. Troncos y piedra conservan las suyas, como pedía el plan. El oro sigue con los sacos: la pila de oro de las propuestas (lingotes y cofre a la vista junto a la bóveda) pertenece a una función que Salvador no eligió. Carne ahumada y pescado ahumado comparten la pila de ahumados. Pilas nuevas hechas en esta fase: frijoles, harina y abono.
+
+**D-8934. Hasta 6 pilas, y dónde van.**
+Las de los recursos de los que el edificio tiene más; entre ellas, en el orden de los recursos, para que una pila no cambie de sitio cada vez que cambian las cantidades. Antes las pilas se ponían en fila frente a la puerta y la tapaban; ahora ocupan la pared de la puerta dejando un metro libre a cada lado de su centro y siguen por la pared derecha. Un taller de 5 × 5 tiene sitio para 4; un granero, para 6. No se comprueba si el sitio de la pila está ocupado por un edificio vecino (tampoco antes).
+
+**D-8935. Cuándo una pila se ve llena.**
+En un almacén, con un sexto de su capacidad en ese recurso (antes un tercio, cuando las pilas eran por tipo de carga y había menos). En una obra, con todo lo que el edificio pide de ese material.
+
+**D-8936. Lo medido y lo que no.**
+Pruebas nuevas: `variants` (el campo `pile`: los tres archivos, fuera del mod, sin pila, cambiada por otro mod, y las de `core`), `people` (qué pilas se eligen y dónde van) y `model` (los 622 modelos de `core` cargan; las 108 pilas pesan 1 200 triángulos o menos, no tienen esqueleto ni animación, se apoyan en el suelo y ninguno de sus materiales brilla de noche; esta prueba encontró el abono hundido 9 cm, ya corregido). En pantalla, en una partida nueva: junto al centro del pueblo se ven las pilas de raíces, bayas, leña, troncos, piedra y los sacos del oro. **No se midieron los FPS con 1 000 aldeanos en el mapa colosal** que pedía el criterio: el `--reporte` pone una multitud pero no un pueblo, así que no dibuja pilas y la medida no diría nada. Lo que cuesta es a lo más 6 instancias por edificio, de modelos de menos de 1 200 triángulos, rehechas dos veces por segundo como antes. No se vio en pantalla un granero con cinco alimentos ni una obra de ladrillo: quedan en la lista de pruebas manuales.
+
+**D-8937. La simulación no cambia.**
+Ni reglas ni red ni generador. Cambia el hash del contenido (los recursos tienen un campo más), así que las partidas guardadas con la versión anterior no cargan, como siempre que cambian las definiciones.

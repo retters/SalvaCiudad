@@ -267,6 +267,30 @@ public:
         }
     }
 
+    // A resource's "pile" (phase 89): the start of the names of its three
+    // pile models, "<pile>_1.glb" to "<pile>_3.glb", which must all exist
+    // inside the model's mod folder. Returns "" if it has none.
+    std::string pile(const std::function<std::filesystem::path(const std::string&)>& mod_dir,
+                     std::vector<ModelRef>* refs, const std::string& name_key) {
+        const std::string base = text("pile", false, 190);
+        if (base.empty()) {
+            return base;
+        }
+        for (int level = 1; level <= sim::kPileLevels; ++level) {
+            const std::string rel = sim::pile_file(base, level);
+            const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), rel);
+            std::error_code ec;
+            const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
+            if (!exists) {
+                fail(std::format("pile model '{}' not found in mod '{}'", rel, def_.model_mod));
+            }
+            if (refs != nullptr) {
+                refs->push_back({def_.type, def_.id, name_key, def_.model_mod, rel, exists});
+            }
+        }
+        return base;
+    }
+
     // The model files: "models", a list of variants (phase 31), or
     // "model", one file. Each must exist inside the model's mod folder.
     // With `refs`, records every file (found or not) under `name_key`.
@@ -439,7 +463,9 @@ void DefSet::add_file(std::string_view json_text, const std::string& mod, const 
                 if (copy != nullptr && kc != nullptr) {
                     (void)yyjson_mut_obj_add(target->obj, kc, copy);
                 }
-                if (std::string_view(key) == "model" || std::string_view(key) == "models") {
+                // A resource's "pile" names model files too.
+                if (std::string_view(key) == "model" || std::string_view(key) == "models" ||
+                    std::string_view(key) == "pile") {
                     target->model_mod = mod;
                 }
                 if (std::string_view(key) == "levels") {
@@ -521,6 +547,8 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         static constexpr std::string_view kLoads[] = {"crate", "logs", "stone", "sack", "basket"};
         def.load = static_cast<sim::LoadKind>(
             r.choice("load", kLoads, def.category == sim::ResourceCategory::Food ? 4 : 0));
+        def.pile = r.pile(mod_dir, refs, def.name_key);
+        def.mod = d->model_mod;
         if (r.ok()) {
             out.resources.push_back(std::move(def));
         }

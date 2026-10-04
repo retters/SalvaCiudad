@@ -89,6 +89,74 @@ TEST_SUITE("variants") {
         CHECK(pack.content.feature(sim::FeatureType::Stone)->models.size() == 3);
     }
 
+    TEST_CASE("a resource names its pile, and its three sizes must be there") {
+        // Phase 89. `files`: how many of heap_1.glb to heap_3.glb the mod has.
+        const auto build = [](const test::TempDir& dir, int files, std::string_view defs, mods::ModLibrary& lib) {
+            std::filesystem::create_directories(dir / "vt" / "models");
+            for (int level = 1; level <= files; ++level) {
+                std::filesystem::copy_file(kTestModels / "test_house.glb",
+                                           dir / "vt" / "models" / ("heap_" + std::to_string(level) + ".glb"),
+                                           std::filesystem::copy_options::overwrite_existing);
+            }
+            return build_with(dir, defs, lib);
+        };
+        constexpr const char* kSalt = R"({"type": "resource", "id": "vt:salt", "name": "r.salt", "category": "good", )";
+        {
+            test::TempDir dir;
+            mods::ModLibrary lib;
+            const mods::BuildResult pack = build(dir, 3, std::string(kSalt) + R"("pile": "models/heap"})", lib);
+            CHECK_MESSAGE(errors_of(lib, "vt").empty(), errors_of(lib, "vt"));
+            const sim::DefIndex salt = pack.content.find_resource("vt:salt");
+            REQUIRE(salt != sim::kNoDef);
+            CHECK(pack.content.resources[salt].pile == "models/heap");
+            CHECK(pack.content.resources[salt].mod == "vt");
+            CHECK(sim::pile_file(pack.content.resources[salt].pile, 2) == "models/heap_2.glb");
+            // The viewer hears of the three files.
+            int files = 0;
+            for (const mods::ModelRef& ref : pack.model_refs) {
+                if (ref.def_type == "resource" && ref.def_id == "vt:salt") {
+                    ++files;
+                    CHECK(ref.exists);
+                    CHECK(ref.mod == "vt");
+                }
+            }
+            CHECK(files == 3);
+        }
+        // A size missing, or a place outside the mod: the resource is refused.
+        for (const auto& [files, pile] : {std::pair{2, "models/heap"}, std::pair{3, "../core/models/props/pile_wheat"}}) {
+            test::TempDir dir;
+            mods::ModLibrary lib;
+            const mods::BuildResult pack = build(dir, files, std::string(kSalt) + R"("pile": ")" + pile + R"("})", lib);
+            CHECK_MESSAGE(pack.content.find_resource("vt:salt") == sim::kNoDef, pile);
+            CHECK_MESSAGE(!errors_of(lib, "vt").empty(), pile);
+        }
+        // Without a pile it has none: it shows the pile of its kind of load.
+        {
+            test::TempDir dir;
+            mods::ModLibrary lib;
+            const mods::BuildResult pack = build(dir, 0, std::string(kSalt) + R"("load": "sack"})", lib);
+            const sim::DefIndex salt = pack.content.find_resource("vt:salt");
+            REQUIRE(salt != sim::kNoDef);
+            CHECK(pack.content.resources[salt].pile.empty());
+        }
+        // A mod that changes the pile of a resource of the base game brings the files.
+        {
+            test::TempDir dir;
+            mods::ModLibrary lib;
+            const mods::BuildResult pack =
+                build(dir, 3, R"({"type": "resource", "patch": "core:wheat", "pile": "models/heap"})", lib);
+            CHECK_MESSAGE(errors_of(lib, "vt").empty(), errors_of(lib, "vt"));
+            const sim::ResourceDef& wheat = pack.content.resources[pack.content.find_resource("core:wheat")];
+            CHECK(wheat.pile == "models/heap");
+            CHECK(wheat.mod == "vt");
+        }
+        // The base game: wheat has its own pile, logs keep the pile of their load.
+        const sim::Content& core = test::core_content();
+        CHECK(core.resources[core.find_resource("core:wheat")].pile == "models/props/pile_wheat");
+        CHECK(core.resources[core.find_resource("core:wheat")].mod == "core");
+        CHECK(core.resources[core.find_resource("core:log")].pile.empty());
+    }
+
     TEST_CASE("bad lists of models are rejected") {
         const char* bad[] = {
             R"("model": "models/a.glb", "models": ["models/b.glb"]})",  // Both.

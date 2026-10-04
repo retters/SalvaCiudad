@@ -337,6 +337,48 @@ TEST_SUITE("model") {
         }
     }
 
+    TEST_CASE("every model of the base game loads, and the piles are light, still and unlit") {
+        // Phase 89. The limit of a pile is that of art/blender/proposals/game.json.
+        constexpr std::size_t kPileTriangles = 1200;
+        int files = 0;
+        int piles = 0;
+        std::error_code ec;
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(kData, ec)) {
+            if (entry.path().extension() != ".glb") {
+                continue;
+            }
+            ++files;
+            const std::string name = entry.path().lexically_relative(kData).generic_string();
+            const ModelLoadResult r = load_data(name);
+            REQUIRE_MESSAGE(r.ok, name << ": " << r.error);
+            CHECK_MESSAGE(!r.model.primitives.empty(), name);
+            if (!name.starts_with("props/pile_")) {
+                continue;
+            }
+            ++piles;
+            CHECK_MESSAGE(r.model.indices.size() / 3 <= kPileTriangles, name << ": " << r.model.indices.size() / 3);
+            CHECK_MESSAGE(!r.model.skinned(), name);
+            CHECK_MESSAGE(r.model.clips.empty(), name);
+            // A pile stands on the ground, about a meter and a half wide.
+            CHECK_MESSAGE(r.model.bounds_min.y > -0.05f, name);
+            CHECK_MESSAGE(r.model.bounds_max.x - r.model.bounds_min.x < 2.2f, name);
+            CHECK_MESSAGE(r.model.bounds_max.z - r.model.bounds_min.z < 2.2f, name);
+            for (const ModelMaterial& mat : r.model.materials) {
+                CHECK_MESSAGE(material_glow(mat.name) == 0.0f, name << " " << mat.name);
+            }
+        }
+        CHECK(files >= 500);
+        CHECK(piles >= 100);
+        // Every resource's pile is one of them, in its three sizes.
+        for (const sim::ResourceDef& res : test::core_content().resources) {
+            for (int level = 1; !res.pile.empty() && level <= sim::kPileLevels; ++level) {
+                const std::string file = sim::pile_file(res.pile, level);
+                REQUIRE_MESSAGE(file.starts_with("models/"), file);
+                CHECK_MESSAGE(load_data(file.substr(7)).ok, file);
+            }
+        }
+    }
+
     TEST_CASE("the study models that have been generated load, skeletons and clips included") {
         // art/studies is not versioned: the Blender scripts write it (phases 46
         // and 48). Whatever is there must load; a checkout without it skips this.

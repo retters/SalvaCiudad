@@ -272,6 +272,39 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
             piles_[kind][level] = prop(builtin_models::kPiles[kind][level]);
         }
     }
+    // Phase 89: each resource's own pile, from its mod; without one (or with
+    // a file that does not load), the pile of its kind of load.
+    resource_piles_.assign(content.resources.size(), {kNoPile, kNoPile, kNoPile});
+    pile_ids_.clear();
+    for (std::size_t i = 0; i < content.resources.size(); ++i) {
+        const sim::ResourceDef& res = content.resources[i];
+        for (std::size_t level = 0; level < 3; ++level) {
+            Model m = piles_[static_cast<std::size_t>(res.load)][level];
+            if (!res.pile.empty()) {
+                const std::filesystem::path file =
+                    mods::mod_file(pack.dir(res.mod), sim::pile_file(res.pile, static_cast<int>(level) + 1));
+                std::error_code ec;
+                const Model own = !file.empty() && std::filesystem::is_regular_file(file, ec)
+                                      ? load_building_file(renderer, file)
+                                      : Model{};
+                if (own.id != kNoModel) {
+                    if (!is_prop(own.id)) {
+                        prop_models_.push_back(own.id);
+                    }
+                    m = own;
+                }
+            }
+            if (m.id == kNoModel) {
+                continue;
+            }
+            const auto known = std::find(pile_ids_.begin(), pile_ids_.end(), m.id);
+            resource_piles_[i][level] = static_cast<std::size_t>(known - pile_ids_.begin());
+            if (known == pile_ids_.end()) {
+                pile_ids_.push_back(m.id);
+            }
+        }
+    }
+    pile_lists_.assign(pile_ids_.size(), {});
     cart_ = prop(builtin_models::kCart);
     arrow_ = prop(builtin_models::kArrow);
     if (tile_model_ == kNoModel) {
@@ -1163,12 +1196,17 @@ void VillageView::shoot(math::Vec3 from, math::Vec3 to) {
     }
 }
 
-// The piles: at a site, what was brought so far; beside a storage, what it
-// holds. One pile per kind of load, along the door's side.
+// The piles (phases 67 and 89): at a site, what was brought so far; beside a
+// storage or a workshop, what it holds. One pile per resource, for those it
+// has the most of; where each goes, props::pile_spot says.
 void VillageView::rebuild_piles(render::SceneRenderer& renderer, const sim::Game& game) {
     const sim::Content& content = game.content();
-    constexpr std::size_t kKinds = static_cast<std::size_t>(sim::LoadKind::Count);
-    std::array<std::array<std::vector<render::Instance>, 3>, kKinds> lists;
+    const std::size_t resources = std::min(content.resources.size(), resource_piles_.size());
+    for (std::vector<render::Instance>& list : pile_lists_) {
+        list.clear();
+    }
+    pile_amounts_.resize(resources);
+    pile_full_.resize(resources);
     const auto& store = game.buildings();
     for (std::size_t k = 0; k < store.size(); ++k) {
         const sim::Building& b = store.data()[k];
@@ -1178,24 +1216,24 @@ void VillageView::rebuild_piles(render::SceneRenderer& renderer, const sim::Game
             !building_shown(game, b)) {
             continue;
         }
-        // How much of each kind, and what a full pile of it would be.
-        std::array<std::int32_t, kKinds> amount{};
-        std::array<std::int32_t, kKinds> full{};
+        // How much of each resource, and what a full pile of it would be: at
+        // a site, all that the building takes; in a storage, its share if the
+        // room were split among as many kinds as it shows piles.
+        std::fill(pile_amounts_.begin(), pile_amounts_.end(), 0);
+        std::fill(pile_full_.begin(), pile_full_.end(),
+                  site ? 0 : std::max(1, d.storage / static_cast<std::int32_t>(props::kMaxPiles)));
         for (const sim::Stock& st : site ? b.delivered : b.stock) {
-            if (st.resource < content.resources.size()) {
-                amount[static_cast<std::size_t>(content.resources[st.resource].load)] += st.amount;
+            if (st.resource < resources) {
+                pile_amounts_[st.resource] += st.amount;
             }
         }
         if (site) {
             for (const sim::ResourceAmount& c : d.cost) {
-                if (c.resource < content.resources.size()) {
-                    full[static_cast<std::size_t>(content.resources[c.resource].load)] += c.amount;
+                if (c.resource < resources) {
+                    pile_full_[c.resource] += c.amount;
                 }
             }
-        } else {
-            full.fill(std::max(1, d.storage / 3));  // A third of the storage in one kind is a full pile.
         }
-        // Along the door's side, a meter out, from its left corner.
         const float yaw = std::numbers::pi_v<float> - static_cast<float>(b.rotation) * std::numbers::pi_v<float> * 0.5f;
         // The door looks along -Z unturned; `out` points away from it, `along` to its right.
         static constexpr float kOut[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
@@ -1205,32 +1243,30 @@ void VillageView::rebuild_piles(render::SceneRenderer& renderer, const sim::Game
         const float cz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
         const float half_out = static_cast<float>(r % 2 == 0 ? b.depth : b.width) * 0.5f;
         const float half_along = static_cast<float>(r % 2 == 0 ? b.width : b.depth) * 0.5f;
-        int placed = 0;
-        for (std::size_t kind = 0; kind < kKinds; ++kind) {
-            const int level = props::pile_level(amount[kind], full[kind]);
-            if (level == 0 || piles_[kind][static_cast<std::size_t>(level - 1)].id == kNoModel) {
+        std::size_t placed = 0;
+        for (const std::size_t resource : props::choose_piles(pile_amounts_)) {
+            const int level = props::pile_level(pile_amounts_[resource], pile_full_[resource]);
+            const std::size_t list = level > 0 ? resource_piles_[resource][static_cast<std::size_t>(level - 1)] : kNoPile;
+            if (list == kNoPile) {
                 continue;
             }
-            // Sites pile up on the left of the door, storages on the right.
-            const float side = (site ? -1.0f : 1.0f) * (half_along - 0.8f - 1.7f * static_cast<float>(placed));
-            if (std::abs(side) > half_along + 0.1f && placed > 0) {
-                break;  // No more room along this side.
+            const std::optional<props::PileSpot> spot = props::pile_spot(placed, half_along, half_out);
+            if (!spot) {
+                break;  // No more room around this building.
             }
+            // Sites pile up on the left of the door, storages on the right.
+            const float along = site ? -spot->along : spot->along;
             render::Instance inst;
-            inst.position.x = cx + kOut[r][0] * (half_out + 1.0f) + kAlong[r][0] * side;
-            inst.position.z = cz + kOut[r][1] * (half_out + 1.0f) + kAlong[r][1] * side;
+            inst.position.x = cx + kOut[r][0] * spot->out + kAlong[r][0] * along;
+            inst.position.z = cz + kOut[r][1] * spot->out + kAlong[r][1] * along;
             inst.position.y = map_surface_height(game.map(), inst.position.x, inst.position.z);
             inst.yaw = yaw + static_cast<float>(placed) * 0.6f;
-            lists[kind][static_cast<std::size_t>(level - 1)].push_back(inst);
+            pile_lists_[list].push_back(inst);
             ++placed;
         }
     }
-    for (std::size_t kind = 0; kind < kKinds; ++kind) {
-        for (std::size_t level = 0; level < 3; ++level) {
-            if (piles_[kind][level].id != kNoModel) {
-                renderer.set_instances(piles_[kind][level].id, lists[kind][level]);
-            }
-        }
+    for (std::size_t i = 0; i < pile_ids_.size(); ++i) {
+        renderer.set_instances(pile_ids_[i], pile_lists_[i]);
     }
 }
 

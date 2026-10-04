@@ -39,7 +39,16 @@ struct ResourceDef {
     std::int32_t carry = 0;      // Units per trip in place of 12 / weight; 0 = from the weight (phase 28).
     std::int32_t value = 0;      // Base price in gold; 0 = merchants do not trade it (phase 14).
     LoadKind load = LoadKind::Crate;  // Phase 67; by default food goes in a basket and the rest in a crate.
+    // Phase 89: its own pile beside storages, sites and workshops, in three
+    // sizes: "<pile>_1.glb" to "<pile>_3.glb" inside the folder of `mod`.
+    // Empty: the pile of its kind of load. Presentation only.
+    std::string pile;
+    std::string mod;
 };
+
+// The sizes a pile comes in, and the file of one: "<pile>_<level>.glb".
+inline constexpr int kPileLevels = 3;
+[[nodiscard]] std::string pile_file(std::string_view pile, int level);
 
 struct ResourceAmount {
     DefIndex resource = kNoDef;

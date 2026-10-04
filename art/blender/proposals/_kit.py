@@ -182,12 +182,21 @@ def build_zoo_spec(spec, family):
     print("PROPOSAL %s/%s.glb" % (family, spec.name))
 
 
+# Set by whoever runs a family's script from another script (build_all.py,
+# for the models that go into the game): the ids to build, in place of the
+# command line's.
+SELECT = None
+
+
 def run(models, family):
     """The usual main of a family script: `models` maps a model id to a
     function without arguments that builds and saves it. Builds the ids
-    given on the command line, or all of them."""
-    wanted = [a for a in args() if a in models] or list(models)
-    unknown = [a for a in args() if a not in models]
+    given on the command line (or in SELECT), or all of them."""
+    asked = args() if SELECT is None else list(SELECT)
+    wanted = [a for a in asked if a in models]
+    if not wanted and SELECT is None:
+        wanted = list(models)
+    unknown = [a for a in asked if a not in models]
     if unknown:
         print("PROPOSAL unknown names:", ", ".join(unknown))
     failed = []

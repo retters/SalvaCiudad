@@ -1,6 +1,7 @@
 #include <doctest.h>
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <set>
 #include <string>
@@ -317,6 +318,36 @@ TEST_SUITE("people") {
         CHECK(props::pile_level(20, 30) == 3);
         CHECK(props::pile_level(500, 30) == 3);
         CHECK(props::pile_level(5, 0) == 3);
+        // Phase 89: a pile for each resource, at most six, those there is most of,
+        // each keeping its turn by its index.
+        const std::int32_t stock[] = {5, 0, 40, 7, 9, 0, 30, 2, 8, 1};
+        CHECK(props::choose_piles(stock) == std::vector<std::size_t>{0, 2, 3, 4, 6, 8});
+        CHECK(props::choose_piles(stock, 2) == std::vector<std::size_t>{2, 6});
+        CHECK(props::choose_piles(std::span<const std::int32_t>(stock, 2)) == std::vector<std::size_t>{0});
+        const std::int32_t alike[] = {3, 3, 3};
+        CHECK(props::choose_piles(alike, 2) == std::vector<std::size_t>{0, 1});
+        CHECK(props::choose_piles({}).empty());
+        // Around a building of 8 x 6: two on the front wall, right of the door
+        // and clear of it, then down the right wall; all of them outside.
+        std::size_t spots = 0;
+        for (; spots < 20; ++spots) {
+            const std::optional<props::PileSpot> spot = props::pile_spot(spots, 4.0f, 3.0f);
+            if (!spot) {
+                break;
+            }
+            CHECK((spot->out > 3.5f || spot->along > 4.5f));
+            CHECK((spot->out < 3.5f || spot->along >= 1.0f));
+            for (std::size_t other = 0; other < spots; ++other) {
+                const props::PileSpot o = *props::pile_spot(other, 4.0f, 3.0f);
+                CHECK(std::hypot(o.along - spot->along, o.out - spot->out) >= 1.5f);
+            }
+        }
+        CHECK(spots >= props::kMaxPiles);
+        CHECK(props::pile_spot(0, 4.0f, 3.0f)->out == doctest::Approx(4.0f));
+        CHECK(props::pile_spot(2, 4.0f, 3.0f)->along == doctest::Approx(5.0f));
+        // A small workshop of 5 x 5 has room for four.
+        CHECK(props::pile_spot(3, 2.5f, 2.5f).has_value());
+        CHECK_FALSE(props::pile_spot(4, 2.5f, 2.5f).has_value());
         // An arrow: from one end to the other, highest in the middle,
         // pointing where it goes.
         const math::Vec3 from{10.0f, 2.0f, 10.0f};

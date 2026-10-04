@@ -3,9 +3,9 @@
     blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models [only]
 
 `only` limits the build to one group: characters, tools, loads, props,
-trees, buildings or animals. After "trees" or "characters", names limit it
-further (for example: trees cherry_1 pine); "buildings sites" builds only
-the construction sites.
+trees, buildings, animals or proposals. After "trees" or "characters", names
+limit it further (for example: trees cherry_1 pine); "buildings sites" builds
+only the construction sites; after "proposals", family names (piles).
 """
 
 import importlib
@@ -96,6 +96,57 @@ def make_animals(folder):
             studies.build_final(spec, folder)
 
 
+def make_proposals(out, only=None):
+    """The proposal models that are in the game (phase 89):
+    art/blender/proposals/game.json lists them. Each is built by its
+    family's own script into art/studies/propuestas, checked against the
+    triangle limit of its class and copied to its folder of the game's
+    models. `only`: family names, to build just those. Returns the problems
+    found (a model over its limit is not copied)."""
+    import json
+    import runpy
+    import shutil
+    folder = os.path.join(HERE, "proposals")
+    sys.path.insert(0, folder)
+    import _kit as kit
+    with open(os.path.join(folder, "game.json"), encoding="utf-8") as f:
+        doc = json.load(f)
+    problems = []
+    for entry in doc["models"]:
+        family = entry["family"]
+        if only and family not in only:
+            continue
+        limit = doc["limits"][entry["class"]]
+        ids = [name + suffix for name in entry["ids"] for suffix in entry.get("each", [""])]
+        script = os.path.join(folder, family)
+        before = set(sys.modules)
+        kit.SELECT = ids
+        try:
+            runpy.run_path(os.path.join(script, "build.py"), run_name="__main__")
+        finally:
+            kit.SELECT = None
+            # A family's own modules must not be taken for the next family's.
+            for name in set(sys.modules) - before:
+                if os.path.dirname(getattr(sys.modules[name], "__file__", None) or "") == script:
+                    del sys.modules[name]
+            while script in sys.path:
+                sys.path.remove(script)
+        os.makedirs(os.path.join(out, entry["to"]), exist_ok=True)
+        for name in ids:
+            built = os.path.join(kit.OUT, family, name + ".glb")
+            if not os.path.isfile(built):
+                problems.append("%s/%s was not built" % (family, name))
+                continue
+            triangles = kit._triangles(built)
+            if triangles > limit:
+                problems.append("%s/%s has %d triangles, over the %d of a %s" % (family, name, triangles, limit, entry["class"]))
+                continue
+            shutil.copyfile(built, os.path.join(out, entry["to"], name + ".glb"))
+    for line in problems:
+        print("PROPOSAL PROBLEM", line)
+    return problems
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     out = os.path.abspath(args[0] if args else "data/mods/core/models")
@@ -119,6 +170,9 @@ def main():
             importlib.import_module(theme).make_all(os.path.join(out, "buildings"))
     if only in (None, "animals"):
         make_animals(os.path.join(out, "animals"))
+    if only in (None, "proposals"):
+        if make_proposals(out, args[2:] if only == "proposals" else None):
+            sys.exit(1)
     print("SalvaCiudad models written to", out)
 
 
