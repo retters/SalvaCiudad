@@ -38,12 +38,17 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 37;
+inline constexpr std::uint32_t kGameRulesVersion = 38;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
 // its walls (its windows), if its def says nothing.
 inline constexpr std::int32_t kOccupiedLight = 6;
+// Phase 70: at night, out of the light, villagers walk and work at this
+// percent (those of a race that sees at night, as always).
+inline constexpr std::int32_t kDarkPercent = 75;
+// The light of the simulation is kept in cells of this many meters.
+inline constexpr std::int32_t kLightCell = 4;
 inline constexpr std::int32_t kFoodMax = 1000;           // Hunger meter.
 inline constexpr std::int32_t kEatBelow = 500;           // Goes to eat under this.
 inline constexpr std::uint32_t kTicksPerFoodPoint = 4;   // Hunger: one meter point per 4 ticks.
@@ -567,11 +572,20 @@ public:
     // Phase 69: how many meters around its middle a building lights at
     // night; 0 if it gives no light now.
     [[nodiscard]] std::int32_t light(const Building& b) const;
+    // Phase 70. Whether it is night now (never, with no cycle); whether a
+    // point is within the light of a building; and whether a villager is
+    // slowed by the dark: at night, out of the light, without night vision.
+    [[nodiscard]] bool night() const { return day_time().night; }
+    [[nodiscard]] bool lit(std::int32_t x, std::int32_t z) const;
+    [[nodiscard]] bool in_the_dark(const Villager& v) const;
     [[nodiscard]] std::int32_t sight(const Villager& v) const;
     [[nodiscard]] std::int32_t sight(const Creature& a) const;
     // Explores around every town's people and buildings; step() does it
     // once a second (public for the benchmarks). Nothing without fog.
     void update_vision();
+    // Phase 70: the lit cells, from the buildings that give light now. Only
+    // drawn again when those change (and after loading: it is not saved).
+    void update_light();
 
     // Armies and the end of the game (phase 16).
     [[nodiscard]] std::int32_t soldiers(std::uint8_t player) const;
@@ -639,6 +653,11 @@ private:
     GameRules rules_;
     std::int32_t temperature_ = 12;  // Today's; follows from the tick.
     std::int32_t snow_ = 0;          // 0..kMaxSnow.
+    // Derived, not saved: one byte per cell of kLightCell meters, and what
+    // it was drawn from (0: never).
+    std::vector<std::uint8_t> light_cells_;
+    std::int32_t light_side_ = 0;
+    std::uint64_t light_signature_ = 0;
     DefIndex firewood_ = kNoDef;     // Resources the rules use, looked up once.
     DefIndex clothes_ = kNoDef;
     DefIndex fertilizer_ = kNoDef;

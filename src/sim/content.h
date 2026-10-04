@@ -204,7 +204,7 @@ struct RaceDef {
     std::array<std::int32_t, kSkills> work{100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
     std::int32_t cold = 0;       // Resistance to cold, percent (less warmth lost, less flu); may be negative.
     std::int32_t disease = 0;    // Resistance to every disease, percent.
-    bool night_vision = false;   // Declared for a day and night cycle (not in the game yet).
+    bool night_vision = false;   // Not slowed by the dark of the night (phase 70).
     std::int32_t sight = 12;     // Phase 32: meters a villager sees (fog of war).
 };
 

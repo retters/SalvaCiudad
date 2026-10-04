@@ -990,6 +990,7 @@
     "hud.walker.title": "Test person",
     "hud.walker.note": "Placed with the developer tools: it only strolls.",
     "hud.walker.model": "Model: {0:name}",
+    "hud.villager.dark": "In the dark: walks and works at {0:percent} %. A torch nearby prevents it.",
     "hud.building.light": "Lights {0:meters} m around it at night.",
     "hud.building.campfire": "Campfire: keeps those within {0:meters} m warm. Burns 1 firewood each cold day.",
     "hud.building.campfireOut": "Out: there is no firewood in the stores.",

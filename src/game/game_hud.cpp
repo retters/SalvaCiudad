@@ -2101,6 +2101,11 @@ void GameHud::villager_window(ui::Context& ctx, GameSession& s, const WindowList
         v->warmth < sim::village::kWarmthMax / 3 ? ctx.theme().danger : ui::Color::rgb(0xE08A3C));
     bar(tr("hud.villager.health"), static_cast<float>(v->health) / static_cast<float>(sim::village::kHealthMax),
         v->health < sim::village::kHealthMax / 2 ? ctx.theme().danger : ui::Color::rgb(0x6FAF5A));
+    if (game.in_the_dark(*v)) {
+        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr("hud.villager.dark", sim::village::kDarkPercent), body,
+                  ui::Color::rgb(0x9CC7F0));
+        y += line;
+    }
     ctx.pop_id();
 }
 

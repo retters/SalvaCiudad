@@ -733,6 +733,113 @@ TEST_SUITE("village") {
         CHECK(light_of("house") > village::kOccupiedLight);
     }
 
+    TEST_CASE("the dark of the night slows those out of the light, but not those who see in it") {
+        const auto race_of = [](const char* id) {
+            const auto& races = content()->races;
+            for (std::size_t i = 0; i < races.size(); ++i) {
+                if (races[i].id == id) {
+                    return static_cast<std::uint8_t>(i);
+                }
+            }
+            FAIL("no race " << id);
+            return std::uint8_t{0};
+        };
+        struct Walked {
+            double lit = 0.0;      // The longest step of a tick in the light, in meters.
+            double dark = 0.0;     // And in the dark.
+            int dark_steps = 0;    // Ticks somebody walked in the dark.
+            bool night = false;
+        };
+        // A town with a woodcutter and a forager, so people walk far from
+        // the town center; the first ten minutes are day, then it is night.
+        const auto walk = [&](const char* race, DayNightSettings cycle) {
+            GameSetup setup{1, 7, false, GameRules{}};
+            setup.rules.climate.seasons = 0b0010;  // No snow to slow anybody.
+            setup.rules.raiders = Threat::None;
+            setup.rules.wildlife = Threat::None;
+            setup.rules.fires = Threat::None;
+            setup.rules.diseases = Threat::None;
+            setup.rules.races.fill(race_of(race));
+            setup.rules.other_races = 0;
+            setup.rules.day_night = cycle;
+            Game g(content(), small_map(27), setup);
+            opening(g);
+            run(g, 10 * kTicksPerMinute + 50);
+            Walked w;
+            w.night = g.night();
+            for (int t = 0; t < 4000; ++t) {
+                std::vector<bool> before;
+                for (const Villager& v : g.villagers().data()) {
+                    before.push_back(g.in_the_dark(v));
+                }
+                const std::size_t count = g.villagers().size();
+                g.step();
+                if (g.villagers().size() != count) {
+                    continue;  // Somebody came or went: the order changed.
+                }
+                for (std::size_t k = 0; k < count; ++k) {
+                    const Villager& v = g.villagers().data()[k];
+                    const bool after = g.in_the_dark(v);
+                    if (before[k] != after) {
+                        continue;  // Crossing the edge of the light.
+                    }
+                    const double step = static_cast<double>((v.position - v.previous).length().raw()) / 65536.0;
+                    (after ? w.dark : w.lit) = std::max(after ? w.dark : w.lit, step);
+                    w.dark_steps += after && step > 0.0 ? 1 : 0;
+                }
+            }
+            return w;
+        };
+        const Walked humans = walk("core:human", {10, 30});
+        MESSAGE("humans at night: " << humans.lit << " m a tick in the light, " << humans.dark << " in the dark ("
+                                    << humans.dark_steps << " steps)");
+        CHECK(humans.night);
+        CHECK(humans.dark_steps > 100);
+        CHECK(humans.lit == doctest::Approx(0.2).epsilon(0.02));
+        CHECK(humans.dark == doctest::Approx(0.2 * village::kDarkPercent / 100).epsilon(0.02));
+        // Catfolk see at night: never in the dark, and as fast as ever.
+        const Walked cats = walk("core:catfolk", {10, 30});
+        CHECK(cats.night);
+        CHECK(cats.dark_steps == 0);
+        CHECK(cats.lit > 0.2);
+        // No cycle: no night, nobody in the dark.
+        const Walked always_day = walk("core:human", {});
+        CHECK_FALSE(always_day.night);
+        CHECK(always_day.dark_steps == 0);
+        CHECK(always_day.lit == doctest::Approx(0.2).epsilon(0.02));
+    }
+
+    TEST_CASE("the light of the simulation: around what gives light, and gone with it") {
+        GameSetup setup{1, 7, false, GameRules{}};
+        setup.rules.raiders = Threat::None;
+        setup.rules.wildlife = Threat::None;
+        setup.rules.day_night = {1, 30};
+        Game g(content(), small_map(27), setup);
+        const Building* tc = g.buildings().get(g.player(0).town_center);
+        REQUIRE(tc != nullptr);
+        const std::int32_t cx = tc->x + tc->width / 2;
+        const std::int32_t cz = tc->z + tc->depth / 2;
+        // By day nothing is drawn or asked.
+        CHECK_FALSE(g.night());
+        run(g, kTicksPerMinute + 1);
+        REQUIRE(g.night());
+        CHECK(g.lit(cx, cz));
+        CHECK(g.lit(cx + 14, cz));
+        CHECK_FALSE(g.lit(cx + 30, cz));
+        CHECK_FALSE(g.lit(-5, cz));
+        // A loaded game draws the same light.
+        BinaryWriter w;
+        g.save(w);
+        BinaryReader r(w.bytes());
+        Game loaded(content(), small_map(1), 1, 1);
+        REQUIRE(loaded.load(r, content()));
+        loaded.step();
+        g.step();
+        CHECK(loaded.lit(cx + 14, cz));
+        CHECK_FALSE(loaded.lit(cx + 30, cz));
+        CHECK(loaded.hash() == g.hash());
+    }
+
     TEST_CASE("a campfire burns the town's firewood on cold days and keeps those near it warm") {
         const DefIndex fire = building("campfire");
         CHECK(content()->buildings[fire].warmth == 10);

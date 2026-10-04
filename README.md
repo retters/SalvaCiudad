@@ -601,6 +601,14 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 70 (oscuridad en la simulación)
+
+- [ ] De noche, un aldeano lejos de las luces camina visiblemente más lento; su ventana dice «A oscuras: camina y trabaja al 75 %».
+- [ ] Junto a una antorcha, una fogata encendida, una casa con gente o el centro del pueblo no hay penalización.
+- [ ] Un pueblo de gatunos no dice «A oscuras» nunca.
+- [ ] Con «Día y noche» desmarcado no hay penalización.
+- [ ] **Tu opinión:** si el 75 % se nota lo suficiente, y si quieres que la capa de mapa muestre las zonas iluminadas.
+
 ### Fase 69 (luces de noche)
 
 - [ ] De noche el pueblo se ve por sus luces: el centro del pueblo, las casas con gente y los talleres con trabajadores alumbran a su alrededor, y sus ventanas brillan.

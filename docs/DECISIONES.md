@@ -2731,3 +2731,23 @@ Reglas 37, protocolo de red 15 (edificio nuevo y campo nuevo en los datos).
 
 **D-6909. Sin revisar.**
 Se vio en pantalla: charcos de luz del centro del pueblo, antorchas, fogata y aldeanos; ventanas encendidas; el humo oscuro por encima de las luces; las luces apagadas de día. No se vieron las decoraciones de luz azul ni los faroles de Plaza. En una partida aparecieron de noche unos pocos triángulos blancos en un acantilado oscuro junto al agua; no se repitió en otros dos mapas y no se encontró la causa.
+
+## Fase 70: oscuridad en la simulación (2026-10-03)
+
+**D-7001. La luz de la simulación: celdas de 4 m, no se guarda.**
+Un byte por celda de 4 m dice si la alcanza la luz de algún edificio (`Game::light`, el mismo radio que dibuja la vista). Solo se calcula de noche, y solo se vuelve a dibujar cuando cambia el conjunto de luces (posición y radio), que se resume en un número cada tick. Es una función pura de los edificios: no va en la partida guardada ni en el hash, y una partida cargada dibuja la misma luz (prueba). Se descartó actualizarla cada cierto tiempo: una partida cargada a medias y otra en marcha podrían no coincidir y desincronizar la red.
+
+**D-7002. La penalización.**
+De noche, un aldeano fuera de la luz camina y trabaja al 75 % (`village::kDarkPercent`), como eligió Salvador. Se aplica en los dos sitios donde ya entraban la raza y la nieve: el paso por tick y los pasos de trabajo (talar, recolectar, cultivar, cazar, pescar, construir, producir). Dentro de un edificio que da luz no hay penalización, porque su centro está iluminado. Los animales, los asaltantes y los soldados no cambian aquí (fase 72).
+
+**D-7003. Visión nocturna (reemplaza D-1904).**
+El rasgo `nightVision` de la raza quita la penalización. En `core` lo tienen los gatunos.
+
+**D-7004. La antorcha en mano no cuenta.**
+Es solo de la vista (D-6906): no quita la penalización. La ventana del aldeano dice «A oscuras: camina y trabaja al 75 %» cuando le toca.
+
+**D-7005. Versiones.**
+Reglas 38, protocolo de red 16.
+
+**D-7006. Lo probado y lo que no.**
+Prueba: humanos de noche dan pasos de 0,20 m por tick en la luz y de 0,15 a oscuras; los gatunos nunca están a oscuras; sin ciclo nadie lo está; la luz rodea al centro del pueblo y es igual tras cargar. La velocidad de trabajo usa la misma condición pero no tiene una prueba propia que mida cuánto tarda un leñador (el criterio lo pedía): queda por medir. No se revisó en pantalla la línea de la ventana del aldeano.

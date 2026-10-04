@@ -218,7 +218,11 @@ public:
     // Whole work steps this tick: one at 100 %, with the rest carried over.
     std::int32_t steps(Villager& v, Skill skill) {
         const RaceDef* r = race_of(v);
-        const std::int32_t rate = r != nullptr ? r->work[static_cast<std::size_t>(skill)] : 100;
+        std::int32_t rate = r != nullptr ? r->work[static_cast<std::size_t>(skill)] : 100;
+        // Working by feel in the dark of the night (phase 70).
+        if (g_.in_the_dark(v)) {
+            rate = rate * village::kDarkPercent / 100;
+        }
         v.work_carry += rate;
         const std::int32_t n = v.work_carry / 100;
         v.work_carry -= n * 100;
@@ -303,6 +307,10 @@ public:
         Fixed budget = walk_speed(g_.adult(v)) * Fixed::from_ratio(200 - g_.snow_, 200);
         if (const RaceDef* r = race_of(v)) {
             budget = budget * Fixed::from_ratio(r->move, 100);
+        }
+        // And so does the dark of the night, out of the light (phase 70).
+        if (g_.in_the_dark(v)) {
+            budget = budget * Fixed::from_ratio(village::kDarkPercent, 100);
         }
         while (budget > Fixed{} && moving(v)) {
             const FixedVec2 target = v.path[v.path_index];
@@ -4709,6 +4717,9 @@ void Game::apply(const Command& command) {
 
 void Game::step() {
     goods_changed();
+    if (night()) {
+        update_light();
+    }
     VillageRules(*this).step();
     goods_changed();
     // The fog lifts once a second, where anybody's people are (phase 32).
@@ -4751,6 +4762,74 @@ std::int32_t Game::light(const Building& b) const {
         return 0;
     }
     return village::kOccupiedLight + std::max(b.width, b.depth) / 2;
+}
+
+void Game::update_light() {
+    // What the lights are now, in a number: the cells are drawn again only
+    // when it changes. A pure function of the buildings, so a loaded game
+    // and a running one agree.
+    std::uint64_t signature = 0xCBF29CE484222325ull;
+    const auto mix = [&signature](std::uint64_t v) {
+        signature = (signature ^ v) * 0x100000001B3ull;
+    };
+    for (const Building& b : buildings_.data()) {
+        if (const std::int32_t radius = light(b); radius > 0) {
+            mix(static_cast<std::uint64_t>(b.x + b.width / 2));
+            mix(static_cast<std::uint64_t>(b.z + b.depth / 2));
+            mix(static_cast<std::uint64_t>(radius));
+        }
+    }
+    signature |= 1;  // Never 0, which means "not drawn yet".
+    if (signature == light_signature_) {
+        return;
+    }
+    light_signature_ = signature;
+    light_side_ = (map_.size + village::kLightCell - 1) / village::kLightCell;
+    light_cells_.assign(static_cast<std::size_t>(light_side_) * static_cast<std::size_t>(light_side_), 0);
+    for (const Building& b : buildings_.data()) {
+        const std::int32_t radius = light(b);
+        if (radius <= 0) {
+            continue;
+        }
+        const std::int32_t cx = b.x + b.width / 2;
+        const std::int32_t cz = b.z + b.depth / 2;
+        const std::int32_t x0 = std::max(0, (cx - radius) / village::kLightCell);
+        const std::int32_t x1 = std::min(light_side_ - 1, (cx + radius) / village::kLightCell);
+        const std::int32_t z0 = std::max(0, (cz - radius) / village::kLightCell);
+        const std::int32_t z1 = std::min(light_side_ - 1, (cz + radius) / village::kLightCell);
+        for (std::int32_t z = z0; z <= z1; ++z) {
+            for (std::int32_t x = x0; x <= x1; ++x) {
+                // By the middle of the cell.
+                const std::int64_t dx = x * village::kLightCell + village::kLightCell / 2 - cx;
+                const std::int64_t dz = z * village::kLightCell + village::kLightCell / 2 - cz;
+                if (dx * dx + dz * dz <= static_cast<std::int64_t>(radius) * radius) {
+                    light_cells_[static_cast<std::size_t>(z) * static_cast<std::size_t>(light_side_) +
+                                 static_cast<std::size_t>(x)] = 1;
+                }
+            }
+        }
+    }
+}
+
+bool Game::lit(std::int32_t x, std::int32_t z) const {
+    if (light_side_ == 0 || x < 0 || z < 0) {
+        return false;
+    }
+    const std::int32_t cx = x / village::kLightCell;
+    const std::int32_t cz = z / village::kLightCell;
+    return cx < light_side_ && cz < light_side_ &&
+           light_cells_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(light_side_) +
+                        static_cast<std::size_t>(cx)] != 0;
+}
+
+bool Game::in_the_dark(const Villager& v) const {
+    if (!night()) {
+        return false;
+    }
+    if (v.race < content_->races.size() && content_->races[v.race].night_vision) {
+        return false;
+    }
+    return !lit(v.position.x.floor_int(), v.position.z.floor_int());
 }
 
 std::int32_t Game::sight(const Villager& v) const {
