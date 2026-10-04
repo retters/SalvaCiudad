@@ -396,6 +396,7 @@
     "dev.object.villager": "Aldeano",
     "feature.tree": "Árbol",
     "feature.stone": "Piedra",
+    "feature.stoneDeposit": "Yacimiento de roca",
     "feature.ironOre": "Mineral de hierro",
     "feature.berryBush": "Arbusto de bayas",
     "feature.herbs": "Hierbas medicinales",

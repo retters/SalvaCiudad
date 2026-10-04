@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 46;
+inline constexpr std::uint32_t kGameRulesVersion = 47;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -841,6 +841,9 @@ private:
     bool features_added_ = false;
 
     void build_indexes();
+    // Phase 83: the ground a stone deposit stands on is taken (or free again).
+    void block_deposit(const MapFeature& f, bool blocked);
+    void block_deposits();
 };
 
 // Human-readable name of a task (English, for logs and the developer tools).

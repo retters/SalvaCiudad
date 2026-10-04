@@ -75,6 +75,21 @@ void block_nav(NavGrid& nav, const BuildingDef& d, std::int32_t x, std::int32_t 
     nav.set_building(x, z, x + w, z + depth, on);
 }
 
+// What a natural feature holds when the game starts.
+std::int32_t feature_amount(const Content& c, const MapFeature& f) {
+    if (f.type == FeatureType::Tree) {
+        return f.species < c.flora.species.size() && f.size < kTreeSizes ? c.flora.species[f.species].logs[f.size] : 0;
+    }
+    const FeatureDef* fd = c.feature(f.type);
+    if (fd == nullptr) {
+        return 0;
+    }
+    if (f.type == FeatureType::StoneDeposit) {
+        return deposit_amount(fd->amount, std::min<std::uint8_t>(f.size, kDepositSizes - 1));
+    }
+    return std::max(1, (fd->amount * f.scale.raw()) >> 16);
+}
+
 void compact(std::vector<Stock>& list) {
     std::erase_if(list, [](const Stock& s) { return s.amount <= 0; });
 }
@@ -236,6 +251,7 @@ public:
         switch (t) {
             case FeatureType::Tree: return Skill::Wood;
             case FeatureType::Stone:
+            case FeatureType::StoneDeposit:
             case FeatureType::IronOre: return Skill::Stone;
             default: return Skill::Forage;
         }
@@ -852,12 +868,15 @@ public:
                     if (n.amount <= 0 && !grows) {
                         continue;  // Gone for good.
                     }
-                    // The cheapest cell next to the node (rocks may sit on steep ones).
+                    // The cheapest cell next to the node (rocks may sit on steep
+                    // ones); a deposit is worked from around the ground it takes.
+                    const bool deposit = f.type == FeatureType::StoneDeposit;
+                    const std::int32_t ring = deposit ? deposit_half_side(f.size) / NavGrid::kCell + 2 : 1;
                     const std::int32_t nx = g_.nav_.cell_of(f.x);
                     const std::int32_t nz = g_.nav_.cell_of(f.z);
                     std::uint32_t cost = 0xFFFF;
-                    for (std::int32_t dz = -1; dz <= 1; ++dz) {
-                        for (std::int32_t dx = -1; dx <= 1; ++dx) {
+                    for (std::int32_t dz = -ring; dz <= ring; ++dz) {
+                        for (std::int32_t dx = -ring; dx <= ring; ++dx) {
                             cost = std::min<std::uint32_t>(cost, area.at(nx + dx, nz + dz));
                         }
                     }
@@ -868,7 +887,7 @@ public:
                         waiting = true;  // Empty or frozen bushes and herbs.
                         continue;
                     }
-                    if (n.reserved != 0) {
+                    if (n.reserved != 0 && !deposit) {
                         busy = true;
                         continue;
                     }
@@ -887,10 +906,15 @@ public:
         const MapFeature& f = g_.map_.features[best - 1];
         v.task = Task::GoGather;
         v.node = best;
-        g_.nodes_[best - 1].reserved = v_index_ + 1;
-        // Stand a step away from the trunk or rock.
+        // Stand a step away from the trunk or rock. A deposit has room for
+        // many: nobody keeps it, and each stands outside its square.
+        const bool deposit = f.type == FeatureType::StoneDeposit;
+        if (!deposit) {
+            g_.nodes_[best - 1].reserved = v_index_ + 1;
+        }
+        const Fixed away = deposit ? Fixed::from_ratio(deposit_half_side(f.size) * 142 + 80, 100) : Fixed::from_ratio(8, 10);
         const FixedVec2 p{f.x, f.z};
-        const FixedVec2 to = p + (v.position - p).normalized() * Fixed::from_ratio(8, 10);
+        const FixedVec2 to = p + (v.position - p).normalized() * away;
         if (!walk_to(v, to)) {
             fail(v);
         }
@@ -3561,7 +3585,7 @@ public:
             return;
         }
         Node& n = g_.nodes_[v.node - 1];
-        const MapFeature& f = g_.map_.features[v.node - 1];
+        MapFeature& f = g_.map_.features[v.node - 1];
         const FeatureDef* fd = c_.feature(f.type);
         if (fd == nullptr || n.amount <= 0) {
             release(v);
@@ -3575,6 +3599,18 @@ public:
         --n.amount;
         v.carrying.resource = fd->resource;
         ++v.carrying.amount;
+        if (f.type == FeatureType::StoneDeposit) {
+            // Worn down, it is the next size smaller; spent, its ground is free.
+            const std::uint8_t size = deposit_size(fd->amount, n.amount);
+            if (n.amount <= 0 || size != f.size) {
+                g_.block_deposit(f, false);
+                f.size = size;
+                if (n.amount > 0) {
+                    g_.block_deposit(f, true);
+                    g_.changed_nodes_.push_back(v.node - 1);
+                }
+            }
+        }
         if (n.amount <= 0) {
             g_.changed_nodes_.push_back(v.node - 1);
             if (fd->regrow_days > 0) {
@@ -4817,24 +4853,24 @@ public:
                 const bool tree = type == FeatureType::Tree;
                 if (!g_.dev_commands_ || c.def >= static_cast<std::uint16_t>(FeatureType::Count) || x >= g_.map_.size ||
                     z >= g_.map_.size || g_.map_.features.size() >= kMaxMapFeatures ||
-                    (tree && (c.def2 >= c_.flora.species.size() || c.count >= kTreeSizes))) {
+                    (tree && (c.def2 >= c_.flora.species.size() || c.count >= kTreeSizes)) ||
+                    (type == FeatureType::StoneDeposit && c.count >= kDepositSizes)) {
                     ++g_.rejected_;
                     break;
                 }
                 MapFeature f;
                 f.type = type;
                 f.species = tree ? static_cast<std::uint8_t>(c.def2) : std::uint8_t{0};
-                f.size = tree ? static_cast<std::uint8_t>(c.count) : std::uint8_t{0};
+                f.size = tree || type == FeatureType::StoneDeposit ? static_cast<std::uint8_t>(c.count) : std::uint8_t{0};
                 f.rotation = static_cast<std::uint16_t>(c.value2);
                 f.x = c.position.x;
                 f.z = c.position.z;
                 f.scale = Fixed::from_raw(c.value);
                 // A resource like any other: with its node, and where gatherers look.
                 Node node;
-                if (tree) {
-                    node.amount = c_.flora.species[f.species].logs[f.size];
-                } else if (const FeatureDef* fd = c_.feature(type)) {
-                    node.amount = std::max(1, (fd->amount * f.scale.raw()) >> 16);
+                node.amount = feature_amount(c_, f);
+                if (type == FeatureType::StoneDeposit && node.amount > 0) {
+                    g_.block_deposit(f, true);
                 }
                 const auto index = static_cast<std::uint32_t>(g_.map_.features.size());
                 g_.map_.features.push_back(f);
@@ -5094,15 +5130,9 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     build_indexes();
     nodes_.assign(map_.features.size(), Node{});
     for (std::size_t i = 0; i < map_.features.size(); ++i) {
-        const MapFeature& f = map_.features[i];
-        if (f.type == FeatureType::Tree) {
-            if (f.species < content_->flora.species.size() && f.size < kTreeSizes) {
-                nodes_[i].amount = content_->flora.species[f.species].logs[f.size];
-            }
-        } else if (const FeatureDef* fd = content_->feature(f.type)) {
-            nodes_[i].amount = std::max(1, (fd->amount * f.scale.raw()) >> 16);
-        }
+        nodes_[i].amount = feature_amount(*content_, map_.features[i]);
     }
+    block_deposits();
     VillageRules(*this).setup(players, setup.start_towns, setup.shared_town);
     // Players of a common town share its town center.
     for (std::uint8_t p = 0; p < player_count_; ++p) {
@@ -5138,6 +5168,29 @@ void Game::build_indexes() {
         const std::int32_t cx = std::clamp(f.x.floor_int() / kNodeCell, 0, node_cells_side_ - 1);
         const std::int32_t cz = std::clamp(f.z.floor_int() / kNodeCell, 0, node_cells_side_ - 1);
         node_cells_[static_cast<std::size_t>(cz * node_cells_side_ + cx)].push_back(static_cast<std::uint32_t>(i));
+    }
+}
+
+void Game::block_deposit(const MapFeature& f, bool blocked) {
+    const std::int32_t half = deposit_half_side(f.size);
+    const std::int32_t x0 = std::clamp(f.x.floor_int() - half, 0, map_.size);
+    const std::int32_t z0 = std::clamp(f.z.floor_int() - half, 0, map_.size);
+    const std::int32_t x1 = std::clamp(f.x.floor_int() + half, 0, map_.size);
+    const std::int32_t z1 = std::clamp(f.z.floor_int() + half, 0, map_.size);
+    for (std::int32_t z = z0; z < z1; ++z) {
+        for (std::int32_t x = x0; x < x1; ++x) {
+            occupied_[static_cast<std::size_t>(z) * static_cast<std::size_t>(map_.size) + static_cast<std::size_t>(x)] =
+                blocked ? 1 : 0;
+        }
+    }
+    nav_.set_building(x0, z0, x1, z1, blocked);
+}
+
+void Game::block_deposits() {
+    for (std::size_t i = 0; i < map_.features.size(); ++i) {
+        if (map_.features[i].type == FeatureType::StoneDeposit && nodes_[i].amount > 0) {
+            block_deposit(map_.features[i], true);
+        }
     }
 }
 
@@ -6752,6 +6805,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             return false;
         }
     }
+    g.block_deposits();
     if (!r.count(kMaxMapFeatures, 12, n)) {
         return false;
     }

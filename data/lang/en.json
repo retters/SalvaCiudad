@@ -396,6 +396,7 @@
     "dev.object.villager": "Villager",
     "feature.tree": "Tree",
     "feature.stone": "Stone",
+    "feature.stoneDeposit": "Stone deposit",
     "feature.ironOre": "Iron ore",
     "feature.berryBush": "Berry bush",
     "feature.herbs": "Medicinal herbs",

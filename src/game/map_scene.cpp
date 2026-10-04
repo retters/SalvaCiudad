@@ -88,6 +88,12 @@ std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, Tr
     return content.flora.species[f.species].state_models[state].empty() ? std::uint8_t{0} : static_cast<std::uint8_t>(state);
 }
 
+std::uint8_t feature_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when) {
+    // A stone deposit's sizes are the looks of one model (phase 83).
+    return f.type == sim::FeatureType::StoneDeposit ? std::min<std::uint8_t>(f.size, sim::kDepositSizes - 1)
+                                                    : tree_look(content, f, when);
+}
+
 std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
     if (f.type == sim::FeatureType::Tree) {
         // One of the variants, by the place; the state is its look.
@@ -96,6 +102,9 @@ std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
         return tree_variant_slot(
             f.species, pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
                                     std::clamp<std::size_t>(variants, 1, sim::kMaxModelVariants)));
+    }
+    if (f.type == sim::FeatureType::StoneDeposit) {
+        return feature_slot(content, f.type, 0);  // Its files are its sizes, not variants.
     }
     // Each other kind has room for its variants; the place picks one.
     const sim::FeatureDef* def = content.feature(f.type);
@@ -190,7 +199,8 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     inst.position = {x, to_float(map.height_at(f.x, f.z)), z};
     inst.yaw = static_cast<float>(f.rotation) / 65536.0f * 2.0f * std::numbers::pi_v<float>;
     inst.scale = f.type == sim::FeatureType::Tree ? static_cast<float>(sim::MapData::tree_height_cm(f)) / 100.0f
-                                                  : to_float(f.scale);
+                 : f.type == sim::FeatureType::StoneDeposit ? 1.0f  // Its models are to size.
+                                                            : to_float(f.scale);
     // Slightly different shades so forests do not look copied.
     const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
     const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
@@ -201,7 +211,8 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
         if (tree) {
             inst.landmark = f.species < content->flora.species.size() && content->flora.species[f.species].landmark;
         } else if (const sim::FeatureDef* fd = content->feature(f.type)) {
-            inst.landmark = fd->landmark;
+            // Of the stone deposits, only the large ones.
+            inst.landmark = fd->landmark && (f.type != sim::FeatureType::StoneDeposit || f.size + 1 >= sim::kDepositSizes);
         }
     }
     return inst;
@@ -277,7 +288,7 @@ std::vector<std::vector<render::Instance>> build_feature_instances(const sim::Ma
         const std::size_t slot = visual_slot(content, f);
         if (slot < features.size()) {
             features[slot].push_back(feature_instance(map, f, &content, when.season, snowy));
-            features[slot].back().look = tree_look(content, f, when);
+            features[slot].back().look = feature_look(content, f, when);
         }
     }
     return features;
@@ -427,6 +438,15 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
             missing += slot.model == kNoModel ? 1 : 0;
             any = any || slot.model != kNoModel;
         }
+        if (f.kind == sim::FeatureKind::StoneDeposit && f.models.size() >= sim::kDepositSizes) {
+            // The small one is the model; the medium and the large, its looks 1 and 2.
+            const render::ModelId small = slots_[feature_slot(content, f.kind, 0)].model;
+            const render::ModelId looks[2] = {slots_[feature_slot(content, f.kind, 1)].model,
+                                              slots_[feature_slot(content, f.kind, 2)].model};
+            if (small != kNoModel) {
+                renderer.set_model_looks(small, looks);
+            }
+        }
     }
     if (missing > 0) {
         log::warn("map: {} model(s) missing; those objects will not be drawn", missing);
@@ -540,7 +560,7 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
     }
     looks_[feature] = look;
     render::Instance inst = feature_instance(map, f, &content, when_.season, snowy_);
-    inst.look = tree_look(content, f, when_);
+    inst.look = feature_look(content, f, when_);
     if (slot < tree_slots_) {
         inst.scale = slots_[slot].tree_scale(inst.scale);
     }

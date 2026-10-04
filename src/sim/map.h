@@ -115,7 +115,22 @@ struct MapSettings {
 
 enum class Terrain : std::uint8_t { Grass, Meadow, ForestFloor, Sand, Rock, Clay, Water, Count };
 
-enum class FeatureType : std::uint8_t { Tree, Stone, IronOre, BerryBush, Herbs, Count };
+enum class FeatureType : std::uint8_t { Tree, Stone, IronOre, BerryBush, Herbs, StoneDeposit, Count };
+
+// Phase 83: a stone deposit is an outcrop in three sizes (0..2). A size
+// holds the feature's amount, 5/2 of it or 25/4 of it (800, 2000 and 5000
+// in the base game), stands on a square of 4, 6 or 8 m that cannot be
+// walked or built on, and is as large as what is left in it.
+inline constexpr std::uint8_t kDepositSizes = 3;
+[[nodiscard]] constexpr std::int32_t deposit_amount(std::int32_t base, std::uint8_t size) {
+    return size == 0 ? base : size == 1 ? base * 5 / 2 : base * 25 / 4;
+}
+[[nodiscard]] constexpr std::uint8_t deposit_size(std::int32_t base, std::int32_t amount) {
+    return amount > deposit_amount(base, 1) ? std::uint8_t{2} : amount > base ? std::uint8_t{1} : std::uint8_t{0};
+}
+[[nodiscard]] constexpr std::int32_t deposit_half_side(std::uint8_t size) {
+    return 2 + (size < kDepositSizes ? size : kDepositSizes - 1);
+}
 
 // A natural object on the map. Positions are in meters from the map's
 // corner (0, 0); rotation is a binary angle. For trees, `scale` is the
@@ -123,7 +138,7 @@ enum class FeatureType : std::uint8_t { Tree, Stone, IronOre, BerryBush, Herbs, 
 struct MapFeature {
     FeatureType type = FeatureType::Tree;
     std::uint8_t species = 0;  // Species, for trees.
-    std::uint8_t size = 0;     // TreeSize, for trees.
+    std::uint8_t size = 0;     // TreeSize, for trees; 0..2 for a stone deposit, by what is left.
     std::uint16_t rotation = 0;
     Fixed x;
     Fixed z;

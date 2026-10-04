@@ -81,7 +81,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `cost` | `{"core:log": 12, ...}`. |
 | `buildWork` | Trabajo para construirlo (ticks de trabajador; 10 por segundo a x1). |
 | `workers`, `work` | Trabajadores y tipo de trabajo: `gather`, `produce`, `haul`, `farm`, `hunt`, `fish`, `explore` (su trabajador va adonde el jugador lo manda con clic derecho). |
-| `gathers`, `radius` | Para `gather`: `tree`, `stone`, `ironOre`, `berryBush`, `herbs`, y el radio en metros. |
+| `gathers`, `radius` | Para `gather`: `tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, y el radio en metros. |
 | `recipes` | Para `produce`: lista de recetas. |
 | `residents` | Para casas. |
 | `storage`, `stores` | Capacidad y categorías que guarda. Un `storage` que guarda `gold` y no es el puesto de comercio es una bóveda: ahí van los peones a dejar el oro que sobra. |
@@ -109,7 +109,7 @@ Las unidades del ejército y los pueblos también tienen `sight`: los metros que
 
 ### mapFeature
 
-Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie).
+Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie). El yacimiento (`stoneDeposit`) es distinto: `amount` es lo que tiene el tamaño chico (el mediano tiene 5/2 y el grande 25/4), `models` son sus tres tamaños en orden (chico, mediano, grande) y no variantes, y `landmark` vale solo para el grande.
 
 ### species y biome
 

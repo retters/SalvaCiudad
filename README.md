@@ -602,6 +602,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 83 (yacimientos de roca)
+
+- [ ] En una partida nueva hay un yacimiento de roca mediano o grande a un paseo del pueblo (hasta unos 200 m), y unos pocos más por el mapa; se distinguen los tres tamaños.
+- [ ] Al hacer clic en uno, su ventana dice «Yacimiento de roca» y cuánta piedra le queda.
+- [ ] No se puede construir encima, y los aldeanos lo rodean al caminar.
+- [ ] Un cantero con un yacimiento a su alcance lo trabaja con sus dos trabajadores a la vez, parados alrededor.
+- [ ] Al gastarse pasa al modelo del tamaño menor (en 2 000 y en 800 unidades) y al agotarse desaparece; ahí se puede volver a construir.
+- [ ] Con niebla de guerra, los yacimientos grandes se ven como silueta en lo no explorado.
+- [ ] **Sin revisar en pantalla por Claude:** en el juego; los tres modelos sí se vieron en una imagen hecha con Blender.
+- [ ] **Tu opinión:** el aspecto de los tres modelos, si hay pocos o muchos, y si los trabajadores se ven bien picando a varios metros del centro.
+
 ### Fase 82 (más roca, bayas y hierbas)
 
 - [ ] En una partida nueva se ven más rocas sueltas, arbustos de bayas y hierbas que antes, cerca del pueblo y lejos de él.

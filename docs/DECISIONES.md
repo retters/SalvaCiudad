@@ -3099,3 +3099,26 @@ Generador 6; suma de referencia del mapa pequeño `0xc35b65fc86f2066e`. El lími
 
 **D-8203. Pruebas que dependían del mapa exacto.**
 Al cambiar los mapas, dos pruebas de la suite `farming` quedaron en otro escenario y cambiaron de semilla: «los cazadores traen carne» pasa de la 2 a la 7 (con los mapas nuevos pasa en 9 de las primeras 20 semillas, por las mismas razones de D-5613), y «nadie pasa hambre en un viaje largo» pasa de 1 y 14 a 4 y 16 (zona de caza a 350 m o más). **Hallazgo sin resolver:** en esa misma prueba, con las semillas 14, 15 y 18 de los mapas nuevos, el medidor de comida de algún aldeano llega a cero durante el año aunque el pueblo tiene comida, y la cabaña de caza nunca se termina (en la 14 la zona está a solo 51 m). No se investigó si es la regla del hambre de la fase 66, el sitio de la cabaña o algo de las fases 73 a 79; queda para revisar aparte.
+
+## Fase 83: yacimientos de roca (2026-10-04)
+
+**D-8301. Un tipo de objeto natural nuevo, con tamaño.**
+`stoneDeposit` es un tipo más de los objetos del mapa. Su tamaño (0 a 2) va en el campo que los árboles usan para el suyo, y lo fija lo que le queda: más de 2 000, grande; más de 800, mediano; si no, chico. Las cantidades salen del `amount` de su definición (800) por 1, 5/2 y 25/4, así un mod puede cambiarlas con un número. Al gastarse, la simulación le baja el tamaño y la vista cambia de modelo sin rehacer nada (los tres modelos son «aspectos» de uno solo, como los estados de un árbol).
+
+**D-8302. Ocupa terreno.**
+Un cuadrado de 4, 6 u 8 m de lado donde no se camina ni se construye; al bajar de tamaño ocupa menos y al agotarse queda libre. Es el único objeto natural que estorba: árboles y rocas sueltas siguen sin estorbar. El generador quita lo que haya caído sobre ese cuadrado (y el yacimiento menor si dos se pisan).
+
+**D-8303. Varios a la vez.**
+Un yacimiento no se reserva: lo trabajan a la vez todos los canteros que lo tengan a su alcance, cada uno parado fuera del cuadrado. Las rocas sueltas siguen siendo de un trabajador por roca.
+
+**D-8304. Cuántos y dónde.**
+Con «Recursos» al 100 %, 4 por km² (uno al menos por mapa) en el terreno más rocoso o empinado de entre varios sitios al azar; la mitad chicos, un 35 % medianos y un 15 % grandes. Además cada inicio tiene uno mediano a entre 70 y 180 m si no le tocó ya uno mediano o grande a menos de 200 m. La especificación pedía «250 m caminando»: el generador no calcula caminos, así que se garantiza la distancia en línea recta, y la prueba comprueba que desde el pueblo se llega caminando en tres mapas medianos de cuatro jugadores. Un inicio rodeado de agua podría quedar sin el suyo (seis intentos), como ya pasa con las rocas y las bayas.
+
+**D-8305. Su propio azar.**
+Los yacimientos tiran sus dados aparte (otra secuencia de la misma semilla). Así el resto del mapa es el de la fase 82 más los yacimientos, y no hubo que volver a buscar semillas para las pruebas de partida. La primera versión usaba los dados comunes y dejaba otra vez sin pueblo a las pruebas de una hora.
+
+**D-8306. Arte.**
+`props.py` (`stone_deposits`): tres afloramientos de rocas grandes con caras más claras de piedra cortada y musgo arriba, de unos 2,5, 4 y 5,5 m de alto. Se construyeron solo esos tres archivos, sin rehacer los demás modelos.
+
+**D-8307. Versiones, lo medido y lo que no.**
+Generador 7 (suma del mapa pequeño `0xcef750f665d22845`), reglas 47. Pruebas en la suite `resources`: los dos canteros pican a la vez; un yacimiento chico se trabaja hasta la última unidad, libera su terreno y el cantero avisa una vez; guardar y cargar con uno a medio gastar; no se construye ni se camina encima; cada inicio tiene el suyo y se llega caminando; nada más ocupa su terreno. Sin prueba propia: el paso de grande a mediano y de mediano a chico dentro de una partida (sí la función que decide el tamaño), y que entregue exactamente 800 unidades (lo que no cabe en los almacenes se pierde, así que solo se comprueba que el nodo llega a cero). Las herramientas de desarrollo no ganaron un botón para crear yacimientos (la orden `DevFeature` sí los acepta).

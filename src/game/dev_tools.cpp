@@ -35,6 +35,7 @@ sim::Fixed to_fixed(float v) {
 const char* feature_key(sim::FeatureType t) {
     switch (t) {
         case sim::FeatureType::Stone: return "feature.stone";
+        case sim::FeatureType::StoneDeposit: return "feature.stoneDeposit";
         case sim::FeatureType::IronOre: return "feature.ironOre";
         case sim::FeatureType::BerryBush: return "feature.berryBush";
         case sim::FeatureType::Herbs: return "feature.herbs";
@@ -46,6 +47,7 @@ const char* feature_key(sim::FeatureType t) {
 float feature_base_height(sim::FeatureType t) {
     switch (t) {
         case sim::FeatureType::Stone: return 1.0f;
+        case sim::FeatureType::StoneDeposit: return 3.0f;
         case sim::FeatureType::IronOre: return 1.1f;
         case sim::FeatureType::BerryBush: return 0.9f;
         case sim::FeatureType::Herbs: return 0.6f;

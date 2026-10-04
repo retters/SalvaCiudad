@@ -42,7 +42,9 @@ struct TreeCalendar {
 
 // The look (render::Instance::look) a tree takes in a state: the state's
 // number, or 0 (Bloom's) for a species without models for it.
-[[nodiscard]] std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when);
+[[nodiscard]] // The look of any feature: a tree's state, a stone deposit's size, 0 the rest.
+[[nodiscard]] std::uint8_t feature_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when);
+std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when);
 
 // Instances are grouped by "visual slot". Each tree species has
 // kSpeciesSlots, one per variant: a tree stays in its slot all year and

@@ -46,6 +46,16 @@
       "work": 20,
       "regrowDays": 45,
       "model": "models/props/herb.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:stone_deposit",
+      "kind": "stoneDeposit",
+      "resource": "core:stone",
+      "amount": 800,
+      "work": 30,
+      "landmark": true,
+      "models": ["models/props/stone_deposit_small.glb", "models/props/stone_deposit_medium.glb", "models/props/stone_deposit_large.glb"]
     }
   ]
 }

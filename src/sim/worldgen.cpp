@@ -75,7 +75,8 @@ class Generator {
 public:
     Generator(const MapSettings& s, const Content& content, const GenProgress& progress)
         : s_(s), flora_(content.flora), progress_(progress), n_(map_cells(s.size)), v_(n_ + 1),
-          rng_(s.seed, 7) {}
+          rng_(s.seed, 7),
+          deposit_rng_(s.seed, 83) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -124,9 +125,10 @@ private:
         const std::int32_t a = h_[vi(cx, cz)], b = h_[vi(cx + 1, cz)], c = h_[vi(cx, cz + 1)], d = h_[vi(cx + 1, cz + 1)];
         return std::max({a, b, c, d}) - std::min({a, b, c, d});
     }
-    void add_feature(FeatureType type, Fixed x, Fixed z, Fixed scale, std::uint16_t rotation) {
+    void add_feature(FeatureType type, Fixed x, Fixed z, Fixed scale, std::uint16_t rotation, std::uint8_t size = 0) {
         MapFeature f;
         f.type = type;
+        f.size = size;
         f.x = x;
         f.z = z;
         f.scale = scale;
@@ -1053,6 +1055,55 @@ private:
         }
     }
 
+    void deposit(std::int32_t cx, std::int32_t cz, std::uint8_t size) {
+        add_feature(FeatureType::StoneDeposit, cell_center(cx), cell_center(cz), Fixed::one(),
+                    static_cast<std::uint16_t>(rng_.next_u32()), size);
+    }
+
+    // Nothing else stands on the ground a stone deposit takes.
+    void clear_deposits() {
+        // The deposits by 16 m square, each in the nine around it.
+        std::vector<std::pair<std::uint64_t, std::uint32_t>> near;
+        const auto key = [](std::int32_t x, std::int32_t z) {
+            return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(z >> 4)) << 32) | static_cast<std::uint32_t>(x >> 4);
+        };
+        for (std::size_t i = 0; i < out_.features.size(); ++i) {
+            const MapFeature& f = out_.features[i];
+            if (f.type != FeatureType::StoneDeposit) {
+                continue;
+            }
+            for (std::int32_t dz = -16; dz <= 16; dz += 16) {
+                for (std::int32_t dx = -16; dx <= 16; dx += 16) {
+                    near.emplace_back(key(f.x.floor_int() + dx, f.z.floor_int() + dz), static_cast<std::uint32_t>(i));
+                }
+            }
+        }
+        if (near.empty()) {
+            return;
+        }
+        std::sort(near.begin(), near.end());
+        std::vector<std::uint8_t> gone(out_.features.size(), 0);
+        for (std::size_t i = 0; i < out_.features.size(); ++i) {
+            const MapFeature& f = out_.features[i];
+            const std::int32_t x = f.x.floor_int();
+            const std::int32_t z = f.z.floor_int();
+            const std::pair<std::uint64_t, std::uint32_t> from{key(x, z), 0};
+            for (auto it = std::lower_bound(near.begin(), near.end(), from); it != near.end() && it->first == from.first; ++it) {
+                const MapFeature& d = out_.features[it->second];
+                // A deposit gives way to a larger one, or to the one placed first.
+                const bool stays = f.type == FeatureType::StoneDeposit &&
+                                   (f.size > d.size || (f.size == d.size && i <= it->second));
+                const std::int32_t reach = deposit_half_side(d.size) + (f.type == FeatureType::StoneDeposit ? deposit_half_side(f.size) : 1);
+                if (!stays && std::abs(x - d.x.floor_int()) <= reach && std::abs(z - d.z.floor_int()) <= reach) {
+                    gone[i] = 1;
+                    break;
+                }
+            }
+        }
+        std::size_t at = 0;
+        std::erase_if(out_.features, [&](const MapFeature&) { return gone[at++] != 0; });
+    }
+
     bool resources() {
         const std::int64_t k = s_.resources;  // In fiftieths: 100 % is 2.
         std::int32_t x = 0;
@@ -1071,6 +1122,17 @@ private:
         if (!report(GenStage::Resources, 25)) {
             return false;
         }
+        // Phase 83: a few stone deposits, on the rockiest ground found; one
+        // in two is small, one in seven large.
+        const std::int32_t deposits = per_area(20 * k / 50);
+        std::swap(rng_, deposit_rng_);
+        for (std::int32_t i = 0; i < deposits; ++i) {
+            if (pick_cell(12, any, rocky, x, z)) {
+                const std::int32_t roll = rng_.range(0, 99);
+                deposit(x, z, roll < 50 ? std::uint8_t{0} : roll < 85 ? std::uint8_t{1} : std::uint8_t{2});
+            }
+        }
+        std::swap(rng_, deposit_rng_);
         const std::int32_t ores = per_area(30 * k / 50);
         for (std::int32_t i = 0; i < ores; ++i) {
             if (pick_cell(16, any, rocky, x, z)) {
@@ -1273,6 +1335,19 @@ private:
                     cluster(FeatureType::BerryBush, x, z, 3, 5, 90, 120);
                 }
             }
+            // Phase 83: a stone deposit, medium or large, a walk away.
+            const auto big_deposit = [&](const MapFeature& f) {
+                return f.type == FeatureType::StoneDeposit && f.size >= 1 &&
+                       d2(f.x, f.z, s.x, s.z) <= meters2(kStartDepositRadius) && !cleared(f);
+            };
+            std::swap(rng_, deposit_rng_);
+            for (int attempt = 0;
+                 attempt < 6 && std::none_of(out_.features.begin(), out_.features.end(), big_deposit); ++attempt) {
+                if (ring_cell(s.x, s.z, 70, kStartDepositRadius - 20, x, z)) {
+                    deposit(x, z, 1);
+                }
+            }
+            std::swap(rng_, deposit_rng_);
             for (int attempt = 0; attempt < 4; ++attempt) {
                 const std::int32_t trees = count_near(FeatureType::Tree, s.x, s.z, kStartResourceRadius);
                 if (trees >= kStartMinTrees || !ring_cell(s.x, s.z, 70, 150, x, z)) {
@@ -1284,6 +1359,7 @@ private:
         // Room for the town center, and no predators on the doorstep.
         const std::int64_t safe = meters2(250);
         std::erase_if(out_.features, [&](const MapFeature& f) { return cleared(f); });
+        clear_deposits();
         std::erase_if(out_.zones, [&](const Zone& zone) {
             const bool predator = zone.type == ZoneType::Wolves || zone.type == ZoneType::Bears;
             return predator && std::any_of(out_.starts.begin(), out_.starts.end(), [&](const StartPosition& s) {
@@ -1463,6 +1539,9 @@ private:
     std::int32_t n_;
     std::int32_t v_;
     Rng rng_;
+    // Phase 83: the stone deposits roll their own dice, so the rest of the
+    // map is the one it was without them.
+    Rng deposit_rng_;
     MapData out_;
     std::vector<std::int32_t> h_;       // Vertex heights, millimeters.
     std::vector<std::uint8_t> bed_;        // Vertex dug as a river bed.

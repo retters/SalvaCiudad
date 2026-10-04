@@ -233,7 +233,8 @@
       "workers": 2,
       "work": "gather",
       "gathers": [
-        "stone"
+        "stone",
+        "stoneDeposit"
       ],
       "radius": 60,
       "storage": 40,

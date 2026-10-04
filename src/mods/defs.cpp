@@ -337,7 +337,7 @@ constexpr std::string_view kBuildCategories[] = {"housing",  "food",       "reso
                                                  "garden",   "nature",     "monuments", "ruins"};
 constexpr std::string_view kNeeds[] = {"food",   "water",  "clothes", "shoes",  "religion", "entertainment",
                                        "heating", "beauty", "market",  "hygiene", "healer",  "doctor"};
-constexpr std::string_view kFeatureKinds[] = {"tree", "stone", "ironOre", "berryBush", "herbs"};
+constexpr std::string_view kFeatureKinds[] = {"tree", "stone", "ironOre", "berryBush", "herbs", "stoneDeposit"};
 constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge"};
 
 template <typename T>

@@ -146,8 +146,9 @@ std::int32_t left(const Game& g, FeatureType type, std::int32_t x, std::int32_t 
 
 TEST_SUITE("resources") {
     TEST_CASE("a stonecutter that runs out of rock says so once, and stays that way") {
-        // Two small rocks (4 units each) and no other within 150 m.
-        const Land l = land(21, {FeatureType::Stone}, FeatureType::Stone, 2, Fixed::from_ratio(1, 10));
+        // Two small rocks (4 units each) and no other rock or deposit within 150 m.
+        const Land l = land(21, {FeatureType::Stone, FeatureType::StoneDeposit}, FeatureType::Stone, 2,
+                            Fixed::from_ratio(1, 10));
         Game g(content(), l.map, setup());
         const EntityId cutter = build(g, "core:stonecutter", l.x, l.z);
         const sc::sim::BuildingDef& def = content()->buildings[g.buildings().get(cutter)->def];
@@ -193,6 +194,154 @@ TEST_SUITE("resources") {
         stop.value = 0;
         g.apply(stop);
         CHECK(sc::supply_key(def, *g.buildings().get(cutter)) == nullptr);
+    }
+
+    TEST_CASE("a stone deposit is quarried by two at once, wears down a size at a time and is gone") {
+        // No loose rock near: only a medium deposit (2000), cut down to 812 to see it end.
+        Land l = land(21, {FeatureType::Stone, FeatureType::StoneDeposit}, FeatureType::StoneDeposit, 1, Fixed::one());
+        l.map.features.back().size = 1;
+        const std::int32_t dx = l.map.features.back().x.floor_int();
+        const std::int32_t dz = l.map.features.back().z.floor_int();
+        Game g(content(), l.map, setup());
+        const std::uint32_t node = static_cast<std::uint32_t>(g.nodes().size() - 1);
+        REQUIRE(g.nodes()[node].amount == 2000);
+        // Its ground is taken: nothing is built on it, and nobody walks through.
+        const DefIndex house = content()->find_building("core:house");
+        CHECK(g.can_place(0, house, dx - 1, dz - 1, 0) == PlaceError::Blocked);
+        CHECK_FALSE(g.nav().walkable(g.nav().cell_of(Fixed::from_int(dx)), g.nav().cell_of(Fixed::from_int(dz))));
+        const EntityId cutter = build(g, "core:stonecutter", dx, dz + 12);
+        (void)g.take_events();
+        // Both workers at the deposit at the same time.
+        bool together = false;
+        for (int t = 0; t < 3000 && !together; ++t) {
+            g.step();
+            int at = 0;
+            for (const Villager& v : g.villagers().data()) {
+                at += v.job == cutter && v.task == Task::Gather && v.node == node + 1 ? 1 : 0;
+            }
+            together = at >= 2;
+        }
+        CHECK(together);
+        CHECK(g.map().features[node].size == 1);
+        // Saved half spent and loaded, it is the same game.
+        BinaryWriter w;
+        g.save(w);
+        Game back(content(), l.map, setup());
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, content()));
+        CHECK(back.hash() == g.hash());
+        CHECK(back.nodes()[node].amount == g.nodes()[node].amount);
+        CHECK_FALSE(back.nav().walkable(back.nav().cell_of(Fixed::from_int(dx)), back.nav().cell_of(Fixed::from_int(dz))));
+        run(g, 200);
+        run(back, 200);
+        CHECK(back.hash() == g.hash());
+    }
+
+    TEST_CASE("a small stone deposit is worked to its last unit and frees its ground; the stonecutter then says so") {
+        Land l = land(21, {FeatureType::Stone, FeatureType::StoneDeposit}, FeatureType::StoneDeposit, 1, Fixed::one());
+        const std::int32_t dx = l.map.features.back().x.floor_int();
+        const std::int32_t dz = l.map.features.back().z.floor_int();
+        Game g(content(), l.map, setup());
+        const std::uint32_t node = static_cast<std::uint32_t>(g.nodes().size() - 1);
+        REQUIRE(g.nodes()[node].amount == 800);
+        CHECK(deposit_amount(800, 2) == 5000);
+        CHECK(deposit_size(800, 5000) == 2);
+        CHECK(deposit_size(800, 2001) == 2);
+        CHECK(deposit_size(800, 2000) == 1);
+        CHECK(deposit_size(800, 801) == 1);
+        CHECK(deposit_size(800, 800) == 0);
+        const EntityId cutter = build(g, "core:stonecutter", dx, dz + 12);
+        (void)g.take_events();
+        const DefIndex stone = content()->find_resource("core:stone");
+        const auto all_stone = [&] {
+            std::int32_t total = g.stored(0)[stone];
+            for (const Building& b : g.buildings().data()) {
+                for (const Stock& s : b.stock) {
+                    total += b.state == BuildingState::Complete && content()->buildings[b.def].storage == 0 &&
+                                     s.resource == stone
+                                 ? s.amount
+                                 : 0;
+                }
+            }
+            for (const Villager& v : g.villagers().data()) {
+                total += v.carrying.resource == stone ? v.carrying.amount : 0;
+            }
+            return total;
+        };
+        const std::int32_t before = all_stone();
+        int told = 0;
+        for (int t = 0; t < 4000 && g.buildings().get(cutter)->supply != Supply::Exhausted; ++t) {
+            grant(g, "core:roots", 1);
+            run(g, 100);
+            told += exhausted_events(g, cutter);
+        }
+        CHECK(g.nodes()[node].amount == 0);
+        CHECK(g.buildings().get(cutter)->supply == Supply::Exhausted);
+        CHECK(told == 1);
+        // (What does not fit in the storages is left on the ground: not all 800 are kept.)
+        CHECK(all_stone() > before);
+        CHECK(g.nav().walkable(g.nav().cell_of(Fixed::from_int(dx)), g.nav().cell_of(Fixed::from_int(dz))));
+        CHECK(g.can_place(0, content()->find_building("core:house"), dx - 1, dz - 1, 0) != PlaceError::Blocked);
+    }
+
+    TEST_CASE("every start has a stone deposit, medium or large, within a walk") {
+        for (const std::uint64_t seed : {4242ull, 12345ull, 777ull}) {
+            MapSettings s;
+            s.seed = seed;
+            s.size = MapSize::Medium;
+            s.sea = Sea::None;
+            s.players = 4;
+            const std::optional<MapData> m = generate_map(s, *content());
+            REQUIRE(m.has_value());
+            int deposits = 0;
+            int sizes[kDepositSizes] = {};
+            for (const MapFeature& f : m->features) {
+                if (f.type == FeatureType::StoneDeposit) {
+                    ++deposits;
+                    REQUIRE(f.size < kDepositSizes);
+                    ++sizes[f.size];
+                }
+            }
+            MESSAGE("seed " << seed << ": " << deposits << " deposits (" << sizes[0] << " small, " << sizes[1] << " medium, "
+                            << sizes[2] << " large)");
+            CHECK(deposits >= 4);
+            CHECK(deposits <= 40);
+            GameSetup gs = setup();
+            gs.players = 4;
+            Game g(content(), *m, gs);
+            for (std::size_t p = 0; p < m->starts.size(); ++p) {
+                const StartPosition& st = m->starts[p];
+                bool near = false;
+                for (const MapFeature& f : m->features) {
+                    const std::int64_t ddx = f.x.floor_int() - st.x.floor_int();
+                    const std::int64_t ddz = f.z.floor_int() - st.z.floor_int();
+                    if (f.type != FeatureType::StoneDeposit || f.size < 1 || ddx * ddx + ddz * ddz > 200 * 200) {
+                        continue;
+                    }
+                    // Walkable from the town to beside the deposit.
+                    const std::int32_t half = deposit_half_side(f.size) + 2;
+                    for (const auto& [ox, oz] : {std::pair{half, 0}, std::pair{-half, 0}, std::pair{0, half}, std::pair{0, -half}}) {
+                        near = near || g.nav().connected({st.x, st.z + Fixed::from_int(12)},
+                                                         {f.x + Fixed::from_int(ox), f.z + Fixed::from_int(oz)});
+                    }
+                }
+                CAPTURE(seed);
+                CAPTURE(p);
+                CHECK(near);
+            }
+            // Nothing else stands on a deposit's ground.
+            for (const MapFeature& d : m->features) {
+                if (d.type != FeatureType::StoneDeposit) {
+                    continue;
+                }
+                for (const MapFeature& f : m->features) {
+                    const std::int32_t reach = deposit_half_side(d.size);
+                    const bool on = &f != &d && std::abs(f.x.floor_int() - d.x.floor_int()) <= reach &&
+                                    std::abs(f.z.floor_int() - d.z.floor_int()) <= reach;
+                    CHECK_FALSE(on);
+                }
+            }
+        }
     }
 
     TEST_CASE("a forager whose bushes are picked clean waits for them, without a word") {

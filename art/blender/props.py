@@ -502,9 +502,43 @@ def arrow_flight(folder):
     common.export_glb(os.path.join(folder, "arrow_flight.glb"), [obj])
 
 
+def stone_deposits(folder):
+    """Stone deposits (phase 83): an outcrop of bare rock in three sizes,
+    about 4, 6 and 8 m across. Each is the one above worn down, so a deposit
+    being quarried can change to the smaller one. Lighter faces show the cut
+    stone; (x, y, z, r, sx, sy, sz, mat) per lump, as rock_variant."""
+    os.makedirs(folder, exist_ok=True)
+    rock_variant(folder, "stone_deposit_small", (
+        (0.0, 0.0, 0.55, 1.25, 1.25, 1.05, 0.95, "rock"),
+        (1.0, 0.55, 0.3, 0.75, 1.1, 1.0, 0.8, "rock_dark"),
+        (-0.95, -0.5, 0.3, 0.7, 1.2, 0.9, 0.75, "stone"),
+        (0.2, -1.0, 0.2, 0.5, 1.1, 1.0, 0.7, "rock_dark"),
+        (-0.2, 0.3, 1.45, 0.45, 1.3, 1.0, 0.35, "moss")), 4.1)
+    rock_variant(folder, "stone_deposit_medium", (
+        (0.0, 0.0, 0.9, 1.75, 1.3, 1.05, 1.2, "rock"),
+        (1.6, 0.7, 0.5, 1.1, 1.1, 1.0, 0.95, "rock_dark"),
+        (-1.55, -0.6, 0.6, 1.15, 1.15, 0.95, 1.1, "stone"),
+        (0.3, -1.7, 0.35, 0.85, 1.2, 1.0, 0.8, "rock_dark"),
+        (-0.6, 1.6, 0.35, 0.8, 1.1, 1.1, 0.8, "rock"),
+        (2.2, -0.9, 0.2, 0.5, 1.0, 1.0, 0.7, "stone"),
+        (-0.2, 0.2, 2.85, 0.6, 1.4, 1.0, 0.3, "moss")), 6.3)
+    rock_variant(folder, "stone_deposit_large", (
+        (0.0, 0.0, 1.5, 2.3, 1.25, 1.05, 1.5, "rock"),
+        (2.1, 0.9, 0.9, 1.5, 1.15, 1.0, 1.25, "rock_dark"),
+        (-2.1, -0.7, 1.0, 1.6, 1.1, 0.95, 1.4, "stone"),
+        (0.5, -2.3, 0.6, 1.2, 1.2, 1.0, 1.0, "rock_dark"),
+        (-0.9, 2.2, 0.6, 1.15, 1.15, 1.1, 1.0, "rock"),
+        (3.0, -1.1, 0.35, 0.75, 1.1, 1.0, 0.8, "stone"),
+        (-3.0, 1.0, 0.3, 0.7, 1.0, 1.1, 0.8, "rock_dark"),
+        (1.3, 2.6, 0.3, 0.65, 1.2, 1.0, 0.7, "rock_dark"),
+        (-0.3, 0.2, 4.85, 0.75, 1.5, 1.1, 0.3, "moss"),
+        (2.0, 0.9, 2.75, 0.5, 1.4, 1.0, 0.3, "moss")), 8.7)
+
+
 def make_all(folder):
     os.makedirs(folder, exist_ok=True)
     rock(folder)
+    stone_deposits(folder)
     ore_rock(folder)
     berry_bush(folder)
     herb(folder)

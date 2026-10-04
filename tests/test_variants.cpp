@@ -397,8 +397,10 @@ TEST_SUITE("variants") {
                 REQUIRE(autumn_all[slot].size() == summer_all[slot].size());
                 for (std::size_t i = 0; i < autumn_all[slot].size(); ++i) {
                     CHECK(autumn_all[slot][i].position == summer_all[slot][i].position);
-                    CHECK(summer_all[slot][i].look == 0);
-                    turned += autumn_all[slot][i].look == 1 ? 1u : 0u;
+                    // (A stone deposit's look is its size, all year: phase 83.)
+                    const bool tree = slot < tree_slot_count(content);
+                    CHECK((!tree || summer_all[slot][i].look == 0));
+                    turned += tree && autumn_all[slot][i].look == 1 ? 1u : 0u;
                 }
             }
             CHECK(turned == (turn == 0 ? 0u : turn == kTurnSteps ? cherries : turned));

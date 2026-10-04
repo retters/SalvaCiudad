@@ -168,6 +168,7 @@ Selected selected(const GameSession::Interaction& ui) {
 const char* feature_key(sim::FeatureType type) {
     switch (type) {
         case sim::FeatureType::Stone: return "feature.stone";
+        case sim::FeatureType::StoneDeposit: return "feature.stoneDeposit";
         case sim::FeatureType::IronOre: return "feature.ironOre";
         case sim::FeatureType::BerryBush: return "feature.berryBush";
         case sim::FeatureType::Herbs: return "feature.herbs";
