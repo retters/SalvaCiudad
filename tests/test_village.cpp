@@ -691,155 +691,6 @@ TEST_SUITE("village") {
         CHECK(a.rejected_commands() == 3);
     }
 
-    TEST_CASE("what gives light at night: the town center, a torch once built, a home with people") {
-        CHECK(content()->buildings[building("torch")].light == 10);
-        CHECK(content()->buildings[building("town_center")].light == 20);
-        CHECK(content()->buildings[building("decor_lamp_post")].light > 0);
-        CHECK(content()->buildings[building("decor_glow_bells")].cool_light);
-        CHECK(content()->buildings[building("house")].light == 0);
-        GameSetup setup{1, 7, false, GameRules{}};
-        setup.rules.raiders = Threat::None;
-        setup.rules.wildlife = Threat::None;
-        setup.rules.fires = Threat::None;
-        setup.rules.diseases = Threat::None;
-        Game g(content(), small_map(27), setup);
-        const Building* tc = g.buildings().get(g.player(0).town_center);
-        REQUIRE(tc != nullptr);
-        CHECK(g.light(*tc) == 20);
-        REQUIRE(place(g, building("torch")));
-        REQUIRE(place(g, building("house")));
-        const auto light_of = [&](std::string_view id) {
-            for (const Building& b : g.buildings().data()) {
-                if (b.def == building(id)) {
-                    return g.light(b);
-                }
-            }
-            return -1;
-        };
-        // Sites give none.
-        CHECK(light_of("torch") == 0);
-        CHECK(light_of("house") == 0);
-        for (int i = 0; i < 6000 && (complete_count(g, building("torch")) == 0 || complete_count(g, building("house")) == 0);
-             ++i) {
-            g.step();
-        }
-        REQUIRE(complete_count(g, building("torch")) == 1);
-        REQUIRE(complete_count(g, building("house")) == 1);
-        CHECK(light_of("torch") == 10);
-        // The house, once someone lives in it: its windows, a little beyond its walls.
-        for (int i = 0; i < 3000 && light_of("house") == 0; ++i) {
-            g.step();
-        }
-        CHECK(light_of("house") > village::kOccupiedLight);
-    }
-
-    TEST_CASE("the dark of the night slows those out of the light, but not those who see in it") {
-        const auto race_of = [](const char* id) {
-            const auto& races = content()->races;
-            for (std::size_t i = 0; i < races.size(); ++i) {
-                if (races[i].id == id) {
-                    return static_cast<std::uint8_t>(i);
-                }
-            }
-            FAIL("no race " << id);
-            return std::uint8_t{0};
-        };
-        struct Walked {
-            double lit = 0.0;      // The longest step of a tick in the light, in meters.
-            double dark = 0.0;     // And in the dark.
-            int dark_steps = 0;    // Ticks somebody walked in the dark.
-            bool night = false;
-        };
-        // A town with a woodcutter and a forager, so people walk far from
-        // the town center; the first ten minutes are day, then it is night.
-        const auto walk = [&](const char* race, DayNightSettings cycle) {
-            GameSetup setup{1, 7, false, GameRules{}};
-            setup.rules.climate.seasons = 0b0010;  // No snow to slow anybody.
-            setup.rules.raiders = Threat::None;
-            setup.rules.wildlife = Threat::None;
-            setup.rules.fires = Threat::None;
-            setup.rules.diseases = Threat::None;
-            setup.rules.races.fill(race_of(race));
-            setup.rules.other_races = 0;
-            setup.rules.day_night = cycle;
-            Game g(content(), small_map(27), setup);
-            opening(g);
-            run(g, 10 * kTicksPerMinute + 50);
-            Walked w;
-            w.night = g.night();
-            for (int t = 0; t < 4000; ++t) {
-                std::vector<bool> before;
-                for (const Villager& v : g.villagers().data()) {
-                    before.push_back(g.in_the_dark(v));
-                }
-                const std::size_t count = g.villagers().size();
-                g.step();
-                if (g.villagers().size() != count) {
-                    continue;  // Somebody came or went: the order changed.
-                }
-                for (std::size_t k = 0; k < count; ++k) {
-                    const Villager& v = g.villagers().data()[k];
-                    const bool after = g.in_the_dark(v);
-                    if (before[k] != after) {
-                        continue;  // Crossing the edge of the light.
-                    }
-                    const double step = static_cast<double>((v.position - v.previous).length().raw()) / 65536.0;
-                    (after ? w.dark : w.lit) = std::max(after ? w.dark : w.lit, step);
-                    w.dark_steps += after && step > 0.0 ? 1 : 0;
-                }
-            }
-            return w;
-        };
-        const Walked humans = walk("core:human", {10, 30});
-        MESSAGE("humans at night: " << humans.lit << " m a tick in the light, " << humans.dark << " in the dark ("
-                                    << humans.dark_steps << " steps)");
-        CHECK(humans.night);
-        CHECK(humans.dark_steps > 100);
-        CHECK(humans.lit == doctest::Approx(0.2).epsilon(0.02));
-        CHECK(humans.dark == doctest::Approx(0.2 * village::kDarkPercent / 100).epsilon(0.02));
-        // Catfolk see at night: never in the dark, and as fast as ever.
-        const Walked cats = walk("core:catfolk", {10, 30});
-        CHECK(cats.night);
-        CHECK(cats.dark_steps == 0);
-        CHECK(cats.lit > 0.2);
-        // No cycle: no night, nobody in the dark.
-        const Walked always_day = walk("core:human", {});
-        CHECK_FALSE(always_day.night);
-        CHECK(always_day.dark_steps == 0);
-        CHECK(always_day.lit == doctest::Approx(0.2).epsilon(0.02));
-    }
-
-    TEST_CASE("the light of the simulation: around what gives light, and gone with it") {
-        GameSetup setup{1, 7, false, GameRules{}};
-        setup.rules.raiders = Threat::None;
-        setup.rules.wildlife = Threat::None;
-        setup.rules.day_night = {1, 30};
-        Game g(content(), small_map(27), setup);
-        const Building* tc = g.buildings().get(g.player(0).town_center);
-        REQUIRE(tc != nullptr);
-        const std::int32_t cx = tc->x + tc->width / 2;
-        const std::int32_t cz = tc->z + tc->depth / 2;
-        // By day nothing is drawn or asked.
-        CHECK_FALSE(g.night());
-        run(g, kTicksPerMinute + 1);
-        REQUIRE(g.night());
-        CHECK(g.lit(cx, cz));
-        CHECK(g.lit(cx + 14, cz));
-        CHECK_FALSE(g.lit(cx + 30, cz));
-        CHECK_FALSE(g.lit(-5, cz));
-        // A loaded game draws the same light.
-        BinaryWriter w;
-        g.save(w);
-        BinaryReader r(w.bytes());
-        Game loaded(content(), small_map(1), 1, 1);
-        REQUIRE(loaded.load(r, content()));
-        loaded.step();
-        g.step();
-        CHECK(loaded.lit(cx + 14, cz));
-        CHECK_FALSE(loaded.lit(cx + 30, cz));
-        CHECK(loaded.hash() == g.hash());
-    }
-
     TEST_CASE("a campfire burns the town's firewood on cold days and keeps those near it warm") {
         const DefIndex fire = building("campfire");
         CHECK(content()->buildings[fire].warmth == 10);
@@ -925,98 +776,6 @@ TEST_SUITE("village") {
                                              << " ms");
         CHECK(end.population(0) > village::kStartVillagers);
         CHECK(complete_count(end, building("house")) >= 4);
-    }
-
-    TEST_CASE("tired villagers go home to rest, and those with no home take twice as long") {
-        // How long the rests that ran from start to end took, in ticks, and
-        // how much of everybody's time went into resting.
-        struct Rests {
-            std::vector<int> ticks;
-            double share = 0.0;
-            bool saved_alike = false;
-        };
-        const auto play = [&](bool homes, bool tired) {
-            GameSetup setup{1, 7, false, GameRules{}};
-            setup.rules.climate.seasons = 0b0010;
-            setup.rules.raiders = Threat::None;
-            setup.rules.wildlife = Threat::None;
-            setup.rules.fires = Threat::None;
-            setup.rules.diseases = Threat::None;
-            setup.rules.rest = tired;
-            Game g(content(), small_map(27), setup);
-            CHECK(place_for(g, building("forager"), FeatureType::BerryBush));
-            if (homes) {
-                for (int i = 0; i < 4; ++i) {
-                    CHECK(place(g, building("house")));
-                }
-            }
-            Rests out;
-            std::map<std::uint32_t, int> since;  // Villager -> ticks resting, from an empty meter.
-            std::int64_t resting = 0;
-            std::int64_t all = 0;
-            for (int t = 0; t < 20 * static_cast<int>(kTicksPerMinute); ++t) {
-                g.step();
-                for (std::size_t k = 0; k < g.villagers().size(); ++k) {
-                    const Villager& v = g.villagers().data()[k];
-                    const std::uint32_t id = g.villagers().entities()[k].index;
-                    ++all;
-                    if (v.task == Task::Rest) {
-                        ++resting;
-                        if (since.contains(id)) {
-                            ++since[id];
-                        } else if (v.energy <= village::kRestGain) {
-                            since[id] = 1;
-                        }
-                    } else if (since.contains(id)) {
-                        if (v.energy >= village::kEnergyMax) {
-                            out.ticks.push_back(since[id]);
-                        }
-                        since.erase(id);
-                    }
-                }
-                if (t == 9 * static_cast<int>(kTicksPerMinute)) {
-                    // Saved with people at rest: the same game comes back.
-                    BinaryWriter w;
-                    g.save(w);
-                    Game back(content(), small_map(1), 1, 1);
-                    BinaryReader r(w.bytes());
-                    out.saved_alike = back.load(r, content()) && back.hash() == g.hash();
-                }
-            }
-            out.share = all > 0 ? static_cast<double>(resting) / static_cast<double>(all) : 0.0;
-            return out;
-        };
-        const Rests housed = play(true, true);
-        REQUIRE_FALSE(housed.ticks.empty());
-        const int at_home = *std::min_element(housed.ticks.begin(), housed.ticks.end());
-        MESSAGE("with homes: " << housed.ticks.size() << " whole rests, the shortest " << at_home << " ticks; "
-                               << housed.share * 100.0 << " % of the time resting");
-        // Two minutes at home.
-        CHECK(at_home == doctest::Approx(village::kEnergyMax / village::kRestGain).epsilon(0.02));
-        CHECK(housed.share > 0.08);
-        CHECK(housed.share < 0.35);
-        CHECK(housed.saved_alike);
-        // Four with no home.
-        const Rests homeless = play(false, true);
-        REQUIRE_FALSE(homeless.ticks.empty());
-        const int outside = *std::min_element(homeless.ticks.begin(), homeless.ticks.end());
-        MESSAGE("with no homes: the shortest whole rest " << outside << " ticks");
-        CHECK(outside == doctest::Approx(village::kEnergyMax / village::kRestGainOutside).epsilon(0.02));
-        // The rule off: nobody rests.
-        const Rests tireless = play(true, false);
-        CHECK(tireless.ticks.empty());
-        CHECK(tireless.share == 0.0);
-    }
-
-    TEST_CASE("an hour of play with tiredness: the tended village still grows") {
-        GameSetup setup{1, 79, false, GameRules{}};
-        setup.rules.raiders = Threat::None;
-        setup.rules.rest = true;
-        Game g(content(), small_map(1), setup);
-        tended_hour(g, false);
-        MESSAGE("after an hour, resting: population " << g.population(0) << ", deaths " << g.player(0).deaths
-                                                      << ", houses " << complete_count(g, building("house")));
-        CHECK(g.population(0) > village::kStartVillagers);
     }
 
     TEST_CASE("an untended village fades away") {
@@ -1178,5 +937,254 @@ TEST_SUITE("village_years") {
         // years people grow old more slowly (D-5902): fewer die, fewer come.
         CHECK(alike(usual.arrivals, longer.arrivals, 0.25));
         CHECK(alike(usual.food * 100 / usual.people, longer.food * 100 / longer.people));
+    }
+}
+
+// Phases 69 to 71: light, the dark of the night and rest. Long games, so in
+// suites of their own.
+TEST_SUITE("night") {
+    TEST_CASE("what gives light at night: the town center, a torch once built, a home with people") {
+        CHECK(content()->buildings[building("torch")].light == 10);
+        CHECK(content()->buildings[building("town_center")].light == 20);
+        CHECK(content()->buildings[building("decor_lamp_post")].light > 0);
+        CHECK(content()->buildings[building("decor_glow_bells")].cool_light);
+        CHECK(content()->buildings[building("house")].light == 0);
+        GameSetup setup{1, 7, false, GameRules{}};
+        setup.rules.raiders = Threat::None;
+        setup.rules.wildlife = Threat::None;
+        setup.rules.fires = Threat::None;
+        setup.rules.diseases = Threat::None;
+        Game g(content(), small_map(27), setup);
+        const Building* tc = g.buildings().get(g.player(0).town_center);
+        REQUIRE(tc != nullptr);
+        CHECK(g.light(*tc) == 20);
+        REQUIRE(place(g, building("torch")));
+        REQUIRE(place(g, building("house")));
+        const auto light_of = [&](std::string_view id) {
+            for (const Building& b : g.buildings().data()) {
+                if (b.def == building(id)) {
+                    return g.light(b);
+                }
+            }
+            return -1;
+        };
+        // Sites give none.
+        CHECK(light_of("torch") == 0);
+        CHECK(light_of("house") == 0);
+        for (int i = 0; i < 6000 && (complete_count(g, building("torch")) == 0 || complete_count(g, building("house")) == 0);
+             ++i) {
+            g.step();
+        }
+        REQUIRE(complete_count(g, building("torch")) == 1);
+        REQUIRE(complete_count(g, building("house")) == 1);
+        CHECK(light_of("torch") == 10);
+        // The house, once someone lives in it: its windows, a little beyond its walls.
+        for (int i = 0; i < 3000 && light_of("house") == 0; ++i) {
+            g.step();
+        }
+        CHECK(light_of("house") > village::kOccupiedLight);
+    }
+
+    TEST_CASE("the dark of the night slows those out of the light, but not those who see in it") {
+        const auto race_of = [](const char* id) {
+            const auto& races = content()->races;
+            for (std::size_t i = 0; i < races.size(); ++i) {
+                if (races[i].id == id) {
+                    return static_cast<std::uint8_t>(i);
+                }
+            }
+            FAIL("no race " << id);
+            return std::uint8_t{0};
+        };
+        struct Walked {
+            double lit = 0.0;      // The longest step of a tick in the light, in meters.
+            double dark = 0.0;     // And in the dark.
+            int dark_steps = 0;    // Ticks somebody walked in the dark.
+            bool night = false;
+        };
+        // A town with a woodcutter and a forager, so people walk far from
+        // the town center; the first ten minutes are day, then it is night.
+        const auto walk = [&](const char* race, DayNightSettings cycle) {
+            GameSetup setup{1, 7, false, GameRules{}};
+            setup.rules.climate.seasons = 0b0010;  // No snow to slow anybody.
+            setup.rules.raiders = Threat::None;
+            setup.rules.wildlife = Threat::None;
+            setup.rules.fires = Threat::None;
+            setup.rules.diseases = Threat::None;
+            setup.rules.races.fill(race_of(race));
+            setup.rules.other_races = 0;
+            setup.rules.day_night = cycle;
+            Game g(content(), small_map(27), setup);
+            opening(g);
+            run(g, 10 * kTicksPerMinute + 50);
+            Walked w;
+            w.night = g.night();
+            for (int t = 0; t < 4000; ++t) {
+                std::vector<bool> before;
+                for (const Villager& v : g.villagers().data()) {
+                    before.push_back(g.in_the_dark(v));
+                }
+                const std::size_t count = g.villagers().size();
+                g.step();
+                if (g.villagers().size() != count) {
+                    continue;  // Somebody came or went: the order changed.
+                }
+                for (std::size_t k = 0; k < count; ++k) {
+                    const Villager& v = g.villagers().data()[k];
+                    const bool after = g.in_the_dark(v);
+                    if (before[k] != after) {
+                        continue;  // Crossing the edge of the light.
+                    }
+                    const double step = static_cast<double>((v.position - v.previous).length().raw()) / 65536.0;
+                    (after ? w.dark : w.lit) = std::max(after ? w.dark : w.lit, step);
+                    w.dark_steps += after && step > 0.0 ? 1 : 0;
+                }
+            }
+            return w;
+        };
+        const Walked humans = walk("core:human", {10, 30});
+        MESSAGE("humans at night: " << humans.lit << " m a tick in the light, " << humans.dark << " in the dark ("
+                                    << humans.dark_steps << " steps)");
+        CHECK(humans.night);
+        CHECK(humans.dark_steps > 100);
+        CHECK(humans.lit == doctest::Approx(0.2).epsilon(0.02));
+        CHECK(humans.dark == doctest::Approx(0.2 * village::kDarkPercent / 100).epsilon(0.02));
+        // Catfolk see at night: never in the dark, and as fast as ever.
+        const Walked cats = walk("core:catfolk", {10, 30});
+        CHECK(cats.night);
+        CHECK(cats.dark_steps == 0);
+        CHECK(cats.lit > 0.2);
+        // No cycle: no night, nobody in the dark.
+        const Walked always_day = walk("core:human", {});
+        CHECK_FALSE(always_day.night);
+        CHECK(always_day.dark_steps == 0);
+        CHECK(always_day.lit == doctest::Approx(0.2).epsilon(0.02));
+    }
+
+    TEST_CASE("the light of the simulation: around what gives light, and gone with it") {
+        GameSetup setup{1, 7, false, GameRules{}};
+        setup.rules.raiders = Threat::None;
+        setup.rules.wildlife = Threat::None;
+        setup.rules.day_night = {1, 30};
+        Game g(content(), small_map(27), setup);
+        const Building* tc = g.buildings().get(g.player(0).town_center);
+        REQUIRE(tc != nullptr);
+        const std::int32_t cx = tc->x + tc->width / 2;
+        const std::int32_t cz = tc->z + tc->depth / 2;
+        // By day nothing is drawn or asked.
+        CHECK_FALSE(g.night());
+        run(g, kTicksPerMinute + 1);
+        REQUIRE(g.night());
+        CHECK(g.lit(cx, cz));
+        CHECK(g.lit(cx + 14, cz));
+        CHECK_FALSE(g.lit(cx + 30, cz));
+        CHECK_FALSE(g.lit(-5, cz));
+        // A loaded game draws the same light.
+        BinaryWriter w;
+        g.save(w);
+        BinaryReader r(w.bytes());
+        Game loaded(content(), small_map(1), 1, 1);
+        REQUIRE(loaded.load(r, content()));
+        loaded.step();
+        g.step();
+        CHECK(loaded.lit(cx + 14, cz));
+        CHECK_FALSE(loaded.lit(cx + 30, cz));
+        CHECK(loaded.hash() == g.hash());
+    }
+}
+
+TEST_SUITE("rest") {
+    TEST_CASE("tired villagers go home to rest, and those with no home take twice as long") {
+        // How long the rests that ran from start to end took, in ticks, and
+        // how much of everybody's time went into resting.
+        struct Rests {
+            std::vector<int> ticks;
+            double share = 0.0;
+            bool saved_alike = false;
+        };
+        const auto play = [&](bool homes, bool tired) {
+            GameSetup setup{1, 7, false, GameRules{}};
+            setup.rules.climate.seasons = 0b0010;
+            setup.rules.raiders = Threat::None;
+            setup.rules.wildlife = Threat::None;
+            setup.rules.fires = Threat::None;
+            setup.rules.diseases = Threat::None;
+            setup.rules.rest = tired;
+            Game g(content(), small_map(27), setup);
+            CHECK(place_for(g, building("forager"), FeatureType::BerryBush));
+            if (homes) {
+                for (int i = 0; i < 4; ++i) {
+                    CHECK(place(g, building("house")));
+                }
+            }
+            Rests out;
+            std::map<std::uint32_t, int> since;  // Villager -> ticks resting, from an empty meter.
+            std::int64_t resting = 0;
+            std::int64_t all = 0;
+            for (int t = 0; t < 20 * static_cast<int>(kTicksPerMinute); ++t) {
+                g.step();
+                for (std::size_t k = 0; k < g.villagers().size(); ++k) {
+                    const Villager& v = g.villagers().data()[k];
+                    const std::uint32_t id = g.villagers().entities()[k].index;
+                    ++all;
+                    if (v.task == Task::Rest) {
+                        ++resting;
+                        if (since.contains(id)) {
+                            ++since[id];
+                        } else if (v.energy <= village::kRestGain) {
+                            since[id] = 1;
+                        }
+                    } else if (since.contains(id)) {
+                        if (v.energy >= village::kEnergyMax) {
+                            out.ticks.push_back(since[id]);
+                        }
+                        since.erase(id);
+                    }
+                }
+                if (t == 9 * static_cast<int>(kTicksPerMinute)) {
+                    // Saved with people at rest: the same game comes back.
+                    BinaryWriter w;
+                    g.save(w);
+                    Game back(content(), small_map(1), 1, 1);
+                    BinaryReader r(w.bytes());
+                    out.saved_alike = back.load(r, content()) && back.hash() == g.hash();
+                }
+            }
+            out.share = all > 0 ? static_cast<double>(resting) / static_cast<double>(all) : 0.0;
+            return out;
+        };
+        const Rests housed = play(true, true);
+        REQUIRE_FALSE(housed.ticks.empty());
+        const int at_home = *std::min_element(housed.ticks.begin(), housed.ticks.end());
+        MESSAGE("with homes: " << housed.ticks.size() << " whole rests, the shortest " << at_home << " ticks; "
+                               << housed.share * 100.0 << " % of the time resting");
+        // Two minutes at home.
+        CHECK(at_home == doctest::Approx(village::kEnergyMax / village::kRestGain).epsilon(0.02));
+        CHECK(housed.share > 0.08);
+        CHECK(housed.share < 0.35);
+        CHECK(housed.saved_alike);
+        // Four with no home.
+        const Rests homeless = play(false, true);
+        REQUIRE_FALSE(homeless.ticks.empty());
+        const int outside = *std::min_element(homeless.ticks.begin(), homeless.ticks.end());
+        MESSAGE("with no homes: the shortest whole rest " << outside << " ticks");
+        CHECK(outside == doctest::Approx(village::kEnergyMax / village::kRestGainOutside).epsilon(0.02));
+        // The rule off: nobody rests.
+        const Rests tireless = play(true, false);
+        CHECK(tireless.ticks.empty());
+        CHECK(tireless.share == 0.0);
+    }
+}
+
+TEST_SUITE("rest_hour") {
+    TEST_CASE("an hour of play with tiredness: the tended village still grows") {
+        GameSetup setup{1, 79, false, GameRules{}};
+        setup.rules.raiders = Threat::None;
+        setup.rules.rest = true;
+        Game g(content(), small_map(1), setup);
+        tended_hour(g, false);
+        MESSAGE("after an hour, resting: population " << g.population(0) << ", deaths " << g.player(0).deaths
+                                                      << ", houses " << complete_count(g, building("house")));
+        CHECK(g.population(0) > village::kStartVillagers);
     }
 }
