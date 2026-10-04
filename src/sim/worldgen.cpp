@@ -1061,7 +1061,8 @@ private:
         const auto rocky = [this](std::int32_t cx, std::int32_t cz) {
             return cell_slope(cx, cz) + (cell_terrain(cx, cz) == Terrain::Rock ? 1000 : 0);
         };
-        const std::int32_t stones = per_area(125 * k / 50);
+        // Phase 82: twice the loose rock, bushes and herbs of before.
+        const std::int32_t stones = per_area(250 * k / 50);
         for (std::int32_t i = 0; i < stones; ++i) {
             if (pick_cell(8, any, rocky, x, z)) {
                 cluster(FeatureType::Stone, x, z, rng_.range(1, 3), 5, 100, 220);
@@ -1080,7 +1081,7 @@ private:
             const Terrain t = cell_terrain(cx, cz);
             return (t == Terrain::ForestFloor && forest_[ci(cx, cz)] < 40) || t == Terrain::Meadow;
         };
-        const std::int32_t berries = per_area(100 * k / 50);
+        const std::int32_t berries = per_area(250 * k / 50);
         for (std::int32_t i = 0; i < berries; ++i) {
             if (pick_cell(10, forest_edge, {}, x, z)) {
                 cluster(FeatureType::BerryBush, x, z, rng_.range(2, 4), 6, 80, 130);
@@ -1089,7 +1090,7 @@ private:
         const auto deep_forest = [this](std::int32_t cx, std::int32_t cz) {
             return cell_terrain(cx, cz) == Terrain::ForestFloor && forest_[ci(cx, cz)] >= 60;
         };
-        const std::int32_t herbs = per_area(75 * k / 50);
+        const std::int32_t herbs = per_area(150 * k / 50);
         for (std::int32_t i = 0; i < herbs; ++i) {
             if (pick_cell(10, deep_forest, {}, x, z)) {
                 cluster(FeatureType::Herbs, x, z, rng_.range(2, 5), 5, 80, 140);

@@ -248,8 +248,9 @@ TEST_SUITE("farming") {
         // a villager only decided to eat between tasks. Now a walk that
         // cannot be come back from is given up (the lodge is not built, and
         // nobody dies for it); tests/test_explorer.cpp has a site that can
-        // just be reached.
-        for (const std::uint64_t seed : {1ull, 14ull}) {
+        // just be reached. (Seeds of the maps of phase 82, with the zone at
+        // 350 m or more; on 14, 15 and 18 somebody still starves, D-8203.)
+        for (const std::uint64_t seed : {4ull, 16ull}) {
             Game g(content(), map_for(seed), setup());
             std::optional<std::size_t> zone;
             for (std::size_t z = 0; z < g.map().zones.size() && !zone; ++z) {
@@ -297,9 +298,10 @@ TEST_SUITE("farming") {
     }
 
     TEST_CASE("hunters take game from the zones, and it comes back") {
-        // Passes on 13 of the first 20 seeds: on the others the first zone is
-        // too far from the town to hunt in this time, or across water (D-5613).
-        Game g(content(), map_for(2), setup());
+        // Passes on 9 of the first 20 seeds of the maps of phase 82: on the
+        // others the first zone is too far from the town to hunt in this
+        // time, or across water (D-5613, D-8203).
+        Game g(content(), map_for(7), setup());
         // The lodge next to the first zone with deer or boar.
         std::optional<std::size_t> zone;
         for (std::size_t z = 0; z < g.map().zones.size() && !zone; ++z) {

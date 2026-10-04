@@ -219,7 +219,7 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town, s
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0xb62f09e39b1ea9c0ull;
+constexpr std::uint64_t kGoldenSmallMap = 0xc35b65fc86f2066eull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {
@@ -274,6 +274,29 @@ TEST_SUITE("worldgen") {
             }
         }
         CHECK(same);
+    }
+
+    TEST_CASE("a map has about twice the rocks, bushes and herbs of before phase 82, and the same iron") {
+        int count[static_cast<std::size_t>(FeatureType::Count)] = {};
+        for (const std::uint64_t seed : {4242ull, 12345ull, 777ull}) {
+            const auto m = gen(settings(seed, MapSize::Medium));
+            REQUIRE(m.has_value());
+            for (const MapFeature& f : m->features) {
+                ++count[static_cast<std::size_t>(f.type)];
+            }
+        }
+        const int stones = count[static_cast<std::size_t>(FeatureType::Stone)];
+        const int ore = count[static_cast<std::size_t>(FeatureType::IronOre)];
+        const int bushes = count[static_cast<std::size_t>(FeatureType::BerryBush)];
+        const int herbs = count[static_cast<std::size_t>(FeatureType::Herbs)];
+        MESSAGE("stones " << stones << ", iron " << ore << ", bushes " << bushes << ", herbs " << herbs);
+        // Before, on these three maps: 152 stones, 28 of iron, 137 bushes, 140 herbs.
+        CHECK(stones * 10 >= 152 * 18);
+        CHECK(bushes * 10 >= 137 * 18);
+        CHECK(herbs * 10 >= 140 * 18);
+        // As many deposits of iron as before; each has one or two rocks, by the dice.
+        CHECK(ore >= 28 * 3 / 4);
+        CHECK(ore <= 28 * 5 / 4);
     }
 
     TEST_CASE("the small map checksum is the same on every build") {

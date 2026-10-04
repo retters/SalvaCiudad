@@ -41,11 +41,11 @@ namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
 // the map (decision D-620). It goes on from the hierarchical generator's
 // own number, which it was until phase 49 (D-4902).
-inline constexpr std::uint16_t kGeneratorVersion = 5;
+inline constexpr std::uint16_t kGeneratorVersion = 6;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
-inline constexpr std::int32_t kStartMinStones = 2;
-inline constexpr std::int32_t kStartMinBerries = 2;
+inline constexpr std::int32_t kStartMinStones = 4;
+inline constexpr std::int32_t kStartMinBerries = 4;
 inline constexpr std::int32_t kStartMinTrees = 60;
 inline constexpr std::int32_t kStartMaxWaterDistance = 150;  // A start always has water this close.
 

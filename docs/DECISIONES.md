@@ -3088,3 +3088,14 @@ Dibujado por la interfaz sobre el edificio, como las marcas de los sitios sugeri
 
 **D-8105. Versiones y lo medido.**
 Reglas 46 (el estado se guarda con la partida y entra en el hash). Suite nueva `resources`: un cantero con dos rocas las agota, queda agotado y lo dice una sola vez aunque sus trabajadores sigan buscando; la roca fuera de su alcance no cuenta; guardar y cargar da la misma partida; un recolector con arbustos vacíos queda esperando sin evento. El texto del cazador y del pescador no tiene prueba propia. Nada se vio en pantalla.
+
+## Fase 82: más roca, bayas y hierbas (2026-10-04)
+
+**D-8201. Cuánto.**
+El generador pone el doble de grupos de rocas sueltas y de hierbas, y dos veces y media los de arbustos de bayas: los arbustos solo caben en el borde del bosque y en praderas, y con el doble de intentos salían 1,66 veces más. En tres mapas medianos (semillas 4242, 12345 y 777): rocas de 152 a 310, arbustos de 137 a 280, hierbas de 140 a 280; el hierro sigue en 28. El mínimo alrededor de cada inicio sube de 2 a 4 rocas y de 2 a 4 arbustos. «Recursos» sigue escalando todo junto.
+
+**D-8202. Versiones y lo no medido.**
+Generador 6; suma de referencia del mapa pequeño `0xc35b65fc86f2066e`. El límite de objetos del mapa (32 millones) queda lejísimos: un colosal al 200 % tiene del orden de cientos de miles de rocas, arbustos y hierbas. El tiempo de generación no se midió: son unos cientos de objetos más por mapa mediano, en una etapa que ya era de las más rápidas.
+
+**D-8203. Pruebas que dependían del mapa exacto.**
+Al cambiar los mapas, dos pruebas de la suite `farming` quedaron en otro escenario y cambiaron de semilla: «los cazadores traen carne» pasa de la 2 a la 7 (con los mapas nuevos pasa en 9 de las primeras 20 semillas, por las mismas razones de D-5613), y «nadie pasa hambre en un viaje largo» pasa de 1 y 14 a 4 y 16 (zona de caza a 350 m o más). **Hallazgo sin resolver:** en esa misma prueba, con las semillas 14, 15 y 18 de los mapas nuevos, el medidor de comida de algún aldeano llega a cero durante el año aunque el pueblo tiene comida, y la cabaña de caza nunca se termina (en la 14 la zona está a solo 51 m). No se investigó si es la regla del hambre de la fase 66, el sitio de la cabaña o algo de las fases 73 a 79; queda para revisar aparte.

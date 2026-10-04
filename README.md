@@ -602,6 +602,12 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 82 (más roca, bayas y hierbas)
+
+- [ ] En una partida nueva se ven más rocas sueltas, arbustos de bayas y hierbas que antes, cerca del pueblo y lejos de él.
+- [ ] Con «Recursos» al 200 % hay claramente más que al 100 %, y al 0 % casi nada.
+- [ ] **Tu opinión:** si el doble alcanza o hace falta más (los yacimientos de la fase 83 se suman a esto).
+
 ### Fase 81 (avisos de recursos agotados)
 
 - [ ] Un cantero que acaba con la roca a su alcance: aparece la notificación «Cantero: ya no queda nada que recoger a su alcance», y al hacer clic la cámara va al edificio.
