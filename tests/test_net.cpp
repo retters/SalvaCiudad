@@ -520,6 +520,73 @@ TEST_SUITE("net") {
         }
     }
 
+    // Phase 114: what a happening asks a town is answered with an order: it
+    // travels like any other, and does the same on every machine.
+    TEST_CASE("the answer to the turtles travels over the net: the beach is protected on both machines") {
+        // A coast where some town has a beach within reach (the first seed that gives one).
+        for (std::uint64_t seed = 61; seed < 80; ++seed) {
+            Cluster c;
+            c.join("P1");
+            c.frames(3, 0);
+            GameConfig coast = config(seed, false);
+            coast.map.sea = sim::Sea::OneSide;
+            c.host().set_config(coast);
+            c.ready_all();
+            REQUIRE(c.host().start());
+            c.frames(3, 0);
+            REQUIRE(c.m[1].game != nullptr);
+            const sim::Game& g = *c.m[1].game;
+            if (!g.turtle_beach(0).has_value() && !g.turtle_beach(1).has_value()) {
+                continue;
+            }
+            MESSAGE("coast for two towns: seed " << seed);
+            // Into the summer, until one of the towns is asked.
+            const auto asked = [&](const sim::Game& game) -> const sim::Happening* {
+                for (const sim::Happening& h : game.happenings()) {
+                    if (h.kind == sim::HappeningKind::Turtles && h.state == sim::HappeningState::Asked) {
+                        return &h;
+                    }
+                }
+                return nullptr;
+            };
+            for (std::uint32_t t = 0; t < g.year_ticks() && asked(g) == nullptr; t += 40) {
+                c.frames(10, 4);
+            }
+            REQUIRE(asked(g) != nullptr);
+            const sim::Happening question = *asked(g);
+            // The seat of that town answers from its own machine.
+            std::size_t machine = 0;
+            for (std::size_t k = 0; k < 2; ++k) {
+                machine = c.m[k].game->town_of(static_cast<std::uint8_t>(k)) == question.town ? k : machine;
+            }
+            sim::Command answer;
+            answer.type = sim::CommandType::AnswerHappening;
+            answer.def = static_cast<std::uint16_t>(sim::HappeningKind::Turtles);
+            answer.value = 1;
+            c.m[machine].session->issue(answer);
+            c.frames(40, 4);
+            c.settle();
+            expect_same_games(c);
+            for (std::size_t k = 0; k < 2; ++k) {
+                const sim::Game& game = *c.m[k].game;
+                REQUIRE(game.happenings().size() >= 1);
+                bool kept = false, waiting = false;
+                for (const sim::Happening& h : game.happenings()) {
+                    const bool its = h.kind == sim::HappeningKind::Turtles && h.town == question.town;
+                    kept = kept || (its && h.state == sim::HappeningState::Protected && h.at == question.at);
+                    waiting = waiting || (its && h.state == sim::HappeningState::Asked);
+                }
+                CHECK(kept);
+                CHECK_FALSE(waiting);  // (The other town may still have its own question.)
+                CHECK(game.protected_ground(question.at.x.floor_int(), question.at.z.floor_int(), 1, 1));
+                CHECK(game.town_mood(question.town) >= sim::village::kMoodPoints);
+                CHECK(game.player(question.town).turtles == sim::village::kTurtlesFirst + 1);
+            }
+            return;
+        }
+        FAIL("no seed gave two towns a beach within reach");
+    }
+
     // Phase 107: a fold is built by the town, its pasture is marked with an
     // order and its flock breeds by the calendar: the same on every machine.
     TEST_CASE("a sheepfold, its pasture and its flock are the same on both machines") {

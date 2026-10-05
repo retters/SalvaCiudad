@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 74;
+inline constexpr std::uint32_t kGameRulesVersion = 75;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,24 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 114. A happening may ask the town what to do: it waits kAnswerDays
+// days for an answer (any seat of the town gives it) and passes with no
+// effect without one. The turtles: one night of every summer (the first
+// night from the day the seed gives; that day, in a game without nights)
+// they come out to a beach within kTurtleReach meters of the town center
+// that the town has explored, with no building within kBeachMeters. To
+// protect them: for kProtectDays days nobody builds or gathers within
+// kBeachMeters of the place, the town is in a good mood and one more comes
+// the next year (kTurtlesFirst the first time, kTurtlesMost at most). To
+// take the eggs: kTurtleEggs for each turtle, and they never come back to
+// that town.
+inline constexpr std::uint32_t kAnswerDays = 3;
+inline constexpr std::uint32_t kProtectDays = 10;
+inline constexpr std::int32_t kBeachMeters = 30;
+inline constexpr std::int32_t kTurtleReach = 400;
+inline constexpr std::uint8_t kTurtlesFirst = 2;
+inline constexpr std::uint8_t kTurtlesMost = 6;
+inline constexpr std::int32_t kTurtleEggs = 6;
 // Phase 113. A happening begins on a day the seed of the game decides, is
 // seen where it is for a few days and leaves the town it is for in a good
 // mood: kMoodPoints of happiness for all its houses during kMoodDays days,
@@ -492,7 +510,10 @@ enum class ArmyOrderKind : std::uint8_t { Defend, Attack, Retreat, Count };
 enum class Outcome : std::uint8_t { Playing, Won, Lost, Count };
 
 // Phase 113: what happens now and then, by the calendar and the seed.
-enum class HappeningKind : std::uint8_t { Whales, Lanterns, Count };
+enum class HappeningKind : std::uint8_t { Whales, Lanterns, Turtles, Count };
+// Phase 114: a sight and no more; one that waits for the town's answer; the
+// place the town protects.
+enum class HappeningState : std::uint8_t { Seen, Asked, Protected, Count };
 inline constexpr std::size_t kHappeningKinds = static_cast<std::size_t>(HappeningKind::Count);
 // One under way: where it is seen and until which day (days from the first
 // of year 1; that day it is over).
@@ -501,6 +522,8 @@ struct Happening {
     std::uint8_t town = 0;
     FixedVec2 at;
     std::uint32_t until_day = 0;
+    HappeningState state = HappeningState::Seen;
+    std::uint8_t count = 0;  // How many came (the turtles).
     bool operator==(const Happening&) const = default;
 };
 inline constexpr std::size_t kMaxHappenings = 64;
@@ -538,6 +561,12 @@ struct PlayerState {
     std::uint64_t unicorns_seen = 0;
     // Phase 113: the mood each kind of happening left: until which day (0: none).
     std::array<std::uint32_t, kHappeningKinds> mood_until{};
+    // Phase 114: the turtles: how many come the next time (0: as many as the
+    // first time), the year (from 1) they last came or were looked for, and
+    // whether the town took their eggs: then they never come again.
+    std::uint8_t turtles = 0;
+    std::uint32_t turtle_year = 0;
+    bool turtles_gone = false;
     std::vector<MerchantGood> merchant;  // What this merchant sells and buys.
     // Phase 29: automatic trade, by resource index, and this visit's tally.
     std::vector<TradeRule> trade_rules;
@@ -627,6 +656,7 @@ enum class PlaceError : std::uint8_t {
     Locked,      // Needs a bigger town center.
     Unexplored,  // Under the fog of war (phase 32).
     Unreachable, // Phase 65: no villager of the town can walk there.
+    Protected,   // Phase 114: a beach where the turtles lay, while a town protects it.
     DoorBelow,   // Phase 65: the ground rises too high behind the door; turned, it may fit.
 };
 // Phase 65: the ground under a building may differ this much in height, and
@@ -931,6 +961,9 @@ public:
                              // it): its unicorn is gone for good.
             Whales,          // Phase 113: the whales pass off the coast of the town, at `at`.
             Lanterns,        // Phase 113: the town lets its lanterns go, at `at` (the door of its center).
+            Turtles,         // Phase 114: `value` turtles came out to the beach at `at`: the town is asked.
+            TurtlesKept,     // Phase 114: the town protects the beach at `at`.
+            TurtlesTaken,    // Phase 114: the town took `value` eggs from the beach at `at`.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -999,6 +1032,10 @@ public:
     [[nodiscard]] std::int32_t town_mood(std::uint8_t town) const;
     [[nodiscard]] std::uint32_t happening_day(HappeningKind kind, std::uint32_t year, std::uint8_t town) const;
     [[nodiscard]] bool sea_at(std::int32_t x, std::int32_t z) const;
+    // Phase 114. Whether some of the rectangle is within village::kBeachMeters of a place a town protects;
+    // and the beach the turtles would come out to for a town now, if there is one.
+    [[nodiscard]] bool protected_ground(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const;
+    [[nodiscard]] std::optional<FixedVec2> turtle_beach(std::uint8_t town) const;
     // Phase 112. Whether a unicorn grazes in a glade whose middle is within `radius` meters of (x, z).
     [[nodiscard]] bool unicorn_near(std::int32_t x, std::int32_t z, std::int32_t radius) const;
     // Whether felling trees from a building of `def` at (x, z) (its corner) could frighten one away: it

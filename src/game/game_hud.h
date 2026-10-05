@@ -67,6 +67,8 @@ public:
 private:
     void top_bar(ui::Context& ctx, GameSession& s);
     void build_bar(ui::Context& ctx, GameSession& s);
+    // Phase 114: what a happening asks the town, with its two answers.
+    void question(ui::Context& ctx, GameSession& s);
     // The windows of things on the map (phase 62): each acts on its own.
     void building_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     void villager_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);

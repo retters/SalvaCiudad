@@ -999,6 +999,9 @@ public:
                     if ((!picking && !gathered) || g_.barren(f)) {
                         continue;  // (A bramble is nothing to a forager: phase 99.)
                     }
+                    if (!g_.happenings_.empty() && g_.protected_ground(f.x.floor_int(), f.z.floor_int(), 1, 1)) {
+                        continue;  // Phase 114: nobody gathers where the turtles lay, while the beach is protected.
+                    }
                     const bool grows = picking || regrows(f);
                     const bool sprout = !picking && f.type == FeatureType::Tree && n.amount <= 0 && n.regrow_tick != 0;
                     if (n.amount <= 0 && (picking || !grows) && !sprout) {
@@ -5381,6 +5384,21 @@ public:
                     }
                 }
             }
+            // The turtles (phase 114): from their day on, the first night of the summer (in a game with
+            // nights and summers); once a year, unless the town took their eggs once.
+            const bool nights = g_.rules_.day_night.enabled();
+            const bool summers = (g_.rules_.climate.seasons & 2u) != 0;
+            if (!ps.turtles_gone && ps.turtle_year != year + 1 &&
+                today >= year * kDaysPerYear + g_.happening_day(HappeningKind::Turtles, year, p) &&
+                (!summers || g_.calendar().season == Season::Summer) && (!nights || g_.night())) {
+                ps.turtle_year = year + 1;
+                if (const std::optional<FixedVec2> beach = g_.turtle_beach(p); beach && g_.happenings_.size() < kMaxHappenings) {
+                    const std::uint8_t count = ps.turtles == 0 ? village::kTurtlesFirst : ps.turtles;
+                    g_.happenings_.push_back(
+                        {HappeningKind::Turtles, p, *beach, today + village::kAnswerDays, HappeningState::Asked, count});
+                    g_.events_.push_back({Game::Event::Kind::Turtles, p, {}, *beach, count, 0});
+                }
+            }
             // The lanterns: from their day on, the first night (in a game with nights) the town has
             // enough of the people; once a year.
             const std::uint32_t due = year * kDaysPerYear + g_.happening_day(HappeningKind::Lanterns, year, p);
@@ -5400,7 +5418,7 @@ public:
     void begin(HappeningKind kind, std::uint8_t town, FixedVec2 at, std::uint32_t days, Game::Event::Kind notice) {
         const auto today = static_cast<std::uint32_t>(g_.calendar_day());
         if (g_.happenings_.size() < kMaxHappenings) {
-            g_.happenings_.push_back({kind, town, at, today + days});
+            g_.happenings_.push_back({kind, town, at, today + days, HappeningState::Seen, 0});
         }
         g_.players_[town].mood_until[static_cast<std::size_t>(kind)] = today + village::kMoodDays;
         g_.events_.push_back({notice, town, {}, at, 0, 0});
@@ -6573,6 +6591,49 @@ public:
                 g_.buildings_changed_ = true;
                 break;
             }
+            case CommandType::AnswerHappening: {
+                // Phase 114: any seat of the town answers; once.
+                const std::uint8_t town = g_.town_of(c.player);
+                const auto asked = std::find_if(g_.happenings_.begin(), g_.happenings_.end(), [&](const Happening& h) {
+                    return h.state == HappeningState::Asked && h.town == town && static_cast<DefIndex>(h.kind) == c.def;
+                });
+                if (asked == g_.happenings_.end() || !g_.players_[town].founded || asked->kind != HappeningKind::Turtles) {
+                    ++g_.rejected_;
+                    break;
+                }
+                PlayerState& ps = g_.players_[town];
+                const auto today = static_cast<std::uint32_t>(g_.calendar_day());
+                if (c.value == 1) {
+                    // Protected: the beach is theirs for some days, and more come next year.
+                    asked->state = HappeningState::Protected;
+                    asked->until_day = today + village::kProtectDays;
+                    ps.mood_until[static_cast<std::size_t>(HappeningKind::Turtles)] = today + village::kMoodDays;
+                    ps.turtles = std::min<std::uint8_t>(village::kTurtlesMost, static_cast<std::uint8_t>(asked->count + 1));
+                    g_.events_.push_back({Game::Event::Kind::TurtlesKept, town, {}, asked->at, asked->count, 0});
+                } else {
+                    // The eggs: to the gatherers' hut nearest to the beach, or to the town itself. No more turtles.
+                    const std::int32_t eggs = asked->count * village::kTurtleEggs;
+                    const DefIndex egg = c_.find_resource("core:eggs");
+                    Building* to = nullptr;
+                    std::uint64_t to_d = UINT64_MAX;
+                    for (const EntityId id : g_.owned(town)) {
+                        Building& b = *g_.buildings_.get(id);
+                        const bool gathers_nests = ((def(b).gathers >> static_cast<unsigned>(FeatureType::Nest)) & 1u) != 0;
+                        if (complete(b) && gathers_nests && distance2(center_of(b), asked->at) < to_d) {
+                            to_d = distance2(center_of(b), asked->at);
+                            to = &b;
+                        }
+                    }
+                    to = to != nullptr ? to : depot(town);
+                    if (to != nullptr && egg != kNoDef) {
+                        add_to(to->stock, egg, eggs);
+                    }
+                    ps.turtles_gone = true;
+                    g_.events_.push_back({Game::Event::Kind::TurtlesTaken, town, {}, asked->at, static_cast<std::uint16_t>(eggs), 0});
+                    g_.happenings_.erase(asked);
+                }
+                break;
+            }
             case CommandType::BuyMale: {
                 Building* fold = g_.buildings_.get(c.entity);
                 const HerdDef* herd = fold != nullptr ? g_.herd_of(*fold) : nullptr;
@@ -7636,6 +7697,9 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
     if (vision_.active() && !vision_.explored_rect(vision_group(player), x, z, w, dp)) {
         return PlaceError::Unexplored;  // Decision D-3203.
     }
+    if (protected_ground(x, z, w, dp)) {
+        return PlaceError::Protected;  // Phase 114.
+    }
     if (ground != PlaceError::None) {
         return ground;
     }
@@ -7918,6 +7982,9 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
     }
     if (vision_.active() && !vision_.explored_rect(vision_group(player), x, z, w, d)) {
         return PlaceError::Unexplored;
+    }
+    if (protected_ground(x, z, w, d)) {
+        return PlaceError::Protected;  // Phase 114.
     }
     std::int32_t lo = 65535, hi = 0;
     for (std::int32_t cz = z; cz < z + d; ++cz) {
@@ -8240,27 +8307,89 @@ std::int32_t Game::town_mood(std::uint8_t town) const {
 }
 
 std::uint32_t Game::happening_day(HappeningKind kind, std::uint32_t year, std::uint8_t town) const {
-    const std::uint64_t salt = kind == HappeningKind::Lanterns ? std::uint64_t{town} + 1 : 0;
+    const std::uint64_t salt = kind != HappeningKind::Whales ? std::uint64_t{town} + 1 : 0;
     const std::uint64_t h = mix64(seed_ ^ mix64((static_cast<std::uint64_t>(kind) + 1) * 0x9E3779B97F4A7C15ull ^
                                               (static_cast<std::uint64_t>(year) << 20) ^ (salt << 8)));
     std::uint32_t day = static_cast<std::uint32_t>(h % kDaysPerYear);
-    if (kind == HappeningKind::Whales) {
-        // A day of the autumn (of the year, in a game without one).
-        std::array<std::uint32_t, kDaysPerYear> autumn{};
+    if (kind == HappeningKind::Whales || kind == HappeningKind::Turtles) {
+        // A day of the autumn, or of the summer (of the year, in a game without that season).
+        const Season season = kind == HappeningKind::Whales ? Season::Autumn : Season::Summer;
+        std::array<std::uint32_t, kDaysPerYear> of_season{};
         std::uint32_t days = 0;
         const std::uint64_t ticks = calendar_day_ticks();
         for (std::uint32_t d = 0; d < kDaysPerYear; ++d) {
             const std::uint64_t noon = (static_cast<std::uint64_t>(year) * kDaysPerYear + d) * ticks + ticks / 2;
-            if (sim::calendar(rules_.climate, noon).season == Season::Autumn) {
-                autumn[days++] = d;
+            if (sim::calendar(rules_.climate, noon).season == season) {
+                of_season[days++] = d;
             }
         }
         if (days > 0) {
-            day = autumn[h % days];
+            day = of_season[h % days];
         }
     }
     // (The first day of the game has no round of its own.)
     return year == 0 && day == 0 ? 1 : day;
+}
+
+bool Game::protected_ground(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const {
+    for (const Happening& h : happenings_) {
+        if (h.state != HappeningState::Protected) {
+            continue;
+        }
+        // From the place to the nearest point of the rectangle.
+        const std::int64_t hx = h.at.x.floor_int();
+        const std::int64_t hz = h.at.z.floor_int();
+        const std::int64_t dx = hx < x ? x - hx : hx > x + w - 1 ? hx - (x + w - 1) : 0;
+        const std::int64_t dz = hz < z ? z - hz : hz > z + d - 1 ? hz - (z + d - 1) : 0;
+        if (dx * dx + dz * dz <= static_cast<std::int64_t>(village::kBeachMeters) * village::kBeachMeters) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::optional<FixedVec2> Game::turtle_beach(std::uint8_t town) const {
+    const Building* tc = town < players_.size() ? buildings_.get(players_[town].town_center) : nullptr;
+    if (tc == nullptr ||
+        std::all_of(map_.sea_levels.begin(), map_.sea_levels.end(), [](std::uint16_t level) { return level == 0; })) {
+        return std::nullopt;
+    }
+    // The sand by the sea nearest to the town center, on a grid of 4 m: explored by the town and with no
+    // building of anybody within village::kBeachMeters.
+    constexpr std::int32_t kStep = 4;
+    const std::int32_t tx = tc->x + tc->width / 2;
+    const std::int32_t tz = tc->z + tc->depth / 2;
+    const std::int64_t reach = village::kTurtleReach;
+    const std::uint8_t group = town_group(town);
+    std::optional<FixedVec2> best;
+    std::int64_t best_d = INT64_MAX;
+    for (std::int32_t z = std::max(8, (tz - village::kTurtleReach) / kStep * kStep); z < std::min(map_.size - 8, tz + village::kTurtleReach);
+         z += kStep) {
+        for (std::int32_t x = std::max(8, (tx - village::kTurtleReach) / kStep * kStep);
+             x < std::min(map_.size - 8, tx + village::kTurtleReach); x += kStep) {
+            const std::int64_t d = static_cast<std::int64_t>(x - tx) * (x - tx) + static_cast<std::int64_t>(z - tz) * (z - tz);
+            if (d >= best_d || d > reach * reach || map_.terrain_at(x, z) != Terrain::Sand || map_.water_at(x, z)) {
+                continue;
+            }
+            if (!sea_at(x - 8, z) && !sea_at(x + 8, z) && !sea_at(x, z - 8) && !sea_at(x, z + 8)) {
+                continue;
+            }
+            if (vision_.active() && !vision_.explored_at(group, x, z)) {
+                continue;
+            }
+            bool built = false;
+            for (const Building& b : buildings_.data()) {
+                const std::int64_t dx = x < b.x ? b.x - x : x > b.x + b.width - 1 ? x - (b.x + b.width - 1) : 0;
+                const std::int64_t dz = z < b.z ? b.z - z : z > b.z + b.depth - 1 ? z - (b.z + b.depth - 1) : 0;
+                built = built || dx * dx + dz * dz <= static_cast<std::int64_t>(village::kBeachMeters) * village::kBeachMeters;
+            }
+            if (!built) {
+                best = FixedVec2{Fixed::from_int(x), Fixed::from_int(z)};
+                best_d = d;
+            }
+        }
+    }
+    return best;
 }
 
 bool Game::sea_at(std::int32_t x, std::int32_t z) const {
@@ -8993,6 +9122,9 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         for (const std::uint32_t until : ps.mood_until) {
             w.u32(until);
         }
+        w.u8(ps.turtles);
+        w.u32(ps.turtle_year);
+        w.u8(ps.turtles_gone ? 1 : 0);
         w.u8(ps.alarm ? 1 : 0);
         w.u64(ps.next_raid);
         w.i32(ps.raids);
@@ -9085,6 +9217,8 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(h.town);
         w.vec2(h.at);
         w.u32(h.until_day);
+        w.u8(static_cast<std::uint8_t>(h.state));
+        w.u8(h.count);
     }
     m.buildings = w.bytes().size();
     const auto& bs = g.buildings();
@@ -9353,6 +9487,11 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
                 return false;
             }
         }
+        std::uint8_t gone = 0;
+        if (!r.u8(ps.turtles) || ps.turtles > village::kTurtlesMost || !r.u32(ps.turtle_year) || !r.u8(gone) || gone > 1) {
+            return false;
+        }
+        ps.turtles_gone = gone != 0;
         std::uint8_t alarm = 0, order = 0, outcome = 0;
         if (!r.u8(alarm) || alarm > 1 || !r.u64(ps.next_raid) || !r.i32(ps.raids) || !r.u8(order) ||
             order >= static_cast<std::uint8_t>(ArmyOrderKind::Count) || !r.vec2(ps.rally) || !r.u8(ps.enemy) ||
@@ -9513,17 +9652,19 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             return false;
         }
     }
-    if (!r.count(kMaxHappenings, 14, n)) {
+    if (!r.count(kMaxHappenings, 16, n)) {
         return false;
     }
     g.happenings_.resize(n);
     for (Happening& h : g.happenings_) {
-        std::uint8_t kind = 0;
-        if (!r.u8(kind) || kind >= kHappeningKinds || !r.u8(h.town) || h.town >= kMaxPlayers || !r.vec2(h.at) || !r.u32(h.until_day)) {
+        std::uint8_t kind = 0, state = 0;
+        if (!r.u8(kind) || kind >= kHappeningKinds || !r.u8(h.town) || h.town >= kMaxPlayers || !r.vec2(h.at) || !r.u32(h.until_day) ||
+            !r.u8(state) || state >= static_cast<std::uint8_t>(HappeningState::Count) || !r.u8(h.count)) {
             r.fail();
             return false;
         }
         h.kind = static_cast<HappeningKind>(kind);
+        h.state = static_cast<HappeningState>(state);
     }
     if (!r.count(100000, 30, n)) {
         return false;

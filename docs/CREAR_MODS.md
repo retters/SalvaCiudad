@@ -130,6 +130,15 @@ Un **suceso** empieza un día que decide la semilla de la partida (el mismo en t
 - **El paso de las ballenas.** Un día de cada otoño (del año, en una partida sin otoño), el mismo para todos los pueblos. Vale para el pueblo que tenga algún edificio terminado a 150 m o menos del mar; se ven cuatro días en el mar abierto más cercano a su centro. Además, el mercader que venía en camino llega en la mitad del tiempo que le faltaba.
 - **Los farolillos.** Una raza con `"lanterns": true` (los zorrunos del juego base) trae la costumbre: una vez al año el pueblo que tenga 2 o más de ellos suelta farolillos frente a su centro: la primera noche a partir del día que le toca (distinto para cada pueblo) en que los tenga; en una partida sin noche, ese mismo día. Se ven cuatro días, de noche.
 
+#### Las tortugas y los sucesos que preguntan (fase 114)
+
+Un suceso puede **preguntar** al pueblo qué hacer: aparece un panel con la pregunta y dos botones, espera 3 días y, sin respuesta, pasa sin efecto. Responde cualquier asiento del pueblo; la respuesta es una orden de la simulación (`AnswerHappening`) y viaja por la red como las demás.
+
+**El desove de las tortugas.** Una vez cada verano (del año, en una partida sin verano), la primera noche a partir del día que le toca a cada pueblo (ese mismo día, en una partida sin noche), las tortugas salen a una playa: arena junto al mar, a 400 m o menos del centro del pueblo, explorada por él y sin ningún edificio a 30 m. Si no hay una así, ese año no vienen. La primera vez son 2.
+
+- **Proteger la playa:** durante 10 días nadie construye ni recolecta a 30 m o menos del sitio (ni ese pueblo ni otro), el pueblo gana el ánimo de un suceso (3 puntos, 10 días) y al año siguiente viene una más, hasta 6.
+- **Recoger los huevos:** 6 huevos por tortuga, al momento, a la cabaña de recolectores del pueblo más cercana a la playa (o al centro del pueblo si no tiene ninguna). Las tortugas no vuelven nunca a ese pueblo.
+
 #### El unicornio (fase 112)
 
 Un bioma con `"unicorn": true` (el bosque encantado en el juego base) tiene un **claro** en cada tramo suyo de 3200 m² o más: el generador lo pone donde el tramo es más hondo (lo más lejos de su borde), a 100 m o más de cada inicio. En el claro pasta un unicornio mientras nadie tale un árbol a 40 m o menos de su centro; el primer árbol que cae ahí (lo tale un leñador o un peón que despeja una obra) lo ahuyenta para siempre. No se caza y no camina por el mapa.

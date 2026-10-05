@@ -56,6 +56,7 @@ enum class CommandType : std::uint8_t {
     DevBeast = 44,        // Developer tools: a beast of kind `def` (a CreatureKind: deer to bear) at `position`.
     BuyMale = 45,         // Phase 107: fold `entity` buys a male for its herd, with the town's gold.
     SetHerd = 46,         // Phase 108: fold `entity` keeps another of its herds (number `value`): new animals, no pasture.
+    AnswerHappening = 47, // Phase 114: the town answers what the happening of kind `def` asks it: `value` 1 or 2.
 
 };
 

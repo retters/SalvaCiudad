@@ -69,6 +69,8 @@ enum class Species : std::uint8_t {
     // Phase 113: what is seen of a happening, where it is: the whales that pass, the lanterns of a town.
     Whale,
     SkyLanterns,
+    // Phase 114: the turtles on their beach.
+    Turtle,
     Count
 };
 inline constexpr std::size_t kSpecies = static_cast<std::size_t>(Species::Count);

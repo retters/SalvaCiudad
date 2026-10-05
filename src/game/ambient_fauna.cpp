@@ -25,6 +25,7 @@ constexpr std::string_view kFiles[kSpecies] = {
     "models/fauna/goat_brown.glb",  "models/fauna/goat_pied.glb",     "models/fauna/rabbit.glb",
     "models/fauna/lynx.glb",        "models/fauna/wildcat.glb",       "models/fauna/mammoth.glb",
     "models/fauna/unicorn.glb",     "models/fauna/whale.glb",         "models/fauna/lanterns.glb",
+    "models/fauna/turtle.glb",
 };
 
 constexpr float kTau = 2.0f * std::numbers::pi_v<float>;
@@ -137,13 +138,17 @@ Habit habit(Species species) {
         case Species::Fireflies:
         case Species::Dragonflies: return Habit::Swarm;
         case Species::Whale:
-        case Species::SkyLanterns: return Habit::Show;
+        case Species::SkyLanterns:
+        case Species::Turtle: return Habit::Show;
         default: return Habit::Bird;
     }
 }
 
 std::string_view show_clip(Species species) {
-    return species == Species::Whale ? "swim_breach" : species == Species::SkyLanterns ? "drift" : std::string_view{};
+    return species == Species::Whale         ? "swim_breach"
+           : species == Species::SkyLanterns ? "drift"
+           : species == Species::Turtle      ? "idle"
+                                             : std::string_view{};
 }
 
 When when(const sim::Game& game) {
@@ -623,6 +628,23 @@ void AmbientFauna::settle(const sim::Game& game, std::int32_t fsx, std::int32_t 
             continue;
         }
         const bool whales = h.kind == sim::HappeningKind::Whales;
+        if (h.kind == sim::HappeningKind::Turtles) {
+            // As many as came, about the place, on dry ground: day and night while they are there.
+            for (std::size_t n = 0; n < h.count; ++n) {
+                const std::uint64_t id = (std::uint64_t{1} << 56) | (static_cast<std::uint64_t>(h.kind) << 48) |
+                                         (static_cast<std::uint64_t>(h.town) << 40) | (static_cast<std::uint64_t>(hi) << 8) | n;
+                if (const auto it = animals_.find(id); it != animals_.end()) {
+                    it->second.stays = true;
+                    continue;
+                }
+                const float angle = static_cast<float>(n) * kTau / static_cast<float>(h.count) + 0.4f;
+                const float x = hx + std::sin(angle) * (n == 0 ? 0.0f : 4.5f), z = hz + std::cos(angle) * (n == 0 ? 0.0f : 4.5f);
+                if (land(game.map(), x, z)) {
+                    add(game, id, Species::Turtle, x, z, 0.0f, 0.0f);
+                }
+            }
+            continue;
+        }
         if (!whales && game.rules().day_night.enabled() && !when_.night) {
             continue;
         }

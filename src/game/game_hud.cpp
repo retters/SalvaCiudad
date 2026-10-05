@@ -37,6 +37,7 @@ const char* place_error_key(sim::PlaceError e) {
         case sim::PlaceError::Unexplored: return "hud.place.error.unexplored";
         case sim::PlaceError::Unreachable: return "hud.place.error.unreachable";
         case sim::PlaceError::DoorBelow: return "hud.place.error.doorBelow";
+        case sim::PlaceError::Protected: return "hud.place.error.protected";
     }
     return "hud.place.error.unknown";
 }
@@ -366,6 +367,7 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     const bool has_town = game.founded(s->local_player()) && !s->spectating();
     if (has_town) {
         build_bar(ctx, *s);
+        question(ctx, *s);
     } else {
         build_bar_top_ = ctx.height();
     }
@@ -792,6 +794,62 @@ void GameHud::network(ui::Context& ctx, GameSession& s, float& right) {
             net->answer_vote(false);
             answered_vote_ = vote->id;
         }
+    }
+}
+
+// Phase 114: what a happening asks the town: the question and its two
+// answers, under the top bar, for as long as it waits. Any seat of the town
+// answers, and the answer is an order like any other.
+void GameHud::question(ui::Context& ctx, GameSession& s) {
+    const sim::Game& game = s.game();
+    const sim::Happening* asked = nullptr;
+    for (const sim::Happening& h : game.happenings()) {
+        if (h.state == sim::HappeningState::Asked && h.town == s.town() && h.kind == sim::HappeningKind::Turtles) {
+            asked = &h;
+            break;
+        }
+    }
+    if (asked == nullptr) {
+        return;
+    }
+    const ui::TextStyle st = ctx.style(ctx.theme().body);
+    const ui::TextStyle small = ctx.style(ctx.theme().small);
+    const auto today = static_cast<std::uint32_t>(game.calendar_day());
+    const int left = asked->until_day > today ? static_cast<int>(asked->until_day - today) : 0;
+    const std::string q = tr("hud.ask.turtles", static_cast<int>(asked->count));
+    const std::string days = tr("hud.ask.days", left);
+    const float pad = ctx.s(12.0f);
+    const float bh = std::round(ctx.s(36.0f));
+    const float line = ctx.text().line_height(st);
+    const float line2 = ctx.text().line_height(small);
+    const float see_w = ctx.text().measure(st, tr("hud.ask.see")) + 2 * pad;
+    const float width = std::min(ctx.width() - 2 * pad,
+                                 std::max({ctx.s(460.0f), ctx.text().measure(st, q) + 3 * pad + see_w, ctx.text().measure(small, days) + 2 * pad}));
+    const float bar_h = std::round(ctx.s(44.0f));
+    const ui::Rect box{std::round((ctx.width() - width) * 0.5f), std::round(bar_h + ctx.s(10.0f)), std::round(width),
+                       std::round(line + line2 + bh + 3.5f * pad)};
+    ctx.panel(box);
+    block(s, box);
+    ctx.label({box.x + pad, box.y + pad, box.w - 3 * pad - see_w, line}, q, st, ctx.theme().text);
+    if (ctx.button(ctx.id("ask_see"), {box.right() - pad - see_w, box.y + pad - ctx.s(4.0f), see_w, line + ctx.s(8.0f)}, tr("hud.ask.see"))) {
+        services_.focus_camera(meters(asked->at.x), meters(asked->at.z));
+    }
+    ctx.label({box.x + pad, box.y + pad + line + ctx.s(4.0f), box.w - 2 * pad, line2}, days, small, ctx.theme().text_dim);
+    const auto answer = [&](std::int32_t which) {
+        sim::Command c;
+        c.type = sim::CommandType::AnswerHappening;
+        c.def = static_cast<std::uint16_t>(asked->kind);
+        c.value = which;
+        s.issue(c);
+    };
+    const float bw = (box.w - 3 * pad) * 0.5f;
+    const float by = box.bottom() - pad - bh;
+    if (ctx.button(ctx.id("ask_first"), {box.x + pad, by, bw, bh}, tr("hud.ask.turtles.keep"),
+                   tr("hud.ask.turtles.keep.tooltip", static_cast<int>(sim::village::kProtectDays)))) {
+        answer(1);
+    } else if (ctx.button(ctx.id("ask_second"), {box.x + 2 * pad + bw, by, bw, bh}, tr("hud.ask.turtles.take"),
+                          tr("hud.ask.turtles.take.tooltip", static_cast<int>(asked->count) * sim::village::kTurtleEggs))) {
+        answer(2);
     }
 }
 

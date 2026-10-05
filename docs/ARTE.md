@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### La tortuga (fase 114)
+
+`fauna/turtle.glb` (de `proposals/beasts`, `sea_giant_turtle`, 276 triángulos). Otro «espectáculo» de la fauna de ambiente: tantas como hayan venido, en la arena alrededor del sitio, con su animación `idle`, mientras esperan la respuesta y mientras el pueblo protege la playa.
+
 ### La ballena y los farolillos (fase 113)
 
 `fauna/whale.glb` (de `proposals/beasts`, `sea_whale`, 394 triángulos) y `fauna/lanterns.glb` (de `proposals/sky`, `sky_lanterns`, 656: la mesa con los farolillos plegados y cinco que suben; su llama brilla). Los dibuja la fauna de ambiente como un «espectáculo»: se quedan donde están y repiten su única animación (`swim_breach`, el salto, y `drift`). Como el resto de esa fauna, solo se ven cerca de donde mira la cámara y no con el detalle de fauna apagado; el aviso del suceso lleva la cámara ahí.

@@ -117,7 +117,7 @@
     {
       "family": "beasts", "class": "animal", "to": "fauna",
       "ids": {"animal_ram": "ram", "pet_rabbit": "rabbit", "animal_mammoth": "mammoth", "mythic_unicorn": "unicorn",
-              "sea_whale": "whale"}
+              "sea_whale": "whale", "sea_giant_turtle": "turtle"}
     },
     {
       "family": "sky", "class": "animal", "to": "fauna",

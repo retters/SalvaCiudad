@@ -4065,3 +4065,32 @@ Suite nueva `happenings`, 8 casos: los datos; los mismos días con la misma semi
 
 **D-11308. Versiones.**
 Reglas 74 y red 33. El generador no cambia.
+
+## Fase 114: tortugas y avisos con decisión (2026-10-05)
+
+**D-11401. La pregunta es estado de la partida, no un aviso con botones.**
+Un aviso es pasajero (se va a los segundos y vive solo en la máquina que lo mostró). La pregunta queda en la simulación (un suceso en estado «pregunta», con su plazo) y la interfaz muestra un panel mientras esté: se guarda con la partida, la ve cada asiento del pueblo y desaparece para todos cuando uno responde o vence. Además llega el aviso de siempre, que lleva la cámara. La respuesta es la orden `AnswerHappening` (clase de suceso y 1 o 2); una segunda respuesta, o una tardía, se rechaza.
+
+**D-11402. Cuándo y dónde salen.**
+Como los farolillos: a cada pueblo le toca un día del verano y salen la primera noche desde ese día, mientras siga siendo verano; una vez al año. La playa es la arena junto al mar (mar a 8 m) más cercana al centro del pueblo, hasta 400 m, explorada por el pueblo (con niebla) y sin edificios de nadie a 30 m. Se busca una vez al año; si no hay, ese año no vienen. El tope de 400 m no está en la especificación: sin él, en una partida sin niebla saldrían en cualquier playa del mapa, lejos de todo.
+
+**D-11403. Proteger.**
+Diez días de «playa protegida» en un círculo de 30 m: no se puede colocar ningún edificio ni campo que lo toque (error nuevo de colocación, con su texto) y los recolectores no toman nada de ahí; vale para todos los pueblos. El ánimo es el de un suceso (3 puntos, 10 días). Al año siguiente viene una más: 2, 3, 4, 5, 6 y 6.
+
+**D-11404. Recoger los huevos: sin viaje.**
+«El recolector trae huevos de la playa» quedó así: 6 huevos por tortuga aparecen al momento en la cabaña de recolectores más cercana a la playa, o en el centro del pueblo si no hay ninguna. Se descartó poner los huevos como objetos del mapa para que alguien fuera por ellos: pedía una clase nueva de objeto con su modelo, ampliar la máscara de lo que recoge cada edificio (ya no caben más clases en sus 16 bits) y decidir qué pasa con los que nadie recoge. El pueblo pierde a las tortugas para siempre.
+
+**D-11405. Sin respuesta.**
+A los tres días el suceso se va: ni ánimo, ni huevos, ni cambia cuántas vienen. Al año siguiente vuelven.
+
+**D-11406. A la vista.**
+La tortuga de las propuestas, tantas como hayan venido, en la arena. El panel va centrado bajo la barra de arriba: la pregunta, los días que quedan, «Ver la playa» y los dos botones con su explicación.
+
+**D-11407. Una prueba que costó.**
+«No se recolecta en esa playa» se mide con dos pueblos iguales en una costa sin más piedra que la que se pone en la playa: sin proteger, un cantero sale por ella a los 26 ticks; protegida, a los 1031 (al acabar los diez días). La primera versión esperaba a que la piedra llegara al almacén, y con el pueblo a 275 m del mar eso tarda más que la protección, con o sin ella.
+
+**D-11408. Lo medido.**
+Suite nueva `turtles`, 8 casos: salen un día de verano a arena junto al mar, sin edificios a 30 m, y el pueblo recibe la pregunta; sin respuesta no pasa nada y vuelven al año siguiente; proteger bloquea construir diez días a 30 m y no a 31, da el ánimo y trae una más cada año hasta seis; nadie recolecta ahí mientras tanto; recoger da 12 huevos a la cabaña de recolectores (o al pueblo) y en tres años no vuelven; sin mar, o con la playa sin explorar, no salen, y la playa del año siguiente nunca está junto a un edificio; con noches, salen de noche; guardar y cargar con la pregunta pendiente y con la playa protegida. En `net`: la respuesta sale de la máquina del pueblo preguntado y la playa queda protegida en las dos. La suite de la fase 113 ahora mira solo ballenas y farolillos (en sus costas también salen tortugas).
+
+**D-11409. Versiones.**
+Reglas 75 y red 34. El generador no cambia.

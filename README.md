@@ -872,6 +872,11 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Con un puesto comercial, el mercader siguiente llega antes tras el paso de las ballenas.
 - [ ] En un pueblo con dos o más zorrunos, una noche al año llega el aviso de los farolillos y se ven subir frente al centro del pueblo. Con uno solo, no.
 - [ ] Guardar y cargar con las ballenas a la vista: siguen ahí.
+- [ ] En un mapa con mar y una playa a menos de 400 m del pueblo, una noche de verano llega el aviso de las tortugas y aparece bajo la barra de arriba el panel con la pregunta, «Ver la playa» y los dos botones (cada uno con su explicación al pasar el puntero).
+- [ ] «Proteger la playa»: el panel se va, las casas ganan ánimo y al intentar construir en la playa dice «Playa protegida»; a los diez días se puede otra vez. Al verano siguiente vienen tres.
+- [ ] «Recoger los huevos»: llegan los huevos y no hay más tortugas en esa partida.
+- [ ] Sin responder en tres días el panel desaparece y no pasa nada.
+- [ ] En red: responde cualquiera de los que comparten el pueblo y el panel se va en todas las máquinas.
 - [ ] Al amanecer y al atardecer se ven conejos en algunas praderas; muy de vez en cuando, un lince o un gato montés en el bosque.
 - [ ] Un cazador sin ciervos ni jabalíes a su alcance trae carne de conejo (2 por viaje, sin piel).
 - [ ] Un campo de verduras en una pradera con conejos da un quinto menos, con el aviso «Los conejos se comieron parte de la cosecha»; con valla en medio borde o una caseta de perro a 12 m, no.

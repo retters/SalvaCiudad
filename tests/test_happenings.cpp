@@ -224,6 +224,18 @@ std::uint32_t today(const Game& g) {
     return static_cast<std::uint32_t>(g.calendar_day());
 }
 
+// What is seen of the whales and the lanterns. (The turtles of phase 114, which come to the same coasts,
+// have their own suite.)
+std::vector<Happening> sights(const Game& g) {
+    std::vector<Happening> out;
+    for (const Happening& h : g.happenings()) {
+        if (h.kind != HappeningKind::Turtles) {
+            out.push_back(h);
+        }
+    }
+    return out;
+}
+
 }  // namespace
 
 TEST_SUITE("happenings") {
@@ -299,11 +311,11 @@ TEST_SUITE("happenings") {
                     CHECK(coast.calendar().season == Season::Autumn);
                     // In the sea, within reach of the house.
                     CHECK(coast.sea_at(e.at.x.floor_int(), e.at.z.floor_int()));
-                    REQUIRE(coast.happenings().size() == 1);
-                    CHECK(coast.happenings()[0].kind == HappeningKind::Whales);
-                    CHECK(coast.happenings()[0].town == 0);
-                    CHECK(coast.happenings()[0].at == e.at);
-                    CHECK(coast.happenings()[0].until_day == day + village::kWhaleDays);
+                    REQUIRE(sights(coast).size() == 1);
+                    CHECK(sights(coast)[0].kind == HappeningKind::Whales);
+                    CHECK(sights(coast)[0].town == 0);
+                    CHECK(sights(coast)[0].at == e.at);
+                    CHECK(sights(coast)[0].until_day == day + village::kWhaleDays);
                     CHECK(coast.town_mood(0) == village::kMoodPoints);
                 }
             }
@@ -312,11 +324,11 @@ TEST_SUITE("happenings") {
                     others += e.kind == Game::Event::Kind::Whales ? 1 : 0;
                 }
                 CHECK(g->town_mood(0) == 0);
-                CHECK(g->happenings().empty());
+                CHECK(sights(*g).empty());
             }
             // What is seen of them lasts its days and no more.
             if (seen == 1) {
-                CHECK(coast.happenings().size() == (today(coast) < from + village::kWhaleDays ? 1u : 0u));
+                CHECK(sights(coast).size() == (today(coast) < from + village::kWhaleDays ? 1u : 0u));
             }
         }
         CHECK(seen == 1);
@@ -429,9 +441,9 @@ TEST_SUITE("happenings") {
                     CHECK(std::abs(e.at.x.floor_int() - (tc.x + tc.width / 2)) <= tc.width);
                     CHECK(std::abs(e.at.z.floor_int() - (tc.z + tc.depth / 2)) <= tc.depth);
                     CHECK(two.town_mood(0) == village::kMoodPoints);
-                    REQUIRE(two.happenings().size() == 1);
-                    CHECK(two.happenings()[0].kind == HappeningKind::Lanterns);
-                    CHECK(two.happenings()[0].until_day == today(two) + village::kLanternDays);
+                    REQUIRE(sights(two).size() == 1);
+                    CHECK(sights(two)[0].kind == HappeningKind::Lanterns);
+                    CHECK(sights(two)[0].until_day == today(two) + village::kLanternDays);
                 }
             }
             for (Game* g : {&one, &none}) {
@@ -502,13 +514,13 @@ TEST_SUITE("happenings") {
         (void)town(g);
         (void)house_by_the_sea(g);
         arrive(g, "core:foxfolk", 2);
-        for (std::uint32_t t = 0; t < g.year_ticks() && g.happenings().empty(); ++t) {
+        for (std::uint32_t t = 0; t < g.year_ticks() && sights(g).empty(); ++t) {
             if (t % g.calendar_month_ticks() == 0) {
                 supply(g);
             }
             g.step();
         }
-        REQUIRE(g.happenings().size() == 1);
+        REQUIRE(sights(g).size() == 1);
         REQUIRE(g.town_mood(0) == village::kMoodPoints);
         BinaryWriter w;
         g.save(w);
@@ -523,7 +535,7 @@ TEST_SUITE("happenings") {
         run(g, 12 * g.calendar_day_ticks());
         run(loaded, 12 * loaded.calendar_day_ticks());
         CHECK(loaded.hash() == g.hash());
-        CHECK(loaded.happenings().empty());
+        CHECK(sights(loaded).empty());
         CHECK(loaded.town_mood(0) == 0);
         // A save cut short, or with a happening of a kind that does not exist, is refused.
         Game again(core(), coast_map(), setup());
@@ -562,15 +574,15 @@ TEST_SUITE("happenings") {
         Game sea(core(), coast_map(), rules);
         (void)town(sea);
         const EntityId house = house_by_the_sea(sea);
-        for (std::uint32_t t = 0; t < sea.year_ticks() && sea.happenings().empty(); ++t) {
+        for (std::uint32_t t = 0; t < sea.year_ticks() && sights(sea).empty(); ++t) {
             if (t % sea.calendar_month_ticks() == 0) {
                 supply(sea);
             }
             sea.step();
         }
-        REQUIRE(sea.happenings().size() == 1);
+        REQUIRE(sights(sea).size() == 1);
         write(sea, "whales");
-        MESSAGE("the whales at (" << sea.happenings()[0].at.x.floor_int() << ", " << sea.happenings()[0].at.z.floor_int() << "), the house at ("
+        MESSAGE("the whales at (" << sights(sea)[0].at.x.floor_int() << ", " << sights(sea)[0].at.z.floor_int() << "), the house at ("
                                   << at(sea, house).x << ", " << at(sea, house).z << "), map of " << sea.map().size);
         GameSetup foxes = setup();
         foxes.rules.fog = FogMode::None;
@@ -579,16 +591,16 @@ TEST_SUITE("happenings") {
         foxes.rules.races.fill(race("core:foxfolk"));
         Game fest(core(), inland_map(), foxes);
         (void)town(fest);
-        for (std::uint32_t t = 0; t < fest.year_ticks() && fest.happenings().empty(); ++t) {
+        for (std::uint32_t t = 0; t < fest.year_ticks() && sights(fest).empty(); ++t) {
             if (t % fest.calendar_month_ticks() == 0) {
                 supply(fest);
             }
             fest.step();
         }
-        REQUIRE(fest.happenings().size() == 1);
+        REQUIRE(sights(fest).size() == 1);
         REQUIRE(fest.night());
         write(fest, "lanterns");
-        MESSAGE("the lanterns at (" << fest.happenings()[0].at.x.floor_int() << ", " << fest.happenings()[0].at.z.floor_int() << "), night: "
+        MESSAGE("the lanterns at (" << sights(fest)[0].at.x.floor_int() << ", " << sights(fest)[0].at.z.floor_int() << "), night: "
                                     << fest.night());
     }
 }
