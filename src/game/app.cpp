@@ -2785,6 +2785,10 @@ void App::report_game_events() {
                 text = tr(e.value == 1 ? "event.onlyFruit" : "event.exhausted", place);
                 break;
             case sim::Game::Event::Kind::Fox: text = tr("event.fox", static_cast<int>(e.value)); break;
+            case sim::Game::Event::Kind::Lynx:
+                text = e.other == 1 ? tr("event.lynx.young") : tr("event.lynx.hen", static_cast<int>(e.value));
+                break;
+            case sim::Game::Event::Kind::Rabbits: text = tr("event.rabbits"); break;
             case sim::Game::Event::Kind::Barked:
                 text = tr(e.value == static_cast<std::uint16_t>(sim::CreatureKind::Bear)     ? "event.bark.bear"
                           : e.value == static_cast<std::uint16_t>(sim::CreatureKind::Raider) ? "event.bark.raider"

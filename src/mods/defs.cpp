@@ -859,6 +859,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.grow_days = r.integer("growDays", 1, 1000, 40);
         def.fertility = r.integer("fertility", -100, 100, -10);
         def.hardy = r.flag("hardy");
+        def.rabbits = r.flag("rabbitsEat");
         def.models = r.models(mod_dir, false, refs, def.name_key);
         def.mod = d->model_mod;
         if (!def.models.empty() && def.models.size() != sim::kCropStages) {

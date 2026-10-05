@@ -58,6 +58,10 @@ enum class Species : std::uint8_t {
     Goat,
     GoatBrown,
     GoatPied,
+    // Phase 109: the rabbits of a zone, out at dawn and at dusk; and its lynx (or wildcat), seldom seen.
+    Rabbit,
+    Lynx,
+    Wildcat,
     Count
 };
 inline constexpr std::size_t kSpecies = static_cast<std::size_t>(Species::Count);
@@ -75,6 +79,8 @@ struct When {
     sim::Season season = sim::Season::Spring;
     bool snow = false;
     bool night = false;
+    bool twilight = false;  // Phase 109: the first and the last of the day (always, where there is no night).
+    std::uint32_t day = 0;  // The calendar's, for what is seen some days and not others.
     bool operator==(const When&) const = default;
 };
 [[nodiscard]] When when(const sim::Game& game);

@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Conejos y lince (fase 109)
+
+`fauna/rabbit.glb` (de `proposals/beasts`), `fauna/lynx.glb` y `fauna/wildcat.glb` (de `proposals/creatures`). Fauna de ambiente: hasta cinco conejos por zona, visibles al amanecer y al atardecer (siempre, si la partida no tiene noche); el lince, o el gato montés en una de cada dos zonas, uno de cada cuatro días.
+
 ### Cabras (fase 108)
 
 `fauna/goat.glb` (blanca), `goat_brown.glb` y `goat_pied.glb`, de `proposals/creatures`. En un redil de cabras las hembras alternan blanca y parda, y la pía es el macho. El queso usa por ahora la pila del pan.

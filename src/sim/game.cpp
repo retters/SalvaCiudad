@@ -1418,10 +1418,14 @@ public:
             case ZoneType::Boar: return CreatureKind::Boar;
             case ZoneType::Wolves: return CreatureKind::Wolf;
             case ZoneType::Bears: return CreatureKind::Bear;
+            case ZoneType::Rabbits:
+            case ZoneType::Lynx:
             case ZoneType::Count: break;
         }
         return CreatureKind::Deer;
     }
+    // Whether the animals of a zone walk the map (not rabbits nor the lynx: phase 109).
+    [[nodiscard]] static bool walks(ZoneType t) { return t != ZoneType::Rabbits && t != ZoneType::Lynx; }
 
     // A walkable point near `at` within `radius` meters (or `at`).
     [[nodiscard]] FixedVec2 open_point(FixedVec2 at, std::int32_t radius) {
@@ -3521,6 +3525,13 @@ public:
                     f.growth = 1000;
                     f.state = FieldState::Ripe;
                     f.pending = g_.per_year(std::max(1, f.w * f.d * crop.yield * f.fertility / 1000));
+                    if (g_.rabbits_eat(b.owner, f.crop, f.x, f.z, f.w, f.d)) {
+                        // Phase 109.
+                        f.pending = std::max(1, f.pending * (100 - village::kRabbitLoss) / 100);
+                        g_.events_.push_back({Game::Event::Kind::Rabbits, b.owner, g_.buildings_.entities()[static_cast<std::size_t>(
+                                                                                       &b - g_.buildings_.data().data())],
+                                              {Fixed::from_int(f.x + f.w / 2), Fixed::from_int(f.z + f.d / 2)}, 0, 0});
+                    }
                     g_.buildings_changed_ = true;
                 }
             }
@@ -3536,6 +3547,8 @@ public:
             case ZoneType::Boar: return 10;
             case ZoneType::Wolves: return predators ? 5 : 0;
             case ZoneType::Bears: return predators ? 2 : 0;
+            case ZoneType::Rabbits: return village::kRabbits;  // (Half with a lynx near: Game::zone_room.)
+            case ZoneType::Lynx: return 1;
             case ZoneType::Count: break;
         }
         return 0;
@@ -3546,19 +3559,26 @@ public:
         const std::int32_t reach = def(lodge).work_radius;
         std::optional<std::size_t> best;
         std::uint64_t best_d = UINT64_MAX;
-        for (std::size_t z = 0; z < g_.map_.zones.size(); ++z) {
-            const Zone& zone = g_.map_.zones[z];
-            if (g_.zone_animals_[z] <= 0 || (zone.type != ZoneType::Deer && zone.type != ZoneType::Boar)) {
-                continue;  // Hunters go for deer and boar.
+        // Hunters go for deer and boar; with none in reach, for rabbits (phase 109).
+        for (const bool small : {false, true}) {
+            for (std::size_t z = 0; z < g_.map_.zones.size() && !(small && best); ++z) {
+                const Zone& zone = g_.map_.zones[z];
+                const bool game = small ? zone.type == ZoneType::Rabbits : zone.type == ZoneType::Deer || zone.type == ZoneType::Boar;
+                if (g_.zone_animals_[z] <= 0 || !game) {
+                    continue;
+                }
+                const FixedVec2 c{zone.x, zone.z};
+                const std::uint64_t d = distance2(c, door);
+                const std::int64_t r = static_cast<std::int64_t>(reach) + zone.radius.floor_int();
+                if (d > static_cast<std::uint64_t>(r * r) * (1ull << 32) || d >= best_d || !g_.nav_.connected(door, c)) {
+                    continue;
+                }
+                best_d = d;
+                best = z;
             }
-            const FixedVec2 c{zone.x, zone.z};
-            const std::uint64_t d = distance2(c, door);
-            const std::int64_t r = static_cast<std::int64_t>(reach) + zone.radius.floor_int();
-            if (d > static_cast<std::uint64_t>(r * r) * (1ull << 32) || d >= best_d || !g_.nav_.connected(door, c)) {
-                continue;
+            if (best) {
+                break;
             }
-            best_d = d;
-            best = z;
         }
         if (!best) {
             return false;
@@ -3595,6 +3615,12 @@ public:
                 prey_d = distance2(a.position, v.position);
                 prey = cs.entities()[i];
             }
+        }
+        if (g_.map_.zones[z].type == ZoneType::Rabbits) {
+            // Phase 109: small game: a little meat and no hide.
+            --g_.zone_animals_[z];
+            v.carrying = {g_.meat_, std::min(village::kRabbitMeat, carry_capacity(c_, g_.meat_))};
+            return;
         }
         if (prey.valid()) {
             remove_creature(prey);
@@ -4657,10 +4683,10 @@ public:
         check_outcomes();
         // Diets: last month's variety; the game comes back to its zones.
         for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
-            const std::int32_t cap = g_.zone_open(z) ? zone_capacity(g_.map_.zones[z].type, g_.rules_) : 0;
+            const std::int32_t cap = g_.zone_open(z) ? g_.zone_room(z) : 0;
             const std::int32_t before = g_.zone_animals_[z];
             g_.zone_animals_[z] = std::min(cap, before + std::max(1, cap / 6));
-            for (std::int32_t n = before; n < g_.zone_animals_[z]; ++n) {
+            for (std::int32_t n = before; n < g_.zone_animals_[z] && walks(g_.map_.zones[z].type); ++n) {
                 spawn_animal(z);
             }
         }
@@ -4921,8 +4947,15 @@ public:
                 }
                 compact(b.stock);
                 if (b.males > 0 && b.females > 0) {
-                    const std::int32_t young = std::max(1, b.females * 2 / 3);
-                    b.females = static_cast<std::uint8_t>(b.females + std::clamp(room - b.females - b.males, 0, young));
+                    std::int32_t young = std::clamp(room - b.females - b.males, 0, std::max(1, b.females * 2 / 3));
+                    // Phase 109: a lynx near takes one of the young of a fold no dog guards.
+                    if (young > 0 && g_.lynx_near(b.x + b.width / 2, b.z + b.depth / 2) && !g_.guarded(b.x, b.z, b.width, b.depth)) {
+                        --young;
+                        g_.events_.push_back({Game::Event::Kind::Lynx, b.owner,
+                                              g_.buildings_.entities()[static_cast<std::size_t>(&b - g_.buildings_.data().data())],
+                                              center_of(b), 0, 1});
+                    }
+                    b.females = static_cast<std::uint8_t>(b.females + young);
                 }
                 g_.buildings_changed_ = true;
             }
@@ -5015,6 +5048,13 @@ public:
                 --b.flock;
                 g_.buildings_changed_ = true;
                 g_.events_.push_back({Game::Event::Kind::Fox, b.owner, list.entities()[i], center_of(b), b.flock, 0});
+            }
+            // Phase 109: and where a lynx lives near, it comes as often as the fox.
+            if (b.flock > 0 && g_.lynx_near(b.x + b.width / 2, b.z + b.depth / 2) && !g_.coop_safe(b) &&
+                g_.rng_.below(100) < static_cast<std::uint32_t>(village::kFoxPercent)) {
+                --b.flock;
+                g_.buildings_changed_ = true;
+                g_.events_.push_back({Game::Event::Kind::Lynx, b.owner, list.entities()[i], center_of(b), b.flock, 0});
             }
             if (b.flock == 0) {
                 continue;
@@ -6360,7 +6400,7 @@ public:
             if (!g_.zone_open(z)) {
                 g_.zone_animals_[z] = 0;
             }
-            for (std::int32_t n = 0; n < g_.zone_animals_[z]; ++n) {
+            for (std::int32_t n = 0; n < g_.zone_animals_[z] && walks(g_.map_.zones[z].type); ++n) {
                 spawn_animal(z);
             }
         }
@@ -6444,7 +6484,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     }
     zone_animals_.resize(map_.zones.size());
     for (std::size_t z = 0; z < map_.zones.size(); ++z) {
-        zone_animals_[z] = VillageRules::zone_capacity(map_.zones[z].type, rules_);
+        zone_animals_[z] = zone_room(z);
     }
     temperature_ = sim::temperature(rules_.climate, seed_, 0);
     build_indexes();
@@ -7641,6 +7681,77 @@ std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
         }
     }
     return beauty + std::min(trees, 8);
+}
+
+std::int32_t Game::zone_room(std::size_t z) const {
+    const Zone& zone = map_.zones[z];
+    const std::int32_t room = VillageRules::zone_capacity(zone.type, rules_);
+    if (zone.type != ZoneType::Rabbits) {
+        return room;
+    }
+    return lynx_near(zone.x.floor_int(), zone.z.floor_int(), zone.radius.floor_int()) ? room / 2 : room;
+}
+
+bool Game::lynx_near(std::int32_t x, std::int32_t z, std::int32_t radius) const {
+    for (const Zone& zone : map_.zones) {
+        if (zone.type != ZoneType::Lynx) {
+            continue;
+        }
+        const std::int64_t dx = zone.x.floor_int() - x;
+        const std::int64_t dz = zone.z.floor_int() - z;
+        const std::int64_t reach = zone.radius.floor_int() + radius + village::kLynxMeters;
+        if (dx * dx + dz * dz <= reach * reach) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Game::guarded(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const {
+    for (const Building& o : buildings_.data()) {
+        const BuildingDef& od = content_->buildings[o.def];
+        if (od.guard_radius <= 0 || o.state != BuildingState::Complete) {
+            continue;
+        }
+        // From the guard's middle to the nearest point of the rectangle.
+        const std::int32_t gx = o.x + o.width / 2, gz = o.z + o.depth / 2;
+        const std::int64_t dx = std::max({x - gx, gx - (x + w), 0});
+        const std::int64_t dz = std::max({z - gz, gz - (z + d), 0});
+        if (dx * dx + dz * dz <= static_cast<std::int64_t>(od.guard_radius) * od.guard_radius) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Game::rabbits_eat(std::uint8_t town, DefIndex crop, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const {
+    (void)town;
+    if (crop >= content_->crops.size() || !content_->crops[crop].rabbits) {
+        return false;
+    }
+    const std::int32_t mx = x + w / 2, mz = z + d / 2;
+    bool many = false;
+    for (std::size_t k = 0; k < map_.zones.size() && !many; ++k) {
+        const Zone& zone = map_.zones[k];
+        const std::int64_t dx = zone.x.floor_int() - mx, dz = zone.z.floor_int() - mz;
+        const std::int64_t r = zone.radius.floor_int();
+        many = zone.type == ZoneType::Rabbits && zone_animals_[k] >= village::kManyRabbits && dx * dx + dz * dz <= r * r;
+    }
+    if (!many || lynx_near(mx, mz) || guarded(x, z, w, d)) {
+        return false;
+    }
+    // A fence, a hedge or a palisade along half its border: modules that touch the field, two meters each.
+    std::int32_t modules = 0;
+    for (const Building& o : buildings_.data()) {
+        const BuildingDef& od = content_->buildings[o.def];
+        if (od.line.empty() || od.road > 0 || o.state != BuildingState::Complete) {
+            continue;
+        }
+        const std::int32_t gx = std::max({o.x - (x + w), x - (o.x + o.width), 0});
+        const std::int32_t gz = std::max({o.z - (z + d), z - (o.z + o.depth), 0});
+        modules += gx <= 1 && gz <= 1 ? 1 : 0;
+    }
+    return modules * kTraceModule < w + d;
 }
 
 bool Game::zone_open(std::size_t z) const {

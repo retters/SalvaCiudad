@@ -79,7 +79,8 @@ public:
           deposit_rng_(s.seed, 83),
           forage_rng_(s.seed, 98),
           ore_rng_(s.seed, 101),
-          stone_rng_(s.seed, 102) {}
+          stone_rng_(s.seed, 102),
+          small_rng_(s.seed, 109) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -1371,7 +1372,37 @@ private:
         forage();
         ores();
         stones();
+        small_game();
         return report(GenStage::Starts, 100);
+    }
+
+    // Phase 109: zones of rabbits on the meadows and the grass, and of the
+    // lynx in the thick of the woods, after all the other zones and with
+    // their own random sequence: the zones there were are as they were.
+    void small_game() {
+        std::swap(rng_, small_rng_);
+        const auto open = [this](std::int32_t cx, std::int32_t cz) {
+            const Terrain t = cell_terrain(cx, cz);
+            return t == Terrain::Meadow || t == Terrain::Grass;
+        };
+        const auto thick = [this](std::int32_t cx, std::int32_t cz) {
+            return cell_terrain(cx, cz) == Terrain::ForestFloor && forest_[ci(cx, cz)] >= 60;
+        };
+        std::int32_t x = 0;
+        std::int32_t z = 0;
+        const std::int32_t rabbits = per_area(kRabbitZonesPerKm2);
+        for (std::int32_t i = 0; i < rabbits; ++i) {
+            if (pick_cell(10, open, {}, x, z)) {
+                out_.zones.push_back({ZoneType::Rabbits, cell_center(x), cell_center(z), Fixed::from_int(rng_.range(40, 90))});
+            }
+        }
+        const std::int32_t lynxes = per_area(kLynxZonesPerKm2);
+        for (std::int32_t i = 0; i < lynxes; ++i) {
+            if (pick_cell(10, thick, {}, x, z)) {
+                out_.zones.push_back({ZoneType::Lynx, cell_center(x), cell_center(z), Fixed::from_int(rng_.range(60, 120))});
+            }
+        }
+        std::swap(rng_, small_rng_);
     }
 
     // Phase 102: loose stones, in ones, twos and threes, more of them on
@@ -1750,6 +1781,7 @@ private:
     Rng forage_rng_;
     Rng ore_rng_;  // Phase 101: the deposits of clay, coal and gold, as last of all.
     Rng stone_rng_;  // Phase 102: the loose stones, after those.
+    Rng small_rng_;  // Phase 109: the zones of rabbits and of the lynx.
     MapData out_;
     std::vector<std::int32_t> h_;       // Vertex heights, millimeters.
     std::vector<std::uint8_t> bed_;        // Vertex dug as a river bed.

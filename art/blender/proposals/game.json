@@ -50,7 +50,8 @@
               "pet_dog": "dog", "pet_dog_shepherd": "dog_shepherd", "pet_dog_mastiff": "dog_mastiff",
               "pet_dog_terrier": "dog_terrier", "pet_cat": "cat", "pet_cat_tabby": "cat_tabby", "pet_cat_black": "cat_black",
               "pet_cat_white": "cat_white", "pet_kitten": "kitten",
-              "animal_goat": "goat", "animal_goat_brown": "goat_brown", "animal_goat_pied": "goat_pied"}
+              "animal_goat": "goat", "animal_goat_brown": "goat_brown", "animal_goat_pied": "goat_pied",
+              "animal_lynx": "lynx", "animal_wildcat": "wildcat"}
     },
     {
       "family": "nature", "class": "animal", "to": "fauna", "bare": true,
@@ -111,7 +112,7 @@
     },
     {
       "family": "beasts", "class": "animal", "to": "fauna",
-      "ids": {"animal_ram": "ram"}
+      "ids": {"animal_ram": "ram", "pet_rabbit": "rabbit"}
     },
     {
       "family": "annexes", "class": "building", "to": "buildings", "game": true,

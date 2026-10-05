@@ -395,7 +395,7 @@ TEST_SUITE("stones") {
             const std::optional<MapData> m = generate_map(s, test::core_content());
             REQUIRE(m.has_value());
             CAPTURE(want.seed);
-            CHECK(m->generator_version == 10);
+            CHECK(m->generator_version == worldgen::kGeneratorVersion);
             std::uint32_t features = 0;
             const std::uint64_t hash = old_map_hash(*m, features);
             MESSAGE("seed " << want.seed << ": {" << features << ", " << hash << "ull}, loose stones "

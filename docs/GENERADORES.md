@@ -84,6 +84,8 @@ Después, igual (fase 101), los yacimientos de arcilla, carbón y oro: bancos de
 
 Y al final (fase 102), las piedras sueltas: grupos de una a tres, más en terreno áspero, unas 400 por km² con «Recursos» al 100 %; y al menos 6 a 80 m o menos de cada inicio. Ninguna donde va el centro del pueblo ni sobre un yacimiento.
 
+Y las zonas de caza menor (fase 109), después de todas las demás zonas y con su propia secuencia de azar: de conejos en praderas y pasto (4 por km², de 40 a 90 m de radio) y de lince en lo espeso del bosque (0,8 por km², de 60 a 120 m). Las zonas de ciervos, jabalíes, lobos y osos quedan donde estaban.
+
 Lomas de 64 m, ondulaciones de 512 m y 40 cm de relieve fino, más las rocas, arbustos, hierbas y el pasto.
 
 ## Todo lo que F3 puede nombrar

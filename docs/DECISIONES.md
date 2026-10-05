@@ -3899,3 +3899,32 @@ Seis casos más en la suite `herds` (14 en total): los datos; cambiar a cabras d
 
 **D-10807. Versiones.**
 Reglas 69 y red 32 (por la orden nueva). El generador no cambia.
+
+## Fase 109: conejos y lince (2026-10-05)
+
+**D-10901. Dos tipos de zona más, sin animales que caminen.**
+`Rabbits` y `Lynx` se suman a las zonas de animales, pero no crean criaturas en el mapa como los ciervos o los lobos: la simulación guarda solo cuántos hay (16 conejos por zona, 1 lince) y todo lo que hacen son reglas. Un conejo o un lince que caminara necesitaría huida, caza y camino para un resultado igual, y los conejos serían cientos. La vista los enseña como fauna de ambiente.
+
+**D-10902. El cazador y los conejos.**
+Va por conejos solo si no tiene ciervos ni jabalíes a su alcance. Trae 2 de carne por viaje (una carga normal son más) y ninguna piel. Los conejos vuelven de a dos por mes, como toda zona vuelve un sexto de su tope: en la prueba un puesto de caza sacó 3 en cinco minutos, así que **un cazador no los baja de «muchos»**. Solo el lince lo hace.
+
+**D-10903. «Muchos conejos» son 10 o más de 16.**
+Una zona sin lince está casi siempre llena, así que en la práctica: un campo de verduras en una pradera con conejos pierde cosecha salvo que se lo proteja. La pérdida se aplica una vez, cuando el campo madura (un 20 % menos de lo que iba a dar), con un aviso.
+
+**D-10904. Qué protege un campo.**
+Cualquiera de tres cosas: módulos de cualquier línea que no sea camino tocando el campo (a 1 m o menos) que sumen la mitad de su borde (un campo de 8 × 8 tiene 32 m de borde: 8 módulos de 2 m); un edificio con `guardRadius` cuyo radio llegue al campo; o un lince a 60 m o menos del borde de su zona. «Cerca» de un lince es lo mismo para todo: 60 m desde el borde de su zona.
+
+**D-10905. El lince.**
+No es criatura, no ataca ni se caza. Tres efectos: las zonas de conejos a su alcance tienen la mitad (8); los gallineros sin valla ni perro a su alcance pierden gallinas el doble de seguido (el lince tira su propia suerte, igual que el zorro, con su propio aviso); y un redil a su alcance sin perro pierde **una cría** cada primavera, si nació alguna. Zorro y lince no se cazan, como dice la especificación.
+
+**D-10906. El generador.**
+Al final de todo y con su propia secuencia de azar: 4 zonas de conejos por km² en pradera o pasto y 0,8 de lince por km² en bosque espeso. Se añaden después de las zonas que había, que no cambian: la prueba de la fase 98 compara las huellas del mapa de siempre y sigue pasando (mirando solo los tipos de zona de entonces). Un mapa pequeño tiene una zona de conejos y, a veces, una de lince.
+
+**D-10907. A la vista.**
+Conejos: hasta cinco por zona, al amanecer y al atardecer (el primer y el último 15 % del día), o siempre si la partida no tiene noche. El lince: uno de cada cuatro días, a esas mismas horas; en una de cada dos zonas es un gato montés.
+
+**D-10908. Lo medido.**
+Suite nueva `smallgame`, 7 casos: las zonas nuevas van al final, las de conejos en pradera o pasto y las de lince en bosque; no hay criaturas de esas zonas, y junto a un lince hay 8 conejos donde lejos hay 16; el cazador sacó 3 conejos y 8 de carne en cinco minutos sin ninguna piel, y con ciervos a su alcance no tocó los conejos; las verduras se pierden y el trigo no, fuera de la zona no, con siete módulos de valla sí y con ocho no, con una caseta a 24 m sí y a 14 m no, y con un lince cerca no; un campo dio 40 sin conejos y 32 con ellos, con un solo aviso; junto a un lince un gallinero perdió gallinas y el que tenía perro ninguna, y un redil pasó de 4 a 5 en vez de a 6, y con perro a 6; guardar y cargar.
+
+**D-10909. Versiones.**
+Reglas 70 y generador 11. La red no cambia.

@@ -122,6 +122,12 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### Conejos y lince (fase 109)
+
+El mapa tiene zonas de **conejos** (en praderas y pasto) y de **lince** (en lo espeso del bosque). No son animales que caminen por el mapa: la simulación guarda cuántos hay en cada zona, y la vista los enseña al amanecer y al atardecer.
+
+Un cultivo con `"rabbitsEat": true` (las verduras del juego base) pierde un 20 % de la cosecha si el centro de su campo está dentro de una zona con 10 conejos o más, salvo que tenga una valla, un seto o una empalizada pegada a la mitad de su borde, un edificio con `guardRadius` que lo alcance, o un lince a 60 m o menos del borde de su zona. Una zona de conejos tiene hasta 16; con un lince cerca, 8.
+
 #### Rebaños y rediles (fase 107)
 
 Un **rebaño** es una definición propia, en `defs/herds.json` (o cualquier archivo de `defs/`):

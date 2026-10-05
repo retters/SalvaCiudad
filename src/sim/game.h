@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 69;
+inline constexpr std::uint32_t kGameRulesVersion = 70;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,16 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 109. A zone of rabbits holds kRabbits of them, half with a lynx
+// within kLynxMeters of it. With kManyRabbits or more, a field of a crop
+// they eat that stands in the zone loses kRabbitLoss percent of its harvest,
+// unless a fence runs along half its border, a guard is within its reach
+// or a lynx is near. A hunter brings kRabbitMeat of meat from one.
+inline constexpr std::int32_t kRabbits = 16;
+inline constexpr std::int32_t kManyRabbits = 10;
+inline constexpr std::int32_t kRabbitLoss = 20;
+inline constexpr std::int32_t kRabbitMeat = 2;
+inline constexpr std::int32_t kLynxMeters = 60;
 // Phase 106. A guard dog (a building with a guard radius) looks every
 // kDogTicks: with a wolf, a bear or a raider in its reach it barks (a notice,
 // once until kBarkQuietTicks have gone by with nobody there), the villagers
@@ -837,6 +847,9 @@ public:
                              // (`value` 1: nothing but the fruit trees it spares, phase 85).
             Fox,             // Phase 105: a fox took a hen from coop `entity`; `value`: the hens left.
             Barked,          // Phase 106: the dog of kennel `entity` barks; `value`: the CreatureKind it saw.
+            Lynx,            // Phase 109: a lynx took a hen from coop `entity` (`value`: those left), or (`other` 1) a
+                             // young one from fold `entity`.
+            Rabbits,         // Phase 109: rabbits ate part of the harvest of a field of farm `entity`.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -886,6 +899,16 @@ public:
     // How pleasant a place is for homes: buildings around (gardens add,
     // workshops take away) and trees (phase 12; the map layer, phase 17).
     [[nodiscard]] std::int32_t desirability_at(FixedVec2 here, const Building* self = nullptr) const;
+    // Phase 109. How many animals zone `z` holds at most (rabbits: half with a lynx near).
+    [[nodiscard]] std::int32_t zone_room(std::size_t z) const;
+    // Whether a lynx lives within village::kLynxMeters of the edge of the circle at (x, z) of `radius` meters.
+    [[nodiscard]] bool lynx_near(std::int32_t x, std::int32_t z, std::int32_t radius = 0) const;
+    // Whether a guard (a kennel) has the rectangle within its reach.
+    [[nodiscard]] bool guarded(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) const;
+    // Whether the rabbits eat of a field (x, z, w, d) of `town` sown with `crop`: it is in a zone with many
+    // of them and nothing keeps them out.
+    [[nodiscard]] bool rabbits_eat(std::uint8_t town, DefIndex crop, std::int32_t x, std::int32_t z, std::int32_t w,
+                                   std::int32_t d) const;
     // Phase 107. A fold's herd (null: not a fold), and how many animals its pasture has room for.
     [[nodiscard]] const HerdDef* herd_of(const Building& fold) const;
     [[nodiscard]] std::int32_t herd_room(const Building& fold) const;

@@ -212,6 +212,9 @@ std::uint64_t old_map_hash(const MapData& m, std::uint32_t& features) {
         w.i32(p.z.raw());
     }
     for (const Zone& z : m.zones) {
+        if (z.type > ZoneType::Bears) {
+            continue;  // (The zones of rabbits and of the lynx came with generator 11, phase 109.)
+        }
         w.u8(static_cast<std::uint8_t>(z.type));
         w.i32(z.x.raw());
         w.i32(z.z.raw());

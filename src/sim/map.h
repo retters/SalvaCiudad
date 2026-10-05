@@ -159,7 +159,9 @@ struct MapFeature {
     bool operator==(const MapFeature&) const = default;
 };
 
-enum class ZoneType : std::uint8_t { Deer, Boar, Wolves, Bears, Count };
+// (Phase 109: rabbits, small game that eats the vegetables; and the lynx, which is not hunted and hunts them.
+// Neither is a creature that walks the map: a zone and how many live in it.)
+enum class ZoneType : std::uint8_t { Deer, Boar, Wolves, Bears, Rabbits, Lynx, Count };
 
 // Where animals of a kind live.
 struct Zone {

@@ -15,6 +15,7 @@
     {
       "type": "crop",
       "id": "core:vegetables",
+      "rabbitsEat": true,
       "name": "crop.vegetables",
       "models": ["models/props/crop_vegetables_1.glb", "models/props/crop_vegetables_2.glb", "models/props/crop_vegetables_3.glb"],
       "resource": "core:vegetables",

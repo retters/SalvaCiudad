@@ -22,7 +22,8 @@ constexpr std::string_view kFiles[kSpecies] = {
     "models/fauna/dog_terrier.glb", "models/fauna/cat.glb",           "models/fauna/cat_tabby.glb",
     "models/fauna/cat_black.glb",   "models/fauna/cat_white.glb",     "models/fauna/kitten.glb",
     "models/animals/sheep.glb",     "models/fauna/ram.glb",           "models/fauna/goat.glb",
-    "models/fauna/goat_brown.glb",  "models/fauna/goat_pied.glb",
+    "models/fauna/goat_brown.glb",  "models/fauna/goat_pied.glb",     "models/fauna/rabbit.glb",
+    "models/fauna/lynx.glb",        "models/fauna/wildcat.glb",
 };
 
 constexpr float kTau = 2.0f * std::numbers::pi_v<float>;
@@ -74,7 +75,7 @@ bool sea(const sim::MapData& map, std::int32_t cx, std::int32_t cz) {
 // and how far it then goes, in meters.
 // The animals of the village: used to people, and they walk.
 bool poultry(Species s) {
-    return s >= Species::Hen && s < Species::Count;
+    return s >= Species::Hen && s < Species::Rabbit;
 }
 float fear(Species s) {
     if (poultry(s)) {
@@ -117,7 +118,10 @@ Habit habit(Species species) {
         case Species::Ram:
         case Species::Goat:
         case Species::GoatBrown:
-        case Species::GoatPied: return Habit::Ground;
+        case Species::GoatPied:
+        case Species::Rabbit:
+        case Species::Lynx:
+        case Species::Wildcat: return Habit::Ground;
         case Species::Owl:
         case Species::OwlSnowy: return Habit::Perched;
         case Species::Butterflies:
@@ -132,6 +136,9 @@ When when(const sim::Game& game) {
     w.season = game.calendar().season;
     w.snow = game.snow() >= 30;
     w.night = game.night();
+    const sim::DayTime time = game.day_time();
+    w.twilight = !game.rules().day_night.enabled() || (!time.night && (time.progress < 150 || time.progress >= 850));
+    w.day = static_cast<std::uint32_t>(game.calendar_day());
     return w;
 }
 
@@ -552,6 +559,39 @@ void AmbientFauna::settle(const sim::Game& game, std::int32_t fsx, std::int32_t 
             const float angle = static_cast<float>(bird) * kTau / static_cast<float>(birds) + 0.6f;
             const float out_by = static_cast<float>(std::max(b.width, b.depth)) * 0.5f + 1.0f;
             add(game, id, who, cx + std::sin(angle) * out_by, cz + std::cos(angle) * out_by, 0.0f, 2.5f);
+        }
+    }
+    // Phase 109: rabbits out in their zones at dawn and dusk, a few of those there are; and the lynx of a
+    // zone (a wildcat in every other one), one day in four.
+    for (std::size_t zi = 0; zi < game.map().zones.size() && when_.twilight; ++zi) {
+        const sim::Zone& zone = game.map().zones[zi];
+        if (zone.type != sim::ZoneType::Rabbits && zone.type != sim::ZoneType::Lynx) {
+            continue;
+        }
+        const float zx = to_float(zone.x), zz = to_float(zone.z), zr = to_float(zone.radius);
+        if (std::hypot(zx - fx, zz - fz) > far + zr) {
+            continue;
+        }
+        const bool lynx = zone.type == sim::ZoneType::Lynx;
+        const std::int32_t living = zi < game.zone_animals().size() ? game.zone_animals()[zi] : 0;
+        if (lynx && mix(static_cast<std::int32_t>(zi), static_cast<std::int32_t>(when_.day), 12) % 4u != 0) {
+            continue;
+        }
+        const std::size_t shown = lynx ? (living > 0 ? 1u : 0u) : static_cast<std::size_t>(std::clamp(living / 3, 0, 5));
+        for (std::size_t n = 0; n < shown; ++n) {
+            const std::uint64_t id = (std::uint64_t{1} << 59) | (static_cast<std::uint64_t>(zi) << 8) | n;
+            if (const auto it = animals_.find(id); it != animals_.end()) {
+                it->second.stays = true;
+                continue;
+            }
+            const std::uint32_t h = mix(static_cast<std::int32_t>(zi), static_cast<std::int32_t>(n), 13);
+            const float angle = unit(h) * kTau;
+            const float out_by = unit(h, 8) * zr * 0.6f;
+            const float x = zx + std::sin(angle) * out_by, z = zz + std::cos(angle) * out_by;
+            if (std::hypot(x - fx, z - fz) > far || !land(game.map(), x, z)) {
+                continue;
+            }
+            add(game, id, lynx ? (zi % 2 == 0 ? Species::Lynx : Species::Wildcat) : Species::Rabbit, x, z, 0.0f, lynx ? 10.0f : 4.0f);
         }
     }
     // Phase 107: the herd of each fold: in its pasture by day, by the fold at night (or with no pasture).

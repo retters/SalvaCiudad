@@ -134,8 +134,9 @@ TEST_SUITE("wildlife") {
     TEST_CASE("animals live in their zones, and no dens by the town") {
         Game g(core(), map_for(91), setup());
         std::int32_t expected = 0;
-        for (const std::int32_t n : g.zone_animals()) {
-            expected += n;
+        for (std::size_t z = 0; z < g.zone_animals().size(); ++z) {
+            // (Rabbits and the lynx are counted in their zones, but walk no map: phase 109.)
+            expected += g.map().zones[z].type <= ZoneType::Bears ? g.zone_animals()[z] : 0;
         }
         CHECK(static_cast<std::int32_t>(g.creatures().size()) == expected);
         CHECK(count(g, CreatureKind::Deer) > 0);

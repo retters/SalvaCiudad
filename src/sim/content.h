@@ -388,6 +388,7 @@ struct CropDef {
     std::int32_t grow_days = 40;   // Days of growing weather (5 °C or more) to ripen.
     std::int32_t fertility = -10;  // Change to the field's fertility after a harvest.
     bool hardy = false;            // Survives frost.
+    bool rabbits = false;          // Phase 109: rabbits eat it (see village::kRabbitLoss).
     // Phase 90: how it looks in a field, as plots of 2 x 2 m, one per two
     // cells: its three stages (sprouts, green, ripe), files inside the
     // folder of `mod`. None: the plain plants of before. `sways`: it bends
