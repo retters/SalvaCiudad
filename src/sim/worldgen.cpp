@@ -76,7 +76,8 @@ public:
     Generator(const MapSettings& s, const Content& content, const GenProgress& progress)
         : s_(s), flora_(content.flora), progress_(progress), n_(map_cells(s.size)), v_(n_ + 1),
           rng_(s.seed, 7),
-          deposit_rng_(s.seed, 83) {}
+          deposit_rng_(s.seed, 83),
+          forage_rng_(s.seed, 98) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -1366,7 +1367,61 @@ private:
                        return d2(zone.x, zone.z, s.x, s.z) <= safe;
                    });
         });
+        forage();
         return report(GenStage::Starts, 100);
+    }
+
+    // Phase 98: trees with a hive and nests by the edge of the woods and in
+    // the meadows, old stumps and hollow logs in the woods, rings of
+    // mushrooms where they are thick; and some of each a walk from every
+    // start. After everything else and with their own random sequence, so
+    // that a seed gives the map it always gave, with these added.
+    void forage() {
+        std::swap(rng_, forage_rng_);
+        const std::int32_t k = s_.resources;
+        const auto edge = [this](std::int32_t cx, std::int32_t cz) {
+            const Terrain t = cell_terrain(cx, cz);
+            return (t == Terrain::ForestFloor && forest_[ci(cx, cz)] < 40) || t == Terrain::Meadow;
+        };
+        const auto woods = [this](std::int32_t cx, std::int32_t cz) { return cell_terrain(cx, cz) == Terrain::ForestFloor; };
+        const auto deep = [this](std::int32_t cx, std::int32_t cz) {
+            return cell_terrain(cx, cz) == Terrain::ForestFloor && forest_[ci(cx, cz)] >= 60;
+        };
+        std::int32_t x = 0;
+        std::int32_t z = 0;
+        const auto scatter = [&](FeatureType type, std::int32_t tenths_per_km2,
+                                 const std::function<bool(std::int32_t, std::int32_t)>& where, std::int32_t most) {
+            const std::int32_t count = per_area(static_cast<std::int64_t>(tenths_per_km2) * k / 100);
+            for (std::int32_t i = 0; i < count; ++i) {
+                if (pick_cell(10, where, {}, x, z)) {
+                    cluster(type, x, z, rng_.range(1, most), 5, 90, 115);
+                }
+            }
+        };
+        scatter(FeatureType::BeeTree, 120, edge, 1);
+        scatter(FeatureType::Nest, 180, edge, 2);
+        scatter(FeatureType::Stump, 240, woods, 2);
+        scatter(FeatureType::MushroomRing, 160, deep, 2);
+        // Fairness: every start has some of each within reach.
+        for (const StartPosition& s : out_.starts) {
+            const auto ensure = [&](FeatureType type, std::int32_t least) {
+                for (int attempt = 0; attempt < 6 && count_near(type, s.x, s.z, kStartResourceRadius) < least; ++attempt) {
+                    if (ring_cell(s.x, s.z, 50, 150, x, z)) {
+                        cluster(type, x, z, 1, 5, 90, 115);
+                    }
+                }
+            };
+            ensure(FeatureType::BeeTree, kStartMinBeeTrees);
+            ensure(FeatureType::Nest, kStartMinNests);
+            // Mushrooms: stumps, which always have theirs in autumn.
+            ensure(FeatureType::Stump, kStartMinMushrooms);
+        }
+        // None where a town center goes, nor on the ground of a stone deposit.
+        std::erase_if(out_.features, [&](const MapFeature& f) {
+            return f.type >= FeatureType::BeeTree && f.type < FeatureType::Count && cleared(f);
+        });
+        clear_deposits();
+        std::swap(rng_, forage_rng_);
     }
 
     // Islands: each town near the middle of its home island, on good
@@ -1542,6 +1597,9 @@ private:
     // Phase 83: the stone deposits roll their own dice, so the rest of the
     // map is the one it was without them.
     Rng deposit_rng_;
+    // Phase 98: what the forager finds by seasons has its own sequence too,
+    // and is placed last: the rest of the map is where it was.
+    Rng forage_rng_;
     MapData out_;
     std::vector<std::int32_t> h_;       // Vertex heights, millimeters.
     std::vector<std::uint8_t> bed_;        // Vertex dug as a river bed.

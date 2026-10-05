@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Miel, huevos y setas (fase 98)
+
+De las propuestas, sin cambios de forma: `props/bee_tree.glb` (árbol con panal, 612 triángulos), `props/nest.glb` (nido con huevos, 360), `props/stump.glb` y `props/stump_2.glb` (tocón con setas y tronco hueco, 420 y 332; son variantes del mismo elemento) y `props/mushroom_ring.glb` y `props/mushroom_ring_2.glb` (setas pardas y rojas, 336 y 784; variantes del corro). Las pilas `pile_honey`, `pile_eggs` y `pile_mushrooms` (las dos últimas, nuevas en `proposals/piles/build.py`: cestas como las de bayas). El nido y el tocón se ven igual todo el año; el corro solo se dibuja mientras tiene setas.
+
 ## Modelos de propuesta que entran al juego (fase 89)
 
 Los modelos de `art/blender/proposals` (los de la página `docs/propuestas`) no están en el juego hasta que una fase los usa. `art/blender/proposals/game.json` lista los que sí:

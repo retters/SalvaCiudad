@@ -206,7 +206,11 @@
       "work": "gather",
       "gathers": [
         "berryBush",
-        "herbs"
+        "herbs",
+        "beeTree",
+        "nest",
+        "stump",
+        "mushroomRing"
       ],
       "picksFruit": true,
       "radius": 65,

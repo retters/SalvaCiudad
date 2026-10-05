@@ -32,6 +32,7 @@ COLORS = {
     "shoe": C(0x5A3B24), "wicker": C(0xB08A4A), "wicker_dark": C(0x8A6A34), "bow_wood": C(0x8A6038), "string": C(0xE8E0C8), "water": C(0x4A8FC0),
     "cloth_yellow": C(0xE0B840), "cheese": C(0xE8C050), "milk": C(0xF4F0E4), "honey": C(0xE0A030), "wool": C(0xF0ECE0),
     "bean": C(0xC9B79A), "bean_dark": C(0x8A4A34), "flour": C(0xF2EEE2), "compost": C(0x4A3A2A), "compost_dark": C(0x36291C),
+    "egg": C(0xF2EADC), "egg_brown": C(0xC9A47A), "cap": C(0x9A6A44), "cap_pale": C(0xE6D8C0),
 }
 
 
@@ -228,6 +229,18 @@ def fruit(rnd):
 def berries(rnd):
     spots = ((-0.4, -0.35, 0.0), (0.4, -0.3, 0.0), (0.0, 0.4, 0.0), (-0.4, 0.42, 0.0), (0.42, 0.42, 0.0), (0.0, -0.05, 0.3))
     return [basket(x, y, z, 0.24, "berry", 7, i) for i, (x, y, z) in enumerate(spots)]
+
+
+def eggs(rnd):
+    """Baskets of eggs (phase 98)."""
+    spots = ((-0.4, -0.35, 0.0), (0.4, -0.3, 0.0), (0.0, 0.4, 0.0), (-0.4, 0.42, 0.0), (0.42, 0.42, 0.0), (0.0, -0.05, 0.3))
+    return [basket(x, y, z, 0.24, ("egg", "egg", "egg_brown"), 7, 60 + i) for i, (x, y, z) in enumerate(spots)]
+
+
+def mushrooms(rnd):
+    """Baskets of mushrooms, brown caps and a few pale ones (phase 98)."""
+    spots = ((-0.4, -0.35, 0.0), (0.4, -0.3, 0.0), (0.0, 0.4, 0.0), (-0.4, 0.42, 0.0), (0.42, 0.42, 0.0), (0.0, -0.05, 0.3))
+    return [basket(x, y, z, 0.24, ("cap", "cap", "cap_pale"), 7, 70 + i) for i, (x, y, z) in enumerate(spots)]
 
 
 def beans(rnd):
@@ -451,7 +464,7 @@ KINDS = {
     "wheat": sheaves("wheat", "wheat_dark"), "barley": sheaves("barley", "wheat_dark"), "flax": sheaves("flax", "herb"), "bread": bread, "vegetables": vegetables,
     "fruit": fruit, "berries": berries, "roots": roots, "meat": hanging("meat"), "smoked": hanging("smoked"), "fish": hanging("fish"), "herbs": hanging("herbs"),
     "beer": beer, "cheese": dairy, "honey": honey, "hay": hay,
-    "beans": beans, "flour": flour, "fertilizer": fertilizer,
+    "beans": beans, "flour": flour, "fertilizer": fertilizer, "eggs": eggs, "mushrooms": mushrooms,
     "hides": hides, "leather": rolls(("leather_roll", "hide_dark")), "linen": rolls(("linen", "linen_shade", "cloth_blue", "cloth_red"), 0.11, 0.9),
     "clothes": folded(("linen", "cloth_blue", "cloth_red", "cloth_green", "cloth_yellow")), "shoes": shoes, "bows": bows, "weapons": weapons, "wool": wool,
 }

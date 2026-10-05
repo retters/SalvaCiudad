@@ -37,7 +37,7 @@ constexpr std::string_view kSkillNames[] = {"wood", "stone", "forage", "farm",  
 constexpr std::string_view kTutorialGoals[] = {"none",  "camera", "place",      "build", "workers",
                                                "speed", "stock",  "population", "lua"};
 constexpr std::string_view kTutorialSizes[] = {"small", "medium"};
-constexpr std::string_view kDiseaseSources[] = {"cold", "water", "rats"};
+constexpr std::string_view kDiseaseSources[] = {"cold", "water", "rats", "food"};
 constexpr std::string_view kSeasons[] = {"spring", "summer", "autumn", "winter"};
 // In the order of sim::TreeState.
 constexpr std::string_view kTreeStateNames[] = {"bloom", "autumn", "bare"};
@@ -400,7 +400,9 @@ constexpr std::string_view kBuildCategories[] = {"housing",  "food",       "reso
                                                  "garden",   "nature",     "monuments", "ruins"};
 constexpr std::string_view kNeeds[] = {"food",   "water",  "clothes", "shoes",  "religion", "entertainment",
                                        "heating", "beauty", "market",  "hygiene", "healer",  "doctor"};
-constexpr std::string_view kFeatureKinds[] = {"tree", "stone", "ironOre", "berryBush", "herbs", "stoneDeposit"};
+constexpr std::string_view kFeatureKinds[] = {"tree",         "stone",   "ironOre", "berryBush", "herbs",
+                                              "stoneDeposit", "beeTree", "nest",    "stump",     "mushroomRing"};
+static_assert(std::size(kFeatureKinds) == static_cast<std::size_t>(sim::FeatureType::Count));
 constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge"};
 
 template <typename T>
@@ -580,6 +582,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.category = static_cast<sim::ResourceCategory>(r.choice("category", kCategories, 1, true));
         def.nutrition = r.integer("nutrition", 0, 1000, 0);
         def.value = r.integer("value", 0, 10000, 0);
+        def.bad_percent = r.integer("badPercent", 0, 100, 0);
         def.weight = r.integer("weight", 1, 12, 1);
         def.carry = r.integer("carry", 0, 1000, 0);
         // "load": "crate", "logs", "stone", "sack" or "basket".
@@ -859,6 +862,15 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.amount = r.integer("amount", 1, 10000, 10);
         def.work = r.integer("work", 1, 10000, 20);
         def.regrow_days = r.integer("regrowDays", 0, 3650, 0);
+        def.seasons = r.choices("seasons", kSeasons);
+        def.after_rain = r.flag("afterRain");
+        if (def.after_rain && def.seasons == 0) {
+            r.fail("\"afterRain\" needs \"seasons\"");
+        }
+        if (def.seasons != 0 && (def.regrow_days != 0 || def.kind == sim::FeatureKind::Tree ||
+                                 def.kind == sim::FeatureKind::StoneDeposit)) {
+            r.fail("what gives by \"seasons\" does not regrow, and is not a tree or a deposit");
+        }
         def.landmark = r.flag("landmark");
         // Features have no name of their own: the viewer shows the resource's.
         def.models = r.models(mod_dir, false, refs,
@@ -886,7 +898,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.build_work = r.integer("buildWork", 0, 100000, 100);
         def.workers = r.integer("workers", 0, 50, 0);
         def.work = static_cast<sim::WorkKind>(r.choice("work", kWorkKinds, 0));
-        def.gathers = r.choices("gathers", kFeatureKinds);
+        def.gathers = r.choices<std::uint16_t>("gathers", kFeatureKinds);
         def.work_radius = r.integer("radius", 0, 500, 0);
         def.picks_fruit = r.flag("picksFruit");
         def.residents = r.integer("residents", 0, 50, 0);

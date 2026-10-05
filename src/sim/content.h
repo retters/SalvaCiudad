@@ -38,6 +38,10 @@ struct ResourceDef {
     std::int32_t weight = 1;     // Units a villager carries per trip: 12 / weight.
     std::int32_t carry = 0;      // Units per trip in place of 12 / weight; 0 = from the weight (phase 28).
     std::int32_t value = 0;      // Base price in gold; 0 = merchants do not trade it (phase 14).
+    // Phase 98: of a hundred units eaten, how many are bad (red mushrooms):
+    // who eats one falls ill of the disease that comes from food, unless
+    // the town has a healer or a doctor, who tell them apart.
+    std::int32_t bad_percent = 0;
     LoadKind load = LoadKind::Crate;  // Phase 67; by default food goes in a basket and the rest in a crate.
     // Phase 89: its own pile beside storages, sites and workshops, in three
     // sizes: "<pile>_1.glb" to "<pile>_3.glb" inside the folder of `mod`.
@@ -125,7 +129,7 @@ struct BuildingDef {
     std::int32_t build_work = 100;  // Worker-ticks to build.
     std::int32_t workers = 0;       // Most workers.
     WorkKind work = WorkKind::None;
-    std::uint8_t gathers = 0;       // FeatureKind bits, for Gather.
+    std::uint16_t gathers = 0;      // FeatureKind bits, for Gather.
     std::int32_t work_radius = 0;   // Meters, for Gather/Hunt/Fish.
     bool picks_fruit = false;       // Phase 84, for Gather: its workers pick the fruit of the fruit trees too.
     std::int32_t residents = 0;     // Houses.
@@ -209,7 +213,8 @@ inline constexpr std::int32_t kRoadModule = 2;
 inline constexpr std::size_t kMaxRoadKinds = 15;
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.
-enum class DiseaseSource : std::uint8_t { Cold, Water, Rats, Count };
+// (Food, phase 98: nobody catches it from the air; it comes from eating what was bad.)
+enum class DiseaseSource : std::uint8_t { Cold, Water, Rats, Food, Count };
 struct DiseaseDef {
     std::string id;
     std::string name_key;
@@ -353,6 +358,14 @@ struct FeatureDef {
     std::int32_t amount = 10;      // Units per feature (trees: per size, see below).
     std::int32_t work = 20;        // Worker-ticks per unit.
     std::int32_t regrow_days = 0;  // Berries and herbs grow back; 0 = never.
+    // Phase 98: what gives once a year, in its seasons (Season bits; 0: not
+    // one of these): a hive its honey, a nest its eggs, a stump its
+    // mushrooms. It is picked a unit at a time and the feature stays, like
+    // the fruit of a tree; out of season it has nothing. `after_rain`: it
+    // fills not once a year but every day after a day of rain (a ring of
+    // mushrooms); where it never rains, every ten days of its season.
+    std::uint8_t seasons = 0;
+    bool after_rain = false;
     std::vector<std::string> models;  // Variants, paths inside the mod (trees use their species).
     std::string mod;
     bool landmark = false;         // Phase 34: its silhouette shows through the fog of war.

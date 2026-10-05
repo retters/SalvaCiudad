@@ -49,6 +49,61 @@
     },
     {
       "type": "mapFeature",
+      "id": "core:bee_tree",
+      "kind": "beeTree",
+      "resource": "core:honey",
+      "amount": 6,
+      "work": 30,
+      "seasons": [
+        "summer"
+      ],
+      "model": "models/props/bee_tree.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:nest",
+      "kind": "nest",
+      "resource": "core:eggs",
+      "amount": 4,
+      "work": 15,
+      "seasons": [
+        "spring"
+      ],
+      "model": "models/props/nest.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:stump",
+      "kind": "stump",
+      "resource": "core:mushrooms",
+      "amount": 5,
+      "work": 15,
+      "seasons": [
+        "autumn"
+      ],
+      "models": [
+        "models/props/stump.glb",
+        "models/props/stump_2.glb"
+      ]
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:mushroom_ring",
+      "kind": "mushroomRing",
+      "resource": "core:mushrooms",
+      "amount": 6,
+      "work": 15,
+      "seasons": [
+        "autumn"
+      ],
+      "afterRain": true,
+      "models": [
+        "models/props/mushroom_ring.glb",
+        "models/props/mushroom_ring_2.glb"
+      ]
+    },
+    {
+      "type": "mapFeature",
       "id": "core:stone_deposit",
       "kind": "stoneDeposit",
       "resource": "core:stone",

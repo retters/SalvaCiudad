@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 58;
+inline constexpr std::uint32_t kGameRulesVersion = 59;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -600,6 +600,14 @@ public:
     [[nodiscard]] std::int32_t days_without_rain() const;
     // Dirt roads are mud: it rains, or it did yesterday.
     [[nodiscard]] bool muddy() const { return muddy_; }
+    // Phase 98: whether a feature of the map gives by seasons (a hive, a
+    // nest, a stump, a ring of mushrooms): fruit_on() says what it has.
+    [[nodiscard]] bool seasonal(const MapFeature& f) const;
+    // The day the rings of mushrooms last filled, plus one; 0 if they have
+    // not this autumn (or it is not autumn).
+    [[nodiscard]] std::uint32_t ring_cycle() const { return ring_cycle_; }
+    // Whether a town has somebody who tells the bad mushrooms from the good: a healer or a doctor.
+    [[nodiscard]] bool has_healer(std::uint8_t town) const;
     [[nodiscard]] std::uint8_t player_count() const { return player_count_; }
     // Whether the developer tools' commands are accepted (single player,
     // or a multiplayer game that allows them). Part of the state.
@@ -898,7 +906,15 @@ private:
     // mud. update_weather() sets it when a day of the calendar begins (and
     // after loading), and tells the walking grid how fast each road is now.
     bool muddy_ = false;
+    std::uint32_t ring_cycle_ = 0;  // Phase 98, derived too: see ring_cycle().
+    std::vector<std::uint32_t> ring_nodes_;  // The features that fill after the rain, for the view.
     void update_weather();
+    // What a seasonal feature's count of what was picked is kept for: the
+    // year, or the filling of the rings.
+    [[nodiscard]] std::uint32_t pick_cycle(const FeatureDef& fd, const Calendar& when) const {
+        return fd.after_rain ? ring_cycle_ : when.year;
+    }
+    DefIndex food_disease_ = kNoDef;  // The disease that comes from bad food, if the content has one.
     void set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind);
     // Takes away the roads under a rectangle of the map, in meters.
     void clear_roads(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d);

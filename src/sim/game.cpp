@@ -85,6 +85,9 @@ std::int32_t feature_amount(const Content& c, const MapFeature& f) {
         return f.species < c.flora.species.size() && f.size < kTreeSizes ? c.flora.species[f.species].logs[f.size] : 0;
     }
     const FeatureDef* fd = c.feature(f.type);
+    if (fd != nullptr && fd->seasons != 0) {
+        return 1;  // It is there; what it gives is counted by the year (phase 98).
+    }
     if (fd == nullptr) {
         return 0;
     }
@@ -930,9 +933,12 @@ public:
                 for (const std::uint32_t i : g_.node_cells_[static_cast<std::size_t>(cz * side + cx)]) {
                     const Node& n = g_.nodes_[i];
                     const MapFeature& f = g_.map_.features[i];
-                    // A fruit tree, for those who pick its fruit and leave it standing.
-                    const bool picking = picks_fruit(d, f);
-                    if (!picking && ((d.gathers >> static_cast<unsigned>(f.type)) & 1u) == 0) {
+                    // A fruit tree, for those who pick its fruit and leave it
+                    // standing; and what gives by seasons (phase 98), for those
+                    // who gather it.
+                    const bool gathered = ((d.gathers >> static_cast<unsigned>(f.type)) & 1u) != 0;
+                    const bool picking = picks_fruit(d, f) || (gathered && g_.seasonal(f));
+                    if (!picking && !gathered) {
                         continue;
                     }
                     const bool grows = picking || regrows(f);
@@ -3085,6 +3091,7 @@ public:
                         }
                         source = source && !has(Need::Hygiene);
                         break;
+                    case DiseaseSource::Food:   // Only from eating it (phase 98).
                     case DiseaseSource::Count: break;
                 }
                 if (source) {
@@ -3688,6 +3695,30 @@ public:
                 break;
             }
             --best->amount;
+            // Phase 98: a bad one (a red mushroom), where nobody tells them
+            // apart and diseases are part of the game.
+            if (const std::int32_t bad = c_.resources[best->resource].bad_percent;
+                bad > 0 && v.disease == 0 && v.immune_days <= 0 && g_.food_disease_ != kNoDef &&
+                threat_percent(g_.rules_.diseases) > 0 && !g_.has_healer(v.owner) &&
+                g_.rng_.below(100) < static_cast<std::uint32_t>(bad)) {
+                bool first = true;
+                for (const Villager& o : g_.villagers_.data()) {
+                    first = first && !(o.owner == v.owner && o.disease == g_.food_disease_ + 1);
+                }
+                v.disease = static_cast<std::uint8_t>(g_.food_disease_ + 1);
+                v.sick_days = c_.diseases[g_.food_disease_].days;
+                if (first) {
+                    // (The villager's own id: the one being updated.)
+                    EntityId who;
+                    for (const EntityId id : g_.villagers_.entities()) {
+                        if (id.index == v_index_) {
+                            who = id;
+                        }
+                    }
+                    g_.events_.push_back({Game::Event::Kind::Outbreak, v.owner, who, v.position,
+                                          static_cast<std::uint16_t>(g_.food_disease_)});
+                }
+            }
             v.meals[v.meal_index++ % v.meals.size()] = best->resource;
             v.meal_index = static_cast<std::uint8_t>(v.meal_index % v.meals.size());
             // Variety: the kinds among the last helpings.
@@ -3836,7 +3867,8 @@ public:
             v.task = Task::Idle;
             return;
         }
-        if (const Building* job = g_.buildings_.get(v.job); job != nullptr && picks_fruit(def(*job), f)) {
+        if (const Building* job = g_.buildings_.get(v.job);
+            job != nullptr && (picks_fruit(def(*job), f) || g_.seasonal(f))) {
             pick_fruit(v, n);
             return;
         }
@@ -3921,23 +3953,31 @@ public:
     void pick_fruit(Villager& v, Node& n) {
         constexpr std::int32_t kFruitWork = 15;  // Worker-ticks per fruit, as a berry.
         const Calendar today = g_.calendar();
-        if (g_.fruit_ == kNoDef || g_.fruit_on(v.node - 1, today) <= 0) {
+        // Phase 98: or what a hive, a nest, a stump or a ring of mushrooms
+        // gives: its own resource, at its own pace, counted by its own cycle.
+        const FeatureDef* fd = c_.feature(g_.map_.features[v.node - 1].type);
+        const bool seasonal = fd != nullptr && fd->seasons != 0;
+        const DefIndex resource = seasonal ? fd->resource : g_.fruit_;
+        const std::int32_t work = seasonal ? fd->work : kFruitWork;
+        const std::uint32_t cycle = seasonal ? g_.pick_cycle(*fd, today) : today.year;
+        if (resource == kNoDef || g_.fruit_on(v.node - 1, today) <= 0) {
             release(v);
             v.task = Task::Idle;
             return;
         }
-        if ((v.timer += steps(v, Skill::Forage)) < kFruitWork) {
+        if ((v.timer += steps(v, Skill::Forage)) < work) {
             return;
         }
         v.timer = 0;
-        if (n.fruit_year != today.year) {
-            n.fruit_year = today.year;
+        if (n.fruit_year != cycle) {
+            n.fruit_year = cycle;
             n.fruit_picked = 0;
         }
         ++n.fruit_picked;
-        v.carrying.resource = g_.fruit_;
+        v.carrying.resource = resource;
         ++v.carrying.amount;
-        if (g_.fruit_on(v.node - 1, today) <= 0 || v.carrying.amount >= carry_capacity(c_, g_.fruit_)) {
+        g_.changed_nodes_.push_back(v.node - 1);  // The view shows what is left.
+        if (g_.fruit_on(v.node - 1, today) <= 0 || v.carrying.amount >= carry_capacity(c_, resource)) {
             release(v);
             v.task = Task::Idle;  // Decides to deliver next.
         }
@@ -4686,7 +4726,7 @@ public:
     void step() {
         ++g_.tick_;
         const bool calendar_day = g_.tick_ % g_.calendar_day_ticks() == 0;
-        if (calendar_day && g_.rules_.rain != 0) {
+        if (calendar_day) {
             g_.update_weather();
         }
         if (g_.tick_ % g_.day_ticks() == 0) {
@@ -5408,6 +5448,9 @@ public:
                 const std::int32_t cx = std::clamp(x / kNodeCell, 0, g_.node_cells_side_ - 1);
                 const std::int32_t cz = std::clamp(z / kNodeCell, 0, g_.node_cells_side_ - 1);
                 g_.node_cells_[static_cast<std::size_t>(cz * g_.node_cells_side_ + cx)].push_back(index);
+                if (const FeatureDef* fd = c_.feature(f.type); fd != nullptr && fd->after_rain) {
+                    g_.ring_nodes_.push_back(index);
+                }
                 g_.features_added_ = true;
                 break;
             }
@@ -5768,6 +5811,29 @@ std::int32_t Game::days_without_rain() const {
 
 void Game::update_weather() {
     const std::uint64_t today = calendar_day();
+    // Phase 98: the rings of mushrooms. In autumn they fill the day after a
+    // day of rain (where it never rains, every ten days): the last such
+    // day, looking back while it is autumn.
+    const std::uint32_t ring_shown = ring_cycle_;
+    ring_cycle_ = 0;
+    for (std::uint64_t day = today, back = 0; back < kDaysPerYear; ++back, --day) {
+        if (sim::calendar(rules_.climate, day * calendar_day_ticks()).season != Season::Autumn) {
+            break;
+        }
+        // (Where it never rains: the days of the game that are a multiple of ten.)
+        const bool fills = rules_.rain != 0 ? day > 0 && rained(day - 1) : day % 10 == 0;
+        if (fills) {
+            ring_cycle_ = static_cast<std::uint32_t>(day) + 1;
+            break;
+        }
+        if (day == 0) {
+            break;
+        }
+    }
+    if (ring_cycle_ != ring_shown) {
+        // They came up, or went: the view shows them or hides them.
+        changed_nodes_.insert(changed_nodes_.end(), ring_nodes_.begin(), ring_nodes_.end());
+    }
     const bool mud = rules_.rain != 0 && (rained(today) || (today > 0 && rained(today - 1)));
     if (mud == muddy_) {
         return;
@@ -5795,14 +5861,29 @@ void Game::build_indexes() {
         }
     }
     nav_.set_road_kinds(percents);
+    food_disease_ = kNoDef;
+    for (std::size_t d = 0; d < content_->diseases.size() && food_disease_ == kNoDef; ++d) {
+        if (content_->diseases[d].source == DiseaseSource::Food) {
+            food_disease_ = static_cast<DefIndex>(d);
+        }
+    }
     occupied_.assign(static_cast<std::size_t>(map_.size) * static_cast<std::size_t>(map_.size), 0);
     node_cells_side_ = (map_.size + kNodeCell - 1) / kNodeCell;
     node_cells_.assign(static_cast<std::size_t>(node_cells_side_) * static_cast<std::size_t>(node_cells_side_), {});
+    // (Which kinds fill after the rain, looked up once: a map has millions of features.)
+    std::array<bool, static_cast<std::size_t>(FeatureType::Count)> after_rain{};
+    for (const FeatureDef& fd : content_->features) {
+        after_rain[static_cast<std::size_t>(fd.kind) % after_rain.size()] = fd.after_rain;
+    }
+    ring_nodes_.clear();
     for (std::size_t i = 0; i < map_.features.size(); ++i) {
         const MapFeature& f = map_.features[i];
         const std::int32_t cx = std::clamp(f.x.floor_int() / kNodeCell, 0, node_cells_side_ - 1);
         const std::int32_t cz = std::clamp(f.z.floor_int() / kNodeCell, 0, node_cells_side_ - 1);
         node_cells_[static_cast<std::size_t>(cz * node_cells_side_ + cx)].push_back(static_cast<std::uint32_t>(i));
+        if (after_rain[static_cast<std::size_t>(f.type) % after_rain.size()]) {
+            ring_nodes_.push_back(static_cast<std::uint32_t>(i));
+        }
     }
 }
 
@@ -5862,12 +5943,42 @@ std::optional<TreeSize> Game::next_size(const MapFeature& tree) const {
     return std::nullopt;
 }
 
+bool Game::seasonal(const MapFeature& f) const {
+    const FeatureDef* fd = content_->feature(f.type);
+    return fd != nullptr && fd->seasons != 0;
+}
+
+bool Game::has_healer(std::uint8_t town) const {
+    for (const Building& b : buildings_.data()) {
+        const std::uint8_t service = content_->buildings[b.def].service;
+        if (b.owner == town && b.state == BuildingState::Complete &&
+            (service == static_cast<std::uint8_t>(Need::Healer) || service == static_cast<std::uint8_t>(Need::Doctor))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::int32_t Game::fruit_on(std::uint32_t node, const Calendar& when) const {
-    if (node >= nodes_.size() || (when.season != Season::Summer && when.season != Season::Autumn)) {
+    if (node >= nodes_.size()) {
+        return 0;
+    }
+    if (seasonal(map_.features[node])) {
+        // (Its seasons are its own.)
+    } else if (when.season != Season::Summer && when.season != Season::Autumn) {
         return 0;
     }
     const MapFeature& f = map_.features[node];
     const Node& n = nodes_[node];
+    if (const FeatureDef* fd = content_->feature(f.type); fd != nullptr && fd->seasons != 0) {
+        // Phase 98: a hive, a nest, a stump: all of it once a year, in its
+        // season. A ring of mushrooms: all of it each time it fills.
+        if (n.amount <= 0 || ((fd->seasons >> static_cast<unsigned>(when.season)) & 1u) == 0 ||
+            (fd->after_rain && ring_cycle_ == 0)) {
+            return 0;
+        }
+        return std::max(0, fd->amount - (n.fruit_year == pick_cycle(*fd, when) ? n.fruit_picked : 0));
+    }
     if (f.type != FeatureType::Tree || n.amount <= 0 || f.species >= content_->flora.species.size() || f.size >= kTreeSizes) {
         return 0;
     }

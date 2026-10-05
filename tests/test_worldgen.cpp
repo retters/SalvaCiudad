@@ -219,7 +219,9 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town, s
 
 // The golden checksum of a small map. If the generator changes on purpose,
 // update it (and the simulation rules version).
-constexpr std::uint64_t kGoldenSmallMap = 0xcef750f665d22845ull;
+// (Generator 8, phase 98: the trees with a hive, nests, stumps and rings of
+// mushrooms were added; what generator 7 made is checked in the forage suite.)
+constexpr std::uint64_t kGoldenSmallMap = 0x1e701536f00c0062ull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {

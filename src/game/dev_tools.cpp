@@ -39,6 +39,10 @@ const char* feature_key(sim::FeatureType t) {
         case sim::FeatureType::IronOre: return "feature.ironOre";
         case sim::FeatureType::BerryBush: return "feature.berryBush";
         case sim::FeatureType::Herbs: return "feature.herbs";
+        case sim::FeatureType::BeeTree: return "feature.beeTree";
+        case sim::FeatureType::Nest: return "feature.nest";
+        case sim::FeatureType::Stump: return "feature.stump";
+        case sim::FeatureType::MushroomRing: return "feature.mushroomRing";
         default: return "feature.tree";
     }
 }
@@ -51,6 +55,10 @@ float feature_base_height(sim::FeatureType t) {
         case sim::FeatureType::IronOre: return 1.1f;
         case sim::FeatureType::BerryBush: return 0.9f;
         case sim::FeatureType::Herbs: return 0.6f;
+        case sim::FeatureType::BeeTree: return 3.6f;
+        case sim::FeatureType::Nest: return 0.9f;
+        case sim::FeatureType::Stump: return 0.8f;
+        case sim::FeatureType::MushroomRing: return 0.5f;
         default: return 1.0f;
     }
 }

@@ -7,7 +7,8 @@
       "ids": ["pile_bricks", "pile_roof_tiles", "pile_clay", "pile_iron", "pile_tools", "pile_firewood", "pile_coal", "pile_iron_ore",
               "pile_wheat", "pile_barley", "pile_flax", "pile_bread", "pile_vegetables", "pile_fruit", "pile_berries", "pile_roots",
               "pile_meat", "pile_smoked", "pile_fish", "pile_herbs", "pile_beer", "pile_beans", "pile_flour", "pile_fertilizer",
-              "pile_hides", "pile_leather", "pile_linen", "pile_clothes", "pile_shoes", "pile_bows", "pile_weapons"]
+              "pile_hides", "pile_leather", "pile_linen", "pile_clothes", "pile_shoes", "pile_bows", "pile_weapons",
+              "pile_honey", "pile_eggs", "pile_mushrooms"]
     },
     {
       "family": "farm", "class": "crop", "to": "props", "each": ["_1", "_2", "_3"],
@@ -96,6 +97,15 @@
     {
       "family": "bridges", "class": "building", "to": "buildings", "game": true,
       "ids": {"dock_beacon": "beacon"}
+    },
+    {
+      "family": "nature", "class": "rock", "to": "props", "game": true,
+      "ids": {"nature_bee_tree": "bee_tree", "nature_nest": "nest", "nature_stump_mushrooms": "stump",
+              "nature_stump_hollow_log": "stump_2"}
+    },
+    {
+      "family": "scatter", "class": "rock", "to": "props", "game": true,
+      "ids": {"scatter_mushrooms_brown": "mushroom_ring", "scatter_mushrooms_red": "mushroom_ring_2"}
     }
   ]
 }

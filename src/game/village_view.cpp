@@ -190,6 +190,31 @@ render::ModelData make_streak_model() {
     return m;
 }
 
+// Phase 98: which kinds of feature fill after the rain (a ring of mushrooms),
+// looked up once for a pass over the map's features.
+using AfterRain = std::array<bool, static_cast<std::size_t>(sim::FeatureType::Count)>;
+AfterRain features_after_rain(const sim::Content& content) {
+    AfterRain out{};
+    for (const sim::FeatureDef& fd : content.features) {
+        out[static_cast<std::size_t>(fd.kind) % out.size()] = fd.after_rain;
+    }
+    return out;
+}
+
+// How a feature of the map is shown: as it is, picked (a bush that grows
+// back), or not at all (felled, cleared, or a ring of mushrooms with none).
+MapScene::FeatureLook node_look(const sim::Game& game, const AfterRain& after_rain, std::size_t i) {
+    const sim::Node& n = game.nodes()[i];
+    if (n.amount <= 0) {
+        return n.regrow_tick != 0 ? MapScene::FeatureLook::Empty : MapScene::FeatureLook::Gone;
+    }
+    if (after_rain[static_cast<std::size_t>(game.map().features[i].type) % after_rain.size()] &&
+        game.fruit_on(static_cast<std::uint32_t>(i)) <= 0) {
+        return MapScene::FeatureLook::Gone;
+    }
+    return MapScene::FeatureLook::Normal;
+}
+
 // Red (0) through yellow to green (1).
 math::Vec3 ramp(float v) {
     v = std::clamp(v, 0.0f, 1.0f);
@@ -438,12 +463,10 @@ void VillageView::begin(render::SceneRenderer& renderer, MapScene& scene, sim::G
     // The map shows every feature as generated; felled trees and picked
     // bushes of a loaded game are updated here.
     const sim::Content& content = game.content();
+    const AfterRain after_rain = features_after_rain(content);
     for (std::size_t i = 0; i < game.nodes().size(); ++i) {
-        const sim::Node& n = game.nodes()[i];
-        if (n.amount <= 0) {
-            const bool regrows = n.regrow_tick != 0;
-            scene.set_feature_look(renderer, game.map(), content, i,
-                                   regrows ? MapScene::FeatureLook::Empty : MapScene::FeatureLook::Gone);
+        if (const MapScene::FeatureLook look = node_look(game, after_rain, i); look != MapScene::FeatureLook::Normal) {
+            scene.set_feature_look(renderer, game.map(), content, i, look);
         }
     }
     (void)game.take_changed_nodes();
@@ -602,21 +625,18 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
     if (game.take_features_added()) {
         // Everything again, then the felled and the picked as they were.
         scene.refresh_features(renderer, game.map(), game.content());
+        const AfterRain after_rain = features_after_rain(game.content());
         for (std::size_t i = 0; i < game.nodes().size(); ++i) {
-            const sim::Node& n = game.nodes()[i];
-            if (n.amount <= 0) {
-                scene.set_feature_look(renderer, game.map(), game.content(), i,
-                                       n.regrow_tick != 0 ? MapScene::FeatureLook::Empty : MapScene::FeatureLook::Gone);
+            if (const MapScene::FeatureLook look = node_look(game, after_rain, i); look != MapScene::FeatureLook::Normal) {
+                scene.set_feature_look(renderer, game.map(), game.content(), i, look);
             }
         }
     }
-    for (const std::uint32_t i : game.take_changed_nodes()) {
-        const sim::Node& n = game.nodes()[i];
-        MapScene::FeatureLook look = MapScene::FeatureLook::Normal;
-        if (n.amount <= 0) {
-            look = n.regrow_tick != 0 ? MapScene::FeatureLook::Empty : MapScene::FeatureLook::Gone;
+    if (const std::vector<std::uint32_t> changed = game.take_changed_nodes(); !changed.empty()) {
+        const AfterRain after_rain = features_after_rain(game.content());
+        for (const std::uint32_t i : changed) {
+            scene.set_feature_look(renderer, game.map(), game.content(), i, node_look(game, after_rain, i));
         }
-        scene.set_feature_look(renderer, game.map(), game.content(), i, look);
     }
     // Buildings of others come and go with the fog.
     const std::uint64_t shown = shown_signature(game);

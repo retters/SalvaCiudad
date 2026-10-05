@@ -30,6 +30,16 @@
       "contagion": 60,
       "severity": 120,
       "days": 12
+    },
+    {
+      "type": "disease",
+      "id": "core:poisoning",
+      "name": "disease.poisoning",
+      "source": "food",
+      "chance": 0,
+      "contagion": 0,
+      "severity": 25,
+      "days": 3
     }
   ]
 }

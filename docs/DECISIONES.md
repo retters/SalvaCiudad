@@ -3580,3 +3580,29 @@ Suite nueva `rain`, 8 casos: misma semilla, mismos días, y otra semilla, otros;
 
 **D-9708. Versiones.**
 Reglas 58, red 29: no hay mensajes nuevos, pero las reglas de la partida viajan con un byte más (la lluvia) y una versión anterior las leería mal.
+
+## Fase 98: miel, huevos y setas (2026-10-04)
+
+**D-9801. Un solo mecanismo: «lo que da por temporadas», igual que la fruta de un árbol.**
+El panal, el nido, el tocón y el corro no se agotan ni rebrotan como un arbusto. Usan lo que ya tenía la fruta de los árboles (fase 84): se recoge de a una unidad, el elemento se queda donde está, y lo recogido se cuenta por año en el propio elemento. Lo que tiene hoy se calcula al preguntarlo (estación, año, cuánto se recogió): **no hay que recorrer el mapa cada día**, que en un mapa colosal son millones de elementos. En los datos es `seasons` en la definición del elemento; el recolector los trabaja porque tiene su tipo en `gathers`. Los avisos de la fase 81 no cambian: fuera de temporada el recolector dice «esperando», como con un arbusto que rebrota (no tiene prueba propia).
+
+**D-9802. Cantidades.**
+Panal: 6 de miel en verano, 30 de trabajo cada una. Nido: 4 huevos en primavera, 15. Tocón o tronco hueco: 5 setas en otoño, 15. Corro: 6 setas cada vez que se llena, 15. Miel: 4 de alimento y vale 3; huevos: 3 y 2; setas: 2 y 1. Son extras para variar la dieta, no un sustento: un recolector alcanza pocos de cada uno. La propuesta de la miel decía «no se echa a perder y sube la felicidad»: en el juego nada se echa a perder, y la felicidad ya sube con la variedad de lo que se come; no se añadió regla.
+
+**D-9803. El corro de setas.**
+En otoño se llena entero el día siguiente a cada día de lluvia (lo que quedara sin recoger no se acumula) y solo se dibuja mientras tiene setas. El día de llenado es el mismo para todos los corros del mapa y se deduce del clima, así que tampoco se guarda. En una partida sin lluvia, los días múltiplos de diez (contados desde el inicio de la partida, no de la estación: más simple y siempre igual).
+
+**D-9804. La intoxicación se decide al comer.**
+El plan decía «una de cada cinco setas recogidas es mala». Llevar la cuenta de setas buenas y malas por almacén era otro recurso o un número más en cada existencia; en su lugar, cada ración de setas que alguien come tiene 1 probabilidad en 5 de ser mala si su pueblo no tiene un curandero o un médico terminado. Con él, ninguna («el recolector solo trae las buenas»). La intoxicación es una enfermedad más (25 de gravedad, 3 días, contagio 0) con origen nuevo, `food`: no sale en el sorteo diario. Como las demás, no existe en una partida sin enfermedades, no cae sobre quien ya está enfermo y deja 60 días de inmunidad.
+
+**D-9805. El generador.**
+Lo nuevo se pone al final, con su propia secuencia de azar (semilla, 98), después de despejar los inicios: por kilómetro cuadrado, con recursos al 100 %, 12 árboles con panal y 18 grupos de nidos (praderas y bordes de bosque), 24 grupos de tocones (bosque) y 16 de corros (bosque espeso), de 1 o 2 cada grupo. Cerca de cada inicio (180 m), al menos 2 panales, 2 nidos y 3 tocones; corros no se garantizan (necesitan bosque espeso), las setas de otoño las aseguran los tocones. Ninguno donde irá un centro de pueblo ni sobre un yacimiento. Generador 8. **Lo de antes no se mueve**: antes de tocar el generador se guardó la huella de cuatro mapas (todos los elementos de los tipos que había, los inicios y las zonas de animales) y la prueba comprueba que siguen iguales.
+
+**D-9806. Detalles.**
+`gathers` pasa de 8 a 16 bits (ya hay diez tipos de elemento). El leñador no tala el árbol con panal: no es un árbol para las reglas, es su propio elemento. Construir encima de uno lo quita para siempre, como a un arbusto.
+
+**D-9807. Lo medido.**
+Suite nueva `forage`, 8 casos: los datos; las huellas del generador 7 en cuatro mapas y los mínimos de cada inicio; en una partida de una sola estación el recolector recoge el nido entero en primavera, el panal entero en verano, el tocón y el corro en otoño y nada en invierno, y nunca lo de otra estación; un panal queda vacío el resto del año y vuelve entero al siguiente; en 60 días de otoño con mucha lluvia el corro se llenó 32 veces (cada día que siguió a uno de lluvia, comprobado día por día) y el recolector lo dejó limpio 5; sin lluvia en las reglas, los días 0, 10, 20 y 30; en 14 000 ticks comiendo setas, 2 intoxicados sin curandero, 0 con él y 0 en una partida sin enfermedades; guardar y cargar; construir sobre un nido. En pantalla, con una escena de otoño guardada (caso saltado «manual: a saved game with hives, nests, stumps and mushrooms»): los árboles con panal, los nidos, el tocón con setas, el tronco hueco y los corros; la ventana de un árbol con panal («Ahora no tiene nada. Da: Miel. Temporada: Verano, una vez al año.»). **No se vieron** las pilas de miel, huevos y setas (con la comida de la escena no entran entre las seis pilas que se dibujan) ni un corro apareciendo y desapareciendo. La primera versión de esa escena no cargaba: tenía minutos para estaciones que la partida no tenía, y la lectura de reglas lo rechaza con razón; era la escena, no el guardado.
+
+**D-9808. Versiones.**
+Reglas 59, generador 8. La red no cambia. Cambia la huella de referencia del mapa chico (`kGoldenSmallMap` en `tests/test_worldgen.cpp`), que incluye los elementos nuevos.

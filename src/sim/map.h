@@ -115,7 +115,10 @@ struct MapSettings {
 
 enum class Terrain : std::uint8_t { Grass, Meadow, ForestFloor, Sand, Rock, Clay, Water, Count };
 
-enum class FeatureType : std::uint8_t { Tree, Stone, IronOre, BerryBush, Herbs, StoneDeposit, Count };
+// (Phase 98: a tree with a hive, a nest, an old stump or hollow log, a ring of mushrooms.)
+enum class FeatureType : std::uint8_t {
+    Tree, Stone, IronOre, BerryBush, Herbs, StoneDeposit, BeeTree, Nest, Stump, MushroomRing, Count
+};
 
 // Phase 83: a stone deposit is an outcrop in three sizes (0..2). A size
 // holds the feature's amount, 5/2 of it or 25/4 of it (800, 2000 and 5000

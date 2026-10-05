@@ -41,7 +41,7 @@ namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
 // the map (decision D-620). It goes on from the hierarchical generator's
 // own number, which it was until phase 49 (D-4902).
-inline constexpr std::uint16_t kGeneratorVersion = 7;
+inline constexpr std::uint16_t kGeneratorVersion = 8;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 4;
@@ -49,6 +49,10 @@ inline constexpr std::int32_t kStartMinStones = 4;
 // a straight line; the walk is somewhat longer).
 inline constexpr std::int32_t kStartDepositRadius = 200;
 inline constexpr std::int32_t kStartMinBerries = 4;
+// Phase 98: trees with a hive, nests, and stumps or rings of mushrooms.
+inline constexpr std::int32_t kStartMinBeeTrees = 2;
+inline constexpr std::int32_t kStartMinNests = 2;
+inline constexpr std::int32_t kStartMinMushrooms = 3;
 inline constexpr std::int32_t kStartMinTrees = 60;
 inline constexpr std::int32_t kStartMaxWaterDistance = 150;  // A start always has water this close.
 

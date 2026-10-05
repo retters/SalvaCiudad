@@ -184,6 +184,10 @@ const char* feature_key(sim::FeatureType type) {
         case sim::FeatureType::IronOre: return "feature.ironOre";
         case sim::FeatureType::BerryBush: return "feature.berryBush";
         case sim::FeatureType::Herbs: return "feature.herbs";
+        case sim::FeatureType::BeeTree: return "feature.beeTree";
+        case sim::FeatureType::Nest: return "feature.nest";
+        case sim::FeatureType::Stump: return "feature.stump";
+        case sim::FeatureType::MushroomRing: return "feature.mushroomRing";
         default: return "feature.tree";
     }
 }
@@ -2316,13 +2320,32 @@ void GameHud::node_window(ui::Context& ctx, GameSession& s, const WindowList::Ob
         }
     }
     sim::DefIndex resource = sim::kNoDef;
+    const sim::FeatureDef* feature = nullptr;
     for (const sim::FeatureDef& d : content.features) {
         if (d.kind == f.type) {
             resource = d.resource;
+            feature = &d;
             break;
         }
     }
-    if (n.amount > 0 && resource < content.resources.size()) {
+    if (feature != nullptr && feature->seasons != 0 && n.amount > 0 && resource < content.resources.size()) {
+        // Phase 98: what it has now, and when it gives.
+        static constexpr const char* kSeasons[] = {"hud.season.spring", "hud.season.summer", "hud.season.autumn",
+                                                   "hud.season.winter"};
+        const std::string what = tr(content.resources[resource].name_key);
+        const std::int32_t has = game.fruit_on(index);
+        lines.push_back(has > 0 ? tr("feature.yield.now", what, has) : tr("feature.yield.empty"));
+        std::string when;
+        for (std::size_t season = 0; season < 4; ++season) {
+            if (((feature->seasons >> season) & 1u) != 0) {
+                when += (when.empty() ? "" : ", ") + tr(kSeasons[season]);
+            }
+        }
+        lines.push_back(tr(!feature->after_rain     ? "feature.yield.season"
+                           : game.rules().rain != 0 ? "feature.yield.afterRain"
+                                                    : "feature.yield.dry",
+                           what, when));
+    } else if (n.amount > 0 && resource < content.resources.size()) {
         lines.push_back(tr("hud.thing.gives", tr("hud.amount", tr(content.resources[resource].name_key), n.amount)));
     } else if (n.amount <= 0) {
         lines.push_back(tr(tree ? "hud.node.sprout" : "hud.node.empty"));

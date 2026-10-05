@@ -71,6 +71,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `load` | Cómo se ve al cargarlo y apilarlo (fase 67): `crate`, `logs`, `stone`, `sack` o `basket`. Por omisión, `basket` para los alimentos y `crate` para lo demás. Solo cambia lo que se ve. |
 | `pile` | Su propia pila junto a almacenes, obras y talleres (fase 89): el comienzo del nombre de tres modelos del mod, `<pile>_1.glb` (poco), `<pile>_2.glb` (a medias) y `<pile>_3.glb` (lleno). Por ejemplo `"pile": "models/props/pile_salt"`. Los tres archivos tienen que existir. Sin `pile`, el recurso usa la pila genérica de su `load`. Solo cambia lo que se ve. |
 | `value` | Precio base en oro para los mercaderes (0 a 10000). Con 0 no lo compran ni lo venden. |
+| `badPercent` | De cada cien unidades comidas, cuántas son malas (fase 98; las setas del juego base, 20). Quien come una mala enferma de la enfermedad con `"source": "food"`, salvo que su pueblo tenga un edificio con servicio `healer` o `doctor`, o que la partida no tenga enfermedades. |
 
 ### building
 
@@ -183,7 +184,9 @@ La hierba alta, los juncos junto al agua dulce, lo que deja el mar en la arena y
 
 ### mapFeature
 
-Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie). El yacimiento (`stoneDeposit`) es distinto: `amount` es lo que tiene el tamaño chico (el mediano tiene 5/2 y el grande 25/4), `models` son sus tres tamaños en orden (chico, mediano, grande) y no variantes, y `landmark` vale solo para el grande.
+Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, `beeTree`, `nest`, `stump`, `mushroomRing`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie).
+
+**Lo que da por temporadas (fase 98).** Con `"seasons": ["summer"]` (una o varias de `spring`, `summer`, `autumn`, `winter`) el elemento no se agota ni rebrota: da su `amount` **una vez al año**, en esas estaciones, y fuera de ellas no tiene nada. Se recoge de a una unidad, cada una con `work` de trabajo, y el elemento se queda donde está (el árbol con panal, el nido y el tocón del juego base). Con `"afterRain": true` además no se llena una vez al año sino **cada día que sigue a un día de lluvia**, dentro de sus estaciones, y solo se ve en el mapa mientras tiene algo (el corro de setas); en una partida sin lluvia se llena los días múltiplos de diez. No vale para `tree` ni `stoneDeposit`, ni junto con `regrowDays`. Lo trabaja el edificio de recolección que tenga su `kind` en `gathers`. El yacimiento (`stoneDeposit`) es distinto: `amount` es lo que tiene el tamaño chico (el mediano tiene 5/2 y el grande 25/4), `models` son sus tres tamaños en orden (chico, mediano, grande) y no variantes, y `landmark` vale solo para el grande.
 
 ### species y biome
 

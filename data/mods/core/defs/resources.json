@@ -41,6 +41,37 @@
     },
     {
       "type": "resource",
+      "id": "core:honey",
+      "name": "resource.honey",
+      "pile": "models/props/pile_honey",
+      "category": "food",
+      "nutrition": 4,
+      "weight": 1,
+      "value": 3
+    },
+    {
+      "type": "resource",
+      "id": "core:eggs",
+      "name": "resource.eggs",
+      "pile": "models/props/pile_eggs",
+      "category": "food",
+      "nutrition": 3,
+      "weight": 1,
+      "value": 2
+    },
+    {
+      "type": "resource",
+      "id": "core:mushrooms",
+      "name": "resource.mushrooms",
+      "pile": "models/props/pile_mushrooms",
+      "category": "food",
+      "nutrition": 2,
+      "weight": 1,
+      "value": 1,
+      "badPercent": 20
+    },
+    {
+      "type": "resource",
       "id": "core:berries",
       "name": "resource.berries",
       "pile": "models/props/pile_berries",
