@@ -330,6 +330,37 @@
     },
     {
       "type": "building",
+      "id": "core:vineyard",
+      "name": "building.vineyard",
+      "kind": "workplace",
+      "model": "models/buildings/vineyard.glb",
+      "winterModel": "models/buildings/vineyard_bare.glb",
+      "size": [
+        8,
+        8
+      ],
+      "cost": {
+        "core:log": 12
+      },
+      "buildWork": 300,
+      "workers": 2,
+      "work": "produce",
+      "recipes": [
+        "core:pick_grapes"
+      ],
+      "seasons": [
+        "autumn"
+      ],
+      "matureYears": 2,
+      "yearlyLimit": 140,
+      "storage": 60,
+      "stores": [
+        "food"
+      ],
+      "category": "food"
+    },
+    {
+      "type": "building",
       "id": "core:hunter",
       "name": "building.hunter",
       "kind": "workplace",
@@ -939,8 +970,10 @@
       "service": "entertainment",
       "serviceRadius": 70,
       "serviceUses": {
-        "core:beer": 1
+        "core:beer": 1,
+        "core:wine": 1
       },
+      "serviceUsesAny": true,
       "storage": 40,
       "stores": [
         "good"
@@ -2639,7 +2672,7 @@
       "type": "building",
       "id": "core:decor_wine_press",
       "name": "building.decor_wine_press",
-      "kind": "decoration",
+      "kind": "workplace",
       "model": "models/buildings/decor_wine_press.glb",
       "size": [
         2,
@@ -2650,9 +2683,17 @@
         "core:stone": 2
       },
       "buildWork": 80,
-      "desirability": 7,
-      "fireproof": true,
-      "category": "garden"
+      "workers": 1,
+      "work": "produce",
+      "recipes": [
+        "core:press_wine"
+      ],
+      "storage": 30,
+      "stores": [
+        "food",
+        "good"
+      ],
+      "category": "food"
     },
     {
       "type": "building",

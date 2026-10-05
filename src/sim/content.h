@@ -149,6 +149,9 @@ struct BuildingDef {
     std::uint8_t service = kNoNeed; // Need it provides to homes nearby.
     std::int32_t service_radius = 0;
     std::vector<ResourceAmount> service_uses;  // Used up each day to provide it (a tavern's beer).
+    // Phase 100: it needs not all of `service_uses` but any one of them
+    // (beer or wine): the first in the list that it has is the one used.
+    bool service_any = false;
     std::uint8_t category = 0;      // BuildCategory, for the build bar.
     bool fireproof = false;         // Stone: does not catch fire (phase 13).
     bool trade = false;             // Merchants come to it (phase 14).
@@ -199,6 +202,8 @@ struct BuildingDef {
     // may be traced over a slower one. `road_eraser`: tracing it lays
     // nothing, it takes the roads away. `road_desirability`: what a house
     // gains with its door on it.
+    // Phase 100, presentation only: its model in winter (a vineyard's bare vines); empty: the same all year.
+    std::string model_winter;
     std::int32_t road = 0;
     bool road_eraser = false;
     std::int32_t road_desirability = 0;

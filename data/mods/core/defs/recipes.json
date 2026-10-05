@@ -230,6 +230,25 @@
         "core:weapons": 1
       },
       "work": 120
+    },
+    {
+      "type": "recipe",
+      "id": "core:pick_grapes",
+      "outputs": {
+        "core:fruit": 2
+      },
+      "work": 40
+    },
+    {
+      "type": "recipe",
+      "id": "core:press_wine",
+      "inputs": {
+        "core:fruit": 2
+      },
+      "outputs": {
+        "core:wine": 1
+      },
+      "work": 90
     }
   ]
 }

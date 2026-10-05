@@ -366,6 +366,21 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
             line_pieces_[static_cast<sim::DefIndex>(i)] = pieces;
         }
     }
+    // Phase 100: a building's model in winter.
+    winter_models_.clear();
+    for (std::size_t i = 0; i < content.buildings.size(); ++i) {
+        const sim::BuildingDef& d = content.buildings[i];
+        if (d.model_winter.empty()) {
+            continue;
+        }
+        const std::filesystem::path file = mods::mod_file(pack.dir(d.mod), d.model_winter);
+        std::error_code ec;
+        if (!file.empty() && std::filesystem::is_regular_file(file, ec)) {
+            if (const Model m = load_building_file(renderer, file); m.id != kNoModel) {
+                winter_models_[static_cast<sim::DefIndex>(i)] = m;
+            }
+        }
+    }
     // Phase 90: each crop's plots, by stage. They are small vegetation (not
     // drawn from afar, where the color of the field's ground tells the crop).
     crop_models_.assign(content.crops.size(), {kNoPile, kNoPile, kNoPile});
@@ -671,7 +686,9 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
     }
     // Buildings of others come and go with the fog.
     const std::uint64_t shown = shown_signature(game);
-    if (game.take_buildings_changed() || ghost_changed_ || shown != shown_buildings_) {
+    // (And when winter comes or goes, for the buildings that change with it: phase 100.)
+    const bool winter_turned = !winter_models_.empty() && winter_ != (game.calendar().season == sim::Season::Winter);
+    if (game.take_buildings_changed() || ghost_changed_ || shown != shown_buildings_ || winter_turned) {
         shown_buildings_ = shown;
         rebuild_buildings(renderer, game);
         ghost_changed_ = false;
@@ -1469,9 +1486,15 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         }
         return true;
     };
+    winter_ = game.calendar().season == sim::Season::Winter;
     for (std::size_t k = 0; k < game.buildings().size(); ++k) {
         const sim::Building& b = game.buildings().data()[k];
         const Model* m = model_for(b.def, b.level, place_key(b.x, b.z));
+        if (winter_ && b.state == sim::BuildingState::Complete) {
+            if (const auto bare = winter_models_.find(b.def); bare != winter_models_.end()) {
+                m = &bare->second;  // Phase 100.
+            }
+        }
         if (m == nullptr || (!building_shown(game, b) && !building_silhouette(game, b))) {
             continue;
         }

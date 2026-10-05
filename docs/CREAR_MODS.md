@@ -122,6 +122,13 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### Un servicio con varias bebidas, y un edificio que cambia en invierno (fase 100)
+
+| Campo | Valores |
+|---|---|
+| `serviceUsesAny` | `true`: el servicio no necesita **todo** lo de `serviceUses` sino **cualquiera** de esas cosas. Cada día gasta la primera de la lista que tenga (la taberna del juego base: cerveza, y si no hay, vino). |
+| `winterModel` | Otro modelo para el invierno (el viñedo sin hojas). Solo cambia lo que se ve. |
+
 #### Caminos (fase 95)
 
 Un camino se traza como un muro, lo construyen los peones tramo por tramo, y al terminarse **deja de ser un edificio**: queda como una marca del terreno (una por celda de 2 × 2 m). Por eso cientos de tramos no pesan nada.

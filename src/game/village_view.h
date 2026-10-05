@@ -301,6 +301,9 @@ private:
     // Phase 99: the season the bushes were last looked over for (year 0: not yet).
     sim::Season bush_season_ = sim::Season::Spring;
     std::uint32_t bush_year_ = 0;
+    // Phase 100: the buildings that look another way in winter (a vineyard), and whether it is.
+    std::unordered_map<sim::DefIndex, Model> winter_models_;
+    bool winter_ = false;
     float view_distance_ = 60.0f;
     void update_weather(render::SceneRenderer& renderer, const sim::Game& game, float dt, float speed);
     void update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt);

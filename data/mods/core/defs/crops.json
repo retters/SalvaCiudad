@@ -53,6 +53,17 @@
       "yield": 10,
       "growDays": 40,
       "fertility": -10
+    },
+    {
+      "type": "crop",
+      "id": "core:roots",
+      "name": "crop.roots",
+      "models": ["models/props/crop_roots_1.glb", "models/props/crop_roots_2.glb", "models/props/crop_roots_3.glb"],
+      "resource": "core:roots",
+      "yield": 14,
+      "growDays": 60,
+      "fertility": -8,
+      "hardy": true
     }
   ]
 }

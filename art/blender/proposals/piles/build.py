@@ -465,6 +465,7 @@ KINDS = {
     "fruit": fruit, "berries": berries, "roots": roots, "meat": hanging("meat"), "smoked": hanging("smoked"), "fish": hanging("fish"), "herbs": hanging("herbs"),
     "beer": beer, "cheese": dairy, "honey": honey, "hay": hay,
     "beans": beans, "flour": flour, "fertilizer": fertilizer, "eggs": eggs, "mushrooms": mushrooms,
+    "wine": beer,   # Barrels, like the beer's (phase 100).
     "hides": hides, "leather": rolls(("leather_roll", "hide_dark")), "linen": rolls(("linen", "linen_shade", "cloth_blue", "cloth_red"), 0.11, 0.9),
     "clothes": folded(("linen", "cloth_blue", "cloth_red", "cloth_green", "cloth_yellow")), "shoes": shoes, "bows": bows, "weapons": weapons, "wool": wool,
 }

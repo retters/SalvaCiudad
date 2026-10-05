@@ -1040,6 +1040,11 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.service = service < 0 ? sim::kNoNeed : static_cast<std::uint8_t>(service);
         def.service_radius = r.integer("serviceRadius", 0, 500, 0);
         def.service_uses = amounts(r.table("serviceUses", find_resource, 1, 1000, 4));
+        def.service_any = r.flag("serviceUsesAny");
+        if (def.service_any && def.service_uses.empty()) {
+            r.fail("\"serviceUsesAny\" needs \"serviceUses\"");
+        }
+        def.model_winter = r.extra_model("winterModel", mod_dir, refs, def.name_key);
         // The build bar's group: given, or from what the building is.
         auto category = sim::BuildCategory::Industry;
         switch (def.kind) {

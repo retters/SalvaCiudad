@@ -367,6 +367,15 @@
       "carry": 50,
       "value": 0,
       "load": "sack"
+    },
+    {
+      "type": "resource",
+      "id": "core:wine",
+      "name": "resource.wine",
+      "pile": "models/props/pile_wine",
+      "category": "good",
+      "weight": 1,
+      "value": 12
     }
   ]
 }

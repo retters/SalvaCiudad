@@ -8,11 +8,11 @@
               "pile_wheat", "pile_barley", "pile_flax", "pile_bread", "pile_vegetables", "pile_fruit", "pile_berries", "pile_roots",
               "pile_meat", "pile_smoked", "pile_fish", "pile_herbs", "pile_beer", "pile_beans", "pile_flour", "pile_fertilizer",
               "pile_hides", "pile_leather", "pile_linen", "pile_clothes", "pile_shoes", "pile_bows", "pile_weapons",
-              "pile_honey", "pile_eggs", "pile_mushrooms"]
+              "pile_honey", "pile_eggs", "pile_mushrooms", "pile_wine"]
     },
     {
       "family": "farm", "class": "crop", "to": "props", "each": ["_1", "_2", "_3"],
-      "ids": ["crop_wheat", "crop_barley", "crop_flax", "crop_vegetables", "crop_beans"]
+      "ids": ["crop_wheat", "crop_barley", "crop_flax", "crop_vegetables", "crop_beans", "crop_roots"]
     },
     {
       "family": "scatter", "class": "ground", "to": "props", "game": true,
@@ -108,6 +108,10 @@
       "ids": {"scatter_mushrooms_brown": "mushroom_ring", "scatter_mushrooms_red": "mushroom_ring_2",
               "scatter_bush": "bush_green", "scatter_bush_flowers": "bush_flowers", "scatter_bush_berries": "bush_berries",
               "scatter_bush_blueberries": "bush_blueberries", "scatter_bush_thorn": "bush_thorn"}
+    },
+    {
+      "family": "farm", "class": "building", "to": "buildings", "game": true,
+      "ids": {"farm_vineyard": "vineyard", "farm_vineyard_bare": "vineyard_bare"}
     }
   ]
 }

@@ -3634,3 +3634,25 @@ En pantalla, con dos escenas guardadas (caso saltado «manual: saved games with 
 
 **D-9908. Versiones.**
 Reglas 60. El generador y la red no cambian.
+
+## Fase 100: raíces, viñedo y vino (2026-10-04)
+
+**D-10001. Casi todo son datos.**
+Las raíces son un cultivo más (`hardy`, 60 días de crecimiento contra 35 a 45 de los demás, rinde 14, gasta 8 de fertilidad). El viñedo es un huerto de frutales con otros números: 8 × 8, 12 troncos, dos trabajadores, solo en otoño, a partir del tercer año, hasta 140 de fruta al año (el huerto da hasta 120 entre verano y otoño). La prensa: 2 de fruta por 1 de vino, 90 de trabajo. El vino vale 12 (la cerveza, 6). Reglas nuevas solo dos, las de D-10002 y D-10003.
+
+**D-10002. La taberna: «cualquiera de», no «todo».**
+`serviceUses` exigía todo lo que listaba. Con `serviceUsesAny` basta una cosa de la lista, y se gasta la primera que haya: cerveza, y si no, vino. Se descartó gastar una de cada si hay las dos (el doble de consumo por el mismo servicio) y elegir al azar (inútil y menos predecible). El tabernero sigue yendo a buscar las dos bebidas cuando le quedan menos de diez.
+
+**D-10003. El viñedo sin hojas en invierno.**
+Un edificio puede tener `winterModel`: la vista usa ese modelo mientras es invierno y vuelve a dibujar los edificios cuando el invierno llega o se va. Solo cambia lo que se ve.
+
+**D-10004. La prensa de vino conserva su identificador.**
+Sigue siendo `core:decor_wine_press`, ahora como taller en la pestaña Alimentos. Deja de dar entorno (daba 7 como adorno) y de ser incombustible. Cambiarle el identificador no aportaba nada y habría que tocar textos, modelos y catálogo.
+
+**D-10005. Lo medido.**
+Suite nueva `wine`, 6 casos: los datos; con cultivos demasiado lentos para madurar antes del invierno, la helada mata el trigo y las raíces siguen creciendo; el viñedo no da nada en sus dos primeros años y en el tercero da 140 de fruta, todo en otoño; la prensa hace vino con dos de fruta cada uno; una taberna con vino y sin cerveza da entretenimiento a una casa, con cerveza también, y sin ninguna de las dos no; guardar y cargar.
+
+En pantalla, con dos escenas guardadas (caso saltado «manual: saved games with a vineyard in autumn and in winter»): el viñedo con hojas en otoño y con las espalderas desnudas en invierno, y la prensa de vino. El modelo del viñedo ocupa unos 5 × 6 m de su solar de 8 × 8. **No se vieron** las parcelas de raíces creciendo (el campo de la escena estaba recién arado), ni la pila de vino.
+
+**D-10006. Versiones.**
+Reglas 61. La red y el generador no cambian.

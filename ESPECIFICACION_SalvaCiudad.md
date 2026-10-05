@@ -1096,7 +1096,7 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - **Raíces:** cultivo nuevo para los campos; aguanta la helada y tarda más que los demás, así que se cosecha tarde. Sus parcelas en tres etapas (fase 90).
    - **Viñedo:** edificio nuevo de 8 × 8 m con hileras de vides (con hojas y racimos, o desnudas en invierno), dos trabajadores; como el huerto de frutales: da **fruta** cada otoño a partir del tercer año.
    - **Prensa de vino:** la decoración de hoy pasa a taller de un trabajador: 2 de fruta → 1 de **vino** (recurso nuevo, vale el doble que la cerveza). La prensa acepta cualquier fruta, porque las uvas son «fruta».
-   - La taberna da entretenimiento con cerveza **o** con vino.
+   - La taberna da entretenimiento con cerveza **o** con vino (gasta la cerveza primero).
    - *Criterios:* pruebas: las raíces sobreviven a una helada que mata al trigo; el viñedo no produce los dos primeros años y sí el tercero, solo en otoño; la prensa convierte fruta en vino; una taberna con vino y sin cerveza cumple el entretenimiento; el mercader compra vino al doble; guardar y cargar; español e inglés; sube la versión de reglas.
 101. **Yacimientos de arcilla, carbón y oro** (bloque E).
    - Tres yacimientos nuevos, como los de roca de la fase 83: finitos, ocupan su terreno, varios trabajadores a la vez, seleccionables, con aviso al agotarse.

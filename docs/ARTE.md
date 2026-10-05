@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Raíces, viñedo y vino (fase 100)
+
+`props/crop_roots_1.glb` a `_3.glb` (las parcelas de raíces en sus tres etapas, 180 triángulos, de `proposals/farm`), `buildings/vineyard.glb` (3286) y `buildings/vineyard_bare.glb` (912; el mismo viñedo en invierno, sin hojas ni racimos), y las pilas `pile_wine` (barriles, los mismos de la cerveza). La prensa de vino usa el modelo que ya tenía como decoración.
+
 ### Arbustos de bayas por temporada (fase 99)
 
 De `proposals/scatter`: `props/bush_berries.glb` y `props/bush_blueberries.glb` (con fruto, 620 triángulos), `props/bush_flowers.glb` (en flor, 620), `props/bush_green.glb` (sin fruto, 268) y `props/bush_thorn.glb` (zarza, 364). Los dos con fruto llevan el de flor y el verde como «aspectos» del mismo modelo, igual que los estados de un árbol: cambiar de estación no cuesta nada. Los `berry_bush*.glb` de antes siguen en el mod pero el juego base ya no los usa.

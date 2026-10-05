@@ -4456,6 +4456,22 @@ public:
                 continue;
             }
             bool active = d.workers == 0 || !b.workers.empty();
+            if (d.service_any) {
+                // Phase 100: any one of them will do (a tavern's beer, or its wine): the first it has.
+                const ResourceAmount* have = nullptr;
+                for (const ResourceAmount& use : d.service_uses) {
+                    if (have == nullptr && amount_of(b.stock, use.resource) >= use.amount) {
+                        have = &use;
+                    }
+                }
+                if (!active || have == nullptr) {
+                    continue;
+                }
+                add_to(b.stock, have->resource, -have->amount);
+                compact(b.stock);
+                services.push_back({d.service, b.owner, center(b), meters2(d.service_radius)});
+                continue;
+            }
             for (const ResourceAmount& use : d.service_uses) {
                 active = active && amount_of(b.stock, use.resource) >= use.amount;
             }

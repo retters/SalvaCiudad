@@ -851,6 +851,10 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] En un campo se puede elegir «Raíces»: tarda más que los demás cultivos, sus parcelas se ven en tres etapas y una helada no las mata.
+- [ ] Alimentos > Viñedo (8 × 8 m, dos trabajadores): no da nada los dos primeros años; desde el tercero da fruta cada otoño. En invierno se ve sin hojas.
+- [ ] Alimentos > Prensa de vino (antes una decoración de Jardín): con un trabajador convierte 2 de fruta en 1 de vino. El vino vale el doble que la cerveza con el mercader.
+- [ ] Una taberna con vino y sin cerveza da entretenimiento a las casas cercanas; gasta primero la cerveza si tiene.
 - [ ] El muro de piedra se traza igual (sin diagonales) y se ve como antes. Una empalizada en obra se ve como andamio de troncos; con más de la mitad del daño, con una brecha.
 - [ ] Un campo recién sembrado muestra surcos con brotes; a media temporada, el cultivo verde; listo para cosechar, el cultivo maduro (trigo y cebada dorados, lino con flores azules, coles grandes, frijoles trepando por sus varas). Se distingue qué hay sembrado sin abrir la ventana de la granja. Tras la cosecha quedan rastrojos y en barbecho, pasto.
 - [ ] Trigo, cebada y lino se mecen con el viento; verduras y frijoles no. Con la cámara lejos el cultivo deja de dibujarse y el campo conserva su color.
