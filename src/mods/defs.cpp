@@ -1267,6 +1267,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         static_assert(std::size(kRockKinds) == static_cast<std::size_t>(sim::RockKind::Count));
         def.rock = static_cast<std::uint8_t>(r.choice("rock", kRockKinds, 0));
         def.mammoths = r.flag("mammoths");
+        def.unicorn = r.flag("unicorn");
         // Phase 54: where it grows. Ranges are [low, high], 0 to 100.
         const auto range = [&](const char* key, std::uint8_t* out2) {
             r.numbers(key, out2, 2, 0, 100);

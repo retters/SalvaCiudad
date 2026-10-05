@@ -335,6 +335,7 @@
     {
       "type": "biome",
       "id": "core:enchanted",
+      "unicorn": true,
       "rock": "mossy",
       "name": "biome.enchanted",
       "flowers": 160,

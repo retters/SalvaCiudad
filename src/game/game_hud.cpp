@@ -891,6 +891,10 @@ void GameHud::placement_hint(ui::Context& ctx, GameSession& s) {
             s.game().fish_spots(ui.hover_x + hut.width / 2, ui.hover_z + hut.depth / 2, hut.work_radius);
         text += "  ·  " + tr("hud.place.fisher", spots.shoals + spots.reeds);
     }
+    // Phase 112: a woodcutter being placed where it would fell the trees of a unicorn's glade.
+    if (!ui.field_farm.valid() && ui.hover_valid && s.game().fells_by_unicorn(ui.placing, ui.hover_x, ui.hover_z)) {
+        text += "  ·  " + tr("hud.place.unicorn");
+    }
     // Phase 93: a line being traced says how long it is and what it will cost.
     const sim::Content& content = s.game().content();
     const bool tracing = ui.placing < content.buildings.size() && !content.buildings[ui.placing].line.empty() &&
@@ -979,6 +983,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     } else {
         if ((b->garden & sim::garden::kFormal) != 0) {
             lines.push_back(tr("hud.decor.formal"));
+        }
+        if (game.fells_by_unicorn(b->def, b->x, b->z)) {
+            lines.push_back(tr("hud.unicorn.fells"));  // Phase 112.
         }
         if (d.hunt_arms != sim::kNoDef) {
             // Phase 111: the mammoths within its reach (none: it says nothing), and its weapons.
@@ -2003,6 +2010,11 @@ void GameHud::house_lines(const sim::Game& game, const sim::Building& b, std::ve
     }
     if (b.cat != 0) {
         lines.push_back(tr("hud.house.cat", sim::village::kCatBeauty));
+    }
+    // Phase 112: a unicorn grazing near.
+    if (game.unicorn_near(b.x + b.width / 2, b.z + b.depth / 2, sim::village::kUnicornMeters)) {
+        lines.push_back(tr("hud.house.unicorn", sim::village::kUnicornBeauty));
+        lines.push_back(tr("hud.house.unicornHeals"));
     }
     if (const std::int32_t flowers = game.flower_beauty(b); flowers > 0) {
         lines.push_back(tr("hud.house.flowers", flowers));

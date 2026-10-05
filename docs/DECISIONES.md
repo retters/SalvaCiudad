@@ -4007,3 +4007,35 @@ Suite nueva `mammoths`, 8 casos: los datos; ninguno en primavera, verano y otoñ
 
 **D-11113. Versiones.**
 Reglas 72 y generador 13. La red no cambia: no hay órdenes nuevas.
+
+## Fase 112: el unicornio (2026-10-05)
+
+**D-11201. El claro es una zona, no un objeto del mapa.**
+`ZoneType::Unicorn`, como conejos, linces y mamuts: un sitio y una cuenta (1 mientras el unicornio está, 0 para siempre después). Su radio (40 m) es la distancia a la que no se puede talar. Se descartó hacerlo un objeto del mapa con modelo propio: ningún modelo de las propuestas se eligió para eso, y un objeto ocupa suelo y estorba construir. El claro no se ve; lo que se ve es el unicornio.
+
+**D-11202. Dónde va.**
+«Un claro por cada región de bosque encantado»: una región es un tramo seguido del bioma (mirado por cuadros de 8 m, unidos por los lados) de 3200 m² o más. El claro va en su cuadro más hondo, a 100 m o más de todo inicio: más cerca, el pueblo lo ahuyentaría sin querer al despejar sus primeras obras. No se usa azar. No se quitan árboles para «abrir» el claro: cambiaría los árboles que ya tenía el mapa.
+
+**D-11203. Qué lo ahuyenta.**
+Que caiga un árbol a 40 m o menos del centro: cuando el árbol queda talado del todo, no al primer hachazo, y lo tale quien lo tale (leñador o peón despejando una obra, de cualquier pueblo). Recoger fruta de un frutal no es talar. El fuego no cuenta. No vuelve nunca: su zona no se repone.
+
+**D-11204. Lo que da.**
++8 de entorno a cualquier sitio a 60 m del centro (lo usan las casas, y también la capa de entorno al elegir dónde construir). A los enfermos cuya casa está a 60 m, el doble de recuperación por día: 4 días en vez de 8 en la prueba; se multiplica con lo del curandero o el médico.
+
+**D-11205. Cuándo «lo ve» el pueblo.**
+La primera vez que uno de sus aldeanos está a 60 m o menos del claro; se mira una vez al día. Se descartó usar lo explorado en la niebla: sin niebla todo está explorado desde el primer instante y todos los pueblos recibirían un aviso por cada claro del mapa al empezar. Cada pueblo guarda cuáles ha visto (los primeros 64 claros del mapa).
+
+**D-11206. Quién se entera de que se fue.**
+El pueblo que taló (aunque no lo hubiera visto: así sabe qué perdió) y los que lo habían visto.
+
+**D-11207. La advertencia.**
+Al colocar un edificio que tala (el leñador) cuyo radio alcanza los 40 m de un claro con unicornio, el texto de ayuda lo avisa, se haya visto o no el unicornio: es una pérdida que no tiene vuelta. La ventana de un leñador ya puesto ahí lo dice también. No se impide construir ni talar.
+
+**D-11208. A la vista.**
+El unicornio de las propuestas en la fauna de ambiente, en el centro del claro. Su cuerno brilla; la prueba que pedía que solo brillaran las luciérnagas lo admite.
+
+**D-11209. Lo medido.**
+Suite nueva `unicorn`, 8 casos: los datos, y que el cazador no lo caza; +8 exactos hasta 60 m y nada a 61, en el sitio y en una casa; 4 días de enfermedad junto al claro contra 8 sin él, el mismo aldeano y el mismo día; al caer el primer árbol del claro se va, hay un aviso, la casa pierde lo suyo y en diez años no vuelve; talar al otro lado del pueblo no lo ahuyenta; el aviso de haberlo visto llega una vez y solo si alguien se acerca; tres mapas de puro bosque encantado tienen su claro y los mismos sin ese bioma, ninguno; guardar y cargar con el unicornio visto y con el unicornio ido. De las pruebas de antes cambiaron tres: la huella del mapa pequeño, la de la fauna (el brillo) y la de las zonas de mamuts (ya no son las últimas).
+
+**D-11210. Versiones.**
+Reglas 73 y generador 14. La red no cambia.

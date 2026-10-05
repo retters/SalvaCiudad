@@ -24,6 +24,7 @@ constexpr std::string_view kFiles[kSpecies] = {
     "models/animals/sheep.glb",     "models/fauna/ram.glb",           "models/fauna/goat.glb",
     "models/fauna/goat_brown.glb",  "models/fauna/goat_pied.glb",     "models/fauna/rabbit.glb",
     "models/fauna/lynx.glb",        "models/fauna/wildcat.glb",       "models/fauna/mammoth.glb",
+    "models/fauna/unicorn.glb",
 };
 
 constexpr float kTau = 2.0f * std::numbers::pi_v<float>;
@@ -128,7 +129,8 @@ Habit habit(Species species) {
         case Species::Rabbit:
         case Species::Lynx:
         case Species::Wildcat:
-        case Species::Mammoth: return Habit::Ground;
+        case Species::Mammoth:
+        case Species::Unicorn: return Habit::Ground;
         case Species::Owl:
         case Species::OwlSnowy: return Habit::Perched;
         case Species::Butterflies:
@@ -600,6 +602,23 @@ void AmbientFauna::settle(const sim::Game& game, std::int32_t fsx, std::int32_t 
             }
             add(game, id, lynx ? (zi % 2 == 0 ? Species::Lynx : Species::Wildcat) : Species::Rabbit, x, z, 0.0f, lynx ? 10.0f : 4.0f);
         }
+    }
+    // Phase 112: the unicorn of a glade, about its middle, day and night until it is gone.
+    for (std::size_t zi = 0; zi < game.map().zones.size(); ++zi) {
+        const sim::Zone& zone = game.map().zones[zi];
+        if (zone.type != sim::ZoneType::Unicorn || zi >= game.zone_animals().size() || game.zone_animals()[zi] <= 0) {
+            continue;
+        }
+        const float zx = to_float(zone.x), zz = to_float(zone.z);
+        if (std::hypot(zx - fx, zz - fz) > far || !land(game.map(), zx, zz)) {
+            continue;
+        }
+        const std::uint64_t id = (std::uint64_t{1} << 57) | (static_cast<std::uint64_t>(zi) << 8);
+        if (const auto it = animals_.find(id); it != animals_.end()) {
+            it->second.stays = true;
+            continue;
+        }
+        add(game, id, Species::Unicorn, zx, zz, 0.0f, 8.0f);
     }
     // Phase 111: the mammoths of a zone, those left of the herd, day and night while the winter lasts.
     for (std::size_t zi = 0; zi < game.map().zones.size(); ++zi) {

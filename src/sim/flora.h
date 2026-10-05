@@ -96,6 +96,8 @@ struct BiomeDef {
     std::uint8_t rock = 0;
     // Phase 111: mammoths come to it in winter (the generator puts their zones in it).
     bool mammoths = false;
+    // Phase 112: a unicorn lives in each stretch of it (the generator puts a glade there).
+    bool unicorn = false;
     // Phase 54: where it likes to be. A place takes the biome that fits it
     // best. Temperature and humidity go from 0 to 100; the altitude is the
     // share of the map's land that lies lower, 0 to 100.

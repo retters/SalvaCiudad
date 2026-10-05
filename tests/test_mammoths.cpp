@@ -446,6 +446,9 @@ TEST_SUITE("mammoths") {
             std::vector<const Zone*> zones;
             bool after = false;
             for (const Zone& z : m->zones) {
+                if (z.type > ZoneType::Mammoths) {
+                    continue;  // (What came after them: the glades of phase 112.)
+                }
                 if (z.type != ZoneType::Mammoths) {
                     CHECK_FALSE(after);  // They are the last ones: the zones of before keep their places.
                     continue;

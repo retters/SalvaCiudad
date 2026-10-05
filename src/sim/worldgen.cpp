@@ -1377,7 +1377,100 @@ private:
         small_game();
         fishing();
         big_game();
+        glades();
         return report(GenStage::Starts, 100);
+    }
+
+    // Phase 112: the glade of a unicorn in every stretch of a biome where
+    // one lives (the enchanted wood), where the stretch is deepest: the
+    // place farthest from its edge. Looked at by squares of 8 m; nothing
+    // is drawn at random, and nothing else moves. A map without that biome
+    // has none.
+    void glades() {
+        constexpr std::int32_t kStep = 8;
+        const std::int32_t side = n_ / kStep;
+        const auto mid = [](std::int32_t g) { return g * kStep + kStep / 2; };
+        const auto wood = [&](std::int32_t gx, std::int32_t gz) {
+            const std::int32_t x = mid(gx);
+            const std::int32_t z = mid(gz);
+            const std::size_t biome = biome_[ci(x, z)];
+            return biome < flora_.biomes.size() && flora_.biomes[biome].unicorn && land(x, z);
+        };
+        const auto at = [side](std::int32_t gx, std::int32_t gz) {
+            return static_cast<std::size_t>(gz) * static_cast<std::size_t>(side) + static_cast<std::size_t>(gx);
+        };
+        constexpr std::int32_t kDx[] = {1, -1, 0, 0};
+        constexpr std::int32_t kDz[] = {0, 0, 1, -1};
+        std::vector<std::uint8_t> seen(static_cast<std::size_t>(side) * static_cast<std::size_t>(side), 0);
+        std::vector<std::int32_t> depth(seen.size(), -1);
+        std::vector<std::pair<std::int32_t, std::int32_t>> cells;
+        std::vector<std::pair<std::int32_t, std::int32_t>> ring;
+        for (std::int32_t sz = 0; sz < side; ++sz) {
+            for (std::int32_t sx = 0; sx < side; ++sx) {
+                if (seen[at(sx, sz)] != 0 || !wood(sx, sz)) {
+                    continue;
+                }
+                // The stretch this square belongs to.
+                cells.clear();
+                cells.emplace_back(sx, sz);
+                seen[at(sx, sz)] = 1;
+                for (std::size_t k = 0; k < cells.size(); ++k) {
+                    for (int d = 0; d < 4; ++d) {
+                        const std::int32_t x = cells[k].first + kDx[d];
+                        const std::int32_t z = cells[k].second + kDz[d];
+                        if (x >= 0 && z >= 0 && x < side && z < side && seen[at(x, z)] == 0 && wood(x, z)) {
+                            seen[at(x, z)] = 1;
+                            cells.emplace_back(x, z);
+                        }
+                    }
+                }
+                if (static_cast<std::int64_t>(cells.size()) * kStep * kStep < kGladeMinArea) {
+                    continue;
+                }
+                // How deep each square is: steps to the edge of the stretch.
+                ring.clear();
+                for (const auto& [x, z] : cells) {
+                    bool edge = false;
+                    for (int d = 0; d < 4; ++d) {
+                        const std::int32_t ox = x + kDx[d];
+                        const std::int32_t oz = z + kDz[d];
+                        edge = edge || ox < 0 || oz < 0 || ox >= side || oz >= side || !wood(ox, oz);
+                    }
+                    if (edge) {
+                        depth[at(x, z)] = 0;
+                        ring.emplace_back(x, z);
+                    }
+                }
+                for (std::size_t k = 0; k < ring.size(); ++k) {
+                    for (int d = 0; d < 4; ++d) {
+                        const std::int32_t x = ring[k].first + kDx[d];
+                        const std::int32_t z = ring[k].second + kDz[d];
+                        if (x >= 0 && z >= 0 && x < side && z < side && wood(x, z) && depth[at(x, z)] < 0) {
+                            depth[at(x, z)] = depth[at(ring[k].first, ring[k].second)] + 1;
+                            ring.emplace_back(x, z);
+                        }
+                    }
+                }
+                // The deepest one that is not by a start (the first of them, in the order they were found).
+                std::int32_t best = -1;
+                std::pair<std::int32_t, std::int32_t> where{0, 0};
+                for (const auto& [x, z] : cells) {
+                    const Fixed cx = cell_center(mid(x));
+                    const Fixed cz = cell_center(mid(z));
+                    const bool by_start = std::any_of(out_.starts.begin(), out_.starts.end(), [&](const StartPosition& s) {
+                        return d2(cx, cz, s.x, s.z) < meters2(kGladeFromStart);
+                    });
+                    if (!by_start && depth[at(x, z)] > best) {
+                        best = depth[at(x, z)];
+                        where = {x, z};
+                    }
+                }
+                if (best >= 0) {
+                    out_.zones.push_back({ZoneType::Unicorn, cell_center(mid(where.first)), cell_center(mid(where.second)),
+                                          Fixed::from_int(kGladeRadius)});
+                }
+            }
+        }
     }
 
     // Phase 111: zones of mammoths on the open ground of the biomes they

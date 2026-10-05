@@ -227,7 +227,8 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town, s
 // (Generator 11, phase 109: zones of rabbits and of the lynx; the forage suite checks the zones of before.)
 // (Generator 12, phase 110: shoals of fish, banks of reeds and ducks; the stones suite checks the rest.)
 // (Generator 13, phase 111: zones of mammoths, after all the others; the forage suite checks the zones of before.)
-constexpr std::uint64_t kGoldenSmallMap = 0x217e886d168e4008ull;
+// (Generator 14, phase 112: the glades of the unicorns, after those.)
+constexpr std::uint64_t kGoldenSmallMap = 0xdabbf067ec9528d3ull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {

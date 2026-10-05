@@ -123,6 +123,12 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### El unicornio (fase 112)
+
+Un bioma con `"unicorn": true` (el bosque encantado en el juego base) tiene un **claro** en cada tramo suyo de 3200 m² o más: el generador lo pone donde el tramo es más hondo (lo más lejos de su borde), a 100 m o más de cada inicio. En el claro pasta un unicornio mientras nadie tale un árbol a 40 m o menos de su centro; el primer árbol que cae ahí (lo tale un leñador o un peón que despeja una obra) lo ahuyenta para siempre. No se caza y no camina por el mapa.
+
+Mientras está, cualquier sitio a 60 m o menos del centro del claro tiene **8 puntos más de entorno**, y los enfermos cuya casa está a esa distancia **sanan en la mitad de tiempo** (se suma a lo que hagan el curandero o el médico). Un pueblo recibe el aviso la primera vez que uno de sus aldeanos pasa a 60 m o menos del claro, y otro cuando el unicornio se va (también el pueblo que taló, aunque no lo hubiera visto).
+
 #### Mamuts (fase 111)
 
 Un bioma con `"mammoths": true` (montaña y boreal en el juego base) tiene **zonas de mamuts**: el generador las pone en su suelo abierto, a 220 m o más una de otra y a 120 m o más de cada inicio. Están vacías todo el año; el día que empieza el invierno llegan 3 mamuts a cada una, y los que queden se van el día que termina. En una partida sin invierno no vienen nunca; en una que es toda invierno, la manada se repone cada año.

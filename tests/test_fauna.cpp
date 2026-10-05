@@ -242,7 +242,8 @@ TEST_SUITE("fauna") {
             for (const render::ModelMaterial& mat : m.materials) {
                 shines = shines || render::material_glow(mat.name) > 0.0f;
             }
-            CHECK_MESSAGE(shines == (species == Species::Fireflies), file);
+            // (And the horn of the unicorn: phase 112.)
+            CHECK_MESSAGE(shines == (species == Species::Fireflies || species == Species::Unicorn), file);
         }
     }
 

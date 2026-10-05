@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 72;
+inline constexpr std::uint32_t kGameRulesVersion = 73;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,15 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 112. A unicorn grazes in its glade until somebody fells a tree
+// within the radius of the glade: then it is gone for good. While it is
+// there, a place within kUnicornMeters of the middle of the glade has
+// kUnicornBeauty more of surroundings, and the sick whose home is that near
+// get well twice as fast. A town sees it the first time one of its people
+// comes within kUnicornSight meters of the glade.
+inline constexpr std::int32_t kUnicornMeters = 60;
+inline constexpr std::int32_t kUnicornBeauty = 8;
+inline constexpr std::int32_t kUnicornSight = 60;
 // Phase 111. Mammoths: kMammoths come to each of their zones when winter
 // begins and those left go when it ends. A lodge goes for them only with
 // two hunters and a weapon of the kLodgeArms it keeps (laborers bring them
@@ -496,6 +505,8 @@ struct PlayerState {
     // resource kept in its buildings (phase 28).
     std::uint64_t merchant_arrives = 0;  // Tick; 0 = not yet planned.
     std::uint64_t merchant_leaves = 0;   // Tick; past it, no merchant.
+    // Phase 112: the unicorns the town has seen: bit k, the k-th glade of the map (the first 64).
+    std::uint64_t unicorns_seen = 0;
     std::vector<MerchantGood> merchant;  // What this merchant sells and buys.
     // Phase 29: automatic trade, by resource index, and this visit's tally.
     std::vector<TradeRule> trade_rules;
@@ -884,6 +895,9 @@ public:
             Rabbits,         // Phase 109: rabbits ate part of the harvest of a field of farm `entity`.
             Mammoths,        // Phase 111: winter: a herd of `value` mammoths came to its zone, at `at`.
             Wounded,         // Phase 111: villager `entity` came back wounded from a mammoth hunt.
+            UnicornSeen,     // Phase 112: the town saw, for the first time, the unicorn of the glade at `at`.
+            UnicornLeft,     // Phase 112: a tree was felled by the glade at `at` (`other`: the town that felled
+                             // it): its unicorn is gone for good.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -945,6 +959,11 @@ public:
     [[nodiscard]] FishSpots fish_spots(const Building& hut) const;
     // The pace it fishes at, in percent of the pace of before.
     [[nodiscard]] static std::int32_t fish_percent(const FishSpots& spots);
+    // Phase 112. Whether a unicorn grazes in a glade whose middle is within `radius` meters of (x, z).
+    [[nodiscard]] bool unicorn_near(std::int32_t x, std::int32_t z, std::int32_t radius) const;
+    // Whether felling trees from a building of `def` at (x, z) (its corner) could frighten one away: it
+    // fells trees, and the ground around a glade with its unicorn is within its reach.
+    [[nodiscard]] bool fells_by_unicorn(DefIndex def, std::int32_t x, std::int32_t z) const;
     // Phase 111. The big game within the reach of a lodge: how many zones of mammoths, and how many
     // mammoths are in them now (none but in winter).
     struct BigGame {

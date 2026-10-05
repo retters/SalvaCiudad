@@ -90,6 +90,8 @@ Y lo del pescador (fase 110), también al final y con su propia secuencia de aza
 
 Y las zonas de mamuts (fase 111), las últimas y con su propia secuencia de azar: se prueban 8 sitios por km²; el que cae en suelo abierto (ni roca ni arena) de un bioma con `"mammoths": true` es una zona de 50 a 80 m de radio, si no hay otra a menos de 220 m ni un inicio a menos de 120 m. Un mapa mediano tiene de 2 a 5; uno sin montaña ni bosque boreal, ninguna. Las zonas de antes quedan donde estaban y en el mismo orden.
 
+Y los claros de los unicornios (fase 112), después de todo lo demás y sin azar: el mapa se mira por cuadros de 8 m; cada tramo seguido de un bioma con `"unicorn": true` que cubra 3200 m² o más tiene un claro en su cuadro más hondo (el más lejano de su borde) de los que están a 100 m o más de todo inicio. Si ninguno lo está, ese tramo no tiene claro. Un mapa sin bosque encantado no tiene ninguno.
+
 Lomas de 64 m, ondulaciones de 512 m y 40 cm de relieve fino, más las rocas, arbustos, hierbas y el pasto.
 
 ## Todo lo que F3 puede nombrar

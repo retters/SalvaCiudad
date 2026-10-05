@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### El unicornio (fase 112)
+
+`fauna/unicorn.glb` (de `proposals/beasts`, `mythic_unicorn`, 1214 triángulos, con su esqueleto y sus animaciones). Su cuerno brilla: es, con las luciérnagas, lo único de la fauna de ambiente que lo hace. Lo dibuja la fauna de ambiente en el centro de su claro, de día y de noche, mientras esté; como el resto de esa fauna, solo cerca de donde mira la cámara. El claro no tiene modelo propio.
+
 ### El mamut (fase 111)
 
 `fauna/mammoth.glb` (de `proposals/beasts`, `animal_mammoth`, 1712 triángulos, con su esqueleto y sus animaciones; se le añadió la de correr, un trote pesado, porque toda la fauna de ambiente tiene una). Lo dibuja la fauna de ambiente: tantos como queden en la zona, cerca de su centro, de día y de noche mientras dura el invierno. Como el resto de esa fauna, solo se ve cerca de donde mira la cámara (hasta 112 m con el detalle más alto) y no se dibuja con el detalle de fauna apagado.

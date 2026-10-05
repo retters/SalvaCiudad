@@ -64,6 +64,8 @@ enum class Species : std::uint8_t {
     Wildcat,
     // Phase 111: the mammoths of a zone, as many as are left of the herd, all winter.
     Mammoth,
+    // Phase 112: the unicorn of a glade, until it is frightened away.
+    Unicorn,
     Count
 };
 inline constexpr std::size_t kSpecies = static_cast<std::size_t>(Species::Count);

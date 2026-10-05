@@ -863,6 +863,10 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] De vez en cuando llega el aviso de un cazador herido; se recupera solo.
 - [ ] El marfil se puede vender al mercader, y el mercader nunca lo trae.
 - [ ] En primavera los mamuts ya no están.
+- [ ] En un mapa con bosque encantado, la primera vez que un aldeano se acerca a un claro llega el aviso del unicornio y la cámara va ahí; se ve el unicornio pastando, con el cuerno brillante.
+- [ ] Una casa a 60 m del claro dice «Un unicornio pasta cerca: +8 de entorno» y que sus enfermos sanan en la mitad de tiempo.
+- [ ] Al colocar un Leñador cuyo radio toca el claro, el texto de ayuda avisa de que talar ahí lo ahuyenta; la ventana de un leñador ya construido ahí también lo dice.
+- [ ] Al talar el primer árbol junto al claro llega el aviso, el unicornio desaparece y la casa pierde esos 8 puntos. No vuelve.
 - [ ] Al amanecer y al atardecer se ven conejos en algunas praderas; muy de vez en cuando, un lince o un gato montés en el bosque.
 - [ ] Un cazador sin ciervos ni jabalíes a su alcance trae carne de conejo (2 por viaje, sin piel).
 - [ ] Un campo de verduras en una pradera con conejos da un quinto menos, con el aviso «Los conejos se comieron parte de la cosecha»; con valla en medio borde o una caseta de perro a 12 m, no.

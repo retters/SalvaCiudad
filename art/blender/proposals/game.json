@@ -116,7 +116,7 @@
     },
     {
       "family": "beasts", "class": "animal", "to": "fauna",
-      "ids": {"animal_ram": "ram", "pet_rabbit": "rabbit", "animal_mammoth": "mammoth"}
+      "ids": {"animal_ram": "ram", "pet_rabbit": "rabbit", "animal_mammoth": "mammoth", "mythic_unicorn": "unicorn"}
     },
     {
       "family": "beasts", "class": "animal", "to": "props", "game": true,

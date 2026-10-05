@@ -1465,13 +1465,15 @@ public:
             case ZoneType::Rabbits:
             case ZoneType::Lynx:
             case ZoneType::Mammoths:
+            case ZoneType::Unicorn:
             case ZoneType::Count: break;
         }
         return CreatureKind::Deer;
     }
-    // Whether the animals of a zone walk the map (not rabbits nor the lynx: phase 109; nor mammoths: phase 111).
+    // Whether the animals of a zone walk the map (not rabbits nor the lynx: phase 109; nor mammoths: phase 111;
+    // nor the unicorn: phase 112).
     [[nodiscard]] static bool walks(ZoneType t) {
-        return t != ZoneType::Rabbits && t != ZoneType::Lynx && t != ZoneType::Mammoths;
+        return t != ZoneType::Rabbits && t != ZoneType::Lynx && t != ZoneType::Mammoths && t != ZoneType::Unicorn;
     }
 
     // A walkable point near `at` within `radius` meters (or `at`).
@@ -3299,6 +3301,11 @@ public:
                     severity /= 2;
                     recovery = 2;
                 }
+                if (const Building* house = g_.buildings_.get(v.home);
+                    house != nullptr &&
+                    g_.unicorn_near(house->x + house->width / 2, house->z + house->depth / 2, village::kUnicornMeters)) {
+                    recovery *= 2;  // Phase 112: in half the time.
+                }
                 v.health -= severity;
                 v.sick_days -= recovery;
                 if (v.health <= 0) {
@@ -3598,6 +3605,7 @@ public:
             case ZoneType::Rabbits: return village::kRabbits;  // (Half with a lynx near: Game::zone_room.)
             case ZoneType::Lynx: return 1;
             case ZoneType::Mammoths: return village::kMammoths;  // (In winter: Game::zone_room.)
+            case ZoneType::Unicorn: return 1;
             case ZoneType::Count: break;
         }
         return 0;
@@ -4435,6 +4443,63 @@ public:
         }
     }
 
+    // Phase 112: a tree was felled by `town`: the unicorn of a glade it
+    // stood in is gone for good. The town that felled it hears of it, and
+    // so do those that had seen the unicorn.
+    void frighten_unicorns(const MapFeature& tree, std::uint8_t town) {
+        std::size_t glade = 0;
+        for (std::size_t z = 0; z < g_.map_.zones.size(); ++z) {
+            const Zone& zone = g_.map_.zones[z];
+            if (zone.type != ZoneType::Unicorn) {
+                continue;
+            }
+            const std::size_t k = glade++;
+            const std::uint64_t reach = static_cast<std::uint64_t>(zone.radius.floor_int());
+            if (g_.zone_animals_[z] <= 0 || distance2({tree.x, tree.z}, {zone.x, zone.z}) > ((reach * reach) << 32)) {
+                continue;
+            }
+            g_.zone_animals_[z] = 0;
+            g_.buildings_changed_ = true;  // (The surroundings of the houses near it change.)
+            for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+                const bool saw = k < 64 && ((g_.players_[p].unicorns_seen >> k) & 1u) != 0;
+                if (g_.players_[p].active && g_.town_of(p) == p && (p == town || saw)) {
+                    g_.events_.push_back({Game::Event::Kind::UnicornLeft, p, {}, {zone.x, zone.z}, 0, town});
+                }
+            }
+        }
+    }
+
+    // Phase 112: once a day, the towns that see a unicorn for the first
+    // time: one of their people is within village::kUnicornSight meters of
+    // its glade.
+    void unicorns() {
+        std::size_t glade = 0;
+        for (std::size_t z = 0; z < g_.map_.zones.size(); ++z) {
+            const Zone& zone = g_.map_.zones[z];
+            if (zone.type != ZoneType::Unicorn) {
+                continue;
+            }
+            const std::size_t k = glade++;
+            if (g_.zone_animals_[z] <= 0 || k >= 64) {
+                continue;
+            }
+            const auto sight = static_cast<std::uint64_t>(village::kUnicornSight);
+            std::uint32_t towns = 0;
+            for (const Villager& v : g_.villagers_.data()) {
+                if (distance2(v.position, {zone.x, zone.z}) <= ((sight * sight) << 32)) {
+                    towns |= 1u << v.owner;
+                }
+            }
+            for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+                PlayerState& ps = g_.players_[p];
+                if (((towns >> p) & 1u) != 0 && ((ps.unicorns_seen >> k) & 1u) == 0) {
+                    ps.unicorns_seen |= std::uint64_t{1} << k;
+                    g_.events_.push_back({Game::Event::Kind::UnicornSeen, p, {}, {zone.x, zone.z}, 0, 0});
+                }
+            }
+        }
+    }
+
     void gather(Villager& v) {
         if (v.node == 0) {
             v.task = Task::Idle;
@@ -4485,6 +4550,7 @@ public:
         }
         bool planted = false;
         if (n.amount <= 0 && f.type == FeatureType::Tree) {
+            frighten_unicorns(f, v.owner);
             if (const Building* job = g_.buildings_.get(v.job); job != nullptr && (job->options & option::kReplant) != 0) {
                 plant(v.node - 1);
                 planted = true;
@@ -4941,8 +5007,10 @@ public:
         check_outcomes();
         // Diets: last month's variety; the game comes back to its zones.
         for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
-            if (g_.map_.zones[z].type == ZoneType::Mammoths) {
-                continue;  // Phase 111: a herd is what came with the winter (see mammoths()).
+            if (g_.map_.zones[z].type == ZoneType::Mammoths || g_.map_.zones[z].type == ZoneType::Unicorn) {
+                // Phase 111: a herd is what came with the winter (see mammoths()). Phase 112: a unicorn
+                // that was frightened away does not come back.
+                continue;
             }
             const std::int32_t cap = g_.zone_open(z) ? g_.zone_room(z) : 0;
             const std::int32_t before = g_.zone_animals_[z];
@@ -5284,6 +5352,7 @@ public:
         herds();
         refill_shoals();
         mammoths();
+        unicorns();
     }
 
     // Phase 111: the mammoths come to their zones the day winter begins
@@ -7988,6 +8057,10 @@ std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
             beauty += des * (30 - dist) / 30;
         }
     }
+    // Phase 112: a unicorn grazing near.
+    if (unicorn_near(here.x.floor_int(), here.z.floor_int(), village::kUnicornMeters)) {
+        beauty += village::kUnicornBeauty;
+    }
     std::int32_t trees = 0;
     const std::int32_t side = node_cells_side_;
     const std::int32_t cx = here.x.floor_int() / kNodeCell;
@@ -8049,6 +8122,39 @@ Game::FishSpots Game::fish_spots(const Building& hut) const {
 
 std::int32_t Game::fish_percent(const FishSpots& spots) {
     return std::min(village::kFishMost, village::kFishAlone + village::kFishPerSpot * (spots.shoals + spots.reeds));
+}
+
+bool Game::unicorn_near(std::int32_t x, std::int32_t z, std::int32_t radius) const {
+    for (std::size_t k = 0; k < map_.zones.size(); ++k) {
+        const Zone& zone = map_.zones[k];
+        if (zone.type != ZoneType::Unicorn || k >= zone_animals_.size() || zone_animals_[k] <= 0) {
+            continue;
+        }
+        const std::int64_t dx = zone.x.floor_int() - x;
+        const std::int64_t dz = zone.z.floor_int() - z;
+        if (dx * dx + dz * dz <= static_cast<std::int64_t>(radius) * radius) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Game::fells_by_unicorn(DefIndex def, std::int32_t x, std::int32_t z) const {
+    if (def >= content_->buildings.size()) {
+        return false;
+    }
+    const BuildingDef& d = content_->buildings[def];
+    if (((d.gathers >> static_cast<unsigned>(FeatureType::Tree)) & 1u) == 0 || d.work_radius <= 0) {
+        return false;
+    }
+    for (std::size_t k = 0; k < map_.zones.size(); ++k) {
+        const Zone& zone = map_.zones[k];
+        if (zone.type == ZoneType::Unicorn && k < zone_animals_.size() && zone_animals_[k] > 0 &&
+            unicorn_near(x + d.width / 2, z + d.depth / 2, d.work_radius + zone.radius.floor_int())) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool Game::reaches_herd(const Building& lodge, const Zone& zone) const {
@@ -8735,6 +8841,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(ps.burned_down);
         w.u64(ps.merchant_arrives);
         w.u64(ps.merchant_leaves);
+        w.u64(ps.unicorns_seen);
         w.u8(ps.alarm ? 1 : 0);
         w.u64(ps.next_raid);
         w.i32(ps.raids);
@@ -9080,7 +9187,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             !r.u32(ps.town_center.index) || !r.u32(ps.town_center.generation) || !r.u32(ps.next_family) ||
             !r.i32(ps.births) || !r.i32(ps.deaths) || !r.i32(ps.arrivals) || !r.i32(ps.departures) ||
             !r.i32(ps.burned_down) || !r.u64(ps.merchant_arrives) ||
-            !r.u64(ps.merchant_leaves)) {
+            !r.u64(ps.merchant_leaves) || !r.u64(ps.unicorns_seen)) {
             return false;
         }
         std::uint8_t alarm = 0, order = 0, outcome = 0;
