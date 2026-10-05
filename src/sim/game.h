@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 73;
+inline constexpr std::uint32_t kGameRulesVersion = 74;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,21 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 113. A happening begins on a day the seed of the game decides, is
+// seen where it is for a few days and leaves the town it is for in a good
+// mood: kMoodPoints of happiness for all its houses during kMoodDays days,
+// fewer in the last ones. The whales pass a day of every autumn, for the
+// towns with a building within kWhaleMeters of the sea (their next merchant
+// comes in half the time that was left); the lanterns go up one night a
+// year in every town with kLanternFolk of a people that has the custom:
+// the first night from the day the seed gives (that day, in a game without
+// nights) on which the town has them.
+inline constexpr std::int32_t kMoodPoints = 3;
+inline constexpr std::uint32_t kMoodDays = 10;
+inline constexpr std::int32_t kWhaleMeters = 150;
+inline constexpr std::uint32_t kWhaleDays = 4;    // (A day of the calendar is ten seconds at x1.)
+inline constexpr std::uint32_t kLanternDays = 4;
+inline constexpr std::int32_t kLanternFolk = 2;
 // Phase 112. A unicorn grazes in its glade until somebody fells a tree
 // within the radius of the glade: then it is gone for good. While it is
 // there, a place within kUnicornMeters of the middle of the glade has
@@ -476,6 +491,20 @@ struct TradeTally {
 enum class ArmyOrderKind : std::uint8_t { Defend, Attack, Retreat, Count };
 enum class Outcome : std::uint8_t { Playing, Won, Lost, Count };
 
+// Phase 113: what happens now and then, by the calendar and the seed.
+enum class HappeningKind : std::uint8_t { Whales, Lanterns, Count };
+inline constexpr std::size_t kHappeningKinds = static_cast<std::size_t>(HappeningKind::Count);
+// One under way: where it is seen and until which day (days from the first
+// of year 1; that day it is over).
+struct Happening {
+    HappeningKind kind = HappeningKind::Whales;
+    std::uint8_t town = 0;
+    FixedVec2 at;
+    std::uint32_t until_day = 0;
+    bool operator==(const Happening&) const = default;
+};
+inline constexpr std::size_t kMaxHappenings = 64;
+
 struct PlayerState {
     bool active = false;
     // Phase 75: who sits here (the player's name and color, for the
@@ -507,6 +536,8 @@ struct PlayerState {
     std::uint64_t merchant_leaves = 0;   // Tick; past it, no merchant.
     // Phase 112: the unicorns the town has seen: bit k, the k-th glade of the map (the first 64).
     std::uint64_t unicorns_seen = 0;
+    // Phase 113: the mood each kind of happening left: until which day (0: none).
+    std::array<std::uint32_t, kHappeningKinds> mood_until{};
     std::vector<MerchantGood> merchant;  // What this merchant sells and buys.
     // Phase 29: automatic trade, by resource index, and this visit's tally.
     std::vector<TradeRule> trade_rules;
@@ -898,6 +929,8 @@ public:
             UnicornSeen,     // Phase 112: the town saw, for the first time, the unicorn of the glade at `at`.
             UnicornLeft,     // Phase 112: a tree was felled by the glade at `at` (`other`: the town that felled
                              // it): its unicorn is gone for good.
+            Whales,          // Phase 113: the whales pass off the coast of the town, at `at`.
+            Lanterns,        // Phase 113: the town lets its lanterns go, at `at` (the door of its center).
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -959,6 +992,13 @@ public:
     [[nodiscard]] FishSpots fish_spots(const Building& hut) const;
     // The pace it fishes at, in percent of the pace of before.
     [[nodiscard]] static std::int32_t fish_percent(const FishSpots& spots);
+    // Phase 113. What is happening now; the mood of a town (points of happiness for its houses); the day
+    // of the year (0..119) a happening falls on in `year` (from 0) for `town`: the whales pass the same day
+    // for everybody; and whether a cell is of the sea.
+    [[nodiscard]] const std::vector<Happening>& happenings() const { return happenings_; }
+    [[nodiscard]] std::int32_t town_mood(std::uint8_t town) const;
+    [[nodiscard]] std::uint32_t happening_day(HappeningKind kind, std::uint32_t year, std::uint8_t town) const;
+    [[nodiscard]] bool sea_at(std::int32_t x, std::int32_t z) const;
     // Phase 112. Whether a unicorn grazes in a glade whose middle is within `radius` meters of (x, z).
     [[nodiscard]] bool unicorn_near(std::int32_t x, std::int32_t z, std::int32_t radius) const;
     // Whether felling trees from a building of `def` at (x, z) (its corner) could frighten one away: it
@@ -1160,6 +1200,7 @@ private:
     DefIndex gold_ = kNoDef;
     std::vector<std::int32_t> zone_animals_;
     std::int32_t fires_ = 0;          // Buildings burning (follows from them).
+    std::vector<Happening> happenings_;  // Phase 113.
     std::vector<TradeOffer> offers_;
     ComponentStore<Creature> creatures_;
     // Phase 20: counts that were recomputed over and over. Derived state,

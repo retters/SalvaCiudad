@@ -1263,7 +1263,7 @@ struct SceneRenderer::Impl {
                                     SDL_GPU_BUFFERUSAGE_VERTEX);
     }
 
-    bool add_skinned(const ModelData& data, const std::vector<SkinnedVertex>& verts, GpuSkinned& m) {
+    bool add_skinned(const ModelData& data, const std::vector<SkinnedVertex>& verts, GpuSkinned& m, bool own_colors = false) {
         m.vertices = upload_skinned_vertices(verts);
         m.indices = upload_static_buffer(data.indices.data(),
                                          static_cast<std::uint32_t>(data.indices.size() * sizeof(std::uint32_t)),
@@ -1279,7 +1279,8 @@ struct SceneRenderer::Impl {
         }
         for (const ModelMaterial& mat : data.materials) {
             GpuMaterial g;
-            const int slot = palette_slot(mat.name);
+            // (An animal keeps the colors of its model, whatever its materials are called.)
+            const int slot = own_colors ? -1 : palette_slot(mat.name);
             // A recolored material takes its color from the palette; what is
             // left of its own is how much lighter or darker it is than the
             // slot's main material, so the facets keep their tones.
@@ -1618,7 +1619,7 @@ void SceneRenderer::update_instance(ModelId model, std::uint32_t index, const In
     }
 }
 
-bool SceneRenderer::add_skinned_model(const ModelData& data, SkinnedId& id) {
+bool SceneRenderer::add_skinned_model(const ModelData& data, SkinnedId& id, bool own_colors) {
     Impl& d = *impl_;
     if (!data.skinned() || data.clips.empty() || data.skin.size() != data.vertices.size()) {
         log::error("scene: a character model needs a skeleton and animations");
@@ -1634,7 +1635,7 @@ bool SceneRenderer::add_skinned_model(const ModelData& data, SkinnedId& id) {
         verts.push_back(sv);
     }
     GpuSkinned m;
-    if (!d.add_skinned(data, verts, m)) {
+    if (!d.add_skinned(data, verts, m, own_colors)) {
         return false;
     }
     m.joint_count = static_cast<std::uint32_t>(data.joint_names.size());

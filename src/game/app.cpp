@@ -2793,6 +2793,8 @@ void App::report_game_events() {
             case sim::Game::Event::Kind::Wounded: text = tr("event.wounded"); break;
             case sim::Game::Event::Kind::UnicornSeen: text = tr("event.unicornSeen"); break;
             case sim::Game::Event::Kind::UnicornLeft: text = tr("event.unicornLeft"); break;
+            case sim::Game::Event::Kind::Whales: text = tr("event.whales"); break;
+            case sim::Game::Event::Kind::Lanterns: text = tr("event.lanterns"); break;
             case sim::Game::Event::Kind::Barked:
                 text = tr(e.value == static_cast<std::uint16_t>(sim::CreatureKind::Bear)     ? "event.bark.bear"
                           : e.value == static_cast<std::uint16_t>(sim::CreatureKind::Raider) ? "event.bark.raider"

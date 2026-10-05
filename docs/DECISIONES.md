@@ -4039,3 +4039,29 @@ Suite nueva `unicorn`, 8 casos: los datos, y que el cazador no lo caza; +8 exact
 
 **D-11210. Versiones.**
 Reglas 73 y generador 14. La red no cambia.
+
+## Fase 113: sucesos: las ballenas y los farolillos (2026-10-05)
+
+**D-11301. El día lo decide la semilla, sin estado.**
+El día de cada suceso sale de mezclar la semilla de la partida con el año, la clase de suceso y (en los farolillos) el pueblo. No se guarda un calendario de sucesos ni se gasta el azar de la partida: lo que había antes de esta fase cae igual que antes, y «con la misma semilla caen los mismos días» sale solo. El primer día de la partida no tiene ronda: si cae ahí, pasa al segundo.
+
+**D-11302. Las ballenas.**
+Un día de cada otoño, el mismo para todos los pueblos (pasan una vez). En una partida sin otoño, un día cualquiera del año. Vale para un pueblo con algún edificio terminado a 150 m o menos de agua de mar; el sitio donde se ven es el mar abierto (mar a 18 m alrededor) más cercano al centro del pueblo dentro de esos 150 m, o el mar más cercano si no hay abierto. Se ven cuatro días (un día del calendario son diez segundos a ×1: con menos no da tiempo de ir a mirar). «Su próximo mercader llega antes»: al que ya venía en camino le queda la mitad del tiempo; sin puesto comercial no hay nada que adelantar.
+
+**D-11303. Los farolillos.**
+`"lanterns": true` en la raza (zorrunos). A cada pueblo le toca un día al año, distinto entre pueblos. Desde ese día, la primera noche en que el pueblo tenga 2 o más (de cualquier edad) suelta los farolillos; una vez por año. En una partida sin ciclo de día y noche, ese mismo día. La primera versión los soltaba el día que tocaba fuera de día o de noche, y como la noche dura muchos días del calendario casi nunca coincidían: se cambió al preparar la escena para mirarlos. Suben frente a la puerta del centro del pueblo y se ven cuatro días, de noche.
+
+**D-11304. El ánimo del pueblo.**
+Cada clase de suceso deja «ánimo hasta tal día»; el ánimo del pueblo es la suma de los que siguen vivos, y se suma a la felicidad de cada casa. «Se apagan con los días»: 3 puntos los ocho primeros días, 2 el noveno y 1 el décimo. Se descartó una lista de ánimos con sus puntos: con uno por clase alcanza para esta fase y la siguiente (tortugas), y se guarda en tres números.
+
+**D-11305. A la vista.**
+La ballena y los farolillos de las propuestas, en la fauna de ambiente, con un hábito nuevo («espectáculo»: se queda donde está y repite su animación). Solo se ven cerca de la cámara y no con el detalle de fauna apagado; el aviso lleva la cámara. Las casas dicen el ánimo del pueblo en su ventana. Al mirarlas, las ballenas salían de color canela: su material se llama «skin» y el juego recolorea con la paleta de los aldeanos todo material con nombre de ranura (piel, pelo, ropa). La fauna de ambiente conserva desde ahora los colores de su modelo; cambia también lo que ya estaba mal sin notarse: la trompa del mamut, la crin del unicornio y la cabeza del buitre.
+
+**D-11306. Para las pruebas: gente de una raza.**
+La orden de desarrollo que hace llegar adultos (`DevSpawn`) admite ahora de qué raza (`def2`); con 0 es como antes. Sin eso no había forma de tener exactamente un zorruno.
+
+**D-11307. Lo medido.**
+Suite nueva `happenings`, 8 casos: los datos; los mismos días con la misma semilla en doce años, otros con otra, las ballenas siempre en otoño y los farolillos en días distintos por pueblo; el pueblo con una casa en la orilla recibe el aviso una vez, en el mar, y el mismo pueblo sin esa casa y uno sin mar no; el ánimo vale 3, 3, 3, 3, 3, 3, 3, 3, 2, 1 y 0, y la felicidad de una casa es la que tenía más el ánimo; el mercader que estaba a 891 ticks pasa a 446; con un zorruno no hay farolillos en tres años y con dos, uno por año, y si el segundo llega tarde suben el día que llega; con noches, suben de noche y una vez al año; guardar y cargar con el suceso en curso. En `net`, dos pueblos de zorrunos en dos máquinas: cada uno con su noche, y las partidas iguales. De las pruebas de antes cambiaron dos: la de la fauna (un «espectáculo» tiene una sola animación, y la llama de los farolillos brilla) y la de las mascotas, que daba por hecho que todo lo que viene después del perro en la lista de fauna camina por el suelo.
+
+**D-11308. Versiones.**
+Reglas 74 y red 33. El generador no cambia.

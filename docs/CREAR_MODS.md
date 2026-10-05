@@ -123,6 +123,13 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### Sucesos y ánimo del pueblo (fase 113)
+
+Un **suceso** empieza un día que decide la semilla de la partida (el mismo en todas las máquinas y cada vez que se juega esa semilla), se ve donde ocurre durante unos días y deja al pueblo de **buen ánimo**: 3 puntos de felicidad para todas sus casas durante 10 días (3 los ocho primeros, luego 2 y 1). Dos sucesos a la vez suman. El aviso lleva la cámara al sitio.
+
+- **El paso de las ballenas.** Un día de cada otoño (del año, en una partida sin otoño), el mismo para todos los pueblos. Vale para el pueblo que tenga algún edificio terminado a 150 m o menos del mar; se ven cuatro días en el mar abierto más cercano a su centro. Además, el mercader que venía en camino llega en la mitad del tiempo que le faltaba.
+- **Los farolillos.** Una raza con `"lanterns": true` (los zorrunos del juego base) trae la costumbre: una vez al año el pueblo que tenga 2 o más de ellos suelta farolillos frente a su centro: la primera noche a partir del día que le toca (distinto para cada pueblo) en que los tenga; en una partida sin noche, ese mismo día. Se ven cuatro días, de noche.
+
 #### El unicornio (fase 112)
 
 Un bioma con `"unicorn": true` (el bosque encantado en el juego base) tiene un **claro** en cada tramo suyo de 3200 m² o más: el generador lo pone donde el tramo es más hondo (lo más lejos de su borde), a 100 m o más de cada inicio. En el claro pasta un unicornio mientras nadie tale un árbol a 40 m o menos de su centro; el primer árbol que cae ahí (lo tale un leñador o un peón que despeja una obra) lo ahuyenta para siempre. No se caza y no camina por el mapa.

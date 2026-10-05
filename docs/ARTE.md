@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### La ballena y los farolillos (fase 113)
+
+`fauna/whale.glb` (de `proposals/beasts`, `sea_whale`, 394 triángulos) y `fauna/lanterns.glb` (de `proposals/sky`, `sky_lanterns`, 656: la mesa con los farolillos plegados y cinco que suben; su llama brilla). Los dibuja la fauna de ambiente como un «espectáculo»: se quedan donde están y repiten su única animación (`swim_breach`, el salto, y `drift`). Como el resto de esa fauna, solo se ven cerca de donde mira la cámara y no con el detalle de fauna apagado; el aviso del suceso lleva la cámara ahí.
+
 ### El unicornio (fase 112)
 
 `fauna/unicorn.glb` (de `proposals/beasts`, `mythic_unicorn`, 1214 triángulos, con su esqueleto y sus animaciones). Su cuerno brilla: es, con las luciérnagas, lo único de la fauna de ambiente que lo hace. Lo dibuja la fauna de ambiente en el centro de su claro, de día y de noche, mientras esté; como el resto de esa fauna, solo cerca de donde mira la cámara. El claro no tiene modelo propio.

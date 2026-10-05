@@ -754,6 +754,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.disease = r.integer("disease", -100, 90, 0);
         def.night_vision = r.flag("nightVision");
         def.likes_cats = r.flag("likesCats");
+        def.lanterns = r.flag("lanterns");
         def.sight = r.integer("sight", 1, sim::kMaxSight, 12);
         if (yyjson_mut_val* work = yyjson_mut_obj_get(d->obj, "work"); work != nullptr) {
             if (!yyjson_mut_is_obj(work)) {

@@ -24,7 +24,7 @@ constexpr std::string_view kFiles[kSpecies] = {
     "models/animals/sheep.glb",     "models/fauna/ram.glb",           "models/fauna/goat.glb",
     "models/fauna/goat_brown.glb",  "models/fauna/goat_pied.glb",     "models/fauna/rabbit.glb",
     "models/fauna/lynx.glb",        "models/fauna/wildcat.glb",       "models/fauna/mammoth.glb",
-    "models/fauna/unicorn.glb",
+    "models/fauna/unicorn.glb",     "models/fauna/whale.glb",         "models/fauna/lanterns.glb",
 };
 
 constexpr float kTau = 2.0f * std::numbers::pi_v<float>;
@@ -136,8 +136,14 @@ Habit habit(Species species) {
         case Species::Butterflies:
         case Species::Fireflies:
         case Species::Dragonflies: return Habit::Swarm;
+        case Species::Whale:
+        case Species::SkyLanterns: return Habit::Show;
         default: return Habit::Bird;
     }
+}
+
+std::string_view show_clip(Species species) {
+    return species == Species::Whale ? "swim_breach" : species == Species::SkyLanterns ? "drift" : std::string_view{};
 }
 
 When when(const sim::Game& game) {
@@ -218,10 +224,15 @@ void AmbientFauna::load(render::SceneRenderer& renderer, const mods::BuildResult
         const std::filesystem::path file = mods::mod_file(pack.dir("core"), kFiles[k]);
         const auto data = file.empty() ? std::nullopt : load_model_file(file);
         Body body;
-        if (!data.has_value() || !renderer.add_skinned_model(*data, body.id)) {
+        // (With its own colors: the people's palettes are not for animals.)
+        if (!data.has_value() || !renderer.add_skinned_model(*data, body.id, true)) {
             continue;  // Not drawn.
         }
-        const int idle = renderer.clip_index(body.id, habit(static_cast<Species>(k)) == Habit::Swarm ? "fly" : "idle");
+        const Habit how = habit(static_cast<Species>(k));
+        // (A show has one clip, which is all it does: it stands for the others.)
+        const int idle = renderer.clip_index(body.id, how == Habit::Swarm  ? std::string_view{"fly"}
+                                                      : how == Habit::Show ? show_clip(static_cast<Species>(k))
+                                                                           : std::string_view{"idle"});
         if (idle < 0) {
             continue;
         }
@@ -335,7 +346,7 @@ void AmbientFauna::rest(Animal& a) {
     a.timer = 2.0f + 5.0f * unit(h);
     a.lift = 0.0f;
     const Habit how = habit(a.species);
-    const bool eats = how != Habit::Perched && how != Habit::Swarm && (h & 0x100u) != 0;
+    const bool eats = how != Habit::Perched && how != Habit::Swarm && how != Habit::Show && (h & 0x100u) != 0;
     a.clip = eats ? body.eat : body.idle;
     a.clip_length = eats ? body.eat_length : body.idle_length;
     a.clip_time = std::fmod(a.clip_time, a.clip_length);
@@ -388,7 +399,7 @@ void AmbientFauna::move(const sim::Game& game, Animal& a, math::Vec3 goal, bool 
 void AmbientFauna::step(const sim::Game& game, Animal& a, float dt) {
     a.clip_time = std::fmod(a.clip_time + dt, a.clip_length);
     const Habit how = habit(a.species);
-    if (how == Habit::Swarm || how == Habit::Perched || dt <= 0.0f) {
+    if (how == Habit::Swarm || how == Habit::Perched || how == Habit::Show || dt <= 0.0f) {
         return;
     }
     // People near: off it goes, away from the nearest.
@@ -470,7 +481,7 @@ void AmbientFauna::add(const sim::Game& game, std::uint64_t id, Species species,
     a.clip_time = unit(a.seed, 16) * 3.0f;
     a.stays = true;
     rest(a);
-    if (habit(species) == Habit::Swarm) {
+    if (habit(species) == Habit::Swarm || habit(species) == Habit::Show) {
         a.clip = body.fly;
         a.clip_length = body.fly_length;
     }
@@ -601,6 +612,41 @@ void AmbientFauna::settle(const sim::Game& game, std::int32_t fsx, std::int32_t 
                 continue;
             }
             add(game, id, lynx ? (zi % 2 == 0 ? Species::Lynx : Species::Wildcat) : Species::Rabbit, x, z, 0.0f, lynx ? 10.0f : 4.0f);
+        }
+    }
+    // Phase 113: what is happening: the whales where they pass (two of them), all the days it lasts; the
+    // lanterns of a town, by night (all day, where there is none).
+    for (std::size_t hi = 0; hi < game.happenings().size(); ++hi) {
+        const sim::Happening& h = game.happenings()[hi];
+        const float hx = to_float(h.at.x), hz = to_float(h.at.z);
+        if (std::hypot(hx - fx, hz - fz) > far) {
+            continue;
+        }
+        const bool whales = h.kind == sim::HappeningKind::Whales;
+        if (!whales && game.rules().day_night.enabled() && !when_.night) {
+            continue;
+        }
+        for (std::size_t n = 0; n < (whales ? 2u : 1u); ++n) {
+            const std::uint64_t id = (std::uint64_t{1} << 56) | (static_cast<std::uint64_t>(h.kind) << 48) |
+                                     (static_cast<std::uint64_t>(h.town) << 40) | (static_cast<std::uint64_t>(h.until_day) << 8) | n;
+            if (const auto it = animals_.find(id); it != animals_.end()) {
+                it->second.stays = true;
+                continue;
+            }
+            // The second whale, farther out: away from the town the happening is for.
+            float x = hx, z = hz;
+            if (n != 0) {
+                const sim::Building* tc = game.buildings().get(game.player(h.town).town_center);
+                const float ox = tc != nullptr ? hx - static_cast<float>(tc->x) : 1.0f;
+                const float oz = tc != nullptr ? hz - static_cast<float>(tc->z) : 0.0f;
+                const float len = std::max(1.0f, std::hypot(ox, oz));
+                x += ox / len * 18.0f - oz / len * 7.0f;
+                z += oz / len * 18.0f + ox / len * 7.0f;
+            }
+            if (whales && !water(game.map(), static_cast<std::int32_t>(std::floor(x)), static_cast<std::int32_t>(std::floor(z)))) {
+                continue;
+            }
+            add(game, id, whales ? Species::Whale : Species::SkyLanterns, x, z, 0.0f, 0.0f);
         }
     }
     // Phase 112: the unicorn of a glade, about its middle, day and night until it is gone.

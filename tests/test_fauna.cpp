@@ -229,6 +229,10 @@ TEST_SUITE("fauna") {
             const fauna::Habit how = fauna::habit(species);
             if (how == fauna::Habit::Swarm) {
                 CHECK_MESSAGE(m.clip_index("fly") >= 0, file);
+            } else if (how == fauna::Habit::Show) {
+                // (Phase 113: a show has its one clip.)
+                REQUIRE_MESSAGE(!fauna::show_clip(species).empty(), file);
+                CHECK_MESSAGE(m.clip_index(fauna::show_clip(species)) >= 0, file);
             } else {
                 CHECK_MESSAGE(m.clip_index("idle") >= 0, file);
                 CHECK_MESSAGE(m.clip_index("walk") >= 0, file);
@@ -242,8 +246,9 @@ TEST_SUITE("fauna") {
             for (const render::ModelMaterial& mat : m.materials) {
                 shines = shines || render::material_glow(mat.name) > 0.0f;
             }
-            // (And the horn of the unicorn: phase 112.)
-            CHECK_MESSAGE(shines == (species == Species::Fireflies || species == Species::Unicorn), file);
+            // (And the horn of the unicorn: phase 112. And the flame of the lanterns: phase 113.)
+            CHECK_MESSAGE(shines == (species == Species::Fireflies || species == Species::Unicorn || species == Species::SkyLanterns),
+                          file);
         }
     }
 

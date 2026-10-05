@@ -484,6 +484,42 @@ TEST_SUITE("net") {
         CHECK(c.m[0].game->roads() == c.m[1].game->roads());
     }
 
+    // Phase 113: the happenings fall by the seed and the calendar, and the
+    // mood they leave is part of the game: the same on every machine.
+    TEST_CASE("the lanterns of two towns of foxfolk go up the same nights on both machines") {
+        Cluster c;
+        c.join("P1");
+        c.frames(3, 0);
+        GameConfig foxes = config(27, false);
+        std::uint8_t fox = 0;
+        for (std::size_t i = 0; i < content()->races.size(); ++i) {
+            fox = content()->races[i].lanterns ? static_cast<std::uint8_t>(i) : fox;
+        }
+        REQUIRE(content()->races[fox].lanterns);
+        foxes.rules.races.fill(fox);
+        foxes.rules.other_races = 0;
+        c.host().set_config(foxes);
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(3, 0);
+        REQUIRE(c.m[1].game != nullptr);
+        const sim::Game& g = *c.m[1].game;
+        // A year: each town has had its night. (They have what they began with: some may go hungry.)
+        const auto lanterns = static_cast<std::size_t>(sim::HappeningKind::Lanterns);
+        for (std::uint32_t t = 0; t < g.year_ticks() + 400; t += 400) {
+            c.frames(100, 4);
+        }
+        c.settle();
+        expect_same_games(c);
+        for (std::size_t k = 0; k < 2; ++k) {
+            for (std::uint8_t town = 0; town < 2; ++town) {
+                CHECK(c.m[k].game->player(town).mood_until[lanterns] ==
+                      c.m[0].game->happening_day(sim::HappeningKind::Lanterns, 0, town) + sim::village::kMoodDays);
+            }
+            CHECK(c.m[k].game->happenings() == c.m[0].game->happenings());
+        }
+    }
+
     // Phase 107: a fold is built by the town, its pasture is marked with an
     // order and its flock breeds by the calendar: the same on every machine.
     TEST_CASE("a sheepfold, its pasture and its flock are the same on both machines") {

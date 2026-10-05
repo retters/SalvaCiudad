@@ -116,7 +116,12 @@
     },
     {
       "family": "beasts", "class": "animal", "to": "fauna",
-      "ids": {"animal_ram": "ram", "pet_rabbit": "rabbit", "animal_mammoth": "mammoth", "mythic_unicorn": "unicorn"}
+      "ids": {"animal_ram": "ram", "pet_rabbit": "rabbit", "animal_mammoth": "mammoth", "mythic_unicorn": "unicorn",
+              "sea_whale": "whale"}
+    },
+    {
+      "family": "sky", "class": "animal", "to": "fauna",
+      "ids": {"sky_lanterns": "lanterns"}
     },
     {
       "family": "beasts", "class": "animal", "to": "props", "game": true,

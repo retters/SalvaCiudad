@@ -66,6 +66,9 @@ enum class Species : std::uint8_t {
     Mammoth,
     // Phase 112: the unicorn of a glade, until it is frightened away.
     Unicorn,
+    // Phase 113: what is seen of a happening, where it is: the whales that pass, the lanterns of a town.
+    Whale,
+    SkyLanterns,
     Count
 };
 inline constexpr std::size_t kSpecies = static_cast<std::size_t>(Species::Count);
@@ -75,8 +78,11 @@ inline constexpr std::size_t kSpecies = static_cast<std::size_t>(Species::Count)
 
 // How an animal lives: on the ground, as a bird (on the ground, and flying
 // off), perched in a tree, or as a swarm that stays in the air of its place.
-enum class Habit : std::uint8_t { Ground, Bird, Perched, Swarm };
+// (Phase 113: or as a show, which stays where it is and plays its one clip.)
+enum class Habit : std::uint8_t { Ground, Bird, Perched, Swarm, Show };
 [[nodiscard]] Habit habit(Species species);
+// The clip of a show.
+[[nodiscard]] std::string_view show_clip(Species species);
 
 // What the time does to who is about.
 struct When {

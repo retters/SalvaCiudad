@@ -230,7 +230,9 @@ public:
     void clear_terrain();
 
     // Animated bodies. Returns false if the model has no skeleton or clips.
-    bool add_skinned_model(const ModelData& data, SkinnedId& id);
+    // `own_colors`: none of its materials is recolored by the characters'
+    // palettes, whatever they are called (the whale's "skin": phase 113).
+    bool add_skinned_model(const ModelData& data, SkinnedId& id, bool own_colors = false);
     // The far version of a body (phase 57): the same skeleton with a
     // simpler mesh and no clips of its own. A character lower on screen
     // than the level of detail's pixels is drawn with it, and so are all

@@ -341,6 +341,7 @@
     {
       "type": "race",
       "id": "core:foxfolk",
+      "lanterns": true,
       "name": "race.foxfolk",
       "bodies": {
         "male": [

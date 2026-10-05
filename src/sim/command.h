@@ -32,7 +32,8 @@ enum class CommandType : std::uint8_t {
     DevRaid = 24,         // Developer tools: raiders come now.
     TrainUnit = 25,       // Barracks `entity`: train one unit `def` (`value` 1), or cancel the last (`value` 0).
     DevLevel = 27,        // Developer tools: the town center goes up a level at once.
-    DevSpawn = 28,        // Developer tools: `value` adults (couples) arrive at the town center.
+    DevSpawn = 28,        // Developer tools: `value` adults (couples) arrive at the town center
+                          // (phase 113: of the people `def2` - 1, or with 0 those the town would get).
     ArmyOrder = 26,       // The army: defend around `position` (`value` 0), attack player `count` (1) or retreat (2).
     SetTradeRule = 29,    // Automatic trade of `def`: sell over `value`, buy under `value2` (kNoRule: off);
                           // `count` and `def2`: the price limits of each, percent (0: any price).

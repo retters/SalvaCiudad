@@ -2016,6 +2016,10 @@ void GameHud::house_lines(const sim::Game& game, const sim::Building& b, std::ve
         lines.push_back(tr("hud.house.unicorn", sim::village::kUnicornBeauty));
         lines.push_back(tr("hud.house.unicornHeals"));
     }
+    // Phase 113: the mood a happening left in the town.
+    if (const std::int32_t mood = game.town_mood(b.owner); mood > 0) {
+        lines.push_back(tr("hud.house.mood", mood));
+    }
     if (const std::int32_t flowers = game.flower_beauty(b); flowers > 0) {
         lines.push_back(tr("hud.house.flowers", flowers));
     }

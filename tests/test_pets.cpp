@@ -240,7 +240,8 @@ TEST_SUITE("pets") {
             CHECK(r.likes_cats == (r.id == "core:catfolk"));
         }
         CHECK(like == 1);
-        for (auto s = static_cast<std::size_t>(fauna::Species::Dog); s < fauna::kSpecies; ++s) {
+        // (Dogs and cats; what came after them in the list is not theirs to check.)
+        for (auto s = static_cast<std::size_t>(fauna::Species::Dog); s <= static_cast<std::size_t>(fauna::Species::Kitten); ++s) {
             CHECK(fauna::habit(static_cast<fauna::Species>(s)) == fauna::Habit::Ground);
             CHECK_FALSE(fauna::model_file(static_cast<fauna::Species>(s)).empty());
         }

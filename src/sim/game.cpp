@@ -6,6 +6,8 @@
 #include <bit>
 #include <optional>
 
+#include "sim/noise.h"
+
 namespace sc::sim {
 
 namespace {
@@ -5353,6 +5355,101 @@ public:
         refill_shoals();
         mammoths();
         unicorns();
+        happenings();
+    }
+
+    // Phase 113: the day's happenings. Those that are over go; then, in
+    // every town, what falls on today: the whales for a town by the sea,
+    // the lanterns for one with enough of the people that has the custom.
+    void happenings() {
+        const auto today = static_cast<std::uint32_t>(g_.calendar_day());
+        std::erase_if(g_.happenings_, [today](const Happening& h) { return today >= h.until_day; });
+        const std::uint32_t year = today / kDaysPerYear;
+        const std::uint32_t day = today % kDaysPerYear;
+        for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+            PlayerState& ps = g_.players_[p];
+            const Building* tc = g_.buildings_.get(ps.town_center);
+            if (!ps.active || g_.town_of(p) != p || tc == nullptr) {
+                continue;
+            }
+            if (g_.happening_day(HappeningKind::Whales, year, p) == day) {
+                if (const std::optional<FixedVec2> at = whale_point(p)) {
+                    begin(HappeningKind::Whales, p, *at, village::kWhaleDays, Game::Event::Kind::Whales);
+                    // Word of it spreads: the merchant on his way comes in half the time.
+                    if (ps.merchant_arrives > g_.tick_) {
+                        ps.merchant_arrives = g_.tick_ + (ps.merchant_arrives - g_.tick_) / 2;
+                    }
+                }
+            }
+            // The lanterns: from their day on, the first night (in a game with nights) the town has
+            // enough of the people; once a year.
+            const std::uint32_t due = year * kDaysPerYear + g_.happening_day(HappeningKind::Lanterns, year, p);
+            const bool lit = ps.mood_until[static_cast<std::size_t>(HappeningKind::Lanterns)] >= due + village::kMoodDays;
+            if (today >= due && !lit && (!g_.rules_.day_night.enabled() || g_.night())) {
+                std::int32_t folk = 0;
+                for (const Villager& v : g_.villagers_.data()) {
+                    const RaceDef* race = v.owner == p ? race_of(v) : nullptr;
+                    folk += race != nullptr && race->lanterns ? 1 : 0;
+                }
+                if (folk >= village::kLanternFolk) {
+                    begin(HappeningKind::Lanterns, p, g_.door(*tc), village::kLanternDays, Game::Event::Kind::Lanterns);
+                }
+            }
+        }
+    }
+    void begin(HappeningKind kind, std::uint8_t town, FixedVec2 at, std::uint32_t days, Game::Event::Kind notice) {
+        const auto today = static_cast<std::uint32_t>(g_.calendar_day());
+        if (g_.happenings_.size() < kMaxHappenings) {
+            g_.happenings_.push_back({kind, town, at, today + days});
+        }
+        g_.players_[town].mood_until[static_cast<std::size_t>(kind)] = today + village::kMoodDays;
+        g_.events_.push_back({notice, town, {}, at, 0, 0});
+    }
+    // Where the whales pass for a town: the open sea (sea 18 m around)
+    // nearest to its center among what is within village::kWhaleMeters of
+    // one of its buildings; with none open, the nearest sea there. Nothing
+    // for a town with no building that near the sea.
+    [[nodiscard]] std::optional<FixedVec2> whale_point(std::uint8_t town) const {
+        if (std::all_of(g_.map_.sea_levels.begin(), g_.map_.sea_levels.end(), [](std::uint16_t level) { return level == 0; })) {
+            return std::nullopt;
+        }
+        const Building* tc = g_.buildings_.get(g_.players_[town].town_center);
+        if (tc == nullptr) {
+            return std::nullopt;
+        }
+        constexpr std::int32_t kStep = 6;
+        const std::int64_t tx = tc->x + tc->width / 2;
+        const std::int64_t tz = tc->z + tc->depth / 2;
+        const std::int64_t reach = village::kWhaleMeters;
+        std::optional<FixedVec2> best;
+        std::int64_t best_d = INT64_MAX;
+        bool best_open = false;
+        for (const EntityId id : g_.owned(town)) {
+            const Building& b = *g_.buildings_.get(id);
+            if (!complete(b)) {
+                continue;
+            }
+            const std::int32_t cx = b.x + b.width / 2;
+            const std::int32_t cz = b.z + b.depth / 2;
+            // (On a grid that is the same for every building: the cells are looked at the same from each.)
+            for (std::int32_t z = (cz - village::kWhaleMeters) / kStep * kStep; z <= cz + village::kWhaleMeters; z += kStep) {
+                for (std::int32_t x = (cx - village::kWhaleMeters) / kStep * kStep; x <= cx + village::kWhaleMeters; x += kStep) {
+                    const std::int64_t dx = x - cx;
+                    const std::int64_t dz = z - cz;
+                    if (dx * dx + dz * dz > reach * reach || !g_.sea_at(x, z)) {
+                        continue;
+                    }
+                    const bool open = g_.sea_at(x - 18, z) && g_.sea_at(x + 18, z) && g_.sea_at(x, z - 18) && g_.sea_at(x, z + 18);
+                    const std::int64_t d = (x - tx) * (x - tx) + (z - tz) * (z - tz);
+                    if ((open && !best_open) || (open == best_open && d < best_d)) {
+                        best = FixedVec2{Fixed::from_int(x), Fixed::from_int(z)};
+                        best_d = d;
+                        best_open = open;
+                    }
+                }
+            }
+        }
+        return best;
     }
 
     // Phase 111: the mammoths come to their zones the day winter begins
@@ -5615,7 +5712,8 @@ public:
             b.needs = bits;
             // Happiness: a base, each need met, and the neighborhood.
             const auto met = static_cast<std::int32_t>(std::popcount(static_cast<unsigned>(bits | felt)));
-            b.happiness = std::clamp(28 + 8 * met + std::clamp(beauty / 2, -10, 10) + annex_joy, 0, 100);
+            // (Phase 113: and the mood of the town.)
+            b.happiness = std::clamp(28 + 8 * met + std::clamp(beauty / 2, -10, 10) + annex_joy + g_.town_mood(b.owner), 0, 100);
             // An upgrade when the next level's needs are met.
             if (!b.upgrading && b.level < d.levels.size()) {
                 const LevelDef& next = d.levels[b.level];
@@ -6446,8 +6544,10 @@ public:
                     const std::uint32_t family = n % 2 == 0 ? g_.players_[town].next_family++ : g_.players_[town].next_family - 1;
                     const FixedVec2 spot{at.x + Fixed::from_int(static_cast<std::int32_t>(g_.rng_.below(9)) - 4),
                                          at.z - Fixed::from_int(2 + static_cast<std::int32_t>(g_.rng_.below(4)))};
+                    const std::uint8_t usual = newcomer_race(town);
                     (void)spawn_villager(town, spot, n % 2 == 0 ? Sex::Male : Sex::Female,
-                                         18 + static_cast<std::int32_t>(g_.rng_.below(20)), family, newcomer_race(town));
+                                         18 + static_cast<std::int32_t>(g_.rng_.below(20)), family,
+                                         c.def2 != 0 && c.def2 <= c_.races.size() ? static_cast<std::uint8_t>(c.def2 - 1) : usual);
                 }
                 break;
             }
@@ -8124,6 +8224,54 @@ std::int32_t Game::fish_percent(const FishSpots& spots) {
     return std::min(village::kFishMost, village::kFishAlone + village::kFishPerSpot * (spots.shoals + spots.reeds));
 }
 
+std::int32_t Game::town_mood(std::uint8_t town) const {
+    if (town >= players_.size()) {
+        return 0;
+    }
+    // (It fades: in its last days, a point less each day.)
+    const auto today = static_cast<std::uint32_t>(calendar_day());
+    std::int32_t mood = 0;
+    for (const std::uint32_t until : players_[town].mood_until) {
+        if (until > today) {
+            mood += std::min<std::int32_t>(village::kMoodPoints, static_cast<std::int32_t>(until - today));
+        }
+    }
+    return mood;
+}
+
+std::uint32_t Game::happening_day(HappeningKind kind, std::uint32_t year, std::uint8_t town) const {
+    const std::uint64_t salt = kind == HappeningKind::Lanterns ? std::uint64_t{town} + 1 : 0;
+    const std::uint64_t h = mix64(seed_ ^ mix64((static_cast<std::uint64_t>(kind) + 1) * 0x9E3779B97F4A7C15ull ^
+                                              (static_cast<std::uint64_t>(year) << 20) ^ (salt << 8)));
+    std::uint32_t day = static_cast<std::uint32_t>(h % kDaysPerYear);
+    if (kind == HappeningKind::Whales) {
+        // A day of the autumn (of the year, in a game without one).
+        std::array<std::uint32_t, kDaysPerYear> autumn{};
+        std::uint32_t days = 0;
+        const std::uint64_t ticks = calendar_day_ticks();
+        for (std::uint32_t d = 0; d < kDaysPerYear; ++d) {
+            const std::uint64_t noon = (static_cast<std::uint64_t>(year) * kDaysPerYear + d) * ticks + ticks / 2;
+            if (sim::calendar(rules_.climate, noon).season == Season::Autumn) {
+                autumn[days++] = d;
+            }
+        }
+        if (days > 0) {
+            day = autumn[h % days];
+        }
+    }
+    // (The first day of the game has no round of its own.)
+    return year == 0 && day == 0 ? 1 : day;
+}
+
+bool Game::sea_at(std::int32_t x, std::int32_t z) const {
+    if (x < 0 || z < 0 || x >= map_.size || z >= map_.size) {
+        return false;
+    }
+    const std::size_t cell = static_cast<std::size_t>(z) * static_cast<std::size_t>(map_.size) + static_cast<std::size_t>(x);
+    const auto region = static_cast<std::size_t>(map_.region_at(x, z));
+    return region < map_.sea_levels.size() && map_.sea_levels[region] != 0 && map_.water[cell] == map_.sea_levels[region];
+}
+
 bool Game::unicorn_near(std::int32_t x, std::int32_t z, std::int32_t radius) const {
     for (std::size_t k = 0; k < map_.zones.size(); ++k) {
         const Zone& zone = map_.zones[k];
@@ -8842,6 +8990,9 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u64(ps.merchant_arrives);
         w.u64(ps.merchant_leaves);
         w.u64(ps.unicorns_seen);
+        for (const std::uint32_t until : ps.mood_until) {
+            w.u32(until);
+        }
         w.u8(ps.alarm ? 1 : 0);
         w.u64(ps.next_raid);
         w.i32(ps.raids);
@@ -8927,6 +9078,13 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
     w.u32(static_cast<std::uint32_t>(g.zone_animals().size()));
     for (const std::int32_t a : g.zone_animals()) {
         w.i32(a);
+    }
+    w.u32(static_cast<std::uint32_t>(g.happenings().size()));
+    for (const Happening& h : g.happenings()) {
+        w.u8(static_cast<std::uint8_t>(h.kind));
+        w.u8(h.town);
+        w.vec2(h.at);
+        w.u32(h.until_day);
     }
     m.buildings = w.bytes().size();
     const auto& bs = g.buildings();
@@ -9190,6 +9348,11 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             !r.u64(ps.merchant_leaves) || !r.u64(ps.unicorns_seen)) {
             return false;
         }
+        for (std::uint32_t& until : ps.mood_until) {
+            if (!r.u32(until)) {
+                return false;
+            }
+        }
         std::uint8_t alarm = 0, order = 0, outcome = 0;
         if (!r.u8(alarm) || alarm > 1 || !r.u64(ps.next_raid) || !r.i32(ps.raids) || !r.u8(order) ||
             order >= static_cast<std::uint8_t>(ArmyOrderKind::Count) || !r.vec2(ps.rally) || !r.u8(ps.enemy) ||
@@ -9349,6 +9512,18 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             r.fail();
             return false;
         }
+    }
+    if (!r.count(kMaxHappenings, 14, n)) {
+        return false;
+    }
+    g.happenings_.resize(n);
+    for (Happening& h : g.happenings_) {
+        std::uint8_t kind = 0;
+        if (!r.u8(kind) || kind >= kHappeningKinds || !r.u8(h.town) || h.town >= kMaxPlayers || !r.vec2(h.at) || !r.u32(h.until_day)) {
+            r.fail();
+            return false;
+        }
+        h.kind = static_cast<HappeningKind>(kind);
     }
     if (!r.count(100000, 30, n)) {
         return false;

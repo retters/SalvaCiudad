@@ -867,6 +867,11 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Una casa a 60 m del claro dice «Un unicornio pasta cerca: +8 de entorno» y que sus enfermos sanan en la mitad de tiempo.
 - [ ] Al colocar un Leñador cuyo radio toca el claro, el texto de ayuda avisa de que talar ahí lo ahuyenta; la ventana de un leñador ya construido ahí también lo dice.
 - [ ] Al talar el primer árbol junto al claro llega el aviso, el unicornio desaparece y la casa pierde esos 8 puntos. No vuelve.
+- [ ] En un mapa con mar y con algún edificio a 150 m de la costa, un día de otoño llega el aviso de las ballenas; al hacer clic la cámara va al mar y se ven dos ballenas saltando durante cuatro días (40 segundos a ×1).
+- [ ] Las casas dicen «Ánimo del pueblo: +3 de felicidad» durante diez días (baja a 2 y a 1 al final).
+- [ ] Con un puesto comercial, el mercader siguiente llega antes tras el paso de las ballenas.
+- [ ] En un pueblo con dos o más zorrunos, una noche al año llega el aviso de los farolillos y se ven subir frente al centro del pueblo. Con uno solo, no.
+- [ ] Guardar y cargar con las ballenas a la vista: siguen ahí.
 - [ ] Al amanecer y al atardecer se ven conejos en algunas praderas; muy de vez en cuando, un lince o un gato montés en el bosque.
 - [ ] Un cazador sin ciervos ni jabalíes a su alcance trae carne de conejo (2 por viaje, sin piel).
 - [ ] Un campo de verduras en una pradera con conejos da un quinto menos, con el aviso «Los conejos se comieron parte de la cosecha»; con valla en medio borde o una caseta de perro a 12 m, no.
