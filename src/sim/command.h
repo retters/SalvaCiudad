@@ -52,6 +52,7 @@ enum class CommandType : std::uint8_t {
     Trace = 42,           // Phase 93: a line of modules `def` from the cell at `position` to the cell (`value`, `value2`);
                           // `count` 1: an L goes along z first.
     DevBuild = 43,        // Developer tools: everything the town is building is finished at once.
+    DevBeast = 44,        // Developer tools: a beast of kind `def` (a CreatureKind: deer to bear) at `position`.
 
 };
 

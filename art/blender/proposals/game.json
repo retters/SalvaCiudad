@@ -46,7 +46,10 @@
               "animal_sparrow": "sparrow", "animal_robin": "robin", "animal_bluebird": "bluebird",
               "animal_crow": "crow", "animal_raven": "raven", "animal_vulture": "vulture",
               "animal_fox": "fox", "animal_fox_arctic": "fox_arctic",
-              "animal_hen": "hen", "animal_hen_white": "hen_white", "animal_chick": "chick"}
+              "animal_hen": "hen", "animal_hen_white": "hen_white", "animal_chick": "chick",
+              "pet_dog": "dog", "pet_dog_shepherd": "dog_shepherd", "pet_dog_mastiff": "dog_mastiff",
+              "pet_dog_terrier": "dog_terrier", "pet_cat": "cat", "pet_cat_tabby": "cat_tabby", "pet_cat_black": "cat_black",
+              "pet_cat_white": "cat_white", "pet_kitten": "kitten"}
     },
     {
       "family": "nature", "class": "animal", "to": "fauna", "bare": true,

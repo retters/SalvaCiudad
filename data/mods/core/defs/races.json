@@ -89,6 +89,7 @@
     {
       "type": "race",
       "id": "core:catfolk",
+      "likesCats": true,
       "name": "race.catfolk",
       "bodies": {
         "male": [

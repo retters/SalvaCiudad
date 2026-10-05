@@ -439,27 +439,29 @@ TEST_SUITE("gardens") {
         CHECK(flowers <= village::kMaxFlowerBeauty);
         CHECK(g.flower_beauty(at(g, bare)) == 0);
         days(g, 1);
-        const std::int32_t in_spring = at(g, house).desirability;
-        const std::int32_t bare_in_spring = at(g, bare).desirability;
-        CHECK(in_spring == g.desirability_at(middle(at(g, house)), &at(g, house)));
+        // (Without the cat that may come with the months, phase 106.)
+        const auto place = [&](EntityId id) { return at(g, id).desirability - (at(g, id).cat != 0 ? village::kCatBeauty : 0); };
+        const std::int32_t in_spring = place(house);
+        const std::int32_t bare_in_spring = place(bare);
+        CHECK(at(g, house).desirability == g.desirability_at(middle(at(g, house)), &at(g, house)));
         while (g.calendar().season != Season::Autumn) {
             g.step();
         }
         days(g, 1);
         CHECK(g.flower_beauty(at(g, house)) == flowers);
-        CHECK(at(g, house).desirability == in_spring);
+        CHECK(place(house) == in_spring);
         while (g.calendar().season != Season::Winter) {
             g.step();
         }
         days(g, 1);
         CHECK(g.flower_beauty(at(g, house)) == 0);
-        CHECK(at(g, house).desirability == in_spring - flowers);
-        CHECK(at(g, bare).desirability == bare_in_spring);
+        CHECK(place(house) == in_spring - flowers);
+        CHECK(place(bare) == bare_in_spring);
         while (g.calendar().season != Season::Spring) {
             g.step();
         }
         days(g, 1);
-        CHECK(at(g, house).desirability == in_spring);
+        CHECK(place(house) == in_spring);
     }
 
     TEST_CASE("ploughing the meadow takes its flowers from the house beside it") {

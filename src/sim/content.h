@@ -319,6 +319,7 @@ struct RaceDef {
     std::int32_t cold = 0;       // Resistance to cold, percent (less warmth lost, less flu); may be negative.
     std::int32_t disease = 0;    // Resistance to every disease, percent.
     bool night_vision = false;   // Not slowed by the dark of the night (phase 70).
+    bool likes_cats = false;     // Phase 106: happier with a house cat nearby.
     std::int32_t sight = 12;     // Phase 32: meters a villager sees (fog of war).
 };
 

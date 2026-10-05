@@ -851,6 +851,11 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] Cada Caseta del perro tiene un perro rondando (mestizo, pastor, mastín o terrier). Su ventana dice que ladra y que planta cara a un lobo.
+- [ ] Cuando un lobo, un oso o asaltantes entran a 12 m de una caseta, sale el aviso «El perro ladra…» y los aldeanos de ese radio corren al centro del pueblo. Un lobo se queda quieto junto al perro y va perdiendo vida; un oso sigue de largo.
+- [ ] Con comida de sobra, cada mes una casa recibe un gato (se ve rondándola y su ventana dice «Gato en casa: +2 de entorno»); si el pueblo pasa hambre, se van de a uno por mes.
+- [ ] En un pueblo de gatunos, las casas a 15 m o menos de un gato son 2 puntos más felices.
+- [ ] En las herramientas de desarrollo no hay botón para poner bestias: el comando existe solo para las pruebas.
 - [ ] El Gallinero (pestaña Jardín) tiene gallinas y un pollito caminando alrededor; su ventana dice «Gallinas: 4 de 4», para cuántos días tiene grano y si está a salvo del zorro.
 - [ ] Con trigo o cebada en un almacén, un peón le lleva grano y el gallinero da huevos (uno cada tres días), que los peones se llevan. Sin grano no pone.
 - [ ] Un gallinero sin valla ni perro pierde gallinas de vez en cuando, con el aviso «Un zorro se llevó una gallina»; con cuatro módulos de valla, seto o empalizada a 3 m, o una Caseta del perro a 12 m, no pierde ninguna.

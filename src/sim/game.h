@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 66;
+inline constexpr std::uint32_t kGameRulesVersion = 67;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,21 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 106. A guard dog (a building with a guard radius) looks every
+// kDogTicks: with a wolf, a bear or a raider in its reach it barks (a notice,
+// once until kBarkQuietTicks have gone by with nobody there), the villagers
+// in its reach run for the town center, and it keeps the nearest wolf at bay,
+// biting it for kDogBite each time.
+inline constexpr std::int32_t kDogTicks = 10;
+inline constexpr std::int32_t kBarkQuietTicks = 600;
+inline constexpr std::int32_t kDogBite = 6;
+// A house cat: kCatLooks looks (four coats and a kitten); it adds
+// kCatBeauty to its house's environment, and kCatJoy to the happiness of the
+// houses within kCatMeters where somebody of a people that likes cats lives.
+inline constexpr std::int32_t kCatLooks = 5;
+inline constexpr std::int32_t kCatBeauty = 2;
+inline constexpr std::int32_t kCatJoy = 2;
+inline constexpr std::int32_t kCatMeters = 15;
 // Phase 105. A coop is safe from the fox with kCoopFence modules of any line
 // (a fence, a hedge, a palisade) within kGardenMeters of its walls, or a
 // guard in reach. Unsafe, it loses a hen kFoxPercent days in a hundred. It
@@ -260,6 +275,7 @@ struct Building {
     std::uint16_t needs = 0;         // Houses: Need bits met today.
     std::uint16_t annexes = 0;       // Houses: the annexes that serve it (a bit per BuildingDef::annex_bit); phase 103.
     std::uint8_t garden = 0;         // Phase 104: garden::kHouse (a house with its fence), garden::kFormal (a decoration with its hedge).
+    std::uint8_t cat = 0;            // Phase 106: a house's cat: 0 none, else its look (1 to village::kCatLooks).
     std::uint8_t flock = 0;          // Phase 105: a coop's hens. (Its `produced` is the days of feed left; its `work_done`, eggs on the way.)
     std::int32_t happiness = 50;     // Houses: 0..100.
     std::int32_t desirability = 0;   // Houses: how pleasant the place is.
@@ -472,6 +488,8 @@ struct Creature {
     DefIndex unit = 0;            // Soldiers: their UnitDef.
     // Phase 96: ticks a beast has waited at the edge of a light it will not enter.
     std::uint16_t held = 0;
+    // Phase 106: ticks a wolf is kept at bay by a guard dog: it neither moves nor bites.
+    std::uint16_t bay = 0;
     bool operator==(const Creature&) const = default;
 };
 
@@ -809,6 +827,7 @@ public:
             Exhausted,       // Phase 81: workplace `entity` has nothing left to take within its reach
                              // (`value` 1: nothing but the fruit trees it spares, phase 85).
             Fox,             // Phase 105: a fox took a hen from coop `entity`; `value`: the hens left.
+            Barked,          // Phase 106: the dog of kennel `entity` barks; `value`: the CreatureKind it saw.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;

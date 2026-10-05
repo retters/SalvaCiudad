@@ -18,6 +18,9 @@ constexpr std::string_view kFiles[kSpecies] = {
     "models/fauna/vulture.glb",     "models/fauna/fox.glb",           "models/fauna/fox_arctic.glb",
     "models/fauna/butterflies.glb", "models/fauna/fireflies.glb",     "models/fauna/dragonflies.glb",
     "models/fauna/hen.glb",         "models/fauna/hen_white.glb",     "models/fauna/chick.glb",
+    "models/fauna/dog.glb",         "models/fauna/dog_shepherd.glb",  "models/fauna/dog_mastiff.glb",
+    "models/fauna/dog_terrier.glb", "models/fauna/cat.glb",           "models/fauna/cat_tabby.glb",
+    "models/fauna/cat_black.glb",   "models/fauna/cat_white.glb",     "models/fauna/kitten.glb",
 };
 
 constexpr float kTau = 2.0f * std::numbers::pi_v<float>;
@@ -67,8 +70,9 @@ bool sea(const sim::MapData& map, std::int32_t cx, std::int32_t cz) {
 
 // How close a person may come before an animal of this habit takes fright,
 // and how far it then goes, in meters.
+// The animals of the village: used to people, and they walk.
 bool poultry(Species s) {
-    return s == Species::Hen || s == Species::HenWhite || s == Species::Chick;
+    return s >= Species::Hen && s < Species::Count;
 }
 float fear(Species s) {
     if (poultry(s)) {
@@ -97,7 +101,16 @@ Habit habit(Species species) {
         case Species::FoxArctic:
         case Species::Hen:
         case Species::HenWhite:
-        case Species::Chick: return Habit::Ground;
+        case Species::Chick:
+        case Species::Dog:
+        case Species::DogShepherd:
+        case Species::DogMastiff:
+        case Species::DogTerrier:
+        case Species::Cat:
+        case Species::CatTabby:
+        case Species::CatBlack:
+        case Species::CatWhite:
+        case Species::Kitten: return Habit::Ground;
         case Species::Owl:
         case Species::OwlSnowy: return Habit::Perched;
         case Species::Butterflies:
@@ -533,6 +546,33 @@ void AmbientFauna::settle(const sim::Game& game, std::int32_t fsx, std::int32_t 
             const float out_by = static_cast<float>(std::max(b.width, b.depth)) * 0.5f + 1.0f;
             add(game, id, who, cx + std::sin(angle) * out_by, cz + std::cos(angle) * out_by, 0.0f, 2.5f);
         }
+    }
+    // Phase 106: the dog of each kennel, and the cat of each house that has one.
+    for (std::size_t i = 0; i < game.buildings().size(); ++i) {
+        const sim::Building& b = game.buildings().data()[i];
+        const sim::BuildingDef& d = game.content().buildings[b.def];
+        const bool kennel = d.guard_radius > 0;
+        if ((!kennel && b.cat == 0) || b.state != sim::BuildingState::Complete) {
+            continue;
+        }
+        const float cx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
+        const float cz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
+        if (std::hypot(cx - fx, cz - fz) > far) {
+            continue;
+        }
+        const std::uint64_t id = (std::uint64_t{1} << 61) | (static_cast<std::uint64_t>(game.buildings().entities()[i].index) << 8) |
+                                 (kennel ? 0u : b.cat);
+        if (const auto it = animals_.find(id); it != animals_.end()) {
+            it->second.stays = true;
+            continue;
+        }
+        constexpr Species kDogs[] = {Species::Dog, Species::DogShepherd, Species::DogMastiff, Species::DogTerrier};
+        constexpr Species kCats[] = {Species::Cat, Species::CatTabby, Species::CatBlack, Species::CatWhite, Species::Kitten};
+        const Species who = kennel ? kDogs[mix(b.x, b.z, 9) % std::size(kDogs)] : kCats[(b.cat - 1u) % std::size(kCats)];
+        // By the door (the kennel's, the house's), roaming a little: a dog farther than a cat.
+        const float out_by = static_cast<float>(std::max(b.width, b.depth)) * 0.5f + 1.2f;
+        const float angle = unit(mix(b.x, b.z, 10)) * kTau;
+        add(game, id, who, cx + std::sin(angle) * out_by, cz + std::cos(angle) * out_by, 0.0f, kennel ? 6.0f : 3.0f);
     }
     std::erase_if(animals_, [](const auto& entry) { return !entry.second.stays; });
 }

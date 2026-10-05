@@ -136,6 +136,10 @@ Un **gallinero** es una decoración sin trabajadores con `storage` y estos campo
 
 Los peones le llevan grano de un almacén cuando se queda sin nada (guarda hasta 4) y se llevan los huevos. Sin grano no pone. Cada día, un gallinero **sin protección** tiene 4 posibilidades en 100 de perder una gallina por el zorro; está protegido con 4 módulos o más de cualquier línea (valla, seto, empalizada, muralla) a 3 m de sus paredes, o con un edificio con `guardRadius` (la caseta del perro: 12) cuyo centro esté a esa distancia o menos. Las gallinas se reponen al empezar la primavera (o el año, si la partida no tiene primavera).
 
+**El perro (fase 106).** Un edificio con `guardRadius` tiene además un perro guardián. Cada segundo mira su radio: si hay un lobo, un oso o un asaltante, ladra (un aviso al jugador, que no se repite hasta que pase un minuto sin nadie), los aldeanos que están dentro corren al centro del pueblo, y al **lobo más cercano** lo retiene donde está y lo muerde (6 de vida cada vez) hasta que muere o hasta que otro lobo se acerca más. A osos y asaltantes no los toca.
+
+**El gato (fase 106).** No es un edificio: cada mes, un pueblo con comida de sobra (tres por habitante, la regla de los nacimientos) recibe un gato en una casa habitada que no tenga, y un pueblo con menos comida que habitantes pierde uno. Su casa gana 2 de entorno. Una raza con `"likesCats": true` (los gatunos del juego base) gana además 2 de felicidad en las casas con un gato a 15 m o menos.
+
 #### Jardines y colmenas (fase 104)
 
 Una **línea** (valla, seto) puede hacer un jardín de lo que tenga cerca. Con `gardenModules` (cuántos módulos hacen falta, contando sus portones) y una de dos marcas:

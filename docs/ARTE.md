@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Perros y gatos (fase 106)
+
+De `proposals/creatures`: `fauna/dog.glb` (mestizo), `dog_shepherd.glb`, `dog_mastiff.glb` y `dog_terrier.glb`; `fauna/cat.glb` (gris), `cat_tabby.glb`, `cat_black.glb`, `cat_white.glb` y `kitten.glb`. Fauna de ambiente: el perro de una caseta es uno de los cuatro según dónde está la caseta y ronda a 6 m; el gato de una casa es el del número que guarda la casa y ronda a 3 m.
+
 ### Gallinas (fase 105)
 
 `fauna/hen.glb`, `hen_white.glb` y `chick.glb`, de `proposals/creatures` (clase `animal`). La vista pone alrededor de cada gallinero tantas gallinas como le quedan, alternando parda y blanca, y un pollito si tiene dos o más; de noche no se ven. Son fauna de ambiente (fase 92): no están en la simulación.

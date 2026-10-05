@@ -41,6 +41,16 @@ enum class Species : std::uint8_t {
     Hen,
     HenWhite,
     Chick,
+    // Phase 106: the dog of a kennel (one of four, by the kennel) and the cat of a house (by its look).
+    Dog,
+    DogShepherd,
+    DogMastiff,
+    DogTerrier,
+    Cat,
+    CatTabby,
+    CatBlack,
+    CatWhite,
+    Kitten,
     Count
 };
 inline constexpr std::size_t kSpecies = static_cast<std::size_t>(Species::Count);

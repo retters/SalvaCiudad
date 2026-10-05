@@ -982,6 +982,8 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
             lines.push_back(tr(game.coop_safe(*b) ? "hud.coop.safe" : "hud.coop.unsafe"));
         }
         if (d.guard_radius > 0) {
+            lines.push_back(tr("hud.guard.dog"));
+            lines.push_back(tr("hud.guard.wolf"));
             lines.push_back(tr("hud.guard.coops", d.guard_radius));
         }
         if (d.hive_gives != sim::kNoDef) {
@@ -1897,6 +1899,9 @@ void GameHud::house_lines(const sim::Game& game, const sim::Building& b, std::ve
                 break;
             }
         }
+    }
+    if (b.cat != 0) {
+        lines.push_back(tr("hud.house.cat", sim::village::kCatBeauty));
     }
     if (const std::int32_t flowers = game.flower_beauty(b); flowers > 0) {
         lines.push_back(tr("hud.house.flowers", flowers));

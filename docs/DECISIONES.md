@@ -3812,3 +3812,35 @@ Suite nueva `coop`, 5 casos: los datos y los modelos; sin grano, nada en 30 día
 
 **D-10510. Versiones.**
 Reglas 66. La red y el generador no cambian.
+
+## Fase 106: perro guardián y gato (2026-10-05)
+
+**D-10601. El perro es una regla de la caseta, no un animal de la simulación.**
+La caseta (cualquier edificio con `guardRadius`) mira su radio cada 10 ticks. No hay un perro con posición, vida ni camino en la simulación: lo que se ve rondar es fauna de ambiente. Así no hay que guardar nada más que lo de abajo, y el perro no puede morir ni perderse. Se descartó un perro como criatura: habría que darle combate, huida y reglas contra cada bestia para un efecto que es el mismo.
+
+**D-10602. Ladrar.**
+Con un lobo, un oso o un asaltante en el radio, sale un aviso (dice cuál es el más cercano) y los aldeanos del pueblo que están en el radio corren al centro del pueblo, como cuando los atacan; los que están peleando no. El aviso no se repite mientras siga habiendo alguien ni hasta 60 segundos después (600 ticks, en el campo `rearm` de la caseta, que solo usaban las trampas). Ciervos y jabalíes no lo hacen ladrar.
+
+**D-10603. Plantar cara a un lobo.**
+Al lobo más cercano dentro del radio lo deja clavado (un campo nuevo de la criatura, `bay`: ni se mueve ni muerde) y le quita 6 de vida en cada mirada; un lobo tiene 250, así que muere en unos 40 segundos si nadie más interviene. Solo uno a la vez: un segundo lobo sigue su camino. No puse un punto en que el lobo huya herido: «lo retiene y lo hiere» ya protege, y un lobo que huye volvería sin que el perro lo detuviera de nuevo. Contra osos y asaltantes solo avisa.
+
+**D-10604. Un comando de desarrollo nuevo, solo para probar.**
+`DevBeast` (44): pone una bestia (ciervo, jabalí, lobo u oso) en un punto. Sin él no había forma de hacer entrar un lobo a un radio en una prueba. Como cambia la lista de comandos, sube la versión de red (30). No tiene botón en las herramientas de desarrollo.
+
+**D-10605. El gato.**
+Cada vez que empieza un mes: un pueblo con comida guardada de al menos tres por habitante recibe un gato en una casa habitada sin gato, elegida al azar; uno con menos comida que habitantes pierde un gato al azar. Entre medias no pasa nada. La casa guarda qué gato tiene (1 a 5: cuatro pelajes y el gatito), que es solo aspecto. Da +2 de entorno a su casa (dentro de `desirability_at`) y +2 de felicidad a las casas con algún habitante de una raza con `likesCats` a 15 m de pared a pared, la suya incluida; varios gatos cerca no suman.
+
+**D-10606. «Protege campos de conejos» queda para la fase 109.**
+Los conejos no existen todavía. La protección de los gallineros ya estaba desde la fase 105.
+
+**D-10607. A la vista.**
+Perros y gatos como fauna de ambiente (fase 92): caminan cerca de su caseta o de su casa, no huyen de la gente. «Duerme y corre ladrando» no tiene animación propia: el perro descansa y camina como los demás animales de ambiente.
+
+**D-10608. Lo medido.**
+Suite nueva `pets`, 7 casos: los datos y los modelos; el mismo lobo, sin caseta, muerde a alguien en un minuto, y con caseta dispara un solo aviso en la primera mirada, hace huir a los aldeanos del radio, queda retenido, pierde vida y no ataca a nadie; pasado el silencio, otro lobo vuelve a ser aviso; con dos lobos retiene al más cercano y el otro queda libre e ileso; un oso dispara el aviso y la huida y no es retenido ni herido, y un ciervo no hace ladrar; un pueblo con tres casas y comida recibe un gato por mes hasta tres, y cuando se acaba la comida se van; con gatunos la casa del gato y la de 10 m tienen +2 de felicidad y la lejana 0, con humanos 0, y el entorno de la casa del gato sube 2 en los dos casos; guardar y cargar con un lobo retenido.
+
+**D-10610. Dos pruebas de antes, ajustadas.**
+La de las flores (fase 104) comparaba el entorno de una casa entre estaciones y ahora le llegaba un gato en medio: compara sin contar el gato. La del año largo volvió a fallar por los recién llegados (27 con años de 15 minutos, 45 con años de 45) y por la población (84 y 98, un 17 % de diferencia con un límite del 15 %): con la comida por temporadas el almacén de un año largo se llena más de golpe y llegan más familias, así que el pueblo del año largo es algo mayor. Ya no se compara cuántos llegan (solo que al año largo no le lleguen menos), la población se compara al 25 %, y siguen como estaban la comida por habitante (15 %) y que nadie muera. Es la tercera vez que esta prueba se mueve con un cambio que no la toca: mide ocho partidas enteras y cualquier cosa que cambie el azar la desplaza.
+
+**D-10609. Versiones.**
+Reglas 67 y red 30. El generador no cambia.

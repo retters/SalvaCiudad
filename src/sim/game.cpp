@@ -1881,9 +1881,83 @@ public:
         leave(a);
     }
 
+    // Phase 106: the guard dogs look around.
+    void guard_dogs() {
+        auto& list = g_.buildings_;
+        auto& cs = g_.creatures_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            Building& b = list.data()[i];
+            const BuildingDef& d = def(b);
+            if (d.guard_radius <= 0 || !complete(b)) {
+                continue;
+            }
+            const FixedVec2 here = center_of(b);
+            const std::uint64_t reach = meters2(d.guard_radius);
+            Creature* wolf = nullptr;
+            std::uint64_t wolf_d = reach + 1;
+            bool seen = false;
+            CreatureKind what = CreatureKind::Wolf;
+            std::uint64_t what_d = reach + 1;
+            for (std::size_t k = 0; k < cs.size(); ++k) {
+                Creature& a = cs.data()[k];
+                if (!Game::hostile(a.kind) || a.health <= 0) {
+                    continue;
+                }
+                const std::uint64_t dist = distance2(a.position, here);
+                if (dist > reach) {
+                    continue;
+                }
+                seen = true;
+                if (dist < what_d) {
+                    what_d = dist;
+                    what = a.kind;
+                }
+                if (a.kind == CreatureKind::Wolf && dist < wolf_d) {
+                    wolf_d = dist;
+                    wolf = &a;
+                }
+            }
+            if (!seen) {
+                b.rearm = std::max(0, b.rearm - village::kDogTicks);
+                continue;
+            }
+            if (b.rearm == 0) {
+                g_.events_.push_back({Game::Event::Kind::Barked, b.owner, list.entities()[i], here, static_cast<std::uint16_t>(what), 0});
+            }
+            b.rearm = village::kBarkQuietTicks;
+            // Everybody in its reach runs for the town center.
+            for (Villager& v : g_.villagers_.data()) {
+                if (g_.town_of(v.owner) == g_.town_of(b.owner) && distance2(v.position, here) <= reach) {
+                    scare(v);
+                }
+            }
+            // And it holds one wolf, the nearest.
+            if (wolf != nullptr) {
+                wolf->bay = static_cast<std::uint16_t>(village::kDogTicks + 2);
+                wolf->health -= village::kDogBite;
+            }
+        }
+    }
+
+    // A villager runs to the town center, as one that is attacked does (not those who fight).
+    void scare(Villager& v) {
+        if (v.task == Task::Fight || v.task == Task::GoFight || v.task == Task::Flee) {
+            return;
+        }
+        release(v);
+        v.task = Task::Flee;
+        const Building* tc = g_.buildings_.get(g_.players_[v.owner].town_center);
+        if (tc == nullptr || !walk_to(v, g_.door(*tc))) {
+            v.task = Task::Idle;
+        }
+    }
+
     void update_creatures() {
         if (g_.creatures_.size() == 0) {
             return;
+        }
+        if (g_.tick_ % static_cast<std::uint64_t>(village::kDogTicks) == 0) {
+            guard_dogs();
         }
         build_grid();
         gone_.clear();
@@ -1892,6 +1966,10 @@ public:
             Creature& a = cs.data()[i];
             const EntityId self = cs.entities()[i];
             a.previous = a.position;
+            if (a.bay > 0) {
+                --a.bay;  // Phase 106: held by a dog.
+                continue;
+            }
             const bool think = (g_.tick_ + self.index) % 10 == 0;
             if (a.kind == CreatureKind::Soldier) {
                 soldier_tick(a, self, think);
@@ -4802,6 +4880,43 @@ public:
         }
     }
 
+    // Phase 106: a new month. A town with food to spare (what lets children
+    // be born) may get a cat in one of its houses without one; a town that
+    // goes hungry (less food than people) loses one.
+    void cats() {
+        const std::uint32_t day = g_.calendar_day_ticks();
+        if (g_.tick_ < day || g_.calendar().month == sim::calendar(g_.rules_.climate, g_.tick_ - day).month) {
+            return;
+        }
+        auto& list = g_.buildings_;
+        for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+            if (!g_.players_[p].active || g_.town_of(p) != p) {
+                continue;
+            }
+            const std::int32_t food = food_stored(p);
+            const std::int32_t people = g_.population(p);
+            const bool plenty = people > 0 && food >= 3 * people;
+            const bool hungry = food < people;
+            if (!plenty && !hungry) {
+                continue;
+            }
+            std::vector<std::size_t> houses;
+            for (std::size_t i = 0; i < list.size(); ++i) {
+                const Building& b = list.data()[i];
+                if (g_.town_of(b.owner) == p && def(b).kind == BuildingKind::House && complete(b) &&
+                    (plenty ? b.cat == 0 && !b.residents.empty() : b.cat != 0)) {
+                    houses.push_back(i);
+                }
+            }
+            if (houses.empty()) {
+                continue;
+            }
+            Building& b = list.data()[houses[g_.rng_.below(static_cast<std::uint32_t>(houses.size()))]];
+            b.cat = plenty ? static_cast<std::uint8_t>(1 + g_.rng_.below(static_cast<std::uint32_t>(village::kCatLooks))) : std::uint8_t{0};
+            g_.buildings_changed_ = true;
+        }
+    }
+
     // What happens once every day of the calendar, whatever the length of
     // the year: the gardens' harvest, the hives and the coops (phases 104
     // and 105).
@@ -4809,6 +4924,7 @@ public:
         garden_harvest();
         hives();
         coops();
+        cats();
     }
 
     // Phase 105: the coops' day. The flock is whole again when spring comes
@@ -4866,6 +4982,32 @@ public:
                 g_.buildings_changed_ = true;
             }
         }
+    }
+
+    // Phase 106: what the cats nearby add to the happiness of a house where
+    // somebody of a people that likes them lives.
+    [[nodiscard]] std::int32_t cat_joy(const Building& house) const {
+        bool likes = false;
+        for (const EntityId r : house.residents) {
+            const Villager* v = g_.villagers_.get(r);
+            const RaceDef* race = v != nullptr ? race_of(*v) : nullptr;
+            likes = likes || (race != nullptr && race->likes_cats);
+        }
+        if (!likes) {
+            return 0;
+        }
+        const std::int32_t reach = village::kCatMeters;
+        for (const Building& o : g_.buildings_.data()) {
+            if (o.cat == 0 || g_.town_of(o.owner) != g_.town_of(house.owner)) {
+                continue;
+            }
+            const std::int32_t gx = std::max({o.x - (house.x + house.width), house.x - (o.x + o.width), 0});
+            const std::int32_t gz = std::max({o.z - (house.z + house.depth), house.z - (o.z + o.depth), 0});
+            if (gx * gx + gz * gz <= reach * reach) {
+                return village::kCatJoy;
+            }
+        }
+        return 0;
     }
 
     void update_homes() {
@@ -4952,7 +5094,8 @@ public:
             // Phase 103: its annexes. One of each kind counts.
             b.annexes = g_.annexes_of(b);
             std::int32_t annex_beauty = 0;
-            std::int32_t annex_joy = 0;
+            // Phase 106: a cat within reach, for those who like them.
+            std::int32_t annex_joy = cat_joy(b);
             std::uint16_t felt = 0;  // Needs felt as met for the mood, not for levelling up (an altar).
             if (b.annexes != 0) {
                 bool children = false;
@@ -5814,6 +5957,35 @@ public:
                     (void)spawn_villager(town, spot, n % 2 == 0 ? Sex::Male : Sex::Female,
                                          18 + static_cast<std::int32_t>(g_.rng_.below(20)), family, newcomer_race(town));
                 }
+                break;
+            }
+            case CommandType::DevBeast: {
+                const auto kind = static_cast<CreatureKind>(c.def);
+                const std::int32_t x = c.position.x.floor_int();
+                const std::int32_t z = c.position.z.floor_int();
+                if (!g_.dev_commands_ || c.def > static_cast<DefIndex>(CreatureKind::Bear) || g_.map_.zones.empty() || x < 0 || z < 0 ||
+                    x >= g_.map_.size || z >= g_.map_.size ||
+                    !g_.nav_.walkable(x / NavGrid::kCellMeters, z / NavGrid::kCellMeters)) {
+                    ++g_.rejected_;
+                    break;
+                }
+                // It lives where it is put: of the nearest zone (for how far it roams).
+                std::size_t zone = 0;
+                for (std::size_t k = 1; k < g_.map_.zones.size(); ++k) {
+                    if (distance2({g_.map_.zones[k].x, g_.map_.zones[k].z}, c.position) <
+                        distance2({g_.map_.zones[zone].x, g_.map_.zones[zone].z}, c.position)) {
+                        zone = k;
+                    }
+                }
+                Creature a;
+                a.kind = kind;
+                a.zone = static_cast<std::uint16_t>(zone);
+                a.home = c.position;
+                a.position = c.position;
+                a.previous = a.position;
+                a.goal = a.position;
+                a.health = stats(a.kind).health;
+                g_.creatures_.add(g_.registry_.create(), a);
                 break;
             }
             case CommandType::DevBuild: {
@@ -7300,6 +7472,7 @@ std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
             }
         }
         beauty += flower_beauty(*self);
+        beauty += self->cat != 0 ? village::kCatBeauty : 0;  // Phase 106.
     }
     std::vector<DefIndex> counted;  // Those with a reach of their own found so far.
     for (const Building& o : buildings_.data()) {
@@ -8055,6 +8228,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u16(b.annexes);
         w.u8(b.garden);
         w.u8(b.flock);
+        w.u8(b.cat);
         w.i32(b.happiness);
         w.i32(b.desirability);
         w.i32(b.fire);
@@ -8175,6 +8349,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(static_cast<std::uint8_t>(a.target_kind));
         w.u16(a.unit);
         w.u16(a.held);
+        w.u16(a.bay);
     }
     // What each side explored: a count and a checksum (the cells themselves
     // follow the random numbers in a save).
@@ -8465,7 +8640,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t upgrading = 0;
         if (!r.u8(b.level) || b.level > c.buildings[b.def].levels.size() || !r.u8(upgrading) || upgrading > 1 ||
             !r.i32(b.limit) || b.limit < 0 || b.limit > 10000 || !r.u8(b.recipe) || !r.u16(b.needs) ||
-            !r.u16(b.annexes) || !r.u8(b.garden) || b.garden > (garden::kHouse | garden::kFormal) || !r.u8(b.flock) || b.flock > 20 || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
+            !r.u16(b.annexes) || !r.u8(b.garden) || b.garden > (garden::kHouse | garden::kFormal) || !r.u8(b.flock) || b.flock > 20 || !r.u8(b.cat) || b.cat > village::kCatLooks || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
             b.fire < 0 || b.fire > 100 || !r.i32(b.burned) || b.burned < 0 || b.burned > 1000 || !r.i32(b.damage) ||
             b.damage < 0 || !r.i32(b.rearm) || b.rearm < 0) {
             r.fail();
@@ -8617,7 +8792,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         }
         std::uint8_t target_kind = 0;
         if (!r.u8(target_kind) || target_kind >= static_cast<std::uint8_t>(TargetKind::Count) || !r.u16(a.unit) ||
-            !r.u16(a.held) || (a.kind == CreatureKind::Soldier && a.unit >= c.units.size())) {
+            !r.u16(a.held) || !r.u16(a.bay) || (a.kind == CreatureKind::Soldier && a.unit >= c.units.size())) {
             r.fail();
             return false;
         }

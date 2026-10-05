@@ -960,12 +960,14 @@ TEST_SUITE("village_years") {
             return static_cast<double>(b) > static_cast<double>(a) * (1.0 - within) &&
                    static_cast<double>(b) < static_cast<double>(a) * (1.0 + within);
         };
-        CHECK(alike(usual.people, longer.people));
         // Newcomers come while the store holds food to spare, and with food
         // by seasons the store of a long year swells three times as much
-        // after its autumn: more of them come then, and fewer in its long
-        // spring. Their count is alike only roughly (D-10111).
-        CHECK(alike(usual.arrivals, longer.arrivals, 0.5));
+        // after its autumn: more of them come then (34 and 48 in phase 101,
+        // 27 and 45 in phase 106), so the long year's village is somewhat
+        // larger. Their count is no longer compared; the people are, more
+        // loosely than the food (D-10111, D-10610).
+        CHECK(alike(usual.people, longer.people, 0.25));
+        CHECK(longer.arrivals >= usual.arrivals * 3 / 4);
         // Nobody starves in either. (Until phase 101 some did, with food in
         // store: villagers shut out of the near side of the town center by
         // the houses around it stood there instead of walking round.)
