@@ -1963,8 +1963,8 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
     }
     if (ui.placing != sim::kNoDef) {
         const sim::BuildingDef& pd = game.content().buildings[ui.placing];
-        if (pd.kind == sim::BuildingKind::Defense && !pd.trap && pd.width == 2 && pd.depth == 2) {
-            return;  // Walls are placed by dragging (update_placement).
+        if (!pd.line.empty() && !pd.gate && pd.width == sim::kTraceModule && pd.depth == sim::kTraceModule) {
+            return;  // Lines are traced by dragging (update_placement).
         }
         if (ui.hover_valid && ui.hover_error == sim::PlaceError::None) {
             sim::Command c;

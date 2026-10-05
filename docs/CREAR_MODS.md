@@ -113,6 +113,20 @@ Todo lo que tiene `line`, y toda puerta, **cierra el paso a los animales salvaje
 
 Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego base no tienen `pillar`, `site`, `breach` ni `diagonal`): un módulo suelto usa entonces el remate, la obra se ve con la pieza que será, medio transparente, y el daño con la pieza normal.
 
+#### Caminos (fase 95)
+
+Un camino se traza como un muro, lo construyen los peones tramo por tramo, y al terminarse **deja de ser un edificio**: queda como una marca del terreno (una por celda de 2 × 2 m). Por eso cientos de tramos no pesan nada.
+
+| Campo | Valores |
+|---|---|
+| `road` | A qué velocidad se camina sobre él, en porcentaje: de 101 a 200 (el camino de tierra del juego base, 115; la calle empedrada, 130). Necesita `line`, medir 2 × 2 y no llevar `diagonal`, `gate` ni `trap`. |
+| `roadDesirability` | Lo que gana de entorno una casa con la puerta sobre él (0 a 100). |
+| `roadEraser` | `true`: no pone nada; trazarlo **quita** los caminos (y los tramos en obra del propio pueblo) por donde pasa. |
+
+Un juego admite hasta 15 tipos de camino. Uno más rápido se puede trazar sobre uno más lento (lo mejora; el lento sigue ahí hasta que el tramo nuevo se termina); al revés, o sobre uno igual, no. Un edificio o un campo colocado encima borra el camino que tapa. La búsqueda de rutas prefiere los caminos en la misma proporción en que se camina más rápido.
+
+Sus `pieces` son las mismas de un muro (`pillar` para un tramo suelto, `end`, `straight`, `corner`, `tee`, `cross`), pero planas: se dibujan a ras de suelo e inclinadas con la ladera.
+
 #### Setos: entorno con alcance propio y frutos (fase 94)
 
 | Campo | Valores |

@@ -1124,6 +1124,9 @@ struct SceneRenderer::Impl {
         g.row2[0] = -s;
         g.row2[2] = c;
         g.row2[3] = inst.position.z;
+        // Leaning with the ground: its height follows where each point ends up on the map.
+        g.row1[0] = inst.slope_x * g.row0[0] + inst.slope_z * g.row2[0];
+        g.row1[2] = inst.slope_x * g.row0[2] + inst.slope_z * g.row2[2];
         // The palette number rides in the tint's unused fourth channel.
         // The palette number, plus 4096 for a landmark (mesh.vert splits them).
         set4(g.tint, inst.tint,

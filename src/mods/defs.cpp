@@ -869,6 +869,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         }
     }
     // Buildings.
+    std::size_t road_kinds = 0;
     for (const RawDef* d : buildings) {
         Reader r(*d, errors);
         sim::BuildingDef def;
@@ -938,6 +939,24 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.yield_per = r.integer("yieldPer", 1, 1000, 1);
         if (!def.yields.empty() && def.line.empty()) {
             r.fail("\"yields\" needs a \"line\"");
+        }
+        // Phase 95: roads.
+        def.road = r.integer("road", 0, 200, 0);
+        def.road_eraser = r.flag("roadEraser");
+        def.road_desirability = r.integer("roadDesirability", 0, 100, 0);
+        if (def.road != 0 && def.road <= 100) {
+            r.fail("\"road\" is how fast people walk on it, percent: more than 100");
+        }
+        if (def.road > 0 || def.road_eraser) {
+            if (def.line.empty() || def.width != sim::kRoadModule || def.depth != sim::kRoadModule || def.gate || def.trap ||
+                def.line_diagonal || (def.road > 0 && def.road_eraser)) {
+                r.fail("a road is a \"line\" of 2 x 2, without diagonals, and not a gate or a trap");
+            }
+            if (def.road > 0 && ++road_kinds > sim::kMaxRoadKinds) {
+                r.fail("too many kinds of road");
+            }
+        } else if (def.road_desirability != 0) {
+            r.fail("\"roadDesirability\" needs a \"road\"");
         }
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);

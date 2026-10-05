@@ -77,6 +77,37 @@ void GameHud::minimap(ui::Context& ctx, GameSession& s, bool blocked) {
     const float scale = size / static_cast<float>(map.size);
     const auto to_screen = [&](float x, float z) { return std::array<float, 2>{image.x + x * scale, image.y + z * scale}; };
     ctx.draw().push_clip(image);
+    // Phase 95: the roads, each run of cells along a row as one line. Under
+    // the fog of war, the explored ones.
+    if (!game.roads().empty()) {
+        const auto side = static_cast<std::uint32_t>(game.road_side());
+        const float cell_size = static_cast<float>(sim::kRoadModule) * scale;
+        const float thick = std::max(1.0f, std::floor(cell_size));
+        const ui::Color color = ui::Color::rgb(0xD8C49A, 230);
+        std::uint32_t first = 0, length = 0, last = 0;
+        const auto flush = [&] {
+            if (length > 0) {
+                const auto [x, y] = to_screen(static_cast<float>(first % side) * static_cast<float>(sim::kRoadModule),
+                                              static_cast<float>(first / side) * static_cast<float>(sim::kRoadModule));
+                ctx.draw().rect({std::floor(x), std::floor(y), std::max(thick, static_cast<float>(length) * cell_size), thick}, color);
+            }
+            length = 0;
+        };
+        for (const auto& [cell, kind] : game.roads()) {
+            if (fog.mode() != sim::FogMode::None &&
+                !fog.explored(static_cast<float>(cell % side) * static_cast<float>(sim::kRoadModule) + 1.0f,
+                              static_cast<float>(cell / side) * static_cast<float>(sim::kRoadModule) + 1.0f)) {
+                continue;
+            }
+            if (length == 0 || cell != last + 1 || cell % side == 0) {
+                flush();
+                first = cell;
+            }
+            ++length;
+            last = cell;
+        }
+        flush();
+    }
     // Buildings in their town's color, at least a dot.
     const float dot = std::max(2.0f, std::round(ctx.s(2.0f)));
     for (const sim::Building& b : game.buildings().data()) {

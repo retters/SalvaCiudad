@@ -80,6 +80,14 @@
     {
       "family": "walls", "class": "building", "to": "buildings", "game": true,
       "ids": {"wall_hedge_arch": "hedge_arch", "fence_boxhedge_gate": "boxhedge_gate", "fence_picket_gate": "picket_gate"}
+    },
+    {
+      "family": "lines", "class": "line", "to": "buildings", "game": true,
+      "ids": {"street_dirt_pillar": "road_dirt_pillar", "street_dirt_end": "road_dirt_end", "street_dirt_straight": "road_dirt_straight",
+              "street_dirt_corner": "road_dirt_corner", "street_dirt_tee": "road_dirt_tee", "street_dirt_cross": "road_dirt_cross",
+              "street_cobble_pillar": "road_cobble_pillar", "street_cobble_end": "road_cobble_end",
+              "street_cobble_straight": "road_cobble_straight", "street_cobble_corner": "road_cobble_corner",
+              "street_cobble_tee": "road_cobble_tee", "street_cobble_cross": "road_cobble_cross"}
     }
   ]
 }

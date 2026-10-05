@@ -186,7 +186,21 @@ struct BuildingDef {
     std::int32_t desirability_radius = 0;
     std::vector<ResourceAmount> yields;
     std::int32_t yield_per = 1;
+    // Phase 95: roads. `road`: it is a stretch of road, and people walk on
+    // it this fast, percent (0: not a road). Traced like a wall; once built
+    // it is no building any more but a mark on the ground. A faster road
+    // may be traced over a slower one. `road_eraser`: tracing it lays
+    // nothing, it takes the roads away. `road_desirability`: what a house
+    // gains with its door on it.
+    std::int32_t road = 0;
+    bool road_eraser = false;
+    std::int32_t road_desirability = 0;
 };
+
+// A stretch of road: a cell of the walking grid.
+inline constexpr std::int32_t kRoadModule = 2;
+// The kinds of road a game may have (their number fits in a few bits of a cell).
+inline constexpr std::size_t kMaxRoadKinds = 15;
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.
 enum class DiseaseSource : std::uint8_t { Cold, Water, Rats, Count };
@@ -251,7 +265,7 @@ struct RaceDef {
 // building has a level floor at the height of the ground by its door, over
 // stone foundations.
 [[nodiscard]] inline bool follows_ground(const BuildingDef& d) {
-    return d.kind == BuildingKind::Defense && d.attack_range <= 0;
+    return (d.kind == BuildingKind::Defense && d.attack_range <= 0) || d.road > 0;
 }
 
 // Phase 91: wild flowers. How thick they grow in a cell, from 0 (none) to

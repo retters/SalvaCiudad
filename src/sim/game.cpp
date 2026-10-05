@@ -66,8 +66,8 @@ std::int32_t total(const std::vector<Stock>& list) {
 // every gate stops the wild animals too (phase 94).
 void block_nav(NavGrid& nav, const BuildingDef& d, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t depth,
                bool on) {
-    if (d.trap) {
-        return;
+    if (d.trap || d.road > 0) {
+        return;  // (A stretch of road being built is walked over.)
     }
     if (d.gate || !d.line.empty()) {
         nav.set_barrier(x, z, x + w, z + depth, on);
@@ -357,6 +357,14 @@ public:
         // And so does the dark of the night, out of the light (phase 70).
         if (g_.in_the_dark(v)) {
             budget = budget * Fixed::from_ratio(village::kDarkPercent, 100);
+        }
+        // And a road under the feet makes the going faster (phase 95).
+        if (moving(v)) {
+            const std::int32_t road = g_.nav_.road_percent(v.position.x.floor_int() / NavGrid::kCellMeters,
+                                                           v.position.z.floor_int() / NavGrid::kCellMeters);
+            if (road != 100) {
+                budget = budget * Fixed::from_ratio(road, 100);
+            }
         }
         while (budget > Fixed{} && moving(v)) {
             const FixedVec2 target = v.path[v.path_index];
@@ -3910,7 +3918,11 @@ public:
         }
         if (site->work_done >= site_work(*site)) {
             if (site->state == BuildingState::Construction) {
+                const bool road = def(*site).road > 0;
                 finish(*site);
+                if (road) {
+                    pave(v.target);
+                }
             } else {
                 // An upgrade done.
                 ++site->level;
@@ -3922,6 +3934,40 @@ public:
             }
             v.task = Task::Idle;
         }
+    }
+
+    // Phase 95: a stretch of road is done. From now on it is a mark on the
+    // ground and no building: hundreds of them weigh nothing.
+    void pave(EntityId id) {
+        const Building* b = g_.buildings_.get(id);
+        if (b == nullptr) {
+            return;
+        }
+        const std::uint8_t kind = g_.road_kind(b->def);
+        const std::int32_t cx = b->x / kRoadModule;
+        const std::int32_t cz = b->z / kRoadModule;
+        remove_building(id);
+        g_.set_road(cx, cz, kind);
+    }
+
+    // Phase 95: the road eraser on a module's cell: the road goes, and so
+    // does a stretch the town was still building. False if there was nothing.
+    bool erase_road(std::uint8_t town, std::int32_t x, std::int32_t z) {
+        bool changed = false;
+        if (g_.road_at(x, z) != 0) {
+            g_.set_road(x / kRoadModule, z / kRoadModule, 0);
+            changed = true;
+        }
+        const auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            const Building& b = list.data()[i];
+            if (b.owner == town && b.x == x && b.z == z && def(b).road > 0) {
+                remove_building(list.entities()[i]);
+                changed = true;
+                break;
+            }
+        }
+        return changed;
     }
 
     void finish(Building& b) {
@@ -4758,6 +4804,9 @@ public:
             }
         }
         block_nav(g_.nav_, d, x, z, b.width, b.depth, true);
+        if (d.road == 0) {
+            g_.clear_roads(x, z, b.width, b.depth);  // (A better road keeps the old one until it is done.)
+        }
         g_.buildings_.add(id, b);
         g_.building_set_changed();
         g_.buildings_changed_ = true;
@@ -4793,6 +4842,7 @@ public:
             f.plan[y] = static_cast<DefIndex>(y % c_.crops.size());
         }
         f.year = g_.calendar().year;
+        g_.clear_roads(x, z, w, d);
         // Whatever grows there is cleared.
         for (std::int32_t cz = z / kNodeCell - 1; cz <= (z + d) / kNodeCell + 1; ++cz) {
             for (std::int32_t cx = x / kNodeCell - 1; cx <= (x + w) / kNodeCell + 1; ++cx) {
@@ -4991,6 +5041,12 @@ public:
                     ++g_.rejected_;
                     break;
                 }
+                if (c_.buildings[c.def].road_eraser) {
+                    if (!erase_road(c.player, x, z)) {
+                        ++g_.rejected_;
+                    }
+                    break;
+                }
                 // A gate set into a wall takes the place of the modules under it.
                 for (const EntityId old : g_.replaced_by(c.player, c_.buildings[c.def], x, z, rot)) {
                     remove_building(old);
@@ -5010,7 +5066,11 @@ public:
                 int placed = 0;
                 for (const auto& [x, z] : trace_cells(c.position.x.floor_int(), c.position.z.floor_int(), c.value, c.value2,
                                                       c.count != 0, c_.buildings[c.def].line_diagonal)) {
-                    if (g_.can_place(c.player, c.def, x, z, 0) == PlaceError::None && add_building(c.player, c.def, x, z, 0, false).valid()) {
+                    if (g_.can_place(c.player, c.def, x, z, 0) != PlaceError::None) {
+                        continue;
+                    }
+                    if (c_.buildings[c.def].road_eraser ? erase_road(c.player, x, z)
+                                                        : add_building(c.player, c.def, x, z, 0, false).valid()) {
                         ++placed;
                     }
                 }
@@ -5566,8 +5626,72 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     buildings_changed_ = true;
 }
 
+std::uint8_t Game::road_kind(DefIndex def) const {
+    for (std::size_t k = 0; k < road_defs_.size(); ++k) {
+        if (road_defs_[k] == def) {
+            return static_cast<std::uint8_t>(k + 1);
+        }
+    }
+    return 0;
+}
+
+void Game::set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind) {
+    if (cx < 0 || cz < 0 || cx >= nav_.side() || cz >= nav_.side() || kind > road_defs_.size() || nav_.road(cx, cz) == kind) {
+        return;
+    }
+    nav_.set_road(cx, cz, kind);
+    const auto cell = static_cast<std::uint32_t>(cz) * static_cast<std::uint32_t>(nav_.side()) + static_cast<std::uint32_t>(cx);
+    if (kind == 0) {
+        roads_.erase(cell);
+    } else {
+        roads_[cell] = kind;
+    }
+    ++roads_version_;
+    buildings_changed_ = true;  // The view draws them with the buildings.
+}
+
+void Game::clear_roads(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d) {
+    if (roads_.empty()) {
+        return;
+    }
+    for (std::int32_t cz = z / kRoadModule; cz <= (z + d - 1) / kRoadModule; ++cz) {
+        for (std::int32_t cx = x / kRoadModule; cx <= (x + w - 1) / kRoadModule; ++cx) {
+            set_road(cx, cz, 0);
+        }
+    }
+}
+
+bool Game::road_to_erase(std::uint8_t town, std::int32_t x, std::int32_t z) const {
+    if (x % kRoadModule != 0 || z % kRoadModule != 0) {
+        return false;
+    }
+    if (road_at(x, z) != 0) {
+        return true;
+    }
+    if (occupied_[static_cast<std::size_t>(z) * static_cast<std::size_t>(map_.size) + static_cast<std::size_t>(x)] == 0) {
+        return false;
+    }
+    for (const Building& b : buildings_.data()) {
+        if (b.owner == town && b.x == x && b.z == z && content_->buildings[b.def].road > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Game::build_indexes() {
     nav_.build(map_);
+    // The kinds of road, in the order of the content's buildings.
+    roads_.clear();
+    road_defs_.clear();
+    std::vector<std::int32_t> percents;
+    for (std::size_t i = 0; i < content_->buildings.size() && road_defs_.size() < kMaxRoadKinds; ++i) {
+        if (content_->buildings[i].road > 0) {
+            road_defs_.push_back(static_cast<DefIndex>(i));
+            percents.push_back(content_->buildings[i].road);
+        }
+    }
+    nav_.set_road_kinds(percents);
     occupied_.assign(static_cast<std::size_t>(map_.size) * static_cast<std::size_t>(map_.size), 0);
     node_cells_side_ = (map_.size + kNodeCell - 1) / kNodeCell;
     node_cells_.assign(static_cast<std::size_t>(node_cells_side_) * static_cast<std::size_t>(node_cells_side_), {});
@@ -5972,6 +6096,17 @@ PlaceError Game::can_place(std::uint8_t player, DefIndex def_index, std::int32_t
     if (d.tier > tier(player)) {
         return PlaceError::Locked;
     }
+    if (d.road_eraser) {
+        // Nothing is placed: it fits where there is a road to take away.
+        constexpr std::int32_t kMargin = 4;
+        if (x < kMargin || z < kMargin || x + kRoadModule > map_.size - kMargin || z + kRoadModule > map_.size - kMargin) {
+            return PlaceError::OutsideMap;
+        }
+        if (vision_.active() && !vision_.explored_rect(vision_group(player), x, z, kRoadModule, kRoadModule)) {
+            return PlaceError::Unexplored;
+        }
+        return road_to_erase(town_of(player), x, z) ? PlaceError::None : PlaceError::Blocked;
+    }
     if (d.kind == BuildingKind::TownCenter || d.unique) {
         for (std::size_t i = 0; i < buildings_.size(); ++i) {
             const Building& b = buildings_.data()[i];
@@ -6096,6 +6231,14 @@ PlaceError Game::ground_error(std::uint8_t town, const BuildingDef& d, std::int3
             return PlaceError::OutsideMap;
         }
     }
+    if (d.road > 0) {
+        // A stretch of road is a cell of the walking grid, and goes over
+        // open ground or over a slower road.
+        if (x % kRoadModule != 0 || z % kRoadModule != 0 ||
+            (road_at(x, z) != 0 && nav_.road_percent(x / kRoadModule, z / kRoadModule) >= d.road)) {
+            return PlaceError::Blocked;
+        }
+    }
     std::int32_t lo = 65535, hi = 0;
     // What a gate takes the place of does not stand in its way (phase 93).
     const std::vector<EntityId> replaced = replaced_by(town, d, x, z, rotation);
@@ -6127,7 +6270,7 @@ PlaceError Game::ground_error(std::uint8_t town, const BuildingDef& d, std::int3
         }
     }
     const bool on_ground = follows_ground(d);
-    if (hi - lo > (on_ground ? kMaxWallSlopeCm : kMaxSlopeCm)) {
+    if (hi - lo > (d.road > 0 ? kMaxRoadSlopeCm : on_ground ? kMaxWallSlopeCm : kMaxSlopeCm)) {
         return PlaceError::TooSteep;
     }
     // Its floor is level with the ground at the door. Downhill the
@@ -6289,6 +6432,23 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
 
 std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
     std::int32_t beauty = 0;
+    // Phase 95: a house whose door opens onto a street: a road one or two
+    // meters out of it (the cells of a road are 2 m, and a house may stand
+    // on odd ones: the stretch against its wall may begin a meter away).
+    if (self != nullptr && !roads_.empty() && content_->buildings[self->def].kind == BuildingKind::House) {
+        const FixedVec2 out = door(*self);
+        const std::int32_t turn = self->rotation & 3;
+        const std::int32_t dx = turn == 1 ? 1 : turn == 3 ? -1 : 0;
+        const std::int32_t dz = turn == 0 ? -1 : turn == 2 ? 1 : 0;
+        std::int32_t street = 0;
+        for (std::int32_t k = 0; k < 2; ++k) {
+            const DefIndex def = road_def(road_at(out.x.floor_int() + dx * k, out.z.floor_int() + dz * k));
+            if (def != kNoDef) {
+                street = std::max(street, content_->buildings[def].road_desirability);
+            }
+        }
+        beauty += street;
+    }
     std::vector<DefIndex> counted;  // Those with a reach of their own found so far.
     for (const Building& o : buildings_.data()) {
         const BuildingDef& od = content_->buildings[o.def];
@@ -6999,6 +7159,12 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u64(t);
         w.u32(i);
     }
+    // Roads (phase 95): the cells that have one, in order, and its kind.
+    w.u32(static_cast<std::uint32_t>(g.roads().size()));
+    for (const auto& [cell, kind] : g.roads()) {
+        w.u32(cell);
+        w.u8(kind);
+    }
     w.u32(static_cast<std::uint32_t>(g.zone_animals().size()));
     for (const std::int32_t a : g.zone_animals()) {
         w.i32(a);
@@ -7385,6 +7551,22 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
             r.fail();
             return false;
         }
+    }
+    // Roads: cells of the walking grid in rising order, each with a kind this content has.
+    const auto road_side = static_cast<std::uint32_t>(g.nav_.side());
+    if (!r.count(road_side * road_side, 5, n)) {
+        return false;
+    }
+    for (std::uint32_t i = 0, last = 0; i < n; ++i) {
+        std::uint32_t cell = 0;
+        std::uint8_t kind = 0;
+        if (!r.u32(cell) || !r.u8(kind) || cell >= road_side * road_side || (i > 0 && cell <= last) || kind == 0 ||
+            kind > g.road_defs_.size()) {
+            r.fail();
+            return false;
+        }
+        g.set_road(static_cast<std::int32_t>(cell % road_side), static_cast<std::int32_t>(cell / road_side), kind);
+        last = cell;
     }
     if (!r.count(100000, 4, n) || n != g.map_.zones.size()) {
         r.fail();

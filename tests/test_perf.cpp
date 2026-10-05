@@ -323,3 +323,81 @@ TEST_SUITE("sim_perf") {
         }
     }
 }
+
+TEST_SUITE("sim_perf") {
+    // Phase 95: what the roads cost. A town of 1000 on a colossal map, with
+    // 2000 stretches of road and without them, measured after the same
+    // number of ticks (several minutes; docs/RENDIMIENTO.md).
+    TEST_CASE("a town of 1000 on a colossal map, with and without 2000 stretches of road" * doctest::skip()) {
+        MapSettings ms;
+        ms.seed = 2026;
+        ms.size = MapSize::Colossal;
+        ms.players = 1;
+        std::optional<MapData> map = generate_map(ms, sc::test::core_content());
+        REQUIRE(map.has_value());
+        const DefIndex road = sc::test::core_content().find_building("core:dirt_road");
+        REQUIRE(road != kNoDef);
+        const auto stretches = [&](const Game& g) {
+            std::size_t n = 0;
+            for (const Building& b : g.buildings().data()) {
+                n += b.def == road ? 1u : 0u;
+            }
+            return n;
+        };
+        std::uint64_t ticks_to_build = 0;
+        Timing with_roads;
+        {
+            Game g(core(), *map, rules(1));
+            grow(g, 0, 1000);
+            (void)measure(g, 600);
+            // Rows of road across the town, 64 modules to a trace, until there are 2000.
+            const Building* tc = g.buildings().get(g.player(0).town_center);
+            REQUIRE(tc != nullptr);
+            const int tx = (tc->x / 2) * 2;
+            const int tz = (tc->z / 2) * 2;
+            for (int row = 0; row < 200 && stretches(g) < 2000; ++row) {
+                const int z = tz + (row % 2 == 0 ? 1 : -1) * (6 + 6 * (row / 2));
+                for (const int x0 : {tx - 128, tx}) {
+                    if (stretches(g) >= 2000) {
+                        break;
+                    }
+                    Command c;
+                    c.type = CommandType::Trace;
+                    c.def = road;
+                    c.position = {Fixed::from_int(x0), Fixed::from_int(z)};
+                    c.value = x0 + 126;
+                    c.value2 = z;
+                    g.apply(c);
+                }
+            }
+            const std::size_t traced = stretches(g);
+            MESSAGE(traced << " stretches traced");
+            const std::uint64_t t0 = g.tick();
+            for (int t = 0; t < 60000 && stretches(g) > 0; ++t) {
+                g.step();
+            }
+            ticks_to_build = g.tick() - t0;
+            MESSAGE(g.roads().size() << " cells of road after " << ticks_to_build << " ticks, " << stretches(g) << " still to build");
+            CHECK(g.roads().size() >= 2000);
+            (void)measure(g, 600);
+            with_roads = measure(g, 1200);
+            MESSAGE("with roads: " << g.villagers().size() << " villagers; tick " << with_roads.mean_ms << " ms mean, "
+                                   << with_roads.p95_ms << " ms p95, " << with_roads.worst_ms << " ms worst; "
+                                   << g.nav().searches() << " searches; peak " << peak_mib() << " MiB");
+        }
+        Game g(core(), *map, rules(1));
+        map.reset();
+        grow(g, 0, 1000);
+        (void)measure(g, 600);
+        for (std::uint64_t t = 0; t < ticks_to_build; ++t) {
+            g.step();
+        }
+        (void)measure(g, 600);
+        const Timing without = measure(g, 1200);
+        MESSAGE("without roads: " << g.villagers().size() << " villagers; tick " << without.mean_ms << " ms mean, "
+                                  << without.p95_ms << " ms p95, " << without.worst_ms << " ms worst; " << g.nav().searches()
+                                  << " searches");
+        MESSAGE("with roads the tick takes " << with_roads.mean_ms / without.mean_ms * 100.0 << " % of what it takes without");
+        CHECK(with_roads.mean_ms <= without.mean_ms * 1.10);
+    }
+}

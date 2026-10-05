@@ -172,6 +172,10 @@ void NavGrid::build(const MapData& map) {
     terrain_cost_.assign(cells, 10);
     building_.assign(cells, 0);
     gate_.assign(cells, 0);
+    road_.clear();
+    road_.shrink_to_fit();
+    road_cells_.fill(0);
+    least_step_ = 10;
     walk_areas_.reset(side_);
     land_areas_ = Areas{};
     for (std::int32_t cz = 0; cz < side_; ++cz) {
@@ -328,6 +332,42 @@ void NavGrid::set_gate(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::i
     }
 }
 
+void NavGrid::set_road_kinds(const std::vector<std::int32_t>& percents) {
+    road_percent_.fill(100);
+    for (std::size_t k = 0; k < percents.size() && k + 1 < road_percent_.size(); ++k) {
+        road_percent_[k + 1] = std::clamp(percents[k], 100, 1000);
+    }
+}
+
+void NavGrid::set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind) {
+    if (cx < 0 || cz < 0 || cx >= side_ || cz >= side_ || kind >= road_cells_.size()) {
+        return;
+    }
+    if (road_.empty()) {
+        if (kind == 0) {
+            return;
+        }
+        road_.assign(static_cast<std::size_t>(side_) * static_cast<std::size_t>(side_), 0);
+    }
+    std::uint8_t& cell = road_[index(cx, cz)];
+    if (cell == kind) {
+        return;
+    }
+    --road_cells_[cell];
+    ++road_cells_[kind];
+    cell = kind;
+    ++version_;  // What is within reach of where changed.
+    // A search must never guess a way cheaper than it can be: its guess per
+    // step is the cost of flat ground on the fastest road there is.
+    std::int32_t fastest = 100;
+    for (std::size_t k = 1; k < road_cells_.size(); ++k) {
+        if (road_cells_[k] != 0) {
+            fastest = std::max(fastest, road_percent_[k]);
+        }
+    }
+    least_step_ = std::max<std::uint32_t>(1, (10u * 100u + static_cast<std::uint32_t>(fastest) / 2) / static_cast<std::uint32_t>(fastest));
+}
+
 void NavGrid::set_barrier(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, bool on) {
     for (std::int32_t cz = std::max(0, z0 / kCell); cz <= std::min(side_ - 1, (z1 - 1) / kCell); ++cz) {
         for (std::int32_t cx = std::max(0, x0 / kCell); cx <= std::min(side_ - 1, (x1 - 1) / kCell); ++cx) {
@@ -421,10 +461,13 @@ bool NavGrid::search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, 
             closed_[i] = 0;
         }
     };
+    // Without roads: 10 a straight step and 14 a diagonal one, as ever.
+    const std::uint32_t straight = least_step_;
+    const std::uint32_t diagonal = least_step_ * 14 / 10 - least_step_;
     const auto heuristic = [&](std::int32_t x, std::int32_t z) {
-        const std::int32_t dx = std::abs(x - tx);
-        const std::int32_t dz = std::abs(z - tz);
-        return static_cast<std::uint32_t>(10 * std::max(dx, dz) + 4 * std::min(dx, dz));
+        const auto dx = static_cast<std::uint32_t>(std::abs(x - tx));
+        const auto dz = static_cast<std::uint32_t>(std::abs(z - tz));
+        return straight * std::max(dx, dz) + diagonal * std::min(dx, dz);
     };
     // Min-heap on (f, cell index): the index breaks ties deterministically.
     std::priority_queue<std::uint64_t, std::vector<std::uint64_t>, std::greater<>> open;
@@ -469,7 +512,7 @@ bool NavGrid::search(FixedVec2 from, FixedVec2 to, std::vector<FixedVec2>& out, 
                 continue;
             }
             // Breaking through costs what walking 25 cells around would.
-            const std::uint32_t step = terrain_cost_[ni] + (through && obstacle(nx, nz) ? 250u : 0u);
+            const std::uint32_t step = step_cost(ni) + (through && obstacle(nx, nz) ? 250u : 0u);
             const std::uint32_t g = g_[cur] + (k >= 4 ? step * 14 / 10 : step);
             if (g < g_[ni]) {
                 g_[ni] = g;
@@ -555,7 +598,7 @@ NavGrid::Area NavGrid::flood(FixedVec2 from, std::uint16_t max_cost) const {
             if (k >= 4 && (!walkable(cx + kDx[k], cz) || !walkable(cx, cz + kDz[k]))) {
                 continue;
             }
-            const std::uint32_t step = terrain_cost_[index(nx, nz)];
+            const std::uint32_t step = step_cost(index(nx, nz));
             const std::uint32_t n = c + (k >= 4 ? step * 14 / 10 : step);
             const std::size_t ni = local(nx, nz);
             if (n <= max_cost && n < area.cost[ni]) {

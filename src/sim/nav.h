@@ -3,6 +3,8 @@
 // are broken by cell index, never by memory order.
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <utility>
@@ -49,6 +51,16 @@ public:
     [[nodiscard]] bool obstacle(std::int32_t cx, std::int32_t cz) const;
     // Open ground (no water or cliff), whatever is built on it.
     [[nodiscard]] bool ground(std::int32_t cx, std::int32_t cz) const;
+    // Phase 95: roads. Each kind (1 to `percents.size()`) is walked at its
+    // percent of the usual speed, and a path costs that much less over it.
+    void set_road_kinds(const std::vector<std::int32_t>& percents);
+    // The road on a cell: a kind, or 0 for none.
+    void set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind);
+    [[nodiscard]] std::uint8_t road(std::int32_t cx, std::int32_t cz) const {
+        return road_.empty() || cx < 0 || cz < 0 || cx >= side_ || cz >= side_ ? std::uint8_t{0} : road_[index(cx, cz)];
+    }
+    // How fast one walks on a cell, percent (100 off the roads).
+    [[nodiscard]] std::int32_t road_percent(std::int32_t cx, std::int32_t cz) const { return road_percent_[road(cx, cz)]; }
     // Phase 94: walls, hedges, fences and their gates. The wild animals do
     // not cross these cells (they walk over every other building's).
     void set_barrier(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, bool on);
@@ -134,6 +146,24 @@ private:
     // High half: the walls, fences and gates over it (closed to the wild
     // animals). Two counts in a byte: a colossal map has 67 million cells.
     std::vector<std::uint8_t> gate_;
+
+    // Roads: the kind on each cell (empty until the first road is laid: a
+    // colossal map has 67 million cells), how many cells there are of each
+    // kind, and each kind's speed and what it does to the cost of a step.
+    std::vector<std::uint8_t> road_;
+    std::array<std::uint32_t, 16> road_cells_{};
+    std::array<std::int32_t, 16> road_percent_{100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
+    // The least a straight step may cost, with the roads there are now (10 without any).
+    std::uint32_t least_step_ = 10;
+    // The cost of a step onto a cell: its ground's, less on a road.
+    [[nodiscard]] std::uint32_t step_cost(std::size_t i) const {
+        const std::uint32_t ground = terrain_cost_[i];
+        if (road_.empty() || road_[i] == 0) {
+            return ground;
+        }
+        const auto percent = static_cast<std::uint32_t>(road_percent_[road_[i]]);
+        return std::max<std::uint32_t>(1, (ground * 100 + percent / 2) / percent);
+    }
 
     // Search scratch, reused between searches (stamped instead of cleared).
     std::vector<std::uint32_t> stamp_;

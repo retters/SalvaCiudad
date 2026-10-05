@@ -267,3 +267,14 @@ Medido con `--reporte`, `release`, 1600 × 900, Ultra, sin vsync, mapa chico (se
 | De cerca, 420 a la vista | 550 y 550 FPS | 548, 549 y 550 FPS |
 
 Cada carga es un accesorio de unos 300 triángulos y solo se dibuja hasta cuatro veces la distancia en que el personaje pasa a su versión lejana. El descarte de personajes se rehízo para que su costo no crezca con el número de modelos (ahora cada personaje tiene 9 cargas además de sus herramientas). La pérdida queda en 1 a 2 %; el criterio de la fase permitía un 10 %.
+
+## Caminos (fase 95)
+
+Caso manual de `sim_perf` («a town of 1000 on a colossal map, with and without 2000 stretches of road»), `release`: un pueblo de 1000 en un mapa colosal; en una partida se trazan filas de camino de tierra hasta pasar de 2000 tramos y se espera a que los construyan (4718 ticks); en la otra se dejan pasar los mismos ticks sin trazar nada. Después, 600 ticks de asentamiento y 1200 medidos en cada una.
+
+| Partida | Tick medio | p95 | Peor |
+|---|---|---|---|
+| Con 2026 tramos de camino | 2,73 ms | 4,34 ms | 13,2 ms |
+| Sin caminos | 2,86 ms | 4,55 ms | 10,5 ms |
+
+Con caminos el tick tarda el 95,5 % de lo que tarda sin ellos: la diferencia está dentro del ruido (una sola corrida de cada una). El criterio de la fase permitía un 10 % más. La búsqueda de rutas mira algunas celdas más cuando hay caminos (su estimación baja de 10 a 9 u 8 por paso, D-9503), pero los caminos acortan las rutas y eso lo compensa. La copia por celda de los caminos (64 MiB en un mapa colosal) solo se reserva cuando se pone el primero.

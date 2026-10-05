@@ -438,6 +438,52 @@ TEST_SUITE("net") {
         expect_same_games(c);
     }
 
+    // Phase 95: a road is traced with one order and built by the town; on
+    // every machine it ends up as the same marks on the ground.
+    TEST_CASE("a road traced on one machine is the same road on the other") {
+        Cluster c;
+        c.join("P1");
+        c.frames(3, 0);
+        c.host().set_config(config(22, false));
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(3, 0);
+        REQUIRE(c.m[1].game != nullptr);
+        // The client traces a dirt road by its town: six modules in a row, where they fit.
+        const sim::Game& g = *c.m[1].game;
+        const sim::DefIndex road = content()->find_building("core:dirt_road");
+        REQUIRE(road != sim::kNoDef);
+        const sim::Building* tc = g.buildings().get(g.player(g.town_of(1)).town_center);
+        REQUIRE(tc != nullptr);
+        std::optional<sim::Command> order;
+        for (int r = 12; r < 90 && !order; r += 2) {
+            for (const int dz : {-r, r}) {
+                const int x0 = (tc->x / 2) * 2;
+                const int z0 = ((tc->z + dz) / 2) * 2;
+                bool fits = true;
+                for (int k = 0; k < 6 && fits; ++k) {
+                    fits = g.can_place(g.town_of(1), road, x0 + 2 * k, z0, 0) == sim::PlaceError::None;
+                }
+                if (fits && !order) {
+                    sim::Command t;
+                    t.type = sim::CommandType::Trace;
+                    t.def = road;
+                    t.position = {sim::Fixed::from_int(x0), sim::Fixed::from_int(z0)};
+                    t.value = x0 + 10;
+                    t.value2 = z0;
+                    order = t;
+                }
+            }
+        }
+        REQUIRE(order.has_value());
+        c.m[1].session->issue(*order);
+        c.frames(500, 4);
+        c.settle();
+        expect_same_games(c);
+        CHECK(c.m[0].game->roads().size() == 6);
+        CHECK(c.m[0].game->roads() == c.m[1].game->roads());
+    }
+
     TEST_CASE("a player who drops out comes back and follows") {
         Cluster c;
         c.join("Ana");

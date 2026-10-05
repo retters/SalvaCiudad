@@ -1428,6 +1428,83 @@
     },
     {
       "type": "building",
+      "id": "core:dirt_road",
+      "name": "building.dirtRoad",
+      "kind": "decoration",
+      "category": "plaza",
+      "model": "models/buildings/road_dirt_straight.glb",
+      "size": [
+        2,
+        2
+      ],
+      "buildWork": 5,
+      "road": 115,
+      "fireproof": true,
+      "line": "road",
+      "pieces": {
+        "pillar": "models/buildings/road_dirt_pillar.glb",
+        "end": "models/buildings/road_dirt_end.glb",
+        "straight": "models/buildings/road_dirt_straight.glb",
+        "corner": "models/buildings/road_dirt_corner.glb",
+        "tee": "models/buildings/road_dirt_tee.glb",
+        "cross": "models/buildings/road_dirt_cross.glb"
+      }
+    },
+    {
+      "type": "building",
+      "id": "core:cobbled_street",
+      "name": "building.cobbledStreet",
+      "kind": "decoration",
+      "category": "plaza",
+      "model": "models/buildings/road_cobble_straight.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:stone": 1
+      },
+      "buildWork": 15,
+      "tier": 2,
+      "road": 130,
+      "roadDesirability": 4,
+      "fireproof": true,
+      "line": "road",
+      "pieces": {
+        "pillar": "models/buildings/road_cobble_pillar.glb",
+        "end": "models/buildings/road_cobble_end.glb",
+        "straight": "models/buildings/road_cobble_straight.glb",
+        "corner": "models/buildings/road_cobble_corner.glb",
+        "tee": "models/buildings/road_cobble_tee.glb",
+        "cross": "models/buildings/road_cobble_cross.glb"
+      }
+    },
+    {
+      "type": "building",
+      "id": "core:road_eraser",
+      "name": "building.roadEraser",
+      "kind": "decoration",
+      "category": "plaza",
+      "model": "models/buildings/road_dirt_straight.glb",
+      "size": [
+        2,
+        2
+      ],
+      "buildWork": 1,
+      "roadEraser": true,
+      "fireproof": true,
+      "line": "road",
+      "pieces": {
+        "pillar": "models/buildings/road_dirt_pillar.glb",
+        "end": "models/buildings/road_dirt_end.glb",
+        "straight": "models/buildings/road_dirt_straight.glb",
+        "corner": "models/buildings/road_dirt_corner.glb",
+        "tee": "models/buildings/road_dirt_tee.glb",
+        "cross": "models/buildings/road_dirt_cross.glb"
+      }
+    },
+    {
+      "type": "building",
       "id": "core:watchtower",
       "name": "building.watchtower",
       "kind": "defense",

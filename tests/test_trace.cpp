@@ -474,7 +474,7 @@ TEST_SUITE("trace") {
             grant(g, food, 3000);
         }
         // Away from the town center: a ring traced where people stroll shuts them in.
-        const auto [x0, z0] = open_ground(g, 58, 40);
+        const auto [x0, z0] = open_ground(g, 70, 40);
         const auto lay = [&](const char* def, int ax, int az, int bx, int bz, bool z_first = false) {
             g.apply(trace(g, def, x0 + ax, z0 + az, x0 + bx, z0 + bz, z_first));
         };
@@ -552,7 +552,20 @@ TEST_SUITE("trace") {
         gate("core:boxhedge_gate", 22, 42);
         gate("core:picket_gate", 32, 42);
         build();
+        // Phase 95: a dirt road with a branch and a crossing, a cobbled street
+        // that joins it, and a part of the dirt road made a street.
+        lay("core:dirt_road", 0, 60, 40, 60);
+        lay("core:dirt_road", 20, 62, 20, 68);
+        lay("core:dirt_road", 10, 56, 10, 58);
+        lay("core:dirt_road", 10, 62, 10, 66);
+        lay("core:dirt_road", 46, 60, 46, 60);
+        build();
+        lay("core:cobbled_street", 24, 64, 40, 64);
+        lay("core:cobbled_street", 40, 62, 40, 62);
+        lay("core:cobbled_street", 30, 60, 40, 60);
+        build();
         // And a stretch of each left as sites.
+        lay("core:cobbled_street", 0, 66, 6, 66);
         lay("core:palisade", 28, 36, 40, 36);
         lay("core:hedge", 0, 54, 6, 54);
         lay("core:boxhedge", 10, 54, 16, 54);

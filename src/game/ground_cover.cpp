@@ -300,6 +300,12 @@ void GroundCover::block(const sim::Game& game) {
             take(f.x, f.z, f.w, f.d);
         }
     }
+    // Phase 95: nor on a road.
+    const auto side = static_cast<std::uint32_t>(std::max(1, game.road_side()));
+    for (const auto& [cell, kind] : game.roads()) {
+        take(static_cast<std::int32_t>(cell % side) * sim::kRoadModule, static_cast<std::int32_t>(cell / side) * sim::kRoadModule,
+             sim::kRoadModule, sim::kRoadModule);
+    }
 }
 
 const GroundCover::Chunk& GroundCover::chunk(const sim::Game& game, std::int32_t cx, std::int32_t cz) {

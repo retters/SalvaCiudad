@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 55;
+inline constexpr std::uint32_t kGameRulesVersion = 56;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -484,6 +484,7 @@ enum class PlaceError : std::uint8_t {
 // rise this much over its floor (the walls are buried that far, no more).
 inline constexpr std::int32_t kMaxSlopeCm = 400;
 inline constexpr std::int32_t kMaxWallSlopeCm = 180;  // What follows the ground (walls...).
+inline constexpr std::int32_t kMaxRoadSlopeCm = 100;  // A stretch of road (phase 95).
 inline constexpr std::int32_t kMaxBuriedCm = 200;
 
 inline constexpr std::uint8_t kNoRequest = 0xFF;
@@ -566,6 +567,21 @@ public:
     [[nodiscard]] const ComponentStore<Building>& buildings() const { return buildings_; }
     [[nodiscard]] const PlayerState& player(std::uint8_t p) const { return players_[p]; }
     [[nodiscard]] const NavGrid& nav() const { return nav_; }
+    // Phase 95: roads, a layer of the ground. The cells of the walking grid
+    // (2 m) that have one, by index (z * road_side() + x), and its kind: 1
+    // and up, in the order of the content's road buildings.
+    [[nodiscard]] const std::map<std::uint32_t, std::uint8_t>& roads() const { return roads_; }
+    [[nodiscard]] std::int32_t road_side() const { return nav_.side(); }
+    // The kind of road at a point, in meters (0: none), and the building it was laid as.
+    [[nodiscard]] std::uint8_t road_at(std::int32_t x, std::int32_t z) const {
+        return x < 0 || z < 0 ? std::uint8_t{0} : nav_.road(x / kRoadModule, z / kRoadModule);
+    }
+    [[nodiscard]] DefIndex road_def(std::uint8_t kind) const {
+        return kind == 0 || kind > road_defs_.size() ? kNoDef : road_defs_[kind - 1];
+    }
+    [[nodiscard]] std::uint8_t road_kind(DefIndex def) const;
+    // Changes whenever a road is laid or taken away (for the views).
+    [[nodiscard]] std::uint32_t roads_version() const { return roads_version_; }
     [[nodiscard]] std::uint8_t player_count() const { return player_count_; }
     // Whether the developer tools' commands are accepted (single player,
     // or a multiplayer game that allows them). Part of the state.
@@ -854,6 +870,15 @@ private:
     std::vector<std::vector<std::uint32_t>> node_cells_;  // Node indices per 16 m cell.
     std::int32_t node_cells_side_ = 0;
     std::vector<std::uint8_t> occupied_;  // Map cells under buildings.
+    // Roads (phase 95): see roads(). The walking grid keeps its own copy, by cell.
+    std::map<std::uint32_t, std::uint8_t> roads_;
+    std::vector<DefIndex> road_defs_;
+    std::uint32_t roads_version_ = 0;
+    void set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind);
+    // Takes away the roads under a rectangle of the map, in meters.
+    void clear_roads(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d);
+    // Whether there is a road, or a stretch `town` is building, at a module's cell.
+    [[nodiscard]] bool road_to_erase(std::uint8_t town, std::int32_t x, std::int32_t z) const;
 
     std::uint64_t tick_ = 0;
     std::uint64_t seed_ = 0;

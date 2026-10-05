@@ -26,7 +26,9 @@ float to_float(sim::Fixed f) {
 // Villagers walk 0.2 m per tick (sim/game.cpp), ten ticks a second at x1.
 
 // A slab of soil, 2 x 2 m, white so the instance tint colors it.
-constexpr float kSoilTop = 0.25f;  // Its top over its origin.
+constexpr float kSoilTop = 0.25f;
+// How far over the ground a stretch of road lies, so the ground's own bumps do not show through it.
+constexpr float kRoadLift = 0.04f;  // Its top over its origin.
 render::ModelData make_tile_model() {
     render::ModelData m;
     const float h = kSoilTop;
@@ -1218,6 +1220,16 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
             mark_line(content.buildings[b.def], b.x, b.z, b.width, b.depth);
         }
     }
+    // Phase 95: and the roads, which are no buildings any more.
+    const std::int32_t road_side = game.road_side();
+    for (const auto& [cell, kind] : game.roads()) {
+        const sim::DefIndex def = game.road_def(kind);
+        if (def < content.buildings.size() && road_side > 0) {
+            mark_line(content.buildings[def], static_cast<std::int32_t>(cell % static_cast<std::uint32_t>(road_side)) * sim::kRoadModule,
+                      static_cast<std::int32_t>(cell / static_cast<std::uint32_t>(road_side)) * sim::kRoadModule, sim::kRoadModule,
+                      sim::kRoadModule);
+        }
+    }
     for (const Ghost& g : trace_) {
         if (g.def < content.buildings.size() && !content.buildings[g.def].line.empty()) {
             mark_line(content.buildings[g.def], g.x, g.z, sim::kTraceModule, sim::kTraceModule);
@@ -1232,7 +1244,9 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     // stretches that join it to its neighbors across a corner. `state`: 0
     // being built, 1 whole, 2 badly damaged. False if the definition has no
     // pieces: it shows its own model, as any building.
-    const auto put_module = [&](sim::DefIndex def, std::int32_t x, std::int32_t z, int state, math::Vec3 tint, std::uint8_t fade) {
+    // `raise`: meters over where it would lie (a ghost over what is there).
+    const auto put_module = [&](sim::DefIndex def, std::int32_t x, std::int32_t z, int state, math::Vec3 tint, std::uint8_t fade,
+                                float raise = 0.0f) {
         const auto found = line_pieces_.find(def);
         if (found == line_pieces_.end()) {
             return false;
@@ -1273,7 +1287,15 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
             }
         }
         render::Instance inst;
-        inst.position = {cx, y - 0.05f, cz};
+        inst.position = {cx, y - 0.05f + raise, cz};
+        if (d.road > 0 || d.road_eraser) {
+            // A road lies on the ground and leans with it.
+            const float east = ground(cx + 1.0f, cz), west = ground(cx - 1.0f, cz);
+            const float north = ground(cx, cz - 1.0f), south = ground(cx, cz + 1.0f);
+            inst.slope_x = (east - west) * 0.5f;
+            inst.slope_z = (south - north) * 0.5f;
+            inst.position.y = (east + west + north + south) * 0.25f + kRoadLift + raise;
+        }
         inst.yaw = static_cast<float>(look.turns) * std::numbers::pi_v<float> * 0.5f;
         inst.tint = tint;
         inst.fade = fade;
@@ -1389,13 +1411,29 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         g.palette = 0;  // Its own colors under the green or red.
         lists[m->id].push_back(g);
     }
+    // Phase 95: the roads. Under the fog of war, the explored ones.
+    for (const auto& [cell, kind] : game.roads()) {
+        const sim::DefIndex def = game.road_def(kind);
+        const std::int32_t x = static_cast<std::int32_t>(cell % static_cast<std::uint32_t>(road_side)) * sim::kRoadModule;
+        const std::int32_t z = static_cast<std::int32_t>(cell / static_cast<std::uint32_t>(road_side)) * sim::kRoadModule;
+        if (def >= content.buildings.size() || (fog_ != nullptr && fog_->mode() != sim::FogMode::None &&
+                                                fog_->rect_unexplored(x, z, sim::kRoadModule, sim::kRoadModule))) {
+            continue;
+        }
+        (void)put_module(def, x, z, 1, {1.0f, 1.0f, 1.0f}, 0);
+    }
     // Phase 93: the line being traced, each module green or red.
     for (const Ghost& g : trace_) {
         if (g.def >= content.buildings.size()) {
             continue;
         }
-        const math::Vec3 tint = g.allowed ? math::Vec3{0.55f, 1.6f, 0.6f} : math::Vec3{1.8f, 0.45f, 0.4f};
-        if (!put_module(g.def, g.x, g.z, 1, tint, 0)) {
+        const sim::BuildingDef& gd = content.buildings[g.def];
+        if (gd.road_eraser && !g.allowed) {
+            continue;  // Nothing to take away there.
+        }
+        // (The eraser marks in red what will go.)
+        const math::Vec3 tint = g.allowed && !gd.road_eraser ? math::Vec3{0.55f, 1.6f, 0.6f} : math::Vec3{1.8f, 0.45f, 0.4f};
+        if (!put_module(g.def, g.x, g.z, 1, tint, 0, gd.road > 0 || gd.road_eraser ? 0.06f : 0.0f)) {
             if (const Model* m = model_for(g.def, 0, place_key(g.x, g.z))) {
                 render::Instance inst = building_instance(game, g.def, *m, g.x, g.z, sim::kTraceModule, sim::kTraceModule, 0, 1.0f);
                 inst.tint = tint;

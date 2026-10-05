@@ -3492,3 +3492,38 @@ Suite nueva `fences`, 10 casos: los datos de los tres y de sus pasos; un corral 
 
 **D-9408. Versiones.**
 Reglas 55. La red no cambia (no hay órdenes nuevas): sigue en 26.
+
+## Fase 95: caminos (2026-10-04)
+
+**D-9501. Una capa dispersa, y una copia por celda solo cuando hace falta.**
+Los caminos son un valor por celda de la cuadrícula de paso (2 × 2 m): el tipo de camino, de 1 a 15, en el orden en que el contenido define sus edificios de camino. La partida guarda solo las celdas que tienen camino (una lista ordenada: así se guardan, se envían y entran al hash sin recorrer el mapa). La cuadrícula de paso tiene además su copia por celda, para consultar en cada paso de cada búsqueda, pero **no la reserva hasta que se pone el primer camino**: un mapa colosal tiene 67 millones de celdas y una partida sin caminos no paga esos 64 MiB.
+
+**D-9502. Mientras se construye, un tramo es una obra como cualquier otra.**
+Se traza con la orden de la fase 93, los peones llevan la piedra y trabajan en él, y si hay un árbol en la celda lo talan primero (fase 88, sin tocar nada). Lo único distinto: la obra de un camino **no estorba el paso** (ni a aldeanos, ni a fieras, ni a asaltantes). Al terminarse, el edificio desaparece y queda la marca. Se descartó ponerlos al instante: el empedrado cuesta piedra y alguien tiene que llevarla.
+
+**D-9503. Velocidad y rutas.**
+Un aldeano con los pies en una celda de camino avanza ese tick al 115 % o al 130 %. Para la búsqueda, pisar esa celda cuesta en la misma proporción menos (10 → 9 en tierra, 8 en empedrado, en terreno llano). La estimación que guía la búsqueda usaba 10 por paso; con caminos eso sería estimar de más y la búsqueda dejaría de encontrar el mejor camino justo cuando hay un rodeo corto por una calle. Ahora usa el costo del camino más rápido **que exista en ese momento en el mapa**: sin caminos sigue siendo 10 y todas las rutas son las de siempre (las pruebas de pueblos guionizados no cambian); con caminos la ruta es la óptima, a cambio de mirar algunas celdas más. Solo los aldeanos van más rápido: soldados, asaltantes y animales se mueven con otro código y no se tocaron.
+
+**D-9504. Dónde cabe un tramo.**
+En una celda par (las de la cuadrícula de paso), sobre terreno libre y con hasta 1 m de desnivel dentro del tramo. Un muro admite 1,8 m, pero un camino tan empinado se vería roto. Sobre agua no.
+
+**D-9505. Mejorar.**
+Un camino más rápido se traza sobre uno más lento. El lento sigue sirviendo hasta que el tramo nuevo se termina. Tierra sobre empedrado, o cualquiera sobre uno igual, se rechaza. «Mejorar cobra solo la piedra» sale solo: el camino de tierra no cuesta materiales.
+
+**D-9506. «Quitar camino» es un trazo más, no una orden nueva.**
+Es un edificio de mentira (`roadEraser`): aparece en la pestaña Plaza junto a los caminos, se arrastra igual, y en lugar de poner obras quita los caminos y los tramos en obra del propio pueblo por donde pasa. Así reutiliza el trazado, el fantasma y el aviso de la fase 93 sin una herramienta aparte en la interfaz. El fantasma marca en rojo solo lo que se irá. Los caminos no tienen dueño: en una partida de varios pueblos cualquiera puede quitar cualquier camino que haya explorado. Es lo más simple; si resulta molesto, se le pone dueño a cada celda.
+
+**D-9507. La casa «frente a la calle».**
+La puerta de una casa está un metro fuera de su pared. Como los tramos van en celdas pares y una casa puede estar en celdas impares, el tramo pegado a la pared puede empezar un metro más allá: cuenta una calle a uno **o dos** metros delante de la puerta. +4 con empedrado, nada con tierra (`roadDesirability`). Una calle que pasa por un costado o por detrás no cuenta.
+
+**D-9508. En pantalla.**
+Las piezas elegidas (camino de tierra con rodadas, calle empedrada) son losas planas. Puestas tal cual, en una ladera la mitad de cada tramo quedaba enterrada y la otra mitad flotando. Cada instancia de dibujo gana dos números, cuánto sube hacia el este y hacia el sur, y la pieza se **cizalla** con el terreno (no se gira: así dos tramos vecinos siguen coincidiendo en su borde). Va 4 cm sobre el suelo. Las piezas se eligen por vecinos como los muros, y la tierra se une con el empedrado. La hierba y las flores de la fase 91 no crecen sobre un camino. En el minimapa, cada fila de celdas seguidas es una línea clara.
+
+**D-9509. Error de la fase 93 corregido: las puertas de un módulo no se podían colocar con el ratón.**
+Al pasar el trazado a «todo lo que tiene `line`», quedó en el clic una regla vieja: «un edificio de defensa de 2 × 2 no se coloca con clic, se arrastra». La poterna de la empalizada (fase 93) y el arco y las cancelas de la fase 94 miden 2 × 2 y son de defensa: el fantasma se veía bien, pero el clic no hacía nada. No lo vieron las pruebas (colocan con órdenes, no con el ratón) ni yo en pantalla (probé con órdenes en la escena guardada). Ahora la regla del clic es la misma que la del trazado: no se coloca con clic lo que se traza, y una puerta sí.
+
+**D-9510. Lo medido y lo visto.**
+Suite nueva `roads`, 11 casos: los datos; un trazo de 10 tramos se construye y deja de ser edificios, y mientras es obra se puede caminar sobre él; un árbol en el trazo se tala primero; la calle exige nivel 2 y una piedra por tramo, y con tres tramos más que piedra, tres se quedan en obra hasta que llega; mejorar tierra a calle gasta exactamente una piedra por tramo y ningún tronco, y nada se traza sobre un camino igual o mejor; **entre dos puntos a 40 m, un explorador tarda 200 ticks campo a través, 184 con un camino de tierra en la fila de al lado (160 de ellos sobre el camino) y 166 con una calle**; la casa gana 4 con la calle delante de la puerta y nada con tierra; el borrador, un edificio y una casa encima quitan el camino; guardar y cargar (y un guardado con una celda o un tipo imposibles se rechaza); dos partidas con las mismas órdenes coinciden tick a tick; sin caminos la búsqueda da la ruta de siempre. En `net`: un camino trazado por el cliente queda igual en el anfitrión. Rendimiento, caso manual de `sim_perf` en un mapa colosal con un pueblo de 1000: con 2026 tramos de camino de tierra construidos el tick tarda 2,73 ms de media (p95 4,34) y sin caminos, tras el mismo número de ticks, 2,86 ms (p95 4,55): un 95,5 %, es decir, la diferencia queda dentro del ruido de la medición. El criterio permitía un 10 % más. Es una sola corrida de cada una; pico de memoria del proceso, 6963 MiB (dos partidas colosales una tras otra). En pantalla, con la escena guardada: el camino de tierra con su cruce, su ramal y sus remates, la calle unida a él, los tramos en obra semitransparentes, las piezas siguiendo el terreno, las líneas claras en el minimapa; con clics de verdad, un tramo de camino puesto desde la pestaña Plaza y una cancela de valla colocada sobre su valla. **No se vio** el arrastre (los arrastres enviados no llegan al juego), el borrador en pantalla, ni un camino en una ladera fuerte.
+
+**D-9511. Versiones.**
+Reglas 56, red 27.

@@ -35,6 +35,11 @@ struct Instance {
     std::uint8_t look = 0;
     // Phase 61: how see-through it is drawn, in quarters (0 to kMaxFade).
     std::uint8_t fade = 0;
+    // Phase 95: what lies on the ground leans with it: meters it rises per
+    // meter to the east (+x) and to the south (+z). It is sheared, not
+    // turned, so neighbors keep meeting along their edges.
+    float slope_x = 0.0f;
+    float slope_z = 0.0f;
 };
 inline constexpr std::uint8_t kMaxFade = 3;
 inline constexpr float kCarriedReach = 4.0f;

@@ -285,6 +285,8 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 **Setos y vallas (fase 94).** Del mismo kit salen `hedge_<pieza>.glb` (seto vivo, las diez piezas), `boxhedge_<pieza>.glb` (seto bajo recortado) y `picket_<pieza>.glb` (valla de estacas); estos dos solo tienen `end`, `straight`, `corner`, `tee`, `cross` y `step`. Sus pasos: `hedge_arch.glb`, `boxhedge_gate.glb` y `picket_gate.glb` (2 × 2 m, sin esqueleto, cerrados). Los setos tienen su propia clase en `game.json`, `hedge`, con tope de 1500 triángulos: son volúmenes de hojas y el seto vivo llega a 1492 en la diagonal. La valla cabe en los 800 de `line`.
 
+**Caminos (`proposals/lines`, fase 95).** `buildings/road_dirt_<pieza>.glb` (camino de tierra con rodadas, 132 a 156 triángulos) y `buildings/road_cobble_<pieza>.glb` (calle empedrada, 512 a 780): `pillar`, `end`, `straight`, `corner`, `tee` y `cross`, de la clase `line`. Son losas de pocos centímetros con el origen a ras de suelo. El juego las pone 4 cm sobre el terreno y las **inclina con la ladera** (`render::Instance::slope_x` y `slope_z`: la pieza se cizalla, no se gira, así que dos tramos vecinos siguen coincidiendo en su borde). Una pieza nueva de camino no debe tener nada alto: lo que sobresale se inclina con ella.
+
 `palisade.glb`, el modelo de un solo bloque, sigue en el mod como modelo del edificio (el que usa el fantasma al colocar y cualquier pieza que falte).
 
 ## Modelos de propuesta que entran al juego (fase 89)
