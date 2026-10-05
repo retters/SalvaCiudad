@@ -980,6 +980,20 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
         if ((b->garden & sim::garden::kFormal) != 0) {
             lines.push_back(tr("hud.decor.formal"));
         }
+        if (d.hunt_arms != sim::kNoDef) {
+            // Phase 111: the mammoths within its reach (none: it says nothing), and its weapons.
+            if (const sim::Game::BigGame big = game.big_game(*b); big.zones > 0) {
+                lines.push_back(big.animals > 0 ? tr("hud.lodge.mammoths", big.animals) : tr("hud.lodge.mammothsWinter"));
+                std::int32_t arms = 0;
+                for (const sim::Stock& st : b->stock) {
+                    arms += st.resource == d.hunt_arms ? st.amount : 0;
+                }
+                lines.push_back(tr("hud.lodge.arms", arms, sim::village::kLodgeArms));
+                if (b->workers.size() < 2) {
+                    lines.push_back(tr("hud.lodge.two"));
+                }
+            }
+        }
         if (d.work == sim::WorkKind::Fish) {
             // Phase 110: what it has within its reach, and how its shoals are.
             const sim::Game::FishSpots spots = game.fish_spots(*b);

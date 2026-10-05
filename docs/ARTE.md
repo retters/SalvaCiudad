@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### El mamut (fase 111)
+
+`fauna/mammoth.glb` (de `proposals/beasts`, `animal_mammoth`, 1712 triángulos, con su esqueleto y sus animaciones; se le añadió la de correr, un trote pesado, porque toda la fauna de ambiente tiene una). Lo dibuja la fauna de ambiente: tantos como queden en la zona, cerca de su centro, de día y de noche mientras dura el invierno. Como el resto de esa fauna, solo se ve cerca de donde mira la cámara (hasta 112 m con el detalle más alto) y no se dibuja con el detalle de fauna apagado.
+
 ### Bancos de peces, juncos, patos y la presa de castores (fase 110)
 
 `props/fish_shoal.glb` (de `proposals/beasts`, 888 triángulos, sin esqueleto; se dibuja 45 cm bajo el agua), `props/reed_bank.glb` (de `proposals/biomes`, 928; en el juego va sin su placa de agua), `props/ducks.glb` (un pato de `proposals/creatures`, sin esqueleto, sobre el agua) y `props/cover_beaver_dam.glb` (1388, también sin sus placas de agua; adorno de la capa de detalle del suelo). En la lista `game.json`, una entrada de `creatures` tiene que ir antes que cualquiera de `beasts`: `beasts` toma prestados módulos de `creatures`, y si se construye primero en la misma pasada, los modelos de `creatures` se guardan en la carpeta equivocada.

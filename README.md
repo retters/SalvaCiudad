@@ -857,6 +857,12 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Un banco muy pescado desaparece y vuelve al cambiar la estación.
 - [ ] Con patos cerca llegan huevos en primavera y verano, y carne en otoño, sin cazador.
 - [ ] En algunos tramos de río angostos hay una presa de castores (solo adorno).
+- [ ] En un mapa con montaña o bosque boreal, el primer día del invierno llega el aviso de los mamuts (si hay una manada a 250 m de algún edificio del pueblo) y la cámara va a la manada; se ven tres mamuts.
+- [ ] Una Cabaña del cazador con la manada dentro de su radio dice «Mamuts a su alcance» y cuántas armas tiene; con armas en el almacén, los peones le llevan 2.
+- [ ] Sus dos cazadores salen juntos y vuelven con carne; en la cabaña quedan pieles y marfil, y hay un arma menos. Con un solo cazador o sin armas no van.
+- [ ] De vez en cuando llega el aviso de un cazador herido; se recupera solo.
+- [ ] El marfil se puede vender al mercader, y el mercader nunca lo trae.
+- [ ] En primavera los mamuts ya no están.
 - [ ] Al amanecer y al atardecer se ven conejos en algunas praderas; muy de vez en cuando, un lince o un gato montés en el bosque.
 - [ ] Un cazador sin ciervos ni jabalíes a su alcance trae carne de conejo (2 por viaje, sin piel).
 - [ ] Un campo de verduras en una pradera con conejos da un quinto menos, con el aviso «Los conejos se comieron parte de la cosecha»; con valla en medio borde o una caseta de perro a 12 m, no.

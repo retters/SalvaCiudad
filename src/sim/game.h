@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 71;
+inline constexpr std::uint32_t kGameRulesVersion = 72;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,30 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 111. Mammoths: kMammoths come to each of their zones when winter
+// begins and those left go when it ends. A lodge goes for them only with
+// two hunters and a weapon of the kLodgeArms it keeps (laborers bring them
+// while there are mammoths in its reach); the two set out together, each
+// with kMammothFood of food and kMammothEnergy of energy at least (one who
+// has less eats or rests first), one waits for the other at the herd up to
+// kMammothWait ticks, and kMammothWork worker-ticks of both bring one down: kMammothMeat of meat, kMammothHides hides and
+// kMammothIvory of ivory, and a weapon less. One hunt in kMammothWoundOneIn
+// leaves a hunter wounded: kMammothWound of health less, never under
+// kWoundLeast by the wound alone. A town hears of a herd that comes within
+// kMammothNewsMeters of one of its buildings.
+inline constexpr std::int32_t kMammoths = 3;
+inline constexpr std::int32_t kLodgeArms = 2;
+inline constexpr std::int32_t kMammothFood = 850;
+inline constexpr std::int32_t kMammothEnergy = 1600;
+inline constexpr std::int32_t kMammothWait = 900;
+inline constexpr std::int32_t kMammothWork = 480;
+inline constexpr std::int32_t kMammothMeat = 40;
+inline constexpr std::int32_t kMammothHides = 4;
+inline constexpr std::int32_t kMammothIvory = 2;
+inline constexpr std::int32_t kMammothWoundOneIn = 4;
+inline constexpr std::int32_t kMammothWound = 500;
+inline constexpr std::int32_t kWoundLeast = 100;
+inline constexpr std::int32_t kMammothNewsMeters = 250;
 // Phase 110. A fisher's hut fishes at kFishAlone percent of the pace of
 // before; each shoal with fish in it and each bank of reeds within its
 // reach adds kFishPerSpot, up to kFishMost. Every fish caught with shoals in
@@ -858,6 +882,8 @@ public:
             Lynx,            // Phase 109: a lynx took a hen from coop `entity` (`value`: those left), or (`other` 1) a
                              // young one from fold `entity`.
             Rabbits,         // Phase 109: rabbits ate part of the harvest of a field of farm `entity`.
+            Mammoths,        // Phase 111: winter: a herd of `value` mammoths came to its zone, at `at`.
+            Wounded,         // Phase 111: villager `entity` came back wounded from a mammoth hunt.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -919,7 +945,16 @@ public:
     [[nodiscard]] FishSpots fish_spots(const Building& hut) const;
     // The pace it fishes at, in percent of the pace of before.
     [[nodiscard]] static std::int32_t fish_percent(const FishSpots& spots);
-    // Phase 109. How many animals zone `z` holds at most (rabbits: half with a lynx near).
+    // Phase 111. The big game within the reach of a lodge: how many zones of mammoths, and how many
+    // mammoths are in them now (none but in winter).
+    struct BigGame {
+        std::int32_t zones = 0;
+        std::int32_t animals = 0;
+    };
+    [[nodiscard]] BigGame big_game(const Building& lodge) const;
+    // Whether the middle of a zone of mammoths, where the herd stands, is within the reach of a lodge.
+    [[nodiscard]] bool reaches_herd(const Building& lodge, const Zone& zone) const;
+    // Phase 109. How many animals zone `z` holds at most (rabbits: half with a lynx near; mammoths: in winter).
     [[nodiscard]] std::int32_t zone_room(std::size_t z) const;
     // Whether a lynx lives within village::kLynxMeters of the edge of the circle at (x, z) of `radius` meters.
     [[nodiscard]] bool lynx_near(std::int32_t x, std::int32_t z, std::int32_t radius = 0) const;
@@ -1099,6 +1134,7 @@ private:
     DefIndex fertilizer_ = kNoDef;
     DefIndex meat_ = kNoDef;
     DefIndex hide_ = kNoDef;
+    DefIndex ivory_ = kNoDef;
     DefIndex fish_ = kNoDef;
     DefIndex fruit_ = kNoDef;
     DefIndex shoes_ = kNoDef;

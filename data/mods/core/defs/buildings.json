@@ -406,6 +406,7 @@
       "buildWork": 220,
       "workers": 2,
       "work": "hunt",
+      "huntArms": "core:weapons",
       "radius": 110,
       "storage": 40,
       "stores": [

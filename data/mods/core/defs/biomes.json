@@ -4,6 +4,7 @@
     {
       "type": "biome",
       "id": "core:mountain",
+      "mammoths": true,
       "bush": "blueberries",
       "name": "biome.mountain",
       "flowers": 60,
@@ -38,6 +39,7 @@
     {
       "type": "biome",
       "id": "core:boreal",
+      "mammoths": true,
       "rock": "mossy",
       "bush": "blueberries",
       "name": "biome.boreal",

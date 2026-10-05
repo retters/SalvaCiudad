@@ -71,6 +71,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `load` | Cómo se ve al cargarlo y apilarlo (fase 67): `crate`, `logs`, `stone`, `sack` o `basket`. Por omisión, `basket` para los alimentos y `crate` para lo demás. Solo cambia lo que se ve. |
 | `pile` | Su propia pila junto a almacenes, obras y talleres (fase 89): el comienzo del nombre de tres modelos del mod, `<pile>_1.glb` (poco), `<pile>_2.glb` (a medias) y `<pile>_3.glb` (lleno). Por ejemplo `"pile": "models/props/pile_salt"`. Los tres archivos tienen que existir. Sin `pile`, el recurso usa la pila genérica de su `load`. Solo cambia lo que se ve. |
 | `value` | Precio base en oro para los mercaderes (0 a 10000). Con 0 no lo compran ni lo venden. |
+| `sellOnly` | `true`: los mercaderes lo compran pero nunca lo traen (fase 111; el marfil). |
 | `badPercent` | De cada cien unidades comidas, cuántas son malas (fase 98; las setas del juego base, 20). Quien come una mala enferma de la enfermedad con `"source": "food"`, salvo que su pueblo tenga un edificio con servicio `healer` o `doctor`, o que la partida no tenga enfermedades. |
 
 ### building
@@ -121,6 +122,12 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 | `wardsBeasts` | `true`: de noche, lobos y osos no entran en su luz (necesita `light`). Es lo que distingue a un farol de camino o a la almenara de una antorcha, un brasero o el centro del pueblo, cuya luz solo evita que una fiera *elija* a quien está dentro. |
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
+
+#### Mamuts (fase 111)
+
+Un bioma con `"mammoths": true` (montaña y boreal en el juego base) tiene **zonas de mamuts**: el generador las pone en su suelo abierto, a 220 m o más una de otra y a 120 m o más de cada inicio. Están vacías todo el año; el día que empieza el invierno llegan 3 mamuts a cada una, y los que queden se van el día que termina. En una partida sin invierno no vienen nunca; en una que es toda invierno, la manada se repone cada año.
+
+Un edificio que caza (`"work": "hunt"`) con `"huntArms": "<recurso>"` (la cabaña del cazador, con las armas) va por ellos si el **centro** de una zona con mamuts está dentro de su `radius`, tiene **dos cazadores** y tiene al menos una unidad de ese recurso. Los peones le llevan hasta 2 de un almacén mientras haya mamuts a su alcance y no le quede ninguna; nadie se las lleva de ahí. Los dos cazadores salen juntos, comidos y descansados (el que no lo está come o descansa primero, y el otro lo espera sin empezar otra cosa). Entre los dos abaten un mamut: 40 de carne, 4 pieles y 2 de marfil (`core:ivory`), y un arma menos. Cada uno vuelve con una carga de carne; lo demás queda en la cabaña y los peones lo recogen. En una de cada cuatro cacerías uno de los dos vuelve herido: pierde la mitad de la vida (nunca por debajo de 100 de 1000 por la herida sola) y la recupera como cualquier otro daño, comido y abrigado. Mientras haya mamuts y armas, esa cabaña no caza otra cosa.
 
 #### Pesca: bancos, juncos y patos (fase 110)
 

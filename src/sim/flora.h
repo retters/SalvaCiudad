@@ -94,6 +94,8 @@ struct BiomeDef {
     // Phase 102: the stone of its rocks (a RockKind): gray, mossy or
     // sandstone. Looks only.
     std::uint8_t rock = 0;
+    // Phase 111: mammoths come to it in winter (the generator puts their zones in it).
+    bool mammoths = false;
     // Phase 54: where it likes to be. A place takes the biome that fits it
     // best. Temperature and humidity go from 0 to 100; the altitude is the
     // share of the map's land that lies lower, 0 to 100.

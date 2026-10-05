@@ -380,6 +380,15 @@
     },
     {
       "type": "resource",
+      "id": "core:ivory",
+      "name": "resource.ivory",
+      "category": "good",
+      "weight": 3,
+      "value": 60,
+      "sellOnly": true
+    },
+    {
+      "type": "resource",
       "id": "core:gold",
       "name": "resource.gold",
       "category": "gold",

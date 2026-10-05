@@ -40,6 +40,7 @@ struct ResourceDef {
     std::int32_t weight = 1;     // Units a villager carries per trip: 12 / weight.
     std::int32_t carry = 0;      // Units per trip in place of 12 / weight; 0 = from the weight (phase 28).
     std::int32_t value = 0;      // Base price in gold; 0 = merchants do not trade it (phase 14).
+    bool sell_only = false;      // Phase 111: merchants buy it and never bring it (ivory).
     // Phase 98: of a hundred units eaten, how many are bad (red mushrooms):
     // who eats one falls ill of the disease that comes from food, unless
     // the town has a healer or a doctor, who tell them apart.
@@ -173,6 +174,10 @@ struct BuildingDef {
     // Phase 105: a guard (the dog's kennel): no fox comes to the coops
     // within this many meters of it.
     std::int32_t guard_radius = 0;
+    // Phase 111: what a hunters' lodge takes to go for big game (weapons):
+    // laborers bring it from a storage while there are mammoths within its
+    // reach, it keeps village::kLodgeArms and every hunt spends one.
+    DefIndex hunt_arms = kNoDef;
     // Phase 104: gardens. A line with `garden_modules` makes a garden of
     // what has that many of its modules (or of its gates) within
     // village::kGardenMeters of its walls. `garden_house`: of a house, which

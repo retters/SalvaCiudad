@@ -61,7 +61,9 @@ def mammoth(name, gear=None, k=1.0):
         for i in range(5):
             pose.turn(f"trunk.{i + 1}", Z, 5.0 * math.sin(p - i * 0.8))
             pose.turn(f"trunk.{i + 1}", X, -5.0 - 2.0 * math.sin(2 * p - i * 0.6))      # Only curls forward and up.
-    q.clips(walk=dict(frames=40, duty=0.7, lift=0.2, crouch=0.08, nod=1.5, wag=4.0, yaw=1.0), attack="gore", attack_s=1.8,
+    # (The run, a heavy trot, is for the game: every animal of its fauna has one.)
+    q.clips(walk=dict(frames=40, duty=0.7, lift=0.2, crouch=0.08, nod=1.5, wag=4.0, yaw=1.0), run=dict(frames=26, lift=0.3),
+            attack="gore", attack_s=1.8,
             die_s=2.6, wide=1.8, extra_idle=sway, extra_walk=sway, eat=dict(bend=4.0, head=6.0, body=1.0), idle_look=3.0)
 
     def curl(pose, t):

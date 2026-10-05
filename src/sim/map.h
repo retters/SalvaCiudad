@@ -164,7 +164,8 @@ struct MapFeature {
 
 // (Phase 109: rabbits, small game that eats the vegetables; and the lynx, which is not hunted and hunts them.
 // Neither is a creature that walks the map: a zone and how many live in it.)
-enum class ZoneType : std::uint8_t { Deer, Boar, Wolves, Bears, Rabbits, Lynx, Count };
+// (Phase 111: mammoths, in the cold biomes and only in winter; the same.)
+enum class ZoneType : std::uint8_t { Deer, Boar, Wolves, Bears, Rabbits, Lynx, Mammoths, Count };
 
 // Where animals of a kind live.
 struct Zone {

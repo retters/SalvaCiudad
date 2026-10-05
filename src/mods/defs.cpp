@@ -604,6 +604,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.category = static_cast<sim::ResourceCategory>(r.choice("category", kCategories, 1, true));
         def.nutrition = r.integer("nutrition", 0, 1000, 0);
         def.value = r.integer("value", 0, 10000, 0);
+        def.sell_only = r.flag("sellOnly");
         def.bad_percent = r.integer("badPercent", 0, 100, 0);
         def.weight = r.integer("weight", 1, 12, 1);
         def.carry = r.integer("carry", 0, 1000, 0);
@@ -1120,6 +1121,17 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("\"coopGives\" needs \"coopFeed\": what the hens eat");
         }
         def.guard_radius = r.integer("guardRadius", 0, 60, 0);
+        // Phase 111: the weapons of a hunters' lodge.
+        if (const std::string arms = r.text("huntArms", false); !arms.empty()) {
+            const int ai = find_resource(arms);
+            if (ai < 0) {
+                r.fail(std::format("\"huntArms\" '{}' does not exist", arms));
+            } else if (def.work != sim::WorkKind::Hunt || def.storage <= 0) {
+                r.fail("\"huntArms\" is for a workplace that hunts, with \"storage\"");
+            } else {
+                def.hunt_arms = static_cast<sim::DefIndex>(ai);
+            }
+        }
         // Phase 104: gardens and hives.
         def.garden_modules = r.integer("gardenModules", 0, 100, 0);
         def.garden_house = r.flag("houseGarden");
@@ -1254,6 +1266,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         static constexpr std::string_view kRockKinds[] = {"gray", "mossy", "sandstone"};
         static_assert(std::size(kRockKinds) == static_cast<std::size_t>(sim::RockKind::Count));
         def.rock = static_cast<std::uint8_t>(r.choice("rock", kRockKinds, 0));
+        def.mammoths = r.flag("mammoths");
         // Phase 54: where it grows. Ranges are [low, high], 0 to 100.
         const auto range = [&](const char* key, std::uint8_t* out2) {
             r.numbers(key, out2, 2, 0, 100);

@@ -81,7 +81,8 @@ public:
           ore_rng_(s.seed, 101),
           stone_rng_(s.seed, 102),
           small_rng_(s.seed, 109),
-          fish_rng_(s.seed, 110) {}
+          fish_rng_(s.seed, 110),
+          big_rng_(s.seed, 111) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -1375,7 +1376,42 @@ private:
         stones();
         small_game();
         fishing();
+        big_game();
         return report(GenStage::Starts, 100);
+    }
+
+    // Phase 111: zones of mammoths on the open ground of the biomes they
+    // come to (the cold ones), apart from each other and from the starts.
+    // Last of all and with their own random sequence: nothing else moves,
+    // and a map without those biomes has none.
+    void big_game() {
+        std::swap(rng_, big_rng_);
+        const auto cold = [this](std::int32_t cx, std::int32_t cz) {
+            const std::size_t biome = biome_[ci(cx, cz)];
+            const Terrain t = cell_terrain(cx, cz);
+            return biome < flora_.biomes.size() && flora_.biomes[biome].mammoths && t != Terrain::Rock && t != Terrain::Sand;
+        };
+        std::int32_t x = 0;
+        std::int32_t z = 0;
+        const std::int32_t tries = per_area(kMammothTriesPerKm2);
+        for (std::int32_t i = 0; i < tries; ++i) {
+            if (!pick_cell(4, cold, {}, x, z)) {
+                continue;
+            }
+            const Fixed zx = cell_center(x);
+            const Fixed zz = cell_center(z);
+            const bool by_start = std::any_of(out_.starts.begin(), out_.starts.end(), [&](const StartPosition& s) {
+                return d2(zx, zz, s.x, s.z) < meters2(kMammothFromStart);
+            });
+            const bool by_another = std::any_of(out_.zones.begin(), out_.zones.end(), [&](const Zone& o) {
+                return o.type == ZoneType::Mammoths && d2(zx, zz, o.x, o.z) < meters2(kMammothSpacing);
+            });
+            const Fixed radius = Fixed::from_int(rng_.range(50, 80));
+            if (!by_start && !by_another) {
+                out_.zones.push_back({ZoneType::Mammoths, zx, zz, radius});
+            }
+        }
+        std::swap(rng_, big_rng_);
     }
 
     // Phase 110: shoals of fish in the water, banks of reeds on the shores
@@ -1863,6 +1899,7 @@ private:
     Rng stone_rng_;  // Phase 102: the loose stones, after those.
     Rng small_rng_;  // Phase 109: the zones of rabbits and of the lynx.
     Rng fish_rng_;   // Phase 110: shoals of fish, banks of reeds and ducks.
+    Rng big_rng_;    // Phase 111: the zones of mammoths.
     MapData out_;
     std::vector<std::int32_t> h_;       // Vertex heights, millimeters.
     std::vector<std::uint8_t> bed_;        // Vertex dug as a river bed.

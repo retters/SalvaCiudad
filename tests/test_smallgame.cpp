@@ -225,7 +225,8 @@ TEST_SUITE("smallgame") {
             int rabbits = 0, lynx = 0;
             bool new_ones = false;
             for (const Zone& z : m.zones) {
-                const bool is_new = z.type == ZoneType::Rabbits || z.type == ZoneType::Lynx;
+                // (And after them, since phase 111, those of mammoths.)
+                const bool is_new = z.type >= ZoneType::Rabbits;
                 new_ones = new_ones || is_new;
                 CHECK(is_new == new_ones);  // They come last.
                 const Terrain t = m.terrain_at(z.x.floor_int(), z.z.floor_int());

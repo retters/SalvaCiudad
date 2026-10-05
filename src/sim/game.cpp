@@ -121,6 +121,9 @@ bool gives_out(const Content& c, const Building& b, DefIndex r) {
     if (d.kind != BuildingKind::Workplace) {
         return false;
     }
+    if (d.hunt_arms != kNoDef && d.hunt_arms == r) {
+        return false;  // Phase 111: a lodge's weapons are its hunters'.
+    }
     for (const DefIndex recipe : d.recipes) {
         for (const ResourceAmount& in : c.recipes[recipe].inputs) {
             if (in.resource == r) {
@@ -903,8 +906,10 @@ public:
             }
             if (d.work == WorkKind::Hunt || d.work == WorkKind::Fish) {
                 // No game or no open water is of the season: never Exhausted.
+                // (Nor is a hunter waiting for the other to go for the mammoths without game: phase 111.)
+                waits_for_mate_ = false;
                 const bool found = d.work == WorkKind::Hunt ? start_hunting(v, *job) : start_fishing(v, *job);
-                set_supply(*job, v.job, found ? Supply::Fine : Supply::Waiting);
+                set_supply(*job, v.job, found || waits_for_mate_ ? Supply::Fine : Supply::Waiting);
                 if (found) {
                     return;
                 }
@@ -919,7 +924,7 @@ public:
             return;
         }
         // 4. Laborer: construction, then the hens' grain, then hauling, then the town's gold.
-        if (start_construction(v) || start_feeding(v) || start_hauling(v) || start_moving_gold(v)) {
+        if (start_construction(v) || start_feeding(v) || start_arming(v) || start_hauling(v) || start_moving_gold(v)) {
             return;
         }
         wander(v, home_point(v));
@@ -1172,6 +1177,45 @@ public:
     [[nodiscard]] bool is_feed(const BuildingDef& d, DefIndex r) const {
         return d.coop_gives != kNoDef && std::find(d.coop_feed.begin(), d.coop_feed.end(), r) != d.coop_feed.end();
     }
+    // How many of `r` a building keeps for its own use and laborers bring to
+    // it: a coop's grain, a lodge's weapons (phase 111). 0: it is not that.
+    [[nodiscard]] std::int32_t keeps(const BuildingDef& d, DefIndex r) const {
+        if (is_feed(d, r)) {
+            return village::kCoopFeed;
+        }
+        return d.hunt_arms != kNoDef && d.hunt_arms == r ? village::kLodgeArms : 0;
+    }
+
+    // Phase 111: weapons for a lodge with its two hunters, mammoths within
+    // its reach and none left, from a storage. One laborer at a time for
+    // each lodge.
+    bool start_arming(Villager& v) {
+        for (const EntityId id : g_.owned(v.owner)) {
+            const Building& b = *g_.buildings_.get(id);
+            const BuildingDef& d = def(b);
+            if (d.hunt_arms == kNoDef || !complete(b) || b.workers.size() < 2 || amount_of(b.stock, d.hunt_arms) > 0 ||
+                g_.big_game(b).animals <= 0) {
+                continue;
+            }
+            const EntityId from = storage_with(v.owner, v.position, d.hunt_arms, true);
+            if (!from.valid()) {
+                continue;
+            }
+            bool coming = false;
+            for (const Villager& o : g_.villagers_.data()) {
+                coming = coming || (o.task == Task::GoFetch && o.site == id) || (o.task == Task::GoDeliver && o.target == id);
+            }
+            if (coming) {
+                continue;
+            }
+            v.site = id;  // The weapons go to the lodge.
+            v.carrying = {d.hunt_arms, 0};
+            v.timer = 0;
+            go(v, Task::GoFetch, from);
+            return true;
+        }
+        return false;
+    }
 
     // Laborers carry what workplaces gathered or made to a storage.
     bool start_hauling(Villager& v) {
@@ -1420,12 +1464,15 @@ public:
             case ZoneType::Bears: return CreatureKind::Bear;
             case ZoneType::Rabbits:
             case ZoneType::Lynx:
+            case ZoneType::Mammoths:
             case ZoneType::Count: break;
         }
         return CreatureKind::Deer;
     }
-    // Whether the animals of a zone walk the map (not rabbits nor the lynx: phase 109).
-    [[nodiscard]] static bool walks(ZoneType t) { return t != ZoneType::Rabbits && t != ZoneType::Lynx; }
+    // Whether the animals of a zone walk the map (not rabbits nor the lynx: phase 109; nor mammoths: phase 111).
+    [[nodiscard]] static bool walks(ZoneType t) {
+        return t != ZoneType::Rabbits && t != ZoneType::Lynx && t != ZoneType::Mammoths;
+    }
 
     // A walkable point near `at` within `radius` meters (or `at`).
     [[nodiscard]] FixedVec2 open_point(FixedVec2 at, std::int32_t radius) {
@@ -2948,7 +2995,8 @@ public:
         }
         for (std::uint32_t k = 0; k < for_sale && !ps.merchant.empty(); ++k) {
             MerchantGood& m = ps.merchant[g_.rng_.below(static_cast<std::uint32_t>(ps.merchant.size()))];
-            m.stock += 20 + static_cast<std::int32_t>(g_.rng_.below(41));
+            const std::int32_t brought = 20 + static_cast<std::int32_t>(g_.rng_.below(41));
+            m.stock += c_.resources[m.resource].sell_only ? 0 : brought;  // (Phase 111: he only buys ivory.)
         }
         g_.events_.push_back({Game::Event::Kind::MerchantArrived, p, id_of(post), center_of(post), 0, 0});
     }
@@ -3549,12 +3597,166 @@ public:
             case ZoneType::Bears: return predators ? 2 : 0;
             case ZoneType::Rabbits: return village::kRabbits;  // (Half with a lynx near: Game::zone_room.)
             case ZoneType::Lynx: return 1;
+            case ZoneType::Mammoths: return village::kMammoths;  // (In winter: Game::zone_room.)
             case ZoneType::Count: break;
         }
         return 0;
     }
 
+    // Phase 111: the two hunters of a lodge that has a weapon go together
+    // for the mammoths within its reach: both to the middle of the zone,
+    // and they set out at the same time. One whose mate is busy (eating,
+    // on the way back with a load) waits for it without starting anything
+    // else: the other finds it free when it is done, and they go.
+    enum class BigHunt : std::uint8_t { None, Wait, Go };
+    BigHunt start_big_hunt(Villager& v, const Building& lodge) {
+        const DefIndex arms = def(lodge).hunt_arms;
+        if (arms == kNoDef || lodge.workers.size() < 2 || amount_of(lodge.stock, arms) <= 0 || g_.meat_ == kNoDef) {
+            return BigHunt::None;
+        }
+        Villager* mate = nullptr;
+        for (const EntityId id : lodge.workers) {
+            Villager* o = g_.villagers_.get(id);
+            if (o != nullptr && o != &v) {
+                mate = o;
+                break;
+            }
+        }
+        if (mate == nullptr || mate->disease != 0) {
+            return BigHunt::None;  // Alone, or with the other one ill at home: the common game.
+        }
+        const FixedVec2 door = g_.door(lodge);
+        std::optional<std::size_t> best;
+        std::uint64_t best_d = UINT64_MAX;
+        for (std::size_t z = 0; z < g_.map_.zones.size(); ++z) {
+            const Zone& zone = g_.map_.zones[z];
+            if (zone.type != ZoneType::Mammoths || g_.zone_animals_[z] <= 0 || !g_.reaches_herd(lodge, zone)) {
+                continue;
+            }
+            const FixedVec2 c{zone.x, zone.z};
+            const std::uint64_t d = distance2(c, door);
+            if (d >= best_d || !g_.nav_.connected(door, c)) {
+                continue;
+            }
+            best_d = d;
+            best = z;
+        }
+        if (!best) {
+            return BigHunt::None;
+        }
+        // Each sets out fed and rested for the whole hunt, so that neither
+        // turns back halfway: one who is not eats or rests first (with no
+        // food in the town, or nowhere to rest: the common game, as ever).
+        const auto fed = [](const Villager& h) { return h.food >= village::kMammothFood; };
+        const auto rested = [this](const Villager& h) { return !g_.rules_.rest || h.energy >= village::kMammothEnergy; };
+        if (!fed(v) || !fed(*mate)) {
+            const EntityId food = storage_with(v.owner, v.position, kNoDef);
+            if (!food.valid()) {
+                return BigHunt::None;
+            }
+            if (!fed(v)) {
+                go(v, Task::GoEat, food);
+                return BigHunt::Go;
+            }
+        }
+        if (!rested(v)) {
+            return start_rest(v) ? BigHunt::Go : BigHunt::None;
+        }
+        const auto spot = static_cast<std::uint16_t>(*best + 1);
+        const bool coming = (mate->task == Task::GoHunt || mate->task == Task::Hunt) && mate->spot == spot;
+        const bool free = (mate->task == Task::Idle || mate->task == Task::Wander) && fed(*mate) && rested(*mate) &&
+                          !g_.players_[mate->owner].alarm;
+        if (!coming && !free) {
+            return BigHunt::Wait;
+        }
+        const Zone& zone = g_.map_.zones[*best];
+        for (Villager* hunter : {&v, mate}) {
+            if (hunter == mate && coming) {
+                continue;
+            }
+            hunter->task = Task::GoHunt;
+            hunter->spot = spot;
+            hunter->timer = 0;
+            if (!walk_to(*hunter, {zone.x, zone.z})) {
+                fail(*hunter);
+            }
+        }
+        return BigHunt::Go;
+    }
+
+    // At the herd: nothing is done until the other hunter of the lodge is
+    // there too; then the work of both brings a mammoth down.
+    void big_hunt_work(Villager& v, std::size_t z) {
+        Building* lodge = g_.buildings_.get(v.job);
+        const DefIndex arms = lodge != nullptr ? def(*lodge).hunt_arms : kNoDef;
+        if (arms == kNoDef || g_.zone_animals_[z] <= 0 || amount_of(lodge->stock, arms) <= 0 || g_.meat_ == kNoDef) {
+            v.timer = 0;
+            v.task = Task::Idle;  // The herd left, or the weapon is gone.
+            return;
+        }
+        Villager* mate = nullptr;
+        EntityId mate_id;
+        for (const EntityId id : lodge->workers) {
+            Villager* o = g_.villagers_.get(id);
+            if (o != nullptr && o != &v && o->task == Task::Hunt && o->spot == v.spot && o->job == v.job) {
+                mate = o;
+                mate_id = id;
+                break;
+            }
+        }
+        if (mate == nullptr) {
+            v.timer = std::min(v.timer, 0) - 1;
+            if (v.timer < -village::kMammothWait) {
+                v.timer = 0;
+                v.task = Task::Idle;  // Alone for too long (the other turned back): they will set out again.
+            }
+            return;
+        }
+        v.timer = std::max(v.timer, 0) + steps(v, Skill::Hunt);
+        if (v.timer + std::max(mate->timer, 0) < village::kMammothWork) {
+            return;
+        }
+        --g_.zone_animals_[z];
+        add_to(lodge->stock, arms, -1);
+        compact(lodge->stock);
+        // Each brings a load of the meat; the rest, the hides and the ivory stay at the lodge.
+        std::int32_t meat = village::kMammothMeat;
+        for (Villager* hunter : {&v, mate}) {
+            const std::int32_t load = std::min(meat, carry_capacity(c_, g_.meat_));
+            hunter->carrying = {g_.meat_, load};
+            hunter->timer = 0;
+            hunter->task = Task::Idle;
+            meat -= load;
+        }
+        if (meat > 0) {
+            add_to(lodge->stock, g_.meat_, meat);
+        }
+        if (g_.hide_ != kNoDef) {
+            add_to(lodge->stock, g_.hide_, village::kMammothHides);
+        }
+        if (g_.ivory_ != kNoDef) {
+            add_to(lodge->stock, g_.ivory_, village::kMammothIvory);
+        }
+        if (g_.rng_.range(0, village::kMammothWoundOneIn - 1) == 0) {
+            // One of the two comes back wounded: it heals as any hurt does, fed and warm.
+            const bool first = g_.rng_.range(0, 1) == 0;
+            Villager& hurt = first ? v : *mate;
+            hurt.health = std::min(hurt.health, std::max(village::kWoundLeast, hurt.health - village::kMammothWound));
+            EntityId who = mate_id;
+            if (first) {
+                for (const EntityId id : lodge->workers) {
+                    who = g_.villagers_.get(id) == &v ? id : who;
+                }
+            }
+            g_.events_.push_back({Game::Event::Kind::Wounded, v.owner, who, hurt.position, 0, 0});
+        }
+    }
+
     bool start_hunting(Villager& v, const Building& lodge) {
+        if (const BigHunt big = start_big_hunt(v, lodge); big != BigHunt::None) {
+            waits_for_mate_ = big == BigHunt::Wait;
+            return big == BigHunt::Go;
+        }
         const FixedVec2 door = g_.door(lodge);
         const std::int32_t reach = def(lodge).work_radius;
         std::optional<std::size_t> best;
@@ -3596,6 +3798,11 @@ public:
     }
 
     void hunt_work(Villager& v) {
+        if (const std::size_t zone = v.spot - 1u;
+            v.spot != 0 && zone < g_.zone_animals_.size() && g_.map_.zones[zone].type == ZoneType::Mammoths) {
+            big_hunt_work(v, zone);
+            return;
+        }
         if ((v.timer += steps(v, Skill::Hunt)) < 120) {
             return;
         }
@@ -4128,10 +4335,13 @@ public:
         if (v.carrying.resource == g_.gold_ && def(*b).kind == BuildingKind::TownCenter) {
             put = v.carrying.amount;
         }
-        // A coop takes the grain of its hens (phase 105).
-        const bool feed = is_feed(def(*b), v.carrying.resource);
+        // A coop takes the grain of its hens (phase 105); a lodge, its weapons (phase 111).
+        const std::int32_t keep = keeps(def(*b), v.carrying.resource);
+        const bool feed = keep > 0;
         if (feed) {
-            put = std::min({v.carrying.amount, village::kCoopFeed - amount_of(b->stock, v.carrying.resource), free_space(*b)});
+            // (A lodge's weapons go in however full of meat it is: it needs them to go on.)
+            const std::int32_t room = is_feed(def(*b), v.carrying.resource) ? free_space(*b) : keep;
+            put = std::min({v.carrying.amount, keep - amount_of(b->stock, v.carrying.resource), room});
         }
         if (put > 0 && (own || hearth || feed || accepts(*b, v.carrying.resource))) {
             add_to(b->stock, v.carrying.resource, put);
@@ -4161,8 +4371,8 @@ public:
         }
         std::int32_t want = for_site ? promised : carry_capacity(c_, res);
         want = std::min(want, amount_of(from->stock, res));
-        if (is_feed(def(*site), res)) {
-            want = std::min(want, village::kCoopFeed);  // No more than the coop keeps.
+        if (const std::int32_t keep = keeps(def(*site), res); keep > 0) {
+            want = std::min(want, keep - amount_of(site->stock, res));  // No more than the coop (or the lodge) keeps.
         }
         if (res == g_.gold_ && !for_site) {
             want = std::min(want, gold_to_move(*from, v.site, v.owner));
@@ -4731,6 +4941,9 @@ public:
         check_outcomes();
         // Diets: last month's variety; the game comes back to its zones.
         for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
+            if (g_.map_.zones[z].type == ZoneType::Mammoths) {
+                continue;  // Phase 111: a herd is what came with the winter (see mammoths()).
+            }
             const std::int32_t cap = g_.zone_open(z) ? g_.zone_room(z) : 0;
             const std::int32_t before = g_.zone_animals_[z];
             g_.zone_animals_[z] = std::min(cap, before + std::max(1, cap / 6));
@@ -5070,6 +5283,64 @@ public:
         cats();
         herds();
         refill_shoals();
+        mammoths();
+    }
+
+    // Phase 111: the mammoths come to their zones the day winter begins
+    // (where the year is all winter, the day it begins) and those left go
+    // the day it ends. A town hears of the herd nearest to it, if it comes
+    // within village::kMammothNewsMeters of one of its buildings.
+    void mammoths() {
+        const std::uint32_t day = g_.calendar_day_ticks();
+        if (g_.tick_ < day || (g_.rules_.climate.seasons & 8u) == 0) {
+            return;
+        }
+        const Calendar now = g_.calendar();
+        const Calendar before = sim::calendar(g_.rules_.climate, g_.tick_ - day);
+        const bool one_season = std::popcount(static_cast<unsigned>(g_.rules_.climate.seasons & 0xFu)) <= 1;
+        const bool came = one_season ? now.year != before.year : now.season == Season::Winter && before.season != Season::Winter;
+        const bool left = now.season != Season::Winter && before.season == Season::Winter;
+        if (!came && !left) {
+            return;
+        }
+        bool any = false;
+        for (std::size_t z = 0; z < g_.zone_animals_.size(); ++z) {
+            if (g_.map_.zones[z].type == ZoneType::Mammoths) {
+                g_.zone_animals_[z] = came ? village::kMammoths : 0;
+                any = true;
+            }
+        }
+        if (!came || !any) {
+            return;
+        }
+        for (std::uint8_t p = 0; p < g_.player_count_; ++p) {
+            if (!g_.players_[p].active || g_.town_of(p) != p) {
+                continue;
+            }
+            std::optional<std::size_t> best;
+            std::int64_t best_d = INT64_MAX;
+            for (std::size_t z = 0; z < g_.map_.zones.size(); ++z) {
+                const Zone& zone = g_.map_.zones[z];
+                if (zone.type != ZoneType::Mammoths) {
+                    continue;
+                }
+                const std::int64_t reach = zone.radius.floor_int() + village::kMammothNewsMeters;
+                for (const EntityId id : g_.owned(p)) {
+                    const Building& b = *g_.buildings_.get(id);
+                    const std::int64_t dx = b.x + b.width / 2 - zone.x.floor_int();
+                    const std::int64_t dz = b.z + b.depth / 2 - zone.z.floor_int();
+                    const std::int64_t d = dx * dx + dz * dz;
+                    if (complete(b) && d <= reach * reach && d < best_d) {
+                        best_d = d;
+                        best = z;
+                    }
+                }
+            }
+            if (best) {
+                const Zone& zone = g_.map_.zones[*best];
+                g_.events_.push_back({Game::Event::Kind::Mammoths, p, {}, {zone.x, zone.z}, static_cast<std::uint16_t>(village::kMammoths), 0});
+            }
+        }
     }
 
     // Phase 105: the coops' day. The flock is whole again when spring comes
@@ -6491,6 +6762,8 @@ public:
     std::vector<Campfire> campfires_;
     bool campfires_listed_ = false;
     bool movers_counted_ = false;
+    bool waits_for_mate_ = false;  // Phase 111: set by start_hunting() when the hunter waits for the other.
+
     std::uint32_t no_gold_work_ = 0;  // Bit per town.
     std::array<std::int32_t, kMaxPlayers> movers_{};
 
@@ -6518,6 +6791,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     fertilizer_ = content_->find_resource("core:fertilizer");
     meat_ = content_->find_resource("core:meat");
     hide_ = content_->find_resource("core:hide");
+    ivory_ = content_->find_resource("core:ivory");
     fish_ = content_->find_resource("core:fish");
     fruit_ = content_->find_resource("core:fruit");
     shoes_ = content_->find_resource("core:shoes");
@@ -7777,9 +8051,31 @@ std::int32_t Game::fish_percent(const FishSpots& spots) {
     return std::min(village::kFishMost, village::kFishAlone + village::kFishPerSpot * (spots.shoals + spots.reeds));
 }
 
+bool Game::reaches_herd(const Building& lodge, const Zone& zone) const {
+    // (The herd stands in the middle of its zone: the hunters go there, however wide the zone.)
+    const std::int64_t dx = zone.x.floor_int() - (lodge.x + lodge.width / 2);
+    const std::int64_t dz = zone.z.floor_int() - (lodge.z + lodge.depth / 2);
+    const std::int64_t reach = content_->buildings[lodge.def].work_radius;
+    return dx * dx + dz * dz <= reach * reach;
+}
+
+Game::BigGame Game::big_game(const Building& lodge) const {
+    BigGame out;
+    for (std::size_t z = 0; z < map_.zones.size(); ++z) {
+        if (map_.zones[z].type == ZoneType::Mammoths && reaches_herd(lodge, map_.zones[z])) {
+            ++out.zones;
+            out.animals += z < zone_animals_.size() ? zone_animals_[z] : 0;
+        }
+    }
+    return out;
+}
+
 std::int32_t Game::zone_room(std::size_t z) const {
     const Zone& zone = map_.zones[z];
     const std::int32_t room = VillageRules::zone_capacity(zone.type, rules_);
+    if (zone.type == ZoneType::Mammoths) {
+        return calendar().season == Season::Winter ? room : 0;  // Phase 111.
+    }
     if (zone.type != ZoneType::Rabbits) {
         return room;
     }

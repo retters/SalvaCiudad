@@ -3966,3 +3966,44 @@ Suite nueva `fishing`, 7 casos: los datos y la cuenta del ritmo (50, 84, 118, 15
 
 **D-11012. Versiones.**
 Reglas 71 y generador 12. La red no cambia.
+
+## Fase 111: mamuts (2026-10-05)
+
+**D-11101. Una zona y cuántos hay, no animales simulados.**
+Como se decidió en la ronda de ideas (conejos, linces y mamuts se apoyan en las zonas de animales): `ZoneType::Mammoths` es una zona con su cuenta. No caminan por el mapa, no atacan y nada los ataca. «No atacan si no se los caza» queda como la herida de la cacería.
+
+**D-11102. Solo en invierno.**
+La zona está vacía todo el año. El día que empieza el invierno llegan 3 a cada zona y los que queden se van el día que termina; lo que se caza no se repone ese invierno. En una partida sin invierno no vienen; en una que es toda invierno están desde el principio y la manada se repone cada año.
+
+**D-11103. A quién le llega el aviso.**
+A cada pueblo que tenga algún edificio a 250 m o menos del borde de una zona, una vez por invierno, por la zona más cercana; el aviso lleva la cámara ahí. Se descartó avisar a todos (con niebla, delataría un sitio sin explorar al otro lado del mapa) y avisar solo a quien tenga cabaña cerca (el jugador no sabría que conviene ponerla).
+
+**D-11104. «A su alcance» es el centro de la zona.**
+La manada está en el centro. La cabaña va por ella si ese centro está dentro de su radio (110 m), no si apenas toca el borde: en invierno, con nieve, a un cazador que camina más que eso el juego lo manda de vuelta a comer antes de llegar.
+
+**D-11105. Las armas.**
+`huntArms` en la cabaña (las armas del juego). Los peones le llevan hasta 2 cuando no le queda ninguna, tiene sus dos cazadores y hay mamuts a su alcance: así no acapara armas el resto del año. Entran aunque la cabaña esté llena de carne. Nadie se las lleva de ahí; la que sobre queda para el invierno siguiente. Cada cacería gasta 1.
+
+**D-11106. Van los dos juntos: lo que hubo que cambiar.**
+La primera versión citaba a los dos junto a la manada y el primero esperaba al otro. Medido en un pueblo de prueba, se desfasaban: uno esperaba en la nieve mientras el otro iba a comer, y al volver este, el primero se iba a comer; 9 cacerías en cuatro años. Quedó así: salen los dos a la vez; el que encuentra al otro ocupado (comiendo, de vuelta con carga) lo espera sin empezar otra cosa; y ninguno sale con menos de 850 de comida ni menos de un tercio de energía (come o descansa primero). Junto a la manada se esperan hasta 90 segundos, por si uno tiene el camino más largo. Con eso, 18 cacerías en el mismo tiempo. Mientras haya mamuts y armas, la cabaña no caza otra cosa. Si el compañero está enfermo, o no hay comida en el pueblo, se caza lo de siempre.
+
+**D-11107. El botín.**
+40 de carne, 4 pieles y 2 de marfil. Cada cazador vuelve con una carga de carne (6); el resto queda en la cabaña, como ya quedaba la piel de un ciervo, aunque pase de lo que la cabaña guarda. Los peones lo recogen.
+
+**D-11108. La herida.**
+Una de cada cuatro cacerías, a uno de los dos al azar: 500 de vida menos, nunca por debajo de 100 por la herida. Se cura como cualquier daño (comido, abrigado y sin enfermedad). No hay un estado «herido» aparte ni reposo obligado: es lo más simple, y un pueblo con hambre o frío sí puede perder a un cazador herido, que es lo que pide el criterio («ningún muerto por la herida sola»).
+
+**D-11109. El marfil.**
+Recurso nuevo, bien, valor 60 (las armas valen 16). `sellOnly`: el mercader lo compra y nunca lo trae. Nada lo usa. No tiene pila propia: se ve como una caja. Al haber un recurso más con precio, la lista del mercader cambia y con ella su secuencia de azar.
+
+**D-11110. El generador.**
+`"mammoths": true` en los biomas montaña y boreal. Zonas al final y con su propio azar (8 sitios por km²; suelo que no sea roca ni arena; 220 m entre zonas; 120 m de cada inicio). No hay bioma de tundra (decidido en la ronda).
+
+**D-11111. A la vista.**
+El mamut de las propuestas, en la fauna de ambiente: se ve cerca de la cámara, como las ovejas y los conejos, y no desde lejos. La ventana de la cabaña dice los mamuts a su alcance (o que llegan en invierno), las armas que tiene y, si le falta un cazador, que hacen falta los dos. Mientras un cazador espera al otro, la cabaña no dice «Sin presas a su alcance»; sin armas y sin otra caza sí lo dice, debajo de los mamuts que tiene a su alcance.
+
+**D-11112. Lo medido.**
+Suite nueva `mammoths`, 8 casos: los datos; ninguno en primavera, verano y otoño, 3 en invierno con un aviso, ninguno al volver la primavera; un pueblo lejos no recibe aviso y una partida sin invierno no tiene mamuts; sin armas, o con armas y un solo cazador, nadie va por ellos y las armas no salen del almacén; una cacería deja 40 de carne, 4 pieles y 2 de marfil y gasta un arma, y la cabaña nunca guarda más de 2; en cuatro años de invierno, 18 cacerías, 3 heridos, ninguna vida por debajo de 100, los mismos dos cazadores vivos y ni un arma perdida; en cuatro mapas medianos hay de 2 a 5 zonas, todas en bioma frío y al final de la lista, y ninguna sin montaña ni boreal; guardar y cargar a media cacería. De las pruebas de antes cambiaron tres: la huella del mapa pequeño (lleva las zonas nuevas), la de las zonas de conejos (ya no son las últimas) y la de la fauna, que pide a cada animal su animación de correr (se la añadí al mamut).
+
+**D-11113. Versiones.**
+Reglas 72 y generador 13. La red no cambia: no hay órdenes nuevas.
