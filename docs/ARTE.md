@@ -291,6 +291,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `palisade.glb`, el modelo de un solo bloque, sigue en el mod como modelo del edificio (el que usa el fantasma al colocar y cualquier pieza que falte).
 
+### Sonido de lluvia (fase 97)
+
+`art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
+
 ## Modelos de propuesta que entran al juego (fase 89)
 
 Los modelos de `art/blender/proposals` (los de la página `docs/propuestas`) no están en el juego hasta que una fase los usa. `art/blender/proposals/game.json` lista los que sí:

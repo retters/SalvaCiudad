@@ -23,8 +23,8 @@ float near_gain(float dx, float dz, float height, float reach) {
 }  // namespace
 
 void SoundDirector::load(const mods::BuildResult& pack) {
-    static constexpr const char* kFiles[] = {"chop", "hammer", "bell", "fire", "click",
-                                             "notify", "coins", "sword", "birds", "wind"};
+    static constexpr const char* kFiles[] = {"chop", "hammer", "bell", "fire", "click", "notify",
+                                             "coins", "sword", "birds", "wind", "rain"};
     ids_.fill(audio::kNoSound);
     if (mixer_.sound_count() > 0) {
         return;  // Loaded once; the sounds do not depend on the enabled mods.
@@ -102,9 +102,14 @@ void SoundDirector::update(const sim::Game& game, const FogView* fog, float x, f
     // up, the birds fade and the wind stays.
     const bool cold = game.temperature() < 2 || game.calendar().season == sim::Season::Winter;
     const float up = std::clamp((height - 30.0f) / 150.0f, 0.0f, 1.0f);
+    // Phase 97: under the rain the birds are quiet, and it is heard from any height.
+    const bool rain = game.rules().rain != 0 && game.raining();
     if (ids_[Birds] != audio::kNoSound && ids_[Wind] != audio::kNoSound) {
         mixer_.set_loop(0, cold ? ids_[Wind] : ids_[Birds], audio::Category::Ambient,
-                        paused ? 0.0f : (cold ? 0.5f : 0.45f * (1.0f - up)));
+                        paused ? 0.0f : (cold ? 0.5f : 0.45f * (1.0f - up) * (rain ? 0.25f : 1.0f)));
+    }
+    if (ids_[Rain] != audio::kNoSound) {
+        mixer_.set_loop(2, ids_[Rain], audio::Category::Ambient, paused || !rain ? 0.0f : 0.55f - 0.2f * up);
     }
     // The nearest fire crackles.
     float fire = 0.0f;

@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 57;
+inline constexpr std::uint32_t kGameRulesVersion = 58;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -490,6 +490,7 @@ enum class PlaceError : std::uint8_t {
 inline constexpr std::int32_t kMaxSlopeCm = 400;
 inline constexpr std::int32_t kMaxWallSlopeCm = 180;  // What follows the ground (walls...).
 inline constexpr std::int32_t kMaxRoadSlopeCm = 100;  // A stretch of road (phase 95).
+inline constexpr std::int32_t kMaxDryDays = 30;       // As far back as days_without_rain() looks (phase 97).
 inline constexpr std::int32_t kMaxBuriedCm = 200;
 
 inline constexpr std::uint8_t kNoRequest = 0xFF;
@@ -587,6 +588,18 @@ public:
     [[nodiscard]] std::uint8_t road_kind(DefIndex def) const;
     // Changes whenever a road is laid or taken away (for the views).
     [[nodiscard]] std::uint32_t roads_version() const { return roads_version_; }
+    // Phase 97: rain. The day of the calendar it is, counted from the start
+    // of the game; whether rain or snow falls on a day (`wet`), and which.
+    [[nodiscard]] std::uint64_t seed() const { return seed_; }
+    [[nodiscard]] std::uint64_t calendar_day() const { return tick_ / calendar_day_ticks(); }
+    [[nodiscard]] bool wet(std::uint64_t day) const;
+    [[nodiscard]] bool rained(std::uint64_t day) const;  // It fell as rain: it was not freezing.
+    [[nodiscard]] bool raining() const { return rained(calendar_day()); }
+    [[nodiscard]] bool snowing() const { return wet(calendar_day()) && !raining(); }
+    // Days since it last rained: 0 while it rains, at most kMaxDryDays.
+    [[nodiscard]] std::int32_t days_without_rain() const;
+    // Dirt roads are mud: it rains, or it did yesterday.
+    [[nodiscard]] bool muddy() const { return muddy_; }
     [[nodiscard]] std::uint8_t player_count() const { return player_count_; }
     // Whether the developer tools' commands are accepted (single player,
     // or a multiplayer game that allows them). Part of the state.
@@ -881,6 +894,11 @@ private:
     std::map<std::uint32_t, std::uint8_t> roads_;
     std::vector<DefIndex> road_defs_;
     std::uint32_t roads_version_ = 0;
+    // Phase 97. Derived from the day, not saved: whether the dirt roads are
+    // mud. update_weather() sets it when a day of the calendar begins (and
+    // after loading), and tells the walking grid how fast each road is now.
+    bool muddy_ = false;
+    void update_weather();
     void set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind);
     // Takes away the roads under a rectangle of the map, in meters.
     void clear_roads(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d);

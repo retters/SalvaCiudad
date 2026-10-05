@@ -36,7 +36,7 @@ public:
     [[nodiscard]] audio::Mixer& mixer() { return mixer_; }
 
 private:
-    enum Sfx : std::size_t { Chop, Hammer, Bell, Fire, Click, Notify, Coins, Sword, Birds, Wind, Count };
+    enum Sfx : std::size_t { Chop, Hammer, Bell, Fire, Click, Notify, Coins, Sword, Birds, Wind, Rain, Count };
     audio::Mixer mixer_;
     audio::Output output_;
     std::array<audio::SoundId, Sfx::Count> ids_{};

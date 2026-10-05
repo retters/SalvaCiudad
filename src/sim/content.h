@@ -198,6 +198,9 @@ struct BuildingDef {
     std::int32_t road = 0;
     bool road_eraser = false;
     std::int32_t road_desirability = 0;
+    // Phase 97: with rain it is mud: no faster than the open ground while
+    // it rains and the day after.
+    bool road_muddy = false;
 };
 
 // A stretch of road: a cell of the walking grid.

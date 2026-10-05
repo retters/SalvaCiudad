@@ -130,6 +130,7 @@ Un camino se traza como un muro, lo construyen los peones tramo por tramo, y al 
 | `road` | A qué velocidad se camina sobre él, en porcentaje: de 101 a 200 (el camino de tierra del juego base, 115; la calle empedrada, 130). Necesita `line`, medir 2 × 2 y no llevar `diagonal`, `gate` ni `trap`. |
 | `roadDesirability` | Lo que gana de entorno una casa con la puerta sobre él (0 a 100). |
 | `roadEraser` | `true`: no pone nada; trazarlo **quita** los caminos (y los tramos en obra del propio pueblo) por donde pasa. |
+| `muddy` | `true`: con lluvia se embarra (fase 97). Mientras llueve y el día siguiente se camina sobre él como campo a través y las rutas dejan de preferirlo. El camino de tierra del juego base lo es; la calle empedrada, no. |
 
 Un juego admite hasta 15 tipos de camino. Uno más rápido se puede trazar sobre uno más lento (lo mejora; el lento sigue ahí hasta que el tramo nuevo se termina); al revés, o sobre uno igual, no. Un edificio o un campo colocado encima borra el camino que tapa. La búsqueda de rutas prefiere los caminos en la misma proporción en que se camina más rápido.
 

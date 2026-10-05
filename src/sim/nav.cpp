@@ -337,6 +337,20 @@ void NavGrid::set_road_kinds(const std::vector<std::int32_t>& percents) {
     for (std::size_t k = 0; k < percents.size() && k + 1 < road_percent_.size(); ++k) {
         road_percent_[k + 1] = std::clamp(percents[k], 100, 1000);
     }
+    update_least_step();
+    ++version_;  // What is within reach of where changed (mud, phase 97).
+}
+
+void NavGrid::update_least_step() {
+    // A search must never guess a way cheaper than it can be: its guess per
+    // step is the cost of flat ground on the fastest road there is.
+    std::int32_t fastest = 100;
+    for (std::size_t k = 1; k < road_cells_.size(); ++k) {
+        if (road_cells_[k] != 0) {
+            fastest = std::max(fastest, road_percent_[k]);
+        }
+    }
+    least_step_ = std::max<std::uint32_t>(1, (10u * 100u + static_cast<std::uint32_t>(fastest) / 2) / static_cast<std::uint32_t>(fastest));
 }
 
 void NavGrid::set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind) {
@@ -357,15 +371,7 @@ void NavGrid::set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind) {
     ++road_cells_[kind];
     cell = kind;
     ++version_;  // What is within reach of where changed.
-    // A search must never guess a way cheaper than it can be: its guess per
-    // step is the cost of flat ground on the fastest road there is.
-    std::int32_t fastest = 100;
-    for (std::size_t k = 1; k < road_cells_.size(); ++k) {
-        if (road_cells_[k] != 0) {
-            fastest = std::max(fastest, road_percent_[k]);
-        }
-    }
-    least_step_ = std::max<std::uint32_t>(1, (10u * 100u + static_cast<std::uint32_t>(fastest) / 2) / static_cast<std::uint32_t>(fastest));
+    update_least_step();
 }
 
 void NavGrid::set_barrier(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, bool on) {

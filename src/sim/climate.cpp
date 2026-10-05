@@ -68,6 +68,7 @@ void GameRules::write(BinaryWriter& w) const {
     w.u8(static_cast<std::uint8_t>(fog));
     w.u8(shared_vision ? 1 : 0);
     w.u8(rest ? 1 : 0);
+    w.u8(rain);
 }
 
 bool GameRules::read(BinaryReader& r, GameRules& out) {
@@ -118,7 +119,7 @@ bool GameRules::read(BinaryReader& r, GameRules& out) {
     g.fog = static_cast<FogMode>(fog);
     g.shared_vision = shared_vision != 0;
     std::uint8_t rest = 0;
-    if (!r.u8(rest) || rest > 1) {
+    if (!r.u8(rest) || rest > 1 || !r.u8(g.rain) || g.rain > kMaxRain) {
         r.fail();
         return false;
     }
@@ -251,6 +252,23 @@ std::int32_t temperature(const ClimateSettings& c, std::uint64_t seed, std::uint
     const std::uint64_t day = tick / (year / (kMonths * kDaysPerMonth));
     t += static_cast<std::int32_t>(mix(seed ^ (day * 0x9E3779B97F4A7C15ull)) % 7) - 3;
     return t;
+}
+
+std::int32_t rain_chance(Season season, std::uint8_t rain, std::uint8_t humidity) {
+    // Of a hundred days of the season on a map of the usual humidity.
+    constexpr std::int32_t kBase[] = {30, 18, 32, 26};
+    const std::int32_t base = kBase[static_cast<std::size_t>(season) % 4];
+    return std::clamp(base * static_cast<std::int32_t>(rain) / 100 * static_cast<std::int32_t>(humidity) / 100, 0, 90);
+}
+
+bool wet_day(const ClimateSettings& c, std::uint8_t rain, std::uint8_t humidity, std::uint64_t seed, std::uint64_t day) {
+    if (rain == 0) {
+        return false;
+    }
+    const std::uint64_t day_ticks = year_ticks(c) / (kMonths * kDaysPerMonth);
+    const Season season = calendar(c, day * day_ticks).season;
+    const std::uint64_t roll = mix(seed ^ 0x5261696E44617973ull ^ (day * 0xD6E8FEB86659FD93ull)) % 100;
+    return roll < static_cast<std::uint64_t>(rain_chance(season, rain, humidity));
 }
 
 DayTime day_time(const DayNightSettings& d, std::uint64_t tick) {

@@ -144,6 +144,7 @@ struct NewGameSettings {
     int day_minutes = 5;
     int night_minutes = 5;
     bool rest = true;               // Villagers get tired and rest (phase 71).
+    int rain = 100;                 // How much it rains, percent of the usual; 0: never (phase 97).
     std::string winter = "normal";  // new_game_names::kWinters
     std::string start = "normal";   // new_game_names::kStarts
     std::string diseases = "medium";  // new_game_names::kThreats

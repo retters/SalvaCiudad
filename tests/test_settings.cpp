@@ -318,6 +318,7 @@ TEST_SUITE("settings") {
         n.day_minutes = 30;
         n.night_minutes = 1;
         n.rest = false;
+        n.rain = 150;
         n.winter = "harsh";
         n.start = "plenty";
         n.diseases = "none";

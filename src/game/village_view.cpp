@@ -164,6 +164,32 @@ render::ModelData make_puff_model() {
     return m;
 }
 
+// Phase 97: a drop of rain as it is seen falling: a thin streak, half a
+// meter long, standing on its lower end.
+render::ModelData make_streak_model() {
+    render::ModelData m;
+    constexpr float kHalf = 0.012f;
+    constexpr float kLong = 0.5f;
+    const float corners[4][2] = {{-kHalf, -kHalf}, {kHalf, -kHalf}, {kHalf, kHalf}, {-kHalf, kHalf}};
+    for (int side = 0; side < 4; ++side) {
+        const float* a = corners[side];
+        const float* b = corners[(side + 1) % 4];
+        const math::Vec3 n = math::normalize({a[0] + b[0], 0.0f, a[1] + b[1]});
+        const auto base = static_cast<std::uint32_t>(m.vertices.size());
+        m.vertices.push_back({a[0], 0.0f, a[1], n.x, n.y, n.z, 0.0f, 0.0f});
+        m.vertices.push_back({b[0], 0.0f, b[1], n.x, n.y, n.z, 0.0f, 0.0f});
+        m.vertices.push_back({b[0], kLong, b[1], n.x, n.y, n.z, 0.0f, 0.0f});
+        m.vertices.push_back({a[0], kLong, a[1], n.x, n.y, n.z, 0.0f, 0.0f});
+        m.indices.insert(m.indices.end(), {base, base + 2, base + 1, base, base + 3, base + 2});
+    }
+    m.materials.push_back({});
+    m.primitives.push_back({0, static_cast<std::uint32_t>(m.indices.size()), 0});
+    m.bounds_min = {-kHalf, 0.0f, -kHalf};
+    m.bounds_max = {kHalf, kLong, kHalf};
+    m.radius = kLong;
+    return m;
+}
+
 // Red (0) through yellow to green (1).
 math::Vec3 ramp(float v) {
     v = std::clamp(v, 0.0f, 1.0f);
@@ -388,6 +414,10 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
             puff_model_ = id;
             used_.push_back(id);
         }
+        if (renderer.add_model(make_streak_model(), id)) {
+            streak_model_ = id;
+            used_.push_back(id);
+        }
     }
 }
 
@@ -601,6 +631,7 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
     update_creatures(renderer, game, alpha, dt, speed);
     update_overlay(renderer, game, dt);
     update_particles(renderer, game, dt, speed);
+    update_weather(renderer, game, dt, speed);
 }
 
 bool VillageView::building_shown(const sim::Game& game, const sim::Building& b) const {
@@ -791,6 +822,76 @@ void VillageView::update_particles(render::SceneRenderer& renderer, const sim::G
     renderer.set_instances(puff_model_, puffs_);
 }
 
+
+void VillageView::update_weather(render::SceneRenderer& renderer, const sim::Game& game, float dt, float speed) {
+    if (streak_model_ == kNoModel || puff_model_ == kNoModel) {
+        return;
+    }
+    // The box the drops fall in, around where the view looks, and how many at the most.
+    constexpr float kHalf = 60.0f;
+    constexpr float kHeight = 22.0f;  // Low: none falls right in front of the camera.
+    constexpr std::size_t kDrops = 1400;
+    constexpr float kRainFall = 17.0f;  // Meters a second.
+    constexpr float kSnowFall = 1.6f;
+    constexpr float kDrift = 2.2f;      // The wind carries them east.
+    const bool rain = weather_shown_ && game.rules().rain != 0 && game.raining();
+    const bool snow = weather_shown_ && game.rules().rain != 0 && game.snowing();
+    if (rain || snow) {
+        flakes_falling_ = snow;
+    }
+    // A few seconds to set in and to clear.
+    const float target = rain || snow ? 1.0f : 0.0f;
+    wet_ += std::clamp(target - wet_, -dt / 4.0f, dt / 4.0f);
+    streaks_.clear();
+    flakes_.clear();
+    if (wet_ <= 0.0f) {
+        drops_.clear();
+        renderer.set_instances(streak_model_, streaks_);
+        return;
+    }
+    if (drops_.size() != kDrops) {
+        drops_.resize(kDrops);
+        for (math::Vec3& d : drops_) {
+            d = {(random01() * 2.0f - 1.0f) * kHalf, random01() * kHeight, (random01() * 2.0f - 1.0f) * kHalf};
+        }
+    }
+    const float step = dt * std::min(std::max(speed, 0.0f), 3.0f);
+    const float fall = flakes_falling_ ? kSnowFall : kRainFall;
+    // From far a streak of two centimeters is less than a pixel: it grows
+    // with the distance so that it stays about one pixel wide.
+    const float far = std::clamp(view_distance_ / 22.0f, 1.0f, 9.0f);
+    const float floor = map_surface_height(game.map(), view_x_, view_z_) - 3.0f;
+    const auto shown = static_cast<std::size_t>(static_cast<float>(kDrops) * wet_);
+    for (std::size_t i = 0; i < shown; ++i) {
+        math::Vec3& d = drops_[i];
+        d.y -= fall * step;
+        d.x += kDrift * step;
+        if (d.y < 0.0f) {
+            d = {(random01() * 2.0f - 1.0f) * kHalf, kHeight, (random01() * 2.0f - 1.0f) * kHalf};
+        }
+        if (d.x > kHalf) {
+            d.x -= 2.0f * kHalf;
+        }
+        render::Instance inst;
+        inst.position = {view_x_ + d.x, floor + d.y, view_z_ + d.z};
+        if (flakes_falling_) {
+            inst.scale = 0.09f * far;
+            inst.tint = {1.6f, 1.6f, 1.7f};
+            flakes_.push_back(inst);
+        } else {
+            inst.scale = far;
+            inst.tint = {0.9f, 1.0f, 1.2f};
+            inst.fade = 2;
+            streaks_.push_back(inst);
+        }
+    }
+    renderer.set_instances(streak_model_, streaks_);
+    // The flakes are puffs: they go with the smoke's.
+    if (!flakes_.empty()) {
+        puffs_.insert(puffs_.end(), flakes_.begin(), flakes_.end());
+        renderer.set_instances(puff_model_, puffs_);
+    }
+}
 
 void VillageView::update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt) {
     if (overlay_model_ == kNoModel) {
@@ -1184,7 +1285,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     std::map<render::ModelId, std::vector<render::Instance>> lists;
     for (const render::ModelId id : used_) {
         if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
-            id != puff_model_ && !is_prop(id)) {
+            id != puff_model_ && id != streak_model_ && !is_prop(id)) {
             lists[id];
         }
     }
@@ -1420,7 +1521,9 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
                                                 fog_->rect_unexplored(x, z, sim::kRoadModule, sim::kRoadModule))) {
             continue;
         }
-        (void)put_module(def, x, z, 1, {1.0f, 1.0f, 1.0f}, 0);
+        // Phase 97: a dirt road after the rain is darker: mud.
+        const bool mud = game.muddy() && content.buildings[def].road_muddy;
+        (void)put_module(def, x, z, 1, mud ? math::Vec3{0.66f, 0.6f, 0.56f} : math::Vec3{1.0f, 1.0f, 1.0f}, 0);
     }
     // Phase 93: the line being traced, each module green or red.
     for (const Ghost& g : trace_) {
@@ -1444,7 +1547,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     }
     for (auto& [id, list] : lists) {
         if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&
-            id != puff_model_ && !is_prop(id)) {
+            id != puff_model_ && id != streak_model_ && !is_prop(id)) {
             renderer.set_instances(id, list);
         }
     }

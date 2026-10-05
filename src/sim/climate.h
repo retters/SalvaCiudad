@@ -101,11 +101,25 @@ struct GameRules {
     DayNightSettings day_night;
     // Phase 71: villagers get tired and go home to rest.
     bool rest = false;
+    // Phase 97: how much it rains, percent of the usual (0: never, which is
+    // what the tests of earlier phases use; the new game form starts at 100).
+    std::uint8_t rain = 0;
 
     void write(BinaryWriter& w) const;
     [[nodiscard]] static bool read(BinaryReader& r, GameRules& out);
     bool operator==(const GameRules&) const = default;
 };
+
+inline constexpr std::uint8_t kMaxRain = 200;
+// Phase 97. Whether it rains (or, when it freezes, snows) on a day of the
+// calendar, counted from the start of the game: a pure function of the
+// seed, the day, its season, how wet the map is (MapSettings::humidity, 100
+// the usual) and the rules' rain. The same on every machine; nothing of it
+// is saved.
+[[nodiscard]] bool wet_day(const ClimateSettings& c, std::uint8_t rain, std::uint8_t humidity, std::uint64_t seed,
+                           std::uint64_t day);
+// The chance of it on a day of a season, percent.
+[[nodiscard]] std::int32_t rain_chance(Season season, std::uint8_t rain, std::uint8_t humidity);
 
 inline constexpr std::int32_t kMinPopulationLimit = 50;
 inline constexpr std::int32_t kMaxPopulationLimit = 1000;

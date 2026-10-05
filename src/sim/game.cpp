@@ -2921,12 +2921,14 @@ public:
     void burn() {
         std::vector<EntityId> gone;
         auto& list = g_.buildings_;
+        const bool raining = g_.rules_.rain != 0 && g_.raining();
         for (std::size_t i = 0; i < list.size(); ++i) {
             Building& b = list.data()[i];
             if (b.fire <= 0) {
                 continue;
             }
-            if (g_.tick_ % 10 == 0) {
+            // Under the rain it grows at half the speed (phase 97).
+            if (g_.tick_ % (raining ? 20u : 10u) == 0) {
                 b.fire = std::min(100, b.fire + 1);
                 b.burned = std::min(1000, b.burned + 1 + b.fire / 10);
             }
@@ -4684,6 +4686,9 @@ public:
     void step() {
         ++g_.tick_;
         const bool calendar_day = g_.tick_ % g_.calendar_day_ticks() == 0;
+        if (calendar_day && g_.rules_.rain != 0) {
+            g_.update_weather();
+        }
         if (g_.tick_ % g_.day_ticks() == 0) {
             daily(calendar_day);
         } else if (calendar_day) {
@@ -5654,6 +5659,7 @@ Game::Game(std::shared_ptr<const Content> content, MapData map, const GameSetup&
     }
     temperature_ = sim::temperature(rules_.climate, seed_, 0);
     build_indexes();
+    update_weather();
     nodes_.assign(map_.features.size(), Node{});
     for (std::size_t i = 0; i < map_.features.size(); ++i) {
         const MapFeature& f = map_.features[i];
@@ -5741,6 +5747,39 @@ bool Game::road_to_erase(std::uint8_t town, std::int32_t x, std::int32_t z) cons
         }
     }
     return false;
+}
+
+bool Game::wet(std::uint64_t day) const {
+    return wet_day(rules_.climate, rules_.rain, map_.settings.humidity, seed_, day);
+}
+
+bool Game::rained(std::uint64_t day) const {
+    return wet(day) && sim::temperature(rules_.climate, seed_, day * calendar_day_ticks()) >= 0;
+}
+
+std::int32_t Game::days_without_rain() const {
+    const std::uint64_t today = calendar_day();
+    std::int32_t days = 0;
+    while (days < kMaxDryDays && static_cast<std::uint64_t>(days) <= today && !rained(today - static_cast<std::uint64_t>(days))) {
+        ++days;
+    }
+    return days;
+}
+
+void Game::update_weather() {
+    const std::uint64_t today = calendar_day();
+    const bool mud = rules_.rain != 0 && (rained(today) || (today > 0 && rained(today - 1)));
+    if (mud == muddy_) {
+        return;
+    }
+    muddy_ = mud;
+    buildings_changed_ = true;  // The view shows the mud.
+    std::vector<std::int32_t> percents;
+    for (const DefIndex d : road_defs_) {
+        const BuildingDef& road = content_->buildings[d];
+        percents.push_back(mud && road.road_muddy ? 100 : road.road);
+    }
+    nav_.set_road_kinds(percents);
 }
 
 void Game::build_indexes() {
@@ -7479,6 +7518,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
     // As of the last day that turned the weather: the village's or the calendar's.
     g.temperature_ = sim::temperature(g.rules_.climate, g.seed_,
                                       std::max(g.tick_ - g.tick_ % g.day_ticks(), g.tick_ - g.tick_ % g.calendar_day_ticks()));
+    g.update_weather();
     g.player_count_ = pc;
     for (std::uint8_t p = 0; p < pc; ++p) {
         PlayerState& ps = g.players_[p];

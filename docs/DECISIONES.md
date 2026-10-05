@@ -3554,3 +3554,29 @@ Suite nueva `lanterns`, 7 casos, en un mapa con una manada de lobos a 260 m del 
 
 **D-9607. Versiones.**
 Reglas 57, red 28.
+
+## Fase 97: lluvia (2026-10-04)
+
+**D-9701. Cada día llueve o no, por sorteo fijo.**
+Un día del calendario es de lluvia si un número sacado de la semilla de la partida y del número del día cae por debajo de la probabilidad de ese día: 30 % en primavera, 18 % en verano, 32 % en otoño y 26 % en invierno, multiplicada por la «Lluvia» de las reglas y por la humedad del mapa (las dos en porcentaje; tope 90 %). Cada día se sortea aparte: no hay frentes ni rachas (lo más simple; si se quieren, basta con que la probabilidad de hoy mire a ayer). Nada se guarda: `Game::wet(día)` es una función, y por eso una partida cargada, un cliente que entra tarde y el anfitrión dicen lo mismo. Si ese día la temperatura está bajo cero, lo que cae es nieve: no embarra ni apaga. La nieve acumulada en el suelo sigue como desde la fase 10 (depende del frío, no de que nieve): cambiarlo movería pruebas de fases anteriores.
+
+**D-9702. El barro.**
+El camino de tierra tiene `muddy` en sus datos. Mientras llueve y todo el día siguiente, su velocidad vuelve a 100 % y la búsqueda de rutas lo trata como terreno. El empedrado no cambia. Se hace cambiando la tabla de velocidades por tipo de camino al empezar cada día del calendario; las celdas no se tocan.
+
+**D-9703. Incendios.**
+Bajo la lluvia un incendio crece cada 20 ticks en lugar de cada 10: tanto su intensidad como el daño. Las chispas a los edificios vecinos saltan igual, pero con la intensidad que tenga, que es menor.
+
+**D-9704. Lo que la simulación ofrece a las fases siguientes.**
+`raining()`, `snowing()`, `rained(día)`, `wet(día)`, `days_without_rain()` (hasta 30) y `muddy()`. El tonel (fase 103) y las setas (fase 98) las usarán.
+
+**D-9705. En pantalla y en el oído.**
+1400 rayas finas (o copos, si nieva) caen en una caja de 120 × 120 × 22 m centrada donde mira la cámara; entran y salen en cuatro segundos. Las rayas engordan con la distancia de la cámara: con su grosor real (2 cm) no llegaban a un píxel desde la altura normal y no se veía llover (así salió en la primera captura); en la segunda, demasiado gruesas y largas, parecían barras, y se dejaron en medio metro, semitransparentes y en una caja baja para que ninguna caiga pegada a la cámara. La luz de la escena pasa por `rain_lighting`: cielo gris con el mismo brillo que tenía (de noche no aclara), sol al 40 % sin disco, sin estrellas. El sonido es un bucle nuevo, `rain.wav`, en un tercer canal de ambiente; los pájaros bajan a la cuarta parte. La barra superior dibuja un ícono con trazos (sol o luna, nube con gotas, nube con copos) solo en partidas donde puede llover, y antepone «Llueve» o «Nieva» al clima. El camino de tierra embarrado se oscurece. Un reporte (`--reporte`) no muestra lluvia: enseña un momento de una partida, no su clima.
+
+**D-9706. Formulario y ajustes.**
+«Lluvia», deslizador de 0 a 200 % en pasos de 25 (0 dice «Nunca»), junto a día y noche; se recuerda en `settings.json` (`newGame.rain`). Las partidas armadas en pruebas tienen 0, como pedía el plan.
+
+**D-9707. Lo medido y lo visto.**
+Suite nueva `rain`, 8 casos: misma semilla, mismos días, y otra semilla, otros; con 0 nunca; en cinco años con cuatro semillas llueve entre 15 y 35 de cada cien días sin helada, más con más lluvia o más humedad y menos en un mapa seco; las reglas viajan con la lluvia y se rechaza un valor imposible; en 240 días de una partida, 48 de lluvia, 14 de nieve y 78 de barro, y cada día `raining`, `muddy` y `days_without_rain` cuadran entre sí; **bajo la lluvia, 24 m se cruzan en 120 ticks campo a través, 120 por el camino de tierra embarrado y 101 por la calle; con el camino seco, 113**; un incendio, tras 90 ticks, lleva 8 de daño bajo la lluvia y 18 sin ella; guardar y cargar con barro (el barro se va a la vez en la partida y en su copia); la luz de un día de lluvia. En `net`: tras un año con lluvia, anfitrión y cliente tienen el mismo hash y el mismo clima. En `settings`: la lluvia del formulario se guarda y se lee.
+
+**D-9708. Versiones.**
+Reglas 58, red 29: no hay mensajes nuevos, pero las reglas de la partida viajan con un byte más (la lluvia) y una versión anterior las leería mal.

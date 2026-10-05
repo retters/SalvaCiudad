@@ -155,6 +155,7 @@ private:
     std::array<std::int32_t, 16> road_percent_{100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
     // The least a straight step may cost, with the roads there are now (10 without any).
     std::uint32_t least_step_ = 10;
+    void update_least_step();
     // The cost of a step onto a cell: its ground's, less on a road.
     [[nodiscard]] std::uint32_t step_cost(std::size_t i) const {
         const std::uint32_t ground = terrain_cost_[i];

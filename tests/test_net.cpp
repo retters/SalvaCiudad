@@ -484,6 +484,37 @@ TEST_SUITE("net") {
         CHECK(c.m[0].game->roads() == c.m[1].game->roads());
     }
 
+    // Phase 97: the rain follows from the seed and the day; nothing of it
+    // travels. After a year with rain, two machines have the same game.
+    TEST_CASE("a year with rain: the same weather and the same game on both machines") {
+        Cluster c;
+        c.join("P1");
+        c.frames(3, 0);
+        GameConfig rainy = config(22, false);
+        rainy.rules.rain = 100;
+        c.host().set_config(rainy);
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(3, 0);
+        REQUIRE(c.m[1].game != nullptr);
+        CHECK(c.m[1].game->rules().rain == 100);
+        const std::uint32_t year = c.m[0].game->year_ticks();
+        int rainy_days = 0;
+        for (std::uint32_t t = 0; t < year; t += 10) {
+            c.frame(10);
+            if (c.m[0].game->tick() % c.m[0].game->calendar_day_ticks() < 10) {
+                rainy_days += c.m[0].game->raining() ? 1 : 0;
+            }
+        }
+        c.settle();
+        expect_same_games(c);
+        CHECK(c.m[0].game->tick() >= year);
+        CHECK(rainy_days > 5);
+        CHECK(c.m[0].game->raining() == c.m[1].game->raining());
+        CHECK(c.m[0].game->muddy() == c.m[1].game->muddy());
+        CHECK(c.m[0].game->days_without_rain() == c.m[1].game->days_without_rain());
+    }
+
     TEST_CASE("a player who drops out comes back and follows") {
         Cluster c;
         c.join("Ana");

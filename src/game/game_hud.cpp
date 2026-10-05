@@ -225,6 +225,39 @@ bool GameHud::pressed(const ui::Context& ctx, Action action) const {
     return false;
 }
 
+// Phase 97: the sky in a few strokes. `kind`: 0 clear (a sun, or a moon by
+// night), 1 rain, 2 snow.
+void weather_icon(ui::Context& ctx, const ui::Rect& r, int kind, bool night) {
+    ui::DrawList& d = ctx.draw();
+    const float u = std::max(1.0f, std::round(r.h / 8.0f));  // A stroke.
+    const float cx = std::round(r.x + r.w * 0.5f);
+    const float cy = std::round(r.y + r.h * 0.5f);
+    if (kind == 0) {
+        const ui::Color c = night ? ui::Color::rgb(0xD8DCEB) : ui::Color::rgb(0xF2C94C);
+        d.rect({cx - 2.0f * u, cy - 2.0f * u, 4.0f * u, 4.0f * u}, c);
+        if (night) {
+            d.rect({cx - 0.5f * u, cy - 2.0f * u, 2.5f * u, 2.5f * u}, ui::Color::rgb(0x2B2620));  // A bite: the moon.
+        } else {
+            for (const auto& [dx, dy] : {std::pair{0.0f, -1.0f}, std::pair{0.0f, 1.0f}, std::pair{-1.0f, 0.0f}, std::pair{1.0f, 0.0f}}) {
+                d.rect({cx + dx * 3.5f * u - 0.5f * u, cy + dy * 3.5f * u - 0.5f * u, u, u}, c);
+            }
+        }
+        return;
+    }
+    // A cloud, and what falls from it.
+    const ui::Color cloud = ui::Color::rgb(0xAEB6C2);
+    d.rect({cx - 3.5f * u, cy - 2.0f * u, 7.0f * u, 2.5f * u}, cloud);
+    d.rect({cx - 2.0f * u, cy - 3.5f * u, 3.5f * u, 2.0f * u}, cloud);
+    for (int k = -1; k <= 1; ++k) {
+        const float x = cx + static_cast<float>(k) * 2.5f * u;
+        if (kind == 1) {
+            d.line(x + 0.5f * u, cy + 1.0f * u, x - 0.5f * u, cy + 3.5f * u, u, ui::Color::rgb(0x6FB1F0));
+        } else {
+            d.rect({x - 0.5f * u, cy + (k == 0 ? 2.5f : 1.5f) * u, u, u}, ui::Color::rgb(0xFFFFFF));
+        }
+    }
+}
+
 void GameHud::mark(ui::Context& ctx, const ui::Rect& r) const {
     // A gold outline that pulses about once a second.
     const double t = static_cast<double>(ctx.now_ns() % 1'000'000'000ull) / 1e9;
@@ -552,17 +585,36 @@ void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
     if (cycle) {
         weather = tr("hud.dayTime", tr(day_time.night ? "hud.night" : "hud.day"), weather);
     }
+    // Phase 97: what falls from the sky, said first and drawn beside it
+    // (in a game where it may rain).
+    const bool rainy_game = game.rules().rain != 0;
+    const bool raining = rainy_game && game.raining();
+    const bool snowing = rainy_game && game.snowing();
+    if (raining || snowing) {
+        weather = tr("hud.dayTime", tr(raining ? "hud.weather.rain" : "hud.weather.snowfall"), weather);
+    }
     const std::string date_text = tr("hud.date", static_cast<int>(cal.year), static_cast<int>(cal.month),
                                      static_cast<int>(cal.day));
     // Weather over the date, in two small lines.
     const ui::TextStyle two = ctx.style(ctx.theme().small);
     const float half = std::round(bar.h * 0.5f);
-    const float ww = std::max(ctx.text().measure(two, weather), ctx.text().measure(two, date_text)) + ctx.s(24.0f);
+    const float icon = rainy_game ? std::round(ctx.s(20.0f)) : 0.0f;
+    const float ww = std::max(ctx.text().measure(two, weather), ctx.text().measure(two, date_text)) + ctx.s(24.0f) + icon;
     right -= ww;
-    ctx.label({right, bar.y + ctx.s(3.0f), ww, half - ctx.s(3.0f)}, weather, two,
+    if (rainy_game) {
+        weather_icon(ctx, {right + ctx.s(4.0f), bar.y + ctx.s(4.0f), icon - ctx.s(4.0f), half - ctx.s(4.0f)},
+                     raining ? 1 : snowing ? 2 : 0, cycle && day_time.night);
+    }
+    ctx.label({right + icon, bar.y + ctx.s(3.0f), ww - icon, half - ctx.s(3.0f)}, weather, two,
               game.temperature() < 0 ? ui::Color::rgb(0x9CC7F0) : ctx.theme().text);
-    ctx.label({right, bar.y + half, ww, half - ctx.s(3.0f)}, date_text, two, ctx.theme().text_dim);
+    ctx.label({right + icon, bar.y + half, ww - icon, half - ctx.s(3.0f)}, date_text, two, ctx.theme().text_dim);
     std::string weather_tip = tr(game.frozen() ? "hud.weather.frozen" : "hud.weather.tooltip", game.snow());
+    if (rainy_game) {
+        weather_tip += "\n" + (raining       ? tr("hud.weather.rain.tooltip")
+                               : snowing      ? tr("hud.weather.snowfall.tooltip")
+                               : game.muddy() ? tr("hud.weather.mud.tooltip")
+                                              : tr("hud.weather.dry.tooltip", game.days_without_rain()));
+    }
     if (cycle) {
         // Ten ticks a second at normal speed.
         const int seconds = static_cast<int>((day_time.ticks_left + 9) / 10);

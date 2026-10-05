@@ -1439,6 +1439,7 @@
       ],
       "buildWork": 5,
       "road": 115,
+      "muddy": true,
       "fireproof": true,
       "line": "road",
       "pieces": {

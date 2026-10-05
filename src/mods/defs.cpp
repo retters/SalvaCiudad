@@ -948,6 +948,10 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.road = r.integer("road", 0, 200, 0);
         def.road_eraser = r.flag("roadEraser");
         def.road_desirability = r.integer("roadDesirability", 0, 100, 0);
+        def.road_muddy = r.flag("muddy");
+        if (def.road_muddy && def.road <= 0) {
+            r.fail("\"muddy\" needs a \"road\"");
+        }
         if (def.road != 0 && def.road <= 100) {
             r.fail("\"road\" is how fast people walk on it, percent: more than 100");
         }

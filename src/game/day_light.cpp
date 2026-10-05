@@ -94,4 +94,25 @@ render::Lighting day_lighting(const render::Lighting& season, bool night, float 
     return l;
 }
 
+render::Lighting rain_lighting(const render::Lighting& clear, float amount) {
+    const float a = std::clamp(amount, 0.0f, 1.0f);
+    if (a <= 0.0f) {
+        return clear;
+    }
+    render::Lighting l = clear;
+    // As bright as it was (it rains by night too), without its color.
+    const auto gray = [](math::Vec3 c, float keep) {
+        const float y = (0.30f * c.x + 0.55f * c.y + 0.15f * c.z) * keep;
+        return math::Vec3{y * 0.95f, y, y * 1.06f};
+    };
+    l.zenith_color = mix(clear.zenith_color, gray(clear.zenith_color, 1.15f), a * 0.9f);
+    l.horizon_color = mix(clear.horizon_color, gray(clear.horizon_color, 0.9f), a * 0.9f);
+    l.sky_ambient = mix(clear.sky_ambient, gray(clear.sky_ambient, 0.95f), a * 0.8f);
+    l.sun_color = clear.sun_color * (1.0f - 0.6f * a);
+    l.disc = clear.disc * (1.0f - a);
+    l.stars = clear.stars * (1.0f - a);
+    l.water = clear.water * (1.0f - 0.25f * a);
+    return l;
+}
+
 }  // namespace sc

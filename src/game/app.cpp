@@ -947,11 +947,15 @@ void App::render_frame(float dt) {
                     lighting_ = day_lighting(lighting_, night, progress);
                     night_ = 1.0f - daylight(night, progress);
                 }
+                // Phase 97: under the rain the sky is gray.
+                village_.set_weather_shown(!replay_);
+                lighting_ = rain_lighting(lighting_, village_.wet());
                 if (!still) {
                     update_placement(frame.width, frame.height);
                 }
                 const float speed = host_->game_paused() ? 0.0f : speed::multiplier(clock_.speed());
                 village_.set_view(camera_.target().x, camera_.target().z, session_->town());
+                village_.set_view_distance(camera_.distance());
                 update_war_fog();
                 village_.set_fog(&session_->fog());
                 // What the eye is inside of and, in third person, what

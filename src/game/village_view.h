@@ -99,6 +99,15 @@ public:
     [[nodiscard]] std::size_t ambient_animals() const { return fauna_.shown(); }
     // Phase 91: the "ground detail" setting, 0 (nothing dresses the ground) to 3.
     void set_ground_detail(int detail) { ground_detail_ = detail; }
+    // Phase 97: how much it rains or snows on screen now, 0 to 1 (it eases
+    // in and out), for the light and the sound; `false`: nothing falls
+    // (a report shows a moment of a game, not its weather).
+    [[nodiscard]] float wet() const { return wet_; }
+    [[nodiscard]] bool snow_falling() const { return flakes_falling_; }
+    void set_weather_shown(bool shown) { weather_shown_ = shown; }
+    // How far the camera is from what it looks at, in meters: the rain is
+    // drawn thicker from far, or it would not be seen.
+    void set_view_distance(float meters) { view_distance_ = meters; }
     [[nodiscard]] std::size_t ground_cover_shown() const { return cover_.shown(); }
     void set_view(float x, float z, std::uint8_t town) {
         view_x_ = x;
@@ -280,6 +289,17 @@ private:
     float emit_timer_ = 0.0f;
     [[nodiscard]] float random01();
     void update_particles(render::SceneRenderer& renderer, const sim::Game& game, float dt, float speed);
+    // Phase 97: rain, or snow when it freezes: streaks (or flakes) falling
+    // in a box around where the view looks. `wet_` eases in and out.
+    render::ModelId streak_model_ = kNoModel;
+    std::vector<math::Vec3> drops_;  // Where each is, from the middle of the box.
+    std::vector<render::Instance> streaks_;
+    std::vector<render::Instance> flakes_;
+    float wet_ = 0.0f;
+    bool flakes_falling_ = false;
+    bool weather_shown_ = true;
+    float view_distance_ = 60.0f;
+    void update_weather(render::SceneRenderer& renderer, const sim::Game& game, float dt, float speed);
     void update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt);
     std::vector<render::Instance> animals_;
     std::vector<render::Instance> marks_;

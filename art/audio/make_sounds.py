@@ -180,11 +180,37 @@ def wind(rng):
     return out
 
 
+def rain(rng):
+    """Steady rain, a loop of six seconds: a hiss, and drops on leaves and roofs (phase 97)."""
+    n = int(RATE * 6.0)
+    # The hiss: noise with its lows taken out, so it does not rumble.
+    white = noise(rng, n)
+    low = lowpass(white, 0.08)
+    hiss = lowpass([w - l for w, l in zip(white, low)], 0.55)
+    out = [h * 0.5 for h in hiss]
+    # Some three hundred drops a second, each a tick of a few milliseconds.
+    for _ in range(1800):
+        start = rng.randrange(n)
+        length = rng.randrange(40, 160)
+        loud = rng.uniform(0.15, 0.6)
+        tone = rng.uniform(900.0, 3200.0)
+        for i in range(length):
+            t = i / RATE
+            out[(start + i) % n] += math.sin(2 * math.pi * tone * t) * math.exp(-t * 900.0) * loud
+    # The ends meet: the last tenth of a second fades into the first.
+    blend = int(RATE * 0.1)
+    for i in range(blend):
+        k = i / blend
+        out[i] = out[i] * k + out[n - blend + i] * (1 - k)
+    return out[:n - blend]
+
+
 def main():
     folder = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "data/mods/core/sounds")
     os.makedirs(folder, exist_ok=True)
     for name, make in (("chop", chop), ("hammer", hammer), ("bell", bell), ("fire", fire), ("click", click),
-                       ("notify", notify), ("coins", coins), ("sword", sword), ("birds", birds), ("wind", wind)):
+                       ("notify", notify), ("coins", coins), ("sword", sword), ("birds", birds), ("wind", wind),
+                       ("rain", rain)):
         write(folder, name, make(random.Random(name)))
     print("SalvaCiudad sounds written to", folder)
 

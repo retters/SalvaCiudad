@@ -20,4 +20,8 @@ namespace sc {
 // progress = 0.5 (noon) or do not call it.
 [[nodiscard]] render::Lighting day_lighting(const render::Lighting& season, bool night, float progress);
 
+// Phase 97: the same light under the rain (or the snow), `amount` from 0
+// (clear) to 1: a gray sky, a weak sun without its disc, no stars.
+[[nodiscard]] render::Lighting rain_lighting(const render::Lighting& clear, float amount);
+
 }  // namespace sc

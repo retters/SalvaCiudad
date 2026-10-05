@@ -57,7 +57,7 @@ public:
     void mix(std::span<float> out);
     [[nodiscard]] std::size_t voices() const;
 
-    static constexpr std::size_t kLoops = 2;
+    static constexpr std::size_t kLoops = 3;
 
 private:
     struct Voice {

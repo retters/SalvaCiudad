@@ -178,6 +178,7 @@ sim::GameRules varied_rules() {
     r.climate.minutes = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
     r.day_night = {kUsualDayMinutes, kUsualDayMinutes};
     r.rest = true;
+    r.rain = 100;
     return r;
 }
 
@@ -322,6 +323,7 @@ void NewGameScreen::apply(const NewGameSettings& n) {
         season_minutes_[i] = std::clamp(n.season_minutes[i], 1, static_cast<int>(sim::kMaxSeasonMinutes));
     }
     game_.rest = n.rest;
+    game_.rain = static_cast<std::uint8_t>(percent(n.rain));
     day_night_on_ = n.day_night;
     day_minutes_ = std::clamp(n.day_minutes, 1, static_cast<int>(sim::kMaxDayMinutes));
     night_minutes_ = std::clamp(n.night_minutes, 1, static_cast<int>(sim::kMaxDayMinutes));
@@ -377,6 +379,7 @@ NewGameSettings NewGameScreen::remembered() const {
     n.seasons = game_.climate.seasons;
     n.season_minutes = season_minutes_;
     n.rest = game_.rest;
+    n.rain = game_.rain;
     n.day_night = day_night_on_;
     n.day_minutes = day_minutes_;
     n.night_minutes = night_minutes_;
@@ -772,6 +775,16 @@ void NewGameScreen::rules_rows(ui::Context& ctx, float x, float& y, float cw) {
         }
     }
 
+    {
+        // Phase 97: how much it rains.
+        int v = game_.rain;
+        const Row r = row(ctx, x, y, cw, tr("newGame.rain"), tr("newGame.rain.tooltip"));
+        if (ctx.slider(ctx.id("rain"), r.control, v, 0, sim::kMaxRain, 25,
+                       [](int p) { return p == 0 ? tr("newGame.rain.never") : tr("newGame.percent", p); },
+                       tr("newGame.rain.tooltip"))) {
+            game_.rain = static_cast<std::uint8_t>(percent(v));
+        }
+    }
     {
         const Row r = row(ctx, x, y, cw, tr("newGame.dayNight"), tr("newGame.dayNight.tooltip"));
         (void)ctx.checkbox(ctx.id("day_night_on"), r.control, day_night_on_, tr("newGame.dayNight.tooltip"));
