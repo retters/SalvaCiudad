@@ -410,7 +410,13 @@ struct HerdDef {
     std::int32_t male_price = 30;    // Gold for another male.
     std::vector<ResourceAmount> spring;  // What each female gives in spring (wool).
     std::vector<ResourceAmount> cull;    // What each animal over the pasture's room gives in autumn (meat, hides).
-    std::uint8_t look = 0;           // How it is drawn (the view's: 0 sheep).
+    // Phase 108: what every female gives each `gives_days` days, all year but in winter (a goat's cheese).
+    std::vector<ResourceAmount> gives;
+    std::int32_t gives_days = 8;
+    // How much the ground of its pasture may rise from its lowest to its highest cell, in centimeters
+    // (a farm's field: 300; goats graze on steeper ground).
+    std::int32_t steep = 300;
+    std::uint8_t look = 0;           // How it is drawn (the view's: 0 sheep, 1 goats).
 };
 
 struct RecipeDef {

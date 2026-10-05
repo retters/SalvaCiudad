@@ -222,7 +222,7 @@ TEST_SUITE("herds") {
         CHECK(h.spring[0].amount == 2);
         CHECK(h.cull.size() == 2);
         const BuildingDef& fold = c.buildings[c.find_building("core:sheepfold")];
-        REQUIRE(fold.herds.size() == 1);
+        REQUIRE(fold.herds.size() == 2);  // Sheep, what it comes with; and goats (phase 108).
         CHECK(fold.herds[0] == sheep);
         CHECK(fold.workers == 1);
         CHECK(fold.work == WorkKind::None);
@@ -480,7 +480,16 @@ TEST_SUITE("herds") {
         Game g(core(), map_for(92), rules);
         const EntityId fold = fold_with_shepherd(g);
         REQUIRE(mark(g, fold, 20, 16));
-        run(g, 400);
+        // And a second fold, of goats (phase 108).
+        const EntityId goats = put(g, "core:sheepfold", at(g, fold).x, at(g, fold).z + 44);
+        REQUIRE(goats.valid());
+        Command change;
+        change.type = CommandType::SetHerd;
+        change.entity = goats;
+        change.value = 1;
+        g.apply(change);
+        REQUIRE(mark(g, goats, 16, 16));
+        run(g, 1200);
         save::SaveData data;
         data.header.name = "herds";
         data.header.game_version = SC_VERSION_STRING;
@@ -495,5 +504,203 @@ TEST_SUITE("herds") {
         data.put("GAME", std::move(w.bytes()));
         REQUIRE(save::write_file(folder / "manual_herds.scsave", data));
         MESSAGE("flock " << flock(at(g, fold)) << ", pasture room " << g.herd_room(at(g, fold)));
+    }
+
+    // --- Phase 108: goats ---------------------------------------------------------------
+
+    TEST_CASE("the base game has goats: cheese all year but in winter, no wool, and steeper pastures") {
+        const Content& c = test::core_content();
+        const DefIndex goats = c.find_herd("core:goats");
+        REQUIRE(goats != kNoDef);
+        const HerdDef& h = c.herds[goats];
+        CHECK(h.spring.empty());
+        REQUIRE(h.gives.size() == 1);
+        CHECK(h.gives[0].resource == c.find_resource("core:cheese"));
+        CHECK(h.gives_days == 8);
+        CHECK(h.steep == 400);
+        CHECK(c.herds[c.find_herd("core:sheep")].steep == 300);
+        CHECK(h.start == 3);
+        CHECK(h.start_male);
+        CHECK(h.cull.size() == 2);
+        const BuildingDef& fold = c.buildings[c.find_building("core:sheepfold")];
+        CHECK(fold.herds[1] == goats);
+        // Cheese is food like any other: it counts as a kind in the diet.
+        const ResourceDef& cheese = c.resources[c.find_resource("core:cheese")];
+        CHECK(cheese.category == ResourceCategory::Food);
+        CHECK(cheese.nutrition > 0);
+        for (const fauna::Species s : {fauna::Species::Goat, fauna::Species::GoatBrown, fauna::Species::GoatPied}) {
+            CHECK_FALSE(fauna::model_file(s).empty());
+        }
+    }
+
+    TEST_CASE("a fold changes its sheep for goats: other animals, and its pasture to mark again") {
+        Game g(core(), map_for(92), setup());
+        const EntityId fold = fold_with_shepherd(g);
+        REQUIRE(mark(g, fold, 16, 20));
+        run(g, 2 * g.calendar_day_ticks());
+        REQUIRE(flock(at(g, fold)) == 6);
+        Command change;
+        change.type = CommandType::SetHerd;
+        change.entity = fold;
+        change.value = 1;
+        g.apply(change);
+        CHECK(g.rejected_commands() == 0);
+        CHECK(g.herd_of(at(g, fold))->id == "core:goats");
+        CHECK(flock(at(g, fold)) == 4);
+        CHECK(at(g, fold).fields.empty());
+        g.apply(change);  // The same herd: nothing to change.
+        CHECK(g.rejected_commands() == 1);
+        change.value = 2;  // It has no third.
+        g.apply(change);
+        CHECK(g.rejected_commands() == 2);
+        const auto [tx, tz] = town(g);
+        const EntityId house = put(g, "core:house", tx - 30, tz + 30);
+        change.entity = house;
+        change.value = 1;
+        g.apply(change);
+        CHECK(g.rejected_commands() == 3);
+        // Goats give no wool: what there is, the sheep gave.
+        const std::int32_t wool = have(g, "core:wool");
+        REQUIRE(mark(g, fold, 16, 20));
+        run(g, 2 * g.calendar_day_ticks());
+        CHECK(flock(at(g, fold)) == 6);  // They breed as the sheep do: a new flock, in the spring it comes.
+        until(g, Season::Spring);
+        CHECK(have(g, "core:wool") == wool);
+        CHECK(flock(at(g, fold)) == 8);
+    }
+
+    TEST_CASE("goats give a unit for every female every eight days, and none in winter") {
+        // (Goats that give clay: nobody eats it, so it can be counted.)
+        auto c = std::make_shared<Content>(test::core_content());
+        c->herds[c->find_herd("core:goats")].gives = {{c->find_resource("core:clay"), 1}};
+        Game g(c, map_for(92), setup());
+        const EntityId fold = fold_with_shepherd(g);
+        Command change;
+        change.type = CommandType::SetHerd;
+        change.entity = fold;
+        change.value = 1;
+        g.apply(change);
+        REQUIRE(at(g, fold).females == 3);
+        const std::int32_t had = have(g, "core:clay");
+        run(g, 16 * g.calendar_day_ticks());
+        CHECK(have(g, "core:clay") == had + 6);  // Three goats, sixteen days.
+        CHECK(have(g, "core:wool") == 0);
+        while (g.calendar().season != Season::Winter) {
+            g.step();
+        }
+        run(g, 2 * g.calendar_day_ticks());
+        const std::int32_t at_winter = have(g, "core:clay");
+        CHECK(at_winter > had + 6);
+        run(g, 20 * g.calendar_day_ticks());
+        CHECK(have(g, "core:clay") == at_winter);
+    }
+
+    TEST_CASE("a pasture of goats is taken on a slope where one of sheep and a field of a farm are not") {
+        // A terrace by the town, level, with a ramp on it that rises 22 cm a meter.
+        MapData m = map_for(92);
+        REQUIRE(!m.starts.empty());
+        const std::int32_t sx = m.starts[0].x.floor_int();
+        const std::int32_t sz = m.starts[0].z.floor_int();
+        const std::int32_t side = m.size + 1;
+        const std::uint16_t base = m.height_cm(sx, sz);
+        REQUIRE(sx + 96 < m.size);
+        REQUIRE(sz - 36 > 0);
+        REQUIRE(sz + 36 < m.size);
+        for (std::int32_t z = sz - 34; z <= sz + 34; ++z) {
+            for (std::int32_t x = sx + 14; x <= sx + 94; ++x) {
+                const std::int32_t rise = std::clamp(x - (sx + 55), 0, 16) * 22;
+                m.heights[static_cast<std::size_t>(z) * static_cast<std::size_t>(side) + static_cast<std::size_t>(x)] =
+                    static_cast<std::uint16_t>(base + rise);
+                if (x < m.size && z < m.size) {
+                    m.water[static_cast<std::size_t>(z) * static_cast<std::size_t>(m.size) + static_cast<std::size_t>(x)] = 0;
+                }
+            }
+        }
+        std::erase_if(m.features, [&](const MapFeature& f) {
+            return f.x.floor_int() >= sx + 12 && f.x.floor_int() <= sx + 96 && std::abs(f.z.floor_int() - sz) <= 36;
+        });
+        Game g(core(), m, setup());
+        const EntityId fold = put(g, "core:sheepfold", sx + 30, sz - 6);
+        const EntityId farm = put(g, "core:farm", sx + 40, sz + 12);
+        REQUIRE(fold.valid());
+        REQUIRE(farm.valid());
+        const std::int32_t x0 = sx + 55, z0 = sz - 8;
+        // The ground of the pasture rises more than three meters and less than four.
+        std::int32_t lo = 65535, hi = 0;
+        for (std::int32_t z = z0; z < z0 + 12; ++z) {
+            for (std::int32_t x = x0; x < x0 + 16; ++x) {
+                lo = std::min<std::int32_t>(lo, g.map().height_cm(x, z));
+                hi = std::max<std::int32_t>(hi, g.map().height_cm(x, z));
+            }
+        }
+        REQUIRE(hi - lo > 300);
+        REQUIRE(hi - lo <= 400);
+        CHECK(g.can_place_field(0, fold, x0, z0, 16, 12) == PlaceError::TooSteep);  // Sheep.
+        CHECK(g.can_place_field(0, farm, x0, z0, 16, 12) == PlaceError::TooSteep);  // A field.
+        Command change;
+        change.type = CommandType::SetHerd;
+        change.entity = fold;
+        change.value = 1;
+        g.apply(change);
+        CHECK(g.can_place_field(0, fold, x0, z0, 16, 12) == PlaceError::None);  // Goats.
+        // On level ground, any of them.
+        CHECK(g.can_place_field(0, farm, sx + 30, sz + 24, 12, 8) == PlaceError::None);
+        Command place;
+        place.type = CommandType::PlaceField;
+        place.entity = fold;
+        place.position = {Fixed::from_int(x0), Fixed::from_int(z0)};
+        place.value = 16 | (12 << 8);
+        g.apply(place);
+        CHECK(at(g, fold).fields.size() == 1);
+        CHECK(g.herd_room(at(g, fold)) == 4);
+    }
+
+    TEST_CASE("cheese is another kind of food in the diet of the villagers") {
+        const auto most_varied = [](bool cheese) {
+            Game g(core(), map_for(92), setup());
+            if (cheese) {
+                grant(g, "core:cheese", 300);
+            }
+            std::uint8_t most = 0;
+            bool ate = false;
+            const DefIndex r = g.content().find_resource("core:cheese");
+            for (std::uint32_t t = 0; t < 9000; ++t) {
+                g.step();
+                for (const Villager& v : g.villagers().data()) {
+                    most = std::max(most, v.variety);
+                    ate = ate || std::count(v.meals.begin(), v.meals.end(), r) > 0;
+                }
+            }
+            CHECK(ate == cheese);
+            return most;
+        };
+        const std::uint8_t without = most_varied(false);
+        const std::uint8_t with = most_varied(true);
+        MESSAGE("kinds of food in a diet: " << int(without) << " with what a town starts with, " << int(with) << " with cheese too");
+        CHECK(with == without + 1);
+    }
+
+    TEST_CASE("saving and loading keeps a fold of goats and the cheese on its way") {
+        Game g(core(), map_for(92), setup());
+        const EntityId fold = fold_with_shepherd(g);
+        Command change;
+        change.type = CommandType::SetHerd;
+        change.entity = fold;
+        change.value = 1;
+        g.apply(change);
+        REQUIRE(mark(g, fold, 16, 20));
+        run(g, 13 * g.calendar_day_ticks());
+        BinaryWriter w;
+        g.save(w);
+        Game loaded(core(), map_for(92), setup());
+        BinaryReader r(w.bytes());
+        REQUIRE(loaded.load(r, core()));
+        CHECK(loaded.hash() == g.hash());
+        CHECK(loaded.herd_of(at(loaded, fold))->id == "core:goats");
+        CHECK(at(loaded, fold).work_done == at(g, fold).work_done);
+        run(g, 40 * g.calendar_day_ticks());
+        run(loaded, 40 * loaded.calendar_day_ticks());
+        CHECK(loaded.hash() == g.hash());
+        CHECK(have(loaded, "core:cheese") == have(g, "core:cheese"));
     }
 }

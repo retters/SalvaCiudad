@@ -139,9 +139,11 @@ Un **rebaño** es una definición propia, en `defs/herds.json` (o cualquier arch
 | `malePrice` | Oro que cuesta otro macho. |
 | `spring` | Lo que da **cada hembra** en primavera (la lana). |
 | `cull` | Lo que da **cada animal** que sobra en otoño, cuando el rebaño pasa del sitio de su pasto. |
-| `look` | Cómo se dibuja: `sheep` (los demás aspectos llegan con sus fases). |
+| `gives`, `givesDays` | Lo que da cada hembra cada `givesDays` días, todo el año salvo en invierno (el queso de las cabras: 1 cada 8 días). |
+| `steep` | Cuánto puede subir el suelo de su pasto entre su celda más baja y la más alta, en centímetros (por omisión 300, lo de un campo; las cabras, 400). |
+| `look` | Cómo se dibuja: `sheep` o `goat`. |
 
-Un **redil** es un `workplace` con `storage`, `radius` y `"herds": ["core:sheep"]` (el primero es el que trae), sin `work` ni recetas. Con `pastureFence` se nombra la línea (un edificio con `line`) cuyas piezas cierran su pasto; es solo aspecto. Su pasto es **un** rectángulo que se marca como un campo de granja, de 4 a 32 m de lado, dentro de su `radius`.
+Un **redil** es un `workplace` con `storage`, `radius` y `"herds": ["core:sheep", "core:goats"]` (el primero es el que trae; los demás se eligen en su ventana, hasta 8), sin `work` ni recetas. Al cambiar de rebaño llegan los animales con que empieza el otro y el pasto se quita. Con `pastureFence` se nombra la línea (un edificio con `line`) cuyas piezas cierran su pasto; es solo aspecto. Su pasto es **un** rectángulo que se marca como un campo de granja, de 4 a 32 m de lado, dentro de su `radius`.
 
 Con su pastor: en primavera, una vez, las hembras dan lo suyo y, si hay macho, nacen dos crías por cada tres hembras mientras el pasto tenga sitio; en otoño, una vez, lo que sobra del sitio se vuelve `cull` (nunca por debajo de los animales con que empezó, ni el macho).
 

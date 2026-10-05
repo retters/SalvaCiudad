@@ -923,6 +923,8 @@
     "hud.fold.mark": "Mark the pasture",
     "hud.fold.mark.tooltip": "Mark the pasture near the fold by dragging over the ground. It is fenced.",
     "hud.fold.marked": "This fold has its pasture.",
+    "hud.fold.change": "Change to: {0:herd}",
+    "hud.fold.change.tooltip": "The herd is changed for the animals the other one starts with, and the pasture is to be marked again.",
     "hud.fold.unmark": "Remove the pasture",
     "hud.fold.buyMale": "Buy a male ({0:gold} gold)",
     "hud.fold.buyMale.tooltip": "With no male the herd has no young.",

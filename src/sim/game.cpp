@@ -4901,6 +4901,18 @@ public:
             if (h == nullptr || !complete(b) || b.workers.empty()) {
                 continue;
             }
+            // Phase 108: what the females give through the year (a goat's cheese), but in winter.
+            if (!h->gives.empty() && now.season != Season::Winter && b.females > 0) {
+                b.work_done += b.females;
+                while (b.work_done >= h->gives_days) {
+                    b.work_done -= h->gives_days;
+                    for (const ResourceAmount& y : h->gives) {
+                        add_to(b.stock, y.resource, std::min(g_.per_year(y.amount), std::max(0, free_space(b))));
+                    }
+                    compact(b.stock);
+                    g_.buildings_changed_ = true;
+                }
+            }
             const std::int32_t room = g_.herd_room(b);
             if (spring && b.herd_spring != now.year) {
                 b.herd_spring = now.year;
@@ -6008,6 +6020,28 @@ public:
                     (void)spawn_villager(town, spot, n % 2 == 0 ? Sex::Male : Sex::Female,
                                          18 + static_cast<std::int32_t>(g_.rng_.below(20)), family, newcomer_race(town));
                 }
+                break;
+            }
+            case CommandType::SetHerd: {
+                Building* fold = g_.buildings_.get(c.entity);
+                if (fold == nullptr || fold->owner != g_.town_of(c.player) || !complete(*fold) ||
+                    static_cast<std::size_t>(c.value) >= def(*fold).herds.size() || c.value == fold->herd) {
+                    ++g_.rejected_;
+                    break;
+                }
+                // Other animals: those the new herd comes with, and its pasture is to be marked again.
+                fold->herd = static_cast<std::uint8_t>(c.value);
+                const HerdDef* herd = g_.herd_of(*fold);
+                fold->females = static_cast<std::uint8_t>(herd != nullptr ? herd->start : 0);
+                fold->males = herd != nullptr && herd->start_male ? 1 : 0;
+                fold->herd_spring = 0;
+                fold->herd_autumn = 0;
+                fold->work_done = 0;
+                for (const Field& f : fold->fields) {
+                    mark_field(f, 0);
+                }
+                fold->fields.clear();
+                g_.buildings_changed_ = true;
                 break;
             }
             case CommandType::BuyMale: {
@@ -7367,7 +7401,9 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
             hi = std::max(hi, h);
         }
     }
-    if (hi - lo > 300) {
+    // (Phase 108: a pasture as steep as its herd grazes.)
+    const HerdDef* grazes = fold ? herd_of(*farm) : nullptr;
+    if (hi - lo > (grazes != nullptr ? grazes->steep : 300)) {
         return PlaceError::TooSteep;
     }
     // Its farmers must be able to walk to it.

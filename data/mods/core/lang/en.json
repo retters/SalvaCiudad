@@ -79,6 +79,8 @@
     "building.farm": "Farm",
     "building.sheepfold": "Sheepfold",
     "herd.sheep": "Sheep",
+    "herd.goats": "Goats",
+    "resource.cheese": "Cheese",
     "resource.wool": "Wool",
     "building.orchard": "Orchard",
     "building.vineyard": "Vineyard",

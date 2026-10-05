@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Cabras (fase 108)
+
+`fauna/goat.glb` (blanca), `goat_brown.glb` y `goat_pied.glb`, de `proposals/creatures`. En un redil de cabras las hembras alternan blanca y parda, y la pía es el macho. El queso usa por ahora la pila del pan.
+
 ### Redil, ovejas y carnero (fase 107)
 
 `buildings/sheepfold.glb` (2308 triángulos; ocupa 10 × 10 m) sale de `proposals/farm` como `farm_sheepfold_empty`: el redil de la propuesta sin sus cinco ovejas, porque el rebaño lo dibuja el juego. `animals/sheep.glb` es la oveja del zoológico (`zoo/sheep.py`, que se construye con `animals`) y `fauna/ram.glb` el carnero de `proposals/beasts`. La lana usa por ahora la pila del lino. Las obras del redil son `site_10x10_1.glb` y `_2.glb`.

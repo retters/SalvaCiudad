@@ -49,7 +49,8 @@
               "animal_hen": "hen", "animal_hen_white": "hen_white", "animal_chick": "chick",
               "pet_dog": "dog", "pet_dog_shepherd": "dog_shepherd", "pet_dog_mastiff": "dog_mastiff",
               "pet_dog_terrier": "dog_terrier", "pet_cat": "cat", "pet_cat_tabby": "cat_tabby", "pet_cat_black": "cat_black",
-              "pet_cat_white": "cat_white", "pet_kitten": "kitten"}
+              "pet_cat_white": "cat_white", "pet_kitten": "kitten",
+              "animal_goat": "goat", "animal_goat_brown": "goat_brown", "animal_goat_pied": "goat_pied"}
     },
     {
       "family": "nature", "class": "animal", "to": "fauna", "bare": true,

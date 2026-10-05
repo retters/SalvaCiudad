@@ -195,6 +195,9 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::BuyMale:
             ok = ok && c.entity.valid();
             break;
+        case CommandType::SetHerd:
+            ok = ok && c.entity.valid() && c.value >= 0 && c.value < 8;
+            break;
         case CommandType::DevBeast:
             ok = ok && c.position.x >= Fixed{} && c.position.z >= Fixed{} && c.def <= 3;
             break;

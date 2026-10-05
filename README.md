@@ -851,6 +851,9 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] La ventana del redil tiene «Cambiar a: Cabras» (y de vuelta «Cambiar a: Ovejas»): el rebaño pasa a ser 3 hembras y un macho del otro animal y hay que marcar el pasto otra vez.
+- [ ] El pasto de cabras se puede marcar en una ladera donde el de ovejas y un campo de granja salen en rojo por empinado (hasta 4 m de desnivel en vez de 3).
+- [ ] Un redil de cabras junta queso todo el año salvo en invierno (1 por cabra cada 8 días) y no da lana; los aldeanos lo comen y cuenta como otro alimento en su dieta.
 - [ ] Alimentos > Redil (10 × 10 m, un pastor): al terminarse tiene 3 ovejas y un carnero, que se ven dentro.
 - [ ] En su ventana, «Marcar el pasto» deja arrastrar un rectángulo cerca del redil (hasta 32 m de lado); queda cercado con valla de estacas y las ovejas pastan ahí de día y vuelven al redil de noche.
 - [ ] En primavera el redil recibe 2 de lana por oveja y nacen crías (de 4 a 6 animales la primera vez) hasta el sitio del pasto (uno cada 40 m², 16 como mucho). La ventana dice cuántos hay y para cuántos alcanza el pasto.

@@ -79,6 +79,8 @@
     "building.farm": "Granja",
     "building.sheepfold": "Redil",
     "herd.sheep": "Ovejas",
+    "herd.goats": "Cabras",
+    "resource.cheese": "Queso",
     "resource.wool": "Lana",
     "building.orchard": "Huerto",
     "building.vineyard": "Viñedo",

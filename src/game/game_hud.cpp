@@ -1091,6 +1091,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     }
     if (herd != nullptr && mine) {
         h += (b->males == 0 ? 2.0f : 1.0f) * (button_h + pad * 0.5f);
+        h += static_cast<float>(d.herds.size() - 1) * (button_h + pad * 0.5f);  // Phase 108: the other herds.
     }
     const bool town_center = d.kind == sim::BuildingKind::TownCenter && b->state == sim::BuildingState::Complete;
     const bool workshop = d.work == sim::WorkKind::Produce && b->state == sim::BuildingState::Complete;
@@ -1229,6 +1230,23 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
             s.issue(c);
         }
         y += button_h;
+        for (std::size_t k = 0; k < d.herds.size(); ++k) {
+            if (k == b->herd || d.herds[k] >= game.content().herds.size()) {
+                continue;
+            }
+            // Phase 108: another herd in this fold.
+            y += pad * 0.5f;
+            const std::string other = tr(game.content().herds[d.herds[k]].name_key);
+            if (ctx.button(ctx.id("herd" + std::to_string(k)), {box.x + pad, y, box.w - 2 * pad, button_h},
+                           tr("hud.fold.change", other), tr("hud.fold.change.tooltip"))) {
+                sim::Command c;
+                c.type = sim::CommandType::SetHerd;
+                c.entity = window_entity_;
+                c.value = static_cast<std::int32_t>(k);
+                s.issue(c);
+            }
+            y += button_h;
+        }
         if (b->males == 0) {
             y += pad * 0.5f;
             const bool rich = game.gold(s.town()) >= herd->male_price;

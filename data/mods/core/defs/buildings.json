@@ -322,7 +322,8 @@
         "good"
       ],
       "herds": [
-        "core:sheep"
+        "core:sheep",
+        "core:goats"
       ],
       "pastureFence": "core:picket_fence",
       "category": "food"

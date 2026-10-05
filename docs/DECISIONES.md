@@ -3876,3 +3876,26 @@ Suite nueva `herds`, 8 casos: los datos; el rebaño pasa de 4 a 6 la primera pri
 
 **D-10710. Versiones.**
 Reglas 68 y red 31. El generador no cambia.
+
+## Fase 108: cabras (2026-10-05)
+
+**D-10801. Un rebaño más, no un edificio más.**
+`core:goats` en `herds.json` y el redil lista los dos. Lo nuevo del rebaño son tres datos: `gives` y `givesDays` (lo que da cada hembra cada tantos días, salvo en invierno) y `steep` (el desnivel que admite su pasto). El queso se junta en el redil con la misma cuenta que los huevos del gallinero: cada día con pastor suma una parte por cabra, y cada 8 partes es un queso.
+
+**D-10802. Elegir el rebaño es cambiarlo.**
+«Se elige al construirlo» quedó como una orden nueva (`SetHerd`) que vale en cualquier momento: el redil pasa a tener los animales con que empieza el otro rebaño (3 hembras y un macho), pierde su pasto, que hay que volver a marcar, y vuelve a tener su primavera y su otoño por delante. Se descartó permitirlo solo antes de la primera primavera (habría que explicar por qué el botón desaparece) y conservar el número de animales (cambiar 16 ovejas por 16 cabras gratis).
+
+**D-10803. «Donde no cabe un campo» es la pendiente.**
+Un campo y un pasto de ovejas admiten 3 m de desnivel entre su celda más baja y la más alta; uno de cabras, 4 m. La especificación habla también de «suelo de roca», pero hoy un campo no mira el tipo de suelo, solo la pendiente y el agua, así que no hay nada que las cabras tengan que saltarse ahí. Si más adelante los campos dejan de aceptar roca, el rebaño tendrá que llevar ese permiso.
+
+**D-10804. El queso.**
+Recurso nuevo `core:cheese`: comida, nutrición 4, vale 4. Cuenta en la dieta variada sin hacer nada: la variedad son las clases distintas entre las últimas cuatro comidas. Un rebaño de 3 cabras da unos 34 al año; uno de 15, unos 170.
+
+**D-10805. A la vista.**
+Tres modelos de cabra de las propuestas; la pía hace de macho. Al cambiar de rebaño los animales dibujados se cambian en el momento.
+
+**D-10806. Lo medido.**
+Seis casos más en la suite `herds` (14 en total): los datos; cambiar a cabras deja 4 animales y ningún pasto, no vale repetir el mismo rebaño, un tercero que no hay ni una casa, las cabras no dan lana y crían como las ovejas (6 la primavera en que llegan, 8 la siguiente); con cabras que dan arcilla para poder contarla, 6 unidades en 16 días con 3 hembras y ninguna en 20 días de invierno; en una rampa hecha a propósito que sube 3,3 m el pasto de ovejas y el campo de una granja salen «demasiado empinado» y el de cabras se acepta; un pueblo nuevo come 2 clases de alimento y con queso 3; guardar y cargar.
+
+**D-10807. Versiones.**
+Reglas 69 y red 32 (por la orden nueva). El generador no cambia.

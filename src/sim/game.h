@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 68;
+inline constexpr std::uint32_t kGameRulesVersion = 69;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond

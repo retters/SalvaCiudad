@@ -17,6 +17,25 @@
         "core:meat": 3,
         "core:hide": 1
       }
+    },
+    {
+      "type": "herd",
+      "id": "core:goats",
+      "name": "herd.goats",
+      "look": "goat",
+      "start": 3,
+      "area": 40,
+      "most": 16,
+      "malePrice": 30,
+      "steep": 400,
+      "gives": {
+        "core:cheese": 1
+      },
+      "givesDays": 8,
+      "cull": {
+        "core:meat": 2,
+        "core:hide": 1
+      }
     }
   ]
 }

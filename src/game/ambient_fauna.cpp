@@ -21,7 +21,8 @@ constexpr std::string_view kFiles[kSpecies] = {
     "models/fauna/dog.glb",         "models/fauna/dog_shepherd.glb",  "models/fauna/dog_mastiff.glb",
     "models/fauna/dog_terrier.glb", "models/fauna/cat.glb",           "models/fauna/cat_tabby.glb",
     "models/fauna/cat_black.glb",   "models/fauna/cat_white.glb",     "models/fauna/kitten.glb",
-    "models/animals/sheep.glb",     "models/fauna/ram.glb",
+    "models/animals/sheep.glb",     "models/fauna/ram.glb",           "models/fauna/goat.glb",
+    "models/fauna/goat_brown.glb",  "models/fauna/goat_pied.glb",
 };
 
 constexpr float kTau = 2.0f * std::numbers::pi_v<float>;
@@ -113,7 +114,10 @@ Habit habit(Species species) {
         case Species::CatWhite:
         case Species::Kitten:
         case Species::Sheep:
-        case Species::Ram: return Habit::Ground;
+        case Species::Ram:
+        case Species::Goat:
+        case Species::GoatBrown:
+        case Species::GoatPied: return Habit::Ground;
         case Species::Owl:
         case Species::OwlSnowy: return Habit::Perched;
         case Species::Butterflies:
@@ -564,8 +568,9 @@ void AmbientFauna::settle(const sim::Game& game, std::int32_t fsx, std::int32_t 
         }
         const bool out = !when_.night && !b.fields.empty();
         const std::size_t animals = static_cast<std::size_t>(b.females) + b.males;
-        const std::uint64_t base = (std::uint64_t{1} << 60) | (static_cast<std::uint64_t>(game.buildings().entities()[i].index) << 8) |
-                                   (out ? 0x80u : 0u);
+        // (Another herd in the same fold is other animals: phase 108.)
+        const std::uint64_t base = (std::uint64_t{1} << 60) | (static_cast<std::uint64_t>(herd->look) << 56) |
+                                   (static_cast<std::uint64_t>(game.buildings().entities()[i].index) << 8) | (out ? 0x80u : 0u);
         for (std::size_t n = 0; n < animals && n < 64; ++n) {
             const std::uint64_t id = base | n;
             if (const auto it = animals_.find(id); it != animals_.end()) {
@@ -582,7 +587,10 @@ void AmbientFauna::settle(const sim::Game& game, std::int32_t fsx, std::int32_t 
                 z = static_cast<float>(f.z) + 1.5f + unit(h, 8) * std::max(0.0f, static_cast<float>(f.d) - 3.0f);
                 range = std::max(1.0f, static_cast<float>(std::min(f.w, f.d)) * 0.25f);
             }
-            add(game, id, n < b.females ? Species::Sheep : Species::Ram, x, z, 0.0f, range);
+            const bool female = n < b.females;
+            const Species who = herd->look == 1 ? (!female ? Species::GoatPied : n % 2 == 0 ? Species::Goat : Species::GoatBrown)
+                                                : (female ? Species::Sheep : Species::Ram);
+            add(game, id, who, x, z, 0.0f, range);
         }
     }
     // Phase 106: the dog of each kennel, and the cat of each house that has one.

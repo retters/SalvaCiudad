@@ -882,6 +882,9 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.male_price = r.integer("malePrice", 0, 10000, 30);
         def.spring = amounts(r.table("spring", find_resource, 1, 1000, 4));
         def.cull = amounts(r.table("cull", find_resource, 1, 1000, 4));
+        def.gives = amounts(r.table("gives", find_resource, 1, 1000, 4));
+        def.gives_days = r.integer("givesDays", 1, 365, 8);
+        def.steep = r.integer("steep", 50, 1000, 300);
         static constexpr std::string_view kHerdLooks[] = {"sheep", "goat"};
         def.look = static_cast<std::uint8_t>(r.choice("look", kHerdLooks, 0));
         if (def.start + (def.start_male ? 1 : 0) > def.most) {

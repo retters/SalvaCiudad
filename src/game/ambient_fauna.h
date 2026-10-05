@@ -54,6 +54,10 @@ enum class Species : std::uint8_t {
     // Phase 107: the animals of a fold: as many as it has, in its pasture by day and by the fold at night.
     Sheep,
     Ram,
+    // Phase 108: goats (the pied one is the male).
+    Goat,
+    GoatBrown,
+    GoatPied,
     Count
 };
 inline constexpr std::size_t kSpecies = static_cast<std::size_t>(Species::Count);

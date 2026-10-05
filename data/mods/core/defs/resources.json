@@ -61,6 +61,16 @@
     },
     {
       "type": "resource",
+      "id": "core:cheese",
+      "name": "resource.cheese",
+      "pile": "models/props/pile_bread",
+      "category": "food",
+      "nutrition": 4,
+      "weight": 1,
+      "value": 4
+    },
+    {
+      "type": "resource",
       "id": "core:mushrooms",
       "name": "resource.mushrooms",
       "pile": "models/props/pile_mushrooms",

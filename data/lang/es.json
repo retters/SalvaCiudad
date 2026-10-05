@@ -923,6 +923,8 @@
     "hud.fold.mark": "Marcar el pasto",
     "hud.fold.mark.tooltip": "Marca el pasto cerca del redil arrastrando sobre el suelo. Queda cercado.",
     "hud.fold.marked": "Este redil ya tiene su pasto.",
+    "hud.fold.change": "Cambiar a: {0:herd}",
+    "hud.fold.change.tooltip": "El rebaño se cambia por los animales con que empieza el otro, y hay que marcar el pasto de nuevo.",
     "hud.fold.unmark": "Quitar el pasto",
     "hud.fold.buyMale": "Comprar un macho ({0:gold} de oro)",
     "hud.fold.buyMale.tooltip": "Sin macho el rebaño no cría.",
