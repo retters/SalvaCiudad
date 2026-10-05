@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 65;
+inline constexpr std::uint32_t kGameRulesVersion = 66;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,13 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 105. A coop is safe from the fox with kCoopFence modules of any line
+// (a fence, a hedge, a palisade) within kGardenMeters of its walls, or a
+// guard in reach. Unsafe, it loses a hen kFoxPercent days in a hundred. It
+// keeps kCoopFeed units of feed.
+inline constexpr std::int32_t kCoopFence = 4;
+inline constexpr std::int32_t kFoxPercent = 4;
+inline constexpr std::int32_t kCoopFeed = 4;
 // Phase 104. A garden's fence or hedge stands within this of the walls.
 inline constexpr std::int32_t kGardenMeters = 3;
 // Wild flowers make a house's place nicer: those within kFlowerMeters of its
@@ -253,6 +260,7 @@ struct Building {
     std::uint16_t needs = 0;         // Houses: Need bits met today.
     std::uint16_t annexes = 0;       // Houses: the annexes that serve it (a bit per BuildingDef::annex_bit); phase 103.
     std::uint8_t garden = 0;         // Phase 104: garden::kHouse (a house with its fence), garden::kFormal (a decoration with its hedge).
+    std::uint8_t flock = 0;          // Phase 105: a coop's hens. (Its `produced` is the days of feed left; its `work_done`, eggs on the way.)
     std::int32_t happiness = 50;     // Houses: 0..100.
     std::int32_t desirability = 0;   // Houses: how pleasant the place is.
     // Phase 13.
@@ -800,6 +808,7 @@ public:
             GameStarted,     // Phase 73: every town is founded; time runs.
             Exhausted,       // Phase 81: workplace `entity` has nothing left to take within its reach
                              // (`value` 1: nothing but the fruit trees it spares, phase 85).
+            Fox,             // Phase 105: a fox took a hen from coop `entity`; `value`: the hens left.
         };
         Kind kind = Kind::FireStarted;
         std::uint8_t owner = 0;
@@ -849,6 +858,8 @@ public:
     // How pleasant a place is for homes: buildings around (gardens add,
     // workshops take away) and trees (phase 12; the map layer, phase 17).
     [[nodiscard]] std::int32_t desirability_at(FixedVec2 here, const Building* self = nullptr) const;
+    // Phase 105. Whether no fox comes to `coop`: it has its fence, or a guard in reach.
+    [[nodiscard]] bool coop_safe(const Building& coop) const;
     // Phase 104. How thick the wild flowers are over the cells from (x0, z0)
     // to (x1, z1), one in `step` each way: the sum of sim::wildflowers
     // where nothing covers them (a building, a road, a field, water). With

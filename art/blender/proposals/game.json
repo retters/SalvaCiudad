@@ -45,7 +45,8 @@
       "ids": {"animal_squirrel": "squirrel", "animal_squirrel_gray": "squirrel_gray", "animal_owl": "owl", "animal_owl_snowy": "owl_snowy",
               "animal_sparrow": "sparrow", "animal_robin": "robin", "animal_bluebird": "bluebird",
               "animal_crow": "crow", "animal_raven": "raven", "animal_vulture": "vulture",
-              "animal_fox": "fox", "animal_fox_arctic": "fox_arctic"}
+              "animal_fox": "fox", "animal_fox_arctic": "fox_arctic",
+              "animal_hen": "hen", "animal_hen_white": "hen_white", "animal_chick": "chick"}
     },
     {
       "family": "nature", "class": "animal", "to": "fauna", "bare": true,

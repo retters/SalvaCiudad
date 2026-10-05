@@ -851,6 +851,10 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] El Gallinero (pestaña Jardín) tiene gallinas y un pollito caminando alrededor; su ventana dice «Gallinas: 4 de 4», para cuántos días tiene grano y si está a salvo del zorro.
+- [ ] Con trigo o cebada en un almacén, un peón le lleva grano y el gallinero da huevos (uno cada tres días), que los peones se llevan. Sin grano no pone.
+- [ ] Un gallinero sin valla ni perro pierde gallinas de vez en cuando, con el aviso «Un zorro se llevó una gallina»; con cuatro módulos de valla, seto o empalizada a 3 m, o una Caseta del perro a 12 m, no pierde ninguna.
+- [ ] Al empezar la primavera el gallinero vuelve a tener sus cuatro gallinas.
 - [ ] Una casa con seis módulos de valla de estacas a 3 m o menos dice en su ventana «Jardín de casa: +2 de entorno…»; con cinco no. Cada tres meses del calendario sin helada llega 1 de verduras al almacén (si tiene sitio).
 - [ ] Una estatua o un adorno de jardín con seis módulos de seto bajo a 3 m dice «Jardín formal: su entorno cuenta doble», y las casas cercanas lo notan al día siguiente.
 - [ ] Una casa junto a un prado con flores dice «Flores silvestres: +N de entorno» de primavera a otoño; en invierno la línea desaparece, y también si se ponen campos sobre las flores.

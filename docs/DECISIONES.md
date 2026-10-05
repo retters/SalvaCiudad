@@ -3780,3 +3780,35 @@ Suite nueva `gardens`, 9 casos: los datos; con 5 módulos de valla no hay jardí
 
 **D-10407. Versiones.**
 Reglas 65. La red y el generador no cambian.
+
+## Fase 105: gallinero (2026-10-05)
+
+**D-10501. El gallinero es datos sobre la decoración que ya había.**
+`coopGives`, `coopHens`, `coopDays`, `coopFeed`, `coopFeedDays` y un almacén de 12. El edificio guarda cuántas gallinas le quedan (`flock`, nuevo en la partida guardada); los días de grano que le quedan y los huevos a medio poner van en dos campos que una decoración no usaba (`produced` y `work_done`).
+
+**D-10502. El grano.**
+Una unidad de trigo o de cebada dura 6 días. Cuando al gallinero no le queda grano ni días, **un** peón (no dos a la vez) le lleva hasta 4 unidades del almacén más cercano que tenga; va después de las obras y antes del acarreo. Los aldeanos también comen trigo, así que compiten por él con las gallinas: no reservé grano para nadie.
+
+**D-10503. Los huevos.**
+Cada día con grano el gallinero suma una parte por gallina; con 12 partes (4 gallinas × 3 días) hay un huevo. Con 2 gallinas, uno cada 6 días. Los peones se los llevan como la miel de la colmena; lleno (12 entre huevos y grano), espera. Si ningún almacén tiene sitio, lo que el peón lleva en la mano se pierde, como cualquier otra carga: en una partida nueva conviene un almacén.
+
+**D-10504. El zorro viene una vez al día, no «de noche».**
+Cada día del calendario, un gallinero sin protección tiene un 4 % de perder una gallina, con su aviso. No lo até a la noche: la noche puede estar apagada en las reglas y dura un número variable de días. Medido: en ocho partidas de un año se llevó 1, 3, 2, 2, 2, 3, 4 y 4; y en ocho años seguidos de una misma partida, entre 2 y 4 cada año.
+
+**D-10505. Qué protege.**
+Cuatro módulos o más de **cualquier línea** que no sea un camino (valla de estacas, seto, seto bajo, empalizada, muralla y sus portones) a 3 m de sus paredes, o un edificio con `guardRadius` a esa distancia de centro a centro. La caseta del perro lleva `guardRadius: 12` desde ahora; todo lo demás del perro es de la fase 106.
+
+**D-10506. Las gallinas vuelven en primavera.**
+El primer día de primavera el gallinero vuelve a tener todas; en una partida sin primavera, el primer día del año.
+
+**D-10507. Un fallo de las fases 104 y 105 corregido antes de cerrar.**
+La entrega del jardín, las colmenas y los gallineros corrían «cada día del calendario», pero puestos donde solo se ejecutan si ese día coincide con el día del pueblo (10 segundos). En una partida con el año de 20 minutos coinciden siempre; con años más cortos o más largos, casi nunca. Lo vi porque en un año de 8 minutos el zorro venía cinco veces menos. Ahora las tres cosas corren en cada día del calendario sea cual sea la duración del año. La recogida de bayas de los setos (fase 94) está en el mismo sitio, pero le basta con ejecutarse alguna vez en su estación y no la toqué.
+
+**D-10508. Gallinas a la vista.**
+Fauna de ambiente (fase 92): gallinas parda y blanca alternadas, tantas como quedan, y un pollito con dos o más. Caminan a 2,5 m del gallinero, no huyen de la gente salvo que les pase muy cerca, y de noche no se dibujan. «Reducen los insectos del huerto» queda sin efecto, como dice la especificación.
+
+**D-10509. Lo medido.**
+Suite nueva `coop`, 5 casos: los datos y los modelos; sin grano, nada en 30 días, y con grano 19 unidades en 60 días con 10 de grano comidas y nunca más de 4 guardadas; un gallinero sin protección pierde gallinas en un año y los que tienen cuatro módulos de valla o una caseta a 12 m no pierden ninguna (tres módulos o una caseta a 16 m no bastan; empalizada y seto sirven); las gallinas vuelven en primavera y con dos gallinas pone la mitad; guardar y cargar. Para contar, las pruebas usan gallinas que ponen arcilla y comen carbón: los aldeanos se comen los huevos y el trigo.
+
+**D-10510. Versiones.**
+Reglas 66. La red y el generador no cambian.

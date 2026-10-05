@@ -1051,6 +1051,27 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("\"serviceUsesAny\" needs \"serviceUses\"");
         }
         def.model_winter = r.extra_model("winterModel", mod_dir, refs, def.name_key);
+        // Phase 105: coops and guards.
+        if (const std::string eggs = r.text("coopGives", false); !eggs.empty()) {
+            const int ei = find_resource(eggs);
+            if (ei < 0) {
+                r.fail(std::format("\"coopGives\" '{}' does not exist", eggs));
+            } else if (def.kind != sim::BuildingKind::Decoration || def.storage <= 0 || def.workers > 0) {
+                r.fail("\"coopGives\" is for a decoration with \"storage\" and no workers");
+            } else {
+                def.coop_gives = static_cast<sim::DefIndex>(ei);
+            }
+        }
+        def.coop_hens = r.integer("coopHens", 1, 20, 4);
+        def.coop_days = r.integer("coopDays", 1, 100, 3);
+        def.coop_feed_days = r.integer("coopFeedDays", 1, 100, 6);
+        for (const sim::ResourceAmount& feed : amounts(r.table("coopFeed", find_resource, 1, 1, 4))) {
+            def.coop_feed.push_back(feed.resource);
+        }
+        if (def.coop_gives != sim::kNoDef && def.coop_feed.empty()) {
+            r.fail("\"coopGives\" needs \"coopFeed\": what the hens eat");
+        }
+        def.guard_radius = r.integer("guardRadius", 0, 60, 0);
         // Phase 104: gardens and hives.
         def.garden_modules = r.integer("gardenModules", 0, 100, 0);
         def.garden_house = r.flag("houseGarden");

@@ -122,6 +122,20 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### Gallineros y guardianes (fase 105)
+
+Un **gallinero** es una decoración sin trabajadores con `storage` y estos campos:
+
+| Campo | Valores |
+|---|---|
+| `coopGives` | El recurso que ponen las gallinas (huevos). |
+| `coopHens` | Cuántas gallinas tiene (por omisión 4). |
+| `coopDays` | Cada cuántos días da una unidad con todas sus gallinas (por omisión 3); con menos gallinas, en proporción. |
+| `coopFeed` | Lo que comen, como `{"core:wheat": 1, "core:barley": 1}` (el número no cuenta): cualquiera de esos recursos. |
+| `coopFeedDays` | Cuántos días dura una unidad de grano (por omisión 6). |
+
+Los peones le llevan grano de un almacén cuando se queda sin nada (guarda hasta 4) y se llevan los huevos. Sin grano no pone. Cada día, un gallinero **sin protección** tiene 4 posibilidades en 100 de perder una gallina por el zorro; está protegido con 4 módulos o más de cualquier línea (valla, seto, empalizada, muralla) a 3 m de sus paredes, o con un edificio con `guardRadius` (la caseta del perro: 12) cuyo centro esté a esa distancia o menos. Las gallinas se reponen al empezar la primavera (o el año, si la partida no tiene primavera).
+
 #### Jardines y colmenas (fase 104)
 
 Una **línea** (valla, seto) puede hacer un jardín de lo que tenga cerca. Con `gardenModules` (cuántos módulos hacen falta, contando sus portones) y una de dos marcas:

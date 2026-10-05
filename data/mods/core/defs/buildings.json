@@ -2656,7 +2656,16 @@
       "buildWork": 80,
       "desirability": 5,
       "fireproof": true,
-      "category": "garden"
+      "category": "garden",
+      "storage": 12,
+      "coopGives": "core:eggs",
+      "coopHens": 4,
+      "coopDays": 3,
+      "coopFeed": {
+        "core:wheat": 1,
+        "core:barley": 1
+      },
+      "coopFeedDays": 6
     },
     {
       "type": "building",
@@ -2711,7 +2720,8 @@
       "buildWork": 40,
       "desirability": 5,
       "fireproof": true,
-      "category": "garden"
+      "category": "garden",
+      "guardRadius": 12
     },
     {
       "type": "building",

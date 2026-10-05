@@ -2780,6 +2780,7 @@ void App::report_game_events() {
             case sim::Game::Event::Kind::Exhausted:
                 text = tr(e.value == 1 ? "event.onlyFruit" : "event.exhausted", place);
                 break;
+            case sim::Game::Event::Kind::Fox: text = tr("event.fox", static_cast<int>(e.value)); break;
             case sim::Game::Event::Kind::Born: text = tr("event.born"); break;
             case sim::Game::Event::Kind::Died: text = tr("event.died"); break;
             case sim::Game::Event::Kind::TownFounded:

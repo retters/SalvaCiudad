@@ -37,6 +37,10 @@ enum class Species : std::uint8_t {
     Butterflies,
     Fireflies,
     Dragonflies,
+    // Phase 105: the hens of a coop, as many as it has, and a chick. Not wild.
+    Hen,
+    HenWhite,
+    Chick,
     Count
 };
 inline constexpr std::size_t kSpecies = static_cast<std::size_t>(Species::Count);

@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Gallinas (fase 105)
+
+`fauna/hen.glb`, `hen_white.glb` y `chick.glb`, de `proposals/creatures` (clase `animal`). La vista pone alrededor de cada gallinero tantas gallinas como le quedan, alternando parda y blanca, y un pollito si tiene dos o más; de noche no se ven. Son fauna de ambiente (fase 92): no están en la simulación.
+
 ### Anexos de casa (fase 103)
 
 De `proposals/annexes` (clase `building`): `buildings/annex_clothesline.glb` (622 triángulos; ocupa 4 × 2 m), `annex_home_shrine.glb` (556; 2 × 2), `annex_playground.glb` (el columpio, 432; 4 × 2), `annex_rain_barrel.glb` (480; 2 × 2) y `annex_woodshed.glb` (4140; 6 × 2). El leñero tenía 8460 triángulos, más que el límite de un edificio (6000): sus leños apilados se hacen ahora con cinco lados y solo la cara que se ve. Los modelos `decor_clothesline`, `decor_firewood_rack` y `decor_tool_corner` siguen en la carpeta, pero el juego base ya no los usa. El leñero estrena una huella de 6 × 2: sus obras (`site_6x2_1.glb` y `_2.glb`) salen de `buildings sites`, como las demás.

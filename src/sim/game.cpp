@@ -115,6 +115,9 @@ bool gives_out(const Content& c, const Building& b, DefIndex r) {
     if (d.hive_gives != kNoDef) {
         return r == d.hive_gives;  // Phase 104: a hive's honey.
     }
+    if (d.coop_gives != kNoDef) {
+        return r == d.coop_gives;  // Phase 105: a coop's eggs (its grain is the hens').
+    }
     if (d.kind != BuildingKind::Workplace) {
         return false;
     }
@@ -915,8 +918,8 @@ public:
             wander(v, g_.door(*job));
             return;
         }
-        // 4. Laborer: construction, then hauling, then the town's gold.
-        if (start_construction(v) || start_hauling(v) || start_moving_gold(v)) {
+        // 4. Laborer: construction, then the hens' grain, then hauling, then the town's gold.
+        if (start_construction(v) || start_feeding(v) || start_hauling(v) || start_moving_gold(v)) {
             return;
         }
         wander(v, home_point(v));
@@ -1124,6 +1127,52 @@ public:
         return fd != nullptr && fd->regrow_days > 0;
     }
 
+    // Phase 105: grain for a coop that has none left, from a storage. One
+    // laborer at a time for each coop.
+    bool start_feeding(Villager& v) {
+        for (const EntityId id : g_.owned(v.owner)) {
+            const Building& b = *g_.buildings_.get(id);
+            const BuildingDef& d = def(b);
+            if (d.coop_gives == kNoDef || !complete(b) || b.flock == 0 || b.produced > 1) {
+                continue;
+            }
+            std::int32_t have = 0;
+            for (const DefIndex feed : d.coop_feed) {
+                have += amount_of(b.stock, feed);
+            }
+            if (have > 0) {
+                continue;
+            }
+            DefIndex feed = kNoDef;
+            EntityId from;
+            for (const DefIndex f : d.coop_feed) {
+                if (!from.valid()) {
+                    from = storage_with(v.owner, v.position, f, true);
+                    feed = f;
+                }
+            }
+            if (!from.valid()) {
+                continue;
+            }
+            bool coming = false;
+            for (const Villager& o : g_.villagers_.data()) {
+                coming = coming || (o.task == Task::GoFetch && o.site == id) || (o.task == Task::GoDeliver && o.target == id);
+            }
+            if (coming) {
+                continue;
+            }
+            v.site = id;  // The grain goes to the coop.
+            v.carrying = {feed, 0};
+            v.timer = 0;
+            go(v, Task::GoFetch, from);
+            return true;
+        }
+        return false;
+    }
+    [[nodiscard]] bool is_feed(const BuildingDef& d, DefIndex r) const {
+        return d.coop_gives != kNoDef && std::find(d.coop_feed.begin(), d.coop_feed.end(), r) != d.coop_feed.end();
+    }
+
     // Laborers carry what workplaces gathered or made to a storage.
     bool start_hauling(Villager& v) {
         EntityId best;
@@ -1131,7 +1180,8 @@ public:
         std::uint64_t best_d = UINT64_MAX;
         for (const EntityId id : g_.owned(v.owner)) {
             const Building& b = *g_.buildings_.get(id);
-            if (!complete(b) || (def(b).kind != BuildingKind::Workplace && def(b).hive_gives == kNoDef)) {
+            if (!complete(b) ||
+                (def(b).kind != BuildingKind::Workplace && def(b).hive_gives == kNoDef && def(b).coop_gives == kNoDef)) {
                 continue;
             }
             DefIndex res = kNoDef;
@@ -3926,7 +3976,12 @@ public:
         if (v.carrying.resource == g_.gold_ && def(*b).kind == BuildingKind::TownCenter) {
             put = v.carrying.amount;
         }
-        if (put > 0 && (own || hearth || accepts(*b, v.carrying.resource))) {
+        // A coop takes the grain of its hens (phase 105).
+        const bool feed = is_feed(def(*b), v.carrying.resource);
+        if (feed) {
+            put = std::min({v.carrying.amount, village::kCoopFeed - amount_of(b->stock, v.carrying.resource), free_space(*b)});
+        }
+        if (put > 0 && (own || hearth || feed || accepts(*b, v.carrying.resource))) {
             add_to(b->stock, v.carrying.resource, put);
             v.carrying.amount -= put;
         }
@@ -3954,6 +4009,9 @@ public:
         }
         std::int32_t want = for_site ? promised : carry_capacity(c_, res);
         want = std::min(want, amount_of(from->stock, res));
+        if (is_feed(def(*site), res)) {
+            want = std::min(want, village::kCoopFeed);  // No more than the coop keeps.
+        }
         if (res == g_.gold_ && !for_site) {
             want = std::min(want, gold_to_move(*from, v.site, v.owner));
         }
@@ -4227,6 +4285,9 @@ public:
         b.incoming.clear();
         b.work_done = 0;
         b.wanted_workers = def(b).workers;
+        if (def(b).coop_gives != kNoDef) {
+            b.flock = static_cast<std::uint8_t>(def(b).coop_hens);  // Phase 105: it comes with its hens.
+        }
         if (def(b).trade) {
             b.limit = kPostReserve;
         }
@@ -4741,6 +4802,72 @@ public:
         }
     }
 
+    // What happens once every day of the calendar, whatever the length of
+    // the year: the gardens' harvest, the hives and the coops (phases 104
+    // and 105).
+    void calendar_round() {
+        garden_harvest();
+        hives();
+        coops();
+    }
+
+    // Phase 105: the coops' day. The flock is whole again when spring comes
+    // (or the year, where there is no spring); the fox comes to those it
+    // can get into; the hens eat and lay.
+    void coops() {
+        const std::uint32_t day = g_.calendar_day_ticks();
+        const Calendar now = g_.calendar();
+        const Calendar before = sim::calendar(g_.rules_.climate, g_.tick_ >= day ? g_.tick_ - day : 0);
+        const bool has_spring = (g_.rules_.climate.seasons & 1u) != 0;
+        const bool renewed = g_.tick_ >= day && (has_spring ? now.season == Season::Spring && before.season != Season::Spring
+                                                            : now.year != before.year);
+        auto& list = g_.buildings_;
+        for (std::size_t i = 0; i < list.size(); ++i) {
+            Building& b = list.data()[i];
+            const BuildingDef& d = def(b);
+            if (d.coop_gives == kNoDef || !complete(b)) {
+                continue;
+            }
+            if (renewed && b.flock != d.coop_hens) {
+                b.flock = static_cast<std::uint8_t>(d.coop_hens);
+                g_.buildings_changed_ = true;
+            }
+            if (b.flock > 0 && !g_.coop_safe(b) && g_.rng_.below(100) < static_cast<std::uint32_t>(village::kFoxPercent)) {
+                --b.flock;
+                g_.buildings_changed_ = true;
+                g_.events_.push_back({Game::Event::Kind::Fox, b.owner, list.entities()[i], center_of(b), b.flock, 0});
+            }
+            if (b.flock == 0) {
+                continue;
+            }
+            if (b.produced <= 0) {
+                // A new unit of feed, if there is any.
+                for (const DefIndex feed : d.coop_feed) {
+                    if (b.produced <= 0 && amount_of(b.stock, feed) > 0) {
+                        add_to(b.stock, feed, -1);
+                        compact(b.stock);
+                        b.produced = d.coop_feed_days;
+                    }
+                }
+            }
+            if (b.produced <= 0) {
+                continue;  // Nothing to eat: nothing laid.
+            }
+            --b.produced;
+            b.work_done += b.flock;
+            const std::int32_t each = d.coop_hens * d.coop_days;
+            while (b.work_done >= each) {
+                if (free_space(b) <= 0) {
+                    b.work_done = each;  // Full: they wait.
+                    break;
+                }
+                b.work_done -= each;
+                add_to(b.stock, d.coop_gives, std::min(g_.per_year(1), free_space(b)));
+                g_.buildings_changed_ = true;
+            }
+        }
+    }
+
     void update_homes() {
         struct Service {
             std::uint8_t need;
@@ -4868,6 +4995,7 @@ public:
     void calendar_daily() {
         g_.temperature_ = sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_);
         grow_fields();
+        calendar_round();
         g_.buildings_changed_ = true;
     }
 
@@ -4928,8 +5056,7 @@ public:
         }
         if (calendar_day) {
             pick_hedges();
-            garden_harvest();
-            hives();
+            calendar_round();
         }
         update_gardens();
         update_homes();
@@ -7014,6 +7141,31 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
     return PlaceError::None;
 }
 
+bool Game::coop_safe(const Building& coop) const {
+    const std::int32_t reach = village::kGardenMeters;
+    const FixedVec2 here{Fixed::from_int(coop.x) + Fixed::from_ratio(coop.width, 2), Fixed::from_int(coop.z) + Fixed::from_ratio(coop.depth, 2)};
+    std::int32_t fence = 0;
+    for (const Building& o : buildings_.data()) {
+        const BuildingDef& od = content_->buildings[o.def];
+        if (o.state != BuildingState::Complete || &o == &coop) {
+            continue;
+        }
+        if (od.guard_radius > 0) {
+            const FixedVec2 c{Fixed::from_int(o.x) + Fixed::from_ratio(o.width, 2), Fixed::from_int(o.z) + Fixed::from_ratio(o.depth, 2)};
+            const auto r = static_cast<std::uint64_t>(od.guard_radius);
+            if (distance2(here, c) <= ((r * r) << 32)) {
+                return true;
+            }
+        }
+        if (!od.line.empty() && od.road == 0) {
+            const std::int32_t gx = std::max({o.x - (coop.x + coop.width), coop.x - (o.x + o.width), 0});
+            const std::int32_t gz = std::max({o.z - (coop.z + coop.depth), coop.z - (o.z + o.depth), 0});
+            fence += gx * gx + gz * gz <= reach * reach ? 1 : 0;
+        }
+    }
+    return fence >= village::kCoopFence;
+}
+
 std::int32_t Game::flowers(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, std::int32_t step,
                            std::int32_t radius) const {
     x0 = std::max(x0, 0);
@@ -7902,6 +8054,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u16(b.needs);
         w.u16(b.annexes);
         w.u8(b.garden);
+        w.u8(b.flock);
         w.i32(b.happiness);
         w.i32(b.desirability);
         w.i32(b.fire);
@@ -8312,7 +8465,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t upgrading = 0;
         if (!r.u8(b.level) || b.level > c.buildings[b.def].levels.size() || !r.u8(upgrading) || upgrading > 1 ||
             !r.i32(b.limit) || b.limit < 0 || b.limit > 10000 || !r.u8(b.recipe) || !r.u16(b.needs) ||
-            !r.u16(b.annexes) || !r.u8(b.garden) || b.garden > (garden::kHouse | garden::kFormal) || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
+            !r.u16(b.annexes) || !r.u8(b.garden) || b.garden > (garden::kHouse | garden::kFormal) || !r.u8(b.flock) || b.flock > 20 || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
             b.fire < 0 || b.fire > 100 || !r.i32(b.burned) || b.burned < 0 || b.burned > 1000 || !r.i32(b.damage) ||
             b.damage < 0 || !r.i32(b.rearm) || b.rearm < 0) {
             r.fail();

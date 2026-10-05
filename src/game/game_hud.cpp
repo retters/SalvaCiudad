@@ -969,6 +969,21 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
         if ((b->garden & sim::garden::kFormal) != 0) {
             lines.push_back(tr("hud.decor.formal"));
         }
+        if (d.coop_gives != sim::kNoDef) {
+            lines.push_back(tr("hud.coop.hens", static_cast<int>(b->flock), d.coop_hens));
+            std::int32_t grain = 0;
+            for (const sim::DefIndex feed : d.coop_feed) {
+                for (const sim::Stock& st : b->stock) {
+                    grain += st.resource == feed ? st.amount : 0;
+                }
+            }
+            const std::int32_t fed = b->produced + grain * d.coop_feed_days;
+            lines.push_back(fed > 0 ? tr("hud.coop.fed", fed) : tr("hud.coop.hungry"));
+            lines.push_back(tr(game.coop_safe(*b) ? "hud.coop.safe" : "hud.coop.unsafe"));
+        }
+        if (d.guard_radius > 0) {
+            lines.push_back(tr("hud.guard.coops", d.guard_radius));
+        }
         if (d.hive_gives != sim::kNoDef) {
             if (game.calendar().season == sim::Season::Winter) {
                 lines.push_back(tr("hud.hive.winter"));

@@ -17,6 +17,7 @@ constexpr std::string_view kFiles[kSpecies] = {
     "models/fauna/bluebird.glb",    "models/fauna/crow.glb",          "models/fauna/raven.glb",
     "models/fauna/vulture.glb",     "models/fauna/fox.glb",           "models/fauna/fox_arctic.glb",
     "models/fauna/butterflies.glb", "models/fauna/fireflies.glb",     "models/fauna/dragonflies.glb",
+    "models/fauna/hen.glb",         "models/fauna/hen_white.glb",     "models/fauna/chick.glb",
 };
 
 constexpr float kTau = 2.0f * std::numbers::pi_v<float>;
@@ -66,10 +67,19 @@ bool sea(const sim::MapData& map, std::int32_t cx, std::int32_t cz) {
 
 // How close a person may come before an animal of this habit takes fright,
 // and how far it then goes, in meters.
+bool poultry(Species s) {
+    return s == Species::Hen || s == Species::HenWhite || s == Species::Chick;
+}
 float fear(Species s) {
+    if (poultry(s)) {
+        return 1.2f;  // Used to people.
+    }
     return s == Species::Fox || s == Species::FoxArctic ? 14.0f : habit(s) == Habit::Bird ? 5.0f : 6.0f;
 }
 float flight(Species s) {
+    if (poultry(s)) {
+        return 2.5f;
+    }
     return s == Species::Fox || s == Species::FoxArctic ? 22.0f : habit(s) == Habit::Bird ? 12.0f : 7.0f;
 }
 
@@ -84,7 +94,10 @@ Habit habit(Species species) {
         case Species::Squirrel:
         case Species::SquirrelGray:
         case Species::Fox:
-        case Species::FoxArctic: return Habit::Ground;
+        case Species::FoxArctic:
+        case Species::Hen:
+        case Species::HenWhite:
+        case Species::Chick: return Habit::Ground;
         case Species::Owl:
         case Species::OwlSnowy: return Habit::Perched;
         case Species::Butterflies:
@@ -321,8 +334,8 @@ void AmbientFauna::move(const sim::Game& game, Animal& a, math::Vec3 goal, bool 
         a.lift = 0.0f;
         speed = std::max(0.3f, body.walk_speed);
     } else {
-        // A squirrel always scurries; a fox trots off and runs when frightened.
-        const bool runs = flee || !fox;
+        // A squirrel always scurries; a fox trots off and runs when frightened; hens walk.
+        const bool runs = flee || !(fox || poultry(a.species));
         a.mode = flee ? Mode::Flee : Mode::Move;
         a.clip = runs ? body.run : body.walk;
         a.clip_length = runs ? body.run_length : body.walk_length;
@@ -493,6 +506,32 @@ void AmbientFauna::settle(const sim::Game& game, std::int32_t fsx, std::int32_t 
             }
             const float angle = static_cast<float>(bird) * kTau / static_cast<float>(kCarrionBirds);
             add(game, id, carrion_bird(place.dry, bird), place.x + std::sin(angle) * 1.2f, place.z + std::cos(angle) * 1.2f, 0.0f, 4.0f);
+        }
+    }
+    // Phase 105: the hens of each coop, as many as it has left, and a chick with two or more.
+    for (std::size_t i = 0; i < game.buildings().size(); ++i) {
+        const sim::Building& b = game.buildings().data()[i];
+        const sim::BuildingDef& d = game.content().buildings[b.def];
+        if (d.coop_gives == sim::kNoDef || b.state != sim::BuildingState::Complete || when_.night) {
+            continue;  // (At night they are inside.)
+        }
+        const float cx = static_cast<float>(b.x) + static_cast<float>(b.width) * 0.5f;
+        const float cz = static_cast<float>(b.z) + static_cast<float>(b.depth) * 0.5f;
+        if (std::hypot(cx - fx, cz - fz) > far) {
+            continue;
+        }
+        const std::size_t birds = b.flock + (b.flock >= 2 ? 1u : 0u);
+        const std::uint64_t base = (std::uint64_t{1} << 62) | (static_cast<std::uint64_t>(game.buildings().entities()[i].index) << 8);
+        for (std::size_t bird = 0; bird < birds; ++bird) {
+            const std::uint64_t id = base | bird;
+            if (const auto it = animals_.find(id); it != animals_.end()) {
+                it->second.stays = true;
+                continue;
+            }
+            const Species who = bird >= b.flock ? Species::Chick : bird % 2 == 0 ? Species::Hen : Species::HenWhite;
+            const float angle = static_cast<float>(bird) * kTau / static_cast<float>(birds) + 0.6f;
+            const float out_by = static_cast<float>(std::max(b.width, b.depth)) * 0.5f + 1.0f;
+            add(game, id, who, cx + std::sin(angle) * out_by, cz + std::cos(angle) * out_by, 0.0f, 2.5f);
         }
     }
     std::erase_if(animals_, [](const auto& entry) { return !entry.second.stays; });

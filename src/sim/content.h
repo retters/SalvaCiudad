@@ -154,6 +154,20 @@ struct BuildingDef {
     // Phase 100: it needs not all of `service_uses` but any one of them
     // (beer or wine): the first in the list that it has is the one used.
     bool service_any = false;
+    // Phase 105: a coop. With no worker, its `coop_hens` hens lay a unit of
+    // `coop_gives` (eggs) every `coop_days` days while they have feed: a unit
+    // of any of `coop_feed` (grain) lasts them `coop_feed_days` days, and
+    // laborers bring it from a storage. A fox takes a hen now and then
+    // unless a fence or a guard keeps it out (see village::kCoopFence); each
+    // hen less lays its share less, and the flock is whole again in spring.
+    DefIndex coop_gives = kNoDef;
+    std::int32_t coop_hens = 4;
+    std::int32_t coop_days = 3;
+    std::vector<DefIndex> coop_feed;
+    std::int32_t coop_feed_days = 6;
+    // Phase 105: a guard (the dog's kennel): no fox comes to the coops
+    // within this many meters of it.
+    std::int32_t guard_radius = 0;
     // Phase 104: gardens. A line with `garden_modules` makes a garden of
     // what has that many of its modules (or of its gates) within
     // village::kGardenMeters of its walls. `garden_house`: of a house, which
