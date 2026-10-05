@@ -1049,6 +1049,18 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     const bool mine = b->owner == s.town();
     const bool has_workers = d.workers > 0 && b->state == sim::BuildingState::Complete;
     const bool farm = d.work == sim::WorkKind::Farm && b->state == sim::BuildingState::Complete;
+    const sim::HerdDef* herd = b->state == sim::BuildingState::Complete ? game.herd_of(*b) : nullptr;  // Phase 107.
+    if (herd != nullptr) {
+        lines.push_back(tr(b->males > 0 ? "hud.fold.herd" : "hud.fold.herdNoMale", tr(herd->name_key), static_cast<int>(b->females)));
+        if (b->fields.empty()) {
+            lines.push_back(tr("hud.fold.noPasture"));
+        } else {
+            lines.push_back(tr("hud.fold.pasture", b->fields[0].w, b->fields[0].d, game.herd_room(*b)));
+        }
+        if (b->workers.empty()) {
+            lines.push_back(tr("hud.fold.shepherd"));
+        }
+    }
     const float field_row = std::round(ctx.s(30.0f));
     const float button_h = std::round(ctx.s(34.0f));
     const float title_h = ctx.text().line_height(title);
@@ -1076,6 +1088,9 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     }
     if (farm) {
         h += static_cast<float>(b->fields.size()) * (line + field_row + pad * 0.5f) + button_h + pad;
+    }
+    if (herd != nullptr && mine) {
+        h += (b->males == 0 ? 2.0f : 1.0f) * (button_h + pad * 0.5f);
     }
     const bool town_center = d.kind == sim::BuildingKind::TownCenter && b->state == sim::BuildingState::Complete;
     const bool workshop = d.work == sim::WorkKind::Produce && b->state == sim::BuildingState::Complete;
@@ -1194,6 +1209,38 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     if (farm) {
         y += pad * 0.5f;
         farm_fields(ctx, s, *b, box, y, field_row);
+    }
+    if (herd != nullptr && mine) {
+        // Its pasture: marked like a field, or taken away; and another male when it has none.
+        GameSession::Interaction& ui = s.ui();
+        y += pad * 0.5f;
+        if (b->fields.empty()) {
+            if (ctx.button(ctx.id("pasture"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr("hud.fold.mark"),
+                           tr("hud.fold.mark.tooltip"), true, ui.field_farm == window_entity_)) {
+                ui.field_farm = window_entity_;
+                ui.placing = sim::kNoDef;
+            }
+        } else if (ctx.button(ctx.id("pasture"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr("hud.fold.unmark"),
+                              tr("hud.fold.marked"))) {
+            sim::Command c;
+            c.type = sim::CommandType::RemoveField;
+            c.entity = window_entity_;
+            c.value = 0;
+            s.issue(c);
+        }
+        y += button_h;
+        if (b->males == 0) {
+            y += pad * 0.5f;
+            const bool rich = game.gold(s.town()) >= herd->male_price;
+            if (ctx.button(ctx.id("male"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr("hud.fold.buyMale", herd->male_price),
+                           tr(rich ? "hud.fold.buyMale.tooltip" : "hud.fold.buyMale.poor"), rich)) {
+                sim::Command c;
+                c.type = sim::CommandType::BuyMale;
+                c.entity = window_entity_;
+                s.issue(c);
+            }
+            y += button_h;
+        }
     }
     if (post) {
         // How much gold to keep here, for buying (phase 28).

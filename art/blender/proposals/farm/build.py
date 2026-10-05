@@ -120,7 +120,8 @@ def cowshed():
     kit.save(mb, FAMILY, "farm_cowshed", COLORS, mech=kit.Mech(cows[0]["bones"] + cows[1]["bones"]).clip("feed", 6.0, feed))
 
 
-def sheepfold():
+def sheepfold(flock=True):
+    """`flock` False: the fold alone, for the game (phase 107), which draws the animals it has."""
     mb = kit.begin()
     rnd = random.Random(2)
     r = 4.2
@@ -143,6 +144,9 @@ def sheepfold():
     mb.sphere((-0.6, 2.1, 0.0), 0.7, "hay", segments=7, rings=3, scale=(1.2, 0.8, 0.4))
     log(mb, (1.6, 1.8, 0.16), (2.9, 1.2, 0.16), 0.17)                                   # A trough.
     mb.box((2.25, 1.5, 0.27), (1.1, 0.2, 0.04), "water", rotation_z=-0.43)
+    if not flock:
+        kit.save(mb, FAMILY, "farm_sheepfold_empty", COLORS)
+        return
     spots = [(-1.6, -1.2, 30, "wool"), (0.9, -0.4, -70, "wool"), (-0.2, 0.6, 160, "wool"), (2.2, -1.9, 100, "wool_dark"), (-2.6, 0.9, -130, "wool")]
     sheep = [draft_animal(mb, y, "s%d_" % i, "sheep", coat, "mane_dark", x=x, harness=False, turn=turn) for i, (x, y, turn, coat) in enumerate(spots)]
     poses = [(lambda s, i: (lambda t: s["graze"](t, i * 1.4)))(s, i) if i % 3 != 2 else s["idle"] for i, s in enumerate(sheep)]
@@ -663,6 +667,7 @@ MODELS = {
     "farm_barn_stone": barn("farm_barn_stone", True),
     "farm_cowshed": cowshed,
     "farm_sheepfold": sheepfold,
+    "farm_sheepfold_empty": lambda: sheepfold(False),
     "farm_hay_barn": hay_barn,
     "farm_silo": silo("farm_silo", False),
     "farm_silo_wood": silo("farm_silo_wood", True),

@@ -122,6 +122,29 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### Rebaños y rediles (fase 107)
+
+Un **rebaño** es una definición propia, en `defs/herds.json` (o cualquier archivo de `defs/`):
+
+```json
+{"type": "herd", "id": "core:sheep", "name": "herd.sheep", "look": "sheep",
+ "start": 3, "area": 40, "most": 16, "malePrice": 30,
+ "spring": {"core:wool": 2}, "cull": {"core:meat": 3, "core:hide": 1}}
+```
+
+| Campo | Valores |
+|---|---|
+| `start`, `noMale` | Hembras con que empieza un redil nuevo (1 a 50) y, salvo `"noMale": true`, un macho. |
+| `area`, `most` | Metros cuadrados de pasto por animal, y el máximo de animales por grande que sea el pasto. |
+| `malePrice` | Oro que cuesta otro macho. |
+| `spring` | Lo que da **cada hembra** en primavera (la lana). |
+| `cull` | Lo que da **cada animal** que sobra en otoño, cuando el rebaño pasa del sitio de su pasto. |
+| `look` | Cómo se dibuja: `sheep` (los demás aspectos llegan con sus fases). |
+
+Un **redil** es un `workplace` con `storage`, `radius` y `"herds": ["core:sheep"]` (el primero es el que trae), sin `work` ni recetas. Con `pastureFence` se nombra la línea (un edificio con `line`) cuyas piezas cierran su pasto; es solo aspecto. Su pasto es **un** rectángulo que se marca como un campo de granja, de 4 a 32 m de lado, dentro de su `radius`.
+
+Con su pastor: en primavera, una vez, las hembras dan lo suyo y, si hay macho, nacen dos crías por cada tres hembras mientras el pasto tenga sitio; en otoño, una vez, lo que sobra del sitio se vuelve `cull` (nunca por debajo de los animales con que empezó, ni el macho).
+
 #### Gallineros y guardianes (fase 105)
 
 Un **gallinero** es una decoración sin trabajadores con `storage` y estos campos:

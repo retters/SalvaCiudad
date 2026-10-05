@@ -109,6 +109,10 @@
               "nature_deposit_coal": "coal_deposit", "nature_deposit_gold": "gold_deposit"}
     },
     {
+      "family": "beasts", "class": "animal", "to": "fauna",
+      "ids": {"animal_ram": "ram"}
+    },
+    {
       "family": "annexes", "class": "building", "to": "buildings", "game": true,
       "ids": {"annex_clothesline": "annex_clothesline", "annex_home_shrine": "annex_home_shrine",
               "annex_playground_swing": "annex_playground", "annex_rain_barrel": "annex_rain_barrel",
@@ -128,7 +132,7 @@
     },
     {
       "family": "farm", "class": "building", "to": "buildings", "game": true,
-      "ids": {"farm_vineyard": "vineyard", "farm_vineyard_bare": "vineyard_bare"}
+      "ids": {"farm_vineyard": "vineyard", "farm_vineyard_bare": "vineyard_bare", "farm_sheepfold_empty": "sheepfold"}
     }
   ]
 }

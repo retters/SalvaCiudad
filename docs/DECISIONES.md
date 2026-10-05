@@ -3844,3 +3844,35 @@ La de las flores (fase 104) comparaba el entorno de una casa entre estaciones y 
 
 **D-10609. Versiones.**
 Reglas 67 y red 30. El generador no cambia.
+
+## Fase 107: el redil y las ovejas (2026-10-05)
+
+**D-10701. El rebaño es una definición propia.**
+Tipo nuevo `herd` (`defs/herds.json`): cuántas hembras trae, si trae macho, metros de pasto por animal, máximo, precio del macho, lo que da cada hembra en primavera y lo que da cada animal que sobra en otoño. El redil lista sus rebaños (`herds`); hoy uno, y la fase 108 suma las cabras sin tocar el código del redil. El edificio guarda qué rebaño tiene, cuántas hembras, si tiene macho y qué primavera y qué otoño ya pasaron.
+
+**D-10702. El pasto es un campo del redil.**
+Reutiliza todo lo de los campos de granja: la misma orden para marcarlo y quitarlo, las mismas comprobaciones (dentro del radio, no sobre agua, ni sobre otro campo o edificio, ni demasiado empinado, alcanzable a pie) y el mismo arrastre en pantalla. Diferencias: es uno solo, puede medir hasta 32 m de lado (un campo, 20: con 20 × 20 solo cabrían 10 animales y el máximo es 16), no se siembra nada en él y no tapa las flores silvestres (no está arado).
+
+**D-10703. La valla que «se pone sola» es solo aspecto.**
+La vista dibuja módulos de valla de estacas por los cuatro lados del pasto, con las piezas de la línea que el redil nombra en `pastureFence`. No son edificios: no cuestan, no se pueden quitar uno a uno, no cuentan como jardín ni protegen del zorro, y no cierran el paso a nadie (el suelo del pasto ya no se puede construir). Se descartó crear módulos reales: habría que deshacerlos al quitar el pasto y dejar una puerta.
+
+**D-10704. Primavera y otoño, una vez cada uno, y solo con pastor.**
+Mientras es primavera y el redil tiene pastor, el primer día que se cumple todo: 2 de lana por oveja (las que había, no las crías) y, con carnero, nacen dos crías por cada tres ovejas (al menos una), hasta el sitio del pasto. Un redil recién construido en primavera lo hace enseguida: por eso «pasa de 4 a 6 en la primera primavera». En otoño, igual: lo que pasa del sitio se vuelve 3 de carne y 1 piel por animal; nunca baja de los 4 con que empezó (un redil sin pasto todavía no pierde su rebaño) ni toca al carnero. Sin pastor toda una estación, ese año no hay lana ni crías. Donde la partida no tiene primavera u otoño valen el primer y el tercer trimestre del año.
+
+**D-10705. Todas las crías cuentan como hembras.**
+El rebaño son hembras y, como mucho, un macho. No hay edades ni corderos aparte.
+
+**D-10706. Cómo se pierde el carnero.**
+Hoy, de ninguna manera: no hay lobos que ataquen rediles ni vejez de los animales. La compra (orden nueva `BuyMale`, 30 de oro del pueblo) está y se prueba con un rebaño definido sin macho; será útil cuando los eventos de la fase 113 puedan quitarlo.
+
+**D-10707. Lana y tela.**
+Recurso nuevo `core:wool` (material, vale 2). Receta nueva `weave_wool`: 2 de lana dan 1 de tela, el mismo trabajo que con lino; el tejedor tiene ahora las dos recetas. La pila de lana usa el modelo de la del lino.
+
+**D-10708. A la vista.**
+Las ovejas (la del zoológico de modelos) y el carnero (de las propuestas) son fauna de ambiente: tantas como dice el redil, repartidas por el pasto de día y junto al redil de noche o si no hay pasto. El modelo del redil de la propuesta traía cinco ovejas pegadas y pasaba del límite de triángulos (7728): se hizo una versión sin ellas (2308).
+
+**D-10709. Lo medido.**
+Suite nueva `herds`, 8 casos: los datos; el rebaño pasa de 4 a 6 la primera primavera, a 8 la segunda (cabían dos de las tres crías) y ahí se queda; con un pasto mayor sigue hasta 16 y no pasa; sin pasto no crece pero da lana y conserva sus 4; sin pastor, nada; sin carnero no hay crías, comprarlo cuesta 30 de oro, no se compra un segundo ni desde una casa, y con el oro de un pueblo nuevo alcanza para tres; la lana llega al almacén y el tejedor hace 3 de tela con 6 de lana; achicar el pasto deja 4 animales en otoño y 2 pieles; un pasto no se marca sobre agua, sobre un campo, fuera del radio, más grande de la cuenta ni dos veces, y no se construye encima; guardar y cargar. En `net`, un caso nuevo: un redil construido por el pueblo, su pasto y un macho que no hace falta (orden rechazada), más de un año de juego: las dos máquinas tienen la misma partida.
+
+**D-10710. Versiones.**
+Reglas 68 y red 31. El generador no cambia.

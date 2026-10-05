@@ -34,6 +34,10 @@ DefIndex Content::find_crop(std::string_view id) const {
     return find_def(crops, id);
 }
 
+DefIndex Content::find_herd(std::string_view id) const {
+    return find_def(herds, id);
+}
+
 std::string race_body_file(std::string_view body) {
     return "models/characters/" + std::string(body) + ".glb";
 }

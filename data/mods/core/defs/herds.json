@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "defs": [
+    {
+      "type": "herd",
+      "id": "core:sheep",
+      "name": "herd.sheep",
+      "look": "sheep",
+      "start": 3,
+      "area": 40,
+      "most": 16,
+      "malePrice": 30,
+      "spring": {
+        "core:wool": 2
+      },
+      "cull": {
+        "core:meat": 3,
+        "core:hide": 1
+      }
+    }
+  ]
+}

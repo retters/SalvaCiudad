@@ -22,6 +22,8 @@ import studies  # noqa: E402
 # The wild animals of the game (phase 47), in the order of sim::CreatureKind:
 # the low-poly zoo specs of art/blender/zoo, with their skeleton and clips.
 GAME_ANIMALS = ("deer", "boar", "wolf", "bear")
+# The animals of the folds (phase 107), from the same zoo: drawn by the view around their fold.
+GAME_LIVESTOCK = ("sheep",)
 
 
 # The trees (phase 53): every spec of art/blender/lowpoly_trees, one model
@@ -91,7 +93,7 @@ def make_loads(folder):
 
 def make_animals(folder):
     sys.path.insert(0, os.path.join(HERE, "zoo"))
-    for name in GAME_ANIMALS:
+    for name in GAME_ANIMALS + GAME_LIVESTOCK:
         for spec in importlib.import_module(name).SPECS:
             studies.build_final(spec, folder)
 

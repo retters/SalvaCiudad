@@ -300,6 +300,35 @@
     },
     {
       "type": "building",
+      "id": "core:sheepfold",
+      "name": "building.sheepfold",
+      "kind": "workplace",
+      "model": "models/buildings/sheepfold.glb",
+      "size": [
+        10,
+        10
+      ],
+      "cost": {
+        "core:log": 10,
+        "core:stone": 12
+      },
+      "buildWork": 300,
+      "workers": 1,
+      "radius": 50,
+      "storage": 60,
+      "stores": [
+        "food",
+        "material",
+        "good"
+      ],
+      "herds": [
+        "core:sheep"
+      ],
+      "pastureFence": "core:picket_fence",
+      "category": "food"
+    },
+    {
+      "type": "building",
       "id": "core:orchard",
       "name": "building.orchard",
       "kind": "workplace",
@@ -632,7 +661,8 @@
       "workers": 1,
       "work": "produce",
       "recipes": [
-        "core:weave_linen"
+        "core:weave_linen",
+        "core:weave_wool"
       ],
       "storage": 40,
       "stores": [

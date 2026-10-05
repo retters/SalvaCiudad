@@ -154,6 +154,11 @@ struct BuildingDef {
     // Phase 100: it needs not all of `service_uses` but any one of them
     // (beer or wine): the first in the list that it has is the one used.
     bool service_any = false;
+    // Phase 107: a fold: the herds it may keep (HerdDef indexes; the first is
+    // what it comes with). It has a pasture: one field, marked like a
+    // farm's within its `work_radius`, of up to kMaxPastureSide a side.
+    std::vector<DefIndex> herds;
+    std::string pasture_fence;  // The line (a building id) whose pieces close its pasture; presentation only.
     // Phase 105: a coop. With no worker, its `coop_hens` hens lay a unit of
     // `coop_gives` (eggs) every `coop_days` days while they have feed: a unit
     // of any of `coop_feed` (grain) lasts them `coop_feed_days` days, and
@@ -393,6 +398,21 @@ struct CropDef {
 };
 inline constexpr std::size_t kCropStages = 3;
 
+// Phase 107: a herd kept in a fold (sheep). The simulation knows how many
+// there are, females and one male at most; the view draws them.
+struct HerdDef {
+    std::string id;
+    std::string name_key;
+    std::int32_t start = 3;          // Females a new fold comes with...
+    bool start_male = true;          // ...and a male.
+    std::int32_t area = 40;          // Square meters of pasture for each animal.
+    std::int32_t most = 16;          // However large the pasture.
+    std::int32_t male_price = 30;    // Gold for another male.
+    std::vector<ResourceAmount> spring;  // What each female gives in spring (wool).
+    std::vector<ResourceAmount> cull;    // What each animal over the pasture's room gives in autumn (meat, hides).
+    std::uint8_t look = 0;           // How it is drawn (the view's: 0 sheep).
+};
+
 struct RecipeDef {
     std::string id;
     std::vector<ResourceAmount> inputs;
@@ -444,6 +464,7 @@ struct Content {
     std::vector<RecipeDef> recipes;
     std::vector<FeatureDef> features;
     std::vector<CropDef> crops;
+    std::vector<HerdDef> herds;
     std::vector<DiseaseDef> diseases;
     std::vector<UnitDef> units;
     std::vector<TutorialDef> tutorials;
@@ -458,6 +479,7 @@ struct Content {
     [[nodiscard]] DefIndex find_building(std::string_view id) const;
     [[nodiscard]] DefIndex find_recipe(std::string_view id) const;
     [[nodiscard]] DefIndex find_crop(std::string_view id) const;
+    [[nodiscard]] DefIndex find_herd(std::string_view id) const;
     [[nodiscard]] const FeatureDef* feature(FeatureKind kind) const;
 };
 

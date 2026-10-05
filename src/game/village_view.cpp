@@ -574,6 +574,9 @@ void VillageView::rebuild_fields(render::SceneRenderer& renderer, const sim::Gam
     };
     const sim::Content& content = game.content();
     for (const sim::Building& b : game.buildings().data()) {
+        if (!content.buildings[b.def].herds.empty()) {
+            continue;  // Phase 107: a pasture is grass, with a fence around it (drawn with the buildings).
+        }
         for (const sim::Field& f : b.fields) {
             if (fog_ != nullptr && fog_->mode() != sim::FogMode::None && game.town_group(b.owner) != fog_->group() &&
                 !fog_->rect_shows(f.x, f.z, f.w, f.d)) {
@@ -1404,6 +1407,38 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
             mark_line(content.buildings[g.def], g.x, g.z, sim::kTraceModule, sim::kTraceModule);
         }
     }
+    // Phase 107: the fence around each pasture, of the modules its fold
+    // names: along its four sides, a module every two meters.
+    struct Post {
+        sim::DefIndex def;
+        std::int32_t x, z;
+    };
+    std::vector<Post> pasture_posts;
+    for (const sim::Building& b : game.buildings().data()) {
+        const sim::BuildingDef& bd = content.buildings[b.def];
+        if (bd.herds.empty() || bd.pasture_fence.empty() || b.fields.empty() || !building_shown(game, b)) {
+            continue;
+        }
+        const sim::DefIndex fence = content.find_building(bd.pasture_fence);
+        if (fence == sim::kNoDef || content.buildings[fence].line.empty()) {
+            continue;
+        }
+        constexpr std::int32_t m = sim::kTraceModule;
+        for (const sim::Field& f : b.fields) {
+            const auto side = [&](std::int32_t from, std::int32_t length, bool along_x, std::int32_t other) {
+                for (std::int32_t k = 0; k < length; k += m) {
+                    const std::int32_t at = from + std::min(k, std::max(0, length - m));
+                    const Post post{fence, along_x ? at : other, along_x ? other : at};
+                    pasture_posts.push_back(post);
+                    mark_line(content.buildings[fence], post.x, post.z, m, m);
+                }
+            };
+            side(f.x, f.w, true, f.z);
+            side(f.x, f.w, true, f.z + f.d - m);
+            side(f.z, f.d, false, f.x);
+            side(f.z, f.d, false, f.x + f.w - m);
+        }
+    }
     const auto joins = [&](const std::string& family, std::int32_t x, std::int32_t z) {
         const auto it = line_at.find(cell_key(x, z));
         return it != line_at.end() && *it->second == family;
@@ -1486,6 +1521,9 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         }
         return true;
     };
+    for (const Post& post : pasture_posts) {
+        (void)put_module(post.def, post.x, post.z, 1, math::Vec3{1.0f, 1.0f, 1.0f}, 0);
+    }
     winter_ = game.calendar().season == sim::Season::Winter;
     for (std::size_t k = 0; k < game.buildings().size(); ++k) {
         const sim::Building& b = game.buildings().data()[k];

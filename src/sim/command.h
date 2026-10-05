@@ -53,6 +53,7 @@ enum class CommandType : std::uint8_t {
                           // `count` 1: an L goes along z first.
     DevBuild = 43,        // Developer tools: everything the town is building is finished at once.
     DevBeast = 44,        // Developer tools: a beast of kind `def` (a CreatureKind: deer to bear) at `position`.
+    BuyMale = 45,         // Phase 107: fold `entity` buys a male for its herd, with the town's gold.
 
 };
 

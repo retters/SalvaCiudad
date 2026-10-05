@@ -86,6 +86,17 @@
     },
     {
       "type": "recipe",
+      "id": "core:weave_wool",
+      "inputs": {
+        "core:wool": 2
+      },
+      "outputs": {
+        "core:linen": 1
+      },
+      "work": 70
+    },
+    {
+      "type": "recipe",
       "id": "core:sew_linen",
       "inputs": {
         "core:linen": 1

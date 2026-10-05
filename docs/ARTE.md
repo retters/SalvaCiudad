@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Redil, ovejas y carnero (fase 107)
+
+`buildings/sheepfold.glb` (2308 triángulos; ocupa 10 × 10 m) sale de `proposals/farm` como `farm_sheepfold_empty`: el redil de la propuesta sin sus cinco ovejas, porque el rebaño lo dibuja el juego. `animals/sheep.glb` es la oveja del zoológico (`zoo/sheep.py`, que se construye con `animals`) y `fauna/ram.glb` el carnero de `proposals/beasts`. La lana usa por ahora la pila del lino. Las obras del redil son `site_10x10_1.glb` y `_2.glb`.
+
 ### Perros y gatos (fase 106)
 
 De `proposals/creatures`: `fauna/dog.glb` (mestizo), `dog_shepherd.glb`, `dog_mastiff.glb` y `dog_terrier.glb`; `fauna/cat.glb` (gris), `cat_tabby.glb`, `cat_black.glb`, `cat_white.glb` y `kitten.glb`. Fauna de ambiente: el perro de una caseta es uno de los cuatro según dónde está la caseta y ronda a 6 m; el gato de una casa es el del número que guarda la casa y ronda a 3 m.

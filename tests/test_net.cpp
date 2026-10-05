@@ -484,6 +484,81 @@ TEST_SUITE("net") {
         CHECK(c.m[0].game->roads() == c.m[1].game->roads());
     }
 
+    // Phase 107: a fold is built by the town, its pasture is marked with an
+    // order and its flock breeds by the calendar: the same on every machine.
+    TEST_CASE("a sheepfold, its pasture and its flock are the same on both machines") {
+        Cluster c;
+        c.join("P1");
+        c.frames(3, 0);
+        c.host().set_config(config(23, false));
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(3, 0);
+        REQUIRE(c.m[1].game != nullptr);
+        const sim::Game& g = *c.m[1].game;
+        const std::uint8_t town = g.town_of(1);
+        const sim::DefIndex def = content()->find_building("core:sheepfold");
+        REQUIRE(def != sim::kNoDef);
+        const auto place = place_near(g, 1, "core:sheepfold", 2);
+        REQUIRE(place.has_value());
+        c.m[1].session->issue(*place);
+        // Until the town has built it and somebody keeps it.
+        const auto built = [&](const sim::Game& game) {
+            for (std::size_t i = 0; i < game.buildings().size(); ++i) {
+                const sim::Building& b = game.buildings().data()[i];
+                if (b.def == def && b.owner == town && b.state == sim::BuildingState::Complete && !b.workers.empty()) {
+                    return game.buildings().entities()[i];
+                }
+            }
+            return sim::EntityId{};
+        };
+        sim::EntityId fold;
+        for (int i = 0; i < 40 && !fold.valid(); ++i) {
+            c.frames(100, 4);
+            fold = built(g);
+        }
+        REQUIRE(fold.valid());
+        // Its pasture, where it fits; and a male it has no need of (refused the same everywhere).
+        const sim::Building at = *g.buildings().get(fold);
+        std::optional<sim::Command> pasture;
+        for (int r = 12; r < 44 && !pasture; r += 2) {
+            for (const auto& [dx, dz] : {std::pair{r, 0}, std::pair{-r - 16, 0}, std::pair{0, r}, std::pair{0, -r - 16}}) {
+                if (!pasture && g.can_place_field(1, fold, at.x + dx, at.z + dz, 16, 16) == sim::PlaceError::None) {
+                    sim::Command f;
+                    f.type = sim::CommandType::PlaceField;
+                    f.entity = fold;
+                    f.position = {sim::Fixed::from_int(at.x + dx), sim::Fixed::from_int(at.z + dz)};
+                    f.value = 16 | (16 << 8);
+                    pasture = f;
+                }
+            }
+        }
+        REQUIRE(pasture.has_value());
+        c.m[1].session->issue(*pasture);
+        sim::Command male;
+        male.type = sim::CommandType::BuyMale;
+        male.entity = fold;
+        c.m[1].session->issue(male);
+        // Into the next spring.
+        const std::uint32_t year = g.year_ticks();
+        for (std::uint32_t t = 0; t < year + year / 8; t += 400) {
+            c.frames(100, 4);
+        }
+        c.settle();
+        expect_same_games(c);
+        for (std::size_t k = 0; k < 2; ++k) {
+            const sim::Building* b = c.m[k].game->buildings().get(fold);
+            REQUIRE(b != nullptr);
+            CHECK(b->fields.size() == 1);
+            CHECK(b->males == 1);
+            CHECK(b->females > 3);
+            CHECK(b->females == c.m[0].game->buildings().get(fold)->females);
+            CHECK(c.m[k].game->herd_room(*b) == 6);
+        }
+        CHECK(c.m[0].game->rejected_commands() == c.m[1].game->rejected_commands());
+        CHECK(c.m[0].game->rejected_commands() >= 1);
+    }
+
     // Phase 97: the rain follows from the seed and the day; nothing of it
     // travels. After a year with rain, two machines have the same game.
     TEST_CASE("a year with rain: the same weather and the same game on both machines") {

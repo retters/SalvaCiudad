@@ -239,6 +239,16 @@
     },
     {
       "type": "resource",
+      "id": "core:wool",
+      "name": "resource.wool",
+      "pile": "models/props/pile_flax",
+      "category": "material",
+      "weight": 1,
+      "value": 2,
+      "load": "sack"
+    },
+    {
+      "type": "resource",
       "id": "core:linen",
       "name": "resource.linen",
       "pile": "models/props/pile_linen",

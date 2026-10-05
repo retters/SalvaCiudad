@@ -851,6 +851,13 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] Alimentos > Redil (10 × 10 m, un pastor): al terminarse tiene 3 ovejas y un carnero, que se ven dentro.
+- [ ] En su ventana, «Marcar el pasto» deja arrastrar un rectángulo cerca del redil (hasta 32 m de lado); queda cercado con valla de estacas y las ovejas pastan ahí de día y vuelven al redil de noche.
+- [ ] En primavera el redil recibe 2 de lana por oveja y nacen crías (de 4 a 6 animales la primera vez) hasta el sitio del pasto (uno cada 40 m², 16 como mucho). La ventana dice cuántos hay y para cuántos alcanza el pasto.
+- [ ] El tejedor hace tela con lana igual que con lino.
+- [ ] Si el pasto se achica, en otoño los animales que sobran se vuelven carne y pieles.
+- [ ] Un redil sin carnero muestra «Comprar un macho (30 de oro)»; al comprarlo baja el oro del pueblo.
+- [ ] No se puede marcar el pasto sobre agua, sobre un campo ni sobre un edificio, ni un segundo pasto.
 - [ ] Cada Caseta del perro tiene un perro rondando (mestizo, pastor, mastín o terrier). Su ventana dice que ladra y que planta cara a un lobo.
 - [ ] Cuando un lobo, un oso o asaltantes entran a 12 m de una caseta, sale el aviso «El perro ladra…» y los aldeanos de ese radio corren al centro del pueblo. Un lobo se queda quieto junto al perro y va perdiendo vida; un oso sigue de largo.
 - [ ] Con comida de sobra, cada mes una casa recibe un gato (se ve rondándola y su ventana dice «Gato en casa: +2 de entorno»); si el pueblo pasa hambre, se van de a uno por mes.

@@ -1787,8 +1787,12 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
         std::int32_t z0 = ui.field_dragging ? std::min(ui.drag_z, cz) : cz;
         std::int32_t w = ui.field_dragging ? std::abs(cx - ui.drag_x) + 1 : sim::kMinFieldSide;
         std::int32_t d = ui.field_dragging ? std::abs(cz - ui.drag_z) + 1 : sim::kMinFieldSide;
-        w = std::clamp(w, sim::kMinFieldSide, sim::kMaxFieldSide);
-        d = std::clamp(d, sim::kMinFieldSide, sim::kMaxFieldSide);
+        const sim::Building* field_of = game.buildings().get(ui.field_farm);
+        const std::int32_t most_side = field_of != nullptr && !game.content().buildings[field_of->def].herds.empty()
+                                           ? sim::kMaxPastureSide
+                                           : sim::kMaxFieldSide;  // Phase 107: a pasture may be larger.
+        w = std::clamp(w, sim::kMinFieldSide, most_side);
+        d = std::clamp(d, sim::kMinFieldSide, most_side);
         if (ui.field_dragging && cx < ui.drag_x) {
             x0 = ui.drag_x - w + 1;
         }

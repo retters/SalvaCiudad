@@ -26,7 +26,7 @@ bool valid_name_part(std::string_view s) {
 }
 
 constexpr std::string_view kTypes[] = {"resource", "mapFeature", "building", "recipe", "species", "biome",
-                                        "crop",     "disease",    "unit",   "tutorial", "race"};
+                                        "crop",     "disease",    "unit",   "tutorial", "race",   "herd"};
 // In the order of sim::BiomeWater and sim::BiomeRegion (phase 54).
 constexpr std::string_view kBiomeWaters[] = {"any", "fresh", "sea"};
 constexpr std::string_view kBiomeRegions[] = {"plain", "hills", "mountains", "plateau", "basin"};
@@ -574,7 +574,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
     out = sim::Content{};
     // Ids first, so definitions can refer to each other in any order.
     std::vector<const RawDef*> resources, features, buildings, recipes, species, biomes, crops, diseases, units,
-        tutorials, races;
+        tutorials, races, herds;
     for (const RawDef& d : set.defs()) {
         if (d.type == "resource") resources.push_back(&d);
         else if (d.type == "mapFeature") features.push_back(&d);
@@ -587,6 +587,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         else if (d.type == "unit") units.push_back(&d);
         else if (d.type == "tutorial") tutorials.push_back(&d);
         else if (d.type == "race") races.push_back(&d);
+        else if (d.type == "herd") herds.push_back(&d);
     }
     if (species.size() > sim::kMaxSpecies || biomes.size() > sim::kMaxBiomes ||
         resources.size() > 1000 || buildings.size() > 1000 || recipes.size() > 2000) {
@@ -868,6 +869,28 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             out.crops.push_back(std::move(def));
         }
     }
+    // Herds (phase 107).
+    for (const RawDef* d : herds) {
+        Reader r(*d, errors);
+        sim::HerdDef def;
+        def.id = d->id;
+        def.name_key = r.text("name", true);
+        def.start = r.integer("start", 1, 50, 3);
+        def.start_male = !r.flag("noMale");
+        def.area = r.integer("area", 1, 1000, 40);
+        def.most = r.integer("most", 1, 200, 16);
+        def.male_price = r.integer("malePrice", 0, 10000, 30);
+        def.spring = amounts(r.table("spring", find_resource, 1, 1000, 4));
+        def.cull = amounts(r.table("cull", find_resource, 1, 1000, 4));
+        static constexpr std::string_view kHerdLooks[] = {"sheep", "goat"};
+        def.look = static_cast<std::uint8_t>(r.choice("look", kHerdLooks, 0));
+        if (def.start + (def.start_male ? 1 : 0) > def.most) {
+            r.fail("a herd starts with no more than its \"most\"");
+        }
+        if (r.ok() && out.herds.size() < 250) {
+            out.herds.push_back(std::move(def));
+        }
+    }
     // Map features.
     for (const RawDef* d : features) {
         Reader r(*d, errors);
@@ -1052,6 +1075,25 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("\"serviceUsesAny\" needs \"serviceUses\"");
         }
         def.model_winter = r.extra_model("winterModel", mod_dir, refs, def.name_key);
+        // Phase 107: folds.
+        def.pasture_fence = r.text("pastureFence", false);
+        if (yyjson_mut_val* kinds = yyjson_mut_obj_get(d->obj, "herds"); kinds != nullptr) {
+            std::size_t i = 0, max = 0;
+            yyjson_mut_val* item = nullptr;
+            yyjson_mut_arr_foreach(kinds, i, max, item) {
+                const char* id = yyjson_mut_get_str(item);
+                const int hi = id != nullptr ? index_of(out.herds, id) : -1;
+                if (hi < 0) {
+                    r.fail("\"herds\" refers to a herd that does not exist");
+                } else if (def.herds.size() < 8) {
+                    def.herds.push_back(static_cast<sim::DefIndex>(hi));
+                }
+            }
+            if (def.kind != sim::BuildingKind::Workplace || def.storage <= 0 || def.work_radius <= 0 ||
+                def.work != sim::WorkKind::None || !def.recipes.empty()) {
+                r.fail("a building with \"herds\" is a workplace with \"storage\" and a \"radius\", and no other work");
+            }
+        }
         // Phase 105: coops and guards.
         if (const std::string eggs = r.text("coopGives", false); !eggs.empty()) {
             const int ei = find_resource(eggs);

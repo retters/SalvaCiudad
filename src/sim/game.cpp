@@ -4366,6 +4366,11 @@ public:
         if (def(b).coop_gives != kNoDef) {
             b.flock = static_cast<std::uint8_t>(def(b).coop_hens);  // Phase 105: it comes with its hens.
         }
+        if (const HerdDef* herd = g_.herd_of(b)) {
+            // Phase 107: and a fold with its first animals.
+            b.females = static_cast<std::uint8_t>(herd->start);
+            b.males = herd->start_male ? 1 : 0;
+        }
         if (def(b).trade) {
             b.limit = kPostReserve;
         }
@@ -4880,6 +4885,51 @@ public:
         }
     }
 
+    // Phase 107: the folds' day. With its shepherd: in spring, once, the
+    // females give what they give (wool) and, with a male, the young are
+    // born, two for every three females, while the pasture has room; in
+    // autumn, once, the animals over the pasture's room become meat and
+    // hides. (Where the year has no spring or no autumn: its first and its
+    // third quarter.)
+    void herds() {
+        const Calendar now = g_.calendar();
+        const std::uint8_t seasons = g_.rules_.climate.seasons;
+        const bool spring = (seasons & 1u) != 0 ? now.season == Season::Spring : now.month <= 3;
+        const bool autumn = (seasons & 4u) != 0 ? now.season == Season::Autumn : now.month >= 7 && now.month <= 9;
+        for (Building& b : g_.buildings_.data()) {
+            const HerdDef* h = g_.herd_of(b);
+            if (h == nullptr || !complete(b) || b.workers.empty()) {
+                continue;
+            }
+            const std::int32_t room = g_.herd_room(b);
+            if (spring && b.herd_spring != now.year) {
+                b.herd_spring = now.year;
+                for (const ResourceAmount& y : h->spring) {
+                    add_to(b.stock, y.resource, std::min(g_.per_year(y.amount * b.females), std::max(0, free_space(b))));
+                }
+                compact(b.stock);
+                if (b.males > 0 && b.females > 0) {
+                    const std::int32_t young = std::max(1, b.females * 2 / 3);
+                    b.females = static_cast<std::uint8_t>(b.females + std::clamp(room - b.females - b.males, 0, young));
+                }
+                g_.buildings_changed_ = true;
+            }
+            if (autumn && b.herd_autumn != now.year) {
+                b.herd_autumn = now.year;
+                // (Never under what a fold comes with: one with no pasture yet keeps its first animals.)
+                const std::int32_t keep = std::max(room, h->start + (h->start_male ? 1 : 0));
+                const std::int32_t over = std::min<std::int32_t>(b.females, b.females + b.males - keep);
+                if (over > 0) {
+                    b.females = static_cast<std::uint8_t>(b.females - over);
+                    for (const ResourceAmount& y : h->cull) {
+                        add_to(b.stock, y.resource, y.amount * over);  // (It may overflow: it is carried off.)
+                    }
+                    g_.buildings_changed_ = true;
+                }
+            }
+        }
+    }
+
     // Phase 106: a new month. A town with food to spare (what lets children
     // be born) may get a cat in one of its houses without one; a town that
     // goes hungry (less food than people) loses one.
@@ -4925,6 +4975,7 @@ public:
         hives();
         coops();
         cats();
+        herds();
     }
 
     // Phase 105: the coops' day. The flock is whole again when spring comes
@@ -5532,8 +5583,8 @@ public:
             }
         }
         f.fertility = static_cast<std::int32_t>(sum * 100 / (255 * static_cast<std::int64_t>(w) * d));
-        // A first plan: the content's crops in turn.
-        for (std::size_t y = 0; y < kPlanYears && !c_.crops.empty(); ++y) {
+        // A first plan: the content's crops in turn. (Nothing is sown in a pasture.)
+        for (std::size_t y = 0; y < kPlanYears && !c_.crops.empty() && def(farm).herds.empty(); ++y) {
             f.plan[y] = static_cast<DefIndex>(y % c_.crops.size());
         }
         f.year = g_.calendar().year;
@@ -5957,6 +6008,18 @@ public:
                     (void)spawn_villager(town, spot, n % 2 == 0 ? Sex::Male : Sex::Female,
                                          18 + static_cast<std::int32_t>(g_.rng_.below(20)), family, newcomer_race(town));
                 }
+                break;
+            }
+            case CommandType::BuyMale: {
+                Building* fold = g_.buildings_.get(c.entity);
+                const HerdDef* herd = fold != nullptr ? g_.herd_of(*fold) : nullptr;
+                if (herd == nullptr || fold->owner != g_.town_of(c.player) || !complete(*fold) || fold->males > 0 ||
+                    !take_from_town(fold->owner, g_.gold_, herd->male_price)) {
+                    ++g_.rejected_;
+                    break;
+                }
+                fold->males = 1;
+                g_.buildings_changed_ = true;
                 break;
             }
             case CommandType::DevBeast: {
@@ -7266,13 +7329,15 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
         return PlaceError::NotYours;
     }
     const BuildingDef& fd = content_->buildings[farm->def];
-    if (fd.work != WorkKind::Farm) {
+    const bool fold = !fd.herds.empty();  // Phase 107: its one pasture.
+    if (fd.work != WorkKind::Farm && !fold) {
         return PlaceError::UnknownBuilding;
     }
-    if (static_cast<std::int32_t>(farm->fields.size()) >= fd.fields) {
+    if (static_cast<std::int32_t>(farm->fields.size()) >= (fold ? 1 : fd.fields)) {
         return PlaceError::TooMany;
     }
-    if (w < kMinFieldSide || d < kMinFieldSide || w > kMaxFieldSide || d > kMaxFieldSide) {
+    const std::int32_t most = fold ? kMaxPastureSide : kMaxFieldSide;
+    if (w < kMinFieldSide || d < kMinFieldSide || w > most || d > most) {
         return PlaceError::BadSize;
     }
     constexpr std::int32_t kMargin = 4;
@@ -7313,6 +7378,27 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
     return PlaceError::None;
 }
 
+const HerdDef* Game::herd_of(const Building& fold) const {
+    const BuildingDef& d = content_->buildings[fold.def];
+    if (d.herds.empty()) {
+        return nullptr;
+    }
+    const DefIndex h = d.herds[std::min<std::size_t>(fold.herd, d.herds.size() - 1)];
+    return h < content_->herds.size() ? &content_->herds[h] : nullptr;
+}
+
+std::int32_t Game::herd_room(const Building& fold) const {
+    const HerdDef* h = herd_of(fold);
+    if (h == nullptr) {
+        return 0;
+    }
+    std::int32_t area = 0;
+    for (const Field& f : fold.fields) {
+        area += f.w * f.d;
+    }
+    return std::min(h->most, area / std::max(1, h->area));
+}
+
 bool Game::coop_safe(const Building& coop) const {
     const std::int32_t reach = village::kGardenMeters;
     const FixedVec2 here{Fixed::from_int(coop.x) + Fixed::from_ratio(coop.width, 2), Fixed::from_int(coop.z) + Fixed::from_ratio(coop.depth, 2)};
@@ -7351,6 +7437,9 @@ std::int32_t Game::flowers(std::int32_t x0, std::int32_t z0, std::int32_t x1, st
     };
     std::vector<Rect> fields;
     for (const Building& b : buildings_.data()) {
+        if (!content_->buildings[b.def].herds.empty()) {
+            continue;  // A pasture is not ploughed (phase 107).
+        }
         for (const Field& f : b.fields) {
             if (f.x <= x1 && f.x + f.w > x0 && f.z <= z1 && f.z + f.d > z0) {
                 fields.push_back({f.x, f.z, f.x + f.w, f.z + f.d});
@@ -8229,6 +8318,11 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(b.garden);
         w.u8(b.flock);
         w.u8(b.cat);
+        w.u8(b.herd);
+        w.u8(b.females);
+        w.u8(b.males);
+        w.u32(b.herd_spring);
+        w.u32(b.herd_autumn);
         w.i32(b.happiness);
         w.i32(b.desirability);
         w.i32(b.fire);
@@ -8640,7 +8734,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t upgrading = 0;
         if (!r.u8(b.level) || b.level > c.buildings[b.def].levels.size() || !r.u8(upgrading) || upgrading > 1 ||
             !r.i32(b.limit) || b.limit < 0 || b.limit > 10000 || !r.u8(b.recipe) || !r.u16(b.needs) ||
-            !r.u16(b.annexes) || !r.u8(b.garden) || b.garden > (garden::kHouse | garden::kFormal) || !r.u8(b.flock) || b.flock > 20 || !r.u8(b.cat) || b.cat > village::kCatLooks || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
+            !r.u16(b.annexes) || !r.u8(b.garden) || b.garden > (garden::kHouse | garden::kFormal) || !r.u8(b.flock) || b.flock > 20 || !r.u8(b.cat) || b.cat > village::kCatLooks || !r.u8(b.herd) || b.herd >= 8 || !r.u8(b.females) ||
+            !r.u8(b.males) || b.males > 1 || !r.u32(b.herd_spring) || !r.u32(b.herd_autumn) || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
             b.fire < 0 || b.fire > 100 || !r.i32(b.burned) || b.burned < 0 || b.burned > 1000 || !r.i32(b.damage) ||
             b.damage < 0 || !r.i32(b.rearm) || b.rearm < 0) {
             r.fail();

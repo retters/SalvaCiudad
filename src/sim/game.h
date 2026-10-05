@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 67;
+inline constexpr std::uint32_t kGameRulesVersion = 68;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -214,6 +214,8 @@ inline constexpr std::uint8_t kCount = 3;
 enum class FieldState : std::uint8_t { Waiting, Growing, Ripe, Done, Count };
 inline constexpr std::int32_t kMinFieldSide = 4;
 inline constexpr std::int32_t kMaxFieldSide = 20;
+// Phase 107: a fold's pasture may be larger.
+inline constexpr std::int32_t kMaxPastureSide = 32;
 inline constexpr std::size_t kPlanYears = 3;
 
 struct Field {
@@ -276,6 +278,13 @@ struct Building {
     std::uint16_t annexes = 0;       // Houses: the annexes that serve it (a bit per BuildingDef::annex_bit); phase 103.
     std::uint8_t garden = 0;         // Phase 104: garden::kHouse (a house with its fence), garden::kFormal (a decoration with its hedge).
     std::uint8_t cat = 0;            // Phase 106: a house's cat: 0 none, else its look (1 to village::kCatLooks).
+    // Phase 107: a fold's herd: which of its def's herds, how many females, whether it has its male, and
+    // the years whose spring (wool, young) and autumn (the surplus) are done.
+    std::uint8_t herd = 0;
+    std::uint8_t females = 0;
+    std::uint8_t males = 0;
+    std::uint32_t herd_spring = 0;
+    std::uint32_t herd_autumn = 0;
     std::uint8_t flock = 0;          // Phase 105: a coop's hens. (Its `produced` is the days of feed left; its `work_done`, eggs on the way.)
     std::int32_t happiness = 50;     // Houses: 0..100.
     std::int32_t desirability = 0;   // Houses: how pleasant the place is.
@@ -877,6 +886,9 @@ public:
     // How pleasant a place is for homes: buildings around (gardens add,
     // workshops take away) and trees (phase 12; the map layer, phase 17).
     [[nodiscard]] std::int32_t desirability_at(FixedVec2 here, const Building* self = nullptr) const;
+    // Phase 107. A fold's herd (null: not a fold), and how many animals its pasture has room for.
+    [[nodiscard]] const HerdDef* herd_of(const Building& fold) const;
+    [[nodiscard]] std::int32_t herd_room(const Building& fold) const;
     // Phase 105. Whether no fox comes to `coop`: it has its fence, or a guard in reach.
     [[nodiscard]] bool coop_safe(const Building& coop) const;
     // Phase 104. How thick the wild flowers are over the cells from (x0, z0)
