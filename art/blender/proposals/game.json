@@ -1,5 +1,5 @@
 {
-  "comment": "The proposal models that are in the game (phase 89). build_all.py builds each with its family's script, checks it against the triangle limit of its class and copies it to data/mods/core/models/<to>/<id>.glb. 'each' multiplies the ids by its suffixes (a pile's three levels). 'ids' may map a model to the name it takes in the game. With 'game': true the family's script builds the game's version of the model: without skeleton or clips and with fewer pieces (see _kit.GAME). A model enters this list in the phase that uses it.",
+  "comment": "The proposal models that are in the game (phase 89). build_all.py builds each with its family's script, checks it against the triangle limit of its class and copies it to data/mods/core/models/<to>/<id>.glb. 'each' multiplies the ids by its suffixes (a pile's three levels). 'ids' may map a model to the name it takes in the game. With 'game': true the family's script builds the game's version of the model: without skeleton or clips and with fewer pieces (see _kit.GAME). With 'bare': true it leaves out the scenery around its creatures (see _kit.BARE). A model enters this list in the phase that uses it.",
   "limits": {"pile": 1200, "line": 800, "ground": 400, "rock": 1500, "crop": 200, "animal": 2000, "building": 6000},
   "models": [
     {
@@ -38,6 +38,18 @@
     {
       "family": "nature", "class": "rock", "to": "props", "game": true,
       "ids": {"nature_beach_tide_pool": "cover_tide_pool", "nature_winter_snowman": "cover_snowman"}
+    },
+    {
+      "family": "creatures", "class": "animal", "to": "fauna",
+      "ids": {"animal_squirrel": "squirrel", "animal_squirrel_gray": "squirrel_gray", "animal_owl": "owl", "animal_owl_snowy": "owl_snowy",
+              "animal_sparrow": "sparrow", "animal_robin": "robin", "animal_bluebird": "bluebird",
+              "animal_crow": "crow", "animal_raven": "raven", "animal_vulture": "vulture",
+              "animal_fox": "fox", "animal_fox_arctic": "fox_arctic"}
+    },
+    {
+      "family": "nature", "class": "animal", "to": "fauna", "bare": true,
+      "ids": {"nature_insects_butterflies": "butterflies", "nature_insects_fireflies": "fireflies",
+              "nature_insects_dragonflies": "dragonflies"}
     }
   ]
 }

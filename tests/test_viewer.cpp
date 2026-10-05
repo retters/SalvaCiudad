@@ -117,6 +117,14 @@ TEST_SUITE("viewer") {
             REQUIRE_MESSAGE(m != nullptr, use.path);
             CHECK(m->used());
         }
+        // What dresses the ground and the ambient animals are loaded by the code too.
+        for (const char* path : {"models/props/cover_fern.glb", "models/props/cover_snowman.glb", "models/fauna/robin.glb",
+                                 "models/fauna/fireflies.glb"}) {
+            const viewer::CatalogModel* m = c.find("core", path);
+            REQUIRE_MESSAGE(m != nullptr, path);
+            CHECK_MESSAGE(m->used(), path);
+        }
+        CHECK(c.find("core", "models/fauna/fox.glb")->category == viewer::Category::Animals);
     }
 
     TEST_CASE("a mod's unused model and a definition's missing model are found") {

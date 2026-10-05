@@ -820,6 +820,11 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] En suelo de bosque hay helechos; en el bosque en flor, pétalos en el suelo mientras es primavera. En montaña: pedregales sobre la roca, riscos en las laderas empinadas y flores alpinas. Junto a ríos y lagos, juncos; en la arena junto al mar, madera de deriva, conchas y alguna poza.
 - [ ] En invierno con nieve: ventisqueros contra algunas paredes, témpanos en el agua cuando hiela y, en pueblos con niños, muñecos de nieve junto a adornos de plaza.
 - [ ] Nada de eso aparece bajo edificios, obras ni campos, ni estorba para caminar o construir.
+- [ ] De día, entre los árboles: ardillas que corretean y se sientan a comer, y pájaros pequeños junto a los troncos; se alejan cuando pasa un aldeano. Cerca de un jardín, un huerto de frutales o una decoración de naturaleza hay muchos más pájaros, y mariposas.
+- [ ] En otoño e invierno solo quedan petirrojos. De noche (con el ciclo de día y noche): búhos posados en los árboles y, en verano, luciérnagas; el búho es blanco en bosques fríos o con nieve.
+- [ ] Junto a ríos y lagos, libélulas en primavera y verano; sobre los manchones de flores, mariposas. Lejos de los edificios, muy de vez en cuando, un zorro (blanco en clima frío) que huye al acercarse alguien.
+- [ ] Donde muere un aldeano, un soldado o un asaltante se juntan tres aves carroñeras (cuervos, o buitres en biomas secos) durante un mes de juego.
+- [ ] Con «Detalle del terreno» en «Apagado» no hay ningún animal de ambiente. En pausa se quedan quietos.
 - [ ] Configuración > Gráficos > «Detalle del terreno»: en «Apagado» no se ve ninguno; en «Bajo» solo cerca y quietos; en «Medio» y «Alto» más lejos y meciéndose.
 - [ ] Un campo recién sembrado muestra surcos con brotes; a media temporada, el cultivo verde; listo para cosechar, el cultivo maduro (trigo y cebada dorados, lino con flores azules, coles grandes, frijoles trepando por sus varas). Se distingue qué hay sembrado sin abrir la ventana de la granja. Tras la cosecha quedan rastrojos y en barbecho, pasto.
 - [ ] Trigo, cebada y lino se mecen con el viento; verduras y frijoles no. Con la cámara lejos el cultivo deja de dibujarse y el campo conserva su color.

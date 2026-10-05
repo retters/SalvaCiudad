@@ -384,8 +384,9 @@ def insects(name, kind):
                 bones += b
                 parts.append((prefix, flaps, 1 if i % 2 else -1, 30, 40, 0.06))
         else:
-            mb.cylinder((0, 0, 0), (0, 0, 0.04), 1.2, 1.2, "water", segments=9)
-            for _ in range(5):
+            if not kit.BARE:   # In the game they fly over real water.
+                mb.cylinder((0, 0, 0), (0, 0, 0.04), 1.2, 1.2, "water", segments=9)
+            for _ in range(0 if kit.BARE else 5):
                 x, y, h = rnd.uniform(-0.8, 0.8), rnd.uniform(-0.8, 0.8), rnd.uniform(0.7, 1.2)
                 mb.cylinder((x, y, 0), (x + 0.04, y, h), 0.016, 0.012, "reed", segments=4)
             for i in range(3):

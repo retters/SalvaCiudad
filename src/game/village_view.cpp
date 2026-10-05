@@ -182,6 +182,7 @@ float wrap_angle(float a) {
 void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult& pack) {
     const sim::Content& content = pack.content;
     cover_.load(renderer, pack);
+    fauna_.load(renderer, pack);
     // The animals (phase 18), animated (phase 47).
     creature_looks_.clear();
     corpses_.clear();
@@ -373,6 +374,7 @@ bool VillageView::is_prop(render::ModelId id) const {
 void VillageView::begin(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game) {
     shown_ = true;
     cover_.reset(renderer);
+    fauna_.reset();
     arrows_.clear();
     piles_timer_ = 0.0f;
     looks_.clear();
@@ -935,6 +937,9 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         }
         CreatureLook& look = creature_looks_[id.index];
         if (look.generation != id.generation) {
+            if (look.generation != ~0u && (look.kind == sim::CreatureKind::Raider || look.kind == sim::CreatureKind::Soldier)) {
+                fauna_.note_death(game, look.position.x, look.position.z);
+            }
             add_corpse(look);  // The slot's last animal died this tick.
             look = CreatureLook{};
             look.generation = id.generation;
@@ -1023,11 +1028,15 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
     // game by dying).
     for (CreatureLook& look : creature_looks_) {
         if (look.generation != ~0u && look.present + 1 == frame_) {
+            if (look.kind == sim::CreatureKind::Raider || look.kind == sim::CreatureKind::Soldier) {
+                fauna_.note_death(game, look.position.x, look.position.z);
+            }
             add_corpse(look);
             look = CreatureLook{};
         }
     }
     update_corpses(game, game_dt);
+    fauna_.update(game, {view_x_, 0.0f, view_z_}, ground_detail_, game_dt, characters_);
     if (animal_model_ != kNoModel) {
         renderer.set_instances(animal_model_, animals_);
     }
@@ -1245,6 +1254,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     rebuild_fields(renderer, game);
     rebuild_piles(renderer, game);
     cover_.buildings_changed();
+    fauna_.buildings_changed();
 }
 
 void VillageView::shoot(math::Vec3 from, math::Vec3 to) {

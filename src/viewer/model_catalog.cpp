@@ -65,7 +65,7 @@ Category category_of(std::string_view path, const std::vector<Use>& uses) {
     if (path.starts_with("models/characters/")) {
         return Category::Characters;
     }
-    if (path.starts_with("models/animals/")) {
+    if (path.starts_with("models/animals/") || path.starts_with(builtin_models::kFaunaPrefix)) {
         return Category::Animals;
     }
     if (species || path.starts_with("models/trees/")) {
@@ -180,6 +180,12 @@ Catalog build_catalog(std::span<const ModFolder> mods, std::span<const mods::Mod
     for (CatalogModel& m : out.models) {
         if (!builtin.empty() && m.mod == builtin_mod && m.path.starts_with(builtin_models::kSitePrefix)) {
             m.uses.push_back({"code", "site", {}});
+        }
+        if (!builtin.empty() && m.mod == builtin_mod && m.path.starts_with(builtin_models::kCoverPrefix)) {
+            m.uses.push_back({"code", "ground", {}});
+        }
+        if (!builtin.empty() && m.mod == builtin_mod && m.path.starts_with(builtin_models::kFaunaPrefix)) {
+            m.uses.push_back({"code", "fauna", {}});
         }
     }
     // Groups: the first definition that uses a file, else its use in the

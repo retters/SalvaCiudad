@@ -237,8 +237,11 @@ struct RaceDef {
 struct Content;
 [[nodiscard]] std::int32_t wildflowers(const MapData& map, const Content& content, std::int32_t cx, std::int32_t cz);
 
-// The build category "plaza" (its place in the loader's list of names).
+// The build categories "plaza", "garden" and "nature" (their places in the
+// loader's list of names).
 inline constexpr std::uint8_t kPlazaCategory = 7;
+inline constexpr std::uint8_t kGardenCategory = 8;
+inline constexpr std::uint8_t kNatureCategory = 9;
 
 // Path of a character's model inside the core mod:
 // "models/characters/<body>.glb".

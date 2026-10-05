@@ -48,6 +48,11 @@ inline constexpr std::string_view kArrow = "models/props/arrow_flight.glb";  // 
 // A building site's two stages, by its footprint: site_<w>x<d>_<stage>.glb
 // (the viewer counts every file that starts like this as used).
 inline constexpr std::string_view kSitePrefix = "models/buildings/site_";
+// What dresses the ground (phase 91, game/ground_cover) and the animals that
+// only give the map life (phase 92, game/ambient_fauna): every file that
+// starts like these.
+inline constexpr std::string_view kCoverPrefix = "models/props/cover_";
+inline constexpr std::string_view kFaunaPrefix = "models/fauna/";
 
 // Each file with the group the viewer shows it in.
 struct Use {

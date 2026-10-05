@@ -269,6 +269,14 @@ Salen de las familias `scatter`, `biomes` y `nature` de las propuestas, en su **
 
 Topes: 400 triángulos (`ground`) para lo que se repite mucho y 1 500 (`rock`) para las pocas piezas grandes (pedregal, risco, poza, muñeco). Las plantas se mecen en el sombreador, como los cultivos.
 
+### Fauna de ambiente (`models/fauna/`, fase 92)
+
+Quince modelos con esqueleto que la vista dibuja y mueve cerca de la cámara (`src/game/ambient_fauna`): ardilla roja y gris, búho pardo y nival, gorrión, petirrojo y azulejo, cuervo, corneja grande y buitre, zorro rojo y ártico, y tres enjambres (mariposas, luciérnagas y libélulas). Salen de las familias `creatures` y `nature` de las propuestas tal como están en la página, con sus animaciones; no llevan `"game": true` porque necesitan el esqueleto.
+
+Qué animación usa el juego: `idle` y `eat` al estar quietos, `walk` y `run` al moverse (la ardilla siempre corretea con `run`), `fly` las aves y los enjambres. La velocidad a la que se mueven es la que el modelo declara para cada clip (`<clip>_speed`), para que las patas no patinen. Los enjambres son un solo modelo: cada insecto es un hueso que da vueltas dentro del clip `fly`.
+
+Las libélulas del juego llevan `"bare": true`: el script deja fuera la charca y los juncos sobre los que vuelan en la página (`_kit.BARE`), porque en el juego vuelan sobre agua de verdad. Solo las luciérnagas tienen un material que brilla de noche.
+
 ## Modelos de propuesta que entran al juego (fase 89)
 
 Los modelos de `art/blender/proposals` (los de la página `docs/propuestas`) no están en el juego hasta que una fase los usa. `art/blender/proposals/game.json` lista los que sí:

@@ -2601,6 +2601,10 @@ void App::report_game_events() {
     sim::Game& game = session_->game();
     const sim::Content& content = game.content();
     for (const sim::Game::Event& e : game.take_events()) {
+        if (e.kind == sim::Game::Event::Kind::Died) {
+            // Whoever's villager it was, the crows come (phase 92).
+            village_.note_death(game, static_cast<float>(e.at.x.raw()) / 65536.0f, static_cast<float>(e.at.z.raw()) / 65536.0f);
+        }
         if (e.owner != session_->town() && e.kind != sim::Game::Event::Kind::TownLost &&
             e.kind != sim::Game::Event::Kind::GameOver && e.kind != sim::Game::Event::Kind::TownFounded &&
             e.kind != sim::Game::Event::Kind::GameStarted && e.kind != sim::Game::Event::Kind::AccessChanged &&

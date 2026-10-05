@@ -127,12 +127,15 @@ def make_proposals(out, only=None):
         before = set(sys.modules)
         kit.SELECT = ids
         kit.GAME = bool(entry.get("game"))
-        built_in = kit.OUT_GAME if kit.GAME else kit.OUT
+        kit.BARE = bool(entry.get("bare"))
+        # A bare model is not the page's either: it goes with the game's versions.
+        built_in = kit.OUT_GAME if kit.GAME or kit.BARE else kit.OUT
         try:
             runpy.run_path(os.path.join(script, "build.py"), run_name="__main__")
         finally:
             kit.SELECT = None
             kit.GAME = False
+            kit.BARE = False
             # A family's own modules must not be taken for the next family's.
             for name in set(sys.modules) - before:
                 if os.path.dirname(getattr(sys.modules[name], "__file__", None) or "") == script:

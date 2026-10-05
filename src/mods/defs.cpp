@@ -945,6 +945,8 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                 break;
         }
         static_assert(kBuildCategories[sim::kPlazaCategory] == "plaza");
+        static_assert(kBuildCategories[sim::kGardenCategory] == "garden");
+        static_assert(kBuildCategories[sim::kNatureCategory] == "nature");
         def.category = static_cast<std::uint8_t>(r.choice("category", kBuildCategories, static_cast<int>(category)));
         if (def.work == sim::WorkKind::Farm && def.fields == 0) {
             r.fail("a farm needs \"fields\"");

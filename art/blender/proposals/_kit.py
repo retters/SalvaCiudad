@@ -46,7 +46,7 @@ smooth = rigs.smooth
 
 
 def out_folder(family):
-    folder = os.path.join(OUT_GAME if GAME else OUT, family)
+    folder = os.path.join(OUT_GAME if GAME or BARE else OUT, family)
     os.makedirs(folder, exist_ok=True)
     return folder
 
@@ -197,6 +197,12 @@ SELECT = None
 # the proposals page shows.
 GAME = False
 OUT_GAME = os.path.join(REPO, "art", "studies", "propuestas_game")
+
+
+# Phase 92. True while build_all.py builds an entry of game.json with
+# "bare": true: a script leaves out the scenery it sets its creatures in
+# (the pond the dragonflies fly over), which the game has of its own.
+BARE = False
 
 
 def light(count, share=0.4, least=1):

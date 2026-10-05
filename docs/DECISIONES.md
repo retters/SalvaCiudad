@@ -3402,3 +3402,35 @@ Pruebas, suite nueva `cover`: el mismo cuadro da siempre lo mismo y cae dentro d
 
 **D-9110. Versiones.**
 La simulación no cambia de reglas (nadie usa todavía `wildflowers`), ni la red, ni el generador. Cambia el hash del contenido.
+
+## Fase 92: fauna de ambiente (2026-10-04)
+
+**D-9201. Quién vive en cada cuadro de 16 m, por una regla sin estado.**
+Como los adornos del suelo: el mapa se mira en cuadros de 16 m y en cada uno vive a lo más un animal (o un enjambre), elegido por lo que el cuadro ofrece (si tiene árbol, agua dulce cerca, flores, un jardín al lado, edificios cerca, bioma seco o frío), la estación, la nieve, si es de noche y un número de su posición (`fauna::resident`). La vista los crea alrededor de donde mira la cámara y los vuelve a repartir al cruzar de cuadro o al cambiar la hora o la estación. Lo que hace cada uno después (pasear, comer, volar, huir) no sigue ninguna regla compartida: no hace falta, porque no está en la simulación.
+
+**D-9202. Jardines, por los datos.**
+Tu nota pedía pájaros «en jardines, árboles podados, bebederos de pájaros y huertos». No hay bebederos ni árboles podados en el juego. Cuenta como jardín toda decoración de las categorías «jardín» y «naturaleza» y todo edificio que tarda años en dar fruto (el huerto de frutales; el viñedo cuando llegue). En esos cuadros, y en los de al lado, seis de cada diez tienen pájaros en primavera y verano, frente a uno de cada diez junto a un árbol cualquiera.
+
+**D-9203. Los cuervos se quedan un mes, no tres días.**
+Un día de juego dura 10 segundos a velocidad normal: en tres días nadie alcanzaría a verlos. Se quedan 1 000 ticks, un mes. Vienen por las muertes de aldeanos (el aviso «murió» de la simulación, de cualquier pueblo) y de soldados y asaltantes (cuando la vista los ve desaparecer). Son tres: una corneja grande y dos cuervos, o tres buitres si el bioma es de veranos secos. Se recuerdan hasta 16 lugares; no se guardan con la partida.
+
+**D-9204. Búhos solo en árboles.**
+El plan decía «en ramas y tejados». Posarlos en un tejado pide saber la forma de cada edificio; en un árbol basta su altura. Se posan a media altura, junto al tronco, y no vuelan.
+
+**D-9205. Sin abejas todavía.**
+El enjambre de abejas de las propuestas viene con su tronco de miel. Entra con el árbol con panal (fase 98) y las colmenas (fase 104), que es donde tiene sentido.
+
+**D-9206. Huyen de los aldeanos; de los perros, cuando haya.**
+Ardillas, pájaros y zorros miran tres veces por segundo si hay un aldeano cerca (6, 5 y 14 m) y se alejan de él: la ardilla corre, el pájaro vuela, el zorro corre 22 m. No entran al agua ni salen del mapa. Los búhos y los enjambres no se inmutan.
+
+**D-9207. Mismo ajuste que los adornos.**
+«Detalle del terreno» manda también aquí: apagado, ninguno; bajo, hasta 48 m; medio, 80; alto, 112. No se agregó otra opción.
+
+**D-9208. Lo medido y lo visto.**
+Pruebas, suite nueva `fauna`: la misma pregunta da siempre la misma respuesta; cada especie donde y cuando debe (ardillas de día con árboles y sin nieve, búhos de noche en árboles y nivales en frío, luciérnagas en noches de verano, mariposas de día sobre flores en primavera y verano, libélulas junto a agua dulce, nadie sobre el agua ni en roca); los pájaros se van en otoño y el petirrojo se queda, y un jardín atrae más del triple; zorros pocos, lejos de edificios y blancos en frío; carroñeros solo donde hubo muertes; los 15 modelos cargan, con esqueleto, sus animaciones y 2 000 triángulos o menos, y solo las luciérnagas brillan; y nada de esto cambia el hash de la partida ni el mapa. En pantalla, con `--reporte` en un bosque de un mapa pequeño: con el ajuste en «Alto» hay 37 animales de ambiente dentro del alcance (75 personajes frente a 38 con el ajuste apagado) y se vio un petirrojo junto a su árbol, bien dibujado. Costo en esa vista: de 2 027 a 1 834 FPS con adornos y fauna juntos (0,05 ms por cuadro). **No se vieron** moverse, huir ni volar (el reporte toma una sola imagen), ni los búhos, las luciérnagas, las libélulas, los zorros ni los cuervos.
+
+**D-9209. Tropiezo: objetos viejos en `build/release`.**
+Al cerrar la fase, el ejecutable de `release` se cerraba al arrancar (0xC0000409) sin escribir una línea en el registro, con el código bien compilado en `debug`. Borrar las carpetas de objetos de `build/release/CMakeFiles` y recompilar lo arregló: es el mismo tropiezo de Ninja del 2026-10-03, ahora con el juego y no con las pruebas. Ninja sí tiene anotadas las dependencias de encabezados, así que la causa sigue sin explicar. Desde ahora, antes del commit de cada fase se recompila `release` desde limpio y se arranca el juego una vez.
+
+**D-9210. Versiones.**
+La simulación no cambia: ni reglas ni red ni generador. Cambia el hash del contenido solo por los archivos de modelos nuevos si alguna definición los nombrara; estos no los nombra ninguna (los carga el código, como las cargas y las herramientas).

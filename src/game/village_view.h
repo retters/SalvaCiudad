@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "game/ambient_fauna.h"
 #include "game/ground_cover.h"
 #include "game/animal_motion.h"
 #include "game/fog_view.h"
@@ -91,6 +92,9 @@ public:
         overlay_ = layer;
         overlay_timer_ = 0.0f;
     }
+    // Phase 92: somebody died at (x, z): carrion birds gather there a while.
+    void note_death(const sim::Game& game, float x, float z) { fauna_.note_death(game, x, z); }
+    [[nodiscard]] std::size_t ambient_animals() const { return fauna_.shown(); }
     // Phase 91: the "ground detail" setting, 0 (nothing dresses the ground) to 3.
     void set_ground_detail(int detail) { ground_detail_ = detail; }
     [[nodiscard]] std::size_t ground_cover_shown() const { return cover_.shown(); }
@@ -191,6 +195,8 @@ private:
     // Phase 91: what dresses the ground around where the camera looks.
     cover::GroundCover cover_;
     int ground_detail_ = 2;
+    // Phase 92: the animals that only give the map life, by the same setting.
+    fauna::AmbientFauna fauna_;
     // No place in a list of models (a pile's, a crop's).
     static constexpr std::size_t kNoPile = ~std::size_t{0};
     // Meters a crop that sways bends at one meter of height.
