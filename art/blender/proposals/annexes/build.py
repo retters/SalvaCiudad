@@ -58,7 +58,11 @@ def firewood(mb, x0, x1, y, z0, rows, rnd, depth=0.5):
             x = x0 + r + k * r * 2.05 + (r if row % 2 else 0)
             if x + r > x1:
                 continue
-            log(mb, (x, y - depth / 2 + rnd.uniform(-0.03, 0.03), z0 + r + row * r * 1.8), (x, y + depth / 2, z0 + r + row * r * 1.8), r)
+            # Lighter than log(): five sides, and only the end one sees (a stack is a hundred of them).
+            ya = y - depth / 2 + rnd.uniform(-0.03, 0.03)
+            z = z0 + r + row * r * 1.8
+            mb.cylinder((x, ya, z), (x, y + depth / 2, z), r, r * 0.92, "bark", segments=5)
+            mb.cylinder((x, ya - 0.006, z), (x, ya + 0.02, z), r * 0.78, r * 0.78, "log_end", segments=5)
 
 
 # --- Models -------------------------------------------------------------------------------------

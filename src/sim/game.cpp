@@ -1318,8 +1318,15 @@ public:
         const Building* home = g_.buildings_.get(v.home);
         const Season season = g_.calendar().season;
         const bool cold_ahead = g_.temperature_ < village::kColdBelow || season == Season::Autumn || season == Season::Winter;
-        if (home == nullptr || !cold_ahead || amount_of(home->stock, g_.firewood_) + amount_of(home->incoming, g_.firewood_) >=
-                                                    village::kHouseFirewood / 2) {
+        if (home == nullptr || !cold_ahead) {
+            return false;
+        }
+        // Phase 103: with a woodshed it is filled in autumn (and kept full in
+        // winter), a whole load at a time; without, as ever: when half is gone.
+        const std::int32_t room = g_.firewood_room(*home);
+        const bool stock_up = room > village::kHouseFirewood && (season == Season::Autumn || season == Season::Winter);
+        const std::int32_t below = stock_up ? room - carry_capacity(c_, g_.firewood_) + 1 : village::kHouseFirewood / 2;
+        if (amount_of(home->stock, g_.firewood_) + amount_of(home->incoming, g_.firewood_) >= below) {
             return false;
         }
         const EntityId from = storage_with(v.owner, v.position, g_.firewood_);
@@ -2994,7 +3001,8 @@ public:
                         distance2(center_of(o), center_of(b)) > meters2(10 + (b.width + o.width) / 2)) {
                         continue;
                     }
-                    if (g_.rng_.below(1000) < static_cast<std::uint32_t>(b.fire)) {
+                    // (Phase 103: half as likely to a house with a full rain barrel.)
+                    if (g_.rng_.below(1000) < static_cast<std::uint32_t>(g_.has_full_barrel(o) ? b.fire / 2 : b.fire)) {
                         ignite(o, list.entities()[k]);
                     }
                 }
@@ -3044,8 +3052,16 @@ public:
                 }
             }
             if (g_.rng_.below(100000) < static_cast<std::uint32_t>(chance * scale / 100)) {
-                ignite(b, list.entities()[i]);
+                accident(b, list.entities()[i]);
             }
+        }
+    }
+
+    // A fire that starts by itself. Phase 103: in a house with a full rain
+    // barrel it is put out at once.
+    void accident(Building& b, EntityId id) {
+        if (!g_.has_full_barrel(b)) {
+            ignite(b, id);
         }
     }
 
@@ -3901,7 +3917,7 @@ public:
         const bool hearth = def(*b).kind == BuildingKind::House && v.carrying.resource == g_.firewood_ &&
                             g_.firewood_ != kNoDef;
         if (hearth) {
-            put = std::min(v.carrying.amount, village::kHouseFirewood - amount_of(b->stock, g_.firewood_));
+            put = std::min(v.carrying.amount, g_.firewood_room(*b) - amount_of(b->stock, g_.firewood_));
         }
         // The town center always takes gold, full or not (like goods from trade).
         if (v.carrying.resource == g_.gold_ && def(*b).kind == BuildingKind::TownCenter) {
@@ -4212,6 +4228,14 @@ public:
             b.limit = kPostReserve;
         }
         g_.buildings_changed_ = true;
+        if (def(b).annex_bit >= 0 || def(b).kind == BuildingKind::House) {
+            // Phase 103: the houses know their annexes from now (and every day after).
+            for (Building& h : g_.buildings_.data()) {
+                if (def(h).kind == BuildingKind::House && complete(h)) {
+                    h.annexes = g_.annexes_of(h);
+                }
+            }
+        }
         if (def(b).kind == BuildingKind::TownCenter) {
             unload_cart(b);  // Last: it removes a building, and `b` may move.
         }
@@ -4672,16 +4696,38 @@ public:
                     bits = static_cast<std::uint16_t>(bits | (1u << sv.need));
                 }
             }
+            // Phase 103: its annexes. One of each kind counts.
+            b.annexes = g_.annexes_of(b);
+            std::int32_t annex_beauty = 0;
+            std::int32_t annex_joy = 0;
+            std::uint16_t felt = 0;  // Needs felt as met for the mood, not for levelling up (an altar).
+            if (b.annexes != 0) {
+                bool children = false;
+                for (const EntityId r : b.residents) {
+                    const Villager* v = g_.villagers_.get(r);
+                    children = children || (v != nullptr && !g_.adult(*v));
+                }
+                for (const BuildingDef& ad : c_.buildings) {
+                    if (ad.annex_bit < 0 || ((b.annexes >> ad.annex_bit) & 1u) == 0) {
+                        continue;
+                    }
+                    annex_beauty += ad.annex_desirability;
+                    annex_joy += !ad.annex_children || children ? ad.annex_happiness : 0;
+                    if (ad.annex_need != kNoNeed) {
+                        felt = static_cast<std::uint16_t>(felt | (1u << ad.annex_need));
+                    }
+                }
+            }
             // Beauty: pleasant and unpleasant buildings nearby, and trees.
-            const std::int32_t beauty = g_.desirability_at(here, &b);
+            const std::int32_t beauty = g_.desirability_at(here, &b) + annex_beauty;
             b.desirability = beauty;
             if (beauty >= 10) {
                 set(Need::Beauty);
             }
             b.needs = bits;
             // Happiness: a base, each need met, and the neighborhood.
-            const auto met = static_cast<std::int32_t>(std::popcount(static_cast<unsigned>(bits)));
-            b.happiness = std::clamp(28 + 8 * met + std::clamp(beauty / 2, -10, 10), 0, 100);
+            const auto met = static_cast<std::int32_t>(std::popcount(static_cast<unsigned>(bits | felt)));
+            b.happiness = std::clamp(28 + 8 * met + std::clamp(beauty / 2, -10, 10) + annex_joy, 0, 100);
             // An upgrade when the next level's needs are met.
             if (!b.upgrading && b.level < d.levels.size()) {
                 const LevelDef& next = d.levels[b.level];
@@ -5629,7 +5675,12 @@ public:
                     ++g_.rejected_;
                     break;
                 }
-                ignite(*b, c.entity);
+                // (`count` 1: as a fire that starts by itself, which a full rain barrel puts out.)
+                if (c.count == 1) {
+                    accident(*b, c.entity);
+                } else {
+                    ignite(*b, c.entity);
+                }
                 break;
             }
             case CommandType::DevGrant: {
@@ -6834,6 +6885,51 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
     return PlaceError::None;
 }
 
+std::uint16_t Game::annexes_of(const Building& house) const {
+    std::uint16_t bits = 0;
+    for (const Building& o : buildings_.data()) {
+        const BuildingDef& od = content_->buildings[o.def];
+        if (od.annex_bit < 0 || o.state != BuildingState::Complete || town_of(o.owner) != town_of(house.owner)) {
+            continue;
+        }
+        // The gap between the two footprints, along each axis.
+        const std::int32_t gx = std::max({o.x - (house.x + house.width), house.x - (o.x + o.width), 0});
+        const std::int32_t gz = std::max({o.z - (house.z + house.depth), house.z - (o.z + o.depth), 0});
+        if (gx * gx + gz * gz <= od.annex_radius * od.annex_radius) {
+            bits = static_cast<std::uint16_t>(bits | (1u << od.annex_bit));
+        }
+    }
+    return bits;
+}
+
+std::int32_t Game::firewood_room(const Building& house) const {
+    std::int32_t room = village::kHouseFirewood;
+    if (house.annexes != 0) {
+        for (const BuildingDef& ad : content_->buildings) {
+            if (ad.annex_bit >= 0 && ((house.annexes >> ad.annex_bit) & 1u) != 0) {
+                room = std::max(room, ad.annex_firewood);
+            }
+        }
+    }
+    return room;
+}
+
+bool Game::barrels_full() const {
+    return rules_.rain != 0 && days_without_rain() < village::kBarrelDryDays;
+}
+
+bool Game::has_full_barrel(const Building& b) const {
+    if (b.annexes == 0 || !barrels_full()) {
+        return false;
+    }
+    for (const BuildingDef& ad : content_->buildings) {
+        if (ad.annex_rain && ad.annex_bit >= 0 && ((b.annexes >> ad.annex_bit) & 1u) != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
     std::int32_t beauty = 0;
     // Phase 95: a house whose door opens onto a street: a road one or two
@@ -7603,6 +7699,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(b.limit);
         w.u8(b.recipe);
         w.u16(b.needs);
+        w.u16(b.annexes);
         w.i32(b.happiness);
         w.i32(b.desirability);
         w.i32(b.fire);
@@ -8013,7 +8110,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t upgrading = 0;
         if (!r.u8(b.level) || b.level > c.buildings[b.def].levels.size() || !r.u8(upgrading) || upgrading > 1 ||
             !r.i32(b.limit) || b.limit < 0 || b.limit > 10000 || !r.u8(b.recipe) || !r.u16(b.needs) ||
-            !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
+            !r.u16(b.annexes) || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
             b.fire < 0 || b.fire > 100 || !r.i32(b.burned) || b.burned < 0 || b.burned > 1000 || !r.i32(b.damage) ||
             b.damage < 0 || !r.i32(b.rearm) || b.rearm < 0) {
             r.fail();

@@ -983,6 +983,99 @@
     },
     {
       "type": "building",
+      "id": "core:annex_clothesline",
+      "name": "building.annex_clothesline",
+      "kind": "decoration",
+      "model": "models/buildings/annex_clothesline.glb",
+      "size": [
+        4,
+        2
+      ],
+      "cost": {
+        "core:log": 3
+      },
+      "buildWork": 30,
+      "annex": true,
+      "annexDesirability": 6,
+      "category": "housing"
+    },
+    {
+      "type": "building",
+      "id": "core:annex_home_shrine",
+      "name": "building.annex_home_shrine",
+      "kind": "decoration",
+      "model": "models/buildings/annex_home_shrine.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 50,
+      "annex": true,
+      "annexNeed": "religion",
+      "category": "housing"
+    },
+    {
+      "type": "building",
+      "id": "core:annex_playground",
+      "name": "building.annex_playground",
+      "kind": "decoration",
+      "model": "models/buildings/annex_playground.glb",
+      "size": [
+        4,
+        2
+      ],
+      "cost": {
+        "core:log": 8
+      },
+      "buildWork": 60,
+      "annex": true,
+      "annexRadius": 15,
+      "annexHappiness": 5,
+      "annexChildren": true,
+      "category": "housing"
+    },
+    {
+      "type": "building",
+      "id": "core:annex_rain_barrel",
+      "name": "building.annex_rain_barrel",
+      "kind": "decoration",
+      "model": "models/buildings/annex_rain_barrel.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 4
+      },
+      "buildWork": 40,
+      "annex": true,
+      "annexRain": true,
+      "fireproof": true,
+      "category": "housing"
+    },
+    {
+      "type": "building",
+      "id": "core:annex_woodshed",
+      "name": "building.annex_woodshed",
+      "kind": "decoration",
+      "model": "models/buildings/annex_woodshed.glb",
+      "size": [
+        6,
+        2
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 60,
+      "annex": true,
+      "annexFirewood": 80,
+      "category": "housing"
+    },
+    {
+      "type": "building",
       "id": "core:chapel",
       "name": "building.chapel",
       "kind": "workplace",
@@ -2354,24 +2447,6 @@
     },
     {
       "type": "building",
-      "id": "core:decor_clothesline",
-      "name": "building.decor_clothesline",
-      "kind": "decoration",
-      "model": "models/buildings/decor_clothesline.glb",
-      "size": [
-        3,
-        3
-      ],
-      "cost": {
-        "core:log": 3
-      },
-      "buildWork": 30,
-      "desirability": 4,
-      "fireproof": true,
-      "category": "garden"
-    },
-    {
-      "type": "building",
       "id": "core:decor_pergola",
       "name": "building.decor_pergola",
       "kind": "decoration",
@@ -2460,24 +2535,6 @@
       },
       "buildWork": 50,
       "desirability": 8,
-      "fireproof": true,
-      "category": "garden"
-    },
-    {
-      "type": "building",
-      "id": "core:decor_firewood_rack",
-      "name": "building.decor_firewood_rack",
-      "kind": "decoration",
-      "model": "models/buildings/decor_firewood_rack.glb",
-      "size": [
-        2,
-        2
-      ],
-      "cost": {
-        "core:log": 6
-      },
-      "buildWork": 40,
-      "desirability": 3,
       "fireproof": true,
       "category": "garden"
     },
@@ -2697,25 +2754,6 @@
       },
       "buildWork": 60,
       "desirability": 7,
-      "fireproof": true,
-      "category": "garden"
-    },
-    {
-      "type": "building",
-      "id": "core:decor_tool_corner",
-      "name": "building.decor_tool_corner",
-      "kind": "decoration",
-      "model": "models/buildings/decor_tool_corner.glb",
-      "size": [
-        2,
-        2
-      ],
-      "cost": {
-        "core:log": 4,
-        "core:stone": 1
-      },
-      "buildWork": 40,
-      "desirability": 4,
       "fireproof": true,
       "category": "garden"
     },

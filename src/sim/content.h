@@ -19,6 +19,8 @@ namespace sc::sim {
 // Most model files a definition (or a building level) can list as
 // variants of its look (phase 31).
 inline constexpr std::size_t kMaxModelVariants = 8;
+// Phase 103: kinds of annex a content may have (a bit each in a house).
+inline constexpr std::size_t kMaxAnnexes = 16;
 
 // Index of a definition in its list; stable for a given set of mods.
 using DefIndex = std::uint16_t;
@@ -152,6 +154,19 @@ struct BuildingDef {
     // Phase 100: it needs not all of `service_uses` but any one of them
     // (beer or wine): the first in the list that it has is the one used.
     bool service_any = false;
+    // Phase 103: an annex: a small piece that serves every house whose
+    // walls are within `annex_radius` meters of its own. A house takes each
+    // kind of annex once, however many stand by it. `annex_bit`: which of
+    // the content's annexes it is (kMaxAnnexes at most), set by the loader.
+    bool annex = false;
+    std::int8_t annex_bit = -1;
+    std::int32_t annex_radius = 3;
+    std::int32_t annex_desirability = 0;  // Added to the environment of its houses.
+    std::uint8_t annex_need = kNoNeed;    // Its houses are as happy as with this need met; they do not level up by it.
+    std::int32_t annex_happiness = 0;     // Added to the happiness of its houses...
+    bool annex_children = false;          // ...those with children only.
+    bool annex_rain = false;              // A rain barrel: full, a fire that starts in its house goes out.
+    std::int32_t annex_firewood = 0;      // Firewood its houses keep, instead of village::kHouseFirewood.
     std::uint8_t category = 0;      // BuildCategory, for the build bar.
     bool fireproof = false;         // Stone: does not catch fire (phase 13).
     bool trade = false;             // Merchants come to it (phase 14).

@@ -910,6 +910,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
     }
     // Buildings.
     std::size_t road_kinds = 0;
+    std::size_t annexes = 0;
     for (const RawDef* d : buildings) {
         Reader r(*d, errors);
         sim::BuildingDef def;
@@ -1050,6 +1051,30 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("\"serviceUsesAny\" needs \"serviceUses\"");
         }
         def.model_winter = r.extra_model("winterModel", mod_dir, refs, def.name_key);
+        // Phase 103: annexes.
+        def.annex = r.flag("annex");
+        def.annex_radius = r.integer("annexRadius", 1, 60, 3);
+        def.annex_desirability = r.integer("annexDesirability", -50, 50, 0);
+        def.annex_need = static_cast<std::uint8_t>(r.choice("annexNeed", kNeeds, sim::kNoNeed));
+        def.annex_happiness = r.integer("annexHappiness", -50, 50, 0);
+        def.annex_children = r.flag("annexChildren");
+        def.annex_rain = r.flag("annexRain");
+        def.annex_firewood = r.integer("annexFirewood", 0, 1000, 0);
+        if (def.annex) {
+            if (def.kind != sim::BuildingKind::Decoration || def.workers > 0 || def.residents > 0 || !def.line.empty() ||
+                def.road > 0) {
+                r.fail("an \"annex\" is a decoration: no workers, residents, line or road");
+            }
+            if (annexes >= sim::kMaxAnnexes) {
+                r.fail(std::format("too many annexes (the most is {})", sim::kMaxAnnexes));
+            } else {
+                def.annex_bit = static_cast<std::int8_t>(annexes++);
+            }
+        } else if (def.annex_desirability != 0 || def.annex_need != sim::kNoNeed || def.annex_happiness != 0 || def.annex_children ||
+                   def.annex_rain || def.annex_firewood != 0) {
+            r.fail("\"annexDesirability\", \"annexNeed\", \"annexHappiness\", \"annexChildren\", \"annexRain\" and "
+                   "\"annexFirewood\" need \"annex\"");
+        }
         // The build bar's group: given, or from what the building is.
         auto category = sim::BuildCategory::Industry;
         switch (def.kind) {

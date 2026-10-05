@@ -105,6 +105,12 @@
               "nature_deposit_coal": "coal_deposit", "nature_deposit_gold": "gold_deposit"}
     },
     {
+      "family": "annexes", "class": "building", "to": "buildings", "game": true,
+      "ids": {"annex_clothesline": "annex_clothesline", "annex_home_shrine": "annex_home_shrine",
+              "annex_playground_swing": "annex_playground", "annex_rain_barrel": "annex_rain_barrel",
+              "annex_woodshed": "annex_woodshed"}
+    },
+    {
       "family": "scatter", "class": "rock", "to": "props", "game": true,
       "ids": {"scatter_mushrooms_brown": "mushroom_ring", "scatter_mushrooms_red": "mushroom_ring_2",
               "scatter_bush": "bush_green", "scatter_bush_flowers": "bush_flowers", "scatter_bush_berries": "bush_berries",

@@ -966,6 +966,27 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
             lines.push_back(tr("hud.building.material", tr(content.resources[c.resource].name_key), have, c.amount));
         }
     } else {
+        if (d.annex) {
+            lines.push_back(tr("hud.annex.serves", d.annex_radius));
+            if (d.annex_desirability != 0) {
+                lines.push_back(tr("hud.annex.desirability", d.annex_desirability));
+            }
+            if (d.annex_need != sim::kNoNeed) {
+                lines.push_back(tr("hud.annex.need", tr(need_text_key(d.annex_need))));
+            }
+            if (d.annex_happiness != 0) {
+                lines.push_back(tr("hud.annex.happiness", d.annex_happiness));
+            }
+            if (d.annex_children) {
+                lines.push_back(tr("hud.annex.children"));
+            }
+            if (d.annex_firewood > 0) {
+                lines.push_back(tr("hud.annex.firewood", d.annex_firewood));
+            }
+            if (d.annex_rain) {
+                lines.push_back(tr(game.barrels_full() ? "hud.annex.barrelFull" : "hud.annex.barrelEmpty"));
+            }
+        }
         if (d.residents > 0) {
             lines.push_back(tr("hud.building.residents", static_cast<int>(b->residents.size()), d.residents));
             if (d.kind == sim::BuildingKind::House) {
@@ -975,7 +996,7 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
                 for (const sim::Stock& st : b->stock) {
                     wood += st.resource == fw ? st.amount : 0;
                 }
-                lines.push_back(tr("hud.building.firewood", wood, sim::village::kHouseFirewood));
+                lines.push_back(tr("hud.building.firewood", wood, game.firewood_room(*b)));
                 if (!b->heated) {
                     lines.push_back(tr("hud.building.cold"));
                 }
@@ -1842,6 +1863,32 @@ void GameHud::house_lines(const sim::Game& game, const sim::Building& b, std::ve
     const sim::BuildingDef& d = game.content().buildings[b.def];
     lines.push_back(tr("hud.house.level", static_cast<int>(b.level) + 1, static_cast<int>(d.levels.size()) + 1));
     lines.push_back(tr("hud.house.happiness", b.happiness, b.desirability));
+    // Phase 103: the annexes that serve it.
+    if (b.annexes != 0) {
+        // A few to a line: the window is narrow, and a house may have five.
+        constexpr std::size_t kLineBytes = 30;
+        std::string list;
+        bool first = true;
+        const auto flush = [&] {
+            lines.push_back(first ? tr("hud.house.annexes", list) : "   " + list);
+            first = false;
+            list.clear();
+        };
+        for (const sim::BuildingDef& ad : game.content().buildings) {
+            if (ad.annex_bit < 0 || ((b.annexes >> ad.annex_bit) & 1u) == 0) {
+                continue;
+            }
+            const std::string name = tr(ad.name_key);
+            if (!list.empty() && list.size() + name.size() + 2 > kLineBytes) {
+                list += ",";
+                flush();
+            }
+            list += (list.empty() ? "" : ", ") + name;
+        }
+        if (!list.empty()) {
+            flush();
+        }
+    }
     if (b.upgrading) {
         lines.push_back(tr("hud.house.upgrading"));
     } else if (b.level < d.levels.size()) {

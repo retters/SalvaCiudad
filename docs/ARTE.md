@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Anexos de casa (fase 103)
+
+De `proposals/annexes` (clase `building`): `buildings/annex_clothesline.glb` (622 triángulos; ocupa 4 × 2 m), `annex_home_shrine.glb` (556; 2 × 2), `annex_playground.glb` (el columpio, 432; 4 × 2), `annex_rain_barrel.glb` (480; 2 × 2) y `annex_woodshed.glb` (4140; 6 × 2). El leñero tenía 8460 triángulos, más que el límite de un edificio (6000): sus leños apilados se hacen ahora con cinco lados y solo la cara que se ve. Los modelos `decor_clothesline`, `decor_firewood_rack` y `decor_tool_corner` siguen en la carpeta, pero el juego base ya no los usa. El leñero estrena una huella de 6 × 2: sus obras (`site_6x2_1.glb` y `_2.glb`) salen de `buildings sites`, como las demás.
+
 ### Rocas en tres tamaños y tres piedras (fase 102)
 
 De `proposals/scatter` (clase `rock`): `props/loose_stones.glb` (piedras sueltas, 252 triángulos), `boulder.glb` (peñasco, 288) y `outcrop.glb` (afloramiento, 496), cada uno también `_mossy` y `_sandstone`. El peñasco reemplaza a `rock.glb`, `rock_2.glb` y `rock_3.glb`, y el afloramiento a `stone_deposit_small.glb`; esos cuatro archivos siguen en la carpeta pero el juego base ya no los usa. Los yacimientos de roca mediano y grande conservan su modelo.

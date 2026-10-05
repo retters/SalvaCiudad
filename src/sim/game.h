@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 63;
+inline constexpr std::uint32_t kGameRulesVersion = 64;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,8 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 103: a rain barrel is empty after this many days without rain.
+inline constexpr std::int32_t kBarrelDryDays = 10;
 inline constexpr std::int32_t kColdBelow = 10;        // Houses burn firewood below this (°C).
 inline constexpr std::int32_t kMaxSnow = 100;
 // Phase 66. With this little food to spare over what the walk to the
@@ -231,6 +233,7 @@ struct Building {
     std::int32_t limit = 0;          // Workplaces: stock of their product to reach (0 = automatic).
     std::uint8_t recipe = 0;         // The recipe being worked.
     std::uint16_t needs = 0;         // Houses: Need bits met today.
+    std::uint16_t annexes = 0;       // Houses: the annexes that serve it (a bit per BuildingDef::annex_bit); phase 103.
     std::int32_t happiness = 50;     // Houses: 0..100.
     std::int32_t desirability = 0;   // Houses: how pleasant the place is.
     // Phase 13.
@@ -827,6 +830,16 @@ public:
     // How pleasant a place is for homes: buildings around (gardens add,
     // workshops take away) and trees (phase 12; the map layer, phase 17).
     [[nodiscard]] std::int32_t desirability_at(FixedVec2 here, const Building* self = nullptr) const;
+    // Phase 103. The annexes that serve `house` now (bits of annex_bit):
+    // those of its town, built, with their walls within their reach of the
+    // house's. What a house has is in Building::annexes, set once a day.
+    [[nodiscard]] std::uint16_t annexes_of(const Building& house) const;
+    // The firewood a house keeps: more with a woodshed.
+    [[nodiscard]] std::int32_t firewood_room(const Building& house) const;
+    // Whether the rain barrels are full: it rained within village::kBarrelDryDays.
+    [[nodiscard]] bool barrels_full() const;
+    // Whether a fire that starts in `b` goes out by itself (a house with a full barrel).
+    [[nodiscard]] bool has_full_barrel(const Building& b) const;
 
     // Fog of war (phase 32): what each vision group has explored. A
     // group is a town, or all the allies when they share what they see.

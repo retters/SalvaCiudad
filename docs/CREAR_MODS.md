@@ -122,6 +122,19 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### Anexos de casa (fase 103)
+
+Un anexo es una decoración (`"kind": "decoration"`, sin trabajadores) con `"annex": true`: sirve a **toda casa del pueblo** cuyas paredes estén a `annexRadius` metros o menos de las suyas (por omisión, 3). Una casa cuenta cada tipo de anexo una sola vez, tenga los que tenga al lado. Un mod puede definir hasta 16 tipos.
+
+| Campo | Qué da a sus casas |
+|---|---|
+| `annexRadius` | Hasta cuántos metros sirve, de pared a pared (1 a 60; por omisión 3). |
+| `annexDesirability` | Puntos que suma al entorno de la casa (el tendedero: 6). |
+| `annexNeed` | Una necesidad (`religion`, `water`…): la casa es **tan feliz** como si la tuviera cubierta, pero no le cuenta para subir de nivel (el altar doméstico). |
+| `annexHappiness`, `annexChildren` | Puntos de felicidad; con `annexChildren`, solo a las casas donde vive algún niño (los juegos de niños: 5, a 15 m). |
+| `annexRain` | Un tonel de lluvia: está lleno si llovió en los últimos 10 días. Lleno, un incendio que empieza solo en su casa se apaga, y el que salta de un edificio vecino prende la mitad de las veces. |
+| `annexFirewood` | Cuánta leña guarda la casa en vez de 20 (el leñero: 80). En otoño e invierno sus habitantes la mantienen llena. |
+
 #### Un servicio con varias bebidas, y un edificio que cambia en invierno (fase 100)
 
 | Campo | Valores |

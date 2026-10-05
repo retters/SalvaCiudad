@@ -851,6 +851,13 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] Vivienda tiene cinco anexos nuevos: Tendedero, Altar doméstico, Juegos de niños, Tonel de lluvia y Leñero. En Jardín ya no están el tendedero, la leñera ni el rincón del barril de lluvia.
+- [ ] Un tendedero a 3 m o menos de una casa le sube 6 el entorno (se ve en su ventana al día siguiente); a 10 m no; dos tendederos no suman dos veces.
+- [ ] La ventana de una casa dice «Anexos: …» con los que le sirven, y la de cada anexo dice qué da.
+- [ ] Con un altar doméstico la casa es más feliz, pero para subir de nivel sigue pidiendo capilla.
+- [ ] Los juegos de niños suben 5 la felicidad de las casas con niños a 15 m o menos, y nada a las demás.
+- [ ] La ventana del tonel de lluvia dice «Lleno» si llovió en los últimos diez días y «Vacío» si no.
+- [ ] Con un leñero, la ventana de la casa dice «Leña: N de 80» y en otoño sus habitantes la van llenando.
 - [ ] Por todo el mapa hay piedras sueltas (montoncitos), además de los peñascos y los yacimientos de roca; cerca del pueblo hay al menos seis. Al hacer clic dicen «Piedras sueltas», «Peñasco» o «Yacimiento de roca».
 - [ ] Sin cantero y con la piedra del almacén gastada, una obra que pide piedra se termina igual: los peones recogen piedras sueltas cercanas y las llevan a la obra. Mientras haya piedra en un almacén no las tocan.
 - [ ] El cantero trabaja peñascos y yacimientos como antes, y también recoge piedras sueltas a su alcance.

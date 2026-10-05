@@ -3725,3 +3725,35 @@ La de variantes miraba que los peñascos se repartieran entre sus tres modelos a
 
 **D-10209. Versiones.**
 Reglas 63 y generador 10. La red no cambia.
+
+## Fase 103: anexos de casa (2026-10-04)
+
+**D-10301. El anexo es una decoración con una marca, y sus efectos son datos.**
+`annex` más seis campos (`annexRadius`, `annexDesirability`, `annexNeed`, `annexHappiness` con `annexChildren`, `annexRain`, `annexFirewood`). Los cinco anexos del juego base son cinco combinaciones de esos campos; no hay código por anexo. Se descartó un tipo de edificio nuevo: una decoración ya se coloca, se construye y se quita como hace falta.
+
+**D-10302. «A 3 m o menos» se mide de pared a pared.**
+La distancia es el hueco entre los dos rectángulos (0 si se tocan). Medir entre centros dejaría fuera a un leñero de 6 m pegado a una casa grande. Sirve a las casas de su mismo pueblo.
+
+**D-10303. Cada casa guarda qué anexos tiene, un bit por tipo.**
+`Building::annexes` (16 bits; el cargador numera los tipos de anexo, 16 como mucho). «No suma dos iguales» sale solo: es un bit. Se recalcula al terminar de construirse una casa o un anexo y, como todo lo de las casas, una vez al día; por eso, al quitar un anexo, su casa lo nota al día siguiente. Entra en la partida guardada.
+
+**D-10304. El altar.**
+La casa cuenta la fe como cubierta **para la felicidad** (8 puntos, lo mismo que con capilla) pero no en `needs`: el siguiente nivel sigue pidiendo capilla y la ventana de la casa lo sigue listando como falta. Con capilla y altar no se suma dos veces.
+
+**D-10305. Los juegos de niños.**
++5 de felicidad a las casas con algún habitante menor de 5 años a 15 m o menos (de pared a pared). Va aparte de las necesidades y del entorno, y cuenta una vez.
+
+**D-10306. El tonel de lluvia no tiene estado propio.**
+Está lleno si llovió hace menos de 10 días (`days_without_rain()` de la fase 97); en una partida sin lluvia, nunca. Todos los toneles del mapa están igual, así que no hay nada que guardar. Lleno: el incendio que empieza solo en su casa no prende (se descartó prenderlo y apagarlo enseguida: mismo resultado y un aviso de incendio falso), y la chispa que llega de un edificio vecino prende con la mitad de probabilidad. No protege de la antorcha de un asaltante. El tonel mismo no arde. Para las pruebas, la herramienta de desarrollo de incendiar acepta «como accidente» (`count` 1).
+
+**D-10307. El leñero.**
+La casa guarda hasta 80 de leña. En otoño e invierno sus habitantes van por más mientras quepa una carga entera; el resto del año, y las casas sin leñero, como siempre (cuando baja de 10 y hace o viene frío). No se reserva leña del almacén para nadie: si hay poca, la casa con leñero se lleva más que las otras.
+
+**D-10308. Se quitan tres decoraciones.**
+`decor_clothesline`, `decor_firewood_rack` y `decor_tool_corner` dejan de existir como edificios (sus modelos quedan en la carpeta). Los anexos van en la pestaña Vivienda. Costos: tendedero 3 troncos, altar 4, juegos 8, tonel 4, leñero 10.
+
+**D-10309. Lo medido.**
+Suite nueva `annexes`, 8 casos: los datos y las tres decoraciones que ya no están; tendedero (la casa pegada +6, la de 10 m nada, dos no suman, 3 m sí y 4 m no); altar (8 de felicidad sin capilla, la necesidad sigue sin cubrir y la casa no sube de nivel, mientras que una igual a la que no se le pide nada sí sube); juegos (5 a las casas con niños, 0 a las que no tienen, igual con dos juegos, nada a la casa lejana); tonel (tras llover, el accidente no prende en su casa y sí en otra; tras 10 días secos, prende); sin lluvia en las reglas el tonel está vacío, y un incendio provocado prende aunque esté lleno; leñero (con 70 de leña en el pueblo su casa llegó a 36 y la otra a 20, el almacén quedó vacío y la casa pasó caliente los 24 días de invierno, de 30 a 8); guardar y cargar. No se midió la chispa a la mitad (es azar; está en el código junto a la regla).
+
+**D-10310. Versiones.**
+Reglas 64. La red y el generador no cambian.
