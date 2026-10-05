@@ -283,6 +283,8 @@ Las libélulas del juego llevan `"bare": true`: el script deja fuera la charca y
 
 Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de los cuatro vecinos; es la misma regla de `docs/propuestas/muros.html`. Un tramo en diagonal no usa piezas distintas en cada celda: cada módulo es un pilar y entre dos módulos que se tocan por la esquina se pone una pieza `diagonal` centrada en esa esquina, de centro a centro.
 
+**Setos y vallas (fase 94).** Del mismo kit salen `hedge_<pieza>.glb` (seto vivo, las diez piezas), `boxhedge_<pieza>.glb` (seto bajo recortado) y `picket_<pieza>.glb` (valla de estacas); estos dos solo tienen `end`, `straight`, `corner`, `tee`, `cross` y `step`. Sus pasos: `hedge_arch.glb`, `boxhedge_gate.glb` y `picket_gate.glb` (2 × 2 m, sin esqueleto, cerrados). Los setos tienen su propia clase en `game.json`, `hedge`, con tope de 1500 triángulos: son volúmenes de hojas y el seto vivo llega a 1492 en la diagonal. La valla cabe en los 800 de `line`.
+
 `palisade.glb`, el modelo de un solo bloque, sigue en el mod como modelo del edificio (el que usa el fantasma al colocar y cualquier pieza que falte).
 
 ## Modelos de propuesta que entran al juego (fase 89)

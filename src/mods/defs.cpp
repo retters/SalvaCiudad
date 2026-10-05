@@ -932,6 +932,13 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                                                                   [](const std::string& p) { return !p.empty(); }))) {
             r.fail("\"diagonal\" and \"pieces\" need a \"line\"");
         }
+        // Phase 94: hedges.
+        def.desirability_radius = r.integer("desirabilityRadius", 0, 30, 0);
+        def.yields = amounts(r.table("yields", find_resource, 1, 1000, 4));
+        def.yield_per = r.integer("yieldPer", 1, 1000, 1);
+        if (!def.yields.empty() && def.line.empty()) {
+            r.fail("\"yields\" needs a \"line\"");
+        }
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);

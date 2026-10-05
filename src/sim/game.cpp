@@ -62,11 +62,15 @@ std::int32_t total(const std::vector<Stock>& list) {
 }
 
 // A building on the walking grid: most block it, gates only stop raiders
-// and traps nothing.
+// and traps nothing. What is laid in lines (walls, hedges, fences) and
+// every gate stops the wild animals too (phase 94).
 void block_nav(NavGrid& nav, const BuildingDef& d, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t depth,
                bool on) {
     if (d.trap) {
         return;
+    }
+    if (d.gate || !d.line.empty()) {
+        nav.set_barrier(x, z, x + w, z + depth, on);
     }
     if (d.gate) {
         nav.set_gate(x, z, x + w, z + depth, on);
@@ -1403,8 +1407,28 @@ public:
         if (!g_.nav_.ground(cx, cz)) {
             return false;
         }
+        if (wild(a.kind)) {
+            // Phase 94: a wall, a hedge, a fence or a gate stops it, and so
+            // does the corner where two of them meet. (One that a wall was
+            // built over walks out of it.)
+            const std::int32_t ox = a.position.x.floor_int() / NavGrid::kCellMeters;
+            const std::int32_t oz = a.position.z.floor_int() / NavGrid::kCellMeters;
+            if ((cx != ox || cz != oz) && !g_.nav_.barrier(ox, oz) &&
+                (g_.nav_.barrier(cx, cz) || (cx != ox && cz != oz && g_.nav_.barrier(cx, oz) && g_.nav_.barrier(ox, cz)))) {
+                return false;
+            }
+        }
         a.position = next;
         return true;
+    }
+    // An animal, not a raider or a soldier.
+    [[nodiscard]] static bool wild(CreatureKind k) { return k != CreatureKind::Raider && k != CreatureKind::Soldier; }
+    // Phase 94: what it was after is behind a fence: back home.
+    void give_up(Creature& a) {
+        a.state = CreatureState::Wander;
+        a.target = {};
+        a.target_kind = TargetKind::Villager;
+        a.goal = a.home;
     }
 
     [[nodiscard]] const UnitDef* unit_of(const Creature& a) const {
@@ -1807,7 +1831,9 @@ public:
         }
         const std::int32_t reach = range_of(a);
         if (distance2(a.position, o->position) > meters2(reach) + (meters2(1) >> 1)) {
-            (void)step_toward(a, o->position, speed_of(a));
+            if (!step_toward(a, o->position, speed_of(a)) && wild(a.kind)) {
+                give_up(a);
+            }
             return;
         }
         if (++a.timer % every_of(a) != 0) {
@@ -2197,7 +2223,9 @@ public:
             return;
         }
         if (distance2(a.position, v->position) > meters2(1) + (meters2(1) >> 1)) {
-            (void)step_toward(a, v->position, speed_of(a));
+            if (!step_toward(a, v->position, speed_of(a)) && wild(a.kind)) {
+                give_up(a);
+            }
             return;
         }
         if (++a.timer % 10 != 0) {
@@ -4380,10 +4408,61 @@ public:
 
     // The village's day, always ten seconds at x1. `calendar_day`: it is
     // also the calendar's (always, with a year of the usual length).
+    // Phase 94: what grows on the modules of a line (the berries of a
+    // hedge), in its season. A gatherer that picks fruit, with somebody
+    // working, has those in its reach: for every `yield_per` of them not yet
+    // picked this year, it gets what they give. The ones left over wait for
+    // more to be built, until the season ends.
+    void pick_hedges() {
+        const Calendar today = g_.calendar();
+        const auto season = static_cast<std::uint8_t>(1u << static_cast<unsigned>(today.season));
+        bool any = false;
+        for (const BuildingDef& d : c_.buildings) {
+            any = any || (!d.yields.empty() && (d.seasons == 0 || (d.seasons & season) != 0));
+        }
+        if (!any) {
+            return;
+        }
+        auto& list = g_.buildings_.data();
+        std::vector<Building*> ready;
+        for (Building& picker : list) {
+            const BuildingDef& pd = def(picker);
+            if (pd.work != WorkKind::Gather || !pd.picks_fruit || !complete(picker) || picker.workers.empty()) {
+                continue;
+            }
+            const FixedVec2 at = center_of(picker);
+            for (std::size_t di = 0; di < c_.buildings.size(); ++di) {
+                const BuildingDef& d = c_.buildings[di];
+                if (d.yields.empty() || (d.seasons != 0 && (d.seasons & season) == 0)) {
+                    continue;
+                }
+                ready.clear();
+                for (Building& b : list) {
+                    if (b.def == di && b.owner == picker.owner && complete(b) && b.produced_year != today.year &&
+                        distance2(at, center_of(b)) <= meters2(pd.work_radius)) {
+                        ready.push_back(&b);
+                    }
+                }
+                const auto per = static_cast<std::size_t>(d.yield_per);
+                for (std::size_t i = 0; i + per <= ready.size(); i += per) {
+                    for (std::size_t k = 0; k < per; ++k) {
+                        ready[i + k]->produced_year = today.year;
+                    }
+                    for (const ResourceAmount& y : d.yields) {
+                        add_to(picker.stock, y.resource, y.amount);
+                    }
+                }
+            }
+        }
+    }
+
     void daily(bool calendar_day) {
         g_.temperature_ = sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_);
         if (calendar_day) {
             grow_fields();
+        }
+        if (calendar_day) {
+            pick_hedges();
         }
         update_homes();
         update_health();
@@ -6210,13 +6289,26 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
 
 std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
     std::int32_t beauty = 0;
+    std::vector<DefIndex> counted;  // Those with a reach of their own found so far.
     for (const Building& o : buildings_.data()) {
-        const std::int32_t des = content_->buildings[o.def].desirability;
+        const BuildingDef& od = content_->buildings[o.def];
+        const std::int32_t des = od.desirability;
         if (des == 0 || &o == self) {
             continue;
         }
         const FixedVec2 c{Fixed::from_int(o.x) + Fixed::from_ratio(o.width, 2), Fixed::from_int(o.z) + Fixed::from_ratio(o.depth, 2)};
         const std::uint64_t d2 = distance2(here, c);
+        if (od.desirability_radius > 0) {
+            // Phase 94: a hedge counts whole within its reach, and once
+            // however many of its modules are there.
+            const auto reach = static_cast<std::uint64_t>(od.desirability_radius);
+            if (o.state == BuildingState::Complete && d2 <= ((reach * reach) << 32) &&
+                std::find(counted.begin(), counted.end(), o.def) == counted.end()) {
+                counted.push_back(o.def);
+                beauty += des;
+            }
+            continue;
+        }
         if (d2 < (static_cast<std::uint64_t>(30 * 30) << 32)) {
             const auto dist = static_cast<std::int32_t>(isqrt(d2 >> 32));
             beauty += des * (30 - dist) / 30;

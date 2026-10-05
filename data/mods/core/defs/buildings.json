@@ -1280,6 +1280,154 @@
     },
     {
       "type": "building",
+      "id": "core:hedge",
+      "name": "building.hedge",
+      "kind": "defense",
+      "category": "garden",
+      "model": "models/buildings/hedge_straight.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1
+      },
+      "buildWork": 20,
+      "hp": 60,
+      "line": "hedge",
+      "diagonal": true,
+      "desirability": 2,
+      "desirabilityRadius": 8,
+      "yields": {
+        "core:berries": 1
+      },
+      "yieldPer": 4,
+      "seasons": [
+        "autumn"
+      ],
+      "pieces": {
+        "pillar": "models/buildings/hedge_pillar.glb",
+        "end": "models/buildings/hedge_end.glb",
+        "straight": "models/buildings/hedge_straight.glb",
+        "corner": "models/buildings/hedge_corner.glb",
+        "tee": "models/buildings/hedge_tee.glb",
+        "cross": "models/buildings/hedge_cross.glb",
+        "diagonal": "models/buildings/hedge_diagonal.glb",
+        "step": "models/buildings/hedge_step.glb",
+        "site": "models/buildings/hedge_site.glb",
+        "breach": "models/buildings/hedge_breach.glb"
+      }
+    },
+    {
+      "type": "building",
+      "id": "core:hedge_arch",
+      "name": "building.hedgeArch",
+      "kind": "defense",
+      "category": "garden",
+      "model": "models/buildings/hedge_arch.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1
+      },
+      "buildWork": 20,
+      "hp": 60,
+      "gate": true,
+      "line": "hedge"
+    },
+    {
+      "type": "building",
+      "id": "core:boxhedge",
+      "name": "building.boxhedge",
+      "kind": "defense",
+      "category": "garden",
+      "model": "models/buildings/boxhedge_straight.glb",
+      "size": [
+        2,
+        2
+      ],
+      "buildWork": 8,
+      "hp": 60,
+      "line": "boxhedge",
+      "desirability": 1,
+      "desirabilityRadius": 6,
+      "pieces": {
+        "end": "models/buildings/boxhedge_end.glb",
+        "straight": "models/buildings/boxhedge_straight.glb",
+        "corner": "models/buildings/boxhedge_corner.glb",
+        "tee": "models/buildings/boxhedge_tee.glb",
+        "cross": "models/buildings/boxhedge_cross.glb",
+        "step": "models/buildings/boxhedge_step.glb"
+      }
+    },
+    {
+      "type": "building",
+      "id": "core:boxhedge_gate",
+      "name": "building.boxhedgeGate",
+      "kind": "defense",
+      "category": "garden",
+      "model": "models/buildings/boxhedge_gate.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1
+      },
+      "buildWork": 10,
+      "hp": 60,
+      "gate": true,
+      "line": "boxhedge"
+    },
+    {
+      "type": "building",
+      "id": "core:picket_fence",
+      "name": "building.picketFence",
+      "kind": "defense",
+      "category": "garden",
+      "model": "models/buildings/picket_straight.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1
+      },
+      "buildWork": 10,
+      "hp": 60,
+      "line": "picket",
+      "pieces": {
+        "end": "models/buildings/picket_end.glb",
+        "straight": "models/buildings/picket_straight.glb",
+        "corner": "models/buildings/picket_corner.glb",
+        "tee": "models/buildings/picket_tee.glb",
+        "cross": "models/buildings/picket_cross.glb",
+        "step": "models/buildings/picket_step.glb"
+      }
+    },
+    {
+      "type": "building",
+      "id": "core:picket_gate",
+      "name": "building.picketGate",
+      "kind": "defense",
+      "category": "garden",
+      "model": "models/buildings/picket_gate.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 1
+      },
+      "buildWork": 10,
+      "hp": 60,
+      "gate": true,
+      "line": "picket"
+    },
+    {
+      "type": "building",
       "id": "core:watchtower",
       "name": "building.watchtower",
       "kind": "defense",

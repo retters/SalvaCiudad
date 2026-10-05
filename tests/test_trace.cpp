@@ -80,13 +80,14 @@ DefIndex building(const Game& g, const char* id) {
     return d;
 }
 
-// The corner of a square of `side` x `side` cells near the town center where a
-// palisade fits on every module: open, level ground to trace on.
-std::pair<std::int32_t, std::int32_t> open_ground(const Game& g, std::int32_t side) {
+// The corner of a square of `side` x `side` cells near the town center (`from`
+// meters away or more) where a palisade fits on every module: open, level
+// ground to trace on.
+std::pair<std::int32_t, std::int32_t> open_ground(const Game& g, std::int32_t side, std::int32_t from = 12) {
     const DefIndex palisade = building(g, "core:palisade");
     const Building* tc = g.buildings().get(g.player(0).town_center);
     REQUIRE(tc != nullptr);
-    for (std::int32_t r = 12; r < 200; r += 4) {
+    for (std::int32_t r = from; r < 200; r += 4) {
         for (const auto& [dx, dz] : {std::pair{r, 0}, std::pair{-r, 0}, std::pair{0, r}, std::pair{0, -r}, std::pair{r, r},
                                      std::pair{-r, -r}, std::pair{r, -r}, std::pair{-r, r}}) {
             const std::int32_t x0 = ((tc->x + dx) / 2) * 2, z0 = ((tc->z + dz) / 2) * 2;
@@ -472,7 +473,8 @@ TEST_SUITE("trace") {
         for (const char* food : {"core:bread", "core:meat", "core:vegetables", "core:fruit"}) {
             grant(g, food, 3000);
         }
-        const auto [x0, z0] = open_ground(g, 44);
+        // Away from the town center: a ring traced where people stroll shuts them in.
+        const auto [x0, z0] = open_ground(g, 58, 40);
         const auto lay = [&](const char* def, int ax, int az, int bx, int bz, bool z_first = false) {
             g.apply(trace(g, def, x0 + ax, z0 + az, x0 + bx, z0 + bz, z_first));
         };
@@ -489,7 +491,11 @@ TEST_SUITE("trace") {
                     return;
                 }
             }
-            MESSAGE("some sites were never built");
+            for (const Building& b : g.buildings().data()) {
+                if (b.state == BuildingState::Construction && !g.content().buildings[b.def].line.empty()) {
+                    MESSAGE("never built: " << g.content().buildings[b.def].id << " at (" << b.x - x0 << ", " << b.z - z0 << ")");
+                }
+            }
         };
         // A wall across where the ring will be, and another that crosses it.
         lay("core:palisade", 0, 12, 24, 12);
@@ -520,8 +526,37 @@ TEST_SUITE("trace") {
         c.position = {Fixed::from_int(x0 + 12), Fixed::from_int(z0 + 24)};
         g.apply(c);
         build();
-        // And a stretch left as sites.
+        // Phase 94: a hedge with its arch and a diagonal, a pen of low hedge
+        // and one of picket fence with a wall across, each with its gate.
+        const auto square = [&](const char* def, int ax, int az, int side) {
+            lay(def, ax, az, ax + side, az);
+            lay(def, ax + side, az, ax + side, az + side);
+            lay(def, ax + side, az + side, ax, az + side);
+            lay(def, ax, az + side, ax, az);
+        };
+        const auto gate = [&](const char* def, int ax, int az) {
+            c.def = building(g, def);
+            c.position = {Fixed::from_int(x0 + ax), Fixed::from_int(z0 + az)};
+            g.apply(c);
+        };
+        lay("core:picket_fence", 34, 46, 38, 46);  // (Not all the way across: it would shut its builders in.)
+        build();
+        square("core:hedge", 0, 42, 8);
+        lay("core:hedge", 12, 42, 18, 48);
+        lay("core:hedge", 18, 48, 18, 50);
+        square("core:boxhedge", 20, 42, 6);
+        square("core:picket_fence", 30, 42, 8);
+        lay("core:picket_fence", 42, 42, 42, 42);
+        // Their gates at once: whoever was standing inside must be able to walk out.
+        gate("core:hedge_arch", 4, 42);
+        gate("core:boxhedge_gate", 22, 42);
+        gate("core:picket_gate", 32, 42);
+        build();
+        // And a stretch of each left as sites.
         lay("core:palisade", 28, 36, 40, 36);
+        lay("core:hedge", 0, 54, 6, 54);
+        lay("core:boxhedge", 10, 54, 16, 54);
+        lay("core:picket_fence", 20, 54, 26, 54);
         run(g, 2);
         save::SaveData data;
         data.header.name = "lines";

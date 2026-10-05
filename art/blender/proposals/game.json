@@ -1,6 +1,6 @@
 {
   "comment": "The proposal models that are in the game (phase 89). build_all.py builds each with its family's script, checks it against the triangle limit of its class and copies it to data/mods/core/models/<to>/<id>.glb. 'each' multiplies the ids by its suffixes (a pile's three levels). 'ids' may map a model to the name it takes in the game. With 'game': true the family's script builds the game's version of the model: without skeleton or clips and with fewer pieces (see _kit.GAME). With 'bare': true it leaves out the scenery around its creatures (see _kit.BARE). A model enters this list in the phase that uses it.",
-  "limits": {"pile": 1200, "line": 800, "ground": 400, "rock": 1500, "crop": 200, "animal": 2000, "building": 6000},
+  "limits": {"pile": 1200, "line": 800, "hedge": 1500, "ground": 400, "rock": 1500, "crop": 200, "animal": 2000, "building": 6000},
   "models": [
     {
       "family": "piles", "class": "pile", "to": "props", "each": ["_1", "_2", "_3"],
@@ -61,6 +61,25 @@
     {
       "family": "walls", "class": "building", "to": "buildings", "game": true,
       "ids": {"gate_palisade": "palisade_gate", "gate_palisade_postern": "palisade_postern"}
+    },
+    {
+      "family": "walls", "class": "hedge", "to": "buildings", "game": true,
+      "ids": {"wall_hedge_pillar": "hedge_pillar", "wall_hedge_end": "hedge_end", "wall_hedge_straight": "hedge_straight",
+              "wall_hedge_corner": "hedge_corner", "wall_hedge_tee": "hedge_tee", "wall_hedge_cross": "hedge_cross",
+              "wall_hedge_diagonal": "hedge_diagonal", "wall_hedge_step": "hedge_step", "wall_hedge_building": "hedge_site",
+              "wall_hedge_breach": "hedge_breach",
+              "fence_boxhedge_end": "boxhedge_end", "fence_boxhedge_straight": "boxhedge_straight",
+              "fence_boxhedge_corner": "boxhedge_corner", "fence_boxhedge_tee": "boxhedge_tee",
+              "fence_boxhedge_cross": "boxhedge_cross", "fence_boxhedge_step": "boxhedge_step"}
+    },
+    {
+      "family": "walls", "class": "line", "to": "buildings", "game": true,
+      "ids": {"fence_picket_end": "picket_end", "fence_picket_straight": "picket_straight", "fence_picket_corner": "picket_corner",
+              "fence_picket_tee": "picket_tee", "fence_picket_cross": "picket_cross", "fence_picket_step": "picket_step"}
+    },
+    {
+      "family": "walls", "class": "building", "to": "buildings", "game": true,
+      "ids": {"wall_hedge_arch": "hedge_arch", "fence_boxhedge_gate": "boxhedge_gate", "fence_picket_gate": "picket_gate"}
     }
   ]
 }

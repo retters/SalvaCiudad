@@ -109,6 +109,21 @@ En reposo (sin girar), visto desde arriba con el norte hacia −Z: el recto une 
 
 Una **puerta** de la familia (`"gate": true` y el mismo `line`) se puede colocar encima de los módulos del muro: los reemplaza. Puede medir 2 × 2 (una poterna) o más (4 × 2).
 
+Todo lo que tiene `line`, y toda puerta, **cierra el paso a los animales salvajes** además de a los aldeanos (fase 94). Los asaltantes lo rompen: con `"hp": 60` cae de un golpe.
+
+Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego base no tienen `pillar`, `site`, `breach` ni `diagonal`): un módulo suelto usa entonces el remate, la obra se ve con la pieza que será, medio transparente, y el daño con la pieza normal.
+
+#### Setos: entorno con alcance propio y frutos (fase 94)
+
+| Campo | Valores |
+|---|---|
+| `desirabilityRadius` | 0 a 30 (metros). Con 0, `desirability` funciona como siempre: llega a 30 m y se apaga con la distancia. Con un alcance propio vale **entero** dentro de él y **una sola vez** por tipo de edificio, haya uno o veinte (veinte módulos de seto son un seto). Solo cuentan los terminados. |
+| `yields` | Lo que dan sus módulos una vez al año, como `{"core:berries": 1}`. Necesita `line`. |
+| `yieldPer` | Cuántos módulos hacen falta para dar eso (por omisión 1). |
+| `seasons` | En qué estaciones lo dan (el mismo campo de los lugares de trabajo). |
+
+Lo recibe, en su propia existencia, un lugar de trabajo de recolección con `"picksFruit": true`, terminado y con al menos un trabajador, que tenga los módulos dentro de su `radius`. Los módulos que sobran (menos de `yieldPer`) esperan a que haya más mientras dure la estación.
+
 ### unit y race
 
 Una raza (`race`) dice qué personajes son sus aldeanos y de qué colores (fase 57; todo esto es solo de la vista):

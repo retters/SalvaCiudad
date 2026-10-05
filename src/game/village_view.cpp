@@ -1245,6 +1245,10 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         const float cx = static_cast<float>(x) + 1.0f, cz = static_cast<float>(z) + 1.0f;
         float y = ground(cx, cz);
         const auto has = [&](sim::LinePiece p) { return pieces[static_cast<std::size_t>(p)].id != kNoModel; };
+        if (state == 0 && !has(sim::LinePiece::Site)) {
+            // A kit without a piece for its sites: what it will be, half see-through.
+            fade = std::max<std::uint8_t>(fade, 2);
+        }
         if (state == 0 && has(sim::LinePiece::Site)) {
             look.piece = sim::LinePiece::Site;
             look.turns = look.turns % 2;
@@ -1262,7 +1266,8 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
             }
         }
         if (!has(look.piece)) {
-            look = {sim::LinePiece::Pillar, 0};
+            // A kit without this piece: its post, or its end (a low fence has no post of its own).
+            look = {has(sim::LinePiece::Pillar) ? sim::LinePiece::Pillar : sim::LinePiece::End, 0};
             if (!has(look.piece)) {
                 return false;
             }

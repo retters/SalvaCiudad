@@ -177,6 +177,15 @@ struct BuildingDef {
     std::string line;
     bool line_diagonal = false;
     std::array<std::string, kLinePieces> line_pieces;
+    // Phase 94. `desirability_radius`: meters its desirability reaches (0:
+    // the usual 30, fading with the distance); with a reach of its own it
+    // counts whole inside it and once, however many of them are there (a
+    // hedge of twenty modules is one hedge). `yields`: what `yield_per` of
+    // them give once a year, in their `seasons`, to a gatherer that picks
+    // fruit and has them in its reach (the berries of a hedge).
+    std::int32_t desirability_radius = 0;
+    std::vector<ResourceAmount> yields;
+    std::int32_t yield_per = 1;
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.

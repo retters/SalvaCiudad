@@ -322,9 +322,24 @@ void NavGrid::set_gate(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::i
     for (std::int32_t cz = std::max(0, z0 / kCell); cz <= std::min(side_ - 1, (z1 - 1) / kCell); ++cz) {
         for (std::int32_t cx = std::max(0, x0 / kCell); cx <= std::min(side_ - 1, (x1 - 1) / kCell); ++cx) {
             std::uint8_t& g = gate_[index(cx, cz)];
-            g = static_cast<std::uint8_t>(on ? std::min(255, g + 1) : std::max(0, g - 1));
+            const int gates = g & 0x0F;
+            g = static_cast<std::uint8_t>((g & 0xF0) | (on ? std::min(15, gates + 1) : std::max(0, gates - 1)));
         }
     }
+}
+
+void NavGrid::set_barrier(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, bool on) {
+    for (std::int32_t cz = std::max(0, z0 / kCell); cz <= std::min(side_ - 1, (z1 - 1) / kCell); ++cz) {
+        for (std::int32_t cx = std::max(0, x0 / kCell); cx <= std::min(side_ - 1, (x1 - 1) / kCell); ++cx) {
+            std::uint8_t& g = gate_[index(cx, cz)];
+            const int barriers = g >> 4;
+            g = static_cast<std::uint8_t>((g & 0x0F) | ((on ? std::min(15, barriers + 1) : std::max(0, barriers - 1)) << 4));
+        }
+    }
+}
+
+bool NavGrid::barrier(std::int32_t cx, std::int32_t cz) const {
+    return cx >= 0 && cz >= 0 && cx < side_ && cz < side_ && (gate_[index(cx, cz)] >> 4) != 0;
 }
 
 bool NavGrid::obstacle(std::int32_t cx, std::int32_t cz) const {
@@ -332,7 +347,7 @@ bool NavGrid::obstacle(std::int32_t cx, std::int32_t cz) const {
         return false;
     }
     const std::size_t i = index(cx, cz);
-    return building_[i] != 0 || gate_[i] != 0;
+    return building_[i] != 0 || (gate_[i] & 0x0F) != 0;
 }
 
 bool NavGrid::ground(std::int32_t cx, std::int32_t cz) const {

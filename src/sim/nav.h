@@ -49,6 +49,10 @@ public:
     [[nodiscard]] bool obstacle(std::int32_t cx, std::int32_t cz) const;
     // Open ground (no water or cliff), whatever is built on it.
     [[nodiscard]] bool ground(std::int32_t cx, std::int32_t cz) const;
+    // Phase 94: walls, hedges, fences and their gates. The wild animals do
+    // not cross these cells (they walk over every other building's).
+    void set_barrier(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, bool on);
+    [[nodiscard]] bool barrier(std::int32_t cx, std::int32_t cz) const;
 
     // Straight-line guess of the walking distance, in meters.
     [[nodiscard]] static std::int32_t distance_estimate(FixedVec2 a, FixedVec2 b);
@@ -126,7 +130,10 @@ private:
     std::int32_t side_ = 0;
     std::vector<std::uint8_t> terrain_cost_;  // 0 = blocked, else cost of a straight step (10 = normal).
     std::vector<std::uint8_t> building_;      // Cells under buildings.
-    std::vector<std::uint8_t> gate_;          // Cells under gates (walkable, but raiders break them).
+    // Low half: the gates over the cell (walkable, but raiders break them).
+    // High half: the walls, fences and gates over it (closed to the wild
+    // animals). Two counts in a byte: a colossal map has 67 million cells.
+    std::vector<std::uint8_t> gate_;
 
     // Search scratch, reused between searches (stamped instead of cleared).
     std::vector<std::uint32_t> stamp_;

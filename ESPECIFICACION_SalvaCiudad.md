@@ -1058,10 +1058,10 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - *Criterios:* pruebas: un trazo de 10 celdas coloca 10 obras y cobra 40 troncos al construirse; cada combinación de vecinos da la pieza y el giro esperados (16 casos más la diagonal); un recinto cerrado con tramos rectos y diagonales no se puede cruzar, y con una puerta sí; los asaltantes rompen el módulo y entran; la empalizada se quema; un trazo sobre agua o pendiente excesiva omite esas celdas; guardar y cargar; dos instancias en red con los mismos hashes; español e inglés; suben las versiones de reglas y de red.
 94. **Setos y vallas** (bloque B).
    - Tres tipos de trazado más: **seto vivo** (1,8 m; con arco de paso), **seto bajo recortado** y **valla de estacas** (1 m; con cancela). Sin diagonales para los dos bajos.
-   - Los tres cierran el paso a aldeanos y animales; se cruzan por su cancela o su arco. No son defensa: tienen 60 de vida y arden.
+   - Los tres cierran el paso a aldeanos y animales; se cruzan por su cancela o su arco. No son defensa: tienen 60 de vida y arden. Desde esta fase los animales salvajes tampoco cruzan la empalizada, el muro de piedra ni ninguna puerta (D-9401). Van en la pestaña «Jardín y mercado».
    - Costos: seto vivo, 1 tronco y 20 de trabajo por módulo; seto bajo, sin materiales y 8 de trabajo; valla, 1 tronco y 10 de trabajo.
-   - Entorno: el seto vivo suma entorno a las casas a 8 m; el seto bajo, +1 a 6 m. Lo de «rodear» una casa, un jardín o una estatua llega en la fase 104.
-   - Bayas del seto vivo: cada otoño, 1 de bayas por cada 4 módulos, que recoge el recolector que lo tenga a su alcance.
+   - Entorno: el seto vivo suma +2 a las casas a 8 m; el seto bajo, +1 a 6 m. Cada tipo cuenta una vez, haya los módulos que haya (D-9404). Lo de «rodear» una casa, un jardín o una estatua llega en la fase 104.
+   - Bayas del seto vivo: cada otoño, 1 de bayas por cada 4 módulos, que recibe el recolector con gente que lo tenga a su alcance (D-9405).
    - *Criterios:* pruebas: un corral de valla cerrado no deja salir a un aldeano hasta que tiene cancela; un lobo no entra; un asaltante lo rompe de un golpe; 8 módulos de seto vivo dan 2 de bayas en otoño y nada en primavera; el entorno de una casa a 5 m sube con el seto bajo y no a 10 m; guardar y cargar; español e inglés; sube la versión de reglas.
 95. **Caminos** (bloque B).
    - Dos niveles, trazados igual que los muros (sin diagonales): **camino de tierra** (sin materiales, 5 de trabajo por tramo) y **calle empedrada** (1 de piedra y 15 de trabajo por tramo; desde el centro de nivel 2; se puede trazar sobre un camino de tierra para mejorarlo).

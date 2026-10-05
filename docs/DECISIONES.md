@@ -3466,3 +3466,29 @@ Pruebas, suite nueva `trace`: las celdas de un trazo (recta, L por x o por z, di
 
 **D-9310. Versiones.**
 Reglas 54, red 26. El generador no cambia.
+
+## Fase 94: setos y vallas (2026-10-04)
+
+**D-9401. Los animales salvajes ya no cruzan muros, setos, vallas ni puertas.**
+Hasta ahora un lobo caminaba en línea recta hacia su presa y solo lo detenían el agua y los riscos: atravesaba casas, empalizadas y puertas. Para que «un lobo no entre» en un corral, la cuadrícula de paso guarda una marca más por celda, **barrera**, que ponen todos los edificios con `line` y todas las puertas. Un animal no entra a una celda con barrera ni pasa por la esquina donde se tocan dos (los tramos en diagonal); uno al que le construyen un muro encima sí puede salir de él. Vale también para la empalizada y el muro de piedra, que ahora sí protegen de las fieras: es lo que un jugador espera, y no hubo que tocar ninguna prueba anterior. Los demás edificios se siguen cruzando como antes (cambiarlo es otro asunto y movería el equilibrio de todo el juego). Los animales no buscan camino: el que choca con una cerca persiguiendo a alguien se rinde y vuelve a su zona; si el corral tiene un hueco, puede dar con él o no. Asaltantes y soldados no cambian: los asaltantes rompen lo que les estorba. La marca no ocupa memoria nueva: comparte byte con la cuenta de puertas de cada celda (un mapa colosal tiene 67 millones de celdas de paso; un vector más serían 64 MiB).
+
+**D-9402. Qué son en las reglas.**
+Edificios de tipo defensa (para que sigan el terreno módulo a módulo y los asaltantes no los elijan como botín) pero en la pestaña «Jardín y mercado», con 60 de vida. El golpe de un asaltante hace 60: cae al primero. No son a prueba de fuego. El seto vivo cuesta 1 tronco y 20 de trabajo; el seto bajo, nada y 8; la valla, 1 tronco y 10: los números del plan.
+
+**D-9403. Los pasos.**
+Arco de seto (la pieza de arco del kit de seto vivo; cuesta lo mismo que un módulo), cancela de seto bajo y cancela de valla (1 tronco y 10 de trabajo cada una). Los tres miden un módulo, se colocan sobre un tramo de su propia familia y lo reemplazan, como la poterna de la empalizada. Entran cerrados y sin animación: los aldeanos los cruzan sin que se abran, igual que las puertas de la fase 93.
+
+**D-9404. Entorno con alcance propio.**
+El entorno de siempre llega a 30 m y se apaga con la distancia; con esa cuenta, «+1 a 6 m» daría siempre cero y veinte módulos sumarían veinte veces. Campo nuevo `desirabilityRadius`: quien lo tiene vale **entero** dentro de su alcance y **una vez por tipo**, y solo terminado. La distancia se mide de centro a centro, como el resto del entorno (y como lo pinta la capa de entorno, que usa la misma función). El plan no daba la cifra del seto vivo: **+2 a 8 m**, el doble que el bajo por ser el doble de alto. Los dos se suman entre sí. «Rodear» la casa llega en la fase 104.
+
+**D-9405. Las bayas del seto no las va a buscar nadie: aparecen en el recolector.**
+Al cambiar el día del calendario, en otoño, cada recolector (lugar de recolección con `picksFruit`, terminado y con al menos un trabajador) mira los módulos de seto de su pueblo dentro de su radio que no hayan dado fruto este año; por cada cuatro recibe 1 de bayas en su propia existencia, como la fruta de un árbol talado, y de ahí sale por el reparto normal. Los que sobran esperan a que haya más. Se descartó que un aldeano camine hasta el seto: habría que tratar cada módulo como un arbusto más (ocupación, cosecha parcial, animación) por una baya cada ocho metros. Sin recolector a su alcance, o sin nadie trabajando en él, el seto no da nada. Va en los datos (`yields`, `yieldPer`, `seasons`), no en el código: un mod puede hacer un seto de otra cosa.
+
+**D-9406. Piezas que faltan y un tope para los setos.**
+Los kits bajos de las propuestas no traen pilar, obra, brecha ni diagonal. Un módulo suelto se dibuja con el remate; en obra, con la pieza que será, medio transparente; dañado, con su pieza normal. Sin diagonal en los datos, tampoco se pueden trazar a 45°, como pedía el plan. El seto vivo y el bajo pasan de los 800 triángulos de la clase `line` (hasta 1492 y 888): clase nueva `hedge`, tope 1500. Son hojas; aligerarlos los dejaba calvos.
+
+**D-9407. Lo medido y lo visto.**
+Suite nueva `fences`, 10 casos: los datos de los tres y de sus pasos; un corral de valla cerrado no comunica dentro con fuera hasta que tiene cancela, y la cancela de otro tipo no se deja poner; una fiera encerrada en un corral de 16 × 16 m quiere salir y en 6000 pasos no sale, y ninguna otra entra (quitando la barrera a propósito, la misma prueba falla: se escapa); los asaltantes atraviesan un anillo de valla alrededor del centro del pueblo y nunca queda un módulo dañado en pie; 8 módulos de seto dan 2 de bayas en otoño, paso a paso (1 por cada 4 que se marcan) y nada más los días siguientes; 3 módulos no dan nada, ni 8 en primavera, ni 8 sin recolector; un seto bajo terminado sube en 1 el entorno a 5 m y no a 10 m, cinco módulos siguen sumando 1 y el seto vivo suma aparte; el seto arde; guardar y cargar conserva setos, cancelas, lo ya recogido y la barrera.
+
+**D-9408. Versiones.**
+Reglas 55. La red no cambia (no hay órdenes nuevas): sigue en 26.
