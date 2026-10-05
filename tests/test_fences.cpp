@@ -520,4 +520,71 @@ TEST_SUITE("fences") {
         run(loaded, 600);
         CHECK(loaded.hash() == g.hash());
     }
+
+    TEST_CASE("a town center shut in on three sides is reached by the side left open") {
+        // A palisade around the north, west and east of the town center, two
+        // meters from it, and closed against it at both ends: the ground
+        // between them is a pocket nobody outside can walk into. The south
+        // side is open. A villager goes to the nearest side of a building,
+        // and for the one who works north of it that side is in the pocket.
+        Game g(core(), map_for(92), setup());
+        provide(g);
+        const Building tc = *g.buildings().get(g.player(0).town_center);
+        // In cells of the walking grid (2 m): those the town center stands on.
+        const std::int32_t k = NavGrid::kCell;
+        const std::int32_t x0 = tc.x / k * k, z0 = tc.z / k * k;
+        const std::int32_t x1 = (tc.x + tc.width - 1) / k * k, z1 = (tc.z + tc.depth - 1) / k * k;
+        const std::int32_t mid = (x0 + x1) / 2 + 1;
+        const FixedVec2 far_north{Fixed::from_int(mid), Fixed::from_int(z0 - 16)};
+        // A splitter of firewood to the north: its worker comes to the town
+        // center for logs, and to eat.
+        const EntityId splitter = place(g, "core:firewood_splitter", x0, z0 - 30);
+        REQUIRE(splitter.valid());
+        Command done;
+        done.type = CommandType::DevBuild;
+        g.apply(done);
+        EntityId worker;
+        for (int t = 0; t < 4000 && !worker.valid(); ++t) {
+            g.step();
+            const Building* b = g.buildings().get(splitter);
+            REQUIRE(b != nullptr);
+            if (!b->workers.empty()) {
+                const Villager* v = g.villagers().get(b->workers[0]);
+                if (v != nullptr && v->task == Task::Produce) {
+                    worker = b->workers[0];
+                }
+            }
+        }
+        REQUIRE(worker.valid());
+        trace(g, "core:palisade", x0 - 2 * k, z0 - 2 * k, x1 + 2 * k, z0 - 2 * k);
+        trace(g, "core:palisade", x0 - 2 * k, z0 - 2 * k, x0 - 2 * k, z1);
+        trace(g, "core:palisade", x1 + 2 * k, z0 - 2 * k, x1 + 2 * k, z1);
+        trace(g, "core:palisade", x0 - k, z1, x0 - k, z1);
+        trace(g, "core:palisade", x1 + k, z1, x1 + k, z1);
+        g.apply(done);
+        const FixedVec2 pocket{Fixed::from_int(mid), Fixed::from_int(z0 - 1)};
+        const FixedVec2 south{Fixed::from_int(mid), Fixed::from_int(z1 + k + 1)};
+        REQUIRE(g.nav().walkable(g.nav().cell_of(pocket.x), g.nav().cell_of(pocket.z)));
+        REQUIRE(g.nav().walkable(g.nav().cell_of(south.x), g.nav().cell_of(south.z)));
+        REQUIRE_FALSE(g.nav().connected(far_north, pocket));
+        REQUIRE(g.nav().connected(far_north, south));
+        // The worker is outside, and its nearest side of the town center is the one shut in.
+        const FixedVec2 from = g.villagers().get(worker)->position;
+        REQUIRE(g.nav().connected(from, far_north));
+        REQUIRE_FALSE(g.nav().connected(from, g.approach(tc, from)));
+        // Four meals' time: it eats, and goes on with its work.
+        const DefIndex firewood = g.content().find_resource("core:firewood");
+        REQUIRE(firewood != kNoDef);
+        const std::int32_t before = g.stored(0)[firewood];
+        std::int32_t lowest = village::kFoodMax;
+        for (int t = 0; t < 14000; ++t) {
+            g.step();
+            const Villager* v = g.villagers().get(worker);
+            REQUIRE(v != nullptr);
+            lowest = std::min(lowest, v->food);
+        }
+        CHECK(lowest > 0);
+        CHECK(g.player(0).deaths == 0);
+        CHECK(g.stored(0)[firewood] > before);
+    }
 }

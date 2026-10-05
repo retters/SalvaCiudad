@@ -270,6 +270,8 @@
     "building.kiln": "Kiln",
     "building.charcoalKiln": "Charcoal burner",
     "building.ironMine": "Iron mine",
+    "building.coalMine": "Coal mine",
+    "building.goldMine": "Gold mine",
     "building.smelter": "Smelter",
     "building.blacksmith": "Blacksmith",
     "building.smokehouse": "Smokehouse",

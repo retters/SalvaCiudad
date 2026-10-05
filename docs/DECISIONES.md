@@ -3656,3 +3656,40 @@ En pantalla, con dos escenas guardadas (caso saltado «manual: saved games with 
 
 **D-10006. Versiones.**
 Reglas 61. La red y el generador no cambian.
+
+## Fase 101: yacimientos de arcilla, carbón y oro (2026-10-04)
+
+**D-10101. Tres tipos más, con las reglas del yacimiento de roca.**
+`ClayDeposit`, `CoalDeposit` y `GoldDeposit` se agregan al final de la lista de tipos (los números de los anteriores no cambian) y todo lo que el juego hacía «si es un yacimiento de roca» pasa a preguntar `is_deposit()`: cantidad por tamaño (1, 5/2 y 25/4 de `amount`), terreno ocupado, varios trabajadores a la vez parados alrededor, achicarse al gastarse y liberar el suelo al acabarse. No se escribió ninguna regla nueva.
+
+**D-10102. La arcillera pasa de taller a recolector.**
+Antes tenía la receta `dig_clay` (arcilla de la nada); la receta se quita y la arcillera es un edificio `gather` de `clayDeposit` con 60 m de alcance. Así el aviso «no queda qué trabajar» es el mismo de las fases 84 a 87, sin código propio. Una partida guardada con una arcillera antigua no se puede cargar de todos modos (suben las reglas). Los pueblos de la IA y las pruebas que contaban con arcilla en cualquier parte se ajustaron (ver D-10107).
+
+**D-10103. Las minas.**
+Mina de carbón: nivel 2, 20 troncos y 10 de piedra, dos trabajadores, 70 m de alcance, guarda combustible. Mina de oro: nivel 3, 30 troncos y 20 de piedra, dos trabajadores, 70 m, **sin almacén**: como el oro no se guarda en edificios de trabajo (fase 28), sus mineros lo llevan al centro del pueblo y ahí cuenta como oro del pueblo. Las dos usan el modelo de la mina de hierro, como dice la especificación, y solo cambia el nombre. La carbonera pasa de 80 a 120 de trabajo por tanda (un 50 % más lenta).
+
+**D-10104. Cuánto tienen.**
+Tamaño chico: arcilla 500 (30 de trabajo por unidad), carbón 600 (35), oro 200 (80). Un banco mediano de arcilla son 1250: unas 20 casas de ladrillo. El oro sale despacio: a 80 de trabajo por moneda, dos mineros sacan menos que lo que deja un mercader en una visita, y una veta chica se acaba. Son números para probar; se ajustan en datos.
+
+**D-10105. Dónde los pone el generador.**
+Con «Recursos» al 100 %: arcilla 6 por km² sobre suelo de arcilla, carbón 4 por km² y oro 0,8 por km² en lo más rocoso o empinado de entre varios sitios al azar; mitad chicos, 35 % medianos, 15 % grandes. Además cada inicio tiene un banco de arcilla mediano a menos de 250 m y una veta de carbón mediana a menos de 400 m si no le tocó ya uno. El oro no se garantiza. Como en D-8304, la distancia es en línea recta porque el generador no calcula caminos; la prueba comprueba que desde el pueblo se llega caminando en los cuatro mapas de referencia.
+
+**D-10106. El resto del mapa queda igual.**
+Los yacimientos nuevos se colocan al final, con su propia secuencia de azar, y **solo donde no hay nada**: a diferencia de los de roca (que despejan su terreno), un sitio con cualquier objeto encima o al lado se descarta. Así los objetos de antes no se mueven ni desaparecen: las cuatro huellas del generador 7 guardadas en la fase 98 siguen saliendo iguales. El precio es que salen algo menos de los que se piden en mapas muy arbolados.
+
+**D-10107. Lo que hubo que ajustar en las pruebas.**
+La prueba del límite de producción usaba la arcillera como taller: ahora usa la carbonera. La huella del mapa pequeño de referencia cambió (generador 9). Una prueba del explorador miraba su salud sin desactivar las enfermedades y con el mapa nuevo le tocó enfermarse: en esa prueba se desactivan.
+
+**D-10108. Lo medido.**
+Suite nueva `deposits`, 8 casos: los datos; una arcillera sin banco no saca nada y avisa una vez; con un banco de 14 saca los 14, el banco desaparece, su suelo queda libre y avisa una vez; la mina de carbón entrega los 20 de su veta; la mina de oro sube en 12 el oro del pueblo y no guarda nada; no se construye encima ni al borde, no se camina, y sus dos mineros la trabajan a la vez; en cuatro mapas cada inicio tiene arcilla a 250 m y carbón a 400 m a los que se llega caminando, ninguno donde va el centro del pueblo, y ningún yacimiento comparte suelo con otro objeto; guardar y cargar con una veta grande ya achicada.
+
+**D-10109. Versiones.**
+Reglas 62 y generador 9. La red no cambia.
+
+**D-10110. Un fallo que apareció de paso: aldeanos que morían de hambre con comida guardada.**
+La prueba del año largo falló con 17 muertos en una partida con más de 300 de comida en el centro del pueblo. La causa no era de esta fase: un aldeano que va a un edificio camina al punto **más cercano** de su borde, y si ese lado quedó encerrado (casas pegadas al centro del pueblo que cierran un pasillo contra él) no hay camino hasta ese punto; el aldeano se quedaba donde estaba, reintentando cada segundo, y moría de hambre aunque otro lado del edificio estuviera libre. Pasaba desde que existe `approach()`; la colocación de los yacimientos movió el azar y lo hizo visible (los 6 muertos sin explicar de la fase 99 eran lo mismo).
+Arreglo, el más acotado: solo cuando el camino al lado cercano falla, se busca alrededor del edificio el punto alcanzable más cercano y se va ahí (`walk_round`). Donde antes había camino no cambia nada. Se descartó prohibir construir si se encierra un lado (caro de calcular y sorprendente para el jugador) y elegir siempre el punto alcanzable (cambiaría los caminos de todas las partidas). Prueba nueva en `fences`: un centro del pueblo con empalizada por tres lados y un trabajador al norte, que con el arreglo come y sigue trabajando y sin él muere (comprobado quitándolo).
+Queda sin tocar algo parecido que vi en la misma prueba: un explorador mandado a terreno no explorado camina en línea recta desde donde tomó provisiones, y si el centro del pueblo queda en medio se queda esperando ahí mismo. No es de esta fase.
+
+**D-10111. La prueba del año largo ya no compara los recién llegados al 25 %.**
+Llegan recién llegados mientras hay comida de sobra guardada (40 más 10 por habitante). Desde que la comida viene por temporadas (fase 99), en un año de 45 minutos el almacén sube tres veces más tras el otoño y baja durante una primavera tres veces más larga, así que llegan en otros momentos y en otra cantidad (34 y 48 en la medición). La prueba sigue exigiendo población parecida (15 %) y comida por habitante parecida (15 %), deja los recién llegados en un 50 %, y ahora exige además que **nadie muera** en ninguna de las ocho partidas.

@@ -160,15 +160,16 @@ TEST_SUITE("needs") {
 
     TEST_CASE("a production limit stops a workshop") {
         Game g(open_content(), map_for(63), setup());
-        const EntityId pit = build(g, "core:clay_pit");
+        // (The clay pit until phase 101: it digs a bank now, and has no recipe.)
+        const EntityId kiln = build(g, "core:charcoal_kiln");
         Command c;
         c.type = CommandType::SetLimit;
-        c.entity = pit;
+        c.entity = kiln;
         c.value = 6;
         g.apply(c);
         run(g, 5000);
-        CHECK(total(g, "core:clay") >= 6);
-        CHECK(total(g, "core:clay") <= 10);  // The limit plus a batch or two on the way.
+        CHECK(total(g, "core:coal") >= 6);
+        CHECK(total(g, "core:coal") <= 10);  // The limit plus a batch or two on the way.
     }
 
     TEST_CASE("buildings above the town center's level are locked") {

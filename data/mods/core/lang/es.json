@@ -270,6 +270,8 @@
     "building.kiln": "Horno de ladrillos",
     "building.charcoalKiln": "Carbonera",
     "building.ironMine": "Mina de hierro",
+    "building.coalMine": "Mina de carbón",
+    "building.goldMine": "Mina de oro",
     "building.smelter": "Fundición",
     "building.blacksmith": "Herrería",
     "building.smokehouse": "Ahumadero",

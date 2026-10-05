@@ -101,7 +101,8 @@
     {
       "family": "nature", "class": "rock", "to": "props", "game": true,
       "ids": {"nature_bee_tree": "bee_tree", "nature_nest": "nest", "nature_stump_mushrooms": "stump",
-              "nature_stump_hollow_log": "stump_2"}
+              "nature_stump_hollow_log": "stump_2", "nature_deposit_clay": "clay_deposit",
+              "nature_deposit_coal": "coal_deposit", "nature_deposit_gold": "gold_deposit"}
     },
     {
       "family": "scatter", "class": "rock", "to": "props", "game": true,

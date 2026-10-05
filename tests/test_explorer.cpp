@@ -232,7 +232,9 @@ TEST_SUITE("explorer") {
 
     TEST_CASE("it comes back by itself with just enough food for the way") {
         const Strip f = strip(31);
-        Game g(content(), f.map, setup(FogMode::Static));
+        GameSetup rules = setup(FogMode::Static);
+        rules.rules.diseases = Threat::None;  // Its health is looked at below: no illness on the way.
+        Game g(content(), f.map, rules);
         const Post post = explorer_post(g);
         (void)g.take_events();
         g.apply(order(post.worker, f.x0 + f.dir * 100.0, f.z));

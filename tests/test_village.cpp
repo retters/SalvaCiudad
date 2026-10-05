@@ -961,9 +961,16 @@ TEST_SUITE("village_years") {
                    static_cast<double>(b) < static_cast<double>(a) * (1.0 + within);
         };
         CHECK(alike(usual.people, longer.people));
-        // Newcomers follow the room left by those who die, and with longer
-        // years people grow old more slowly (D-5902): fewer die, fewer come.
-        CHECK(alike(usual.arrivals, longer.arrivals, 0.25));
+        // Newcomers come while the store holds food to spare, and with food
+        // by seasons the store of a long year swells three times as much
+        // after its autumn: more of them come then, and fewer in its long
+        // spring. Their count is alike only roughly (D-10111).
+        CHECK(alike(usual.arrivals, longer.arrivals, 0.5));
+        // Nobody starves in either. (Until phase 101 some did, with food in
+        // store: villagers shut out of the near side of the town center by
+        // the houses around it stood there instead of walking round.)
+        CHECK(usual.deaths == 0);
+        CHECK(longer.deaths == 0);
         CHECK(alike(static_cast<std::int32_t>(usual.fed / (4 * 45)), static_cast<std::int32_t>(longer.fed / (4 * 45))));
         // And nobody is left without: there is food in both at the end.
         CHECK(usual.food > usual.people);

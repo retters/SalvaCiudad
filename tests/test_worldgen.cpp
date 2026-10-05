@@ -221,7 +221,9 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town, s
 // update it (and the simulation rules version).
 // (Generator 8, phase 98: the trees with a hive, nests, stumps and rings of
 // mushrooms were added; what generator 7 made is checked in the forage suite.)
-constexpr std::uint64_t kGoldenSmallMap = 0x1e701536f00c0062ull;
+// (Generator 9, phase 101: the deposits of clay, coal and gold were added, on
+// free ground; the deposits suite checks that what was there is as it was.)
+constexpr std::uint64_t kGoldenSmallMap = 0xb5b49e1b40c1a956ull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {

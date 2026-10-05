@@ -113,6 +113,33 @@
       "work": 30,
       "landmark": true,
       "models": ["models/props/stone_deposit_small.glb", "models/props/stone_deposit_medium.glb", "models/props/stone_deposit_large.glb"]
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:clay_deposit",
+      "kind": "clayDeposit",
+      "resource": "core:clay",
+      "amount": 500,
+      "work": 30,
+      "model": "models/props/clay_deposit.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:coal_deposit",
+      "kind": "coalDeposit",
+      "resource": "core:coal",
+      "amount": 600,
+      "work": 35,
+      "model": "models/props/coal_deposit.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:gold_deposit",
+      "kind": "goldDeposit",
+      "resource": "core:gold",
+      "amount": 200,
+      "work": 80,
+      "model": "models/props/gold_deposit.glb"
     }
   ]
 }

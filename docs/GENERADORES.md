@@ -80,6 +80,8 @@ Humedad, fertilidad y suelos (pasto, pradera, suelo de bosque, arena, roca, arci
 
 Al final de todo, y con su propia secuencia de azar (fase 98), lo que el recolector encuentra por temporadas: árboles con panal y nidos en praderas y bordes de bosque, tocones y troncos huecos en el bosque, corros de setas donde es espeso; y cerca de cada inicio, al menos 2 árboles con panal, 2 nidos y 3 tocones. Como van al final y no usan la secuencia principal, una semilla da el mismo mapa que daba antes, con esto añadido. Todo elemento nuevo del mapa de aquí en adelante se pone así.
 
+Después, igual (fase 101), los yacimientos de arcilla, carbón y oro: bancos de arcilla sobre el suelo arcilloso, vetas de carbón y unas pocas de oro en lo más rocoso o empinado; y cerca de cada inicio, arcilla a 250 m o menos y carbón a 400 m o menos (en línea recta). A diferencia de los yacimientos de roca, estos solo se ponen donde no hay nada: no quitan ni mueven nada de lo que el mapa ya tenía.
+
 Lomas de 64 m, ondulaciones de 512 m y 40 cm de relieve fino, más las rocas, arbustos, hierbas y el pasto.
 
 ## Todo lo que F3 puede nombrar

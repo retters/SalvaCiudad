@@ -77,7 +77,8 @@ public:
         : s_(s), flora_(content.flora), progress_(progress), n_(map_cells(s.size)), v_(n_ + 1),
           rng_(s.seed, 7),
           deposit_rng_(s.seed, 83),
-          forage_rng_(s.seed, 98) {}
+          forage_rng_(s.seed, 98),
+          ore_rng_(s.seed, 101) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -1070,7 +1071,7 @@ private:
         };
         for (std::size_t i = 0; i < out_.features.size(); ++i) {
             const MapFeature& f = out_.features[i];
-            if (f.type != FeatureType::StoneDeposit) {
+            if (!is_deposit(f.type)) {
                 continue;
             }
             for (std::int32_t dz = -16; dz <= 16; dz += 16) {
@@ -1092,9 +1093,8 @@ private:
             for (auto it = std::lower_bound(near.begin(), near.end(), from); it != near.end() && it->first == from.first; ++it) {
                 const MapFeature& d = out_.features[it->second];
                 // A deposit gives way to a larger one, or to the one placed first.
-                const bool stays = f.type == FeatureType::StoneDeposit &&
-                                   (f.size > d.size || (f.size == d.size && i <= it->second));
-                const std::int32_t reach = deposit_half_side(d.size) + (f.type == FeatureType::StoneDeposit ? deposit_half_side(f.size) : 1);
+                const bool stays = is_deposit(f.type) && (f.size > d.size || (f.size == d.size && i <= it->second));
+                const std::int32_t reach = deposit_half_side(d.size) + (is_deposit(f.type) ? deposit_half_side(f.size) : 1);
                 if (!stays && std::abs(x - d.x.floor_int()) <= reach && std::abs(z - d.z.floor_int()) <= reach) {
                     gone[i] = 1;
                     break;
@@ -1368,7 +1368,87 @@ private:
                    });
         });
         forage();
+        ores();
         return report(GenStage::Starts, 100);
+    }
+
+    // Phase 101: deposits of clay on the map's clay, of coal on its rocky
+    // ground and a few of gold in its roughest; and by every start, clay
+    // within kStartClayRadius and coal within kStartCoalRadius. Last of
+    // all and with their own random sequence; and only where nothing else
+    // stands, so that the rest of the map is as it was.
+    void ores() {
+        std::swap(rng_, ore_rng_);
+        const std::int32_t k = s_.resources;
+        // Whether a deposit of `size` fits with its middle on a cell: on land
+        // all over, off the starts, and with no feature on its ground or beside it.
+        const auto fits = [this](std::int32_t cx, std::int32_t cz, std::uint8_t size) {
+            const std::int32_t half = deposit_half_side(size);
+            for (std::int32_t z = cz - half; z <= cz + half; ++z) {
+                for (std::int32_t x = cx - half; x <= cx + half; ++x) {
+                    if (!land(x, z)) {
+                        return false;
+                    }
+                }
+            }
+            const Fixed fx = cell_center(cx), fz = cell_center(cz);
+            for (const StartPosition& s : out_.starts) {
+                if (d2(fx, fz, s.x, s.z) <= meters2(kStartClearRadius + half + 8)) {
+                    return false;
+                }
+            }
+            for (const MapFeature& f : out_.features) {
+                const std::int32_t reach = half + (is_deposit(f.type) ? deposit_half_side(f.size) + 4 : 2);
+                if (std::abs(f.x.floor_int() - cx) <= reach && std::abs(f.z.floor_int() - cz) <= reach) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        const auto put = [&](FeatureType type, std::int32_t cx, std::int32_t cz, std::uint8_t size) {
+            add_feature(type, cell_center(cx), cell_center(cz), Fixed::one(), static_cast<std::uint16_t>(rng_.next_u32()), size);
+        };
+        const auto size_roll = [&] {
+            const std::int32_t roll = rng_.range(0, 99);
+            return roll < 50 ? std::uint8_t{0} : roll < 85 ? std::uint8_t{1} : std::uint8_t{2};
+        };
+        const auto clayey = [this](std::int32_t cx, std::int32_t cz) { return cell_terrain(cx, cz) == Terrain::Clay; };
+        const auto rocky = [this](std::int32_t cx, std::int32_t cz) {
+            return cell_slope(cx, cz) + (cell_terrain(cx, cz) == Terrain::Rock ? 1000 : 0);
+        };
+        const auto any = [](std::int32_t, std::int32_t) { return true; };
+        std::int32_t x = 0;
+        std::int32_t z = 0;
+        const auto scatter = [&](FeatureType type, std::int32_t tenths_per_km2, int tries,
+                                 const std::function<bool(std::int32_t, std::int32_t)>& where,
+                                 const std::function<std::int32_t(std::int32_t, std::int32_t)>& score) {
+            const std::int32_t count = per_area(static_cast<std::int64_t>(tenths_per_km2) * k / 100);
+            for (std::int32_t i = 0; i < count; ++i) {
+                const std::uint8_t size = size_roll();
+                if (pick_cell(tries, where, score, x, z) && fits(x, z, size)) {
+                    put(type, x, z, size);
+                }
+            }
+        };
+        scatter(FeatureType::ClayDeposit, 60, 10, clayey, {});
+        scatter(FeatureType::CoalDeposit, 40, 12, any, rocky);
+        scatter(FeatureType::GoldDeposit, 8, 16, any, rocky);
+        // Every start: clay and coal within a walk, of the medium size.
+        for (const StartPosition& s : out_.starts) {
+            const auto ensure = [&](FeatureType type, std::int32_t radius) {
+                const auto there = [&](const MapFeature& f) {
+                    return f.type == type && d2(f.x, f.z, s.x, s.z) <= meters2(radius);
+                };
+                for (int attempt = 0; attempt < 24 && std::none_of(out_.features.begin(), out_.features.end(), there); ++attempt) {
+                    if (ring_cell(s.x, s.z, 60, radius - 20, x, z) && fits(x, z, 1)) {
+                        put(type, x, z, 1);
+                    }
+                }
+            };
+            ensure(FeatureType::ClayDeposit, kStartClayRadius);
+            ensure(FeatureType::CoalDeposit, kStartCoalRadius);
+        }
+        std::swap(rng_, ore_rng_);
     }
 
     // Phase 98: trees with a hive and nests by the edge of the woods and in
@@ -1600,6 +1680,7 @@ private:
     // Phase 98: what the forager finds by seasons has its own sequence too,
     // and is placed last: the rest of the map is where it was.
     Rng forage_rng_;
+    Rng ore_rng_;  // Phase 101: the deposits of clay, coal and gold, as last of all.
     MapData out_;
     std::vector<std::int32_t> h_;       // Vertex heights, millimeters.
     std::vector<std::uint8_t> bed_;        // Vertex dug as a river bed.

@@ -188,6 +188,9 @@ const char* feature_key(sim::FeatureType type) {
         case sim::FeatureType::Nest: return "feature.nest";
         case sim::FeatureType::Stump: return "feature.stump";
         case sim::FeatureType::MushroomRing: return "feature.mushroomRing";
+        case sim::FeatureType::ClayDeposit: return "feature.clayDeposit";
+        case sim::FeatureType::CoalDeposit: return "feature.coalDeposit";
+        case sim::FeatureType::GoldDeposit: return "feature.goldDeposit";
         default: return "feature.tree";
     }
 }

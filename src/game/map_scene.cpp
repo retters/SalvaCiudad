@@ -119,8 +119,8 @@ std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f, c
             f.species, pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
                                     std::clamp<std::size_t>(variants, 1, sim::kMaxModelVariants)));
     }
-    if (f.type == sim::FeatureType::StoneDeposit) {
-        return feature_slot(content, f.type, 0);  // Its files are its sizes, not variants.
+    if (sim::is_deposit(f.type)) {
+        return feature_slot(content, f.type, 0);  // A stone deposit's files are its sizes, not variants; the others have one.
     }
     if (f.type == sim::FeatureType::BerryBush) {
         // Its files are the bushes of the biomes: berries, blueberries, brambles (phase 99).
@@ -227,7 +227,9 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     inst.yaw = static_cast<float>(f.rotation) / 65536.0f * 2.0f * std::numbers::pi_v<float>;
     inst.scale = f.type == sim::FeatureType::Tree ? static_cast<float>(sim::MapData::tree_height_cm(f)) / 100.0f
                  : f.type == sim::FeatureType::StoneDeposit ? 1.0f  // Its models are to size.
-                                                            : to_float(f.scale);
+                 : sim::is_deposit(f.type)                  // The other deposits (phase 101): one model, as large as their ground.
+                     ? static_cast<float>(sim::deposit_half_side(f.size)) / static_cast<float>(sim::deposit_half_side(0))
+                     : to_float(f.scale);
     // Slightly different shades so forests do not look copied.
     const std::uint32_t h = hash2(static_cast<std::uint32_t>(f.x.raw()), static_cast<std::uint32_t>(f.z.raw()));
     const float shade = 0.9f + static_cast<float>(h & 0xFFu) / 255.0f * 0.2f;
@@ -239,7 +241,7 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
             inst.landmark = f.species < content->flora.species.size() && content->flora.species[f.species].landmark;
         } else if (const sim::FeatureDef* fd = content->feature(f.type)) {
             // Of the stone deposits, only the large ones.
-            inst.landmark = fd->landmark && (f.type != sim::FeatureType::StoneDeposit || f.size + 1 >= sim::kDepositSizes);
+            inst.landmark = fd->landmark && (!sim::is_deposit(f.type) || f.size + 1 >= sim::kDepositSizes);
         }
     }
     return inst;

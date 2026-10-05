@@ -83,7 +83,7 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `cost` | `{"core:log": 12, ...}`. |
 | `buildWork` | Trabajo para construirlo (ticks de trabajador; 10 por segundo a x1). |
 | `workers`, `work` | Trabajadores y tipo de trabajo: `gather`, `produce`, `haul`, `farm`, `hunt`, `fish`, `explore` (su trabajador va adonde el jugador lo manda con clic derecho). |
-| `gathers`, `radius` | Para `gather`: `tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, y el radio en metros. |
+| `gathers`, `radius` | Para `gather`: `tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, `beeTree`, `nest`, `stump`, `mushroomRing`, `clayDeposit`, `coalDeposit`, `goldDeposit`, y el radio en metros. Un edificio de recolección sin almacén (`storage` 0) no guarda nada: sus trabajadores llevan lo que sacan al almacén que lo acepte, y el oro al centro del pueblo (la mina de oro). |
 | `picksFruit` | Para `gather` (sin `tree` en `gathers`): sus trabajadores recogen también la fruta de los frutales, sin talarlos. |
 | `recipes` | Para `produce`: lista de recetas. |
 | `residents` | Para casas. |
@@ -191,11 +191,13 @@ La hierba alta, los juncos junto al agua dulce, lo que deja el mar en la arena y
 
 ### mapFeature
 
-Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, `beeTree`, `nest`, `stump`, `mushroomRing`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie).
+Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, `beeTree`, `nest`, `stump`, `mushroomRing`, `clayDeposit`, `coalDeposit`, `goldDeposit`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie).
 
 **Lo que da por temporadas (fase 98).** Con `"seasons": ["summer"]` (una o varias de `spring`, `summer`, `autumn`, `winter`) el elemento no se agota ni rebrota: da su `amount` **una vez al año**, en esas estaciones, y fuera de ellas no tiene nada. Se recoge de a una unidad, cada una con `work` de trabajo, y el elemento se queda donde está (el árbol con panal, el nido y el tocón del juego base). Con `"afterRain": true` además no se llena una vez al año sino **cada día que sigue a un día de lluvia**, dentro de sus estaciones, y solo se ve en el mapa mientras tiene algo (el corro de setas); en una partida sin lluvia se llena los días múltiplos de diez. No vale para `tree` ni `stoneDeposit`, ni junto con `regrowDays`. Lo trabaja el edificio de recolección que tenga su `kind` en `gathers`. La cantidad es por año de la duración normal (20 minutos): en una partida con años más largos o más cortos da en proporción.
 
 **Su aspecto según la época (fase 99).** Con `"green"` y `"flower"` (dos modelos más) lo que da por temporadas se dibuja en flor en primavera, verde fuera de sus estaciones y también cuando ya se le recogió todo, y con su modelo normal mientras tiene fruto. El arbusto de bayas (`berryBush`) es además distinto según el bioma: sus `models` no son variantes al azar sino, en orden, el de **bayas**, el de **arándanos** y la **zarza**; cada bioma dice cuál tiene con `"bush": "berries"`, `"blueberries"` o `"thorn"` (por omisión, bayas). La zarza no da fruto nunca y el recolector la ignora; los arándanos dan lo mismo que las bayas. El yacimiento (`stoneDeposit`) es distinto: `amount` es lo que tiene el tamaño chico (el mediano tiene 5/2 y el grande 25/4), `models` son sus tres tamaños en orden (chico, mediano, grande) y no variantes, y `landmark` vale solo para el grande.
+
+**Yacimientos de arcilla, carbón y oro (fase 101).** `clayDeposit`, `coalDeposit` y `goldDeposit` siguen las reglas del de roca: finitos, en tres tamaños con las mismas proporciones de `amount`, ocupan su terreno (no se camina ni se construye encima), los trabajan varios a la vez y no rebrotan. Llevan **un** modelo (`model`), que el juego agranda según el tamaño. No valen `seasons` ni `regrowDays`.
 
 ### species y biome
 

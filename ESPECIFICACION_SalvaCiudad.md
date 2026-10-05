@@ -1103,7 +1103,7 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - **Arcilla:** bancos sobre el suelo de arcilla del mapa. La arcillera deja de producir en cualquier parte: saca de los bancos a su alcance.
    - **Carbón:** edificio nuevo, la **mina de carbón** (nivel 2; por ahora con el modelo de la mina de hierro y otro cartel). La carbonera sigue haciendo carbón de troncos, un 50 % más lenta que hoy.
    - **Oro:** edificio nuevo, la **mina de oro** (nivel 3): saca oro directamente, despacio; el oro se lleva y se guarda con las reglas de la fase 28. Pocos yacimientos por mapa.
-   - El generador garantiza arcilla a 250 m y carbón a 400 m caminando de cada inicio; el oro no se garantiza. Cristal y azufre quedan fuera.
+   - El generador garantiza arcilla a 250 m y carbón a 400 m caminando de cada inicio (medidos en línea recta, como en la fase 83; D-10105); el oro no se garantiza. Cristal y azufre quedan fuera.
    - *Criterios:* pruebas: una arcillera sin banco a su alcance no produce y avisa; con banco, lo agota y avisa una vez; la mina de carbón entrega lo que tenía el yacimiento; la mina de oro sube el oro del pueblo; cada inicio cumple sus garantías; no se construye encima; guardar y cargar a medio gastar; el resto del mapa queda igual; español e inglés; suben generador y reglas.
 102. **Rocas en tres tamaños** (bloque E).
    - **Piedras sueltas** (elemento nuevo, 6 de piedra): las recoge cualquier peón cuando una obra pide piedra y no hay en ningún almacén; el cantero también las toma.

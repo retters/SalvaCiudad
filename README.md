@@ -851,6 +851,11 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] En una partida nueva hay bancos de arcilla (sobre el suelo arcilloso) y vetas de carbón por el mapa, y alguna veta de oro; al hacer clic dicen «Banco de arcilla», «Veta de carbón» o «Veta de oro» y cuánto les queda.
+- [ ] Una arcillera lejos de todo banco no saca nada y muestra el aviso de que no le queda qué trabajar; junto a un banco lo trabaja con sus dos trabajadores, el banco se achica y al final desaparece.
+- [ ] Recursos > Mina de carbón (nivel 2) y Mina de oro (nivel 3): la primera llena de carbón su almacén; con la segunda sube el oro del pueblo, despacio.
+- [ ] La carbonera sigue haciendo carbón de troncos, más despacio que antes.
+- [ ] No se puede construir sobre un yacimiento, y los aldeanos lo rodean.
 - [ ] En un campo se puede elegir «Raíces»: tarda más que los demás cultivos, sus parcelas se ven en tres etapas y una helada no las mata.
 - [ ] Alimentos > Viñedo (8 × 8 m, dos trabajadores): no da nada los dos primeros años; desde el tercero da fruta cada otoño. En invierno se ve sin hojas.
 - [ ] Alimentos > Prensa de vino (antes una decoración de Jardín): con un trabajador convierte 2 de fruta en 1 de vino. El vino vale el doble que la cerveza con el mercader.

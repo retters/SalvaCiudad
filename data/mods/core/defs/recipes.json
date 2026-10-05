@@ -119,14 +119,6 @@
     },
     {
       "type": "recipe",
-      "id": "core:dig_clay",
-      "outputs": {
-        "core:clay": 2
-      },
-      "work": 60
-    },
-    {
-      "type": "recipe",
       "id": "core:fire_bricks",
       "inputs": {
         "core:clay": 2,
@@ -158,7 +150,7 @@
       "outputs": {
         "core:coal": 2
       },
-      "work": 80
+      "work": 120
     },
     {
       "type": "recipe",

@@ -714,16 +714,14 @@
       },
       "buildWork": 300,
       "workers": 2,
-      "work": "produce",
-      "recipes": [
-        "core:dig_clay"
+      "work": "gather",
+      "gathers": [
+        "clayDeposit"
       ],
+      "radius": 60,
       "storage": 40,
       "stores": [
-        "food",
-        "material",
-        "fuel",
-        "good"
+        "material"
       ],
       "desirability": -4,
       "category": "resources"
@@ -816,6 +814,58 @@
       "stores": [
         "material"
       ],
+      "tier": 3,
+      "desirability": -8
+    },
+    {
+      "type": "building",
+      "id": "core:coal_mine",
+      "name": "building.coalMine",
+      "kind": "workplace",
+      "model": "models/buildings/iron_mine.glb",
+      "size": [
+        5,
+        4
+      ],
+      "cost": {
+        "core:log": 20,
+        "core:stone": 10
+      },
+      "buildWork": 350,
+      "workers": 2,
+      "work": "gather",
+      "gathers": [
+        "coalDeposit"
+      ],
+      "radius": 70,
+      "storage": 40,
+      "stores": [
+        "fuel"
+      ],
+      "tier": 2,
+      "desirability": -8
+    },
+    {
+      "type": "building",
+      "id": "core:gold_mine",
+      "name": "building.goldMine",
+      "kind": "workplace",
+      "model": "models/buildings/iron_mine.glb",
+      "size": [
+        5,
+        4
+      ],
+      "cost": {
+        "core:log": 30,
+        "core:stone": 20
+      },
+      "buildWork": 450,
+      "workers": 2,
+      "work": "gather",
+      "gathers": [
+        "goldDeposit"
+      ],
+      "radius": 70,
       "tier": 3,
       "desirability": -8
     },

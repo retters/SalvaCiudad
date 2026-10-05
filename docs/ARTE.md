@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Yacimientos de arcilla, carbón y oro (fase 101)
+
+`props/clay_deposit.glb`, `coal_deposit.glb` y `gold_deposit.glb`, de `proposals/nature` (clase `rock`, hasta 1500 triángulos). Un modelo por yacimiento, hecho al tamaño chico (unos 4 m de lado); el juego lo dibuja 1,5 y 2 veces más grande para el mediano y el grande. Las minas de carbón y de oro usan por ahora el modelo de la mina de hierro.
+
 ### Raíces, viñedo y vino (fase 100)
 
 `props/crop_roots_1.glb` a `_3.glb` (las parcelas de raíces en sus tres etapas, 180 triángulos, de `proposals/farm`), `buildings/vineyard.glb` (3286) y `buildings/vineyard_bare.glb` (912; el mismo viñedo en invierno, sin hojas ni racimos), y las pilas `pile_wine` (barriles, los mismos de la cerveza). La prensa de vino usa el modelo que ya tenía como decoración.

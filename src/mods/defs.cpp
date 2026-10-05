@@ -419,8 +419,9 @@ constexpr std::string_view kBuildCategories[] = {"housing",  "food",       "reso
                                                  "garden",   "nature",     "monuments", "ruins"};
 constexpr std::string_view kNeeds[] = {"food",   "water",  "clothes", "shoes",  "religion", "entertainment",
                                        "heating", "beauty", "market",  "hygiene", "healer",  "doctor"};
-constexpr std::string_view kFeatureKinds[] = {"tree",         "stone",   "ironOre", "berryBush", "herbs",
-                                              "stoneDeposit", "beeTree", "nest",    "stump",     "mushroomRing"};
+constexpr std::string_view kFeatureKinds[] = {"tree",         "stone",       "ironOre",     "berryBush",   "herbs",
+                                              "stoneDeposit", "beeTree",     "nest",        "stump",       "mushroomRing",
+                                              "clayDeposit",  "coalDeposit", "goldDeposit"};
 static_assert(std::size(kFeatureKinds) == static_cast<std::size_t>(sim::FeatureType::Count));
 constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge"};
 
@@ -886,8 +887,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         if (def.after_rain && def.seasons == 0) {
             r.fail("\"afterRain\" needs \"seasons\"");
         }
-        if (def.seasons != 0 && (def.regrow_days != 0 || def.kind == sim::FeatureKind::Tree ||
-                                 def.kind == sim::FeatureKind::StoneDeposit)) {
+        if (def.seasons != 0 && (def.regrow_days != 0 || def.kind == sim::FeatureKind::Tree || sim::is_deposit(def.kind))) {
             r.fail("what gives by \"seasons\" does not regrow, and is not a tree or a deposit");
         }
         def.landmark = r.flag("landmark");

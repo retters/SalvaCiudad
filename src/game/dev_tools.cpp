@@ -43,6 +43,9 @@ const char* feature_key(sim::FeatureType t) {
         case sim::FeatureType::Nest: return "feature.nest";
         case sim::FeatureType::Stump: return "feature.stump";
         case sim::FeatureType::MushroomRing: return "feature.mushroomRing";
+        case sim::FeatureType::ClayDeposit: return "feature.clayDeposit";
+        case sim::FeatureType::CoalDeposit: return "feature.coalDeposit";
+        case sim::FeatureType::GoldDeposit: return "feature.goldDeposit";
         default: return "feature.tree";
     }
 }
@@ -59,6 +62,9 @@ float feature_base_height(sim::FeatureType t) {
         case sim::FeatureType::Nest: return 0.9f;
         case sim::FeatureType::Stump: return 0.8f;
         case sim::FeatureType::MushroomRing: return 0.5f;
+        case sim::FeatureType::ClayDeposit:
+        case sim::FeatureType::CoalDeposit:
+        case sim::FeatureType::GoldDeposit: return 1.3f;
         default: return 1.0f;
     }
 }
