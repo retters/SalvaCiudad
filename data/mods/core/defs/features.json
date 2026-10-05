@@ -16,7 +16,12 @@
       "resource": "core:stone",
       "amount": 40,
       "work": 30,
-      "models": ["models/props/rock.glb", "models/props/rock_2.glb", "models/props/rock_3.glb"]
+      "models": [
+        "models/props/boulder.glb",
+        "models/props/boulder_mossy.glb",
+        "models/props/boulder_sandstone.glb"
+      ],
+      "rockOfBiome": true
     },
     {
       "type": "mapFeature",
@@ -112,7 +117,13 @@
       "amount": 800,
       "work": 30,
       "landmark": true,
-      "models": ["models/props/stone_deposit_small.glb", "models/props/stone_deposit_medium.glb", "models/props/stone_deposit_large.glb"]
+      "models": [
+        "models/props/outcrop.glb",
+        "models/props/stone_deposit_medium.glb",
+        "models/props/stone_deposit_large.glb",
+        "models/props/outcrop_mossy.glb",
+        "models/props/outcrop_sandstone.glb"
+      ]
     },
     {
       "type": "mapFeature",
@@ -140,6 +151,21 @@
       "amount": 200,
       "work": 80,
       "model": "models/props/gold_deposit.glb"
+    },
+    {
+      "type": "mapFeature",
+      "id": "core:loose_stones",
+      "kind": "looseStones",
+      "resource": "core:stone",
+      "amount": 6,
+      "work": 10,
+      "loose": true,
+      "rockOfBiome": true,
+      "models": [
+        "models/props/loose_stones.glb",
+        "models/props/loose_stones_mossy.glb",
+        "models/props/loose_stones_sandstone.glb"
+      ]
     }
   ]
 }

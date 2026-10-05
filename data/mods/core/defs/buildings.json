@@ -239,7 +239,8 @@
       "work": "gather",
       "gathers": [
         "stone",
-        "stoneDeposit"
+        "stoneDeposit",
+        "looseStones"
       ],
       "radius": 60,
       "storage": 40,

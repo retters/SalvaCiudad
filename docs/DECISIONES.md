@@ -3693,3 +3693,35 @@ Queda sin tocar algo parecido que vi en la misma prueba: un explorador mandado a
 
 **D-10111. La prueba del año largo ya no compara los recién llegados al 25 %.**
 Llegan recién llegados mientras hay comida de sobra guardada (40 más 10 por habitante). Desde que la comida viene por temporadas (fase 99), en un año de 45 minutos el almacén sube tres veces más tras el otoño y baja durante una primavera tres veces más larga, así que llegan en otros momentos y en otra cantidad (34 y 48 en la medición). La prueba sigue exigiendo población parecida (15 %) y comida por habitante parecida (15 %), deja los recién llegados en un 50 %, y ahora exige además que **nadie muera** en ninguna de las ocho partidas.
+
+## Fase 102: rocas en tres tamaños (2026-10-04)
+
+**D-10201. Las piedras sueltas son un tipo más de objeto natural, con una marca nueva.**
+`LooseStones` al final de la lista de tipos; 6 de piedra, 10 de trabajo por unidad (un peñasco: 30), no rebrotan. Lo que las hace especiales es un dato, `loose`, no el tipo: cualquier objeto natural marcado así lo recoge un peón para una obra. No se camina ni se construye distinto por ellas (como los peñascos).
+
+**D-10202. Cuándo las recoge un peón.**
+Solo si una obra pide ese recurso y **ningún almacén** del pueblo lo tiene; el orden de un peón queda: talar el solar, traer materiales de un almacén, recoger lo suelto, construir. Va al montón libre más cercano a la obra, a 100 m o menos en línea recta y al que pueda llegar caminando. Toma lo que la obra aún necesita (hasta lo que el montón tiene y lo que carga) y lo lleva **directo a la obra**, sin pasar por el almacén. Lo que va a traer queda prometido a la obra desde que sale, igual que lo que se trae de un almacén, para que no vayan dos por lo mismo; si lo interrumpen (hambre, alarma), la promesa se deshace y lo que tenga en la mano va al almacén. Se descartó llevarlas siempre al almacén (doble viaje) y dejar que varios fueran a la vez sin promesa (sobraba piedra recogida de más: lo vi en la primera versión).
+
+**D-10203. La promesa se guarda en un campo que ya existía.**
+El peón guarda cuánto prometió en `spot`, que solo usaban los granjeros y los cazadores (que tienen trabajo; un peón no). Así no cambia el formato del aldeano en las partidas guardadas.
+
+**D-10204. El cantero.**
+Su lista `gathers` suma `looseStones`. No las prefiere ni las evita: toma lo más cercano por camino, como siempre.
+
+**D-10205. La piedra de cada bioma: solo aspecto.**
+Cada bioma tiene `rock` (gris, con musgo, arenisca): con musgo el boreal, el florido, la ribera y el encantado; arenisca el mediterráneo, la sabana y el trópico seco; gris los demás. Las piedras sueltas y el peñasco listan sus tres modelos en ese orden (`rockOfBiome`). El yacimiento de roca lista sus tres tamaños y después el chico con musgo y de arenisca. Un peñasco deja de tener tres variantes al azar: todos los de un bioma usan el mismo modelo, girado y a distinta escala.
+
+**D-10206. Nombres.**
+La roca de siempre pasa a llamarse «Peñasco». El yacimiento de roca conserva su nombre aunque su tamaño chico use ahora el modelo del afloramiento: el mediano y el grande son lo mismo de antes y partirlo en dos nombres complicaría su ventana sin ganar nada.
+
+**D-10207. El generador.**
+Al final de todo y con su propia secuencia de azar: 200 grupos por km² con «Recursos» al 100 % (cada uno de una a tres piedras, en el más áspero de tres sitios al azar, nunca en arena), y por cada inicio se completan 6 a menos de 80 m. Se quitan las que caen donde va un centro del pueblo o sobre un yacimiento. Lo demás del mapa no cambia: la prueba compara las huellas de cuatro mapas con las del generador 9, tomadas con las piedras sueltas apagadas. La primera densidad (20 grupos por km²) daba 13 en un mapa pequeño: se subió diez veces.
+
+**D-10208. Lo medido.**
+Suite nueva `stones`, 8 casos: los datos y la piedra de seis biomas; cada roca se dibuja con la piedra de su bioma y un yacimiento chico con el afloramiento del suyo; una casa que pide toda la piedra del pueblo y 6 más se termina, salen exactamente 6 de los montones cercanos y nada va al almacén; con piedra de sobra en el almacén los montones quedan intactos; sin obra nadie recoge nada, y lo que está a más de 100 m de la obra no se toca; el cantero agota un montón y un peñasco; las garantías de cada inicio y las huellas del mapa anterior; guardar y cargar con un peón a medio recoger (pedía 4: quedan 2 en el montón).
+
+**D-10210. Dos pruebas de antes, ajustadas.**
+La de variantes miraba que los peñascos se repartieran entre sus tres modelos al azar: ahora mira el mineral de hierro, que sí tiene variantes. La de «una calle empedrada sin piedra no se termina» usa un mapa sin piedras sueltas, porque con ellas los peones la terminan (que es lo que esta fase pide).
+
+**D-10209. Versiones.**
+Reglas 63 y generador 10. La red no cambia.

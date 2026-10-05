@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Rocas en tres tamaños y tres piedras (fase 102)
+
+De `proposals/scatter` (clase `rock`): `props/loose_stones.glb` (piedras sueltas, 252 triángulos), `boulder.glb` (peñasco, 288) y `outcrop.glb` (afloramiento, 496), cada uno también `_mossy` y `_sandstone`. El peñasco reemplaza a `rock.glb`, `rock_2.glb` y `rock_3.glb`, y el afloramiento a `stone_deposit_small.glb`; esos cuatro archivos siguen en la carpeta pero el juego base ya no los usa. Los yacimientos de roca mediano y grande conservan su modelo.
+
 ### Yacimientos de arcilla, carbón y oro (fase 101)
 
 `props/clay_deposit.glb`, `coal_deposit.glb` y `gold_deposit.glb`, de `proposals/nature` (clase `rock`, hasta 1500 triángulos). Un modelo por yacimiento, hecho al tamaño chico (unos 4 m de lado); el juego lo dibuja 1,5 y 2 veces más grande para el mediano y el grande. Las minas de carbón y de oro usan por ahora el modelo de la mina de hierro.

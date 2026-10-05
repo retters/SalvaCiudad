@@ -377,6 +377,15 @@ struct FeatureDef {
     // its biome's BushKind, in order: berries, blueberries, brambles.
     std::string model_green;
     std::string model_flower;
+    // Phase 102: lying about for anybody to take: when a site wants its
+    // resource and no storage has any, a laborer picks it up and carries it
+    // straight to the site (loose stones).
+    bool loose = false;
+    // Phase 102, presentation only: its `models` are not variants by the
+    // place but by its biome's RockKind, in order: gray, mossy, sandstone.
+    // (A stone deposit's are its three sizes, and after them it may list
+    // its small size in mossy and in sandstone.)
+    bool rock_of_biome = false;
     std::vector<std::string> models;  // Variants, paths inside the mod (trees use their species).
     std::string mod;
     bool landmark = false;         // Phase 34: its silhouette shows through the fog of war.

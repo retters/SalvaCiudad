@@ -38,6 +38,7 @@
     {
       "type": "biome",
       "id": "core:boreal",
+      "rock": "mossy",
       "bush": "blueberries",
       "name": "biome.boreal",
       "flowers": 50,
@@ -104,6 +105,7 @@
     {
       "type": "biome",
       "id": "core:flowering",
+      "rock": "mossy",
       "name": "biome.flowering",
       "flowers": 180,
       "cover": ["petals", "ferns", "clover"],
@@ -139,6 +141,7 @@
     {
       "type": "biome",
       "id": "core:riverside",
+      "rock": "mossy",
       "name": "biome.riverside",
       "flowers": 110,
       "cover": ["ferns", "clover"],
@@ -171,6 +174,7 @@
     {
       "type": "biome",
       "id": "core:mediterranean",
+      "rock": "sandstone",
       "bush": "thorn",
       "name": "biome.mediterranean",
       "flowers": 80,
@@ -202,6 +206,7 @@
     {
       "type": "biome",
       "id": "core:dry_tropical",
+      "rock": "sandstone",
       "name": "biome.dry_tropical",
       "flowers": 60,
       "cover": ["dryGrass"],
@@ -231,6 +236,7 @@
     {
       "type": "biome",
       "id": "core:savanna",
+      "rock": "sandstone",
       "bush": "thorn",
       "name": "biome.savanna",
       "flowers": 40,
@@ -327,6 +333,7 @@
     {
       "type": "biome",
       "id": "core:enchanted",
+      "rock": "mossy",
       "name": "biome.enchanted",
       "flowers": 160,
       "cover": ["petals", "ferns", "clover"],

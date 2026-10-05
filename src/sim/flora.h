@@ -91,6 +91,9 @@ struct BiomeDef {
     // Phase 99: what its berry bushes are (a BushKind): berries, blueberries
     // (the same fruit, another look) or brambles, which bear none.
     std::uint8_t bush = 0;
+    // Phase 102: the stone of its rocks (a RockKind): gray, mossy or
+    // sandstone. Looks only.
+    std::uint8_t rock = 0;
     // Phase 54: where it likes to be. A place takes the biome that fits it
     // best. Temperature and humidity go from 0 to 100; the altitude is the
     // share of the map's land that lies lower, 0 to 100.
@@ -105,6 +108,9 @@ struct BiomeDef {
 
 // Phase 99: the berry bushes of a biome.
 enum class BushKind : std::uint8_t { Berries, Blueberries, Thorn, Count };
+
+// Phase 102: the stone of a biome's rocks.
+enum class RockKind : std::uint8_t { Gray, Mossy, Sandstone, Count };
 
 // Limits so an index fits in the map's bytes.
 inline constexpr std::size_t kMaxSpecies = 250;

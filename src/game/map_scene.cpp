@@ -119,8 +119,31 @@ std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f, c
             f.species, pick_variant(place_key(static_cast<std::int32_t>(f.x.raw()), static_cast<std::int32_t>(f.z.raw())),
                                     std::clamp<std::size_t>(variants, 1, sim::kMaxModelVariants)));
     }
+    // Phase 102: the stone of the biome the feature stands in (gray without a map).
+    const auto rock = [&]() -> std::size_t {
+        if (map == nullptr) {
+            return 0;
+        }
+        const std::size_t biome = map->biome_at(f.x.floor_int(), f.z.floor_int());
+        return biome < content.flora.biomes.size() ? content.flora.biomes[biome].rock : 0;
+    };
+    if (f.type == sim::FeatureType::StoneDeposit) {
+        // Its files are its sizes, not variants. After them it may list its
+        // small size in mossy and in sandstone: a small one is the outcrop of
+        // its biome (phase 102); worn down from a larger one, too.
+        const sim::FeatureDef* def = content.feature(f.type);
+        const std::size_t kind = f.size == 0 ? rock() : 0;
+        const std::size_t file = sim::kDepositSizes + kind - 1;
+        return feature_slot(content, f.type,
+                            kind != 0 && def != nullptr && file < def->models.size() && file < sim::kMaxModelVariants ? file : 0);
+    }
     if (sim::is_deposit(f.type)) {
-        return feature_slot(content, f.type, 0);  // A stone deposit's files are its sizes, not variants; the others have one.
+        return feature_slot(content, f.type, 0);  // One file.
+    }
+    if (const sim::FeatureDef* def = content.feature(f.type); def != nullptr && def->rock_of_biome) {
+        // Its files are the stones of the biomes: gray, mossy, sandstone.
+        const std::size_t kind = rock();
+        return feature_slot(content, f.type, kind < def->models.size() && kind < sim::kMaxModelVariants ? kind : 0);
     }
     if (f.type == sim::FeatureType::BerryBush) {
         // Its files are the bushes of the biomes: berries, blueberries, brambles (phase 99).
@@ -487,11 +510,14 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
         }
         if (f.kind == sim::FeatureKind::StoneDeposit && f.models.size() >= sim::kDepositSizes) {
             // The small one is the model; the medium and the large, its looks 1 and 2.
-            const render::ModelId small = slots_[feature_slot(content, f.kind, 0)].model;
+            // (And the same for the small ones of other stone, phase 102.)
             const render::ModelId looks[2] = {slots_[feature_slot(content, f.kind, 1)].model,
                                               slots_[feature_slot(content, f.kind, 2)].model};
-            if (small != kNoModel) {
-                renderer.set_model_looks(small, looks);
+            for (std::size_t v = 0; v < f.models.size() && v < sim::kMaxModelVariants; ++v) {
+                const render::ModelId small = slots_[feature_slot(content, f.kind, v)].model;
+                if ((v == 0 || v >= sim::kDepositSizes) && small != kNoModel) {
+                    renderer.set_model_looks(small, looks);
+                }
             }
         }
     }

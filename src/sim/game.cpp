@@ -284,6 +284,7 @@ public:
             case FeatureType::ClayDeposit:
             case FeatureType::CoalDeposit:
             case FeatureType::GoldDeposit:
+            case FeatureType::LooseStones:
             case FeatureType::IronOre: return Skill::Stone;
             default: return Skill::Forage;
         }
@@ -445,6 +446,15 @@ public:
 
     // Drops reservations: a node being worked, goods promised to a site.
     void release(Villager& v) {
+        if (v.node != 0 && v.spot > 0 && !v.job.valid() && (v.task == Task::GoGather || v.task == Task::Gather)) {
+            // Phase 102: loose stones promised to a site and not brought.
+            const FeatureDef* fd = c_.feature(g_.map_.features[v.node - 1].type);
+            if (Building* s = g_.buildings_.get(v.site); fd != nullptr && fd->loose && s != nullptr && is_site(*s)) {
+                add_to(s->incoming, fd->resource, -static_cast<std::int32_t>(v.spot));
+                compact(s->incoming);
+            }
+            v.spot = 0;
+        }
         if (v.node != 0) {
             Node& n = g_.nodes_[v.node - 1];
             if (n.reserved == v_index_ + 1) {
@@ -3561,6 +3571,10 @@ public:
         std::uint64_t best_build_d = UINT64_MAX;
         std::uint32_t best_tree = 0;  // Phase 88: a tree to fell on a site, before anything else.
         std::uint64_t best_tree_d = UINT64_MAX;
+        // Phase 102: what lies loose by a site that wants it, when no storage has any.
+        std::uint32_t best_loose = 0;
+        EntityId best_loose_site;
+        std::uint64_t best_loose_d = UINT64_MAX;
         for (const EntityId id : g_.owned(v.owner)) {
             const Building& b = *g_.buildings_.get(id);
             if (!is_site(b)) {
@@ -3589,6 +3603,12 @@ public:
                     best_fetch_site = id;
                     best_fetch_from = from;
                     best_res = cost.resource;
+                } else if (d < best_loose_d) {
+                    if (const std::uint32_t node = loose_near(v, b, cost.resource); node != 0) {
+                        best_loose_d = d;
+                        best_loose = node;
+                        best_loose_site = id;
+                    }
                 }
             }
             if (all_there && b.work_done < site_work(b) && d < best_build_d) {
@@ -3618,11 +3638,98 @@ public:
                 return true;
             }
         }
+        if (best_loose != 0) {
+            return pick_loose(v, best_loose, best_loose_site);
+        }
         if (best_build.valid()) {
             go(v, Task::GoBuild, best_build);
             return true;
         }
         return false;
+    }
+
+    // Phase 102. What lies loose and gives `resource` (stones), the nearest
+    // to `site` within kLooseMeters that nobody is at and that the villager
+    // can walk to: its index + 1, or 0.
+    [[nodiscard]] std::uint32_t loose_near(const Villager& v, const Building& site, DefIndex resource) const {
+        std::uint32_t kinds = 0;
+        for (const FeatureDef& fd : c_.features) {
+            kinds |= fd.loose && fd.resource == resource ? 1u << static_cast<unsigned>(fd.kind) : 0u;
+        }
+        if (kinds == 0) {
+            return 0;
+        }
+        const std::int32_t reach = village::kLooseMeters;
+        const std::int32_t mx = site.x + site.width / 2;
+        const std::int32_t mz = site.z + site.depth / 2;
+        const std::int32_t side = g_.node_cells_side_;
+        const std::int32_t cx0 = std::max(0, (mx - reach) / kNodeCell);
+        const std::int32_t cz0 = std::max(0, (mz - reach) / kNodeCell);
+        const std::int32_t cx1 = std::min(side - 1, (mx + reach) / kNodeCell);
+        const std::int32_t cz1 = std::min(side - 1, (mz + reach) / kNodeCell);
+        const FixedVec2 middle{Fixed::from_int(mx), Fixed::from_int(mz)};
+        const std::uint64_t far = distance2(middle, middle + FixedVec2{Fixed::from_int(reach), Fixed{}});
+        std::uint32_t best = 0;
+        std::uint64_t best_d = far + 1;
+        for (std::int32_t cz = cz0; cz <= cz1; ++cz) {
+            for (std::int32_t cx = cx0; cx <= cx1; ++cx) {
+                for (const std::uint32_t i : g_.node_cells_[static_cast<std::size_t>(cz * side + cx)]) {
+                    const Node& n = g_.nodes_[i];
+                    const MapFeature& f = g_.map_.features[i];
+                    if (((kinds >> static_cast<unsigned>(f.type)) & 1u) == 0 || n.amount <= 0 || n.reserved != 0) {
+                        continue;
+                    }
+                    const std::uint64_t d = distance2(middle, {f.x, f.z});
+                    if (d < best_d && g_.nav_.connected(v.position, {f.x, f.z})) {
+                        best_d = d;
+                        best = i + 1;
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+    // To pick up what lies at `node` (index + 1) for `site`: as much as the
+    // site wants, the heap has and the hands hold. It is promised to the
+    // site from now (`spot` keeps how much), so that nobody else goes for it.
+    bool pick_loose(Villager& v, std::uint32_t node, EntityId site) {
+        const MapFeature& f = g_.map_.features[node - 1];
+        const FeatureDef* fd = c_.feature(f.type);
+        Building* to = g_.buildings_.get(site);
+        if (fd == nullptr || to == nullptr) {
+            return false;
+        }
+        const std::int32_t take =
+            std::min({site_wants(site, fd->resource), g_.nodes_[node - 1].amount, carry_capacity(c_, fd->resource)});
+        if (take <= 0) {
+            return false;
+        }
+        add_to(to->incoming, fd->resource, take);
+        v.task = Task::GoGather;
+        v.node = node;
+        v.site = site;
+        v.spot = static_cast<std::uint16_t>(take);
+        g_.nodes_[node - 1].reserved = v_index_ + 1;
+        const FixedVec2 p{f.x, f.z};
+        if (!walk_to(v, p + (v.position - p).normalized() * Fixed::from_ratio(8, 10))) {
+            fail(v);
+        }
+        return true;
+    }
+
+    // How much of `resource` a site still wants, counting what is on its way.
+    [[nodiscard]] std::int32_t site_wants(EntityId id, DefIndex resource) const {
+        const Building* site = g_.buildings_.get(id);
+        if (site == nullptr || !is_site(*site)) {
+            return 0;
+        }
+        for (const ResourceAmount& cost : site_cost(*site)) {
+            if (cost.resource == resource) {
+                return cost.amount - amount_of(site->delivered, resource) - amount_of(site->incoming, resource);
+            }
+        }
+        return 0;
     }
 
     // --- Arrivals and work ----------------------------------------------------
@@ -3953,11 +4060,22 @@ public:
                 g_.regrow_.insert(std::upper_bound(g_.regrow_.begin(), g_.regrow_.end(), item), item);
             }
         }
-        if (n.amount <= 0 || v.carrying.amount >= carry_capacity(c_, fd->resource)) {
+        // Phase 102: a laborer picking up loose stones for a site takes what
+        // it promised, and carries it straight there.
+        const bool for_site = fd->loose && !v.job.valid() && v.spot > 0;
+        if (n.amount <= 0 || v.carrying.amount >= carry_capacity(c_, fd->resource) || (for_site && v.carrying.amount >= v.spot)) {
+            const std::int32_t promised = for_site ? v.spot : 0;
+            v.spot = for_site ? std::uint16_t{0} : v.spot;  // (Kept: release() would take the promise back.)
             release(v);
             v.task = Task::Idle;  // Decides to deliver next.
             if (planted) {
                 v.idle_ticks = kPlantTicks;  // Planting takes a while.
+            }
+            if (Building* site = for_site ? g_.buildings_.get(v.site) : nullptr; site != nullptr && is_site(*site)) {
+                // What is in hand is what is on its way.
+                add_to(site->incoming, v.carrying.resource, v.carrying.amount - promised);
+                compact(site->incoming);
+                go(v, Task::GoSite, v.site);
             }
         }
     }

@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 62;
+inline constexpr std::uint32_t kGameRulesVersion = 63;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -87,6 +87,9 @@ inline constexpr std::int32_t kHungryFood = 60;
 inline constexpr std::int32_t kProvisions = 2000;
 // An order to a point this near its own building sends an explorer home.
 inline constexpr std::int32_t kHomeMeters = 12;
+// Phase 102: a laborer picks up what lies loose (stones) for a site that
+// wants it, within this many meters of the site.
+inline constexpr std::int32_t kLooseMeters = 100;
 }  // namespace village
 
 // Phase 66: what an explorer under orders is doing.

@@ -421,7 +421,7 @@ constexpr std::string_view kNeeds[] = {"food",   "water",  "clothes", "shoes",  
                                        "heating", "beauty", "market",  "hygiene", "healer",  "doctor"};
 constexpr std::string_view kFeatureKinds[] = {"tree",         "stone",       "ironOre",     "berryBush",   "herbs",
                                               "stoneDeposit", "beeTree",     "nest",        "stump",       "mushroomRing",
-                                              "clayDeposit",  "coalDeposit", "goldDeposit"};
+                                              "clayDeposit",  "coalDeposit", "goldDeposit", "looseStones"};
 static_assert(std::size(kFeatureKinds) == static_cast<std::size_t>(sim::FeatureType::Count));
 constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge"};
 
@@ -891,6 +891,11 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("what gives by \"seasons\" does not regrow, and is not a tree or a deposit");
         }
         def.landmark = r.flag("landmark");
+        def.loose = r.flag("loose");
+        if (def.loose && (def.seasons != 0 || def.regrow_days != 0 || def.kind == sim::FeatureKind::Tree || sim::is_deposit(def.kind))) {
+            r.fail("what lies \"loose\" does not regrow or give by seasons, and is not a tree or a deposit");
+        }
+        def.rock_of_biome = r.flag("rockOfBiome");
         // Features have no name of their own: the viewer shows the resource's.
         def.models = r.models(mod_dir, false, refs,
                               ri < 0 ? std::string{} : out.resources[static_cast<std::size_t>(ri)].name_key);
@@ -1128,6 +1133,9 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         static constexpr std::string_view kBushKinds[] = {"berries", "blueberries", "thorn"};
         static_assert(std::size(kBushKinds) == static_cast<std::size_t>(sim::BushKind::Count));
         def.bush = static_cast<std::uint8_t>(r.choice("bush", kBushKinds, 0));
+        static constexpr std::string_view kRockKinds[] = {"gray", "mossy", "sandstone"};
+        static_assert(std::size(kRockKinds) == static_cast<std::size_t>(sim::RockKind::Count));
+        def.rock = static_cast<std::uint8_t>(r.choice("rock", kRockKinds, 0));
         // Phase 54: where it grows. Ranges are [low, high], 0 to 100.
         const auto range = [&](const char* key, std::uint8_t* out2) {
             r.numbers(key, out2, 2, 0, 100);

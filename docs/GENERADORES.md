@@ -82,6 +82,8 @@ Al final de todo, y con su propia secuencia de azar (fase 98), lo que el recolec
 
 Después, igual (fase 101), los yacimientos de arcilla, carbón y oro: bancos de arcilla sobre el suelo arcilloso, vetas de carbón y unas pocas de oro en lo más rocoso o empinado; y cerca de cada inicio, arcilla a 250 m o menos y carbón a 400 m o menos (en línea recta). A diferencia de los yacimientos de roca, estos solo se ponen donde no hay nada: no quitan ni mueven nada de lo que el mapa ya tenía.
 
+Y al final (fase 102), las piedras sueltas: grupos de una a tres, más en terreno áspero, unas 400 por km² con «Recursos» al 100 %; y al menos 6 a 80 m o menos de cada inicio. Ninguna donde va el centro del pueblo ni sobre un yacimiento.
+
 Lomas de 64 m, ondulaciones de 512 m y 40 cm de relieve fino, más las rocas, arbustos, hierbas y el pasto.
 
 ## Todo lo que F3 puede nombrar

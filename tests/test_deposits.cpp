@@ -335,7 +335,7 @@ TEST_SUITE("deposits") {
             const std::optional<MapData> m = generate_map(s, test::core_content());
             REQUIRE(m.has_value());
             CAPTURE(seed);
-            CHECK(m->generator_version == 9);
+            CHECK(m->generator_version == worldgen::kGeneratorVersion);
             std::map<FeatureType, int> count;
             for (const MapFeature& f : m->features) {
                 ++count[f.type];

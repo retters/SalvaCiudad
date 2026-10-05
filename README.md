@@ -851,6 +851,10 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] Por todo el mapa hay piedras sueltas (montoncitos), además de los peñascos y los yacimientos de roca; cerca del pueblo hay al menos seis. Al hacer clic dicen «Piedras sueltas», «Peñasco» o «Yacimiento de roca».
+- [ ] Sin cantero y con la piedra del almacén gastada, una obra que pide piedra se termina igual: los peones recogen piedras sueltas cercanas y las llevan a la obra. Mientras haya piedra en un almacén no las tocan.
+- [ ] El cantero trabaja peñascos y yacimientos como antes, y también recoge piedras sueltas a su alcance.
+- [ ] Las rocas son grises, con musgo en los biomas húmedos (boreal, florido, ribera, encantado) y de arenisca en los secos (mediterráneo, sabana, trópico seco).
 - [ ] En una partida nueva hay bancos de arcilla (sobre el suelo arcilloso) y vetas de carbón por el mapa, y alguna veta de oro; al hacer clic dicen «Banco de arcilla», «Veta de carbón» o «Veta de oro» y cuánto les queda.
 - [ ] Una arcillera lejos de todo banco no saca nada y muestra el aviso de que no le queda qué trabajar; junto a un banco lo trabaja con sus dos trabajadores, el banco se achica y al final desaparece.
 - [ ] Recursos > Mina de carbón (nivel 2) y Mina de oro (nivel 3): la primera llena de carbón su almacén; con la segunda sube el oro del pueblo, despacio.

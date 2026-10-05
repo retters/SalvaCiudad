@@ -283,20 +283,23 @@ TEST_SUITE("variants") {
         s.players = 1;
         const std::optional<sim::MapData> map = sim::generate_map(s, content);
         REQUIRE(map.has_value());
-        const sim::FeatureDef* stone = content.feature(sim::FeatureType::Stone);
-        REQUIRE(stone != nullptr);
+        // (Iron ore: the boulders, which this looked at until phase 102, take
+        // the stone of their biome and not a variant by the place.)
+        const sim::FeatureDef* ore = content.feature(sim::FeatureType::IronOre);
+        REQUIRE(ore != nullptr);
+        REQUIRE(ore->models.size() > 1);
         std::set<std::size_t> slots;
         for (const sim::MapFeature& f : map->features) {
-            if (f.type != sim::FeatureType::Stone) {
+            if (f.type != sim::FeatureType::IronOre) {
                 continue;
             }
             const std::size_t slot = visual_slot(content, f);
-            CHECK(slot >= feature_slot(content, sim::FeatureType::Stone, 0));
-            CHECK(slot < feature_slot(content, sim::FeatureType::Stone, stone->models.size()));
+            CHECK(slot >= feature_slot(content, sim::FeatureType::IronOre, 0));
+            CHECK(slot < feature_slot(content, sim::FeatureType::IronOre, ore->models.size()));
             CHECK(slot < visual_slot_count(content));
             slots.insert(slot);
         }
-        CHECK(slots.size() == stone->models.size());
+        CHECK(slots.size() == ore->models.size());
         // The instances are grouped by those slots.
         const auto instances = build_feature_instances(*map, content);
         CHECK(instances.size() == visual_slot_count(content));

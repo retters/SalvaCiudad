@@ -41,7 +41,7 @@ namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
 // the map (decision D-620). It goes on from the hierarchical generator's
 // own number, which it was until phase 49 (D-4902).
-inline constexpr std::uint16_t kGeneratorVersion = 9;
+inline constexpr std::uint16_t kGeneratorVersion = 10;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 4;
@@ -51,6 +51,11 @@ inline constexpr std::int32_t kStartDepositRadius = 200;
 // Phase 101: clay and coal within these many meters of every start.
 inline constexpr std::int32_t kStartClayRadius = 250;
 inline constexpr std::int32_t kStartCoalRadius = 400;
+// Phase 102: loose stones, in tenths of a group per km² (a group is one to
+// three), and how many every start has within how many meters.
+inline constexpr std::int32_t kLooseStonesPerKm2 = 2000;
+inline constexpr std::int32_t kStartMinLooseStones = 6;
+inline constexpr std::int32_t kStartLooseRadius = 80;
 inline constexpr std::int32_t kStartMinBerries = 4;
 // Phase 98: trees with a hive, nests, and stumps or rings of mushrooms.
 inline constexpr std::int32_t kStartMinBeeTrees = 2;

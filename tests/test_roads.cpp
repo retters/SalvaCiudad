@@ -361,7 +361,10 @@ TEST_SUITE("roads") {
     }
 
     TEST_CASE("a cobbled street needs the second level and a stone a stretch: without stone it is not finished") {
-        Game g(core(), map_for(92), setup());
+        // (A map with no loose stones: laborers would pick them up for the street, phase 102.)
+        MapData bare = map_for(92);
+        std::erase_if(bare.features, [](const MapFeature& f) { return f.type == FeatureType::LooseStones; });
+        Game g(core(), std::move(bare), setup());
         provide(g);
         const auto [x0, z0] = open_ground(g, 44);
         CHECK(g.can_place(0, building(g, "core:cobbled_street"), x0, z0, 0) == PlaceError::Locked);

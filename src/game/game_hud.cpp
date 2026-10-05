@@ -191,6 +191,7 @@ const char* feature_key(sim::FeatureType type) {
         case sim::FeatureType::ClayDeposit: return "feature.clayDeposit";
         case sim::FeatureType::CoalDeposit: return "feature.coalDeposit";
         case sim::FeatureType::GoldDeposit: return "feature.goldDeposit";
+        case sim::FeatureType::LooseStones: return "feature.looseStones";
         default: return "feature.tree";
     }
 }

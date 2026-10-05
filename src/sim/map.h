@@ -116,10 +116,10 @@ struct MapSettings {
 enum class Terrain : std::uint8_t { Grass, Meadow, ForestFloor, Sand, Rock, Clay, Water, Count };
 
 // (Phase 98: a tree with a hive, a nest, an old stump or hollow log, a ring of mushrooms.)
-// (Phase 101: deposits of clay, of coal and of gold.)
+// (Phase 101: deposits of clay, of coal and of gold. Phase 102: loose stones.)
 enum class FeatureType : std::uint8_t {
     Tree, Stone, IronOre, BerryBush, Herbs, StoneDeposit, BeeTree, Nest, Stump, MushroomRing,
-    ClayDeposit, CoalDeposit, GoldDeposit, Count
+    ClayDeposit, CoalDeposit, GoldDeposit, LooseStones, Count
 };
 
 // A deposit (phases 83 and 101): finite, in three sizes, standing on ground

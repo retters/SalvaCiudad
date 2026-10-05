@@ -78,7 +78,8 @@ public:
           rng_(s.seed, 7),
           deposit_rng_(s.seed, 83),
           forage_rng_(s.seed, 98),
-          ore_rng_(s.seed, 101) {}
+          ore_rng_(s.seed, 101),
+          stone_rng_(s.seed, 102) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -1369,7 +1370,74 @@ private:
         });
         forage();
         ores();
+        stones();
         return report(GenStage::Starts, 100);
+    }
+
+    // Phase 102: loose stones, in ones, twos and threes, more of them on
+    // rough ground; and kStartMinLooseStones of them within
+    // kStartLooseRadius of every start. Last of all and with their own
+    // random sequence: nothing else moves.
+    void stones() {
+        std::swap(rng_, stone_rng_);
+        const std::size_t first = out_.features.size();
+        const auto dry = [this](std::int32_t cx, std::int32_t cz) { return cell_terrain(cx, cz) != Terrain::Sand; };
+        const auto rough = [this](std::int32_t cx, std::int32_t cz) {
+            return cell_slope(cx, cz) + (cell_terrain(cx, cz) == Terrain::Rock ? 1000 : 0);
+        };
+        std::int32_t x = 0;
+        std::int32_t z = 0;
+        const std::int32_t count = per_area(static_cast<std::int64_t>(kLooseStonesPerKm2) * s_.resources / 100);
+        for (std::int32_t i = 0; i < count; ++i) {
+            if (pick_cell(3, dry, rough, x, z)) {
+                cluster(FeatureType::LooseStones, x, z, rng_.range(1, 3), 4, 85, 115);
+            }
+        }
+        for (const StartPosition& s : out_.starts) {
+            for (int attempt = 0;
+                 attempt < 12 && count_near(FeatureType::LooseStones, s.x, s.z, kStartLooseRadius) < kStartMinLooseStones; ++attempt) {
+                if (ring_cell(s.x, s.z, kStartClearRadius + 8, kStartLooseRadius - 5, x, z)) {
+                    cluster(FeatureType::LooseStones, x, z, 2, 4, 85, 115);
+                }
+            }
+        }
+        // None where a town center goes, nor on the ground of a deposit (the
+        // deposits by 16 m square, each in the nine around it).
+        std::vector<std::pair<std::uint64_t, std::uint32_t>> near;
+        const auto key = [](std::int32_t kx, std::int32_t kz) {
+            return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(kz >> 4)) << 32) | static_cast<std::uint32_t>(kx >> 4);
+        };
+        for (std::size_t i = 0; i < first; ++i) {
+            const MapFeature& d = out_.features[i];
+            if (!is_deposit(d.type)) {
+                continue;
+            }
+            for (std::int32_t dz = -16; dz <= 16; dz += 16) {
+                for (std::int32_t dx = -16; dx <= 16; dx += 16) {
+                    near.emplace_back(key(d.x.floor_int() + dx, d.z.floor_int() + dz), static_cast<std::uint32_t>(i));
+                }
+            }
+        }
+        std::sort(near.begin(), near.end());
+        std::vector<MapFeature> kept;
+        for (std::size_t i = first; i < out_.features.size(); ++i) {
+            const MapFeature& f = out_.features[i];
+            const std::int32_t fx = f.x.floor_int();
+            const std::int32_t fz = f.z.floor_int();
+            const std::pair<std::uint64_t, std::uint32_t> from{key(fx, fz), 0};
+            bool on_deposit = false;
+            for (auto it = std::lower_bound(near.begin(), near.end(), from); it != near.end() && it->first == from.first; ++it) {
+                const MapFeature& d = out_.features[it->second];
+                const std::int32_t reach = deposit_half_side(d.size) + 1;
+                on_deposit = on_deposit || (std::abs(fx - d.x.floor_int()) <= reach && std::abs(fz - d.z.floor_int()) <= reach);
+            }
+            if (!on_deposit && !cleared(f)) {
+                kept.push_back(f);
+            }
+        }
+        out_.features.resize(first);
+        out_.features.insert(out_.features.end(), kept.begin(), kept.end());
+        std::swap(rng_, stone_rng_);
     }
 
     // Phase 101: deposits of clay on the map's clay, of coal on its rocky
@@ -1681,6 +1749,7 @@ private:
     // and is placed last: the rest of the map is where it was.
     Rng forage_rng_;
     Rng ore_rng_;  // Phase 101: the deposits of clay, coal and gold, as last of all.
+    Rng stone_rng_;  // Phase 102: the loose stones, after those.
     MapData out_;
     std::vector<std::int32_t> h_;       // Vertex heights, millimeters.
     std::vector<std::uint8_t> bed_;        // Vertex dug as a river bed.

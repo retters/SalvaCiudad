@@ -46,6 +46,7 @@ const char* feature_key(sim::FeatureType t) {
         case sim::FeatureType::ClayDeposit: return "feature.clayDeposit";
         case sim::FeatureType::CoalDeposit: return "feature.coalDeposit";
         case sim::FeatureType::GoldDeposit: return "feature.goldDeposit";
+        case sim::FeatureType::LooseStones: return "feature.looseStones";
         default: return "feature.tree";
     }
 }
@@ -65,6 +66,7 @@ float feature_base_height(sim::FeatureType t) {
         case sim::FeatureType::ClayDeposit:
         case sim::FeatureType::CoalDeposit:
         case sim::FeatureType::GoldDeposit: return 1.3f;
+        case sim::FeatureType::LooseStones: return 0.4f;
         default: return 1.0f;
     }
 }
