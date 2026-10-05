@@ -192,11 +192,21 @@ render::ModelData make_streak_model() {
 
 // Phase 98: which kinds of feature fill after the rain (a ring of mushrooms),
 // looked up once for a pass over the map's features.
-using AfterRain = std::array<bool, static_cast<std::size_t>(sim::FeatureType::Count)>;
+// And which show when they were picked clean in their season (a berry
+// bush, phase 99), with those seasons.
+struct AfterRain {
+    std::array<bool, static_cast<std::size_t>(sim::FeatureType::Count)> rings{};
+    std::array<std::uint8_t, static_cast<std::size_t>(sim::FeatureType::Count)> picked_seasons{};
+    [[nodiscard]] bool any_picked() const {
+        return std::any_of(picked_seasons.begin(), picked_seasons.end(), [](std::uint8_t s) { return s != 0; });
+    }
+};
 AfterRain features_after_rain(const sim::Content& content) {
     AfterRain out{};
     for (const sim::FeatureDef& fd : content.features) {
-        out[static_cast<std::size_t>(fd.kind) % out.size()] = fd.after_rain;
+        const std::size_t kind = static_cast<std::size_t>(fd.kind) % out.rings.size();
+        out.rings[kind] = fd.after_rain;
+        out.picked_seasons[kind] = fd.seasons != 0 && !fd.after_rain && !fd.model_green.empty() ? fd.seasons : std::uint8_t{0};
     }
     return out;
 }
@@ -208,9 +218,15 @@ MapScene::FeatureLook node_look(const sim::Game& game, const AfterRain& after_ra
     if (n.amount <= 0) {
         return n.regrow_tick != 0 ? MapScene::FeatureLook::Empty : MapScene::FeatureLook::Gone;
     }
-    if (after_rain[static_cast<std::size_t>(game.map().features[i].type) % after_rain.size()] &&
-        game.fruit_on(static_cast<std::uint32_t>(i)) <= 0) {
+    const sim::MapFeature& f = game.map().features[i];
+    const std::size_t kind = static_cast<std::size_t>(f.type) % after_rain.rings.size();
+    if (after_rain.rings[kind] && game.fruit_on(static_cast<std::uint32_t>(i)) <= 0) {
         return MapScene::FeatureLook::Gone;
+    }
+    // A bush in its season with no fruit left (and not a bramble, which never had any).
+    if (((after_rain.picked_seasons[kind] >> static_cast<unsigned>(game.calendar().season)) & 1u) != 0 &&
+        game.fruit_on(static_cast<std::uint32_t>(i)) <= 0 && !game.barren(f)) {
+        return MapScene::FeatureLook::Empty;
     }
     return MapScene::FeatureLook::Normal;
 }
@@ -636,6 +652,21 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
         const AfterRain after_rain = features_after_rain(game.content());
         for (const std::uint32_t i : changed) {
             scene.set_feature_look(renderer, game.map(), game.content(), i, node_look(game, after_rain, i));
+        }
+    }
+    // Phase 99: a new season: the bushes that were picked clean have their
+    // fruit again, or lose the look of it. (Four times a year, over the map.)
+    if (const sim::Calendar now = game.calendar(); now.season != bush_season_ || now.year != bush_year_) {
+        const bool first = bush_year_ == 0;
+        bush_season_ = now.season;
+        bush_year_ = now.year;
+        if (const AfterRain after_rain = features_after_rain(game.content()); !first && after_rain.any_picked()) {
+            for (std::size_t i = 0; i < game.nodes().size(); ++i) {
+                const std::size_t kind = static_cast<std::size_t>(game.map().features[i].type) % after_rain.rings.size();
+                if (after_rain.picked_seasons[kind] != 0) {
+                    scene.set_feature_look(renderer, game.map(), game.content(), i, node_look(game, after_rain, i));
+                }
+            }
         }
     }
     // Buildings of others come and go with the fog.

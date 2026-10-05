@@ -32,10 +32,12 @@
       "id": "core:berry_bush",
       "kind": "berryBush",
       "resource": "core:berries",
-      "amount": 12,
+      "amount": 30,
       "work": 15,
-      "regrowDays": 30,
-      "models": ["models/props/berry_bush.glb", "models/props/berry_bush_2.glb", "models/props/berry_bush_3.glb"]
+      "seasons": ["summer", "autumn"],
+      "models": ["models/props/bush_berries.glb", "models/props/bush_blueberries.glb", "models/props/bush_thorn.glb"],
+      "green": "models/props/bush_green.glb",
+      "flower": "models/props/bush_flowers.glb"
     },
     {
       "type": "mapFeature",

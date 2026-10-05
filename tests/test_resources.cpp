@@ -1062,7 +1062,7 @@ TEST_SUITE("resources_years") {
 
 TEST_SUITE("resources") {
     TEST_CASE("a forager whose bushes are picked clean waits for them, without a word") {
-        // Two bushes of one berry each; they grow back in a month.
+        // Two bushes; once their berries are picked there are no more until next year (phase 99).
         const Land l = land(21, {FeatureType::BerryBush, FeatureType::Herbs}, FeatureType::BerryBush, 2,
                             Fixed::from_ratio(1, 20));
         Game g(content(), l.map, setup());
@@ -1077,7 +1077,15 @@ TEST_SUITE("resources") {
         const Building* b = g.buildings().get(forager);
         REQUIRE(b->supply == Supply::Waiting);
         CHECK(told == 0);
-        CHECK(left(g, FeatureType::BerryBush, l.x, l.z, 20) == 0);
+        // The bushes are still there, without a berry on them.
+        CHECK(left(g, FeatureType::BerryBush, l.x, l.z, 20) == 2);
+        for (std::size_t i = 0; i < g.nodes().size(); ++i) {
+            const MapFeature& f = g.map().features[i];
+            const std::int64_t dx = f.x.floor_int() - l.x, dz = f.z.floor_int() - l.z;
+            if (f.type == FeatureType::BerryBush && dx * dx + dz * dz < 20 * 20) {
+                CHECK(g.fruit_on(static_cast<std::uint32_t>(i)) == 0);
+            }
+        }
         CHECK(std::string_view(sc::supply_key(def, *b)) == "hud.supply.waiting");
     }
 }

@@ -90,11 +90,27 @@ std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, Tr
 
 std::uint8_t feature_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when) {
     // A stone deposit's sizes are the looks of one model (phase 83).
-    return f.type == sim::FeatureType::StoneDeposit ? std::min<std::uint8_t>(f.size, sim::kDepositSizes - 1)
-                                                    : tree_look(content, f, when);
+    if (f.type == sim::FeatureType::StoneDeposit) {
+        return std::min<std::uint8_t>(f.size, sim::kDepositSizes - 1);
+    }
+    if (f.type == sim::FeatureType::Tree) {
+        return tree_look(content, f, when);
+    }
+    // Phase 99: what gives by seasons, if it has the models for it: in
+    // flower in spring (look 2), green out of its seasons (look 1), and
+    // with its fruit, itself.
+    const sim::FeatureDef* def = content.feature(f.type);
+    if (def == nullptr || def->seasons == 0) {
+        return 0;
+    }
+    if (when.season == sim::Season::Spring && !def->model_flower.empty()) {
+        return kFlowerLook;
+    }
+    const bool in_season = ((def->seasons >> static_cast<unsigned>(when.season)) & 1u) != 0;
+    return !in_season && !def->model_green.empty() ? kGreenLook : std::uint8_t{0};
 }
 
-std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
+std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f, const sim::MapData* map) {
     if (f.type == sim::FeatureType::Tree) {
         // One of the variants, by the place; the state is its look.
         const std::size_t variants =
@@ -105,6 +121,17 @@ std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f) {
     }
     if (f.type == sim::FeatureType::StoneDeposit) {
         return feature_slot(content, f.type, 0);  // Its files are its sizes, not variants.
+    }
+    if (f.type == sim::FeatureType::BerryBush) {
+        // Its files are the bushes of the biomes: berries, blueberries, brambles (phase 99).
+        const sim::FeatureDef* bush = content.feature(f.type);
+        const std::size_t files = bush != nullptr ? bush->models.size() : 1;
+        std::size_t kind = 0;
+        if (map != nullptr) {
+            const std::size_t biome = map->biome_at(f.x.floor_int(), f.z.floor_int());
+            kind = biome < content.flora.biomes.size() ? content.flora.biomes[biome].bush : 0;
+        }
+        return feature_slot(content, f.type, kind < files && kind < sim::kMaxModelVariants ? kind : 0);
     }
     // Each other kind has room for its variants; the place picks one.
     const sim::FeatureDef* def = content.feature(f.type);
@@ -285,7 +312,7 @@ std::vector<std::vector<render::Instance>> build_feature_instances(const sim::Ma
     std::vector<std::vector<render::Instance>> features(visual_slot_count(content));
     // One instance per natural feature, standing on the ground.
     for (const sim::MapFeature& f : map.features) {
-        const std::size_t slot = visual_slot(content, f);
+        const std::size_t slot = visual_slot(content, f, &map);
         if (slot < features.size()) {
             features[slot].push_back(feature_instance(map, f, &content, when.season, snowy));
             features[slot].back().look = feature_look(content, f, when);
@@ -438,6 +465,24 @@ bool MapScene::load_models(render::SceneRenderer& renderer, const mods::BuildRes
             missing += slot.model == kNoModel ? 1 : 0;
             any = any || slot.model != kNoModel;
         }
+        if (!f.model_green.empty() || !f.model_flower.empty()) {
+            // Phase 99: without its fruit and in flower, as looks 1 and 2 of
+            // each of its models (but the bramble, which is always the same).
+            const auto extra = [&](const std::string& rel) {
+                const std::filesystem::path file = rel.empty() ? std::filesystem::path{} : mods::mod_file(pack.dir(f.mod), rel);
+                const render::ModelId id = file.empty() ? kNoModel : load_file(renderer, file, feature_class(f.kind)).model;
+                missing += !rel.empty() && id == kNoModel ? 1 : 0;
+                return id;
+            };
+            const render::ModelId looks[2] = {extra(f.model_green), extra(f.model_flower)};
+            for (std::size_t v = 0; v < f.models.size() && v < sim::kMaxModelVariants; ++v) {
+                const render::ModelId model = slots_[feature_slot(content, f.kind, v)].model;
+                const bool bramble = f.kind == sim::FeatureKind::BerryBush && v == static_cast<std::size_t>(sim::BushKind::Thorn);
+                if (model != kNoModel && !bramble) {
+                    renderer.set_model_looks(model, looks);
+                }
+            }
+        }
         if (f.kind == sim::FeatureKind::StoneDeposit && f.models.size() >= sim::kDepositSizes) {
             // The small one is the model; the medium and the large, its looks 1 and 2.
             const render::ModelId small = slots_[feature_slot(content, f.kind, 0)].model;
@@ -533,7 +578,7 @@ void MapScene::build_feature_refs(const sim::MapData& map, const sim::Content& c
     }
     std::vector<std::uint32_t> next(slots_.size(), 0);
     for (std::size_t k = 0; k < map.features.size(); ++k) {
-        const std::size_t slot = visual_slot(content, map.features[k]);
+        const std::size_t slot = visual_slot(content, map.features[k], &map);
         if (slot >= slots_.size()) {
             continue;
         }
@@ -551,7 +596,7 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
     }
     const FeatureRef ref = feature_refs_[feature];
     const sim::MapFeature& f = map.features[feature];
-    const std::size_t slot = visual_slot(content, f);
+    const std::size_t slot = visual_slot(content, f, &map);
     if (ref.model == kNoModel || slot >= slots_.size()) {
         return;
     }
@@ -568,6 +613,9 @@ void MapScene::set_feature_look(render::SceneRenderer& renderer, const sim::MapD
         inst.scale = 0.0f;
     } else if (look == FeatureLook::Empty && f.type == sim::FeatureType::Tree) {
         inst.scale *= 0.3f;  // A sprout (phase 86): its tree, small.
+    } else if (const sim::FeatureDef* def = look == FeatureLook::Empty ? content.feature(f.type) : nullptr;
+               def != nullptr && def->seasons != 0 && !def->model_green.empty()) {
+        inst.look = kGreenLook;  // Picked clean in its season (phase 99): the bush without its fruit.
     } else if (look == FeatureLook::Empty) {
         // A picked bush: smaller and duller until it grows back.
         inst.scale *= 0.8f;

@@ -4,6 +4,7 @@
     {
       "type": "biome",
       "id": "core:mountain",
+      "bush": "blueberries",
       "name": "biome.mountain",
       "flowers": 60,
       "cover": ["scree", "crag", "alpine", "ferns"],
@@ -37,6 +38,7 @@
     {
       "type": "biome",
       "id": "core:boreal",
+      "bush": "blueberries",
       "name": "biome.boreal",
       "flowers": 50,
       "cover": ["ferns"],
@@ -169,6 +171,7 @@
     {
       "type": "biome",
       "id": "core:mediterranean",
+      "bush": "thorn",
       "name": "biome.mediterranean",
       "flowers": 80,
       "cover": ["dryGrass"],
@@ -228,6 +231,7 @@
     {
       "type": "biome",
       "id": "core:savanna",
+      "bush": "thorn",
       "name": "biome.savanna",
       "flowers": 40,
       "cover": ["dryGrass"],

@@ -42,9 +42,13 @@ struct TreeCalendar {
 
 // The look (render::Instance::look) a tree takes in a state: the state's
 // number, or 0 (Bloom's) for a species without models for it.
-[[nodiscard]] // The look of any feature: a tree's state, a stone deposit's size, 0 the rest.
+[[nodiscard]] std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when);
+// Phase 99: the looks of what gives by seasons: without its fruit, and in flower.
+inline constexpr std::uint8_t kGreenLook = 1;
+inline constexpr std::uint8_t kFlowerLook = 2;
+// The look of any feature: a tree's state, a stone deposit's size, the
+// time of the year of what gives by seasons, 0 the rest.
 [[nodiscard]] std::uint8_t feature_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when);
-std::uint8_t tree_look(const sim::Content& content, const sim::MapFeature& f, TreeCalendar when);
 
 // Instances are grouped by "visual slot". Each tree species has
 // kSpeciesSlots, one per variant: a tree stays in its slot all year and
@@ -54,7 +58,8 @@ inline constexpr std::size_t kSpeciesSlots = sim::kMaxModelVariants;
 [[nodiscard]] std::size_t tree_variant_slot(std::size_t species, std::size_t variant);
 [[nodiscard]] std::size_t tree_slot_count(const sim::Content& content);
 [[nodiscard]] std::size_t visual_slot_count(const sim::Content& content);
-[[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f);
+// (`map`: a berry bush is the one of its biome, phase 99; without it, the first.)
+[[nodiscard]] std::size_t visual_slot(const sim::Content& content, const sim::MapFeature& f, const sim::MapData* map = nullptr);
 
 // A tree is its model scaled to the tree's height, but never under half
 // the model's height or over one and a half.

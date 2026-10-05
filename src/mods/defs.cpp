@@ -269,6 +269,25 @@ public:
 
     // A line building's "pieces" (phase 93): an object of model files by
     // piece name; each named file must exist inside the model's mod folder.
+    // One more model file of the definition under `key`, which may not be there.
+    std::string extra_model(const char* key, const std::function<std::filesystem::path(const std::string&)>& mod_dir,
+                            std::vector<ModelRef>* refs, const std::string& name_key) {
+        const std::string rel = text(key, false, 200);
+        if (rel.empty()) {
+            return rel;
+        }
+        const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), rel);
+        std::error_code ec;
+        const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
+        if (!exists) {
+            fail(std::format("model '{}' not found in mod '{}'", rel, def_.model_mod));
+        }
+        if (refs != nullptr) {
+            refs->push_back({def_.type, def_.id, name_key, def_.model_mod, rel, exists});
+        }
+        return rel;
+    }
+
     void pieces(const std::function<std::filesystem::path(const std::string&)>& mod_dir, std::vector<ModelRef>* refs,
                 const std::string& name_key, std::array<std::string, sim::kLinePieces>& out) {
         static constexpr std::string_view kNames[sim::kLinePieces] = {"pillar", "end",      "straight", "corner", "tee",
@@ -875,6 +894,10 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         // Features have no name of their own: the viewer shows the resource's.
         def.models = r.models(mod_dir, false, refs,
                               ri < 0 ? std::string{} : out.resources[static_cast<std::size_t>(ri)].name_key);
+        def.model_green = r.extra_model("green", mod_dir, refs,
+                                        ri < 0 ? std::string{} : out.resources[static_cast<std::size_t>(ri)].name_key);
+        def.model_flower = r.extra_model("flower", mod_dir, refs,
+                                         ri < 0 ? std::string{} : out.resources[static_cast<std::size_t>(ri)].name_key);
         def.mod = d->model_mod;
         if (r.ok()) {
             out.features.push_back(std::move(def));
@@ -1097,6 +1120,9 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         static constexpr std::string_view kBiomeCovers[] = {"ferns", "clover", "dryGrass", "petals", "scree", "crag", "alpine"};
         static_assert(std::size(kBiomeCovers) == static_cast<std::size_t>(sim::BiomeCover::Count));
         def.cover = r.choices("cover", kBiomeCovers);
+        static constexpr std::string_view kBushKinds[] = {"berries", "blueberries", "thorn"};
+        static_assert(std::size(kBushKinds) == static_cast<std::size_t>(sim::BushKind::Count));
+        def.bush = static_cast<std::uint8_t>(r.choice("bush", kBushKinds, 0));
         // Phase 54: where it grows. Ranges are [low, high], 0 to 100.
         const auto range = [&](const char* key, std::uint8_t* out2) {
             r.numbers(key, out2, 2, 0, 100);

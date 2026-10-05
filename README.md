@@ -848,6 +848,9 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] En el mapa hay árboles con panal, nidos, tocones viejos (y troncos huecos) y, en otoño tras la lluvia, corros de setas. Al seleccionarlos, su ventana dice qué tienen ahora y en qué estación dan.
 - [ ] Un recolector que los tenga a su alcance trae huevos en primavera, miel en verano y setas en otoño; aparecen en Bienes con su pila propia junto al almacén. Fuera de temporada el recolector no los trabaja.
 - [ ] Sin cabaña de curandero ni médico, de vez en cuando alguien que come setas enferma de «Intoxicación» (leve, pocos días, no se contagia). Con curandero no pasa.
+- [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
+- [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
+- [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
 - [ ] El muro de piedra se traza igual (sin diagonales) y se ve como antes. Una empalizada en obra se ve como andamio de troncos; con más de la mitad del daño, con una brecha.
 - [ ] Un campo recién sembrado muestra surcos con brotes; a media temporada, el cultivo verde; listo para cosechar, el cultivo maduro (trigo y cebada dorados, lino con flores azules, coles grandes, frijoles trepando por sus varas). Se distingue qué hay sembrado sin abrir la ventana de la granja. Tras la cosecha quedan rastrojos y en barbecho, pasto.
 - [ ] Trigo, cebada y lino se mecen con el viento; verduras y frijoles no. Con la cámara lejos el cultivo deja de dibujarse y el campo conserva su color.

@@ -88,6 +88,9 @@ struct BiomeDef {
     // sim::wildflowers), and the BiomeCover bits of its ground.
     std::uint16_t flowers = 100;
     std::uint8_t cover = 0;
+    // Phase 99: what its berry bushes are (a BushKind): berries, blueberries
+    // (the same fruit, another look) or brambles, which bear none.
+    std::uint8_t bush = 0;
     // Phase 54: where it likes to be. A place takes the biome that fits it
     // best. Temperature and humidity go from 0 to 100; the altitude is the
     // share of the map's land that lies lower, 0 to 100.
@@ -99,6 +102,9 @@ struct BiomeDef {
     std::uint8_t regions = 0;            // Bit per BiomeRegion; 0: any.
     std::uint16_t weight = 100;          // How readily it wins where several fit.
 };
+
+// Phase 99: the berry bushes of a biome.
+enum class BushKind : std::uint8_t { Berries, Blueberries, Thorn, Count };
 
 // Limits so an index fits in the map's bytes.
 inline constexpr std::size_t kMaxSpecies = 250;

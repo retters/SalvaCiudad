@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 59;
+inline constexpr std::uint32_t kGameRulesVersion = 60;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -603,6 +603,12 @@ public:
     // Phase 98: whether a feature of the map gives by seasons (a hive, a
     // nest, a stump, a ring of mushrooms): fruit_on() says what it has.
     [[nodiscard]] bool seasonal(const MapFeature& f) const;
+    // Phase 99: the berry bushes of the biome a feature stands in (a
+    // BushKind), and whether it is one that never bears fruit: a bramble.
+    [[nodiscard]] BushKind bush_kind(const MapFeature& f) const;
+    [[nodiscard]] bool barren(const MapFeature& f) const {
+        return f.type == FeatureType::BerryBush && bush_kind(f) == BushKind::Thorn;
+    }
     // The day the rings of mushrooms last filled, plus one; 0 if they have
     // not this autumn (or it is not autumn).
     [[nodiscard]] std::uint32_t ring_cycle() const { return ring_cycle_; }

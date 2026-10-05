@@ -366,6 +366,12 @@ struct FeatureDef {
     // mushrooms); where it never rains, every ten days of its season.
     std::uint8_t seasons = 0;
     bool after_rain = false;
+    // Phase 99, presentation only: how what gives by seasons looks without
+    // its fruit (`model_green`) and in spring (`model_flower`); empty: as
+    // ever. A berry bush's `models` are not variants by the place but by
+    // its biome's BushKind, in order: berries, blueberries, brambles.
+    std::string model_green;
+    std::string model_flower;
     std::vector<std::string> models;  // Variants, paths inside the mod (trees use their species).
     std::string mod;
     bool landmark = false;         // Phase 34: its silhouette shows through the fog of war.

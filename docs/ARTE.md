@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Arbustos de bayas por temporada (fase 99)
+
+De `proposals/scatter`: `props/bush_berries.glb` y `props/bush_blueberries.glb` (con fruto, 620 triángulos), `props/bush_flowers.glb` (en flor, 620), `props/bush_green.glb` (sin fruto, 268) y `props/bush_thorn.glb` (zarza, 364). Los dos con fruto llevan el de flor y el verde como «aspectos» del mismo modelo, igual que los estados de un árbol: cambiar de estación no cuesta nada. Los `berry_bush*.glb` de antes siguen en el mod pero el juego base ya no los usa.
+
 ### Miel, huevos y setas (fase 98)
 
 De las propuestas, sin cambios de forma: `props/bee_tree.glb` (árbol con panal, 612 triángulos), `props/nest.glb` (nido con huevos, 360), `props/stump.glb` y `props/stump_2.glb` (tocón con setas y tronco hueco, 420 y 332; son variantes del mismo elemento) y `props/mushroom_ring.glb` y `props/mushroom_ring_2.glb` (setas pardas y rojas, 336 y 784; variantes del corro). Las pilas `pile_honey`, `pile_eggs` y `pile_mushrooms` (las dos últimas, nuevas en `proposals/piles/build.py`: cestas como las de bayas). El nido y el tocón se ven igual todo el año; el corro solo se dibuja mientras tiene setas.

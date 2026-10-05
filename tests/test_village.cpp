@@ -155,7 +155,9 @@ void opening(Game& g) {
 // The scripted player of the tests: an opening and then, minute by minute
 // for an hour at normal speed, houses, foragers and workplaces as the town
 // grows. `strict`: fails if a workplace finds no room.
-void tended_hour(Game& g, bool strict = true) {
+// `food_per_person`: if given, the food there is for each villager (times
+// 100) at the end of every minute.
+void tended_hour(Game& g, bool strict = true, std::vector<std::int32_t>* food_per_person = nullptr) {
     opening(g);
     int houses = 2;
     int foragers = 1;
@@ -171,6 +173,9 @@ void tended_hour(Game& g, bool strict = true) {
         std::int32_t food = 0;
         for (std::size_t r = 0; r < stored.size(); ++r) {
             food += content()->resources[r].category == ResourceCategory::Food ? stored[r] : 0;
+        }
+        if (food_per_person != nullptr) {
+            food_per_person->push_back(food * 100 / std::max(1, g.population(0)));
         }
         if (food < g.population(0) * 6 && foragers < 5 && place_for(g, building("forager"), FeatureType::BerryBush)) {
             ++foragers;
@@ -206,7 +211,7 @@ TEST_SUITE("village") {
         CHECK(g.population(0, true) == 10);
         const auto stored = g.stored(0);
         CHECK(stored[resource("log")] == 60);
-        CHECK(stored[resource("berries")] == 150);
+        CHECK(stored[resource("berries")] == 188);  // (150 until phase 99: a quarter more food to start with.)
     }
 
     TEST_CASE("placement rules") {
@@ -905,8 +910,15 @@ TEST_SUITE("village_years") {
         // live by). One game is not like another (a village's luck swings
         // its numbers by a third), so four are added up: people, newcomers
         // and food come out alike.
+        // Food comes by seasons since phase 99 (the bushes bear in summer
+        // and autumn), so what is in store at the end of the hour depends on
+        // the season the hour ends in: after the autumn with one year, at
+        // the end of a spring with the other. What is compared is the food
+        // per villager through the last 45 minutes: three whole years of
+        // 15, or one of 45.
         struct Sum {
             std::int32_t people = 0, arrivals = 0, deaths = 0, food = 0;
+            std::int64_t fed = 0;  // Food per villager (times 100), added up minute by minute.
         };
         const auto play = [](std::uint8_t season_minutes) {
             Sum sum;
@@ -919,7 +931,12 @@ TEST_SUITE("village_years") {
                 setup.rules.climate.seasons = 0b0111;
                 setup.rules.climate.minutes = {season_minutes, season_minutes, season_minutes, 0};
                 Game g(content(), small_map(1), setup);
-                tended_hour(g, false);
+                std::vector<std::int32_t> food_per_person;
+                tended_hour(g, false, &food_per_person);
+                REQUIRE(food_per_person.size() == 60);
+                for (std::size_t minute = 15; minute < 60; ++minute) {
+                    sum.fed += food_per_person[minute];
+                }
                 CHECK(g.calendar().year == (season_minutes == 5 ? 5u : 2u));
                 sum.people += g.population(0);
                 sum.arrivals += g.player(0).arrivals;
@@ -934,9 +951,11 @@ TEST_SUITE("village_years") {
         const Sum usual = play(5);
         const Sum longer = play(15);
         MESSAGE("years of 15 min: people " << usual.people << ", arrivals " << usual.arrivals << ", deaths "
-                                           << usual.deaths << ", food " << usual.food);
+                                           << usual.deaths << ", food " << usual.food << ", food per villager through the years "
+                                           << usual.fed / (4 * 45));
         MESSAGE("years of 45 min: people " << longer.people << ", arrivals " << longer.arrivals << ", deaths "
-                                           << longer.deaths << ", food " << longer.food);
+                                           << longer.deaths << ", food " << longer.food << ", food per villager through the years "
+                                           << longer.fed / (4 * 45));
         const auto alike = [](std::int32_t a, std::int32_t b, double within = 0.15) {
             return static_cast<double>(b) > static_cast<double>(a) * (1.0 - within) &&
                    static_cast<double>(b) < static_cast<double>(a) * (1.0 + within);
@@ -945,7 +964,10 @@ TEST_SUITE("village_years") {
         // Newcomers follow the room left by those who die, and with longer
         // years people grow old more slowly (D-5902): fewer die, fewer come.
         CHECK(alike(usual.arrivals, longer.arrivals, 0.25));
-        CHECK(alike(usual.food * 100 / usual.people, longer.food * 100 / longer.people));
+        CHECK(alike(static_cast<std::int32_t>(usual.fed / (4 * 45)), static_cast<std::int32_t>(longer.fed / (4 * 45))));
+        // And nobody is left without: there is food in both at the end.
+        CHECK(usual.food > usual.people);
+        CHECK(longer.food > longer.people);
     }
 }
 

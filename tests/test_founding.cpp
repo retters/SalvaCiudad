@@ -165,7 +165,7 @@ TEST_SUITE("founding") {
             cost_logs += c.resource == resource("core:log") ? c.amount : 0;
         }
         CHECK(amount(*cart, resource("core:log")) == 60 + cost_logs);
-        CHECK(amount(*cart, resource("core:berries")) == 150);
+        CHECK(amount(*cart, resource("core:berries")) == 188);
         CHECK(amount(*cart, resource("core:gold")) == 100);
         CHECK(g.gold(0) == 100);
         // Everybody stands on ground they can walk.

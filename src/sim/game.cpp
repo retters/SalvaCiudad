@@ -938,8 +938,8 @@ public:
                     // who gather it.
                     const bool gathered = ((d.gathers >> static_cast<unsigned>(f.type)) & 1u) != 0;
                     const bool picking = picks_fruit(d, f) || (gathered && g_.seasonal(f));
-                    if (!picking && !gathered) {
-                        continue;
+                    if ((!picking && !gathered) || g_.barren(f)) {
+                        continue;  // (A bramble is nothing to a forager: phase 99.)
                     }
                     const bool grows = picking || regrows(f);
                     const bool sprout = !picking && f.type == FeatureType::Tree && n.amount <= 0 && n.regrow_tick != 0;
@@ -4573,7 +4573,7 @@ public:
                         ready[i + k]->produced_year = today.year;
                     }
                     for (const ResourceAmount& y : d.yields) {
-                        add_to(picker.stock, y.resource, y.amount);
+                        add_to(picker.stock, y.resource, g_.per_year(y.amount));
                     }
                 }
             }
@@ -5484,8 +5484,9 @@ public:
         const struct {
             const char* id;
             std::int32_t amount;
-        } kStart[] = {{"core:log", 60},   {"core:stone", 20},    {"core:berries", 150},
-                      {"core:roots", 40}, {"core:firewood", 40}, {"core:clothes", 12}};
+        // (Phase 99: a quarter more food, 188 and 50: the bushes give nothing until summer.)
+        } kStart[] = {{"core:log", 60},   {"core:stone", 20},    {"core:berries", 188},
+                      {"core:roots", 50}, {"core:firewood", 40}, {"core:clothes", 12}};
         const std::int32_t percent = g_.rules_.start == StartGoods::Scarce   ? 50
                                      : g_.rules_.start == StartGoods::Plenty ? 200
                                                                              : 100;
@@ -5943,6 +5944,14 @@ std::optional<TreeSize> Game::next_size(const MapFeature& tree) const {
     return std::nullopt;
 }
 
+BushKind Game::bush_kind(const MapFeature& f) const {
+    const std::size_t biome = map_.biome_at(f.x.floor_int(), f.z.floor_int());
+    const auto& biomes = content_->flora.biomes;
+    return biome < biomes.size() && biomes[biome].bush < static_cast<std::uint8_t>(BushKind::Count)
+               ? static_cast<BushKind>(biomes[biome].bush)
+               : BushKind::Berries;
+}
+
 bool Game::seasonal(const MapFeature& f) const {
     const FeatureDef* fd = content_->feature(f.type);
     return fd != nullptr && fd->seasons != 0;
@@ -5974,10 +5983,11 @@ std::int32_t Game::fruit_on(std::uint32_t node, const Calendar& when) const {
         // Phase 98: a hive, a nest, a stump: all of it once a year, in its
         // season. A ring of mushrooms: all of it each time it fills.
         if (n.amount <= 0 || ((fd->seasons >> static_cast<unsigned>(when.season)) & 1u) == 0 ||
-            (fd->after_rain && ring_cycle_ == 0)) {
+            (fd->after_rain && ring_cycle_ == 0) || barren(f)) {
             return 0;
         }
-        return std::max(0, fd->amount - (n.fruit_year == pick_cycle(*fd, when) ? n.fruit_picked : 0));
+        // (Per year of the usual length: a longer year gives as much more, phase 59.)
+        return std::max(0, per_year(fd->amount) - (n.fruit_year == pick_cycle(*fd, when) ? n.fruit_picked : 0));
     }
     if (f.type != FeatureType::Tree || n.amount <= 0 || f.species >= content_->flora.species.size() || f.size >= kTreeSizes) {
         return 0;

@@ -3606,3 +3606,31 @@ Suite nueva `forage`, 8 casos: los datos; las huellas del generador 7 en cuatro 
 
 **D-9808. Versiones.**
 Reglas 59, generador 8. La red no cambia. Cambia la huella de referencia del mapa chico (`kGoldenSmallMap` en `tests/test_worldgen.cpp`), que incluye los elementos nuevos.
+
+## Fase 99: bayas por temporada (2026-10-04)
+
+**D-9901. El arbusto pasa a ser «lo que da por temporadas».**
+Con el mecanismo de la fase 98: `seasons` verano y otoño, una cosecha al año contada en el propio arbusto, nada en primavera ni en invierno. Ya no rebrota cada 30 días ni se «agota»: fuera de temporada el recolector queda «esperando». Las hierbas medicinales no cambian.
+
+**D-9902. Cuánto: 30 bayas al año por arbusto.**
+Antes daba 12 cada 30 días, es decir hasta 48 al año si alguien lo recogía sin falta. Con 30 una vez al año las pruebas de pueblos (una hora de juego atendida, pueblos de años, recursos) quedan dentro de sus márgenes sin tocar nada más, salvo lo de D-9904. La cantidad es por año de la duración normal y **crece con la duración del año**, como las cosechas de los campos desde la fase 59; lo mismo vale ahora para la miel, los huevos, las setas y las bayas del seto vivo. Sin eso, una partida con años de 45 minutos tenía la tercera parte de la comida por minuto.
+
+**D-9903. Arándanos y zarzas, por bioma.**
+Cada bioma dice qué arbusto tiene (`bush`): arándanos en boreal y montaña, zarza en mediterráneo y sabana, bayas en los demás. Los arándanos son las mismas bayas con otro modelo. La zarza no da nada, nunca, y el recolector no la cuenta. No se toca el generador: el arbusto es el mismo elemento en el mismo sitio, y qué es lo decide el bioma donde está. **Consecuencia que conviene saber:** un pueblo que empieza en sabana o mediterráneo tiene sus arbustos «garantizados» convertidos en zarzas; vive de la caza, los campos, los huevos, la miel y las setas. Si resulta demasiado duro, lo simple es que el generador garantice otra comida en esos biomas.
+
+**D-9904. La prueba de «años largos» compara ahora años completos.**
+Esa prueba juega una hora con años de 15 y de 45 minutos y comparaba la comida guardada al final. Con la comida por temporadas eso depende de la estación en que termina la hora: tras el otoño en un caso (849 de comida) y al final de una primavera en el otro (398). Se cambió a lo que la prueba quiere medir: la comida por aldeano **promediada sobre los últimos 45 minutos** (tres años de 15, o uno de 45): 7,9 y 8,5, iguales dentro de su margen del 15 %. Población y recién llegados siguen comparándose como antes y pasan (95 y 102 personas). En la partida de años largos hubo 6 muertes entre cuatro pueblos y ninguna en la otra; la prueba no lo mira y no se investigó si son de vejez o de hambre en la primavera larga.
+
+**D-9905. Compensación del primer año.**
+Las provisiones iniciales de comida suben un 25 %: 188 de bayas y 50 de raíces (antes 150 y 40). En primavera el recolector tiene los nidos y las hierbas.
+
+**D-9906. En pantalla.**
+El arbusto con fruto es el modelo; en flor y verde son dos «aspectos» suyos (el mecanismo de los estados de los árboles, que admite hasta tres por modelo). Verde también cuando se le recogió todo en su temporada. Al cambiar de estación o de año la vista repasa los arbustos una vez (cuatro veces al año). Los modelos anteriores del arbusto quedan en el mod sin uso.
+
+**D-9907. Lo medido.**
+Suite nueva `berries`, 7 casos: los datos y qué arbusto tiene cada bioma; por calendario y a lo largo de un año de juego, nada en primavera, 30 en verano, lo que quedó sin recoger en otoño, nada en invierno, y el año siguiente otra vez 30; en invierno el recolector queda «esperando» y no avisa de agotado; en un mapa seco hay zarzas (10 de 17 arbustos) que no dan nada y en uno frío arándanos (10 de 17) que dan lo mismo, y cada uno se dibuja con su modelo; el aspecto por estación; las provisiones iniciales. Se ajustaron tres pruebas de antes: las dos que contaban 150 de bayas al empezar, y la del recolector que espera (los arbustos ya no desaparecen de la cuenta: se quedan, sin fruto).
+
+En pantalla, con dos escenas guardadas (caso saltado «manual: saved games with berry bushes in spring and in summer»): en primavera los arbustos con flores blancas; en verano con bayas rojas, los del lado frío del mapa con arándanos azules, y el que el recolector ya había vaciado, verde. No se vio el invierno ni una zarza.
+
+**D-9908. Versiones.**
+Reglas 60. El generador y la red no cambian.

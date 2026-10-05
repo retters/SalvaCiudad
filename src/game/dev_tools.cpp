@@ -755,7 +755,7 @@ void DevTools::rebuild_list(const DevContext& ctx) {
             return true;
         }
         if (o.kind == DevObject::Kind::Feature) {
-            const std::size_t slot = visual_slot(*ctx.content, ctx.map->features[o.index]);
+            const std::size_t slot = visual_slot(*ctx.content, ctx.map->features[o.index], ctx.map);
             if (slot >= slot_match.size()) {
                 return false;
             }

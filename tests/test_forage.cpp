@@ -264,7 +264,8 @@ TEST_SUITE("forage") {
             CHECK(((forager.gathers >> static_cast<unsigned>(k.type)) & 1u) != 0);
         }
         // What there was does not give by seasons.
-        for (const FeatureType old : {FeatureType::Tree, FeatureType::BerryBush, FeatureType::Herbs, FeatureType::StoneDeposit}) {
+        // (The berry bush does since phase 99.)
+        for (const FeatureType old : {FeatureType::Tree, FeatureType::Herbs, FeatureType::StoneDeposit}) {
             REQUIRE(c.feature(old) != nullptr);
             CHECK(c.feature(old)->seasons == 0);
         }
@@ -451,7 +452,7 @@ TEST_SUITE("forage") {
         }
         MESSAGE("in 60 days of autumn the ring filled " << filled << " times and was picked clean " << emptied << " times");
         CHECK(filled >= 5);
-        CHECK(emptied >= 3);
+        CHECK(emptied >= 1);  // (The forager has the bushes of autumn to pick too.)
         // Where it never rains: the days that are a multiple of ten.
         Game dry(core(), map_for(92), setup(kAutumn, 0));
         for (int d = 0; d < 35; ++d) {
