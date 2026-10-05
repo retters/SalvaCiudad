@@ -520,6 +520,80 @@ TEST_SUITE("net") {
         }
     }
 
+    // Phase 116: a soldier is the villager it was (its people, its sex, its
+    // look): the same one on every machine.
+    TEST_CASE("a soldier trained on one machine is the same villager turned soldier on both") {
+        Cluster c;
+        c.join("P1");
+        c.frames(3, 0);
+        c.host().set_config(config(29, false));
+        c.ready_all();
+        REQUIRE(c.host().start());
+        c.frames(3, 0);
+        REQUIRE(c.m[1].game != nullptr);
+        const sim::Game& g = *c.m[1].game;
+        const std::uint8_t town = g.town_of(1);
+        const sim::DefIndex def = content()->find_building("core:barracks");
+        sim::DefIndex levy = sim::kNoDef;
+        for (std::size_t u = 0; u < content()->units.size(); ++u) {
+            levy = content()->units[u].id == "core:levy" ? static_cast<sim::DefIndex>(u) : levy;
+        }
+        REQUIRE(def != sim::kNoDef);
+        REQUIRE(levy != sim::kNoDef);
+        // A barracks wants a bigger town center, and stone: with the developer's orders, which travel too.
+        sim::Command up;
+        up.type = sim::CommandType::DevLevel;
+        c.m[1].session->issue(up);
+        for (const char* resource : {"core:log", "core:stone"}) {
+            sim::Command grant;
+            grant.type = sim::CommandType::DevGrant;
+            grant.def = content()->find_resource(resource);
+            grant.value = 200;
+            c.m[1].session->issue(grant);
+        }
+        c.frames(20, 4);
+        const auto place = place_near(g, 1, "core:barracks", 2);
+        REQUIRE(place.has_value());
+        c.m[1].session->issue(*place);
+        const auto built = [&](const sim::Game& game) {
+            for (std::size_t i = 0; i < game.buildings().size(); ++i) {
+                const sim::Building& b = game.buildings().data()[i];
+                if (b.def == def && b.owner == town && b.state == sim::BuildingState::Complete) {
+                    return game.buildings().entities()[i];
+                }
+            }
+            return sim::EntityId{};
+        };
+        sim::EntityId barracks;
+        for (int i = 0; i < 60 && !barracks.valid(); ++i) {
+            c.frames(100, 4);
+            barracks = built(g);
+        }
+        REQUIRE(barracks.valid());
+        sim::Command train;
+        train.type = sim::CommandType::TrainUnit;
+        train.entity = barracks;
+        train.def = levy;
+        train.value = 1;
+        c.m[1].session->issue(train);
+        for (int i = 0; i < 40 && g.soldiers(town) < 1; ++i) {
+            c.frames(100, 4);
+        }
+        REQUIRE(g.soldiers(town) == 1);
+        c.settle();
+        expect_same_games(c);
+        std::uint32_t looks[2] = {0, 1};
+        for (std::size_t k = 0; k < 2; ++k) {
+            for (const sim::Creature& a : c.m[k].game->creatures().data()) {
+                if (a.kind == sim::CreatureKind::Soldier && a.town == town) {
+                    looks[k] = a.appearance ^ (static_cast<std::uint32_t>(a.race) << 24) ^ (static_cast<std::uint32_t>(a.female) << 31);
+                    CHECK(a.appearance != 0);
+                }
+            }
+        }
+        CHECK(looks[0] == looks[1]);
+    }
+
     // Phase 114: what a happening asks a town is answered with an order: it
     // travels like any other, and does the same on every machine.
     TEST_CASE("the answer to the turtles travels over the net: the beach is protected on both machines") {

@@ -20,12 +20,18 @@ struct Tool {
     std::string_view kind;
     std::string_view path;
     float roll = 0.0f;
+    // Phase 116: held upright (its long axis up) and not along the hand: a spear, its butt by the foot.
+    bool upright = false;
 };
 inline constexpr Tool kTools[] = {
     {"axe", "models/tools/axe.glb", 90.0f},
     {"bow", "models/tools/bow.glb", 0.0f},
     {"rod", "models/tools/rod.glb", 0.0f},
     {"hammer", "models/tools/hammer.glb", 0.0f},
+    // Phase 116: what the soldiers hold, by their unit (not named by any clip).
+    {"club", "models/tools/club.glb", 0.0f},
+    {"spear", "models/tools/spear.glb", 0.0f, true},
+    {"shield", "models/tools/shield.glb", 0.0f},
 };
 
 // What a villager carries (phase 67), on its back or in its arms: rigid
@@ -64,6 +70,7 @@ inline constexpr Use kAll[] = {
     {kSampleHouse, "sample_house"},
     {kAnimals[0], "deer"},     {kAnimals[1], "boar"},          {kAnimals[2], "wolf"},     {kAnimals[3], "bear"},
     {kTools[0].path, "tool"},  {kTools[1].path, "tool"},       {kTools[2].path, "tool"},  {kTools[3].path, "tool"},
+    {kTools[4].path, "tool"},  {kTools[5].path, "tool"},       {kTools[6].path, "tool"},
     {kLoads[0], "load"},       {kLoads[1], "load"},            {kLoads[2], "load"},       {kLoads[3], "load"},
     {kLoads[4], "load"},       {kLoads[5], "load"},            {kLoads[6], "load"},       {kLoads[7], "load"},
     {kLoads[8], "load"},

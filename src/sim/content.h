@@ -288,6 +288,9 @@ struct DiseaseDef {
 
 // A kind of soldier (phase 16): trained at a barracks from an adult
 // villager and its equipment.
+// Phase 116, presentation only: what a unit is seen to fight with.
+enum class UnitWeapon : std::uint8_t { None, Club, Spear, Bow, Count };
+
 struct UnitDef {
     std::string id;
     std::string name_key;
@@ -301,6 +304,9 @@ struct UnitDef {
     std::int32_t power = 1;          // Military power (score).
     std::uint8_t tier = 0;
     std::int32_t sight = 16;         // Phase 32: meters it sees (fog of war).
+    // Phase 116, presentation only: its weapon, and whether it carries a shield.
+    UnitWeapon weapon = UnitWeapon::None;
+    bool shield = false;
 };
 
 // What a villager's work is, for the races' speeds (phase 19).
@@ -331,6 +337,10 @@ struct RaceDef {
     bool night_vision = false;   // Not slowed by the dark of the night (phase 70).
     bool likes_cats = false;     // Phase 106: happier with a house cat nearby.
     bool lanterns = false;       // Phase 113: a town with some of them lets lanterns go into the sky one night a year.
+    // Phase 116, presentation only: the body its soldiers take, by sex: one
+    // of its bodies (the humans' knights); empty: the body the villager had.
+    std::string soldier_male;
+    std::string soldier_female;
     std::int32_t sight = 12;     // Phase 32: meters a villager sees (fog of war).
 };
 

@@ -130,6 +130,12 @@ Un **suceso** empieza un día que decide la semilla de la partida (el mismo en t
 - **El paso de las ballenas.** Un día de cada otoño (del año, en una partida sin otoño), el mismo para todos los pueblos. Vale para el pueblo que tenga algún edificio terminado a 150 m o menos del mar; se ven cuatro días en el mar abierto más cercano a su centro. Además, el mercader que venía en camino llega en la mitad del tiempo que le faltaba.
 - **Los farolillos.** Una raza con `"lanterns": true` (los zorrunos del juego base) trae la costumbre: una vez al año el pueblo que tenga 2 o más de ellos suelta farolillos frente a su centro: la primera noche a partir del día que le toca (distinto para cada pueblo) en que los tenga; en una partida sin noche, ese mismo día. Se ven cuatro días, de noche.
 
+#### Soldados de cada raza (fase 116)
+
+Un aldeano que pasa por el cuartel sigue siendo quien era: el soldado guarda su raza, su sexo y su aspecto, y se dibuja con el cuerpo de su raza, del tamaño y con los colores que tenía. Una raza puede nombrar el cuerpo de sus soldados con `"soldierMale"` y `"soldierFemale"` (uno de sus `bodies` de ese sexo; los humanos, sus caballeros); sin eso, el soldado conserva el cuerpo que tenía de aldeano.
+
+Lo que lleva en las manos lo dice la **unidad**, y es solo aspecto: `"weapon"` (`"club"`, `"spear"`, `"bow"` o `"none"`) y `"shield": true`. En el juego base: la leva, garrote y escudo; el lancero, lanza y escudo; el arquero, arco. Con `"none"` (o un cuerpo sin los huesos `hand.R`, `hand.L` y `lower_arm.L`) se ve la herramienta de la animación, como antes. El arquero ataca con la animación de disparar; los demás, con la de talar.
+
 #### Las tortugas y los sucesos que preguntan (fase 114)
 
 Un suceso puede **preguntar** al pueblo qué hacer: aparece un panel con la pregunta y dos botones, espera 3 días y, sin respuesta, pasa sin efecto. Responde cualquier asiento del pueblo; la respuesta es una orden de la simulación (`AnswerHappening`) y viaja por la red como las demás.

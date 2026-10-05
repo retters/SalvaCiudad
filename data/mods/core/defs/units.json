@@ -4,6 +4,8 @@
     {
       "type": "unit",
       "id": "core:levy",
+      "weapon": "club",
+      "shield": true,
       "name": "unit.levy",
       "health": 500,
       "damage": 40,
@@ -19,6 +21,7 @@
     {
       "type": "unit",
       "id": "core:archer",
+      "weapon": "bow",
       "name": "unit.archer",
       "health": 400,
       "damage": 45,
@@ -35,6 +38,8 @@
     {
       "type": "unit",
       "id": "core:spearman",
+      "weapon": "spear",
+      "shield": true,
       "name": "unit.spearman",
       "health": 800,
       "damage": 70,

@@ -4118,3 +4118,29 @@ Una prueba en `people` que deja escrito lo de arriba para que no se pierda: los 
 
 **D-11503. La revisión de animaciones.**
 No se repitió: son los mismos archivos que ya se revisaron en la fase 57 y siguientes. La prueba que carga todos los cuerpos comprueba que cada uno tiene las 10.
+
+## Fase 116: guardias por raza (2026-10-05)
+
+**D-11601. Los «cuerpos de guardia» tampoco son cuerpos: se hace con accesorios.**
+Como en la fase 115 (D-11501), los nueve guardias de las propuestas son los personajes de raza del juego con otro color en la prenda principal, un arma en la mano y un escudo. No se rehacen como cuerpos. Lo que la fase pedía se consigue en la tubería del juego así: el soldado se dibuja con el cuerpo de su raza, y el arma y el escudo son **accesorios** que el juego le pone según su unidad, igual que pone el hacha o el arco según lo que hace un aldeano.
+
+**D-11602. El soldado es el aldeano que fue.**
+`Creature` guarda la raza, el sexo y el aspecto del aldeano que entró al cuartel (se guardan en la partida; una partida con una raza que no existe se rechaza). Antes un soldado era un humano cualquiera elegido por su número. Se dibuja con su cuerpo, su tamaño (un 5 % más, como antes) y sus colores. Los asaltantes no cambian.
+
+**D-11603. Los humanos, con sus caballeros.**
+`soldierMale` y `soldierFemale` en la raza: un cuerpo de los suyos para sus soldados. Los humanos nombran `knight_man` y `knight_woman`; antes un soldado humano podía salir de mago o de clérigo. Las demás razas no nombran ninguno y su soldado conserva el cuerpo de aldeano.
+
+**D-11604. El arma, por la unidad.**
+`weapon` y `shield` en la unidad, solo aspecto: leva, garrote y escudo; lancero, lanza y escudo; arquero, arco. Los tres modelos nuevos (garrote con púas, lanza y escudo redondo de madera) son de la biblioteca de armas del juego (`art/blender/weapons`), no de las propuestas: los guardias de las propuestas llevan espadas, alabardas y escudos de cometa que el juego no tiene. Los escudos de las propuestas (redondo o de cometa según la raza) quedan en uno solo, redondo.
+
+**D-11605. La lanza, de pie.**
+Con la regla de las herramientas (a lo largo de la mano) la lanza iba horizontal, de 1,9 m, atravesando a los vecinos. Va de pie, con el regatón junto al pie. Al atacar se mueve con el brazo en la animación de talar: no hay una de estocada entre las diez del juego, y hacerla es animación nueva.
+
+**D-11606. Cómo se miró.**
+En el juego se ven los soldados de cada raza junto al cuartel con algo en las manos, pero desde la cámara de inicio miden veinte píxeles y no pude acercarla desde las herramientas de captura. La colocación se comprobó con un render de Blender que aplica la misma cuenta que el juego a la pose de reposo (caballero y enano con lanza y escudo, orco con garrote y escudo): el escudo queda en el antebrazo izquierdo mirando hacia fuera y la lanza de pie. **Falta mirarlo de cerca en el juego, andando y atacando**: está en la lista de pruebas a mano.
+
+**D-11607. Lo medido.**
+En `army`: en un pueblo de enanos, un lancero y un leva salen enanos, con el aspecto y el sexo de un aldeano que ya no está entre los aldeanos; tras guardar y cargar, iguales. En `people`: cada unidad tiene su arma; qué accesorios le tocan a cada una; un cuerpo sin ellos no enseña nada nuevo; los tres modelos existen y todos los cuerpos de todas las razas tienen los huesos donde van; solo los humanos nombran cuerpo de soldado. En `net`: un soldado entrenado desde una máquina es el mismo aldeano en las dos.
+
+**D-11608. Versiones.**
+Reglas 76 y red 35. El generador no cambia.

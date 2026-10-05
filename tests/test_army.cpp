@@ -1,14 +1,18 @@
 #include <doctest.h>
 
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <string>
 #include <tuple>
 
+#include "game/save_file.h"
 #include "sim/game.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
+#include "version.h"
 
 using namespace sc::sim;
 
@@ -457,5 +461,145 @@ TEST_SUITE("army") {
         run(g, 800);
         run(back, 800);
         CHECK(back.hash() == g.hash());
+    }
+
+    // Phase 116.
+    TEST_CASE("a dwarf trained as a spearman is a dwarf soldier, and still is after saving and loading") {
+        const Content& content = sc::test::core_content();
+        std::uint8_t dwarf = 0;
+        for (std::size_t r = 0; r < content.races.size(); ++r) {
+            dwarf = content.races[r].id == "core:dwarf" ? static_cast<std::uint8_t>(r) : dwarf;
+        }
+        REQUIRE(content.races[dwarf].id == "core:dwarf");
+        GameSetup rules = setup();
+        rules.rules.races.fill(dwarf);
+        rules.rules.other_races = 0;
+        Game g(open_content(), map_for(101), rules);
+        const EntityId barracks = build(g, "core:barracks");
+        grant(g, "core:weapons", 4);
+        grant(g, "core:log", 30);
+        // Who is in the town, by look: one of them will be the soldier.
+        struct Look {
+            std::uint32_t appearance;
+            bool female;
+        };
+        std::vector<Look> before;
+        for (const Villager& v : g.villagers().data()) {
+            REQUIRE(v.race == dwarf);
+            before.push_back({v.appearance, v.sex == Sex::Female});
+        }
+        train(g, barracks, "core:spearman", 1);
+        train(g, barracks, "core:levy", 1);
+        for (int t = 0; t < 40 && g.soldiers(0) < 2; ++t) {
+            run(g, 100);
+        }
+        REQUIRE(g.soldiers(0) == 2);
+        DefIndex spearman = kNoDef;
+        for (std::size_t u = 0; u < content.units.size(); ++u) {
+            spearman = content.units[u].id == "core:spearman" ? static_cast<DefIndex>(u) : spearman;
+        }
+        REQUIRE(spearman != kNoDef);
+        int spearmen = 0;
+        for (const Creature& c : g.creatures().data()) {
+            if (c.kind != CreatureKind::Soldier) {
+                continue;
+            }
+            // Of the people it was, with the look and the sex of a villager who is no longer one.
+            CHECK(c.race == dwarf);
+            const auto was = std::find_if(before.begin(), before.end(), [&](const Look& l) {
+                return l.appearance == c.appearance && l.female == (c.female != 0);
+            });
+            CHECK(was != before.end());
+            for (const Villager& v : g.villagers().data()) {
+                CHECK(v.appearance != c.appearance);
+            }
+            spearmen += c.unit == spearman ? 1 : 0;
+        }
+        CHECK(spearmen == 1);
+        BinaryWriter w;
+        g.save(w);
+        Game back(open_content(), map_for(101), rules);
+        BinaryReader r(w.bytes());
+        REQUIRE(back.load(r, open_content()));
+        CHECK(back.hash() == g.hash());
+        REQUIRE(back.creatures().size() == g.creatures().size());
+        for (std::size_t k = 0; k < g.creatures().size(); ++k) {
+            const Creature& a = g.creatures().data()[k];
+            const Creature& b = back.creatures().data()[k];
+            CHECK(b.race == a.race);
+            CHECK(b.female == a.female);
+            CHECK(b.appearance == a.appearance);
+            CHECK(b.unit == a.unit);
+        }
+        // A save that names a people that does not exist is refused.
+        std::vector<std::uint8_t> bytes = w.bytes();
+        Game bad(open_content(), map_for(101), rules);
+        bytes.resize(bytes.size() / 3);
+        BinaryReader cut(bytes);
+        CHECK_FALSE(bad.load(cut, open_content()));
+    }
+
+    // Not a test: a saved game of a town of every people with a barracks and its soldiers.
+    //   salvaciudad_tests -ts=army -tc="manual*" --no-skip
+    // It writes <temp>/SalvaCiudad/manual_guards.scsave: copy it to the saves
+    // folder and load it.
+    TEST_CASE("manual: a saved game with soldiers of every people by their barracks" * doctest::skip()) {
+        std::error_code ec;
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        std::filesystem::create_directories(folder, ec);
+        GameSetup rules = setup();
+        rules.rules.fog = FogMode::None;
+        rules.rules.other_races = 0;
+        Game g(open_content(), map_for(101), rules);
+        grant(g, "core:bread", 6000);
+        grant(g, "core:firewood", 2000);
+        // Three grown people of each of the other peoples; the laborers nearest to the barracks are armed first.
+        for (std::size_t r = 0; r < g.content().races.size(); ++r) {
+            if (g.content().races[r].id == "core:human") {
+                continue;
+            }
+            Command c;
+            c.type = CommandType::DevSpawn;
+            c.value = 3;
+            c.def2 = static_cast<std::uint16_t>(r + 1);
+            g.apply(c);
+        }
+        const EntityId barracks = build(g, "core:barracks");
+        grant(g, "core:weapons", 20);
+        grant(g, "core:bows", 20);
+        grant(g, "core:log", 100);
+        for (int n = 0; n < 6; ++n) {
+            train(g, barracks, "core:levy", 1);
+            train(g, barracks, "core:spearman", 1);
+            train(g, barracks, "core:archer", 1);
+        }
+        for (int t = 0; t < 200 && g.soldiers(0) < 18; ++t) {
+            run(g, 100);
+        }
+        sc::save::SaveData data;
+        data.header.name = "guards";
+        data.header.game_version = SC_VERSION_STRING;
+        data.header.saved_at = "2026-10-05T00:00:00";
+        data.header.rules_version = kGameRulesVersion;
+        data.header.content_hash = g.content().hash;
+        data.header.seed = g.map().settings.seed;
+        data.header.tick = g.tick();
+        data.header.population = static_cast<std::uint32_t>(g.population(0));
+        BinaryWriter bw;
+        g.save(bw);
+        data.put("GAME", std::move(bw.bytes()));
+        REQUIRE(sc::save::write_file(folder / "manual_guards.scsave", data));
+        std::map<std::string, int> by_people;
+        for (const Creature& c : g.creatures().data()) {
+            if (c.kind == CreatureKind::Soldier) {
+                ++by_people[g.content().races[c.race].id];
+            }
+        }
+        std::string list;
+        for (const auto& [id, n] : by_people) {
+            list += id + " " + std::to_string(n) + "; ";
+        }
+        const Building b = *g.buildings().get(barracks);
+        MESSAGE(g.soldiers(0) << " soldiers by the barracks at (" << b.x << ", " << b.z << "), map of " << g.map().size << ": " << list);
     }
 }

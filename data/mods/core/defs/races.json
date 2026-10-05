@@ -4,6 +4,8 @@
     {
       "type": "race",
       "id": "core:human",
+      "soldierMale": "knight_man",
+      "soldierFemale": "knight_woman",
       "name": "race.human",
       "bodies": {
         "male": [

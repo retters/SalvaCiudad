@@ -36,19 +36,40 @@ constexpr std::uint32_t kOutfits[][2] = {
 // bone that holds it, its long axis (+Y in the file) along the hand's
 // forward direction at rest (+Z, the model's front), turned `roll` about
 // that axis. The same rule as art/blender/study_preview.py.
-math::Mat4 tool_placement(const render::ModelData& body, int joint, const render::ModelData& tool, float roll_degrees) {
+math::Mat4 tool_placement(const render::ModelData& body, int joint, const render::ModelData& tool, float roll_degrees,
+                          bool upright = false) {
     const float length = static_cast<std::size_t>(joint) < body.joint_length.size()
                              ? body.joint_length[static_cast<std::size_t>(joint)]
                              : 0.0f;
     const math::Vec3 middle =
         body.joint_rest[static_cast<std::size_t>(joint)].transform_point({0.0f, length * 0.5f, 0.0f});
-    const float half = math::kPi * 0.25f;  // A quarter turn about X, as a quaternion.
+    // A quarter turn about X, as a quaternion; none for what is held upright (+Y in the file is up already).
+    const float half = upright ? 0.0f : math::kPi * 0.25f;
     const float roll = roll_degrees * math::kPi / 360.0f;
     // The tools are made for a person 1.8 m tall: smaller hands hold smaller ones.
     const float size = std::clamp(body.bounds_max.y / 1.8f, 0.7f, 1.15f);
     return math::translation(middle) * math::rotation_quat(std::sin(half), 0.0f, 0.0f, std::cos(half)) *
            math::rotation_quat(0.0f, std::sin(roll), 0.0f, std::cos(roll)) * math::scaling({size, size, size}) *
            math::translation(-tool.grip);
+}
+
+// Phase 116. Where a shield goes in the body's bind pose: flat against the
+// outer side of the forearm that carries it, its middle (its grip) at the
+// middle of the bone and its face looking away from the body. In its file a
+// shield stands in the XY plane and looks along +Z.
+math::Mat4 shield_placement(const render::ModelData& body, int joint, const render::ModelData& shield) {
+    const float length = static_cast<std::size_t>(joint) < body.joint_length.size()
+                             ? body.joint_length[static_cast<std::size_t>(joint)]
+                             : 0.0f;
+    const math::Vec3 middle =
+        body.joint_rest[static_cast<std::size_t>(joint)].transform_point({0.0f, length * 0.5f, 0.0f});
+    const float size = std::clamp(body.bounds_max.y / 1.8f, 0.7f, 1.15f) * 0.8f;
+    // The arm is on its side of the body: away from it is farther along X.
+    const float side = middle.x < 0.0f ? -1.0f : 1.0f;
+    const float half = side * math::kPi * 0.25f;  // A quarter turn about Y: its face looks along X.
+    return math::translation(middle + math::Vec3{side * 0.075f * size, 0.0f, 0.0f}) *
+           math::rotation_quat(0.0f, std::sin(half), 0.0f, std::cos(half)) * math::scaling({size, size, size}) *
+           math::translation(-shield.grip);
 }
 
 // Where a load goes in the body's bind pose (art: docs/ARTE.md): its grip
@@ -164,6 +185,26 @@ void pose(const Body& body, const Motion& m, render::CharacterInstance& c, Load 
     } else {
         c.near_only = 0;
     }
+}
+
+std::uint32_t soldier_gear(const Body& body, const sim::UnitDef& unit) {
+    const auto bit = [&](Gear g) { return body.gear[static_cast<std::size_t>(g)]; };
+    std::uint32_t weapon = 0;
+    switch (unit.weapon) {
+        case sim::UnitWeapon::Club: weapon = bit(Gear::Club); break;
+        case sim::UnitWeapon::Spear: weapon = bit(Gear::Spear); break;
+        case sim::UnitWeapon::Bow: weapon = bit(Gear::Bow); break;
+        case sim::UnitWeapon::None:
+        case sim::UnitWeapon::Count: break;
+    }
+    if (weapon == 0) {
+        return 0;
+    }
+    return weapon | (unit.shield ? bit(Gear::Shield) : 0u);
+}
+
+Act soldier_attack(const sim::UnitDef& unit) {
+    return unit.weapon == sim::UnitWeapon::Bow ? Act::Shoot : Act::Chop;
 }
 
 Act act_of(const sim::Game& game, const sim::Villager& v, bool moving) {
@@ -298,6 +339,41 @@ bool load_body(render::SceneRenderer& renderer, const std::filesystem::path& cor
             loaded.emplace_back(prop, bit);
         }
     }
+    // Phase 116: what the soldiers hold. A thing some clip already put in the same hand is the same accessory.
+    struct GearSpec {
+        Gear gear;
+        std::string_view kind;
+        std::string_view bone;
+    };
+    static constexpr GearSpec kGearSpecs[] = {{Gear::Club, "club", "hand.R"},
+                                              {Gear::Spear, "spear", "hand.R"},
+                                              {Gear::Bow, "bow", "hand.L"},
+                                              {Gear::Shield, "shield", "lower_arm.L"}};
+    body.gear.fill(0);
+    for (const GearSpec& g : kGearSpecs) {
+        const std::string prop = std::string(g.kind) + ":" + std::string(g.bone);
+        const auto known = std::find_if(loaded.begin(), loaded.end(), [&](const auto& l) { return l.first == prop; });
+        if (known != loaded.end()) {
+            body.gear[static_cast<std::size_t>(g.gear)] = 1u << known->second;
+            continue;
+        }
+        const int joint = model.joint_index(g.bone);
+        const auto tool = std::find_if(std::begin(builtin_models::kTools), std::end(builtin_models::kTools),
+                                       [&](const builtin_models::Tool& t) { return t.kind == g.kind; });
+        if (joint < 0 || tool == std::end(builtin_models::kTools)) {
+            continue;
+        }
+        const auto data = load_model_file(core_dir / tool->path);
+        std::uint32_t bit = 0;
+        if (data.has_value() && !data->skinned() &&
+            renderer.add_accessory(*data, body.id, g.bone,
+                                   g.gear == Gear::Shield ? shield_placement(model, joint, *data)
+                                                          : tool_placement(model, joint, *data, tool->roll, tool->upright),
+                                   bit)) {
+            body.gear[static_cast<std::size_t>(g.gear)] = 1u << bit;
+            loaded.emplace_back(prop, bit);
+        }
+    }
     // The loads (phase 67), pinned to the chest.
     body.loads.fill(0);
     if (const int chest = model.joint_index("chest"); chest >= 0) {
@@ -344,6 +420,9 @@ bool Cast::load(render::SceneRenderer& renderer, const std::filesystem::path& co
                     known = bodies_.end() - 1;
                 }
                 (female ? mine.female : mine.male).push_back(static_cast<std::uint32_t>(known - bodies_.begin()));
+                if (name == (female ? race.soldier_female : race.soldier_male)) {
+                    (female ? mine.soldier_female : mine.soldier_male) = static_cast<std::uint32_t>(known - bodies_.begin());
+                }
             }
         }
         races_.push_back(std::move(mine));
@@ -377,6 +456,22 @@ const Body& Cast::body(std::size_t race, bool female, std::uint32_t appearance) 
         return bodies_.front();
     }
     return bodies_[(*list)[(appearance >> 7) % list->size()]];
+}
+
+const Body& Cast::soldier_body(std::size_t race, bool female, std::uint32_t appearance) const {
+    if (race < races_.size()) {
+        const RaceBodies& b = races_[race];
+        // (A people with one body for both sexes names its soldier under either.)
+        const std::uint32_t named = female ? (b.soldier_female != kNoBody ? b.soldier_female : b.soldier_male)
+                                           : (b.soldier_male != kNoBody ? b.soldier_male : b.soldier_female);
+        const bool has_own = female ? !b.female.empty() : !b.male.empty();
+        const std::uint32_t own = female ? b.soldier_female : b.soldier_male;
+        const std::uint32_t pick = has_own ? own : named;
+        if (pick != kNoBody && pick < bodies_.size()) {
+            return bodies_[pick];
+        }
+    }
+    return body(race, female, appearance);
 }
 
 const Body& Cast::any_body(std::uint32_t seed) const {

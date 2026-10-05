@@ -2394,9 +2394,15 @@ public:
             for (const ResourceAmount& c : unit.cost) {
                 (void)take_from_town(b.owner, c.resource, c.amount);
             }
+            // (Phase 116: it goes on being who it was: its people, its sex and its look.)
+            Creature s;
+            if (const Villager* who = g_.villagers_.get(recruit)) {
+                s.race = who->race;
+                s.female = who->sex == Sex::Female ? 1 : 0;
+                s.appearance = who->appearance;
+            }
             kill(recruit, true);
             --g_.players_[b.owner].deaths;  // Not a death: a soldier now.
-            Creature s;
             s.kind = CreatureKind::Soldier;
             s.state = CreatureState::Wander;
             s.town = b.owner;
@@ -9380,6 +9386,9 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u16(a.unit);
         w.u16(a.held);
         w.u16(a.bay);
+        w.u8(a.race);
+        w.u8(a.female);
+        w.u32(a.appearance);
     }
     // What each side explored: a count and a checksum (the cells themselves
     // follow the random numbers in a save).
@@ -9847,7 +9856,8 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         }
         std::uint8_t target_kind = 0;
         if (!r.u8(target_kind) || target_kind >= static_cast<std::uint8_t>(TargetKind::Count) || !r.u16(a.unit) ||
-            !r.u16(a.held) || !r.u16(a.bay) || (a.kind == CreatureKind::Soldier && a.unit >= c.units.size())) {
+            !r.u16(a.held) || !r.u16(a.bay) || (a.kind == CreatureKind::Soldier && a.unit >= c.units.size()) || !r.u8(a.race) ||
+            (a.race != 0 && a.race >= c.races.size()) || !r.u8(a.female) || a.female > 1 || !r.u32(a.appearance)) {
             r.fail();
             return false;
         }

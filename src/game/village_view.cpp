@@ -1169,20 +1169,29 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
             // color for soldiers. They hurry after an enemy and swing at
             // what they attack.
             if (cast_ != nullptr && cast_->loaded()) {
-                const std::uint32_t bits = id.index * 2654435761u + id.generation;
-                const people::Body& body = cast_->any_body(bits);
+                // Phase 116: a soldier is who it was: the body of its people (the humans, their
+                // knights), its size and its colors, with the weapon and the shield of its unit.
+                const sim::UnitDef* unit =
+                    a.kind == sim::CreatureKind::Soldier && a.unit < game.content().units.size() ? &game.content().units[a.unit] : nullptr;
+                const std::uint32_t bits = unit != nullptr ? a.appearance : id.index * 2654435761u + id.generation;
+                const people::Body& body = unit != nullptr ? cast_->soldier_body(a.race, a.female != 0, a.appearance) : cast_->any_body(bits);
                 const float meters = math::length(math::Vec3{to_float(a.position.x - a.previous.x), 0.0f,
                                                              to_float(a.position.z - a.previous.z)}) *
                                      static_cast<float>(sim::kTicksPerSecond);
+                const people::Act attack = unit != nullptr ? people::soldier_attack(*unit) : people::Act::Chop;
                 const people::Act act = moving ? (a.state == sim::CreatureState::Chase ? people::Act::Run : people::Act::Walk)
-                                        : a.state == sim::CreatureState::Bash ? people::Act::Chop
+                                        : a.state == sim::CreatureState::Bash ? attack
                                                                               : people::Act::Idle;
                 people::advance(body, look.person, act, meters, game_dt, rest_dt);
                 render::CharacterInstance c;
                 people::pose(body, look.person, c);
+                if (const std::uint32_t gear = unit != nullptr ? people::soldier_gear(body, *unit) : 0u; gear != 0) {
+                    c.accessories = gear;  // In its hands whatever it does, not the tool of the clip.
+                    c.near_only = 0;
+                }
                 c.position = at;
                 c.yaw = look.yaw;
-                c.scale = 1.05f;
+                c.scale = unit != nullptr ? people::scale_of(sim::village::kAdultAgeYears, a.appearance) * 1.05f : 1.05f;
                 c.palette = people::Cast::palette(body, bits);
                 characters_.push_back(c);
                 torches_.push_back(c.position);

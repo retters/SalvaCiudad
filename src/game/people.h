@@ -51,6 +51,12 @@ inline constexpr std::size_t kLoads = static_cast<std::size_t>(Load::Count);
 // What a villager carries now.
 [[nodiscard]] Load load_of(const sim::Content& content, const sim::Villager& v);
 
+// Phase 116. What a soldier holds, by its unit: accessories of its body
+// that no clip names. The club and the spear go in the right hand, the bow
+// in the left, the shield on the left forearm.
+enum class Gear : std::uint8_t { Club, Spear, Bow, Shield, Count };
+inline constexpr std::size_t kGear = static_cast<std::size_t>(Gear::Count);
+
 // A character model loaded in the renderer.
 struct Body {
     std::string name;  // Its file's name without ".glb".
@@ -59,6 +65,7 @@ struct Body {
     std::array<float, kActs> length{};          // Seconds.
     std::array<std::uint32_t, kActs> tools{};   // Accessory bits shown while the act plays.
     std::array<std::uint32_t, kLoads> loads{};  // Accessory bit of each load (0: not loaded).
+    std::array<std::uint32_t, kGear> gear{};    // Accessory bit of each thing a soldier holds (0: not loaded).
     float walk_speed = 1.4f;  // Meters per second its clips cover at their own rate.
     float run_speed = 2.8f;
     float height = 1.8f;
@@ -90,6 +97,12 @@ inline constexpr float kRunAbove = 1.5f;
 void advance(const Body& body, Motion& m, Act wanted, float speed, float game_dt, float rest_dt, Load load = Load::None);
 // The clip, its time, the tool in hand and the load, into `c`.
 void pose(const Body& body, const Motion& m, render::CharacterInstance& c, Load load = Load::None);
+
+// Phase 116. The accessories of a soldier of `unit` on `body` (0: the body
+// lacks them: it shows the tool of its clip, as before); and the act it
+// attacks with: an archer shoots, the others strike.
+[[nodiscard]] std::uint32_t soldier_gear(const Body& body, const sim::UnitDef& unit);
+[[nodiscard]] Act soldier_attack(const sim::UnitDef& unit);
 
 // What a villager's task looks like. `moving`: it changed place this tick.
 [[nodiscard]] Act act_of(const sim::Game& game, const sim::Villager& v, bool moving);
@@ -133,7 +146,11 @@ public:
     // appearance bits. Never fails once loaded.
     [[nodiscard]] const Body& body(std::size_t race, bool female, std::uint32_t appearance) const;
     [[nodiscard]] std::size_t race_count() const { return races_.size(); }
-    // Any body, for whoever has no race (raiders, soldiers): a human's.
+    // Phase 116. The body of a soldier that was a villager of that people,
+    // sex and look: the one its people names for its soldiers (the humans'
+    // knights), or the one it had.
+    [[nodiscard]] const Body& soldier_body(std::size_t race, bool female, std::uint32_t appearance) const;
+    // Any body, for whoever has no race (raiders): a human's.
     [[nodiscard]] const Body& any_body(std::uint32_t seed) const;
     // Its palette, by the same bits.
     [[nodiscard]] static std::uint32_t palette(const Body& body, std::uint32_t appearance);
@@ -146,7 +163,11 @@ private:
     struct RaceBodies {
         std::vector<std::uint32_t> male;
         std::vector<std::uint32_t> female;
+        // Phase 116: its soldiers' body, by sex (kNoBody: the villager's own).
+        std::uint32_t soldier_male = kNoBody;
+        std::uint32_t soldier_female = kNoBody;
     };
+    static constexpr std::uint32_t kNoBody = ~0u;
     std::vector<Body> bodies_;
     std::vector<RaceBodies> races_;
     std::vector<render::Palette> palettes_;

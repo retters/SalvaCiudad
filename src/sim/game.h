@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 75;
+inline constexpr std::uint32_t kGameRulesVersion = 76;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -612,6 +612,10 @@ struct Creature {
     std::uint16_t held = 0;
     // Phase 106: ticks a wolf is kept at bay by a guard dog: it neither moves nor bites.
     std::uint16_t bay = 0;
+    // Phase 116. Soldiers: the people, the sex and the look of the villager each one was.
+    std::uint8_t race = 0;
+    std::uint8_t female = 0;
+    std::uint32_t appearance = 0;
     bool operator==(const Creature&) const = default;
 };
 

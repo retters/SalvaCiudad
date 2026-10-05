@@ -877,6 +877,8 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] «Recoger los huevos»: llegan los huevos y no hay más tortugas en esa partida.
 - [ ] Sin responder en tres días el panel desaparece y no pasa nada.
 - [ ] En red: responde cualquiera de los que comparten el pueblo y el panel se va en todas las máquinas.
+- [ ] En un pueblo de varias razas, el cuartel saca soldados de la raza del aldeano que entra (un enano sale enano, del mismo color de ropa): la leva con garrote y escudo, el lancero con la lanza de pie y escudo, el arquero con arco. Los humanos salen de caballeros.
+- [ ] Al atacar, el arquero hace el gesto de disparar y los demás golpean. Los asaltantes se ven como antes.
 - [ ] En un pueblo de varias razas (o de una sola que no sea humana) los aldeanos de una misma raza no visten todos igual: se ven al menos cuatro o cinco colores de ropa distintos, y cada uno lleva la herramienta de lo que hace (hacha, martillo, arco, caña). Los orcos sí se ven todos iguales (van a pecho descubierto).
 - [ ] Al amanecer y al atardecer se ven conejos en algunas praderas; muy de vez en cuando, un lince o un gato montés en el bosque.
 - [ ] Un cazador sin ciervos ni jabalíes a su alcance trae carne de conejo (2 por viaje, sin piel).

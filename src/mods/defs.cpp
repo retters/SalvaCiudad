@@ -755,6 +755,15 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.night_vision = r.flag("nightVision");
         def.likes_cats = r.flag("likesCats");
         def.lanterns = r.flag("lanterns");
+        // Phase 116: the body of its soldiers, one of those it has for that sex.
+        def.soldier_male = r.text("soldierMale", false);
+        def.soldier_female = r.text("soldierFemale", false);
+        const auto one_of = [](const std::string& name, const std::vector<std::string>& bodies) {
+            return name.empty() || std::find(bodies.begin(), bodies.end(), name) != bodies.end();
+        };
+        if (!one_of(def.soldier_male, def.bodies_male) || !one_of(def.soldier_female, def.bodies_female)) {
+            r.fail("\"soldierMale\" and \"soldierFemale\" must be among the \"bodies\" of that sex");
+        }
         def.sight = r.integer("sight", 1, sim::kMaxSight, 12);
         if (yyjson_mut_val* work = yyjson_mut_obj_get(d->obj, "work"); work != nullptr) {
             if (!yyjson_mut_is_obj(work)) {
@@ -827,6 +836,10 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.power = r.integer("power", 0, 1000, 1);
         def.tier = static_cast<std::uint8_t>(r.integer("tier", 0, 10, 0));
         def.sight = r.integer("sight", 1, sim::kMaxSight, 16);
+        static constexpr std::string_view kUnitWeapons[] = {"none", "club", "spear", "bow"};
+        static_assert(std::size(kUnitWeapons) == static_cast<std::size_t>(sim::UnitWeapon::Count));
+        def.weapon = static_cast<sim::UnitWeapon>(r.choice("weapon", kUnitWeapons, 0));
+        def.shield = r.flag("shield");
         if (r.ok() && out.units.size() < 64) {
             out.units.push_back(std::move(def));
         }

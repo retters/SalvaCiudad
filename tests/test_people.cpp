@@ -224,6 +224,65 @@ TEST_SUITE("people") {
         }
     }
 
+    // Phase 116.
+    TEST_CASE("soldiers: each unit has its weapon, every body can hold it, and the humans have their knights") {
+        const sim::Content& content = sc::test::core_content();
+        const auto unit = [&](std::string_view id) -> const sim::UnitDef& {
+            const auto found = std::find_if(content.units.begin(), content.units.end(), [&](const sim::UnitDef& u) { return u.id == id; });
+            REQUIRE(found != content.units.end());
+            return *found;
+        };
+        CHECK(unit("core:levy").weapon == sim::UnitWeapon::Club);
+        CHECK(unit("core:levy").shield);
+        CHECK(unit("core:spearman").weapon == sim::UnitWeapon::Spear);
+        CHECK(unit("core:spearman").shield);
+        CHECK(unit("core:archer").weapon == sim::UnitWeapon::Bow);
+        CHECK_FALSE(unit("core:archer").shield);
+        CHECK(people::soldier_attack(unit("core:archer")) == people::Act::Shoot);
+        CHECK(people::soldier_attack(unit("core:levy")) == people::Act::Chop);
+        CHECK(people::soldier_attack(unit("core:spearman")) == people::Act::Chop);
+        // What a body shows for each: its weapon, and its shield if the unit has one.
+        people::Body body;
+        body.gear = {1u << 4, 1u << 5, 1u << 1, 1u << 6};
+        CHECK(people::soldier_gear(body, unit("core:levy")) == ((1u << 4) | (1u << 6)));
+        CHECK(people::soldier_gear(body, unit("core:spearman")) == ((1u << 5) | (1u << 6)));
+        CHECK(people::soldier_gear(body, unit("core:archer")) == (1u << 1));
+        sim::UnitDef bare;
+        CHECK(people::soldier_gear(body, bare) == 0);
+        // A body that lacks the weapon shows nothing of this: the tool of its clip, as before.
+        people::Body none;
+        CHECK(people::soldier_gear(none, unit("core:levy")) == 0);
+        // The game has the three things, held by a handle; and every body has the bones they go on.
+        for (const char* kind : {"club", "spear", "shield", "bow"}) {
+            CAPTURE(kind);
+            const auto tool = std::find_if(std::begin(builtin_models::kTools), std::end(builtin_models::kTools),
+                                           [&](const builtin_models::Tool& t) { return t.kind == kind; });
+            REQUIRE(tool != std::end(builtin_models::kTools));
+            const render::ModelData m = load(std::string(tool->path));
+            CHECK_FALSE(m.skinned());
+            CHECK(m.indices.size() / 3 <= 1000u);
+        }
+        for (const sim::RaceDef& race : content.races) {
+            std::vector<std::string> names = race.bodies_male;
+            names.insert(names.end(), race.bodies_female.begin(), race.bodies_female.end());
+            for (const std::string& name : names) {
+                CAPTURE(name);
+                const render::ModelData m = load(sim::race_body_file(name));
+                CHECK(m.joint_index("hand.R") >= 0);
+                CHECK(m.joint_index("hand.L") >= 0);
+                CHECK(m.joint_index("lower_arm.L") >= 0);
+            }
+            // Only the humans name a body for their soldiers: their knights.
+            if (race.id == "core:human") {
+                CHECK(race.soldier_male == "knight_man");
+                CHECK(race.soldier_female == "knight_woman");
+            } else {
+                CHECK(race.soldier_male.empty());
+                CHECK(race.soldier_female.empty());
+            }
+        }
+    }
+
     // Phase 115. The proposals' villagers of the other peoples in everyday
     // clothes are the game's own race characters with their main garment in
     // another color. The game already does that, and more: those bodies have

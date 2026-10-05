@@ -58,8 +58,9 @@ GAME_PEOPLE = ("adventurer_man", "adventurer_woman", "knight_man", "knight_woman
 # model names the kind): kind -> spec of art/blender/weapons. The game
 # knows them by these file names (src/game/builtin_models.h).
 # The arrow is not held: it is what a bow shoots (phase 67).
+# (Phase 116: the club, the spear and the shield of the soldiers; the game gives them by the unit.)
 GAME_TOOLS = {"axe": "w07_battle_axe", "bow": "w13_long_bow", "rod": "w18_fishing_rod", "hammer": "w33_stone_hammer",
-              "arrow": "w17_arrow"}
+              "arrow": "w17_arrow", "club": "w32_spiked_club", "spear": "w10_spear", "shield": "w19_round_wood_shield"}
 
 
 def make_people(folder, only=None):
