@@ -3928,3 +3928,41 @@ Suite nueva `smallgame`, 7 casos: las zonas nuevas van al final, las de conejos 
 
 **D-10909. Versiones.**
 Reglas 70 y generador 11. La red no cambia.
+
+## Fase 110: pesca: bancos de peces, juncos y patos (2026-10-05)
+
+**D-11001. Tres objetos naturales más, que son del pescador.**
+`FishShoal`, `ReedBank` y `Ducks` son objetos del mapa como los demás (se ven, se pueden seleccionar, tienen su nodo), pero ningún recolector los toma: el pescador sigue yendo al agua más cercana, y lo que tenga dentro del radio de su cabaña cambia cuánto saca.
+
+**D-11002. El ritmo.**
+Antes un pez costaba 45 de trabajo. Ahora 45 × 100 / porcentaje, con 50 % sin nada cerca y 34 puntos por cada banco con peces u orilla de juncos, hasta 150 %: 90 de trabajo por pez sin nada, 30 con tres o más. Es decir, una cabaña en agua sin nada pesca la mitad que antes de esta fase. Los patos no cuentan para el ritmo.
+
+**D-11003. Los bancos se agotan y vuelven.**
+Un banco tiene 40 peces por estación. Cada pez que se saca teniendo bancos al alcance sale del más lleno; al llegar a cero el banco desaparece de la vista y deja de sumar. Al cambiar la estación todos vuelven a 40 (donde la partida tiene una sola estación, cada trimestre). Los juncos no se agotan. Medido: dos pescadores con un solo banco de 12 lo vacían en una estación.
+
+**D-11004. Los patos.**
+Con patos a su alcance, cada vez que un pescador completa su carga (8 peces) la cabaña recibe 1 de huevos en primavera y verano, o 1 de carne en otoño; en invierno, nada. No se gastan. Se descartó hacer de los patos una presa del cazador (sería otra regla de caza para un adorno).
+
+**D-11005. El hielo.**
+No cambia: con −3 °C o menos no se pesca. Un pescador que ya iba de camino llega al agua, ve el hielo y se vuelve; la prueba lo admite (un tick).
+
+**D-11006. El generador.**
+Al final y con su propio azar: 2000 sitios por km²; agua abierta → banco (o patos, uno de cada cinco en agua dulce); orilla de agua dulce → juncos, seis de cada diez. Un mapa pequeño tiene 3 o 4 bancos; uno mediano de cuatro jugadores, 59 bancos, 15 orillas y 22 grupos de patos; uno con mar, 153 bancos. Cada inicio tiene un banco en el agua más cercana (hasta 300 m) si no había ya uno o juncos a 30 m. Ninguno a menos de 27 m de un inicio. Empecé con 600 sitios por km² y un mapa pequeño tenía 2: lo subí.
+
+**D-11007. A la vista.**
+El banco se dibuja 45 cm bajo la superficie y los patos sobre ella. La ventana del pescador lista bancos (y agotados), juncos, patos y el ritmo como porcentaje del máximo. «Al colocar la cabaña se ven los bancos a su alcance» quedó como un número en el texto de ayuda de la colocación (los bancos ya se ven en el agua); no dibujé un resaltado aparte. Los modelos de la propuesta de los juncos y de la presa traían su propia placa de agua; en tierra se veía como un rectángulo azul sobre el pasto, así que la versión del juego va sin ella (igual que ya se hacía con los juncos sueltos de `scatter`). La página de propuestas no cambia.
+
+**D-11008. La presa de castores.**
+Va en la capa de detalle del suelo (fase 91), que es solo vista: en agua dulce con orilla a 5 m por dos lados opuestos y no por los otros dos (un tramo angosto), una de cada ochenta celdas de esa capa, tendida de orilla a orilla; con hielo no se dibuja. No estorba el paso ni cambia nada.
+
+**D-11009. Un tropiezo de la herramienta de modelos.**
+El pato no se construía cuando `beasts` iba antes que `creatures` en la misma pasada: `beasts` importa módulos de `creatures`, y estos quedaban apuntando a la carpeta de `beasts`. No toqué la herramienta: puse la entrada del pato antes de cualquier entrada de `beasts` y lo anoté en ARTE.md.
+
+**D-11010. Pruebas de antes, ajustadas.**
+Cuatro daban por hecho que nada del mapa está en el agua: ahora admiten bancos y patos (la de la vista del mapa pedía que todo objeto estuviera a ras del suelo: lo del agua va en la superficie o hasta 50 cm debajo), y la presa de castores en la capa de detalle (que además pasa del límite pequeño de triángulos y va con los adornos grandes). La huella del mapa de antes ya no mira los tipos nuevos.
+
+**D-11011. Lo medido.**
+Suite nueva `fishing`, 7 casos: los datos y la cuenta del ritmo (50, 84, 118, 150 y tope en 150; los agotados y los patos no suman); sin nada cerca un pez cuesta más de 80 ticks junto al agua y con tres orillas de juncos menos de 45 (73 peces contra 343 en el mismo tiempo, contando lo que se comen); un banco de 12 se agota, sigue vacío el resto de la estación y vuelve con la siguiente; con patos hay huevos antes del otoño, carne en otoño y nada de eso sin patos; con hielo nadie pesca y no entra pescado; en cuatro mapas hay bancos o juncos, en el agua los unos y en tierra los otros, y cada inicio con agua cerca tiene los suyos; guardar y cargar con un banco a medio pescar.
+
+**D-11012. Versiones.**
+Reglas 71 y generador 12. La red no cambia.

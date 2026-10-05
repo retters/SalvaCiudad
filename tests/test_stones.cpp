@@ -154,8 +154,8 @@ std::uint64_t old_map_hash(const MapData& m, std::uint32_t& features) {
     BinaryWriter w;
     features = 0;
     for (const MapFeature& f : m.features) {
-        if (f.type == FeatureType::LooseStones) {
-            continue;
+        if (f.type >= FeatureType::LooseStones) {
+            continue;  // (And what came after them: shoals, reeds and ducks, phase 110.)
         }
         ++features;
         w.u8(static_cast<std::uint8_t>(f.type));
@@ -402,7 +402,11 @@ TEST_SUITE("stones") {
                             << m->features.size() - features);
             CHECK(features == want.features);
             CHECK(hash == want.hash);
-            CHECK(m->features.size() - features >= 40);
+            std::size_t loose = 0;
+            for (const MapFeature& f : m->features) {
+                loose += f.type == FeatureType::LooseStones ? 1 : 0;
+            }
+            CHECK(loose >= 40);
             for (const StartPosition& start : m->starts) {
                 int near = 0;
                 for (const MapFeature& f : m->features) {

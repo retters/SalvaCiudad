@@ -3667,14 +3667,62 @@ public:
             v.task = Task::Idle;
             return;
         }
-        if ((v.timer += steps(v, Skill::Fish)) < 45) {
+        // Phase 110: by what its hut has in reach.
+        Building* hut = g_.buildings_.get(v.job);
+        const Game::FishSpots spots = hut != nullptr ? g_.fish_spots(*hut) : Game::FishSpots{};
+        if ((v.timer += steps(v, Skill::Fish)) < village::kFishWork * 100 / Game::fish_percent(spots)) {
             return;
         }
         v.timer = 0;
         v.carrying.resource = g_.fish_;
         ++v.carrying.amount;
+        if (spots.fullest != 0) {
+            // Out of the fullest shoal; the last one of it, and it is gone until the season changes.
+            Node& shoal = g_.nodes_[spots.fullest - 1];
+            if (--shoal.amount <= 0) {
+                shoal.amount = 0;
+                g_.changed_nodes_.push_back(spots.fullest - 1);
+            }
+        }
         if (v.carrying.amount >= 8) {
             v.task = Task::Idle;
+            // With ducks in reach: their eggs in spring and summer, and one of them in autumn; left at the hut.
+            if (spots.ducks > 0 && hut != nullptr) {
+                const Season season = g_.calendar().season;
+                const FeatureDef* ducks = c_.feature(FeatureType::Ducks);
+                if ((season == Season::Spring || season == Season::Summer) && ducks != nullptr) {
+                    add_to(hut->stock, ducks->resource, 1);
+                } else if (season == Season::Autumn && g_.meat_ != kNoDef) {
+                    add_to(hut->stock, g_.meat_, 1);
+                }
+            }
+        }
+    }
+
+    // Phase 110: a new season (or quarter of the year, where there is one season): the shoals are full again.
+    void refill_shoals() {
+        const std::uint32_t day = g_.calendar_day_ticks();
+        if (g_.tick_ < day) {
+            return;
+        }
+        const Calendar now = g_.calendar();
+        const Calendar before = sim::calendar(g_.rules_.climate, g_.tick_ - day);
+        // (The seasons need not begin with a quarter of the year: one or the other, not both.)
+        const bool one_season = std::popcount(static_cast<unsigned>(g_.rules_.climate.seasons & 0xFu)) <= 1;
+        if (one_season ? (now.month - 1) / 3 == (before.month - 1) / 3 : now.season == before.season) {
+            return;
+        }
+        const FeatureDef* fd = c_.feature(FeatureType::FishShoal);
+        if (fd == nullptr) {
+            return;
+        }
+        for (std::size_t i = 0; i < g_.nodes_.size(); ++i) {
+            if (g_.map_.features[i].type == FeatureType::FishShoal && g_.nodes_[i].amount < fd->amount) {
+                if (g_.nodes_[i].amount <= 0) {
+                    g_.changed_nodes_.push_back(static_cast<std::uint32_t>(i));
+                }
+                g_.nodes_[i].amount = fd->amount;
+            }
         }
     }
 
@@ -5021,6 +5069,7 @@ public:
         coops();
         cats();
         herds();
+        refill_shoals();
     }
 
     // Phase 105: the coops' day. The flock is whole again when spring comes
@@ -7681,6 +7730,51 @@ std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
         }
     }
     return beauty + std::min(trees, 8);
+}
+
+Game::FishSpots Game::fish_spots(std::int32_t x, std::int32_t z, std::int32_t radius) const {
+    FishSpots out;
+    const std::int32_t side = node_cells_side_;
+    if (side <= 0) {
+        return out;
+    }
+    std::int32_t most = 0;
+    for (std::int32_t cz = std::max(0, (z - radius) / kNodeCell); cz <= std::min(side - 1, (z + radius) / kNodeCell); ++cz) {
+        for (std::int32_t cx = std::max(0, (x - radius) / kNodeCell); cx <= std::min(side - 1, (x + radius) / kNodeCell); ++cx) {
+            for (const std::uint32_t i : node_cells_[static_cast<std::size_t>(cz * side + cx)]) {
+                const MapFeature& f = map_.features[i];
+                if (f.type != FeatureType::FishShoal && f.type != FeatureType::ReedBank && f.type != FeatureType::Ducks) {
+                    continue;
+                }
+                const std::int64_t dx = f.x.floor_int() - x, dz = f.z.floor_int() - z;
+                if (dx * dx + dz * dz > static_cast<std::int64_t>(radius) * radius) {
+                    continue;
+                }
+                if (f.type == FeatureType::ReedBank) {
+                    ++out.reeds;
+                } else if (f.type == FeatureType::Ducks) {
+                    ++out.ducks;
+                } else if (nodes_[i].amount > 0) {
+                    ++out.shoals;
+                    if (nodes_[i].amount > most) {
+                        most = nodes_[i].amount;
+                        out.fullest = i + 1;
+                    }
+                } else {
+                    ++out.spent;
+                }
+            }
+        }
+    }
+    return out;
+}
+
+Game::FishSpots Game::fish_spots(const Building& hut) const {
+    return fish_spots(hut.x + hut.width / 2, hut.z + hut.depth / 2, content_->buildings[hut.def].work_radius);
+}
+
+std::int32_t Game::fish_percent(const FishSpots& spots) {
+    return std::min(village::kFishMost, village::kFishAlone + village::kFishPerSpot * (spots.shoals + spots.reeds));
 }
 
 std::int32_t Game::zone_room(std::size_t z) const {

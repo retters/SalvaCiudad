@@ -23,6 +23,7 @@ constexpr std::string_view kFiles[kKinds] = {
     "models/props/cover_driftwood.glb",      "models/props/cover_shells.glb",
     "models/props/cover_tide_pool.glb",      "models/props/cover_snow_drift.glb",
     "models/props/cover_ice_floe.glb",       "models/props/cover_snowman.glb",
+    "models/props/cover_beaver_dam.glb",
 };
 
 // Meters a plant bends at one meter of height.
@@ -138,7 +139,19 @@ std::optional<Item> item_at(const sim::MapData& map, const sim::Content& content
     if (map.water_at(cx, cz)) {
         // Ice floes, away from the shore, while it freezes.
         const bool open = water(map, cx - 2, cz) && water(map, cx + 2, cz) && water(map, cx, cz - 2) && water(map, cx, cz + 2);
-        return when.frozen && open && roll < 30 ? take(Kind::IceFloe) : std::nullopt;
+        if (when.frozen && open && roll < 30) {
+            return take(Kind::IceFloe);
+        }
+        // Phase 110: a beaver dam across a stream: fresh water with a bank
+        // within five meters on two opposite sides. An ornament.
+        const bool banks_x = !water(map, cx - 5, cz) && !water(map, cx + 5, cz);
+        const bool banks_z = !water(map, cx, cz - 5) && !water(map, cx, cz + 5);
+        if (!when.frozen && !sea(map, cx, cz) && (banks_x != banks_z) && roll >= 30 && roll < 42) {
+            item.scale = 1.0f;
+            item.yaw = banks_x ? 0.0f : std::numbers::pi_v<float> * 0.5f;  // It lies from bank to bank.
+            return take(Kind::BeaverDam);
+        }
+        return std::nullopt;
     }
     const sim::Terrain terrain = map.terrain_at(cx, cz);
     const std::uint8_t b = map.biome_at(cx, cz);

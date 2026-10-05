@@ -192,6 +192,9 @@ const char* feature_key(sim::FeatureType type) {
         case sim::FeatureType::CoalDeposit: return "feature.coalDeposit";
         case sim::FeatureType::GoldDeposit: return "feature.goldDeposit";
         case sim::FeatureType::LooseStones: return "feature.looseStones";
+        case sim::FeatureType::FishShoal: return "feature.fishShoal";
+        case sim::FeatureType::ReedBank: return "feature.reedBank";
+        case sim::FeatureType::Ducks: return "feature.ducks";
         default: return "feature.tree";
     }
 }
@@ -880,6 +883,14 @@ void GameHud::placement_hint(ui::Context& ctx, GameSession& s) {
     const KeyBindings& b = services_.settings().input.bindings;
     std::string text = ui.field_farm.valid() ? tr("hud.place.field.hint")
                                              : tr("hud.place.hint", key_display_name(b.key(Action::GameRotateBuilding, 0)));
+    // Phase 110: a fisher's hut being placed says what it would have within reach there.
+    if (const sim::Content& c = s.game().content();
+        !ui.field_farm.valid() && ui.hover_valid && ui.placing < c.buildings.size() && c.buildings[ui.placing].work == sim::WorkKind::Fish) {
+        const sim::BuildingDef& hut = c.buildings[ui.placing];
+        const sim::Game::FishSpots spots =
+            s.game().fish_spots(ui.hover_x + hut.width / 2, ui.hover_z + hut.depth / 2, hut.work_radius);
+        text += "  ·  " + tr("hud.place.fisher", spots.shoals + spots.reeds);
+    }
     // Phase 93: a line being traced says how long it is and what it will cost.
     const sim::Content& content = s.game().content();
     const bool tracing = ui.placing < content.buildings.size() && !content.buildings[ui.placing].line.empty() &&
@@ -968,6 +979,17 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
     } else {
         if ((b->garden & sim::garden::kFormal) != 0) {
             lines.push_back(tr("hud.decor.formal"));
+        }
+        if (d.work == sim::WorkKind::Fish) {
+            // Phase 110: what it has within its reach, and how its shoals are.
+            const sim::Game::FishSpots spots = game.fish_spots(*b);
+            lines.push_back(spots.spent > 0 ? tr("hud.fisher.shoalsSpent", spots.shoals, spots.spent)
+                                            : tr("hud.fisher.shoals", spots.shoals));
+            lines.push_back(tr("hud.fisher.reeds", spots.reeds));
+            if (spots.ducks > 0) {
+                lines.push_back(tr("hud.fisher.ducks"));
+            }
+            lines.push_back(tr("hud.fisher.pace", sim::Game::fish_percent(spots) * 100 / sim::village::kFishMost));
         }
         if (d.coop_gives != sim::kNoDef) {
             lines.push_back(tr("hud.coop.hens", static_cast<int>(b->flock), d.coop_hens));

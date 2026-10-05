@@ -122,6 +122,12 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### Pesca: bancos, juncos y patos (fase 110)
+
+Tres objetos naturales son del pescador y de nadie más (no van en `gathers`): `fishShoal` (un banco de peces en el agua; su `amount` son los peces que tiene por estación), `reedBank` (una orilla de juncos en tierra, junto a agua dulce) y `ducks` (patos en agua dulce; su `resource` es lo que dan en primavera y verano, los huevos).
+
+Un edificio con `"work": "fish"` pesca al 50 % del ritmo de antes; cada banco con peces y cada orilla de juncos dentro de su `radius` suma 34 puntos, hasta 150 %. Cada pez que saca teniendo bancos a su alcance sale del banco más lleno; uno vacío no suma, y todos se rellenan al cambiar la estación. Con patos a su alcance, cada viaje de pesca completo deja además en la cabaña 1 de lo que dan los patos en primavera y verano, y 1 de carne en otoño.
+
 #### Conejos y lince (fase 109)
 
 El mapa tiene zonas de **conejos** (en praderas y pasto) y de **lince** (en lo espeso del bosque). No son animales que caminen por el mapa: la simulación guarda cuántos hay en cada zona, y la vista los enseña al amanecer y al atardecer.
@@ -266,7 +272,7 @@ La hierba alta, los juncos junto al agua dulce, lo que deja el mar en la arena y
 
 ### mapFeature
 
-Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, `beeTree`, `nest`, `stump`, `mushroomRing`, `clayDeposit`, `coalDeposit`, `goldDeposit`, `looseStones`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie).
+Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`, `beeTree`, `nest`, `stump`, `mushroomRing`, `clayDeposit`, `coalDeposit`, `goldDeposit`, `looseStones`, `fishShoal`, `reedBank`, `ducks`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie).
 
 **Lo que da por temporadas (fase 98).** Con `"seasons": ["summer"]` (una o varias de `spring`, `summer`, `autumn`, `winter`) el elemento no se agota ni rebrota: da su `amount` **una vez al año**, en esas estaciones, y fuera de ellas no tiene nada. Se recoge de a una unidad, cada una con `work` de trabajo, y el elemento se queda donde está (el árbol con panal, el nido y el tocón del juego base). Con `"afterRain": true` además no se llena una vez al año sino **cada día que sigue a un día de lluvia**, dentro de sus estaciones, y solo se ve en el mapa mientras tiene algo (el corro de setas); en una partida sin lluvia se llena los días múltiplos de diez. No vale para `tree` ni `stoneDeposit`, ni junto con `regrowDays`. Lo trabaja el edificio de recolección que tenga su `kind` en `gathers`. La cantidad es por año de la duración normal (20 minutos): en una partida con años más largos o más cortos da en proporción.
 

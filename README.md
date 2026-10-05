@@ -851,6 +851,12 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] En el agua hay bancos de peces (se ven bajo la superficie) y, en agua dulce, patos; en algunas orillas, juncos altos. Al hacer clic dicen «Banco de peces», «Orilla de juncos» o «Patos».
+- [ ] Al colocar una Cabaña del pescador, el texto de ayuda dice cuántos bancos y juncos tendría a su alcance en ese sitio.
+- [ ] La ventana del pescador dice cuántos bancos tiene (y cuántos agotados), cuántas orillas de juncos, si hay patos y a qué ritmo pesca.
+- [ ] Un banco muy pescado desaparece y vuelve al cambiar la estación.
+- [ ] Con patos cerca llegan huevos en primavera y verano, y carne en otoño, sin cazador.
+- [ ] En algunos tramos de río angostos hay una presa de castores (solo adorno).
 - [ ] Al amanecer y al atardecer se ven conejos en algunas praderas; muy de vez en cuando, un lince o un gato montés en el bosque.
 - [ ] Un cazador sin ciervos ni jabalíes a su alcance trae carne de conejo (2 por viaje, sin piel).
 - [ ] Un campo de verduras en una pradera con conejos da un quinto menos, con el aviso «Los conejos se comieron parte de la cosecha»; con valla en medio borde o una caseta de perro a 12 m, no.

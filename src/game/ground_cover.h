@@ -45,6 +45,7 @@ enum class Kind : std::uint8_t {
     SnowDrift,
     IceFloe,
     Snowman,
+    BeaverDam,  // Phase 110: across a stream, here and there.
     Count
 };
 inline constexpr std::size_t kKinds = static_cast<std::size_t>(Kind::Count);

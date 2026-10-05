@@ -247,6 +247,10 @@ render::Instance feature_instance(const sim::MapData& map, const sim::MapFeature
     const float z = to_float(f.z);
     render::Instance inst;
     inst.position = {x, to_float(map.height_at(f.x, f.z)), z};
+    if (f.type == sim::FeatureType::FishShoal || f.type == sim::FeatureType::Ducks) {
+        // Phase 110: on the water (the ducks), or just under it (the fish).
+        inst.position.y = map_surface_height(map, x, z) - (f.type == sim::FeatureType::FishShoal ? 0.45f : 0.02f);
+    }
     inst.yaw = static_cast<float>(f.rotation) / 65536.0f * 2.0f * std::numbers::pi_v<float>;
     inst.scale = f.type == sim::FeatureType::Tree ? static_cast<float>(sim::MapData::tree_height_cm(f)) / 100.0f
                  : f.type == sim::FeatureType::StoneDeposit ? 1.0f  // Its models are to size.

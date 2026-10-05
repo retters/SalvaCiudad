@@ -225,7 +225,8 @@ void check_island_map(MapSize size, std::int32_t towns, std::int32_t per_town, s
 // free ground; the deposits suite checks that what was there is as it was.)
 // (Generator 10, phase 102: loose stones; the stones suite checks the rest.)
 // (Generator 11, phase 109: zones of rabbits and of the lynx; the forage suite checks the zones of before.)
-constexpr std::uint64_t kGoldenSmallMap = 0xd847870755e7ef6bull;
+// (Generator 12, phase 110: shoals of fish, banks of reeds and ducks; the stones suite checks the rest.)
+constexpr std::uint64_t kGoldenSmallMap = 0xac047f9c84e5ae45ull;
 
 // Generates a map with the defaults and prints the time of each stage.
 void time_stages(MapSize size) {
@@ -338,7 +339,9 @@ TEST_SUITE("worldgen") {
             CHECK(f.z >= Fixed{});
             CHECK(f.x < Fixed::from_int(m->size));
             CHECK(f.z < Fixed::from_int(m->size));
-            CHECK_FALSE(m->water_at(f.x.floor_int(), f.z.floor_int()));
+            // (Shoals of fish and ducks live in the water: phase 110. Nothing else does.)
+            const bool of_the_water = f.type == FeatureType::FishShoal || f.type == FeatureType::Ducks;
+            CHECK(m->water_at(f.x.floor_int(), f.z.floor_int()) == of_the_water);
             trees += f.type == FeatureType::Tree;
             stones += f.type == FeatureType::Stone;
         }

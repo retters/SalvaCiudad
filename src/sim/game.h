@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 70;
+inline constexpr std::uint32_t kGameRulesVersion = 71;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,14 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 110. A fisher's hut fishes at kFishAlone percent of the pace of
+// before; each shoal with fish in it and each bank of reeds within its
+// reach adds kFishPerSpot, up to kFishMost. Every fish caught with shoals in
+// reach comes out of one of them; they fill again when the season changes.
+inline constexpr std::int32_t kFishAlone = 50;
+inline constexpr std::int32_t kFishPerSpot = 34;
+inline constexpr std::int32_t kFishMost = 150;
+inline constexpr std::int32_t kFishWork = 45;  // Worker-ticks a fish took, and takes at 100 percent.
 // Phase 109. A zone of rabbits holds kRabbits of them, half with a lynx
 // within kLynxMeters of it. With kManyRabbits or more, a field of a crop
 // they eat that stands in the zone loses kRabbitLoss percent of its harvest,
@@ -899,6 +907,18 @@ public:
     // How pleasant a place is for homes: buildings around (gardens add,
     // workshops take away) and trees (phase 12; the map layer, phase 17).
     [[nodiscard]] std::int32_t desirability_at(FixedVec2 here, const Building* self = nullptr) const;
+    // Phase 110. What a fisher's hut has within its reach.
+    struct FishSpots {
+        std::int32_t shoals = 0;   // With fish in them.
+        std::int32_t spent = 0;    // Fished out until the season changes.
+        std::int32_t reeds = 0;
+        std::int32_t ducks = 0;
+        std::uint32_t fullest = 0; // The shoal with most fish left: its index + 1, or 0.
+    };
+    [[nodiscard]] FishSpots fish_spots(std::int32_t x, std::int32_t z, std::int32_t radius) const;
+    [[nodiscard]] FishSpots fish_spots(const Building& hut) const;
+    // The pace it fishes at, in percent of the pace of before.
+    [[nodiscard]] static std::int32_t fish_percent(const FishSpots& spots);
     // Phase 109. How many animals zone `z` holds at most (rabbits: half with a lynx near).
     [[nodiscard]] std::int32_t zone_room(std::size_t z) const;
     // Whether a lynx lives within village::kLynxMeters of the edge of the circle at (x, z) of `radius` meters.

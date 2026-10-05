@@ -55,7 +55,14 @@ TEST_SUITE("map_view") {
                 const sim::Fixed x = sim::Fixed::from_raw(static_cast<std::int32_t>(std::lround(inst.position.x * 65536.0f)));
                 const sim::Fixed z = sim::Fixed::from_raw(static_cast<std::int32_t>(std::lround(inst.position.z * 65536.0f)));
                 const float ground = static_cast<float>(map.height_at(x, z).raw()) / 65536.0f;
-                CHECK(std::abs(inst.position.y - ground) < 0.02f);
+                if (map.water_at(x.floor_int(), z.floor_int())) {
+                    // What lives in the water (phase 110): on it, the ducks; or just under it, the fish.
+                    const float surface = map_surface_height(map, inst.position.x, inst.position.z);
+                    CHECK(inst.position.y <= surface + 0.02f);
+                    CHECK(inst.position.y >= surface - 0.5f);
+                } else {
+                    CHECK(std::abs(inst.position.y - ground) < 0.02f);
+                }
                 CHECK(inst.scale > 0.0f);
             }
         }

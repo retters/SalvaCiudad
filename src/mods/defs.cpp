@@ -421,7 +421,8 @@ constexpr std::string_view kNeeds[] = {"food",   "water",  "clothes", "shoes",  
                                        "heating", "beauty", "market",  "hygiene", "healer",  "doctor"};
 constexpr std::string_view kFeatureKinds[] = {"tree",         "stone",       "ironOre",     "berryBush",   "herbs",
                                               "stoneDeposit", "beeTree",     "nest",        "stump",       "mushroomRing",
-                                              "clayDeposit",  "coalDeposit", "goldDeposit", "looseStones"};
+                                              "clayDeposit",  "coalDeposit", "goldDeposit", "looseStones",
+                                              "fishShoal",    "reedBank",    "ducks"};
 static_assert(std::size(kFeatureKinds) == static_cast<std::size_t>(sim::FeatureType::Count));
 constexpr std::string_view kSizes[] = {"small", "medium", "large", "huge"};
 

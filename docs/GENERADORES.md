@@ -86,6 +86,8 @@ Y al final (fase 102), las piedras sueltas: grupos de una a tres, más en terren
 
 Y las zonas de caza menor (fase 109), después de todas las demás zonas y con su propia secuencia de azar: de conejos en praderas y pasto (4 por km², de 40 a 90 m de radio) y de lince en lo espeso del bosque (0,8 por km², de 60 a 120 m). Las zonas de ciervos, jabalíes, lobos y osos quedan donde estaban.
 
+Y lo del pescador (fase 110), también al final y con su propia secuencia de azar: se prueban 2000 sitios por km²; el que cae en agua abierta es un banco de peces (o, una vez de cada cinco en agua dulce, patos) y el que cae en una orilla de agua dulce, seis de cada diez veces, una orilla de juncos. Además cada inicio tiene un banco en el agua más cercana a él (hasta 300 m), si no había ya un banco o juncos a 30 m. Ninguno donde va un centro del pueblo.
+
 Lomas de 64 m, ondulaciones de 512 m y 40 cm de relieve fino, más las rocas, arbustos, hierbas y el pasto.
 
 ## Todo lo que F3 puede nombrar

@@ -41,7 +41,7 @@ namespace worldgen {
 // Changes whenever the same settings would give a different map. Saved with
 // the map (decision D-620). It goes on from the hierarchical generator's
 // own number, which it was until phase 49 (D-4902).
-inline constexpr std::uint16_t kGeneratorVersion = 11;
+inline constexpr std::uint16_t kGeneratorVersion = 12;
 inline constexpr std::int32_t kStartClearRadius = 25;       // Meters kept free for the town center.
 inline constexpr std::int32_t kStartResourceRadius = 180;   // Where each start is guaranteed resources.
 inline constexpr std::int32_t kStartMinStones = 4;
@@ -56,6 +56,12 @@ inline constexpr std::int32_t kStartCoalRadius = 400;
 inline constexpr std::int32_t kLooseStonesPerKm2 = 2000;
 inline constexpr std::int32_t kStartMinLooseStones = 6;
 inline constexpr std::int32_t kStartLooseRadius = 80;
+// Phase 110: places tried for a shoal, reeds or ducks, in tenths per km² (most fall on dry land and are
+// nothing); and the shoal or reeds every start has within kStartFishNear meters of the water nearest to
+// it, looked for up to kStartFishRadius away.
+inline constexpr std::int32_t kFishTriesPerKm2 = 20000;
+inline constexpr std::int32_t kStartFishRadius = 300;
+inline constexpr std::int32_t kStartFishNear = 30;
 // Phase 109: zones of rabbits and of the lynx, in tenths per km².
 inline constexpr std::int32_t kRabbitZonesPerKm2 = 40;
 inline constexpr std::int32_t kLynxZonesPerKm2 = 8;

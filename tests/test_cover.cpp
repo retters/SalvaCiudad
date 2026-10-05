@@ -335,7 +335,8 @@ TEST_SUITE("cover") {
             const render::ModelLoadResult r =
                 render::load_glb({reinterpret_cast<const std::uint8_t*>(bytes.data.data()), bytes.data.size()});
             REQUIRE_MESSAGE(r.ok, file << ": " << r.error);
-            const bool large = kind == Kind::Scree || kind == Kind::Crag || kind == Kind::TidePool || kind == Kind::Snowman;
+            const bool large = kind == Kind::Scree || kind == Kind::Crag || kind == Kind::TidePool || kind == Kind::Snowman ||
+                               kind == Kind::BeaverDam;
             CHECK_MESSAGE(r.model.indices.size() / 3 <= (large ? 1500u : 400u), file << ": " << r.model.indices.size() / 3);
             CHECK_MESSAGE(!r.model.skinned(), file);
             CHECK_MESSAGE(r.model.clips.empty(), file);
@@ -381,7 +382,8 @@ TEST_SUITE("cover") {
                     REQUIRE(cz >= 0);
                     REQUIRE(cx < game.map().size);
                     REQUIRE(cz < game.map().size);
-                    CHECK((!game.map().water_at(cx, cz) || item->kind == Kind::IceFloe));
+                    // (On the water: floes when it freezes and, across a stream, a beaver dam: phase 110.)
+                    CHECK((!game.map().water_at(cx, cz) || item->kind == Kind::IceFloe || item->kind == Kind::BeaverDam));
                 }
             }
         }

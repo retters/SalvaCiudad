@@ -80,7 +80,8 @@ public:
           forage_rng_(s.seed, 98),
           ore_rng_(s.seed, 101),
           stone_rng_(s.seed, 102),
-          small_rng_(s.seed, 109) {}
+          small_rng_(s.seed, 109),
+          fish_rng_(s.seed, 110) {}
 
     std::optional<MapData> run() {
         out_.settings = s_;
@@ -1373,7 +1374,86 @@ private:
         ores();
         stones();
         small_game();
+        fishing();
         return report(GenStage::Starts, 100);
+    }
+
+    // Phase 110: shoals of fish in the water, banks of reeds on the shores
+    // of fresh water and ducks on it; and by every start, a shoal in the
+    // water nearest to it. After everything else, with their own random
+    // sequence: nothing else moves.
+    void fishing() {
+        std::swap(rng_, fish_rng_);
+        const auto wet = [this](std::int32_t x, std::int32_t z) {
+            return x >= 2 && z >= 2 && x < n_ - 2 && z < n_ - 2 && !land(x, z);
+        };
+        // (As the game tells the sea from a lake: water at the level of the sea.)
+        const auto fresh = [this](std::int32_t x, std::int32_t z) {
+            const auto level = water_[ci(x, z)];
+            return level != 0 && !(sea_mm_ / 10 != 0 && std::clamp(level / 10, 1, 65535) == std::clamp(sea_mm_ / 10, 0, 65535));
+        };
+        // (None where a town center goes.)
+        const auto clear = [this](std::int32_t x, std::int32_t z) {
+            return std::none_of(out_.starts.begin(), out_.starts.end(), [&](const StartPosition& s) {
+                return d2(cell_center(x), cell_center(z), s.x, s.z) <= meters2(kStartClearRadius + 2);
+            });
+        };
+        const auto put = [&](FeatureType type, std::int32_t x, std::int32_t z) {
+            if (clear(x, z)) {
+                add_feature(type, cell_center(x), cell_center(z), Fixed::one(), static_cast<std::uint16_t>(rng_.next_u32()));
+            }
+        };
+        const auto shore = [&](std::int32_t x, std::int32_t z) {
+            // Land with fresh water two meters away.
+            if (x < 4 || z < 4 || x >= n_ - 4 || z >= n_ - 4 || !land(x, z)) {
+                return false;
+            }
+            for (const auto& [dx, dz] : {std::pair{2, 0}, std::pair{-2, 0}, std::pair{0, 2}, std::pair{0, -2}}) {
+                if (wet(x + dx, z + dz) && fresh(x + dx, z + dz)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        const std::int32_t tries = per_area(kFishTriesPerKm2);
+        for (std::int32_t i = 0; i < tries; ++i) {
+            const std::int32_t x = rng_.range(4, n_ - 5);
+            const std::int32_t z = rng_.range(4, n_ - 5);
+            const std::int32_t roll = rng_.range(0, 99);
+            if (wet(x, z) && wet(x + 3, z) && wet(x - 3, z) && wet(x, z + 3) && wet(x, z - 3)) {
+                // Open water: a shoal; on fresh water, ducks now and then.
+                put(roll < 80 || !fresh(x, z) ? FeatureType::FishShoal : FeatureType::Ducks, x, z);
+            } else if (shore(x, z) && roll < 60) {
+                put(FeatureType::ReedBank, x, z);
+            }
+        }
+        // By every start: a shoal in the water nearest to it, within a walk.
+        for (const StartPosition& s : out_.starts) {
+            const std::int32_t sx = s.x.floor_int(), sz = s.z.floor_int();
+            std::int64_t best = INT64_MAX;
+            std::int32_t bx = 0, bz = 0;
+            for (std::int32_t z = std::max(4, sz - kStartFishRadius); z < std::min(n_ - 4, sz + kStartFishRadius); z += 2) {
+                for (std::int32_t x = std::max(4, sx - kStartFishRadius); x < std::min(n_ - 4, sx + kStartFishRadius); x += 2) {
+                    const std::int64_t d = static_cast<std::int64_t>(x - sx) * (x - sx) + static_cast<std::int64_t>(z - sz) * (z - sz);
+                    if (d < best && clear(x, z) && wet(x, z) && wet(x + 2, z) && wet(x - 2, z) && wet(x, z + 2) && wet(x, z - 2)) {
+                        best = d;
+                        bx = x;
+                        bz = z;
+                    }
+                }
+            }
+            if (best == INT64_MAX) {
+                continue;  // No water by this start.
+            }
+            const bool has = std::any_of(out_.features.begin(), out_.features.end(), [&](const MapFeature& f) {
+                return (f.type == FeatureType::FishShoal || f.type == FeatureType::ReedBank) &&
+                       d2(f.x, f.z, cell_center(bx), cell_center(bz)) <= meters2(kStartFishNear);
+            });
+            if (!has) {
+                put(FeatureType::FishShoal, bx, bz);
+            }
+        }
+        std::swap(rng_, fish_rng_);
     }
 
     // Phase 109: zones of rabbits on the meadows and the grass, and of the
@@ -1782,6 +1862,7 @@ private:
     Rng ore_rng_;  // Phase 101: the deposits of clay, coal and gold, as last of all.
     Rng stone_rng_;  // Phase 102: the loose stones, after those.
     Rng small_rng_;  // Phase 109: the zones of rabbits and of the lynx.
+    Rng fish_rng_;   // Phase 110: shoals of fish, banks of reeds and ducks.
     MapData out_;
     std::vector<std::int32_t> h_;       // Vertex heights, millimeters.
     std::vector<std::uint8_t> bed_;        // Vertex dug as a river bed.

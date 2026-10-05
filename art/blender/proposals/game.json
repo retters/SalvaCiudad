@@ -54,6 +54,10 @@
               "animal_lynx": "lynx", "animal_wildcat": "wildcat"}
     },
     {
+      "family": "creatures", "class": "animal", "to": "props", "game": true,
+      "ids": {"animal_duck": "ducks"}
+    },
+    {
       "family": "nature", "class": "animal", "to": "fauna", "bare": true,
       "ids": {"nature_insects_butterflies": "butterflies", "nature_insects_fireflies": "fireflies",
               "nature_insects_dragonflies": "dragonflies"}
@@ -113,6 +117,14 @@
     {
       "family": "beasts", "class": "animal", "to": "fauna",
       "ids": {"animal_ram": "ram", "pet_rabbit": "rabbit"}
+    },
+    {
+      "family": "beasts", "class": "animal", "to": "props", "game": true,
+      "ids": {"sea_fish_school": "fish_shoal"}
+    },
+    {
+      "family": "biomes", "class": "rock", "to": "props", "game": true,
+      "ids": {"biome_riverside_reed_bank": "reed_bank", "biome_riverside_beaver_dam": "cover_beaver_dam"}
     },
     {
       "family": "annexes", "class": "building", "to": "buildings", "game": true,

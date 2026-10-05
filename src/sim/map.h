@@ -119,7 +119,10 @@ enum class Terrain : std::uint8_t { Grass, Meadow, ForestFloor, Sand, Rock, Clay
 // (Phase 101: deposits of clay, of coal and of gold. Phase 102: loose stones.)
 enum class FeatureType : std::uint8_t {
     Tree, Stone, IronOre, BerryBush, Herbs, StoneDeposit, BeeTree, Nest, Stump, MushroomRing,
-    ClayDeposit, CoalDeposit, GoldDeposit, LooseStones, Count
+    ClayDeposit, CoalDeposit, GoldDeposit, LooseStones,
+    // Phase 110: what a fisher's hut fishes better by: a shoal in the water (it is fished out and comes
+    // back with the season), a bank of reeds on a fresh shore; and ducks, for eggs and meat.
+    FishShoal, ReedBank, Ducks, Count
 };
 
 // A deposit (phases 83 and 101): finite, in three sizes, standing on ground

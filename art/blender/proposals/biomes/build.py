@@ -191,7 +191,8 @@ def petal_carpet(name, mat):
 def reed_bank():
     mb = kit.begin()
     rnd = random.Random(10)
-    solid(mb, [(-2.5, -1.0, 0.0), (2.5, -1.0, 0.0), (2.5, 0.2, 0.0), (-2.5, 0.2, 0.0)], (0, 0, 0.06), "water")
+    if not kit.GAME:   # In the game it stands on the bank, by the map's own water.
+        solid(mb, [(-2.5, -1.0, 0.0), (2.5, -1.0, 0.0), (2.5, 0.2, 0.0), (-2.5, 0.2, 0.0)], (0, 0, 0.06), "water")
     blob(mb, 0, 0.8, 0, 2.6, "grass", (1, 0.4, 0.12), None, 9, 3)
     bones = ["sway0", "sway1", "sway2"]
     for i in range(16):
@@ -209,8 +210,9 @@ def beaver_dam():
     """A dam of sticks across a stream, with the lodge: the water stands higher behind it. Waterline Z = 0."""
     mb = kit.begin()
     rnd = random.Random(11)
-    mb.box((0, 1.6, -0.02), (7.0, 3.0, 0.1), "water")
-    mb.box((0, -1.6, -0.5), (7.0, 3.0, 0.1), "water")
+    if not kit.GAME:   # In the game it lies across the map's own water.
+        mb.box((0, 1.6, -0.02), (7.0, 3.0, 0.1), "water")
+        mb.box((0, -1.6, -0.5), (7.0, 3.0, 0.1), "water")
     for _ in range(70):
         x = rnd.uniform(-3.2, 3.2)
         y = rnd.uniform(-0.5, 0.5)
