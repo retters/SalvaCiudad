@@ -295,6 +295,10 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 `art/audio/make_sounds.py` genera también `rain.wav`: un bucle de 5,9 segundos de lluvia pareja (un siseo sin graves y unas trescientas gotas por segundo), con el final fundido en el principio para que no se note la vuelta. Como los demás, sale de una semilla fija: generarlo dos veces da el mismo archivo.
 
+### Los aldeanos de raza «de diario» (fase 115): no hay cuerpos nuevos
+
+Los nueve aldeanos de raza de las propuestas (`proposals/folk/races.py`) son los personajes de raza del juego con otro color en una prenda y una herramienta en la mano; ni la malla ni el esqueleto cambian. Esa prenda es, en los archivos del juego, el material `top`, que el juego ya pinta distinto en cada aldeano (el color propio del personaje o uno de siete atuendos de diario), y la herramienta ya la pone el juego según lo que hace. Por eso no se añadieron cuerpos: serían la misma malla dos veces. Ver D-11501.
+
 ### La tortuga (fase 114)
 
 `fauna/turtle.glb` (de `proposals/beasts`, `sea_giant_turtle`, 276 triángulos). Otro «espectáculo» de la fauna de ambiente: tantas como hayan venido, en la arena alrededor del sitio, con su animación `idle`, mientras esperan la respuesta y mientras el pueblo protege la playa.

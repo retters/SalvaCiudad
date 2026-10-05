@@ -1,14 +1,19 @@
 #include <doctest.h>
 
+#include <algorithm>
+#include <cstdlib>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <set>
 
+#include "game/save_file.h"
 #include "sim/game.h"
 #include "sim/worldgen.h"
 #include "test_util.h"
+#include "version.h"
 
 using namespace sc::sim;
 
@@ -222,5 +227,95 @@ TEST_SUITE("races") {
         run(g, 700);
         run(back, 700);
         CHECK(back.hash() == g.hash());
+    }
+
+    // Not a test: a saved game of a town of every people, with work for all.
+    //   salvaciudad_tests -ts=races -tc="manual*" --no-skip
+    // It writes <temp>/SalvaCiudad/manual_mixed.scsave: copy it to the saves
+    // folder and load it.
+    TEST_CASE("manual: a saved game with a town of every people at work" * doctest::skip()) {
+        std::error_code ec;
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        std::filesystem::create_directories(folder, ec);
+        MapSettings ms;
+        ms.seed = 92;
+        ms.size = MapSize::Small;
+        ms.sea = Sea::None;
+        std::optional<MapData> map = generate_map(ms, sc::test::core_content());
+        REQUIRE(map.has_value());
+        GameSetup rules;
+        rules.seed = 15;
+        rules.rules.fog = FogMode::None;
+        rules.rules.diseases = Threat::None;
+        rules.rules.fires = Threat::None;
+        rules.rules.raiders = Threat::None;
+        rules.rules.wildlife = Threat::None;
+        Game g(std::shared_ptr<const Content>(std::shared_ptr<const Content>{}, &sc::test::core_content()), *map, rules);
+        const auto grant = [&](const char* resource, std::int32_t amount) {
+            Command c;
+            c.type = CommandType::DevGrant;
+            c.def = g.content().find_resource(resource);
+            c.value = amount;
+            g.apply(c);
+        };
+        grant("core:bread", 6000);
+        grant("core:firewood", 2000);
+        // Four grown people of each of the other peoples.
+        for (std::size_t r = 0; r < g.content().races.size(); ++r) {
+            if (g.content().races[r].id == "core:human") {
+                continue;
+            }
+            Command c;
+            c.type = CommandType::DevSpawn;
+            c.value = 4;
+            c.def2 = static_cast<std::uint16_t>(r + 1);
+            g.apply(c);
+        }
+        const Building tc = *g.buildings().get(g.player(0).town_center);
+        const auto put = [&](const char* def, std::int32_t x, std::int32_t z) {
+            const DefIndex d = g.content().find_building(def);
+            for (std::int32_t r = 0; r <= 20; ++r) {
+                for (std::int32_t dz = -r; dz <= r; ++dz) {
+                    for (std::int32_t dx = -r; dx <= r; ++dx) {
+                        if (std::max(std::abs(dx), std::abs(dz)) == r && g.can_place(0, d, x + dx, z + dz, 0) == PlaceError::None) {
+                            Command c;
+                            c.type = CommandType::PlaceBuilding;
+                            c.def = d;
+                            c.position = {Fixed::from_int(x + dx), Fixed::from_int(z + dz)};
+                            g.apply(c);
+                            Command done;
+                            done.type = CommandType::DevBuild;
+                            g.apply(done);
+                            return;
+                        }
+                    }
+                }
+            }
+        };
+        put("core:storehouse", tc.x - 26, tc.z);
+        put("core:woodcutter", tc.x + 18, tc.z - 14);
+        put("core:stonecutter", tc.x + 18, tc.z + 12);
+        put("core:forager", tc.x - 14, tc.z + 18);
+        put("core:hunter", tc.x - 14, tc.z - 20);
+        for (int n = 0; n < 6; ++n) {
+            put("core:house", tc.x - 24 + n * 10, tc.z - 34);
+        }
+        for (int t = 0; t < 900; ++t) {
+            g.step();
+        }
+        sc::save::SaveData data;
+        data.header.name = "mixed";
+        data.header.game_version = SC_VERSION_STRING;
+        data.header.saved_at = "2026-10-05T00:00:00";
+        data.header.rules_version = kGameRulesVersion;
+        data.header.content_hash = g.content().hash;
+        data.header.seed = g.map().settings.seed;
+        data.header.tick = g.tick();
+        data.header.population = static_cast<std::uint32_t>(g.population(0));
+        BinaryWriter bw;
+        g.save(bw);
+        data.put("GAME", std::move(bw.bytes()));
+        REQUIRE(sc::save::write_file(folder / "manual_mixed.scsave", data));
+        MESSAGE("a town of " << g.villagers().size() << " people at (" << tc.x << ", " << tc.z << ")");
     }
 }

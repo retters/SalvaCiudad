@@ -224,6 +224,65 @@ TEST_SUITE("people") {
         }
     }
 
+    // Phase 115. The proposals' villagers of the other peoples in everyday
+    // clothes are the game's own race characters with their main garment in
+    // another color. The game already does that, and more: those bodies have
+    // their main garment in the "top" slot, so each villager wears its
+    // people's own colors or one of the game's seven outfits; the tool is
+    // the game's, by the clip; and each has its far version. (All but the
+    // orc, who goes bare-chested: it has nothing to dress in another color.)
+    TEST_CASE("the other peoples wear everyday clothes: their bodies take the game's outfits") {
+        const sim::Content& content = sc::test::core_content();
+        std::size_t bodies = 0, dressed = 0;
+        for (const sim::RaceDef& race : content.races) {
+            if (race.id == "core:human") {
+                continue;
+            }
+            std::vector<std::string> names = race.bodies_male;
+            names.insert(names.end(), race.bodies_female.begin(), race.bodies_female.end());
+            REQUIRE_FALSE(names.empty());
+            for (const std::string& name : names) {
+                CAPTURE(name);
+                ++bodies;
+                const render::ModelData m = load(sim::race_body_file(name));
+                std::uint32_t skins = 0, hairs = 0, outfits = 0;
+                const std::vector<render::Palette> palettes = people::make_palettes(m, race.skins, race.hairs, skins, hairs, outfits);
+                CHECK(palettes.size() == static_cast<std::size_t>(skins) * hairs * outfits);
+                math::Vec3 top;
+                if (render::palette_reference(m, people::kTopSlot, top)) {
+                    // Its main garment is the game's to color: its own colors and the seven outfits.
+                    ++dressed;
+                    CHECK(outfits == 8);
+                    std::set<int> tops;
+                    for (std::uint32_t o = 0; o < outfits; ++o) {
+                        const math::Vec3 c = palettes[o].colors[people::kTopSlot];
+                        tops.insert(static_cast<int>(c.x * 255.0f) << 16 | static_cast<int>(c.y * 255.0f) << 8 | static_cast<int>(c.z * 255.0f));
+                    }
+                    // (Seven for the dwarves: the russet and the green they come in are two of the game's.)
+                    CHECK(tops.size() >= 7);
+                } else {
+                    CHECK(name == "orc");
+                    CHECK(outfits == 1);
+                }
+                // The tool in its hands is the game's, named by each clip; never part of the body.
+                for (const std::string_view clip : people::kActClips) {
+                    const int i = m.clip_index(clip);
+                    REQUIRE(i >= 0);
+                    const std::string& prop = m.clips[static_cast<std::size_t>(i)].prop;
+                    CHECK((prop.empty() || prop.find(':') != std::string::npos));
+                }
+                // Its far version: the same skeleton, far fewer triangles, the same garment to color.
+                const render::ModelData far = load(sim::race_body_file(name + "_far"));
+                CHECK(far.joint_names == m.joint_names);
+                CHECK(far.indices.size() * 3 < m.indices.size());
+                math::Vec3 far_top;
+                CHECK(render::palette_reference(far, people::kTopSlot, far_top) == render::palette_reference(m, people::kTopSlot, top));
+            }
+        }
+        CHECK(bodies == 11);  // Eight peoples; dwarves and both elves have a man and a woman.
+        CHECK(dressed == 10);
+    }
+
     TEST_CASE("what a villager carries shows: a lot on its back, a little in its arms") {
         const sim::Content& content = sc::test::core_content();
         const auto resource = [&](const char* id) -> const sim::ResourceDef& {

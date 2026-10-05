@@ -4094,3 +4094,27 @@ Suite nueva `turtles`, 8 casos: salen un día de verano a arena junto al mar, si
 
 **D-11409. Versiones.**
 Reglas 75 y red 34. El generador no cambia.
+
+## Fase 115: aldeanos de raza con ropa de diario (2026-10-05)
+
+**D-11501. No se añaden cuerpos: la fase ya estaba hecha, y lo que pedía no existe en las propuestas.**
+La especificación pedía rehacer en la tubería del juego «los 9 cuerpos de diario de las propuestas» y dar a cada raza ese segundo cuerpo. Al ir a hacerlo encontré que esos nueve modelos **no son cuerpos distintos**: `proposals/folk/races.py` construye cada uno a partir de la clase del personaje del juego, cambiando colores y poniéndole una herramienta («nothing of their bodies or skeletons changes», dice su propio encabezado). Comparados material por material con los del juego:
+
+| Propuesta | Qué cambia respecto al cuerpo del juego |
+|---|---|
+| Gatuno, rana, enano, enana | Solo el color del material `top` (la prenda principal) |
+| Zorruno | `top` y `top_dark` |
+| Lagarto | `top` (el pañuelo) y el acero de las hombreras, más pardo |
+| Orco, elfa, elfa oscura | Nada: son idénticos; solo traían la herramienta |
+
+Y lo que la fase quería conseguir ya lo hace el juego desde la fase 57: el material `top` es una ranura de paleta, y cada aldeano sale con el color propio de su personaje o con uno de siete atuendos de diario (azul, bermejo, verde, pardo, morado, tela sin teñir, pizarra); la piel y el pelo van por las listas de su raza; la herramienta la pone el juego según lo que hace; todos tienen sus 10 animaciones y su versión lejana. Los colores «de diario» de las propuestas (ocre, oliva, gris azulado) son casi los mismos de esa lista.
+
+Construí los seis que diferían para comprobarlo (salen bien, con sus versiones lejanas) y **no los dejé**: añadirlos sería cargar seis mallas repetidas, con sus llamadas de dibujo, para que uno de cada dieciséis aldeanos de esas razas tenga un color más. Se descartó también meter esos colores como atuendos por raza: ya están, o casi.
+
+**Lo que sí queda sin resolver, y necesita modelos nuevos:** que un aldeano de raza tenga otra *silueta* (sin hombreras ni correajes de aventurero), como los humanos con sus cuatro cuerpos. Eso no está en las propuestas elegidas; habría que proponer cuerpos nuevos en la página de propuestas. Y el orco: va a pecho descubierto y no tiene prenda que pintar, así que todos se ven iguales; bastaría con que su faldón de cuero fuera la ranura `bottom`, pero es tocar un personaje ya aprobado y no lo hice.
+
+**D-11502. Lo que deja la fase.**
+Una prueba en `people` que deja escrito lo de arriba para que no se pierda: los 11 cuerpos de las ocho razas no humanas tienen sus clips con la herramienta nombrada por el juego y su versión lejana con el mismo esqueleto; 10 de ellos toman los ocho atuendos (el orco, uno). Una escena para mirar (`-ts=races -tc="manual*"`): un pueblo con cuatro adultos de cada raza. En pantalla se ven de varios colores. No cambian las reglas, la red ni el generador, y los FPS no se midieron porque no cambia nada de lo que se dibuja.
+
+**D-11503. La revisión de animaciones.**
+No se repitió: son los mismos archivos que ya se revisaron en la fase 57 y siguientes. La prueba que carga todos los cuerpos comprueba que cada uno tiene las 10.
