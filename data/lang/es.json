@@ -1099,6 +1099,7 @@
     "end.watch": "Seguir mirando",
     "end.watch.tooltip": "Cierra esto y sigue en la partida.",
     "dev.village.level": "Subir de nivel el centro del pueblo",
+    "dev.village.build": "Terminar todas las obras",
     "hud.window.pin": "Fijar",
     "hud.window.pinned": "Fijada",
     "hud.window.pin.tooltip": "Una ventana fijada solo se cierra con su propia ×: ni Esc, ni un clic en el mapa, ni otra selección la cierran.\nArrastra el título para moverla: se pega a los bordes, a la barra de construcción y a otras ventanas, y se ancla con ellas; Ctrl+arrastrar la saca de su grupo. Suéltala sobre el título de otra para unirlas en una con pestañas; arrastra una pestaña hacia afuera para separarla. La esquina cambia su ancho.",

@@ -162,6 +162,7 @@ bool Command::read(BinaryReader& r, Command& out) {
             break;
         case CommandType::DevRaid:
         case CommandType::DevLevel:
+        case CommandType::DevBuild:
             break;
         case CommandType::DevSpawn:
             ok = ok && c.value >= 1 && c.value <= 1000;

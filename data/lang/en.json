@@ -1099,6 +1099,7 @@
     "end.watch": "Keep watching",
     "end.watch.tooltip": "Close this and stay in the game.",
     "dev.village.level": "Town center up a level",
+    "dev.village.build": "Finish every construction",
     "hud.window.pin": "Pin",
     "hud.window.pinned": "Pinned",
     "hud.window.pin.tooltip": "A pinned window is closed only by its own ×: not by Esc, a click on the map or another selection.\nDrag the title to move it: it snaps to the edges, to the build bar and to other windows, and docks with them; Ctrl+drag takes it out of its group. Drop it on another's title to join them as tabs of one window; drag a tab away to take it out. The corner changes its width.",

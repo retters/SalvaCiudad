@@ -113,6 +113,14 @@ Todo lo que tiene `line`, y toda puerta, **cierra el paso a los animales salvaje
 
 Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego base no tienen `pillar`, `site`, `breach` ni `diagonal`): un módulo suelto usa entonces el remate, la obra se ve con la pieza que será, medio transparente, y el daño con la pieza normal.
 
+#### Luces que ahuyentan a las fieras (fase 96)
+
+| Campo | Valores |
+|---|---|
+| `wardsBeasts` | `true`: de noche, lobos y osos no entran en su luz (necesita `light`). Es lo que distingue a un farol de camino o a la almenara de una antorcha, un brasero o el centro del pueblo, cuya luz solo evita que una fiera *elija* a quien está dentro. |
+
+La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
+
 #### Caminos (fase 95)
 
 Un camino se traza como un muro, lo construyen los peones tramo por tramo, y al terminarse **deja de ser un edificio**: queda como una marca del terreno (una por celda de 2 × 2 m). Por eso cientos de tramos no pesan nada.

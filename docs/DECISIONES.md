@@ -3527,3 +3527,30 @@ Suite nueva `roads`, 11 casos: los datos; un trazo de 10 tramos se construye y d
 
 **D-9511. Versiones.**
 Reglas 56, red 27.
+
+## Fase 96: faroles de camino y almenara (2026-10-04)
+
+**D-9601. Qué son.**
+Los tres faroles son decoración de 1 × 1 en la pestaña Plaza, junto a los caminos: madera (1 tronco, 8 m), hierro (1 de hierro, 16 m) y piedra (4 de piedra, 12 m, no arde y tiene el triple de vida: 300 contra 100). Los tres con 20 de trabajo. No hace falta ponerlos junto a un camino: el nombre viene del modelo. La almenara es un edificio de defensa de 3 × 3 (20 troncos, 10 de piedra, 300 de trabajo, 600 de vida, 30 m de luz) que se ve por encima de la niebla, como las torres. El de cristal quedó fuera, como decía el plan.
+
+**D-9602. La regla, exacta.**
+La cuadrícula de luz (celdas de 4 m, ya existía) guarda un segundo bit: «alumbrada por una luz que ahuyenta». De noche:
+- un lobo o un oso no da un paso desde fuera hacia dentro de una celda así (ni paseando ni persiguiendo);
+- el que venía persiguiendo a alguien y choca con el borde se queda quieto ahí hasta 100 ticks (10 segundos a ×1) y luego se rinde y vuelve a su zona; si su presa sale de la luz antes, sigue;
+- el que la noche (o un farol recién puesto) encuentra dentro no elige presa ni muerde mientras siga dentro, y puede salir.
+De día nada de esto vale. Ciervos y jabalíes no cambian (el plan decía lobos y osos), ni los asaltantes. Las demás luces siguen como en la fase 70: solo evitan que una fiera elija a quien está dentro. La espera se guarda con el animal (un número más por criatura), así que una partida guardada con un lobo esperando continúa igual.
+
+**D-9603. Las luces solo se calculan de noche.**
+Ya era así (fase 70) y se dejó: de día `lit` y `warded` no se actualizan y la regla no se consulta.
+
+**D-9604. Herramienta de desarrollo «Terminar todas las obras».**
+Orden nueva, `DevBuild`, solo con las herramientas de desarrollo: todo lo que el pueblo tiene en obra queda terminado, sin materiales (un tramo de camino pasa a ser camino). Hacía falta para las pruebas: para comprobar que un lobo no entra en la luz hay que poner faroles **dentro de la zona de los lobos**, y los peones que fueran a construirlos serían atacados antes de terminar. También sirve para armar escenas de prueba sin esperar a los peones (en las fases 93 a 95 la escena tardaba años de juego y el pueblo se moría de hambre). Tiene su botón en el panel de desarrollo. Por ser una orden nueva sube la versión de red.
+
+**D-9605. La prueba del viaje usa un camino, y por qué.**
+El criterio dice «por un camino con faroles». Al principio la prueba ponía solo faroles a lo largo de la ruta calculada y fallaba: en campo abierto hay muchas rutas igual de cortas, y el explorador (que antes pasa por provisiones) tomaba otra, a 25 m de los faroles. Con un camino de tierra por la ruta, la búsqueda lo prefiere y el explorador va por donde están los faroles. Es decir: para que un sendero iluminado proteja, hace falta el camino; los faroles sueltos en el campo no guían a nadie.
+
+**D-9606. Lo medido y lo visto.**
+Suite nueva `lanterns`, 7 casos, en un mapa con una manada de lobos a 260 m del pueblo y noches largas: los datos; con cinco faroles de piedra en la guarida, en 6000 ticks de noche **ninguna** fiera entra a la luz desde fuera, contra 34 veces con cinco antorchas y 15 veces de día con los mismos faroles; de noche el explorador llega a la guarida por un camino con faroles en 2041 ticks, sin una herida y siempre dentro de la luz una vez fuera del pueblo, y a oscuras es atacado y no llega; un lobo que persigue al explorador se queda en el borde, espera los 100 ticks sin entrar y se va; los asaltantes entran en la luz de una almenara junto al centro; la orden de desarrollo termina una casa, un farol y un tramo de camino, viaja como bytes y se rechaza sin las herramientas; guardar y cargar. En pantalla, con una escena nocturna guardada (caso saltado «manual: a saved game in the night with lanterns and the beacon» de la misma suite): el camino alumbrado por los tres faroles, la almenara con su llama al final y la antorcha común, cada uno con su charco de luz. **No se vio** a un lobo detenerse en el borde (lo cubre la prueba). En esa escena vuelven a salir, grandes, los triángulos blancos del terreno de noche (D-6909, abierto): no es de esta fase, no se tocó y quedó propuesto como tarea aparte.
+
+**D-9607. Versiones.**
+Reglas 57, red 28.

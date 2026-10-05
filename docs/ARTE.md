@@ -287,6 +287,8 @@ Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de lo
 
 **Caminos (`proposals/lines`, fase 95).** `buildings/road_dirt_<pieza>.glb` (camino de tierra con rodadas, 132 a 156 triángulos) y `buildings/road_cobble_<pieza>.glb` (calle empedrada, 512 a 780): `pillar`, `end`, `straight`, `corner`, `tee` y `cross`, de la clase `line`. Son losas de pocos centímetros con el origen a ras de suelo. El juego las pone 4 cm sobre el terreno y las **inclina con la ladera** (`render::Instance::slope_x` y `slope_z`: la pieza se cizalla, no se gira, así que dos tramos vecinos siguen coincidiendo en su borde). Una pieza nueva de camino no debe tener nada alto: lo que sobresale se inclina con ella.
 
+**Faroles de camino y almenara (fase 96).** `buildings/lantern_wood.glb` (332 triángulos), `lantern_iron.glb` (478) y `lantern_stone.glb` (136), de `proposals/roads`; `buildings/beacon.glb` (1672), de `proposals/bridges` (`dock_beacon`). Entran sin esqueleto: en el juego no se balancean ni parpadean; la luz la pone el juego de noche, como en cualquier edificio con `light`.
+
 `palisade.glb`, el modelo de un solo bloque, sigue en el mod como modelo del edificio (el que usa el fantasma al colocar y cualquier pieza que falte).
 
 ## Modelos de propuesta que entran al juego (fase 89)

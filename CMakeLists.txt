@@ -447,6 +447,7 @@ if(SC_BUILD_TESTS)
         tests/test_trace.cpp
         tests/test_fences.cpp
         tests/test_roads.cpp
+        tests/test_lanterns.cpp
         tests/test_races.cpp
         tests/test_perf.cpp
         tests/test_viewer.cpp
@@ -473,7 +474,7 @@ if(SC_BUILD_TESTS)
         target_link_options(salvaciudad_tests PRIVATE /INCREMENTAL:NO)
     endif()
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life worldgen_hier_giants minimap nav windows explorer night rest rest_hour founding seats spectator resources resources_years cover fauna trace fences roads)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life worldgen_hier_giants minimap nav windows explorer night rest rest_hour founding seats spectator resources resources_years cover fauna trace fences roads lanterns)
     # AddressSanitizer runs about twice as slow, and its times vary up to
     # twice between runs (D-3110).
     set(SC_TEST_TIMEOUT 120)

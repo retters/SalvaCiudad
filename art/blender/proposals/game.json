@@ -88,6 +88,14 @@
               "street_cobble_pillar": "road_cobble_pillar", "street_cobble_end": "road_cobble_end",
               "street_cobble_straight": "road_cobble_straight", "street_cobble_corner": "road_cobble_corner",
               "street_cobble_tee": "road_cobble_tee", "street_cobble_cross": "road_cobble_cross"}
+    },
+    {
+      "family": "roads", "class": "building", "to": "buildings", "game": true,
+      "ids": {"road_lantern_wood": "lantern_wood", "road_lantern_iron": "lantern_iron", "road_lantern_stone": "lantern_stone"}
+    },
+    {
+      "family": "bridges", "class": "building", "to": "buildings", "game": true,
+      "ids": {"dock_beacon": "beacon"}
     }
   ]
 }

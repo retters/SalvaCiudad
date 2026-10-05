@@ -1505,6 +1505,84 @@
     },
     {
       "type": "building",
+      "id": "core:lantern_wood",
+      "name": "building.lanternWood",
+      "kind": "decoration",
+      "category": "plaza",
+      "model": "models/buildings/lantern_wood.glb",
+      "size": [
+        1,
+        1
+      ],
+      "cost": {
+        "core:log": 1
+      },
+      "buildWork": 20,
+      "hp": 100,
+      "light": 8,
+      "wardsBeasts": true
+    },
+    {
+      "type": "building",
+      "id": "core:lantern_iron",
+      "name": "building.lanternIron",
+      "kind": "decoration",
+      "category": "plaza",
+      "model": "models/buildings/lantern_iron.glb",
+      "size": [
+        1,
+        1
+      ],
+      "cost": {
+        "core:iron": 1
+      },
+      "buildWork": 20,
+      "hp": 100,
+      "light": 16,
+      "wardsBeasts": true
+    },
+    {
+      "type": "building",
+      "id": "core:lantern_stone",
+      "name": "building.lanternStone",
+      "kind": "decoration",
+      "category": "plaza",
+      "model": "models/buildings/lantern_stone.glb",
+      "size": [
+        1,
+        1
+      ],
+      "cost": {
+        "core:stone": 4
+      },
+      "buildWork": 20,
+      "hp": 300,
+      "light": 12,
+      "wardsBeasts": true,
+      "fireproof": true
+    },
+    {
+      "type": "building",
+      "id": "core:beacon",
+      "name": "building.beacon",
+      "kind": "defense",
+      "model": "models/buildings/beacon.glb",
+      "size": [
+        3,
+        3
+      ],
+      "cost": {
+        "core:log": 20,
+        "core:stone": 10
+      },
+      "buildWork": 300,
+      "hp": 600,
+      "light": 30,
+      "wardsBeasts": true,
+      "landmark": true
+    },
+    {
+      "type": "building",
       "id": "core:watchtower",
       "name": "building.watchtower",
       "kind": "defense",

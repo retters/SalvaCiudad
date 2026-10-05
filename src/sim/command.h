@@ -51,6 +51,7 @@ enum class CommandType : std::uint8_t {
     SetOption = 41,       // Phase 85: workplace `entity`'s option number `count` (sim::option) on (`value` 1) or off (0).
     Trace = 42,           // Phase 93: a line of modules `def` from the cell at `position` to the cell (`value`, `value2`);
                           // `count` 1: an L goes along z first.
+    DevBuild = 43,        // Developer tools: everything the town is building is finished at once.
 
 };
 

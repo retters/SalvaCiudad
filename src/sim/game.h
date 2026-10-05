@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 56;
+inline constexpr std::uint32_t kGameRulesVersion = 57;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -59,6 +59,9 @@ inline constexpr std::int32_t kLightCell = 4;
 // in the dark; with fog of war, everybody sees half as far.
 inline constexpr std::int32_t kNightAggroPercent = 150;
 inline constexpr std::int32_t kNightRoamMeters = 15;
+// Phase 96: how long a beast that was chasing somebody waits at the edge of
+// a light that keeps it out before it gives up, in ticks.
+inline constexpr std::int32_t kWardWaitTicks = 100;
 inline constexpr std::int32_t kDarkAimPercent = 75;
 inline constexpr std::int32_t kEnergyMax = 4800;
 inline constexpr std::int32_t kRestGain = 4;
@@ -434,6 +437,8 @@ struct Creature {
     // Phase 16.
     TargetKind target_kind = TargetKind::Villager;
     DefIndex unit = 0;            // Soldiers: their UnitDef.
+    // Phase 96: ticks a beast has waited at the edge of a light it will not enter.
+    std::uint16_t held = 0;
     bool operator==(const Creature&) const = default;
 };
 
@@ -809,6 +814,8 @@ public:
     // slowed by the dark: at night, out of the light, without night vision.
     [[nodiscard]] bool night() const { return day_time().night; }
     [[nodiscard]] bool lit(std::int32_t x, std::int32_t z) const;
+    // Phase 96: lit, at night, by a light that keeps wolves and bears out.
+    [[nodiscard]] bool warded(std::int32_t x, std::int32_t z) const;
     [[nodiscard]] bool in_the_dark(const Villager& v) const;
     [[nodiscard]] std::int32_t sight(const Villager& v) const;
     [[nodiscard]] std::int32_t sight(const Creature& a) const;
@@ -911,8 +918,9 @@ private:
     GameRules rules_;
     std::int32_t temperature_ = 12;  // Today's; follows from the tick.
     std::int32_t snow_ = 0;          // 0..kMaxSnow.
-    // Derived, not saved: one byte per cell of kLightCell meters, and what
-    // it was drawn from (0: never).
+    // Derived, not saved: one byte per cell of kLightCell meters (bit 0:
+    // lit; bit 1: by a light that keeps the beasts out), and what it was
+    // drawn from (0: never).
     std::vector<std::uint8_t> light_cells_;
     std::int32_t light_side_ = 0;
     std::uint64_t light_signature_ = 0;

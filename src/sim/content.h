@@ -165,6 +165,9 @@ struct BuildingDef {
     // the pale blue of what glows by magic, not the color of fire.
     std::int32_t light = 0;
     bool cool_light = false;
+    // Phase 96: its light keeps wolves and bears out at night (a road
+    // lantern, the beacon). Needs `light`.
+    bool wards = false;
     // Phase 73: the settlers' wagon. Nobody builds or removes it: it comes
     // with a new town, keeps its goods, and goes when the center is built.
     bool cart = false;

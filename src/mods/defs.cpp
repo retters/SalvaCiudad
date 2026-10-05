@@ -924,6 +924,10 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.warmth = r.integer("warmth", 0, 100, 0);
         def.light = r.integer("light", 0, sim::kMaxLight, 0);
         def.cool_light = r.flag("coolLight");
+        def.wards = r.flag("wardsBeasts");
+        if (def.wards && def.light <= 0) {
+            r.fail("\"wardsBeasts\" needs a \"light\"");
+        }
         def.cart = r.flag("cart");
         // Phase 93: walls and the like, placed in lines.
         def.line = r.text("line", false, 32);

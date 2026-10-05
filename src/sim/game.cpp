@@ -1426,8 +1426,32 @@ public:
                 return false;
             }
         }
+        // Phase 96: nor does a wolf or a bear walk into the light of a road
+        // lantern or a beacon. (One that the night finds inside walks out.)
+        if (shuns_light(a.kind) && warded_at(next) && !warded_at(a.position)) {
+            return false;
+        }
         a.position = next;
         return true;
+    }
+    [[nodiscard]] static bool shuns_light(CreatureKind k) { return k == CreatureKind::Wolf || k == CreatureKind::Bear; }
+    [[nodiscard]] bool warded_at(FixedVec2 p) const { return g_.warded(p.x.floor_int(), p.z.floor_int()); }
+    // A beast cannot get to what it was after. A fence in the way: back
+    // home at once. A light that keeps it out: it waits at its edge for a
+    // while first.
+    void blocked(Creature& a, FixedVec2 to) {
+        if (!wild(a.kind)) {
+            return;
+        }
+        if (shuns_light(a.kind) && !warded_at(a.position)) {
+            const FixedVec2 d = to - a.position;
+            const Fixed len = d.length();
+            const bool light_ahead = len > Fixed{} && warded_at(a.position + d * (std::min(len, speed_of(a)) / len));
+            if (light_ahead && ++a.held < village::kWardWaitTicks) {
+                return;
+            }
+        }
+        give_up(a);
     }
     // An animal, not a raider or a soldier.
     [[nodiscard]] static bool wild(CreatureKind k) { return k != CreatureKind::Raider && k != CreatureKind::Soldier; }
@@ -1437,6 +1461,7 @@ public:
         a.target = {};
         a.target_kind = TargetKind::Villager;
         a.goal = a.home;
+        a.held = 0;
     }
 
     [[nodiscard]] const UnitDef* unit_of(const Creature& a) const {
@@ -1522,6 +1547,10 @@ public:
             // But they keep out of the light: nobody standing in it is gone after.
             if (const Villager* seen = night ? g_.villagers_.get(near) : nullptr;
                 seen != nullptr && g_.lit(seen->position.x.floor_int(), seen->position.z.floor_int())) {
+                near = {};
+            }
+            // Nor does a beast standing in a light that keeps it out go after anybody (phase 96).
+            if (shuns_light(a.kind) && warded_at(a.position)) {
                 near = {};
             }
             if (near.valid() && distance2(a.position, a.home) <= meters2(territory) &&
@@ -1839,8 +1868,8 @@ public:
         }
         const std::int32_t reach = range_of(a);
         if (distance2(a.position, o->position) > meters2(reach) + (meters2(1) >> 1)) {
-            if (!step_toward(a, o->position, speed_of(a)) && wild(a.kind)) {
-                give_up(a);
+            if (!step_toward(a, o->position, speed_of(a))) {
+                blocked(a, o->position);
             }
             return;
         }
@@ -2230,9 +2259,16 @@ public:
             }
             return;
         }
+        // Phase 96: in the light that keeps it out, a beast hunts nobody.
+        if (shuns_light(a.kind) && warded_at(a.position)) {
+            give_up(a);
+            return;
+        }
         if (distance2(a.position, v->position) > meters2(1) + (meters2(1) >> 1)) {
-            if (!step_toward(a, v->position, speed_of(a)) && wild(a.kind)) {
-                give_up(a);
+            if (!step_toward(a, v->position, speed_of(a))) {
+                blocked(a, v->position);
+            } else {
+                a.held = 0;
             }
             return;
         }
@@ -5264,6 +5300,34 @@ public:
                 }
                 break;
             }
+            case CommandType::DevBuild: {
+                // Everything the town is building, done: by the list of
+                // what there is now (a road, once done, is no building).
+                if (!g_.dev_commands_) {
+                    ++g_.rejected_;
+                    break;
+                }
+                std::vector<EntityId> sites;
+                const auto& list = g_.buildings_;
+                for (std::size_t i = 0; i < list.size(); ++i) {
+                    const Building& b = list.data()[i];
+                    if (b.owner == c.player && b.state == BuildingState::Construction) {
+                        sites.push_back(list.entities()[i]);
+                    }
+                }
+                for (const EntityId id : sites) {
+                    Building* b = g_.buildings_.get(id);
+                    if (b == nullptr) {
+                        continue;
+                    }
+                    const bool road = def(*b).road > 0;
+                    finish(*b);
+                    if (road) {
+                        pave(id);
+                    }
+                }
+                break;
+            }
             case CommandType::DevLevel: {
                 Building* tc = g_.buildings_.get(g_.players_[g_.town_of(c.player)].town_center);
                 if (!g_.dev_commands_ || tc == nullptr || tc->level >= def(*tc).levels.size()) {
@@ -5908,7 +5972,7 @@ void Game::update_light() {
         if (const std::int32_t radius = light(b); radius > 0) {
             mix(static_cast<std::uint64_t>(b.x + b.width / 2));
             mix(static_cast<std::uint64_t>(b.z + b.depth / 2));
-            mix(static_cast<std::uint64_t>(radius));
+            mix(static_cast<std::uint64_t>(radius) | (content_->buildings[b.def].wards ? 0x10000u : 0u));
         }
     }
     signature |= 1;  // Never 0, which means "not drawn yet".
@@ -5935,8 +5999,9 @@ void Game::update_light() {
                 const std::int64_t dx = x * village::kLightCell + village::kLightCell / 2 - cx;
                 const std::int64_t dz = z * village::kLightCell + village::kLightCell / 2 - cz;
                 if (dx * dx + dz * dz <= static_cast<std::int64_t>(radius) * radius) {
-                    light_cells_[static_cast<std::size_t>(z) * static_cast<std::size_t>(light_side_) +
-                                 static_cast<std::size_t>(x)] = 1;
+                    std::uint8_t& cell = light_cells_[static_cast<std::size_t>(z) * static_cast<std::size_t>(light_side_) +
+                                                      static_cast<std::size_t>(x)];
+                    cell = static_cast<std::uint8_t>(cell | (content_->buildings[b.def].wards ? 3u : 1u));
                 }
             }
         }
@@ -5952,6 +6017,16 @@ bool Game::lit(std::int32_t x, std::int32_t z) const {
     return cx < light_side_ && cz < light_side_ &&
            light_cells_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(light_side_) +
                         static_cast<std::size_t>(cx)] != 0;
+}
+
+bool Game::warded(std::int32_t x, std::int32_t z) const {
+    if (light_side_ == 0 || x < 0 || z < 0 || !night()) {
+        return false;
+    }
+    const std::int32_t cx = x / village::kLightCell;
+    const std::int32_t cz = z / village::kLightCell;
+    return cx < light_side_ && cz < light_side_ &&
+           (light_cells_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(light_side_) + static_cast<std::size_t>(cx)] & 2u) != 0;
 }
 
 bool Game::in_the_dark(const Villager& v) const {
@@ -7318,6 +7393,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.i32(a.loot.amount);
         w.u8(static_cast<std::uint8_t>(a.target_kind));
         w.u16(a.unit);
+        w.u16(a.held);
     }
     // What each side explored: a count and a checksum (the cells themselves
     // follow the random numbers in a save).
@@ -7759,7 +7835,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         }
         std::uint8_t target_kind = 0;
         if (!r.u8(target_kind) || target_kind >= static_cast<std::uint8_t>(TargetKind::Count) || !r.u16(a.unit) ||
-            (a.kind == CreatureKind::Soldier && a.unit >= c.units.size())) {
+            !r.u16(a.held) || (a.kind == CreatureKind::Soldier && a.unit >= c.units.size())) {
             r.fail();
             return false;
         }
