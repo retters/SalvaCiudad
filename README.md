@@ -851,6 +851,10 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Los arbustos de bayas se ven en flor en primavera, con fruto en verano y otoño y verdes en invierno. Un arbusto al que el recolector ya le sacó todo queda verde hasta el año siguiente. En biomas fríos son de arándanos (azules); en los secos son zarzas, que no dan nada.
 - [ ] En primavera y en invierno el recolector dice «esperando», no «agotado», aunque no tenga bayas que recoger.
 - [ ] Una partida nueva empieza con 188 de bayas y 50 de raíces (antes 150 y 40).
+- [ ] Una casa con seis módulos de valla de estacas a 3 m o menos dice en su ventana «Jardín de casa: +2 de entorno…»; con cinco no. Cada tres meses del calendario sin helada llega 1 de verduras al almacén (si tiene sitio).
+- [ ] Una estatua o un adorno de jardín con seis módulos de seto bajo a 3 m dice «Jardín formal: su entorno cuenta doble», y las casas cercanas lo notan al día siguiente.
+- [ ] Una casa junto a un prado con flores dice «Flores silvestres: +N de entorno» de primavera a otoño; en invierno la línea desaparece, y también si se ponen campos sobre las flores.
+- [ ] Las Colmenas y la Colmena entre flores (Jardín y Naturaleza) juntan miel solas: su ventana dice cuántas flores tienen a 30 m, y los peones se llevan la miel. En invierno no producen.
 - [ ] Vivienda tiene cinco anexos nuevos: Tendedero, Altar doméstico, Juegos de niños, Tonel de lluvia y Leñero. En Jardín ya no están el tendedero, la leñera ni el rincón del barril de lluvia.
 - [ ] Un tendedero a 3 m o menos de una casa le sube 6 el entorno (se ve en su ventana al día siguiente); a 10 m no; dos tendederos no suman dos veces.
 - [ ] La ventana de una casa dice «Anexos: …» con los que le sirven, y la de cada anexo dice qué da.

@@ -966,6 +966,17 @@ void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList
             lines.push_back(tr("hud.building.material", tr(content.resources[c.resource].name_key), have, c.amount));
         }
     } else {
+        if ((b->garden & sim::garden::kFormal) != 0) {
+            lines.push_back(tr("hud.decor.formal"));
+        }
+        if (d.hive_gives != sim::kNoDef) {
+            if (game.calendar().season == sim::Season::Winter) {
+                lines.push_back(tr("hud.hive.winter"));
+            } else {
+                lines.push_back(tr("hud.hive.flowers", d.hive_radius,
+                                   game.per_year(game.nectar(*b)) * 100 / sim::village::kNectarPerUnit));
+            }
+        }
         if (d.annex) {
             lines.push_back(tr("hud.annex.serves", d.annex_radius));
             if (d.annex_desirability != 0) {
@@ -1863,6 +1874,18 @@ void GameHud::house_lines(const sim::Game& game, const sim::Building& b, std::ve
     const sim::BuildingDef& d = game.content().buildings[b.def];
     lines.push_back(tr("hud.house.level", static_cast<int>(b.level) + 1, static_cast<int>(d.levels.size()) + 1));
     lines.push_back(tr("hud.house.happiness", b.happiness, b.desirability));
+    // Phase 104: its garden and the flowers around it.
+    if ((b.garden & sim::garden::kHouse) != 0) {
+        for (const sim::BuildingDef& gd : game.content().buildings) {
+            if (gd.garden_house) {
+                lines.push_back(tr("hud.house.garden", gd.garden_desirability));
+                break;
+            }
+        }
+    }
+    if (const std::int32_t flowers = game.flower_beauty(b); flowers > 0) {
+        lines.push_back(tr("hud.house.flowers", flowers));
+    }
     // Phase 103: the annexes that serve it.
     if (b.annexes != 0) {
         // A few to a line: the window is narrow, and a house may have five.

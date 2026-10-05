@@ -1541,7 +1541,9 @@
         "tee": "models/buildings/boxhedge_tee.glb",
         "cross": "models/buildings/boxhedge_cross.glb",
         "step": "models/buildings/boxhedge_step.glb"
-      }
+      },
+      "gardenModules": 6,
+      "formalGarden": true
     },
     {
       "type": "building",
@@ -1586,6 +1588,12 @@
         "tee": "models/buildings/picket_tee.glb",
         "cross": "models/buildings/picket_cross.glb",
         "step": "models/buildings/picket_step.glb"
+      },
+      "gardenModules": 6,
+      "houseGarden": true,
+      "gardenDesirability": 2,
+      "gardenGives": {
+        "core:vegetables": 1
       }
     },
     {
@@ -2590,7 +2598,10 @@
       "buildWork": 50,
       "desirability": 6,
       "fireproof": true,
-      "category": "garden"
+      "category": "garden",
+      "storage": 8,
+      "hiveGives": "core:honey",
+      "hiveRadius": 30
     },
     {
       "type": "building",
@@ -3273,7 +3284,10 @@
       "buildWork": 60,
       "desirability": 8,
       "fireproof": true,
-      "category": "nature"
+      "category": "nature",
+      "storage": 8,
+      "hiveGives": "core:honey",
+      "hiveRadius": 30
     },
     {
       "type": "building",

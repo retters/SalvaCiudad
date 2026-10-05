@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 64;
+inline constexpr std::uint32_t kGameRulesVersion = 65;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -78,6 +78,18 @@ inline constexpr std::int32_t kStartVillagers = 12;
 inline constexpr std::int32_t kMaxVillagersPerPlayer = 1000;
 inline constexpr std::int32_t kWarmthMax = 1000;      // Cold meter (phase 10).
 inline constexpr std::int32_t kHouseFirewood = 20;    // Firewood a house keeps.
+// Phase 104. A garden's fence or hedge stands within this of the walls.
+inline constexpr std::int32_t kGardenMeters = 3;
+// Wild flowers make a house's place nicer: those within kFlowerMeters of its
+// walls, a point for every kFlowerPoints of them (see Game::flowers), up to
+// kMaxFlowerBeauty; from spring to autumn.
+inline constexpr std::int32_t kFlowerMeters = 6;
+inline constexpr std::int32_t kFlowerPoints = 1200;
+inline constexpr std::int32_t kMaxFlowerBeauty = 5;
+// A hive looks at one place in kHiveStep meters each way, and makes a unit
+// for every kNectarPerUnit of flowers it finds in a day.
+inline constexpr std::int32_t kHiveStep = 2;
+inline constexpr std::int32_t kNectarPerUnit = 40000;
 // Phase 103: a rain barrel is empty after this many days without rain.
 inline constexpr std::int32_t kBarrelDryDays = 10;
 inline constexpr std::int32_t kColdBelow = 10;        // Houses burn firewood below this (°C).
@@ -206,6 +218,12 @@ struct Stock {
     bool operator==(const Stock&) const = default;
 };
 
+// Phase 104: the bits of Building::garden.
+namespace garden {
+inline constexpr std::uint8_t kHouse = 1;
+inline constexpr std::uint8_t kFormal = 2;
+}  // namespace garden
+
 struct Building {
     DefIndex def = 0;
     std::uint8_t owner = 0;
@@ -234,6 +252,7 @@ struct Building {
     std::uint8_t recipe = 0;         // The recipe being worked.
     std::uint16_t needs = 0;         // Houses: Need bits met today.
     std::uint16_t annexes = 0;       // Houses: the annexes that serve it (a bit per BuildingDef::annex_bit); phase 103.
+    std::uint8_t garden = 0;         // Phase 104: garden::kHouse (a house with its fence), garden::kFormal (a decoration with its hedge).
     std::int32_t happiness = 50;     // Houses: 0..100.
     std::int32_t desirability = 0;   // Houses: how pleasant the place is.
     // Phase 13.
@@ -830,6 +849,16 @@ public:
     // How pleasant a place is for homes: buildings around (gardens add,
     // workshops take away) and trees (phase 12; the map layer, phase 17).
     [[nodiscard]] std::int32_t desirability_at(FixedVec2 here, const Building* self = nullptr) const;
+    // Phase 104. How thick the wild flowers are over the cells from (x0, z0)
+    // to (x1, z1), one in `step` each way: the sum of sim::wildflowers
+    // where nothing covers them (a building, a road, a field, water). With
+    // `radius`, only those within that many meters of the middle.
+    [[nodiscard]] std::int32_t flowers(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, std::int32_t step = 1,
+                                       std::int32_t radius = 0) const;
+    // What the flowers around `house` add to its environment today.
+    [[nodiscard]] std::int32_t flower_beauty(const Building& house) const;
+    // What a hive finds in a day (0 in winter).
+    [[nodiscard]] std::int32_t nectar(const Building& hive) const;
     // Phase 103. The annexes that serve `house` now (bits of annex_bit):
     // those of its town, built, with their walls within their reach of the
     // house's. What a house has is in Building::annexes, set once a day.

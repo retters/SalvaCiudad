@@ -240,7 +240,9 @@ TEST_SUITE("annexes") {
         REQUIRE(near.valid());
         REQUIRE(far.valid());
         days(g, 1);
-        const std::int32_t before = at(g, near).desirability;
+        // (Without the wild flowers around it, phase 104: a clothesline may stand on some.)
+        const auto place = [&] { return at(g, near).desirability - g.flower_beauty(at(g, near)); };
+        const std::int32_t before = place();
         REQUIRE(beside(g, near, "core:annex_clothesline", 2).valid());
         REQUIRE(beside(g, far, "core:annex_clothesline", 10).valid());
         // The house knows at once; its environment, the next day.
@@ -248,13 +250,13 @@ TEST_SUITE("annexes") {
         CHECK_FALSE(has(g, far, "core:annex_clothesline"));
         days(g, 1);
         CHECK(at(g, near).desirability == g.desirability_at(middle(at(g, near)), &at(g, near)) + 6);
-        CHECK(at(g, near).desirability == before + 6);
+        CHECK(place() == before + 6);
         CHECK(at(g, far).desirability == g.desirability_at(middle(at(g, far)), &at(g, far)));
         CHECK(at(g, far).annexes == 0);
         // Another one by the same house adds nothing.
         REQUIRE(beside(g, near, "core:annex_clothesline", 1).valid());
         days(g, 1);
-        CHECK(at(g, near).desirability == before + 6);
+        CHECK(place() == before + 6);
         // Three meters is the most.
         const EntityId third = put(g, "core:house", tx - 30, tz + 20);
         REQUIRE(third.valid());

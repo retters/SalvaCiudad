@@ -154,6 +154,23 @@ struct BuildingDef {
     // Phase 100: it needs not all of `service_uses` but any one of them
     // (beer or wine): the first in the list that it has is the one used.
     bool service_any = false;
+    // Phase 104: gardens. A line with `garden_modules` makes a garden of
+    // what has that many of its modules (or of its gates) within
+    // village::kGardenMeters of its walls. `garden_house`: of a house, which
+    // gains `garden_desirability` and, every quarter of the year without
+    // frost, sends `garden_gives` to the nearest storage that takes it.
+    // `garden_formal`: of a decoration that makes its place nicer, whose
+    // desirability then counts double.
+    std::int32_t garden_modules = 0;
+    bool garden_house = false;
+    std::int32_t garden_desirability = 0;
+    std::vector<ResourceAmount> garden_gives;
+    bool garden_formal = false;
+    // Phase 104: a hive. With no worker, it makes `hive_gives` (honey) by
+    // the wild flowers within `hive_radius` meters, none in winter, and
+    // keeps it (its `storage`) until laborers carry it away.
+    DefIndex hive_gives = kNoDef;
+    std::int32_t hive_radius = 30;
     // Phase 103: an annex: a small piece that serves every house whose
     // walls are within `annex_radius` meters of its own. A house takes each
     // kind of annex once, however many stand by it. `annex_bit`: which of

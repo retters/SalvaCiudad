@@ -3757,3 +3757,26 @@ Suite nueva `annexes`, 8 casos: los datos y las tres decoraciones que ya no est�
 
 **D-10310. Versiones.**
 Reglas 64. La red y el generador no cambian.
+
+## Fase 104: jardines, flores y colmenas (2026-10-05)
+
+**D-10401. El jardín es un dato de la valla y del seto.**
+La valla de estacas lleva `gardenModules: 6`, `houseGarden`, `gardenDesirability: 2` y `gardenGives` (1 de verduras); el seto bajo, `gardenModules: 6` y `formalGarden`. Cada edificio guarda si tiene jardín (`Building::garden`, dos bits), que se recalcula una vez al día y al terminar de construir una casa, una decoración o un módulo. «A 3 m» es de pared a pared, como en los anexos. Los portones de la misma línea cuentan como módulos.
+
+**D-10402. «Cada estación sin helada» es cada tres meses del calendario.**
+Las estaciones se pueden apagar o alargar en las reglas de la partida, así que el jardín entrega al cambiar el trimestre (meses 1 a 3, 4 a 6…): cuatro veces al año en cualquier partida. No entrega si algún día del trimestre que termina estuvo bajo cero; eso se calcula de la temperatura, que sale de la semilla y del día, sin guardar nada. Lo que da va al almacén más cercano que lo acepte **y tenga sitio**; si no hay ninguno, se pierde (lo vi en la prueba: el centro del pueblo de una partida nueva está casi lleno). En partidas con años más largos da en proporción.
+
+**D-10403. Qué es «un jardín o una estatua».**
+Toda decoración con `desirability` positiva, sin alcance propio (no los setos) y que no sea anexo. Se descartó una lista de edificios o una categoría: la pestaña del menú es presentación y un mod no tendría cómo sumarse. Doble es doble del valor del edificio; la distancia se aplica igual que antes.
+
+**D-10404. Las flores silvestres y el entorno.**
+Se suma lo espeso de las flores (0 a 100 por celda, la función de la fase 91) en las celdas a 6 m o menos de las paredes de la casa, y cada 1200 puntos es +1 de entorno, hasta +5; en invierno, 0. No cuentan las celdas bajo un edificio, un camino o un campo (así «arar el prado» las quita) ni el agua. La casa mejor situada del mapa de prueba junta 6711 puntos (+5); con cuatro campos de 8 × 8 alrededor, 2809 (+2). Esto cambia el entorno de las casas de cualquier partida: las que están en prados suben.
+
+**D-10405. Las colmenas.**
+Las dos decoraciones (`decor_beehives` y `decor_beehive`) pasan a tener almacén de 8 y `hiveGives`. Cada día del calendario suman las flores a 30 m, mirando una celda de cada dos en cada sentido, y dan 1 de miel cada 40 000 puntos; lo que sobra se guarda para el día siguiente (en `work_done`, que un edificio terminado no usaba). Llenas, esperan. En el mejor prado del mapa de prueba: 7998 puntos al día, unas 18 de miel entre primavera y otoño; con cuatro campos de 16 × 16 alrededor, 5230. Empecé con 80 000 por unidad y daba la mitad: lo dejé en 40 000 para que una colmena bien puesta rinda como tres árboles con panal. Los peones se llevan la miel como la de un taller; como en un taller, un aldeano con hambre puede comer ahí mismo.
+
+**D-10406. Lo medido.**
+Suite nueva `gardens`, 9 casos: los datos; con 5 módulos de valla no hay jardín y con 6 sí, +2 exactos, más valla no suma, un seto bajo no hace jardín de casa y seis módulos con tres lejos tampoco; el jardín entrega una unidad en cada uno de los cuatro cambios de trimestre de un año y ninguna donde siempre es invierno; seis módulos de seto bajo doblan lo que un obelisco suma a una casa a 15 m, cinco no, y una valla de estacas no hace jardín formal; una casa en un prado tiene +5 en primavera, verano y otoño, 0 en invierno y otra vez +5 la primavera siguiente; con campos alrededor baja; una colmena en el prado da 11 en medio año y 7 entre campos, y nada en invierno; los peones se llevan la miel; guardar y cargar.
+
+**D-10407. Versiones.**
+Reglas 65. La red y el generador no cambian.

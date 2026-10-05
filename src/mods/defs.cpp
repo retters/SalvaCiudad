@@ -1051,6 +1051,30 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
             r.fail("\"serviceUsesAny\" needs \"serviceUses\"");
         }
         def.model_winter = r.extra_model("winterModel", mod_dir, refs, def.name_key);
+        // Phase 104: gardens and hives.
+        def.garden_modules = r.integer("gardenModules", 0, 100, 0);
+        def.garden_house = r.flag("houseGarden");
+        def.garden_desirability = r.integer("gardenDesirability", 0, 50, 0);
+        def.garden_gives = amounts(r.table("gardenGives", find_resource, 1, 1000, 4));
+        def.garden_formal = r.flag("formalGarden");
+        if (def.garden_modules > 0 && (def.line.empty() || def.garden_house == def.garden_formal)) {
+            r.fail("\"gardenModules\" is for a line, with either \"houseGarden\" or \"formalGarden\"");
+        }
+        if (def.garden_modules == 0 &&
+            (def.garden_house || def.garden_formal || def.garden_desirability != 0 || !def.garden_gives.empty())) {
+            r.fail("\"houseGarden\", \"formalGarden\", \"gardenDesirability\" and \"gardenGives\" need \"gardenModules\"");
+        }
+        if (const std::string honey = r.text("hiveGives", false); !honey.empty()) {
+            const int hi = find_resource(honey);
+            if (hi < 0) {
+                r.fail(std::format("\"hiveGives\" '{}' does not exist", honey));
+            } else if (def.kind != sim::BuildingKind::Decoration || def.storage <= 0 || def.workers > 0) {
+                r.fail("\"hiveGives\" is for a decoration with \"storage\" and no workers");
+            } else {
+                def.hive_gives = static_cast<sim::DefIndex>(hi);
+            }
+        }
+        def.hive_radius = r.integer("hiveRadius", 1, 60, 30);
         // Phase 103: annexes.
         def.annex = r.flag("annex");
         def.annex_radius = r.integer("annexRadius", 1, 60, 3);

@@ -112,6 +112,9 @@ bool gives_out(const Content& c, const Building& b, DefIndex r) {
     if (d.kind == BuildingKind::Storage || d.kind == BuildingKind::TownCenter || d.kind == BuildingKind::Market) {
         return true;
     }
+    if (d.hive_gives != kNoDef) {
+        return r == d.hive_gives;  // Phase 104: a hive's honey.
+    }
     if (d.kind != BuildingKind::Workplace) {
         return false;
     }
@@ -1128,7 +1131,7 @@ public:
         std::uint64_t best_d = UINT64_MAX;
         for (const EntityId id : g_.owned(v.owner)) {
             const Building& b = *g_.buildings_.get(id);
-            if (!complete(b) || def(b).kind != BuildingKind::Workplace) {
+            if (!complete(b) || (def(b).kind != BuildingKind::Workplace && def(b).hive_gives == kNoDef)) {
                 continue;
             }
             DefIndex res = kNoDef;
@@ -4228,6 +4231,9 @@ public:
             b.limit = kPostReserve;
         }
         g_.buildings_changed_ = true;
+        if (def(b).kind == BuildingKind::House || def(b).kind == BuildingKind::Decoration || !def(b).line.empty()) {
+            update_gardens();  // Phase 104: a garden is one from the moment its last piece is built.
+        }
         if (def(b).annex_bit >= 0 || def(b).kind == BuildingKind::House) {
             // Phase 103: the houses know their annexes from now (and every day after).
             for (Building& h : g_.buildings_.data()) {
@@ -4615,6 +4621,126 @@ public:
     // Once a day: the weather, the snow and the houses' fires.
     // Once a day: which services work, and each home's needs, beauty,
     // happiness and upgrade.
+    // Phase 104: which houses have their fence and which decorations their
+    // hedge. Once a day, and when a house, a decoration or a module is built.
+    void update_gardens() {
+        struct Kind {
+            const BuildingDef* def;
+            std::vector<const Building*> modules;
+        };
+        std::vector<Kind> kinds;
+        for (const BuildingDef& d : c_.buildings) {
+            if (d.garden_modules > 0) {
+                kinds.push_back({&d, {}});
+            }
+        }
+        if (kinds.empty()) {
+            return;
+        }
+        for (const Building& b : g_.buildings_.data()) {
+            const BuildingDef& d = def(b);
+            if (d.line.empty() || !complete(b)) {
+                continue;
+            }
+            for (Kind& k : kinds) {
+                if (d.line == k.def->line) {
+                    k.modules.push_back(&b);
+                }
+            }
+        }
+        const std::int32_t reach = village::kGardenMeters;
+        for (Building& b : g_.buildings_.data()) {
+            const BuildingDef& d = def(b);
+            const bool house = d.kind == BuildingKind::House;
+            const bool decor = d.kind == BuildingKind::Decoration && d.desirability > 0 && d.desirability_radius == 0 && !d.annex;
+            std::uint8_t bits = 0;
+            if ((house || decor) && complete(b)) {
+                for (const Kind& k : kinds) {
+                    if (house ? !k.def->garden_house : !k.def->garden_formal) {
+                        continue;
+                    }
+                    std::int32_t n = 0;
+                    for (const Building* m : k.modules) {
+                        if (town_of_building(*m) != town_of_building(b)) {
+                            continue;
+                        }
+                        const std::int32_t gx = std::max({m->x - (b.x + b.width), b.x - (m->x + m->width), 0});
+                        const std::int32_t gz = std::max({m->z - (b.z + b.depth), b.z - (m->z + m->depth), 0});
+                        n += gx * gx + gz * gz <= reach * reach ? 1 : 0;
+                    }
+                    if (n >= k.def->garden_modules) {
+                        bits = static_cast<std::uint8_t>(bits | (house ? garden::kHouse : garden::kFormal));
+                    }
+                }
+            }
+            if (b.garden != bits) {
+                b.garden = bits;
+                g_.buildings_changed_ = true;
+            }
+        }
+    }
+    [[nodiscard]] std::uint8_t town_of_building(const Building& b) const { return g_.town_of(b.owner); }
+
+    // Phase 104: a new quarter of the year. The house gardens send what
+    // they give to the nearest storage that takes it, unless it froze in
+    // the quarter that ended.
+    void garden_harvest() {
+        const std::uint32_t day = g_.calendar_day_ticks();
+        if (g_.tick_ < day) {
+            return;
+        }
+        const Calendar now = g_.calendar();
+        const Calendar before = sim::calendar(g_.rules_.climate, g_.tick_ - day);
+        if ((now.month - 1) / 3 == (before.month - 1) / 3 && now.year == before.year) {
+            return;
+        }
+        // The days of the quarter that ended: three months of ten.
+        for (std::uint64_t k = 1; k <= 30 && k * day <= g_.tick_; ++k) {
+            if (sim::temperature(g_.rules_.climate, g_.seed_, g_.tick_ - k * day) < 0) {
+                return;
+            }
+        }
+        const BuildingDef* gives = nullptr;
+        for (const BuildingDef& d : c_.buildings) {
+            if (gives == nullptr && d.garden_house && !d.garden_gives.empty()) {
+                gives = &d;
+            }
+        }
+        if (gives == nullptr) {
+            return;
+        }
+        for (Building& b : g_.buildings_.data()) {
+            if ((b.garden & garden::kHouse) == 0 || !complete(b) || def(b).kind != BuildingKind::House) {
+                continue;
+            }
+            for (const ResourceAmount& y : gives->garden_gives) {
+                if (Building* store = g_.buildings_.get(storage_for(b.owner, g_.door(b), y.resource))) {
+                    add_to(store->stock, y.resource, std::min(g_.per_year(y.amount), free_space(*store)));
+                }
+            }
+        }
+    }
+
+    // Phase 104: the hives make their honey of the flowers within their reach.
+    void hives() {
+        for (Building& b : g_.buildings_.data()) {
+            const BuildingDef& d = def(b);
+            if (d.hive_gives == kNoDef || !complete(b)) {
+                continue;
+            }
+            b.work_done += g_.per_year(g_.nectar(b));
+            while (b.work_done >= village::kNectarPerUnit) {
+                if (free_space(b) <= 0) {
+                    b.work_done = village::kNectarPerUnit;  // Full: it waits.
+                    break;
+                }
+                b.work_done -= village::kNectarPerUnit;
+                add_to(b.stock, d.hive_gives, 1);
+                g_.buildings_changed_ = true;
+            }
+        }
+    }
+
     void update_homes() {
         struct Service {
             std::uint8_t need;
@@ -4802,7 +4928,10 @@ public:
         }
         if (calendar_day) {
             pick_hedges();
+            garden_harvest();
+            hives();
         }
+        update_gardens();
         update_homes();
         update_health();
         start_fires();
@@ -6885,6 +7014,65 @@ PlaceError Game::can_place_field(std::uint8_t player, EntityId farm_id, std::int
     return PlaceError::None;
 }
 
+std::int32_t Game::flowers(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1, std::int32_t step,
+                           std::int32_t radius) const {
+    x0 = std::max(x0, 0);
+    z0 = std::max(z0, 0);
+    x1 = std::min(x1, map_.size - 1);
+    z1 = std::min(z1, map_.size - 1);
+    step = std::max(step, 1);
+    // The fields that reach there.
+    struct Rect {
+        std::int32_t x0, z0, x1, z1;
+    };
+    std::vector<Rect> fields;
+    for (const Building& b : buildings_.data()) {
+        for (const Field& f : b.fields) {
+            if (f.x <= x1 && f.x + f.w > x0 && f.z <= z1 && f.z + f.d > z0) {
+                fields.push_back({f.x, f.z, f.x + f.w, f.z + f.d});
+            }
+        }
+    }
+    const std::int32_t mx = (x0 + x1) / 2;
+    const std::int32_t mz = (z0 + z1) / 2;
+    std::int32_t sum = 0;
+    for (std::int32_t z = z0; z <= z1; z += step) {
+        for (std::int32_t x = x0; x <= x1; x += step) {
+            if (radius > 0 && (x - mx) * (x - mx) + (z - mz) * (z - mz) > radius * radius) {
+                continue;
+            }
+            const std::int32_t thick = wildflowers(map_, *content_, x, z);
+            if (thick <= 0 || !nav_.walkable(x / NavGrid::kCellMeters, z / NavGrid::kCellMeters) || road_at(x, z) != 0) {
+                continue;
+            }
+            const bool ploughed = std::any_of(fields.begin(), fields.end(),
+                                              [&](const Rect& f) { return x >= f.x0 && x < f.x1 && z >= f.z0 && z < f.z1; });
+            sum += ploughed ? 0 : thick;
+        }
+    }
+    return sum;
+}
+
+std::int32_t Game::flower_beauty(const Building& house) const {
+    if (calendar().season == Season::Winter) {
+        return 0;
+    }
+    const std::int32_t m = village::kFlowerMeters;
+    const std::int32_t points = flowers(house.x - m, house.z - m, house.x + house.width - 1 + m, house.z + house.depth - 1 + m);
+    return std::min(village::kMaxFlowerBeauty, points / village::kFlowerPoints);
+}
+
+std::int32_t Game::nectar(const Building& hive) const {
+    const BuildingDef& d = content_->buildings[hive.def];
+    if (d.hive_gives == kNoDef || calendar().season == Season::Winter) {
+        return 0;
+    }
+    const std::int32_t mx = hive.x + hive.width / 2;
+    const std::int32_t mz = hive.z + hive.depth / 2;
+    const std::int32_t r = d.hive_radius;
+    return flowers(mx - r, mz - r, mx + r, mz + r, village::kHiveStep, r);
+}
+
 std::uint16_t Game::annexes_of(const Building& house) const {
     std::uint16_t bits = 0;
     for (const Building& o : buildings_.data()) {
@@ -6949,10 +7137,23 @@ std::int32_t Game::desirability_at(FixedVec2 here, const Building* self) const {
         }
         beauty += street;
     }
+    // Phase 104: a house's own garden, and the wild flowers around it.
+    if (self != nullptr && content_->buildings[self->def].kind == BuildingKind::House) {
+        if ((self->garden & garden::kHouse) != 0) {
+            for (const BuildingDef& gd : content_->buildings) {
+                if (gd.garden_house) {
+                    beauty += gd.garden_desirability;
+                    break;
+                }
+            }
+        }
+        beauty += flower_beauty(*self);
+    }
     std::vector<DefIndex> counted;  // Those with a reach of their own found so far.
     for (const Building& o : buildings_.data()) {
         const BuildingDef& od = content_->buildings[o.def];
-        const std::int32_t des = od.desirability;
+        // (Phase 104: a formal garden counts double.)
+        const std::int32_t des = (o.garden & garden::kFormal) != 0 ? od.desirability * 2 : od.desirability;
         if (des == 0 || &o == self) {
             continue;
         }
@@ -7700,6 +7901,7 @@ void write_state(const Game& g, BinaryWriter& w, std::uint64_t seed, std::uint32
         w.u8(b.recipe);
         w.u16(b.needs);
         w.u16(b.annexes);
+        w.u8(b.garden);
         w.i32(b.happiness);
         w.i32(b.desirability);
         w.i32(b.fire);
@@ -8110,7 +8312,7 @@ bool Game::load(BinaryReader& r, std::shared_ptr<const Content> content) {
         std::uint8_t upgrading = 0;
         if (!r.u8(b.level) || b.level > c.buildings[b.def].levels.size() || !r.u8(upgrading) || upgrading > 1 ||
             !r.i32(b.limit) || b.limit < 0 || b.limit > 10000 || !r.u8(b.recipe) || !r.u16(b.needs) ||
-            !r.u16(b.annexes) || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
+            !r.u16(b.annexes) || !r.u8(b.garden) || b.garden > (garden::kHouse | garden::kFormal) || !r.i32(b.happiness) || b.happiness < 0 || b.happiness > 100 || !r.i32(b.desirability) || !r.i32(b.fire) ||
             b.fire < 0 || b.fire > 100 || !r.i32(b.burned) || b.burned < 0 || b.burned > 1000 || !r.i32(b.damage) ||
             b.damage < 0 || !r.i32(b.rearm) || b.rearm < 0) {
             r.fail();

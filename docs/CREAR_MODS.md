@@ -122,6 +122,19 @@ Un kit puede no traer todas las piezas (los setos bajos y las vallas del juego b
 
 La regla solo vale de noche. Una fiera que ya estaba dentro cuando la luz se enciende no ataca a nadie y puede salir. La que venía persiguiendo a alguien se queda en el borde unos 10 segundos (a velocidad ×1) y se vuelve a su zona. A los asaltantes, los jabalíes y los ciervos no les afecta.
 
+#### Jardines y colmenas (fase 104)
+
+Una **línea** (valla, seto) puede hacer un jardín de lo que tenga cerca. Con `gardenModules` (cuántos módulos hacen falta, contando sus portones) y una de dos marcas:
+
+| Campo | Valores |
+|---|---|
+| `houseGarden` | `true`: una **casa** con esos módulos a 3 m o menos de sus paredes tiene jardín. Gana `gardenDesirability` de entorno y, cada trimestre del año en que no heló, manda `gardenGives` (por ejemplo `{"core:vegetables": 1}`) al almacén más cercano que lo acepte y tenga sitio; si no hay, se pierde. |
+| `formalGarden` | `true`: una **decoración** que sube el entorno (`desirability` positiva, sin alcance propio y que no sea anexo) con esos módulos a 3 m o menos cuenta **doble**. |
+
+Una **colmena** es una decoración sin trabajadores con `storage` y `hiveGives` (el recurso que produce, la miel): cada día suma las flores silvestres a `hiveRadius` metros (por omisión 30) que no estén tapadas por edificios, caminos o campos, y da una unidad por cada 40 000 puntos; en invierno, nada. Los peones se llevan lo que junta, como de un taller.
+
+Las **flores silvestres** (fase 91) suben además el entorno de las casas: hasta +5 por las que tenga a 6 m o menos de sus paredes, de primavera a otoño. Cuánto florece un bioma lo dice su `flowers`.
+
 #### Anexos de casa (fase 103)
 
 Un anexo es una decoración (`"kind": "decoration"`, sin trabajadores) con `"annex": true`: sirve a **toda casa del pueblo** cuyas paredes estén a `annexRadius` metros o menos de las suyas (por omisión, 3). Una casa cuenta cada tipo de anexo una sola vez, tenga los que tenga al lado. Un mod puede definir hasta 16 tipos.
