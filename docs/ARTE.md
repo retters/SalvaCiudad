@@ -261,6 +261,14 @@ Junto a un edificio se ven hasta 6 pilas, las de lo que más tiene: las primeras
 
 No llevan esqueleto. Los que el cultivo marca con `"sways"` los mece el juego en el sombreador de vértices (`SceneRenderer::set_model_sway`): cada vértice se desplaza en proporción a su altura sobre la base del modelo. Las parcelas de 4 × 4 m de la página de propuestas (`farm_crop_*`, con cada tallo y un esqueleto para mecerse) siguen ahí, pero no son las del juego.
 
+### Adornos del suelo (`cover_*`, fase 91)
+
+`props/cover_<qué>.glb`: 22 modelos que la vista coloca sola alrededor de la cámara (`src/game/ground_cover`), según el bioma, el suelo, la pendiente, el agua cercana y la estación: hierba alta y seca, trébol, helecho, juncos, cinco flores de pradera y girasoles, pétalos rosas y morados, flores alpinas, pedregal, risco, madera de deriva, conchas, poza de marea, ventisquero, témpano y muñeco de nieve.
+
+Salen de las familias `scatter`, `biomes` y `nature` de las propuestas, en su **versión del juego**: la entrada de `game.json` lleva `"game": true` y entonces el script de la familia corre con `_kit.GAME` encendido, que quita el esqueleto y las animaciones (`kit.save` ignora `mech`), adelgaza lo que el script multiplica con `kit.light(n, parte)` y escribe en `art/studies/propuestas_game/`, para no pisar la versión de la página. El nombre en el juego lo da el propio `game.json` (`"ids": {"scatter_fern": "cover_fern"}`).
+
+Topes: 400 triángulos (`ground`) para lo que se repite mucho y 1 500 (`rock`) para las pocas piezas grandes (pedregal, risco, poza, muñeco). Las plantas se mecen en el sombreador, como los cultivos.
+
 ## Modelos de propuesta que entran al juego (fase 89)
 
 Los modelos de `art/blender/proposals` (los de la página `docs/propuestas`) no están en el juego hasta que una fase los usa. `art/blender/proposals/game.json` lista los que sí:

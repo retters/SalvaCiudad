@@ -120,6 +120,15 @@ Además de sus números (`resource`, `yield`, `growDays`, `fertility`, `hardy`),
 
 Solo cambian lo que se ve.
 
+### biome: flores y adornos del suelo (fase 91)
+
+| Campo | Valores |
+|---|---|
+| `flowers` | Flores silvestres, en porcentaje de lo normal (0 a 400; 100 si no se escribe). Crecen en manchones sobre praderas y, más ralas, sobre pasto. Desde la fase 104 también cuentan para la miel y el entorno. |
+| `cover` | Lista de adornos que el suelo del bioma puede llevar: `ferns` (helechos en suelo de bosque), `clover` (trébol en primavera y verano), `dryGrass` (la hierba alta se seca al pasar la primavera), `petals` (pétalos en suelo de bosque, en primavera), `scree` (pedregal sobre roca), `crag` (riscos en laderas que no se caminan) y `alpine` (flores alpinas en lugar de las de pradera). Solo cambia lo que se ve. |
+
+La hierba alta, los juncos junto al agua dulce, lo que deja el mar en la arena y los adornos del invierno salen en cualquier bioma.
+
 ### mapFeature
 
 Los recursos naturales del mapa. `kind` (`tree`, `stone`, `ironOre`, `berryBush`, `herbs`, `stoneDeposit`), `resource`, `amount`, `work`, `regrowDays`, `landmark` y `model` o `models` (los árboles usan el modelo de su especie). El yacimiento (`stoneDeposit`) es distinto: `amount` es lo que tiene el tamaño chico (el mediano tiene 5/2 y el grande 25/4), `models` son sus tres tamaños en orden (chico, mediano, grande) y no variantes, y `landmark` vale solo para el grande.

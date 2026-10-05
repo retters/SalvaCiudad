@@ -190,7 +190,7 @@ TEST_SUITE("i18n") {
         for (const char* tab : {"display", "graphics", "audio", "controls", "interface", "language", "game"}) {
             CHECK(en.find(std::string("settings.tab.") + tab) != nullptr);
         }
-        for (const char* level : {"shadows", "drawDistance", "vegetation", "antialiasing"}) {
+        for (const char* level : {"shadows", "drawDistance", "vegetation", "groundDetail", "antialiasing"}) {
             for (int i = 0; i < 4; ++i) {
                 CHECK(en.find(std::string("settings.graphics.") + level + ".level." + std::to_string(i)) != nullptr);
             }

@@ -72,12 +72,13 @@ struct PresetLevels {
     int draw_distance;
     int vegetation;
     int antialiasing;
+    int ground_detail;
 };
 constexpr PresetLevels kPresets[] = {
-    {QualityPreset::Low, 0, 0, 0, 0},
-    {QualityPreset::Medium, 1, 1, 1, 1},
-    {QualityPreset::High, 2, 2, 2, 2},
-    {QualityPreset::Ultra, 3, 3, 3, 3},
+    {QualityPreset::Low, 0, 0, 0, 0, 0},
+    {QualityPreset::Medium, 1, 1, 1, 1, 1},
+    {QualityPreset::High, 2, 2, 2, 2, 2},
+    {QualityPreset::Ultra, 3, 3, 3, 3, 3},
 };
 }  // namespace
 
@@ -89,6 +90,7 @@ void GraphicsSettings::apply_preset(QualityPreset p) {
             draw_distance = levels.draw_distance;
             vegetation = levels.vegetation;
             antialiasing = levels.antialiasing;
+            ground_detail = levels.ground_detail;
             return;
         }
     }
@@ -98,7 +100,7 @@ void GraphicsSettings::apply_preset(QualityPreset p) {
 QualityPreset GraphicsSettings::matching_preset() const {
     for (const PresetLevels& levels : kPresets) {
         if (levels.shadows == shadows && levels.draw_distance == draw_distance && levels.vegetation == vegetation &&
-            levels.antialiasing == antialiasing) {
+            levels.antialiasing == antialiasing && levels.ground_detail == ground_detail) {
             return levels.preset;
         }
     }
@@ -235,6 +237,7 @@ void read_graphics(Reader& r, yyjson_mut_val* obj, GraphicsSettings& g) {
     r.read_int(obj, "drawDistance", "graphics.drawDistance", 0, 3, g.draw_distance);
     r.read_int(obj, "vegetation", "graphics.vegetation", 0, 3, g.vegetation);
     r.read_int(obj, "antialiasing", "graphics.antialiasing", 0, 3, g.antialiasing);
+    r.read_int(obj, "groundDetail", "graphics.groundDetail", 0, 3, g.ground_detail);
     std::string preset;
     json::Field f = json::get_string(obj, "preset", 16, preset);
     if (f == json::Field::Ok) {
@@ -545,6 +548,7 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     ok = ok && json::set_int(doc, g, "drawDistance", s.graphics.draw_distance);
     ok = ok && json::set_int(doc, g, "vegetation", s.graphics.vegetation);
     ok = ok && json::set_int(doc, g, "antialiasing", s.graphics.antialiasing);
+    ok = ok && json::set_int(doc, g, "groundDetail", s.graphics.ground_detail);
 
     yyjson_mut_val* in = json::ensure_object(doc, root, "input");
     ok = ok && in != nullptr;

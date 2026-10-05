@@ -944,6 +944,7 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
                 }
                 break;
         }
+        static_assert(kBuildCategories[sim::kPlazaCategory] == "plaza");
         def.category = static_cast<std::uint8_t>(r.choice("category", kBuildCategories, static_cast<int>(category)));
         if (def.work == sim::WorkKind::Farm && def.fields == 0) {
             r.fail("a farm needs \"fields\"");
@@ -997,6 +998,10 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         r.numbers("sizeWeights", def.size_weights, sim::kTreeSizes, 0, 10000);
         def.density = static_cast<std::uint16_t>(r.integer("density", 0, 400, 100));
         def.grass = static_cast<std::uint8_t>(r.integer("grass", 0, 255, 180));
+        def.flowers = static_cast<std::uint16_t>(r.integer("flowers", 0, 400, 100));
+        static constexpr std::string_view kBiomeCovers[] = {"ferns", "clover", "dryGrass", "petals", "scree", "crag", "alpine"};
+        static_assert(std::size(kBiomeCovers) == static_cast<std::size_t>(sim::BiomeCover::Count));
+        def.cover = r.choices("cover", kBiomeCovers);
         // Phase 54: where it grows. Ranges are [low, high], 0 to 100.
         const auto range = [&](const char* key, std::uint8_t* out2) {
             r.numbers(key, out2, 2, 0, 100);

@@ -816,6 +816,11 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Al alejar la cámara las cargas dejan de verse (a unas cuatro veces la distancia en que el personaje se simplifica).
 - [ ] Una obra nueva: primero cimientos de piedra con estacas, luego un armazón con andamio, al final el edificio. Junto a la puerta se apila lo que van trayendo.
 - [ ] Junto al centro del pueblo, a los almacenes y a los talleres hay una pila por cada recurso que guardan (hasta 6, las de lo que más hay), que crece o baja con lo guardado: en un granero con cinco alimentos se distinguen los cinco; el oro, los troncos y la piedra usan las pilas de siempre.
+- [ ] En una pradera, en primavera: matas de hierba alta, manchones de flores de colores y trébol. En verano aparecen girasoles; en otoño no quedan flores y la hierba alta está seca; con nieve no se ve ninguna planta.
+- [ ] En suelo de bosque hay helechos; en el bosque en flor, pétalos en el suelo mientras es primavera. En montaña: pedregales sobre la roca, riscos en las laderas empinadas y flores alpinas. Junto a ríos y lagos, juncos; en la arena junto al mar, madera de deriva, conchas y alguna poza.
+- [ ] En invierno con nieve: ventisqueros contra algunas paredes, témpanos en el agua cuando hiela y, en pueblos con niños, muñecos de nieve junto a adornos de plaza.
+- [ ] Nada de eso aparece bajo edificios, obras ni campos, ni estorba para caminar o construir.
+- [ ] Configuración > Gráficos > «Detalle del terreno»: en «Apagado» no se ve ninguno; en «Bajo» solo cerca y quietos; en «Medio» y «Alto» más lejos y meciéndose.
 - [ ] Un campo recién sembrado muestra surcos con brotes; a media temporada, el cultivo verde; listo para cosechar, el cultivo maduro (trigo y cebada dorados, lino con flores azules, coles grandes, frijoles trepando por sus varas). Se distingue qué hay sembrado sin abrir la ventana de la granja. Tras la cosecha quedan rastrojos y en barbecho, pasto.
 - [ ] Trigo, cebada y lino se mecen con el viento; verduras y frijoles no. Con la cámara lejos el cultivo deja de dibujarse y el campo conserva su color.
 - [ ] Una obra de ladrillo y teja (una panadería) muestra a la izquierda de su puerta las pilas de ladrillos y de troncos que ya llegaron.

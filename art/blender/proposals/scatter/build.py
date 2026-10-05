@@ -128,8 +128,9 @@ def grass(name, kind):
             for k in range(9):
                 blades(mb, rnd, rnd.uniform(-0.9, 0.9), rnd.uniform(-0.9, 0.9), 8, 1.1, ("grass", "grass_light", "grass_dry"), 0.15, w, 0.04)
         elif kind == "reeds":
-            mb.cylinder((0, 0, 0), (0, 0, 0.03), 1.1, 1.1, "water", segments=9)
-            for k in range(16):
+            if not kit.GAME:   # In the game they stand on the shore, not in a puddle of their own.
+                mb.cylinder((0, 0, 0), (0, 0, 0.03), 1.1, 1.1, "water", segments=9)
+            for k in range(kit.light(16, 0.6)):
                 x, y = rnd.uniform(-0.8, 0.8), rnd.uniform(-0.8, 0.8)
                 h = rnd.uniform(1.2, 1.9)
                 lean = rnd.uniform(-0.1, 0.1)
@@ -148,10 +149,10 @@ def grass(name, kind):
                                (math.cos(a) * r1 - math.sin(a) * wide * 0.6, math.sin(a) * r1 + math.cos(a) * wide * 0.6, z1)], (0, 0, 0.02), "leaf" if (k + i) % 2 else "leaf_dark", w)
         else:   # Clover.
             mb.cylinder((0, 0, 0), (0, 0, 0.04), 0.9, 0.9, "grass_dark", segments=9)
-            for _ in range(40):
+            for _ in range(kit.light(40, 0.36)):
                 x, y = rnd.uniform(-0.75, 0.75), rnd.uniform(-0.75, 0.75)
                 mb.sphere((x, y, 0.08), 0.07, "grass_light" if rnd.random() < 0.7 else "leaf", w, segments=4, rings=3, scale=(1, 1, 0.4))
-            for _ in range(6):
+            for _ in range(kit.light(6, 0.5)):
                 x, y = rnd.uniform(-0.7, 0.7), rnd.uniform(-0.7, 0.7)
                 mb.cylinder((x, y, 0.05), (x, y, 0.2), 0.008, 0.008, "stem", w, segments=3)
                 mb.sphere((x, y, 0.22), 0.04, "petal_white", w, segments=4, rings=3)
@@ -165,8 +166,8 @@ def flowers(name, petals, tall=False):
         mb = kit.begin()
         rnd = random.Random(len(name) * 7)
         w = {"top": 1.0}
-        blades(mb, rnd, 0, 0, 30, 0.25, ("grass", "grass_light"), 0.8, w, 0.03)
-        n = 9 if tall else 16
+        blades(mb, rnd, 0, 0, kit.light(30, 0.34), 0.25, ("grass", "grass_light"), 0.8, w, 0.03)
+        n = kit.light(9, 0.34) if tall else kit.light(16, 0.4)
         for k in range(n):
             x, y = rnd.uniform(-0.75, 0.75), rnd.uniform(-0.75, 0.75)
             h = rnd.uniform(1.3, 1.9) if tall else rnd.uniform(0.25, 0.5)

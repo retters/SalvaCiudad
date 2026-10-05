@@ -5,6 +5,8 @@
       "type": "biome",
       "id": "core:mountain",
       "name": "biome.mountain",
+      "flowers": 60,
+      "cover": ["scree", "crag", "alpine", "ferns"],
       "species": {
         "core:pine": 55,
         "core:birch": 25,
@@ -36,6 +38,8 @@
       "type": "biome",
       "id": "core:boreal",
       "name": "biome.boreal",
+      "flowers": 50,
+      "cover": ["ferns"],
       "species": {
         "core:pine": 65,
         "core:birch": 35
@@ -68,6 +72,8 @@
       "type": "biome",
       "id": "core:temperate",
       "name": "biome.temperate",
+      "flowers": 100,
+      "cover": ["ferns", "clover"],
       "species": {
         "core:elm": 30,
         "core:oak": 25,
@@ -97,6 +103,8 @@
       "type": "biome",
       "id": "core:flowering",
       "name": "biome.flowering",
+      "flowers": 180,
+      "cover": ["petals", "ferns", "clover"],
       "species": {
         "core:cherry": 30,
         "core:jacaranda": 30,
@@ -130,6 +138,8 @@
       "type": "biome",
       "id": "core:riverside",
       "name": "biome.riverside",
+      "flowers": 110,
+      "cover": ["ferns", "clover"],
       "species": {
         "core:willow": 40,
         "core:weeping_cherry": 20,
@@ -160,6 +170,8 @@
       "type": "biome",
       "id": "core:mediterranean",
       "name": "biome.mediterranean",
+      "flowers": 80,
+      "cover": ["dryGrass"],
       "species": {
         "core:cypress": 30,
         "core:laurel": 30,
@@ -188,6 +200,8 @@
       "type": "biome",
       "id": "core:dry_tropical",
       "name": "biome.dry_tropical",
+      "flowers": 60,
+      "cover": ["dryGrass"],
       "species": {
         "core:guayacan": 45,
         "core:jacaranda": 30,
@@ -215,6 +229,8 @@
       "type": "biome",
       "id": "core:savanna",
       "name": "biome.savanna",
+      "flowers": 40,
+      "cover": ["dryGrass"],
       "species": {
         "core:acacia": 55,
         "core:dragon_tree": 25,
@@ -247,6 +263,7 @@
       "type": "biome",
       "id": "core:tropical_coast",
       "name": "biome.tropical_coast",
+      "flowers": 70,
       "species": {
         "core:palm": 70,
         "core:laurel": 30
@@ -275,6 +292,8 @@
       "type": "biome",
       "id": "core:orchard",
       "name": "biome.orchard",
+      "flowers": 140,
+      "cover": ["clover"],
       "species": {
         "core:apple": 45,
         "core:cherry": 30,
@@ -305,6 +324,8 @@
       "type": "biome",
       "id": "core:enchanted",
       "name": "biome.enchanted",
+      "flowers": 160,
+      "cover": ["petals", "ferns", "clover"],
       "species": {
         "core:wisteria": 40,
         "core:weeping_cherry": 35,

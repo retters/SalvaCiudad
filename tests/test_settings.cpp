@@ -213,6 +213,7 @@ TEST_SUITE("settings") {
         Settings& s = store.settings();
         s.graphics.apply_preset(QualityPreset::Ultra);
         s.graphics.vegetation = 1;
+        s.graphics.ground_detail = 3;
         s.graphics.preset = s.graphics.matching_preset();
         CHECK(s.graphics.preset == QualityPreset::Custom);
         s.input.bindings.set_key(Action::CameraForward, 0, SDL_SCANCODE_I);
@@ -242,7 +243,7 @@ TEST_SUITE("settings") {
         Settings s;
         // The stored preset is derived from the levels, never trusted.
         const auto r = load_text(dir, R"({"schemaVersion": 1, "graphics": {"preset": "ultra", "shadows": 0,
-            "drawDistance": 0, "vegetation": 0, "antialiasing": 0}})", s);
+            "drawDistance": 0, "vegetation": 0, "antialiasing": 0, "groundDetail": 0}})", s);
         CHECK(r.ignored_fields == 0);
         CHECK(s.graphics.preset == QualityPreset::Low);
     }

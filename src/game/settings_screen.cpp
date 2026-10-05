@@ -289,7 +289,8 @@ void SettingsScreen::tab_graphics(ui::Context& ctx, float x, float& y, float w) 
         int* value;
     };
     const Level levels[] = {{"shadows", &g.shadows}, {"drawDistance", &g.draw_distance},
-                            {"vegetation", &g.vegetation}, {"antialiasing", &g.antialiasing}};
+                            {"vegetation", &g.vegetation}, {"groundDetail", &g.ground_detail},
+                            {"antialiasing", &g.antialiasing}};
     for (const Level& l : levels) {
         const std::string base = std::string("settings.graphics.") + l.key;
         const std::vector<std::string> options = level_options((base + ".level").c_str());

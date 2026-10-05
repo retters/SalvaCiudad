@@ -73,6 +73,10 @@ enum class BiomeWater : std::uint8_t { Any, Fresh, Sea, Count };
 // The kinds of region a biome may grow on, as bits of BiomeDef::regions.
 enum class BiomeRegion : std::uint8_t { Plain, Hills, Mountains, Plateau, Basin, Count };
 
+// Phase 91: what the ground of a biome may be dressed with, as bits of
+// BiomeDef::cover. The view puts them (game/ground_cover): presentation only.
+enum class BiomeCover : std::uint8_t { Ferns, Clover, DryGrass, Petals, Scree, Crag, Alpine, Count };
+
 struct BiomeDef {
     std::string id;
     std::string name_key;
@@ -80,6 +84,10 @@ struct BiomeDef {
     std::uint16_t size_weights[kTreeSizes] = {25, 25, 25, 25};
     std::uint16_t density = 100;  // Percent of the usual forest density.
     std::uint8_t grass = 180;     // Decorative grass, 0..255.
+    // Phase 91: wild flowers, in percent of the usual (0: none; see
+    // sim::wildflowers), and the BiomeCover bits of its ground.
+    std::uint16_t flowers = 100;
+    std::uint8_t cover = 0;
     // Phase 54: where it likes to be. A place takes the biome that fits it
     // best. Temperature and humidity go from 0 to 100; the altitude is the
     // share of the map's land that lies lower, 0 to 100.

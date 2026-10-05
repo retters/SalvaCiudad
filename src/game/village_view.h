@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "game/ground_cover.h"
 #include "game/animal_motion.h"
 #include "game/fog_view.h"
 #include "game/map_scene.h"
@@ -90,6 +91,9 @@ public:
         overlay_ = layer;
         overlay_timer_ = 0.0f;
     }
+    // Phase 91: the "ground detail" setting, 0 (nothing dresses the ground) to 3.
+    void set_ground_detail(int detail) { ground_detail_ = detail; }
+    [[nodiscard]] std::size_t ground_cover_shown() const { return cover_.shown(); }
     void set_view(float x, float z, std::uint8_t town) {
         view_x_ = x;
         view_z_ = z;
@@ -184,6 +188,9 @@ private:
 
     std::optional<Ghost> ghost_;
     std::optional<FieldGhost> field_ghost_;
+    // Phase 91: what dresses the ground around where the camera looks.
+    cover::GroundCover cover_;
+    int ground_detail_ = 2;
     // No place in a list of models (a pile's, a crop's).
     static constexpr std::size_t kNoPile = ~std::size_t{0};
     // Meters a crop that sways bends at one meter of height.

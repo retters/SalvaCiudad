@@ -229,6 +229,17 @@ struct RaceDef {
     return d.kind == BuildingKind::Defense && d.attack_range <= 0;
 }
 
+// Phase 91: wild flowers. How thick they grow in a cell, from 0 (none) to
+// 100, by its ground, its biome and where it is: they come in patches of a
+// few meters on meadows and, thinner, on grass. No state: the same for a
+// map on every machine and at any time. The view draws them from spring to
+// autumn; the rules that count them (phase 104) say when.
+struct Content;
+[[nodiscard]] std::int32_t wildflowers(const MapData& map, const Content& content, std::int32_t cx, std::int32_t cz);
+
+// The build category "plaza" (its place in the loader's list of names).
+inline constexpr std::uint8_t kPlazaCategory = 7;
+
 // Path of a character's model inside the core mod:
 // "models/characters/<body>.glb".
 [[nodiscard]] std::string race_body_file(std::string_view body);

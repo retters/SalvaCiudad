@@ -242,6 +242,7 @@ bool App::init() {
     }
     if (scene_ok_) {
         village_.load(scene_, *pack_);
+        village_.set_ground_detail(settings_->settings().graphics.ground_detail);
         village_.set_cast(&walkers_.cast());
     }
     if (!scene_ok_) {
@@ -353,6 +354,7 @@ void App::apply_graphics() {
     if (scene_ok_) {
         (void)scene_.apply_settings(settings_->settings().graphics);
     }
+    village_.set_ground_detail(settings_->settings().graphics.ground_detail);
 }
 
 void App::apply_language() {
@@ -445,6 +447,7 @@ void App::apply_mods(const std::vector<std::string>& enabled) {
     if (scene_ok_) {
         (void)map_scene_.load_models(scene_, *pack_);
         village_.load(scene_, *pack_);
+        village_.set_ground_detail(settings_->settings().graphics.ground_detail);
     }
     start_menu_background();  // With the new mods' trees and rocks.
 }

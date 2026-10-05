@@ -99,9 +99,10 @@ def make_animals(folder):
 def make_proposals(out, only=None):
     """The proposal models that are in the game (phase 89):
     art/blender/proposals/game.json lists them. Each is built by its
-    family's own script into art/studies/propuestas, checked against the
-    triangle limit of its class and copied to its folder of the game's
-    models. `only`: family names, to build just those. Returns the problems
+    family's own script into art/studies/propuestas (or, for an entry with
+    "game": true, its lighter version without a skeleton into
+    art/studies/propuestas_game), checked against the triangle limit of its
+    class and copied to its folder of the game's models. `only`: family names, to build just those. Returns the problems
     found (a model over its limit is not copied)."""
     import json
     import runpy
@@ -117,14 +118,21 @@ def make_proposals(out, only=None):
         if only and family not in only:
             continue
         limit = doc["limits"][entry["class"]]
-        ids = [name + suffix for name in entry["ids"] for suffix in entry.get("each", [""])]
+        # "ids": a list of models, or {model: the name it takes in the game}.
+        names = entry["ids"]
+        named = names if isinstance(names, dict) else {name: name for name in names}
+        ids = [name + suffix for name in named for suffix in entry.get("each", [""])]
+        game_name = {name + suffix: named[name] + suffix for name in named for suffix in entry.get("each", [""])}
         script = os.path.join(folder, family)
         before = set(sys.modules)
         kit.SELECT = ids
+        kit.GAME = bool(entry.get("game"))
+        built_in = kit.OUT_GAME if kit.GAME else kit.OUT
         try:
             runpy.run_path(os.path.join(script, "build.py"), run_name="__main__")
         finally:
             kit.SELECT = None
+            kit.GAME = False
             # A family's own modules must not be taken for the next family's.
             for name in set(sys.modules) - before:
                 if os.path.dirname(getattr(sys.modules[name], "__file__", None) or "") == script:
@@ -133,7 +141,7 @@ def make_proposals(out, only=None):
                 sys.path.remove(script)
         os.makedirs(os.path.join(out, entry["to"]), exist_ok=True)
         for name in ids:
-            built = os.path.join(kit.OUT, family, name + ".glb")
+            built = os.path.join(built_in, family, name + ".glb")
             if not os.path.isfile(built):
                 problems.append("%s/%s was not built" % (family, name))
                 continue
@@ -141,7 +149,7 @@ def make_proposals(out, only=None):
             if triangles > limit:
                 problems.append("%s/%s has %d triangles, over the %d of a %s" % (family, name, triangles, limit, entry["class"]))
                 continue
-            shutil.copyfile(built, os.path.join(out, entry["to"], name + ".glb"))
+            shutil.copyfile(built, os.path.join(out, entry["to"], game_name[name] + ".glb"))
     for line in problems:
         print("PROPOSAL PROBLEM", line)
     return problems

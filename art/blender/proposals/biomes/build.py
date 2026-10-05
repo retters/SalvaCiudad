@@ -110,7 +110,7 @@ def alpine_flowers():
     rnd = random.Random(3)
     bones = ["sway0", "sway1", "sway2"]
     blob(mb, 0, 0, 0, 1.6, "grass", (1.1, 1, 0.1), None, 9, 3)
-    for i in range(22):
+    for i in range(kit.light(22, 0.27)):
         x, y = rnd.uniform(-1.3, 1.3), rnd.uniform(-1.2, 1.2)
         w = {bones[i % 3]: 1.0}
         mb.cylinder((x, y, 0.05), (x, y, 0.3), 0.012, 0.01, "grass_dark", w, segments=4)
@@ -176,10 +176,10 @@ def petal_carpet(name, mat):
         mb = kit.begin()
         rnd = random.Random(8 if mat == "petal" else 9)
         bones = ["drift0", "drift1"]
-        for i in range(60):
+        for i in range(kit.light(60, 0.45)):
             a, d = rnd.uniform(0, TAU), abs(rnd.gauss(0, 1.0))
             mb.box((math.cos(a) * d, math.sin(a) * d, 0.02), (rnd.uniform(0.08, 0.16), rnd.uniform(0.06, 0.1), 0.012), mat if i % 3 else "white_flower", rotation_z=a)
-        for i in range(12):   # A few still falling.
+        for i in range(0 if kit.GAME else 12):   # A few still falling (not in the game: they would hang still in the air).
             w = {bones[i % 2]: 1.0}
             mb.box((rnd.uniform(-1.2, 1.2), rnd.uniform(-1.2, 1.2), rnd.uniform(0.4, 2.2)), (0.1, 0.07, 0.012), mat, w, rotation_z=rnd.uniform(0, 3))
         pose = lambda t: ({"drift0": [(kit.Z, 360 * t)], "drift1": [(kit.Z, -360 * t)]}, {"drift0": (0.2 * math.sin(TAU * t), 0, 0.15 * math.sin(TAU * 2 * t)),   # noqa: E731

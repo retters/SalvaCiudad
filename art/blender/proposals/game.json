@@ -1,6 +1,6 @@
 {
-  "comment": "The proposal models that are in the game (phase 89). build_all.py builds each with its family's script, checks it against the triangle limit of its class and copies it to data/mods/core/models/<to>/<id>.glb. 'each' multiplies the ids by its suffixes (a pile's three levels). A model enters this list in the phase that uses it.",
-  "limits": {"pile": 1200, "line": 800, "ground": 400, "crop": 200, "animal": 2000, "building": 6000},
+  "comment": "The proposal models that are in the game (phase 89). build_all.py builds each with its family's script, checks it against the triangle limit of its class and copies it to data/mods/core/models/<to>/<id>.glb. 'each' multiplies the ids by its suffixes (a pile's three levels). 'ids' may map a model to the name it takes in the game. With 'game': true the family's script builds the game's version of the model: without skeleton or clips and with fewer pieces (see _kit.GAME). A model enters this list in the phase that uses it.",
+  "limits": {"pile": 1200, "line": 800, "ground": 400, "rock": 1500, "crop": 200, "animal": 2000, "building": 6000},
   "models": [
     {
       "family": "piles", "class": "pile", "to": "props", "each": ["_1", "_2", "_3"],
@@ -12,6 +12,32 @@
     {
       "family": "farm", "class": "crop", "to": "props", "each": ["_1", "_2", "_3"],
       "ids": ["crop_wheat", "crop_barley", "crop_flax", "crop_vegetables", "crop_beans"]
+    },
+    {
+      "family": "scatter", "class": "ground", "to": "props", "game": true,
+      "ids": {"scatter_grass_tall": "cover_grass_tall", "scatter_grass_dry": "cover_grass_dry", "scatter_clover": "cover_clover",
+              "scatter_fern": "cover_fern", "scatter_reeds": "cover_reeds",
+              "scatter_flowers_red": "cover_flowers_red", "scatter_flowers_yellow": "cover_flowers_yellow",
+              "scatter_flowers_blue": "cover_flowers_blue", "scatter_flowers_white": "cover_flowers_white",
+              "scatter_flowers_mixed": "cover_flowers_mixed", "scatter_sunflowers": "cover_sunflowers"}
+    },
+    {
+      "family": "biomes", "class": "ground", "to": "props", "game": true,
+      "ids": {"biome_flowering_petals": "cover_petals_pink", "biome_flowering_petals_purple": "cover_petals_purple",
+              "biome_mountain_alpine_flowers": "cover_alpine_flowers"}
+    },
+    {
+      "family": "biomes", "class": "rock", "to": "props", "game": true,
+      "ids": {"biome_mountain_scree": "cover_scree", "biome_mountain_crag": "cover_crag"}
+    },
+    {
+      "family": "nature", "class": "ground", "to": "props", "game": true,
+      "ids": {"nature_beach_driftwood": "cover_driftwood", "nature_beach_shells": "cover_shells",
+              "nature_winter_drift": "cover_snow_drift", "nature_winter_floe": "cover_ice_floe"}
+    },
+    {
+      "family": "nature", "class": "rock", "to": "props", "game": true,
+      "ids": {"nature_beach_tide_pool": "cover_tide_pool", "nature_winter_snowman": "cover_snowman"}
     }
   ]
 }

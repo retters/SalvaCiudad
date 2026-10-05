@@ -46,7 +46,7 @@ smooth = rigs.smooth
 
 
 def out_folder(family):
-    folder = os.path.join(OUT, family)
+    folder = os.path.join(OUT_GAME if GAME else OUT, family)
     os.makedirs(folder, exist_ok=True)
     return folder
 
@@ -120,6 +120,8 @@ def save(mb, family, name, colors, mech=None, extras=None):
     returns the path. With `mech`, the model gets its skeleton and clips.
     `extras` are custom properties saved in the model (a dict)."""
     path = os.path.join(out_folder(family), name + ".glb")
+    if GAME:
+        mech = None
     if mech is None:
         obj = mb.to_object(name, colors)
         for key, value in (extras or {}).items():
@@ -186,6 +188,21 @@ def build_zoo_spec(spec, family):
 # for the models that go into the game): the ids to build, in place of the
 # command line's.
 SELECT = None
+
+# Phase 91. True while build_all.py builds a model's version for the game
+# (an entry of game.json with "game": true): `save` leaves the skeleton and
+# the clips out (the game sways plants in its vertex shader, and draws these
+# models by the thousand), `light` thins out what a script makes many of,
+# and the file goes to art/studies/propuestas_game, apart from the version
+# the proposals page shows.
+GAME = False
+OUT_GAME = os.path.join(REPO, "art", "studies", "propuestas_game")
+
+
+def light(count, share=0.4, least=1):
+    """How many of something to make: `count`, or that share of it in the
+    game's version."""
+    return count if not GAME else max(least, round(count * share))
 
 
 def run(models, family):

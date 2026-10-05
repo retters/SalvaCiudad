@@ -181,6 +181,7 @@ float wrap_angle(float a) {
 
 void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult& pack) {
     const sim::Content& content = pack.content;
+    cover_.load(renderer, pack);
     // The animals (phase 18), animated (phase 47).
     creature_looks_.clear();
     corpses_.clear();
@@ -371,6 +372,7 @@ bool VillageView::is_prop(render::ModelId id) const {
 
 void VillageView::begin(render::SceneRenderer& renderer, MapScene& scene, sim::Game& game) {
     shown_ = true;
+    cover_.reset(renderer);
     arrows_.clear();
     piles_timer_ = 0.0f;
     looks_.clear();
@@ -560,6 +562,7 @@ void VillageView::update(render::SceneRenderer& renderer, MapScene& scene, sim::
         rebuild_buildings(renderer, game);
         ghost_changed_ = false;
     }
+    cover_.update(renderer, game, {view_x_, 0.0f, view_z_}, ground_detail_);
     update_characters(renderer, game, alpha, dt, speed);
     update_props(renderer, game, alpha, dt, speed);
     update_creatures(renderer, game, alpha, dt, speed);
@@ -1241,6 +1244,7 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
     }
     rebuild_fields(renderer, game);
     rebuild_piles(renderer, game);
+    cover_.buildings_changed();
 }
 
 void VillageView::shoot(math::Vec3 from, math::Vec3 to) {

@@ -61,6 +61,10 @@ struct GraphicsSettings {
     int draw_distance = 2;  // Short, medium, far, very far.
     int vegetation = 2;     // Low, medium, high, very high.
     int antialiasing = 2;   // Off, MSAA 2x, MSAA 4x, MSAA 8x.
+    // Phase 91: what dresses the ground around the camera (tall grass,
+    // flowers, reeds, driftwood...): none, near and still, farther and
+    // swaying, far and swaying.
+    int ground_detail = 2;
 
     // Sets the levels of a preset (does nothing for Custom).
     void apply_preset(QualityPreset p);

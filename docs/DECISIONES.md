@@ -3370,3 +3370,35 @@ En la partida de prueba volvieron a verse los triángulos blancos sobre un risco
 
 **D-9010. La simulación no cambia.**
 Ni reglas ni red ni generador; cambia el hash del contenido.
+
+## Fase 91: vestir el terreno (2026-10-04)
+
+**D-9101. Las briznas ya existían; la fase agrega lo que faltaba.**
+El juego dibuja desde la fase 18 briznas de hierba por todo el suelo, en la tarjeta gráfica, con su vaivén. La «mata verde» de las propuestas repetía eso mismo con un modelo, así que no entró. Entraron la hierba alta, la seca, el trébol, el helecho y los juncos, de la familia `scatter`; de `nature_grass` no se usó ninguno (eran los mismos cuatro, más pesados).
+
+**D-9102. Una regla por cuadro de 4 m, sin estado.**
+El suelo se mira en cuadros de 4 × 4 m y cada uno tiene a lo más un adorno, elegido por su terreno, su bioma, su pendiente, el agua cercana, la estación y un número sacado de su posición (`cover::item_at`). La vista calcula los cuadros en trozos de 32 m alrededor de donde mira la cámara y los vuelve a calcular solo al cruzar de trozo, al cambiar la estación, la nieve o la helada, o al cambiar los edificios. No se guarda nada ni pasa por el generador: los mapas y sus sumas de verificación no cambian. Se descartó ponerlos como objetos del mapa (cientos de miles en un mapa colosal, y habría cambiado todos los mapas).
+
+**D-9103. Dónde sale cada cosa.**
+Pradera y pasto: flores de primavera a verano (girasoles solo en verano), hierba alta en 9 de cada 100 cuadros, trébol en 4. Suelo de bosque: helechos y, en primavera, pétalos. Roca: pedregal. Laderas con 3 m o más de desnivel en el cuadro: risco (el nav no las deja caminar). Orilla de agua dulce: juncos. Arena a 6 m o menos del mar: madera de deriva, conchas y pozas. Agua abierta con helada: témpanos. Con 30 o más de nieve no se dibuja ninguna planta. Los pétalos no buscan árboles en flor: salen en el suelo de bosque de los biomas que los declaran, que es donde están esos árboles; buscar árbol por árbol pedía un índice de cientos de miles de objetos.
+
+**D-9104. Qué tiene cada bioma lo dicen los datos: `flowers` y `cover`.**
+No hay nombres de bioma en el código. Cada bioma declara su porcentaje de flores silvestres y la lista de adornos que su suelo admite; un mod puede dar los suyos. La montaña recibió también helechos después de ver en pantalla su suelo de bosque vacío.
+
+**D-9105. La opción tiene cuatro niveles, no tres.**
+El plan decía «apagado, medio, alto». Los selectores de gráficos del juego son todos de cuatro niveles y los ajustes de calidad (bajo, medio, alto, ultra) fijan un nivel a cada uno; con cuatro encaja sin casos especiales. Apagado: nada. Bajo: hasta 64 m, quietos. Medio: 96 m, se mecen. Alto: 160 m, se mecen. Las plantas además se cortan a la distancia de «Vegetación», como los arbustos.
+
+**D-9106. Dónde hay flores lo dice la simulación, pero no las guarda.**
+`sim::wildflowers(mapa, contenido, celda)` da de 0 a 100, con enteros y sin estado: manchones de 8 m, cuatro de cada diez con flores, más densos en pradera que en pasto y según el bioma. La vista la usa ya; las reglas de la miel y del entorno la usarán en la fase 104. Por eso `flowers` es el único campo nuevo de bioma que toca el hash del contenido con sentido de reglas.
+
+**D-9107. Invierno: ventisqueros y muñecos según los edificios.**
+Cerca de la mitad de los edificios terminados tiene un ventisquero contra una de sus paredes; uno de cada tres adornos de plaza tiene un muñeco de nieve al lado si su pueblo tiene niños. Cuáles, lo decide su posición. Se recalculan con lo demás; un niño que nace en pleno invierno no hace aparecer el muñeco hasta que la vista se vuelve a llenar.
+
+**D-9108. Modelos del juego: sin esqueleto y más ligeros (`_kit.GAME`).**
+Los adornos de las propuestas traían un esqueleto para mecerse y hasta 1 128 triángulos. El script de cada familia construye ahora, además, su versión del juego: sin esqueleto, con menos piezas (`kit.light`) y en una carpeta aparte. Así el modelo de la página y el del juego salen del mismo código. Los pétalos del juego no llevan los que «todavía caen»: sin animación quedaban colgados en el aire. Los juncos no llevan su charco: van en la orilla.
+
+**D-9109. Lo medido y lo visto.**
+Pruebas, suite nueva `cover`: el mismo cuadro da siempre lo mismo y cae dentro del mapa; cada terreno y cada bioma tiene lo suyo; riscos solo en ladera de montaña; flores de primavera a verano, girasoles en verano, hierba seca en otoño, nada de plantas con nieve, pétalos solo en primavera; en el agua solo témpanos con helada, juncos junto al lago y conchas junto al mar; las flores silvestres en manchones y por bioma; ventisqueros y muñecos fuera de los edificios; los niveles de la opción; los 22 modelos dentro de su tope, sin esqueleto y sin brillo; y que vestir el suelo no cambia el hash de la partida ni la suma del mapa. `settings` e `i18n` cubren la opción. En pantalla, con `--reporte` sobre un mapa mediano en primavera: hierba alta, flores alpinas y riscos en la ladera. Con la opción en «Alto» frente a «Apagado», en esa vista: de 2 545 a 1 976 FPS, es decir 0,11 ms más por cuadro (42 objetos y 146 llamadas de dibujo más). En el mapa colosal (semilla 12345, centro del mapa): 151 FPS en «Apagado» y 165 en «Alto»; la diferencia es ruido, porque mientras se medía corrían las compilaciones de verificación en la misma máquina. Lo que vale es el costo fijo de 0,11 ms, que no depende del tamaño del mapa: a 150 FPS sería menos de un 2 %. En otras cuatro vistas de mapas pequeños se vieron además el trébol y los helechos. **No se vieron en el juego con claridad** las flores de pradera (son pequeñas a la distancia de las capturas), ni los pétalos, la playa, los juncos o el invierno: solo sus pruebas y las vistas previas de Blender.
+
+**D-9110. Versiones.**
+La simulación no cambia de reglas (nadie usa todavía `wildflowers`), ni la red, ni el generador. Cambia el hash del contenido.
