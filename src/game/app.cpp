@@ -1724,6 +1724,14 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
     GameSession::Interaction& ui = session_->ui();
     const sim::Game& game = session_->game();
     ui.hover_valid = false;
+    // Phase 93: the line being traced this frame; whatever way this ends,
+    // the view shows that and nothing left over from before.
+    struct Traced {
+        VillageView& view;
+        std::vector<VillageView::Ghost> modules;
+        ~Traced() { view.set_trace(std::move(modules)); }
+    } traced{village_, {}};
+    ui.trace_modules = 0;
     if (!game.founded(session_->local_player())) {
         update_founding(width, height);
         return;
@@ -1737,6 +1745,7 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
     }
     if (right_clicked_ && ui.placing != sim::kNoDef) {
         ui.placing = sim::kNoDef;  // Right click cancels.
+        ui.line_dragging = false;
     } else if (right_clicked_ && !ui.field_farm.valid()) {
         order_explorer(width, height);
     }
@@ -1820,45 +1829,98 @@ void App::update_placement(std::uint32_t width, std::uint32_t height) {
     ui.hover_x = static_cast<std::int32_t>(std::lround(hit->x - static_cast<float>(w) * 0.5f));
     ui.hover_z = static_cast<std::int32_t>(std::lround(hit->z - static_cast<float>(d) * 0.5f));
     ui.hover_error = game.can_place(session_->town(), ui.placing, ui.hover_x, ui.hover_z, ui.rotation);
-    // Walls go in lines: press at one end, release at the other.
+    // Phase 93. What goes in lines (walls, fences) is traced: press on one
+    // module, drag, release on another. The simulation lays the line (a
+    // straight, an L, or a diagonal for the walls that take one).
     const sim::BuildingDef& pd = game.content().buildings[ui.placing];
-    if (pd.kind == sim::BuildingKind::Defense && !pd.trap && w == 2 && d == 2) {
+    if (!pd.line.empty() && !pd.gate && w == sim::kTraceModule && d == sim::kTraceModule) {
+        const auto snap = [](float v) { return static_cast<std::int32_t>(std::floor(v / 2.0f)) * sim::kTraceModule; };
+        ui.hover_x = snap(hit->x);
+        ui.hover_z = snap(hit->z);
         if (input_.mouse_pressed) {
             ui.line_dragging = true;
             ui.drag_x = ui.hover_x;
             ui.drag_z = ui.hover_z;
         }
-        if (ui.line_dragging) {
-            // Along the longer side, every 2 m.
-            const bool along_x = std::abs(ui.hover_x - ui.drag_x) >= std::abs(ui.hover_z - ui.drag_z);
-            const std::int32_t end_x = along_x ? ui.hover_x : ui.drag_x;
-            const std::int32_t end_z = along_x ? ui.drag_z : ui.hover_z;
-            ui.hover_x = end_x;
-            ui.hover_z = end_z;
-            ui.hover_error = game.can_place(session_->town(), ui.placing, end_x, end_z, ui.rotation);
-            if (input_.mouse_released) {
-                ui.line_dragging = false;
-                const std::int32_t steps = std::max(std::abs(end_x - ui.drag_x), std::abs(end_z - ui.drag_z)) / 2;
-                for (std::int32_t k = 0; k <= std::min(steps, 100); ++k) {
-                    const std::int32_t x = ui.drag_x + (along_x ? (end_x > ui.drag_x ? 2 * k : -2 * k) : 0);
-                    const std::int32_t z = ui.drag_z + (along_x ? 0 : (end_z > ui.drag_z ? 2 * k : -2 * k));
-                    if (game.can_place(session_->town(), ui.placing, x, z, 0) != sim::PlaceError::None) {
-                        continue;
-                    }
-                    sim::Command c;
-                    c.type = sim::CommandType::PlaceBuilding;
-                    c.def = ui.placing;
-                    c.position = {sim::Fixed::from_int(x), sim::Fixed::from_int(z)};
-                    session_->issue(c);
+        const std::int32_t from_x = ui.line_dragging ? ui.drag_x : ui.hover_x;
+        const std::int32_t from_z = ui.line_dragging ? ui.drag_z : ui.hover_z;
+        std::int32_t to_x = ui.hover_x;
+        std::int32_t to_z = ui.hover_z;
+        // Nearly as far on both sides: a diagonal, for the walls that take one.
+        const std::int32_t far_x = std::abs(to_x - from_x) / sim::kTraceModule;
+        const std::int32_t far_z = std::abs(to_z - from_z) / sim::kTraceModule;
+        if (pd.line_diagonal && std::min(far_x, far_z) >= 2 && std::abs(far_x - far_z) <= 1) {
+            const std::int32_t n = std::min(far_x, far_z) * sim::kTraceModule;
+            to_x = from_x + (to_x > from_x ? n : -n);
+            to_z = from_z + (to_z > from_z ? n : -n);
+        }
+        const bool z_first = far_z > far_x;  // An L goes along its longer side first.
+        std::vector<VillageView::Ghost> modules;
+        std::int32_t fit = 0;
+        for (const auto& [x, z] : sim::trace_cells(from_x, from_z, to_x, to_z, z_first, pd.line_diagonal)) {
+            const bool ok = game.can_place(session_->town(), ui.placing, x, z, 0) == sim::PlaceError::None;
+            fit += ok ? 1 : 0;
+            modules.push_back(VillageView::Ghost{ui.placing, x, z, 0, ok});
+        }
+        ui.trace_modules = static_cast<std::int32_t>(modules.size());
+        ui.trace_fit = fit;
+        ui.hover_error = fit > 0 ? sim::PlaceError::None : game.can_place(session_->town(), ui.placing, to_x, to_z, 0);
+        village_.set_ghost(std::nullopt);
+        traced.modules = std::move(modules);
+        if (ui.line_dragging && input_.mouse_released) {
+            ui.line_dragging = false;
+            if (fit > 0) {
+                sim::Command c;
+                c.type = sim::CommandType::Trace;
+                c.def = ui.placing;
+                c.position = {sim::Fixed::from_int(from_x), sim::Fixed::from_int(from_z)};
+                c.value = to_x;
+                c.value2 = to_z;
+                c.count = z_first ? 1 : 0;
+                session_->issue(c);
+            }
+            if ((SDL_GetModState() & SDL_KMOD_SHIFT) == 0) {
+                ui.placing = sim::kNoDef;
+                traced.modules.clear();
+            }
+        }
+        return;
+    }
+    // A gate of a family of walls goes on the lattice of the modules, and
+    // turns by itself to the wall it is set into.
+    if (!pd.line.empty() && pd.gate) {
+        const auto snap = [](float v) { return static_cast<std::int32_t>(std::lround(v / 2.0f)) * sim::kTraceModule; };
+        for (const std::uint8_t rot : {ui.rotation, static_cast<std::uint8_t>((ui.rotation + 1) & 3)}) {
+            std::int32_t gw = 0, gd = 0;
+            sim::Game::footprint(pd, rot, gw, gd);
+            const std::int32_t gx = snap(hit->x - static_cast<float>(gw) * 0.5f);
+            const std::int32_t gz = snap(hit->z - static_cast<float>(gd) * 0.5f);
+            const std::size_t under = game.replaced_by(session_->town(), pd, gx, gz, rot).size();
+            if (rot == ui.rotation || under * static_cast<std::size_t>(sim::kTraceModule * sim::kTraceModule) ==
+                                          static_cast<std::size_t>(gw) * static_cast<std::size_t>(gd)) {
+                ui.hover_x = gx;
+                ui.hover_z = gz;
+                ui.hover_rotation = rot;
+                ui.hover_error = game.can_place(session_->town(), ui.placing, gx, gz, rot);
+                if (rot != ui.rotation) {
+                    break;  // The other way lies wholly on the wall: that one.
                 }
-                if ((SDL_GetModState() & SDL_KMOD_SHIFT) == 0) {
-                    ui.placing = sim::kNoDef;
-                    village_.set_ghost(std::nullopt);
-                    return;
+                if (under * static_cast<std::size_t>(sim::kTraceModule * sim::kTraceModule) ==
+                    static_cast<std::size_t>(gw) * static_cast<std::size_t>(gd)) {
+                    break;
                 }
             }
         }
+        VillageView::Ghost ghost;
+        ghost.def = ui.placing;
+        ghost.x = ui.hover_x;
+        ghost.z = ui.hover_z;
+        ghost.rotation = ui.hover_rotation;
+        ghost.allowed = ui.hover_error == sim::PlaceError::None;
+        village_.set_ghost(ghost);
+        return;
     }
+    ui.hover_rotation = ui.rotation;
     VillageView::Ghost ghost;
     ghost.def = ui.placing;
     ghost.x = ui.hover_x;
@@ -1909,7 +1971,7 @@ void App::handle_game_click(std::uint32_t width, std::uint32_t height, math::Vec
             c.type = sim::CommandType::PlaceBuilding;
             c.def = ui.placing;
             c.position = {sim::Fixed::from_int(ui.hover_x), sim::Fixed::from_int(ui.hover_z)};
-            c.value = ui.rotation;
+            c.value = ui.hover_rotation;
             session_->issue(c);
             // Shift keeps placing more of the same.
             if ((SDL_GetModState() & SDL_KMOD_SHIFT) == 0) {

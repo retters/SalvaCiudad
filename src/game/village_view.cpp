@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <unordered_map>
 
 #include "core/log.h"
 #include "game/animal_motion.h"
@@ -275,6 +276,27 @@ void VillageView::load(render::SceneRenderer& renderer, const mods::BuildResult&
             piles_[kind][level] = prop(builtin_models::kPiles[kind][level]);
         }
     }
+    // Phase 93: the pieces of what goes in lines (walls, fences).
+    line_pieces_.clear();
+    for (std::size_t i = 0; i < content.buildings.size(); ++i) {
+        const sim::BuildingDef& d = content.buildings[i];
+        std::array<Model, sim::kLinePieces> pieces{};
+        bool any = false;
+        for (std::size_t p = 0; p < sim::kLinePieces; ++p) {
+            if (d.line_pieces[p].empty()) {
+                continue;
+            }
+            const std::filesystem::path file = mods::mod_file(pack.dir(d.mod), d.line_pieces[p]);
+            std::error_code ec;
+            if (!file.empty() && std::filesystem::is_regular_file(file, ec)) {
+                pieces[p] = load_building_file(renderer, file);
+                any = any || pieces[p].id != kNoModel;
+            }
+        }
+        if (any) {
+            line_pieces_[static_cast<sim::DefIndex>(i)] = pieces;
+        }
+    }
     // Phase 90: each crop's plots, by stage. They are small vegetation (not
     // drawn from afar, where the color of the field's ground tells the crop).
     crop_models_.assign(content.crops.size(), {kNoPile, kNoPile, kNoPile});
@@ -408,6 +430,13 @@ void VillageView::end(render::SceneRenderer& renderer) {
     corpses_.clear();
     ghost_.reset();
     shown_ = false;
+}
+
+void VillageView::set_trace(std::vector<Ghost> modules) {
+    if (modules != trace_) {
+        trace_ = std::move(modules);
+        ghost_changed_ = true;
+    }
 }
 
 void VillageView::set_field_ghost(std::optional<FieldGhost> ghost) {
@@ -1171,6 +1200,96 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         return m.id != kNoModel ? &m : nullptr;
     };
     const sim::Content& content = game.content();
+    // Phase 93: where the modules of each family of lines stand (and those
+    // being traced), so each can show the piece its neighbors ask for.
+    std::unordered_map<std::uint64_t, const std::string*> line_at;
+    const auto cell_key = [](std::int32_t x, std::int32_t z) {
+        return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(x)) << 32) | static_cast<std::uint32_t>(z);
+    };
+    const auto mark_line = [&](const sim::BuildingDef& d, std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t dp) {
+        for (std::int32_t cz = z; cz < z + dp; cz += sim::kTraceModule) {
+            for (std::int32_t cx = x; cx < x + w; cx += sim::kTraceModule) {
+                line_at[cell_key(cx, cz)] = &d.line;
+            }
+        }
+    };
+    for (const sim::Building& b : game.buildings().data()) {
+        if (!content.buildings[b.def].line.empty()) {
+            mark_line(content.buildings[b.def], b.x, b.z, b.width, b.depth);
+        }
+    }
+    for (const Ghost& g : trace_) {
+        if (g.def < content.buildings.size() && !content.buildings[g.def].line.empty()) {
+            mark_line(content.buildings[g.def], g.x, g.z, sim::kTraceModule, sim::kTraceModule);
+        }
+    }
+    const auto joins = [&](const std::string& family, std::int32_t x, std::int32_t z) {
+        const auto it = line_at.find(cell_key(x, z));
+        return it != line_at.end() && *it->second == family;
+    };
+    const auto ground = [&](float x, float z) { return map_surface_height(game.map(), x, z); };
+    // Puts the piece of the module at (x, z) in `lists`, and the diagonal
+    // stretches that join it to its neighbors across a corner. `state`: 0
+    // being built, 1 whole, 2 badly damaged. False if the definition has no
+    // pieces: it shows its own model, as any building.
+    const auto put_module = [&](sim::DefIndex def, std::int32_t x, std::int32_t z, int state, math::Vec3 tint, std::uint8_t fade) {
+        const auto found = line_pieces_.find(def);
+        if (found == line_pieces_.end()) {
+            return false;
+        }
+        const std::array<Model, sim::kLinePieces>& pieces = found->second;
+        const sim::BuildingDef& d = content.buildings[def];
+        constexpr std::int32_t m = sim::kTraceModule;
+        const bool e = joins(d.line, x + m, z), n = joins(d.line, x, z - m), w = joins(d.line, x - m, z), s = joins(d.line, x, z + m);
+        props::LineLook look = props::line_look(e, n, w, s);
+        const float cx = static_cast<float>(x) + 1.0f, cz = static_cast<float>(z) + 1.0f;
+        float y = ground(cx, cz);
+        const auto has = [&](sim::LinePiece p) { return pieces[static_cast<std::size_t>(p)].id != kNoModel; };
+        if (state == 0 && has(sim::LinePiece::Site)) {
+            look.piece = sim::LinePiece::Site;
+            look.turns = look.turns % 2;
+        } else if (look.piece == sim::LinePiece::Straight) {
+            // The heights of its two ends: east and west, or north and south.
+            const bool along_x = look.turns % 2 == 0;
+            const float high_end = along_x ? ground(cx + 1.0f, cz) : ground(cx, cz - 1.0f);  // East, or north.
+            const float low_end = along_x ? ground(cx - 1.0f, cz) : ground(cx, cz + 1.0f);
+            if (state == 2 && has(sim::LinePiece::Breach)) {
+                look.piece = sim::LinePiece::Breach;
+            } else if (std::abs(high_end - low_end) >= props::kStepRise && has(sim::LinePiece::Step)) {
+                look.piece = sim::LinePiece::Step;
+                look.turns += high_end < low_end ? 2 : 0;  // Its high half to the higher end.
+                y = std::min(high_end, low_end);
+            }
+        }
+        if (!has(look.piece)) {
+            look = {sim::LinePiece::Pillar, 0};
+            if (!has(look.piece)) {
+                return false;
+            }
+        }
+        render::Instance inst;
+        inst.position = {cx, y - 0.05f, cz};
+        inst.yaw = static_cast<float>(look.turns) * std::numbers::pi_v<float> * 0.5f;
+        inst.tint = tint;
+        inst.fade = fade;
+        lists[pieces[static_cast<std::size_t>(look.piece)].id].push_back(inst);
+        // Across a corner, where no module in between joins the two: a
+        // diagonal stretch from center to center, over the corner they share.
+        if (has(sim::LinePiece::Diagonal)) {
+            for (const std::int32_t dz : {-m, m}) {
+                if (joins(d.line, x + m, z + dz) && !e && !(dz < 0 ? n : s)) {
+                    render::Instance link;
+                    link.position = {cx + 1.0f, ground(cx + 1.0f, cz + static_cast<float>(dz) * 0.5f) - 0.05f,
+                                     cz + static_cast<float>(dz) * 0.5f};
+                    link.yaw = dz < 0 ? 0.0f : std::numbers::pi_v<float> * 0.5f;  // At rest it runs south-west to north-east.
+                    link.tint = tint;
+                    link.fade = fade;
+                    lists[pieces[static_cast<std::size_t>(sim::LinePiece::Diagonal)].id].push_back(link);
+                }
+            }
+        }
+        return true;
+    };
     for (std::size_t k = 0; k < game.buildings().size(); ++k) {
         const sim::Building& b = game.buildings().data()[k];
         const Model* m = model_for(b.def, b.level, place_key(b.x, b.z));
@@ -1178,6 +1297,24 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
             continue;
         }
         const sim::BuildingDef& d = content.buildings[b.def];
+        if (!d.line.empty() && b.width == sim::kTraceModule && b.depth == sim::kTraceModule && !d.gate) {
+            math::Vec3 tint{1.0f, 1.0f, 1.0f};
+            if (b.fire > 0 || b.burned > 0) {
+                const float char_level = 1.0f - 0.7f * static_cast<float>(b.burned) / 1000.0f;
+                tint = b.fire > 0 ? math::Vec3{1.9f * char_level, 0.6f * char_level, 0.3f * char_level}
+                                  : math::Vec3{char_level, char_level, char_level};
+            }
+            std::uint8_t fade = 0;
+            for (const Fade& f : faded_) {
+                if (f.building == game.buildings().entities()[k]) {
+                    fade = std::min(f.level, render::kMaxFade);
+                }
+            }
+            const int state = b.state == sim::BuildingState::Construction ? 0 : b.damage * 2 > d.hp ? 2 : 1;
+            if (put_module(b.def, b.x, b.z, state, tint, fade)) {
+                continue;
+            }
+        }
         float progress = 1.0f;
         if (b.state == sim::BuildingState::Construction) {
             progress = d.build_work > 0 ? static_cast<float>(b.work_done) / static_cast<float>(d.build_work) : 1.0f;
@@ -1190,6 +1327,8 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
             building_instance(game, b.def, *m, b.x, b.z, b.width, b.depth, b.rotation, site != nullptr ? 1.0f : progress);
         if (site != nullptr) {
             inst.palette = 0;  // A site has no colors of its own yet.
+        } else if (!d.line.empty()) {
+            inst.scale = 1.0f;  // A gate meets the wall's own section: never shrunk to its footprint.
         }
         if (b.fire > 0 || b.burned > 0) {
             // Glowing while it burns, charred after.
@@ -1244,6 +1383,21 @@ void VillageView::rebuild_buildings(render::SceneRenderer& renderer, const sim::
         g.tint = ghost_->allowed ? math::Vec3{0.55f, 1.6f, 0.6f} : math::Vec3{1.8f, 0.45f, 0.4f};
         g.palette = 0;  // Its own colors under the green or red.
         lists[m->id].push_back(g);
+    }
+    // Phase 93: the line being traced, each module green or red.
+    for (const Ghost& g : trace_) {
+        if (g.def >= content.buildings.size()) {
+            continue;
+        }
+        const math::Vec3 tint = g.allowed ? math::Vec3{0.55f, 1.6f, 0.6f} : math::Vec3{1.8f, 0.45f, 0.4f};
+        if (!put_module(g.def, g.x, g.z, 1, tint, 0)) {
+            if (const Model* m = model_for(g.def, 0, place_key(g.x, g.z))) {
+                render::Instance inst = building_instance(game, g.def, *m, g.x, g.z, sim::kTraceModule, sim::kTraceModule, 0, 1.0f);
+                inst.tint = tint;
+                inst.palette = 0;
+                lists[m->id].push_back(inst);
+            }
+        }
     }
     for (auto& [id, list] : lists) {
         if (id != tile_model_ && id != plant_model_ && id != animal_model_ && id != mark_model_ && id != overlay_model_ &&

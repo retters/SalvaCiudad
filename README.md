@@ -826,6 +826,10 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Donde muere un aldeano, un soldado o un asaltante se juntan tres aves carroñeras (cuervos, o buitres en biomas secos) durante un mes de juego.
 - [ ] Con «Detalle del terreno» en «Apagado» no hay ningún animal de ambiente. En pausa se quedan quietos.
 - [ ] Configuración > Gráficos > «Detalle del terreno»: en «Apagado» no se ve ninguno; en «Bajo» solo cerca y quietos; en «Medio» y «Alto» más lejos y meciéndose.
+- [ ] Defensa > Empalizada: clic y arrastrar traza una línea de módulos; al soltar quedan como obras. En línea recta, en L (primero el lado más largo) y, si los dos lados miden casi lo mismo, en diagonal. Mientras se arrastra, cada módulo se ve verde o rojo y el aviso de abajo dice cuántos tramos son, cuántos caben y cuánto costarán.
+- [ ] Los módulos se unen solos: rectos, esquinas, uniones en T, cruces y remates en los extremos; un módulo suelto es un poste. En diagonal no queda ningún hueco entre módulos y nadie pasa entre ellos.
+- [ ] Defensa > Puerta de empalizada o Poterna de empalizada sobre un tramo ya trazado: se orienta sola al muro, lo reemplaza, y los aldeanos la cruzan. Sobre el muro de piedra no se deja.
+- [ ] El muro de piedra se traza igual (sin diagonales) y se ve como antes. Una empalizada en obra se ve como andamio de troncos; con más de la mitad del daño, con una brecha.
 - [ ] Un campo recién sembrado muestra surcos con brotes; a media temporada, el cultivo verde; listo para cosechar, el cultivo maduro (trigo y cebada dorados, lino con flores azules, coles grandes, frijoles trepando por sus varas). Se distingue qué hay sembrado sin abrir la ventana de la granja. Tras la cosecha quedan rastrojos y en barbecho, pasto.
 - [ ] Trigo, cebada y lino se mecen con el viento; verduras y frijoles no. Con la cámara lejos el cultivo deja de dibujarse y el campo conserva su color.
 - [ ] Una obra de ladrillo y teja (una panadería) muestra a la izquierda de su puerta las pilas de ladrillos y de troncos que ya llegaron.

@@ -50,6 +50,17 @@
       "family": "nature", "class": "animal", "to": "fauna", "bare": true,
       "ids": {"nature_insects_butterflies": "butterflies", "nature_insects_fireflies": "fireflies",
               "nature_insects_dragonflies": "dragonflies"}
+    },
+    {
+      "family": "walls", "class": "line", "to": "buildings", "game": true,
+      "ids": {"wall_palisade_pillar": "palisade_pillar", "wall_palisade_end": "palisade_end", "wall_palisade_straight": "palisade_straight",
+              "wall_palisade_corner": "palisade_corner", "wall_palisade_tee": "palisade_tee", "wall_palisade_cross": "palisade_cross",
+              "wall_palisade_diagonal": "palisade_diagonal", "wall_palisade_step": "palisade_step",
+              "wall_palisade_building": "palisade_site", "wall_palisade_breach": "palisade_breach"}
+    },
+    {
+      "family": "walls", "class": "building", "to": "buildings", "game": true,
+      "ids": {"gate_palisade": "palisade_gate", "gate_palisade_postern": "palisade_postern"}
     }
   ]
 }

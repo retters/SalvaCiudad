@@ -86,6 +86,8 @@ public:
         bool operator==(const Ghost&) const = default;
     };
     void set_ghost(std::optional<Ghost> ghost);
+    // Phase 93: the modules of a line being traced, each allowed or not.
+    void set_trace(std::vector<Ghost> modules);
     // Phase 17: a map layer (GameHud's list; 0 = none) for a town, drawn
     // around (x, z), where the camera looks.
     void set_overlay(int layer) {
@@ -191,6 +193,10 @@ private:
     people::Motion anchor_motion_;
 
     std::optional<Ghost> ghost_;
+    std::vector<Ghost> trace_;
+    // Phase 93: the pieces of each building that goes in lines, by definition
+    // (kNoModel: it has none, and shows its own model).
+    std::map<sim::DefIndex, std::array<Model, sim::kLinePieces>> line_pieces_;
     std::optional<FieldGhost> field_ghost_;
     // Phase 91: what dresses the ground around where the camera looks.
     cover::GroundCover cover_;

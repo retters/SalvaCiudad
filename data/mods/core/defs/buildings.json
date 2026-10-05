@@ -1190,7 +1190,21 @@
         "core:log": 4
       },
       "buildWork": 40,
-      "hp": 400
+      "hp": 400,
+      "line": "palisade",
+      "diagonal": true,
+      "pieces": {
+        "pillar": "models/buildings/palisade_pillar.glb",
+        "end": "models/buildings/palisade_end.glb",
+        "straight": "models/buildings/palisade_straight.glb",
+        "corner": "models/buildings/palisade_corner.glb",
+        "tee": "models/buildings/palisade_tee.glb",
+        "cross": "models/buildings/palisade_cross.glb",
+        "diagonal": "models/buildings/palisade_diagonal.glb",
+        "step": "models/buildings/palisade_step.glb",
+        "site": "models/buildings/palisade_site.glb",
+        "breach": "models/buildings/palisade_breach.glb"
+      }
     },
     {
       "type": "building",
@@ -1208,7 +1222,8 @@
       "buildWork": 80,
       "hp": 1500,
       "fireproof": true,
-      "tier": 2
+      "tier": 2,
+      "line": "stone"
     },
     {
       "type": "building",
@@ -1226,6 +1241,42 @@
       "buildWork": 80,
       "hp": 600,
       "gate": true
+    },
+    {
+      "type": "building",
+      "id": "core:palisade_gate",
+      "name": "building.palisadeGate",
+      "kind": "defense",
+      "model": "models/buildings/palisade_gate.glb",
+      "size": [
+        4,
+        2
+      ],
+      "cost": {
+        "core:log": 10
+      },
+      "buildWork": 80,
+      "hp": 600,
+      "gate": true,
+      "line": "palisade"
+    },
+    {
+      "type": "building",
+      "id": "core:palisade_postern",
+      "name": "building.palisadePostern",
+      "kind": "defense",
+      "model": "models/buildings/palisade_postern.glb",
+      "size": [
+        2,
+        2
+      ],
+      "cost": {
+        "core:log": 6
+      },
+      "buildWork": 50,
+      "hp": 400,
+      "gate": true,
+      "line": "palisade"
     },
     {
       "type": "building",

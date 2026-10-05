@@ -283,6 +283,8 @@
     "building.palisade": "Empalizada",
     "building.stoneWall": "Muro de piedra",
     "building.gate": "Puerta",
+    "building.palisadeGate": "Puerta de empalizada",
+    "building.palisadePostern": "Poterna de empalizada",
     "building.watchtower": "Torre de vigía",
     "building.trap": "Trampa",
     "resource.bows": "Arcos",

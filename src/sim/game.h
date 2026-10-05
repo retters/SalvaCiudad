@@ -39,7 +39,7 @@ inline constexpr std::uint32_t kTicksPerYear = kTicksPerMonth * kMonthsPerYear;
 
 // Rules of the village; also the number that invalidates saves and replays
 // when it changes.
-inline constexpr std::uint32_t kGameRulesVersion = 53;
+inline constexpr std::uint32_t kGameRulesVersion = 54;
 
 namespace village {
 // A house with people or a workplace with workers lights this far beyond
@@ -95,6 +95,17 @@ enum class Order : std::uint8_t {
     Returning,  // On its way home: sent, or out of provisions, or cold.
     Count
 };
+
+// Phase 93: tracing. Walls, fences and the like go in lines of modules of
+// 2 x 2 m on a lattice of even cells. A trace goes from the module of one
+// cell to the module of another: straight if they share a row or a column;
+// at 45 degrees if `diagonal` and they are as far apart on both; else an L,
+// along x first unless `z_first`. At most kMaxTrace modules (the rest of a
+// longer one is left out). Returns each module's corner cell, in order.
+inline constexpr std::int32_t kTraceModule = 2;
+inline constexpr std::size_t kMaxTrace = 64;
+[[nodiscard]] std::vector<std::pair<std::int32_t, std::int32_t>> trace_cells(std::int32_t x0, std::int32_t z0, std::int32_t x1,
+                                                                            std::int32_t z1, bool z_first, bool diagonal);
 
 // A natural resource of the map (one per map feature, same index).
 struct Node {
@@ -668,6 +679,11 @@ public:
     // Whether `player` may place `def` with its corner at (x, z).
     [[nodiscard]] PlaceError can_place(std::uint8_t player, DefIndex def, std::int32_t x, std::int32_t z,
                                        std::uint8_t rotation) const;
+    // Phase 93: the buildings a gate of a line family would take the place
+    // of there: the plain modules of its town and family that lie wholly
+    // under it (a gate set into a wall). Empty for anything else.
+    [[nodiscard]] std::vector<EntityId> replaced_by(std::uint8_t town, const BuildingDef& d, std::int32_t x, std::int32_t z,
+                                                    std::uint8_t rotation) const;
     // Whether `player` may add a field of `w` x `d` at (x, z) to `farm`.
     [[nodiscard]] PlaceError can_place_field(std::uint8_t player, EntityId farm, std::int32_t x, std::int32_t z,
                                              std::int32_t w, std::int32_t d) const;

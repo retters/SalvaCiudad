@@ -106,6 +106,13 @@ struct LevelDef {
 // The farthest a building may light (its def's "light").
 inline constexpr std::int32_t kMaxLight = 40;
 
+// Phase 93: the pieces a building that goes in lines (a wall, a fence) is
+// drawn with, by how each module joins its neighbors. At rest a straight
+// joins east and west, a corner east and north, a tee all but south, an
+// end reaches west (north: -Z); the step's east half stands a meter higher.
+enum class LinePiece : std::uint8_t { Pillar, End, Straight, Corner, Tee, Cross, Diagonal, Step, Site, Breach, Count };
+inline constexpr std::size_t kLinePieces = static_cast<std::size_t>(LinePiece::Count);
+
 struct BuildingDef {
     std::string id;
     std::string name_key;
@@ -161,6 +168,15 @@ struct BuildingDef {
     // Phase 73: the settlers' wagon. Nobody builds or removes it: it comes
     // with a new town, keeps its goods, and goes when the center is built.
     bool cart = false;
+    // Phase 93. `line`: the family of walls it belongs to ("": none).
+    // Modules of a family (those of 2 x 2) are traced by dragging and join
+    // each other; a gate of the family may be placed over them and takes
+    // their place. `line_diagonal`: it may be
+    // traced at 45 degrees. `line_pieces`: its models by LinePiece (the
+    // view's; an empty one: its own model).
+    std::string line;
+    bool line_diagonal = false;
+    std::array<std::string, kLinePieces> line_pieces;
 };
 
 // A disease (phase 13): where it comes from, how it spreads, how bad it is.

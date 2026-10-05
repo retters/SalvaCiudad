@@ -4908,8 +4908,34 @@ public:
                 const std::int32_t x = c.position.x.floor_int();
                 const std::int32_t z = c.position.z.floor_int();
                 const auto rot = static_cast<std::uint8_t>(c.value & 3);
-                if (g_.can_place(c.player, c.def, x, z, rot) != PlaceError::None ||
-                    !add_building(c.player, c.def, x, z, rot, false).valid()) {
+                if (g_.can_place(c.player, c.def, x, z, rot) != PlaceError::None) {
+                    ++g_.rejected_;
+                    break;
+                }
+                // A gate set into a wall takes the place of the modules under it.
+                for (const EntityId old : g_.replaced_by(c.player, c_.buildings[c.def], x, z, rot)) {
+                    remove_building(old);
+                }
+                if (!add_building(c.player, c.def, x, z, rot, false).valid()) {
+                    ++g_.rejected_;
+                }
+                break;
+            }
+            case CommandType::Trace: {
+                // Phase 93: a line of modules; those that do not fit are left out.
+                if (c.def >= c_.buildings.size() || c_.buildings[c.def].line.empty() || c_.buildings[c.def].width != kTraceModule ||
+                    c_.buildings[c.def].depth != kTraceModule) {
+                    ++g_.rejected_;
+                    break;
+                }
+                int placed = 0;
+                for (const auto& [x, z] : trace_cells(c.position.x.floor_int(), c.position.z.floor_int(), c.value, c.value2,
+                                                      c.count != 0, c_.buildings[c.def].line_diagonal)) {
+                    if (g_.can_place(c.player, c.def, x, z, 0) == PlaceError::None && add_building(c.player, c.def, x, z, 0, false).valid()) {
+                        ++placed;
+                    }
+                }
+                if (placed == 0) {
                     ++g_.rejected_;
                 }
                 break;
@@ -5992,9 +6018,21 @@ PlaceError Game::ground_error(std::uint8_t town, const BuildingDef& d, std::int3
         }
     }
     std::int32_t lo = 65535, hi = 0;
+    // What a gate takes the place of does not stand in its way (phase 93).
+    const std::vector<EntityId> replaced = replaced_by(town, d, x, z, rotation);
+    const auto to_replace = [&](std::int32_t cx, std::int32_t cz) {
+        for (const EntityId id : replaced) {
+            const Building* b = buildings_.get(id);
+            if (b != nullptr && cx >= b->x && cx < b->x + b->width && cz >= b->z && cz < b->z + b->depth) {
+                return true;
+            }
+        }
+        return false;
+    };
     for (std::int32_t cz = z; cz < z + dp; ++cz) {
         for (std::int32_t cx = x; cx < x + w; ++cx) {
-            if (occupied_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(map_.size) + static_cast<std::size_t>(cx)] != 0) {
+            if (occupied_[static_cast<std::size_t>(cz) * static_cast<std::size_t>(map_.size) + static_cast<std::size_t>(cx)] != 0 &&
+                !to_replace(cx, cz)) {
                 return PlaceError::Blocked;
             }
             if (map_.water_at(cx, cz)) {
@@ -6019,6 +6057,67 @@ PlaceError Game::ground_error(std::uint8_t town, const BuildingDef& d, std::int3
         return PlaceError::DoorBelow;
     }
     return PlaceError::None;
+}
+
+std::vector<EntityId> Game::replaced_by(std::uint8_t town, const BuildingDef& d, std::int32_t x, std::int32_t z,
+                                        std::uint8_t rotation) const {
+    std::vector<EntityId> out;
+    if (d.line.empty() || !d.gate || town >= kMaxPlayers) {
+        return out;
+    }
+    std::int32_t w = 0, dp = 0;
+    footprint(d, rotation, w, dp);
+    for (const EntityId id : owned(town)) {
+        const Building* b = buildings_.get(id);
+        if (b == nullptr) {
+            continue;
+        }
+        const BuildingDef& other = content_->buildings[b->def];
+        if (!other.gate && other.line == d.line && b->x >= x && b->z >= z && b->x + b->width <= x + w &&
+            b->z + b->depth <= z + dp) {
+            out.push_back(id);
+        }
+    }
+    return out;
+}
+
+std::vector<std::pair<std::int32_t, std::int32_t>> trace_cells(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1,
+                                                               bool z_first, bool diagonal) {
+    // In modules, on the lattice of even cells.
+    const std::int32_t ax = x0 / kTraceModule, az = z0 / kTraceModule;
+    const std::int32_t bx = x1 / kTraceModule, bz = z1 / kTraceModule;
+    const std::int32_t dx = bx - ax, dz = bz - az;
+    const std::int32_t sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+    const std::int32_t sz = dz > 0 ? 1 : dz < 0 ? -1 : 0;
+    std::vector<std::pair<std::int32_t, std::int32_t>> cells;
+    const auto add = [&](std::int32_t mx, std::int32_t mz) {
+        if (cells.size() < kMaxTrace) {
+            cells.emplace_back(mx * kTraceModule, mz * kTraceModule);
+        }
+    };
+    const std::int32_t nx = dx * sx, nz = dz * sz;  // Steps along each axis.
+    if (diagonal && nx == nz && nx > 0) {
+        for (std::int32_t k = 0; k <= nx; ++k) {
+            add(ax + sx * k, az + sz * k);
+        }
+        return cells;
+    }
+    if (z_first) {
+        for (std::int32_t k = 0; k <= nz; ++k) {
+            add(ax, az + sz * k);
+        }
+        for (std::int32_t k = 1; k <= nx; ++k) {
+            add(ax + sx * k, bz);
+        }
+    } else {
+        for (std::int32_t k = 0; k <= nx; ++k) {
+            add(ax + sx * k, az);
+        }
+        for (std::int32_t k = 1; k <= nz; ++k) {
+            add(bx, az + sz * k);
+        }
+    }
+    return cells;
 }
 
 std::int32_t Game::floor_cm(std::int32_t x, std::int32_t z, std::int32_t w, std::int32_t d, std::uint8_t rotation) const {

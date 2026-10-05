@@ -267,6 +267,45 @@ public:
         }
     }
 
+    // A line building's "pieces" (phase 93): an object of model files by
+    // piece name; each named file must exist inside the model's mod folder.
+    void pieces(const std::function<std::filesystem::path(const std::string&)>& mod_dir, std::vector<ModelRef>* refs,
+                const std::string& name_key, std::array<std::string, sim::kLinePieces>& out) {
+        static constexpr std::string_view kNames[sim::kLinePieces] = {"pillar", "end",      "straight", "corner", "tee",
+                                                                      "cross",  "diagonal", "step",     "site",   "breach"};
+        yyjson_mut_val* obj = yyjson_mut_obj_get(obj_, "pieces");
+        if (obj == nullptr) {
+            return;
+        }
+        if (!yyjson_mut_is_obj(obj)) {
+            fail("\"pieces\" must be an object of model files");
+            return;
+        }
+        std::size_t idx = 0, max = 0;
+        yyjson_mut_val* k = nullptr;
+        yyjson_mut_val* v = nullptr;
+        yyjson_mut_obj_foreach(obj, idx, max, k, v) {
+            const char* key = yyjson_mut_get_str(k);
+            const char* file = yyjson_mut_get_str(v);
+            const auto name = std::find(std::begin(kNames), std::end(kNames), std::string_view(key != nullptr ? key : ""));
+            const std::string rel = file != nullptr ? file : "";
+            if (name == std::end(kNames) || rel.empty() || rel.size() > 200) {
+                fail(std::format("\"pieces\" has an unknown piece or a bad file: '{}'", key != nullptr ? key : ""));
+                continue;
+            }
+            const std::filesystem::path path = mod_file(mod_dir(def_.model_mod), rel);
+            std::error_code ec;
+            const bool exists = !path.empty() && std::filesystem::is_regular_file(path, ec);
+            if (!exists) {
+                fail(std::format("piece model '{}' not found in mod '{}'", rel, def_.model_mod));
+            }
+            if (refs != nullptr) {
+                refs->push_back({def_.type, def_.id, name_key, def_.model_mod, rel, exists});
+            }
+            out[static_cast<std::size_t>(name - std::begin(kNames))] = rel;
+        }
+    }
+
     // A resource's "pile" (phase 89): the start of the names of its three
     // pile models, "<pile>_1.glb" to "<pile>_3.glb", which must all exist
     // inside the model's mod folder. Returns "" if it has none.
@@ -463,9 +502,9 @@ void DefSet::add_file(std::string_view json_text, const std::string& mod, const 
                 if (copy != nullptr && kc != nullptr) {
                     (void)yyjson_mut_obj_add(target->obj, kc, copy);
                 }
-                // A resource's "pile" names model files too.
+                // A resource's "pile" and a wall's "pieces" name model files too.
                 if (std::string_view(key) == "model" || std::string_view(key) == "models" ||
-                    std::string_view(key) == "pile") {
+                    std::string_view(key) == "pile" || std::string_view(key) == "pieces") {
                     target->model_mod = mod;
                 }
                 if (std::string_view(key) == "levels") {
@@ -885,6 +924,14 @@ void build_content(const DefSet& set, const std::function<std::filesystem::path(
         def.light = r.integer("light", 0, sim::kMaxLight, 0);
         def.cool_light = r.flag("coolLight");
         def.cart = r.flag("cart");
+        // Phase 93: walls and the like, placed in lines.
+        def.line = r.text("line", false, 32);
+        def.line_diagonal = r.flag("diagonal");
+        r.pieces(mod_dir, refs, def.name_key, def.line_pieces);
+        if (def.line.empty() && (def.line_diagonal || std::any_of(def.line_pieces.begin(), def.line_pieces.end(),
+                                                                  [](const std::string& p) { return !p.empty(); }))) {
+            r.fail("\"diagonal\" and \"pieces\" need a \"line\"");
+        }
         def.seasons = r.choices("seasons", kSeasons);
         def.mature_years = r.integer("matureYears", 0, 50, 0);
         def.yearly_limit = r.integer("yearlyLimit", 0, 100000, 0);

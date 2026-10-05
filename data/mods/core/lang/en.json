@@ -283,6 +283,8 @@
     "building.palisade": "Palisade",
     "building.stoneWall": "Stone wall",
     "building.gate": "Gate",
+    "building.palisadeGate": "Palisade gate",
+    "building.palisadePostern": "Palisade postern",
     "building.watchtower": "Watchtower",
     "building.trap": "Trap",
     "resource.bows": "Bows",

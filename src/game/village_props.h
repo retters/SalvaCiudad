@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "math/vec.h"
+#include "sim/content.h"
 
 namespace sc::props {
 
@@ -39,6 +40,41 @@ inline constexpr float kFrameFrom = 0.35f;
 [[nodiscard]] constexpr int crop_stage(bool growing, bool ripe, std::int32_t growth) {
     return ripe ? 3 : !growing ? 0 : growth >= 500 ? 2 : 1;
 }
+
+// Phase 93: the piece a module of a wall shows and how it is turned
+// (quarter turns counterclockwise seen from above), by which of its four
+// neighbors are of its family: east (+x), north (-z), west and south. The
+// rule of the pieces' own rest position (sim::LinePiece).
+struct LineLook {
+    sim::LinePiece piece = sim::LinePiece::Pillar;
+    int turns = 0;
+    bool operator==(const LineLook&) const = default;
+};
+[[nodiscard]] constexpr LineLook line_look(bool e, bool n, bool w, bool s) {
+    const int count = (e ? 1 : 0) + (n ? 1 : 0) + (w ? 1 : 0) + (s ? 1 : 0);
+    if (count == 0) {
+        return {sim::LinePiece::Pillar, 0};
+    }
+    if (count == 1) {
+        return {sim::LinePiece::End, w ? 0 : s ? 1 : e ? 2 : 3};
+    }
+    if (count == 4) {
+        return {sim::LinePiece::Cross, 0};
+    }
+    if (count == 3) {
+        return {sim::LinePiece::Tee, !s ? 0 : !e ? 1 : !n ? 2 : 3};
+    }
+    if (e && w) {
+        return {sim::LinePiece::Straight, 0};
+    }
+    if (n && s) {
+        return {sim::LinePiece::Straight, 1};
+    }
+    return {sim::LinePiece::Corner, e && n ? 0 : n && w ? 1 : w && s ? 2 : 3};
+}
+// A straight on a slope becomes a step when its two ends differ this much
+// in height (meters): the step's high half goes to the higher end.
+inline constexpr float kStepRise = 0.6f;
 
 // Phase 89: a building shows a pile for each resource it holds, at most
 // this many: those it has the most of.

@@ -133,6 +133,13 @@ public:
         sim::EntityId field_farm;
         bool field_dragging = false;
         bool line_dragging = false;  // Walls: pressed at one end, released at the other.
+        // Phase 93: the line being traced: its modules and how many of them
+        // fit (0 modules: nothing is being traced); and the rotation the
+        // building under the cursor would be placed with (a gate turns to
+        // the wall under it).
+        std::int32_t trace_modules = 0;
+        std::int32_t trace_fit = 0;
+        std::uint8_t hover_rotation = 0;
         bool rally_mode = false;     // The next click on the ground: where the army defends.
         std::int32_t drag_x = 0;
         std::int32_t drag_z = 0;

@@ -95,6 +95,20 @@ Todo se valida al cargar: tipos, rangos, referencias a otras definiciones y ruta
 | `workerSight` | Metros que ven sus trabajadores, si es más que lo de su raza (0 a 200; por omisión 0). En `core`, el del Explorador ve 30. |
 | `landmark` | `true`: su silueta se ve a través de la niebla de guerra aunque no sobresalga del techo de la niebla (por omisión `false`). |
 
+#### Muros y otras cosas que van en línea (fase 93)
+
+Un edificio de 2 × 2 con `"line"` se **traza arrastrando** en lugar de colocarse de uno en uno, y cada módulo se dibuja con la pieza que piden sus vecinos.
+
+| Campo | Valores |
+|---|---|
+| `line` | El nombre de su familia (por ejemplo `"palisade"`). Los módulos de una misma familia se unen entre sí. |
+| `diagonal` | `true` si se puede trazar a 45°. Necesita la pieza `diagonal`. |
+| `pieces` | Sus modelos por pieza: `pillar` (sin vecinos), `end`, `straight`, `corner`, `tee`, `cross`, `diagonal` (el tramo que une dos módulos por la esquina), `step` (un recto en ladera), `site` (en obra) y `breach` (un recto con más de la mitad del daño). Las que falten usan el pilar o el modelo del edificio. Sin `pieces`, todos los módulos se ven con su `model`. |
+
+En reposo (sin girar), visto desde arriba con el norte hacia −Z: el recto une este y oeste; la esquina, este y norte; la T, todo menos el sur; el remate llega hacia el oeste; la diagonal va del suroeste al noreste; y la mitad este del escalón queda un metro más alta. Cada pieza ocupa una celda de 2 × 2 m con el origen en el centro, a ras de suelo.
+
+Una **puerta** de la familia (`"gate": true` y el mismo `line`) se puede colocar encima de los módulos del muro: los reemplaza. Puede medir 2 × 2 (una poterna) o más (4 × 2).
+
 ### unit y race
 
 Una raza (`race`) dice qué personajes son sus aldeanos y de qué colores (fase 57; todo esto es solo de la vista):

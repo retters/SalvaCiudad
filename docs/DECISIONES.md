@@ -3434,3 +3434,35 @@ Al cerrar la fase, el ejecutable de `release` se cerraba al arrancar (0xC0000409
 
 **D-9210. Versiones.**
 La simulación no cambia: ni reglas ni red ni generador. Cambia el hash del contenido solo por los archivos de modelos nuevos si alguna definición los nombrara; estos no los nombra ninguna (los carga el código, como las cargas y las herramientas).
+
+## Fase 93: trazado por arrastre y empalizada nueva (2026-10-04)
+
+**D-9301. Lo que ya había y lo que cambia.**
+El juego ya dejaba arrastrar para poner muros, pero solo en línea recta, y el cliente mandaba una orden por módulo. Ahora hay **una orden, «trazar»**, con la celda inicial, la final y de qué lado empieza una L; la simulación calcula los módulos (`sim::trace_cells`) y pone los que caben. Así el trazo es el mismo en todas las máquinas aunque el mapa haya cambiado entre que se arrastró y se aplicó, y un trazo de 60 módulos es un mensaje y no sesenta. Tope: 64 módulos por trazo.
+
+**D-9302. Cuadrícula de 2 m en celdas pares.**
+Los módulos de un trazo van siempre en celdas pares, para que encajen entre sí y con las celdas de 2 m del buscador de caminos. La orden antigua de colocar un solo módulo sigue aceptando cualquier celda (la usan pruebas de fases anteriores); un módulo fuera de la cuadrícula simplemente no se une a sus vecinos y se ve como poste.
+
+**D-9303. Recta, L o diagonal.**
+Si las dos celdas comparten fila o columna, recta. Si el muro admite diagonales y están a la misma distancia en los dos ejes, diagonal. Si no, una L. Al arrastrar, la L empieza por su lado más largo y la diagonal se engancha cuando los dos lados difieren en un módulo o menos y miden al menos dos. Lo que no cabe (agua, pendiente, algo construido) se omite y el resto se pone; un trazo del que no cabe nada se rechaza entero.
+
+**D-9304. La diagonal es un tramo entre centros, no una pieza por celda.**
+La pieza diagonal de las propuestas va de esquina a esquina de su celda y por eso «no empalma con los rectos sin un pilar» (defecto anotado). En el juego cada módulo de un tramo diagonal se dibuja como lo que es, un poste, y entre dos módulos que se tocan por la esquina se dibuja la pieza diagonal **centrada en esa esquina**: va del centro de uno al centro del otro, así que empalma con cualquier pieza sin huecos. Para el paso no hizo falta nada: el buscador de caminos ya prohibía cortar una esquina entre dos celdas cerradas, y la prueba del recinto lo comprueba.
+
+**D-9305. Puertas: las de empalizada son edificios nuevos; la de siempre se queda.**
+Salvador eligió sumar la puerta de dos hojas y la poterna de las propuestas. Entran como `core:palisade_gate` (4 × 2, 10 troncos, 600 de vida, como la puerta de hoy) y `core:palisade_postern` (2 × 2, 6 troncos, 400). La puerta de madera anterior no se toca: es la única que tiene el muro de piedra hasta que elija su kit. Una puerta se coloca **encima** del muro de su familia y reemplaza los módulos que tapa (sus materiales vuelven al centro del pueblo, como al demoler); media puerta sobre el muro y media en terreno libre también vale. Nada reemplaza a una puerta: ni otra puerta ni un trazo que pase por encima. Al colocarla sobre un tramo, la puerta se gira sola para cubrirlo.
+
+**D-9306. Piezas por definición: `line`, `diagonal`, `pieces`.**
+Como las pilas y los cultivos: en los datos. El muro de piedra tiene familia (`stone`) y ninguna pieza, así que se traza y se ve como antes. Las piezas son solo de la vista; la familia y `diagonal` sí cuentan en las reglas.
+
+**D-9307. Escalón.**
+Un módulo recto cuyos dos extremos difieren en 0,6 m o más de altura usa la pieza de escalón, con su mitad alta hacia el lado alto y apoyada en el bajo. El plan decía «donde el terreno sube 1 m»; con 0,6 se evita el hueco visible bajo un recto en pendientes medianas. No se vio en pantalla: el terreno de la escena de prueba era llano.
+
+**D-9308. Una escena de prueba guardada, para mirar.**
+Arrastrar el ratón no se puede hacer desde las pruebas de pantalla (los arrastres enviados no llegan al juego). La suite `trace` tiene un caso **saltado** («manual: a saved game with lines of every shape») que arma un pueblo con muros de todas las formas y lo guarda en `<temp>/SalvaCiudad/manual_lines.scsave`; copiado a la carpeta de partidas, se carga y se mira. Se corre con `salvaciudad_tests -ts=trace -tc="manual*" --no-skip`. Lo que hay dentro de un recinto se construye antes de cerrarlo: los peones no llegan a una obra encerrada (esto ya era así y vale para el jugador).
+
+**D-9309. Lo medido y lo visto.**
+Pruebas, suite nueva `trace`: las celdas de un trazo (recta, L por x o por z, diagonal, tope de 64); la pieza y el giro de las 16 combinaciones de vecinos; los datos de la empalizada (4 troncos, 40 de trabajo, 400 de vida, arde), su puerta y su poterna, y el muro de piedra; un trazo de 10 módulos deja 10 obras y construirlas gasta 40 troncos; lo que no cabe se omite; un octágono con cuatro lados rectos y cuatro diagonales no deja pasar a nadie hasta que tiene puerta; la puerta solo reemplaza módulos de su propia familia y nada la reemplaza a ella; la empalizada se incendia; la orden se lee como se escribe, las malformadas se rechazan y dos partidas con las mismas órdenes dan el mismo hash; guardar y cargar con obras a medias. En pantalla, con la escena guardada: el octágono cerrado con sus diagonales sin huecos, la puerta en el lado norte, los muros interiores con sus uniones en T y su cruce, una L, un poste suelto, el muro de piedra trazado y una fila de obras con su pieza de andamio. **No se vio** el arrastre en sí (el fantasma verde y rojo y el aviso con el costo), ni el escalón, ni la brecha, ni a los asaltantes rompiendo un módulo (lo cubre la prueba de fauna de la fase 15, que sigue pasando).
+
+**D-9310. Versiones.**
+Reglas 54, red 26. El generador no cambia.

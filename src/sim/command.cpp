@@ -109,6 +109,10 @@ bool Command::read(BinaryReader& r, Command& out) {
         case CommandType::FoundTown:
             ok = ok && c.value >= 0 && c.value <= 3 && c.position.x >= Fixed{} && c.position.z >= Fixed{};
             break;
+        case CommandType::Trace:
+            ok = ok && c.count <= 1 && c.position.x >= Fixed{} && c.position.z >= Fixed{} && c.value >= 0 &&
+                 c.value <= kMaxCoordinateMeters && c.value2 >= 0 && c.value2 <= kMaxCoordinateMeters;
+            break;
         case CommandType::RemoveBuilding:
             ok = ok && c.entity.valid();
             break;

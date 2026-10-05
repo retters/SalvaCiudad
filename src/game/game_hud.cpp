@@ -820,6 +820,23 @@ void GameHud::placement_hint(ui::Context& ctx, GameSession& s) {
     const KeyBindings& b = services_.settings().input.bindings;
     std::string text = ui.field_farm.valid() ? tr("hud.place.field.hint")
                                              : tr("hud.place.hint", key_display_name(b.key(Action::GameRotateBuilding, 0)));
+    // Phase 93: a line being traced says how long it is and what it will cost.
+    const sim::Content& content = s.game().content();
+    const bool tracing = ui.placing < content.buildings.size() && !content.buildings[ui.placing].line.empty() &&
+                         !content.buildings[ui.placing].gate && ui.trace_modules > 0;
+    if (tracing) {
+        text = tr("hud.place.trace.hint");
+        if (ui.line_dragging) {
+            std::string cost;
+            for (const sim::ResourceAmount& c : content.buildings[ui.placing].cost) {
+                if (c.resource < content.resources.size()) {
+                    cost += (cost.empty() ? "" : ", ") + std::to_string(c.amount * ui.trace_fit) + " " +
+                            tr(content.resources[c.resource].name_key);
+                }
+            }
+            text = tr("hud.place.trace.count", ui.trace_modules, ui.trace_fit, cost.empty() ? tr("hud.place.trace.free") : cost);
+        }
+    }
     ui::Color color = ctx.theme().text;
     if (ui.hover_valid && ui.hover_error != sim::PlaceError::None) {
         text = tr(place_error_key(ui.hover_error));

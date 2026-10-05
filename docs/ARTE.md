@@ -277,6 +277,14 @@ Qué animación usa el juego: `idle` y `eat` al estar quietos, `walk` y `run` al
 
 Las libélulas del juego llevan `"bare": true`: el script deja fuera la charca y los juncos sobre los que vuelan en la página (`_kit.BARE`), porque en el juego vuelan sobre agua de verdad. Solo las luciérnagas tienen un material que brilla de noche.
 
+### Empalizada modular (`proposals/walls`, fase 93)
+
+`buildings/palisade_<pieza>.glb`: las diez piezas del kit de empalizada de las propuestas (`pillar`, `end`, `straight`, `corner`, `tee`, `cross`, `diagonal`, `step`, `site` y `breach`), más `palisade_gate.glb` (4 × 2 m) y `palisade_postern.glb` (2 × 2 m). Tope de una pieza: 800 triángulos (`line`). La puerta y la poterna entran sin esqueleto, cerradas: en el juego los aldeanos las cruzan sin que se abran.
+
+Qué pieza se dibuja y cómo se gira lo decide `props::line_look` a partir de los cuatro vecinos; es la misma regla de `docs/propuestas/muros.html`. Un tramo en diagonal no usa piezas distintas en cada celda: cada módulo es un pilar y entre dos módulos que se tocan por la esquina se pone una pieza `diagonal` centrada en esa esquina, de centro a centro.
+
+`palisade.glb`, el modelo de un solo bloque, sigue en el mod como modelo del edificio (el que usa el fantasma al colocar y cualquier pieza que falte).
+
 ## Modelos de propuesta que entran al juego (fase 89)
 
 Los modelos de `art/blender/proposals` (los de la página `docs/propuestas`) no están en el juego hasta que una fase los usa. `art/blender/proposals/game.json` lista los que sí:

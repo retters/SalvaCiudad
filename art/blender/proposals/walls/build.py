@@ -53,4 +53,5 @@ def write_catalog():
 
 if "--catalog" not in kit.args():
     kit.run(registry.MODELS, FAMILY)
-write_catalog()
+if not (kit.GAME or kit.BARE):   # The catalog lists the page's models, not the game's versions.
+    write_catalog()
