@@ -18,7 +18,7 @@ En Firefox la página no puede escribir en el archivo: usa **Descargar** y reemp
 |---|---|---|
 | Requiere tu atención | Mis respuestas que no leíste y lo que espera tu confirmación | — |
 | Cambios | Qué se implementó en cada fase | sin revisar, revisado, aprobado, con problemas |
-| Pruebas manuales | La lista de verificación del README. Una que falla se vuelve corrección | sin probar, funciona, falla, no aplica |
+| Pruebas manuales | La lista de verificación manual (`docs/VERIFICACION_MANUAL.md`). Una que falla se vuelve corrección | sin probar, funciona, falla, no aplica |
 | Decisiones | Todo `docs/DECISIONES.md` | sin revisar, aprobada, requiere cambio, requiere definición, descartada |
 | Por confirmar | Decisiones que tomé solo y conviene que confirmes; las nuevas, con opciones | pendiente, confirmado, rechazado, requiere definición |
 | Ideas | Tus ideas tal como las escribiste, y las mías ("de Claude": sugerencias y trabajo que quedó abierto); aquí también se escriben | nueva, analizada, para el plan, ajustar, para después, descartada, planeada |
@@ -81,7 +81,7 @@ Al cerrar cada fase agrego sus cambios, pruebas, decisiones y dudas (con opcione
 Herramienta (Python, sin dependencias):
 
 ```
-python tools/revision/revision.py sincronizar            # vuelve a leer DECISIONES.md y README.md, sin perder tus estados
+python tools/revision/revision.py sincronizar            # vuelve a leer DECISIONES.md y VERIFICACION_MANUAL.md, sin perder tus estados
 python tools/revision/revision.py pendientes             # lo que espera que yo actúe (antes pasa las pruebas que fallan a correcciones)
 python tools/revision/revision.py responder <id> <estado|-> "<texto>"
 python tools/revision/revision.py agregar <archivo.json> # cambios, dudas, ideas y correcciones nuevas

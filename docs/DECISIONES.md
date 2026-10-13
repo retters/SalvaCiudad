@@ -4144,3 +4144,14 @@ En `army`: en un pueblo de enanos, un lancero y un leva salen enanos, con el asp
 
 **D-11608. Versiones.**
 Reglas 76 y red 35. El generador no cambia.
+
+## Preparación para publicar en GitHub (2026-10-12)
+
+**D-PUB-01. La lista de verificación manual sale del README.**
+Pasa entera, sin cambios, a `docs/VERIFICACION_MANUAL.md`; el README queda como presentación (estado, compilar, teclas, datos, seguridad y un índice de la documentación). `tools/revision/revision.py` la lee del archivo nuevo (`CHECKS_FILE`); el origen de esas pruebas en `revision.json` se sigue llamando `README` para no perder estados ni notas. La sección 11.3 y la fase 117 de la especificación nombran el archivo nuevo.
+
+**D-PUB-02. Aviso de seguridad del multijugador, sin auditoría.**
+El README dice lo que hay: tráfico sin cifrar, partida sin contraseña, y código de red y aislamiento de Lua sin auditar frente a un participante malintencionado; se recomienda jugar con gente de confianza y no abrir los puertos a internet. La auditoría de `src/net/` y `src/script/` queda pendiente.
+
+**D-PUB-03. El correo del autor en el historial.**
+Todos los commits de todas las ramas llevan `retters@users.noreply.github.com`; los hashes anteriores al 2026-10-12 que citan otros documentos ya no existen.

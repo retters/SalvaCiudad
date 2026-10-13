@@ -192,10 +192,10 @@ class RevisionTest(unittest.TestCase):
         self.assertEqual(items['C-001']['prueba'], 'prueba-5-x')
         self.assertIn('No aparece el botón', items['C-001']['detalle'])
         self.assertNotIn('->', self.run_cmd(revision.cmd_pending))  # Only once.
-        # Rebuilding the checks from the README keeps the link.
+        # Rebuilding the checks from the manual checklist keeps the link.
         doc = revision.load()
         revision.merge(doc, [{'id': 'prueba-5-x', 'tipo': 'prueba', 'fase': '5', 'grupo': 'Fase 5: mercado',
-                              'titulo': 'Se vende pan', 'detalle': '', 'fuente': 'README.md'}], 'README')
+                              'titulo': 'Se vende pan', 'detalle': '', 'fuente': 'docs/VERIFICACION_MANUAL.md'}], 'README')
         self.assertEqual(next(i for i in doc['items'] if i['id'] == 'prueba-5-x')['correccion'], 'C-001')
 
     def test_confirmations_may_offer_options(self):

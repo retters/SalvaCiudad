@@ -442,7 +442,7 @@ Todos definidos como datos en `core` y con reglas en C++ o Lua:
 - Abrir 2 a 4 instancias del juego en tu PC (`--instance`) y jugar una partida en red local.
 - Cambios de modo de pantalla y de monitor.
 
-### 11.3 Lista de verificación manual (en `README.md`)
+### 11.3 Lista de verificación manual (en `docs/VERIFICACION_MANUAL.md`)
 
 Se completa en cada fase. Al final cubre menús, configuración, modos de pantalla, multijugador, guardado y carga, mods e idiomas.
 
@@ -1177,7 +1177,7 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - Un soldado conserva la raza y el aspecto del aldeano del que salió.
    - Los 9 cuerpos de guardia de las propuestas, rehechos como en la fase 115 y sin arma pegada. El arma la pone el juego según la unidad: garrote la leva, lanza el lancero, arco el arquero. Los humanos siguen con sus caballeros y los asaltantes no cambian.
    - *Criterios:* pruebas: un enano entrenado como lancero es un soldado enano, y sigue siéndolo tras guardar y cargar; en pantalla, un cuartel de un pueblo mixto saca guardias de cada raza con el arma de su unidad; dos instancias en red; suben reglas y red.
-117. **Pulido y entrega.** `/analyze` limpio, README con la lista de verificación completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
+117. **Pulido y entrega.** `/analyze` limpio, lista de verificación manual completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
 ## 14. Pendientes para después (no implementar ahora)
 

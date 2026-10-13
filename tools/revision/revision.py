@@ -4,7 +4,7 @@ docs/revision/index.html.
 
     python tools/revision/revision.py sincronizar
         Rebuilds the decisions (docs/DECISIONES.md) and the manual checks
-        (README.md) into revision.json, keeping every state, note and history.
+        (docs/VERIFICACION_MANUAL.md) into revision.json, keeping every state, note and history.
     python tools/revision/revision.py agregar <archivo.json>
         Adds or updates hand-written items (changes, questions, suggestions,
         open work) from a JSON list; states and notes already set are kept.
@@ -54,6 +54,7 @@ import tempfile
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA = os.path.join(ROOT, 'docs', 'revision', 'revision.json')
+CHECKS_FILE = 'docs/VERIFICACION_MANUAL.md'
 SCHEMA = 1
 MAX_BYTES = 32 * 1024 * 1024
 
@@ -211,15 +212,9 @@ def parse_decisions():
 
 def parse_checks():
     items = []
-    text = open(os.path.join(ROOT, 'README.md'), encoding='utf-8').read()
-    inside = False
+    text = open(os.path.join(ROOT, CHECKS_FILE), encoding='utf-8').read()
     fase, grupo = '', ''
     for line in text.splitlines():
-        if line.startswith('## '):
-            inside = line.startswith('## Lista de verificación')
-            continue
-        if not inside:
-            continue
         h = re.match(r'^### (.+)$', line)
         c = re.match(r'^- \[[ xX]\] (.+)$', line)
         if h:
@@ -230,7 +225,7 @@ def parse_checks():
             body = c.group(1).strip()
             items.append({'id': 'prueba-%s-%s' % (re.sub(r'\W+', '', fase.lower())[:12], short_hash(body)),
                           'tipo': 'prueba', 'fase': fase, 'grupo': grupo, 'titulo': body, 'detalle': '',
-                          'fuente': 'README.md'})
+                          'fuente': CHECKS_FILE})
     return items
 
 
