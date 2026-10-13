@@ -2,6 +2,9 @@
 /build/
 /out/
 
+# Claude Code local state (screenshots, worktrees, launch config)
+/.claude/
+
 # IDE state
 /.vs/
 /.vscode/
