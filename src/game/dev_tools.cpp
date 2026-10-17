@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <format>
 #include <numbers>
 
 #include <imgui.h>
@@ -14,6 +15,8 @@
 #include "game/walkers.h"
 #include "i18n/translator.h"
 #include "render/scene_renderer.h"
+#include "ui/rml/rml_test_window.h"
+#include "ui/rml/rml_ui.h"
 
 namespace sc {
 
@@ -479,11 +482,35 @@ void DevTools::draw(DevContext& ctx) {
                 village_tab(ctx);
                 ImGui::EndTabItem();
             }
+            if (ctx.rml != nullptr && tab(Tab::Interface, "dev.tab.interface", "interface")) {
+                active_tab_ = Tab::Interface;
+                interface_tab(ctx);
+                ImGui::EndTabItem();
+            }
             switch_to_.reset();
             ImGui::EndTabBar();
         }
     }
     ImGui::End();
+}
+
+// Interface (phase 117): RmlUi's test window, its inspector and what it costs.
+void DevTools::interface_tab(DevContext& ctx) {
+    if (ctx.rml == nullptr) {
+        return;
+    }
+    bool shown = ctx.rml->document_shown(rml::TestWindow::kDocument);
+    if (ImGui::Checkbox((tr("dev.ui.testWindow") + "###rmltest").c_str(), &shown)) {
+        (void)ctx.rml->show_document(rml::TestWindow::kDocument, shown);
+    }
+    bool debugger = ctx.rml->debugger_shown();
+    if (ImGui::Checkbox((tr("dev.ui.debugger") + "###rmldebug").c_str(), &debugger)) {
+        ctx.rml->show_debugger(debugger);
+    }
+    ImGui::TextWrapped("%s", tr("dev.ui.stats", std::format("{:.3f}", ctx.rml->update_ms()),
+                                std::format("{:.3f}", ctx.rml->render_ms()), ctx.rml->system().errors(),
+                                ctx.rml->system().warnings())
+                                 .c_str());
 }
 
 // Village: goods for testing (a command, so the game stays deterministic).

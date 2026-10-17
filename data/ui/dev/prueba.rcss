@@ -1,0 +1,299 @@
+/* Phase 117 test window: a provisional Frosted, without the effects the
+   renderer does not draw yet (blur, shadows, rounded clipping; phase 118). */
+
+body
+{
+	position: absolute;
+	left: 80dp;
+	top: 140dp;
+	width: 360dp;
+	min-width: 280dp;
+	background-color: rgba(246, 248, 252, 235);
+	border: 1dp rgba(255, 255, 255, 230);
+	border-radius: 16dp;
+	color: #1b1f24;
+}
+
+.bar
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	height: 52dp;
+	padding: 0 8dp 0 12dp;
+	border-bottom: 1dp rgba(20, 30, 70, 25);
+	cursor: move;
+}
+
+body.minimized .bar
+{
+	border-bottom-width: 0;
+}
+
+.wicon
+{
+	width: 34dp;
+	height: 34dp;
+	margin-right: 8dp;
+}
+
+.titles
+{
+	flex: 1;
+}
+
+.title
+{
+	font-size: 19dp;
+	font-weight: bold;
+}
+
+.sub
+{
+	font-size: 13dp;
+	color: #4b5563;
+}
+
+.wbtn
+{
+	width: 30dp;
+	height: 30dp;
+	border-radius: 10dp;
+	text-align: center;
+	padding-top: 6dp;
+	image-color: #4b5563;
+}
+
+.wbtn img, .foot img
+{
+	width: 18dp;
+	height: 18dp;
+}
+
+.wbtn:hover
+{
+	background-color: rgba(255, 255, 255, 200);
+}
+
+.wbtn.on img
+{
+	image-color: #5b5bd6;
+}
+
+.wbtn.close:hover
+{
+	background-color: #cd2b31;
+}
+
+.wbtn.close:hover img
+{
+	image-color: #ffffff;
+}
+
+.sep
+{
+	width: 1dp;
+	height: 22dp;
+	margin: 0 6dp;
+	background-color: rgba(20, 30, 70, 25);
+}
+
+.content
+{
+	padding: 10dp 14dp 14dp;
+}
+
+.hero
+{
+	position: relative;
+	height: 128dp;
+	text-align: center;
+	border-radius: 12dp;
+	background-color: rgba(255, 255, 255, 140);
+}
+
+.hero img
+{
+	height: 120dp;
+	width: 120dp;
+	margin-top: 4dp;
+}
+
+.chip
+{
+	position: absolute;
+	left: 8dp;
+	bottom: 8dp;
+	padding: 2dp 10dp;
+	border-radius: 10dp;
+	font-size: 14dp;
+}
+
+.chip.ok
+{
+	color: #18794e;
+	background-color: rgba(24, 121, 78, 36);
+}
+
+.chip.stopped
+{
+	color: #ad5700;
+	background-color: rgba(173, 87, 0, 36);
+}
+
+.kv
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	height: 34dp;
+	margin-top: 4dp;
+}
+
+.k
+{
+	flex: 1;
+	font-size: 14dp;
+	color: #4b5563;
+}
+
+.res
+{
+	width: 20dp;
+	height: 20dp;
+	margin-right: 6dp;
+}
+
+.v
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.value
+{
+	font-weight: bold;
+	margin: 0 8dp;
+}
+
+.step
+{
+	width: 28dp;
+	height: 28dp;
+	line-height: 28dp;
+	text-align: center;
+	border-radius: 10dp;
+	background-color: rgba(255, 255, 255, 170);
+	border: 1dp rgba(255, 255, 255, 200);
+	font-weight: bold;
+}
+
+.step:hover
+{
+	background-color: rgba(255, 255, 255, 240);
+}
+
+.switch
+{
+	width: 44dp;
+	height: 24dp;
+	border-radius: 12dp;
+	background-color: rgba(20, 30, 70, 40);
+}
+
+.switch.on
+{
+	background-color: #5b5bd6;
+}
+
+.knob
+{
+	width: 18dp;
+	height: 18dp;
+	margin: 3dp;
+	border-radius: 9dp;
+	background-color: #ffffff;
+}
+
+.switch.on .knob
+{
+	margin-left: 23dp;
+}
+
+.row
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-top: 6dp;
+	padding: 6dp 8dp;
+	border-radius: 12dp;
+	background-color: rgba(255, 255, 255, 110);
+	border: 1dp rgba(255, 255, 255, 140);
+}
+
+.row:hover
+{
+	background-color: rgba(255, 255, 255, 200);
+}
+
+.avatar
+{
+	width: 34dp;
+	height: 34dp;
+	margin-right: 10dp;
+}
+
+.task
+{
+	font-size: 13dp;
+	color: #4b5563;
+}
+
+.foot
+{
+	display: flex;
+	flex-direction: row;
+	margin-top: 12dp;
+	padding-top: 10dp;
+	border-top: 1dp rgba(20, 30, 70, 25);
+}
+
+.danger
+{
+	flex: 1;
+	height: 32dp;
+	line-height: 32dp;
+	text-align: center;
+	border-radius: 10dp;
+	color: #cd2b31;
+	image-color: #cd2b31;
+	background-color: rgba(255, 255, 255, 140);
+}
+
+.danger:hover
+{
+	background-color: rgba(205, 43, 49, 40);
+}
+
+.ghost
+{
+	width: 32dp;
+	height: 32dp;
+	margin-left: 6dp;
+	padding-top: 7dp;
+	text-align: center;
+	border-radius: 10dp;
+	image-color: #4b5563;
+}
+
+.grip
+{
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 16dp;
+	height: 16dp;
+	cursor: resize;
+}

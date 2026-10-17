@@ -511,6 +511,19 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 117 (RmlUi: ventana de prueba)
+
+- [ ] Ctrl+F3 > Interfaz > «Ventana de prueba de RmlUi»: aparece la ventana del Cantero, con miniatura, retratos y textos en español.
+- [ ] Arrastrar la ventana por su título la mueve; la esquina de abajo a la derecha la agranda y la achica.
+- [ ] Con el cursor sobre la ventana, la rueda no acerca la cámara y un clic no selecciona nada del mapa; fuera de ella, todo funciona como antes.
+- [ ] − y + cambian los trabajadores (0 a 2) y el título «Trabajadores (N)»; el interruptor pasa a «Producción: detenida»; el pin se pinta de violeta; − de la barra la minimiza; × la cierra (y la casilla se desmarca).
+- [ ] Configuración > Idioma: al pasar a inglés la ventana dice «Stonecutter» sin cerrarse.
+- [ ] Configuración > Interfaz: con escala 0,75 y 2,0 la ventana cambia de tamaño sin cortes; con otra fuente de la interfaz, la ventana la usa.
+- [ ] El inspector de RmlUi (misma pestaña) se abre y muestra el árbol de la ventana.
+- [ ] F3 muestra la línea «RmlUi (diseño + geometría, dibujos)» con valores pequeños.
+- [ ] Salir del juego con la ventana abierta no da error.
+- [ ] **Tu opinión:** si la ventana, aun sin vidrio ni sombras, se parece a la maqueta Frosted; si vale la pena seguir con RmlUi (punto de decisión, D-11710).
+
 ### Fase 88 (despejar una obra talando)
 
 - [ ] Al poner una casa sobre árboles, los árboles siguen ahí y la ventana de la obra dice «Despejando: falta talar N árboles».

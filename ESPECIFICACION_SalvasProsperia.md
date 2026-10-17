@@ -67,7 +67,7 @@ Todas son de código abierto, van vendorizadas en `third_party/<nombre>/` con su
 | zstd | Compresión de partidas guardadas e instantáneas de red | BSD |
 | Dear ImGui | **Solo herramientas de depuración** (nunca la interfaz del jugador) | MIT |
 | doctest | Pruebas automáticas | MIT |
-| RmlUi 6.x | **Interfaz del jugador** (fases 117 a 127): documentos RML y hojas RCSS con flexbox, transiciones, filtros y modelos de datos. Se compila sin FreeType, sin el complemento de Lua y sin el de SVG (D-11703, D-11704, D-11706). Pedida por Salvador el 2026-10-17; la descarga se confirma al empezar la fase 117. | MIT |
+| RmlUi 6.3 | **Interfaz del jugador** (fases 117 a 127): documentos RML y hojas RCSS con flexbox, transiciones, filtros y modelos de datos. Se compila sin FreeType, sin el complemento de Lua y sin el de SVG (D-11703, D-11704, D-11706). Pedida y aprobada por Salvador el 2026-10-17. | MIT |
 
 Tipografías: varias fuentes con licencia OFL (Google Fonts), vendorizadas con su licencia. El jugador elige la de la interfaz en Configuración; el logotipo usa una fuente decorativa fija. Todas deben cubrir al menos el alfabeto latino extendido (español, inglés y los idiomas europeos más comunes).
 

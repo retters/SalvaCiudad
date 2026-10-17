@@ -32,6 +32,11 @@ struct DebugInfo {
     std::uint64_t sim_tick = 0;
     std::uint64_t sim_hash = 0;
     std::uint32_t sim_entities = 0;
+    // RmlUi (phase 117): CPU milliseconds of layout and of recording the
+    // geometry, and its draw calls.
+    float rml_update_ms = 0.0f;
+    float rml_render_ms = 0.0f;
+    int rml_draws = 0;
     // What is under the cursor on a map (phase 37), already in text; empty
     // when there is no map.
     std::vector<std::string> cursor;

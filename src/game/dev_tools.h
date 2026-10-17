@@ -21,6 +21,9 @@ class Camera;
 class GameSession;
 class MapScene;
 class Walkers;
+namespace rml {
+class RmlUi;
+}
 namespace render {
 class SceneRenderer;
 }
@@ -38,6 +41,7 @@ struct DevContext {
     math::Vec3 ray_origin;
     math::Vec3 ray_dir;      // Normalized.
     bool clicked = false;    // A left click (not a drag) on the world.
+    rml::RmlUi* rml = nullptr;  // The RmlUi interface (phase 117), in menus too.
 };
 
 struct DevObject {
@@ -65,7 +69,7 @@ public:
     void reset();
 
 private:
-    enum class Tab : std::uint8_t { Inspector, Create, Explorer, Village };
+    enum class Tab : std::uint8_t { Inspector, Create, Explorer, Village, Interface };
     enum class CreateKind : std::uint8_t { Tree, BerryBush, Herbs, Stone, IronOre, House, Person, Count };
     enum class Filter : std::uint8_t { All, Trees, Plants, Rocks, Houses, People, Count };
 
@@ -88,6 +92,7 @@ private:
     void create_tab(DevContext& ctx);
     void explorer_tab(DevContext& ctx);
     void village_tab(DevContext& ctx);
+    void interface_tab(DevContext& ctx);
     int grant_amount_ = 100;
     void rebuild_list(const DevContext& ctx);
 

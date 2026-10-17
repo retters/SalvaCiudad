@@ -30,11 +30,14 @@
 #include "platform/window.h"
 #include "render/debug_overlay.h"
 #include "render/gpu_device.h"
+#include "render/rml_renderer.h"
 #include "render/scene_renderer.h"
 #include "render/ui_renderer.h"
 #include "ui/context.h"
 #include "ui/font_library.h"
 #include "ui/glyph_atlas.h"
+#include "ui/rml/rml_test_window.h"
+#include "ui/rml/rml_ui.h"
 #include "ui/text.h"
 
 namespace sc {
@@ -213,6 +216,11 @@ private:
     ui::GlyphAtlas atlas_;
     ui::TextRenderer text_;
     ui::Context ui_;
+    // The player's interface with RmlUi (phases 117 to 127), drawn over the
+    // old one; for now only the development test window.
+    RmlRenderer rml_renderer_;
+    rml::RmlUi rml_;
+    rml::TestWindow rml_test_;
     std::unique_ptr<UiHost> host_;
     ui::Input input_;
     render::SceneRenderer scene_;

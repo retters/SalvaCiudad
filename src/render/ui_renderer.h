@@ -41,6 +41,10 @@ public:
     // texture may have changed: this renderer does not keep it alive.
     void set_external_image(std::uint32_t id, SDL_GPUTexture* texture);
 
+    // The glyph atlas on the GPU and its sampler, shared with RmlUi's renderer.
+    [[nodiscard]] SDL_GPUTexture* atlas_texture() const { return atlas_; }
+    [[nodiscard]] SDL_GPUSampler* sampler() const { return sampler_; }
+
 private:
     bool ensure_buffer(SDL_GPUBuffer*& buffer, std::uint32_t& capacity, std::uint32_t needed,
                        SDL_GPUBufferUsageFlags usage);

@@ -4225,3 +4225,28 @@ Los textos fijos de un documento se escriben como `@clave` y RmlUi los pide trad
 
 **D-11712. El pulido pasa a ser la fase 128.**
 
+## Fase 117: RmlUi, cimientos y prueba de viabilidad (2026-10-17)
+
+**D-11713. RmlUi 6.3, solo el núcleo y el inspector, con nuestro CMake.**
+Se vendorizó la versión 6.3 (la más reciente, del 2026-08-22) en `third_party/rmlui`: la licencia, `Include/` y `Source/Core` y `Source/Debugger`, sin su motor de fuentes con FreeType, sin Lua, SVG ni Lottie, y sin sus CMake, muestras, pruebas ni backends. Se compila con un objetivo propio (como zstd o Lua) en lugar de su `CMakeLists.txt`, que traería opciones globales (`BUILD_SHARED_LIBS`) y dependencias. Con sus propias opciones, más tres cosas: su biblioteca estándar sin excepciones (`_HAS_EXCEPTIONS=0`, como el código del juego; RmlUi no lanza ninguna, y sin esto MSVC daba la advertencia C4530 en cada archivo), `ITLIB_FLAT_MAP_NO_THROW` para su contenedor `flat_map`, y, en `debug-asan`, también AddressSanitizer: RmlUi pasa contenedores del STL al código del juego y MSVC se niega a enlazar si unos tienen las anotaciones de ASan y otros no (LNK2038).
+
+**D-11714. El dibujo de RmlUi se graba y se reproduce.**
+RmlUi entrega la geometría mientras dibuja un contexto, y en SDL GPU las copias van fuera de la pasada de dibujo. `RmlRenderer` guarda la geometría compilada en memoria, graba cada dibujo (geometría, traslación, textura, recorte y transformación), y después sube todos los vértices del cuadro en un solo búfer y las texturas nuevas en una pasada de copia; en la pasada de dibujo los reproduce, después de la interfaz vieja y antes de ImGui. Todo con alfa premultiplicado, como trabaja RmlUi. El atlas de glifos del juego es la textura con identificador 1: el sombreador lo lee como cobertura en el canal rojo. Las imágenes son PNG leídos por la interfaz de archivos y decodificados con `stb_image`, premultiplicados al cargarlos. Faltan las máscaras de recorte, las capas, los filtros y los sombreadores, que son de la fase 118: por eso las imágenes no se recortan con esquinas redondeadas y no hay sombras ni desenfoque.
+
+**D-11715. El motor de fuentes reutiliza las fuentes y el atlas del juego.**
+Familias: `ui` (la de Configuración, y cualquier familia desconocida, para que el texto siempre se vea), cada familia de la interfaz por su nombre, `logo` y `logo-small`; un peso de 600 o más toma la negrita. Los glifos se rasterizan con `stb_truetype` en el mismo atlas que usa la interfaz vieja; si alguna de las dos lo vacía por estar lleno, la versión del motor cambia y RmlUi rehace la geometría del texto. Las peticiones de cargar fuentes desde un documento se aceptan y se ignoran (D-205: solo `data/fonts`). Todavía sin efectos de fuente (sombra, contorno). Hallazgo de ASan: la textura del atlas que RmlUi crea para el motor se liberaba después de que RmlUi destruyera su gestor de dibujo; ahora el motor la suelta en su `Shutdown()`, que RmlUi llama antes.
+
+**D-11716. RmlUi recibe los eventos antes que la interfaz vieja y la cámara.**
+El ratón es de RmlUi cuando está sobre uno de sus elementos (el elemento bajo el cursor no es la raíz del contexto) o cuando un botón se apretó sobre uno; la rueda, igual. El teclado solo cuando un campo de texto tiene el foco, para no quitarle teclas al juego. Al soltar un botón el evento sigue siempre también hacia el juego, para que nada quede apretado. Si RmlUi toma el movimiento del ratón, para la interfaz vieja el cursor está fuera de la ventana.
+
+**D-11717. Textos `@clave`.**
+`@` seguido de letras, dígitos, `_`, `-` y `.`, con al menos un punto, y que no termina en punto ni guion (así «@a.b.» al final de una frase conserva su punto). Si el idioma no tiene la clave, queda escrita tal cual, para que el error se vea. Un `@` sin punto (por ejemplo en un correo) no se toca.
+
+**D-11718. Archivos de la interfaz.**
+Por ahora una sola raíz, `data/ui`; las carpetas `ui/` de los mods llegan con los estilos (fase 119). Una ruta que empieza con `/` es relativa a la raíz (así lo resuelve RmlUi); se rechazan las rutas absolutas, las letras de unidad, las partes vacías, `.` y `..`, y lo que después de seguir enlaces quede fuera de la raíz. El archivo entero se lee a memoria (máximo 16 MB).
+
+**D-11719. La ventana de prueba se abre desde las herramientas de desarrollo.**
+Ctrl+F3 > Interfaz: «Ventana de prueba de RmlUi» y el inspector de RmlUi (su depurador, que muestra el árbol de elementos y sus estilos). La ventana es la del Cantero de la maqueta Frosted, en `data/ui/dev/`, con un modelo de datos de prueba (`prueba`): los botones − y +, el interruptor, fijar, minimizar y cerrar cambian el modelo por funciones del C++, como harán las ventanas reales con órdenes. Las miniaturas son las de las maquetas y los íconos de la barra de título se dibujaron aparte con PIL; ambos se reemplazan en las fases 119 y 120. La ventana se arrastra por su barra de título (`<handle move_target="#document">`) y cambia de tamaño por la esquina; eso no se pudo probar con eventos enviados (SDL toma el estado real del ratón para arrastrar), queda en la lista de verificación manual.
+
+**D-11720. Medidas (punto de decisión, D-11710).**
+En `release`, a 1920 × 1080 y en el equipo de desarrollo: la ventana de prueba cuesta 0,027 ms de diseño y 0,034 ms de grabar su geometría por cuadro (40 dibujos), contra un presupuesto de 0,3 ms. Sin tope de cuadros, el menú va a unos 1 081 FPS sin la ventana y a unos 1 030 con ella: unos 0,05 ms, dentro del ruido de una sola medida. La memoria del proceso sube unos 3 MB al mostrar la ventana (sus imágenes). El ejecutable de `release` pasó de 7,06 MB (compilación del 2026-10-14) a 8,77 MB, casi todo RmlUi. Detalle en `docs/RENDIMIENTO.md`.

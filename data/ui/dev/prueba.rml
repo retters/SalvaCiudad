@@ -1,0 +1,62 @@
+<rml>
+<head>
+	<title>Cantero</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="prueba.rcss"/>
+</head>
+<!-- Phase 117 test window: the stonecutter's window of the interface
+     mockups (docs/propuestas/interfaz, style Frosted), with test data. -->
+<body data-model="prueba" data-class-minimized="minimized">
+	<handle class="bar" move_target="#document">
+		<img class="wicon" src="img/stonecutter.png"/>
+		<div class="titles">
+			<div class="title">@building.stonecutter</div>
+			<div class="sub">@hud.build.cat.resources</div>
+		</div>
+		<div class="wbtn"><img src="img/eye.png"/></div>
+		<div class="wbtn"><img src="img/camera.png"/></div>
+		<div class="sep"></div>
+		<div class="wbtn" data-event-click="minimize"><img src="img/minus.png"/></div>
+		<div class="wbtn" data-class-on="pinned" data-event-click="pin"><img src="img/pin.png"/></div>
+		<div class="wbtn close" data-event-click="close"><img src="img/x.png"/></div>
+	</handle>
+	<div class="content" data-if="!minimized">
+		<div class="hero">
+			<img src="img/stonecutter.png"/>
+			<span class="chip ok" data-if="producing">@hud.building.working</span>
+			<span class="chip stopped" data-if="!producing">@hud.building.stopped</span>
+		</div>
+		<div class="kv">
+			<span class="k">{{workers_title}}</span>
+			<div class="v">
+				<div class="step" data-event-click="fewer">−</div>
+				<span class="value">{{workers_value}}</span>
+				<div class="step" data-event-click="more">+</div>
+			</div>
+		</div>
+		<div class="kv">
+			<span class="k">@hud.building.working</span>
+			<div class="v">
+				<div class="switch" data-class-on="producing" data-event-click="production"><div class="knob"></div></div>
+			</div>
+		</div>
+		<div class="kv">
+			<span class="k"><img class="res" src="img/stone_back.png"/>@resource.stone</span>
+			<div class="v"><span class="value">+4</span></div>
+		</div>
+		<div class="row">
+			<img class="avatar" src="img/nyxar.png"/>
+			<div class="who"><div>Nyxar (22)</div><div class="task">@task.produce</div></div>
+		</div>
+		<div class="row">
+			<img class="avatar" src="img/thazza.png"/>
+			<div class="who"><div>Thazza (32)</div><div class="task">@task.goDeliver</div></div>
+		</div>
+		<div class="foot">
+			<div class="danger"><img src="img/trash.png"/>@hud.building.demolish</div>
+			<div class="ghost"><img src="img/more.png"/></div>
+		</div>
+	</div>
+	<handle class="grip" size_target="#document"></handle>
+</body>
+</rml>

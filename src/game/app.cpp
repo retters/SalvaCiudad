@@ -227,6 +227,13 @@ bool App::init() {
         fatal_error("error.fatal.gpu");
         return false;
     }
+    // RmlUi (phase 117) is optional while the old interface still exists.
+    if (!rml_renderer_.create(gpu_, ui_renderer_.atlas_texture(), ui_renderer_.sampler(), rml::FontEngine::kAtlasTexture) ||
+        !rml_.init(rml_renderer_, atlas_, fonts_, {paths_->game_data_dir() / "ui"}, settings_->settings().ui.font) ||
+        !rml_test_.bind(*rml_.context())) {
+        log::warn("rmlui: not available; the old interface goes on alone");
+        rml_.shutdown();
+    }
 
     // The 3D scene is optional: without it the menus still work.
     if (scene_.create(gpu_, settings_->settings().graphics)) {
@@ -298,6 +305,8 @@ void App::shutdown() {
     }
     debug_.destroy();
     scene_.destroy();
+    rml_.shutdown();
+    rml_renderer_.destroy();
     ui_renderer_.destroy();
     gpu_.destroy();
     window_.destroy();
@@ -373,6 +382,7 @@ void App::apply_font() {
     text_.set_font(ui::FontRole::Bold, bold);
     text_.set_font(ui::FontRole::Logo, fonts_.logo());
     text_.set_font(ui::FontRole::LogoSmall, fonts_.logo_small());
+    rml_.set_ui_family(settings_->settings().ui.font);
 }
 
 std::vector<std::string> App::monitor_names() {
@@ -478,6 +488,17 @@ void App::cycle_window_mode() {
 void App::handle_event(const SDL_Event& event) {
     const float density = window_.sdl() != nullptr ? SDL_GetWindowPixelDensity(window_.sdl()) : 1.0f;
     debug_.process_event(event);
+    // RmlUi first: what it takes, the old interface and the camera never see.
+    // A button release always goes on, so nothing stays pressed.
+    if (rml_.process_event(event, density)) {
+        if (event.type == SDL_EVENT_MOUSE_MOTION) {
+            input_.mouse_x = -1.0f;
+            input_.mouse_y = -1.0f;
+        }
+        if (event.type != SDL_EVENT_MOUSE_BUTTON_UP) {
+            return;
+        }
+    }
     switch (event.type) {
         case SDL_EVENT_QUIT:
             running_ = false;
@@ -1076,6 +1097,20 @@ void App::render_frame(float dt) {
             host_->frame(ui_);
         }
         ui_.end_frame();
+        // RmlUi lays out and records its geometry now, so the glyphs it adds
+        // to the shared atlas go up with the old interface's upload below.
+        rml_renderer_.begin_frame(static_cast<int>(frame.width), static_cast<int>(frame.height));
+        if (rml_.ready() && !still) {
+            rml_test_.update();
+            if (rml_test_.take_closed()) {
+                (void)rml_.show_document(rml::TestWindow::kDocument, false);
+            }
+            rml_.update(static_cast<int>(frame.width), static_cast<int>(frame.height), ui_scale());
+            rml_.render();
+        }
+        debug_info_.rml_update_ms = static_cast<float>(rml_.update_ms());
+        debug_info_.rml_render_ms = static_cast<float>(rml_.render_ms());
+        debug_info_.rml_draws = rml_renderer_.draw_count();
 
         debug_info_.backend = gpu_.driver_name();
         debug_info_.width = frame.width;
@@ -1107,6 +1142,7 @@ void App::render_frame(float dt) {
         }
 
         const bool uploaded = ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_);
+        const bool rml_uploaded = rml_renderer_.upload(frame.cmd);
         debug_.prepare(frame.cmd);
         SDL_GPUColorTargetInfo target{};
         target.texture = frame.target;
@@ -1119,6 +1155,9 @@ void App::render_frame(float dt) {
         if (pass != nullptr) {
             if (uploaded) {
                 ui_renderer_.draw(frame.cmd, pass, ui_.draw());
+            }
+            if (rml_uploaded) {
+                rml_renderer_.draw(frame.cmd, pass);
             }
             debug_.render(frame.cmd, pass);
             SDL_EndGPURenderPass(pass);
@@ -1430,6 +1469,7 @@ void App::leave_map() {
 
 DevContext App::dev_context(std::uint32_t width, std::uint32_t height) {
     DevContext ctx;
+    ctx.rml = rml_.ready() ? &rml_ : nullptr;
     if (!dev_tools_.visible() || !scene_ok_ || !host_ || !interactive_scene()) {
         return ctx;
     }

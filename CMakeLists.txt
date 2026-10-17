@@ -169,6 +169,28 @@ target_compile_definitions(lua PRIVATE "LUA_USER_H=\"lua_user.h\"")
 add_library(doctest INTERFACE)
 target_include_directories(doctest SYSTEM INTERFACE third_party/doctest)
 
+# RmlUi 6.3 for the player's interface (phases 117 to 127, section 7.14). Only the
+# core and the debugger, without its FreeType font engine (D-11703): the game
+# gives it its own font engine.
+file(GLOB SC_RMLUI_SOURCES CONFIGURE_DEPENDS third_party/rmlui/Source/Core/*.cpp
+     third_party/rmlui/Source/Core/Elements/*.cpp third_party/rmlui/Source/Core/Layout/*.cpp)
+add_library(rmlui STATIC ${SC_RMLUI_SOURCES})
+target_include_directories(rmlui SYSTEM PUBLIC third_party/rmlui/Include)
+# RmlUi throws nothing; like the game's code, its standard library is built
+# without exceptions.
+target_compile_definitions(rmlui PUBLIC RMLUI_STATIC_LIB ITLIB_FLAT_MAP_NO_THROW $<$<CXX_COMPILER_ID:MSVC>:_HAS_EXCEPTIONS=0>
+    PRIVATE "RMLUI_VERSION=\"6.3\"" _CRT_SECURE_NO_WARNINGS)
+file(GLOB SC_RMLUI_DEBUGGER_SOURCES CONFIGURE_DEPENDS third_party/rmlui/Source/Debugger/*.cpp)
+add_library(rmlui_debugger STATIC ${SC_RMLUI_DEBUGGER_SOURCES})
+target_link_libraries(rmlui_debugger PUBLIC rmlui)
+# RmlUi hands standard containers to the game's code, so under AddressSanitizer
+# both sides must agree on the container annotations (MSVC refuses to link
+# otherwise): RmlUi is sanitized too.
+if(SC_ENABLE_ASAN AND MSVC)
+    target_compile_options(rmlui PRIVATE /fsanitize=address)
+    target_compile_options(rmlui_debugger PRIVATE /fsanitize=address)
+endif()
+
 # ---------------------------------------------------------------------------
 # Shaders: HLSL compiled to DXIL with the DirectX Shader Compiler from the
 # Windows SDK, then embedded as byte arrays (decision D-201). SPIR-V and MSL
@@ -225,6 +247,8 @@ sc_add_shader(shaders/water.vert.hlsl vs_6_0 kWaterVertDxil)
 sc_add_shader(shaders/water.frag.hlsl ps_6_0 kWaterFragDxil)
 sc_add_shader(shaders/grass.vert.hlsl vs_6_0 kGrassVertDxil)
 sc_add_shader(shaders/blur.frag.hlsl ps_6_0 kBlurFragDxil)
+sc_add_shader(shaders/rml.vert.hlsl vs_6_0 kRmlVertDxil)
+sc_add_shader(shaders/rml.frag.hlsl ps_6_0 kRmlFragDxil)
 
 # The base language is built in, so the game shows text even if data/lang
 # is missing.
@@ -337,6 +361,7 @@ set(SC_ENGINE_SOURCES
     src/render/debug_overlay.cpp
     src/render/gpu_device.cpp
     src/render/model.cpp
+    src/render/rml_renderer.cpp
     src/render/scene_renderer.cpp
     src/render/terrain_layer.cpp
     src/render/terrain_mesh.cpp
@@ -347,13 +372,19 @@ set(SC_ENGINE_SOURCES
     src/ui/font_library.cpp
     src/ui/glow.cpp
     src/ui/glyph_atlas.cpp
-    src/ui/text.cpp)
+    src/ui/text.cpp
+    src/ui/rml/rml_font_engine.cpp
+    src/ui/rml/rml_input.cpp
+    src/ui/rml/rml_system.cpp
+    src/ui/rml/rml_test_window.cpp
+    src/ui/rml/rml_ui.cpp)
 
 add_library(sc_engine STATIC ${SC_ENGINE_SOURCES})
 target_include_directories(sc_engine PUBLIC src "${SC_GENERATED_DIR}")
 # Map generation runs on a worker thread.
 find_package(Threads REQUIRED)
-target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui lua zstd enet Threads::Threads)
+target_link_libraries(sc_engine PUBLIC SDL3::SDL3-static yyjson stb_truetype stb_image cgltf imgui lua zstd enet rmlui
+    rmlui_debugger Threads::Threads)
 add_dependencies(sc_engine sc_generated)
 sc_harden_target(sc_engine)
 
@@ -422,6 +453,7 @@ if(SC_BUILD_TESTS)
         tests/test_input_actions.cpp
         tests/test_menus.cpp
         tests/test_ui.cpp
+        tests/test_rml.cpp
         tests/test_math.cpp
         tests/test_model.cpp
         tests/test_camera.cpp
@@ -492,7 +524,7 @@ if(SC_BUILD_TESTS)
         target_link_options(salvasprosperia_tests PRIVATE /INCREMENTAL:NO)
     endif()
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life worldgen_hier_giants minimap nav windows explorer night rest rest_hour founding seats spectator resources resources_years cover fauna trace fences roads lanterns rain forage berries wine deposits stones annexes gardens coop pets herds smallgame fishing mammoths unicorn happenings turtles)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life worldgen_hier_giants minimap nav windows explorer night rest rest_hour founding seats spectator resources resources_years cover fauna trace fences roads lanterns rain forage berries wine deposits stones annexes gardens coop pets herds smallgame fishing mammoths unicorn happenings turtles rml)
     # AddressSanitizer runs about twice as slow, and its times vary up to
     # twice between runs (D-3110).
     set(SC_TEST_TIMEOUT 120)

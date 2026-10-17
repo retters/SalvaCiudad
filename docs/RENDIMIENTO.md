@@ -279,3 +279,17 @@ Caso manual de `sim_perf` («a town of 1000 on a colossal map, with and without 
 
 Con caminos el tick tarda el 95,5 % de lo que tarda sin ellos: la diferencia está dentro del ruido (una sola corrida de cada una). El criterio de la fase permitía un 10 % más. La búsqueda de rutas mira algunas celdas más cuando hay caminos (su estimación baja de 10 a 9 u 8 por paso, D-9503), pero los caminos acortan las rutas y eso lo compensa. La copia por celda de los caminos (64 MiB en un mapa colosal) solo se reserva cuando se pone el primero.
 
+## Interfaz con RmlUi (fase 117)
+
+Ventana de prueba de RmlUi (la del Cantero de las maquetas) sobre el menú principal, `release`, 1920 × 1080, equipo de desarrollo, lectura del panel F3:
+
+| Medida | Valor |
+|---|---|
+| Diseño (`Context::Update`) por cuadro | 0,027 ms |
+| Grabar la geometría (`Context::Render`) por cuadro | 0,034 ms |
+| Dibujos de la ventana | 40 |
+| FPS sin tope, sin la ventana / con ella | ~1 081 / ~1 030 (≈ 0,05 ms, dentro del ruido) |
+| Memoria al mostrar la ventana | +3 MB |
+| Ejecutable `release` | 8,77 MB (7,06 MB el 2026-10-14, sin RmlUi) |
+
+El presupuesto de la fase era 0,3 ms de CPU para la ventana. Falta medir los efectos (vidrio, sombras), que llegan en la fase 118.

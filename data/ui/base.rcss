@@ -1,0 +1,26 @@
+/* Base rules for every document of the player's interface (phase 117).
+   RmlUi has no built-in style sheet: elements are inline unless a sheet says
+   otherwise, so the block elements are declared here. */
+
+body, div, p, h1, h2, h3, section, header, footer, handle
+{
+	display: block;
+}
+
+body
+{
+	font-family: ui;
+	font-size: 16dp;
+	font-weight: normal;
+	color: #1b1f24;
+}
+
+img
+{
+	display: inline-block;
+}
+
+span
+{
+	display: inline;
+}
