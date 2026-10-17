@@ -68,6 +68,7 @@ bool is_valid_id(std::string_view id) {
 bool FontLibrary::load(const std::filesystem::path& fonts_dir) {
     ui_families_.clear();
     logo_.reset();
+    logo_small_.reset();
     const fs::ReadResult manifest = fs::read_file(fonts_dir / "fonts.json", kMaxManifestBytes);
     if (manifest.error != fs::IoError::None) {
         log::error("fonts: cannot read fonts.json ({})", fs::io_error_name(manifest.error));
@@ -104,6 +105,8 @@ bool FontLibrary::load(const std::filesystem::path& fonts_dir) {
         }
         if (role == "logo") {
             logo_ = std::move(regular_font);
+        } else if (role == "logoSmall") {
+            logo_small_ = std::move(regular_font);
         } else if (role == "ui") {
             FontFamily family;
             family.id = id;
@@ -117,7 +120,8 @@ bool FontLibrary::load(const std::filesystem::path& fonts_dir) {
             log::warn("fonts: unknown role '{}' for '{}', skipped", role, id);
         }
     }
-    log::info("fonts: {} interface famil(y/ies), logo font {}", ui_families_.size(), logo_ ? "loaded" : "missing");
+    log::info("fonts: {} interface famil(y/ies), logo fonts {}", ui_families_.size(),
+              logo_ && logo_small_ ? "loaded" : "missing");
     return !ui_families_.empty();
 }
 

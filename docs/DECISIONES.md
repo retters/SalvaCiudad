@@ -4155,3 +4155,73 @@ El README dice lo que hay: tráfico sin cifrar, partida sin contraseña, y códi
 
 **D-PUB-03. El correo del autor en el historial.**
 Todos los commits de todas las ramas llevan `retters@users.noreply.github.com`; los hashes anteriores al 2026-10-12 que citan otros documentos ya no existen.
+
+## Nombre y logotipo: SALVA'S PROSPERIA (2026-10-14)
+
+**D-RENAME-01. El juego pasa a llamarse SALVA'S PROSPERIA, y se renombra todo.**
+Salvador pidió seguir la identidad de sus otros juegos (diapositiva 14 de `IdentidadSalva.pptx`) y dijo que el juego sigue en alfa: no hay partidas guardadas ni nada que impida cambios fuertes. Así que se cambia todo lo que lleva el nombre, sin alias ni migraciones: el texto visible (`app.name` y los textos de error, en español e inglés, y el nombre del mod base), el título de la ventana, el proyecto de CMake, los ejecutables (`SalvasProsperia.exe`, `SalvasProsperiaModelos.exe`, `salvasprosperia_tests.exe`), la carpeta de datos del usuario (`%APPDATA%\Salva\SalvasProsperia`), la de reportes en `%TEMP%`, el archivo de registro (`salvasprosperia.log`), el identificador de SDL y la especificación (`ESPECIFICACION_SalvasProsperia.md`). En identificadores y rutas el nombre se escribe `SalvasProsperia` (sin apóstrofo ni espacios); en pantalla y en prosa, `SALVA'S PROSPERIA`. Los prefijos internos (`sc_`, `SC_`, el espacio de nombres `sc`) no cambian: no son el nombre del juego. Las entradas anteriores de este documento y `docs/revision/revision.json` conservan «SalvaCiudad» porque son historia. La carpeta del repositorio sigue llamándose `SalvaCiudad`; se renombra a mano cuando Salvador quiera.
+
+**D-RENAME-02. Logotipo: oro con resplandor, SALVA'S en plata y filete.**
+Elegido sobre las maquetas de `docs/propuestas/titulo.html` (variante G2). `SALVA'S` en Barlow Semi Condensed Light, 15,15 % del tamaño del nombre y 0,3 em entre letras, en plata (`#BCD2E2`) con un halo azul tenue. `PROSPERIA` en EB Garamond Medium con degradado vertical dorado sobre las mayúsculas, sombra oscura y un resplandor cálido (desde D-RENAME-03, un desenfoque real; antes, anillos de copias del texto). Debajo, un filete plateado que se desvanece en los extremos. Las medidas (hueco de 0,12 em entre la línea base de SALVA'S y las mayúsculas, filete a 0,2 em) salen de la maqueta, que las tomó de Salva's Ludo.
+El motor aprendió dos cosas pequeñas para esto: `DrawList::image_vgradient` (un cuadro con color arriba y abajo) y `TextRenderer::draw_gradient` (texto con degradado vertical por franjas). Dibujado así, el logotipo sigue siendo texto: respeta el idioma y la escala de la interfaz, y no hay imagen que mantener. El degradado del navegador (maqueta) y el del juego no son idénticos: el del juego se reparte por las mayúsculas, no por toda la caja de la línea.
+Las tipografías (`data/fonts/logo/`) son las originales de Google Fonts, completas (unos 590 KB), con su licencia OFL; Cinzel se quitó. No se recortaron a las letras del logotipo, como en Ludo, porque eso requiere `fontTools` y no se instala una dependencia sin preguntar. La nueva función `logoSmall` del manifiesto de fuentes designa la de la línea pequeña.
+
+**D-RENAME-03. El resplandor del logotipo es un desenfoque gaussiano, no copias del texto.**
+Salvador vio el resplandor de D-RENAME-02 de baja calidad: los anillos de copias desplazadas dejaban escalones entre capas, y en `SALVA'S`, con letras tan delgadas, parecían letras fantasma, como un JPEG muy comprimido. Ahora los resplandores (y el filete) son una sola imagen RGBA que se arma en la CPU (`src/ui/glow.h`): las letras se rasterizan en una máscara (`TextRenderer::rasterize`, con el mismo redondeo que `draw`), la máscara se desenfoca con tres desenfoques de caja seguidos (equivalen casi exactamente a un gaussiano y cuestan lo mismo con cualquier radio) y las capas se componen con "over". Al pasar a 8 bits se suma un ruido de medio nivel al alfa para que las colas tenues no hagan bandas. La imagen se dibuja a 1:1 sobre píxeles enteros, debajo de las letras, y se reconstruye solo cuando cambian el tamaño, el idioma o la posición subpíxel (id de imagen 3).
+Medidas de la maqueta G2, donde el radio de desenfoque de CSS equivale a dos sigmas: en `PROSPERIA`, halo cálido `#FFBE46` de sigma 4/62 em al 75 % y halo ancho `#F08C14` de sigma 11/62 em, éste calculado sobre las letras más el primer halo, como encadena CSS sus `drop-shadow`. En `SALVA'S`, halo `#A0D2FF` de la misma sigma corta y, debajo, una cama oscura muy suave (sigma 0,12 de su tamaño) que reemplaza el contorno de ocho copias y la mantiene legible sobre el bosque del menú. Sobre la escena del menú, más clara y variada que el fondo de la maqueta, el halo ancho al 50 % y el azul al 70 % casi no se veían; quedaron en 70 % y 100 %. Si el logotipo pasara de 2048 px (el máximo de imagen del renderizador), se dibuja sin resplandor.
+
+**D-RENAME-04. Variantes del logotipo para elegir dentro del juego (F7 con las herramientas de desarrollo).**
+Para que Salvador compare looks sobre la escena real del menú, el logotipo es ahora una tabla de estilos (`kLogoStyles` en `src/game/ui_host.cpp`): degradado del nombre, sombra, halo cercano, halo ancho, nube oscura detrás, halo de `SALVA'S` y color del filete. A pedido de Salvador, `SALVA'S` es marfil (`#F2E8D5`) en todos y todos llevan filete, del color del metal del nombre. Con las herramientas de desarrollo abiertas (Ctrl+F3) y en los menús, F7 pasa al siguiente estilo y un aviso dice cuál es; se sigue viendo al cerrar las herramientas. No se guarda (ver D-RENAME-05). Como F5 y F6 del fondo del menú, es un atajo fijo de desarrollo que los jugadores no ven (D-622). Los estilos:
+1. Oro con resplandor de farol (G2, el actual).
+2. Acero con resplandor frío (B de las maquetas, 7 + 3); el halo ancho, de 55 % a 75 %, por la misma razón que en D-RENAME-03.
+3. Nuevo: plata a la luz de la luna, neutra, sin el azul del acero, con un halo blanco pálido. Reemplaza a "acero con luz de farol y detalles dorados", que a Salvador le pareció demasiado combinado de colores.
+4. Nuevo: brasa, cobre que enrojece hacia abajo con halo rojo anaranjado.
+5. Nuevo: oro pálido (champán) sobre una nube oscura muy difuminada, que lo hace legible sobre cualquier mapa sin halo de color.
+6. Nuevo: el mismo oro pálido de la 5, pero en lugar de la nube oscura lleva un halo también oro pálido (cercano `#F6E7BC` y ancho `#D8C08A`), con el mismo esquema de dos halos que el oro de G2.
+Salvador decidió conservarlos todos (D-RENAME-05).
+
+**D-RENAME-05. El logotipo sale al azar al entrar al menú principal.**
+Cada vez que el menú principal aparece al iniciar el juego o al salir de una partida (la pantalla anterior era el mapa), se elige uno de los estilos de D-RENAME-04 al azar, nunca el mismo que se acaba de ver. Ir y volver de Configuración, Cargar, Mods, Unirse o Nueva partida no lo cambia, para que el título no salte mientras se navega. La semilla sale de `std::random_device` al crear `UiHost` y avanza con splitmix64; la elección (`pick_logo_style`) es una función pura con su prueba en `menus`. El estilo elegido queda en el registro (`menu: logo style N`). F7 con Ctrl+F3 sigue sirviendo para recorrerlos a mano.
+
+**D-PARTIDA-01. Variado y la partida nueva por omisión: pueblo mixto y sin niebla.**
+Salvador pidió que los mapas Variados y los valores por omisión del formulario de partida nueva tengan Pueblo: Mixto y Niebla de guerra: Sin niebla. Reemplaza a D-3202 (niebla estática por omisión). `varied_rules()` da `FogMode::None` y `kMixedRace` en todos los asientos; `NewGameSettings` empieza con `race = "mixed"` y `fog = "none"`, así que "Restablecer" y "Partir de Variado" también los ponen. Una raza recordada que ya no existe cae en Mixto. Las preferencias ya guardadas de una partida personalizada se respetan; Variado siempre usa estos valores. `GameRules{}` no cambia (pruebas y tutoriales siguen igual).
+
+## Plan: la interfaz del jugador con RmlUi (2026-10-17)
+
+Salvador eligió el estilo **Frosted** de las maquetas (`docs/propuestas/interfaz`), con **Vidrio oscuro** como alternativa, y pidió implementarlo con RmlUi y con la posibilidad de cambiar de estilo. Fases 117 a 127; el pulido pasa a ser la 128.
+
+**D-11701. RmlUi para la interfaz del jugador; ImGui sigue solo para las herramientas.**
+RmlUi (MIT, C++) es lo más parecido a UI Toolkit de Unity: documentos tipo HTML, hojas tipo CSS con flexbox y modelos de datos. Se descartó un navegador embebido (CEF pesa más de 100 MB y corre en procesos aparte; Ultralight tiene licencia comercial) y hacer un sistema propio de árbol y estilos (es reinventar RmlUi). Reemplaza por partes al sistema de widgets propio de la fase 2.
+
+**D-11702. Dos estilos: Frosted por omisión y Vidrio oscuro.**
+Salen de las maquetas `frosted` y `vidrio`. El HUD de hoy no se porta como estilo: queda hasta que cada parte se migra.
+
+**D-11703. Motor de fuentes propio, sin FreeType.**
+RmlUi trae un motor de fuentes con FreeType. Se escribe uno sobre `stb_truetype` y el atlas de glifos que el juego ya tiene: una sola forma de dibujar texto, las mismas fuentes de `data/fonts` y ninguna dependencia nueva aparte de RmlUi.
+
+**D-11704. La interfaz no tiene scripts.**
+Ni el complemento de Lua de RmlUi ni ningún otro lenguaje en los documentos: la lógica sigue en C++ y los documentos solo describen y enlazan datos. Así un estilo o un documento de un mod es solo datos y nunca ejecuta nada, como pide la regla de no ejecutar lo que venga de un archivo.
+
+**D-11705. Tokens de estilo sustituidos por el juego.**
+Las maquetas usan variables de CSS (`var(--x)`); RCSS no las tiene (se confirma con la versión vendorizada en la fase 117; si las tuviera, se usan las nativas). El cargador del juego sustituye cada `var(--token)` con el valor validado del estilo antes de pasar la hoja a RmlUi. Así un estilo nuevo es un `style.json` corto más, si hace falta, reglas propias.
+
+**D-11706. Íconos: atlas PNG generado desde el set propio, sin el complemento SVG.**
+El complemento SVG de RmlUi trae otra biblioteca (lunasvg). Una herramienta convierte los íconos (trazados en la cuadrícula de 24 de las maquetas) en un atlas PNG a 1x y 2x; la herramienta usa PIL, que ya usan las de `tools/propuestas`, y el juego no gana dependencias. Se usa el set propio porque Salvador aún no votó familia de íconos; si elige otra (Lucide, Phosphor o Tabler), la herramienta toma esos SVG, vendorizados con su licencia, previa pregunta.
+
+**D-11707. Migración por partes, con convivencia.**
+Cada fase migra una parte y borra su versión vieja; el juego sigue jugable al cierre de cada fase. La fase 127 retira los restos del sistema viejo.
+
+**D-11708. Vidrio completo o simple, y presupuesto.**
+El desenfoque reutiliza el gaussiano del menú de pausa a media resolución, una vez por cuadro. Presupuesto en el equipo de desarrollo a 1080p: 0,8 ms de GPU con vidrio completo y 0,1 ms con simple. Si no se alcanza, el valor por omisión es *simple*.
+
+**D-11709. Miniaturas y retratos los renderiza el juego.**
+No se guardan PNG pregenerados como en las maquetas: el juego renderiza sus propios modelos a un atlas al cargar. Así un mod con edificios o cuerpos nuevos tiene miniaturas y retratos sin hacer nada, y los retratos respetan la paleta de cada aldeano.
+
+**D-11710. Punto de decisión al cerrar la fase 117.**
+Con las medidas reales (tiempo por cuadro, memoria, tamaño del ejecutable, esfuerzo de pasar una ventana), Salvador decide si se sigue. Si no, la alternativa es un estilo en datos (colores, radios y fuentes en JSON) sobre el HUD actual.
+
+**D-11711. Textos: `@clave` en los documentos, `tr()` para los que llevan datos.**
+Los textos fijos de un documento se escriben como `@clave` y RmlUi los pide traducidos al sistema; los que llevan números o nombres los arma el C++ con `tr()` y los pone en el modelo de datos. Cambiar de idioma recarga los documentos; agregar un idioma sigue sin tocar código.
+
+**D-11712. El pulido pasa a ser la fase 128.**
+

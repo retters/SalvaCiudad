@@ -1,0 +1,45 @@
+/* macOS Sonoma/Sequoia: light vibrancy, traffic lights, thin menu bar, magnifying dock. */
+.stage {
+  --font: -apple-system, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: var(--font);
+  --fs: 15px; --fs-small: 13px; --fs-title: 15px; --title-weight: 600;
+  --text: #1d1d1f; --dim: #6e6e73; --accent: #007aff; --accent-text: #fff;
+  --ok: #28a745; --warn: #ff9500; --bad: #ff3b30; --info: #007aff;
+  --panel: rgba(246, 246, 246, .74); --panel-solid: #f2f2f2;
+  --panel-blur: blur(28px) saturate(180%);
+  --panel-border: .5px solid rgba(0, 0, 0, .14); --panel-radius: 12px;
+  --panel-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .7), 0 22px 50px rgba(0, 0, 0, .28), 0 0 0 .5px rgba(0, 0, 0, .1);
+  --bar: rgba(246, 246, 246, .6); --bar-border: 0; --bar-h: 34px; --bar-blur: blur(28px) saturate(180%);
+  --title-text: #1d1d1f; --title-border: 0; --title-h: 40px;
+  --btn: rgba(0, 0, 0, .05); --btn-hover: rgba(0, 0, 0, .09); --btn-on: #007aff; --btn-on-text: #fff;
+  --btn-border: 0; --btn-radius: 6px; --btn-h: 28px; --btn-shadow: 0 .5px 1px rgba(0, 0, 0, .12);
+  --chip: rgba(0, 0, 0, .06); --row: rgba(0, 0, 0, .035); --row-hover: rgba(0, 0, 0, .07); --sep: rgba(0, 0, 0, .09);
+  --meter: rgba(0, 0, 0, .1); --meter-h: 5px;
+  --avatar-bg: linear-gradient(160deg, #c9d2da, #93a2ae); --thumb-bg: radial-gradient(circle at 50% 75%, rgba(0, 0, 0, .07), transparent 65%);
+  --tip: rgba(250, 250, 250, .96); --tip-text: #1d1d1f; --tip-border: .5px solid rgba(0, 0, 0, .2); --tip-radius: 6px;
+  --icon-stroke: 1.7; --icon-size: 18px;
+}
+.topbar { font-size: 14px; }
+.topbar .tb-item { padding: 2px 8px; border-radius: 5px; }
+.tb-speed .btn { --btn-h: 24px; background: transparent; box-shadow: none; }
+.tb-item.gold b { color: #b8860b; }
+.tb-item.alert { color: #d97706; }
+.win-titles { align-items: center; padding-right: 60px; }
+.win-act .wbtn { color: #6e6e73; }
+.win-bar { padding-right: 8px; }
+.btn.on { box-shadow: none; }
+.dock-icons .dock-btn { border-radius: 12px; }
+.dock-btn.on { background: rgba(0, 122, 255, .14); color: #007aff; }
+.build-dock .bb-cats { background: rgba(255, 255, 255, .32); border: .5px solid rgba(255, 255, 255, .5); border-radius: 22px; }
+.build-dock .bb-cat { background: linear-gradient(180deg, #ffffff, #e6e6ea); color: #3a3a3c; border-radius: 14px; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+.build-dock .bb-cat.on { background: linear-gradient(180deg, #ffffff, #e6e6ea); color: #007aff; }
+.build-dock .bb-cat.on::after { background: #1d1d1f; bottom: -8px; width: 4px; height: 4px; }
+.bb-item.on { background: rgba(0, 122, 255, .12); outline-color: #007aff; }
+.sec { text-transform: none; letter-spacing: 0; color: #6e6e73; font-weight: 600; }
+.seg { background: rgba(0, 0, 0, .06); }
+.seg-b.on { background: #fff; color: #1d1d1f; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); }
+.radio.on { background: #007aff; color: #fff; }
+.switch.on { background: #34c759; }
+.mm-n { color: #ff3b30 !important; }
+.minimap > span { color: #3a3a3c; }
+.question .q-ic { background: rgba(255, 149, 0, .15); }
+.live { background: rgba(0, 0, 0, .45); }

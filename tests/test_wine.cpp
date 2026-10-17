@@ -383,12 +383,12 @@ TEST_SUITE("wine") {
 
     // Not a test: two saved games with a vineyard, a wine press, a tavern and
     // a farm with a field of roots, in autumn and in winter. Run it by name:
-    //   salvaciudad_tests -ts=wine -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_wine_autumn.scsave and
+    //   salvasprosperia_tests -ts=wine -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_wine_autumn.scsave and
     // manual_wine_winter.scsave: copy them to the saves folder and load them.
     TEST_CASE("manual: saved games with a vineyard in autumn and in winter" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.climate.minutes = {5, 5, 5, 5};

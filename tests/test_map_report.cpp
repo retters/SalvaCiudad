@@ -62,7 +62,7 @@ report::Report sample_report(const sim::MapData& map) {
 struct TempDir {
     std::filesystem::path path;
     explicit TempDir(const char* name) {
-        path = std::filesystem::temp_directory_path() / "salvaciudad_tests" / name;
+        path = std::filesystem::temp_directory_path() / "salvasprosperia_tests" / name;
         std::error_code ec;
         std::filesystem::remove_all(path, ec);
         std::filesystem::create_directories(path);

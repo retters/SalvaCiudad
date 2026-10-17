@@ -14,7 +14,7 @@ namespace sc::log {
 
 namespace {
 
-constexpr std::string_view kFileStem = "salvaciudad";
+constexpr std::string_view kFileStem = "salvasprosperia";
 
 struct State {
     std::mutex mutex;
@@ -48,7 +48,7 @@ std::FILE* open_for_append(const std::filesystem::path& path) {
 #endif
 }
 
-// Shifts salvaciudad.log -> .1 -> .2 ..., dropping the oldest. Errors are
+// Shifts salvasprosperia.log -> .1 -> .2 ..., dropping the oldest. Errors are
 // ignored: a failed rotation only means an older log is overwritten or kept.
 void rotate_files(const std::filesystem::path& dir, int kept_files) {
     std::error_code ec;

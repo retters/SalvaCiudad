@@ -352,7 +352,7 @@ TEST_SUITE("new_game") {
         CHECK_FALSE(fallback.settings().island_map());
         CHECK(fallback.settings().biomes == 0);  // Every biome.
         CHECK(fallback.settings().rivers == 50);
-        CHECK(fallback.rules().races[0] == 0);
+        CHECK(fallback.rules().races[0] == sim::kMixedRace);  // The form's default.
         CHECK(fallback.rules().immigrants == 0);
         CHECK(fallback.rules().climate.seasons == 0b0101);  // Every season by itself now.
         CHECK(fallback.rules().max_population == 400);
@@ -385,10 +385,10 @@ TEST_SUITE("new_game") {
         CHECK(rules.climate.seasons == 0b1111);
         CHECK(rules.climate.year == sim::YearLength::Normal);
         CHECK(sim::year_ticks(rules.climate) == sim::year_ticks(sim::YearLength::Normal));
-        CHECK(rules.fog == sim::FogMode::Static);
+        CHECK(rules.fog == sim::FogMode::None);
         CHECK(rules.shared_vision);
         CHECK(rules.max_population == 1000);
-        CHECK(rules.races[0] == 0);
+        CHECK(rules.races[0] == sim::kMixedRace);
         CHECK(rules.other_races == 20);
         CHECK(rules.diseases == sim::Threat::Medium);
         // Over many seeds: every climate and every kind of sea.

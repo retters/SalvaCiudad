@@ -151,11 +151,11 @@ struct NewGameSettings {
     std::string fires = "medium";
     std::string raiders = "medium";
     std::string wildlife = "medium";
-    std::string race;               // A race's id, "mixed", or empty for the first.
+    std::string race = "mixed";     // A race's id, "mixed", or empty for the first (decision D-PARTIDA-01).
     int other_races = 100;          // Percent of the usual share of newcomers of another race (a fifth).
     std::vector<std::string> immigrants;  // Ids of the races that may come; empty: all.
     int max_population = 1000;
-    std::string fog = "static";     // new_game_names::kFogs (phase 32, decision D-3202).
+    std::string fog = "none";       // new_game_names::kFogs (phase 32, decision D-PARTIDA-01).
     bool shared_vision = true;
 
     bool operator==(const NewGameSettings&) const = default;

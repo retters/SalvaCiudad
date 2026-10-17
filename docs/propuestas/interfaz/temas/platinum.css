@@ -1,0 +1,68 @@
+/* Mac OS 8-9 Platinum: grey bevels, pinstriped title bars, close box on the left, Charcoal-like lettering. */
+.stage {
+  --raised: inset -1px -1px #777, inset 1px 1px #fff, inset -2px -2px #aaa;
+  --sunken: inset 1px 1px #777, inset -1px -1px #fff;
+  --font: Charcoal, 'Segoe UI Semibold', Tahoma, sans-serif; --font-title: Charcoal, 'Segoe UI Semibold', Tahoma, sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 14px; --title-weight: 700;
+  --text: #000; --dim: #555; --accent: #3a3aa8; --accent-text: #fff;
+  --ok: #007a00; --warn: #8a6a00; --bad: #b00000; --info: #3a3aa8;
+  --panel: #dddddd; --panel-solid: #ddd; --panel-border: 1px solid #000; --panel-radius: 0; --panel-shadow: 1px 1px 0 #000, var(--raised);
+  --bar: #dddddd; --bar-border: 1px solid #000; --bar-h: 34px;
+  --title-bg: repeating-linear-gradient(180deg, #ddd 0 1px, #999 1px 2px, #ddd 2px 3px); --title-text: #000; --title-border: 1px solid #000; --title-h: 24px;
+  --btn: #ddd; --btn-hover: #e8e8e8; --btn-on: #aaa; --btn-on-text: #000; --btn-text: #000;
+  --btn-border: 1px solid #000; --btn-radius: 5px; --btn-h: 26px; --btn-shadow: var(--raised);
+  --chip: #fff; --row: #fff; --row-hover: #3a3aa8; --sep: #888;
+  --meter: #fff; --meter-h: 12px; --meter-radius: 0;
+  --avatar-bg: #9a9ad0; --avatar-radius: 0; --thumb-bg: #fff;
+  --tip: #ffffc7; --tip-text: #000; --tip-border: 1px solid #000; --tip-radius: 0;
+  --icon-stroke: 1.8; --icon-size: 17px;
+}
+.win-bar { padding: 2px 6px; }
+.win-titles { align-items: center; }
+.win-title { background: #ddd; padding: 0 8px; }
+.win-sub { display: none; }
+.win-icon { display: none; }
+.chrome-left .win-ctl .wbtn { width: 13px; height: 13px; border-radius: 0; background: #ddd !important; box-shadow: var(--raised); border: 1px solid #000; color: transparent; }
+.chrome-left .ctl-pin.on { box-shadow: var(--sunken); background: #888 !important; }
+.chrome-left .ctl-min, .chrome-left .ctl-pin { order: 5 !important; }
+.chrome-left .win-act { order: 4; }
+.win-act .wbtn { width: 22px; --btn-h: 18px; color: #000; background: #ddd; box-shadow: var(--raised); border: 1px solid #000; border-radius: 0; }
+.win-act .wbtn .ic { width: 13px; height: 13px; }
+.win-body { padding: 8px; }
+.hero, .tile, .kpi, .score-row, .tr-pick, .log, .radio-list { background: #fff; border: 1px solid #000; border-radius: 0; box-shadow: var(--sunken); }
+.row, .link, .log-row { border-radius: 0; }
+.row:hover, .link:hover, .log-row:hover, .radio.on { color: #fff; background: #3a3aa8; }
+.row:hover .row-sub, .log-row:hover .log-date { color: #fff; }
+.chip { border-radius: 0; border: 1px solid #888; }
+.meter { border: 1px solid #000; }
+.meter .fill, .meter.ok .fill, .meter.warn .fill, .meter.bad .fill, .meter.accent .fill { border-radius: 0; background: repeating-linear-gradient(135deg, #6a6ad0 0 4px, #3a3aa8 4px 8px); }
+.switch { width: 16px; height: 16px; border-radius: 0; background: #fff; border: 1px solid #000; }
+.switch .knob { display: none; }
+.switch.on::after { content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; color: #000; font-size: 12px; }
+.btn.primary { background: #ddd; color: #000; box-shadow: var(--raised), 0 0 0 2px #ddd, 0 0 0 3px #000; }
+.btn.danger { color: #000; }
+.sec { color: #000; text-transform: none; letter-spacing: 0; font-size: 13px; border-bottom: 1px solid #888; }
+.seg { background: transparent; padding: 0; }
+.seg-b { background: #ddd; box-shadow: var(--raised); border: 1px solid #000; border-radius: 0; color: #000; }
+.seg-b.on { background: #aaa; box-shadow: var(--sunken); color: #000; }
+.need, .annex { border-radius: 0; border: 1px solid #000; background: #fff; }
+.dock-list .dock { padding: 6px; }
+.dock-btn .badge { border-radius: 0; }
+.minimap { padding: 18px; }
+.mm-frame { border: 1px solid #000; }
+.buildbar { padding: 6px; }
+.bb-item { background: #fff; border: 1px solid #000; }
+.bb-item.on { outline: 0; background: #3a3aa8; color: #fff; }
+.bb-item.on .bb-cost { color: #ddd; }
+.toast { border-radius: 0; background: #ffffc7; }
+.toast.bad { border-left: 1px solid #000; }
+.question, .place-hint { border-radius: 0; }
+.modal { border-radius: 0; padding: 0 0 12px; }
+.modal h2 { background: var(--title-bg); color: #000; font-size: 14px; margin: 0 0 8px; padding: 3px; border-bottom: 1px solid #000; }
+.modal .menu-item { margin: 0 14px; }
+.modal.dialog p, .dlg-btns { padding: 0 14px; }
+.tb-item { border-radius: 0; }
+.ring::before { background: #fff; }
+.cam-view { border-radius: 0; border: 1px solid #000; }
+.win-tab { background: #ddd; color: #000; border: 1px solid #000; border-bottom: 0; border-radius: 5px 5px 0 0; }
+.win-tab.on { background: #fff; color: #000; }

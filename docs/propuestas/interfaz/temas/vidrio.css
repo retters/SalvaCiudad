@@ -1,0 +1,45 @@
+/* Vidrio oscuro: blurred black glass, violet-to-cyan gradient rims, soft neon on what is active. */
+.stage {
+  --font: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 18px; --title-weight: 650;
+  --text: #f1f0ff; --dim: rgba(225, 222, 255, .62); --accent: #9b7bff; --accent-text: #fff;
+  --ok: #49f2b0; --warn: #ffd166; --bad: #ff5c8a; --info: #4cc9f0;
+  --panel: linear-gradient(160deg, rgba(40, 30, 70, .55), rgba(10, 12, 24, .6)); --panel-solid: #15142a;
+  --panel-blur: blur(20px) saturate(160%);
+  --panel-border: 1px solid rgba(255, 255, 255, .08); --panel-radius: 18px;
+  --panel-shadow: 0 10px 40px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .08);
+  --bar: rgba(12, 12, 28, .55); --bar-border: 1px solid rgba(255, 255, 255, .08);
+  --title-text: #fff; --title-border: 1px solid rgba(255, 255, 255, .06);
+  --btn: rgba(255, 255, 255, .06); --btn-hover: rgba(255, 255, 255, .12); --btn-on: linear-gradient(135deg, rgba(155, 123, 255, .45), rgba(76, 201, 240, .35)); --btn-on-text: #fff;
+  --btn-border: 1px solid rgba(255, 255, 255, .08); --btn-radius: 10px; --btn-h: 32px;
+  --chip: rgba(255, 255, 255, .08); --row: rgba(255, 255, 255, .04); --row-hover: rgba(255, 255, 255, .09); --sep: rgba(255, 255, 255, .08);
+  --meter: rgba(255, 255, 255, .08); --meter-h: 6px;
+  --avatar-bg: linear-gradient(135deg, #9b7bff, #4cc9f0); --thumb-bg: radial-gradient(circle at 50% 70%, rgba(155, 123, 255, .3), transparent 65%);
+  --tip: rgba(18, 16, 36, .9); --tip-border: 1px solid rgba(155, 123, 255, .5); --tip-radius: 10px;
+  --icon-stroke: 1.7; --icon-size: 18px;
+}
+.win::after, .tb-group::after, .minimap::after, .toast::after, .build-dock .bb-cats::after, .build-dock .bb-items-wrap::after, .question::after, .modal::after {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; padding: 1px;
+  background: linear-gradient(135deg, rgba(155, 123, 255, .9), rgba(255, 255, 255, .05) 40%, rgba(255, 255, 255, .05) 60%, rgba(76, 201, 240, .9));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.tb-group, .toast, .question, .build-dock .bb-cats, .build-dock .bb-items-wrap { position: relative; }
+.btn.on, .bb-item.on, .radio.on, .seg-b.on, .dock-btn.on { box-shadow: 0 0 16px rgba(155, 123, 255, .55); }
+.btn.primary { background: linear-gradient(135deg, #9b7bff, #4cc9f0); color: #fff; box-shadow: 0 0 18px rgba(155, 123, 255, .6); }
+.meter .fill, .meter.ok .fill { background: linear-gradient(90deg, #49f2b0, #4cc9f0); box-shadow: 0 0 10px rgba(73, 242, 176, .6); }
+.meter.warn .fill { background: linear-gradient(90deg, #ffd166, #ff9f43); }
+.meter.bad .fill { background: linear-gradient(90deg, #ff5c8a, #ff8a5c); box-shadow: 0 0 10px rgba(255, 92, 138, .6); }
+.meter.accent .fill { background: linear-gradient(90deg, #9b7bff, #4cc9f0); }
+.switch.on { background: linear-gradient(90deg, #9b7bff, #4cc9f0); }
+.win-act { border-color: rgba(255, 255, 255, .08); }
+.wbtn.on { color: #c4b0ff; text-shadow: 0 0 8px #9b7bff; }
+.sec { color: #b9a6ff; }
+.top-pills .tb-group { border-radius: 99px; }
+.dock-icons .dock-btn { border-radius: 14px; }
+.build-dock .bb-cat { background: rgba(255, 255, 255, .05); border-radius: 14px; }
+.build-dock .bb-cat.on { background: linear-gradient(135deg, rgba(155, 123, 255, .5), rgba(76, 201, 240, .4)); }
+.build-dock .bb-cat.on::after { background: #4cc9f0; box-shadow: 0 0 6px #4cc9f0; }
+.bb-item.on { outline: 0; background: rgba(155, 123, 255, .18); }
+.tb-item.gold b { color: #ffd166; }
+.minimap > span { color: #d8d0ff; }
+.mm-n { color: #ff5c8a !important; }

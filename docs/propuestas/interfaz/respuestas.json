@@ -1,0 +1,62 @@
+{
+ "version": 1,
+ "temas": {
+  "metro": {
+   "voto": "no",
+   "fecha": "2026-10-17T17:30:34.850Z"
+  },
+  "imperial": {
+   "voto": "si",
+   "nota": "Me encanta la columna de la derecha donde se apilan las ventanas. Estoy considerando que esta idea podría expandirse a tener otrás columnas o contenedores de ventanas, y poder moverlos, tal vez mostrando un marco de la columna/ventana contenedora.",
+   "fecha": "2026-10-17T17:36:13.409Z"
+  },
+  "nordico": {
+   "voto": "si",
+   "nota": "Me encanta la columna de la derecha donde se apilan las ventanas. Estoy considerando que esta idea podría expandirse a tener otrás columnas o contenedores de ventanas, y poder moverlos, tal vez mostrando un marco de la columna/ventana contenedora.",
+   "fecha": "2026-10-17T18:03:31.319Z"
+  },
+  "vitral": {
+   "voto": "talvez",
+   "nota": "Me gusta el concepto de vitrales, pero puede mejorar la textura de vitrales, es muy recta y poco detallada.",
+   "fecha": "2026-10-17T17:41:33.510Z"
+  },
+  "win98": {
+   "voto": "si",
+   "fecha": "2026-10-17T17:42:46.356Z"
+  },
+  "actual": {
+   "voto": "no",
+   "fecha": "2026-10-17T17:43:20.698Z"
+  },
+  "macos": {
+   "voto": "si",
+   "fecha": "2026-10-17T17:44:56.391Z"
+  },
+  "liquid": {
+   "voto": "talvez",
+   "fecha": "2026-10-17T17:46:01.679Z"
+  },
+  "frosted": {
+   "voto": "si",
+   "fecha": "2026-10-17T17:46:46.071Z"
+  },
+  "minimo": {
+   "voto": "si",
+   "fecha": "2026-10-17T17:49:28.396Z"
+  },
+  "vidrio": {
+   "voto": "si",
+   "fecha": "2026-10-17T17:51:54.043Z"
+  },
+  "breeze": {
+   "voto": "si",
+   "fecha": "2026-10-17T17:52:49.017Z"
+  },
+  "escarcha": {
+   "voto": "si",
+   "fecha": "2026-10-17T17:55:54.372Z"
+  }
+ },
+ "iconos": {},
+ "general": ""
+}

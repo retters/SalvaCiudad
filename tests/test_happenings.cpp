@@ -547,12 +547,12 @@ TEST_SUITE("happenings") {
 
     // Not a test: two saved games, one the day the whales pass by a town with a house on the shore, the
     // other the night of the lanterns of a town of foxfolk.
-    //   salvaciudad_tests -ts=happenings -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_whales.scsave and manual_lanterns.scsave: copy them to the saves
+    //   salvasprosperia_tests -ts=happenings -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_whales.scsave and manual_lanterns.scsave: copy them to the saves
     // folder and load them.
     TEST_CASE("manual: saved games with the whales passing and with the lanterns of a town" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         const auto write = [&](Game& g, const char* name) {
             save::SaveData data;

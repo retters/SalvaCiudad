@@ -1,0 +1,66 @@
+/* Windows 3.1: white and black, navy title bars, grey raised buttons, the system lettering. */
+.stage {
+  --raised: inset -1px -1px #808080, inset 1px 1px #fff, inset -2px -2px #808080;
+  --font: 'MS Sans Serif', 'Microsoft Sans Serif', Arial, sans-serif; --font-title: 'MS Sans Serif', 'Microsoft Sans Serif', Arial, sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 14px; --title-weight: 700;
+  --text: #000; --dim: #404040; --accent: #000080; --accent-text: #fff;
+  --ok: #008000; --warn: #808000; --bad: #800000; --info: #000080;
+  --panel: #fff; --panel-solid: #fff; --panel-border: 2px solid #000; --panel-radius: 0; --panel-shadow: none;
+  --bar: #fff; --bar-border: 2px solid #000; --bar-h: 38px;
+  --title-bg: #000080; --title-text: #fff; --title-border: 2px solid #000; --title-h: 26px;
+  --btn: #c0c0c0; --btn-hover: #c0c0c0; --btn-on: #808080; --btn-on-text: #fff; --btn-text: #000;
+  --btn-border: 1px solid #000; --btn-radius: 3px; --btn-h: 26px; --btn-shadow: var(--raised);
+  --chip: #fff; --row: #fff; --row-hover: #000080; --sep: #000;
+  --meter: #fff; --meter-h: 12px; --meter-radius: 0;
+  --avatar-radius: 0; --avatar-bg: #008080; --thumb-bg: #fff;
+  --tip: #fff; --tip-text: #000; --tip-border: 1px solid #000; --tip-radius: 0;
+  --icon-stroke: 1.8; --icon-size: 17px;
+}
+.win-bar { padding: 0 0 0 2px; }
+.win-titles { align-items: center; }
+.win-sub, .win-icon { display: none; }
+.win-act { border: 0; padding: 0; }
+.win-act .wbtn, .win-ctl .wbtn { width: 22px; --btn-h: 22px; border-radius: 0; background: #c0c0c0; color: #000; box-shadow: var(--raised); border: 1px solid #000; }
+.wbtn .ic { width: 13px; height: 13px; }
+.wbtn.on { background: #808080 !important; color: #fff; }
+.ctl-close:hover { background: #c0c0c0; color: #000; }
+.win-body { padding: 8px; }
+.row:hover, .link:hover, .log-row:hover, .radio.on { background: #000080; color: #fff; }
+.row:hover .row-sub, .log-row:hover .log-date { color: #fff; }
+.hero, .tile, .kpi, .score-row, .tr-pick, .row, .link, .log-row { border: 1px solid #000; border-radius: 0; }
+.chip { border: 1px solid #000; border-radius: 0; }
+.chip.ok, .chip.bad, .chip.warn, .chip.accent { background: #fff; }
+.meter { border: 1px solid #000; }
+.meter .fill, .meter.ok .fill, .meter.warn .fill, .meter.bad .fill, .meter.accent .fill { border-radius: 0; background: #000080; }
+.switch { width: 16px; height: 16px; border-radius: 0; background: #fff; border: 1px solid #000; }
+.switch .knob { display: none; }
+.switch.on::after { content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; color: #000; font-size: 12px; }
+.btn.primary { background: #c0c0c0; color: #000; outline: 2px solid #000; outline-offset: -1px; font-weight: 700; }
+.btn.danger { color: #800000; }
+.sec { color: #000; text-transform: none; letter-spacing: 0; font-size: 13px; }
+.seg { background: transparent; padding: 0; }
+.seg-b { background: #c0c0c0; box-shadow: var(--raised); border: 1px solid #000; border-radius: 3px; color: #000; }
+.seg-b.on { background: #808080; color: #fff; }
+.need, .annex { border-radius: 0; border: 1px solid #000; background: #fff; }
+.avatar { border: 1px solid #000; }
+.dock-list .dock { background: #c0c0c0; padding: 6px; }
+.dock-btn .badge { border-radius: 0; background: #800000; }
+.minimap { background: #c0c0c0; padding: 18px; }
+.minimap > span { color: #000; }
+.mm-frame { border: 1px solid #000; border-radius: 0; }
+.buildbar { background: #c0c0c0; }
+.bb-item { background: #fff; border: 1px solid #000; }
+.bb-item.on { outline: 0; background: #000080; color: #fff; }
+.bb-item.on .bb-cost { color: #c0c0c0; }
+.toast { background: #fff; border: 2px solid #000; border-radius: 0; color: #000; }
+.toast.bad { border-left: 2px solid #000; }
+.question, .place-hint { border-radius: 0; }
+.modal { padding: 0 0 12px; }
+.modal h2 { background: #000080; color: #fff; font-size: 14px; padding: 4px; margin: 0 0 8px; }
+.modal .menu-item { margin: 0 14px; }
+.modal.dialog p, .dlg-btns { padding: 0 14px; }
+.tb-item { border-radius: 0; }
+.ring::before { background: #fff; }
+.cam-view { border-radius: 0; border: 1px solid #000; }
+.win-tab { border-radius: 0; background: #c0c0c0; color: #000; border: 1px solid #000; }
+.win-tab.on { background: #fff; color: #000; }

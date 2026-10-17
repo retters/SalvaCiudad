@@ -9,10 +9,16 @@
       "bold": "ui/AlegreyaSans-Bold.ttf"
     },
     {
-      "id": "cinzel",
-      "name": "Cinzel",
+      "id": "eb-garamond",
+      "name": "EB Garamond Medium",
       "role": "logo",
-      "regular": "logo/Cinzel.ttf"
+      "regular": "logo/EBGaramond-Medium.ttf"
+    },
+    {
+      "id": "barlow-semi-condensed",
+      "name": "Barlow Semi Condensed Light",
+      "role": "logoSmall",
+      "regular": "logo/BarlowSemiCondensed-Light.ttf"
     }
   ]
 }

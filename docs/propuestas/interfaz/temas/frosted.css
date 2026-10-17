@@ -1,0 +1,36 @@
+/* Frosted: light frosted glass with grain, bright white edges, floating resource pills. */
+.stage {
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --font: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 16px; --fs-small: 14px; --fs-title: 18px; --title-weight: 650;
+  --text: #1b1f24; --dim: #4b5563; --accent: #5b5bd6; --accent-text: #fff;
+  --ok: #18794e; --warn: #ad5700; --bad: #cd2b31; --info: #0d74ce;
+  --panel: var(--noise), linear-gradient(160deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, .38)); --panel-solid: #eef0f4;
+  --panel-blur: blur(18px) saturate(160%);
+  --panel-border: 1px solid rgba(255, 255, 255, .7); --panel-radius: 16px;
+  --panel-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 10px 32px rgba(20, 30, 70, .2);
+  --bar: var(--noise), rgba(255, 255, 255, .5); --bar-border: 1px solid rgba(255, 255, 255, .7);
+  --title-text: #1b1f24; --title-border: 1px solid rgba(255, 255, 255, .55);
+  --btn: rgba(255, 255, 255, .5); --btn-hover: rgba(255, 255, 255, .75); --btn-on: #5b5bd6; --btn-on-text: #fff;
+  --btn-border: 1px solid rgba(255, 255, 255, .7); --btn-radius: 10px; --btn-h: 32px; --btn-shadow: 0 1px 2px rgba(20, 30, 70, .08);
+  --chip: rgba(255, 255, 255, .55); --row: rgba(255, 255, 255, .35); --row-hover: rgba(255, 255, 255, .6); --sep: rgba(20, 30, 70, .1);
+  --meter: rgba(20, 30, 70, .1); --meter-h: 6px;
+  --avatar-bg: linear-gradient(160deg, #e0e4f0, #b8bfd4); --thumb-bg: radial-gradient(circle at 50% 75%, rgba(255, 255, 255, .7), transparent 65%);
+  --tip: rgba(28, 32, 40, .82); --tip-text: #fff; --tip-border: 1px solid rgba(255, 255, 255, .15); --tip-radius: 10px;
+  --icon-stroke: 1.8; --icon-tone: .14;
+}
+.row, .link, .log-row, .tile, .kpi, .score-row, .bb-item, .tr-pick { border-radius: 12px; border: 1px solid rgba(255, 255, 255, .5); }
+.hero { border-radius: 12px; }
+.tb-item.gold b { color: #9a6700; }
+.tb-item.alert { color: #ad5700; }
+.dock-icons .dock-btn { border-radius: 14px; }
+.dock-btn.on { background: #5b5bd6; color: #fff; }
+.bb-cat.on { background: #5b5bd6; color: #fff; }
+.bb-item.on { outline-color: #5b5bd6; background: rgba(91, 91, 214, .12); }
+.sec { color: #5b5bd6; }
+.mm-n { color: #cd2b31 !important; }
+.minimap > span { color: #1b1f24; }
+.radio.on { background: #5b5bd6; color: #fff; }
+.seg { background: rgba(20, 30, 70, .06); }
+.seg-b.on { background: #fff; color: #1b1f24; box-shadow: 0 1px 3px rgba(20, 30, 70, .15); }
+.live { background: rgba(0, 0, 0, .45); }

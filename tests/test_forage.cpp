@@ -554,11 +554,11 @@ TEST_SUITE("forage") {
     // Not a test: a saved game in autumn, the day after rain, with a forager
     // and a tree with a hive, nests, stumps and rings of mushrooms around it,
     // and honey, eggs and mushrooms in the town's stores. Run it by name:
-    //   salvaciudad_tests -ts=forage -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_forage.scsave: copy it to the saves folder and load it.
+    //   salvasprosperia_tests -ts=forage -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_forage.scsave: copy it to the saves folder and load it.
     TEST_CASE("manual: a saved game with hives, nests, stumps and mushrooms" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         const std::filesystem::path file = folder / "manual_forage.scsave";
         GameSetup rules = setup(kAutumn, 200);

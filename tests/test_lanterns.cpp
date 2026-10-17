@@ -587,11 +587,11 @@ TEST_SUITE("lanterns") {
 
     // Not a test: a saved game in the night, with the three lanterns along a
     // road and the beacon, to look at them lit. Run it by name:
-    //   salvaciudad_tests -ts=lanterns -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_lanterns.scsave: copy it to the saves folder and load it.
+    //   salvasprosperia_tests -ts=lanterns -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_lanterns.scsave: copy it to the saves folder and load it.
     TEST_CASE("manual: a saved game in the night with lanterns and the beacon" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         const std::filesystem::path file = folder / "manual_lanterns.scsave";
         GameSetup rules = setup(kLongNight, Threat::None);

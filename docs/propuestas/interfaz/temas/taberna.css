@@ -1,0 +1,34 @@
+/* Taberna: the game's warm palette grown up. Wood panels, brass edges, parchment text, EB Garamond titles. All solid. */
+.stage {
+  --font: 'Alegreya Sans', sans-serif; --font-title: 'EB Garamond', serif;
+  --fs: 18px; --fs-small: 15px; --fs-title: 25px; --title-weight: 500;
+  --text: #f4e6cc; --dim: #c4ad88; --accent: #eab450; --accent-text: #2a1c0c;
+  --ok: #8fcf6a; --warn: #f0b84a; --bad: #e8664a; --info: #8ab8e0;
+  --panel: linear-gradient(180deg, rgba(62, 47, 32, .98), rgba(42, 31, 21, .98));
+  --panel-solid: #35281b;
+  --panel-border: 1px solid #a07a46; --panel-radius: 9px;
+  --panel-shadow: 0 0 0 1px #1e150c, inset 0 1px 0 rgba(255, 220, 160, .14), 0 14px 30px rgba(0, 0, 0, .45);
+  --bar: linear-gradient(180deg, #4a3624, #33251a); --bar-border: 1px solid #a07a46;
+  --title-bg: linear-gradient(180deg, rgba(255, 220, 160, .08), transparent); --title-text: #f3c870; --title-border: 1px solid rgba(160, 122, 70, .5);
+  --btn: linear-gradient(180deg, #5e4732, #4a3725); --btn-hover: linear-gradient(180deg, #70563c, #58422c);
+  --btn-on: linear-gradient(180deg, #2c2016, #3a2b1c); --btn-on-text: #f3c870;
+  --btn-border: 1px solid #7a5a36; --btn-radius: 6px; --btn-shadow: inset 0 1px 0 rgba(255, 220, 160, .12);
+  --chip: rgba(255, 220, 160, .09); --row: rgba(255, 220, 160, .05); --row-hover: rgba(255, 220, 160, .11); --sep: rgba(160, 122, 70, .35);
+  --meter: rgba(0, 0, 0, .35); --meter-h: 8px;
+  --avatar-bg: radial-gradient(circle at 50% 30%, #7a6248, #3a2b1c); --thumb-bg: radial-gradient(circle at 50% 75%, rgba(255, 210, 140, .2), transparent 65%);
+  --tip: linear-gradient(180deg, #f1e2c2, #e2cc9e); --tip-text: #3a2814; --tip-border: 1px solid #8a6a3a; --tip-radius: 4px;
+  --icon-stroke: 1.7; --icon-tone: .18;
+}
+.win-title { text-shadow: 0 1px 0 #000; }
+.avatar { box-shadow: 0 0 0 2px #a07a46; }
+.avatars .avatar { box-shadow: 0 0 0 2px #35281b, 0 0 0 3px #a07a46; }
+.bb-item { background: rgba(0, 0, 0, .18); border: 1px solid rgba(160, 122, 70, .35); }
+.bb-item.on { background: rgba(234, 180, 80, .14); outline-color: #eab450; }
+.bb-cat.on { box-shadow: inset 0 -3px 0 #eab450; }
+.minimap { padding: 16px; }
+.mm-frame { box-shadow: 0 0 0 2px #1e150c, 0 0 0 3px #a07a46; }
+.toast { border-left: 3px solid #a07a46; }
+.win-foot { border-top-color: rgba(160, 122, 70, .35); }
+.sec { color: #c9a46a; font-family: var(--font-title); letter-spacing: .1em; font-size: 14px; }
+.tb-item.gold b { color: #f3c870; }
+.question .q-ic { background: rgba(234, 180, 80, .2); color: #f3c870; }

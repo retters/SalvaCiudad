@@ -1,0 +1,24 @@
+/* Crema: the light variant of the reference image (top right). Cream panels, dark text, amber accent. */
+.stage {
+  --font: 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+  --fs: 16px; --fs-small: 14px; --fs-title: 18px; --title-weight: 600;
+  --text: #2d2a24; --dim: #7a7062; --accent: #b3742a; --accent-text: #fff;
+  --ok: #3f9a4a; --warn: #c08a1a; --bad: #c4462e; --info: #3a7ac0;
+  --panel: rgba(247, 242, 230, .97); --panel-solid: #f7f2e6;
+  --panel-border: 1px solid rgba(120, 100, 70, .22); --panel-radius: 6px; --panel-shadow: 0 8px 22px rgba(40, 30, 10, .28);
+  --bar: rgba(247, 242, 230, .95); --bar-border: 1px solid rgba(120, 100, 70, .2); --bar-h: 46px;
+  --title-text: #2d2a24; --title-border: 1px solid rgba(120, 100, 70, .14); --title-h: 42px;
+  --btn: rgba(80, 60, 30, .07); --btn-hover: rgba(80, 60, 30, .13); --btn-on: rgba(179, 116, 42, .16); --btn-on-text: #8a5414;
+  --btn-radius: 5px; --btn-h: 32px;
+  --chip: rgba(80, 60, 30, .07); --row: rgba(80, 60, 30, .045); --row-hover: rgba(80, 60, 30, .1); --sep: rgba(80, 60, 30, .12);
+  --meter: rgba(80, 60, 30, .12); --meter-h: 5px;
+  --avatar-bg: linear-gradient(160deg, #d9cdb5, #b8a888); --thumb-bg: radial-gradient(circle at 50% 75%, rgba(120, 100, 60, .14), transparent 65%);
+  --tip: #2d2a24; --tip-text: #f7f2e6; --tip-border: 0;
+  --icon-stroke: 1.7;
+}
+.tb-item.gold b { color: #a77812; }
+.tb-item.alert { color: #b06a10; }
+.ctl-close:hover { color: #fff; }
+.mm-n { color: #c4462e !important; }
+.bb-item.on { outline-color: #b3742a; }
+.live { background: rgba(0, 0, 0, .55); }

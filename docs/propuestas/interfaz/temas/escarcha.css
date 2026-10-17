@@ -1,0 +1,36 @@
+/* Escarcha: frosted blue-white ice glass with crystals in the corners. A possible winter look if the HUD follows the season. */
+.stage {
+  --font: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 18px; --title-weight: 650;
+  --text: #0e2a40; --dim: #4a6a84; --accent: #2a8ad0; --accent-text: #fff;
+  --ok: #1a8a6a; --warn: #b07a10; --bad: #c03a4a; --info: #2a8ad0;
+  --panel: radial-gradient(circle at 0 0, rgba(255, 255, 255, .9), transparent 22%), radial-gradient(circle at 100% 100%, rgba(255, 255, 255, .7), transparent 20%), linear-gradient(160deg, rgba(230, 244, 255, .72), rgba(200, 228, 250, .55)); --panel-solid: #dceefa;
+  --panel-blur: blur(14px) saturate(130%) brightness(1.08);
+  --panel-border: 1px solid rgba(255, 255, 255, .85); --panel-radius: 16px;
+  --panel-shadow: inset 0 0 18px rgba(255, 255, 255, .7), 0 0 22px rgba(160, 210, 255, .45), 0 12px 28px rgba(10, 40, 70, .25);
+  --bar: linear-gradient(180deg, rgba(235, 247, 255, .8), rgba(205, 230, 250, .65)); --bar-border: 1px solid rgba(255, 255, 255, .85);
+  --title-text: #0e2a40; --title-border: 1px solid rgba(255, 255, 255, .7);
+  --btn: rgba(255, 255, 255, .55); --btn-hover: rgba(255, 255, 255, .8); --btn-on: #2a8ad0; --btn-on-text: #fff;
+  --btn-border: 1px solid rgba(255, 255, 255, .9); --btn-radius: 10px; --btn-h: 32px;
+  --chip: rgba(255, 255, 255, .6); --row: rgba(255, 255, 255, .45); --row-hover: rgba(255, 255, 255, .75); --sep: rgba(42, 138, 208, .2);
+  --meter: rgba(14, 42, 64, .1); --meter-h: 6px;
+  --avatar-bg: linear-gradient(160deg, #e6f4ff, #a8d4f4); --thumb-bg: radial-gradient(circle at 50% 70%, rgba(255, 255, 255, .8), transparent 65%);
+  --tip: rgba(14, 42, 64, .9); --tip-text: #e6f4ff; --tip-border: 0; --tip-radius: 10px;
+  --icon-stroke: 1.8;
+}
+.win::before { content: '❄'; position: absolute; right: 10px; bottom: 6px; font-size: 40px; color: rgba(255, 255, 255, .7); pointer-events: none; text-shadow: 0 0 10px rgba(160, 210, 255, .9); }
+.win-act { border-color: rgba(42, 138, 208, .25); }
+.wbtn { color: #4a6a84; }
+.wbtn.on { color: #2a8ad0; }
+.sec { color: #2a8ad0; }
+.meter .fill, .meter.ok .fill { background: linear-gradient(90deg, #7ac8ff, #2a8ad0); box-shadow: 0 0 8px rgba(122, 200, 255, .8); }
+.switch.on { background: #2a8ad0; }
+.btn.primary { box-shadow: 0 0 14px rgba(42, 138, 208, .5); }
+.dock-icons .dock-btn { border-radius: 14px; }
+.minimap > span { color: #0e2a40; }
+.build-dock .bb-cat { background: rgba(255, 255, 255, .5); border-radius: 14px; }
+.build-dock .bb-cat.on { background: #2a8ad0; color: #fff; }
+.bb-item.on { outline: 0; background: rgba(42, 138, 208, .2); }
+.tb-item.gold b { color: #a87a10; }
+.live { background: rgba(0, 0, 0, .45); color: #fff; }
+.ring::before { background: #dceefa; }

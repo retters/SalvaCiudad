@@ -1,0 +1,68 @@
+/* Material 3 (Android / Material You): tonal surfaces from a green seed, navigation rail, chips, snackbars. */
+.stage {
+  --font: Roboto, 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: var(--font);
+  --fs: 16px; --fs-small: 14px; --fs-title: 22px; --title-weight: 400;
+  --text: #e1e4da; --dim: #c2c8bb; --accent: #a3d494; --accent-text: #0d3906;
+  --ok: #a3d494; --warn: #e6c56c; --bad: #ffb4ab; --info: #a0cfe0;
+  --panel: #1d211b; --panel-solid: #1d211b; --panel-border: 0; --panel-radius: 28px; --panel-shadow: 0 2px 6px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  --panel-pad: 20px;
+  --bar: #191d17; --bar-border: 0; --bar-h: 56px;
+  --title-text: #e1e4da; --title-border: 0; --title-h: 56px;
+  --btn: #32362f; --btn-hover: #3c4139; --btn-on: #3b4b36; --btn-on-text: #d6e8cd;
+  --btn-border: 0; --btn-radius: 20px; --btn-h: 40px;
+  --chip: #32362f; --row: #272b25; --row-hover: #32362f; --sep: #42483f;
+  --meter: #3c4139; --meter-h: 4px; --meter-radius: 2px;
+  --avatar-bg: #3b4b36; --thumb-bg: #272b25;
+  --tip: #e1e4da; --tip-text: #2e312b; --tip-border: 0; --tip-radius: 4px;
+  --icon-stroke: 2; --icon-size: 22px;
+}
+.btn.primary { background: #a3d494; color: #0d3906; }
+.btn.danger { background: transparent; color: #ffb4ab; outline: 1px solid #8c9387; outline-offset: -1px; }
+.chip { border-radius: 8px; background: transparent; outline: 1px solid #8c9387; outline-offset: -1px; padding: 3px 10px; }
+.chip.ok, .chip.bad, .chip.warn, .chip.accent { outline: 0; }
+.chip.ok { background: #3b4b36; color: #d6e8cd; }
+.win-bar { padding-left: 20px; }
+.win-icon { border-radius: 12px; background: #3b4b36; }
+.win-act { border: 0; }
+.wbtn { width: 40px; --btn-h: 40px; border-radius: 20px; color: #c2c8bb; }
+.wbtn.on { background: #3b4b36; color: #d6e8cd; }
+.ctl-close:hover { background: #93000a; color: #ffdad6; }
+.hero { border-radius: 20px; }
+.row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick { border-radius: 16px; }
+.radio { border-radius: 28px; padding: 8px 12px; }
+.radio.on { background: #3b4b36; color: #d6e8cd; }
+.sec { text-transform: none; letter-spacing: .01em; font-size: 14px; font-weight: 500; color: #a3d494; }
+.seg { background: transparent; outline: 1px solid #8c9387; outline-offset: -1px; border-radius: 20px; padding: 0; gap: 0; overflow: hidden; }
+.seg-b { border-radius: 0; min-height: 40px; border-right: 1px solid #8c9387; }
+.seg-b:last-child { border-right: 0; }
+.seg-b.on { background: #3b4b36; color: #d6e8cd; }
+.switch { width: 52px; height: 32px; background: #32362f; outline: 2px solid #8c9387; outline-offset: -2px; }
+.switch .knob { width: 16px; height: 16px; left: 8px; top: 8px; background: #8c9387; box-shadow: none; }
+.switch.on { background: #a3d494; outline: 0; }
+.switch.on .knob { width: 24px; height: 24px; left: 24px; top: 4px; background: #0d3906; }
+.meter .fill, .meter.ok .fill { background: #a3d494; }
+.need, .annex { border-radius: 14px; }
+.topbar { padding: 0 20px; }
+.tb-item { border-radius: 20px; }
+.tb-speed .btn { --btn-h: 40px; border-radius: 20px; }
+.dock-rail .dock { background: #191d17; border: 0; }
+.dock-rail .dock-btn .ic { color: #c2c8bb; }
+.dock-rail .dock-btn.on .ic { background: #3b4b36; color: #d6e8cd; width: 56px; height: 32px; padding: 4px 16px; border-radius: 16px; }
+.dock-rail ~ * {}
+.dock-rail .minimap { right: 18px; }
+.buildbar { border-radius: 28px; padding: 14px; }
+.build-rail .bb-cat { border-radius: 16px; background: transparent; }
+.build-rail .bb-cat.on { background: #3b4b36; color: #d6e8cd; }
+.bb-item { border-radius: 16px; background: #272b25; }
+.bb-item.on { background: #3b4b36; outline: 0; }
+.bb-arrow { border-radius: 20px; }
+.minimap { padding: 14px; }
+.toasts-snack .toast { background: #e1e4da; color: #2e312b; border: 0; box-shadow: 0 3px 10px rgba(0, 0, 0, .35); }
+.toasts-snack .toast-ic { background: transparent; color: #2e312b !important; }
+.toasts-snack .toast.bad { border-left: 0; }
+.question { border-radius: 28px; padding: 20px; }
+.modal { border-radius: 28px; padding: 24px; }
+.menu-item { border-radius: 20px; }
+.tooltip { box-shadow: 0 2px 6px rgba(0, 0, 0, .3); }
+.dock-rail .win { }
+.stage.dock-rail .buildbar { left: calc(50% + 42px); }

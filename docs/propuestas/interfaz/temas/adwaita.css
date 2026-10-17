@@ -1,0 +1,57 @@
+/* GNOME / libadwaita (dark): grey rounded cards, header bars with round buttons, blue accent, calm. */
+.stage {
+  --font: Cantarell, 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: Cantarell, 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 15px; --title-weight: 700;
+  --text: #ffffff; --dim: rgba(255, 255, 255, .55); --accent: #78aeed; --accent-text: #fff;
+  --ok: #8ff0a4; --warn: #f8e45c; --bad: #ff7b63; --info: #78aeed;
+  --panel: #242424; --panel-solid: #242424; --panel-border: 1px solid rgba(0, 0, 0, .5); --panel-radius: 12px;
+  --panel-shadow: 0 1px 3px 1px rgba(0, 0, 0, .35), 0 2px 14px 5px rgba(0, 0, 0, .25), inset 0 0 0 1px rgba(255, 255, 255, .06);
+  --bar: #1e1e1e; --bar-border: 1px solid #000; --bar-h: 40px;
+  --title-bg: #303030; --title-text: #fff; --title-border: 1px solid rgba(0, 0, 0, .4); --title-h: 46px;
+  --btn: rgba(255, 255, 255, .1); --btn-hover: rgba(255, 255, 255, .15); --btn-on: rgba(255, 255, 255, .2); --btn-on-text: #fff;
+  --btn-border: 0; --btn-radius: 6px; --btn-h: 34px;
+  --chip: rgba(255, 255, 255, .08); --row: #383838; --row-hover: #424242; --sep: rgba(255, 255, 255, .08);
+  --meter: rgba(255, 255, 255, .15); --meter-h: 6px;
+  --avatar-bg: #3584e4; --thumb-bg: #383838;
+  --tip: rgba(0, 0, 0, .85); --tip-border: 0; --tip-radius: 8px;
+  --icon-stroke: 1.7; --icon-size: 18px;
+}
+.btn.primary { background: #3584e4; color: #fff; }
+.btn.danger { background: #c01c28; color: #fff; }
+.win-titles { align-items: center; }
+.win-icon { display: none; }
+.win-act { border: 0; }
+.win-ctl .wbtn { width: 24px; --btn-h: 24px; border-radius: 50%; background: rgba(255, 255, 255, .1); color: #fff; }
+.win-ctl .wbtn .ic { width: 14px; height: 14px; }
+.win-ctl .ctl-close:hover { background: rgba(255, 255, 255, .2); }
+.wbtn.on { background: #3584e4 !important; color: #fff; }
+.win-act .wbtn { color: #fff; border-radius: 6px; }
+.win-body { padding: 12px; }
+.hero, .row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick { border-radius: 12px; }
+.kv { padding: 6px 12px; background: #383838; margin-bottom: -8px; }
+.kv + .kv { border-top: 1px solid rgba(0, 0, 0, .3); }
+.kv:has(+ .kv) { border-radius: 0; }
+.sec + .kv, .hero + .kv, .person-head + .kv, .links + .kv, .meters + .kv, .p + .kv { border-radius: 12px 12px 0 0; }
+.kv:not(:has(+ .kv)) { border-radius: 0 0 12px 12px; margin-bottom: 0; }
+.sec { color: #fff; text-transform: none; letter-spacing: 0; font-size: 14px; margin-top: 10px; }
+.seg { background: rgba(255, 255, 255, .06); border-radius: 9px; }
+.seg-b.on { background: rgba(255, 255, 255, .16); color: #fff; }
+.radio.on { background: rgba(53, 132, 228, .35); color: #fff; }
+.switch.on { background: #3584e4; }
+.meter .fill, .meter.ok .fill { background: #3584e4; }
+.meter.warn .fill { background: #f6d32d; }
+.meter.bad .fill { background: #e01b24; }
+.dock-icons .dock-btn { border-radius: 12px; background: #303030; border: 1px solid rgba(0, 0, 0, .5); }
+.dock-btn.on { background: #3584e4; color: #fff; }
+.minimap { background: #303030; }
+.buildbar { background: #303030; }
+.bb-cat.on { background: #3584e4; color: #fff; }
+.bb-item { background: #383838; border-radius: 12px; }
+.bb-item.on { outline: 2px solid #78aeed; background: #424242; }
+.toasts-top .toast { background: #383838; border: 0; border-radius: 12px; box-shadow: 0 2px 12px rgba(0, 0, 0, .5); }
+.question, .modal { border-radius: 12px; }
+.modal .menu-item { background: #383838; justify-content: flex-start; }
+.modal .menu-item.primary { background: #3584e4; }
+.modal .menu-item.danger { background: #c01c28; color: #fff; }
+.place-hint { background: rgba(0, 0, 0, .8); border: 0; }
+.ring::before { background: #383838; }

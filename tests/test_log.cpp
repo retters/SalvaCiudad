@@ -18,7 +18,7 @@ TEST_SUITE("log") {
         log::warn("multi\nline");
         log::close();
 
-        const std::string text = test::read_text(dir / "salvaciudad.log");
+        const std::string text = test::read_text(dir / "salvasprosperia.log");
         CHECK(text.find("hidden") == std::string::npos);
         CHECK(text.find("INFO  visible 2") != std::string::npos);
         CHECK(text.find("WARN  multi line") != std::string::npos);
@@ -34,10 +34,10 @@ TEST_SUITE("log") {
             log::info("run {}", run);
             log::close();
         }
-        CHECK(test::read_text(dir / "salvaciudad.log").find("run 4") != std::string::npos);
-        CHECK(test::read_text(dir / "salvaciudad.1.log").find("run 3") != std::string::npos);
-        CHECK(test::read_text(dir / "salvaciudad.2.log").find("run 2") != std::string::npos);
-        CHECK_FALSE(std::filesystem::exists(dir / "salvaciudad.3.log"));
+        CHECK(test::read_text(dir / "salvasprosperia.log").find("run 4") != std::string::npos);
+        CHECK(test::read_text(dir / "salvasprosperia.1.log").find("run 3") != std::string::npos);
+        CHECK(test::read_text(dir / "salvasprosperia.2.log").find("run 2") != std::string::npos);
+        CHECK_FALSE(std::filesystem::exists(dir / "salvasprosperia.3.log"));
     }
 
     TEST_CASE("the log rotates when it reaches its size limit") {
@@ -50,9 +50,9 @@ TEST_SUITE("log") {
             log::info("entry number {}", i);
         }
         log::close();
-        const auto size = std::filesystem::file_size(dir / "salvaciudad.log");
+        const auto size = std::filesystem::file_size(dir / "salvasprosperia.log");
         CHECK(size <= 200);
-        CHECK(std::filesystem::exists(dir / "salvaciudad.1.log"));
-        CHECK(test::read_text(dir / "salvaciudad.log").find("entry number 19") != std::string::npos);
+        CHECK(std::filesystem::exists(dir / "salvasprosperia.1.log"));
+        CHECK(test::read_text(dir / "salvasprosperia.log").find("entry number 19") != std::string::npos);
     }
 }

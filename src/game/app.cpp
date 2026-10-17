@@ -148,7 +148,7 @@ void App::fatal_error(const char* text_key) {
 }
 
 bool App::init() {
-    (void)SDL_SetAppMetadata("SalvaCiudad", SC_VERSION_STRING, "io.github.salva.salvaciudad");
+    (void)SDL_SetAppMetadata("SALVA'S PROSPERIA", SC_VERSION_STRING, "io.github.salva.salvasprosperia");
     // Texts first, so even early errors can be shown in the player's language.
     load_languages();
     (void)i18n::translator().set_language(i18n::translator().resolve("auto", preferred_languages()));
@@ -184,7 +184,7 @@ bool App::init() {
     if (!log::open(paths_->logs_dir(), log_options)) {
         std::fprintf(stderr, "Cannot open the log file; continuing without it\n");
     }
-    log::info("SalvaCiudad {} starting on {}", full_version(), SDL_GetPlatform());
+    log::info("SALVA'S PROSPERIA {} starting on {}", full_version(), SDL_GetPlatform());
     log::info("data: {} mode", paths_->portable ? "portable" : "per-user");
     // Log the language files now that the log is open.
     load_languages();
@@ -308,7 +308,7 @@ void App::shutdown() {
         SDL_Quit();
         sdl_ready_ = false;
     }
-    log::info("SalvaCiudad stopped");
+    log::info("SALVA'S PROSPERIA stopped");
     log::close();
 }
 
@@ -372,6 +372,7 @@ void App::apply_font() {
     text_.set_font(ui::FontRole::Regular, regular);
     text_.set_font(ui::FontRole::Bold, bold);
     text_.set_font(ui::FontRole::Logo, fonts_.logo());
+    text_.set_font(ui::FontRole::LogoSmall, fonts_.logo_small());
 }
 
 std::vector<std::string> App::monitor_names() {
@@ -570,6 +571,9 @@ void App::handle_event(const SDL_Event& event) {
             } else if (event.key.scancode == SDL_SCANCODE_F3 && (event.key.mod & SDL_KMOD_CTRL) != 0) {
                 // Developer tools: a fixed shortcut, like Alt+Enter.
                 dev_tools_.toggle();
+            } else if (dev_tools_.visible() && !map_ && host_ && event.key.scancode == SDL_SCANCODE_F7) {
+                // Developer tools, in the menus: F7 shows the next look of the logo (D-RENAME-04).
+                host_->cycle_logo_style();
             } else if (dev_tools_.visible() && !map_ && replay_dir_.empty() &&
                        (event.key.scancode == SDL_SCANCODE_F5 || event.key.scancode == SDL_SCANCODE_F6)) {
                 // Developer tools, in the menus: F5 another map behind them,
@@ -2853,7 +2857,7 @@ void App::handle_net_event(const net::NetEvent& e) {
             host_->toast(tr("net.desync", seat_name(e.slot)));
             if (net_->role() == net::NetSession::Role::Host && paths_) {
                 // A report for whoever looks into it.
-                const std::string text = "SalvaCiudad " + std::string(full_version()) + "\ndesync with seat " +
+                const std::string text = "SALVA'S PROSPERIA " + std::string(full_version()) + "\ndesync with seat " +
                                          std::to_string(e.slot) + " at tick " + std::to_string(e.value) +
                                          "\ndifferent parts: " + e.detail + "\n";
                 const std::filesystem::path file =

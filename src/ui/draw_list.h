@@ -62,6 +62,8 @@ public:
     void triangle(float x0, float y0, float x1, float y1, float x2, float y2, Color c);
     // A textured quad; uv are atlas coordinates in [0, 1].
     void image(const Rect& r, float u0, float v0, float u1, float v1, Color c);
+    // The same quad with `top` on its upper edge and `bottom` on its lower one.
+    void image_vgradient(const Rect& r, float u0, float v0, float u1, float v1, Color top, Color bottom);
     // A quad of an RGBA image (by id, not 0) tinted by `c`; uv in [0, 1].
     void picture(const Rect& r, std::uint32_t image, float u0, float v0, float u1, float v1, Color c);
     // A straight line `thickness` wide.

@@ -143,7 +143,7 @@ def write_glb(path, parts, texture_png=None):
         primitives.append({"attributes": attributes, "indices": index_accessor, "material": len(materials) - 1})
 
     doc = {
-        "asset": {"version": "2.0", "generator": "SalvaCiudad make_test_models.py"},
+        "asset": {"version": "2.0", "generator": "SalvasProsperia make_test_models.py"},
         "scene": 0,
         "scenes": [{"nodes": [0]}],
         "nodes": [{"mesh": 0, "name": os.path.splitext(os.path.basename(path))[0]}],

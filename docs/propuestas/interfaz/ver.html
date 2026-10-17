@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interfaz · visor</title>
+<link rel="stylesheet" href="kit/kit.css">
+<link rel="stylesheet" id="theme-css" href="">
+<style>
+  :root { color-scheme: dark; --side: 340px; --tool: 52px; }
+  html, body { margin: 0; height: 100%; background: #111316; color: #e8e6e1; font: 14px/1.4 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+  .tool { position: fixed; left: 0; right: var(--side); top: 0; height: var(--tool); display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #1a1d21; border-bottom: 1px solid #2a2e33; z-index: 10; }
+  .tool select, .tool button, .side button, .side textarea { font: inherit; color: inherit; background: #262a30; border: 1px solid #353a41; border-radius: 6px; padding: 5px 10px; }
+  .tool button:hover, .side button:hover { background: #30353c; }
+  .tool .sp { flex: 1; }
+  .tool .scenes { display: flex; gap: 2px; background: #22262b; padding: 2px; border-radius: 8px; }
+  .tool .scenes button { border: 0; background: transparent; }
+  .tool .scenes button.on { background: #3a4048; }
+  .tool a { color: #9cc4ff; text-decoration: none; }
+  .theme-pick { display: flex; align-items: center; gap: 4px; }
+  .theme-pick select { min-width: 190px; font-weight: 600; }
+  .view { position: fixed; left: 0; top: var(--tool); right: var(--side); bottom: 0; display: grid; place-items: center; overflow: hidden; }
+  .frame { position: relative; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, .6); }
+  .frame .stage { transform-origin: 0 0; }
+  .side { position: fixed; right: 0; top: 0; bottom: 0; width: var(--side); background: #1a1d21; border-left: 1px solid #2a2e33; overflow-y: auto; padding: 16px; box-sizing: border-box; z-index: 10; }
+  .side h1 { margin: 0; font-size: 22px; }
+  .side .insp { color: #9aa3ad; margin: 2px 0 8px; }
+  .side h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #8a929b; margin: 18px 0 8px; }
+  .side p { margin: 0 0 8px; color: #c8ccd1; }
+  .fx { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid #262a2f; }
+  .fx b { font-weight: 600; }
+  .fx .lv { font-size: 12px; padding: 1px 8px; border-radius: 99px; align-self: start; }
+  .fx .ms { grid-column: 1 / 3; color: #8a929b; font-size: 12px; }
+  .fx details { grid-column: 1 / 3; color: #9aa3ad; font-size: 12px; }
+  .lv0 { background: #1f3a26; color: #8fe0a0; } .lv1 { background: #23392f; color: #a8e0b8; } .lv2 { background: #3a3a1f; color: #e0d88f; }
+  .lv3 { background: #44321c; color: #f0b870; } .lv4 { background: #4a2222; color: #f09090; }
+  .budget { margin-top: 10px; }
+  .budget .bar { height: 10px; border-radius: 6px; background: #262a30; overflow: hidden; margin: 4px 0 2px; }
+  .budget .bar i { display: block; height: 100%; background: linear-gradient(90deg, #5ab06a, #e0b040, #e0604a); }
+  .budget small { color: #8a929b; }
+  .votes { display: flex; gap: 6px; }
+  .votes button { flex: 1; }
+  .votes button.on { background: #3d5a8a; border-color: #5a80c0; }
+  .parts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .parts label { display: inline-flex; gap: 4px; align-items: center; padding: 3px 8px; border-radius: 99px; background: #262a30; cursor: pointer; font-size: 12px; }
+  .parts label:has(input:checked) { background: #2d4a3a; color: #a8e0b8; }
+  .parts input { display: none; }
+  .side textarea { width: 100%; min-height: 80px; box-sizing: border-box; margin-top: 8px; resize: vertical; }
+  #status { font-size: 12px; margin-top: 8px; color: #9aa3ad; }
+  #status.ok { color: #8fe0a0; } #status.warn { color: #f0c070; } #status.bad { color: #f09090; }
+  .keys { color: #7a828b; font-size: 12px; }
+  .keys kbd { background: #262a30; border: 1px solid #353a41; border-radius: 4px; padding: 0 5px; }
+  body.clean .tool, body.clean .side { display: none; }
+  body.clean .view { inset: 0; }
+  .comparing { position: fixed; left: 12px; bottom: 12px; z-index: 20; padding: 6px 12px; border-radius: 8px; background: #000c; color: #fff; display: none; }
+  body.compare .comparing { display: block; }
+</style>
+</head>
+<body>
+<div class="tool">
+  <a href="index.html" title="Volver a la galería">← Galería</a>
+  <span class="theme-pick"><button id="prev" title="Tema anterior (←)">‹</button><select id="theme"></select><button id="next" title="Tema siguiente (→)">›</button></span>
+  <span class="scenes" id="scenes"></span>
+  <span class="sp"></span>
+  <label>Ventanas <select id="win"><option value="">Del tema</option><option value="float">Flotantes</option><option value="side">Columna lateral</option></select></label>
+  <label>Fondo <select id="bg"></select></label>
+  <button id="lang" title="Cambiar idioma de los textos (L)">ES</button>
+  <button id="clean" title="Ocultar los controles (H)">Pantalla limpia</button>
+</div>
+<div class="view" id="view"><div class="frame" id="frame"><div class="stage" id="stage"></div></div></div>
+<aside class="side">
+  <h1 id="t-name"></h1>
+  <div class="insp" id="t-insp"></div>
+  <p id="t-desc"></p>
+  <h2>Rendimiento estimado</h2>
+  <div id="fx"></div>
+  <div class="budget" id="budget"></div>
+  <h2>¿Te gusta?</h2>
+  <div class="votes" id="votes"><button data-v="si">Sí</button><button data-v="talvez">Tal vez</button><button data-v="no">No</button></div>
+  <div class="parts" id="parts"></div>
+  <textarea id="note" placeholder="Qué te gusta, qué cambiarías, qué tomarías de este tema…"></textarea>
+  <div id="status"></div>
+  <div style="display:flex;gap:6px;margin-top:6px"><button id="connect">Abrir respuestas.json</button><button id="download">Descargar</button></div>
+  <h2>Atajos</h2>
+  <div class="keys"><kbd>←</kbd> <kbd>→</kbd> tema · <kbd>1</kbd>–<kbd>5</kbd> escena · <kbd>F</kbd> fondo · <kbd>L</kbd> idioma · <kbd>W</kbd> ventanas flotantes o en columna · <kbd>H</kbd> pantalla limpia · mantener <kbd>C</kbd> compara con el actual. Las ventanas se arrastran por el título y cambian de tamaño por la esquina. Pasa el ratón para ver los textos de ayuda.</div>
+</aside>
+<div class="comparing">Comparando con «Actual»</div>
+<script src="kit/datos.js"></script>
+<script src="kit/iconos.js"></script>
+<script src="temas/catalogo.js"></script>
+<script src="kit/kit.js"></script>
+<script src="kit/respuestas.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+if (params.get('clean')) document.body.classList.add('clean');
+const state = {
+  tema: TEMAS.some(t => t.id === params.get('t')) ? params.get('t') : TEMAS[0].id,
+  escena: Kit.ESCENAS[params.get('e')] ? params.get('e') : 'ventanas',
+  fondo: params.get('f') || '',
+  lang: params.get('l') === 'en' ? 'en' : 'es',
+  win: ['float', 'side'].includes(params.get('w')) ? params.get('w') : '',
+};
+let comparing = false;
+
+const theme = () => TEMAS.find(t => t.id === (comparing ? 'actual' : state.tema));
+
+function fit() {
+  const view = $('#view');
+  const k = Math.min(view.clientWidth / 1920, view.clientHeight / 1080);
+  const frame = $('#frame');
+  frame.style.width = Math.floor(1920 * k) + 'px';
+  frame.style.height = Math.floor(1080 * k) + 'px';
+  // Close-up for reviewing details: ?z=2&ox=200&oy=300 (design pixels).
+  const z = +params.get('z') || 1, ox = +params.get('ox') || 0, oy = +params.get('oy') || 0;
+  $('#stage').style.transform = `scale(${k * z}) translate(${-ox}px, ${-oy}px)`;
+  // One region only, filling the page: ?crop=x,y,w,h (used by comparar.html).
+  const crop = (params.get('crop') || '').split(',').map(Number);
+  if (crop.length === 4 && crop.every(n => n >= 0)) {
+    const [cx, cy, cw, ch] = crop;
+    const kc = Math.min(view.clientWidth / cw, view.clientHeight / ch);
+    frame.style.width = Math.floor(cw * kc) + 'px';
+    frame.style.height = Math.floor(ch * kc) + 'px';
+    frame.style.boxShadow = 'none';
+    $('#stage').style.transform = `scale(${kc}) translate(${-cx}px, ${-cy}px)`;
+  }
+}
+
+function apply() {
+  const th = theme();
+  $('#theme-css').href = 'temas/' + th.id + '.css';
+  const bgId = state.fondo || th.fondo;
+  const bg = DATOS.fondos.find(f => f.id === bgId) || DATOS.fondos[0];
+  const stage = $('#stage');
+  // Extra layout overrides from the address: ?o=windows:float,toasts:stack (used by comparar.html).
+  const extra = {};
+  for (const pair of (params.get('o') || '').split(',')) {
+    const [k, v] = pair.split(':');
+    if (/^[a-z]+$/.test(k || '') && /^[a-z0-9]+$/.test(v || '')) extra[k] = v;
+  }
+  Kit.mount(stage, {layout: th.layout, override: Object.assign(state.win ? {windows: state.win} : {}, extra), escena: state.escena, lang: state.lang});
+  $('#win').value = state.win;
+  stage.style.backgroundImage = `url(${bg.img})`;
+  stage.dataset.tema = th.id;
+  $('#bg').value = bg.id;
+  $('#theme').value = state.tema;
+  $('#lang').textContent = state.lang.toUpperCase();
+  document.querySelectorAll('#scenes button').forEach(b => b.classList.toggle('on', b.dataset.e === state.escena));
+  document.title = th.nombre + ' · Interfaz';
+  if (!comparing) side();
+  const q = new URLSearchParams({t: state.tema, e: state.escena});
+  if (state.fondo) q.set('f', state.fondo);
+  if (state.lang !== 'es') q.set('l', state.lang);
+  if (state.win) q.set('w', state.win);
+  for (const k of ['z', 'ox', 'oy', 'crop', 'clean', 'o']) if (params.get(k)) q.set(k, params.get(k));
+  history.replaceState(null, '', '?' + q);
+}
+
+function fmtMs(r) { return r[1] === 0 ? '0 ms' : (r[0] === r[1] ? r[0] : r[0] + '–' + r[1]) + ' ms'; }
+
+function side() {
+  const th = TEMAS.find(t => t.id === state.tema);
+  $('#t-name').textContent = th.nombre;
+  $('#t-insp').textContent = 'Inspiración: ' + th.inspiracion;
+  $('#t-desc').textContent = th.descripcion;
+  let lo = 0, hi = 0, loI = 0, hiI = 0, top = 0;
+  $('#fx').innerHTML = th.efectos.map(id => {
+    const fx = EFECTOS[id];
+    lo += fx.ms[0]; hi += fx.ms[1]; loI += fx.msInt[0]; hiI += fx.msInt[1]; top = Math.max(top, fx.nivel);
+    return `<div class="fx"><b>${fx.nombre}</b><span class="lv lv${fx.nivel}">${NIVELES[fx.nivel]}</span>`
+      + `<span class="ms">Tarjeta media ${fmtMs(fx.ms)} · integrada ${fmtMs(fx.msInt)} por cuadro</span><details><summary>Cómo se haría</summary>${fx.nota}</details></div>`;
+  }).join('');
+  const r = n => Math.round(n * 100) / 100;
+  $('#budget').innerHTML = `<b>Total: ${r(lo)}–${r(hi)} ms</b> con tarjeta media, ${r(loI)}–${r(hiI)} ms con integrada.`
+    + `<div class="bar"><i style="width:${Math.min(100, hiI / 10 * 100)}%"></i></div>`
+    + `<small>La barra es el peor caso (integrada) contra un cuadro de 10 ms (100 FPS). Sin contar la ventana de cámara en vivo, que ya existe y cuesta igual en todos los temas.</small>`;
+  const a = Respuestas.get('temas', th.id);
+  document.querySelectorAll('#votes button').forEach(b => b.classList.toggle('on', a.voto === b.dataset.v));
+  $('#parts').innerHTML = PARTES.map(p => `<label><input type="checkbox" value="${p}"${(a.partes || []).includes(p) ? ' checked' : ''}>${p}</label>`).join('');
+  if (document.activeElement !== $('#note')) $('#note').value = a.nota || '';
+  status();
+}
+
+function status() {
+  const [cls, text] = Respuestas.status();
+  $('#status').className = cls;
+  $('#status').textContent = text;
+  $('#connect').hidden = Respuestas.connected || !Respuestas.canConnect;
+}
+
+function step(d) {
+  const i = TEMAS.findIndex(t => t.id === state.tema);
+  state.tema = TEMAS[(i + d + TEMAS.length) % TEMAS.length].id;
+  apply();
+}
+
+$('#theme').innerHTML = TEMAS.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+$('#bg').innerHTML = DATOS.fondos.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('');
+$('#scenes').innerHTML = Object.entries(Kit.ESCENAS).map(([id, s], i) => `<button data-e="${id}" title="${i + 1}">${s.nombre}</button>`).join('');
+$('#theme').addEventListener('change', e => { state.tema = e.target.value; apply(); });
+$('#bg').addEventListener('change', e => { state.fondo = e.target.value; apply(); });
+$('#win').addEventListener('change', e => { state.win = e.target.value; apply(); });
+$('#prev').addEventListener('click', () => step(-1));
+$('#next').addEventListener('click', () => step(1));
+$('#lang').addEventListener('click', () => { state.lang = state.lang === 'es' ? 'en' : 'es'; apply(); });
+$('#clean').addEventListener('click', () => { document.body.classList.toggle('clean'); fit(); });
+$('#scenes').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { state.escena = b.dataset.e; apply(); } });
+$('#votes').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const cur = Respuestas.get('temas', state.tema).voto;
+  Respuestas.set('temas', state.tema, {voto: cur === b.dataset.v ? undefined : b.dataset.v});
+  side();
+});
+$('#parts').addEventListener('change', () => {
+  Respuestas.set('temas', state.tema, {partes: [...document.querySelectorAll('#parts input:checked')].map(i => i.value)});
+});
+$('#note').addEventListener('input', e => Respuestas.set('temas', state.tema, {nota: e.target.value}));
+$('#connect').addEventListener('click', () => Respuestas.connect());
+$('#download').addEventListener('click', () => Respuestas.download());
+Respuestas.onChange(status);
+
+document.addEventListener('keydown', e => {
+  if (e.target.matches('textarea, input, select')) return;
+  if (e.key === 'ArrowRight') step(1);
+  else if (e.key === 'ArrowLeft') step(-1);
+  else if (/^[1-9]$/.test(e.key)) { const ids = Object.keys(Kit.ESCENAS); if (ids[+e.key - 1]) { state.escena = ids[+e.key - 1]; apply(); } }
+  else if (e.key === 'h' || e.key === 'H') { document.body.classList.toggle('clean'); fit(); }
+  else if (e.key === 'w' || e.key === 'W') { state.win = state.win === 'side' ? 'float' : 'side'; apply(); }
+  else if (e.key === 'l' || e.key === 'L') { state.lang = state.lang === 'es' ? 'en' : 'es'; apply(); }
+  else if (e.key === 'f' || e.key === 'F') { const i = DATOS.fondos.findIndex(f => f.id === $('#bg').value); state.fondo = DATOS.fondos[(i + 1) % DATOS.fondos.length].id; apply(); }
+  else if ((e.key === 'c' || e.key === 'C') && !comparing && !e.repeat) { comparing = true; document.body.classList.add('compare'); apply(); }
+});
+document.addEventListener('keyup', e => {
+  if ((e.key === 'c' || e.key === 'C') && comparing) { comparing = false; document.body.classList.remove('compare'); apply(); }
+});
+window.addEventListener('resize', fit);
+apply();
+fit();
+</script>
+</body>
+</html>

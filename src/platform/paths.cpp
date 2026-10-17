@@ -12,9 +12,9 @@ namespace sc {
 namespace {
 
 // SDL recommends a non-empty organization; it becomes the parent folder,
-// for example %APPDATA%\Salva\SalvaCiudad on Windows (decision D-101).
+// for example %APPDATA%\Salva\SalvasProsperia on Windows (decision D-101).
 constexpr const char* kOrgName = "Salva";
-constexpr const char* kAppName = "SalvaCiudad";
+constexpr const char* kAppName = "SalvasProsperia";
 
 bool create_user_dirs(const DataPaths& p) {
     std::error_code ec;

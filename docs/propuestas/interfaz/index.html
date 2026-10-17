@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuestas de interfaz</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; background: #111316; color: #e8e6e1; font: 14px/1.45 'Segoe UI', system-ui, sans-serif; }
+  header { padding: 22px 28px 8px; max-width: 1600px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 26px; }
+  header p { color: #a7aeb6; max-width: 980px; margin: 8px 0; }
+  header a { color: #8fbaff; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 28px 16px; max-width: 1600px; margin: 0 auto; }
+  .bar button, .bar select, .bar a.btn { font: inherit; color: inherit; background: #23272c; border: 1px solid #353a41; border-radius: 6px; padding: 6px 12px; text-decoration: none; cursor: pointer; }
+  .bar .sp { flex: 1; }
+  #status { font-size: 12px; color: #9aa3ad; }
+  #status.ok { color: #8fe0a0; } #status.warn { color: #f0c070; } #status.bad { color: #f09090; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 18px; padding: 0 28px 28px; max-width: 1600px; margin: 0 auto; }
+  .card { background: #1a1d21; border: 1px solid #2a2e33; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .card.v-si { border-color: #4a8a5a; } .card.v-talvez { border-color: #8a7a3a; } .card.v-no { opacity: .55; }
+  .thumb { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #000; display: block; }
+  .thumb iframe { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .thumb::after { content: 'Abrir'; position: absolute; right: 10px; bottom: 10px; padding: 4px 10px; border-radius: 6px; background: #000a; color: #fff; opacity: 0; transition: opacity .15s; }
+  .thumb:hover::after { opacity: 1; }
+  .info { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .info h2 { margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .info .insp { color: #9aa3ad; font-size: 13px; }
+  .info p { margin: 0; color: #c8ccd1; font-size: 13px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: 12px; padding: 1px 8px; border-radius: 99px; background: #262a30; color: #b8c0c8; }
+  .lv { font-size: 12px; padding: 1px 8px; border-radius: 99px; }
+  .lv0 { background: #1f3a26; color: #8fe0a0; } .lv1 { background: #23392f; color: #a8e0b8; } .lv2 { background: #3a3a1f; color: #e0d88f; }
+  .lv3 { background: #44321c; color: #f0b870; } .lv4 { background: #4a2222; color: #f09090; }
+  .vote { margin-left: auto; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: #2d3a4d; }
+  .general { padding: 0 28px 40px; max-width: 1600px; margin: 0 auto; }
+  .general textarea { width: 100%; min-height: 90px; box-sizing: border-box; font: inherit; color: inherit; background: #1a1d21; border: 1px solid #2a2e33; border-radius: 8px; padding: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: #9aa3ad; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Propuestas de interfaz</h1>
+  <p>El HUD del juego rehecho en HTML con los textos, edificios, recursos y razas reales (es/en), en varios estilos. Todos los temas comparten la misma estructura: cambian la apariencia y algunas decisiones de acomodo. Abre uno para verlo a tamaño real, arrastrar ventanas, pasar el ratón por los textos de ayuda y votar. Cada tema lista sus efectos visuales con el costo estimado por cuadro en el juego.</p>
+  <p>También: <a href="comparar.html"><b>comparar un elemento</b></a> (la barra superior, una ventana, los botones, la barra de construcción… en todos los temas a la vez, con ♥ para marcar lo que te gusta de cada uno) y la <a href="iconos.html">comparación de íconos</a> (propios contra Lucide, Phosphor y Tabler). Guía en <code>LEEME.md</code>.</p>
+  <div class="legend">Costo en rendimiento: <span class="lv lv0">gratis</span><span class="lv lv1">muy bajo</span><span class="lv lv2">bajo</span><span class="lv lv3">medio</span><span class="lv lv4">alto</span> (el peor efecto del tema)</div>
+</header>
+<div class="bar">
+  <label>Escena de las miniaturas <select id="scene"></select></label>
+  <label>Ordenar <select id="sort"><option value="">Catálogo</option><option value="cost">Por costo</option><option value="vote">Por voto</option></select></label>
+  <span class="sp"></span>
+  <span id="status"></span>
+  <button id="connect">Abrir respuestas.json</button>
+  <button id="download">Descargar</button>
+</div>
+<div class="grid" id="grid"></div>
+<div class="general">
+  <h2>Comentarios generales</h2>
+  <textarea id="general" placeholder="Lo que quieras decir de la interfaz en general: qué combinar de varios temas, qué falta, qué sobra…"></textarea>
+</div>
+<script src="kit/datos.js"></script>
+<script src="temas/catalogo.js"></script>
+<script src="kit/respuestas.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const SCENES = {ventanas: 'Ventanas de selección', pueblo: 'Panel del pueblo', construir: 'Construir y avisos', defensa: 'Comercio y ejército', menu: 'Menú y diálogo'};
+$('#scene').innerHTML = Object.entries(SCENES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+const VOTE_NAME = {si: 'Sí', talvez: 'Tal vez', no: 'No'};
+const VOTE_ORDER = {si: 0, talvez: 1, undefined: 2, no: 3};
+
+function cost(th) {
+  let lo = 0, hi = 0, top = 0;
+  for (const id of th.efectos) { const fx = EFECTOS[id]; lo += fx.msInt[0]; hi += fx.msInt[1]; top = Math.max(top, fx.nivel); }
+  return {lo: Math.round(lo * 100) / 100, hi: Math.round(hi * 100) / 100, top};
+}
+
+function render() {
+  const scene = $('#scene').value;
+  let list = TEMAS.slice();
+  if ($('#sort').value === 'cost') list.sort((a, b) => cost(a).hi - cost(b).hi);
+  if ($('#sort').value === 'vote') list.sort((a, b) => VOTE_ORDER[Respuestas.get('temas', a.id).voto] - VOTE_ORDER[Respuestas.get('temas', b.id).voto]);
+  $('#grid').innerHTML = list.map(th => {
+    const c = cost(th);
+    const v = Respuestas.get('temas', th.id).voto;
+    return `<div class="card${v ? ' v-' + v : ''}"><a class="thumb" href="ver.html?t=${th.id}&e=${scene}"><iframe loading="lazy" tabindex="-1" src="ver.html?t=${th.id}&e=${scene}&clean=1"></iframe></a>`
+      + `<div class="info"><h2>${th.nombre}<span class="lv lv${c.top}">${NIVELES[c.top]}</span>${v ? `<span class="vote">${VOTE_NAME[v]}</span>` : ''}</h2>`
+      + `<span class="insp">${th.inspiracion} · hasta ${c.hi} ms por cuadro con gráficos integrados</span><p>${th.descripcion}</p>`
+      + `<div class="tags">${th.efectos.map(id => `<span class="tag">${EFECTOS[id].nombre}</span>`).join('')}</div></div></div>`;
+  }).join('');
+  fit();
+}
+
+function fit() {
+  document.querySelectorAll('.thumb').forEach(t => {
+    const f = t.querySelector('iframe');
+    f.style.transform = `scale(${t.clientWidth / 1920})`;
+  });
+}
+
+function status() {
+  const [cls, text] = Respuestas.status();
+  $('#status').className = cls; $('#status').textContent = text;
+  $('#connect').hidden = Respuestas.connected || !Respuestas.canConnect;
+}
+
+$('#scene').addEventListener('change', render);
+$('#sort').addEventListener('change', render);
+$('#connect').addEventListener('click', () => Respuestas.connect());
+$('#download').addEventListener('click', () => Respuestas.download());
+$('#general').value = Respuestas.general;
+$('#general').addEventListener('input', e => Respuestas.setGeneral(e.target.value));
+Respuestas.onChange(() => { status(); if (document.activeElement !== $('#general')) $('#general').value = Respuestas.general; });
+window.addEventListener('resize', fit);
+render();
+status();
+</script>
+</body>
+</html>

@@ -30,10 +30,13 @@ public:
     // The family with `id`, or the first one.
     [[nodiscard]] const FontFamily* ui_family(std::string_view id) const;
     [[nodiscard]] const Font* logo() const { return logo_.get(); }
+    // The light face for the small line above the logo.
+    [[nodiscard]] const Font* logo_small() const { return logo_small_.get(); }
 
 private:
     std::vector<FontFamily> ui_families_;
     std::unique_ptr<Font> logo_;
+    std::unique_ptr<Font> logo_small_;
 };
 
 }  // namespace sc::ui

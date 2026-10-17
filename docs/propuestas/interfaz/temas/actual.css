@@ -1,0 +1,34 @@
+/* The game's HUD today (src/ui/context.h Theme): square, solid, bordered text buttons. */
+.stage {
+  --font: 'Alegreya Sans', sans-serif;
+  --fs: 19px; --fs-small: 16px; --fs-title: 23px;
+  --text: #f2e8d5; --dim: #b9ac94; --accent: #d9a441; --accent-text: #2b2620; --bad: #c0583f;
+  --panel: rgba(43, 38, 32, .96); --panel-border: 1px solid #8c7651; --panel-radius: 0; --panel-shadow: none;
+  --bar: rgba(43, 38, 32, .92); --bar-border: 1px solid #8c7651;
+  --title-border: 0;
+  --btn: #4a3f31; --btn-hover: #62533e; --btn-on: #3a3127; --btn-on-text: var(--accent);
+  --btn-border: 1px solid #8c7651; --btn-radius: 0;
+  --chip: #3a3127; --row: #4a3f31; --row-hover: #62533e; --sep: #5c4e38;
+  --meter: #3a3127; --meter-radius: 0; --avatar-radius: 0; --avatar-bg: #3a3127; --thumb-bg: transparent;
+  --tip: rgba(21, 18, 14, .96); --tip-border: 1px solid #8c7651; --tip-radius: 0;
+}
+.dock-list .dock { background: none; border: 0; padding: 0; box-shadow: none; }
+.dock-btn .ic, .bb-cat .ic, .kv .k .ic, .tb-item > .ic { display: none; }
+.dock-btn { justify-content: center; width: 120px; }
+.bb-cat { flex-direction: row; min-height: 36px; font-size: 18px; }
+.bb-item, .row, .link, .log-row, .tile, .kpi, .seg-b.on, .radio.on { border: 1px solid #8c7651; }
+.bb-item { width: 150px; }
+.bb-thumb, .bb-cost { display: none; }
+.bb-name { font-size: 18px; padding: 10px 0; }
+.buildbar { border-radius: 0; }
+.chip { border-radius: 0; }
+.win-title { color: var(--accent); }
+.minimap { border-radius: 0; }
+.mm-frame { border-radius: 0; }
+.hero { display: none; }
+.toast { border-radius: 0; }
+.switch { border-radius: 0; }
+.switch .knob { border-radius: 0; }
+.tb-item .res-ic, .tb-item .ic, .tb-item .of, .tb-item .meter { display: none; }
+.tb-name { display: inline; order: -1; color: var(--text); font-size: var(--fs); }
+.tb-speed .btn .ic { display: block; }

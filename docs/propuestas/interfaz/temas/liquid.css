@@ -1,0 +1,64 @@
+/* Liquid Glass (iOS 26): almost clear glass, capsules, specular rims, a central island, sheets with a grabber. */
+.stage {
+  --font: -apple-system, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 16px; --fs-small: 14px; --fs-title: 20px; --title-weight: 700;
+  --text: #ffffff; --dim: rgba(255, 255, 255, .78); --accent: #ffffff; --accent-text: #0a2440;
+  --ok: #4ff07a; --warn: #ffd60a; --bad: #ff6961; --info: #64d2ff;
+  --panel: linear-gradient(160deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .06) 45%, rgba(255, 255, 255, .12)), rgba(16, 22, 30, .26); --panel-solid: rgba(120, 120, 120, .6);
+  --panel-blur: blur(9px) saturate(190%) brightness(1.08);
+  --panel-border: 1px solid rgba(255, 255, 255, .32); --panel-radius: 30px;
+  --panel-shadow: inset 0 1.5px 0 rgba(255, 255, 255, .55), inset 0 -1px 0 rgba(255, 255, 255, .18), inset 0 0 24px rgba(255, 255, 255, .1), 0 12px 34px rgba(0, 0, 0, .25);
+  --bar: linear-gradient(160deg, rgba(255, 255, 255, .24), rgba(255, 255, 255, .08)); --bar-border: 1px solid rgba(255, 255, 255, .35);
+  --title-text: #fff; --title-border: 0; --title-h: 46px;
+  --btn: rgba(255, 255, 255, .14); --btn-hover: rgba(255, 255, 255, .26); --btn-on: rgba(255, 255, 255, .92); --btn-on-text: #0a2440;
+  --btn-border: 1px solid rgba(255, 255, 255, .22); --btn-radius: 99px; --btn-h: 34px; --btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+  --chip: rgba(255, 255, 255, .16); --row: rgba(255, 255, 255, .1); --row-hover: rgba(255, 255, 255, .2); --sep: rgba(255, 255, 255, .2);
+  --meter: rgba(0, 0, 0, .2); --meter-h: 6px;
+  --avatar-bg: linear-gradient(160deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .1)); --thumb-bg: radial-gradient(circle at 50% 70%, rgba(255, 255, 255, .25), transparent 65%);
+  --tip: rgba(40, 40, 46, .55); --tip-border: 1px solid rgba(255, 255, 255, .3); --tip-radius: 14px;
+  --icon-stroke: 2; --icon-tone: .25;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+}
+.btn.on, .btn.primary, .seg-b.on, .radio.on { text-shadow: none; }
+.win-body { padding: 8px 18px 18px; }
+.win-bar { padding-left: 18px; }
+.win-icon { border-radius: 50%; }
+.row, .link, .log-row, .radio, .tile, .kpi, .score-row, .bb-item, .tr-pick { border-radius: 18px; }
+.need, .annex { border-radius: 14px; }
+.hero { border-radius: 22px; }
+.win-tab { border-radius: 16px 16px 0 0; }
+.chrome-sheet .win-ctl .wbtn { background: rgba(255, 255, 255, .2); color: #fff; width: 32px; --btn-h: 32px; }
+.chrome-sheet .win-ctl .ctl-close:hover { background: rgba(255, 105, 97, .8); }
+.wbtn.on { color: var(--warn); }
+.win-act .wbtn { color: #fff; }
+.tb-group { padding: 0 6px !important; }
+.top-island .tb-res { padding: 0 14px !important; }
+.top-island .tb-town { position: absolute; left: 14px; }
+.tb-speed .btn { background: rgba(255, 255, 255, .18); }
+.build-dock .bb-cats { border-radius: 34px; padding: 10px 14px; }
+.build-dock .bb-cat { border-radius: 50%; background: rgba(255, 255, 255, .12); }
+.build-dock .bb-cat.on { background: rgba(255, 255, 255, .92); color: #0a2440; }
+.build-dock .bb-cat.on::after { display: none; }
+.build-dock .bb-items-wrap { border-radius: 30px; padding: 12px 14px; }
+.bb-item.on { outline: 0; background: rgba(255, 255, 255, .85); color: #0a2440; text-shadow: none; }
+.bb-item.on .bb-cost { color: #2a3a50; }
+.toast { border-radius: 24px; padding: 8px 18px 8px 8px; }
+.question { border-radius: 30px; }
+.place-hint { background: var(--panel); }
+.modal { border-radius: 34px; }
+.minimap { padding: 14px; }
+.minimap > span { color: #fff; }
+.dock-icons .dock-btn { width: 50px; height: 50px; border-radius: 50%; }
+.dock-btn.on { background: rgba(255, 255, 255, .9); color: #0a2440; }
+.meter .fill, .meter.ok .fill { background: linear-gradient(90deg, #4ff07a, #b8ff9a); }
+.switch.on { background: #34c759; }
+.mm-tools .btn { border-radius: 50%; }
+.cam-view { border-radius: 22px; margin-bottom: -10px; }
+/* The specular rim: a light edge brighter at the top left and bottom right. */
+.win::after, .tb-group::after, .minimap::after, .toast::after, .question::after, .build-dock .bb-cats::after, .build-dock .bb-items-wrap::after, .dock-icons .dock-btn::after, .modal::after {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; padding: 1.5px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0) 68%, rgba(255, 255, 255, .55));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.tb-group, .toast, .question, .build-dock .bb-cats, .build-dock .bb-items-wrap { position: relative; }
+.toasts-top .toast.enter { animation: toast-down .5s cubic-bezier(.2, 1.6, .4, 1); }

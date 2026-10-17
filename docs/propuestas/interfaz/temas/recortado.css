@@ -1,0 +1,59 @@
+/* Papel recortado: layers of coloured card with short shadows, wavy edges, buttons that look glued on. */
+.stage {
+  --card: #fdf6e3;
+  --font: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Black', 'Segoe UI', sans-serif;
+  --fs: 16px; --fs-small: 14px; --fs-title: 20px; --title-weight: 900;
+  --text: #3b3355; --dim: #7a7090; --accent: #ff7a59; --accent-text: #fff;
+  --ok: #3aa87a; --warn: #f2a23a; --bad: #e85a5a; --info: #4a8ad8;
+  --panel: var(--card); --panel-solid: #fdf6e3; --panel-border: 0; --panel-radius: 18px;
+  --panel-shadow: 6px 6px 0 #ffb8a0, 12px 12px 0 #8fd0c0, 14px 16px 18px rgba(40, 30, 60, .3); --panel-pad: 16px;
+  --bar: var(--card); --bar-border: 0;
+  --title-text: #3b3355; --title-border: 0; --title-h: 50px;
+  --btn: #fff; --btn-hover: #fff1ea; --btn-on: #ff7a59; --btn-on-text: #fff;
+  --btn-border: 0; --btn-radius: 12px; --btn-h: 34px; --btn-shadow: 3px 3px 0 #3b3355;
+  --chip: #ffe8d8; --row: #fff; --row-hover: #fff1ea; --sep: #f0e2c8;
+  --meter: #f0e2c8; --meter-h: 10px;
+  --avatar-bg: #cfe8ff; --thumb-bg: radial-gradient(circle at 50% 70%, #d8f2e6, transparent 70%);
+  --tip: #3b3355; --tip-text: #fff; --tip-border: 0; --tip-radius: 12px;
+  --icon-stroke: 2.2; --icon-tone: .3;
+}
+.btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #3b3355; }
+.btn.primary { background: #ff7a59; color: #fff; }
+.btn.danger { background: #ffe0e0; color: #c83a3a; }
+.win-bar { margin: -8px 18px 0; padding: 4px 6px 4px 14px; background: #ff7a59; color: #fff; border-radius: 12px; box-shadow: 3px 3px 0 #3b3355; transform: rotate(-1deg); }
+.win-house .win-bar { background: #4a8ad8; transform: rotate(1deg); }
+.win-villager .win-bar { background: #3aa87a; }
+.win-camera .win-bar { background: #f2a23a; transform: rotate(1deg); }
+.win.minimized .win-bar { margin: 6px; border-radius: 12px; }
+.win-title { color: #fff; }
+.win-sub { color: rgba(255, 255, 255, .85); }
+.win-icon { background: rgba(255, 255, 255, .3); border-radius: 50%; }
+.win-act { border-color: rgba(255, 255, 255, .4); }
+.wbtn { color: #fff; }
+.wbtn:hover { color: #fff; background: rgba(255, 255, 255, .2); }
+.wbtn.on { color: #3b3355; }
+.hero { border-radius: 14px; }
+.row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick { border-radius: 12px; box-shadow: 2px 2px 0 #e8d8b8; }
+.need, .annex { border-radius: 12px; box-shadow: 2px 2px 0 #e8d8b8; background: #fff; }
+.sec { color: #ff7a59; }
+.meter .fill, .meter.ok .fill { background: #3aa87a; }
+.meter.warn .fill { background: #f2a23a; }
+.meter.bad .fill { background: #e85a5a; }
+.meter.accent .fill { background: #ff7a59; }
+.switch.on { background: #3aa87a; }
+.seg-b.on { background: #ff7a59; color: #fff; }
+.radio.on { background: #ff7a59; color: #fff; }
+.top-pills .tb-group { box-shadow: 4px 4px 0 #ffb8a0, 8px 8px 0 #8fd0c0; }
+.dock-icons .dock-btn { border-radius: 14px; background: #fff; border: 0; box-shadow: 3px 3px 0 #3b3355; }
+.dock-btn.on { background: #ff7a59; color: #fff; }
+.minimap { box-shadow: 6px 6px 0 #ffb8a0, 12px 12px 0 #8fd0c0; }
+.minimap > span { color: #3b3355; font-weight: 900; }
+.bb-cat.on { background: #ff7a59; color: #fff; }
+.bb-item { border-radius: 14px; background: #fff; box-shadow: 3px 3px 0 #e8d8b8; }
+.bb-item.on { outline: 3px solid #ff7a59; }
+.toast { box-shadow: 4px 4px 0 #ffb8a0, 8px 8px 0 #8fd0c0; }
+.toast.bad { border-left: 0; }
+.modal h2 { color: #3b3355; }
+.ring::before { background: #fdf6e3; }
+.live { background: rgba(0, 0, 0, .5); color: #fff; }
+.tb-item.gold b { color: #d8901a; }

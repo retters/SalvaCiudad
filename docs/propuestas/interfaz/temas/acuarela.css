@@ -1,0 +1,45 @@
+/* Acuarela: watercolour paper, irregular ink edges and colour washes. In the game: a paper texture and a hand-drawn 9-slice edge. */
+.stage {
+  --paper: radial-gradient(ellipse at 20% 15%, rgba(140, 190, 210, .22), transparent 45%), radial-gradient(ellipse at 85% 90%, rgba(220, 170, 120, .22), transparent 50%), radial-gradient(ellipse at 70% 30%, rgba(180, 210, 150, .18), transparent 45%), #fbf6ea;
+  --font: 'Segoe Print', 'Segoe UI', sans-serif; --font-title: 'Segoe Print', 'EB Garamond', serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 20px; --title-weight: 700;
+  --text: #3a3226; --dim: #7a6c58; --accent: #2f6f8f; --accent-text: #fff;
+  --ok: #3f8a4a; --warn: #b07a1a; --bad: #b8402a; --info: #2f6f8f;
+  --panel: var(--paper); --panel-solid: #fbf6ea; --panel-border: 2px solid #3a3226; --panel-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  --panel-shadow: 3px 4px 0 rgba(58, 50, 38, .25), 0 10px 24px rgba(58, 50, 38, .25); --panel-pad: 16px;
+  --bar: var(--paper); --bar-border: 2px solid #3a3226;
+  --title-text: #2a2418; --title-border: 0; --title-h: 48px;
+  --btn: rgba(47, 111, 143, .1); --btn-hover: rgba(47, 111, 143, .2); --btn-on: rgba(47, 111, 143, .28); --btn-on-text: #1d4a62;
+  --btn-border: 1.5px solid #3a3226; --btn-radius: 15px 225px 15px 255px / 255px 15px 225px 15px; --btn-h: 32px;
+  --chip: rgba(58, 50, 38, .07); --row: rgba(255, 255, 255, .45); --row-hover: rgba(47, 111, 143, .12); --sep: rgba(58, 50, 38, .25);
+  --meter: rgba(58, 50, 38, .1); --meter-h: 9px; --meter-radius: 99px;
+  --avatar-bg: #e8dcc0; --thumb-bg: radial-gradient(ellipse at 50% 60%, rgba(140, 190, 120, .35), transparent 65%);
+  --tip: #fbf6ea; --tip-text: #3a3226; --tip-border: 1.5px solid #3a3226; --tip-radius: 12px 4px 14px 6px;
+  --icon-stroke: 1.9; --icon-size: 19px;
+}
+.win-title { transform: rotate(-1deg); }
+.win-act { border-color: rgba(58, 50, 38, .25); }
+.wbtn { color: #5a4c38; border: 0; }
+.wbtn.on { color: #b8402a; }
+.hero { border-radius: 40% 60% 55% 45% / 50% 45% 55% 50%; }
+.row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick, .bb-item { border: 1.5px solid rgba(58, 50, 38, .5); border-radius: 12px 4px 14px 6px; }
+.chip { border: 1px solid rgba(58, 50, 38, .35); }
+.meter { border: 1.5px solid #3a3226; }
+.meter .fill, .meter.ok .fill { background: linear-gradient(90deg, rgba(63, 138, 74, .55), rgba(63, 138, 74, .85)); }
+.meter.warn .fill { background: linear-gradient(90deg, rgba(200, 140, 30, .5), rgba(200, 140, 30, .85)); }
+.meter.bad .fill { background: linear-gradient(90deg, rgba(184, 64, 42, .5), rgba(184, 64, 42, .85)); }
+.meter.accent .fill { background: linear-gradient(90deg, rgba(47, 111, 143, .5), rgba(47, 111, 143, .85)); }
+.sec { color: #2f6f8f; font-family: var(--font-title); text-transform: none; letter-spacing: 0; font-size: 15px; }
+.switch { border: 1.5px solid #3a3226; }
+.switch.on { background: rgba(63, 138, 74, .7); }
+.need, .annex { border: 1.5px solid rgba(58, 50, 38, .5); border-radius: 50% 45% 55% 50%; }
+.btn.primary { background: rgba(47, 111, 143, .85); color: #fff; }
+.btn.danger { color: #b8402a; }
+.dock-btn { justify-content: flex-start; }
+.minimap { padding: 18px; }
+.mm-frame { box-shadow: 0 0 0 2px #3a3226; }
+.minimap > span { color: #3a3226; font-family: var(--font-title); }
+.bb-item.on { outline: 0; background: rgba(47, 111, 143, .18); }
+.tb-item.gold b { color: #a87a10; }
+.live { background: rgba(0, 0, 0, .5); color: #fff; }
+.ring::before { background: #fbf6ea; }

@@ -198,7 +198,7 @@ void ViewerApp::load_languages() {
 }
 
 bool ViewerApp::init() {
-    (void)SDL_SetAppMetadata("SalvaCiudad model viewer", SC_VERSION_STRING, "io.github.salva.salvaciudad.models");
+    (void)SDL_SetAppMetadata("SALVA'S PROSPERIA model viewer", SC_VERSION_STRING, "io.github.salva.salvasprosperia.models");
     load_languages();
     const std::string language = i18n::translator().resolve("auto", preferred_languages());
     (void)i18n::translator().set_language(language);

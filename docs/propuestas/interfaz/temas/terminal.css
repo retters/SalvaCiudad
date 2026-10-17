@@ -1,0 +1,64 @@
+/* Terminal: green phosphor on black, line frames, capitals, a CRT glow and faint scanlines. */
+.stage {
+  --g: #39ff7a;
+  --font: Consolas, 'Cascadia Mono', 'Courier New', monospace; --font-title: Consolas, 'Cascadia Mono', monospace;
+  --fs: 15px; --fs-small: 13px; --fs-title: 15px; --title-weight: 700; --title-case: uppercase; --title-spacing: .1em;
+  --text: #39ff7a; --dim: #1fa84e; --accent: #b6ffcf; --accent-text: #001a08;
+  --ok: #39ff7a; --warn: #ffd84d; --bad: #ff5f4d; --info: #39ffd8;
+  --panel: rgba(0, 10, 4, .9); --panel-solid: #000a04; --panel-border: 1px solid #39ff7a; --panel-radius: 0; --panel-shadow: 0 0 14px rgba(57, 255, 122, .35);
+  --bar: rgba(0, 10, 4, .92); --bar-border: 1px solid #39ff7a; --bar-h: 42px;
+  --title-bg: transparent; --title-text: #b6ffcf; --title-border: 1px dashed #1fa84e; --title-h: 36px;
+  --btn: transparent; --btn-hover: rgba(57, 255, 122, .15); --btn-on: #39ff7a; --btn-on-text: #001a08; --btn-text: #39ff7a;
+  --btn-border: 1px solid #39ff7a; --btn-radius: 0; --btn-h: 28px;
+  --chip: transparent; --row: transparent; --row-hover: rgba(57, 255, 122, .12); --sep: #1fa84e;
+  --meter: transparent; --meter-h: 10px; --meter-radius: 0;
+  --avatar-radius: 0; --avatar-bg: #001a08; --thumb-bg: transparent;
+  --tip: #000; --tip-text: #39ff7a; --tip-border: 1px solid #39ff7a; --tip-radius: 0;
+  --icon-stroke: 1.6; --icon-size: 16px;
+  text-shadow: 0 0 6px rgba(57, 255, 122, .65);
+}
+.stage::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 300; background: repeating-linear-gradient(180deg, rgba(0, 0, 0, .18) 0 1px, transparent 1px 3px); }
+.hud img { filter: grayscale(1) sepia(1) hue-rotate(70deg) saturate(3) brightness(.9); }
+.res-ic { color: #39ff7a !important; }
+.btn.on, .seg-b.on, .radio.on, .bb-item.on { text-shadow: none; }
+.btn.primary { background: #39ff7a; color: #001a08; text-shadow: none; }
+.btn.danger { color: #ff5f4d; border-color: #ff5f4d; }
+.chip { border: 1px solid #1fa84e; border-radius: 0; }
+.dot { border-radius: 0; }
+.meter { border: 1px solid #39ff7a; padding: 1px; }
+.meter .fill, .meter.ok .fill, .meter.warn .fill, .meter.bad .fill, .meter.accent .fill { inset: 1px auto 1px 1px; border-radius: 0; background: repeating-linear-gradient(90deg, #39ff7a 0 6px, transparent 6px 8px); }
+.labels-text .wbtn { background: transparent; color: #39ff7a; border: 1px solid #39ff7a; }
+.labels-text .wbtn .lbl::before { content: '['; } .labels-text .wbtn .lbl::after { content: ']'; }
+.labels-text .wbtn.on { background: #39ff7a; color: #001a08; }
+.hero, .tile, .kpi, .score-row, .tr-pick, .row, .link, .log-row { border: 1px solid #1fa84e; border-radius: 0; }
+.need, .annex { border: 1px solid #1fa84e; border-radius: 0; background: transparent; }
+.sec { color: #b6ffcf; }
+.sec::before { content: '> '; }
+.switch { border-radius: 0; border: 1px solid #39ff7a; background: transparent; }
+.switch .knob { border-radius: 0; background: #39ff7a; box-shadow: none; }
+.switch.on { background: rgba(57, 255, 122, .2); }
+.seg { background: transparent; border: 1px solid #1fa84e; border-radius: 0; }
+.seg-b { border-radius: 0; color: #1fa84e; }
+.radio.on .sw { color: #001a08; }
+.sw { border-radius: 0; background: transparent; color: #39ff7a; border: 1px solid #1fa84e; }
+.log-ic, .toast-ic, .q-ic, .dlg-ic { border-radius: 0; background: transparent; color: #39ff7a !important; border: 1px solid #1fa84e; }
+.dock-list .dock { background: transparent; border: 0; box-shadow: none; padding: 0; }
+.dock-btn { justify-content: flex-start; }
+.dock-btn .badge { border-radius: 0; background: #ff5f4d; color: #000; text-shadow: none; }
+.minimap { border-radius: 0; }
+.mm-frame { border-radius: 0; }
+.minimap > span { color: #39ff7a; }
+.bb-cat { border: 1px solid #1fa84e; }
+.bb-item { border: 1px solid #1fa84e; border-radius: 0; background: transparent; }
+.bb-item.on { outline: 0; background: #39ff7a; color: #001a08; }
+.bb-item.on .bb-cost { color: #001a08; }
+.bb-item.on img { filter: grayscale(1) brightness(.2); }
+.toast, .question, .place-hint, .modal { border-radius: 0; }
+.toast.bad { border-left: 1px solid #ff5f4d; color: #ff5f4d; }
+.cam-view { border-radius: 0; filter: grayscale(1) sepia(1) hue-rotate(70deg) saturate(3) brightness(.8); }
+.ring { border-radius: 0; }
+.ring::before { border-radius: 0; background: #000a04; }
+.win-tab { border-radius: 0; background: transparent; border-color: #1fa84e; color: #1fa84e; }
+.win-tab.on { background: #000a04; color: #39ff7a; }
+.tb-item { border-radius: 0; }
+.modal-veil { background: rgba(0, 0, 0, .7); }

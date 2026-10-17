@@ -511,12 +511,12 @@ TEST_SUITE("mammoths") {
     }
 
     // Not a test: a saved game in winter with a lodge by a herd of mammoths.
-    //   salvaciudad_tests -ts=mammoths -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_mammoths.scsave: copy it to the saves
+    //   salvasprosperia_tests -ts=mammoths -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_mammoths.scsave: copy it to the saves
     // folder and load it.
     TEST_CASE("manual: a saved game with a lodge by a herd of mammoths" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup(kWinterOnly);
         rules.rules.fog = FogMode::None;

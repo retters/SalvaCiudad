@@ -15,12 +15,12 @@ enum class Level : std::uint8_t { Debug, Info, Warn, Error };
 
 struct Options {
     std::uintmax_t max_file_bytes = 2u * 1024u * 1024u;
-    int kept_files = 3;       // salvaciudad.log plus .1 ... .(kept_files - 1)
+    int kept_files = 3;       // salvasprosperia.log plus .1 ... .(kept_files - 1)
     bool echo_to_stderr = false;
     Level min_level = Level::Info;
 };
 
-// Opens `<dir>/salvaciudad.log`, rotating the previous log first. Returns
+// Opens `<dir>/salvasprosperia.log`, rotating the previous log first. Returns
 // false if the file cannot be opened; logging then only goes to stderr (if
 // enabled) and the game keeps running.
 bool open(const std::filesystem::path& dir, const Options& options);

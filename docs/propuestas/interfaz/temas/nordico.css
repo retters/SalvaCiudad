@@ -1,0 +1,56 @@
+/* Nórdico: off-white, pastel accents, everything round and borderless, small spaced lettering. */
+.stage {
+  --font: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 14px; --fs-small: 12px; --fs-title: 14px; --title-weight: 600; --title-case: uppercase; --title-spacing: .16em;
+  --text: #3b4250; --dim: #9aa1ad; --accent: #e8836b; --accent-text: #fff;
+  --ok: #6fbf9a; --warn: #f0b860; --bad: #e8836b; --info: #7aa7d8;
+  --panel: rgba(250, 248, 244, .97); --panel-solid: #faf8f4; --panel-border: 0; --panel-radius: 20px; --panel-shadow: 0 10px 30px rgba(40, 50, 70, .14);
+  --bar: rgba(250, 248, 244, .97); --bar-border: 0;
+  --title-text: #3b4250; --title-border: 0; --title-h: 46px;
+  --btn: #f0ede6; --btn-hover: #e8e4db; --btn-on: #fde3dc; --btn-on-text: #c4583f;
+  --btn-border: 0; --btn-radius: 99px; --btn-h: 32px;
+  --chip: #f0ede6; --row: #f4f1eb; --row-hover: #ece8e0; --sep: transparent;
+  --meter: #ece8e0; --meter-h: 6px;
+  --avatar-bg: #dfe9f3; --thumb-bg: radial-gradient(circle at 50% 70%, #e6efe2, transparent 70%);
+  --tip: #3b4250; --tip-text: #faf8f4; --tip-border: 0; --tip-radius: 99px;
+  --icon-stroke: 1.6; --icon-size: 17px;
+}
+.tb-item b { font-weight: 600; }
+.win-act { border: 0; }
+.wbtn { border-radius: 50%; color: #b0b6c0; }
+.wbtn.on { color: #e8836b; }
+.ctl-close:hover { background: #fde3dc; color: #c4583f; }
+.hero, .row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick { border-radius: 16px; }
+.sec { color: #b0b6c0; letter-spacing: .18em; font-size: 11px; }
+.meter .fill, .meter.ok .fill { background: #6fbf9a; }
+.meter.warn .fill { background: #f0b860; }
+.meter.bad .fill { background: #e8836b; }
+.meter.accent .fill { background: #7aa7d8; }
+.switch.on { background: #6fbf9a; }
+.seg { background: #f0ede6; border-radius: 99px; }
+.seg-b { border-radius: 99px; }
+.seg-b.on { background: #fff; color: #3b4250; box-shadow: 0 2px 6px rgba(40, 50, 70, .1); }
+.radio { border-radius: 99px; }
+.radio.on { background: #fde3dc; color: #c4583f; }
+.btn.primary { background: #e8836b; }
+.btn.danger { background: #fde3dc; color: #c4583f; }
+.top-island .tb-group { box-shadow: 0 8px 24px rgba(40, 50, 70, .14); }
+.tb-item.gold b { color: #d49a30; }
+.dock-icons .dock-btn { border-radius: 50%; background: rgba(250, 248, 244, .97); border: 0; box-shadow: 0 6px 18px rgba(40, 50, 70, .14); }
+.dock-btn.on { background: #fde3dc; color: #c4583f; }
+.minimap { background: rgba(250, 248, 244, .97); border: 0; }
+.minimap > span { color: #9aa1ad; }
+.build-dock .bb-cats { border-radius: 99px; }
+.build-dock .bb-cat { border-radius: 50%; background: transparent; color: #7a8290; }
+.build-dock .bb-cat:hover { width: 58px; height: 58px; margin-top: 0; background: #f0ede6; }
+.build-dock .bb-cat.on { background: #fde3dc; color: #c4583f; }
+.build-dock .bb-cat.on::after { background: #e8836b; }
+.build-dock .bb-items-wrap { border-radius: 28px; }
+.bb-item { border-radius: 16px; }
+.bb-item.on { outline: 0; background: #fde3dc; }
+.toast { border-radius: 99px; border: 0; }
+.toast.bad { border-left: 0; }
+.question, .modal { border-radius: 26px; }
+.place-hint { border: 0; }
+.live { background: rgba(0, 0, 0, .45); color: #fff; }
+.ring::before { background: #faf8f4; }

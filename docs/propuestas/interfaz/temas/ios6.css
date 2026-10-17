@@ -1,0 +1,78 @@
+/* iOS 6: linen, stitched leather, steel-blue bars, glossy buttons. Painted textures in the game; imitated here. */
+.stage {
+  --linen: repeating-linear-gradient(45deg, rgba(255, 255, 255, .03) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0, 0, 0, .06) 0 2px, transparent 2px 4px), #d9dce3;
+  --leather: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, .06), transparent 60%), repeating-radial-gradient(circle at 10% 10%, rgba(0, 0, 0, .05) 0 1px, transparent 1px 3px), #4a3524;
+  --steel: linear-gradient(180deg, #b0bccd 0%, #8a9db6 50%, #7b8fa9 51%, #6d82a0 100%);
+  --font: 'Helvetica Neue', Helvetica, Arial, sans-serif; --font-title: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 17px; --title-weight: 700;
+  --text: #2a2a2a; --dim: #6d6d72; --accent: #2f6fd6; --accent-text: #fff;
+  --ok: #2e9b2e; --warn: #c88a00; --bad: #d13a2a; --info: #2f6fd6;
+  --panel: var(--linen); --panel-solid: #d9dce3; --panel-border: 1px solid #7a8392; --panel-radius: 10px;
+  --panel-shadow: 0 2px 10px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .7);
+  --bar: var(--leather); --bar-border: 1px solid #2a1c10; --bar-h: 46px;
+  --title-bg: var(--steel); --title-text: #fff; --title-border: 1px solid #2d3642; --title-h: 44px;
+  --btn: linear-gradient(180deg, #fdfdfd, #e3e6ec); --btn-hover: linear-gradient(180deg, #fff, #eef0f4); --btn-on: linear-gradient(180deg, #4a8ef0, #2763c9); --btn-on-text: #fff; --btn-text: #2a2a2a;
+  --btn-border: 1px solid #9aa2ae; --btn-radius: 6px; --btn-h: 30px; --btn-shadow: 0 1px 0 rgba(255, 255, 255, .8), inset 0 1px 0 #fff;
+  --chip: #fff; --row: #fff; --row-hover: linear-gradient(180deg, #058cf5, #015de6); --sep: #c8c7cc;
+  --meter: linear-gradient(180deg, #c9ccd2, #f2f3f5); --meter-h: 10px;
+  --avatar-bg: #8a9db6; --thumb-bg: #fff;
+  --tip: linear-gradient(180deg, rgba(40, 40, 40, .92), rgba(10, 10, 10, .92)); --tip-text: #fff; --tip-border: 1px solid #000; --tip-radius: 8px;
+  --icon-stroke: 1.8; --icon-size: 18px;
+}
+.win-bar { border-radius: 9px 9px 0 0; text-shadow: 0 -1px 0 rgba(0, 0, 0, .45); }
+.win.minimized .win-bar { border-radius: 9px; }
+.win-titles { align-items: center; }
+.win-sub { color: #e6ecf4; }
+.win-icon { display: none; }
+.win-act { border: 0; }
+.wbtn { color: #fff; background: linear-gradient(180deg, rgba(255, 255, 255, .25), rgba(0, 0, 0, .1)); border: 1px solid #3d4a5c; border-radius: 5px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); margin: 0 1px; }
+.wbtn:hover { color: #fff; }
+.wbtn.on { background: linear-gradient(180deg, #4a8ef0, #2763c9); color: #fff; }
+.ctl-close:hover { background: linear-gradient(180deg, #f07060, #c83020); }
+.btn.primary { background: linear-gradient(180deg, #4a8ef0, #2763c9); color: #fff; border-color: #1d4b9a; text-shadow: 0 -1px 0 rgba(0, 0, 0, .3); }
+.btn.danger { background: linear-gradient(180deg, #f07060, #c83020); color: #fff; border-color: #8a2010; text-shadow: 0 -1px 0 rgba(0, 0, 0, .3); }
+.hero, .tile, .kpi, .score-row, .tr-pick { background: #fff; border: 1px solid #c8c7cc; }
+.kv { background: #fff; padding: 4px 12px; border: 1px solid #c8c7cc; margin-bottom: -9px; }
+.kv:not(:has(+ .kv)) { border-radius: 0 0 9px 9px; margin-bottom: 0; }
+.sec + .kv, .hero + .kv, .person-head + .kv, .links + .kv, .meters + .kv { border-radius: 9px 9px 0 0; }
+.row, .link, .log-row { border: 1px solid #c8c7cc; }
+.row:hover, .log-row:hover, .link:hover { color: #fff; }
+.row:hover .row-sub, .log-row:hover .log-date { color: #e0ecff; }
+.sec { color: #4c566c; text-transform: uppercase; letter-spacing: 0; font-size: 13px; text-shadow: 0 1px 0 #fff; }
+.chip { border: 1px solid #c8c7cc; }
+.meter { border: 1px solid #9aa2ae; }
+.meter .fill, .meter.ok .fill, .meter.accent .fill { background: linear-gradient(180deg, #8ac0ff, #2f6fd6); }
+.meter.warn .fill { background: linear-gradient(180deg, #ffd68a, #e09a10); }
+.meter.bad .fill { background: linear-gradient(180deg, #ff9a8a, #d13a2a); }
+.switch { width: 56px; height: 26px; background: linear-gradient(180deg, #e8e8e8, #fff); border: 1px solid #9aa2ae; box-shadow: inset 0 2px 3px rgba(0, 0, 0, .2); }
+.switch .knob { width: 24px; height: 24px; top: 0; left: 0; background: linear-gradient(180deg, #fafafa, #d8d8d8); }
+.switch.on { background: linear-gradient(180deg, #1f6fe0, #4a9af5); }
+.switch.on .knob { left: 30px; }
+.seg { background: transparent; padding: 0; gap: 0; }
+.seg-b { background: var(--btn); border: 1px solid #9aa2ae; border-radius: 0; color: #2a2a2a; }
+.seg-b:first-child { border-radius: 6px 0 0 6px; }
+.seg-b:last-child { border-radius: 0 6px 6px 0; }
+.seg-b.on { background: linear-gradient(180deg, #4a8ef0, #2763c9); color: #fff; }
+.radio.on { background: linear-gradient(180deg, #058cf5, #015de6); color: #fff; }
+.topbar { color: #f4ead8; text-shadow: 0 -1px 0 #000; box-shadow: inset 0 -3px 0 -1px rgba(255, 255, 255, .0), inset 0 -4px 0 -2px rgba(255, 220, 170, .35); }
+.topbar::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: 5px; border-bottom: 2px dashed rgba(255, 220, 170, .35); }
+.topbar .dim, .topbar .of { color: #c9b89c; }
+.tb-item.gold b { color: #ffd87a; }
+.tb-speed .btn { text-shadow: none; }
+.dock-icons .dock-btn { border-radius: 12px; background: linear-gradient(180deg, #fdfdfd, #d8dce4); border: 1px solid #7a8392; }
+.dock-btn.on { background: linear-gradient(180deg, #4a8ef0, #2763c9); color: #fff; }
+.minimap { background: var(--leather); border: 1px solid #2a1c10; }
+.minimap > span { color: #f4ead8; }
+.mm-frame { box-shadow: 0 0 0 2px #2a1c10, 0 0 0 4px rgba(255, 220, 170, .3); }
+.buildbar { background: var(--leather); border: 1px solid #2a1c10; }
+.bb-cat { background: transparent; color: #f4ead8; border: 0; box-shadow: none; text-shadow: 0 -1px 0 #000; }
+.bb-cat.on { background: rgba(0, 0, 0, .3); color: #ffd87a; box-shadow: inset 0 2px 4px rgba(0, 0, 0, .5); }
+.bb-item { background: var(--linen); border: 1px solid #2a1c10; }
+.bb-item.on { outline: 2px solid #ffd87a; }
+.bb-arrow { background: transparent; color: #f4ead8; box-shadow: none; border: 0; }
+.toasts-top .toast { background: linear-gradient(180deg, rgba(60, 60, 60, .95), rgba(20, 20, 20, .95)); color: #fff; border: 1px solid #000; border-radius: 10px; }
+.toast-ic { background: rgba(255, 255, 255, .15); }
+.question { background: var(--linen); }
+.modal h2 { color: #4c566c; text-shadow: 0 1px 0 #fff; }
+.ring::before { background: #fff; }
+.live { background: rgba(0, 0, 0, .55); color: #fff; }

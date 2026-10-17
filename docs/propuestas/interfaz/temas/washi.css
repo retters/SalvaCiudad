@@ -1,0 +1,52 @@
+/* Washi: fibrous Japanese paper, red seals, brush strokes as separators, a lot of air. */
+.stage {
+  --paper: repeating-linear-gradient(97deg, rgba(120, 100, 70, .045) 0 1px, transparent 1px 9px), repeating-linear-gradient(13deg, rgba(120, 100, 70, .035) 0 1px, transparent 1px 13px), #f7f2e7;
+  --font: 'Yu Gothic UI', 'Segoe UI', sans-serif; --font-title: 'Yu Mincho', 'EB Garamond', serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 20px; --title-weight: 600; --title-spacing: .08em;
+  --text: #2b2723; --dim: #8a8174; --accent: #b8322a; --accent-text: #fff;
+  --ok: #4a7a4a; --warn: #a8781a; --bad: #b8322a; --info: #3a5a7a;
+  --panel: var(--paper); --panel-solid: #f7f2e7; --panel-border: 1px solid rgba(43, 39, 35, .18); --panel-radius: 3px;
+  --panel-shadow: 0 10px 26px rgba(40, 30, 20, .22); --panel-pad: 18px;
+  --bar: var(--paper); --bar-border: 1px solid rgba(43, 39, 35, .18);
+  --title-text: #2b2723; --title-border: 0; --title-h: 50px;
+  --btn: transparent; --btn-hover: rgba(43, 39, 35, .06); --btn-on: rgba(184, 50, 42, .1); --btn-on-text: #b8322a;
+  --btn-border: 1px solid rgba(43, 39, 35, .25); --btn-radius: 2px; --btn-h: 32px;
+  --chip: rgba(43, 39, 35, .06); --row: transparent; --row-hover: rgba(43, 39, 35, .05); --sep: rgba(43, 39, 35, .15);
+  --meter: rgba(43, 39, 35, .08); --meter-h: 4px; --meter-radius: 0;
+  --avatar-bg: #e8dfcc; --thumb-bg: transparent;
+  --tip: #2b2723; --tip-text: #f7f2e7; --tip-border: 0; --tip-radius: 2px;
+  --icon-stroke: 1.5; --icon-size: 18px;
+}
+.win-bar { position: relative; }
+.win-bar::after { content: ''; position: absolute; left: 18px; right: 40%; bottom: 0; height: 3px; border-radius: 3px; background: linear-gradient(90deg, #2b2723, rgba(43, 39, 35, .6) 70%, transparent); }
+.win-icon { width: 30px; height: 30px; border-radius: 3px; background: #b8322a; }
+.win-icon img { filter: brightness(0) invert(1); opacity: .9; }
+.win-icon.round img { filter: none; }
+.win-icon.glyph { color: #fff; }
+.win-act { border-color: rgba(43, 39, 35, .15); }
+.wbtn { color: #8a8174; border: 0; }
+.wbtn.on { color: #b8322a; }
+.ctl-close:hover { background: #b8322a; color: #fff; }
+.sec { color: #b8322a; letter-spacing: .2em; font-weight: 600; }
+.row, .link, .log-row { border-bottom: 1px solid rgba(43, 39, 35, .1); border-radius: 0; }
+.tile, .kpi, .score-row, .tr-pick { border: 1px solid rgba(43, 39, 35, .15); border-radius: 2px; }
+.chip { border-radius: 2px; }
+.btn.primary { background: #b8322a; border-color: #b8322a; }
+.btn.danger { color: #b8322a; }
+.meter .fill, .meter.ok .fill { background: #2b2723; }
+.meter.warn .fill { background: #a8781a; }
+.meter.bad .fill { background: #b8322a; }
+.switch.on { background: #b8322a; }
+.dock-icons .dock-btn { border-radius: 3px; background: var(--paper); border: 1px solid rgba(43, 39, 35, .18); }
+.dock-btn.on { background: #b8322a; color: #fff; }
+.minimap { padding: 16px; }
+.minimap > span { color: #2b2723; font-family: var(--font-title); }
+.mm-n { color: #b8322a !important; }
+.bb-cat.on { background: transparent; box-shadow: inset 0 -3px 0 #b8322a; }
+.bb-item { border: 1px solid rgba(43, 39, 35, .12); background: transparent; }
+.bb-item.on { outline: 0; border-color: #b8322a; background: rgba(184, 50, 42, .06); }
+.question .q-ic, .dlg-ic { background: #b8322a; color: #fff; border-radius: 3px; }
+.modal h2 { color: #2b2723; letter-spacing: .1em; }
+.ring::before { background: #f7f2e7; }
+.ring { background: conic-gradient(#b8322a calc(var(--p) * 1%), rgba(43, 39, 35, .1) 0); }
+.live { background: rgba(0, 0, 0, .5); color: #fff; }

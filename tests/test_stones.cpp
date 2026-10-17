@@ -478,12 +478,12 @@ TEST_SUITE("stones") {
     // Not a test: a saved game with the three rocks in the three stones side
     // by side, and a vault waiting for stone the town does not have. Run it
     // by name:
-    //   salvaciudad_tests -ts=stones -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_stones.scsave: copy it to the saves
+    //   salvasprosperia_tests -ts=stones -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_stones.scsave: copy it to the saves
     // folder and load it.
     TEST_CASE("manual: a saved game with loose stones, boulders and outcrops" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;

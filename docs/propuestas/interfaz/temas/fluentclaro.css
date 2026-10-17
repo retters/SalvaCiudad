@@ -1,0 +1,45 @@
+/* Windows 11 light: Mica (an almost opaque tint, no live blur), 8 px corners, Fluent caption buttons, blue accent. */
+.stage {
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --font: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 15px; --title-weight: 600;
+  --text: #1b1b1b; --dim: #5c5c5c; --accent: #005fb8; --accent-text: #fff;
+  --ok: #0f7b0f; --warn: #9d5d00; --bad: #c42b1c; --info: #005fb8;
+  --panel: var(--noise), rgba(243, 245, 240, .94); --panel-solid: #f3f5f0;
+  --panel-border: 1px solid rgba(0, 0, 0, .08); --panel-radius: 8px; --panel-shadow: 0 8px 24px rgba(0, 0, 0, .16);
+  --bar: var(--noise), rgba(238, 241, 235, .95); --bar-border: 1px solid rgba(0, 0, 0, .06); --bar-h: 44px;
+  --title-text: #1b1b1b; --title-border: 0; --title-h: 40px;
+  --btn: rgba(255, 255, 255, .75); --btn-hover: rgba(249, 249, 249, .55); --btn-on: rgba(0, 0, 0, .04); --btn-on-text: #1b1b1b;
+  --btn-border: 1px solid rgba(0, 0, 0, .07); --btn-radius: 4px; --btn-h: 32px; --btn-shadow: 0 1px 0 rgba(0, 0, 0, .1);
+  --chip: rgba(0, 0, 0, .05); --row: rgba(255, 255, 255, .7); --row-hover: rgba(255, 255, 255, .95); --sep: rgba(0, 0, 0, .07);
+  --meter: rgba(0, 0, 0, .1); --meter-h: 4px;
+  --avatar-bg: linear-gradient(160deg, #cfe0f0, #8fb0d0); --thumb-bg: rgba(255, 255, 255, .7);
+  --tip: #f9f9f9; --tip-text: #1b1b1b; --tip-border: 1px solid rgba(0, 0, 0, .1); --tip-radius: 4px;
+  --icon-stroke: 1.5; --icon-size: 18px;
+}
+.win-bar { padding: 0 0 0 14px; }
+.win-act { border: 0; padding-right: 4px; }
+.win-ctl { gap: 0; align-self: stretch; }
+.win-ctl .wbtn { width: 46px; min-height: 40px; border-radius: 0; color: #1b1b1b; }
+.win-ctl .ctl-close { border-top-right-radius: 7px; }
+.win-ctl .ctl-close:hover { background: #c42b1c; color: #fff; }
+.wbtn.on { color: #005fb8; }
+.btn.on { box-shadow: inset 0 -2px 0 #005fb8; }
+.btn.primary { box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .3); }
+.meter .fill, .meter.ok .fill { background: #005fb8; }
+.switch.on { background: #005fb8; }
+.sec { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; color: #1b1b1b; }
+.seg-b.on { background: #fff; box-shadow: inset 0 -2px 0 #005fb8; color: #1b1b1b; }
+.radio.on { background: rgba(0, 0, 0, .05); box-shadow: inset 3px 0 0 #005fb8; color: #1b1b1b; }
+.dock-btn.on { box-shadow: inset 3px 0 0 #005fb8; }
+.build-dock .bb-cats { border-radius: 8px; padding: 6px 8px; }
+.build-dock .bb-cat { width: 52px; height: 52px; border-radius: 6px; background: transparent; border: 0; box-shadow: none; }
+.build-dock .bb-cat:hover { width: 52px; height: 52px; margin-top: 0; background: rgba(255, 255, 255, .8); }
+.build-dock .bb-cat.on { background: rgba(255, 255, 255, .8); box-shadow: none; }
+.build-dock .bb-cat.on::after { width: 16px; height: 3px; border-radius: 3px; background: #005fb8; bottom: 2px; }
+.bb-item.on { outline: 0; box-shadow: inset 0 -2px 0 #005fb8; background: #fff; }
+.tb-item.gold b { color: #9d5d00; }
+.mm-n { color: #c42b1c !important; }
+.minimap > span { color: #5c5c5c; }
+.live { background: rgba(0, 0, 0, .5); color: #fff; }
+.ring::before { background: #f3f5f0; }

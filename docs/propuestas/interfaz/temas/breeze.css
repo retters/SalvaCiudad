@@ -1,0 +1,53 @@
+/* KDE Plasma 6, Breeze dark: blue-grey, Breeze blue accent, 1 px frames that light up on hover. */
+.stage {
+  --font: 'Noto Sans', 'Segoe UI', sans-serif; --font-title: 'Noto Sans', 'Segoe UI', sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 15px; --title-weight: 400;
+  --text: #fcfcfc; --dim: #a1a9b1; --accent: #3daee9; --accent-text: #fff;
+  --ok: #27ae60; --warn: #f67400; --bad: #da4453; --info: #3daee9;
+  --panel: #202326; --panel-solid: #202326; --panel-border: 1px solid #3a3f44; --panel-radius: 6px; --panel-shadow: 0 6px 22px rgba(0, 0, 0, .5);
+  --bar: #2a2e32; --bar-border: 1px solid #1b1e20; --bar-h: 44px;
+  --title-bg: #2a2e32; --title-text: #fcfcfc; --title-border: 1px solid #1b1e20; --title-h: 34px;
+  --btn: #31363b; --btn-hover: #31363b; --btn-on: #2d5c76; --btn-on-text: #fcfcfc;
+  --btn-border: 1px solid #4a5056; --btn-radius: 4px; --btn-h: 30px;
+  --chip: #31363b; --row: #292c30; --row-hover: #2d5c76; --sep: #3a3f44;
+  --meter: #31363b; --meter-h: 6px;
+  --avatar-bg: #31363b; --thumb-bg: #292c30;
+  --tip: #292c30; --tip-border: 1px solid #3daee9; --tip-radius: 4px;
+  --icon-stroke: 1.6; --icon-size: 17px;
+}
+.btn:hover, .bb-item:hover, .row:hover, .link:hover, .seg-b:hover { border-color: #3daee9; }
+.btn.primary { background: #3daee9; color: #fff; border-color: #3daee9; }
+.btn.danger { color: #da4453; }
+.win-titles { align-items: center; }
+.win-icon { width: 22px; height: 22px; background: transparent; }
+.win-act { border: 0; }
+.win-ctl .wbtn { width: 22px; --btn-h: 22px; border-radius: 50%; color: #fcfcfc; }
+.win-ctl .wbtn:hover { background: #4a5056; }
+.win-ctl .ctl-close { background: transparent; }
+.win-ctl .ctl-close:hover { background: #da4453; color: #fff; }
+.wbtn.on { color: #3daee9; background: transparent; }
+.row, .link, .log-row { border: 1px solid transparent; }
+.row:hover, .link:hover, .log-row:hover { background: rgba(61, 174, 233, .2); border-color: #3daee9; }
+.hero { border: 1px solid #3a3f44; border-radius: 4px; }
+.tile, .kpi, .score-row, .tr-pick { border: 1px solid #3a3f44; border-radius: 4px; }
+.sec { color: #a1a9b1; text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 700; }
+.seg { background: transparent; padding: 0; gap: 0; }
+.seg-b { border: 1px solid #4a5056; border-radius: 0; background: #31363b; color: #fcfcfc; margin-left: -1px; }
+.seg-b:first-child { border-radius: 4px 0 0 4px; }
+.seg-b:last-child { border-radius: 0 4px 4px 0; }
+.seg-b.on { background: #2d5c76; border-color: #3daee9; color: #fcfcfc; }
+.radio.on { background: #2d5c76; outline: 1px solid #3daee9; color: #fcfcfc; }
+.switch { border: 1px solid #4a5056; }
+.switch.on { background: #3daee9; }
+.meter .fill, .meter.ok .fill, .meter.accent .fill { background: #3daee9; }
+.dock-list .dock { background: #2a2e32; }
+.dock-btn.on { border-color: #3daee9; }
+.buildbar { background: #2a2e32; }
+.bb-cat { border-color: transparent; background: transparent; }
+.bb-cat.on { background: #2d5c76; border-color: #3daee9; }
+.bb-item { background: #292c30; border: 1px solid #3a3f44; }
+.bb-item.on { outline: 0; border-color: #3daee9; background: #2d5c76; }
+.toast { background: #2a2e32; border: 1px solid #3a3f44; }
+.toast.bad { border-left: 3px solid #da4453; }
+.tb-item.gold b { color: #fdbc4b; }
+.ring::before { background: #292c30; }

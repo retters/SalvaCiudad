@@ -1,0 +1,50 @@
+/* Vitral: coloured glass panes with black leading between pieces, light shining through. */
+.stage {
+  --glass: conic-gradient(from 30deg at 30% 20%, rgba(40, 80, 160, .82) 0 25%, rgba(30, 110, 80, .82) 0 45%, rgba(150, 40, 50, .82) 0 70%, rgba(190, 140, 30, .82) 0 85%, rgba(90, 40, 120, .82) 0);
+  --lead: #141414;
+  --font: 'EB Garamond', Georgia, serif; --font-title: 'EB Garamond', Georgia, serif;
+  --fs: 17px; --fs-small: 15px; --fs-title: 23px; --title-weight: 500; --title-spacing: .06em;
+  --text: #fff8e8; --dim: #f0dcc0; --accent: #ffd36a; --accent-text: #1a1408;
+  --ok: #b8ffb0; --warn: #ffe08a; --bad: #ffb0a0; --info: #b0d8ff;
+  --panel: radial-gradient(ellipse at 50% 0%, rgba(255, 240, 200, .35), transparent 60%), linear-gradient(rgba(10, 10, 10, .32), rgba(10, 10, 10, .32)), var(--glass); --panel-solid: #2a2440;
+  --panel-border: 4px solid var(--lead); --panel-radius: 120px 120px 6px 6px / 40px 40px 6px 6px;
+  --panel-shadow: inset 0 0 0 2px #3a3a3a, inset 0 0 30px rgba(255, 230, 160, .25), 0 12px 28px rgba(0, 0, 0, .5);
+  --bar: linear-gradient(rgba(10, 10, 10, .6), rgba(10, 10, 10, .6)), var(--glass); --bar-border: 4px solid var(--lead);
+  --title-text: #ffd36a; --title-border: 3px solid var(--lead); --title-h: 54px;
+  --btn: rgba(20, 20, 20, .45); --btn-hover: rgba(20, 20, 20, .25); --btn-on: rgba(255, 211, 106, .85); --btn-on-text: #1a1408;
+  --btn-border: 2px solid var(--lead); --btn-radius: 4px; --btn-h: 32px;
+  --chip: rgba(20, 20, 20, .4); --row: rgba(20, 20, 20, .35); --row-hover: rgba(20, 20, 20, .2); --sep: var(--lead);
+  --meter: rgba(0, 0, 0, .5); --meter-h: 8px; --meter-radius: 0;
+  --avatar-bg: #2a2440; --thumb-bg: radial-gradient(circle at 50% 50%, rgba(255, 240, 200, .45), transparent 65%);
+  --tip: #1a1a1a; --tip-text: #fff8e8; --tip-border: 2px solid #ffd36a; --tip-radius: 4px;
+  --icon-stroke: 1.8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+}
+.win-bar { justify-content: center; padding-top: 12px; }
+.win-titles { align-items: center; }
+.win-icon { display: none; }
+.win-act { border-color: var(--lead); }
+.wbtn { color: #f0dcc0; }
+.wbtn.on { color: #ffd36a; }
+.ctl-close:hover { background: rgba(150, 40, 50, .9); }
+.row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick, .bb-item { border: 2px solid var(--lead); }
+.hero { border: 3px solid var(--lead); border-radius: 50% 50% 4px 4px / 30% 30% 4px 4px; }
+.need, .annex { border: 2px solid var(--lead); }
+.sec { color: #ffd36a; letter-spacing: .1em; }
+.btn.primary { text-shadow: none; }
+.btn.on { text-shadow: none; }
+.meter { border: 2px solid var(--lead); }
+.meter .fill, .meter.ok .fill { background: linear-gradient(90deg, #4a9a4a, #b8ffb0); }
+.dock-list .dock { border-radius: 6px; }
+.dock-btn { justify-content: flex-start; }
+.minimap { border-radius: 50%; padding: 22px; }
+.minimap > span { color: #ffd36a; }
+.mm-frame { border: 3px solid var(--lead); }
+.buildbar { border-radius: 6px; }
+.toast { border-radius: 6px; }
+.question { border-radius: 6px; }
+.modal { border-radius: 120px 120px 6px 6px / 50px 50px 6px 6px; padding-top: 34px; }
+.modal h2 { color: #ffd36a; }
+.dialog { border-radius: 6px; }
+.ring::before { background: #2a2440; }
+.tb-item.gold b { color: #ffd36a; }

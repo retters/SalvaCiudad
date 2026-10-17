@@ -468,12 +468,12 @@ TEST_SUITE("herds") {
 
     // Not a test: a saved game with a fold, its pasture and its flock. Run
     // it by name:
-    //   salvaciudad_tests -ts=herds -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_herds.scsave: copy it to the saves
+    //   salvasprosperia_tests -ts=herds -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_herds.scsave: copy it to the saves
     // folder and load it.
     TEST_CASE("manual: a saved game with a sheepfold" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;

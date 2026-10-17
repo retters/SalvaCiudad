@@ -173,7 +173,8 @@ sim::MapSettings varied_map(std::uint64_t seed, sim::MapSize size, int players) 
 
 sim::GameRules varied_rules() {
     sim::GameRules r;
-    r.fog = sim::FogMode::Static;  // Decision D-3202.
+    r.fog = sim::FogMode::None;  // Decision D-PARTIDA-01.
+    r.races.fill(sim::kMixedRace);
     // The usual year, said in minutes: four seasons of five.
     r.climate.minutes = {kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes, kUsualSeasonMinutes};
     r.day_night = {kUsualDayMinutes, kUsualDayMinutes};

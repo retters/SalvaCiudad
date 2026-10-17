@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Íconos · comparación</title>
+<style>
+  :root { color-scheme: dark; --bg: #15171a; --panel: #1f2226; --line: #2c3036; --text: #e8e6e1; --dim: #9aa3ad; --size: 24px; --cell: #262a30; }
+  body.light { --bg: #eceae4; --panel: #f7f5f0; --line: #d8d4ca; --text: #22201c; --dim: #6a655c; --cell: #fff; color-scheme: light; }
+  body.warm { --bg: #1b1610; --panel: #2b2620; --line: #4a3f31; --text: #f2e8d5; --dim: #b9ac94; --cell: #3a3127; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 'Segoe UI', system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0 12px 0 0; font-size: 18px; }
+  header a { color: #7fb2ff; text-decoration: none; }
+  button, select { font: inherit; color: inherit; background: var(--cell); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  main { padding: 18px; max-width: 1500px; margin: 0 auto; }
+  .note { color: var(--dim); max-width: 900px; }
+  .warn { color: #f0b860; }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; margin-top: 12px; }
+  th { position: sticky; top: 58px; background: var(--panel); text-align: center; font-weight: 600; padding: 8px 6px; border-bottom: 1px solid var(--line); z-index: 2; }
+  th small { display: block; color: var(--dim); font-weight: 400; }
+  td { text-align: center; padding: 6px; border-bottom: 1px solid var(--line); }
+  td:first-child, th:first-child { text-align: left; color: var(--dim); width: 140px; }
+  .ico { display: inline-grid; place-items: center; width: calc(var(--size) + 18px); height: calc(var(--size) + 18px); border-radius: 8px; background: var(--cell); color: var(--text); font-size: var(--size); }
+  .ico svg { width: var(--size); height: var(--size); }
+  .ico .s { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .ico .k { fill: currentColor; }
+  .ico .f { fill: currentColor; opacity: 0; }
+  .duo .ico .f { opacity: .28; }
+  .solid .ico .f { opacity: 1; }
+  .ico i { font-style: normal; line-height: 1; }
+  .ext .ico:empty::after { content: '·'; color: var(--dim); }
+  .votes { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 18px; }
+  .fam { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .fam h3 { margin: 0 0 4px; }
+  .fam p { margin: 0 0 8px; color: var(--dim); font-size: 13px; }
+  .fam .vb { display: flex; gap: 6px; }
+  .fam .vb button.on { background: #3d5a8a; border-color: #5a80c0; color: #fff; }
+  .fam textarea { width: 100%; box-sizing: border-box; margin-top: 8px; min-height: 54px; font: inherit; color: inherit; background: var(--cell); border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+  .ctx { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 12px; }
+  .bar { display: flex; align-items: center; gap: 4px; padding: 8px 10px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); }
+  .bar b { flex: 1; color: #e9b949; }
+  .bar .ico { --size: 18px; background: transparent; width: 30px; height: 30px; color: var(--dim); }
+  .bar small { color: var(--dim); width: 76px; }
+  #status { font-size: 12px; color: var(--dim); }
+  #status.ok { color: #8fe0a0; } #status.warn { color: #f0c070; } #status.bad { color: #f09090; }
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html">← Galería</a>
+  <h1>Íconos: propios contra bibliotecas</h1>
+  <label>Tamaño <select id="size"><option>16</option><option>20</option><option selected>24</option><option>32</option><option>40</option></select> px</label>
+  <label>Fondo <select id="bg"><option value="">Oscuro</option><option value="warm">Madera (juego)</option><option value="light">Claro</option></select></label>
+  <button id="load">Cargar Lucide, Phosphor y Tabler (internet)</button>
+  <span id="status"></span>
+  <button id="connect">Abrir respuestas.json</button><button id="download">Descargar</button>
+</header>
+<main>
+  <p class="note">La columna <b>Propios</b> es el set de este kit (<code>kit/iconos.js</code>): trazos en una cuadrícula de 24 con las mismas reglas, y una capa de relleno opcional para las versiones duotono y sólida. Las bibliotecas se cargan desde internet <b>solo si pulsas el botón</b> (jsDelivr y unpkg, versiones fijas); el juego nunca se conectaría: se vendorizarían con su licencia (Lucide ISC, Phosphor MIT, Tabler MIT).</p>
+  <p class="note warn" id="offline">Sin cargar las bibliotecas solo se ven los íconos propios.</p>
+  <p class="note">Huecos de cada biblioteca: Phosphor no tiene hacha (se muestra un pino) y Tabler no tiene trigo (se muestra un brote). Son el tipo de cosas propias del juego que habría que dibujar aparte con cualquier biblioteca.</p>
+  <h2>En contexto: la barra de título de una ventana</h2>
+  <div class="ctx" id="ctx"></div>
+  <h2>Uno por uno</h2>
+  <table id="grid"></table>
+  <h2>¿Qué familia prefieres?</h2>
+  <div class="votes" id="votes"></div>
+</main>
+<script src="kit/iconos.js"></script>
+<script src="kit/respuestas.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+// concept, ours, lucide@0.459.0, phosphor@2.0.3, tabler@2.47.0
+const ROWS = [
+  ['Fijar', 'pin', 'pin', 'push-pin', 'pin'], ['Cerrar', 'x', 'x', 'x', 'x'], ['Minimizar', 'minus', 'minus', 'minus', 'minus'],
+  ['Ver (llevar la cámara)', 'eye', 'eye', 'eye', 'eye'], ['Cámara', 'camera', 'video', 'video-camera', 'video'],
+  ['Más opciones', 'more', 'ellipsis', 'dots-three', 'dots'], ['Demoler', 'trash', 'trash-2', 'trash', 'trash'],
+  ['Renombrar', 'pencil', 'pencil', 'pencil-simple', 'pencil'], ['Seguir', 'target', 'crosshair', 'crosshair', 'crosshair'],
+  ['Vivienda', 'home', 'house', 'house', 'home'], ['Población', 'users', 'users', 'users', 'users'],
+  ['Felicidad', 'smile', 'smile', 'smiley', 'mood-smile'], ['Salud', 'heart', 'heart', 'heart', 'heart'],
+  ['Energía', 'bolt', 'zap', 'lightning', 'bolt'], ['Calor', 'thermo', 'thermometer', 'thermometer', 'temperature'],
+  ['Incendio', 'flame', 'flame', 'fire', 'flame'], ['Enfermos', 'pill', 'pill', 'pill', 'pill'],
+  ['Ejército', 'swords', 'swords', 'sword', 'swords'], ['Defensa', 'shield', 'shield', 'shield', 'shield'],
+  ['Comercio', 'scales', 'scale', 'scales', 'scale'], ['Bienes', 'box', 'package', 'package', 'package'],
+  ['Estadísticas', 'chart', 'chart-column', 'chart-bar', 'chart-bar'], ['Eventos', 'list', 'list', 'list-bullets', 'list'],
+  ['Capas', 'layers', 'layers', 'stack', 'stack-2'], ['Oro', 'coins', 'coins', 'coins', 'coins'],
+  ['Comida', 'apple', 'apple', 'bowl-food', 'apple'], ['Trigo', 'wheat', 'wheat', 'grains', 'seeding'],
+  ['Pesca', 'fish', 'fish', 'fish', 'fish'], ['Recursos (talar)', 'axe', 'axe', 'tree-evergreen', 'axe'],
+  ['Industria', 'factory', 'factory', 'factory', 'building-factory'], ['Naturaleza', 'tree', 'tree-pine', 'tree', 'tree'],
+  ['Monumentos', 'landmark', 'landmark', 'bank', 'building-monument'], ['Centro del pueblo', 'castle', 'castle', 'castle-turret', 'building-castle'],
+  ['Mercado', 'stall', 'store', 'storefront', 'building-store'], ['Decoración', 'flower', 'flower-2', 'flower', 'flower'],
+  ['Agua', 'drop', 'droplet', 'drop', 'droplet'], ['Religión', 'chapel', 'church', 'church', 'building-church'],
+  ['Día', 'sun', 'sun', 'sun', 'sun'], ['Noche', 'moon', 'moon', 'moon', 'moon'], ['Lluvia', 'rain', 'cloud-rain', 'cloud-rain', 'cloud-rain'],
+  ['Nieve', 'snow', 'snowflake', 'snowflake', 'snowflake'], ['Pausa', 'pause', 'pause', 'pause', 'player-pause'],
+  ['Más rápido', 'faster', 'fast-forward', 'fast-forward', 'player-track-next'], ['Campana', 'bell', 'bell', 'bell', 'bell'],
+  ['Mapa', 'map', 'map', 'map-trifold', 'map'], ['Nivel', 'crown', 'crown', 'crown', 'crown'], ['Bloqueado', 'lock', 'lock', 'lock', 'lock'],
+];
+const COLS = [
+  {id: 'propios', name: 'Propios', sub: 'trazo', cls: '', cell: r => icono(r[1])},
+  {id: 'propios', name: 'Propios', sub: 'duotono', cls: 'duo', cell: r => icono(r[1])},
+  {id: 'propios', name: 'Propios', sub: 'sólido', cls: 'solid', cell: r => icono(r[1])},
+  {id: 'lucide', name: 'Lucide', sub: 'ISC', cls: 'ext', cell: r => `<i data-lucide="${r[2]}"></i>`},
+  {id: 'phosphor', name: 'Phosphor', sub: 'regular · MIT', cls: 'ext', cell: r => `<i class="ph ph-${r[3]}"></i>`},
+  {id: 'phosphor', name: 'Phosphor', sub: 'relleno', cls: 'ext', cell: r => `<i class="ph-fill ph-${r[3]}"></i>`},
+  {id: 'phosphor', name: 'Phosphor', sub: 'duotono', cls: 'ext', cell: r => `<i class="ph-duotone ph-${r[3]}"></i>`},
+  {id: 'tabler', name: 'Tabler', sub: 'MIT', cls: 'ext', cell: r => `<i class="ti ti-${r[4]}"></i>`},
+];
+$('#grid').innerHTML = '<tr><th>Concepto</th>' + COLS.map(c => `<th>${c.name}<small>${c.sub}</small></th>`).join('') + '</tr>'
+  + ROWS.map(r => `<tr><td>${r[0]}</td>` + COLS.map(c => `<td class="${c.cls}"><span class="ico">${c.cell(r)}</span></td>`).join('') + '</tr>').join('');
+const CTX = ['eye', 'camera', 'minus', 'pin', 'x'].map(k => ROWS.find(r => r[1] === k));
+$('#ctx').innerHTML = COLS.map(c => `<div class="bar ${c.cls}"><small>${c.name} ${c.sub}</small><b>Cantero</b>${CTX.map(r => `<span class="ico">${c.cell(r)}</span>`).join('')}</div>`).join('');
+
+const FAMS = [
+  ['propios', 'Propios', 'Hechos a la medida del juego con reglas fijas; los temas del juego (razas, recursos) salen con el mismo trazo. Más trabajo.'],
+  ['lucide', 'Lucide', 'Limpio y uniforme, más de 1 400 íconos. Le faltan cosas propias del juego.'],
+  ['phosphor', 'Phosphor', 'Seis pesos (fino a relleno, y duotono). El relleno se lee mejor en tamaño pequeño.'],
+  ['tabler', 'Tabler', 'Más de 4 000 íconos de trazo, muchos edificios. Estilo algo más técnico.'],
+];
+function votes() {
+  $('#votes').innerHTML = FAMS.map(([id, name, desc]) => {
+    const a = Respuestas.get('iconos', id);
+    return `<div class="fam" data-id="${id}"><h3>${name}</h3><p>${desc}</p><div class="vb">${[['si', 'Sí'], ['talvez', 'Tal vez'], ['no', 'No']].map(([v, l]) => `<button data-v="${v}" class="${a.voto === v ? 'on' : ''}">${l}</button>`).join('')}</div><textarea placeholder="Notas…">${a.nota || ''}</textarea></div>`;
+  }).join('');
+}
+votes();
+$('#votes').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = b.closest('.fam').dataset.id;
+  const cur = Respuestas.get('iconos', id).voto;
+  Respuestas.set('iconos', id, {voto: cur === b.dataset.v ? undefined : b.dataset.v});
+  votes();
+});
+$('#votes').addEventListener('input', e => {
+  if (e.target.tagName === 'TEXTAREA') Respuestas.set('iconos', e.target.closest('.fam').dataset.id, {nota: e.target.value});
+});
+function status() {
+  const [cls, text] = Respuestas.status();
+  $('#status').className = cls; $('#status').textContent = text;
+  $('#connect').hidden = Respuestas.connected || !Respuestas.canConnect;
+}
+Respuestas.onChange(status); status();
+$('#connect').addEventListener('click', () => Respuestas.connect());
+$('#download').addEventListener('click', () => Respuestas.download());
+$('#size').addEventListener('change', e => document.documentElement.style.setProperty('--size', e.target.value + 'px'));
+$('#bg').addEventListener('change', e => { document.body.className = e.target.value; });
+
+$('#load').addEventListener('click', () => {
+  $('#load').disabled = true;
+  $('#load').textContent = 'Cargando…';
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css';
+  document.head.appendChild(css);
+  const ph = document.createElement('script');
+  ph.src = 'https://unpkg.com/@phosphor-icons/web@2.0.3';
+  document.head.appendChild(ph);
+  const lu = document.createElement('script');
+  lu.src = 'https://cdn.jsdelivr.net/npm/lucide@0.459.0/dist/umd/lucide.min.js';
+  lu.onload = () => { lucide.createIcons(); $('#load').textContent = 'Bibliotecas cargadas'; $('#offline').hidden = true; };
+  lu.onerror = () => { $('#load').textContent = 'No se pudieron cargar'; $('#load').disabled = false; };
+  document.head.appendChild(lu);
+});
+</script>
+</body>
+</html>

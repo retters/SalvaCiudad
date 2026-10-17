@@ -1,14 +1,14 @@
 # Generador de mapas
 
-SalvaCiudad tiene un solo generador de mapas, el **jerárquico**: decide de lo general a lo particular. Primero reparte el mapa en regiones, cada una con un solo papel; después coloca dentro de cada región solo las estructuras de ese papel. Nada se encima. Es determinista: la misma semilla y las mismas opciones dan siempre el mismo mapa, en cualquier computadora.
+SalvasProsperia tiene un solo generador de mapas, el **jerárquico**: decide de lo general a lo particular. Primero reparte el mapa en regiones, cada una con un solo papel; después coloca dentro de cada región solo las estructuras de ese papel. Nada se encima. Es determinista: la misma semilla y las mismas opciones dan siempre el mismo mapa, en cualquier computadora.
 
-Hasta la fase 48 había además un generador **clásico** (relieve de ruido con mesetas, valles, cordilleras y cañones que cruzaban el mapa, costas con cabos y un fondo marino con fosas y dorsales). Se borró en la fase 49 (D-4901); quedó archivado en `J:\Back\salvaciudad-alfa-1.zip`.
+Hasta la fase 48 había además un generador **clásico** (relieve de ruido con mesetas, valles, cordilleras y cañones que cruzaban el mapa, costas con cabos y un fondo marino con fosas y dorsales). Se borró en la fase 49 (D-4901); quedó archivado en `J:\Back\salvasprosperia-alfa-1.zip`.
 
 ## Cómo saber qué hay en cada lugar
 
 - **F3** (ventana de estadísticas), sección "Bajo el cursor": casilla, suelo, bioma, altura, pendiente, fertilidad, agua, la región ("Región: Montañas") y la estructura exacta ("Accidentes: Cresta"). Lo no explorado dice solo "Todavía sin explorar".
-- **Ctrl+F12** (reporte del mapa): pintas lo que te interesa y se guarda una captura con los datos del lugar en `%TEMP%\SalvaCiudad\reportes\`. Ver el README.
-- **`SalvaCiudad.exe --reporte <carpeta>`**: vuelve a generar el mapa de un reporte con el generador actual y guarda una captura del mismo lugar, para comparar el antes y el después de un cambio.
+- **Ctrl+F12** (reporte del mapa): pintas lo que te interesa y se guarda una captura con los datos del lugar en `%TEMP%\SalvasProsperia\reportes\`. Ver el README.
+- **`SalvasProsperia.exe --reporte <carpeta>`**: vuelve a generar el mapa de un reporte con el generador actual y guarda una captura del mismo lugar, para comparar el antes y el después de un cambio.
 
 ## Opciones de la partida que cambian el mapa
 

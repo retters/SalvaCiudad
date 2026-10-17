@@ -461,11 +461,11 @@ TEST_SUITE("rain") {
 
     // Not a test: a saved game on a day of rain, with a dirt road and a
     // cobbled street, to look at it and hear it. Run it by name:
-    //   salvaciudad_tests -ts=rain -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_rain.scsave: copy it to the saves folder and load it.
+    //   salvasprosperia_tests -ts=rain -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_rain.scsave: copy it to the saves folder and load it.
     TEST_CASE("manual: a saved game on a day of rain" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         const std::filesystem::path file = folder / "manual_rain.scsave";
         GameSetup rules = setup(200, 0b1111);

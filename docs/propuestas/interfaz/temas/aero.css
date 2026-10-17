@@ -1,0 +1,70 @@
+/* Windows 7 Aero: blue-tinted blurred glass with a diagonal sheen, glowing titles, glossy red close button. */
+.stage {
+  --font: 'Segoe UI', sans-serif; --font-title: 'Segoe UI', sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 15px; --title-weight: 400;
+  --text: #0b1a2a; --dim: #3b4f63; --accent: #2a6fc9; --accent-text: #fff;
+  --ok: #1f8a2a; --warn: #b07800; --bad: #c42b1c; --info: #1e64c8;
+  --glass: linear-gradient(135deg, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, .12) 38%, rgba(255, 255, 255, 0) 39%, rgba(255, 255, 255, .1) 100%), rgba(120, 170, 220, .38);
+  --panel: var(--glass); --panel-solid: #a9c4e0;
+  --panel-blur: blur(10px) saturate(140%);
+  --panel-border: 1px solid rgba(20, 40, 70, .55); --panel-radius: 8px;
+  --panel-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55), 0 8px 26px rgba(0, 0, 0, .45);
+  --panel-pad: 10px;
+  --bar: linear-gradient(180deg, rgba(255, 255, 255, .45), rgba(255, 255, 255, .1) 48%, rgba(0, 0, 0, .05) 50%, rgba(255, 255, 255, .15)), rgba(60, 100, 150, .45);
+  --bar-border: 1px solid rgba(20, 40, 70, .6); --bar-h: 42px;
+  --title-text: #000; --title-border: 0; --title-h: 34px;
+  --btn: linear-gradient(180deg, #f6f9fc, #e3ebf3 49%, #d5e0ea 50%, #e8eff6); --btn-hover: linear-gradient(180deg, #eaf6fd, #d9f0fc 49%, #bee6fd 50%, #a7d9f5);
+  --btn-on: linear-gradient(180deg, #e5f4fc, #c4e5f6 49%, #98d1ef 50%, #68b3db); --btn-on-text: #0b1a2a; --btn-text: #0b1a2a;
+  --btn-border: 1px solid #707070; --btn-radius: 3px; --btn-h: 28px; --btn-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7);
+  --chip: rgba(255, 255, 255, .6); --row: rgba(255, 255, 255, .72); --row-hover: linear-gradient(180deg, #f2f8fd, #dcecfb); --sep: rgba(20, 40, 70, .18);
+  --meter: #e6e6e6; --meter-h: 12px; --meter-radius: 2px;
+  --avatar-bg: linear-gradient(160deg, #e0eefa, #9ec4e6); --thumb-bg: linear-gradient(180deg, #fff, #e8f0f8);
+  --tip: linear-gradient(180deg, #fff, #e4e5f0); --tip-text: #333; --tip-border: 1px solid #767676; --tip-radius: 3px;
+  --icon-stroke: 1.6; --icon-size: 18px;
+}
+.win-body { background: rgba(255, 255, 255, .86); margin: 0 7px 7px; border: 1px solid rgba(20, 40, 70, .45); border-radius: 2px; }
+.win.minimized .win-body { display: none; }
+.win-bar { text-shadow: 0 0 10px #fff, 0 0 6px #fff, 0 0 2px #fff; padding: 2px 6px 2px 10px; }
+.win-act { border: 0; }
+.win-ctl { gap: 0; align-self: flex-start; margin-top: -3px; }
+.win-ctl .wbtn { width: 28px; --btn-h: 20px; border-radius: 0; border: 1px solid rgba(20, 40, 70, .6); background: linear-gradient(180deg, rgba(255, 255, 255, .6), rgba(255, 255, 255, .15) 48%, rgba(0, 0, 0, .06) 50%, rgba(255, 255, 255, .25)); color: #fff; filter: drop-shadow(0 0 1px #000); }
+.win-ctl .ctl-min { border-radius: 0 0 0 5px; }
+.win-ctl .ctl-close { width: 46px; border-radius: 0 0 5px 0; background: linear-gradient(180deg, #e8a493, #d17660 48%, #b0351c 50%, #d06a4c); }
+.win-ctl .ctl-close:hover { background: linear-gradient(180deg, #f8b8a6, #e8806a 48%, #d03c1c 50%, #f07a52); box-shadow: 0 0 10px #f80; }
+.win-ctl .wbtn:hover { color: #fff; }
+.wbtn.on { color: #fff; background: linear-gradient(180deg, #8fd3ff, #4aa8e8 48%, #1a78c8 50%, #4aa8e8) !important; }
+.win-act .wbtn { color: #0b1a2a; background: transparent; filter: none; }
+.win-icon { width: 22px; height: 22px; background: transparent; }
+.win-sub { color: #23384d; }
+.hero { border: 1px solid #c9d6e3; border-radius: 2px; }
+.topbar { color: #fff; text-shadow: 0 0 8px rgba(0, 0, 0, .55), 0 1px 1px rgba(0, 0, 0, .7); }
+.topbar .dim, .topbar .of { color: #e6f0fa; }
+.topbar .btn { text-shadow: none; }
+.tb-item.gold b { color: #ffe27a; }
+.tb-item.alert { color: #ffd27a; }
+.dock-list .dock { background: var(--glass); }
+.minimap { background: var(--glass); }
+.minimap > span { color: #fff; text-shadow: 0 0 6px #000; }
+.buildbar { background: var(--glass); }
+.bb-cat { min-height: 52px; }
+.bb-item { background: rgba(255, 255, 255, .85); border: 1px solid #b6c6d6; }
+.bb-item.on { outline: 0; background: linear-gradient(180deg, #e5f4fc, #c4e5f6); border-color: #3c7fb1; }
+.toast { background: linear-gradient(180deg, #fff, #e4ecf5); border: 1px solid #6a7a8a; color: #0b1a2a; }
+.question, .place-hint, .modal { background: var(--glass); }
+.question .q-main, .modal { color: #0b1a2a; }
+.q-main { background: rgba(255, 255, 255, .86); border-radius: 3px; padding: 8px 10px; }
+.place-hint { color: #fff; text-shadow: 0 0 6px #000; }
+.modal .menu-item { justify-content: flex-start; }
+.modal h2 { text-shadow: 0 0 10px #fff, 0 0 6px #fff; color: #000; }
+.sec { color: #1e4d8a; text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 600; }
+.seg { background: transparent; padding: 0; gap: 2px; }
+.seg-b { background: var(--btn); border: 1px solid #707070; border-radius: 3px; color: #0b1a2a; }
+.seg-b.on { background: var(--btn-on); color: #0b1a2a; }
+.radio.on { background: linear-gradient(180deg, #e5f4fc, #c4e5f6); color: #0b1a2a; outline: 1px solid #7da2ce; }
+.meter { border: 1px solid #bcbcbc; }
+.meter .fill, .meter.ok .fill { background: linear-gradient(180deg, #a7f0a7, #4ec34e 50%, #06b025); }
+.meter.warn .fill { background: linear-gradient(180deg, #fff2a0, #f0c040 50%, #d8a000); }
+.meter.bad .fill { background: linear-gradient(180deg, #ffb0a0, #e05030 50%, #c42b1c); }
+.meter.accent .fill { background: linear-gradient(180deg, #a8dcff, #3a9ae8 50%, #1a6ec8); }
+.dock-btn.on { color: #0b1a2a; }
+.cam-view { margin: 0 -3px -3px; border-radius: 2px; }

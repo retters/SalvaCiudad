@@ -1,0 +1,27 @@
+/* Pizarra: the dark slate panel of Salvador's reference image (top left). Compact, quiet, status dots. */
+.stage {
+  --font: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: var(--font);
+  --fs: 16px; --fs-small: 14px; --fs-title: 18px; --title-weight: 600;
+  --text: #eef1ec; --dim: #9ea9a1; --accent: #e9b949; --accent-text: #1c1a10;
+  --ok: #72c96e; --warn: #e9b949; --bad: #ec6a55; --info: #79b4e6;
+  --panel: rgba(27, 35, 33, .95); --panel-solid: #1b2321;
+  --panel-border: 1px solid rgba(255, 255, 255, .09); --panel-radius: 8px; --panel-shadow: 0 10px 28px rgba(0, 0, 0, .42);
+  --bar: rgba(20, 26, 25, .93); --bar-border: 1px solid rgba(255, 255, 255, .06); --bar-h: 46px;
+  --title-text: #f4f6f2; --title-border: 1px solid rgba(255, 255, 255, .07); --title-h: 42px;
+  --btn: rgba(255, 255, 255, .05); --btn-hover: rgba(255, 255, 255, .1); --btn-on: rgba(233, 185, 73, .16); --btn-on-text: #f0c75e;
+  --btn-radius: 6px; --btn-h: 32px;
+  --chip: rgba(255, 255, 255, .06); --row: rgba(255, 255, 255, .035); --row-hover: rgba(255, 255, 255, .08); --sep: rgba(255, 255, 255, .07);
+  --meter: rgba(255, 255, 255, .09); --meter-h: 5px;
+  --avatar-bg: linear-gradient(160deg, #4b5a55, #232d2a); --thumb-bg: radial-gradient(circle at 50% 75%, rgba(255, 255, 255, .1), transparent 65%);
+  --tip: rgba(14, 19, 18, .97); --tip-border: 1px solid rgba(255, 255, 255, .1);
+  --icon-stroke: 1.7;
+}
+.dock-list .dock { padding: 6px; }
+.dock-btn { width: 150px; }
+.tb-item b { font-weight: 600; }
+.win-sub { color: #8a958e; }
+.kv .k { color: #a9b4ac; }
+.bb-cat { background: transparent; color: #b8c2bb; }
+.bb-cat.on { background: rgba(233, 185, 73, .14); }
+.hero { height: 112px; }
+.win-icon { border-radius: 6px; }

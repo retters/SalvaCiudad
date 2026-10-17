@@ -150,6 +150,86 @@ TEST_SUITE("ui") {
         CHECK(list.vertices().size() == 12);  // Three glyphs.
     }
 
+    TEST_CASE("glows are smooth Gaussian blurs of the text") {
+        // A single dot spreads into a symmetric bell that keeps its total and has no steps.
+        AlphaMask dot;
+        dot.resize(81, 81);
+        dot.at(40, 40) = 1.0f;
+        gaussian_blur(dot, 6.0f);
+        float total = 0.0f;
+        for (const float a : dot.a) {
+            total += a;
+        }
+        CHECK(total == doctest::Approx(1.0f).epsilon(0.001));
+        CHECK(dot.at(30, 40) == doctest::Approx(dot.at(50, 40)));
+        CHECK(dot.at(40, 30) == doctest::Approx(dot.at(40, 50)));
+        // The spread matches the sigma: about 0.6 of the peak one sigma away (exactly e^-0.5).
+        CHECK(dot.at(46, 40) / dot.at(40, 40) == doctest::Approx(0.6065f).epsilon(0.08));
+        // Falls off steadily outwards, and its slope never jumps (no visible rings).
+        for (int x = 41; x < 70; ++x) {
+            CHECK(dot.at(x, 40) <= dot.at(x - 1, 40));
+            const float curve = dot.at(x - 1, 40) - 2.0f * dot.at(x, 40) + dot.at(x + 1, 40);
+            CHECK(std::abs(curve) < dot.at(40, 40) * 0.05f);
+        }
+
+        // The text mask lines up with the drawn glyphs.
+        auto font = load_ui_font();
+        GlyphAtlas atlas(512);
+        TextRenderer text(atlas);
+        text.set_font(FontRole::Regular, font.get());
+        const TextStyle st{FontRole::Regular, 32};
+        AlphaMask mask;
+        mask.resize(200, 60);
+        CHECK(text.rasterize(st, 10.0f, 5.0f, "Salva", mask) == text.measure(st, "Salva"));
+        AlphaMask s_mask;
+        s_mask.resize(200, 60);
+        text.rasterize(st, 10.0f, 5.0f, "S", s_mask);
+        DrawList list;
+        list.reset(800, 600, atlas.white_u(), atlas.white_v());
+        text.draw(list, st, 10.0f, 5.0f, "S", Color::rgb(0xFFFFFF));
+        REQUIRE(list.vertices().size() == 4);
+        const Vertex& top_left = list.vertices()[0];
+        const Vertex& bottom_right = list.vertices()[2];
+        int x0 = 1000, y0 = 1000, x1 = -1, y1 = -1;
+        for (int y = 0; y < s_mask.h; ++y) {
+            for (int x = 0; x < s_mask.w; ++x) {
+                if (s_mask.at(x, y) > 0.0f) {
+                    x0 = std::min(x0, x);
+                    y0 = std::min(y0, y);
+                    x1 = std::max(x1, x + 1);
+                    y1 = std::max(y1, y + 1);
+                }
+            }
+        }
+        CHECK(static_cast<float>(x0) >= top_left.x);
+        CHECK(static_cast<float>(y0) >= top_left.y);
+        CHECK(static_cast<float>(x1) <= bottom_right.x);
+        CHECK(static_cast<float>(y1) <= bottom_right.y);
+        CHECK(static_cast<float>(x1 - x0) >= (bottom_right.x - top_left.x) - 2.0f);
+        CHECK(static_cast<float>(y1 - y0) >= (bottom_right.y - top_left.y) - 2.0f);
+
+        // Composed glows come out as straight RGBA: the color is kept even where it is faint.
+        AlphaMask bell = dot;
+        const float peak = dot.at(40, 40);
+        for (float& a : bell.a) {
+            a /= peak;
+        }
+        GlowCanvas canvas(81, 81);
+        canvas.over(bell, Color::rgb(0xFF8000), 1.0f);
+        canvas.faded_line(10, 70, 60, 1, Color::rgb(0x8FB0C8));
+        const std::vector<std::uint8_t> rgba = canvas.to_rgba8();
+        REQUIRE(rgba.size() == 81u * 81u * 4u);
+        const std::size_t near = (40u * 81u + 52u) * 4u;
+        CHECK(rgba[near] == 255);
+        CHECK(rgba[near + 1] == 128);
+        CHECK(rgba[near + 3] > 0);
+        const std::size_t mid = (70u * 81u + 40u) * 4u;
+        const std::size_t end = (70u * 81u + 10u) * 4u;
+        CHECK(rgba[mid + 3] >= 254);
+        CHECK(rgba[end + 3] < 10);
+        CHECK(rgba[0 + 3] == 0);
+    }
+
     TEST_CASE("the shipped font manifest loads") {
         FontLibrary lib;
         REQUIRE(lib.load(kFontsDir));

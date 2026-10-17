@@ -427,12 +427,12 @@ TEST_SUITE("deposits") {
     // Not a test: a saved game with a bank of clay, a seam of coal and a vein
     // of gold, each with its pit or mine beside it, and the three sizes of
     // each in a row. Run it by name:
-    //   salvaciudad_tests -ts=deposits -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_deposits.scsave: copy it to the
+    //   salvasprosperia_tests -ts=deposits -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_deposits.scsave: copy it to the
     // saves folder and load it.
     TEST_CASE("manual: a saved game with deposits of clay, coal and gold being worked" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;

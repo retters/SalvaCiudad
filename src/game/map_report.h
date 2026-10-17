@@ -110,7 +110,7 @@ struct Replay {
 void draw_strokes(std::vector<std::uint8_t>& rgb, std::uint32_t width, std::uint32_t height,
                   const std::vector<Stroke>& strokes, float thickness, std::array<std::uint8_t, 3> color);
 
-// %TEMP%\SalvaCiudad\reportes (or the system's temporary folder elsewhere).
+// %TEMP%\SalvasProsperia\reportes (or the system's temporary folder elsewhere).
 [[nodiscard]] std::filesystem::path base_dir();
 // A folder name for a report made now: "2026-09-29_153201".
 [[nodiscard]] std::string folder_name_now();

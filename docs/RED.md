@@ -126,14 +126,14 @@ Los mensajes, salvo la instantánea, miden a lo sumo 256 KB. ENet los entrega en
 
 ## Varias ventanas en una computadora
 
-- `SalvaCiudad.exe --instance 2` usa la carpeta de datos `instance-2` (configuración, partidas y registros propios), una ventana pequeña y el puerto 47802.
+- `SalvasProsperia.exe --instance 2` usa la carpeta de datos `instance-2` (configuración, partidas y registros propios), una ventana pequeña y el puerto 47802.
 - `--loopback` hace que el anfitrión solo acepte conexiones de la misma computadora (127.0.0.1) y que no busque ni anuncie partidas en la red, así Windows no pregunta por el firewall.
 
 Por ejemplo, en dos consolas:
 
 ```
-SalvaCiudad.exe --instance 1 --loopback
-SalvaCiudad.exe --instance 2 --loopback
+SalvasProsperia.exe --instance 1 --loopback
+SalvasProsperia.exe --instance 2 --loopback
 ```
 
 La 1 crea la partida. La 2 se une a `127.0.0.1`, puerto `47801`.

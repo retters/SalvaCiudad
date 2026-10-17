@@ -11,12 +11,12 @@ Lo que conviene probar a mano, por fase; casi todo lo demás lo cubren las prueb
 - [ ] Con dos monitores: mover la ventana al segundo, pasar a pantalla completa, y comprobar que se queda en ese monitor.
 - [ ] Minimizar el juego: no consume CPU apreciable.
 - [ ] Escribir texto inválido en `settings.json`: el juego arranca y deja el archivo como `settings.json.bad-<fecha>`.
-- [ ] `logs\salvaciudad.log` registra el inicio, el modo de ventana y el backend de GPU.
+- [ ] `logs\salvasprosperia.log` registra el inicio, el modo de ventana y el backend de GPU.
 
 ### Fase 2
 
 - [ ] La primera vez, el juego aparece en el idioma de Windows (español si Windows está en español).
-- [ ] El menú principal muestra el logotipo "- SALVA -" / "CIUDAD" con la C más grande, y los siete botones.
+- [ ] El menú principal muestra el logotipo: "SALVA’S" pequeño y plateado, "PROSPERIA" en oro con resplandor y un filete plateado debajo (como la variante G2 de `docs/propuestas/titulo.html`), y los siete botones. Probar con la ventana muy angosta y con la interfaz al 150 %: el logotipo se encoge sin recortarse. El título de la ventana dice "SALVA'S PROSPERIA".
 - [ ] Al detener el puntero sobre un botón, aparece su ayuda emergente tras medio segundo.
 - [ ] Los botones que aún no funcionan muestran "Próximamente"; Enter o Esc cierran el diálogo.
 - [ ] Configuración → Idioma: cambiar a English y de vuelta a Español; todo el texto cambia al instante.
@@ -86,7 +86,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Crear: poner un árbol, una casa y varias personas en el centro de la vista y con clic en el suelo; aparecen al instante.
 - [ ] Explorador: buscar "secuoya" o "arbol" (sin acento), elegir uno de la lista: la cámara va hacia él y el inspector lo muestra; "Eliminar" lo quita.
 - [ ] Mapa Enorme en Ultra: más de 60 FPS en los tres modos de cámara.
-- [ ] **Tu opinión:** formas y colores de cada especie (se ven en `SalvaCiudadModelos.exe`), cantidad de pasto y los tipos de mapa.
+- [ ] **Tu opinión:** formas y colores de cada especie (se ven en `SalvasProsperiaModelos.exe`), cantidad de pasto y los tipos de mapa.
 
 ### Fase 6c (estilo low-poly facetado)
 
@@ -121,7 +121,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 9 (multijugador)
 
-- [ ] Abrir dos ventanas con `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --instance 2 --loopback`. En la 1, "Crear partida multijugador", elegir el mapa y "Abrir la sala".
+- [ ] Abrir dos ventanas con `SalvasProsperia.exe --instance 1 --loopback` y `SalvasProsperia.exe --instance 2 --loopback`. En la 1, "Crear partida multijugador", elegir el mapa y "Abrir la sala".
 - [ ] En la 2, "Unirse a partida", puerto 47801, "Conectar": los dos aparecen en la sala con su nombre y color; cambiar el nombre y el color se ve en la otra ventana.
 - [ ] "Listo" en la 2 y "Empezar" en la 1: las dos generan el mapa y juegan la misma partida (mismo pueblo, mismos aldeanos).
 - [ ] Una casa colocada en una ventana aparece en la otra; en "un pueblo por jugador" cada uno tiene su centro del pueblo.
@@ -226,7 +226,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 20 (rendimiento)
 
-- [ ] `salvaciudad_tests -ts=sim_perf --no-skip` (compilación release) da un tick en marcha de unos 12 ms con 12 × 1000 aldeanos (ver `docs/RENDIMIENTO.md`).
+- [ ] `salvasprosperia_tests -ts=sim_perf --no-skip` (compilación release) da un tick en marcha de unos 12 ms con 12 × 1000 aldeanos (ver `docs/RENDIMIENTO.md`).
 - [ ] Con Ctrl+F3 → Pueblo → "500 aldeanos más" dos veces y F3, el juego sigue fluido a x3 con 1000 aldeanos a la vista.
 - [ ] En la sala multijugador, con población máxima 1000 y siete jugadores o más, aparece el aviso de rendimiento en rojo.
 
@@ -305,8 +305,8 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fase 30 (visor de modelos)
 
-- [ ] `SalvaCiudadModelos.exe` abre sin el juego, en una ventana, con los textos en tu idioma.
-- [ ] A la izquierda están los modelos de "SalvaCiudad (juego base)" por categoría; al elegir un tipo con varias variantes (por ejemplo, Roble o Sombreros) se ven todas lado a lado, con el aldeano de referencia a la izquierda.
+- [ ] `SalvasProsperiaModelos.exe` abre sin el juego, en una ventana, con los textos en tu idioma.
+- [ ] A la izquierda están los modelos de "SalvasProsperia (juego base)" por categoría; al elegir un tipo con varias variantes (por ejemplo, Roble o Sombreros) se ven todas lado a lado, con el aldeano de referencia a la izquierda.
 - [ ] Al elegir un archivo, la ficha muestra sus triángulos, llamadas de dibujo, tamaño y quién lo usa.
 - [ ] En un árbol, cambiar la estación a Otoño o marcar "Con nieve" cambia su color como en el juego; en un personaje, "Otra paleta" cambia su ropa y el menú de animación lo pone a caminar.
 - [ ] Con W / S o las flechas arriba y abajo se recorre la lista y cada tipo o archivo se ve al instante; con D o → se abre una categoría o un tipo con variantes, y con A o ← se cierra o se sube al que lo contiene. Mantener la tecla repite.
@@ -377,7 +377,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Enter guarda y aparece "Reporte guardado en …"; la carpeta tiene `captura.png` (con los trazos, sin la línea de ayuda ni la interfaz), `captura_limpia.png` y `reporte.json`.
 - [ ] Después de guardar, la interfaz vuelve y el juego sigue a la velocidad que tenía.
 - [ ] Esc cancela sin crear carpeta y sin abrir el menú del juego.
-- [ ] `SalvaCiudad.exe --reporte "<esa carpeta>"` abre una ventana, muestra el mismo lugar y se cierra solo, dejando `despues_<fecha_hora>.png` y `.txt` en la carpeta.
+- [ ] `SalvasProsperia.exe --reporte "<esa carpeta>"` abre una ventana, muestra el mismo lugar y se cierra solo, dejando `despues_<fecha_hora>.png` y `.txt` en la carpeta.
 - [ ] Tu configuración (ventana, sonido) no cambió después de usar `--reporte`.
 - [ ] Un círculo cerrado alrededor de una zona da en `reporte.json` un trazo con `"closed": true` y muchas más casillas que la línea sola.
 - [ ] Con la cámara muy alejada (todo el mapa a la vista), los trazos del fondo también tienen casillas.
@@ -421,7 +421,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con una semilla y opciones que antes usabas con "Jerárquico", sale el mismo mapa (mismas regiones en F3, mismos ríos y árboles).
 - [ ] F3 y los reportes nunca dicen "Cordillera", "Cabo", "Fosa marina" ni "Dorsal marina"; en la orilla del mar sigue diciendo "Costa".
 - [ ] Una partida guardada antes de esta fase se rechaza con el mensaje de partida de otra versión.
-- [ ] `SalvaCiudad.exe --reporte` sobre un reporte viejo hecho con el clásico funciona: genera el mapa con el generador de hoy y el `.txt` anota la versión del generador distinta (6 en el reporte, 1 ahora).
+- [ ] `SalvasProsperia.exe --reporte` sobre un reporte viejo hecho con el clásico funciona: genera el mapa con el generador de hoy y el `.txt` anota la versión del generador distinta (6 en el reporte, 1 ahora).
 - [ ] Con mapas separados, el `.txt` de un reporte dice la misma versión del generador que en un mapa compartido.
 - [ ] Las imágenes de referencia están en `art/reference/` y ya no en la raíz del repositorio.
 
@@ -431,7 +431,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Un ciervo paseando camina; al acercarle un aldeano huye corriendo. En los dos casos las patas no patinan sobre el suelo, a x1 y a x3.
 - [ ] Quietos, a veces bajan la cabeza a comer y a veces solo respiran. En pausa se quedan inmóviles.
 - [ ] Al cazar un ciervo a la vista, cae de lado donde estaba, queda unos segundos y se hunde en el suelo.
-- [ ] `SalvaCiudadModelos.exe` muestra los cuatro animales de `core` con sus cinco animaciones.
+- [ ] `SalvasProsperiaModelos.exe` muestra los cuatro animales de `core` con sus cinco animaciones.
 
 ### Fase 50
 
@@ -452,7 +452,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Con nieve, los cerezos se ven blanqueados como los demás árboles.
 - [ ] Talar un cerezo: desaparece y da su madera, como antes.
 - [ ] Los demás árboles se ven igual que antes (cambian de color en otoño e invierno).
-- [ ] En `SalvaCiudadModelos.exe`, el grupo del cerezo muestra sus tres estados lado a lado.
+- [ ] En `SalvasProsperiaModelos.exe`, el grupo del cerezo muestra sus tres estados lado a lado.
 
 ### Fase 52
 
@@ -461,7 +461,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Las sombras de los cerezos se ven bien (usan siempre la versión simple).
 - [ ] En los primeros días del otoño, del invierno y de la primavera, los cerezos van cambiando sin tirones, también en un mapa colosal.
 - [ ] Talar un cerezo en otoño y en invierno: desaparece el árbol correcto.
-- [ ] En `SalvaCiudadModelos.exe`, el grupo del cerezo muestra las seis versiones; con "Versión: lejana" o "cercana" las tres detalladas cambian a la que se pide.
+- [ ] En `SalvasProsperiaModelos.exe`, el grupo del cerezo muestra las seis versiones; con "Versión: lejana" o "cercana" las tres detalladas cambian a la que se pide.
 
 ### Fase 53
 
@@ -470,7 +470,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] En otoño e invierno cambian todos los de hoja caduca; el pino, el ciprés, la palmera, el laurel y el drago siguen verdes.
 - [ ] El inspector de las herramientas de desarrollo y los nombres de F3 dicen la especie nueva de cada árbol.
 - [ ] Talar árboles de varias especies: el abedul da menos madera que el roble amarillo, y el baobab más.
-- [ ] En `SalvaCiudadModelos.exe` están los 27 grupos de árboles (19 especies y 8 gigantes) con sus estados y versiones lejanas, y ya no hay árboles viejos ni modelos sin usar en `props/`.
+- [ ] En `SalvasProsperiaModelos.exe` están los 27 grupos de árboles (19 especies y 8 gigantes) con sus estados y versiones lejanas, y ya no hay árboles viejos ni modelos sin usar en `props/`.
 - [ ] **Tu opinión:** qué especies se ven mal de lejos (versión simple) o demasiado grandes o chicas junto a las casas.
 
 ### Fase 54
@@ -630,7 +630,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 
 ### Fases 75 a 77 (abrir la partida, llegar, unirse)
 
-Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --instance 2 --loopback`.
+Dos ventanas: `SalvasProsperia.exe --instance 1 --loopback` y `SalvasProsperia.exe --instance 2 --loopback`.
 
 - [ ] La 1 juega sola a ×8, abre el menú (Esc) y elige "Abrir a multijugador": aparecen dos casillas marcadas (pedir unirse, fundar pueblo propio). "Abrir": la velocidad queda en ×5, la barra de arriba dice "Jugadores 1" y sale el aviso de que acepta jugadores nuevos. Las velocidades de ×6 a ×9 ya no se ofrecen.
 - [ ] La 2 entra con "Unirse a partida" a `127.0.0.1`, puerto `47801`: recibe la partida y ve "Llegaste a una partida en curso", con "Fundar mi pueblo" y la lista de pueblos.
@@ -963,7 +963,7 @@ Dos ventanas: `SalvaCiudad.exe --instance 1 --loopback` y `SalvaCiudad.exe --ins
 - [ ] Soldados y asaltantes son aldeanos con su marca de color; al atacar dan golpes de hacha.
 - [ ] Al alejar la cámara los aldeanos pasan a su versión simple sin que se note un salto feo; al acercarla vuelven a la detallada.
 - [ ] Con las herramientas de desarrollo, "Persona" coloca personajes de cualquier raza, y el inspector dice su modelo y su paleta.
-- [ ] En el visor (`SalvaCiudadModelos.exe`): "Personajes" lista las 9 razas; cada personaje cambia con "Otra paleta" y muestra la herramienta en la mano en `chop`, `shoot`, `fish_*` y `work`.
+- [ ] En el visor (`SalvasProsperiaModelos.exe`): "Personajes" lista las 9 razas; cada personaje cambia con "Otra paleta" y muestra la herramienta en la mano en `chop`, `shoot`, `fish_*` y `work`.
 - [ ] **Sin revisar de cerca en el juego por Claude:** las animaciones de trabajo con la herramienta se revisaron en el visor y por pruebas; en la partida solo se vio a los aldeanos de lejos (la cámara aérea no se pudo acercar desde las pruebas automáticas).
 - [ ] **Tu opinión:** los enanos (se hicieron sin referencia); los colores de piel y pelaje de cada raza; el tamaño del hacha y del martillo; si la caminata se ve natural a la velocidad del juego.
 

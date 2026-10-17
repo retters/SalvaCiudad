@@ -1,0 +1,58 @@
+/* Heráldico: each window a hanging banner. Coloured field, enamel border, swallow-tail point, small-capital titles. */
+.stage {
+  --field: #7a1f24; --enamel: #d8b25a;
+  --font: 'Alegreya Sans', sans-serif; --font-title: 'EB Garamond', serif;
+  --fs: 17px; --fs-small: 14px; --fs-title: 24px; --title-weight: 500; --title-spacing: .05em;
+  --text: #fbf1dc; --dim: #e0c9a8; --accent: #f2d27a; --accent-text: #3a1010;
+  --ok: #a8e08a; --warn: #f2d27a; --bad: #ffb0a0; --info: #a8d0f0;
+  --panel: linear-gradient(90deg, rgba(0, 0, 0, .18), transparent 12%, transparent 88%, rgba(0, 0, 0, .18)), var(--field); --panel-solid: #7a1f24;
+  --panel-border: 3px solid var(--enamel); --panel-radius: 0; --panel-shadow: 0 0 0 1px #2a0a0c, 0 18px 28px rgba(0, 0, 0, .45);
+  --bar: linear-gradient(180deg, #2a1c14, #1a120c); --bar-border: 2px solid var(--enamel); --bar-h: 50px;
+  --title-text: #f2d27a; --title-border: 1px solid rgba(216, 178, 90, .5); --title-h: 50px;
+  --btn: rgba(0, 0, 0, .22); --btn-hover: rgba(0, 0, 0, .35); --btn-on: var(--enamel); --btn-on-text: #3a1010;
+  --btn-border: 1px solid rgba(216, 178, 90, .6); --btn-radius: 0; --btn-h: 32px;
+  --chip: rgba(0, 0, 0, .25); --row: rgba(0, 0, 0, .18); --row-hover: rgba(0, 0, 0, .3); --sep: rgba(216, 178, 90, .35);
+  --meter: rgba(0, 0, 0, .35); --meter-h: 7px; --meter-radius: 0;
+  --avatar-bg: #4a1216; --thumb-bg: radial-gradient(circle at 50% 70%, rgba(242, 210, 122, .22), transparent 65%);
+  --tip: #f3e6c8; --tip-text: #3a1010; --tip-border: 2px solid var(--enamel); --tip-radius: 0;
+  --icon-stroke: 1.7; --icon-tone: .2;
+}
+/* Every window gets its own tincture, like the arms of a house. */
+.win:nth-of-type(4n + 2) { --field: #1f3a6a; }
+.win:nth-of-type(4n + 3) { --field: #1f5a32; }
+.win:nth-of-type(4n) { --field: #4a2a6a; }
+.win { background: linear-gradient(90deg, rgba(0, 0, 0, .18), transparent 12%, transparent 88%, rgba(0, 0, 0, .18)), var(--field); padding-bottom: 26px; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 22px), 0 100%); }
+.win.minimized { padding-bottom: 0; clip-path: none; }
+.win-title { font-variant: small-caps; text-shadow: 0 2px 0 rgba(0, 0, 0, .5); }
+.win-bar { justify-content: center; }
+.win-titles { align-items: center; }
+.win-icon { display: none; }
+.win-act { border-color: rgba(216, 178, 90, .4); }
+.wbtn { color: #f2d27a; }
+.wbtn.on { color: #fff; }
+.ctl-close:hover { background: #2a0a0c; }
+.sec { color: #f2d27a; font-family: var(--font-title); font-variant: small-caps; text-transform: none; letter-spacing: .1em; font-size: 16px; text-align: center; }
+.avatar { box-shadow: 0 0 0 2px var(--enamel); }
+.avatars .avatar { box-shadow: 0 0 0 2px var(--enamel); margin-left: -4px; }
+.hero { border: 1px solid rgba(216, 178, 90, .4); border-radius: 0; }
+.row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick, .bb-item { border-radius: 0; }
+.chip { border-radius: 0; }
+.btn.primary { background: var(--enamel); color: #3a1010; }
+.btn.danger { color: #ffb0a0; }
+.meter .fill, .meter.ok .fill { background: linear-gradient(90deg, #a08030, #f2d27a); }
+.win-foot { justify-content: center; }
+.dock-list .dock { padding: 8px; }
+.dock-btn { justify-content: flex-start; }
+.minimap { padding: 20px; }
+.minimap > span { color: #f2d27a; font-family: var(--font-title); }
+.buildbar { clip-path: none; }
+.bb-cat.on { background: var(--enamel); color: #3a1010; }
+.bb-item.on { outline: 2px solid var(--enamel); background: rgba(0, 0, 0, .3); }
+.toast { border-radius: 0; }
+.modal { clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 26px), 0 100%); padding-bottom: 46px; }
+.modal h2 { color: #f2d27a; font-variant: small-caps; }
+.dialog { clip-path: none; padding-bottom: 22px; }
+.question { border-radius: 0; }
+.ring::before { background: #4a1216; }
+.cam-view { border-radius: 0; }
+.tb-item.gold b { color: #f2d27a; }

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparar elementos</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; background: #111316; color: #e8e6e1; font: 14px/1.45 'Segoe UI', system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 20px; background: #1a1d21; border-bottom: 1px solid #2a2e33; }
+  header h1 { margin: 0 10px 0 0; font-size: 18px; }
+  header a { color: #8fbaff; text-decoration: none; }
+  .comps { display: flex; flex-wrap: wrap; gap: 4px; }
+  .comps button, header select, header button { font: inherit; color: inherit; background: #23272c; border: 1px solid #353a41; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  .comps button.on { background: #3d5a8a; border-color: #5a80c0; }
+  #status { font-size: 12px; color: #9aa3ad; }
+  #status.ok { color: #8fe0a0; } #status.warn { color: #f0c070; } #status.bad { color: #f09090; }
+  .note { color: #9aa3ad; margin: 12px 20px 0; max-width: 1100px; }
+  .grid { display: grid; gap: 16px; padding: 16px 20px 40px; }
+  .card { background: #1a1d21; border: 1px solid #2a2e33; border-radius: 10px; overflow: hidden; }
+  .card.liked { border-color: #c0506a; box-shadow: 0 0 0 1px #c0506a; }
+  .shot { position: relative; background: #000; overflow: hidden; }
+  .shot iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .meta { display: flex; align-items: center; gap: 8px; padding: 8px 10px; }
+  .meta b { flex: 1; }
+  .meta a { color: #8fbaff; text-decoration: none; font-size: 12px; }
+  .like { font: inherit; background: #23272c; border: 1px solid #353a41; border-radius: 99px; padding: 2px 10px; color: #c8ccd1; cursor: pointer; }
+  .like.on { background: #5a2333; border-color: #c0506a; color: #ff9ab0; }
+  .lv { font-size: 11px; padding: 1px 7px; border-radius: 99px; }
+  .lv0 { background: #1f3a26; color: #8fe0a0; } .lv1 { background: #23392f; color: #a8e0b8; } .lv2 { background: #3a3a1f; color: #e0d88f; }
+  .lv3 { background: #44321c; color: #f0b870; } .lv4 { background: #4a2222; color: #f09090; }
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html">← Galería</a>
+  <h1>Comparar un elemento en todos los temas</h1>
+  <div class="comps" id="comps"></div>
+  <label>Idioma <select id="lang"><option value="es">ES</option><option value="en">EN</option></select></label>
+  <span id="status"></span>
+  <button id="connect">Abrir respuestas.json</button>
+</header>
+<p class="note" id="note"></p>
+<div class="grid" id="grid"></div>
+<script src="kit/datos.js"></script>
+<script src="temas/catalogo.js"></script>
+<script src="kit/respuestas.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+// Each component: the scene, the region of the 1920 x 1080 screen, the part it votes for, and layout
+// overrides so the element sits in the same place in every theme.
+const COMPS = [
+  {id: 'top', name: 'Barra superior', parte: 'Barra superior', e: 'ventanas', crop: [0, 0, 1920, 64], o: 'windows:float', cols: 1},
+  {id: 'building', name: 'Ventana de edificio', parte: 'Ventanas', e: 'ventanas', crop: [186, 300, 380, 640], o: 'windows:float,build:none', cols: 6},
+  {id: 'villager', name: 'Ventana de aldeano', parte: 'Ventanas', e: 'ventanas', crop: [566, 74, 390, 420], o: 'windows:float,build:none', cols: 5},
+  {id: 'house', name: 'Ventana de casa', parte: 'Ventanas', e: 'ventanas', crop: [1276, 300, 390, 660], o: 'windows:float,build:none', cols: 6},
+  {id: 'chrome', name: 'Botones de ventana', parte: 'Botones de ventana', e: 'ventanas', crop: [190, 318, 372, 70], o: 'windows:float,build:none', cols: 3},
+  {id: 'goods', name: 'Bienes', parte: 'Ventanas', e: 'pueblo', crop: [186, 62, 400, 760], o: 'windows:float,build:none', cols: 6},
+  {id: 'build', name: 'Barra de construcción', parte: 'Barra de construcción', e: 'construir', crop: [0, 790, 1920, 290], o: 'windows:float', cols: 2},
+  {id: 'dock', name: 'Dock', parte: 'Dock', e: 'ventanas', crop: [0, 44, 210, 330], o: 'windows:float,build:none', cols: 8},
+  {id: 'minimap', name: 'Minimapa', parte: 'Minimapa', e: 'ventanas', crop: [1600, 44, 320, 290], o: 'windows:float,build:none', cols: 7},
+  {id: 'toasts', name: 'Avisos', parte: 'Avisos', e: 'construir', crop: [1300, 680, 620, 230], o: 'windows:float,toasts:stack', cols: 4},
+  {id: 'question', name: 'Pregunta del pueblo', parte: 'Pregunta del pueblo', e: 'construir', crop: [620, 56, 680, 150], o: 'windows:float,toasts:stack', cols: 3},
+  {id: 'menu', name: 'Menú del juego', parte: 'Menú del juego', e: 'menu', crop: [740, 300, 440, 480], o: 'windows:float', cols: 6},
+];
+const params = new URLSearchParams(location.search);
+let comp = COMPS.find(c => c.id === params.get('c')) || COMPS[0];
+let lang = params.get('l') === 'en' ? 'en' : 'es';
+$('#lang').value = lang;
+
+function worst(th) { let n = 0; for (const id of th.efectos) n = Math.max(n, EFECTOS[id].nivel); return n; }
+
+function render() {
+  $('#comps').innerHTML = COMPS.map(c => `<button data-c="${c.id}" class="${c === comp ? 'on' : ''}">${c.name}</button>`).join('');
+  $('#note').textContent = `Escena «${comp.e}». Para que el elemento quede en el mismo lugar en todos los temas, aquí las ventanas son flotantes${comp.o.includes('toasts') ? ' y los avisos van en pila abajo a la derecha' : ''}; en el visor cada tema usa su propio acomodo. El ♥ marca «${comp.parte}» como parte que te gusta de ese tema.`;
+  const [, , w, h] = comp.crop;
+  $('#grid').style.gridTemplateColumns = `repeat(auto-fill, minmax(${Math.max(180, Math.min(1860, Math.round(1860 / comp.cols) - 16))}px, 1fr))`;
+  $('#grid').innerHTML = TEMAS.map(th => {
+    const liked = (Respuestas.get('temas', th.id).partes || []).includes(comp.parte);
+    const src = `ver.html?t=${th.id}&e=${comp.e}&clean=1&crop=${comp.crop.join(',')}&o=${comp.o}${lang === 'en' ? '&l=en' : ''}`;
+    return `<div class="card${liked ? ' liked' : ''}" data-id="${th.id}"><div class="shot" style="aspect-ratio:${w} / ${h}"><iframe loading="lazy" tabindex="-1" data-w="${w}" data-h="${h}" src="${src}"></iframe></div>`
+      + `<div class="meta"><b>${th.nombre}</b><span class="lv lv${worst(th)}">${NIVELES[worst(th)]}</span><a href="ver.html?t=${th.id}&e=${comp.e}">abrir</a><button class="like${liked ? ' on' : ''}">♥</button></div></div>`;
+  }).join('');
+  fit();
+  history.replaceState(null, '', `?c=${comp.id}${lang === 'en' ? '&l=en' : ''}`);
+}
+
+function fit() {
+  document.querySelectorAll('.shot').forEach(shot => {
+    const f = shot.querySelector('iframe');
+    const w = +f.dataset.w, h = +f.dataset.h;
+    // The iframe is the region at its design size; scaled down to the card.
+    f.style.width = w + 'px';
+    f.style.height = h + 'px';
+    f.style.transform = `scale(${shot.clientWidth / w})`;
+  });
+}
+
+function status() {
+  const [cls, text] = Respuestas.status();
+  $('#status').className = cls; $('#status').textContent = text;
+  $('#connect').hidden = Respuestas.connected || !Respuestas.canConnect;
+}
+
+$('#comps').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { comp = COMPS.find(c => c.id === b.dataset.c); render(); } });
+$('#lang').addEventListener('change', e => { lang = e.target.value; render(); });
+$('#grid').addEventListener('click', e => {
+  const b = e.target.closest('.like'); if (!b) return;
+  const card = b.closest('.card');
+  const id = card.dataset.id;
+  const parts = new Set(Respuestas.get('temas', id).partes || []);
+  if (parts.has(comp.parte)) parts.delete(comp.parte); else parts.add(comp.parte);
+  Respuestas.set('temas', id, {partes: [...parts]});
+  card.classList.toggle('liked', parts.has(comp.parte));
+  b.classList.toggle('on', parts.has(comp.parte));
+});
+$('#connect').addEventListener('click', () => Respuestas.connect());
+Respuestas.onChange(status);
+window.addEventListener('resize', fit);
+render();
+status();
+</script>
+</body>
+</html>

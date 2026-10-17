@@ -1,4 +1,4 @@
-"""Shared helpers for the SalvaCiudad Blender model scripts.
+"""Shared helpers for the SalvasProsperia Blender model scripts.
 
 Every model is built from code so it can be regenerated, improved and varied
 (decision D-007). Scripts run headless and never touch the user's scenes:

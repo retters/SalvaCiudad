@@ -5,7 +5,7 @@ Mediciones de la fase 20, en el equipo de desarrollo (Windows 11, compilación `
 ## Cómo medir
 
 ```
-build\release\bin\salvaciudad_tests.exe -ts=sim_perf --no-skip
+build\release\bin\salvasprosperia_tests.exe -ts=sim_perf --no-skip
 ```
 
 - **"two towns of 300..."**: corre con las demás pruebas y falla si el tick promedio pasa de 33 ms.
@@ -47,7 +47,7 @@ Nada de esto se guarda en la partida: son datos derivados que se rehacen.
 
 ## Mapas gigante y colosal (fase 21)
 
-`salvaciudad_tests -ts=sim_perf -tc="giant and colossal maps" --no-skip` (unos 5 minutos) genera cada mapa con 12 inicios, crea la partida, la guarda, la empaqueta para la red y la vuelve a cargar:
+`salvasprosperia_tests -ts=sim_perf -tc="giant and colossal maps" --no-skip` (unos 5 minutos) genera cada mapa con 12 inicios, crea la partida, la guarda, la empaqueta para la red y la vuelve a cargar:
 
 | Medida | Gigante (8192 m) | Colosal (16 384 m) |
 |---|---|---|
@@ -95,7 +95,7 @@ Medido en el equipo de desarrollo, compilación `release`, ventana de 1600 × 90
 ## Generación de mapas gigante y colosal (tras la fase 31)
 
 ```
-build\release\bin\salvaciudad_tests.exe -ts=worldgen_perf -tc="*time per stage" --no-skip
+build\release\bin\salvasprosperia_tests.exe -ts=worldgen_perf -tc="*time per stage" --no-skip
 ```
 
 "giant map, time per stage" y "colossal map, time per stage" se saltan por omisión. Generan el mapa con los valores por omisión de la partida nueva (mar "A veces", un jugador) y la semilla 12345, y muestran el tiempo de cada etapa y la suma de verificación, para comparar versiones. Desde la fase 49 miden el generador jerárquico, que es el único; la tabla de abajo es del clásico, que se borró, y queda como historia.
@@ -129,7 +129,7 @@ El mapa enorme (4096 m, la prueba "a huge map generates in under 30 seconds") ta
 
 ## Niebla de guerra (fase 32)
 
-`salvaciudad_tests -ts=sim_perf -tc="twelve towns of 1000 with and without fog of war" --no-skip` hace crecer 12 pueblos de 1000 en un mapa enorme en versus (un grupo de visión por pueblo, el peor caso) con cada modo de niebla:
+`salvasprosperia_tests -ts=sim_perf -tc="twelve towns of 1000 with and without fog of war" --no-skip` hace crecer 12 pueblos de 1000 en un mapa enorme en versus (un grupo de visión por pueblo, el peor caso) con cada modo de niebla:
 
 | Medida | Estática | Dinámica |
 |---|---|---|
@@ -278,3 +278,4 @@ Caso manual de `sim_perf` («a town of 1000 on a colossal map, with and without 
 | Sin caminos | 2,86 ms | 4,55 ms | 10,5 ms |
 
 Con caminos el tick tarda el 95,5 % de lo que tarda sin ellos: la diferencia está dentro del ruido (una sola corrida de cada una). El criterio de la fase permitía un 10 % más. La búsqueda de rutas mira algunas celdas más cuando hay caminos (su estimación baja de 10 a 9 u 8 por paso, D-9503), pero los caminos acortan las rutas y eso lo compensa. La copia por celda de los caminos (64 MiB en un mapa colosal) solo se reserva cuando se pone el primero.
+

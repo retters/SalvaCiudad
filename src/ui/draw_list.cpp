@@ -107,6 +107,25 @@ void DrawList::image(const Rect& r, float u0, float v0, float u1, float v1, Colo
     quad(r, u0, v0, u1, v1, c);
 }
 
+void DrawList::image_vgradient(const Rect& r, float u0, float v0, float u1, float v1, Color top, Color bottom) {
+    if (r.w <= 0.0f || r.h <= 0.0f || (top.a == 0 && bottom.a == 0)) {
+        return;
+    }
+    const Rect& clip = clip_stack_.back();
+    if (r.right() <= clip.x || r.x >= clip.right() || r.bottom() <= clip.y || r.y >= clip.bottom()) {
+        return;
+    }
+    const auto base = static_cast<std::uint32_t>(vertices_.size());
+    vertices_.push_back({r.x, r.y, u0, v0, top.r, top.g, top.b, top.a});
+    vertices_.push_back({r.right(), r.y, u1, v0, top.r, top.g, top.b, top.a});
+    vertices_.push_back({r.right(), r.bottom(), u1, v1, bottom.r, bottom.g, bottom.b, bottom.a});
+    vertices_.push_back({r.x, r.bottom(), u0, v1, bottom.r, bottom.g, bottom.b, bottom.a});
+    for (const std::uint32_t i : {0u, 1u, 2u, 0u, 2u, 3u}) {
+        indices_.push_back(base + i);
+    }
+    commands_.back().index_count += 6;
+}
+
 void DrawList::use_image(std::uint32_t image) {
     if (image != image_) {
         image_ = image;

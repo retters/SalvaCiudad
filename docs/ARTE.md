@@ -145,7 +145,7 @@ blender --background --factory-startup --python art/blender/zoo_build.py -- art/
 blender --background --factory-startup --python art/blender/zoo_build.py -- art/studies/trees specs=lowpoly_trees [nombres]
 ```
 
-Para verlos en el visor: `SalvaCiudadModelos.exe --estudio people` (o `weapons`, `trees`, `animals`, `tripo`). `--estudio` acepta el nombre de una carpeta de `art/studies` o una ruta, y abre el visor directamente en esa carpeta.
+Para verlos en el visor: `SalvasProsperiaModelos.exe --estudio people` (o `weapons`, `trees`, `animals`, `tripo`). `--estudio` acepta el nombre de una carpeta de `art/studies` o una ruta, y abre el visor directamente en esa carpeta.
 
 - **Personajes** (`people/`, límite de 3000 triángulos): todos heredan de `Human` en `_human.py`, un cuerpo de partes soldadas con nombre (cabeza, pecho, antebrazo…) y las articulaciones en el mismo lugar, para que después compartan esqueleto. Cada personaje cambia proporciones, agrega volúmenes de ropa en `customize()`, pinta por zona del cuerpo con `zone()` y pone lo fino en `details()`. Las proporciones salen de medir cada referencia (D-4411).
 - **Armas** (`weapons/`, límite de 500 a 600): piezas directas y facetadas en `details()`; el *remesh* solo en lo orgánico (báculos, garrote, martillo de piedra). De pie sobre Z = 0, con el lado ancho hacia −Y. Cada una declara `grip`, el punto donde se sujeta (D-4412).
@@ -163,7 +163,7 @@ blender --background --factory-startup --python art/blender/tripo_build.py -- <m
 - Conserva la malla y la textura del modelo. Del esqueleto de Tripo solo se usan las posiciones de las articulaciones: sus nombres no son fiables, así que las patas, la cola y la cabeza se reconocen por la forma (D-4701).
 - El modelo se gira para mirar hacia −Y, se escala a `length` (del hocico a la punta de la cola; sin `length` queda como viene, que en Tripo es 1 m) y se apoya en Z = 0.
 - Recibe los huesos, pesos y animaciones de la plantilla (`idle`, `walk`, `run`, `eat`, `die`) y queda en `art/studies/tripo/<nombre>.glb`.
-- Verificar con `rig_check.py` y ver con `SalvaCiudadModelos.exe --estudio tripo`.
+- Verificar con `rig_check.py` y ver con `SalvasProsperiaModelos.exe --estudio tripo`.
 - Solo cuadrúpedos por ahora: si el esqueleto no tiene cuatro cadenas de huesos que lleguen al suelo, el modelo se rechaza.
 - Estos modelos son mucho más pesados que los low poly (el lobo de prueba: 10 565 triángulos y una textura de 2048 px, contra 1316 del lobo low poly).
 
@@ -413,7 +413,7 @@ Un tropiezo conocido: la versión lejana (`_far.glb`) de unos pocos personajes (
 
 ## Visor de modelos
 
-`SalvaCiudadModelos.exe` se compila junto al juego (queda en `build\<preset>\bin\`) y sirve para revisar los modelos sin abrir el juego (D-3001):
+`SalvasProsperiaModelos.exe` se compila junto al juego (queda en `build\<preset>\bin\`) y sirve para revisar los modelos sin abrir el juego (D-3001):
 
 - A la izquierda, los modelos del mod elegido por categoría (edificios, árboles, objetos del mapa, personajes, animales). Al elegir un tipo se ven **todas sus variantes lado a lado**; al elegir un archivo, solo ese.
 - Se ven con la luz y las sombras del juego, junto a un aldeano de 1,7 m y sobre una cuadrícula de 1 m. Los árboles se pueden ver en cada estación y con nieve, y los personajes con otra paleta y cada animación.
@@ -427,7 +427,7 @@ Controles: arrastrar con el botón izquierdo gira la cámara, con el derecho la 
 
 Para validar las animaciones antes de meterlas al juego (fase 45). El visor usa el mismo renderizador y la misma animación que el juego, así que lo que se ve ahí es lo que se verá en el juego.
 
-- **Modelos en estudio:** en la lista de mods aparece "Modelos en estudio", que muestra los `.glb` de `art/studies/animals` sin tocar `core`. Otra carpeta: `SalvaCiudadModelos.exe --estudio <carpeta>`. Se leen solo los archivos de la carpeta, no sus subcarpetas, y se recargan solos cuando cambian. Un modelo nuevo aparece con F5.
+- **Modelos en estudio:** en la lista de mods aparece "Modelos en estudio", que muestra los `.glb` de `art/studies/animals` sin tocar `core`. Otra carpeta: `SalvasProsperiaModelos.exe --estudio <carpeta>`. Se leen solo los archivos de la carpeta, no sus subcarpetas, y se recargan solos cuando cambian. Un modelo nuevo aparece con F5.
 - Al elegir un modelo con esqueleto, bajo la lista de animaciones de la ficha:
   - **Pausa**, y las flechas para ir un fotograma atrás o adelante (mantener presionado repite). Se muestra el fotograma actual y el total.
   - **Velocidad** de 0,25× a 2× (clic derecho vuelve a 1×).

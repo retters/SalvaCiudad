@@ -230,12 +230,12 @@ TEST_SUITE("races") {
     }
 
     // Not a test: a saved game of a town of every people, with work for all.
-    //   salvaciudad_tests -ts=races -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_mixed.scsave: copy it to the saves
+    //   salvasprosperia_tests -ts=races -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_mixed.scsave: copy it to the saves
     // folder and load it.
     TEST_CASE("manual: a saved game with a town of every people at work" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         MapSettings ms;
         ms.seed = 92;

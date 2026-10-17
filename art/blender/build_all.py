@@ -1,4 +1,4 @@
-"""Builds every SalvaCiudad model.
+"""Builds every SalvasProsperia model.
 
     blender --background --factory-startup --python art/blender/build_all.py -- data/mods/core/models [only]
 
@@ -187,7 +187,7 @@ def main():
     if only in (None, "proposals"):
         if make_proposals(out, args[2:] if only == "proposals" else None):
             sys.exit(1)
-    print("SalvaCiudad models written to", out)
+    print("SalvasProsperia models written to", out)
 
 
 main()

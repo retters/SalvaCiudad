@@ -311,12 +311,12 @@ TEST_SUITE("berries") {
     // Not a test: two saved games with a forager and rows of berry bushes, in
     // spring (in flower) and in summer (with their fruit, the nearest ones
     // already picked). Run it by name:
-    //   salvaciudad_tests -ts=berries -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_berries_spring.scsave and
+    //   salvasprosperia_tests -ts=berries -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_berries_spring.scsave and
     // manual_berries_summer.scsave: copy them to the saves folder and load them.
     TEST_CASE("manual: saved games with berry bushes in spring and in summer" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup(0b1111);
         rules.rules.climate.minutes = {10, 10, 10, 10};

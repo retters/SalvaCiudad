@@ -5,8 +5,12 @@
 #include "game/minimap.h"
 
 #include <algorithm>
+#include <array>
+#include <iterator>
+#include <random>
 #include <cmath>
 
+#include "core/log.h"
 #include "core/text.h"
 #include "game/build_info.h"
 #include "i18n/translator.h"
@@ -18,6 +22,112 @@ using i18n::tr;
 namespace {
 
 constexpr std::uint64_t kDisplayConfirmNs = 15'000'000'000ull;
+
+constexpr std::uint32_t kLogoGlowImageId = 3;  // Next to minimap::kImageId and kPreviewImageId.
+constexpr int kMaxGlowSize = 2048;             // UiRenderer::kMaxImageSize.
+
+// One look of the logo (decisions D-RENAME-03 and D-RENAME-04). Sigmas are in name em; from
+// the CSS proposals, a blur radius of r px at a 62 px name is a sigma of r / 2 / 62.
+struct Glow {
+    ui::Color color;
+    float opacity = 0.0f;  // 0: none.
+    float sigma = 0.0f;
+};
+struct LogoStyle {
+    const char* name_key;  // Its name in the developer tools' toast.
+    std::array<ui::TextRenderer::GradientStop, 5> metal;  // The name's vertical gradient.
+    ui::Color shadow;      // The hard shadow just below the name.
+    Glow inner;            // Close around the name.
+    Glow outer;            // Wide, around the name and its inner glow, as chained CSS shadows.
+    Glow backdrop;         // A dark cloud behind the whole logo.
+    Glow small_glow;       // Around the small line, which is always ivory.
+    ui::Color rule;        // In the name's metal.
+};
+
+constexpr float kEm = 1.0f / 124.0f;  // A CSS pixel of blur radius at a 62 px name, as a sigma in em.
+constexpr ui::Color kIvory = ui::Color::rgb(0xF2E8D5);  // SALVA'S, in every style.
+
+const LogoStyle kLogoStyles[] = {
+    // G2: burnished gold with a lantern glow.
+    {"logo.style.gold",
+     {{{0.00f, ui::Color::rgb(0xFFF2C4)},
+       {0.38f, ui::Color::rgb(0xF0C660)},
+       {0.52f, ui::Color::rgb(0xB27D22)},
+       {0.70f, ui::Color::rgb(0xE9B94F)},
+       {1.00f, ui::Color::rgb(0x8A5B14)}}},
+     ui::Color::rgb(0x3B2608),
+     {ui::Color::rgb(0xFFBE46), 0.75f, 8 * kEm},
+     {ui::Color::rgb(0xF08C14), 0.7f, 22 * kEm},
+     {},
+     {ui::Color::rgb(0xFFBE46), 0.8f, 8 * kEm},
+     ui::Color::rgb(0xE9B94F)},
+    // B (7 + 3): cold steel with a cold glow.
+    {"logo.style.steel",
+     {{{0.00f, ui::Color::rgb(0xD8E6EF)},
+       {0.45f, ui::Color::rgb(0x8FB0C8)},
+       {0.55f, ui::Color::rgb(0xE9F3F9)},
+       {0.80f, ui::Color::rgb(0x9DB8CC)},
+       {1.00f, ui::Color::rgb(0x6D8FA8)}}},
+     ui::Color::rgb(0x14212B),
+     {ui::Color::rgb(0xA0D2FF), 0.8f, 8 * kEm},
+     {ui::Color::rgb(0x5AA0E6), 0.75f, 24 * kEm},
+     {},
+     {ui::Color::rgb(0xA0D2FF), 0.8f, 8 * kEm},
+     ui::Color::rgb(0x9DB8CC)},
+    // New: moonlit silver. Neutral, without the blue of the steel, under a pale white light.
+    {"logo.style.silver",
+     {{{0.00f, ui::Color::rgb(0xFFFFFF)},
+       {0.42f, ui::Color::rgb(0xC9CDD1)},
+       {0.54f, ui::Color::rgb(0x8C9296)},
+       {0.72f, ui::Color::rgb(0xD5D8DB)},
+       {1.00f, ui::Color::rgb(0x6E7377)}}},
+     ui::Color::rgb(0x1A1C1E),
+     {ui::Color::rgb(0xF4F6F8), 0.6f, 7 * kEm},
+     {ui::Color::rgb(0xB8C0C8), 0.55f, 24 * kEm},
+     {},
+     {ui::Color::rgb(0xF4F6F8), 0.7f, 8 * kEm},
+     ui::Color::rgb(0xC9CDD1)},
+    // New: embers. Copper going red at the foot, with a deep orange-red glow.
+    {"logo.style.ember",
+     {{{0.00f, ui::Color::rgb(0xFFE6B8)},
+       {0.35f, ui::Color::rgb(0xF2A65A)},
+       {0.55f, ui::Color::rgb(0xB4532A)},
+       {0.72f, ui::Color::rgb(0xE08A4A)},
+       {1.00f, ui::Color::rgb(0x6E2A12)}}},
+     ui::Color::rgb(0x2A0E05),
+     {ui::Color::rgb(0xFF8A3C), 0.8f, 8 * kEm},
+     {ui::Color::rgb(0xD2401E), 0.65f, 28 * kEm},
+     {},
+     {ui::Color::rgb(0xFFB070), 0.8f, 8 * kEm},
+     ui::Color::rgb(0xE08A4A)},
+    // New: pale champagne gold on a soft night cloud, which keeps it readable on any map.
+    {"logo.style.night",
+     {{{0.00f, ui::Color::rgb(0xFFF8E6)},
+       {0.40f, ui::Color::rgb(0xEADBB0)},
+       {0.55f, ui::Color::rgb(0xB89F6A)},
+       {0.72f, ui::Color::rgb(0xDCC898)},
+       {1.00f, ui::Color::rgb(0x7D6840)}}},
+     ui::Color::rgb(0x1E1A10),
+     {ui::Color::rgb(0xFFF4D6), 0.45f, 6 * kEm},
+     {},
+     {ui::Color::rgb(0x0B1218), 2.6f, 40 * kEm},
+     {},
+     ui::Color::rgb(0xDCC898)},
+    // New: the same pale gold, with a pale gold glow in place of the night cloud.
+    {"logo.style.paleGold",
+     {{{0.00f, ui::Color::rgb(0xFFF8E6)},
+       {0.40f, ui::Color::rgb(0xEADBB0)},
+       {0.55f, ui::Color::rgb(0xB89F6A)},
+       {0.72f, ui::Color::rgb(0xDCC898)},
+       {1.00f, ui::Color::rgb(0x7D6840)}}},
+     ui::Color::rgb(0x1E1A10),
+     {ui::Color::rgb(0xF6E7BC), 0.75f, 8 * kEm},
+     {ui::Color::rgb(0xD8C08A), 0.7f, 24 * kEm},
+     {},
+     {ui::Color::rgb(0xF6E7BC), 0.8f, 8 * kEm},
+     ui::Color::rgb(0xDCC898)},
+};
+constexpr int kLogoStyleCount = static_cast<int>(std::size(kLogoStyles));
 
 // A centered dialog panel; returns the content rectangle.
 ui::Rect dialog_frame(ui::Context& ctx, float content_height, std::string_view title, float& y) {
@@ -43,7 +153,20 @@ UiHost::UiHost(Services& services)
       mods_screen_(services),
       hud_(services),
       join_(services),
-      lobby_screen_(services) {}
+      lobby_screen_(services),
+      logo_random_(static_cast<std::uint64_t>(std::random_device{}()) << 32 ^ std::random_device{}()) {}
+
+int pick_logo_style(int current, int count, std::uint64_t random) {
+    if (count <= 1) {
+        return 0;
+    }
+    if (current < 0 || current >= count) {
+        return static_cast<int>(random % static_cast<std::uint64_t>(count));
+    }
+    // One of the others: skip over the current one.
+    const int pick = static_cast<int>(random % static_cast<std::uint64_t>(count - 1));
+    return pick >= current ? pick + 1 : pick;
+}
 
 void UiHost::show_message(std::string title, std::string body) {
     messages_.push_back({std::move(title), std::move(body)});
@@ -56,6 +179,12 @@ void UiHost::add_notice(std::string text) {
 void UiHost::toast(std::string text) {
     toast_ = std::move(text);
     toast_since_ns_ = 0;
+}
+
+void UiHost::cycle_logo_style() {
+    logo_style_ = (std::max(logo_style_, 0) + 1) % kLogoStyleCount;
+    toast(tr("dev.logoStyle", std::to_string(logo_style_ + 1), std::to_string(kLogoStyleCount),
+             tr(kLogoStyles[logo_style_].name_key)));
 }
 
 void UiHost::draw_toast(ui::Context& ctx) {
@@ -173,6 +302,16 @@ void UiHost::frame(ui::Context& ctx) {
     }
 
     follow_network();
+    if (screen_ == Screen::MainMenu && (!last_screen_ || *last_screen_ == Screen::MapView || logo_style_ < 0)) {
+        // splitmix64: one step per pick.
+        logo_random_ += 0x9E3779B97F4A7C15ull;
+        std::uint64_t z = logo_random_;
+        z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+        z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+        logo_style_ = pick_logo_style(logo_style_, kLogoStyleCount, z ^ (z >> 31));
+        log::info("menu: logo style {}", logo_style_ + 1);
+    }
+    last_screen_ = screen_;
     if (screen_ == Screen::NewGame) {
         ctx.set_input_blocked(modal);
         const NewGameScreen::Result r = new_game_.frame(ctx, modal);
@@ -252,49 +391,162 @@ void UiHost::frame(ui::Context& ctx) {
 
 void UiHost::draw_logo(ui::Context& ctx, float center_x, float y, float max_width, float max_height, float& height_out,
                        bool draw) {
-    const std::string top = tr("app.logo.top");
-    const std::string bottom = tr("app.logo.bottom");
-    // The first letter of the bottom line is drawn larger.
-    std::size_t first_len = 0;
-    if (!bottom.empty()) {
-        (void)text::next_codepoint(bottom, first_len);
-    }
-    const std::string_view first = std::string_view(bottom).substr(0, first_len);
-    const std::string_view rest = std::string_view(bottom).substr(first_len);
+    // The identity of SALVA'S PROSPERIA (decision D-RENAME-02): a small tracked line over the name,
+    // the name in burnished gold with a warm glow, and a thin silver rule below. Every measure is a
+    // fraction of the name's size, as on the identity slide.
+    constexpr float kCapHeight = 0.65f;    // EB Garamond capitals, in em.
+    constexpr float kSmallSize = 0.1515f;  // The small line, 10/66 of the name.
+    constexpr float kTracking = 0.3f;      // Between its letters, in its own em.
+    constexpr float kGap = 0.12f;          // From its baseline to the capitals, in name em.
+    constexpr float kRuleDrop = 0.2f;      // From the name's baseline to the rule.
+    constexpr float kRuleThick = 0.014f;
 
-    float factor = 1.0f;
-    ui::TextStyle top_style;
-    ui::TextStyle big_style;
-    ui::TextStyle rest_style;
-    float top_w = 0.0f;
-    float bottom_w = 0.0f;
-    float top_h = 0.0f;
-    float bottom_h = 0.0f;
+    const std::string small = tr("app.logo.top");
+    const std::string name = tr("app.logo.bottom");
+
     // Shrink until the logo fits both the width and its share of the height.
-    for (int attempt = 0; attempt < 12; ++attempt) {
-        top_style = ctx.style(static_cast<int>(42.0f * factor), ui::FontRole::Logo);
-        big_style = ctx.style(static_cast<int>(118.0f * factor), ui::FontRole::Logo);
-        rest_style = ctx.style(static_cast<int>(88.0f * factor), ui::FontRole::Logo);
-        top_w = ctx.text().measure(top_style, top);
-        bottom_w = ctx.text().measure(big_style, first) + ctx.text().measure(rest_style, rest);
-        top_h = ctx.text().line_height(top_style);
-        bottom_h = ctx.text().line_height(big_style);
-        if (std::max(top_w, bottom_w) <= max_width && top_h + bottom_h * 0.9f <= max_height) {
+    float size = 112.0f;
+    ui::TextStyle small_style;
+    ui::TextStyle name_style;
+    float small_w = 0.0f;
+    float name_w = 0.0f;
+    float tracking = 0.0f;
+    float block_h = 0.0f;
+    std::vector<std::string_view> letters;
+    for (int attempt = 0; attempt < 16; ++attempt) {
+        const float px = ctx.s(size);
+        name_style = ctx.style(static_cast<int>(px), ui::FontRole::Logo);
+        small_style = ctx.style(std::max(9, static_cast<int>(px * kSmallSize)), ui::FontRole::LogoSmall);
+        tracking = static_cast<float>(small_style.px) * kTracking;
+        letters.clear();
+        small_w = 0.0f;
+        for (std::size_t i = 0; i < small.size();) {
+            std::size_t next = i;
+            (void)text::next_codepoint(small, next);
+            letters.push_back(std::string_view(small).substr(i, next - i));
+            small_w += ctx.text().measure(small_style, letters.back());
+            i = next;
+        }
+        small_w += tracking * static_cast<float>(letters.size() > 1 ? letters.size() - 1 : 0);
+        name_w = ctx.text().measure(name_style, name);
+        block_h = ctx.text().ascent(small_style) + px * (kGap + kCapHeight + kRuleDrop + kRuleThick);
+        if (std::max(small_w, name_w) <= max_width && block_h <= max_height) {
             break;
         }
-        factor *= 0.85f;
+        size *= 0.88f;
     }
-    const float big_ascent = ctx.text().ascent(big_style);
-    height_out = top_h + bottom_h * 0.9f;
+    height_out = block_h;
     if (!draw) {
         return;
     }
-    const ui::Color gold = ctx.theme().accent;
-    ctx.text().draw(ctx.draw(), top_style, std::round(center_x - top_w * 0.5f), y, top, ctx.theme().text);
-    const float baseline = std::round(y + top_h + big_ascent * 0.95f);
-    float x = std::round(center_x - bottom_w * 0.5f);
-    x += ctx.text().draw(ctx.draw(), big_style, x, baseline - big_ascent, first, gold);
-    ctx.text().draw(ctx.draw(), rest_style, x, baseline - ctx.text().ascent(rest_style), rest, gold);
+    const float px = static_cast<float>(name_style.px);
+    const float small_baseline = y + ctx.text().ascent(small_style);
+    const float cap_top = small_baseline + px * kGap;
+    const float baseline = cap_top + px * kCapHeight;
+    const float name_x = std::round(center_x - name_w * 0.5f);
+    const float name_y = baseline - ctx.text().ascent(name_style);
+    const float rule_y = std::round(baseline + px * kRuleDrop);
+    const float rule_h = std::max(1.0f, std::round(px * kRuleThick));
+    ui::DrawList& list = ctx.draw();
+    ui::TextRenderer& text = ctx.text();
+
+    // The glows and the rule are one blurred image (see ui/glow.h), placed on whole pixels so
+    // it lines up with the letters. It is built again only when the layout or the style
+    // changes, with room for the widest glow to fade out completely before the image's edge.
+    const int style_index = std::max(logo_style_, 0);
+    const LogoStyle& style = kLogoStyles[style_index];
+    const float widest = std::max({style.inner.sigma + style.outer.sigma, style.backdrop.sigma, style.small_glow.sigma});
+    const int pad = static_cast<int>(std::ceil(px * widest * 3.5f)) + 2;
+    const int origin_x = static_cast<int>(std::floor(center_x - std::max(small_w, name_w) * 0.5f)) - pad;
+    const int origin_y = static_cast<int>(std::floor(y)) - pad;
+    const auto frac = [](float v) { return static_cast<int>(std::lround((v - std::floor(v)) * 64.0f)); };
+    LogoGlowKey key{style_index, name_style.px, small_style.px, frac(center_x), frac(y), small, name};
+    if (logo_glow_key_ != key) {
+        logo_glow_key_ = key;
+        const LogoGlowLayout layout{name_style, small_style, &letters, name, tracking, small_w, name_w, block_h, pad,
+                                    center_x - static_cast<float>(origin_x), y - static_cast<float>(origin_y),
+                                    name_x - static_cast<float>(origin_x), name_y - static_cast<float>(origin_y),
+                                    rule_y - static_cast<float>(origin_y), rule_h};
+        logo_glow_ = build_logo_glow(text, layout, style_index);
+        if (logo_glow_.w > 0) {
+            services_.set_ui_image(kLogoGlowImageId, logo_glow_.w, logo_glow_.h, std::move(logo_glow_.rgba));
+        }
+        logo_glow_.rgba = {};
+    }
+    if (logo_glow_.w > 0) {
+        list.picture({static_cast<float>(origin_x), static_cast<float>(origin_y), static_cast<float>(logo_glow_.w),
+                      static_cast<float>(logo_glow_.h)},
+                     kLogoGlowImageId, 0.0f, 0.0f, 1.0f, 1.0f, ui::Color::rgb(0xFFFFFF));
+    }
+
+    // The small line, letter by letter with its tracking.
+    float pen = center_x - small_w * 0.5f;
+    for (const std::string_view letter : letters) {
+        pen += text.draw(list, small_style, std::round(pen), y, letter, kIvory) + tracking;
+    }
+
+    // The name: a hard dark shadow just below, then the metal.
+    text.draw(list, name_style, name_x, name_y + px * 0.032f, name, style.shadow);
+    const std::vector<ui::TextRenderer::GradientStop> metal(style.metal.begin(), style.metal.end());
+    text.draw_gradient(list, name_style, name_x, name_y, name, metal, cap_top, px * kCapHeight);
+}
+
+UiHost::LogoGlow UiHost::build_logo_glow(const ui::TextRenderer& text, const LogoGlowLayout& l, int style_index) {
+    const LogoStyle& style = kLogoStyles[style_index];
+    const float px = static_cast<float>(l.name_style.px);
+    LogoGlow glow;
+    glow.w = static_cast<int>(std::ceil(std::max(l.small_w, l.name_w))) + 2 * l.pad + 2;
+    glow.h = static_cast<int>(std::ceil(l.block_h + px * 0.1f)) + 2 * l.pad + 2;
+    if (glow.w > kMaxGlowSize || glow.h > kMaxGlowSize) {
+        glow.w = glow.h = 0;  // Larger than the renderer takes: letters without glow.
+        return glow;
+    }
+
+    ui::AlphaMask small_mask;
+    small_mask.resize(glow.w, glow.h);
+    float pen = l.center_x - l.small_w * 0.5f;
+    for (const std::string_view letter : *l.letters) {
+        pen += text.rasterize(l.small_style, std::round(pen), l.small_y, letter, small_mask) + l.tracking;
+    }
+    ui::AlphaMask name_mask;
+    name_mask.resize(glow.w, glow.h);
+    text.rasterize(l.name_style, l.name_x, l.name_y, l.name, name_mask);
+
+    const auto blurred = [px](ui::AlphaMask mask, float sigma_em) {
+        ui::gaussian_blur(mask, px * sigma_em);
+        return mask;
+    };
+    ui::GlowCanvas canvas(glow.w, glow.h);
+    if (style.backdrop.opacity > 0.0f) {
+        ui::AlphaMask both = name_mask;
+        for (std::size_t i = 0; i < both.a.size(); ++i) {
+            both.a[i] = std::max(both.a[i], small_mask.a[i]);
+        }
+        canvas.over(blurred(std::move(both), style.backdrop.sigma), style.backdrop.color, style.backdrop.opacity);
+    }
+    // The wide glow comes from the letters together with the close one, as chained CSS shadows do.
+    const ui::AlphaMask inner = blurred(name_mask, style.inner.sigma);
+    if (style.outer.opacity > 0.0f) {
+        ui::AlphaMask base = name_mask;
+        for (std::size_t i = 0; i < base.a.size(); ++i) {
+            base.a[i] = std::max(base.a[i], inner.a[i] * style.inner.opacity);
+        }
+        canvas.over(blurred(std::move(base), style.outer.sigma), style.outer.color, style.outer.opacity);
+    }
+    if (style.inner.opacity > 0.0f) {
+        canvas.over(inner, style.inner.color, style.inner.opacity);
+    }
+    // A soft dark bed under the thin small letters keeps them readable over the menu scene.
+    ui::AlphaMask bed = small_mask;
+    ui::gaussian_blur(bed, std::max(0.8f, static_cast<float>(l.small_style.px) * 0.12f));
+    canvas.over(bed, ui::Color::rgb(0x0E1A24), 1.6f);
+    if (style.small_glow.opacity > 0.0f) {
+        canvas.over(blurred(small_mask, style.small_glow.sigma), style.small_glow.color, style.small_glow.opacity);
+    }
+    canvas.faded_line(static_cast<int>(l.name_x), static_cast<int>(l.rule_y), static_cast<int>(std::round(l.name_w)),
+                      static_cast<int>(l.rule_h), style.rule);
+    glow.rgba = canvas.to_rgba8();
+    return glow;
 }
 
 void UiHost::main_menu(ui::Context& ctx) {

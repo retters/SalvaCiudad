@@ -1,5 +1,7 @@
 #include <doctest.h>
 
+#include <array>
+
 #include "core/file_io.h"
 #include "sim/worldgen.h"
 #include "game/menu_backgrounds.h"
@@ -150,6 +152,30 @@ struct Harness {
 }  // namespace
 
 TEST_SUITE("menus") {
+    TEST_CASE("the main menu logo is picked at random, never the same twice in a row") {
+        CHECK(pick_logo_style(-1, 1, 12345) == 0);
+        CHECK(pick_logo_style(0, 1, 12345) == 0);
+        std::array<int, 6> first{};
+        for (std::uint64_t r = 0; r < 600; ++r) {
+            const int s = pick_logo_style(-1, 6, r * 0x9E3779B97F4A7C15ull);
+            REQUIRE(s >= 0);
+            REQUIRE(s < 6);
+            ++first[static_cast<std::size_t>(s)];
+        }
+        for (const int n : first) {
+            CHECK(n > 50);  // Every style comes up.
+        }
+        for (int current = 0; current < 6; ++current) {
+            std::array<int, 6> next{};
+            for (std::uint64_t r = 0; r < 500; ++r) {
+                ++next[static_cast<std::size_t>(pick_logo_style(current, 6, r))];
+            }
+            for (int s = 0; s < 6; ++s) {
+                CHECK(next[static_cast<std::size_t>(s)] == (s == current ? 0 : 100));
+            }
+        }
+    }
+
     TEST_CASE("a risky display change reverts by itself after 15 seconds") {
         Harness h;
         DisplaySettings wanted = h.services.settings_value.display;

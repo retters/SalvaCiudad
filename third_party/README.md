@@ -35,6 +35,7 @@ Licencia SIL Open Font License 1.1; cada una va con su `*-OFL.txt`. Se descargar
 
 | Fuente | Archivo | SHA-256 |
 |---|---|---|
-| Cinzel | `logo/Cinzel.ttf` (fuente variable; se usa su instancia por omisión) | `f4d83d34d1f6c741193e4acf4b3dff9531e5a67b6aa65228d00a7db72a4e0f34` |
+| EB Garamond Medium | `logo/EBGaramond-Medium.ttf` (nombre del juego) | `fa216955996d7490192e361eced78f5e3b50ae1742c5441bb635672f1600541a` |
+| Barlow Semi Condensed Light | `logo/BarlowSemiCondensed-Light.ttf` (línea pequeña del logotipo) | `e2a407155a0c5ff70e65918e23c35ef95433e0918dbbc472019e4496dca4a53a` |
 | Alegreya Sans | `ui/AlegreyaSans-Regular.ttf` | `8fab634196007afca839f1e5a6fb300976daff55d8528b590ef032f01b14ea10` |
 | Alegreya Sans | `ui/AlegreyaSans-Bold.ttf` | `a3055a1893759bdbd7504bb22abc583769e7974c49353176eac0b03792c9fb8e` |

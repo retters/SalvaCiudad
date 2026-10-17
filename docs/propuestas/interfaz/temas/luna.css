@@ -1,0 +1,88 @@
+/* Windows XP Luna: rounded blue title bars, beige bodies, the green Start button and the blue taskbar. */
+.stage {
+  --font: Tahoma, 'Segoe UI', sans-serif; --font-title: 'Trebuchet MS', Tahoma, sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 15px; --title-weight: 700;
+  --text: #000; --dim: #4a4a4a; --accent: #316ac5; --accent-text: #fff;
+  --ok: #2a8a2a; --warn: #a07000; --bad: #c4321c; --info: #316ac5;
+  --panel: #ece9d8; --panel-solid: #ece9d8; --panel-border: 3px solid #0831d9; --panel-radius: 8px 8px 0 0;
+  --panel-shadow: 2px 3px 8px rgba(0, 0, 0, .45); --panel-pad: 8px;
+  --bar: linear-gradient(180deg, #3c8cf6, #245edb 10%, #1f53c9 85%, #1941a5); --bar-border: 1px solid #0c2d8a; --bar-h: 38px;
+  --title-bg: linear-gradient(180deg, #0997ff, #0053ee 8%, #0050ee 40%, #06f 88%, #06f 93%, #005bff 95%, #003dd7 96%, #003dd7);
+  --title-text: #fff; --title-border: 0; --title-h: 30px;
+  --btn: linear-gradient(180deg, #fff, #ecebe6 86%, #d6d0c5); --btn-hover: linear-gradient(180deg, #fff, #f5f4ee 86%, #e3dfd5);
+  --btn-on: linear-gradient(180deg, #e5e4de, #f0efea); --btn-on-text: #000; --btn-text: #000;
+  --btn-border: 1px solid #003c74; --btn-radius: 3px; --btn-h: 26px; --btn-shadow: inset 0 -1px 0 #e0dccf;
+  --chip: #fff; --row: #fff; --row-hover: #c1d2ee; --sep: #aca899;
+  --meter: #fff; --meter-h: 14px; --meter-radius: 3px;
+  --avatar-bg: #7a9ad0; --thumb-bg: #fff;
+  --tip: #ffffe1; --tip-text: #000; --tip-border: 1px solid #000; --tip-radius: 0;
+  --icon-stroke: 1.6; --icon-size: 18px;
+}
+.win { border-top-width: 0; }
+.win-bar { margin: 0 -3px; padding: 2px 4px 2px 8px; border-radius: 8px 8px 0 0; text-shadow: 1px 1px 0 #0a1f60; }
+.win.minimized .win-bar { border-radius: 8px 8px 0 0; }
+.win-icon { width: 18px; height: 18px; background: transparent; }
+.win-sub { color: #cfe0ff; }
+.win-act { border: 0; }
+.win-act .wbtn { color: #fff; }
+.win-ctl { gap: 2px; }
+.win-ctl .wbtn { width: 22px; --btn-h: 22px; border-radius: 3px; border: 1px solid #fff; color: #fff; background: radial-gradient(circle at 30% 30%, #5d9cff, #2463e0 70%); --icon-stroke: 2.6; }
+.win-ctl .wbtn .ic { width: 12px; height: 12px; }
+.win-ctl .ctl-close { background: radial-gradient(circle at 30% 30%, #f0a080, #e04a14 70%); }
+.win-ctl .ctl-close:hover { background: radial-gradient(circle at 30% 30%, #ffb090, #f06030 70%); color: #fff; }
+.win-ctl .wbtn.on { background: radial-gradient(circle at 30% 30%, #9cd38a, #3aa01e 70%) !important; color: #fff; }
+.win-act .wbtn.on { color: #fff; }
+.win-body { padding: 8px; }
+.hero, .tile, .kpi, .score-row, .tr-pick, .log, .radio-list { border: 1px solid #7f9db9; border-radius: 0; background: #fff; }
+.log { padding: 2px; }
+.row, .link, .log-row { border-radius: 0; }
+.row:hover, .link:hover, .log-row:hover { background: #316ac5; color: #fff; }
+.row:hover .row-sub, .log-row:hover .log-date { color: #fff; }
+.chip { border: 1px solid #7f9db9; border-radius: 0; }
+.meter { border: 1px solid #686868; padding: 1px; }
+.meter .fill, .meter.ok .fill, .meter.warn .fill, .meter.bad .fill, .meter.accent .fill { inset: 1px auto 1px 1px; border-radius: 2px; background: repeating-linear-gradient(90deg, #2ec02e 0 7px, transparent 7px 9px); }
+.sec { color: #215dc6; text-transform: none; letter-spacing: 0; font-size: 13px; }
+.seg { background: transparent; padding: 0; }
+.seg-b { background: var(--btn); border: 1px solid #003c74; border-radius: 3px; color: #000; }
+.seg-b.on { background: var(--btn-on); color: #000; box-shadow: inset 0 0 0 1px #f9b54b; }
+.radio.on { background: #316ac5; color: #fff; }
+.switch { width: 16px; height: 16px; border-radius: 0; background: #fff; border: 1px solid #1c5180; }
+.switch .knob { display: none; }
+.switch.on::after { content: '✔'; position: absolute; inset: 0; display: grid; place-items: center; color: #21a121; font-size: 13px; }
+.need, .annex { border-radius: 0; border: 1px solid #7f9db9; background: #fff; }
+.need.miss { background: #fff; }
+.topbar { color: #fff; text-shadow: 1px 1px 0 #0a1f60; }
+.topbar .dim, .topbar .of { color: #c8dcff; }
+.topbar .btn { text-shadow: none; }
+.tb-item.gold b { color: #ffe680; }
+.tb-item.alert { color: #ffd27a; }
+.dock-list .dock { background: linear-gradient(180deg, #7ba2e7, #6375d6); border: 1px solid #fff; padding: 6px; border-radius: 4px; }
+.dock-btn { background: linear-gradient(180deg, #fff, #c6d3f7); border: 1px solid #fff; color: #215dc6; font-weight: 700; justify-content: flex-start; }
+.dock-btn:hover { color: #428eff; text-decoration: underline; }
+.minimap { border: 3px solid #0831d9; border-radius: 8px 8px 0 0; padding: 22px 16px 16px; background: #ece9d8; }
+.minimap::before { content: ''; position: absolute; left: -3px; right: -3px; top: -3px; height: 14px; border-radius: 8px 8px 0 0; background: var(--title-bg); }
+.mm-n { top: 12px !important; }
+.mm-tools .btn { background: var(--btn); }
+.toast { background: #ffffe1; border: 1px solid #000; border-radius: 6px; color: #000; box-shadow: 2px 2px 4px rgba(0, 0, 0, .3); }
+.toast.bad { border-left: 1px solid #000; }
+.question { border: 3px solid #0831d9; border-radius: 8px; }
+.place-hint { background: #ffffe1; border: 1px solid #000; border-radius: 6px; }
+.modal { border: 3px solid #0831d9; border-radius: 8px 8px 0 0; padding: 0 0 12px; }
+.modal h2 { background: var(--title-bg); color: #fff; font-size: 15px; text-align: left; padding: 6px 10px; margin: 0 0 8px; border-radius: 5px 5px 0 0; text-shadow: 1px 1px 0 #0a1f60; }
+.modal .menu-item { margin: 0 12px; }
+.modal.dialog p, .dlg-btns { padding: 0 12px; }
+.taskbar { background: var(--bar); height: 40px; padding: 0 4px 0 0; }
+.start-btn { height: 40px; padding: 0 22px 0 12px; border: 0; border-radius: 0 12px 12px 0; background: linear-gradient(180deg, #3c9a3c, #48b848 12%, #3a9a2a 90%, #2e7a20); color: #fff; font-style: italic; font-size: 19px; text-shadow: 1px 1px 2px #1a3a10; box-shadow: none; }
+.start-btn.on { background: linear-gradient(180deg, #2e7a20, #3a9a2a); }
+.tray { background: linear-gradient(180deg, #0c59b9, #139ee9 8%, #18b5f2 14%, #139beb 40%, #1290e8 90%); color: #fff; border-left: 1px solid #092e9a; height: 40px; }
+.startmenu { border: 2px solid #0831d9; border-radius: 8px 8px 0 0; background: #fff; flex-direction: row; }
+.sm-side { width: 0; padding: 0; }
+.sm-side span { display: none; }
+.sm-cats { background: #fff; }
+.sm-cats .bb-cat { background: transparent; border: 0; color: #000; }
+.sm-cats .bb-cat:hover, .sm-cats .bb-cat.on { background: #316ac5; color: #fff; }
+.sm-items { background: #d3e5fa; border-left: 1px solid #95bdee; }
+.sm-items .bb-item { background: transparent; border: 0; }
+.sm-items .bb-item:hover { background: #316ac5; color: #fff; }
+.ring::before { background: #ece9d8; }
+.cam-view { border-radius: 0; }

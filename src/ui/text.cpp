@@ -1,5 +1,6 @@
 #include "ui/text.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "core/log.h"
@@ -131,6 +132,117 @@ float TextRenderer::draw(DrawList& list, TextStyle style, float x, float y, std:
             const Rect r{std::round(pen) + static_cast<float>(cg->x0), baseline + static_cast<float>(cg->y0),
                          static_cast<float>(cg->w), static_cast<float>(cg->h)};
             list.image(r, cg->u0, cg->v0, cg->u1, cg->v1, color);
+        }
+        pen += f->advance(style.px, g);
+        prev = g;
+    }
+    return std::ceil(pen - x);
+}
+
+namespace {
+
+Color lerp_color(Color a, Color b, float t) {
+    const auto mix = [t](std::uint8_t p, std::uint8_t q) {
+        return static_cast<std::uint8_t>(static_cast<float>(p) + (static_cast<float>(q) - static_cast<float>(p)) * t + 0.5f);
+    };
+    return {mix(a.r, b.r), mix(a.g, b.g), mix(a.b, b.b), mix(a.a, b.a)};
+}
+
+// The gradient's color at `t` in [0, 1].
+Color gradient_at(const std::vector<TextRenderer::GradientStop>& stops, float t) {
+    if (t <= stops.front().at) {
+        return stops.front().color;
+    }
+    for (std::size_t i = 1; i < stops.size(); ++i) {
+        if (t <= stops[i].at) {
+            const float span = stops[i].at - stops[i - 1].at;
+            return lerp_color(stops[i - 1].color, stops[i].color, span > 0.0f ? (t - stops[i - 1].at) / span : 1.0f);
+        }
+    }
+    return stops.back().color;
+}
+
+}  // namespace
+
+float TextRenderer::draw_gradient(DrawList& list, TextStyle style, float x, float y, std::string_view text,
+                                  const std::vector<GradientStop>& stops, float band_top, float band_height) {
+    const Font* f = font(style.role);
+    if (f == nullptr || stops.size() < 2 || band_height <= 0.0f) {
+        return 0.0f;
+    }
+    const float baseline = std::round(y + f->ascent(style.px));
+    float pen = x;
+    int prev = 0;
+    std::size_t i = 0;
+    while (i < text.size()) {
+        const std::uint32_t cp = text::next_codepoint(text, i);
+        if (cp == '\n') {
+            break;
+        }
+        const int g = find_glyph(*f, cp);
+        if (prev != 0) {
+            pen += f->kerning(style.px, prev, g);
+        }
+        if (const CachedGlyph* cg = glyph(style, *f, g); cg != nullptr && cg->w > 0) {
+            const float gx = std::round(pen) + static_cast<float>(cg->x0);
+            const float gy = baseline + static_cast<float>(cg->y0);
+            const float gh = static_cast<float>(cg->h);
+            // Cut the glyph at every stop so each slice blends between two stop colors.
+            std::vector<float> cuts{0.0f, gh};
+            for (const GradientStop& s : stops) {
+                const float cut = s.at * band_height + band_top - gy;
+                if (cut > 0.0f && cut < gh) {
+                    cuts.push_back(cut);
+                }
+            }
+            std::sort(cuts.begin(), cuts.end());
+            for (std::size_t k = 1; k < cuts.size(); ++k) {
+                if (cuts[k] - cuts[k - 1] < 0.01f) {
+                    continue;
+                }
+                const float t0 = (gy + cuts[k - 1] - band_top) / band_height;
+                const float t1 = (gy + cuts[k] - band_top) / band_height;
+                const float v0 = cg->v0 + (cg->v1 - cg->v0) * (cuts[k - 1] / gh);
+                const float v1 = cg->v0 + (cg->v1 - cg->v0) * (cuts[k] / gh);
+                list.image_vgradient({gx, gy + cuts[k - 1], static_cast<float>(cg->w), cuts[k] - cuts[k - 1]}, cg->u0, v0,
+                                     cg->u1, v1, gradient_at(stops, t0), gradient_at(stops, t1));
+            }
+        }
+        pen += f->advance(style.px, g);
+        prev = g;
+    }
+    return std::ceil(pen - x);
+}
+
+float TextRenderer::rasterize(TextStyle style, float x, float y, std::string_view text, AlphaMask& into) const {
+    const Font* f = font(style.role);
+    if (f == nullptr) {
+        return 0.0f;
+    }
+    // The same pen and rounding as draw(), so the mask lines up with the drawn glyphs.
+    const float baseline = std::round(y + f->ascent(style.px));
+    float pen = x;
+    int prev = 0;
+    std::size_t i = 0;
+    while (i < text.size()) {
+        const std::uint32_t cp = text::next_codepoint(text, i);
+        if (cp == '\n') {
+            break;
+        }
+        const int g = find_glyph(*f, cp);
+        if (prev != 0) {
+            pen += f->kerning(style.px, prev, g);
+        }
+        const Font::Bitmap bmp = f->rasterize(style.px, g);
+        const int gx = static_cast<int>(std::round(pen)) + bmp.x0;
+        const int gy = static_cast<int>(baseline) + bmp.y0;
+        for (int row = 0; row < bmp.h; ++row) {
+            for (int col = 0; col < bmp.w; ++col) {
+                const std::uint8_t c = bmp.pixels[static_cast<std::size_t>(row * bmp.w + col)];
+                if (c != 0) {
+                    into.stamp_max(gx + col, gy + row, static_cast<float>(c) / 255.0f);
+                }
+            }
         }
         pen += f->advance(style.px, g);
         prev = g;

@@ -1,0 +1,41 @@
+/* Noche estrellada: night blue with faint stars, warm low-light text, lantern accents. Does not dazzle at night. */
+.stage {
+  --sky: radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, .7), transparent), radial-gradient(1px 1px at 68% 14%, rgba(255, 255, 255, .55), transparent), radial-gradient(1.5px 1.5px at 40% 70%, rgba(255, 240, 200, .6), transparent), radial-gradient(1px 1px at 85% 55%, rgba(255, 255, 255, .5), transparent), radial-gradient(1px 1px at 25% 88%, rgba(255, 255, 255, .45), transparent), linear-gradient(180deg, #121a33, #0b1022);
+  --font: 'Alegreya Sans', sans-serif; --font-title: 'EB Garamond', serif;
+  --fs: 17px; --fs-small: 14px; --fs-title: 22px; --title-weight: 500;
+  --text: #e8dcc0; --dim: #9a9078; --accent: #f2b45a; --accent-text: #1a1206;
+  --ok: #9ad08a; --warn: #f2b45a; --bad: #e88a6a; --info: #8ab0e0;
+  --panel: var(--sky); --panel-solid: #0f162c; --panel-border: 1px solid rgba(242, 180, 90, .25); --panel-radius: 14px;
+  --panel-shadow: 0 10px 30px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(242, 180, 90, .12);
+  --bar: rgba(11, 16, 34, .9); --bar-border: 1px solid rgba(242, 180, 90, .2);
+  --title-text: #f2c47a; --title-border: 1px solid rgba(242, 180, 90, .15);
+  --btn: rgba(255, 255, 255, .05); --btn-hover: rgba(242, 180, 90, .12); --btn-on: rgba(242, 180, 90, .2); --btn-on-text: #f2c47a;
+  --btn-border: 1px solid rgba(242, 180, 90, .2); --btn-radius: 10px; --btn-h: 32px;
+  --chip: rgba(255, 255, 255, .06); --row: rgba(255, 255, 255, .035); --row-hover: rgba(242, 180, 90, .08); --sep: rgba(242, 180, 90, .15);
+  --meter: rgba(255, 255, 255, .08); --meter-h: 6px;
+  --avatar-bg: #1c2648; --thumb-bg: radial-gradient(circle at 50% 70%, rgba(242, 180, 90, .2), transparent 65%);
+  --tip: #0b1022; --tip-border: 1px solid rgba(242, 180, 90, .4); --tip-radius: 10px;
+  --icon-stroke: 1.7;
+}
+.hud img { filter: brightness(.82) saturate(.85); }
+.win-title, .modal h2 { text-shadow: 0 0 12px rgba(242, 180, 90, .45); }
+.wbtn.on { color: #f2c47a; text-shadow: 0 0 8px #f2b45a; }
+.wbtn.on .ic { filter: drop-shadow(0 0 4px #f2b45a); }
+.btn.primary { background: linear-gradient(180deg, #f2c47a, #d89a3a); box-shadow: 0 0 16px rgba(242, 180, 90, .45); }
+.btn.danger { color: #e88a6a; }
+.sec { color: #c8a870; }
+.meter .fill, .meter.ok .fill { background: linear-gradient(90deg, #6a9a5a, #9ad08a); }
+.meter.accent .fill { background: linear-gradient(90deg, #d89a3a, #f2c47a); box-shadow: 0 0 8px rgba(242, 180, 90, .5); }
+.switch.on { background: #d89a3a; }
+.top-pills .tb-group { border-radius: 99px; }
+.dock-icons .dock-btn { border-radius: 50%; }
+.dock-btn.on { box-shadow: 0 0 14px rgba(242, 180, 90, .5); }
+.build-dock .bb-cats { border-radius: 30px; }
+.build-dock .bb-cat { border-radius: 50%; background: rgba(255, 255, 255, .04); }
+.build-dock .bb-cat.on { background: rgba(242, 180, 90, .22); color: #f2c47a; box-shadow: 0 0 14px rgba(242, 180, 90, .45); }
+.build-dock .bb-cat.on::after { background: #f2b45a; box-shadow: 0 0 6px #f2b45a; }
+.bb-item.on { outline: 1px solid rgba(242, 180, 90, .6); background: rgba(242, 180, 90, .1); }
+.minimap > span { color: #c8a870; }
+.mm-frame img { filter: brightness(.7) saturate(.8); }
+.tb-item.gold b { color: #f2c47a; }
+.ring::before { background: #0f162c; }

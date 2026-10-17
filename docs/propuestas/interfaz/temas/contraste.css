@@ -1,0 +1,51 @@
+/* Alto contraste: black and yellow, big bold lettering, 2 px frames, a focus ring you cannot miss. */
+.stage {
+  --font: 'Segoe UI', sans-serif; --font-title: 'Segoe UI', sans-serif;
+  --fs: 20px; --fs-small: 17px; --fs-title: 22px; --title-weight: 800;
+  --text: #ffffff; --dim: #ffffff; --accent: #ffe600; --accent-text: #000;
+  --ok: #3cff3c; --warn: #ffe600; --bad: #ff4d4d; --info: #4dd2ff;
+  --panel: #000; --panel-solid: #000; --panel-border: 2px solid #fff; --panel-radius: 4px; --panel-shadow: none; --panel-pad: 14px;
+  --bar: #000; --bar-border: 2px solid #fff; --bar-h: 54px;
+  --title-text: #ffe600; --title-border: 2px solid #fff; --title-h: 50px;
+  --btn: #000; --btn-hover: #333; --btn-on: #ffe600; --btn-on-text: #000;
+  --btn-border: 2px solid #fff; --btn-radius: 4px; --btn-h: 40px;
+  --chip: #000; --row: #000; --row-hover: #222; --sep: #fff;
+  --meter: #000; --meter-h: 12px; --meter-radius: 0;
+  --avatar-bg: #333; --thumb-bg: #111;
+  --tip: #ffe600; --tip-text: #000; --tip-border: 2px solid #000; --tip-radius: 4px;
+  --icon-stroke: 2.4; --icon-size: 22px;
+}
+.btn:hover, .row:hover, .bb-item:hover, .link:hover, .log-row:hover, .radio:hover { outline: 4px solid #4dd2ff; outline-offset: 1px; }
+.btn.primary { background: #ffe600; color: #000; }
+.btn.danger { color: #ff4d4d; border-color: #ff4d4d; }
+.chip { border: 2px solid currentColor; }
+.chip.ok, .chip.bad, .chip.warn, .chip.accent { background: #000; }
+.meter { border: 2px solid #fff; }
+.row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick, .bb-item { border: 2px solid #fff; }
+.need, .annex { border: 2px solid #fff; background: #000; }
+.need.miss { border-color: #ff4d4d; }
+.wbtn { color: #fff; width: 36px; --btn-h: 36px; }
+.wbtn.on { color: #000; background: #ffe600; }
+.win-act { border-color: #fff; }
+.sec { color: #ffe600; font-size: 15px; }
+.switch { border: 2px solid #fff; background: #000; }
+.switch.on { background: #3cff3c; }
+.switch .knob { background: #fff; }
+.switch.on .knob { background: #000; }
+.seg { background: #000; border: 2px solid #fff; }
+.seg-b { color: #fff; }
+.seg-b.on { background: #ffe600; color: #000; }
+.radio.on { background: #ffe600; color: #000; }
+.dock-btn.on { background: #ffe600; color: #000; }
+.bb-cat.on { background: #ffe600; color: #000; }
+.bb-item.on { outline: 0; background: #ffe600; color: #000; }
+.bb-item.on .bb-cost { color: #000; }
+.tb-item.gold b { color: #ffe600; }
+.tb-item .of, .tb-item .two .dim { color: #fff; }
+.toast { border: 2px solid #fff; }
+.toast.bad { border-color: #ff4d4d; }
+.log-ic, .toast-ic { background: #000; border: 2px solid currentColor; }
+.minimap > span { color: #fff; }
+.ring::before { background: #000; }
+.seg { flex-wrap: wrap; }
+.seg-b { flex: none; }

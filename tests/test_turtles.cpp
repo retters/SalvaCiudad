@@ -575,11 +575,11 @@ TEST_SUITE("turtles") {
     }
 
     // Not a test: a saved game the night the turtles come out, with the question waiting.
-    //   salvaciudad_tests -ts=turtles -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_turtles.scsave: copy it to the saves folder and load it.
+    //   salvasprosperia_tests -ts=turtles -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_turtles.scsave: copy it to the saves folder and load it.
     TEST_CASE("manual: a saved game with the turtles on the beach and the question waiting" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;

@@ -11,11 +11,12 @@
 
 #include "ui/draw_list.h"
 #include "ui/font.h"
+#include "ui/glow.h"
 #include "ui/glyph_atlas.h"
 
 namespace sc::ui {
 
-enum class FontRole : std::uint8_t { Regular, Bold, Logo, Count };
+enum class FontRole : std::uint8_t { Regular, Bold, Logo, LogoSmall, Count };
 
 struct TextStyle {
     FontRole role = FontRole::Regular;
@@ -35,6 +36,20 @@ public:
 
     // Draws one line with its top-left corner at (x, y). Returns the width.
     float draw(DrawList& list, TextStyle style, float x, float y, std::string_view text, Color color);
+
+    // One color of a vertical gradient: `at` runs from 0 (the top of `band`) to 1 (its bottom).
+    struct GradientStop {
+        float at;
+        Color color;
+    };
+    // Like draw(), but the glyphs are colored by a vertical gradient that starts at `band_top`
+    // and is `band_height` tall (stops sorted by `at`, at least two).
+    float draw_gradient(DrawList& list, TextStyle style, float x, float y, std::string_view text,
+                        const std::vector<GradientStop>& stops, float band_top, float band_height);
+
+    // Like draw(), but the coverage goes into `into` (pixel coordinates of the mask)
+    // instead of the draw list; for glows. Returns the width.
+    float rasterize(TextStyle style, float x, float y, std::string_view text, AlphaMask& into) const;
 
     // Splits at line breaks and between words so each line fits `max_width`.
     // A single word longer than the width is split between characters.

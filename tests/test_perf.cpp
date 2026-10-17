@@ -1,6 +1,6 @@
 // Timing of the simulation with many villagers (phase 20). The small case
 // runs with the other tests; the big one (12 towns of 1000 on a huge map)
-// only on demand: salvaciudad_tests -ts=sim_perf --no-skip.
+// only on demand: salvasprosperia_tests -ts=sim_perf --no-skip.
 #include <doctest.h>
 
 #include <algorithm>

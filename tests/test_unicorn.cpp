@@ -561,12 +561,12 @@ TEST_SUITE("unicorn") {
     }
 
     // Not a test: a saved game with a house by the glade of a unicorn.
-    //   salvaciudad_tests -ts=unicorn -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_unicorn.scsave: copy it to the saves
+    //   salvasprosperia_tests -ts=unicorn -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_unicorn.scsave: copy it to the saves
     // folder and load it.
     TEST_CASE("manual: a saved game with a house by the glade of a unicorn" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;

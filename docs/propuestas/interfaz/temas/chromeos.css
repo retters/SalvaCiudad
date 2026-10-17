@@ -1,0 +1,56 @@
+/* ChromeOS / Material You light: surfaces tinted with the town's green, pills, generous corners, a shelf to build. */
+.stage {
+  --font: 'Google Sans', Roboto, 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: 'Google Sans', 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 18px; --title-weight: 500;
+  --text: #1a1c18; --dim: #5d6358; --accent: #3a6a2a; --accent-text: #fff;
+  --ok: #3a7a2a; --warn: #8a6a00; --bad: #ba1a1a; --info: #2a5a8a;
+  --panel: #f6f8ef; --panel-solid: #f6f8ef; --panel-border: 0; --panel-radius: 16px; --panel-shadow: 0 1px 3px rgba(0, 0, 0, .25), 0 4px 18px rgba(0, 0, 0, .18);
+  --bar: #eef1e6; --bar-border: 0;
+  --title-text: #1a1c18; --title-border: 0; --title-h: 48px;
+  --btn: #e1e6d6; --btn-hover: #d6dcca; --btn-on: #bfeaa8; --btn-on-text: #072100;
+  --btn-border: 0; --btn-radius: 99px; --btn-h: 36px;
+  --chip: #e6eadb; --row: #edf0e3; --row-hover: #e1e6d6; --sep: #dfe4d4;
+  --meter: #dfe4d4; --meter-h: 4px;
+  --avatar-bg: #bfeaa8; --thumb-bg: #e6eadb;
+  --tip: #2f312c; --tip-text: #f1f1ea; --tip-border: 0; --tip-radius: 8px;
+  --icon-stroke: 1.9; --icon-size: 20px;
+}
+.btn.primary { background: #3a6a2a; color: #fff; }
+.btn.danger { background: #ffdad6; color: #410002; }
+.win-icon { border-radius: 50%; }
+.win-act { border: 0; }
+.wbtn { border-radius: 50%; width: 34px; --btn-h: 34px; color: #44483f; }
+.wbtn.on { background: #bfeaa8; color: #072100; }
+.ctl-close:hover { background: #ffdad6; color: #410002; }
+.hero, .row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick { border-radius: 14px; }
+.chip { border-radius: 8px; }
+.sec { color: #3a6a2a; text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 500; }
+.seg { background: #e1e6d6; border-radius: 99px; }
+.seg-b { border-radius: 99px; }
+.seg-b.on { background: #bfeaa8; color: #072100; }
+.radio { border-radius: 99px; padding: 6px 12px; }
+.radio.on { background: #bfeaa8; color: #072100; }
+.switch.on { background: #3a6a2a; }
+.meter .fill, .meter.ok .fill { background: #3a6a2a; }
+.top-pills .tb-group { box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+.tb-item.gold b { color: #8a6a00; }
+.dock-rail .dock { background: #eef1e6; }
+.dock-rail .dock-btn.on .ic { background: #bfeaa8; color: #072100; }
+.stage.dock-rail .buildbar { left: calc(50% + 42px); }
+.minimap { background: #f6f8ef; }
+.minimap > span { color: #44483f; }
+.mm-n { color: #ba1a1a !important; }
+.build-dock .bb-cats { border-radius: 99px; background: rgba(238, 241, 230, .92); }
+.build-dock .bb-cat { border-radius: 50%; background: transparent; color: #44483f; }
+.build-dock .bb-cat:hover { width: 58px; height: 58px; margin-top: 0; background: #e1e6d6; }
+.build-dock .bb-cat.on { background: #bfeaa8; color: #072100; }
+.build-dock .bb-cat.on::after { background: #3a6a2a; }
+.build-dock .bb-items-wrap { border-radius: 24px; }
+.bb-item { border-radius: 14px; background: #edf0e3; }
+.bb-item.on { outline: 0; background: #bfeaa8; }
+.toasts-snack .toast { background: #2f312c; color: #f1f1ea; border: 0; border-radius: 8px; }
+.toasts-snack .toast-ic { background: transparent; color: #a8d58f !important; }
+.question, .modal { border-radius: 28px; }
+.place-hint { background: #2f312c; color: #f1f1ea; border: 0; }
+.ring::before { background: #f6f8ef; }
+.live { background: rgba(0, 0, 0, .5); color: #fff; }

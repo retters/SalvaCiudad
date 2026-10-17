@@ -1,6 +1,6 @@
-# SalvaCiudad
+# SALVA'S PROSPERIA
 
-Juego 3D de construcción y supervivencia de pueblos medievales con multijugador de 1 a 12 jugadores. Motor propio en C++20 sobre SDL3. El diseño completo está en [ESPECIFICACION_SalvaCiudad.md](ESPECIFICACION_SalvaCiudad.md) y las decisiones en [docs/DECISIONES.md](docs/DECISIONES.md).
+Juego 3D de construcción y supervivencia de pueblos medievales con multijugador de 1 a 12 jugadores. Motor propio en C++20 sobre SDL3. El diseño completo está en [ESPECIFICACION_SalvasProsperia.md](ESPECIFICACION_SalvasProsperia.md) y las decisiones en [docs/DECISIONES.md](docs/DECISIONES.md).
 
 **Estado:** en desarrollo, fase 116 de 117; falta el pulido y la entrega. Se juega de principio a fin: fundar el pueblo, recolectar, cultivar, producir, comerciar y defenderse, con estaciones, clima, día y noche, enfermedades, incendios, fauna, asaltantes, ejército y nueve razas de fantasía. Hay partidas de un jugador y multijugador cooperativo o versus, con espectadores. No hay todavía un ejecutable para descargar: hay que compilarlo.
 
@@ -18,7 +18,7 @@ cmake --build --preset release
 ctest --preset release
 ```
 
-- El ejecutable queda en `build\release\bin\SalvaCiudad.exe`, con la carpeta `data\` al lado.
+- El ejecutable queda en `build\release\bin\SalvasProsperia.exe`, con la carpeta `data\` al lado.
 - Presets de Windows: `debug`, `release` y `debug-asan` (con AddressSanitizer).
 - Los sombreadores se compilan con el `dxc.exe` del Windows SDK, que viene con Visual Studio.
 - Presets de Linux y macOS: `unix-debug`, `unix-release` y `unix-debug-asan`. Todavía no compilan, porque falta preparar los sombreadores para esas plataformas (D-201).
@@ -27,11 +27,11 @@ ctest --preset release
 
 Los modelos de `data/mods/core/models` se generan con Blender desde los scripts de `art/blender`. Ver [docs/ARTE.md](docs/ARTE.md). Compilar el juego no requiere Blender.
 
-El visor de modelos, `build\release\bin\SalvaCiudadModelos.exe`, es una herramienta aparte para revisar los modelos por categoría con todas sus variantes, ver cuánto cuesta dibujarlos y encontrar los que sobran o faltan (ver [docs/ARTE.md](docs/ARTE.md#visor-de-modelos)).
+El visor de modelos, `build\release\bin\SalvasProsperiaModelos.exe`, es una herramienta aparte para revisar los modelos por categoría con todas sus variantes, ver cuánto cuesta dibujarlos y encontrar los que sobran o faltan (ver [docs/ARTE.md](docs/ARTE.md#visor-de-modelos)).
 
 ## Dónde guarda sus datos
 
-- Normalmente en `%APPDATA%\Salva\SalvaCiudad\`: `settings.json`, `logs\`, `saves\` y `mods\`.
+- Normalmente en `%APPDATA%\Salva\SalvasProsperia\`: `settings.json`, `logs\`, `saves\` y `mods\`.
 - **Modo portable:** si existe un archivo `portable.txt` junto al ejecutable, todo se guarda en `userdata\`, al lado del ejecutable.
 - Un `settings.json` dañado se renombra a `settings.json.bad-<fecha>` (nunca se borra) y el juego arranca con los valores por omisión.
 
@@ -73,7 +73,7 @@ Sirven para decirle a Claude qué te gusta o qué no de un lugar del mapa.
 1. Sobre el mapa, pulsa **Ctrl+F12**. Se oculta la interfaz y la cámara se queda quieta. En una partida de un jugador el juego se pausa; en multijugador sigue.
 2. Arrastra con el clic izquierdo para pintar trazos rojos sobre lo que te interesa. Un trazo que termina cerca de donde empezó encierra un área, y el reporte describe todo lo que queda adentro. **Retroceso** borra el último trazo y **Supr** borra todos.
 3. **Enter** guarda el reporte y **Esc** cancela.
-4. Se guarda en `%TEMP%\SalvaCiudad\reportes\<fecha_hora>\`:
+4. Se guarda en `%TEMP%\SalvasProsperia\reportes\<fecha_hora>\`:
    - `captura.png`: la pantalla con los trazos;
    - `captura_limpia.png`: la misma pantalla sin trazos;
    - `reporte.json`: la semilla y las opciones del mapa, la cámara, lo que hay bajo el cursor y las casillas que cubren los trazos, con un resumen.
@@ -81,7 +81,7 @@ Sirven para decirle a Claude qué te gusta o qué no de un lugar del mapa.
    Se conservan los últimos 30 reportes.
 5. En el chat dile a Claude qué quieres de ese lugar.
 
-`SalvaCiudad.exe --reporte <carpeta>` genera ese mismo mapa con el generador actual, sin niebla y con la estación del reporte, pone la cámara igual y guarda `despues_<fecha_hora>.png`, junto con un `.txt` que dice qué cambió desde el reporte (versión del generador, mods, compilación, tamaño de la ventana). Muestra el mapa generado, no la partida: no aparecen los edificios ni los árboles talados. No guarda la configuración ni partidas.
+`SalvasProsperia.exe --reporte <carpeta>` genera ese mismo mapa con el generador actual, sin niebla y con la estación del reporte, pone la cámara igual y guarda `despues_<fecha_hora>.png`, junto con un `.txt` que dice qué cambió desde el reporte (versión del generador, mods, compilación, tamaño de la ventana). Muestra el mapa generado, no la partida: no aparecen los edificios ni los árboles talados. No guarda la configuración ni partidas.
 
 ## Mapas
 
@@ -103,7 +103,7 @@ Si encuentras un fallo de seguridad, repórtalo en privado desde la pestaña Sec
 
 ## Documentación
 
-- [ESPECIFICACION_SalvaCiudad.md](ESPECIFICACION_SalvaCiudad.md): el diseño completo y el plan por fases.
+- [ESPECIFICACION_SalvasProsperia.md](ESPECIFICACION_SalvasProsperia.md): el diseño completo y el plan por fases.
 - [docs/DECISIONES.md](docs/DECISIONES.md): las decisiones que la especificación no cubre.
 - [docs/VERIFICACION_MANUAL.md](docs/VERIFICACION_MANUAL.md): lo que conviene probar a mano, por fase.
 - [docs/RED.md](docs/RED.md), [docs/DETERMINISMO.md](docs/DETERMINISMO.md) y [docs/RENDIMIENTO.md](docs/RENDIMIENTO.md): el multijugador, la simulación determinista y los tiempos medidos.

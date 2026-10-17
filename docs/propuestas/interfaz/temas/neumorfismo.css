@@ -1,0 +1,60 @@
+/* Neumorfismo: one pale surface, raised and pressed with two soft shadows. */
+.stage {
+  --base: #e4e8ee;
+  --out: 6px 6px 14px #b9bec7, -6px -6px 14px #ffffff;
+  --out-sm: 3px 3px 7px #b9bec7, -3px -3px 7px #ffffff;
+  --in: inset 3px 3px 7px #b9bec7, inset -3px -3px 7px #ffffff;
+  --font: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 15px; --fs-small: 13px; --fs-title: 17px; --title-weight: 650;
+  --text: #4a5568; --dim: #8a94a6; --accent: #6c7ae0; --accent-text: #fff;
+  --ok: #3fa877; --warn: #d69e2e; --bad: #e05c5c; --info: #6c7ae0;
+  --panel: var(--base); --panel-solid: var(--base); --panel-border: 0; --panel-radius: 22px; --panel-shadow: var(--out); --panel-pad: 18px;
+  --bar: var(--base); --bar-border: 0;
+  --title-text: #3d4757; --title-border: 0; --title-h: 48px;
+  --btn: var(--base); --btn-hover: #e9edf3; --btn-on: var(--base); --btn-on-text: var(--accent);
+  --btn-border: 0; --btn-radius: 12px; --btn-h: 34px; --btn-shadow: var(--out-sm);
+  --chip: var(--base); --row: var(--base); --row-hover: #e9edf3; --sep: transparent;
+  --meter: var(--base); --meter-h: 10px;
+  --avatar-bg: var(--base); --thumb-bg: var(--base);
+  --tip: #3d4757; --tip-text: #fff; --tip-border: 0; --tip-radius: 10px;
+  --icon-stroke: 1.8; --icon-size: 18px;
+}
+.btn.on, .btn:active, .seg-b.on, .radio.on, .bb-item.on, .dock-btn.on { box-shadow: var(--in); background: var(--base); color: var(--accent); }
+.btn.primary { background: var(--base); color: var(--accent); font-weight: 650; }
+.btn.danger { color: #e05c5c; }
+.chip { box-shadow: var(--in); }
+.chip.ok, .chip.bad, .chip.warn, .chip.accent { background: var(--base); }
+.meter { box-shadow: var(--in); padding: 2px; }
+.meter .fill { inset: 2px auto 2px 2px; box-shadow: 1px 1px 3px rgba(0, 0, 0, .2); }
+.hero { box-shadow: var(--in); border-radius: 16px; }
+.row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick { box-shadow: var(--out-sm); border-radius: 14px; margin: 3px 0; }
+.need, .annex { box-shadow: var(--out-sm); border-radius: 14px; background: var(--base); }
+.need.miss { box-shadow: var(--in); }
+.avatar { box-shadow: var(--out-sm); }
+.avatars .avatar { box-shadow: 0 0 0 2px var(--base); }
+.win-icon { box-shadow: var(--out-sm); border-radius: 50%; }
+.win-act { border: 0; }
+.wbtn { box-shadow: var(--out-sm); background: var(--base); border-radius: 50%; margin: 0 3px; color: #8a94a6; }
+.wbtn.on { box-shadow: var(--in); color: var(--accent); }
+.ctl-close:hover { color: #e05c5c; background: var(--base); }
+.win-foot { border-top: 0; }
+.sec { color: #a0a9b8; }
+.switch { box-shadow: var(--in); background: var(--base); }
+.switch.on { background: var(--base); }
+.switch .knob { background: var(--base); box-shadow: var(--out-sm); }
+.switch.on .knob { background: var(--accent); }
+.seg { background: var(--base); box-shadow: var(--in); }
+.top-pills .tb-group { box-shadow: var(--out); }
+.dock-icons .dock-btn { border-radius: 16px; background: var(--base); box-shadow: var(--out); border: 0; }
+.minimap { padding: 16px; }
+.mm-frame { box-shadow: var(--in); }
+.minimap > span { color: #8a94a6; }
+.bb-cat { background: transparent; box-shadow: none; }
+.bb-item { box-shadow: var(--out-sm); background: var(--base); border: 0; }
+.bb-item.on { outline: 0; }
+.bb-thumb { background: transparent; }
+.toast, .question, .place-hint, .modal { box-shadow: var(--out); }
+.toast.bad { border-left: 0; }
+.log-ic, .toast-ic, .q-ic, .dlg-ic { background: var(--base); box-shadow: var(--in); }
+.ring::before { background: var(--base); }
+.live { background: rgba(0, 0, 0, .45); }

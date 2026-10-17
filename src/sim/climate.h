@@ -93,8 +93,8 @@ struct GameRules {
     // Phase 56: the races that may come as newcomers of another race: bit i
     // is race i of the content. 0: all of them.
     std::uint16_t immigrants = 0;
-    // Phase 32: fog of war (the new game form starts with static fog,
-    // decision D-3202) and whether allies share what they see.
+    // Phase 32: fog of war (the new game form starts without fog,
+    // decision D-PARTIDA-01) and whether allies share what they see.
     FogMode fog = FogMode::None;
     bool shared_vision = true;
     // Phase 68: day and night.

@@ -1,0 +1,61 @@
+/* Consola (Steam Deck / Big Picture): big touch and gamepad targets, blue focus glow, button hints. */
+.stage {
+  --font: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  --fs: 18px; --fs-small: 15px; --fs-title: 22px; --title-weight: 700;
+  --text: #ffffff; --dim: #8b929a; --accent: #1a9fff; --accent-text: #fff;
+  --ok: #59bf40; --warn: #ffc82c; --bad: #ff5a4a; --info: #1a9fff;
+  --panel: linear-gradient(180deg, #23262e, #1a1d23); --panel-solid: #1d2026; --panel-border: 0; --panel-radius: 6px;
+  --panel-shadow: 0 12px 30px rgba(0, 0, 0, .55); --panel-pad: 16px;
+  --bar: linear-gradient(180deg, #0e141b, #171a21); --bar-border: 0; --bar-h: 52px;
+  --title-text: #fff; --title-border: 0; --title-h: 52px;
+  --btn: #3d4450; --btn-hover: #4b5463; --btn-on: #1a9fff; --btn-on-text: #fff;
+  --btn-border: 0; --btn-radius: 4px; --btn-h: 42px;
+  --chip: #2a2f38; --row: #2a2f38; --row-hover: #343a45; --sep: #2f343d;
+  --meter: #2f343d; --meter-h: 8px;
+  --avatar-bg: #2a2f38; --thumb-bg: radial-gradient(circle at 50% 70%, rgba(26, 159, 255, .2), transparent 65%);
+  --tip: #3d4450; --tip-border: 0; --tip-radius: 4px;
+  --icon-stroke: 2; --icon-size: 22px;
+}
+.btn:hover, .row:hover, .bb-item:hover, .link:hover, .log-row:hover { box-shadow: 0 0 0 2px #fff, 0 0 18px rgba(26, 159, 255, .9); }
+.btn.primary { background: linear-gradient(90deg, #1a9fff, #1478d4); }
+.btn.danger { background: #3d4450; color: #ff8a7a; }
+/* Gamepad hints: A confirms, Y the second action, B closes, X pins. */
+.win-foot .btn:first-child::before, .q-btns .btn:first-child::before, .modal .menu-item.primary::before, .dlg-btns .btn.primary::before { content: 'A'; }
+.win-foot .btn:nth-child(2)::before, .q-btns .btn:nth-child(2)::before { content: 'Y'; background: #ffc82c; }
+.ctl-close::after { content: 'B'; background: #ff5a4a; }
+.ctl-pin::after { content: 'X'; background: #1a9fff; }
+.win-foot .btn::before, .q-btns .btn::before, .modal .menu-item.primary::before, .dlg-btns .btn.primary::before, .ctl-close::after, .ctl-pin::after {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #59bf40; color: #111; font: 800 12px/1 'Segoe UI', sans-serif; flex: none;
+}
+.ctl-close::after, .ctl-pin::after { position: absolute; right: -4px; bottom: -4px; width: 15px; height: 15px; font-size: 9px; }
+.wbtn { position: relative; width: 38px; --btn-h: 38px; color: #dfe3e8; }
+.win-act { border: 0; }
+.win-icon { width: 38px; height: 38px; }
+.win-bar { padding: 8px 10px 4px 16px; }
+.kv { min-height: 40px; }
+.row { padding: 10px; }
+.sec { color: #8b929a; letter-spacing: .12em; }
+.seg-b { min-height: 38px; }
+.seg-b.on { background: #1a9fff; color: #fff; }
+.radio { padding: 8px 10px; }
+.radio.on { background: #1a9fff; color: #fff; }
+.switch.on { background: #1a9fff; }
+.meter .fill, .meter.ok .fill { background: linear-gradient(90deg, #1a9fff, #6bc5ff); }
+.dock-rail .dock { background: linear-gradient(180deg, #0e141b, #171a21); border: 0; width: 96px; }
+.dock-rail .dock-btn { width: 84px; font-size: 13px; }
+.dock-rail .dock-btn.on .ic { background: #1a9fff; color: #fff; width: 60px; border-radius: 4px; }
+.stage.dock-rail .buildbar { left: calc(50% + 48px); }
+.buildbar { background: linear-gradient(180deg, #23262e, #1a1d23); }
+.bb-cat { min-height: 60px; background: transparent; }
+.bb-cat.on { background: #1a9fff; color: #fff; }
+.bb-item { background: #2a2f38; border-radius: 4px; }
+.bb-item.on { outline: 0; box-shadow: 0 0 0 2px #fff, 0 0 18px rgba(26, 159, 255, .9); background: #343a45; }
+.toast { background: #23262e; border: 0; border-left: 4px solid #1a9fff; border-radius: 4px; }
+.toast.bad { border-left-color: #ff5a4a; }
+.question { background: linear-gradient(180deg, #23262e, #1a1d23); border: 0; }
+.modal { border: 0; }
+.menu-item { min-height: 50px; font-size: 18px; }
+.tb-speed .btn { --btn-h: 36px; }
+.ring::before { background: #1d2026; }
+.win-sub { display: none; }
+.wbtn { width: 34px; --btn-h: 34px; }

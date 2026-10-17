@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(SalvaCiudad
+project(SalvasProsperia
     VERSION 0.20.0
     DESCRIPTION "Multiplayer medieval town-building survival game"
     LANGUAGES C CXX)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-    message(FATAL_ERROR "SalvaCiudad requires a 64-bit target.")
+    message(FATAL_ERROR "SalvasProsperia requires a 64-bit target.")
 endif()
 if(MSVC AND MSVC_TOOLSET_VERSION LESS 143)
-    message(FATAL_ERROR "SalvaCiudad requires MSVC v143 (Visual Studio 2022) or newer. Found: ${MSVC_TOOLSET_VERSION}")
+    message(FATAL_ERROR "SalvasProsperia requires MSVC v143 (Visual Studio 2022) or newer. Found: ${MSVC_TOOLSET_VERSION}")
 endif()
 
-option(SC_ENABLE_ASAN "Build SalvaCiudad targets with AddressSanitizer" OFF)
+option(SC_ENABLE_ASAN "Build SalvasProsperia targets with AddressSanitizer" OFF)
 option(SC_BUILD_TESTS "Build the automated tests" ON)
 
 set(CMAKE_C_STANDARD 17)
@@ -39,7 +39,7 @@ set(SC_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 configure_file(src/version.h.in "${SC_GENERATED_DIR}/version.h" @ONLY)
 
 # ---------------------------------------------------------------------------
-# Compiler and linker flags for SalvaCiudad's own code (section 10 of the
+# Compiler and linker flags for SalvasProsperia's own code (section 10 of the
 # specification). Third-party code is built with its own flags.
 # ---------------------------------------------------------------------------
 if(MSVC)
@@ -345,6 +345,7 @@ set(SC_ENGINE_SOURCES
     src/ui/draw_list.cpp
     src/ui/font.cpp
     src/ui/font_library.cpp
+    src/ui/glow.cpp
     src/ui/glyph_atlas.cpp
     src/ui/text.cpp)
 
@@ -359,10 +360,10 @@ sc_harden_target(sc_engine)
 # ---------------------------------------------------------------------------
 # Game executable.
 # ---------------------------------------------------------------------------
-add_executable(SalvaCiudad WIN32 src/main.cpp)
-target_link_libraries(SalvaCiudad PRIVATE sc_engine)
-sc_harden_target(SalvaCiudad)
-set_target_properties(SalvaCiudad PROPERTIES
+add_executable(SalvasProsperia WIN32 src/main.cpp)
+target_link_libraries(SalvasProsperia PRIVATE sc_engine)
+sc_harden_target(SalvasProsperia)
+set_target_properties(SalvasProsperia PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 # The game and the model viewer read data/ next to the executable. One target
@@ -382,7 +383,7 @@ add_custom_command(OUTPUT "${SC_DATA_STAMP}"
     COMMENT "Copying data/ next to the executables"
     VERBATIM)
 add_custom_target(sc_data ALL DEPENDS "${SC_DATA_STAMP}")
-add_dependencies(SalvaCiudad sc_data)
+add_dependencies(SalvasProsperia sc_data)
 
 # ---------------------------------------------------------------------------
 # Model viewer (phase 30): a developer tool apart from the game. Its catalog
@@ -392,15 +393,15 @@ add_library(sc_viewer STATIC src/viewer/model_catalog.cpp)
 target_link_libraries(sc_viewer PUBLIC sc_engine)
 sc_harden_target(sc_viewer)
 
-add_executable(SalvaCiudadModelos WIN32 src/viewer/main.cpp src/viewer/viewer_app.cpp)
-target_link_libraries(SalvaCiudadModelos PRIVATE sc_viewer)
+add_executable(SalvasProsperiaModelos WIN32 src/viewer/main.cpp src/viewer/viewer_app.cpp)
+target_link_libraries(SalvasProsperiaModelos PRIVATE sc_viewer)
 # Reads the source tree's mods while that folder exists (decision D-3003).
-target_compile_definitions(SalvaCiudadModelos PRIVATE SC_VIEWER_SOURCE_DATA="${CMAKE_CURRENT_SOURCE_DIR}/data")
-sc_harden_target(SalvaCiudadModelos)
-set_target_properties(SalvaCiudadModelos PROPERTIES
+target_compile_definitions(SalvasProsperiaModelos PRIVATE SC_VIEWER_SOURCE_DATA="${CMAKE_CURRENT_SOURCE_DIR}/data")
+sc_harden_target(SalvasProsperiaModelos)
+set_target_properties(SalvasProsperiaModelos PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 # It reads the game's data/ next to it, like the game.
-add_dependencies(SalvaCiudadModelos sc_data)
+add_dependencies(SalvasProsperiaModelos sc_data)
 
 # ---------------------------------------------------------------------------
 # Tests.
@@ -408,7 +409,7 @@ add_dependencies(SalvaCiudadModelos sc_data)
 if(SC_BUILD_TESTS)
     enable_testing()
 
-    add_executable(salvaciudad_tests
+    add_executable(salvasprosperia_tests
         tests/test_main.cpp
         tests/test_file_io.cpp
         tests/test_game_clock.cpp
@@ -479,16 +480,16 @@ if(SC_BUILD_TESTS)
         tests/test_seats.cpp
         tests/test_spectator.cpp
         tests/test_resources.cpp)
-    target_link_libraries(salvaciudad_tests PRIVATE sc_engine sc_viewer doctest)
-    target_compile_definitions(salvaciudad_tests PRIVATE
+    target_link_libraries(salvasprosperia_tests PRIVATE sc_engine sc_viewer doctest)
+    target_compile_definitions(salvasprosperia_tests PRIVATE
         SC_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
         SC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-    sc_harden_target(salvaciudad_tests ALLOW_EXCEPTIONS)
+    sc_harden_target(salvasprosperia_tests ALLOW_EXCEPTIONS)
     if(MSVC)
         # A full link every time: with incremental linking the debug tests
         # sometimes ended with 0xC0000409 at exit after every check had
         # passed (the suites that scan the sources, D-5507).
-        target_link_options(salvaciudad_tests PRIVATE /INCREMENTAL:NO)
+        target_link_options(salvasprosperia_tests PRIVATE /INCREMENTAL:NO)
     endif()
 
     set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life worldgen_hier_giants minimap nav windows explorer night rest rest_hour founding seats spectator resources resources_years cover fauna trace fences roads lanterns rain forage berries wine deposits stones annexes gardens coop pets herds smallgame fishing mammoths unicorn happenings turtles)
@@ -499,7 +500,7 @@ if(SC_BUILD_TESTS)
         set(SC_TEST_TIMEOUT 240)
     endif()
     foreach(suite IN LISTS SC_TEST_SUITES)
-        add_test(NAME ${suite} COMMAND salvaciudad_tests --test-suite=${suite})
+        add_test(NAME ${suite} COMMAND salvasprosperia_tests --test-suite=${suite})
         set_tests_properties(${suite} PROPERTIES TIMEOUT ${SC_TEST_TIMEOUT})
         if(MSVC AND SC_ENABLE_ASAN)
             set_tests_properties(${suite} PROPERTIES

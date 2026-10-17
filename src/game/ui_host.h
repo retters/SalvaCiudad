@@ -20,6 +20,10 @@
 
 namespace sc {
 
+// A look of the logo for a fresh visit to the main menu (decision D-RENAME-05): any of
+// `count` from `random`, but never `current` again when there is another (current -1: none yet).
+[[nodiscard]] int pick_logo_style(int current, int count, std::uint64_t random);
+
 class UiHost {
 public:
     explicit UiHost(Services& services);
@@ -32,6 +36,8 @@ public:
     void add_notice(std::string text);
     // A short line at the top of the screen that goes away by itself.
     void toast(std::string text);
+    // Developer tools (F7 in the menus): the next look of the logo, named in a toast.
+    void cycle_logo_style();
     // A game event for the notifications and the event log.
     void notify(std::string text, bool has_pos, float x, float z, const sim::Calendar& when, std::uint64_t now_ns) {
         hud_.notify(std::move(text), has_pos, x, z, when, now_ns);
@@ -102,6 +108,48 @@ private:
     void main_menu(ui::Context& ctx);
     void draw_logo(ui::Context& ctx, float center_x, float y, float max_width, float max_height, float& height_out,
                    bool draw);
+    // The logo's glows and rule as one image, rebuilt only when its key changes.
+    struct LogoGlowKey {
+        int style = 0;
+        int name_px = 0;
+        int small_px = 0;
+        int frac_x = 0;  // Sub-pixel position, in 64ths.
+        int frac_y = 0;
+        std::string small;
+        std::string name;
+        bool operator==(const LogoGlowKey&) const = default;
+    };
+    struct LogoGlowLayout {  // Positions relative to the image's top-left corner.
+        ui::TextStyle name_style;
+        ui::TextStyle small_style;
+        const std::vector<std::string_view>* letters = nullptr;
+        std::string_view name;
+        float tracking = 0.0f;
+        float small_w = 0.0f;
+        float name_w = 0.0f;
+        float block_h = 0.0f;
+        int pad = 0;
+        float center_x = 0.0f;
+        float small_y = 0.0f;
+        float name_x = 0.0f;
+        float name_y = 0.0f;
+        float rule_y = 0.0f;
+        float rule_h = 0.0f;
+    };
+    struct LogoGlow {
+        int w = 0;
+        int h = 0;
+        std::vector<std::uint8_t> rgba;
+    };
+    [[nodiscard]] static LogoGlow build_logo_glow(const ui::TextRenderer& text, const LogoGlowLayout& layout,
+                                                  int style_index);
+    std::optional<LogoGlowKey> logo_glow_key_;
+    LogoGlow logo_glow_;
+    int logo_style_ = -1;  // Index into the styles in ui_host.cpp; -1 until the menu first shows.
+    std::uint64_t logo_random_ = 0;  // Seeded at start, stepped for every pick.
+    // The screen of the previous frame; none on the first. Coming to the main menu from
+    // nothing (the game starts) or from the map (a game was left) picks another logo.
+    std::optional<Screen> last_screen_;
     void message_dialog(ui::Context& ctx);
     // Phase 76: who may come into the game (in the game menu).
     void access_dialog(ui::Context& ctx);

@@ -1,4 +1,4 @@
-"""Sound effects of SalvaCiudad, synthesized (phase 18).
+"""Sound effects of SalvasProsperia, synthesized (phase 18).
 
     python art/audio/make_sounds.py data/mods/core/sounds
 
@@ -212,7 +212,7 @@ def main():
                        ("notify", notify), ("coins", coins), ("sword", sword), ("birds", birds), ("wind", wind),
                        ("rain", rain)):
         write(folder, name, make(random.Random(name)))
-    print("SalvaCiudad sounds written to", folder)
+    print("SalvasProsperia sounds written to", folder)
 
 
 main()

@@ -489,12 +489,12 @@ TEST_SUITE("annexes") {
 
     // Not a test: a saved game with a row of houses and every annex. Run it
     // by name:
-    //   salvaciudad_tests -ts=annexes -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_annexes.scsave: copy it to the saves
+    //   salvasprosperia_tests -ts=annexes -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_annexes.scsave: copy it to the saves
     // folder and load it.
     TEST_CASE("manual: a saved game with houses and their annexes" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup(0b1111);
         rules.rules.fog = FogMode::None;

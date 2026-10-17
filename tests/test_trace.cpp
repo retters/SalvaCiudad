@@ -457,11 +457,11 @@ TEST_SUITE("trace") {
 
     // Not a test: it writes a saved game to look at the lines in the game itself,
     // since no automatic check sees whether the pieces meet. Run it by name:
-    //   salvaciudad_tests -ts=trace -tc="manual*" --no-skip
-    // It writes <temp>/SalvaCiudad/manual_lines.scsave: copy it to the saves folder and load it.
+    //   salvasprosperia_tests -ts=trace -tc="manual*" --no-skip
+    // It writes <temp>/SalvasProsperia/manual_lines.scsave: copy it to the saves folder and load it.
     TEST_CASE("manual: a saved game with lines of every shape" * doctest::skip()) {
         std::error_code ec;
-        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvaCiudad";
+        const std::filesystem::path folder = std::filesystem::temp_directory_path(ec) / "SalvasProsperia";
         std::filesystem::create_directories(folder, ec);
         const std::filesystem::path file = folder / "manual_lines.scsave";
         GameSetup rules = setup();

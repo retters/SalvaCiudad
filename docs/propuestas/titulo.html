@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SALVA'S PROSPERIA · Pantalla de título</title>
+<style>
+@font-face { font-family: "EB Garamond"; font-weight: 500; src: url("fuentes/EBGaramond-Medium.ttf"); }
+@font-face { font-family: "Barlow Semi Condensed"; font-weight: 300; src: url("fuentes/BarlowSemiCondensed-Light.ttf"); }
+@font-face { font-family: "Cinzel"; src: url("fuentes/Cinzel.ttf"); }
+:root { /* colores de Theme en src/ui/context.h */
+  --bg: #1E2A33; --panel: #2B2620; --border: #8C7651; --text: #F2E8D5; --dim: #B9AC94;
+  --button: #4A3F31; --accent: #D9A441;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #14171c; color: #e6e9ee; font: 15px/1.5 "Segoe UI", system-ui, sans-serif; padding: 22px 16px 60px; }
+h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 30px 0 8px; }
+p { max-width: 74ch; color: #9aa4b2; margin: 6px 0; }
+.row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+figure { margin: 0; } figcaption { font-size: 13px; color: #9aa4b2; margin-top: 6px; }
+.screen { background: var(--bg); border: 1px solid #323b47; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 30px; padding: 24px; }
+.btns { display: flex; flex-direction: column; gap: 8px; width: 78%; max-width: 380px; }
+.btns span { background: var(--button); border: 1px solid var(--border); color: var(--text); text-align: center; padding: 10px 0; border-radius: 4px; font-family: "Alegreya Sans", "Segoe UI", sans-serif; font-size: 17px; }
+
+/* Logo actual (Cinzel): dos líneas, primera letra más grande */
+.old { display: flex; flex-direction: column; align-items: center; line-height: 1; color: var(--accent); font-family: Cinzel, serif; }
+.old .t { font-size: .36em; color: var(--text); letter-spacing: .05em; margin-bottom: .06em; }
+.old .b { font-size: .75em; } .old .b i { font-style: normal; font-size: 1.34em; }
+
+/* Logo nuevo, como en la diapositiva 14: SALVA'S = 10/66 de PROSPERIA, 0.3em entre letras */
+.lockup { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; white-space: nowrap; }
+.lockup .s { font-family: "Barlow Semi Condensed", sans-serif; font-weight: 300; font-size: .1515em; letter-spacing: .3em;
+  margin-right: -.3em; /* el espaciado final no descentra */ }
+.lockup .p { font-family: "EB Garamond", serif; font-weight: 500; margin-top: -.1em; margin-bottom: -.14em; }
+.c1 .lockup .s { color: var(--accent); } .c1 .lockup .p { color: var(--text); }   /* Ludo: SALVA'S en acento, nombre en tinta */
+.c2 .lockup .s { color: var(--text); } .c2 .lockup .p { color: var(--accent); }   /* nombre dorado, como hoy */
+.c3 .lockup .s, .c3 .lockup .p { color: var(--accent); }
+
+/* ---- Efectos sobre PROSPERIA ---- */
+.fx .lockup .s { color: var(--text); }
+.fx .screen { width: 380px; height: 250px; gap: 0; }
+.fx .lockup { font-size: 62px; }
+.fx figcaption b { color: #e6e9ee; }
+.e1 .p { background: linear-gradient(180deg,#fff2c4 0%,#f0c660 38%,#b27d22 52%,#e9b94f 70%,#8a5b14 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #3b2608) drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
+.e2 .p { color: #cfc6b4 !important; text-shadow: 0 -1px 0 rgba(0,0,0,.75), 0 1px 0 rgba(255,255,255,.28); letter-spacing: .02em; }
+.e2 .screen { background: linear-gradient(135deg,#3a3d40,#26292c); }
+.e3 .p { color: #fff3d0 !important; text-shadow: 0 0 6px #ffcf66, 0 0 18px #f0a020, 0 0 38px rgba(240,140,20,.65); }
+.e4 .p { color: transparent !important; -webkit-text-stroke: 1.5px var(--accent); letter-spacing: .04em; }
+.e5 .p { color: #f6ecd6 !important; text-shadow: 1px 1px 0 #8c7651, 2px 2px 0 #7a653f, 3px 3px 0 #6a5636, 4px 4px 0 #5a4a2e, 5px 5px 0 #4a3d26, 6px 6px 8px rgba(0,0,0,.55); }
+.e6 .p { background: linear-gradient(180deg,#ffe9a8,#d9a441 55%,#7a4e12); -webkit-background-clip: text; background-clip: text; color: transparent !important; letter-spacing: .14em; margin-right: -.14em; font-size: .86em; }
+.e6 .s { margin-bottom: .5em; }
+.e6 .rule { height: 1px; width: 100%; margin-top: .5em; background: linear-gradient(90deg,transparent,var(--accent),transparent); position: relative; }
+.e6 .rule::after { content: "◆"; position: absolute; left: 50%; top: -.62em; transform: translateX(-50%); font-size: 12px; color: var(--accent); background: var(--bg); padding: 0 8px; }
+.e7 .p { background: linear-gradient(180deg,#d8e6ef 0%,#8fb0c8 45%,#e9f3f9 55%,#6d8fa8 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #14212b) drop-shadow(0 0 10px rgba(143,176,200,.45)); }
+.e7 .s { color: #bcd2e2 !important; }
+.e8 .p { color: #e8dcc2 !important; background: repeating-linear-gradient(95deg,rgba(0,0,0,.08) 0 2px,transparent 2px 7px), #e8dcc2; -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 3px 0 #2a1d10) drop-shadow(0 6px 6px rgba(0,0,0,.5)); }
+.e8 .screen { background: linear-gradient(180deg,#2c2218,#1b140d); }
+.e9 .p { background: linear-gradient(100deg,#d9a441 0%,#d9a441 35%,#fff6d8 50%,#d9a441 65%,#d9a441 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  animation: shine 3.2s linear infinite; }
+@keyframes shine { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+.e10 .p { color: var(--text) !important; }
+.e10 .p span:nth-child(odd) { color: var(--accent); }
+.e10 .p span:first-child { font-size: 1.18em; }
+.e10 .p { display: inline-flex; align-items: baseline; }
+.e10 .p { margin-right: 0; }
+@media (prefers-reduced-motion: reduce) { .e9 .p { animation: none; } }
+
+/* ---- Combinaciones de 1 (oro), 3 (resplandor) y 7 (acero) ---- */
+.k1 .p { background: linear-gradient(180deg,#fff2c4 0%,#f0c660 38%,#b27d22 52%,#e9b94f 70%,#8a5b14 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #3b2608) drop-shadow(0 0 8px rgba(255,190,70,.75)) drop-shadow(0 0 22px rgba(240,140,20,.5)); }
+.k2 .p { background: linear-gradient(180deg,#d8e6ef 0%,#8fb0c8 45%,#e9f3f9 55%,#6d8fa8 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #14212b) drop-shadow(0 0 8px rgba(160,210,255,.8)) drop-shadow(0 0 24px rgba(90,160,230,.55)); }
+.k2 .s { color: #bcd2e2 !important; text-shadow: 0 0 8px rgba(160,210,255,.7); }
+.k3 .p { background: linear-gradient(180deg,#f4fafe 0%,#c4d8e6 22%,#8fb0c8 44%,#f6d98a 54%,#d9a441 72%,#8a5b14 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #1d1608) drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
+.k4 .p { background: linear-gradient(180deg,#f4fafe 0%,#c4d8e6 22%,#8fb0c8 44%,#f6d98a 54%,#d9a441 72%,#8a5b14 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #1d1608) drop-shadow(0 0 8px rgba(255,190,70,.7)) drop-shadow(0 0 24px rgba(240,140,20,.45)); }
+.k4 .s { color: #e9d49a !important; text-shadow: 0 0 8px rgba(255,190,70,.6); }
+.k5 .p { background: linear-gradient(180deg,#d8e6ef 0%,#8fb0c8 45%,#e9f3f9 55%,#6d8fa8 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #14212b) drop-shadow(0 0 10px rgba(255,190,70,.7)) drop-shadow(0 0 26px rgba(240,140,20,.45)); }
+.k5 .s { color: #f0c660 !important; text-shadow: 0 0 8px rgba(255,190,70,.6); }
+.k6 .p { background: linear-gradient(180deg,#fff2c4 0%,#f0c660 38%,#b27d22 52%,#e9b94f 70%,#8a5b14 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #3b2608) drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
+.k6 .s { color: #bcd2e2 !important; text-shadow: 0 0 8px rgba(160,210,255,.7); }
+.k6 .rule { height: 1px; width: 100%; margin-top: .5em; background: linear-gradient(90deg,transparent,#8fb0c8,transparent); }
+
+/* ---- A con SALVA'S de F ---- */
+.g1 .p, .g2 .p { background: linear-gradient(180deg,#fff2c4 0%,#f0c660 38%,#b27d22 52%,#e9b94f 70%,#8a5b14 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #3b2608) drop-shadow(0 0 8px rgba(255,190,70,.75)) drop-shadow(0 0 22px rgba(240,140,20,.5)); }
+.g1 .s, .g2 .s { color: #bcd2e2 !important; text-shadow: 0 0 8px rgba(160,210,255,.7); }
+.g2 .rule { height: 1px; width: 100%; margin-top: .5em; background: linear-gradient(90deg,transparent,#8fb0c8,transparent); }
+
+.g3 .p { background: linear-gradient(180deg,#fff2c4 0%,#f0c660 38%,#b27d22 52%,#e9b94f 70%,#8a5b14 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 2px 0 #3b2608) drop-shadow(0 0 8px rgba(255,190,70,.75)) drop-shadow(0 0 22px rgba(240,140,20,.5)); }
+.g3 .s { color: #bcd2e2 !important; text-shadow: 0 0 8px rgba(160,210,255,.7); }
+.g3 .rule { height: 1px; width: 100%; margin-top: .5em; background: linear-gradient(90deg,transparent,#8fb0c8,transparent); position: relative; }
+.g3 .rule::after { content: "◆"; position: absolute; left: 50%; top: -.62em; transform: translateX(-50%); font-size: 12px; color: #bcd2e2; text-shadow: 0 0 8px rgba(160,210,255,.7); background: var(--bg); padding: 0 8px; line-height: 1; }
+</style>
+</head>
+<body>
+<h1>SALVA'S PROSPERIA · pantalla de título</h1>
+<p>Mockup del logo nuevo sobre la pantalla de título real (colores del tema del juego, botones del menú principal). El logo sigue la diapositiva 14 de <code>IdentidadSalva.pptx</code>: <b>SALVA'S</b> en Barlow Semi Condensed Light a 10/66 del tamaño de <b>PROSPERIA</b>, en EB Garamond Medium; 0,3 em entre letras, igual que Salva's Ludo. La diapositiva no define colores, así que hay tres opciones.</p>
+
+<h2>Antes y después (ventana de 960 × 600)</h2>
+<div class="row">
+  <figure><div class="screen" style="width:480px;height:300px;gap:14px;padding:12px">
+    <div class="old" style="font-size:84px"><span class="t">- SALVA -</span><span class="b"><i>C</i>IUDAD</span></div>
+    <div class="btns" style="gap:5px;width:60%"><span style="padding:5px">Un jugador</span><span style="padding:5px">Tutorial</span><span style="padding:5px">Crear partida</span></div></div>
+    <figcaption>Hoy: «- SALVA - / CIUDAD» en Cinzel dorado.</figcaption></figure>
+  <figure class="c1"><div class="screen" style="width:480px;height:300px;gap:14px;padding:12px">
+    <span class="lockup" style="font-size:60px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span>
+    <div class="btns" style="gap:5px;width:60%"><span style="padding:5px">Un jugador</span><span style="padding:5px">Tutorial</span><span style="padding:5px">Crear partida</span></div></div>
+    <figcaption>Nuevo, opción A.</figcaption></figure>
+</div>
+
+<h2>Tres opciones de color (menú a tamaño completo)</h2>
+<div class="row">
+  <figure class="c1"><div class="screen" style="width:380px;height:520px">
+    <span class="lockup" style="font-size:62px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span>
+    <div class="btns"><span>Un jugador</span><span>Tutorial</span><span>Crear partida</span><span>Unirse a partida</span><span>Cargar partida</span></div></div>
+    <figcaption><b>A · como Salva's Ludo</b>: SALVA'S dorado, PROSPERIA en tinta clara. Es la que usa tu otro juego.</figcaption></figure>
+  <figure class="c2"><div class="screen" style="width:380px;height:520px">
+    <span class="lockup" style="font-size:62px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span>
+    <div class="btns"><span>Un jugador</span><span>Tutorial</span><span>Crear partida</span><span>Unirse a partida</span><span>Cargar partida</span></div></div>
+    <figcaption><b>B · nombre dorado</b>: conserva el dorado de hoy en el nombre.</figcaption></figure>
+  <figure class="c3"><div class="screen" style="width:380px;height:520px">
+    <span class="lockup" style="font-size:62px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span>
+    <div class="btns"><span>Un jugador</span><span>Tutorial</span><span>Crear partida</span><span>Unirse a partida</span><span>Cargar partida</span></div></div>
+    <figcaption><b>C · todo dorado</b>.</figcaption></figure>
+</div>
+
+<h2>Efectos sobre PROSPERIA</h2>
+<p>Diez variantes con el mismo logo y la misma proporción de la diapositiva, cambiando solo el tratamiento del texto. Todas llevan SALVA'S en tinta clara. Pídeme combinaciones por número (por ejemplo «el degradado de 1 con el resplandor de 3 y el filete de 6»). Son efectos de CSS: en el juego se lograrían con una imagen del logo o con capas de texto, cosa que decidimos según cuál elijas.</p>
+<div class="row fx">
+  <figure class="e1"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>1 · Oro bruñido</b> degradado metálico con sombra dura debajo; el más «insignia».</figcaption></figure>
+  <figure class="e2"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>2 · Grabado en piedra</b> texto hundido con luz arriba y sombra abajo, sobre fondo de piedra.</figcaption></figure>
+  <figure class="e3"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>3 · Resplandor de farol</b> luz cálida alrededor del texto, como las linternas del juego de noche.</figcaption></figure>
+  <figure class="e4"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>4 · Contorno dorado</b> solo línea, hueco por dentro; ligero y elegante.</figcaption></figure>
+  <figure class="e5"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>5 · Relieve extruido</b> bloques con profundidad hacia abajo-derecha, en tonos madera/latón.</figcaption></figure>
+  <figure class="e6"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span><span class="rule"></span></span></div>
+    <figcaption><b>6 · Espaciado amplio + filete</b> letras más abiertas, filete con rombo debajo; aire de cartel de gremio.</figcaption></figure>
+  <figure class="e7"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>7 · Acero frío</b> degradado azul-plata con brillo central; un tono más «moderno».</figcaption></figure>
+  <figure class="e8"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>8 · Madera tallada</b> veta de madera con sombra pesada, sobre fondo de taller.</figcaption></figure>
+  <figure class="e9"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>9 · Destello animado</b> dorado liso con un brillo que cruza el texto cada pocos segundos.</figcaption></figure>
+  <figure class="e10"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p"><span>P</span><span>R</span><span>O</span><span>S</span><span>P</span><span>E</span><span>R</span><span>I</span><span>A</span></span></span></div>
+    <figcaption><b>10 · Capitular alternada</b> P grande y letras alternando dorado/claro; guiño al logo actual de CIUDAD.</figcaption></figure>
+</div>
+
+<h2>Combinaciones de 1, 3 y 7</h2>
+<p>Seis mezclas de los tres efectos que te gustaron: el oro bruñido (1), el resplandor de farol (3) y el acero frío (7). Mismo logo y proporciones; cambian el degradado, el halo y el color de SALVA'S. Dime la letra que prefieras o qué ajustar (más o menos brillo, otro tono, filete sí o no).</p>
+<div class="row fx">
+  <figure class="k1"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>A · 1 + 3: oro con resplandor</b> el degradado bruñido con luz de farol alrededor.</figcaption></figure>
+  <figure class="k2"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>B · 7 + 3: acero con resplandor frío</b> acero con halo azulado, SALVA'S también brilla.</figcaption></figure>
+  <figure class="k3"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>C · 1 + 7: acero arriba, oro abajo</b> un solo degradado que pasa de plata a oro, sin resplandor.</figcaption></figure>
+  <figure class="k4"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>D · 1 + 7 + 3: plata a oro con resplandor</b> las tres juntas; SALVA'S en oro pálido.</figcaption></figure>
+  <figure class="k5"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>E · acero con halo cálido</b> letras de acero y resplandor dorado alrededor; SALVA'S dorado.</figcaption></figure>
+  <figure class="k6"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span><span class="rule"></span></span></div>
+    <figcaption><b>F · oro y SALVA'S de acero</b> nombre en oro bruñido, línea pequeña y filete en plata fría.</figcaption></figure>
+</div>
+
+<h2>A con el SALVA'S de F</h2>
+<p>Oro bruñido con resplandor de farol (A) y la línea pequeña en plata fría con su halo azulado (F). G1 sin filete, G2 con el filete plateado de F, G3 con filete y rombo. Debajo, cada una en la pantalla de título.</p>
+<div class="row fx">
+  <figure class="g1"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div>
+    <figcaption><b>G1 · sin filete</b> oro con resplandor; SALVA'S plata.</figcaption></figure>
+  <figure class="g2"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span><span class="rule"></span></span></div>
+    <figcaption><b>G2 · con filete</b> igual, más el filete plateado de F.</figcaption></figure>
+  <figure class="g3"><div class="screen"><span class="lockup"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span><span class="rule"></span></span></div>
+    <figcaption><b>G3 · con filete y rombo</b> igual que G2, con el rombo de la variante 6 en plata.</figcaption></figure>
+</div>
+<div class="row fx" style="margin-top:18px">
+<figure class="g1"><div class="screen" style="width:380px;height:520px;gap:30px"><span class="lockup" style="font-size:62px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span>
+    <div class="btns"><span>Un jugador</span><span>Tutorial</span><span>Crear partida</span><span>Unirse a partida</span><span>Cargar partida</span></div></div>
+    <figcaption><b>G1 en el menú</b></figcaption></figure>
+<figure class="g2"><div class="screen" style="width:380px;height:520px;gap:30px"><span class="lockup" style="font-size:62px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span><span class="rule"></span></span>
+    <div class="btns"><span>Un jugador</span><span>Tutorial</span><span>Crear partida</span><span>Unirse a partida</span><span>Cargar partida</span></div></div>
+    <figcaption><b>G2 en el menú</b></figcaption></figure>
+<figure class="g3"><div class="screen" style="width:380px;height:520px;gap:30px"><span class="lockup" style="font-size:62px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span><span class="rule"></span></span>
+    <div class="btns"><span>Un jugador</span><span>Tutorial</span><span>Crear partida</span><span>Unirse a partida</span><span>Cargar partida</span></div></div>
+    <figcaption><b>G3 en el menú</b></figcaption></figure>
+</div>
+
+<h2>Tamaños y ventanas estrechas</h2>
+<p>«PROSPERIA» tiene 9 letras (CIUDAD tenía 6), así que es más ancho que el logo actual: a igual altura ocupa cerca de 1,5 veces el ancho. El juego ya reduce el logo hasta que cabe; por debajo de ~50 px de alto de PROSPERIA, SALVA'S deja de leerse (misma regla que en Ludo).</p>
+<div class="row c1" style="align-items:flex-end">
+  <figure><div class="screen" style="padding:16px 22px"><span class="lockup" style="font-size:118px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div><figcaption>118 px (tamaño máximo del logo actual)</figcaption></figure>
+  <figure><div class="screen" style="padding:16px 22px"><span class="lockup" style="font-size:76px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div><figcaption>76 px</figcaption></figure>
+  <figure><div class="screen" style="padding:16px 22px"><span class="lockup" style="font-size:52px"><span class="s">SALVA’S</span><span class="p">PROSPERIA</span></span></div><figcaption>52 px (mínimo legible)</figcaption></figure>
+</div>
+
+<h2>Otras notas</h2>
+<p>• La barra de título de la ventana y los mensajes dirán «SALVA'S PROSPERIA» en texto normal (sin tipografía especial).</p>
+<p>• El apóstrofo del logo es el tipográfico (’), como en Ludo; el nombre en texto plano lleva el recto (').</p>
+<p>• Fuentes de este mockup: copias de <code>fuentes/</code> (licencia OFL incluida). En el juego irán recortadas a las letras del logo, como en Ludo.</p>
+</body>
+</html>

@@ -1,0 +1,56 @@
+/* Tallado: wooden planks with grain and nails, carved signs, buttons like little boards. A wood 9-slice in the game. */
+.stage {
+  --planks: repeating-linear-gradient(180deg, transparent 0 38px, rgba(40, 20, 6, .55) 38px 40px), repeating-linear-gradient(90deg, rgba(255, 220, 160, .05) 0 3px, transparent 3px 11px, rgba(60, 30, 10, .07) 11px 13px, transparent 13px 23px), linear-gradient(180deg, #b47a44, #9c6434);
+  --font: 'Segoe UI Black', 'Segoe UI', sans-serif; --font-title: 'Segoe UI Black', 'Segoe UI', sans-serif;
+  --fs: 16px; --fs-small: 14px; --fs-title: 20px; --title-weight: 900;
+  --text: #fff4dc; --dim: #f2d9b0; --accent: #ffd36a; --accent-text: #4a2a10;
+  --ok: #b8f08a; --warn: #ffd36a; --bad: #ff9a7a; --info: #a8e0ff;
+  --panel: var(--planks); --panel-solid: #a86e3c; --panel-border: 4px solid #5a3414; --panel-radius: 10px;
+  --panel-shadow: inset 0 0 0 2px rgba(255, 220, 160, .25), 0 6px 0 #3a200a, 0 12px 24px rgba(0, 0, 0, .4);
+  --bar: var(--planks); --bar-border: 4px solid #5a3414; --bar-h: 52px;
+  --title-text: #fff4dc; --title-border: 0; --title-h: 50px;
+  --btn: linear-gradient(180deg, #d9a066, #c08448); --btn-hover: linear-gradient(180deg, #e6b07a, #cc9054); --btn-on: linear-gradient(180deg, #7a4a1e, #8c5626); --btn-on-text: #ffd36a; --btn-text: #4a2a10;
+  --btn-border: 2px solid #5a3414; --btn-radius: 6px; --btn-h: 32px; --btn-shadow: 0 3px 0 #5a3414;
+  --chip: rgba(60, 30, 10, .35); --row: rgba(60, 30, 10, .3); --row-hover: rgba(60, 30, 10, .45); --sep: rgba(60, 30, 10, .5);
+  --meter: rgba(40, 20, 6, .5); --meter-h: 10px;
+  --avatar-bg: #7a4a1e; --thumb-bg: radial-gradient(circle at 50% 70%, rgba(255, 240, 200, .35), transparent 65%);
+  --tip: #fff4dc; --tip-text: #4a2a10; --tip-border: 3px solid #5a3414; --tip-radius: 8px;
+  --icon-stroke: 2.2; --icon-tone: .2;
+  text-shadow: 0 2px 0 rgba(60, 30, 10, .55);
+}
+.btn { text-shadow: none; }
+.btn.on { text-shadow: 0 1px 0 #000; }
+/* Nails in the corners. */
+.win::before { content: ''; position: absolute; inset: 7px; pointer-events: none; z-index: 2;
+  background: radial-gradient(circle, #e8d0a0 0 2px, #5a3414 2.5px, transparent 3px) 0 0 / 8px 8px no-repeat, radial-gradient(circle, #e8d0a0 0 2px, #5a3414 2.5px, transparent 3px) 100% 0 / 8px 8px no-repeat, radial-gradient(circle, #e8d0a0 0 2px, #5a3414 2.5px, transparent 3px) 0 100% / 8px 8px no-repeat, radial-gradient(circle, #e8d0a0 0 2px, #5a3414 2.5px, transparent 3px) 100% 100% / 8px 8px no-repeat; }
+.win-title { letter-spacing: .02em; }
+.win-icon { background: rgba(60, 30, 10, .3); border-radius: 50%; }
+.win-act { border-color: rgba(60, 30, 10, .5); }
+.wbtn { color: #fff4dc; }
+.wbtn.on { color: #ffd36a; }
+.ctl-close:hover { background: #7a2a10; }
+.hero { background: rgba(255, 244, 220, .85); border: 3px solid #5a3414; border-radius: 8px; }
+.hero-chip .chip { text-shadow: none; }
+.row, .link, .log-row, .tile, .kpi, .score-row, .tr-pick { border-radius: 8px; }
+.need, .annex { border: 2px solid #5a3414; background: rgba(255, 244, 220, .85); }
+.sec { color: #ffd36a; letter-spacing: .1em; }
+.meter { border: 2px solid #5a3414; }
+.meter .fill, .meter.ok .fill { background: linear-gradient(180deg, #c8f09a, #78c040); }
+.switch { border: 2px solid #5a3414; }
+.btn.primary { background: linear-gradient(180deg, #8ad060, #5aa030); color: #fff; border-color: #2a5a10; box-shadow: 0 3px 0 #2a5a10; text-shadow: 0 1px 0 #2a5a10; }
+.btn.danger { background: linear-gradient(180deg, #f08a6a, #c85a3a); color: #fff; border-color: #6a2a10; box-shadow: 0 3px 0 #6a2a10; }
+.top-pills .tb-group { border: 4px solid #5a3414; }
+.dock-list .dock { padding: 8px; }
+.dock-btn { justify-content: flex-start; }
+.minimap { border: 6px solid #5a3414; }
+.mm-frame { box-shadow: 0 0 0 3px #5a3414; }
+.minimap > span { color: #fff4dc; }
+.bb-item { background: rgba(255, 244, 220, .85); border: 2px solid #5a3414; color: #4a2a10; text-shadow: none; }
+.bb-item.on { outline: 3px solid #ffd36a; }
+.bb-cost { color: #6a4a2a; }
+.toast { border-radius: 10px; }
+.toast.bad { border-left: 4px solid #5a3414; }
+.modal h2 { color: #ffd36a; }
+.ring::before { background: #a86e3c; }
+.live { text-shadow: none; }
+.tb-item.gold b { color: #ffd36a; }

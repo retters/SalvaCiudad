@@ -1,5 +1,7 @@
 # Modelos en propuesta
 
+> Las maquetas de la **interfaz** (HUD en 46 estilos, comparación por elemento e íconos) están en `interfaz/`; ver `interfaz/LEEME.md`.
+
 Una página local para ver modelos 3D que **todavía no están en el juego**, probar sus animaciones y decir qué función tendría cada uno. Con tus respuestas se escribe después el plan de implementación.
 
 ## Abrirla

@@ -1,0 +1,56 @@
+/* Pergamino: parchment in brass frames, ribbon titles, book lettering. In the game the parchment and the
+   frame would be drawn textures (9-slice); here gradients stand in for them. */
+.stage {
+  --font: 'EB Garamond', Georgia, serif; --font-title: 'EB Garamond', Georgia, serif;
+  --fs: 19px; --fs-small: 16px; --fs-title: 23px; --title-weight: 500; --title-case: uppercase; --title-spacing: .08em;
+  --text: #3a2814; --dim: #6e5434; --accent: #8a2a1a; --accent-text: #fff3d0;
+  --ok: #3f7a2a; --warn: #a8700a; --bad: #a8281a; --info: #2a5a8a;
+  --panel: radial-gradient(ellipse at 50% 35%, #f6ebcd 0%, #ead7aa 55%, #d8bb82 100%); --panel-solid: #ead7aa;
+  --panel-border: 2px solid #7a5a22; --panel-radius: 3px;
+  --panel-shadow: 0 0 0 2px #2e2010, 0 0 0 4px #c9a24a, 0 0 0 5px #2e2010, 0 16px 34px rgba(0, 0, 0, .5), inset 0 0 40px rgba(120, 80, 30, .35);
+  --bar: linear-gradient(180deg, #4e3822, #2e2014); --bar-border: 0; --bar-h: 50px;
+  --title-bg: linear-gradient(180deg, #a3321f, #6e1e12); --title-text: #fbe7b8; --title-border: 2px solid #c9a24a; --title-h: 42px;
+  --btn: linear-gradient(180deg, #efdfb4, #d2b477); --btn-hover: linear-gradient(180deg, #f7ebc8, #dcc088); --btn-on: linear-gradient(180deg, #8a2a1a, #6a1e12); --btn-on-text: #fff3d0;
+  --btn-text: #3a2814; --btn-border: 1px solid #7a5a22; --btn-radius: 3px; --btn-h: 34px; --btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 1px 1px rgba(0, 0, 0, .25);
+  --chip: rgba(120, 80, 30, .12); --row: rgba(120, 80, 30, .08); --row-hover: rgba(120, 80, 30, .16); --sep: rgba(120, 80, 30, .35);
+  --meter: rgba(80, 50, 20, .2); --meter-h: 8px; --meter-radius: 2px;
+  --avatar-bg: radial-gradient(circle at 50% 30%, #c9b07a, #7a5a22); --avatar-radius: 50%; --thumb-bg: radial-gradient(circle at 50% 70%, rgba(255, 250, 230, .7), transparent 65%);
+  --tip: linear-gradient(180deg, #f6ebcd, #e6d0a0); --tip-text: #3a2814; --tip-border: 1px solid #7a5a22; --tip-radius: 2px;
+  --icon-stroke: 1.7; --icon-tone: .2;
+}
+.topbar { color: #f3e6c4; border-bottom: 2px solid #c9a24a; box-shadow: 0 2px 0 #2e2010, 0 6px 14px rgba(0, 0, 0, .4); }
+.topbar .dim, .topbar .of { color: #c9b089; }
+.topbar .btn { --btn-text: #3a2814; }
+.tb-item.gold b { color: #f0c860; }
+.tb-item.alert { color: #f0b040; }
+.win-bar { margin: 6px 6px 0; border-radius: 0; box-shadow: 0 2px 4px rgba(0, 0, 0, .3); text-shadow: 0 1px 0 #3a0c06; }
+.win.minimized .win-bar { margin: 6px; border-radius: 0; }
+.win-sub { color: #f0d49a; }
+.win-act { border-right-color: rgba(251, 231, 184, .3); }
+.wbtn { color: #f0d49a; }
+.wbtn:hover { color: #fff; }
+.wbtn.on { color: #ffd76a; }
+.win-icon { background: rgba(255, 240, 200, .2); border-radius: 50%; }
+.ctl-close:hover { background: #3a0c06; }
+.sec { color: #8a2a1a; font-size: 15px; letter-spacing: .12em; border-bottom: 1px solid rgba(120, 80, 30, .35); padding-bottom: 2px; }
+.avatar { box-shadow: 0 0 0 2px #c9a24a, 0 0 0 3px #2e2010; }
+.avatars .avatar { box-shadow: 0 0 0 2px #c9a24a; margin-left: -4px; }
+.hero { background: radial-gradient(ellipse, rgba(255, 250, 230, .8), rgba(255, 250, 230, 0) 70%); border: 1px solid rgba(120, 80, 30, .3); border-radius: 2px; }
+.dock-list .dock { background: none; border: 0; box-shadow: none; padding: 0; }
+.dock-btn { box-shadow: 0 0 0 1px #2e2010, 0 3px 8px rgba(0, 0, 0, .35); }
+.minimap { padding: 22px; }
+.minimap > span { color: #6e1e12; font-family: var(--font-title); }
+.mm-frame { box-shadow: 0 0 0 2px #7a5a22; }
+.buildbar { padding: 12px; }
+.bb-cat.on, .bb-item.on { outline: 0; }
+.bb-item { border: 1px solid rgba(120, 80, 30, .3); }
+.bb-item.on { background: rgba(138, 42, 26, .15); border-color: #8a2a1a; }
+.toast { border-radius: 2px; }
+.question .q-ic, .dlg-ic { background: rgba(138, 42, 26, .15); color: #8a2a1a; }
+.modal h2 { color: #8a2a1a; }
+.place-hint { border-radius: 2px; }
+.live { background: rgba(0, 0, 0, .5); color: #fff; }
+.switch.on { background: #3f7a2a; }
+.cam-view { border: 2px solid #7a5a22; border-radius: 0; }
+.win-tab { background: linear-gradient(180deg, #d2b477, #b8965a); color: #3a2814; border-color: #7a5a22; }
+.win-tab.on { background: linear-gradient(180deg, #a3321f, #6e1e12); color: #fbe7b8; }
