@@ -364,8 +364,8 @@ void NavGrid::set_road(std::int32_t cx, std::int32_t cz, std::uint8_t kind) {
         road_.assign(static_cast<std::size_t>(side_) * static_cast<std::size_t>(side_), 0);
     }
     std::uint8_t& cell = road_[index(cx, cz)];
-    if (cell == kind) {
-        return;
+    if (cell == kind || cell >= road_cells_.size()) {
+        return;  // (A cell only ever holds a kind under the count's size.)
     }
     --road_cells_[cell];
     ++road_cells_[kind];

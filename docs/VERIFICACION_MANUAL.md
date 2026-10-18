@@ -2,6 +2,21 @@
 
 Lo que conviene probar a mano, por fase; casi todo lo demás lo cubren las pruebas automáticas (`ctest`). Se completa en cada fase. Los estados y las notas de cada prueba se llevan en la página de revisión ([docs/revision](revision/LEEME.md)).
 
+### Antes de entregar la versión 0.20 (fase 128)
+
+Un repaso general con el ZIP de entrega, además de lo de cada fase:
+
+- [ ] Descomprimir el ZIP en una carpeta nueva, crear `portable.txt` junto al ejecutable y abrirlo: arranca, guarda todo en `userdata\` y `SHA256SUMS.txt` coincide con el ejecutable (`certutil -hashfile SalvasProsperia.exe SHA256`).
+- [ ] Español, español de México e inglés: el menú, Configuración, una partida y sus ventanas.
+- [ ] Una partida de un jugador de principio a fin: fundar, construir, producir, comerciar, guardar, salir, cargar.
+- [ ] El tutorial completo.
+- [ ] Dos instancias en red local (`--instance 1` y `2`): crear, unirse, fundar, pedir unirse a un pueblo y responder.
+- [ ] El mod de ejemplo: activarlo en Mods; su estilo «Pizarra» aparece en Configuración › Interfaz.
+- [ ] Frosted y Vidrio oscuro, con vidrio completo y simple, a escala 75 %, 100 % y 200 %.
+- [ ] Todo el menú y una ventana del juego recorridos solo con el teclado.
+- [ ] Modos de pantalla: ventana, sin bordes y pantalla completa con la cuenta regresiva.
+- [ ] Linux: compilar con los presets `unix-*` en tu máquina (los sombreadores para Vulkan siguen pendientes, D-201).
+
 ### Fase 1
 
 - [ ] Sin `settings.json`, el juego abre en ventana sin bordes a pantalla completa.

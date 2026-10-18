@@ -10,12 +10,13 @@ namespace {
 const std::array<std::uint32_t, 256>& crc_table() {
     static const std::array<std::uint32_t, 256> table = [] {
         std::array<std::uint32_t, 256> t{};
-        for (std::uint32_t n = 0; n < 256; ++n) {
-            std::uint32_t c = n;
+        std::uint32_t n = 0;
+        for (std::uint32_t& entry : t) {
+            std::uint32_t c = n++;
             for (int k = 0; k < 8; ++k) {
                 c = (c & 1u) != 0 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
             }
-            t[n] = c;
+            entry = c;
         }
         return t;
     }();

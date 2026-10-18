@@ -230,7 +230,8 @@ Walk walk(Game& g, EntityId who, FixedVec2 from, FixedVec2 to) {
 // A game with an explorer and, 40 m apart, two points; `road` (if any) is
 // laid along the row next to the straight line between them, a short way round.
 Walk crossing(const char* road) {
-    Game g(core(), map_for(92), setup());
+    const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+    Game& g = *g_owned;
     provide(g);
     grant(g, "core:stone", 200);
     level_up(g);
@@ -300,7 +301,8 @@ TEST_SUITE("roads") {
     }
 
     TEST_CASE("a traced road is built stretch by stretch, and then it is ground and no building") {
-        Game g(core(), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [x0, z0] = open_ground(g, 24);
         const std::size_t buildings = g.buildings().size();
@@ -338,7 +340,8 @@ TEST_SUITE("roads") {
     }
 
     TEST_CASE("a tree in the way of a road is felled first") {
-        Game g(core(), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [x0, z0] = open_ground(g, 16);
         Command plant;
@@ -364,7 +367,8 @@ TEST_SUITE("roads") {
         // (A map with no loose stones: laborers would pick them up for the street, phase 102.)
         MapData bare = map_for(92);
         std::erase_if(bare.features, [](const MapFeature& f) { return f.type == FeatureType::LooseStones; });
-        Game g(core(), std::move(bare), setup());
+        const auto g_owned = std::make_unique<Game>(core(), std::move(bare), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [x0, z0] = open_ground(g, 44);
         CHECK(g.can_place(0, building(g, "core:cobbled_street"), x0, z0, 0) == PlaceError::Locked);
@@ -391,7 +395,8 @@ TEST_SUITE("roads") {
     }
 
     TEST_CASE("a dirt road is made a street for the stone alone; nothing goes over as good a road") {
-        Game g(core(), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         level_up(g);
         const auto [x0, z0] = open_ground(g, 24);
@@ -434,7 +439,8 @@ TEST_SUITE("roads") {
     }
 
     TEST_CASE("a house whose door opens onto a street is a nicer place; onto a dirt road, the same as before") {
-        Game g(core(), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         grant(g, "core:stone", 100);
         level_up(g);
@@ -467,7 +473,8 @@ TEST_SUITE("roads") {
     }
 
     TEST_CASE("the eraser takes roads and unfinished stretches away, and a building or a field laid over a road too") {
-        Game g(core(), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [x0, z0] = open_ground(g, 30);
         g.apply(trace(g, "core:dirt_road", x0, z0, x0 + 18, z0));
@@ -508,7 +515,8 @@ TEST_SUITE("roads") {
     }
 
     TEST_CASE("saving and loading keeps the roads and the stretches being built") {
-        Game g(core(), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         grant(g, "core:stone", 6);
         level_up(g);
@@ -522,7 +530,8 @@ TEST_SUITE("roads") {
         REQUIRE(!g.roads().empty());
         BinaryWriter w;
         g.save(w);
-        Game loaded(core(), map_for(92), setup());
+        const auto loaded_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& loaded = *loaded_owned;
         BinaryReader r(w.bytes());
         REQUIRE(loaded.load(r, core()));
         CHECK(loaded.hash() == g.hash());
@@ -534,7 +543,8 @@ TEST_SUITE("roads") {
         CHECK(loaded.hash() == g.hash());
         CHECK(loaded.roads() == g.roads());
         // A save with a road where the map has no cell, or of a kind there is not, is refused.
-        Game one(core(), map_for(92), setup());
+        const auto one_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& one = *one_owned;
         provide(one);
         const auto [ox, oz] = open_ground(one, 8);
         one.apply(trace(one, "core:dirt_road", ox, oz, ox, oz));
@@ -555,15 +565,18 @@ TEST_SUITE("roads") {
                                             std::pair<std::size_t, std::uint8_t>{7, 0xFF}}) {
             std::vector<std::uint8_t> bad = bytes;
             bad[at + offset] = value;
-            Game refused(core(), map_for(92), setup());
+            const auto refused_owned = std::make_unique<Game>(core(), map_for(92), setup());
+            Game& refused = *refused_owned;
             BinaryReader br(bad);
             CHECK_FALSE(refused.load(br, core()));
         }
     }
 
     TEST_CASE("two games given the same road orders agree, tick by tick") {
-        Game a(core(), map_for(92), setup());
-        Game b(core(), map_for(92), setup());
+        const auto a_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& a = *a_owned;
+        const auto b_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& b = *b_owned;
         for (Game* g : {&a, &b}) {
             provide(*g);
             grant(*g, "core:stone", 20);
@@ -594,7 +607,8 @@ TEST_SUITE("roads") {
     }
 
     TEST_CASE("without roads a search finds the same way as ever, and with them it never guesses too high") {
-        Game g(core(), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [x0, z0] = open_ground(g, 48);
         const FixedVec2 from{Fixed::from_int(x0 + 3), Fixed::from_int(z0 + 11)};

@@ -245,7 +245,8 @@ TEST_SUITE("resources") {
         // Two small rocks (4 units each) and no other rock or deposit within 150 m.
         const Land l = land(21, {FeatureType::Stone, FeatureType::StoneDeposit}, FeatureType::Stone, 2,
                             Fixed::from_ratio(1, 10));
-        Game g(content(), l.map, setup());
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& g = *g_owned;
         const EntityId cutter = build(g, "core:stonecutter", l.x, l.z);
         const sc::sim::BuildingDef& def = content()->buildings[g.buildings().get(cutter)->def];
         (void)g.take_events();
@@ -273,7 +274,8 @@ TEST_SUITE("resources") {
         // Saved and loaded, it is the same game.
         BinaryWriter w;
         g.save(w);
-        Game back(content(), l.map, setup());
+        const auto back_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.hash() == g.hash());
@@ -298,7 +300,8 @@ TEST_SUITE("resources") {
         l.map.features.back().size = 1;
         const std::int32_t dx = l.map.features.back().x.floor_int();
         const std::int32_t dz = l.map.features.back().z.floor_int();
-        Game g(content(), l.map, setup());
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& g = *g_owned;
         const std::uint32_t node = static_cast<std::uint32_t>(g.nodes().size() - 1);
         REQUIRE(g.nodes()[node].amount == 2000);
         // Its ground is taken: nothing is built on it, and nobody walks through.
@@ -322,7 +325,8 @@ TEST_SUITE("resources") {
         // Saved half spent and loaded, it is the same game.
         BinaryWriter w;
         g.save(w);
-        Game back(content(), l.map, setup());
+        const auto back_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.hash() == g.hash());
@@ -337,7 +341,8 @@ TEST_SUITE("resources") {
         Land l = land(21, {FeatureType::Stone, FeatureType::StoneDeposit}, FeatureType::StoneDeposit, 1, Fixed::one());
         const std::int32_t dx = l.map.features.back().x.floor_int();
         const std::int32_t dz = l.map.features.back().z.floor_int();
-        Game g(content(), l.map, setup());
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& g = *g_owned;
         const std::uint32_t node = static_cast<std::uint32_t>(g.nodes().size() - 1);
         REQUIRE(g.nodes()[node].amount == 800);
         CHECK(deposit_amount(800, 2) == 5000);
@@ -404,7 +409,8 @@ TEST_SUITE("resources") {
             CHECK(deposits <= 40);
             GameSetup gs = setup();
             gs.players = 4;
-            Game g(content(), *m, gs);
+            const auto g_owned = std::make_unique<Game>(content(), *m, gs);
+            Game& g = *g_owned;
             for (std::size_t p = 0; p < m->starts.size(); ++p) {
                 const StartPosition& st = m->starts[p];
                 bool near = false;
@@ -445,7 +451,8 @@ TEST_SUITE("resources") {
         const std::uint32_t apple = orchard_land(l);
         GameSetup s = setup();
         s.rules.climate.seasons = 0b1111;
-        Game g(content(), l.map, s);
+        const auto g_owned = std::make_unique<Game>(content(), l.map, s);
+        Game& g = *g_owned;
         REQUIRE(g.calendar().season == Season::Spring);
         CHECK(g.fruit_on(apple) == 0);
         run_to(g, Season::Summer);
@@ -467,14 +474,16 @@ TEST_SUITE("resources") {
         REQUIRE(oak >= 0);
         modded->flora.species[static_cast<std::size_t>(oak)].fruit[static_cast<std::size_t>(TreeSize::Medium)] = 9;
         GameSetup summer = setup();
-        Game m(modded, l.map, summer);
+        const auto m_owned = std::make_unique<Game>(modded, l.map, summer);
+        Game& m = *m_owned;
         CHECK(m.fruit_on(apple + 2) == 9);
     }
 
     TEST_CASE("a forager picks the fruit of the fruit trees as food, and the tree stays") {
         Land l;
         const std::uint32_t apple = orchard_land(l);
-        Game g(content(), l.map, setup());  // Summer all year.
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());  // Summer all year.
+        Game& g = *g_owned;
         const std::int32_t logs = g.nodes()[apple].amount;
         REQUIRE(g.fruit_on(apple) == 6);
         const DefIndex fruit = content()->find_resource("core:fruit");
@@ -505,7 +514,8 @@ TEST_SUITE("resources") {
 
         BinaryWriter w;
         g.save(w);
-        Game back(content(), l.map, setup());
+        const auto back_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.hash() == g.hash());
@@ -525,7 +535,8 @@ TEST_SUITE("resources") {
     TEST_CASE("a woodcutter spares the fruit trees until told otherwise; felled, they give wood and their fruit") {
         Land l;
         const std::uint32_t apple = apple_land(l);
-        Game g(content(), l.map, setup());  // Summer all year: the trees have fruit.
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());  // Summer all year: the trees have fruit.
+        Game& g = *g_owned;
         const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 14);
         (void)g.take_events();
         REQUIRE(g.buildings().get(cutter)->options == 0);
@@ -552,7 +563,8 @@ TEST_SUITE("resources") {
         // The switch is an order: as bytes, like in a network game, to two games.
         BinaryWriter saved;
         g.save(saved);
-        Game other(content(), l.map, setup());
+        const auto other_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& other = *other_owned;
         BinaryReader in(saved.bytes());
         REQUIRE(other.load(in, content()));
         const Command sent = set_option(cutter, 0, true);
@@ -570,7 +582,8 @@ TEST_SUITE("resources") {
         // Saved and loaded with the switch on.
         BinaryWriter w;
         g.save(w);
-        Game back(content(), l.map, setup());
+        const auto back_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.hash() == g.hash());
@@ -600,7 +613,8 @@ TEST_SUITE("resources") {
         const std::uint32_t apple = apple_land(l);
         GameSetup s = setup();
         s.rules.climate.seasons = 0b1000;  // Winter all year.
-        Game g(content(), l.map, s);
+        const auto g_owned = std::make_unique<Game>(content(), l.map, s);
+        Game& g = *g_owned;
         REQUIRE(g.calendar().season == Season::Winter);
         const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 14);
         const std::int32_t fruit = held(g, "core:fruit");
@@ -616,7 +630,8 @@ TEST_SUITE("resources") {
     TEST_CASE("a site over trees is cleared by laborers who fell them, and their wood and fruit come to the town") {
         Land l;
         const std::uint32_t apple = apple_land(l);
-        Game g(content(), l.map, setup());  // Summer all year: the trees have fruit.
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());  // Summer all year: the trees have fruit.
+        Game& g = *g_owned;
         // A woodcutter beside them that spares fruit trees and replants: neither counts on a site.
         // (Built with the town's own wood, and with a storehouse: a new town's
         // center is full, and wood with nowhere to go is left on the ground.)
@@ -663,7 +678,8 @@ TEST_SUITE("resources") {
         // Saved before it is cleared and loaded: the same game.
         BinaryWriter w;
         g.save(w);
-        Game back(content(), l.map, setup());
+        const auto back_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.hash() == g.hash());
@@ -700,7 +716,8 @@ TEST_SUITE("resources") {
     TEST_CASE("a site cancelled before it is cleared keeps its trees") {
         Land l;
         const std::uint32_t apple = apple_land(l);
-        Game g(content(), l.map, setup());
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& g = *g_owned;
         const std::int32_t logs = g.nodes()[apple + 1].amount;
         const MapFeature& f = g.map().features[apple + 1];
         Command c;
@@ -723,7 +740,8 @@ TEST_SUITE("resources") {
     TEST_CASE("a field over trees is sown only after the farm's workers fell them") {
         Land l;
         const std::uint32_t oaks = oak_land(l, 2, TreeSize::Medium);
-        Game g(content(), l.map, setup());
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& g = *g_owned;
         const EntityId farm = build(g, "core:farm", l.x, l.z + 24);
         // A field around the two oaks.
         const MapFeature& f = g.map().features[oaks];
@@ -775,7 +793,8 @@ TEST_SUITE("resources_years") {
         const SpeciesDef& sp = content()->flora.species[static_cast<std::size_t>(oak)];
         GameSetup s = setup();
         s.rules.climate.seasons = 0b1111;
-        Game g(content(), l.map, s);
+        const auto g_owned = std::make_unique<Game>(content(), l.map, s);
+        Game& g = *g_owned;
         const std::uint32_t year = 12 * g.calendar_month_ticks();
         const auto size = [&](std::uint32_t i) { return static_cast<TreeSize>(g.map().features[i].size); };
         REQUIRE(size(apple) == TreeSize::Small);
@@ -799,7 +818,8 @@ TEST_SUITE("resources_years") {
         // Saved in the middle of its growing and loaded, it is the same game.
         BinaryWriter w;
         g.save(w);
-        Game back(content(), l.map, s);
+        const auto back_owned = std::make_unique<Game>(content(), l.map, s);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.hash() == g.hash());
@@ -831,7 +851,8 @@ TEST_SUITE("resources_years") {
         GameSetup s = setup();
         s.players = 0;  // Nobody fells anything.
         s.rules.climate.seasons = 0b1111;
-        Game g(modded, *m, s);
+        const auto g_owned = std::make_unique<Game>(modded, *m, s);
+        Game& g = *g_owned;
         const std::uint32_t year = 12 * g.calendar_month_ticks();
         int growing = 0;
         std::vector<std::uint32_t> oaks;
@@ -883,7 +904,8 @@ TEST_SUITE("resources_years") {
         const std::uint32_t oaks = oak_land(l, 4, TreeSize::Medium);
         const std::uint8_t species = l.map.features[oaks].species;
         for (const bool replant : {false, true}) {
-            Game g(content(), l.map, setup());
+            const auto g_owned = std::make_unique<Game>(content(), l.map, setup());
+            Game& g = *g_owned;
             const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 16);
             if (replant) {
                 g.apply(set_option(cutter, 1, true));
@@ -921,7 +943,8 @@ TEST_SUITE("resources_years") {
             // Saved with sprouts and loaded: the same game; a year on, they are small trees.
             BinaryWriter w;
             g.save(w);
-            Game back(content(), l.map, setup());
+            const auto back_owned = std::make_unique<Game>(content(), l.map, setup());
+            Game& back = *back_owned;
             BinaryReader r(w.bytes());
             REQUIRE(back.load(r, content()));
             CHECK(back.hash() == g.hash());
@@ -960,7 +983,8 @@ TEST_SUITE("resources_years") {
         Land l;
         const std::uint32_t oaks = oak_land(l, 6, TreeSize::Medium);
         GameSetup s = setup();
-        Game g(content(), l.map, s);
+        const auto g_owned = std::make_unique<Game>(content(), l.map, s);
+        Game& g = *g_owned;
         CHECK_FALSE(g.mature(g.map().features[oaks]));
         const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 16);
         g.apply(set_option(cutter, 2, true));
@@ -1016,7 +1040,8 @@ TEST_SUITE("resources_years") {
     TEST_CASE("replanting and felling only the grown, a woodcutter with sixty large trees still brings wood ten years on") {
         Land l;
         const std::uint32_t oaks = oak_land(l, 60, TreeSize::Large);
-        Game g(content(), l.map, setup());
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& g = *g_owned;
         const EntityId cutter = build(g, "core:woodcutter", l.x, l.z + 30);
         g.apply(set_option(cutter, 1, true));
         g.apply(set_option(cutter, 2, true));
@@ -1065,7 +1090,8 @@ TEST_SUITE("resources") {
         // Two bushes; once their berries are picked there are no more until next year (phase 99).
         const Land l = land(21, {FeatureType::BerryBush, FeatureType::Herbs}, FeatureType::BerryBush, 2,
                             Fixed::from_ratio(1, 20));
-        Game g(content(), l.map, setup());
+        const auto g_owned = std::make_unique<Game>(content(), l.map, setup());
+        Game& g = *g_owned;
         const EntityId forager = build(g, "core:forager", l.x, l.z);
         const sc::sim::BuildingDef& def = content()->buildings[g.buildings().get(forager)->def];
         (void)g.take_events();

@@ -13,6 +13,7 @@ if(MSVC AND MSVC_TOOLSET_VERSION LESS 143)
 endif()
 
 option(SC_ENABLE_ASAN "Build SalvasProsperia targets with AddressSanitizer" OFF)
+option(SC_ENABLE_ANALYZE "Build SalvasProsperia targets with MSVC code analysis (/analyze)" OFF)
 option(SC_BUILD_TESTS "Build the automated tests" ON)
 
 set(CMAKE_C_STANDARD 17)
@@ -55,6 +56,11 @@ if(MSVC)
     if(SC_ENABLE_ASAN)
         list(APPEND SC_COMPILE_OPTIONS /fsanitize=address)
         get_filename_component(SC_MSVC_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    endif()
+    # Phase 128: MSVC's code analysis of the game's own code (the headers of
+    # third-party libraries are external and left out).
+    if(SC_ENABLE_ANALYZE)
+        list(APPEND SC_COMPILE_OPTIONS /analyze /analyze:external- /analyze:WX-)
     endif()
 else()
     set(SC_COMPILE_OPTIONS

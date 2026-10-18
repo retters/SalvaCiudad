@@ -256,10 +256,12 @@ TEST_SUITE("stones") {
 
     TEST_CASE("a town with no stonecutter and no stone left finishes a site with loose stones") {
         // The house asks for all the stone the town has and six more.
-        Game probe(core(), map_for(92), setup());
+        const auto probe_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& probe = *probe_owned;
         const std::int32_t stored = stone(probe);
         REQUIRE(stored > 0);
-        Game g(stone_house(stored + 6), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(stone_house(stored + 6), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [tx, tz] = town(g);
         const EntityId house = put(g, "core:house", tx + 14, tz, false);
@@ -284,10 +286,12 @@ TEST_SUITE("stones") {
     }
 
     TEST_CASE("with stone in the storage, laborers leave the loose stones alone") {
-        Game probe(core(), map_for(92), setup());
+        const auto probe_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& probe = *probe_owned;
         const std::int32_t stored = stone(probe);
         REQUIRE(stored >= 6);
-        Game g(stone_house(6), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(stone_house(6), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [tx, tz] = town(g);
         const EntityId house = put(g, "core:house", tx + 14, tz, false);
@@ -305,9 +309,11 @@ TEST_SUITE("stones") {
     }
 
     TEST_CASE("loose stones too far from the site, or with nobody building, stay where they are") {
-        Game probe(core(), map_for(92), setup());
+        const auto probe_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& probe = *probe_owned;
         const std::int32_t stored = stone(probe);
-        Game g(stone_house(stored + 6), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(stone_house(stored + 6), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         run(g, 1500);  // Nothing to build: nobody picks anything up.
         const std::int32_t before = loose(g);
@@ -336,7 +342,8 @@ TEST_SUITE("stones") {
     }
 
     TEST_CASE("the stonecutter takes loose stones too, and boulders as ever") {
-        Game g(core(), map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [tx, tz] = town(g);
         const EntityId cutter = put(g, "core:stonecutter", tx + 16, tz, true);
@@ -438,10 +445,12 @@ TEST_SUITE("stones") {
     }
 
     TEST_CASE("saving and loading keeps a heap half taken and the laborer on its way") {
-        Game probe(core(), map_for(92), setup());
+        const auto probe_owned = std::make_unique<Game>(core(), map_for(92), setup());
+        Game& probe = *probe_owned;
         const std::int32_t stored = stone(probe);
         const auto content = stone_house(stored + 4);
-        Game g(content, map_for(92), setup());
+        const auto g_owned = std::make_unique<Game>(content, map_for(92), setup());
+        Game& g = *g_owned;
         provide(g);
         const auto [tx, tz] = town(g);
         const EntityId house = put(g, "core:house", tx + 14, tz, false);
@@ -459,7 +468,8 @@ TEST_SUITE("stones") {
         REQUIRE(picking);
         BinaryWriter w;
         g.save(w);
-        Game loaded(content, map_for(92), setup());
+        const auto loaded_owned = std::make_unique<Game>(content, map_for(92), setup());
+        Game& loaded = *loaded_owned;
         BinaryReader r(w.bytes());
         REQUIRE(loaded.load(r, content));
         CHECK(loaded.hash() == g.hash());
@@ -487,7 +497,8 @@ TEST_SUITE("stones") {
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;
-        Game g(core(), map_for(92), rules);
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), rules);
+        Game& g = *g_owned;
         provide(g);
         const auto [tx, tz] = town(g);
         for (std::int32_t i = 0; i < 3; ++i) {

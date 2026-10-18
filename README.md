@@ -2,11 +2,13 @@
 
 Juego 3D de construcción y supervivencia de pueblos medievales con multijugador de 1 a 12 jugadores. Motor propio en C++20 sobre SDL3. El diseño completo está en [ESPECIFICACION_SalvasProsperia.md](ESPECIFICACION_SalvasProsperia.md) y las decisiones en [docs/DECISIONES.md](docs/DECISIONES.md).
 
-**Estado:** en desarrollo, fase 116 de 117; falta el pulido y la entrega. Se juega de principio a fin: fundar el pueblo, recolectar, cultivar, producir, comerciar y defenderse, con estaciones, clima, día y noche, enfermedades, incendios, fauna, asaltantes, ejército y nueve razas de fantasía. Hay partidas de un jugador y multijugador cooperativo o versus, con espectadores. No hay todavía un ejecutable para descargar: hay que compilarlo.
+**Estado:** fase 128 de 128: la interfaz nueva (RmlUi) está completa y esta es la entrega de la versión 0.20. Se juega de principio a fin: fundar el pueblo, recolectar, cultivar, producir, comerciar y defenderse, con estaciones, clima, día y noche, enfermedades, incendios, fauna, asaltantes, ejército y nueve razas de fantasía. Hay partidas de un jugador y multijugador cooperativo o versus, con espectadores. La entrega es un ZIP portable que se arma desde la compilación (ver «Entrega»).
 
 El contenido (recursos, edificios, árboles, biomas, razas y sucesos) es un mod, `core`, y se pueden agregar mods con datos, modelos, textos y reglas en Lua; ver [docs/CREAR_MODS.md](docs/CREAR_MODS.md).
 
 Requisito para jugar: una tarjeta gráfica compatible con Direct3D 12 (ver D-201).
+
+La interfaz está hecha con RmlUi (fases 117 a 127): ventanas que se mueven, se agrupan y se apilan en pestañas, miniaturas y retratos dibujados por el juego, y dos estilos, **Frosted** y **Vidrio oscuro**, que se cambian en vivo en Configuración › Interfaz. Un mod puede traer estilos propios; ver [docs/ESTILOS_UI.md](docs/ESTILOS_UI.md). Todo se recorre también con el teclado.
 
 ## Compilar en Windows
 
@@ -19,7 +21,7 @@ ctest --preset release
 ```
 
 - El ejecutable queda en `build\release\bin\SalvasProsperia.exe`, con la carpeta `data\` al lado.
-- Presets de Windows: `debug`, `release` y `debug-asan` (con AddressSanitizer).
+- Presets de Windows: `debug`, `release`, `debug-asan` (con AddressSanitizer) y `analyze` (con el análisis de código de MSVC, `/analyze`, sobre el código propio).
 - Los sombreadores se compilan con el `dxc.exe` del Windows SDK, que viene con Visual Studio.
 - Presets de Linux y macOS: `unix-debug`, `unix-release` y `unix-debug-asan`. Todavía no compilan, porque falta preparar los sombreadores para esas plataformas (D-201).
 
@@ -44,6 +46,7 @@ Todas se cambian en Configuración → Controles, salvo Alt+Enter.
 | F11 | Cambia en ciclo: ventana, ventana sin bordes, pantalla completa |
 | Alt+Enter | Alterna entre ventana y el último modo de pantalla completa |
 | Esc | Cierra un diálogo, o vuelve al menú desde Configuración |
+| Tab, flechas, Enter, Espacio | En los menús, recorren los botones y eligen; en la partida, Tab entra a la ventana de adelante y Esc devuelve las teclas al juego |
 | F3 | Panel de estadísticas (FPS, objetos dibujados, sombras…) |
 | W A S D o flechas | Mover la cámara |
 | Q / E, o arrastrar con el botón central | Girar la cámara |
@@ -106,9 +109,14 @@ Si encuentras un fallo de seguridad, repórtalo en privado desde la pestaña Sec
 - [ESPECIFICACION_SalvasProsperia.md](ESPECIFICACION_SalvasProsperia.md): el diseño completo y el plan por fases.
 - [docs/DECISIONES.md](docs/DECISIONES.md): las decisiones que la especificación no cubre.
 - [docs/VERIFICACION_MANUAL.md](docs/VERIFICACION_MANUAL.md): lo que conviene probar a mano, por fase.
+- [docs/ESTILOS_UI.md](docs/ESTILOS_UI.md): cómo hacer un estilo de la interfaz.
 - [docs/RED.md](docs/RED.md), [docs/DETERMINISMO.md](docs/DETERMINISMO.md) y [docs/RENDIMIENTO.md](docs/RENDIMIENTO.md): el multijugador, la simulación determinista y los tiempos medidos.
 - [docs/ARTE.md](docs/ARTE.md) y [docs/ARBOLES.md](docs/ARBOLES.md): cómo se generan los modelos y los sonidos.
 - [docs/revision](docs/revision/LEEME.md) y [docs/propuestas](docs/propuestas/LEEME.md): las páginas con las que el autor revisa el trabajo y elige modelos nuevos.
+
+## Entrega
+
+Con la compilación `release` hecha, `python -I tools/release/make_zip.py build\release` arma `build\release\SalvasProsperia-<versión>-windows-x64.zip`: el ejecutable, `data\`, este README, la licencia, las licencias de las bibliotecas de terceros (`licenses\`) y `SHA256SUMS.txt` con el SHA-256 del ejecutable. No lleva el PDB, las pruebas ni el visor de modelos. Se descomprime en cualquier carpeta; para que guarde todo a su lado, se crea un `portable.txt` junto al ejecutable.
 
 ## Licencia
 

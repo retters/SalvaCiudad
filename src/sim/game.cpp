@@ -1923,10 +1923,9 @@ public:
         }
         if (total(b->stock) > 0) {
             // The most of one good it can carry.
-            Stock* most = nullptr;
-            for (Stock& st : b->stock) {
-                most = most == nullptr || st.amount > most->amount ? &st : most;
-            }
+            const auto it = std::max_element(b->stock.begin(), b->stock.end(),
+                                              [](const Stock& x, const Stock& y) { return x.amount < y.amount; });
+            Stock* most = &*it;  // Not empty: it holds something.
             const std::int32_t take = std::min(most->amount, 30);
             a.loot = {most->resource, take};
             most->amount -= take;
@@ -2495,7 +2494,10 @@ public:
         }
         g_.game_over_ = true;
         for (const std::uint8_t p : alive) {
-            g_.players_[p].outcome = static_cast<std::int32_t>(p) == winner ? Outcome::Won : Outcome::Lost;
+            const std::size_t seat = p;
+            if (seat < g_.players_.size()) {
+                g_.players_[seat].outcome = static_cast<std::int32_t>(p) == winner ? Outcome::Won : Outcome::Lost;
+            }
         }
         g_.events_.push_back({Game::Event::Kind::GameOver, 0, {}, {}, static_cast<std::uint16_t>(winner + 1), 0});
     }
@@ -2715,7 +2717,9 @@ public:
             a.timer = static_cast<std::int32_t>(g_.rng_.below(10));
             g_.creatures_.add(g_.registry_.create(), a);
         }
-        ++g_.players_[town].raids;
+        if (town < kMaxPlayers) {
+            ++g_.players_[town].raids;
+        }
         g_.events_.push_back({Game::Event::Kind::RaidStarted, town, target, from, static_cast<std::uint16_t>(count), 0});
     }
 

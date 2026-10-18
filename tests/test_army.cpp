@@ -196,7 +196,8 @@ TEST_SUITE("army") {
 
     TEST_CASE("core has units, and a barracks turns villagers into soldiers") {
         REQUIRE(sc::test::core_content().units.size() >= 3);
-        Game g(open_content(), map_for(101), setup());
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(101), setup());
+        Game& g = *g_owned;
         const EntityId barracks = build(g, "core:barracks");
         grant(g, "core:log", 30);
         const std::int32_t people = g.population(0);
@@ -229,7 +230,8 @@ TEST_SUITE("army") {
     TEST_CASE("soldiers defend the town from raiders") {
         GameSetup s = setup();
         s.rules.raiders = Threat::Medium;
-        Game g(open_content(), map_for(102), s);
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(102), s);
+        Game& g = *g_owned;
         const EntityId barracks = build(g, "core:barracks");
         grant(g, "core:log", 60);
         train(g, barracks, "core:levy", 4);
@@ -248,7 +250,8 @@ TEST_SUITE("army") {
     }
 
     TEST_CASE("in a cooperative game armies do not attack players") {
-        Game g(open_content(), map_for(103, 2), setup(2));
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(103, 2), setup(2));
+        Game& g = *g_owned;
         REQUIRE(g.player_count() == 2);
         CHECK_FALSE(g.enemies(0, 1));
         const auto rejected = g.rejected_commands();
@@ -257,7 +260,8 @@ TEST_SUITE("army") {
     }
 
     TEST_CASE("versus: bringing down the rival town center wins") {
-        Game g(open_content(), map_for(103, 2), versus(Victory::Elimination));
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(103, 2), versus(Victory::Elimination));
+        Game& g = *g_owned;
         REQUIRE(g.enemies(0, 1));
         const EntityId barracks = build(g, "core:barracks");
         grant(g, "core:log", 100);
@@ -288,7 +292,8 @@ TEST_SUITE("army") {
         // while the real one changes; seen again, it follows.
         GameSetup s = versus(Victory::Elimination);
         s.rules.fog = FogMode::Dynamic;
-        Game g(open_content(), map_for(103, 2), s);
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(103, 2), s);
+        Game& g = *g_owned;
         const std::uint8_t mine = g.vision_group(0);
         REQUIRE(mine != g.vision_group(1));
         const EntityId rival = g.player(1).town_center;
@@ -347,7 +352,8 @@ TEST_SUITE("army") {
     TEST_CASE("versus without war: the best score after the years wins") {
         GameSetup s = versus(Victory::Score, false);
         s.rules.score_years = 1;
-        Game g(open_content(), map_for(103, 2), s);
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(103, 2), s);
+        Game& g = *g_owned;
         CHECK_FALSE(g.enemies(0, 1));
         grant(g, "core:log", 500, 1);  // Player 1 is richer: more buildings to come.
         (void)build(g, "core:storehouse", 1);
@@ -357,7 +363,8 @@ TEST_SUITE("army") {
     }
 
     TEST_CASE("with separate maps an army travels over the world map") {
-        Game g(open_content(), map_for(104, 2, true), versus(Victory::Elimination));
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(104, 2, true), versus(Victory::Elimination));
+        Game& g = *g_owned;
         const EntityId barracks = build(g, "core:barracks");
         grant(g, "core:log", 30);
         train(g, barracks, "core:levy", 1);
@@ -384,7 +391,8 @@ TEST_SUITE("army") {
     }
 
     TEST_CASE("on islands an army crosses the sea to the rival's island") {
-        Game g(open_content(), islands_for(106, 2), versus(Victory::Elimination));
+        const auto g_owned = std::make_unique<Game>(open_content(), islands_for(106, 2), versus(Victory::Elimination));
+        Game& g = *g_owned;
         const Building* rival = g.buildings().get(g.player(1).town_center);
         REQUIRE(rival != nullptr);
         const FixedVec2 rival_door = g.door(*rival);
@@ -417,7 +425,8 @@ TEST_SUITE("army") {
     TEST_CASE("on islands raiders land on the coast") {
         GameSetup s = setup();
         s.rules.raiders = Threat::Medium;
-        Game g(open_content(), islands_for(107, 1), s);
+        const auto g_owned = std::make_unique<Game>(open_content(), islands_for(107, 1), s);
+        Game& g = *g_owned;
         grant(g, "core:log", 2000);  // Something worth taking.
         Command raid;
         raid.type = CommandType::DevRaid;
@@ -435,7 +444,8 @@ TEST_SUITE("army") {
     }
 
     TEST_CASE("a single-player town that dies out ends the game") {
-        Game g(open_content(), map_for(105), setup());
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(105), setup());
+        Game& g = *g_owned;
         run(g, 40000);  // Nobody builds: the berries run out.
         CHECK(g.population(0) == 0);
         CHECK(g.game_over());
@@ -443,7 +453,8 @@ TEST_SUITE("army") {
     }
 
     TEST_CASE("armies and training survive a save") {
-        Game g(open_content(), map_for(103, 2), versus(Victory::Elimination));
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(103, 2), versus(Victory::Elimination));
+        Game& g = *g_owned;
         const EntityId barracks = build(g, "core:barracks");
         grant(g, "core:log", 60);
         train(g, barracks, "core:levy", 3);
@@ -454,7 +465,8 @@ TEST_SUITE("army") {
         run(g, 300);
         BinaryWriter w;
         g.save(w);
-        Game back(open_content(), map_for(101), setup());
+        const auto back_owned = std::make_unique<Game>(open_content(), map_for(101), setup());
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, open_content()));
         CHECK(back.hash() == g.hash());
@@ -474,7 +486,8 @@ TEST_SUITE("army") {
         GameSetup rules = setup();
         rules.rules.races.fill(dwarf);
         rules.rules.other_races = 0;
-        Game g(open_content(), map_for(101), rules);
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(101), rules);
+        Game& g = *g_owned;
         const EntityId barracks = build(g, "core:barracks");
         grant(g, "core:weapons", 4);
         grant(g, "core:log", 30);
@@ -518,7 +531,8 @@ TEST_SUITE("army") {
         CHECK(spearmen == 1);
         BinaryWriter w;
         g.save(w);
-        Game back(open_content(), map_for(101), rules);
+        const auto back_owned = std::make_unique<Game>(open_content(), map_for(101), rules);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, open_content()));
         CHECK(back.hash() == g.hash());
@@ -533,7 +547,8 @@ TEST_SUITE("army") {
         }
         // A save that names a people that does not exist is refused.
         std::vector<std::uint8_t> bytes = w.bytes();
-        Game bad(open_content(), map_for(101), rules);
+        const auto bad_owned = std::make_unique<Game>(open_content(), map_for(101), rules);
+        Game& bad = *bad_owned;
         bytes.resize(bytes.size() / 3);
         BinaryReader cut(bytes);
         CHECK_FALSE(bad.load(cut, open_content()));
@@ -550,7 +565,8 @@ TEST_SUITE("army") {
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;
         rules.rules.other_races = 0;
-        Game g(open_content(), map_for(101), rules);
+        const auto g_owned = std::make_unique<Game>(open_content(), map_for(101), rules);
+        Game& g = *g_owned;
         grant(g, "core:bread", 6000);
         grant(g, "core:firewood", 2000);
         // Three grown people of each of the other peoples; the laborers nearest to the barracks are armed first.

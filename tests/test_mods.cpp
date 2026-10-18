@@ -250,11 +250,11 @@ TEST_SUITE("mods") {
                 REQUIRE(p.error == json::ParseError::None);
                 std::vector<std::string> out;
                 yyjson_mut_val* strings = yyjson_mut_obj_get(yyjson_mut_doc_get_root(p.doc.get()), "strings");
-                std::size_t i = 0, max = 0;
-                yyjson_mut_val* k = nullptr;
-                yyjson_mut_val* v = nullptr;
-                yyjson_mut_obj_foreach(strings, i, max, k, v) {
-                    out.emplace_back(yyjson_mut_get_str(k));
+                yyjson_mut_obj_iter iter;
+                if (yyjson_mut_obj_iter_init(strings, &iter)) {
+                    while (yyjson_mut_val* k = yyjson_mut_obj_iter_next(&iter)) {
+                        out.emplace_back(yyjson_mut_get_str(k));
+                    }
                 }
                 std::sort(out.begin(), out.end());
                 return out;
@@ -342,7 +342,10 @@ TEST_SUITE("lua") {
         for (const sim::TutorialStep& step : t.steps) {
             lua = step.goal == sim::TutorialGoal::Lua ? &step : lua;
         }
-        REQUIRE(lua != nullptr);
+        if (lua == nullptr) {
+            FAIL("no step with a Lua goal");
+            return;
+        }
         mods::ModLibrary lib = library_with(test::TempDir{}, {});
         const mods::BuildResult pack = lib.build();
         script::TutorialScript script;

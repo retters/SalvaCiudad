@@ -203,7 +203,8 @@ void tended_hour(Game& g, bool strict = true, std::vector<std::int32_t>* food_pe
 
 TEST_SUITE("village") {
     TEST_CASE("a new game has a town center, villagers and goods") {
-        Game g(content(), small_map(11), 1, 5);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(11), 1, 5);
+        Game& g = *g_owned;
         CHECK(g.player_count() == 1);
         const Building& tc = town_center(g);
         CHECK(tc.state == BuildingState::Complete);
@@ -215,7 +216,8 @@ TEST_SUITE("village") {
     }
 
     TEST_CASE("placement rules") {
-        Game g(content(), small_map(12), 1, 5);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(12), 1, 5);
+        Game& g = *g_owned;
         const Building& tc = town_center(g);
         CHECK(g.can_place(0, building("house"), tc.x, tc.z, 0) == PlaceError::Blocked);
         CHECK(g.can_place(0, building("house"), -3, 10, 0) == PlaceError::OutsideMap);
@@ -250,7 +252,8 @@ TEST_SUITE("village") {
     }
 
     TEST_CASE("laborers build a house and families move in") {
-        Game g(content(), small_map(13), 1, 7);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(13), 1, 7);
+        Game& g = *g_owned;
         REQUIRE(place(g, building("house")));
         const std::int32_t logs = g.stored(0)[resource("log")];
         run(g, 3000);
@@ -264,7 +267,8 @@ TEST_SUITE("village") {
     }
 
     TEST_CASE("gatherers bring wood and food to storage") {
-        Game g(content(), small_map(14), 1, 7);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(14), 1, 7);
+        Game& g = *g_owned;
         REQUIRE(place(g, building("woodcutter")));
         REQUIRE(place(g, building("forager")));
         const auto before = g.stored(0);
@@ -285,7 +289,8 @@ TEST_SUITE("village") {
                 r.category = ResourceCategory::Material;  // Nothing is edible.
             }
         }
-        Game g(hungry, small_map(15), 1, 3);
+        const auto g_owned = std::make_unique<Game>(hungry, small_map(15), 1, 3);
+        Game& g = *g_owned;
         run(g, 2500);
         CHECK(g.population(0) == village::kStartVillagers);
         run(g, 9000);  // Children eat half as much and last longer.
@@ -295,8 +300,10 @@ TEST_SUITE("village") {
 
     TEST_CASE("the same commands give the same game") {
         const MapData map = small_map(16);
-        Game a(content(), map, 1, 99);
-        Game b(content(), map, 1, 99);
+        const auto a_owned = std::make_unique<Game>(content(), map, 1, 99);
+        Game& a = *a_owned;
+        const auto b_owned = std::make_unique<Game>(content(), map, 1, 99);
+        Game& b = *b_owned;
         opening(a);
         opening(b);
         CHECK(a.hash() == b.hash());
@@ -305,19 +312,22 @@ TEST_SUITE("village") {
             run(b, 250);
             REQUIRE(a.hash() == b.hash());
         }
-        Game c(content(), map, 1, 100);  // Another seed: another story.
+        const auto c_owned = std::make_unique<Game>(content(), map, 1, 100);  // Another seed: another story.
+        Game& c = *c_owned;
         opening(c);
         run(c, 5000);
         CHECK(c.hash() != a.hash());
     }
 
     TEST_CASE("save and load keep everything") {
-        Game g(content(), small_map(17), 1, 21);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(17), 1, 21);
+        Game& g = *g_owned;
         opening(g);
         run(g, 4321);
         BinaryWriter w;
         g.save(w);
-        Game back(content(), small_map(1), 1, 1);
+        const auto back_owned = std::make_unique<Game>(content(), small_map(1), 1, 1);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(r.at_end());
@@ -331,8 +341,10 @@ TEST_SUITE("village") {
 
     TEST_CASE("villagers have names, and a new name is the same for everyone and after loading") {
         const MapData map = small_map(17);
-        Game a(content(), map, 1, 5);
-        Game b(content(), map, 1, 5);
+        const auto a_owned = std::make_unique<Game>(content(), map, 1, 5);
+        Game& a = *a_owned;
+        const auto b_owned = std::make_unique<Game>(content(), map, 1, 5);
+        Game& b = *b_owned;
         // Each comes with a name of its people and sex, the same on both machines.
         for (std::size_t i = 0; i < a.villagers().size(); ++i) {
             const Villager& v = a.villagers().data()[i];
@@ -366,14 +378,16 @@ TEST_SUITE("village") {
         run(b, 300);
         CHECK(a.hash() == b.hash());
         // The name is part of the game: without it the two would differ.
-        Game c(content(), map, 1, 5);
+        const auto c_owned = std::make_unique<Game>(content(), map, 1, 5);
+        Game& c = *c_owned;
         run(c, 300);
         CHECK(c.hash() != a.hash());
 
         // Saved and loaded with it.
         BinaryWriter w;
         a.save(w);
-        Game back(content(), small_map(1), 1, 1);
+        const auto back_owned = std::make_unique<Game>(content(), small_map(1), 1, 1);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.villager_name(*back.villagers().get(who)) == "Doña Ñandú");
@@ -438,7 +452,8 @@ TEST_SUITE("village") {
     }
 
     TEST_CASE("a stopped workshop lets its workers go and takes them back") {
-        Game g(content(), small_map(19), 1, 7);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(19), 1, 7);
+        Game& g = *g_owned;
         REQUIRE(place(g, building("firewood_splitter")));
         run(g, 3000);
         REQUIRE(complete_count(g, building("firewood_splitter")) == 1);
@@ -476,7 +491,8 @@ TEST_SUITE("village") {
         // Saved and loaded stopped.
         BinaryWriter w;
         g.save(w);
-        Game back(content(), small_map(1), 1, 1);
+        const auto back_owned = std::make_unique<Game>(content(), small_map(1), 1, 1);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.buildings().get(shop)->stopped);
@@ -541,7 +557,8 @@ TEST_SUITE("village") {
         REQUIRE(hd.width >= 5);
         REQUIRE(hd.width <= 8);
         {
-            Game g(content(), shape(50), 1, 7);
+            const auto g_owned = std::make_unique<Game>(content(), shape(50), 1, 7);
+            Game& g = *g_owned;
             const std::int32_t x = x0 + 14;  // All of it on the ramp.
             const std::int32_t z = z0 + 16;
             const std::int32_t range = hd.width * 50;
@@ -581,12 +598,14 @@ TEST_SUITE("village") {
         }
         {
             // Steeper, a wall still goes up.
-            Game g(content(), shape(80), 1, 7);
+            const auto g_owned = std::make_unique<Game>(content(), shape(80), 1, 7);
+            Game& g = *g_owned;
             CHECK(g.can_place(0, building("palisade"), x0 + 14, z0 + 30, 0) == PlaceError::None);
         }
         {
             // Too steep for a house at any turn, and for a wall: its old limit.
-            Game g(content(), shape(95), 1, 7);
+            const auto g_owned = std::make_unique<Game>(content(), shape(95), 1, 7);
+            Game& g = *g_owned;
             REQUIRE(std::min(hd.width, hd.depth) * 95 > kMaxSlopeCm);
             for (std::uint8_t rotation = 0; rotation < 4; ++rotation) {
                 CHECK(g.can_place(0, house, x0 + 14, z0 + 16, rotation) == PlaceError::TooSteep);
@@ -619,7 +638,8 @@ TEST_SUITE("village") {
             return f.x.floor_int() >= x0 - 2 && f.x.floor_int() <= x0 + 42 && f.z.floor_int() >= z0 - 2 &&
                    f.z.floor_int() <= z0 + 42;
         });
-        Game g(content(), map, 1, 7);
+        const auto g_owned = std::make_unique<Game>(content(), map, 1, 7);
+        Game& g = *g_owned;
         const DefIndex house = building("house");
         // On the island: level, dry, free... and out of reach.
         CHECK(g.can_place(0, house, x0 + 16, z0 + 16, 0) == PlaceError::Unreachable);
@@ -633,7 +653,8 @@ TEST_SUITE("village") {
         // The same plot without the moat is fine.
         MapData dry = map;
         std::fill(dry.water.begin(), dry.water.end(), std::uint16_t{0});
-        Game open(content(), dry, 1, 7);
+        const auto open_owned = std::make_unique<Game>(content(), dry, 1, 7);
+        Game& open = *open_owned;
         CHECK(open.can_place(0, house, x0 + 16, z0 + 16, 0) == PlaceError::None);
         // And the town's own ground is, of course.
         CHECK(place(g, house));
@@ -641,8 +662,10 @@ TEST_SUITE("village") {
 
     TEST_CASE("what the developer tools plant is a resource of the game") {
         const MapData map = small_map(26);
-        Game a(content(), map, 1, 7);
-        Game b(content(), map, 1, 7);
+        const auto a_owned = std::make_unique<Game>(content(), map, 1, 7);
+        Game& a = *a_owned;
+        const auto b_owned = std::make_unique<Game>(content(), map, 1, 7);
+        Game& b = *b_owned;
         const Building& tc = town_center(a);
         const std::size_t before = a.map().features.size();
         Command plant;
@@ -676,7 +699,8 @@ TEST_SUITE("village") {
         // Saved and loaded with them.
         BinaryWriter w;
         a.save(w);
-        Game back(content(), small_map(1), 1, 1);
+        const auto back_owned = std::make_unique<Game>(content(), small_map(1), 1, 1);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.map().features.size() == before + 2);
@@ -709,7 +733,8 @@ TEST_SUITE("village") {
             setup.rules.wildlife = Threat::None;
             setup.rules.fires = Threat::None;
             setup.rules.diseases = Threat::None;
-            Game g(content(), small_map(27), setup);
+            const auto g_owned = std::make_unique<Game>(content(), small_map(27), setup);
+            Game& g = *g_owned;
             if (with_fire) {
                 REQUIRE(place(g, fire));
             }
@@ -738,7 +763,8 @@ TEST_SUITE("village") {
     }
 
     TEST_CASE("broken saves are rejected and leave the game untouched") {
-        Game g(content(), small_map(18), 1, 21);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(18), 1, 21);
+        Game& g = *g_owned;
         run(g, 200);
         BinaryWriter w;
         g.save(w);
@@ -771,7 +797,8 @@ TEST_SUITE("village") {
         // the 10 from 77 on do; 6 of the 8 from 77 on after the hunger rule of
         // phase 66 was made cheap; 11 of the 16 from 77 on with the trees
         // growing, phase 86: on 80, 84 and 90 the town burned down, D-8822).
-        Game g(content(), small_map(1), setup);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(1), setup);
+        Game& g = *g_owned;
         tended_hour(g);
         const Game& end = g;
         const auto stored = end.stored(0);
@@ -794,7 +821,8 @@ TEST_SUITE("village") {
 
     TEST_CASE("an untended village fades away") {
         // No buildings: berries run out and nobody gathers more.
-        Game g(content(), small_map(20), 1, 5);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(20), 1, 5);
+        Game& g = *g_owned;
         run(g, 36000);
         MESSAGE("untended: population " << g.population(0) << ", deaths " << g.player(0).deaths);
         CHECK(g.population(0) < village::kStartVillagers);
@@ -930,7 +958,8 @@ TEST_SUITE("village_years") {
                 setup.rules.diseases = Threat::None;
                 setup.rules.climate.seasons = 0b0111;
                 setup.rules.climate.minutes = {season_minutes, season_minutes, season_minutes, 0};
-                Game g(content(), small_map(1), setup);
+                const auto g_owned = std::make_unique<Game>(content(), small_map(1), setup);
+                Game& g = *g_owned;
                 std::vector<std::int32_t> food_per_person;
                 tended_hour(g, false, &food_per_person);
                 REQUIRE(food_per_person.size() == 60);
@@ -994,7 +1023,8 @@ TEST_SUITE("night") {
         setup.rules.wildlife = Threat::None;
         setup.rules.fires = Threat::None;
         setup.rules.diseases = Threat::None;
-        Game g(content(), small_map(27), setup);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(27), setup);
+        Game& g = *g_owned;
         const Building* tc = g.buildings().get(g.player(0).town_center);
         REQUIRE(tc != nullptr);
         CHECK(g.light(*tc) == 20);
@@ -1054,7 +1084,8 @@ TEST_SUITE("night") {
             setup.rules.races.fill(race_of(race));
             setup.rules.other_races = 0;
             setup.rules.day_night = cycle;
-            Game g(content(), small_map(27), setup);
+            const auto g_owned = std::make_unique<Game>(content(), small_map(27), setup);
+            Game& g = *g_owned;
             opening(g);
             run(g, 10 * kTicksPerMinute + 50);
             Walked w;
@@ -1106,7 +1137,8 @@ TEST_SUITE("night") {
         setup.rules.raiders = Threat::None;
         setup.rules.wildlife = Threat::None;
         setup.rules.day_night = {1, 30};
-        Game g(content(), small_map(27), setup);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(27), setup);
+        Game& g = *g_owned;
         const Building* tc = g.buildings().get(g.player(0).town_center);
         REQUIRE(tc != nullptr);
         const std::int32_t cx = tc->x + tc->width / 2;
@@ -1123,7 +1155,8 @@ TEST_SUITE("night") {
         BinaryWriter w;
         g.save(w);
         BinaryReader r(w.bytes());
-        Game loaded(content(), small_map(1), 1, 1);
+        const auto loaded_owned = std::make_unique<Game>(content(), small_map(1), 1, 1);
+        Game& loaded = *loaded_owned;
         REQUIRE(loaded.load(r, content()));
         loaded.step();
         g.step();
@@ -1150,7 +1183,8 @@ TEST_SUITE("rest") {
             setup.rules.fires = Threat::None;
             setup.rules.diseases = Threat::None;
             setup.rules.rest = tired;
-            Game g(content(), small_map(27), setup);
+            const auto g_owned = std::make_unique<Game>(content(), small_map(27), setup);
+            Game& g = *g_owned;
             CHECK(place_for(g, building("forager"), FeatureType::BerryBush));
             if (homes) {
                 for (int i = 0; i < 4; ++i) {
@@ -1185,7 +1219,8 @@ TEST_SUITE("rest") {
                     // Saved with people at rest: the same game comes back.
                     BinaryWriter w;
                     g.save(w);
-                    Game back(content(), small_map(1), 1, 1);
+                    const auto back_owned = std::make_unique<Game>(content(), small_map(1), 1, 1);
+                    Game& back = *back_owned;
                     BinaryReader r(w.bytes());
                     out.saved_alike = back.load(r, content()) && back.hash() == g.hash();
                 }
@@ -1222,7 +1257,8 @@ TEST_SUITE("rest_hour") {
         setup.rules.raiders = Threat::None;
         setup.rules.fires = Threat::None;  // As the hour without tiredness (D-8822).
         setup.rules.rest = true;
-        Game g(content(), small_map(1), setup);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(1), setup);
+        Game& g = *g_owned;
         tended_hour(g, false);
         MESSAGE("after an hour, resting: population " << g.population(0) << ", deaths " << g.player(0).deaths
                                                       << ", houses " << complete_count(g, building("house")));

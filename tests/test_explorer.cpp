@@ -157,7 +157,8 @@ Command order(EntityId who, double x, double z) {
 TEST_SUITE("explorer") {
     TEST_CASE("sent into what nobody has seen, it takes provisions, walks straight and stops at the water") {
         const Strip f = strip(31);
-        Game g(content(), f.map, setup(FogMode::Static));
+        const auto g_owned = std::make_unique<Game>(content(), f.map, setup(FogMode::Static));
+        Game& g = *g_owned;
         const Post post = explorer_post(g);
         const std::uint8_t group = g.vision_group(0);
         const double far_x = f.x0 + f.dir * 170.0;  // Beyond the pond, on the strip's middle line.
@@ -234,7 +235,8 @@ TEST_SUITE("explorer") {
         const Strip f = strip(31);
         GameSetup rules = setup(FogMode::Static);
         rules.rules.diseases = Threat::None;  // Its health is looked at below: no illness on the way.
-        Game g(content(), f.map, rules);
+        const auto g_owned = std::make_unique<Game>(content(), f.map, rules);
+        Game& g = *g_owned;
         const Post post = explorer_post(g);
         (void)g.take_events();
         g.apply(order(post.worker, f.x0 + f.dir * 100.0, f.z));
@@ -285,7 +287,8 @@ TEST_SUITE("explorer") {
         // between tasks, and ran out on the way.
         const Strip f = strip(33, 340, MapSize::Medium, false);
         constexpr std::int32_t kFar = 220;  // About as far as a fed villager gets to, and back.
-        Game g(content(), f.map, setup(FogMode::None));
+        const auto g_owned = std::make_unique<Game>(content(), f.map, setup(FogMode::None));
+        Game& g = *g_owned;
         const DefIndex camp = content()->find_building("core:woodcutter");
         EntityId site;
         for (std::int32_t dz = -20; dz <= 20 && !site.valid(); dz += 4) {
@@ -319,7 +322,8 @@ TEST_SUITE("explorer") {
 
     TEST_CASE("without fog it takes the way anybody would, around the water") {
         const Strip f = strip(31);
-        Game g(content(), f.map, setup(FogMode::None));
+        const auto g_owned = std::make_unique<Game>(content(), f.map, setup(FogMode::None));
+        Game& g = *g_owned;
         const Post post = explorer_post(g);
         const double far_x = f.x0 + f.dir * 150.0;
         g.apply(order(post.worker, far_x, f.z));
@@ -334,8 +338,10 @@ TEST_SUITE("explorer") {
 
     TEST_CASE("only the owner's explorer takes orders, and they are the same on every machine") {
         const Strip f = strip(31);
-        Game a(content(), f.map, setup(FogMode::Static));
-        Game b(content(), f.map, setup(FogMode::Static));
+        const auto a_owned = std::make_unique<Game>(content(), f.map, setup(FogMode::Static));
+        Game& a = *a_owned;
+        const auto b_owned = std::make_unique<Game>(content(), f.map, setup(FogMode::Static));
+        Game& b = *b_owned;
         const Post post = explorer_post(a);
         const Post same = explorer_post(b);
         REQUIRE(post.worker == same.worker);
@@ -372,7 +378,8 @@ TEST_SUITE("explorer") {
         // Saved on its way and loaded: it goes on.
         BinaryWriter w;
         a.save(w);
-        Game back(content(), f.map, setup(FogMode::Static));
+        const auto back_owned = std::make_unique<Game>(content(), f.map, setup(FogMode::Static));
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.hash() == a.hash());

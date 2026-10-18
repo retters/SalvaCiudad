@@ -27,7 +27,8 @@ struct ImageDeleter {
 
 math::Mat4 to_mat4(const cgltf_float m[16]) {
     math::Mat4 r;
-    std::memcpy(&r.m[0][0], m, sizeof(float) * 16);  // glTF is column-major too.
+    static_assert(sizeof(r.m) == sizeof(float) * 16);
+    std::memcpy(&r.m, m, sizeof(r.m));  // glTF is column-major too.
     return r;
 }
 

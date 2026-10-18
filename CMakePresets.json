@@ -36,6 +36,15 @@
       }
     },
     {
+      "name": "analyze",
+      "displayName": "Windows Release with /analyze",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SC_ENABLE_ANALYZE": "ON"
+      }
+    },
+    {
       "name": "unix-base",
       "hidden": true,
       "generator": "Ninja",
@@ -68,6 +77,7 @@
     { "name": "debug", "configurePreset": "debug" },
     { "name": "release", "configurePreset": "release" },
     { "name": "debug-asan", "configurePreset": "debug-asan" },
+    { "name": "analyze", "configurePreset": "analyze" },
     { "name": "unix-debug", "configurePreset": "unix-debug" },
     { "name": "unix-release", "configurePreset": "unix-release" },
     { "name": "unix-debug-asan", "configurePreset": "unix-debug-asan" }

@@ -162,7 +162,8 @@ TEST_SUITE("trade") {
     }
 
     TEST_CASE("a merchant comes to the trading post and trades") {
-        Game g(core(), map_for(81), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(81), setup());
+        Game& g = *g_owned;
         CHECK(gold(g, 0) == 100);
         CHECK_FALSE(g.merchant_here(0));
         const EntityId post = build(g, "core:trading_post");
@@ -202,7 +203,10 @@ TEST_SUITE("trade") {
         for (const MerchantGood& m : goods) {
             stocked = m.stock > 0 && stocked == nullptr ? &m : stocked;
         }
-        REQUIRE(stocked != nullptr);
+        if (stocked == nullptr) {
+            FAIL("the merchant has nothing in stock");
+            return;
+        }
         const DefIndex r = stocked->resource;
         const std::int32_t price = stocked->buy;
         const std::int32_t coins = gold(g, 0);
@@ -222,7 +226,8 @@ TEST_SUITE("trade") {
     }
 
     TEST_CASE("no merchant, no trade") {
-        Game g(core(), map_for(82), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(82), setup());
+        Game& g = *g_owned;
         const EntityId post = build(g, "core:trading_post");
         Command c;
         c.type = CommandType::Trade;
@@ -236,7 +241,8 @@ TEST_SUITE("trade") {
     }
 
     TEST_CASE("two towns trade by caravan") {
-        Game g(core(), map_for(83, 2), setup(2));
+        const auto g_owned = std::make_unique<Game>(core(), map_for(83, 2), setup(2));
+        Game& g = *g_owned;
         REQUIRE(g.player_count() == 2);
         const DefIndex log = g.content().find_resource("core:log");
         const DefIndex stone = g.content().find_resource("core:stone");
@@ -283,7 +289,8 @@ TEST_SUITE("trade") {
     TEST_CASE("a common town does not trade with itself") {
         GameSetup s = setup(2);
         s.shared_town = true;
-        Game g(core(), map_for(84), s);
+        const auto g_owned = std::make_unique<Game>(core(), map_for(84), s);
+        Game& g = *g_owned;
         const auto rejected = g.rejected_commands();
         g.apply(offer(0, 1, g.gold(), 10, g.content().find_resource("core:log"), 10));
         CHECK(g.rejected_commands() == rejected + 1);
@@ -311,7 +318,8 @@ TEST_SUITE("trade") {
         REQUIRE(second.has_value());
         CHECK(second->height_cm(100, 100) == m.height_cm(512 + 100, 100));
 
-        Game g(core(), m, setup(3));
+        const auto g_owned = std::make_unique<Game>(core(), m, setup(3));
+        Game& g = *g_owned;
         REQUIRE(g.player_count() == 3);
         for (std::uint8_t p = 0; p < 3; ++p) {
             const Building* tc = g.buildings().get(g.player(p).town_center);
@@ -336,7 +344,8 @@ TEST_SUITE("trade") {
     }
 
     TEST_CASE("trade survives a save") {
-        Game g(core(), map_for(83, 2), setup(2));
+        const auto g_owned = std::make_unique<Game>(core(), map_for(83, 2), setup(2));
+        Game& g = *g_owned;
         (void)build(g, "core:trading_post");
         wait_for_merchant(g);
         const DefIndex log = g.content().find_resource("core:log");
@@ -347,7 +356,8 @@ TEST_SUITE("trade") {
         REQUIRE(g.caravans().size() == 2);
         BinaryWriter w;
         g.save(w);
-        Game back(core(), map_for(81), setup());
+        const auto back_owned = std::make_unique<Game>(core(), map_for(81), setup());
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, core()));
         CHECK(back.hash() == g.hash());
@@ -399,7 +409,8 @@ TEST_SUITE("gold") {
                                               std::pair{StartGoods::Plenty, 200}}) {
             GameSetup s = setup();
             s.rules.start = start;
-            Game g(core(), map_for(81), s);
+            const auto g_owned = std::make_unique<Game>(core(), map_for(81), s);
+            Game& g = *g_owned;
             REQUIRE(g.gold() == gold_def);
             CHECK(g.gold(0) == expected);
             const Game::GoldPlaces places = g.gold_places(0);
@@ -413,7 +424,8 @@ TEST_SUITE("gold") {
     }
 
     TEST_CASE("laborers keep the trading post's gold, and the rest goes to the vault") {
-        Game g(core(), map_for(81), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(81), setup());
+        Game& g = *g_owned;
         const EntityId post = build(g, "core:trading_post");
         CHECK(g.buildings().get(post)->limit == 100);  // A new post keeps 100.
         // The town's 100 go from the town center to the post.
@@ -446,7 +458,8 @@ TEST_SUITE("gold") {
     }
 
     TEST_CASE("a vault does not burn; a trading post burns with its gold") {
-        Game g(core(), map_for(82), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(82), setup());
+        Game& g = *g_owned;
         const EntityId vault = build(g, "core:vault");
         const EntityId post = build(g, "core:trading_post");
         g.apply(set_reserve(post, 60));
@@ -470,7 +483,8 @@ TEST_SUITE("gold") {
     }
 
     TEST_CASE("buying takes the town's gold, the post's first") {
-        Game g(core(), map_for(81), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(81), setup());
+        Game& g = *g_owned;
         const EntityId post = build(g, "core:trading_post");
         g.apply(set_reserve(post, 0));
         const EntityId vault = build(g, "core:vault");
@@ -481,7 +495,10 @@ TEST_SUITE("gold") {
         for (const MerchantGood& m : g.player(0).merchant) {
             stocked = m.stock > 0 && m.buy <= 100 && stocked == nullptr ? &m : stocked;
         }
-        REQUIRE(stocked != nullptr);
+        if (stocked == nullptr) {
+            FAIL("the merchant has nothing in stock");
+            return;
+        }
         const std::int32_t price = stocked->buy;
         const DefIndex r = stocked->resource;
         const std::int32_t have = gold(g, 0);
@@ -514,14 +531,16 @@ TEST_SUITE("gold") {
     }
 
     TEST_CASE("gold in buildings survives a save") {
-        Game g(core(), map_for(81), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(81), setup());
+        Game& g = *g_owned;
         const EntityId post = build(g, "core:trading_post");
         (void)build(g, "core:vault");
         g.apply(set_reserve(post, 30));
         run(g, 700);  // Some of it on the way.
         BinaryWriter w;
         g.save(w);
-        Game back(core(), map_for(82), setup());
+        const auto back_owned = std::make_unique<Game>(core(), map_for(82), setup());
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, core()));
         CHECK(back.hash() == g.hash());
@@ -566,7 +585,8 @@ const MerchantGood* stocked_good(const Game& g) {
 // A town with a trading post (keeping no gold), a vault with the town's
 // gold, and a merchant here.
 Game town_with_merchant(std::uint64_t map) {
-    Game g(core(), map_for(map), setup());
+    const auto g_owned = std::make_unique<Game>(core(), map_for(map), setup());
+    Game& g = *g_owned;
     const EntityId post = build(g, "core:trading_post");
     g.apply(set_reserve(post, 0));
     (void)build(g, "core:vault");
@@ -609,7 +629,8 @@ TEST_SUITE("auto_trade") {
             BinaryReader rb(wb.bytes());
             CHECK_FALSE(Command::read(rb, back));
         }
-        Game g(core(), map_for(81), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(81), setup());
+        Game& g = *g_owned;
         const DefIndex log = g.content().find_resource("core:log");
         const DefIndex stone = g.content().find_resource("core:stone");
         g.apply(rule(stone, 100, kNoRule));
@@ -708,7 +729,8 @@ TEST_SUITE("auto_trade") {
         // The limits survive a save.
         BinaryWriter ws;
         g.save(ws);
-        Game loaded(core(), MapData{}, 0, 0);
+        const auto loaded_owned = std::make_unique<Game>(core(), MapData{}, 0, 0);
+        Game& loaded = *loaded_owned;
         BinaryReader rs(ws.bytes());
         REQUIRE(loaded.load(rs, core()));
         CHECK(loaded.player(0).trade_rules == g.player(0).trade_rules);
@@ -716,7 +738,8 @@ TEST_SUITE("auto_trade") {
     }
 
     TEST_CASE("without a merchant nothing is traded") {
-        Game g(core(), map_for(82), setup());
+        const auto g_owned = std::make_unique<Game>(core(), map_for(82), setup());
+        Game& g = *g_owned;
         (void)build(g, "core:trading_post");
         REQUIRE_FALSE(g.merchant_here(0));
         const DefIndex log = g.content().find_resource("core:log");
@@ -799,7 +822,8 @@ TEST_SUITE("auto_trade") {
         g.apply(set_reserve(post_of(g), 80));
         BinaryWriter w;
         g.save(w);
-        Game other(core(), map_for(82), setup());
+        const auto other_owned = std::make_unique<Game>(core(), map_for(82), setup());
+        Game& other = *other_owned;
         BinaryReader r(w.bytes());
         REQUIRE(other.load(r, core()));
         const DefIndex log = g.content().find_resource("core:log");
@@ -814,7 +838,8 @@ TEST_SUITE("auto_trade") {
         // Saved in the middle of the visit, with its rules and tally.
         BinaryWriter w2;
         g.save(w2);
-        Game back(core(), map_for(82), setup());
+        const auto back_owned = std::make_unique<Game>(core(), map_for(82), setup());
+        Game& back = *back_owned;
         BinaryReader r2(w2.bytes());
         REQUIRE(back.load(r2, core()));
         CHECK(back.player(0).trade_rules == g.player(0).trade_rules);

@@ -387,7 +387,8 @@ TEST_SUITE("founding") {
         {
             BinaryWriter w;
             g.save(w);
-            Game back(content(), MapData{}, 0, 0);
+            const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+            Game& back = *back_owned;
             BinaryReader r(w.bytes());
             REQUIRE(back.load(r, content()));
             CHECK(back.hash() == g.hash());
@@ -406,7 +407,8 @@ TEST_SUITE("founding") {
         REQUIRE(tc->state == BuildingState::Construction);
         BinaryWriter w;
         g.save(w);
-        Game back(content(), MapData{}, 0, 0);
+        const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.hash() == g.hash());
@@ -419,7 +421,8 @@ TEST_SUITE("founding") {
     }
 
     TEST_CASE("towns that stand from the start are as before: center built, goods inside, no wagon") {
-        Game g(content(), small_map(11), 1, 11);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(11), 1, 11);
+        Game& g = *g_owned;
         CHECK_FALSE(g.awaiting_founders());
         CHECK(g.founded(0));
         const Building* tc = center_of(g, 0);

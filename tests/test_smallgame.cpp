@@ -274,7 +274,8 @@ TEST_SUITE("smallgame") {
     }
 
     TEST_CASE("the hunter brings a little meat and no hide from the rabbits, when there is no bigger game") {
-        Game g(core(), with_zones({{ZoneType::Rabbits, 70, 0, 40}}), setup());
+        const auto g_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Rabbits, 70, 0, 40}}), setup());
+        Game& g = *g_owned;
         grant(g, "core:bread", 2000);
         const auto [tx, tz] = town(g);
         REQUIRE(put(g, "core:storehouse", tx - 26, tz).valid());
@@ -290,7 +291,8 @@ TEST_SUITE("smallgame") {
         CHECK(have(g, "core:meat") <= meat + village::kRabbitMeat * (hunted + 1));
         CHECK(have(g, "core:meat") > meat);
         // With deer in reach they go for the deer, and leave the rabbits alone.
-        Game big(core(), with_zones({{ZoneType::Rabbits, 60, 0, 40}, {ZoneType::Deer, 90, 40, 60}}), setup());
+        const auto big_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Rabbits, 60, 0, 40}, {ZoneType::Deer, 90, 40, 60}}), setup());
+        Game& big = *big_owned;
         grant(big, "core:bread", 2000);
         REQUIRE(put(big, "core:hunter", tx + 24, tz).valid());
         const std::int32_t meat_before = have(big, "core:meat");
@@ -307,7 +309,8 @@ TEST_SUITE("smallgame") {
     TEST_CASE("rabbits eat of the vegetables of a field among many of them, unless a fence, a dog or a lynx keeps them off") {
         const DefIndex vegetables = test::core_content().find_crop("core:vegetables");
         const DefIndex wheat = test::core_content().find_crop("core:wheat");
-        Game g(core(), with_zones({{ZoneType::Rabbits, 40, 30, 70}}), setup());
+        const auto g_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Rabbits, 40, 30, 70}}), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         const std::int32_t x = tx + 30, z = tz + 24;
         CHECK(g.rabbits_eat(0, vegetables, x, z, 8, 8));
@@ -328,7 +331,8 @@ TEST_SUITE("smallgame") {
         REQUIRE(place_at(g, g.content().find_building("core:decor_kennel"), x2 + 14, z2 + 2).valid());
         CHECK_FALSE(g.rabbits_eat(0, vegetables, x2, z2, 8, 8));
         // A lynx near: half the rabbits, and it hunts those that come.
-        Game hunted(core(), with_zones({{ZoneType::Rabbits, 40, 30, 70}, {ZoneType::Lynx, 150, 30, 50}}), setup());
+        const auto hunted_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Rabbits, 40, 30, 70}, {ZoneType::Lynx, 150, 30, 50}}), setup());
+        Game& hunted = *hunted_owned;
         CHECK_FALSE(hunted.rabbits_eat(0, vegetables, x, z, 8, 8));
         // (A hunter does not thin them out enough: two come back every month. Only the lynx does.)
         CHECK(hunted.zone_animals()[0] < village::kManyRabbits);
@@ -336,7 +340,8 @@ TEST_SUITE("smallgame") {
 
     TEST_CASE("a field of vegetables among rabbits brings in a fifth less, and the town is told") {
         const auto harvest = [](bool rabbits, int& told) {
-            Game g(core(), rabbits ? with_zones({{ZoneType::Rabbits, 30, 30, 90}}) : with_zones({}), setup());
+            const auto g_owned = std::make_unique<Game>(core(), rabbits ? with_zones({{ZoneType::Rabbits, 30, 30, 90}}) : with_zones({}), setup());
+            Game& g = *g_owned;
             grant(g, "core:bread", 3000);
             const auto [tx, tz] = town(g);
             const EntityId farm = put(g, "core:farm", tx + 24, tz + 10);
@@ -367,7 +372,8 @@ TEST_SUITE("smallgame") {
     }
 
     TEST_CASE("a lynx takes hens from a coop with no fence and no dog, and a young one a year from a fold with no dog") {
-        Game g(core(), with_zones({{ZoneType::Lynx, 60, 0, 50}}), setup());
+        const auto g_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Lynx, 60, 0, 50}}), setup());
+        Game& g = *g_owned;
         grant(g, "core:bread", 4000);
         const auto [tx, tz] = town(g);
         REQUIRE(put(g, "core:storehouse", tx - 26, tz).valid());
@@ -407,7 +413,8 @@ TEST_SUITE("smallgame") {
         CHECK(seen.young == 1);
         CHECK(at(g, fold).females + at(g, fold).males == 5);  // Six, but for the one it took.
         // The same fold with a dog by it: six.
-        Game safe(core(), with_zones({{ZoneType::Lynx, 60, 0, 50}}), setup());
+        const auto safe_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Lynx, 60, 0, 50}}), setup());
+        Game& safe = *safe_owned;
         grant(safe, "core:bread", 4000);
         const EntityId guarded = put(safe, "core:sheepfold", tx + 24, tz + 14);
         REQUIRE(guarded.valid());
@@ -435,7 +442,8 @@ TEST_SUITE("smallgame") {
     }
 
     TEST_CASE("saving and loading keeps the rabbits there are") {
-        Game g(core(), with_zones({{ZoneType::Rabbits, 70, 0, 40}, {ZoneType::Lynx, 250, 200, 50}}), setup());
+        const auto g_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Rabbits, 70, 0, 40}, {ZoneType::Lynx, 250, 200, 50}}), setup());
+        Game& g = *g_owned;
         grant(g, "core:bread", 2000);
         const auto [tx, tz] = town(g);
         REQUIRE(put(g, "core:hunter", tx + 24, tz).valid());
@@ -443,7 +451,8 @@ TEST_SUITE("smallgame") {
         REQUIRE(g.zone_animals()[0] < village::kRabbits);
         BinaryWriter w;
         g.save(w);
-        Game loaded(core(), with_zones({{ZoneType::Rabbits, 70, 0, 40}, {ZoneType::Lynx, 250, 200, 50}}), setup());
+        const auto loaded_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Rabbits, 70, 0, 40}, {ZoneType::Lynx, 250, 200, 50}}), setup());
+        Game& loaded = *loaded_owned;
         BinaryReader r(w.bytes());
         REQUIRE(loaded.load(r, core()));
         CHECK(loaded.hash() == g.hash());
@@ -465,7 +474,8 @@ TEST_SUITE("smallgame") {
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;
-        Game g(core(), with_zones({{ZoneType::Rabbits, 20, 10, 60}, {ZoneType::Lynx, -60, -40, 40}}), rules);
+        const auto g_owned = std::make_unique<Game>(core(), with_zones({{ZoneType::Rabbits, 20, 10, 60}, {ZoneType::Lynx, -60, -40, 40}}), rules);
+        Game& g = *g_owned;
         grant(g, "core:bread", 3000);
         const auto [tx, tz] = town(g);
         const EntityId farm = put(g, "core:farm", tx + 24, tz + 10);

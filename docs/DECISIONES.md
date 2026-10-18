@@ -4236,7 +4236,7 @@ RmlUi entrega la geometría mientras dibuja un contexto, y en SDL GPU las copias
 **D-11715. El motor de fuentes reutiliza las fuentes y el atlas del juego.**
 Familias: `ui` (la de Configuración, y cualquier familia desconocida, para que el texto siempre se vea), cada familia de la interfaz por su nombre, `logo` y `logo-small`; un peso de 600 o más toma la negrita. Los glifos se rasterizan con `stb_truetype` en el mismo atlas que usa la interfaz vieja; si alguna de las dos lo vacía por estar lleno, la versión del motor cambia y RmlUi rehace la geometría del texto. Las peticiones de cargar fuentes desde un documento se aceptan y se ignoran (D-205: solo `data/fonts`). Todavía sin efectos de fuente (sombra, contorno). Hallazgo de ASan: la textura del atlas que RmlUi crea para el motor se liberaba después de que RmlUi destruyera su gestor de dibujo; ahora el motor la suelta en su `Shutdown()`, que RmlUi llama antes.
 
-**D-11716. RmlUi recibe los eventos antes que la interfaz vieja y la cámara.**
+**D-11716. RmlUi recibe los eventos antes que la interfaz vieja y la cámara.** *(El teclado, ampliado por D-12703: también las teclas de navegación.)*
 El ratón es de RmlUi cuando está sobre uno de sus elementos (el elemento bajo el cursor no es la raíz del contexto) o cuando un botón se apretó sobre uno; la rueda, igual. El teclado solo cuando un campo de texto tiene el foco, para no quitarle teclas al juego. Al soltar un botón el evento sigue siempre también hacia el juego, para que nada quede apretado. Si RmlUi toma el movimiento del ratón, para la interfaz vieja el cursor está fuera de la ventana.
 
 **D-11717. Textos `@clave`.**
@@ -4362,7 +4362,7 @@ La barra de título y la esquina tienen `drag: drag`; `dragstart`, `drag` y `dra
 **D-12303. Las primeras ventanas: Bienes, Estadísticas, Eventos, Capas y las de cámara.**
 Con modelos de datos (`goods`, `stats`, `log`, `layers`) y los mismos textos que antes; los bienes llevan su imagen (fase 121). La ventana de cámara muestra la imagen que dibuja la escena como textura externa (`/ext/cam1`, `/ext/cam2`: `RmlRenderer::set_external_texture`, una textura que no es suya y nunca libera); arrastrar sobre ella gira la vista y la rueda la acerca. Se borraron las versiones viejas de esas cinco.
 
-**D-12304. Convivencia.**
+**D-12304. Convivencia.** *(Reemplazada por D-12501 y D-12701: desde la fase 125 todas las ventanas son de RmlUi y en la fase 127 se borró el marco viejo.)*
 Las ventanas de edificios, aldeanos y cosas del mapa, la de comercio y la del ejército siguen con el marco viejo hasta las fases 124 y 125. Comparten `WindowList`, así que los imanes, las pestañas y los grupos funcionan entre ventanas viejas y nuevas; pero las de RmlUi se dibujan siempre encima de las viejas, porque la interfaz de RmlUi se compone después (D-11801).
 
 **D-12305. Pruebas.**
@@ -4379,7 +4379,7 @@ Se descartó un modelo de datos por ventana (habría que renombrar el modelo en 
 **D-12403. Lo que cambió de forma.**
 Ver y Cámara pasaron a la barra de título (los íconos de ojo y cámara). El interruptor de trabajo es un botón resaltado cuando está detenido, y la imagen dice «Trabajando» o «Detenido». Los botones de − y + son íconos. El bien del comercio automático se elige con flechas en lugar de una lista desplegable (RmlUi la tiene, pero pide su propio estilo y no hacía falta). Los anexos de una casa van en una línea que la ventana parte sola (antes se partían a mano). El residente y el trabajador se listan con su retrato (fase 120), nombre, edad y lo que hace; más de cinco se desplazan. Demoler y Cancelar llevan el ícono de la papelera y el color de peligro.
 
-**D-12404. El tutorial y las ventanas que siguen viejas.**
+**D-12404. El tutorial y las ventanas que siguen viejas.** *(La segunda parte, reemplazada por D-12501.)*
 El botón de «+» de los trabajadores lleva `mark="workers"`: el tutorial lo ilumina como antes. Las ventanas de aldeanos, recursos del mapa, animales y personas de prueba siguen con el marco viejo hasta la fase 125.
 
 **D-12405. Prueba.**
@@ -4450,3 +4450,19 @@ Los mensajes de teclado enviados llevan el código de tecla sin la marca de tecl
 
 **D-12705. `docs/ESTILOS_UI.md`.**
 Cómo hacer un estilo: dónde va, `style.json`, los tokens por tipo y qué toca cada uno, las hojas comunes, los íconos, el vidrio, el foco del teclado y cómo probarlo.
+
+## Fase 128: pulido y entrega (2026-10-18)
+
+**D-12801. `/analyze` sobre el código propio, limpio.**
+El preset `analyze` (opción `SC_ENABLE_ANALYZE`) compila en `release` con `/analyze /analyze:external- /analyze:WX-`: solo el código del juego y de las pruebas (las bibliotecas de terceros no), y sus avisos no detienen la compilación, para verlos todos en una pasada. Hubo unos 34 avisos, que salieron a lo largo de cinco pasadas (las primeras se detenían en el primer aviso de cada archivo); la última, ninguno:
+- El código del juego: dos tablas de CRC llenadas con un índice que el análisis no acotaba (se llenan recorriendo la tabla); un `memcpy` de una matriz escrito sobre su primera fila (`model.cpp`, ahora sobre la matriz entera); 40 KB de pila al armar el terreno (el bloque va al montón); el bien más cargado que roban los asaltantes (`std::max_element`); un índice de caminos y dos de jugadores con su límite explícito; y cuatro recorridos de objetos JSON con la macro de yyjson, que el análisis lee como posibles punteros nulos (ahora con el iterador de yyjson). Ninguno cambia lo que hace el juego: los hashes de las pruebas de determinismo siguen iguales.
+- Las pruebas: 16 casos usaban de 16 a 29 KB de pila porque tienen varias partidas (`sim::Game`) a la vez; ahora van en el montón con `std::make_unique`, en esos 15 archivos. Cuatro punteros que `REQUIRE` comprueba, pero que el análisis no sabe que detienen la prueba, se comprueban con un `if` que termina la prueba.
+
+**D-12802. El ZIP de entrega.**
+`tools/release/make_zip.py` (solo la biblioteca estándar) arma `SalvasProsperia-<versión>-windows-x64.zip` desde la compilación `release`: el ejecutable, `data/`, `README.md`, `LICENSE`, la licencia de cada biblioteca de `third_party/` (en `licenses/`, con su `README.md`) y `SHA256SUMS.txt`. No lleva el PDB, las pruebas ni el visor de modelos, que es una herramienta. Las fuentes llevan su licencia OFL dentro de `data/fonts`. Los modelos, sonidos e imágenes del mod `core` son propios del proyecto (hechos con los scripts de `art/` y `tools/`), así que no hay créditos de terceros que agregar; un mod que traiga assets ajenos lleva su `CREDITS.md` (D-012). El ZIP se escribe con otro nombre y se renombra al terminar.
+
+**D-12803. Linux.**
+La compilación en Linux queda para la máquina de Salvador, como dice la especificación (sección 12): los presets `unix-*` existen, pero los sombreadores todavía solo se compilan a DXIL (D-201), así que el juego no corre ahí sin ese trabajo. Está en la lista de verificación de la entrega.
+
+**D-12804. Guías.**
+El README dice el estado (fase 128 de 128), la interfaz nueva, el teclado, el preset `analyze` y cómo armar la entrega; `docs/VERIFICACION_MANUAL.md` empieza con el repaso general de la entrega. En esta bitácora se marcaron como reemplazadas las decisiones de convivencia de la interfaz vieja y la nueva (D-12304, D-12404) y se amplió D-11716 con D-12703.

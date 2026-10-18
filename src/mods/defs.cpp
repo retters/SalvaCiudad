@@ -173,10 +173,12 @@ public:
             fail(std::format("\"{}\" must be an object with at most {} entries", key, most));
             return out;
         }
-        std::size_t idx = 0, max_i = 0;
-        yyjson_mut_val* k = nullptr;
-        yyjson_mut_val* v = nullptr;
-        yyjson_mut_obj_foreach(obj, idx, max_i, k, v) {
+        yyjson_mut_obj_iter iter;
+        if (!yyjson_mut_obj_iter_init(obj, &iter)) {
+            return out;
+        }
+        while (yyjson_mut_val* k = yyjson_mut_obj_iter_next(&iter)) {
+            yyjson_mut_val* v = yyjson_mut_obj_iter_get_val(k);
             const char* name = yyjson_mut_get_str(k);
             const int found = name != nullptr ? find(name) : -1;
             if (found < 0) {
@@ -207,10 +209,12 @@ public:
             fail("\"models\" of a species must be an object with the files of each state");
             return;
         }
-        std::size_t idx = 0, max = 0;
-        yyjson_mut_val* k = nullptr;
-        yyjson_mut_val* list = nullptr;
-        yyjson_mut_obj_foreach(obj, idx, max, k, list) {
+        yyjson_mut_obj_iter iter;
+        if (!yyjson_mut_obj_iter_init(obj, &iter)) {
+            return;
+        }
+        while (yyjson_mut_val* k = yyjson_mut_obj_iter_next(&iter)) {
+            yyjson_mut_val* list = yyjson_mut_obj_iter_get_val(k);
             const char* key = yyjson_mut_get_str(k);
             std::size_t state = states;
             for (std::size_t s = 0; s < states && key != nullptr; ++s) {
@@ -300,10 +304,12 @@ public:
             fail("\"pieces\" must be an object of model files");
             return;
         }
-        std::size_t idx = 0, max = 0;
-        yyjson_mut_val* k = nullptr;
-        yyjson_mut_val* v = nullptr;
-        yyjson_mut_obj_foreach(obj, idx, max, k, v) {
+        yyjson_mut_obj_iter iter;
+        if (!yyjson_mut_obj_iter_init(obj, &iter)) {
+            return;
+        }
+        while (yyjson_mut_val* k = yyjson_mut_obj_iter_next(&iter)) {
+            yyjson_mut_val* v = yyjson_mut_obj_iter_get_val(k);
             const char* key = yyjson_mut_get_str(k);
             const char* file = yyjson_mut_get_str(v);
             const auto name = std::find(std::begin(kNames), std::end(kNames), std::string_view(key != nullptr ? key : ""));
@@ -506,10 +512,12 @@ void DefSet::add_file(std::string_view json_text, const std::string& mod, const 
                 continue;
             }
             // Replace each given field; "patch" and "type" are not copied.
-            std::size_t pi = 0, pmax = 0;
-            yyjson_mut_val* k = nullptr;
-            yyjson_mut_val* v = nullptr;
-            yyjson_mut_obj_foreach(item, pi, pmax, k, v) {
+            yyjson_mut_obj_iter iter;
+            if (!yyjson_mut_obj_iter_init(item, &iter)) {
+                continue;
+            }
+            while (yyjson_mut_val* k = yyjson_mut_obj_iter_next(&iter)) {
+                yyjson_mut_val* v = yyjson_mut_obj_iter_get_val(k);
                 const char* key = yyjson_mut_get_str(k);
                 if (key == nullptr || std::string_view(key) == "patch" || std::string_view(key) == "type" ||
                     std::string_view(key) == "id") {

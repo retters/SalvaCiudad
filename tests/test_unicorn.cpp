@@ -248,7 +248,8 @@ struct Illness {
     std::uint32_t days = 0;
 };
 Illness first_illness(const MapData& map) {
-    Game g(core(), map, setup(Threat::Medium));
+    const auto g_owned = std::make_unique<Game>(core(), map, setup(Threat::Medium));
+    Game& g = *g_owned;
     const auto [tx, tz] = town(g, "core:mushrooms");
     const auto [zx, zz] = glade(glade_map());
     for (int n = 0; n < 4; ++n) {
@@ -291,7 +292,8 @@ TEST_SUITE("unicorn") {
         for (const BiomeDef& b : c.flora.biomes) {
             CHECK(b.unicorn == (b.id == "core:enchanted"));
         }
-        Game g(core(), glade_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), glade_map(), setup());
+        Game& g = *g_owned;
         REQUIRE(g.map().zones.size() == 1);
         CHECK(g.zone_animals()[0] == 1);
         CHECK(g.zone_room(0) == 1);
@@ -306,8 +308,10 @@ TEST_SUITE("unicorn") {
     }
 
     TEST_CASE("a place within 60 m of the glade has 8 more of surroundings, and so has a house there") {
-        Game with(core(), glade_map(), setup());
-        Game without(core(), plain_map(), setup());
+        const auto with_owned = std::make_unique<Game>(core(), glade_map(), setup());
+        Game& with = *with_owned;
+        const auto without_owned = std::make_unique<Game>(core(), plain_map(), setup());
+        Game& without = *without_owned;
         const auto [gx, gz] = glade(with.map());
         const auto there = [](std::int32_t x, std::int32_t z) { return FixedVec2{Fixed::from_int(x), Fixed::from_int(z)}; };
         for (const std::int32_t d : {0, 30, 59, 60}) {
@@ -349,7 +353,8 @@ TEST_SUITE("unicorn") {
     }
 
     TEST_CASE("felling a tree by the glade drives the unicorn away for good: it is not back in ten years") {
-        Game g(core(), glade_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), glade_map(), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         const auto [gx, gz] = glade(g.map());
         // Trees in the glade, whatever the map had there; and a woodcutter next to it.
@@ -409,7 +414,8 @@ TEST_SUITE("unicorn") {
     }
 
     TEST_CASE("felling trees away from the glade does not frighten the unicorn") {
-        Game g(core(), glade_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), glade_map(), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         const auto [gx, gz] = glade(g.map());
         // A woodcutter on the other side of the town, with trees by it: nothing it can reach is by the glade.
@@ -437,7 +443,8 @@ TEST_SUITE("unicorn") {
 
     TEST_CASE("a town hears of the unicorn the first time one of its people comes near, and only then") {
         // A house by the glade: its people go there.
-        Game g(core(), glade_map(false, 110), setup());
+        const auto g_owned = std::make_unique<Game>(core(), glade_map(false, 110), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         const auto [gx, gz] = glade(g.map());
         (void)g.take_events();
@@ -460,7 +467,8 @@ TEST_SUITE("unicorn") {
         CHECK(seen == 1);
         CHECK(g.player(0).unicorns_seen == 1);
         // Far from everybody: nobody sees it.
-        Game far(core(), glade_map(true), setup());
+        const auto far_owned = std::make_unique<Game>(core(), glade_map(true), setup());
+        Game& far = *far_owned;
         (void)town(far);
         int none = 0;
         for (std::uint32_t k = 0; k < far.year_ticks() / 2; ++k) {
@@ -521,7 +529,8 @@ TEST_SUITE("unicorn") {
     }
 
     TEST_CASE("saving and loading keeps who has seen the unicorn, and one that is gone") {
-        Game g(core(), glade_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), glade_map(), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         const auto [gx, gz] = glade(g.map());
         REQUIRE(put(g, "core:house", (tx + gx * 3) / 4, (tz + gz * 3) / 4).valid());
@@ -532,7 +541,8 @@ TEST_SUITE("unicorn") {
         {
             BinaryWriter w;
             g.save(w);
-            Game loaded(core(), glade_map(), setup());
+            const auto loaded_owned = std::make_unique<Game>(core(), glade_map(), setup());
+            Game& loaded = *loaded_owned;
             BinaryReader r(w.bytes());
             REQUIRE(loaded.load(r, core()));
             CHECK(loaded.hash() == g.hash());
@@ -549,7 +559,8 @@ TEST_SUITE("unicorn") {
         REQUIRE_FALSE(unicorn(g));
         BinaryWriter w;
         g.save(w);
-        Game loaded(core(), glade_map(), setup());
+        const auto loaded_owned = std::make_unique<Game>(core(), glade_map(), setup());
+        Game& loaded = *loaded_owned;
         BinaryReader r(w.bytes());
         REQUIRE(loaded.load(r, core()));
         CHECK(loaded.hash() == g.hash());
@@ -570,7 +581,8 @@ TEST_SUITE("unicorn") {
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;
-        Game g(core(), glade_map(), rules);
+        const auto g_owned = std::make_unique<Game>(core(), glade_map(), rules);
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         const auto [gx, gz] = glade(g.map());
         grant(g, "core:log", 200);

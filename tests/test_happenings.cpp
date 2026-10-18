@@ -37,7 +37,8 @@ const MapData& coast_map() {
         s.sea = Sea::OneSide;
         std::optional<MapData> m = generate_map(s, test::core_content());
         REQUIRE(m.has_value());
-        Game probe(std::shared_ptr<const Content>(std::shared_ptr<const Content>{}, &test::core_content()), *m, GameSetup{});
+        const auto probe_owned = std::make_unique<Game>(std::shared_ptr<const Content>(std::shared_ptr<const Content>{}, &test::core_content()), *m, GameSetup{});
+        Game& probe = *probe_owned;
         const std::int32_t sx = m->starts[0].x.floor_int(), sz = m->starts[0].z.floor_int();
         std::int64_t nearest = INT64_MAX;
         for (std::int32_t z = 0; z < m->size; z += 4) {
@@ -251,9 +252,12 @@ TEST_SUITE("happenings") {
     }
 
     TEST_CASE("with the same seed the happenings fall on the same days: the whales in autumn, the lanterns a day of each town") {
-        const Game a(core(), inland_map(), setup(15));
-        const Game b(core(), inland_map(), setup(15));
-        const Game other(core(), inland_map(), setup(16));
+        const auto a_owned = std::make_unique<Game>(core(), inland_map(), setup(15));
+        const Game& a = *a_owned;
+        const auto b_owned = std::make_unique<Game>(core(), inland_map(), setup(15));
+        const Game& b = *b_owned;
+        const auto other_owned = std::make_unique<Game>(core(), inland_map(), setup(16));
+        const Game& other = *other_owned;
         int differ = 0, towns_differ = 0, years_differ = 0;
         for (std::uint32_t year = 0; year < 12; ++year) {
             const std::uint32_t whales = a.happening_day(HappeningKind::Whales, year, 0);
@@ -277,14 +281,18 @@ TEST_SUITE("happenings") {
         // In a game with no autumn they pass a day of the year, whichever.
         GameSetup mild = setup(15);
         mild.rules.climate.seasons = 0b0011;
-        const Game spring(core(), inland_map(), mild);
+        const auto spring_owned = std::make_unique<Game>(core(), inland_map(), mild);
+        const Game& spring = *spring_owned;
         CHECK(spring.happening_day(HappeningKind::Whales, 4, 0) < kDaysPerYear);
     }
 
     TEST_CASE("the whales pass for a town with a building by the sea, and not for one inland") {
-        Game coast(core(), coast_map(), setup());
-        Game inland(core(), coast_map(), setup());
-        Game dry(core(), inland_map(), setup());
+        const auto coast_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& coast = *coast_owned;
+        const auto inland_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& inland = *inland_owned;
+        const auto dry_owned = std::make_unique<Game>(core(), inland_map(), setup());
+        Game& dry = *dry_owned;
         (void)town(coast);
         (void)town(inland);
         (void)town(dry);
@@ -336,7 +344,8 @@ TEST_SUITE("happenings") {
     }
 
     TEST_CASE("the mood of the town raises the happiness of its houses and is gone in ten days") {
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         (void)house_by_the_sea(g);
         const EntityId home = put(g, "core:house", tx + 20, tz - 18);
@@ -372,7 +381,8 @@ TEST_SUITE("happenings") {
     }
 
     TEST_CASE("the merchant on his way comes in half the time when the whales pass") {
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         (void)house_by_the_sea(g);
         grant(g, "core:log", 400);
@@ -408,9 +418,12 @@ TEST_SUITE("happenings") {
     }
 
     TEST_CASE("a town with one of the foxfolk has no lanterns; with two, once a year") {
-        Game one(core(), inland_map(), setup());
-        Game two(core(), inland_map(), setup());
-        Game none(core(), inland_map(), setup());
+        const auto one_owned = std::make_unique<Game>(core(), inland_map(), setup());
+        Game& one = *one_owned;
+        const auto two_owned = std::make_unique<Game>(core(), inland_map(), setup());
+        Game& two = *two_owned;
+        const auto none_owned = std::make_unique<Game>(core(), inland_map(), setup());
+        Game& none = *none_owned;
         (void)town(one);
         (void)town(two);
         (void)town(none);
@@ -487,7 +500,8 @@ TEST_SUITE("happenings") {
         rules.rules.day_night.day = 3;
         rules.rules.day_night.night = 2;
         rules.rules.races.fill(race("core:foxfolk"));
-        Game g(core(), inland_map(), rules);
+        const auto g_owned = std::make_unique<Game>(core(), inland_map(), rules);
+        Game& g = *g_owned;
         (void)town(g);
         (void)g.take_events();
         int lit = 0;
@@ -510,7 +524,8 @@ TEST_SUITE("happenings") {
     }
 
     TEST_CASE("saving and loading keeps a happening under way and the mood it left") {
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         (void)town(g);
         (void)house_by_the_sea(g);
         arrive(g, "core:foxfolk", 2);
@@ -524,7 +539,8 @@ TEST_SUITE("happenings") {
         REQUIRE(g.town_mood(0) == village::kMoodPoints);
         BinaryWriter w;
         g.save(w);
-        Game loaded(core(), coast_map(), setup());
+        const auto loaded_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& loaded = *loaded_owned;
         BinaryReader r(w.bytes());
         REQUIRE(loaded.load(r, core()));
         CHECK(loaded.hash() == g.hash());
@@ -538,7 +554,8 @@ TEST_SUITE("happenings") {
         CHECK(sights(loaded).empty());
         CHECK(loaded.town_mood(0) == 0);
         // A save cut short, or with a happening of a kind that does not exist, is refused.
-        Game again(core(), coast_map(), setup());
+        const auto again_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& again = *again_owned;
         std::vector<std::uint8_t> bytes = w.bytes();
         bytes.resize(bytes.size() / 2);
         BinaryReader cut(bytes);
@@ -571,7 +588,8 @@ TEST_SUITE("happenings") {
         };
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;
-        Game sea(core(), coast_map(), rules);
+        const auto sea_owned = std::make_unique<Game>(core(), coast_map(), rules);
+        Game& sea = *sea_owned;
         (void)town(sea);
         const EntityId house = house_by_the_sea(sea);
         for (std::uint32_t t = 0; t < sea.year_ticks() && sights(sea).empty(); ++t) {
@@ -589,7 +607,8 @@ TEST_SUITE("happenings") {
         foxes.rules.day_night.day = 3;
         foxes.rules.day_night.night = 3;
         foxes.rules.races.fill(race("core:foxfolk"));
-        Game fest(core(), inland_map(), foxes);
+        const auto fest_owned = std::make_unique<Game>(core(), inland_map(), foxes);
+        Game& fest = *fest_owned;
         (void)town(fest);
         for (std::uint32_t t = 0; t < fest.year_ticks() && sights(fest).empty(); ++t) {
             if (t % fest.calendar_month_ticks() == 0) {

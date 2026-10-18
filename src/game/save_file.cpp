@@ -151,12 +151,13 @@ bool parse_header(std::string_view text, Header& h, std::uint32_t& schema) {
 std::uint32_t crc32(std::span<const std::uint8_t> data) {
     static const auto table = [] {
         std::array<std::uint32_t, 256> t{};
-        for (std::uint32_t i = 0; i < 256; ++i) {
-            std::uint32_t c = i;
+        std::uint32_t n = 0;
+        for (std::uint32_t& entry : t) {
+            std::uint32_t c = n++;
             for (int k = 0; k < 8; ++k) {
                 c = (c & 1u) != 0 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
             }
-            t[i] = c;
+            entry = c;
         }
         return t;
     }();

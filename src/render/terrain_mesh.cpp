@@ -1,6 +1,7 @@
 #include "render/terrain_mesh.h"
 
 #include <algorithm>
+#include <memory>
 #include <cmath>
 #include <cstdlib>
 
@@ -98,7 +99,9 @@ public:
         out.cells = cells_;
         const int per_side = cells_ / kTile;
         out.chunks.resize(static_cast<std::size_t>(per_side) * static_cast<std::size_t>(per_side));
-        Chunk chunk;
+        // 40 KB: on the heap, not the stack.
+        const auto owned = std::make_unique<Chunk>();
+        Chunk& chunk = *owned;
         for (int cz = 0; cz < per_side; ++cz) {
             for (int cx = 0; cx < per_side; ++cx) {
                 load(chunk, cx * kTile, cz * kTile);

@@ -171,7 +171,8 @@ struct Picked {
     std::int32_t honey = 0, eggs = 0, mushrooms = 0;
 };
 Picked season_of_foraging(std::uint8_t seasons, std::uint8_t rain = 0) {
-    Game g(core(), map_for(92), setup(seasons, rain));
+    const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup(seasons, rain));
+    Game& g = *g_owned;
     const Camp c = camp(g);
     Picked p;
     const std::uint32_t year = g.calendar().year;
@@ -281,7 +282,10 @@ TEST_SUITE("forage") {
                 poisoning = &d;
             }
         }
-        REQUIRE(poisoning != nullptr);
+        if (poisoning == nullptr) {
+            FAIL("no disease from food");
+            return;
+        }
         CHECK(poisoning->id == "core:poisoning");
         CHECK(poisoning->contagion == 0);
         CHECK(poisoning->chance == 0);
@@ -389,7 +393,8 @@ TEST_SUITE("forage") {
     }
 
     TEST_CASE("a hive gives its honey once a year: none is left the same year, all of it again the next") {
-        Game g(core(), map_for(92), setup(kSummer));
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup(kSummer));
+        Game& g = *g_owned;
         const Camp c = camp(g);
         const FeatureDef& hive = *g.content().feature(FeatureType::BeeTree);
         CHECK(g.fruit_on(c.hive) == hive.amount);
@@ -417,7 +422,8 @@ TEST_SUITE("forage") {
     }
 
     TEST_CASE("a ring of mushrooms fills the day after it rains, and where it never rains, every ten days") {
-        Game g(core(), map_for(92), setup(kAutumn, 200));
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup(kAutumn, 200));
+        Game& g = *g_owned;
         const Camp c = camp(g);
         const FeatureDef& ring = *g.content().feature(FeatureType::MushroomRing);
         const std::uint32_t day = g.calendar_day_ticks();
@@ -457,13 +463,15 @@ TEST_SUITE("forage") {
         CHECK(filled >= 5);
         CHECK(emptied >= 1);  // (The forager has the bushes of autumn to pick too.)
         // Where it never rains: the days that are a multiple of ten.
-        Game dry(core(), map_for(92), setup(kAutumn, 0));
+        const auto dry_owned = std::make_unique<Game>(core(), map_for(92), setup(kAutumn, 0));
+        Game& dry = *dry_owned;
         for (int d = 0; d < 35; ++d) {
             CHECK(dry.ring_cycle() == static_cast<std::uint32_t>(d / 10 * 10) + 1);
             run(dry, dry.calendar_day_ticks());
         }
         // And out of autumn, never.
-        Game summer(core(), map_for(92), setup(kSummer, 200));
+        const auto summer_owned = std::make_unique<Game>(core(), map_for(92), setup(kSummer, 200));
+        Game& summer = *summer_owned;
         for (int d = 0; d < 30; ++d) {
             CHECK(summer.ring_cycle() == 0);
             run(summer, summer.calendar_day_ticks());
@@ -473,7 +481,8 @@ TEST_SUITE("forage") {
     TEST_CASE("without a healer some who eat mushrooms are poisoned; with one, or without diseases, nobody is") {
         // A town with plenty of mushrooms to eat, for a while. How many fell ill of it.
         const auto poisoned = [](Threat diseases, bool healer) {
-            Game g(core(), map_for(92), setup(kSummer, 0, diseases));
+            const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup(kSummer, 0, diseases));
+            Game& g = *g_owned;
             const Building* tc = g.buildings().get(g.player(0).town_center);
             REQUIRE(tc != nullptr);
             const std::int32_t tx = tc->x, tz = tc->z;
@@ -517,7 +526,8 @@ TEST_SUITE("forage") {
     }
 
     TEST_CASE("saving and loading keeps what was picked and when the rings filled") {
-        Game g(core(), map_for(92), setup(kAutumn, 200));
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup(kAutumn, 200));
+        Game& g = *g_owned;
         const Camp c = camp(g);
         for (int t = 0; t < 20000 && !(g.ring_cycle() != 0 && g.nodes()[c.stump].fruit_picked >= 2); ++t) {
             g.step();
@@ -525,7 +535,8 @@ TEST_SUITE("forage") {
         REQUIRE(g.ring_cycle() != 0);
         BinaryWriter w;
         g.save(w);
-        Game loaded(core(), map_for(92), setup(kSpring));
+        const auto loaded_owned = std::make_unique<Game>(core(), map_for(92), setup(kSpring));
+        Game& loaded = *loaded_owned;
         BinaryReader r(w.bytes());
         REQUIRE(loaded.load(r, core()));
         CHECK(loaded.hash() == g.hash());
@@ -542,7 +553,8 @@ TEST_SUITE("forage") {
     }
 
     TEST_CASE("building over a nest takes it away for good") {
-        Game g(core(), map_for(92), setup(kSpring));
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), setup(kSpring));
+        Game& g = *g_owned;
         const Camp c = camp(g);
         const MapFeature nest = g.map().features[c.nest];
         REQUIRE(g.fruit_on(c.nest) > 0);
@@ -564,7 +576,8 @@ TEST_SUITE("forage") {
         GameSetup rules = setup(kAutumn, 200);
         rules.rules.climate.minutes = {0, 0, 30, 0};  // Long days, to have time to look (and only autumn has any).
         rules.rules.fog = FogMode::None;
-        Game g(core(), map_for(92), rules);
+        const auto g_owned = std::make_unique<Game>(core(), map_for(92), rules);
+        Game& g = *g_owned;
         const Camp c = camp(g);
         const Building at = *g.buildings().get(c.forager);
         // More of each, in a row south of the forager, to compare their looks.

@@ -38,7 +38,8 @@ const MapData& coast_map() {
         s.sea = Sea::OneSide;
         std::optional<MapData> m = generate_map(s, test::core_content());
         REQUIRE(m.has_value());
-        Game probe(std::shared_ptr<const Content>(std::shared_ptr<const Content>{}, &test::core_content()), *m, GameSetup{});
+        const auto probe_owned = std::make_unique<Game>(std::shared_ptr<const Content>(std::shared_ptr<const Content>{}, &test::core_content()), *m, GameSetup{});
+        Game& probe = *probe_owned;
         const std::int32_t sx = m->starts[0].x.floor_int(), sz = m->starts[0].z.floor_int();
         std::int64_t nearest = INT64_MAX;
         for (std::int32_t z = 0; z < m->size; z += 4) {
@@ -251,7 +252,8 @@ std::int64_t square(std::int64_t v) {
 
 TEST_SUITE("turtles") {
     TEST_CASE("one day of every summer the turtles come out to a free beach near the town, and the town is asked") {
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         (void)g.take_events();
         const std::optional<FixedVec2> beach = g.turtle_beach(0);
@@ -292,7 +294,8 @@ TEST_SUITE("turtles") {
     }
 
     TEST_CASE("without an answer in three days nothing happens, and they come again the next year") {
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         (void)town(g);
         REQUIRE(until_asked(g));
         const std::uint32_t day = today(g);
@@ -321,7 +324,8 @@ TEST_SUITE("turtles") {
     }
 
     TEST_CASE("protecting the beach: nobody builds there for ten days, the town is in a good mood, and more come every year") {
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         (void)town(g);
         REQUIRE(until_asked(g));
         const Happening asked = *turtles(g);
@@ -395,7 +399,8 @@ TEST_SUITE("turtles") {
             std::erase_if(bare.features, [](const MapFeature& f) {
                 return f.type == FeatureType::Stone || f.type == FeatureType::StoneDeposit || f.type == FeatureType::LooseStones;
             });
-            Game g(core(), bare, setup());
+            const auto g_owned = std::make_unique<Game>(core(), bare, setup());
+            Game& g = *g_owned;
             (void)town(g);
             // A stonecutter 45 m inland of where they will come out, from the first day: its people are there by then.
             const std::optional<FixedVec2> beach = g.turtle_beach(0);
@@ -455,7 +460,8 @@ TEST_SUITE("turtles") {
     }
 
     TEST_CASE("taking the eggs: the town has them at once, and the turtles never come back") {
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         const auto [tx, tz] = town(g);
         const EntityId forager = put(g, "core:forager", tx + 22, tz + 12);
         REQUIRE(forager.valid());
@@ -491,7 +497,8 @@ TEST_SUITE("turtles") {
         CHECK_FALSE(until_asked(g, 3 * g.year_ticks()));
         CHECK(g.happenings().empty());
         // Without a hut of gatherers the eggs go to the town itself.
-        Game plain(core(), coast_map(), setup());
+        const auto plain_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& plain = *plain_owned;
         (void)town(plain);
         REQUIRE(until_asked(plain));
         const std::int32_t before = have(plain, "core:eggs");
@@ -500,19 +507,22 @@ TEST_SUITE("turtles") {
     }
 
     TEST_CASE("no turtles on a map without sea, on a beach the town has not explored, or by a building") {
-        Game dry(core(), inland_map(), setup());
+        const auto dry_owned = std::make_unique<Game>(core(), inland_map(), setup());
+        Game& dry = *dry_owned;
         (void)town(dry);
         CHECK_FALSE(dry.turtle_beach(0).has_value());
         CHECK_FALSE(until_asked(dry, 2 * dry.year_ticks()));
         // The same coast under the fog of war: the town has not been to the sea.
         GameSetup foggy = setup();
         foggy.rules.fog = FogMode::Static;
-        Game fog(core(), coast_map(), foggy);
+        const auto fog_owned = std::make_unique<Game>(core(), coast_map(), foggy);
+        Game& fog = *fog_owned;
         (void)town(fog);
         CHECK_FALSE(fog.turtle_beach(0).has_value());
         CHECK_FALSE(until_asked(fog));
         // A building on last year's beach: this year they come out somewhere else, or not at all.
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         (void)town(g);
         REQUIRE(until_asked(g));
         const FixedVec2 first = turtles(g)->at;
@@ -534,7 +544,8 @@ TEST_SUITE("turtles") {
         GameSetup rules = setup();
         rules.rules.day_night.day = 3;
         rules.rules.day_night.night = 2;
-        Game g(core(), coast_map(), rules);
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), rules);
+        Game& g = *g_owned;
         (void)town(g);
         REQUIRE(until_asked(g));
         CHECK(g.night());
@@ -543,12 +554,14 @@ TEST_SUITE("turtles") {
     }
 
     TEST_CASE("saving and loading keeps the question waiting, the protected beach and what the town did") {
-        Game g(core(), coast_map(), setup());
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& g = *g_owned;
         (void)town(g);
         REQUIRE(until_asked(g));
         BinaryWriter w;
         g.save(w);
-        Game loaded(core(), coast_map(), setup());
+        const auto loaded_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& loaded = *loaded_owned;
         BinaryReader r(w.bytes());
         REQUIRE(loaded.load(r, core()));
         CHECK(loaded.hash() == g.hash());
@@ -563,7 +576,8 @@ TEST_SUITE("turtles") {
         REQUIRE(turtles(g, HappeningState::Protected) != nullptr);
         BinaryWriter w2;
         g.save(w2);
-        Game again(core(), coast_map(), setup());
+        const auto again_owned = std::make_unique<Game>(core(), coast_map(), setup());
+        Game& again = *again_owned;
         BinaryReader r2(w2.bytes());
         REQUIRE(again.load(r2, core()));
         CHECK(again.hash() == g.hash());
@@ -583,7 +597,8 @@ TEST_SUITE("turtles") {
         std::filesystem::create_directories(folder, ec);
         GameSetup rules = setup();
         rules.rules.fog = FogMode::None;
-        Game g(core(), coast_map(), rules);
+        const auto g_owned = std::make_unique<Game>(core(), coast_map(), rules);
+        Game& g = *g_owned;
         (void)town(g);
         // (So that they are six: five years protected.)
         for (int year = 0; year < 3; ++year) {

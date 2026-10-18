@@ -246,8 +246,10 @@ TEST_SUITE("fog") {
         // ghost of its own, and the ghosts are the same on every machine and
         // after a save.
         const MapData map = small_map(12, 2);
-        Game a(content(), map, setup(2, FogMode::Dynamic, true));
-        Game b(content(), map, setup(2, FogMode::Dynamic, true));
+        const auto a_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::Dynamic, true));
+        Game& a = *a_owned;
+        const auto b_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::Dynamic, true));
+        Game& b = *b_owned;
         run(a, 2000);
         run(b, 2000);
         CHECK(a.vision() == b.vision());
@@ -258,7 +260,8 @@ TEST_SUITE("fog") {
         }
         BinaryWriter w;
         a.save(w);
-        Game back(content(), MapData{}, 0, 0);
+        const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.vision() == a.vision());
@@ -269,7 +272,8 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("with dynamic fog what moves shows only in sight") {
-        Game g(content(), small_map(3), setup(1, FogMode::Dynamic));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Dynamic));
+        Game& g = *g_owned;
         FogView view;
         view.begin(g, g.vision_group(0));
         send_out(g);
@@ -288,7 +292,8 @@ TEST_SUITE("fog") {
         }
         CHECK(hidden > 0);  // The animals far away.
         // With static fog, explored is enough.
-        Game s(content(), small_map(3), setup(1, FogMode::Static));
+        const auto s_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Static));
+        Game& s = *s_owned;
         FogView still;
         still.begin(s, s.vision_group(0));
         const Building& tc = town_center(s);
@@ -298,7 +303,8 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("without fog nothing is kept and everything may be built as before") {
-        Game g(content(), small_map(3), setup(1, FogMode::None));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::None));
+        Game& g = *g_owned;
         CHECK_FALSE(g.fog());
         CHECK_FALSE(g.vision().active());
         run(g, 30);
@@ -306,7 +312,8 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("the town's surroundings start explored and building beyond is refused") {
-        Game g(content(), small_map(3), setup(1, FogMode::Static));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Static));
+        Game& g = *g_owned;
         REQUIRE(g.vision().active());
         const Building& tc = town_center(g);
         const std::uint8_t group = g.vision_group(0);
@@ -336,7 +343,8 @@ TEST_SUITE("fog") {
         }
         REQUIRE(far.has_value());
         // The same game without fog would take it: only the fog is in the way.
-        Game open(content(), small_map(3), setup(1, FogMode::None));
+        const auto open_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::None));
+        Game& open = *open_owned;
         CHECK(open.can_place(0, house, far->first, far->second, 0) != PlaceError::Unexplored);
         // As a command too.
         Command c;
@@ -351,7 +359,8 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("revealed fog: the whole map explored from the start, the rest as dynamic") {
-        Game g(content(), small_map(3), setup(1, FogMode::Revealed));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Revealed));
+        Game& g = *g_owned;
         REQUIRE(g.vision().active());
         CHECK(g.vision().all_explored());
         const Building& tc = town_center(g);
@@ -369,7 +378,8 @@ TEST_SUITE("fog") {
             CHECK(g.can_place(0, house, x, tc.z, 0) != PlaceError::Unexplored);
         }
         // The same places a game without fog takes.
-        Game open(content(), small_map(3), setup(1, FogMode::None));
+        const auto open_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::None));
+        Game& open = *open_owned;
         for (std::int32_t x = 12; x < g.map().size - 20; x += 16) {
             CHECK(g.can_place(0, house, x, tc.z, 0) == open.can_place(0, house, x, tc.z, 0));
         }
@@ -394,13 +404,15 @@ TEST_SUITE("fog") {
         run(g, 300);
         BinaryWriter w;
         g.save(w);
-        Game back(content(), MapData{}, 0, 0);
+        const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(back.rules().fog == FogMode::Revealed);
         CHECK(back.vision().all_explored());
         CHECK(back.hash() == g.hash());
-        Game dynamic(content(), small_map(3), setup(1, FogMode::Dynamic));
+        const auto dynamic_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Dynamic));
+        Game& dynamic = *dynamic_owned;
         run(dynamic, 300);
         BinaryWriter wd;
         dynamic.save(wd);
@@ -411,7 +423,8 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("the villagers explore as they walk") {
-        Game g(content(), small_map(5), setup(1, FogMode::Static));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(5), setup(1, FogMode::Static));
+        Game& g = *g_owned;
         const std::uint32_t start = g.vision().count(g.vision_group(0));
         CHECK(start > 0);
         send_out(g);
@@ -421,8 +434,10 @@ TEST_SUITE("fog") {
 
     TEST_CASE("the fog does not change the rest of the game") {
         const MapData map = small_map(9, 2);
-        Game none(content(), map, setup(2, FogMode::None));
-        Game fog(content(), map, setup(2, FogMode::Dynamic));
+        const auto none_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::None));
+        Game& none = *none_owned;
+        const auto fog_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::Dynamic));
+        Game& fog = *fog_owned;
         run(none, 2000);
         run(fog, 2000);
         const auto a = none.hash_parts();
@@ -439,8 +454,10 @@ TEST_SUITE("fog") {
 
     TEST_CASE("two games with the same setup explore the same cells") {
         const MapData map = small_map(12, 2);
-        Game a(content(), map, setup(2, FogMode::Static, true));
-        Game b(content(), map, setup(2, FogMode::Static, true));
+        const auto a_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::Static, true));
+        Game& a = *a_owned;
+        const auto b_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::Static, true));
+        Game& b = *b_owned;
         run(a, 1500);
         run(b, 1500);
         CHECK(a.hash() == b.hash());
@@ -449,12 +466,15 @@ TEST_SUITE("fog") {
 
     TEST_CASE("allies share what they explore unless each town keeps its own") {
         const MapData map = small_map(12, 2);
-        Game coop(content(), map, setup(2, FogMode::Static));
+        const auto coop_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::Static));
+        Game& coop = *coop_owned;
         CHECK(coop.vision_group(0) == coop.vision_group(1));
         CHECK(coop.vision().groups() == 0b1);
-        Game apart(content(), map, setup(2, FogMode::Static, false, false));
+        const auto apart_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::Static, false, false));
+        Game& apart = *apart_owned;
         CHECK(apart.vision_group(0) != apart.vision_group(1));
-        Game versus(content(), map, setup(2, FogMode::Static, true, true));
+        const auto versus_owned = std::make_unique<Game>(content(), map, setup(2, FogMode::Static, true, true));
+        Game& versus = *versus_owned;
         CHECK(versus.vision_group(0) != versus.vision_group(1));
         CHECK(versus.vision().groups() == 0b11);
         // Each town sees its own start, not the other's.
@@ -465,11 +485,13 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("saving and loading keep what was explored") {
-        Game g(content(), small_map(3), setup(1, FogMode::Dynamic));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Dynamic));
+        Game& g = *g_owned;
         run(g, 600);
         BinaryWriter w;
         g.save(w);
-        Game back(content(), MapData{}, 0, 0);
+        const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+        Game& back = *back_owned;
         BinaryReader r(w.bytes());
         REQUIRE(back.load(r, content()));
         CHECK(r.at_end());
@@ -501,7 +523,8 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("the view sees around its people and keeps the texels up to date") {
-        Game g(content(), small_map(3), setup(1, FogMode::Dynamic));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Dynamic));
+        Game& g = *g_owned;
         FogView view;
         view.begin(g, g.vision_group(0));
         REQUIRE(view.side() == g.vision().side());
@@ -538,7 +561,8 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("with dynamic fog the explored ground out of sight is dim") {
-        Game g(content(), small_map(3), setup(1, FogMode::Dynamic));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Dynamic));
+        Game& g = *g_owned;
         // Walk until something explored falls out of sight.
         FogView view;
         view.begin(g, g.vision_group(0));
@@ -558,7 +582,8 @@ TEST_SUITE("fog") {
         }
         CHECK(dim);
         // Static fog keeps it all in view.
-        Game s(content(), small_map(3), setup(1, FogMode::Static));
+        const auto s_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Static));
+        Game& s = *s_owned;
         FogView still;
         still.begin(s, s.vision_group(0));
         send_out(s);
@@ -570,7 +595,8 @@ TEST_SUITE("fog") {
     }
 
     TEST_CASE("the minimap darkens what was never seen") {
-        Game g(content(), small_map(3), setup(1, FogMode::Static));
+        const auto g_owned = std::make_unique<Game>(content(), small_map(3), setup(1, FogMode::Static));
+        Game& g = *g_owned;
         FogView view;
         view.begin(g, g.vision_group(0));
         std::vector<std::uint8_t> image = minimap::render(g.map());
@@ -629,7 +655,10 @@ TEST_SUITE("fog") {
                 break;
             }
         }
-        REQUIRE(tree != nullptr);
+        if (tree == nullptr) {
+            FAIL("no tree on the map");
+            return;
+        }
         CHECK_FALSE(feature_instance(map, *tree, copy.get(), Season::Summer, false).landmark);
         copy->flora.species[tree->species].landmark = true;
         CHECK(feature_instance(map, *tree, copy.get(), Season::Summer, false).landmark);
@@ -638,7 +667,8 @@ TEST_SUITE("fog") {
     TEST_CASE("only tall buildings and landmarks of others show in the unexplored, and nothing that moves") {
         auto copy = std::make_shared<Content>(test::core_content());
         const MapData map = small_map(12, 2);
-        Game g(copy, map, setup(2, FogMode::Static, true));
+        const auto g_owned = std::make_unique<Game>(copy, map, setup(2, FogMode::Static, true));
+        Game& g = *g_owned;
         FogView fog;
         fog.begin(g, g.vision_group(0));
         VillageView view;

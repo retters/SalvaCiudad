@@ -90,7 +90,8 @@ Game one_seat(std::uint64_t seed, FogMode fog = FogMode::None) {
     setup.start_towns = false;
     setup.access = access::kAll;  // Whoever comes later may found or join.
     setup.seats = {{"Ana", 2}};
-    Game g(content(), small_map(seed, 3), setup);
+    const auto g_owned = std::make_unique<Game>(content(), small_map(seed, 3), setup);
+    Game& g = *g_owned;
     g.apply(found_on_site(g, 0, 0));
     REQUIRE(g.founded(0));
     return g;
@@ -344,7 +345,8 @@ TEST_SUITE("seats") {
         for (int i = 0; i < 200; ++i) {
             g.step();
         }
-        Game back(content(), MapData{}, 0, 0);
+        const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+        Game& back = *back_owned;
         REQUIRE(reload(g, back));
         CHECK(back.hash() == g.hash());
         CHECK(back.player_count() == 4);
@@ -398,7 +400,8 @@ TEST_SUITE("seats") {
         for (int i = 0; i < 30; ++i) {
             g.step();
         }
-        Game back(content(), MapData{}, 0, 0);
+        const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+        Game& back = *back_owned;
         REQUIRE(reload(g, back));
         CHECK(back.hash() == g.hash());
     }
@@ -408,7 +411,8 @@ TEST_SUITE("seats") {
         setup.players = 1;
         setup.seed = 26;
         setup.start_towns = false;
-        Game g(content(), small_map(26, 3), setup);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(26, 3), setup);
+        Game& g = *g_owned;
         CHECK(g.access() == 0);
         CHECK_FALSE(g.open());
         CHECK(g.may_found(0));  // The seats the game began with always may.
@@ -441,7 +445,8 @@ TEST_SUITE("seats") {
         CHECK(g.rejected_commands() == 2);
         CHECK(g.town_exists(1));
         // Saved and loaded with the game.
-        Game back(content(), MapData{}, 0, 0);
+        const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+        Game& back = *back_owned;
         REQUIRE(reload(g, back));
         CHECK(back.access() == access::kAll);
         CHECK(back.player(1).late);
@@ -515,7 +520,8 @@ TEST_SUITE("seats") {
         setup.seed = 28;
         setup.start_towns = false;
         setup.access = access::kOpen | access::kFound;  // To found, not to join.
-        Game g(content(), small_map(28, 3), setup);
+        const auto g_owned = std::make_unique<Game>(content(), small_map(28, 3), setup);
+        Game& g = *g_owned;
         g.apply(found_on_site(g, 0, 0));
         g.apply(add_seat(0, "Beto"));
         g.apply(add_seat(0, "Caro"));
@@ -539,7 +545,8 @@ TEST_SUITE("seats") {
             g.step();
         }
         CHECK(g.player(1).request == 0);
-        Game back(content(), MapData{}, 0, 0);
+        const auto back_owned = std::make_unique<Game>(content(), MapData{}, 0, 0);
+        Game& back = *back_owned;
         REQUIRE(reload(g, back));
         CHECK(back.player(1).request == 0);
         CHECK(back.hash() == g.hash());
@@ -555,7 +562,8 @@ TEST_SUITE("seats") {
         setup.seed = 25;
         setup.shared_town = true;
         setup.start_towns = false;
-        Game common(content(), small_map(25, 1), setup);
+        const auto common_owned = std::make_unique<Game>(content(), small_map(25, 1), setup);
+        Game& common = *common_owned;
         CHECK(common.player_count() == 3);  // Only those who play: more come by AddSeat.
         CHECK(common.town_of(1) == 0);
         CHECK(common.town_of(2) == 0);
@@ -563,7 +571,8 @@ TEST_SUITE("seats") {
         CHECK(common.seats_of(0) == 3);
         setup.shared_town = false;
         setup.access = access::kAll;
-        Game apart(content(), small_map(25, 3), setup);
+        const auto apart_owned = std::make_unique<Game>(content(), small_map(25, 3), setup);
+        Game& apart = *apart_owned;
         CHECK(apart.player_count() == 3);
         CHECK(apart.town_of(2) == 2);
         CHECK_FALSE(apart.shared_town());
