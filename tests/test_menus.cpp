@@ -41,6 +41,10 @@ public:
     std::vector<std::string> monitor_names() override { return {"Monitor A"}; }
     std::vector<Resolution> fullscreen_resolutions(const std::string&) override { return {{1920, 1080}}; }
     const ui::FontLibrary& fonts() const override { return font_library; }
+    std::vector<UiStyleChoice> ui_styles() const override {
+        return {{"frosted", "Frosted", {0xeef0f4ffu, 0x1b1f24ffu, 0x5b5bd6ffu, 0x18794effu, 0xad5700ffu, 0xcd2b31ffu}},
+                {"vidrio", "Vidrio oscuro", {0x15142affu, 0xf1f0ffffu, 0x9b7bffffu, 0x49f2b0ffu, 0xffd166ffu, 0xff5c8affu}}};
+    }
     void open_data_folder() override {}
     void request_quit() override {}
     mods::ModLibrary& mod_library() override { return library; }

@@ -145,6 +145,9 @@ std::optional<std::filesystem::path> resolve_ui_path(const std::vector<std::file
 }
 
 Rml::FileHandle Files::Open(const Rml::String& path) {
+    if (path == kStyleSheet && style_sheet_) {
+        return reinterpret_cast<Rml::FileHandle>(new OpenFile{style_sheet_(), 0});
+    }
     const std::optional<std::filesystem::path> full = resolve_ui_path(roots_, path);
     if (!full) {
         log::warn("rmlui: refused or missing file '{}'", path);
@@ -154,6 +157,9 @@ Rml::FileHandle Files::Open(const Rml::String& path) {
     if (r.error != fs::IoError::None) {
         log::warn("rmlui: cannot read '{}': {}", path, fs::io_error_name(r.error));
         return 0;
+    }
+    if (filter_ && path.size() > 5 && path.ends_with(".rcss")) {
+        filter_(path, r.data);
     }
     auto* file = new OpenFile{std::move(r.data), 0};
     return reinterpret_cast<Rml::FileHandle>(file);

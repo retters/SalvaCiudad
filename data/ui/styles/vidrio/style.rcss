@@ -1,0 +1,19 @@
+/* Vidrio oscuro (D-11702): blurred black glass with violet-to-cyan rims and
+   a soft neon on what is active, from docs/propuestas/interfaz/temas/vidrio.css.
+   The mockup draws the rim with a gradient border; RCSS has none, so the
+   top and left sides are violet and the bottom and right cyan. */
+
+.window
+{
+	border-color: rgba(155, 123, 255, 200) rgba(76, 201, 240, 200) rgba(76, 201, 240, 200) rgba(155, 123, 255, 200);
+}
+
+.wbtn.on
+{
+	box-shadow: rgba(155, 123, 255, 140) 0 0 16dp 0;
+}
+
+.switch.on
+{
+	box-shadow: rgba(155, 123, 255, 140) 0 0 12dp 0;
+}

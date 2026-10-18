@@ -223,6 +223,7 @@ TEST_SUITE("settings") {
         s.ui.font = "some-font";
         s.ui.tooltip_delay_ms = 1200;
         s.ui.glass = UiGlass::Simple;
+        s.ui.style = "vidrio";
         s.gameplay.autosave_minutes = 30;
         s.gameplay.tutorial_seen = true;
         const Settings expected = s;
@@ -304,6 +305,23 @@ TEST_SUITE("settings") {
         r = load_text(dir, R"({"schemaVersion": 1, "ui": {"glass": "frosted"}})", t);
         CHECK(r.ignored_fields == 1);
         CHECK(t.ui.glass == UiGlass::Full);
+    }
+
+    TEST_CASE("the interface style is an id or ignored") {
+        test::TempDir dir;
+        Settings s;
+        CHECK(s.ui.style == "frosted");
+        auto r = load_text(dir, R"({"schemaVersion": 1, "ui": {"style": "vidrio"}})", s);
+        CHECK(r.ignored_fields == 0);
+        CHECK(s.ui.style == "vidrio");
+        for (const char* bad : {R"({"schemaVersion": 1, "ui": {"style": "../x"}})",
+                                R"({"schemaVersion": 1, "ui": {"style": "Vidrio"}})",
+                                R"({"schemaVersion": 1, "ui": {"style": ""}})"}) {
+            Settings t;
+            r = load_text(dir, bad, t);
+            CHECK(r.ignored_fields == 1);
+            CHECK(t.ui.style == "frosted");
+        }
     }
 
     TEST_CASE("the last new game round-trips") {

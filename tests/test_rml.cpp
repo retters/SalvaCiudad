@@ -1,5 +1,6 @@
-// Phases 117 and 118: RmlUi's adapters (texts, files, keys, fonts), documents
-// and the effects, with the game's render interface recording without a GPU.
+// Phases 117 to 119: RmlUi's adapters (texts, files, keys, fonts), documents,
+// the effects, with the game's render interface recording without a GPU, and
+// the styles.
 #include <doctest.h>
 
 #include <cmath>
@@ -26,6 +27,7 @@
 #include "ui/font_library.h"
 #include "ui/glyph_atlas.h"
 #include "ui/rml/rml_input.h"
+#include "ui/rml/rml_style.h"
 #include "ui/rml/rml_system.h"
 #include "ui/rml/rml_test_window.h"
 #include "ui/rml/rml_ui.h"
@@ -242,6 +244,9 @@ TEST_SUITE("rml") {
         // The scale: twice the density, twice the width.
         const float width = doc->GetBox().GetSize(Rml::BoxArea::Border).x;
         f.ui.update(1280, 720, 2.0f);
+        // From 1.5 up the icons come from the 2x sheet: the document reloaded.
+        doc = f.ui.document(rml::TestWindow::kDocument);
+        REQUIRE(doc != nullptr);
         CHECK(doc->GetBox().GetSize(Rml::BoxArea::Border).x == doctest::Approx(width * 2.0f).epsilon(0.02));
 
         // Another language reloads the document with its texts.
@@ -349,7 +354,7 @@ TEST_SUITE("rml") {
         f.render.begin_frame(1280, 720);
         f.ui.render();
         s = f.render.stats();
-        CHECK(s.backdrops == 6);
+        CHECK(s.backdrops == 0);  // The style drops backdrop-filter with the simple glass (phase 119).
         CHECK(s.backdrop_blurs == 0);
         CHECK_FALSE(f.render.wants_backdrop());
 
@@ -360,5 +365,166 @@ TEST_SUITE("rml") {
         f.ui.close_documents();
         CHECK_FALSE(f.ui.document_shown(doc));
         CHECK(f.ui.system().errors() == errors);
+    }
+
+    TEST_CASE("each token type takes CSS values and gives RCSS") {
+        using rml::TokenType;
+        const rml::FontCheck fonts = [](std::string_view id) { return id == "alegreya-sans"; };
+        const auto conv = [&](TokenType t, std::string_view v) { return rml::convert_token(t, v, fonts, nullptr); };
+        CHECK(conv(TokenType::Color, "#fff") == "rgba(255, 255, 255, 255)");
+        CHECK(conv(TokenType::Color, "#5b5bd6") == "rgba(91, 91, 214, 255)");
+        CHECK(conv(TokenType::Color, "#00000080") == "rgba(0, 0, 0, 128)");
+        CHECK(conv(TokenType::Color, "rgba(255, 255, 255, .5)") == "rgba(255, 255, 255, 128)");
+        CHECK(conv(TokenType::Color, "transparent") == "rgba(0, 0, 0, 0)");
+        CHECK_FALSE(conv(TokenType::Color, "rgba(300, 0, 0, 1)"));
+        CHECK_FALSE(conv(TokenType::Color, "rgba(0, 0, 0, 2)"));
+        CHECK_FALSE(conv(TokenType::Color, "#12345"));
+        CHECK_FALSE(conv(TokenType::Color, "red; } body { color: blue"));
+        CHECK(conv(TokenType::Length, "16px") == "16dp");
+        CHECK(conv(TokenType::Length, "0") == "0dp");
+        CHECK(conv(TokenType::Length, "50%") == "50%");
+        CHECK_FALSE(conv(TokenType::Length, "1em"));
+        CHECK_FALSE(conv(TokenType::Length, "12"));
+        CHECK(conv(TokenType::Number, "650") == "650");
+        CHECK_FALSE(conv(TokenType::Number, "bold"));
+        CHECK(conv(TokenType::Shadow, "inset 0 1px 0 rgba(255, 255, 255, .9), 0 10px 32px rgba(20, 30, 70, .2)") ==
+              "rgba(255, 255, 255, 230) 0dp 1dp 0dp inset, rgba(20, 30, 70, 51) 0dp 10dp 32dp");
+        CHECK(conv(TokenType::Shadow, "none") == "none");
+        CHECK_FALSE(conv(TokenType::Shadow, "0 10px"));  // No color.
+        CHECK(conv(TokenType::Filter, "blur(18px) saturate(160%)") == "blur(18dp) saturate(160%)");
+        CHECK_FALSE(conv(TokenType::Filter, "blur(18px) url(x)"));
+        CHECK(conv(TokenType::Paint, "linear-gradient(160deg, rgba(255, 255, 255, .62), transparent 65%)") ==
+              "linear-gradient(160deg, rgba(255, 255, 255, 158), rgba(0, 0, 0, 0) 65%)");
+        CHECK(conv(TokenType::Paint, "#5b5bd6") == "linear-gradient(rgba(91, 91, 214, 255), rgba(91, 91, 214, 255))");
+        CHECK_FALSE(conv(TokenType::Paint, "image(grain.png repeat)"));  // No images allowed here.
+        CHECK_FALSE(conv(TokenType::Paint, "conic-gradient(red, blue)"));
+        CHECK(conv(TokenType::Font, "alegreya-sans") == "alegreya-sans");
+        CHECK(conv(TokenType::Font, "ui") == "ui");
+        CHECK_FALSE(conv(TokenType::Font, "comic-sans"));
+        CHECK(conv(TokenType::IconMode, "solid") == "solid");
+        CHECK_FALSE(conv(TokenType::IconMode, "neon"));
+        // Every default is valid.
+        for (const rml::TokenSpec& t : rml::token_specs()) {
+            CHECK_MESSAGE(rml::convert_token(t.type, t.value, nullptr, nullptr).has_value(), t.name);
+        }
+    }
+
+    TEST_CASE("tokens are substituted and unknown ones reported") {
+        const rml::TokenMap tokens{{"text", "rgba(1, 2, 3, 255)"}, {"panel-radius", "16dp"}};
+        std::vector<std::string> unknown;
+        const std::string out =
+            rml::substitute_tokens("a { color: var(--text); border-radius: var(--panel-radius) var(--nope); }",
+                                   tokens, &unknown);
+        CHECK(out == "a { color: rgba(1, 2, 3, 255); border-radius: 16dp var(--nope); }");
+        REQUIRE(unknown.size() == 1);
+        CHECK(unknown[0] == "nope");
+    }
+
+    TEST_CASE("the game's styles load; damaged ones are refused with a reason; a mod adds one") {
+        const rml::FontCheck fonts = [](std::string_view) { return false; };
+        std::string error;
+        const auto frosted = rml::load_style(kData / "ui", "frosted", fonts, error);
+        REQUIRE_MESSAGE(frosted.has_value(), error);
+        CHECK(frosted->glass);
+        CHECK(frosted->name("es") == "Frosted");
+        CHECK(frosted->icon_mode == "duotone");
+        CHECK(frosted->tokens.at("panel").find("image(/styles/frosted/grain.png repeat)") != std::string::npos);
+        const auto vidrio = rml::load_style(kData / "ui", "vidrio", fonts, error);
+        REQUIRE_MESSAGE(vidrio.has_value(), error);
+        CHECK(vidrio->name("es-MX") == "Vidrio oscuro");
+        CHECK(vidrio->name("en") == "Dark glass");
+        CHECK(vidrio->tokens.at("text") == "rgba(241, 240, 255, 255)");
+        CHECK(vidrio->sheet.find("border-color") != std::string::npos);
+        CHECK(vidrio->preview.size() == 6);
+
+        // A mod's ui folder with one good style and several bad ones.
+        test::TempDir dir;
+        const std::filesystem::path ui = dir / "ui";
+        const auto style = [&ui](const std::string& id, const std::string& json) {
+            std::filesystem::create_directories(ui / "styles" / id);
+            test::write_text(ui / "styles" / id / "style.json", json);
+        };
+        style("pizarra", R"({"schemaVersion": 1, "name": {"es": "Pizarra"}, "glass": false,
+                             "tokens": {"accent": "#ff8800", "panel": "image(tiza.png), #223344"},
+                             "sheets": ["extra.rcss"]})");
+        test::write_text(ui / "styles" / "pizarra" / "extra.rcss",
+                         ".window { border-color: var(--accent); decorator: image(tiza.png); }\n");
+        std::filesystem::copy_file(kData / "ui" / "styles" / "frosted" / "grain.png",
+                                   ui / "styles" / "pizarra" / "tiza.png");
+        style("rota", "{ not json");
+        style("token", R"({"schemaVersion": 1, "name": {"es": "X"}, "tokens": {"sparkle": "#fff"}})");
+        style("tipo", R"({"schemaVersion": 1, "name": {"es": "X"}, "tokens": {"panel-radius": "#fff"}})");
+        style("fuera", R"({"schemaVersion": 1, "name": {"es": "X"}, "sheets": ["../pizarra/extra.rcss"]})");
+        style("falta", R"({"schemaVersion": 1, "name": {"es": "X"}, "sheets": ["nada.rcss"]})");
+        style("imagen", R"j({"schemaVersion": 1, "name": {"es": "X"}, "tokens": {"panel": "image(../../x.png)"}})j");
+        style("campo", R"({"schemaVersion": 1, "name": {"es": "X"}, "script": "x"})");
+        style("frosted", R"({"schemaVersion": 1, "name": {"es": "Otro"}})");  // Id taken by the game's.
+
+        rml::StyleLibrary library;
+        library.scan({kData / "ui", ui}, fonts);
+        CHECK(library.find("frosted") != nullptr);
+        CHECK(library.find("frosted")->name("es") == "Frosted");
+        CHECK(library.find("vidrio") != nullptr);
+        const rml::Style* pizarra = library.find("pizarra");
+        REQUIRE(pizarra != nullptr);
+        CHECK_FALSE(pizarra->glass);
+        CHECK(pizarra->tokens.at("panel-blur") == "none");
+        CHECK(pizarra->sheet.find("border-color: rgba(255, 136, 0, 255)") != std::string::npos);
+        CHECK(pizarra->sheet.find("image(/styles/pizarra/tiza.png)") != std::string::npos);
+        CHECK(library.styles().size() == 3);
+        std::string errors;
+        for (const std::string& e : library.errors()) {
+            errors += e + "\n";
+        }
+        for (const char* id : {"rota:", "token: unknown token 'sparkle'", "tipo: token 'panel-radius'", "fuera:",
+                               "falta:", "imagen:", "campo: style.json: unknown field 'script'",
+                               "frosted: another style"}) {
+            CHECK_MESSAGE(errors.find(id) != std::string::npos, id << "\n" << errors);
+        }
+
+        // The example mod's style (docs/CREAR_MODS.md).
+        rml::StyleLibrary with_example;
+        with_example.scan({kData / "ui", std::filesystem::path(SC_SOURCE_DIR) / "tools" / "example_mod" / "ui"}, fonts);
+        CHECK(with_example.errors().empty());
+        REQUIRE(with_example.find("pizarra") != nullptr);
+        CHECK(with_example.find("pizarra")->name("es") == "Pizarra (ejemplo)");
+    }
+
+    TEST_CASE("the style changes with the test window open") {
+        Fixture& f = fixture();
+        const int errors = f.ui.system().errors();
+        const std::string doc = rml::TestWindow::kDocument;
+        REQUIRE(f.ui.show_document(doc, true));
+        f.ui.update(1280, 720, 1.0f);
+        CHECK(f.ui.style_id() == "frosted");
+        Rml::ElementDocument* d = f.ui.document(doc);
+        REQUIRE(d != nullptr);
+        CHECK(d->GetProperty<Rml::Colourb>("color") == Rml::Colourb(27, 31, 36, 255));
+        // The icons are the style's sprites.
+        Rml::ElementList images;
+        d->GetElementsByTagName(images, "img");
+        int sprites = 0;
+        for (Rml::Element* img : images) {
+            sprites += img->HasAttribute("sprite") ? 1 : 0;
+        }
+        CHECK(sprites >= 7);
+
+        CHECK(f.ui.set_style("vidrio") == "vidrio");
+        f.ui.update(1280, 720, 1.0f);
+        d = f.ui.document(doc);
+        REQUIRE(d != nullptr);
+        CHECK(f.ui.document_shown(doc));
+        CHECK(d->GetProperty<Rml::Colourb>("color") == Rml::Colourb(241, 240, 255, 255));
+        // Twice the scale: the icons' sheet at 2x, without errors.
+        f.ui.update(1280, 720, 2.0f);
+        CHECK(f.ui.document_shown(doc));
+        // An unknown style falls back to Frosted.
+        CHECK(f.ui.set_style("nope") == "frosted");
+        f.ui.update(1280, 720, 1.0f);
+        d = f.ui.document(doc);
+        REQUIRE(d != nullptr);
+        CHECK(d->GetProperty<Rml::Colourb>("color") == Rml::Colourb(27, 31, 36, 255));
+        CHECK(f.ui.system().errors() == errors);
+        f.ui.close_documents();
     }
 }

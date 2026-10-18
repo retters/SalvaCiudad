@@ -4,7 +4,8 @@
 // (the GPU one in the game, a null one in the tests).
 //
 // Phase 117 only has a test window, shown from the developer tools, next to
-// the old interface.
+// the old interface. Phase 119 adds the styles: the active one fills the
+// tokens of every sheet and gives /style.rcss and the icons' sprite sheet.
 #pragma once
 
 #include <SDL3/SDL_events.h>
@@ -22,6 +23,7 @@
 #include "ui/font_library.h"
 #include "ui/glyph_atlas.h"
 #include "ui/rml/rml_font_engine.h"
+#include "ui/rml/rml_style.h"
 #include "ui/rml/rml_system.h"
 
 namespace sc::rml {
@@ -43,6 +45,16 @@ public:
 
     // The interface family of the settings; documents reload if it changed.
     void set_ui_family(std::string_view id);
+
+    // The roots again (data/ui and the active mods' ui folders): the styles
+    // are looked for again and the documents reload.
+    void set_roots(std::vector<std::filesystem::path> roots);
+    // Every valid style, and the active one: `id`, or Frosted if there is no
+    // such style. Returns the id in use; documents reload on the next update.
+    [[nodiscard]] const StyleLibrary& styles() const { return styles_; }
+    std::string set_style(std::string_view id);
+    [[nodiscard]] const std::string& style_id() const { return style_id_; }
+    [[nodiscard]] const TokenMap& tokens() const { return tokens_; }
 
     // Per frame, after the events: lays out the documents (reloading them if
     // the language or the font changed) and then hands their geometry to the
@@ -87,6 +99,9 @@ private:
     };
     void reload_documents();
     void prepare(Document& d);
+    void scan_styles();
+    void build_style_sheet();
+    [[nodiscard]] bool simple_glass_class() const;
     [[nodiscard]] Document* find(const std::string& path);
 
     System system_;
@@ -98,6 +113,13 @@ private:
     bool family_changed_ = false;
     bool debugger_ready_ = false;
     bool simple_glass_ = false;
+    const ui::FontLibrary* fonts_ = nullptr;
+    StyleLibrary styles_;
+    std::string style_id_;
+    TokenMap tokens_ = default_tokens();
+    std::string style_sheet_;
+    int icon_scale_ = 1;     // The icons' sprite sheet: 1x or 2x.
+    bool style_changed_ = false;
     bool debugger_shown_ = false;
     bool pressed_ = false;  // A button went down over an element.
     double update_ms_ = 0.0;

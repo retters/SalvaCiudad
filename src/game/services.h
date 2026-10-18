@@ -3,6 +3,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 
 #include <filesystem>
 #include <string>
@@ -27,6 +28,14 @@ struct Resolution {
     bool operator==(const Resolution&) const = default;
 };
 
+// An interface style for the settings (phase 119): its id, its name in the
+// active language and its swatches (RGBA: panel, text, accent, ok, warn, bad).
+struct UiStyleChoice {
+    std::string id;
+    std::string name;
+    std::vector<std::uint32_t> preview;
+};
+
 class Services {
 public:
     virtual ~Services() = default;
@@ -47,6 +56,8 @@ public:
     // Exclusive fullscreen resolutions of a monitor, largest first.
     [[nodiscard]] virtual std::vector<Resolution> fullscreen_resolutions(const std::string& monitor) = 0;
     [[nodiscard]] virtual const ui::FontLibrary& fonts() const = 0;
+    // The interface styles that loaded (phase 119); empty without RmlUi.
+    [[nodiscard]] virtual std::vector<UiStyleChoice> ui_styles() const = 0;
 
     // True when the 3D view works (without it there are only menus).
     [[nodiscard]] virtual bool scene_available() const = 0;

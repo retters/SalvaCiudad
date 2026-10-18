@@ -1,0 +1,270 @@
+/* The parts of every window of the player's interface (phase 119), shaped
+   by the active style's tokens; a style's own sheet comes after this one
+   and may change any of it. */
+
+.window
+{
+	decorator: var(--panel);
+	backdrop-filter: var(--panel-blur);
+	box-shadow: var(--panel-shadow);
+	border: var(--panel-border-width) var(--panel-border);
+	border-radius: var(--panel-radius);
+	color: var(--text);
+}
+
+/* Simple glass, or a style without glass: no blur, a more opaque panel. */
+.glass-simple.window, .glass-simple .window
+{
+	decorator: var(--panel-simple);
+	backdrop-filter: none;
+}
+
+.bar
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	height: 52dp;
+	padding: 0 8dp 0 12dp;
+	border-bottom: 1dp var(--sep);
+	cursor: move;
+}
+
+.minimized .bar
+{
+	border-bottom-width: 0;
+}
+
+.wicon
+{
+	width: 34dp;
+	height: 34dp;
+	margin-right: 8dp;
+}
+
+.titles
+{
+	flex: 1;
+}
+
+.title
+{
+	font-size: var(--title-size);
+	font-weight: var(--title-weight);
+	color: var(--title-text);
+}
+
+.sub
+{
+	font-size: var(--font-small);
+	color: var(--dim);
+}
+
+/* Square icon buttons (D-11721). */
+.wbtn, .ibtn
+{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--btn-size);
+	height: var(--btn-size);
+	margin-left: 4dp;
+	border: 1dp var(--btn-border);
+	border-radius: var(--btn-radius);
+	background-color: var(--btn);
+	box-shadow: var(--btn-shadow);
+}
+
+/* image-color is not inherited in RmlUi: it goes on the images. */
+.wbtn img, .ibtn img
+{
+	width: 18dp;
+	height: 18dp;
+	image-color: var(--icon);
+}
+
+.wbtn:hover, .ibtn:hover
+{
+	background-color: var(--btn-hover);
+}
+
+.wbtn:hover img, .ibtn:hover img
+{
+	image-color: var(--icon-hover);
+}
+
+.wbtn.on img
+{
+	image-color: var(--icon-on);
+}
+
+.wbtn.close:hover
+{
+	background-color: var(--bad);
+}
+
+.wbtn.close:hover img
+{
+	image-color: #ffffff;
+}
+
+.sep
+{
+	width: 1dp;
+	height: 22dp;
+	margin: 0 6dp 0 10dp;
+	background-color: var(--sep);
+}
+
+.content
+{
+	padding: 10dp var(--panel-pad) var(--panel-pad);
+}
+
+.chip
+{
+	padding: 2dp 10dp;
+	border-radius: 10dp;
+	font-size: var(--font-small);
+	background-color: var(--chip);
+}
+
+.chip.ok
+{
+	color: var(--ok);
+	background-color: var(--ok-soft);
+}
+
+.chip.warn
+{
+	color: var(--warn);
+	background-color: var(--warn-soft);
+}
+
+.chip.bad
+{
+	color: var(--bad);
+	background-color: var(--bad-soft);
+}
+
+.step
+{
+	width: 28dp;
+	height: 28dp;
+	line-height: 28dp;
+	text-align: center;
+	border-radius: var(--btn-radius);
+	border: 1dp var(--btn-border);
+	background-color: var(--btn);
+	box-shadow: var(--btn-shadow);
+	font-weight: bold;
+}
+
+.step:hover
+{
+	background-color: var(--btn-hover);
+}
+
+.switch
+{
+	width: 44dp;
+	height: 24dp;
+	border-radius: 12dp;
+	background-color: var(--switch-off);
+}
+
+.switch.on
+{
+	decorator: var(--switch-on);
+}
+
+.knob
+{
+	width: 18dp;
+	height: 18dp;
+	margin: 3dp;
+	border-radius: 9dp;
+	background-color: var(--knob);
+}
+
+.switch.on .knob
+{
+	margin-left: 23dp;
+}
+
+.row
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-top: 6dp;
+	padding: 6dp 8dp;
+	border-radius: var(--row-radius);
+	background-color: var(--row);
+	border: 1dp var(--row-border);
+}
+
+.row:hover
+{
+	background-color: var(--row-hover);
+}
+
+.avatar
+{
+	width: 34dp;
+	height: 34dp;
+	margin-right: 10dp;
+}
+
+.dim
+{
+	font-size: var(--font-small);
+	color: var(--dim);
+}
+
+.foot
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-top: 12dp;
+	padding-top: 10dp;
+	border-top: 1dp var(--sep);
+}
+
+.danger
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	height: 32dp;
+	border-radius: var(--btn-radius);
+	border: 1dp var(--btn-border);
+	color: var(--bad);
+	background-color: var(--btn);
+}
+
+.danger img
+{
+	width: 18dp;
+	height: 18dp;
+	margin-right: 6dp;
+	image-color: var(--bad);
+}
+
+.danger:hover
+{
+	background-color: var(--bad-soft);
+}
+
+.grip
+{
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 16dp;
+	height: 16dp;
+	cursor: resize;
+}

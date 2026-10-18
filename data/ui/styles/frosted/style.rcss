@@ -1,0 +1,8 @@
+/* Frosted (D-11702): light frosted glass with grain and bright white edges,
+   from docs/propuestas/interfaz/temas/frosted.css. Nearly everything is in
+   the tokens (the defaults are this style's); here only what they cannot say. */
+
+.wbtn.on
+{
+	border-color: var(--icon-on);
+}

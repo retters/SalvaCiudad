@@ -91,6 +91,7 @@ enum class UiGlass { Full, Simple };
 
 struct UiSettings {
     std::string font = "alegreya-sans";  // Id from data/fonts/fonts.json.
+    std::string style = "frosted";       // Interface style id (phase 119): a-z, 0-9 and '-'.
     UiGlass glass = UiGlass::Full;
     bool show_tooltips = true;
     int tooltip_delay_ms = 500;  // 0..3000.

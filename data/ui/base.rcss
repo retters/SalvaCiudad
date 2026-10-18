@@ -1,6 +1,7 @@
-/* Base rules for every document of the player's interface (phase 117).
-   RmlUi has no built-in style sheet: elements are inline unless a sheet says
-   otherwise, so the block elements are declared here. */
+/* Base rules for every document of the player's interface (phases 117 and
+   119). RmlUi has no built-in style sheet: elements are inline unless a sheet
+   says otherwise, so the block elements are declared here. The var() tokens
+   take the active style's values (src/ui/rml/rml_style.h). */
 
 body, div, p, h1, h2, h3, section, header, footer, handle
 {
@@ -9,10 +10,10 @@ body, div, p, h1, h2, h3, section, header, footer, handle
 
 body
 {
-	font-family: ui;
-	font-size: 16dp;
+	font-family: var(--font);
+	font-size: var(--font-size);
 	font-weight: normal;
-	color: #1b1f24;
+	color: var(--text);
 }
 
 img

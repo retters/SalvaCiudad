@@ -1,13 +1,17 @@
 #include "ui/rml/rml_ui.h"
 
+#include <format>
+
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_timer.h>
 
 #include <RmlUi/Core/Core.h>
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
+#include <RmlUi/Core/Factory.h>
 #include <RmlUi/Debugger/Debugger.h>
 
+#include "core/file_io.h"
 #include "core/log.h"
 #include "i18n/translator.h"
 #include "ui/rml/rml_input.h"
@@ -29,6 +33,18 @@ RmlUi::~RmlUi() {
 bool RmlUi::init(Rml::RenderInterface& render, ui::GlyphAtlas& atlas, const ui::FontLibrary& fonts,
                  std::vector<std::filesystem::path> roots, std::string_view ui_family) {
     files_.set_roots(std::move(roots));
+    files_.set_sheet_hooks([this] { return style_sheet_; },
+                           [this](const std::string& path, std::string& text) {
+                               std::vector<std::string> unknown;
+                               text = substitute_tokens(text, tokens_, &unknown);
+                               for (const std::string& name : unknown) {
+                                   log::warn("rmlui: '{}' uses the unknown token '{}'", path, name);
+                               }
+                           });
+    fonts_ = &fonts;
+    scan_styles();
+    (void)set_style(kDefaultStyle);
+    style_changed_ = false;
     font_engine_ = std::make_unique<FontEngine>(atlas, fonts);
     font_engine_->set_ui_family(ui_family);
     Rml::SetSystemInterface(&system_);
@@ -63,6 +79,76 @@ void RmlUi::shutdown() {
     context_ = nullptr;
     Rml::Shutdown();
     font_engine_.reset();
+}
+
+void RmlUi::scan_styles() {
+    const FontCheck fonts = [this](std::string_view id) {
+        if (fonts_ != nullptr) {
+            for (const ui::FontFamily& f : fonts_->ui_families()) {
+                if (f.id == id) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    styles_.scan(files_.roots(), fonts);
+    for (const std::string& error : styles_.errors()) {
+        log::warn("rmlui: style rejected: {}", error);
+    }
+}
+
+void RmlUi::build_style_sheet() {
+    const Style* style = styles_.find(style_id_);
+    style_sheet_ = style != nullptr ? style->sheet : std::string();
+    // The icons in the style's mode and the size the scale needs, from the
+    // game's own folder (tools/ui/iconos.py writes them).
+    const std::string icons = std::format("icons/{}@{}x.rcss", tokens_.at("icon-mode"), icon_scale_);
+    const std::optional<std::filesystem::path> file = resolve_ui_path({files_.roots().front()}, icons);
+    const fs::ReadResult r = file ? fs::read_file(*file, Files::kMaxFileBytes) : fs::ReadResult{};
+    if (!file || r.error != fs::IoError::None) {
+        log::warn("rmlui: no icon sheet '{}'", icons);
+        return;
+    }
+    style_sheet_ += r.data;
+}
+
+std::string RmlUi::set_style(std::string_view id) {
+    const Style* style = styles_.find(id);
+    if (style == nullptr) {
+        if (!id.empty() && id != kDefaultStyle) {
+            log::warn("rmlui: no style '{}'; using {}", id, kDefaultStyle);
+        }
+        style = styles_.find(kDefaultStyle);
+    }
+    if (style == nullptr && !styles_.styles().empty()) {
+        style = &styles_.styles().front();
+    }
+    const std::string chosen = style != nullptr ? style->id : std::string();
+    if (chosen == style_id_ && !style_sheet_.empty()) {
+        return chosen;
+    }
+    style_id_ = chosen;
+    tokens_ = style != nullptr ? style->tokens : default_tokens();
+    build_style_sheet();
+    style_changed_ = true;
+    return chosen;
+}
+
+void RmlUi::set_roots(std::vector<std::filesystem::path> roots) {
+    if (roots == files_.roots()) {
+        return;
+    }
+    files_.set_roots(std::move(roots));
+    scan_styles();
+    const std::string wanted = style_id_;
+    style_id_.clear();
+    (void)set_style(wanted);
+}
+
+bool RmlUi::simple_glass_class() const {
+    const Style* style = styles_.find(style_id_);
+    return simple_glass_ || (style != nullptr && !style->glass);
 }
 
 void RmlUi::set_ui_family(std::string_view id) {
@@ -140,7 +226,7 @@ void RmlUi::show_debugger(bool show) {
 }
 
 void RmlUi::prepare(Document& d) {
-    d.document->SetClass("glass-simple", simple_glass_);
+    d.document->SetClass("glass-simple", simple_glass_class());
     const std::size_t hash = d.path.find('#');
     if (hash == std::string::npos) {
         return;
@@ -174,7 +260,7 @@ void RmlUi::set_simple_glass(bool simple) {
     }
     simple_glass_ = simple;
     for (const Document& d : documents_) {
-        d.document->SetClass("glass-simple", simple);
+        d.document->SetClass("glass-simple", simple_glass_class());
     }
 }
 
@@ -207,10 +293,21 @@ void RmlUi::update(int width, int height, float dp_ratio) {
     if (context_->GetDensityIndependentPixelRatio() != dp_ratio) {
         context_->SetDensityIndependentPixelRatio(dp_ratio);
     }
+    // Icons drawn at twice the size from a scale of 1.5 up.
+    const int icon_scale = dp_ratio >= 1.5f ? 2 : 1;
+    if (icon_scale != icon_scale_) {
+        icon_scale_ = icon_scale;
+        build_style_sheet();
+        style_changed_ = true;
+    }
     const std::uint64_t generation = i18n::translator().generation();
-    if (generation != language_generation_ || family_changed_) {
+    if (generation != language_generation_ || family_changed_ || style_changed_) {
+        if (style_changed_) {
+            Rml::Factory::ClearStyleSheetCache();  // The sheets read again, with the new tokens.
+        }
         language_generation_ = generation;
         family_changed_ = false;
+        style_changed_ = false;
         reload_documents();
     }
     context_->Update();

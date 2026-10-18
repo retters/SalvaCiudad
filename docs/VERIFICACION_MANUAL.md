@@ -511,6 +511,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 119 (estilos de la interfaz)
+
+- [ ] Configuración > Interfaz: «Estilo de la interfaz» ofrece Frosted y Vidrio oscuro, con la franja de colores de cada uno; con la ventana de prueba abierta, el cambio se ve al momento y la ventana no se cierra.
+- [ ] Vidrio oscuro se parece a su maqueta (`docs/propuestas/interfaz`, estilo «Vidrio oscuro»): panel oscuro, borde violeta y cian, íconos de trazo.
+- [ ] Los botones de la barra de la ventana son cuadrados; el pin fijado se pinta del color de acento; × se pone rojo al pasar el ratón.
+- [ ] «Vidrio: Simple» en los dos estilos: panel casi opaco, sin desenfoque. Se guarda al salir y volver a entrar.
+- [ ] Con la escala de la interfaz en 2,0, los íconos se ven nítidos (hoja de 2x).
+- [ ] Copiar `tools/example_mod` a la carpeta de mods y activarlo: aparece el estilo «Pizarra (ejemplo)» y se puede elegir.
+- [ ] **Tu opinión:** los colores y el grosor de los íconos, y si el tono del duotono de Frosted debería ser más o menos marcado.
+
 ### Fase 118 (RmlUi: vidrio y efectos)
 
 - [ ] Ctrl+F3 > Interfaz > «Ventana de prueba de RmlUi»: la ventana se ve como la maqueta Frosted: el mapa desenfocado detrás, grano fino, bordes blancos, una sombra suave abajo y las esquinas redondeadas recortando el vidrio.

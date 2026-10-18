@@ -2,29 +2,32 @@
 <head>
 	<title>Cantero</title>
 	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
 	<link type="text/rcss" href="prueba.rcss"/>
 </head>
-<!-- Phase 117 test window: the stonecutter's window of the interface
-     mockups (docs/propuestas/interfaz, style Frosted), with test data. -->
-<body data-model="prueba" data-class-minimized="minimized">
+<!-- Test window of phases 117 to 119: the stonecutter's window of the
+     interface mockups (docs/propuestas/interfaz), with test data, in the
+     active style (/style.rcss is the style's sheet; icons are its sprites). -->
+<body class="window" data-model="prueba" data-class-minimized="minimized">
 	<handle class="bar" move_target="#document">
 		<img class="wicon" src="img/stonecutter.png"/>
 		<div class="titles">
 			<div class="title">@building.stonecutter</div>
 			<div class="sub">@hud.build.cat.resources</div>
 		</div>
-		<div class="wbtn"><img src="img/eye.png"/></div>
-		<div class="wbtn"><img src="img/camera.png"/></div>
+		<div class="wbtn"><img sprite="icon-eye"/></div>
+		<div class="wbtn"><img sprite="icon-camera"/></div>
 		<div class="sep"></div>
-		<div class="wbtn" data-event-click="minimize"><img src="img/minus.png"/></div>
-		<div class="wbtn" data-class-on="pinned" data-event-click="pin"><img src="img/pin.png"/></div>
-		<div class="wbtn close" data-event-click="close"><img src="img/x.png"/></div>
+		<div class="wbtn" data-event-click="minimize"><img sprite="icon-minus"/></div>
+		<div class="wbtn" data-class-on="pinned" data-event-click="pin"><img sprite="icon-pin"/></div>
+		<div class="wbtn close" data-event-click="close"><img sprite="icon-x"/></div>
 	</handle>
 	<div class="content" data-if="!minimized">
 		<div class="hero">
 			<img src="img/stonecutter.png"/>
 			<span class="chip ok" data-if="producing">@hud.building.working</span>
-			<span class="chip stopped" data-if="!producing">@hud.building.stopped</span>
+			<span class="chip warn" data-if="!producing">@hud.building.stopped</span>
 		</div>
 		<div class="kv">
 			<span class="k">{{workers_title}}</span>
@@ -46,15 +49,15 @@
 		</div>
 		<div class="row">
 			<img class="avatar" src="img/nyxar.png"/>
-			<div class="who"><div>Nyxar (22)</div><div class="task">@task.produce</div></div>
+			<div class="who"><div>Nyxar (22)</div><div class="dim">@task.produce</div></div>
 		</div>
 		<div class="row">
 			<img class="avatar" src="img/thazza.png"/>
-			<div class="who"><div>Thazza (32)</div><div class="task">@task.goDeliver</div></div>
+			<div class="who"><div>Thazza (32)</div><div class="dim">@task.goDeliver</div></div>
 		</div>
 		<div class="foot">
-			<div class="danger"><img src="img/trash.png"/>@hud.building.demolish</div>
-			<div class="ghost"><img src="img/more.png"/></div>
+			<div class="danger"><img sprite="icon-trash"/><span>@hud.building.demolish</span></div>
+			<div class="ibtn"><img sprite="icon-more"/></div>
 		</div>
 	</div>
 	<handle class="grip" size_target="#document"></handle>

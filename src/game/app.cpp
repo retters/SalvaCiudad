@@ -229,7 +229,7 @@ bool App::init() {
     }
     // RmlUi (phase 117) is optional while the old interface still exists.
     if (!rml_renderer_.create(gpu_, ui_renderer_.atlas_texture(), rml::FontEngine::kAtlasTexture) ||
-        !rml_.init(rml_renderer_, atlas_, fonts_, {paths_->game_data_dir() / "ui"}, settings_->settings().ui.font) ||
+        !rml_.init(rml_renderer_, atlas_, fonts_, ui_roots(), settings_->settings().ui.font) ||
         !rml_test_.bind(*rml_.context())) {
         log::warn("rmlui: not available; the old interface goes on alone");
         rml_.shutdown();
@@ -449,11 +449,38 @@ void App::load_mods() {
     pack_ = std::move(pack);
 }
 
+std::vector<UiStyleChoice> App::ui_styles() const {
+    std::vector<UiStyleChoice> out;
+    if (!rml_.ready()) {
+        return out;
+    }
+    const std::string& language = i18n::translator().active().code;
+    for (const rml::Style& s : rml_.styles().styles()) {
+        out.push_back({s.id, s.name(language), s.preview});
+    }
+    return out;
+}
+
+std::vector<std::filesystem::path> App::ui_roots() const {
+    std::vector<std::filesystem::path> roots{paths_->game_data_dir() / "ui"};
+    if (pack_) {
+        for (const std::filesystem::path& dir : pack_->dirs) {
+            std::error_code ec;
+            if (std::filesystem::is_directory(dir / "ui", ec)) {
+                roots.push_back(dir / "ui");
+            }
+        }
+    }
+    return roots;
+}
+
 void App::apply_mods(const std::vector<std::string>& enabled) {
     (void)mods::save_selection(paths_->user_dir / "mods.json", mods::ModSelection{enabled});
     leave_map();
     hide_menu_background();
     load_mods();
+    rml_.set_roots(ui_roots());
+    rml_style_.clear();  // Look for the chosen style again: it may come from a mod.
     apply_language();
     if (scene_ok_) {
         (void)map_scene_.load_models(scene_, *pack_);
@@ -1101,6 +1128,10 @@ void App::render_frame(float dt) {
         ui_.end_frame();
         // RmlUi lays out and records its geometry now, so the glyphs it adds
         // to the shared atlas go up with the old interface's upload below.
+        if (settings_->settings().ui.style != rml_style_) {
+            rml_style_ = settings_->settings().ui.style;
+            (void)rml_.set_style(rml_style_);
+        }
         const bool simple_glass = settings_->settings().ui.glass == UiGlass::Simple;
         rml_renderer_.set_glass(simple_glass ? GlassMode::Simple : GlassMode::Full);
         rml_.set_simple_glass(simple_glass);

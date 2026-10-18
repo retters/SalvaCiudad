@@ -68,6 +68,7 @@ public:
     std::vector<std::string> monitor_names() override;
     std::vector<Resolution> fullscreen_resolutions(const std::string& monitor) override;
     const ui::FontLibrary& fonts() const override { return fonts_; }
+    std::vector<UiStyleChoice> ui_styles() const override;
     void open_data_folder() override;
     mods::ModLibrary& mod_library() override { return mod_library_; }
     void apply_mods(const std::vector<std::string>& enabled) override;
@@ -221,6 +222,9 @@ private:
     RmlRenderer rml_renderer_;
     rml::RmlUi rml_;
     rml::TestWindow rml_test_;
+    std::string rml_style_;  // The style last given to rml_ (ui.style).
+    // data/ui, then the ui folder of each loaded mod.
+    [[nodiscard]] std::vector<std::filesystem::path> ui_roots() const;
     std::unique_ptr<UiHost> host_;
     ui::Input input_;
     render::SceneRenderer scene_;

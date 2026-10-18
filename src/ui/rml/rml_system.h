@@ -8,6 +8,8 @@
 // Files: documents, style sheets and images are read only from the allowed
 // roots (data/ui and the ui folders of active mods). Absolute paths, drive
 // letters, ".." and anything that resolves outside a root are refused.
+// Style sheets pass through a filter (the style's tokens, phase 119) and
+// "style.rcss" at the root is the active style's sheet, made in memory.
 #pragma once
 
 #include <cstddef>
@@ -56,6 +58,15 @@ public:
     void set_roots(std::vector<std::filesystem::path> roots) { roots_ = std::move(roots); }
     [[nodiscard]] const std::vector<std::filesystem::path>& roots() const { return roots_; }
 
+    static constexpr const char* kStyleSheet = "style.rcss";
+    // `style_sheet` gives the text of kStyleSheet; `filter` changes every
+    // other .rcss file after it is read (its path, its text).
+    void set_sheet_hooks(std::function<std::string()> style_sheet,
+                         std::function<void(const std::string&, std::string&)> filter) {
+        style_sheet_ = std::move(style_sheet);
+        filter_ = std::move(filter);
+    }
+
     Rml::FileHandle Open(const Rml::String& path) override;
     void Close(Rml::FileHandle file) override;
     size_t Read(void* buffer, size_t size, Rml::FileHandle file) override;
@@ -69,6 +80,8 @@ private:
         std::size_t position = 0;
     };
     std::vector<std::filesystem::path> roots_;
+    std::function<std::string()> style_sheet_;
+    std::function<void(const std::string&, std::string&)> filter_;
 };
 
 }  // namespace sc::rml

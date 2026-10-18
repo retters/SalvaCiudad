@@ -14,6 +14,7 @@ mi_mod/
   models/*.glb          modelos (glTF binario)
   scripts/main.lua      reglas (opcional)
   scripts/*.lua         módulos para require
+  ui/styles/<id>/       estilos de la interfaz (opcional)
 ```
 
 ## mod.json
@@ -385,3 +386,23 @@ Un edificio, un nivel de un edificio o un recurso natural puede tener varias for
 - Para agregar variantes a un edificio de otro mod, parchea su `models` con la lista completa: `{"type": "building", "patch": "core:well", "models": ["models/pozo_a.glb", "models/pozo_b.glb"]}`. Los archivos de una lista parcheada se buscan en el mod del parche; los de los niveles, en el mod que escribió `levels`.
 - Los materiales llamados `var_roof`, `var_roof_dark`, `var_walls` y `var_shutter` cambian de color en cada edificio (ver `docs/ARTE.md`).
 - El visor de modelos muestra todas las variantes de cada definición juntas.
+
+## Estilos de la interfaz (`ui/styles/`)
+
+Un mod puede traer estilos para la interfaz nueva (la de RmlUi): una carpeta `ui/styles/<id>/` con un `style.json` y, si hace falta, hojas `.rcss` e imágenes PNG dentro de esa misma carpeta. Aparecen en Configuración > Interfaz > «Estilo de la interfaz» mientras el mod está activo. Son solo datos: no ejecutan nada.
+
+```json
+{
+  "schemaVersion": 1,
+  "name": {"es": "Pizarra", "en": "Slate"},
+  "glass": false,
+  "tokens": {"text": "#e8ecef", "accent": "#f2b544", "panel-radius": "6px", "icon-mode": "solid"},
+  "sheets": ["style.rcss"]
+}
+```
+
+- `tokens` cambia los valores que usan todas las ventanas; los que no se nombran quedan como en Frosted. La lista completa, con su tipo y su valor por omisión, está en `src/ui/rml/rml_style.cpp`. Los valores se escriben como en CSS (colores `#rrggbb` o `rgba(r, g, b, 0.5)`, medidas en `px` o `dp`, degradados `linear-gradient(...)` y `radial-gradient(...)`, imágenes `image(archivo.png repeat)`).
+- `glass`: si el estilo desenfoca el mapa detrás de las ventanas. Sin vidrio, o con el ajuste «Vidrio: Simple», se usa el token `panel-simple`.
+- Las hojas pueden usar `var(--token)` y las clases de `data/ui/window.rcss` (`.window`, `.bar`, `.wbtn`, `.row`...).
+- Un token desconocido, un valor del tipo equivocado, una hoja o imagen que falta o una ruta que sale de la carpeta invalidan el estilo entero; el motivo queda en el registro del juego. Un estilo con el mismo id que otro ya cargado se rechaza.
+- El mod de ejemplo trae uno: `tools/example_mod/ui/styles/pizarra`.

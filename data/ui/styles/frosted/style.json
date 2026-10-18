@@ -1,0 +1,11 @@
+{
+ "schemaVersion": 1,
+ "name": {"es": "Frosted", "en": "Frosted"},
+ "glass": true,
+ "tokens": {
+  "panel": "image(grain.png repeat), linear-gradient(160deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, .38))",
+  "panel-simple": "image(grain.png repeat), linear-gradient(160deg, rgba(248, 249, 252, .95), rgba(238, 240, 246, .9))",
+  "icon-mode": "duotone"
+ },
+ "sheets": ["style.rcss"]
+}

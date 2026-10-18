@@ -380,6 +380,7 @@ set(SC_ENGINE_SOURCES
     src/ui/rml/rml_font_engine.cpp
     src/ui/rml/rml_input.cpp
     src/ui/rml/rml_system.cpp
+    src/ui/rml/rml_style.cpp
     src/ui/rml/rml_test_window.cpp
     src/ui/rml/rml_ui.cpp)
 

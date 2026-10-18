@@ -463,6 +463,46 @@ void SettingsScreen::tab_interface(ui::Context& ctx, float x, float& y, float w)
             services_.settings_changed();
         }
     }
+    // The style of the new interface (phase 119), with its colors as a preview,
+    // and its glass; both apply at once.
+    if (const std::vector<UiStyleChoice> styles = services_.ui_styles(); !styles.empty()) {
+        std::vector<std::string> options;
+        int index = 0;
+        for (std::size_t i = 0; i < styles.size(); ++i) {
+            options.push_back(styles[i].name);
+            if (styles[i].id == s.ui.style) {
+                index = static_cast<int>(i);
+            }
+        }
+        const Row r = row(ctx, x, y, w, tr("settings.interface.style"), tr("settings.interface.style.tooltip"));
+        if (ctx.selector(ctx.id("style"), r.control, index, options, tr("settings.interface.style.tooltip"))) {
+            s.ui.style = styles[static_cast<std::size_t>(index)].id;
+            services_.settings_changed();
+        }
+        const Row p = row(ctx, x, y, w, tr("settings.interface.stylePreview"), tr("settings.interface.style.tooltip"));
+        const std::vector<std::uint32_t>& colors = styles[static_cast<std::size_t>(index)].preview;
+        if (!colors.empty()) {
+            const auto color = [](std::uint32_t c) {
+                return ui::Color{static_cast<std::uint8_t>(c >> 24), static_cast<std::uint8_t>(c >> 16),
+                                 static_cast<std::uint8_t>(c >> 8), 255};
+            };
+            ctx.draw().rect(p.control, color(colors[0]));
+            const float pad = p.control.h * 0.2f;
+            const float side = p.control.h - 2.0f * pad;
+            for (std::size_t i = 1; i < colors.size(); ++i) {
+                const ui::Rect sw{p.control.x + pad + static_cast<float>(i - 1) * (side + pad), p.control.y + pad, side,
+                                  side};
+                ctx.draw().rect(sw, color(colors[i]));
+            }
+        }
+        std::vector<std::string> glass{tr("settings.interface.glass.full"), tr("settings.interface.glass.simple")};
+        int g = s.ui.glass == UiGlass::Simple ? 1 : 0;
+        const Row gr = row(ctx, x, y, w, tr("settings.interface.glass"), tr("settings.interface.glass.tooltip"));
+        if (ctx.selector(ctx.id("glass"), gr.control, g, glass, tr("settings.interface.glass.tooltip"))) {
+            s.ui.glass = g == 1 ? UiGlass::Simple : UiGlass::Full;
+            services_.settings_changed();
+        }
+    }
     {
         const Row r = row(ctx, x, y, w, tr("settings.interface.tooltips"), tr("settings.interface.tooltips.tooltip"));
         if (ctx.checkbox(ctx.id("tooltips"), r.control, s.ui.show_tooltips, tr("settings.interface.tooltips.tooltip"))) {

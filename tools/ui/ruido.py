@@ -1,4 +1,4 @@
-"""Writes the grain of the Frosted style (data/ui/dev/img/noise.png): the
+"""Writes the grain of the Frosted style (data/ui/styles/frosted/grain.png): the
 mockups' SVG fractal noise (gray, alpha up to about 9 %) approximated with
 three octaves of smoothed random noise. Fixed seed: the same file every time.
 
@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageFilter
 
 SIZE = 160
-OUT = Path(__file__).resolve().parents[2] / "data" / "ui" / "dev" / "img" / "noise.png"
+OUT = Path(__file__).resolve().parents[2] / "data" / "ui" / "styles" / "frosted" / "grain.png"
 
 
 def octave(rng, cell):
