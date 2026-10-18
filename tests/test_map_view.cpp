@@ -11,6 +11,7 @@
 #include <SDL3/SDL_timer.h>
 
 #include "core/file_io.h"
+#include "i18n/translator.h"
 #include "game/dev_tools.h"
 #include "game/map_generation.h"
 #include "game/map_scene.h"
@@ -461,7 +462,9 @@ TEST_SUITE("new_game") {
         varied.close();
     }
 
-    TEST_CASE("the custom form scrolls down to its buttons") {
+    // Phase 126: the form is a panel of rows; its buttons are its last row,
+    // reached however long the custom form is (the panel scrolls).
+    TEST_CASE("the custom form ends with its buttons, and Generate generates") {
         const sim::Content& content = sc::test::core_content();
         NewGameSettings last;
         last.size = "small";
@@ -469,6 +472,16 @@ TEST_SUITE("new_game") {
         NewGameScreen screen;
         screen.open(&content, false, last);
         REQUIRE(screen.custom());
+        const ThingRows rows = screen.rows();
+        REQUIRE_FALSE(rows.rows.empty());
+        const WinRow& bar = rows.rows.back();
+        REQUIRE(bar.kind == WinRow::Kind::Buttons);
+        REQUIRE(bar.buttons.size() == 3);  // From varied, back, generate.
+        const RowButton& generate = bar.buttons.back();
+        CHECK(generate.label == i18n::tr("newGame.generate"));
+        REQUIRE(generate.enabled);
+        RowEffects e;
+        rows.acts[static_cast<std::size_t>(generate.act)](nullptr, RowInput{}, e);
         auto font = std::make_unique<ui::Font>();
         const auto r = fs::read_file(std::filesystem::path(SC_SOURCE_DIR) / "data/fonts/ui/AlegreyaSans-Regular.ttf",
                                      ui::Font::kMaxFileBytes);
@@ -476,39 +489,22 @@ TEST_SUITE("new_game") {
         ui::GlyphAtlas atlas{512};
         ui::TextRenderer text{atlas};
         text.set_font(ui::FontRole::Regular, font.get());
-        text.set_font(ui::FontRole::Bold, font.get());
         ui::Context ctx{text};
-        std::uint64_t now = 1'000'000;
-        const auto frame = [&](const ui::Input& in) {
-            now += 16'000'000;
-            ctx.begin_frame(in, 1280, 720, 1.0f, now, 0, 0);
-            const NewGameScreen::Result result = screen.frame(ctx, false);
-            ctx.end_frame();
-            return result;
-        };
-        // "Generate" ends up at the bottom right of the panel, 680 wide and
-        // centered: out of sight until the form is scrolled all the way.
-        ui::Input at;
-        at.mouse_x = 856.0f;
-        at.mouse_y = 656.0f;
-        const auto click = [&] {
-            ui::Input down = at;
-            down.mouse_down = down.mouse_pressed = true;
-            ui::Input up = at;
-            up.mouse_released = true;
-            const NewGameScreen::Result first = frame(down);
-            const NewGameScreen::Result second = frame(up);
-            return first != NewGameScreen::Result::None ? first : second;
-        };
-        CHECK(frame(at) == NewGameScreen::Result::None);
-        const sim::MapSettings before = screen.settings();
-        ui::Input wheel = at;
-        wheel.wheel = -3.0f;
-        for (int i = 0; i < 40; ++i) {
-            CHECK(frame(wheel) == NewGameScreen::Result::None);
+        ctx.begin_frame(ui::Input{}, 1280, 720, 1.0f, 1'000'000, 0, 0);
+        CHECK(screen.frame(ctx, false) == NewGameScreen::Result::Generate);
+        ctx.end_frame();
+        // Every text of the form is translated (in Spanish, with the game's texts).
+        auto& t = i18n::translator();
+        const std::filesystem::path data = std::filesystem::path(SC_SOURCE_DIR) / "data";
+        REQUIRE(t.load(data / "lang", test::read_text(data / "lang" / "en.json")) == 0);
+        REQUIRE(t.add_mod_texts(test::read_text(data / "mods" / "core" / "lang" / "es.json"), "es"));
+        REQUIRE(t.set_language("es"));
+        for (const WinRow& row : screen.rows().rows) {
+            CHECK_MESSAGE(row.text.find("newGame.") == std::string::npos, row.text);
+            for (const RowButton& b : row.buttons) {
+                CHECK_MESSAGE(b.label.find("newGame.") == std::string::npos, b.label);
+            }
         }
-        CHECK(screen.settings() == before);  // The wheel changes no choice.
-        CHECK(click() == NewGameScreen::Result::Generate);
         screen.close();
     }
 

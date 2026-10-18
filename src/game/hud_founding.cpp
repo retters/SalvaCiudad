@@ -86,8 +86,8 @@ void GameHud::founding(ui::Context& ctx, GameSession& s) {
     // A site was clicked: the question. The site cannot be changed later.
     if (mine && ui.found_asked && ui.found_sent == 0) {
         out.line(tr("hud.found.question"), WinRow::Kind::Paragraph);
-        RowButton yes = out.button(tr("hud.found.confirm"), {}, [](GameSession& gs, const RowInput&, RowEffects&) {
-            GameSession::Interaction& u = gs.ui();
+        RowButton yes = out.button(tr("hud.found.confirm"), {}, [](GameSession* gs, const RowInput&, RowEffects&) {
+            GameSession::Interaction& u = gs->ui();
             if (!u.found_asked) {
                 return;
             }
@@ -95,13 +95,13 @@ void GameHud::founding(ui::Context& ctx, GameSession& s) {
             c.type = sim::CommandType::FoundTown;
             c.position = {sim::Fixed::from_int(u.found_x), sim::Fixed::from_int(u.found_z)};
             c.value = u.found_rotation;
-            gs.issue(c);
+            gs->issue(c);
             u.found_asked = false;
-            u.found_sent = gs.game().turn() + 1;
+            u.found_sent = gs->game().turn() + 1;
         });
         yes.on = true;
-        out.buttons({std::move(yes), out.button(tr("hud.found.cancel"), {}, [](GameSession& gs, const RowInput&, RowEffects&) {
-                         gs.ui().found_asked = false;
+        out.buttons({std::move(yes), out.button(tr("hud.found.cancel"), {}, [](GameSession* gs, const RowInput&, RowEffects&) {
+                         gs->ui().found_asked = false;
                      })});
     }
     if (!out.rows.empty()) {
@@ -129,11 +129,11 @@ void GameHud::arrival(GameSession& s) {
     out.line(tr(visitor ? "hud.arrive.title.watching" : "hud.arrive.title"), WinRow::Kind::Title);
     if (can_found) {
         RowButton found = out.button(tr("hud.arrive.found"), tr("hud.arrive.found.tooltip"),
-                                     [this, visitor](GameSession& gs, const RowInput&, RowEffects&) {
+                                     [this, visitor](GameSession* gs, const RowInput&, RowEffects&) {
                                          if (visitor) {
                                              services_.play_game(-1);  // A seat first; then the site.
                                          } else {
-                                             gs.ui().found_mode = true;
+                                             gs->ui().found_mode = true;
                                          }
                                      });
         found.on = true;
@@ -151,21 +151,21 @@ void GameHud::arrival(GameSession& s) {
                 c.type = sim::CommandType::CancelJoin;
                 out.stepper(tr("hud.arrive.waiting", town_name(t)),
                             out.button(tr("hud.arrive.cancel"), {},
-                                       [c](GameSession& gs, const RowInput&, RowEffects&) { gs.issue(c); }),
+                                       [c](GameSession* gs, const RowInput&, RowEffects&) { gs->issue(c); }),
                             RowButton{});
                 out.rows.back().cls = "accent";
             } else {
                 out.stepper(tr("hud.arrive.town", town_name(t)),
                             out.button(
                                 tr("hud.arrive.ask"), tr("hud.arrive.ask.tooltip", town_name(t)),
-                                [this, visitor, t](GameSession& gs, const RowInput&, RowEffects&) {
+                                [this, visitor, t](GameSession* gs, const RowInput&, RowEffects&) {
                                     if (visitor) {
                                         services_.play_game(t);  // A seat first; then the request.
                                     } else {
                                         sim::Command c;
                                         c.type = sim::CommandType::RequestJoin;
                                         c.count = t;
-                                        gs.issue(c);
+                                        gs->issue(c);
                                     }
                                 },
                                 asked == sim::kNoRequest),
@@ -178,7 +178,7 @@ void GameHud::arrival(GameSession& s) {
     }
     if (visitor) {
         out.buttons({out.button(tr("hud.arrive.watch"), tr("hud.arrive.watch.tooltip"),
-                                [](GameSession& gs, const RowInput&, RowEffects&) { gs.ui().arrival_open = false; })});
+                                [](GameSession* gs, const RowInput&, RowEffects&) { gs->ui().arrival_open = false; })});
     }
     out.line(tr("hud.arrive.note"), WinRow::Kind::Dim);
     panel("arrival", std::move(out), PanelPlace::Top, 520.0f);
@@ -209,12 +209,16 @@ void GameHud::spectator(GameSession& s) {
             gs.watch(towns[static_cast<std::size_t>(i - 1)], false, gs.seat());
         }
     };
-    RowButton prev = out.button({}, tr("hud.watch.tooltip"), [show, index, count](GameSession& gs, const RowInput&, RowEffects&) {
-        show(gs, (index + count - 1) % count);
+    RowButton prev = out.button({}, tr("hud.watch.tooltip"), [show, index, count](GameSession* gs, const RowInput&, RowEffects&) {
+        if (gs != nullptr) {
+            show(*gs, (index + count - 1) % count);
+        }
     });
     prev.icon = "icon-left";
-    RowButton next = out.button({}, tr("hud.watch.tooltip"), [show, index, count](GameSession& gs, const RowInput&, RowEffects&) {
-        show(gs, (index + 1) % count);
+    RowButton next = out.button({}, tr("hud.watch.tooltip"), [show, index, count](GameSession* gs, const RowInput&, RowEffects&) {
+        if (gs != nullptr) {
+            show(*gs, (index + 1) % count);
+        }
     });
     next.icon = "icon-right";
     out.stepper(tr("hud.watch.label") + " " +
@@ -223,11 +227,11 @@ void GameHud::spectator(GameSession& s) {
     if (mine || game.open()) {
         out.buttons({out.button(tr(mine ? "hud.watch.back" : "hud.watch.play"),
                                 tr(mine ? "hud.watch.back.tooltip" : "hud.watch.play.tooltip"),
-                                [this, mine](GameSession& gs, const RowInput&, RowEffects&) {
+                                [this, mine](GameSession* gs, const RowInput&, RowEffects&) {
                                     if (mine) {
                                         services_.play_game(0);
                                     } else {
-                                        gs.ui().arrival_open = !gs.ui().arrival_open;
+                                        gs->ui().arrival_open = !gs->ui().arrival_open;
                                     }
                                 })});
     }
@@ -256,16 +260,16 @@ void GameHud::join_requests(GameSession& s) {
         if (s.spectating()) {
             // Phase 79: watching, the founder sees it but answers from its town.
             out.buttons({out.button(tr("hud.watch.backToAnswer"), {},
-                                    [this](GameSession&, const RowInput&, RowEffects&) { services_.play_game(0); })});
+                                    [this](GameSession*, const RowInput&, RowEffects&) { services_.play_game(0); })});
         } else {
             const auto answer = [this, p](sim::CommandType type) {
-                return [this, p, type](GameSession& gs, const RowInput&, RowEffects&) {
+                return [this, p, type](GameSession* gs, const RowInput&, RowEffects&) {
                     sim::Command c;
                     c.type = type;
                     c.count = p;
-                    gs.issue(c);
+                    gs->issue(c);
                     answered_seat_ = p;
-                    answered_turn_ = gs.game().turn();
+                    answered_turn_ = gs->game().turn();
                 };
             };
             RowButton yes = out.button(tr("hud.net.accept"), tr("hud.join.accept.tooltip"), answer(sim::CommandType::JoinTown));

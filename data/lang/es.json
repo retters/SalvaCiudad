@@ -67,6 +67,8 @@
     "settings.back": "Volver",
     "settings.value.percent": "{0} %",
     "settings.value.ms": "{0} ms",
+    "settings.value.on": "Sí",
+    "settings.value.off": "No",
     "settings.display.mode": "Modo de ventana",
     "settings.display.mode.tooltip": "Pantalla completa le da al juego toda la pantalla y puede cambiar su resolución. Ventana sin bordes llena la pantalla sin cambiar la resolución y permite cambiar más rápido a otros programas. Ventana muestra el juego en una ventana normal.",
     "settings.display.mode.fullscreen": "Pantalla completa",

@@ -2,7 +2,8 @@
 // kind of map. "Varied" has nothing else to choose: the seed decides the
 // climate and the sea, and the rest is the usual. "Custom" has every
 // choice: check boxes, sliders and lists. A small picture of the map is
-// made again whenever a choice changes.
+// made again whenever a choice changes. Phase 126: an RmlUi menu panel of
+// rows (thing_rows.h); the picture is /live/preview.
 #pragma once
 
 #include <array>
@@ -15,12 +16,15 @@
 #include <vector>
 
 #include "game/settings.h"
+#include "game/thing_rows.h"
 #include "sim/climate.h"
 #include "sim/content.h"
 #include "sim/map.h"
 #include "ui/context.h"
 
 namespace sc {
+
+class UiHost;
 
 // Seeds are typed as decimal digits; at most this many.
 inline constexpr std::size_t kMaxSeedDigits = 19;
@@ -61,7 +65,12 @@ public:
     // the screen's use. `multiplayer`: the map of a network game; the
     // button opens the lobby.
     void open(const sim::Content* content, bool multiplayer = false, const NewGameSettings& remembered = {});
+    Result frame(ui::Context& ctx, UiHost& host, bool modal);
+    // The same without showing it: the keys (Esc, Enter), the preview and
+    // what its buttons asked (the tests).
     Result frame(ui::Context& ctx, bool modal);
+    // The form's rows (the tests press their buttons).
+    [[nodiscard]] ThingRows rows();
     // The choices on the form, to remember them (phase 23).
     [[nodiscard]] NewGameSettings remembered() const;
     // Back to "Varied", with every custom choice at its usual value; the
@@ -82,13 +91,12 @@ public:
     void close();
 
 private:
-    void seed_field(ui::Context& ctx, const ui::Rect& r, bool modal);
     void apply(const NewGameSettings& n);
     // Fills settings_ and rules_ from the form.
     void resolve();
-    void custom_rows(ui::Context& ctx, float x, float& y, float cw);
-    void rules_rows(ui::Context& ctx, float x, float& y, float cw);
-    void preview_panel(ui::Context& ctx, float x, float& y, float cw);
+    void custom_rows(ThingRows& out);
+    void rules_rows(ThingRows& out);
+    [[nodiscard]] std::string preview_rml() const;
     void update_preview(std::uint64_t now_ns);
     [[nodiscard]] std::string summary() const;
 
@@ -110,8 +118,7 @@ private:
     sim::GameRules rules_;
     std::string seed_text_;
     bool multiplayer_ = false;
-    bool seed_focused_ = false;
-    float last_height_ = 0.0f;
+    Result asked_ = Result::None;  // What a button of the panel asked.
 
     // The preview: made in its own thread a moment after the last change.
     struct PreviewResult {

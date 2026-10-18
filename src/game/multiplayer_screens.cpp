@@ -3,8 +3,10 @@
 #include <algorithm>
 #include <charconv>
 #include <cmath>
+#include <format>
 
 #include "game/new_game_screen.h"
+#include "game/ui_host.h"
 #include "i18n/translator.h"
 
 namespace sc {
@@ -15,22 +17,6 @@ namespace {
 
 constexpr std::uint32_t kPlayerColors[net::kColors] = {0xD9463B, 0x3B7BD9, 0x4DAF4A, 0xE8C33A, 0x984EA3, 0xF08A24,
                                                         0x3BC1C9, 0xE377C2, 0x8C564B, 0xBCBD22, 0xF4F4F4, 0x333333};
-
-// A centered panel of `height` for the content; returns the content box.
-ui::Rect frame_panel(ui::Context& ctx, float width, float height, std::string_view title, float& y) {
-    const float pad = ctx.s(24.0f);
-    const ui::TextStyle ts = ctx.style(ctx.theme().heading, ui::FontRole::Bold);
-    const float title_h = ctx.text().line_height(ts);
-    const float w = std::min(ctx.s(width), ctx.width() - ctx.s(32.0f));
-    const float h = std::min(ctx.height() - ctx.s(16.0f), height + title_h + 3 * pad);
-    const ui::Rect box{std::round((ctx.width() - w) * 0.5f), std::round((ctx.height() - h) * 0.5f), std::round(w),
-                       std::round(h)};
-    ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().overlay);
-    ctx.panel(box);
-    ctx.label({box.x + pad, box.y + pad, box.w - 2 * pad, title_h}, title, ts, ctx.theme().accent);
-    y = box.y + pad + title_h + pad * 0.5f;
-    return {box.x + pad, y, box.w - 2 * pad, box.bottom() - pad - y};
-}
 
 bool parse_port(std::string_view text, std::uint16_t& port) {
     int value = 0;
@@ -58,8 +44,7 @@ void JoinScreen::open() {
     services_.set_lan_search(true);
 }
 
-bool JoinScreen::connect(ui::Context& ctx, const std::string& address, std::uint16_t port) {
-    (void)ctx;
+bool JoinScreen::connect(const std::string& address, std::uint16_t port) {
     GameplaySettings& g = services_.settings().gameplay;
     if (net::valid_name(name_)) {
         g.player_name = name_;
@@ -72,75 +57,65 @@ bool JoinScreen::connect(ui::Context& ctx, const std::string& address, std::uint
     return services_.join_game(address, port);
 }
 
-JoinScreen::Result JoinScreen::frame(ui::Context& ctx, bool modal) {
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const float line = ctx.text().line_height(body);
-    const float field_h = ctx.s(40.0f);
-    const float gap = ctx.s(10.0f);
-    const float button_h = ctx.s(44.0f);
-    const std::vector<net::LanGame> games = services_.lan_games();
-    const float list_h = std::max(line * 2.0f, static_cast<float>(std::min<std::size_t>(games.size(), 5)) *
-                                                   (field_h + gap));
-    const float content_h = (line + field_h + gap) * 2 + line + list_h + gap + button_h;
-    float y = 0.0f;
-    const ui::Rect c = frame_panel(ctx, 620.0f, content_h, tr("join.title"), y);
-    const float label_w = std::round(c.w * 0.35f);
-    Result result = Result::None;
-
-    // Name.
-    ctx.label({c.x, y, label_w, field_h}, tr("join.name"), body, ctx.theme().text);
-    (void)ctx.text_field(ctx.id("join_name"), {c.x + label_w, y, c.w - label_w, field_h}, name_, net::kMaxNameBytes,
-                         tr("join.name.tooltip"));
-    y += field_h + gap;
-
-    // Games on the local network.
-    ctx.label({c.x, y, c.w, line}, tr("join.lan"), body, ctx.theme().text_dim);
-    y += line;
-    if (games.empty()) {
-        ctx.label({c.x, y, c.w, line}, tr("join.lan.none"), body, ctx.theme().text_disabled);
+JoinScreen::Result JoinScreen::frame(ui::Context& ctx, UiHost& host, bool modal) {
+    if (!modal && ctx.input().key(SDL_SCANCODE_ESCAPE)) {
+        result_ = Result::Back;
     }
-    const bool name_ok = net::valid_name(name_);
-    for (std::size_t i = 0; i < games.size() && i < 5; ++i) {
-        const net::LanGame& g = games[i];
-        const std::string text = tr(g.playing ? "join.lan.gamePlaying" : "join.lan.game", g.host_name,
-                                    static_cast<int>(g.players), g.address);
-        ctx.push_id("lan");
-        if (ctx.button(ctx.id(std::to_string(i)), {c.x, y, c.w, field_h}, text, tr("join.lan.tooltip"), name_ok) &&
-            connect(ctx, g.address, g.port)) {
-            result = Result::Joining;
-        }
-        ctx.pop_id();
-        y += field_h + gap;
-    }
-    y = std::max(y, c.y + line + field_h + gap + line + list_h);
-
-    // Address and port.
-    ctx.label({c.x, y, c.w, line}, tr("join.address"), body, ctx.theme().text_dim);
-    y += line;
-    const float port_w = std::round(c.w * 0.22f);
-    const float connect_w = std::round(c.w * 0.25f);
-    const float addr_w = c.w - port_w - connect_w - 2 * gap;
-    (void)ctx.text_field(ctx.id("join_address"), {c.x, y, addr_w, field_h}, address_, 64, tr("join.address.tooltip"),
-                         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-");
-    (void)ctx.text_field(ctx.id("join_port"), {c.x + addr_w + gap, y, port_w, field_h}, port_, 5,
-                         tr("join.port.tooltip"), "0123456789");
-    std::uint16_t port = 0;
-    const bool can = name_ok && is_valid_address(address_) && parse_port(port_, port);
-    if (ctx.button(ctx.id("join_connect"), {c.right() - connect_w, y, connect_w, field_h}, tr("join.connect"),
-                   tr("join.connect.tooltip"), can, true) &&
-        connect(ctx, address_, port)) {
-        result = Result::Joining;
-    }
-    const float bw = std::min(ctx.s(180.0f), c.w);
-    if (ctx.button(ctx.id("join_back"), {c.right() - bw, c.bottom() - button_h, bw, button_h}, tr("join.back"),
-                   tr("join.back.tooltip")) ||
-        (!modal && !ctx.typing() && ctx.input().key(SDL_SCANCODE_ESCAPE))) {
-        result = Result::Back;
-    }
+    host.menu("join", rows(), 640.0f);
+    const Result result = result_;
+    result_ = Result::None;
     if (result != Result::None) {
         services_.set_lan_search(false);
     }
     return result;
+}
+
+ThingRows JoinScreen::rows() {
+    ThingRows out;
+    out.line(tr("join.title"), WinRow::Kind::Title);
+    // A text field: what is typed goes to `text`.
+    const auto field = [&out](std::string label, std::string* text, int max, std::string tip) {
+        out.line(std::move(label), WinRow::Kind::Dim);
+        WinRow& row = out.line(*text, WinRow::Kind::Input);
+        row.max = max;
+        row.tip = std::move(tip);
+        row.act = out.add_act([text](GameSession*, const RowInput& in, RowEffects&) { *text = in.text; });
+    };
+    field(tr("join.name"), &name_, static_cast<int>(net::kMaxNameBytes), tr("join.name.tooltip"));
+    const bool name_ok = net::valid_name(name_);
+    // Games on the local network.
+    out.line(tr("join.lan"), WinRow::Kind::Section);
+    const std::vector<net::LanGame> games = services_.lan_games();
+    if (games.empty()) {
+        out.line(tr("join.lan.none"), WinRow::Kind::Dim);
+    }
+    for (std::size_t i = 0; i < games.size() && i < 5; ++i) {
+        const net::LanGame g = games[i];
+        out.buttons({out.button(tr(g.playing ? "join.lan.gamePlaying" : "join.lan.game", g.host_name, static_cast<int>(g.players),
+                                   g.address),
+                                tr("join.lan.tooltip"), row_run([this, g] {
+                                    if (connect(g.address, g.port)) {
+                                        result_ = Result::Joining;
+                                    }
+                                }),
+                                name_ok)});
+    }
+    // Address and port.
+    out.line(tr("join.address"), WinRow::Kind::Section);
+    field(tr("join.address.tooltip"), &address_, 64, tr("join.address.tooltip"));
+    field(tr("join.port.tooltip"), &port_, 5, tr("join.port.tooltip"));
+    std::uint16_t port = 0;
+    const bool can = name_ok && is_valid_address(address_) && parse_port(port_, port);
+    RowButton go = out.button(tr("join.connect"), tr("join.connect.tooltip"), row_run([this] {
+                                  std::uint16_t p = 0;
+                                  if (parse_port(port_, p) && connect(address_, p)) {
+                                      result_ = Result::Joining;
+                                  }
+                              }),
+                              can, true);
+    out.buttons({out.button(tr("join.back"), tr("join.back.tooltip"), row_run([this] { result_ = Result::Back; })), std::move(go)});
+    out.rows.back().cls = "big";
+    return out;
 }
 
 // --- Lobby ------------------------------------------------------------------------
@@ -167,268 +142,216 @@ void LobbyScreen::send_info() {
     services_.settings_changed();
 }
 
-LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, bool modal) {
+LobbyScreen::Result LobbyScreen::frame(ui::Context& ctx, UiHost& host, bool modal) {
     net::NetSession* net = services_.net();
     if (net == nullptr || net->state() == net::NetSession::State::Closed) {
         return Result::Leave;
     }
-    const bool host = net->role() == net::NetSession::Role::Host;
-    const net::Lobby& lobby = net->lobby();
     // Each seat starts with its own color.
-    if (!color_chosen_ && net->state() == net::NetSession::State::Lobby && !lobby.players.empty()) {
+    if (!color_chosen_ && net->state() == net::NetSession::State::Lobby && !net->lobby().players.empty()) {
         color_chosen_ = true;
         color_ = static_cast<std::uint8_t>(net->local_slot() % net::kColors);
         send_info();
     }
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const float line = ctx.text().line_height(body);
-    const float row_h = ctx.s(40.0f);
-    const float gap = ctx.s(8.0f);
-    const float button_h = ctx.s(44.0f);
-    const float list_h = static_cast<float>(sim::kMaxPlayers / 2) * (row_h + gap);
-    // Many villagers in all: a warning (phase 20, docs/RENDIMIENTO.md).
-    const std::int32_t seats = static_cast<std::int32_t>(lobby.players.size());
-    const bool heavy = seats * lobby.config.rules.max_population > sim::kPopulationWarning;
-    const float content_h = line * (heavy ? 3 : 2) + gap + row_h * 6 + gap * 6 + list_h + gap + button_h;
-    float y = 0.0f;
-    const ui::Rect c = frame_panel(ctx, 760.0f, content_h, tr(host ? "lobby.title.host" : "lobby.title.client"), y);
-    Result result = Result::None;
+    if (!modal && ctx.input().key(SDL_SCANCODE_ESCAPE)) {
+        leave_ = true;
+    }
+    host.menu("lobby", rows(), 760.0f);
+    const Result result = leave_ ? Result::Leave : Result::None;
+    leave_ = false;
+    return result;
+}
 
+namespace {
+
+std::string css_color(std::uint8_t index) {
+    return std::format("#{:06x}", kPlayerColors[index % net::kColors]);
+}
+
+}  // namespace
+
+ThingRows LobbyScreen::rows() {
+    ThingRows out;
+    net::NetSession* net = services_.net();
+    if (net == nullptr) {
+        return out;
+    }
+    const bool host = net->role() == net::NetSession::Role::Host;
+    const net::Lobby& lobby = net->lobby();
+    net::NetHost* h = host ? static_cast<net::NetHost*>(net) : nullptr;
+    out.line(tr(host ? "lobby.title.host" : "lobby.title.client"), WinRow::Kind::Title);
+    // The seats, each with its color and whether it is ready.
+    const auto seats = [&](bool saved) {
+        std::string list = "<div class=\"seats\">";
+        for (const net::LobbyPlayer& p : lobby.players) {
+            const std::string name = p.slot == net->local_slot() ? tr("lobby.player.you", p.name) : p.name;
+            // Whoever is not here yet may come later: the town works alone.
+            const char* state = !p.connected ? (saved ? "lobby.player.saved" : "lobby.player.away")
+                                : p.watching ? "lobby.player.watching"
+                                : p.ready    ? "lobby.player.ready"
+                                             : "lobby.player.notReady";
+            list += "<div class=\"seat\"><div class=\"swatch\" style=\"background-color: " + css_color(p.color) +
+                    ";\"></div><span class=\"who\">" + rml_escape(name) + "</span><span class=\"state" +
+                    std::string(p.connected && p.ready ? " on" : "") + "\">" + rml_escape(tr(state)) + "</span></div>";
+        }
+        out.line(list + "</div>", WinRow::Kind::Raw);
+    };
+    // A change of the game's configuration, by the host.
+    const auto config = [h](std::function<void(net::GameConfig&, int)> change) {
+        return [h, change](int value) {
+            if (h != nullptr) {
+                net::GameConfig cfg = h->lobby().config;
+                change(cfg, value);
+                h->set_config(cfg);
+            }
+        };
+    };
     if (net->state() == net::NetSession::State::Connecting) {
-        ctx.label({c.x, y, c.w, line}, tr("lobby.connecting"), body, ctx.theme().text);
+        out.line(tr("lobby.connecting"));
     } else if (lobby.saved) {
         // Phase 78: a saved game. Nothing of it can be changed here; each
         // seat is its player's, by name. The host says who else may come.
-        const ui::TextStyle small = ctx.style(ctx.theme().small);
-        ctx.label({c.x, y, c.w, line}, tr("lobby.saved.title"), body, ctx.theme().text);
-        y += line + gap;
-        ctx.label({c.x, y, c.w, line}, tr("lobby.saved.note"), small, ctx.theme().text_dim);
-        y += line;
-        ctx.label({c.x, y, c.w, line}, tr(host ? "lobby.saved.note.host" : "lobby.saved.note.client"), small,
-                  ctx.theme().text_dim);
-        y += line + gap;
-        const float rows_top = y;
+        out.line(tr("lobby.saved.title"), WinRow::Kind::Section);
+        out.line(tr("lobby.saved.note"), WinRow::Kind::Dim);
+        out.line(tr(host ? "lobby.saved.note.host" : "lobby.saved.note.client"), WinRow::Kind::Dim);
         if (const int now = services_.saved_access(); host && now >= 0) {
             struct Row {
-                const char* id;
                 const char* label;
                 std::uint8_t bit;
                 bool enabled;
             };
             const bool open = (now & sim::access::kOpen) != 0;
-            const Row rows[] = {{"open", "access.open", sim::access::kOpen, true},
-                                {"join", "access.join", sim::access::kJoin, open},
-                                {"found", "access.found", sim::access::kFound, open},
-                                {"watch", "access.watch", sim::access::kWatch, true}};
-            const float check = std::round(ctx.s(28.0f));
-            for (const Row& r : rows) {
-                bool value = (now & r.bit) != 0;
-                const ui::Rect box{c.x, std::round(y + (row_h - check) * 0.5f), check, check};
-                if (ctx.checkbox(ctx.id(std::string("saved_access_") + r.id), box, value,
-                                 tr(std::string(r.label) + ".tooltip"), r.enabled)) {
-                    services_.set_access(static_cast<std::uint8_t>(value ? now | r.bit : now & ~r.bit));
-                }
-                ctx.label({c.x + check + gap, std::round(y), c.w - check - gap, row_h}, tr(r.label), body,
-                          r.enabled ? ctx.theme().text : ctx.theme().text_dim);
-                y += row_h + gap;
+            const Row access[] = {{"access.open", sim::access::kOpen, true},
+                                  {"access.join", sim::access::kJoin, open},
+                                  {"access.found", sim::access::kFound, open},
+                                  {"access.watch", sim::access::kWatch, true}};
+            for (const Row& r : access) {
+                const std::uint8_t bit = r.bit;
+                row_tick(out, tr(r.label), tr(std::string(r.label) + ".tooltip"), (now & r.bit) != 0, r.enabled,
+                         [this, bit](bool v) {
+                             const int a = services_.saved_access();
+                             if (a >= 0) {
+                                 services_.set_access(static_cast<std::uint8_t>(v ? a | bit : a & ~bit));
+                             }
+                         });
             }
         }
-        // The seats start where they do in a new game's lobby.
-        y = std::max(y, rows_top + 6 * (row_h + gap) - 2 * line);
-        const float col_w = (c.w - gap) * 0.5f;
-        for (std::size_t i = 0; i < lobby.players.size(); ++i) {
-            const net::LobbyPlayer& p = lobby.players[i];
-            const float x = c.x + static_cast<float>(i % 2) * (col_w + gap);
-            const float ry = y + static_cast<float>(i / 2) * (row_h + gap);
-            const ui::Rect row{x, ry, col_w, row_h};
-            ctx.draw().rect(row, ctx.theme().button_active.with_alpha(0.7f));
-            ctx.draw().rect({row.x + gap, row.y + gap, row_h - 2 * gap, row_h - 2 * gap}, player_color(p.color));
-            const std::string name = p.slot == net->local_slot() ? tr("lobby.player.you", p.name) : p.name;
-            // Whoever is not here yet may come later: the town works alone.
-            const char* state = !p.connected ? "lobby.player.saved" : (p.ready ? "lobby.player.ready" : "lobby.player.notReady");
-            ctx.label({row.x + row_h, row.y, row.w - row_h - gap, row.h}, name, body, ctx.theme().text);
-            ctx.label({row.x + row_h, row.y, row.w - row_h - gap, row.h}, tr(state), body,
-                      p.connected && p.ready ? ctx.theme().accent : ctx.theme().text_dim, ui::Align::Right);
-        }
+        seats(true);
     } else {
         // The map and the world mode.
-        ctx.label({c.x, y, c.w, line},
-                  tr("lobby.map", std::to_string(lobby.config.map.seed),
-                     tr(map_size_text_key(lobby.config.map.size), sim::map_cells(lobby.config.map.size))),
-                  body, ctx.theme().text_dim);
-        y += line;
-        if (heavy) {
-            ctx.label({c.x, y, c.w, line}, tr("lobby.heavy", seats * lobby.config.rules.max_population),
-                      ctx.style(ctx.theme().small), ctx.theme().danger);
-            ctx.tooltip_area(ctx.id("lobby_heavy"), {c.x, y, c.w, line}, tr("lobby.heavy.tooltip"));
-            y += line;
+        out.line(tr("lobby.map", std::to_string(lobby.config.map.seed),
+                    tr(map_size_text_key(lobby.config.map.size), sim::map_cells(lobby.config.map.size))),
+                 WinRow::Kind::Dim);
+        // Many villagers in all: a warning (phase 20, docs/RENDIMIENTO.md).
+        const auto count = static_cast<std::int32_t>(lobby.players.size());
+        if (count * lobby.config.rules.max_population > sim::kPopulationWarning) {
+            WinRow& w = out.line(tr("lobby.heavy", count * lobby.config.rules.max_population));
+            w.cls = "bad";
+            w.tip = tr("lobby.heavy.tooltip");
         }
-        y += gap;
-        const float label_w = std::round(c.w * 0.3f);
-        ctx.label({c.x, y, label_w, row_h}, tr("lobby.world"), body, ctx.theme().text);
-        const std::string modes[] = {tr("lobby.world.shared"), tr("lobby.world.towns"), tr("lobby.world.separate")};
-        int mode = lobby.config.shared_town ? 0 : lobby.config.map.separate ? 2 : 1;
-        if (ctx.selector(ctx.id("lobby_world"), {c.x + label_w, y, c.w - label_w, row_h}, mode, modes,
-                         tr("lobby.world.tooltip"), host)) {
-            net::GameConfig cfg = lobby.config;
-            cfg.shared_town = mode == 0;
-            cfg.map.separate = mode == 2;
-            static_cast<net::NetHost*>(net)->set_config(cfg);
+        row_pick(out, tr("lobby.world"), tr("lobby.world.tooltip"),
+                 {tr("lobby.world.shared"), tr("lobby.world.towns"), tr("lobby.world.separate")},
+                 lobby.config.shared_town ? 0 : lobby.config.map.separate ? 2 : 1, host,
+                 config([](net::GameConfig& cfg, int m) {
+                     cfg.shared_town = m == 0;
+                     cfg.map.separate = m == 2;
+                 }));
+        // The people of every town (phase 19), chosen by the host.
+        if (const sim::Content* content = services_.content(); content != nullptr && !content->races.empty()) {
+            std::vector<std::string> peoples;
+            for (const sim::RaceDef& r : content->races) {
+                peoples.push_back(tr(r.name_key));
+            }
+            peoples.push_back(tr("newGame.race.mixed"));
+            const std::uint8_t current = lobby.config.rules.races[0];
+            const int races = static_cast<int>(content->races.size());
+            const int people = current == sim::kMixedRace || current >= content->races.size() ? races : current;
+            row_pick(out, tr("newGame.race"), tr("lobby.race.tooltip"), peoples, people, host,
+                     config([races](net::GameConfig& cfg, int p) {
+                         cfg.rules.races.fill(p >= races ? sim::kMixedRace : static_cast<std::uint8_t>(p));
+                     }));
         }
-        y += row_h + gap;
         // Cooperative or versus, and how a versus game is won.
-        {
-            const std::string kinds[] = {tr("lobby.versus.coop"),      tr("lobby.versus.peace"),
-                                         tr("lobby.versus.elimination"), tr("lobby.versus.score"),
-                                         tr("lobby.versus.objective"),   tr("lobby.versus.free")};
-            const sim::GameRules& rules = lobby.config.rules;
-            int kind = 0;
-            if (rules.versus) {
-                kind = !rules.pvp                                  ? 1
-                       : rules.victory == sim::Victory::Elimination ? 2
-                       : rules.victory == sim::Victory::Score       ? 3
-                       : rules.victory == sim::Victory::Objective   ? 4
-                                                                    : 5;
-            }
-            // The people of every town (phase 19), chosen by the host.
-            if (const sim::Content* content = services_.content(); content != nullptr && !content->races.empty()) {
-                std::vector<std::string> peoples;
-                for (const sim::RaceDef& r : content->races) {
-                    peoples.push_back(tr(r.name_key));
-                }
-                peoples.push_back(tr("newGame.race.mixed"));
-                const std::uint8_t current = lobby.config.rules.races[0];
-                int people = current == sim::kMixedRace || current >= content->races.size()
-                                 ? static_cast<int>(content->races.size())
-                                 : current;
-                ctx.label({c.x, y, label_w, row_h}, tr("newGame.race"), body, ctx.theme().text);
-                if (ctx.selector(ctx.id("lobby_race"), {c.x + label_w, y, c.w - label_w, row_h}, people, peoples,
-                                 tr("lobby.race.tooltip"), host)) {
-                    net::GameConfig cfg = lobby.config;
-                    cfg.rules.races.fill(people >= static_cast<int>(content->races.size()) ? sim::kMixedRace
-                                                                                           : static_cast<std::uint8_t>(people));
-                    static_cast<net::NetHost*>(net)->set_config(cfg);
-                }
-                y += row_h + gap;
-            }
-            ctx.label({c.x, y, label_w, row_h}, tr("lobby.versus"), body, ctx.theme().text);
-            if (ctx.selector(ctx.id("lobby_versus"), {c.x + label_w, y, c.w - label_w, row_h}, kind, kinds,
-                             tr("lobby.versus.tooltip"), host)) {
-                net::GameConfig cfg = lobby.config;
-                static constexpr sim::Victory kVictory[] = {sim::Victory::None,        sim::Victory::Score,
-                                                            sim::Victory::Elimination, sim::Victory::Score,
-                                                            sim::Victory::Objective,   sim::Victory::None};
-                cfg.rules.versus = kind != 0;
-                cfg.rules.pvp = kind >= 2;
-                cfg.rules.victory = kVictory[kind];
-                static_cast<net::NetHost*>(net)->set_config(cfg);
-            }
-            y += row_h + gap;
+        const sim::GameRules& rules = lobby.config.rules;
+        int kind = 0;
+        if (rules.versus) {
+            kind = !rules.pvp                                  ? 1
+                   : rules.victory == sim::Victory::Elimination ? 2
+                   : rules.victory == sim::Victory::Score       ? 3
+                   : rules.victory == sim::Victory::Objective   ? 4
+                                                                : 5;
         }
+        row_pick(out, tr("lobby.versus"), tr("lobby.versus.tooltip"),
+                 {tr("lobby.versus.coop"), tr("lobby.versus.peace"), tr("lobby.versus.elimination"), tr("lobby.versus.score"),
+                  tr("lobby.versus.objective"), tr("lobby.versus.free")},
+                 kind, host, config([](net::GameConfig& cfg, int k) {
+                     static constexpr sim::Victory kVictory[] = {sim::Victory::None,  sim::Victory::Score,
+                                                                 sim::Victory::Elimination, sim::Victory::Score,
+                                                                 sim::Victory::Objective, sim::Victory::None};
+                     cfg.rules.versus = k != 0;
+                     cfg.rules.pvp = k >= 2;
+                     cfg.rules.victory = kVictory[k];
+                 }));
         // The fog of war (phase 32).
-        {
-            const std::string fogs[] = {tr("newGame.fog.none"), tr("newGame.fog.static"), tr("newGame.fog.dynamic"),
-                                        tr("newGame.fog.revealed")};
-            static_assert(std::size(fogs) == static_cast<std::size_t>(sim::FogMode::Count));
-            int fog = static_cast<int>(lobby.config.rules.fog);
-            ctx.label({c.x, y, label_w, row_h}, tr("newGame.fog"), body, ctx.theme().text);
-            if (ctx.selector(ctx.id("lobby_fog"), {c.x + label_w, y, c.w - label_w, row_h}, fog, fogs,
-                             tr("newGame.fog.tooltip"), host)) {
-                net::GameConfig cfg = lobby.config;
-                cfg.rules.fog = static_cast<sim::FogMode>(fog);
-                static_cast<net::NetHost*>(net)->set_config(cfg);
-            }
-            y += row_h + gap;
-        }
-
+        row_pick(out, tr("newGame.fog"), tr("newGame.fog.tooltip"),
+                 {tr("newGame.fog.none"), tr("newGame.fog.static"), tr("newGame.fog.dynamic"), tr("newGame.fog.revealed")},
+                 static_cast<int>(lobby.config.rules.fog), host,
+                 config([](net::GameConfig& cfg, int f) { cfg.rules.fog = static_cast<sim::FogMode>(f); }));
         // Phase 79: spectators. The host says whether people may watch;
         // each of the others, whether to watch instead of playing.
-        {
-            const float check = std::round(ctx.s(28.0f));
-            ctx.label({c.x, y, label_w, row_h}, tr("lobby.watch"), body, ctx.theme().text);
-            const ui::Rect box{c.x + label_w, std::round(y + (row_h - check) * 0.5f), check, check};
-            const ui::Rect text{box.right() + gap, y, c.w - label_w - check - gap, row_h};
-            if (host) {
-                bool allowed = lobby.config.spectators;
-                if (ctx.checkbox(ctx.id("lobby_watch_allow"), box, allowed, tr("access.watch.tooltip"))) {
-                    net::GameConfig cfg = lobby.config;
-                    cfg.spectators = allowed;
-                    static_cast<net::NetHost*>(net)->set_config(cfg);
-                }
-                ctx.label(text, tr("access.watch"), body, ctx.theme().text);
-            } else if (lobby.config.spectators) {
-                if (ctx.checkbox(ctx.id("lobby_watch_me"), box, watch_, tr("lobby.watch.me.tooltip"))) {
-                    send_info();
-                }
-                ctx.label(text, tr("lobby.watch.me"), body, ctx.theme().text);
-            } else {
-                ctx.label({c.x + label_w, y, c.w - label_w, row_h}, tr("lobby.watch.off"), body, ctx.theme().text_dim);
-            }
-            y += row_h + gap;
+        if (h != nullptr) {
+            row_tick(out, tr("access.watch"), tr("access.watch.tooltip"), lobby.config.spectators, true, [h](bool v) {
+                net::GameConfig cfg = h->lobby().config;
+                cfg.spectators = v;
+                h->set_config(cfg);
+            });
+        } else if (lobby.config.spectators) {
+            row_tick(out, tr("lobby.watch.me"), tr("lobby.watch.me.tooltip"), watch_, true, [this](bool v) {
+                watch_ = v;
+                send_info();
+            });
+        } else {
+            out.line(tr("lobby.watch.off"), WinRow::Kind::Dim);
         }
-
         // This player's name and color.
-        const float name_w = std::round((c.w - label_w) * 0.6f);
-        ctx.label({c.x, y, label_w, row_h}, tr("lobby.you"), body, ctx.theme().text);
-        if (ctx.text_field(ctx.id("lobby_name"), {c.x + label_w, y, name_w, row_h}, name_, net::kMaxNameBytes,
-                           tr("join.name.tooltip")) &&
-            net::valid_name(name_)) {
-            send_info();
-        }
-        const ui::Rect swatch{c.x + label_w + name_w + gap, y, row_h, row_h};
-        if (ctx.button(ctx.id("lobby_color"), swatch, "", tr("lobby.color.tooltip"))) {
+        out.line(tr("lobby.you"), WinRow::Kind::Section);
+        WinRow& name = out.line(name_, WinRow::Kind::Input);
+        name.max = static_cast<int>(net::kMaxNameBytes);
+        name.tip = tr("join.name.tooltip");
+        name.act = out.add_act([this](GameSession*, const RowInput& in, RowEffects&) {
+            name_ = in.text;
+            if (net::valid_name(name_)) {
+                send_info();
+            }
+        });
+        const int color_act = out.add_act(row_run([this] {
             color_ = static_cast<std::uint8_t>((color_ + 1) % net::kColors);
             color_chosen_ = true;
             send_info();
-        }
-        ctx.draw().rect(swatch.inset(ctx.s(6.0f)), player_color(color_));
-        y += row_h + gap * 2;
-
-        // The seats, in two columns.
-        const float col_w = (c.w - gap) * 0.5f;
-        for (std::size_t i = 0; i < lobby.players.size(); ++i) {
-            const net::LobbyPlayer& p = lobby.players[i];
-            const float x = c.x + static_cast<float>(i % 2) * (col_w + gap);
-            const float ry = y + static_cast<float>(i / 2) * (row_h + gap);
-            const ui::Rect row{x, ry, col_w, row_h};
-            ctx.draw().rect(row, ctx.theme().button_active.with_alpha(0.7f));
-            ctx.draw().rect({row.x + gap, row.y + gap, row_h - 2 * gap, row_h - 2 * gap}, player_color(p.color));
-            std::string name = p.name;
-            if (p.slot == net->local_slot()) {
-                name = tr("lobby.player.you", p.name);
-            }
-            const char* state = !p.connected ? "lobby.player.away"
-                                : p.watching ? "lobby.player.watching"
-                                             : (p.ready ? "lobby.player.ready" : "lobby.player.notReady");
-            ctx.label({row.x + row_h, row.y, row.w - row_h - gap, row.h}, name, body, ctx.theme().text);
-            ctx.label({row.x + row_h, row.y, row.w - row_h - gap, row.h}, tr(state), body,
-                      p.ready ? ctx.theme().accent : ctx.theme().text_dim, ui::Align::Right);
-        }
-        y += list_h + gap;
+        }));
+        out.line(std::format("<div class=\"btn colorpick\" data-act=\"{}\" tip=\"{}\"><div class=\"swatch\" "
+                             "style=\"background-color: {};\"></div><span>{}</span></div>",
+                             color_act, rml_escape(tr("lobby.color.tooltip")), css_color(color_),
+                             rml_escape(tr("lobby.color.tooltip"))),
+                 WinRow::Kind::Raw);
+        seats(false);
     }
-
     // Buttons: leave, and start (host) or ready (client).
-    const float bw = std::min(ctx.s(200.0f), (c.w - gap) * 0.5f);
-    const ui::Rect leave{c.x, c.bottom() - button_h, bw, button_h};
-    const ui::Rect main{c.right() - bw, c.bottom() - button_h, bw, button_h};
-    if (ctx.button(ctx.id("lobby_leave"), leave, tr("lobby.leave"), tr("lobby.leave.tooltip")) ||
-        (!modal && !ctx.typing() && ctx.input().key(SDL_SCANCODE_ESCAPE))) {
-        result = Result::Leave;
-    }
-    if (host) {
-        auto* h = static_cast<net::NetHost*>(net);
-        if (ctx.button(ctx.id("lobby_start"), main, tr("lobby.start"),
-                       tr(h->can_start() ? "lobby.start.tooltip" : "lobby.start.waiting"), h->can_start(), true)) {
-            (void)h->start();
-        }
+    std::vector<RowButton> buttons;
+    buttons.push_back(out.button(tr("lobby.leave"), tr("lobby.leave.tooltip"), row_run([this] { leave_ = true; })));
+    if (h != nullptr) {
+        buttons.push_back(out.button(tr("lobby.start"), tr(h->can_start() ? "lobby.start.tooltip" : "lobby.start.waiting"),
+                                     row_run([h] { (void)h->start(); }), h->can_start(), true));
     } else if (net->state() == net::NetSession::State::Lobby) {
-        if (ctx.button(ctx.id("lobby_ready"), main, tr(ready_ ? "lobby.notReady" : "lobby.ready"),
-                       tr("lobby.ready.tooltip"), true, !ready_)) {
-            ready_ = !ready_;
-            send_info();
-        }
+        buttons.push_back(out.button(tr(ready_ ? "lobby.notReady" : "lobby.ready"), tr("lobby.ready.tooltip"), row_run([this] {
+                                         ready_ = !ready_;
+                                         send_info();
+                                     }),
+                                     true, !ready_));
     }
-    return result;
+    out.buttons(std::move(buttons));
+    out.rows.back().cls = "big";
+    return out;
 }
 
 }  // namespace sc

@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <format>
+#include <functional>
 #include <string>
 
 #include "game/ui_host.h"
@@ -13,10 +15,6 @@ using i18n::tr;
 
 namespace {
 
-constexpr float kRowHeight = 40.0f;
-constexpr float kRowGap = 10.0f;
-constexpr float kWideLayout = 620.0f;  // Below this width, labels go above controls.
-
 constexpr int kFpsOptions[] = {0, 30, 60, 90, 120, 144, 165, 240};
 // 0 is "automatic", the same as 100 % of the screen scale (decision D-207).
 constexpr double kScaleOptions[] = {0.0, 0.75, 0.9, 1.1, 1.25, 1.5, 1.75, 2.0};
@@ -27,10 +25,10 @@ std::string percent(int v) {
 }
 
 // Four-level options ("off/low/medium/high" and similar) from text keys.
-std::vector<std::string> level_options(const char* base) {
+std::vector<std::string> level_options(const std::string& base) {
     std::vector<std::string> out;
     for (int i = 0; i < 4; ++i) {
-        out.push_back(tr(std::string(base) + "." + std::to_string(i)));
+        out.push_back(tr(base + "." + std::to_string(i)));
     }
     return out;
 }
@@ -50,364 +48,60 @@ int closest_index(const T (&options)[N], T value) {
 
 }  // namespace
 
-SettingsScreen::Row SettingsScreen::row(ui::Context& ctx, float x, float& y, float width, std::string_view label,
-                                        std::string_view tooltip) {
-    const float h = ctx.s(kRowHeight);
-    const ui::TextStyle st = ctx.style(ctx.theme().body);
-    Row r;
-    if (width >= ctx.s(kWideLayout)) {
-        const float label_w = std::round(width * 0.42f);
-        r.label = {x, y, label_w - ctx.s(12.0f), h};
-        r.control = {x + label_w, y, width - label_w, h};
-        y += h + ctx.s(kRowGap);
-    } else {
-        const float lh = ctx.text().line_height(st);
-        r.label = {x, y, width, lh};
-        r.control = {x, y + lh + ctx.s(4.0f), width, h};
-        y += lh + ctx.s(4.0f) + h + ctx.s(kRowGap);
-    }
-    ctx.tooltip_area(ctx.id(std::string(label) + "#row"), {x, r.label.y, width, r.control.bottom() - r.label.y}, tooltip);
-    ctx.label(r.label, label, st, ctx.theme().text);
-    return r;
-}
-
-void SettingsScreen::section(ui::Context& ctx, float x, float& y, float width, std::string_view title) {
-    const ui::TextStyle st = ctx.style(ctx.theme().heading, ui::FontRole::Bold);
-    const float h = ctx.text().line_height(st);
-    y += ctx.s(6.0f);
-    ctx.label({x, y, width, h}, title, st, ctx.theme().accent);
-    y += h;
-    ctx.draw().rect({x, y, width, std::max(1.0f, std::round(ctx.s(1.0f)))}, ctx.theme().panel_border);
-    y += ctx.s(12.0f);
-}
-
 bool SettingsScreen::frame(ui::Context& ctx, UiHost& host, bool input_blocked) {
-    const bool blocked = input_blocked || capture_.has_value();
-    ctx.set_input_blocked(blocked);
-    bool stay = true;
-
-    const float margin = ctx.s(16.0f);
-    const float panel_w = std::min(ctx.s(1000.0f), ctx.width() - 2 * margin);
-    const ui::Rect panel{std::round((ctx.width() - panel_w) * 0.5f), margin, std::round(panel_w),
-                         ctx.height() - 2 * margin};
-    ctx.panel(panel);
-    const float pad = ctx.s(20.0f);
-    const float inner_x = panel.x + pad;
-    const float inner_w = panel.w - 2 * pad;
-    static constexpr const char* kTabKeys[] = {"display", "graphics", "audio", "controls", "interface", "language", "game"};
-    const ui::TextStyle title_st = ctx.style(ctx.theme().title, ui::FontRole::Bold);
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const float title_h = ctx.text().line_height(title_st);
-    const float tab_h = ctx.s(38.0f);
-    const float tab_gap = ctx.s(6.0f);
-
-    // Title and tabs; the tabs flow onto several lines when they do not fit.
-    // Returns the header height; draws only when `draw` is set.
-    const auto header = [&](float top, bool draw) {
-        float y = top;
-        if (draw) {
-            ctx.label({inner_x, y, inner_w, title_h}, tr("settings.title"), title_st, ctx.theme().accent);
-        }
-        y += title_h + ctx.s(10.0f);
-        float tx = inner_x;
-        for (std::size_t i = 0; i < std::size(kTabKeys); ++i) {
-            const std::string label = tr(std::string("settings.tab.") + kTabKeys[i]);
-            const float tw = std::min(inner_w, ctx.text().measure(body, label) + ctx.s(32.0f));
-            if (tx + tw > inner_x + inner_w + 0.5f) {
-                tx = inner_x;
-                y += tab_h + tab_gap;
-            }
-            if (draw) {
-                const bool selected = static_cast<std::size_t>(tab_) == i;
-                if (ctx.button(ctx.id(std::string("tab_") + kTabKeys[i]), {tx, y, tw, tab_h}, label, {}, true, selected)) {
-                    tab_ = static_cast<Tab>(i);
-                }
-                if (selected) {
-                    ctx.draw().rect({tx, y + tab_h - ctx.s(3.0f), tw, ctx.s(3.0f)}, ctx.theme().accent);
-                }
-            }
-            tx += tw + tab_gap;
-        }
-        return y + tab_h + ctx.s(14.0f) - top;
-    };
-
-    // Bottom bar, always visible.
-    const float bar_h = ctx.s(44.0f);
-    const float bar_y = panel.bottom() - pad - bar_h;
-    const float top = panel.y + pad;
-    const float header_h = header(top, false);
-    const float area_h = std::max(0.0f, bar_y - ctx.s(12.0f) - top);
-    // When the window is small for the interface size, the header scrolls
-    // with the options instead of leaving them no room.
-    const bool header_fixed = area_h - header_h >= area_h * 0.45f;
-    if (header_fixed) {
-        (void)header(top, true);
-    }
-    const float view_top = header_fixed ? top + header_h : top;
-    const ui::Rect viewport{inner_x, view_top, inner_w, std::max(0.0f, bar_y - ctx.s(12.0f) - view_top)};
-
-    const float content_top = ctx.begin_scroll(ctx.id(std::string("tab_scroll_") + kTabKeys[static_cast<std::size_t>(tab_)]), viewport);
-    float cy = content_top;
-    if (!header_fixed) {
-        cy += header(cy, true);
-    }
-    const float cw = inner_w - ctx.s(14.0f);  // Room for the scroll bar.
-    ctx.push_id(kTabKeys[static_cast<std::size_t>(tab_)]);
-    switch (tab_) {
-        case Tab::Display: tab_display(ctx, host, inner_x, cy, cw); break;
-        case Tab::Graphics: tab_graphics(ctx, inner_x, cy, cw); break;
-        case Tab::Audio: tab_audio(ctx, inner_x, cy, cw); break;
-        case Tab::Controls: tab_controls(ctx, inner_x, cy, cw); break;
-        case Tab::Interface: tab_interface(ctx, inner_x, cy, cw); break;
-        case Tab::Language: tab_language(ctx, inner_x, cy, cw); break;
-        case Tab::Game: tab_game(ctx, inner_x, cy, cw); break;
-        case Tab::Count: break;
-    }
-    ctx.pop_id();
-    ctx.end_scroll(cy - content_top);
-
-    const float gap = ctx.s(12.0f);
-    const float back_w = std::min(ctx.s(200.0f), (inner_w - gap) * 0.4f);
-    const ui::Rect back{inner_x + inner_w - back_w, bar_y, back_w, bar_h};
-    const ui::Rect restore{inner_x, bar_y, std::min(ctx.s(360.0f), inner_w - back_w - gap), bar_h};
-    if (ctx.button(ctx.id("restore"), restore, tr("settings.restoreDefaults"), tr("settings.restoreDefaults.tooltip"))) {
-        restore_tab_defaults(host);
-    }
-    if (ctx.button(ctx.id("back"), back, tr("settings.back"), {}, true, true) ||
-        (!blocked && ctx.input().key(SDL_SCANCODE_ESCAPE))) {
-        stay = false;
-    }
-
     if (capture_) {
-        ctx.set_input_blocked(input_blocked);
-        capture_dialog(ctx);
-        handle_key_capture(ctx);
+        // A binding waits for its key: the first one pressed.
+        if (!ctx.input().keys.empty()) {
+            key_pressed(ctx.input().keys.front());
+        }
+        ThingRows wait;
+        wait.line(tr("settings.controls.capture", tr("action." + std::string(action_info(capture_ ? capture_->action : Action{}).id))),
+                  WinRow::Kind::Paragraph);
+        if (capture_) {
+            host.menu("capture", std::move(wait), 520.0f);
+        }
+    } else if (!input_blocked && ctx.input().key(SDL_SCANCODE_ESCAPE)) {
+        leave_ = true;
     }
+    host.menu("settings", rows(host), 900.0f);
+    const bool stay = !leave_;
+    leave_ = false;
     return stay;
 }
 
-void SettingsScreen::tab_display(ui::Context& ctx, UiHost& host, float x, float& y, float w) {
-    Settings& s = services_.settings();
-    DisplaySettings d = s.display;
-
-    // Mode.
-    {
-        const WindowMode modes[] = {WindowMode::Fullscreen, WindowMode::Borderless, WindowMode::Windowed};
-        const std::vector<std::string> options = {tr("settings.display.mode.fullscreen"),
-                                                  tr("settings.display.mode.borderless"),
-                                                  tr("settings.display.mode.windowed")};
-        int index = static_cast<int>(std::find(std::begin(modes), std::end(modes), d.mode) - std::begin(modes));
-        const Row r = row(ctx, x, y, w, tr("settings.display.mode"), tr("settings.display.mode.tooltip"));
-        if (ctx.selector(ctx.id("mode"), r.control, index, options, tr("settings.display.mode.tooltip"))) {
-            d.mode = modes[static_cast<std::size_t>(index)];
-            host.change_display(d);
-        }
+ThingRows SettingsScreen::rows(UiHost& host) {
+    ThingRows out;
+    out.line(tr("settings.title"), WinRow::Kind::Title);
+    static constexpr const char* kTabKeys[] = {"display", "graphics", "audio", "controls", "interface", "language", "game"};
+    std::vector<RowButton> tabs;
+    for (std::size_t i = 0; i < std::size(kTabKeys); ++i) {
+        const auto t = static_cast<Tab>(i);
+        tabs.push_back(out.button(tr(std::string("settings.tab.") + kTabKeys[i]), {}, row_run([this, t] { tab_ = t; }), true, tab_ == t));
     }
-    // Monitor.
-    {
-        const std::vector<std::string> monitors = services_.monitor_names();
-        std::vector<std::string> options = {tr("settings.display.monitor.primary")};
-        options.insert(options.end(), monitors.begin(), monitors.end());
-        int index = 0;
-        for (std::size_t i = 0; i < monitors.size(); ++i) {
-            if (monitors[i] == d.monitor) {
-                index = static_cast<int>(i) + 1;
-            }
-        }
-        const Row r = row(ctx, x, y, w, tr("settings.display.monitor"), tr("settings.display.monitor.tooltip"));
-        if (ctx.selector(ctx.id("monitor"), r.control, index, options, tr("settings.display.monitor.tooltip"))) {
-            d.monitor = index == 0 ? std::string{} : monitors[static_cast<std::size_t>(index - 1)];
-            host.change_display(d);
-        }
+    out.buttons(std::move(tabs));
+    out.rows.back().cls = "tabs";
+    switch (tab_) {
+        case Tab::Display: tab_display(out, host); break;
+        case Tab::Graphics: tab_graphics(out); break;
+        case Tab::Audio: tab_audio(out); break;
+        case Tab::Controls: tab_controls(out); break;
+        case Tab::Interface: tab_interface(out); break;
+        case Tab::Language: tab_language(out); break;
+        case Tab::Game: tab_game(out); break;
+        case Tab::Count: break;
     }
-    // Resolution (exclusive fullscreen only).
-    {
-        const std::vector<Resolution> modes = services_.fullscreen_resolutions(d.monitor);
-        std::vector<std::string> options = {tr("settings.display.resolution.desktop")};
-        int index = 0;
-        for (std::size_t i = 0; i < modes.size(); ++i) {
-            options.push_back(tr("settings.display.resolution.value", std::to_string(modes[i].width),
-                                 std::to_string(modes[i].height)));
-            if (modes[i].width == d.fullscreen_width && modes[i].height == d.fullscreen_height) {
-                index = static_cast<int>(i) + 1;
-            }
-        }
-        const bool enabled = d.mode == WindowMode::Fullscreen;
-        const std::string tip = tr(enabled ? "settings.display.resolution.tooltip"
-                                           : "settings.display.resolution.disabledTooltip");
-        const Row r = row(ctx, x, y, w, tr("settings.display.resolution"), tip);
-        if (ctx.selector(ctx.id("resolution"), r.control, index, options, tip, enabled)) {
-            d.fullscreen_width = index == 0 ? 0 : modes[static_cast<std::size_t>(index - 1)].width;
-            d.fullscreen_height = index == 0 ? 0 : modes[static_cast<std::size_t>(index - 1)].height;
-            host.change_display(d);
-        }
-    }
-    // VSync and frame limit apply at once; they cannot break the display.
-    {
-        const Row r = row(ctx, x, y, w, tr("settings.display.vsync"), tr("settings.display.vsync.tooltip"));
-        if (ctx.checkbox(ctx.id("vsync"), r.control, s.display.vsync, tr("settings.display.vsync.tooltip"))) {
-            services_.apply_vsync();
-            services_.settings_changed();
-        }
-    }
-    {
-        std::vector<std::string> options;
-        for (const int fps : kFpsOptions) {
-            options.push_back(fps == 0 ? tr("settings.display.fpsLimit.none") : tr("settings.display.fpsLimit.value", fps));
-        }
-        int index = closest_index(kFpsOptions, s.display.fps_limit);
-        const bool enabled = !s.display.vsync;
-        const std::string tip = tr(enabled ? "settings.display.fpsLimit.tooltip" : "settings.display.fpsLimit.disabledTooltip");
-        const Row r = row(ctx, x, y, w, tr("settings.display.fpsLimit"), tip);
-        if (ctx.selector(ctx.id("fps"), r.control, index, options, tip, enabled)) {
-            s.display.fps_limit = kFpsOptions[static_cast<std::size_t>(index)];
-            services_.settings_changed();
-        }
-    }
+    RowButton back = out.button(tr("settings.back"), {}, row_run([this] { leave_ = true; }), true, true);
+    out.buttons({out.button(tr("settings.restoreDefaults"), tr("settings.restoreDefaults.tooltip"),
+                            row_run([this, &host] { restore_tab_defaults(host); })),
+                 std::move(back)});
+    out.rows.back().cls = "big";
+    return out;
 }
 
-void SettingsScreen::tab_graphics(ui::Context& ctx, float x, float& y, float w) {
-    GraphicsSettings& g = services_.settings().graphics;
-
-    bool changed = false;
-    {
-        const std::vector<std::string> options = {tr("settings.graphics.preset.low"), tr("settings.graphics.preset.medium"),
-                                                  tr("settings.graphics.preset.high"), tr("settings.graphics.preset.ultra"),
-                                                  tr("settings.graphics.preset.custom")};
-        int index = static_cast<int>(g.preset);
-        const Row r = row(ctx, x, y, w, tr("settings.graphics.preset"), tr("settings.graphics.preset.tooltip"));
-        if (ctx.selector(ctx.id("preset"), r.control, index, options, tr("settings.graphics.preset.tooltip"))) {
-            const auto p = static_cast<QualityPreset>(index);
-            if (p != QualityPreset::Custom) {
-                g.apply_preset(p);
-            }
-            changed = true;
-        }
-    }
-    struct Level {
-        const char* key;
-        int* value;
-    };
-    const Level levels[] = {{"shadows", &g.shadows}, {"drawDistance", &g.draw_distance},
-                            {"vegetation", &g.vegetation}, {"groundDetail", &g.ground_detail},
-                            {"antialiasing", &g.antialiasing}};
-    for (const Level& l : levels) {
-        const std::string base = std::string("settings.graphics.") + l.key;
-        const std::vector<std::string> options = level_options((base + ".level").c_str());
-        const Row r = row(ctx, x, y, w, tr(base), tr(base + ".tooltip"));
-        if (ctx.selector(ctx.id(l.key), r.control, *l.value, options, tr(base + ".tooltip"))) {
-            changed = true;
-        }
-    }
-    if (changed) {
-        g.preset = g.matching_preset();
-        services_.apply_graphics();
-        services_.settings_changed();
-    }
-}
-
-void SettingsScreen::tab_audio(ui::Context& ctx, float x, float& y, float w) {
-    AudioSettings& a = services_.settings().audio;
-    const float note_h = ctx.paragraph({x, y, w, 0}, tr("settings.audio.pendingNote"), ctx.style(ctx.theme().small),
-                                       ctx.theme().text_dim);
-    y += note_h + ctx.s(12.0f);
-    struct Volume {
-        const char* key;
-        int* value;
-    };
-    const Volume volumes[] = {{"master", &a.master}, {"effects", &a.effects}, {"ambient", &a.ambient},
-                              {"music", &a.music}, {"ui", &a.ui}};
-    for (const Volume& v : volumes) {
-        const std::string base = std::string("settings.audio.") + v.key;
-        const Row r = row(ctx, x, y, w, tr(base), tr(base + ".tooltip"));
-        if (ctx.slider(ctx.id(v.key), r.control, *v.value, 0, 100, 5, percent, tr(base + ".tooltip"))) {
-            services_.settings_changed();
-        }
-    }
-}
-
-void SettingsScreen::tab_controls(ui::Context& ctx, float x, float& y, float w) {
-    InputSettings& in = services_.settings().input;
-    section(ctx, x, y, w, tr("settings.controls.camera"));
-    struct Speed {
-        const char* key;
-        double* value;
-    };
-    const Speed speeds[] = {{"panSpeed", &in.camera_pan_speed}, {"rotateSpeed", &in.camera_rotate_speed},
-                            {"zoomSpeed", &in.camera_zoom_speed}};
-    for (const Speed& sp : speeds) {
-        const std::string base = std::string("settings.controls.") + sp.key;
-        int pct = static_cast<int>(std::lround(*sp.value * 100.0));
-        const Row r = row(ctx, x, y, w, tr(base), tr(base + ".tooltip"));
-        if (ctx.slider(ctx.id(sp.key), r.control, pct, 25, 400, 5, percent, tr(base + ".tooltip"))) {
-            *sp.value = static_cast<double>(pct) / 100.0;
-            services_.settings_changed();
-        }
-    }
-    {
-        const Row r = row(ctx, x, y, w, tr("settings.controls.invertZoom"), tr("settings.controls.invertZoom.tooltip"));
-        if (ctx.checkbox(ctx.id("invertZoom"), r.control, in.invert_zoom, tr("settings.controls.invertZoom.tooltip"))) {
-            services_.settings_changed();
-        }
-    }
-    {
-        const Row r = row(ctx, x, y, w, tr("settings.controls.edgeScroll"), tr("settings.controls.edgeScroll.tooltip"));
-        if (ctx.checkbox(ctx.id("edgeScroll"), r.control, in.edge_scroll, tr("settings.controls.edgeScroll.tooltip"))) {
-            services_.settings_changed();
-        }
-    }
-
-    if (!binding_notice_.empty()) {
-        y += ctx.s(6.0f);
-        y += ctx.paragraph({x, y, w, 0}, binding_notice_, ctx.style(ctx.theme().body), ctx.theme().accent);
-    }
-
-    const ActionGroup groups[] = {ActionGroup::Camera, ActionGroup::Game, ActionGroup::Interface};
-    const char* group_keys[] = {"settings.controls.group.camera", "settings.controls.group.game",
-                                "settings.controls.group.interface"};
-    for (std::size_t gi = 0; gi < std::size(groups); ++gi) {
-        section(ctx, x, y, w, tr(group_keys[gi]));
-        for (const ActionInfo& info : action_table()) {
-            if (info.group != groups[gi]) {
-                continue;
-            }
-            const std::string name = tr("action." + std::string(info.id));
-            const std::string tip = tr("settings.controls.binding.tooltip", name);
-            const Row r = row(ctx, x, y, w, name, tip);
-            const float gap = ctx.s(8.0f);
-            const float bw = (r.control.w - gap) * 0.5f;
-            for (std::size_t slot = 0; slot < kKeysPerAction; ++slot) {
-                const SDL_Scancode key = in.bindings.key(info.action, slot);
-                const std::string label = key == SDL_SCANCODE_UNKNOWN ? tr("settings.controls.unbound") : key_display_name(key);
-                const ui::Rect b{r.control.x + static_cast<float>(slot) * (bw + gap), r.control.y, bw, r.control.h};
-                const bool active = capture_ && capture_->action == info.action && capture_->slot == slot;
-                if (ctx.button(ctx.id(std::string(info.id) + "#" + std::to_string(slot)), b, label, tip, true, active)) {
-                    capture_ = Capture{info.action, slot};
-                    binding_notice_.clear();
-                }
-            }
-        }
-    }
-}
-
-void SettingsScreen::capture_dialog(ui::Context& ctx) {
-    const std::string action = tr("action." + std::string(action_info(capture_->action).id));
-    const std::string text = tr("settings.controls.capture", action);
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const float w = std::min(ctx.s(520.0f), ctx.width() - ctx.s(32.0f));
-    const float pad = ctx.s(24.0f);
-    const float h = ctx.paragraph_height(w - 2 * pad, text, body) + 2 * pad;
-    const ui::Rect box{std::round((ctx.width() - w) * 0.5f), std::round((ctx.height() - h) * 0.5f), w, h};
-    ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().overlay);
-    ctx.panel(box);
-    ctx.paragraph(box.inset(pad), text, body, ctx.theme().text, ui::Align::Center);
-}
-
-void SettingsScreen::handle_key_capture(ui::Context& ctx) {
-    if (!capture_ || ctx.input().keys.empty()) {
+void SettingsScreen::key_pressed(SDL_Scancode key) {
+    if (!capture_) {
         return;
     }
-    const SDL_Scancode key = ctx.input().keys.front();
     KeyBindings& bindings = services_.settings().input.bindings;
     const Capture c = *capture_;
     capture_.reset();
@@ -424,166 +118,337 @@ void SettingsScreen::handle_key_capture(ui::Context& ctx) {
     std::size_t other_slot = 0;
     if (bindings.find(key, other, other_slot) && (other != c.action || other_slot != c.slot)) {
         bindings.set_key(other, other_slot, SDL_SCANCODE_UNKNOWN);
-        binding_notice_ = tr("settings.controls.moved", key_display_name(key),
-                             tr("action." + std::string(action_info(other).id)));
+        binding_notice_ =
+            tr("settings.controls.moved", key_display_name(key), tr("action." + std::string(action_info(other).id)));
     }
     bindings.set_key(c.action, c.slot, key);
     services_.settings_changed();
 }
 
-void SettingsScreen::tab_interface(ui::Context& ctx, float x, float& y, float w) {
+void SettingsScreen::tab_display(ThingRows& out, UiHost& host) {
+    const DisplaySettings& d = services_.settings().display;
+    UiHost* h = &host;
+    // Mode.
+    {
+        static constexpr WindowMode kModes[] = {WindowMode::Fullscreen, WindowMode::Borderless, WindowMode::Windowed};
+        const int index = static_cast<int>(std::find(std::begin(kModes), std::end(kModes), d.mode) - std::begin(kModes));
+        row_pick(out, tr("settings.display.mode"), tr("settings.display.mode.tooltip"),
+             {tr("settings.display.mode.fullscreen"), tr("settings.display.mode.borderless"), tr("settings.display.mode.windowed")},
+             index, true, [this, h](int i) {
+                 DisplaySettings next = services_.settings().display;
+                 next.mode = kModes[static_cast<std::size_t>(i)];
+                 h->change_display(next);
+             });
+    }
+    // Monitor.
+    {
+        const std::vector<std::string> monitors = services_.monitor_names();
+        std::vector<std::string> options = {tr("settings.display.monitor.primary")};
+        options.insert(options.end(), monitors.begin(), monitors.end());
+        int index = 0;
+        for (std::size_t i = 0; i < monitors.size(); ++i) {
+            if (monitors[i] == d.monitor) {
+                index = static_cast<int>(i) + 1;
+            }
+        }
+        row_pick(out, tr("settings.display.monitor"), tr("settings.display.monitor.tooltip"), options, index, true,
+             [this, h, monitors](int i) {
+                 DisplaySettings next = services_.settings().display;
+                 next.monitor = i == 0 ? std::string{} : monitors[static_cast<std::size_t>(i - 1)];
+                 h->change_display(next);
+             });
+    }
+    // Resolution (exclusive fullscreen only).
+    {
+        const std::vector<Resolution> modes = services_.fullscreen_resolutions(d.monitor);
+        std::vector<std::string> options = {tr("settings.display.resolution.desktop")};
+        int index = 0;
+        for (std::size_t i = 0; i < modes.size(); ++i) {
+            options.push_back(
+                tr("settings.display.resolution.value", std::to_string(modes[i].width), std::to_string(modes[i].height)));
+            if (modes[i].width == d.fullscreen_width && modes[i].height == d.fullscreen_height) {
+                index = static_cast<int>(i) + 1;
+            }
+        }
+        const bool enabled = d.mode == WindowMode::Fullscreen;
+        row_pick(out, tr("settings.display.resolution"),
+             tr(enabled ? "settings.display.resolution.tooltip" : "settings.display.resolution.disabledTooltip"), options,
+             index, enabled, [this, h, modes](int i) {
+                 DisplaySettings next = services_.settings().display;
+                 next.fullscreen_width = i == 0 ? 0 : modes[static_cast<std::size_t>(i - 1)].width;
+                 next.fullscreen_height = i == 0 ? 0 : modes[static_cast<std::size_t>(i - 1)].height;
+                 h->change_display(next);
+             });
+    }
+    // VSync and frame limit apply at once; they cannot break the display.
+    row_tick(out, tr("settings.display.vsync"), tr("settings.display.vsync.tooltip"), d.vsync, true, [this](bool v) {
+        services_.settings().display.vsync = v;
+        services_.apply_vsync();
+        services_.settings_changed();
+    });
+    {
+        std::vector<std::string> options;
+        for (const int fps : kFpsOptions) {
+            options.push_back(fps == 0 ? tr("settings.display.fpsLimit.none") : tr("settings.display.fpsLimit.value", fps));
+        }
+        const bool enabled = !d.vsync;
+        row_pick(out, tr("settings.display.fpsLimit"),
+             tr(enabled ? "settings.display.fpsLimit.tooltip" : "settings.display.fpsLimit.disabledTooltip"), options,
+             closest_index(kFpsOptions, d.fps_limit), enabled, [this](int i) {
+                 services_.settings().display.fps_limit = kFpsOptions[static_cast<std::size_t>(i)];
+                 services_.settings_changed();
+             });
+    }
+}
+
+void SettingsScreen::tab_graphics(ThingRows& out) {
+    GraphicsSettings& g = services_.settings().graphics;
+    const auto changed = [this] {
+        GraphicsSettings& gs = services_.settings().graphics;
+        gs.preset = gs.matching_preset();
+        services_.apply_graphics();
+        services_.settings_changed();
+    };
+    row_pick(out, tr("settings.graphics.preset"), tr("settings.graphics.preset.tooltip"),
+         {tr("settings.graphics.preset.low"), tr("settings.graphics.preset.medium"), tr("settings.graphics.preset.high"),
+          tr("settings.graphics.preset.ultra"), tr("settings.graphics.preset.custom")},
+         static_cast<int>(g.preset), true, [this, changed](int i) {
+             const auto p = static_cast<QualityPreset>(i);
+             if (p != QualityPreset::Custom) {
+                 services_.settings().graphics.apply_preset(p);
+             }
+             changed();
+         });
+    struct Level {
+        const char* key;
+        int* value;
+    };
+    const Level levels[] = {{"shadows", &g.shadows},
+                            {"drawDistance", &g.draw_distance},
+                            {"vegetation", &g.vegetation},
+                            {"groundDetail", &g.ground_detail},
+                            {"antialiasing", &g.antialiasing}};
+    for (const Level& l : levels) {
+        const std::string base = std::string("settings.graphics.") + l.key;
+        int* value = l.value;
+        row_pick(out, tr(base), tr(base + ".tooltip"), level_options(base + ".level"), *l.value, true, [value, changed](int i) {
+            *value = i;
+            changed();
+        });
+    }
+}
+
+void SettingsScreen::tab_audio(ThingRows& out) {
+    AudioSettings& a = services_.settings().audio;
+    out.line(tr("settings.audio.pendingNote"), WinRow::Kind::Dim);
+    struct Volume {
+        const char* key;
+        int* value;
+    };
+    const Volume volumes[] = {{"master", &a.master}, {"effects", &a.effects}, {"ambient", &a.ambient}, {"music", &a.music}, {"ui", &a.ui}};
+    for (const Volume& v : volumes) {
+        const std::string base = std::string("settings.audio.") + v.key;
+        int* value = v.value;
+        row_slide(out, tr(base) + ": " + percent(*v.value), tr(base + ".tooltip"), *v.value, 0, 100, 5, true, [this, value](int x) {
+            if (*value != x) {
+                *value = x;
+                services_.settings_changed();
+            }
+        });
+    }
+}
+
+void SettingsScreen::tab_controls(ThingRows& out) {
+    InputSettings& in = services_.settings().input;
+    out.line(tr("settings.controls.camera"), WinRow::Kind::Section);
+    struct Speed {
+        const char* key;
+        double* value;
+    };
+    const Speed speeds[] = {{"panSpeed", &in.camera_pan_speed}, {"rotateSpeed", &in.camera_rotate_speed}, {"zoomSpeed", &in.camera_zoom_speed}};
+    for (const Speed& sp : speeds) {
+        const std::string base = std::string("settings.controls.") + sp.key;
+        const int pct = static_cast<int>(std::lround(*sp.value * 100.0));
+        double* value = sp.value;
+        row_slide(out, tr(base) + ": " + percent(pct), tr(base + ".tooltip"), pct, 25, 400, 5, true, [this, value](int x) {
+            const double v = static_cast<double>(x) / 100.0;
+            if (*value != v) {
+                *value = v;
+                services_.settings_changed();
+            }
+        });
+    }
+    row_tick(out, tr("settings.controls.invertZoom"), tr("settings.controls.invertZoom.tooltip"), in.invert_zoom, true, [this](bool v) {
+        services_.settings().input.invert_zoom = v;
+        services_.settings_changed();
+    });
+    row_tick(out, tr("settings.controls.edgeScroll"), tr("settings.controls.edgeScroll.tooltip"), in.edge_scroll, true, [this](bool v) {
+        services_.settings().input.edge_scroll = v;
+        services_.settings_changed();
+    });
+    if (!binding_notice_.empty()) {
+        out.line(binding_notice_, WinRow::Kind::Accent);
+    }
+    const ActionGroup groups[] = {ActionGroup::Camera, ActionGroup::Game, ActionGroup::Interface};
+    const char* group_keys[] = {"settings.controls.group.camera", "settings.controls.group.game", "settings.controls.group.interface"};
+    for (std::size_t gi = 0; gi < std::size(groups); ++gi) {
+        out.line(tr(group_keys[gi]), WinRow::Kind::Section);
+        for (const ActionInfo& info : action_table()) {
+            if (info.group != groups[gi]) {
+                continue;
+            }
+            const std::string name = tr("action." + std::string(info.id));
+            const std::string tip = tr("settings.controls.binding.tooltip", name);
+            std::vector<RowButton> keys;
+            for (std::size_t slot = 0; slot < kKeysPerAction; ++slot) {
+                const SDL_Scancode key = in.bindings.key(info.action, slot);
+                const bool active = capture_ && capture_->action == info.action && capture_->slot == slot;
+                const Action action = info.action;
+                keys.push_back(out.button(key == SDL_SCANCODE_UNKNOWN ? tr("settings.controls.unbound") : key_display_name(key), tip,
+                                          row_run([this, action, slot] {
+                                              capture_ = Capture{action, slot};
+                                              binding_notice_.clear();
+                                          }),
+                                          true, active));
+            }
+            out.stepper(name, keys.size() > 0 ? keys[0] : RowButton{}, keys.size() > 1 ? keys[1] : RowButton{});
+            out.rows.back().tip = tip;
+            out.rows.back().cls = "wide keys";
+        }
+    }
+}
+
+void SettingsScreen::tab_interface(ThingRows& out) {
     Settings& s = services_.settings();
     {
         std::vector<std::string> options;
         for (const double scale : kScaleOptions) {
-            options.push_back(scale == 0.0 ? tr("settings.interface.scale.auto")
-                                           : percent(static_cast<int>(std::lround(scale * 100.0))));
+            options.push_back(scale == 0.0 ? tr("settings.interface.scale.auto") : percent(static_cast<int>(std::lround(scale * 100.0))));
         }
-        int index = s.display.ui_scale == 1.0 ? 0 : closest_index(kScaleOptions, s.display.ui_scale);
-        const Row r = row(ctx, x, y, w, tr("settings.interface.scale"), tr("settings.interface.scale.tooltip"));
-        if (ctx.selector(ctx.id("scale"), r.control, index, options, tr("settings.interface.scale.tooltip"))) {
-            s.display.ui_scale = kScaleOptions[static_cast<std::size_t>(index)];
-            services_.settings_changed();
-        }
+        row_pick(out, tr("settings.interface.scale"), tr("settings.interface.scale.tooltip"), options,
+             s.display.ui_scale == 1.0 ? 0 : closest_index(kScaleOptions, s.display.ui_scale), true, [this](int i) {
+                 services_.settings().display.ui_scale = kScaleOptions[static_cast<std::size_t>(i)];
+                 services_.settings_changed();
+             });
     }
     {
         const auto& families = services_.fonts().ui_families();
         std::vector<std::string> options;
+        std::vector<std::string> ids;
         int index = 0;
         for (std::size_t i = 0; i < families.size(); ++i) {
             options.push_back(families[i].name);
+            ids.push_back(families[i].id);
             if (families[i].id == s.ui.font) {
                 index = static_cast<int>(i);
             }
         }
-        const Row r = row(ctx, x, y, w, tr("settings.interface.font"), tr("settings.interface.font.tooltip"));
-        if (ctx.selector(ctx.id("font"), r.control, index, options, tr("settings.interface.font.tooltip"))) {
-            s.ui.font = families[static_cast<std::size_t>(index)].id;
-            services_.apply_font();
-            services_.settings_changed();
+        if (!options.empty()) {
+            row_pick(out, tr("settings.interface.font"), tr("settings.interface.font.tooltip"), options, index, true, [this, ids](int i) {
+                services_.settings().ui.font = ids[static_cast<std::size_t>(i)];
+                services_.apply_font();
+                services_.settings_changed();
+            });
         }
     }
-    // The style of the new interface (phase 119), with its colors as a preview,
+    // The style of the interface (phase 119), with its colors as a preview,
     // and its glass; both apply at once.
     if (const std::vector<UiStyleChoice> styles = services_.ui_styles(); !styles.empty()) {
         std::vector<std::string> options;
+        std::vector<std::string> ids;
         int index = 0;
         for (std::size_t i = 0; i < styles.size(); ++i) {
             options.push_back(styles[i].name);
+            ids.push_back(styles[i].id);
             if (styles[i].id == s.ui.style) {
                 index = static_cast<int>(i);
             }
         }
-        const Row r = row(ctx, x, y, w, tr("settings.interface.style"), tr("settings.interface.style.tooltip"));
-        if (ctx.selector(ctx.id("style"), r.control, index, options, tr("settings.interface.style.tooltip"))) {
-            s.ui.style = styles[static_cast<std::size_t>(index)].id;
+        row_pick(out, tr("settings.interface.style"), tr("settings.interface.style.tooltip"), options, index, true, [this, ids](int i) {
+            services_.settings().ui.style = ids[static_cast<std::size_t>(i)];
             services_.settings_changed();
-        }
-        const Row p = row(ctx, x, y, w, tr("settings.interface.stylePreview"), tr("settings.interface.style.tooltip"));
+        });
         const std::vector<std::uint32_t>& colors = styles[static_cast<std::size_t>(index)].preview;
         if (!colors.empty()) {
-            const auto color = [](std::uint32_t c) {
-                return ui::Color{static_cast<std::uint8_t>(c >> 24), static_cast<std::uint8_t>(c >> 16),
-                                 static_cast<std::uint8_t>(c >> 8), 255};
-            };
-            ctx.draw().rect(p.control, color(colors[0]));
-            const float pad = p.control.h * 0.2f;
-            const float side = p.control.h - 2.0f * pad;
+            const auto css = [](std::uint32_t c) { return std::format("#{:06x}", c >> 8); };
+            std::string swatches = "<div class=\"swatches\" style=\"background-color: " + css(colors[0]) + ";\">";
             for (std::size_t i = 1; i < colors.size(); ++i) {
-                const ui::Rect sw{p.control.x + pad + static_cast<float>(i - 1) * (side + pad), p.control.y + pad, side,
-                                  side};
-                ctx.draw().rect(sw, color(colors[i]));
+                swatches += "<div class=\"swatch\" style=\"background-color: " + css(colors[i]) + ";\"></div>";
             }
+            out.line(swatches + "</div>", WinRow::Kind::Raw);
         }
-        std::vector<std::string> glass{tr("settings.interface.glass.full"), tr("settings.interface.glass.simple")};
-        int g = s.ui.glass == UiGlass::Simple ? 1 : 0;
-        const Row gr = row(ctx, x, y, w, tr("settings.interface.glass"), tr("settings.interface.glass.tooltip"));
-        if (ctx.selector(ctx.id("glass"), gr.control, g, glass, tr("settings.interface.glass.tooltip"))) {
-            s.ui.glass = g == 1 ? UiGlass::Simple : UiGlass::Full;
-            services_.settings_changed();
-        }
+        row_pick(out, tr("settings.interface.glass"), tr("settings.interface.glass.tooltip"),
+             {tr("settings.interface.glass.full"), tr("settings.interface.glass.simple")}, s.ui.glass == UiGlass::Simple ? 1 : 0,
+             true, [this](int i) {
+                 services_.settings().ui.glass = i == 1 ? UiGlass::Simple : UiGlass::Full;
+                 services_.settings_changed();
+             });
     }
-    {
-        const Row r = row(ctx, x, y, w, tr("settings.interface.tooltips"), tr("settings.interface.tooltips.tooltip"));
-        if (ctx.checkbox(ctx.id("tooltips"), r.control, s.ui.show_tooltips, tr("settings.interface.tooltips.tooltip"))) {
-            services_.settings_changed();
-        }
-    }
-    {
-        const Row r = row(ctx, x, y, w, tr("settings.interface.tooltipDelay"), tr("settings.interface.tooltipDelay.tooltip"));
-        if (ctx.slider(ctx.id("tooltipDelay"), r.control, s.ui.tooltip_delay_ms, 0, settings_limits::kMaxTooltipDelayMs,
-                       100, [](int v) { return tr("settings.value.ms", v); }, tr("settings.interface.tooltipDelay.tooltip"),
-                       s.ui.show_tooltips)) {
-            services_.settings_changed();
-        }
-    }
+    row_tick(out, tr("settings.interface.tooltips"), tr("settings.interface.tooltips.tooltip"), s.ui.show_tooltips, true, [this](bool v) {
+        services_.settings().ui.show_tooltips = v;
+        services_.settings_changed();
+    });
+    row_slide(out, tr("settings.interface.tooltipDelay") + ": " + tr("settings.value.ms", s.ui.tooltip_delay_ms),
+          tr("settings.interface.tooltipDelay.tooltip"), s.ui.tooltip_delay_ms, 0, settings_limits::kMaxTooltipDelayMs, 100,
+          s.ui.show_tooltips, [this](int v) {
+              if (services_.settings().ui.tooltip_delay_ms != v) {
+                  services_.settings().ui.tooltip_delay_ms = v;
+                  services_.settings_changed();
+              }
+          });
 }
 
-void SettingsScreen::tab_language(ui::Context& ctx, float x, float& y, float w) {
+void SettingsScreen::tab_language(ThingRows& out) {
     Settings& s = services_.settings();
-    const auto languages = i18n::translator().available();
-    const float h = ctx.s(kRowHeight);
-    const float gap = ctx.s(8.0f);
-    const float bw = std::min(w, ctx.s(420.0f));
-
     const bool is_auto = s.language == "auto";
-    if (ctx.button(ctx.id("auto"), {x, y, bw, h}, tr("settings.language.auto"), tr("settings.language.auto.tooltip"), true,
-                   is_auto)) {
-        s.language = "auto";
-        services_.apply_language();
-        services_.settings_changed();
-    }
-    y += h + gap;
-    for (const i18n::LanguageInfo* lang : languages) {
-        const bool selected = !is_auto && s.language == lang->code;
-        if (ctx.button(ctx.id(lang->code), {x, y, bw, h}, lang->native_name, {}, true, selected)) {
-            s.language = lang->code;
+    const auto choose = [this](std::string code) {
+        return row_run([this, code] {
+            services_.settings().language = code;
             services_.apply_language();
             services_.settings_changed();
-        }
-        y += h + gap;
+        });
+    };
+    out.buttons({out.button(tr("settings.language.auto"), tr("settings.language.auto.tooltip"), choose("auto"), true, is_auto)});
+    for (const i18n::LanguageInfo* lang : i18n::translator().available()) {
+        out.buttons({out.button(lang->native_name, {}, choose(lang->code), true, !is_auto && s.language == lang->code)});
     }
-    y += ctx.s(8.0f);
-    y += ctx.paragraph({x, y, w, 0}, tr("settings.language.addHint"), ctx.style(ctx.theme().small), ctx.theme().text_dim);
+    out.line(tr("settings.language.addHint"), WinRow::Kind::Dim);
 }
 
-void SettingsScreen::tab_game(ui::Context& ctx, float x, float& y, float w) {
-    GameplaySettings& g = services_.settings().gameplay;
+void SettingsScreen::tab_game(ThingRows& out) {
+    const GameplaySettings& g = services_.settings().gameplay;
     {
         std::vector<std::string> options;
         for (const int minutes : kAutosaveOptions) {
             options.push_back(minutes == 0 ? tr("settings.game.autosave.off") : i18n::tr_n("settings.game.autosave.minutes", minutes));
         }
-        int index = closest_index(kAutosaveOptions, g.autosave_minutes);
-        const Row r = row(ctx, x, y, w, tr("settings.game.autosave"), tr("settings.game.autosave.tooltip"));
-        if (ctx.selector(ctx.id("autosave"), r.control, index, options, tr("settings.game.autosave.tooltip"))) {
-            g.autosave_minutes = kAutosaveOptions[static_cast<std::size_t>(index)];
-            services_.settings_changed();
-        }
+        row_pick(out, tr("settings.game.autosave"), tr("settings.game.autosave.tooltip"), options,
+             closest_index(kAutosaveOptions, g.autosave_minutes), true, [this](int i) {
+                 services_.settings().gameplay.autosave_minutes = kAutosaveOptions[static_cast<std::size_t>(i)];
+                 services_.settings_changed();
+             });
     }
-    {
-        const Row r = row(ctx, x, y, w, tr("settings.game.autosaveKeep"), tr("settings.game.autosaveKeep.tooltip"));
-        if (ctx.slider(ctx.id("autosaveKeep"), r.control, g.autosave_keep, 1, settings_limits::kMaxAutosaveKeep, 1,
-                       [](int v) { return i18n::tr_n("settings.game.autosaveKeep.value", v); },
-                       tr("settings.game.autosaveKeep.tooltip"), g.autosave_minutes > 0)) {
-            services_.settings_changed();
-        }
-    }
-    {
-        const Row r = row(ctx, x, y, w, tr("settings.game.tutorial"), tr("settings.game.tutorial.tooltip"));
-        if (ctx.button(ctx.id("tutorial"), r.control, tr("settings.game.tutorial.button"), tr("settings.game.tutorial.tooltip"),
-                       g.tutorial_seen)) {
-            g.tutorial_seen = false;
-            services_.settings_changed();
-        }
-    }
-    {
-        const Row r = row(ctx, x, y, w, tr("settings.game.dataFolder"), tr("settings.game.dataFolder.tooltip"));
-        if (ctx.button(ctx.id("dataFolder"), r.control, tr("settings.game.dataFolder.button"),
-                       tr("settings.game.dataFolder.tooltip"))) {
-            services_.open_data_folder();
-        }
-    }
+    row_slide(out, tr("settings.game.autosaveKeep") + ": " + i18n::tr_n("settings.game.autosaveKeep.value", g.autosave_keep),
+          tr("settings.game.autosaveKeep.tooltip"), g.autosave_keep, 1, settings_limits::kMaxAutosaveKeep, 1, g.autosave_minutes > 0,
+          [this](int v) {
+              if (services_.settings().gameplay.autosave_keep != v) {
+                  services_.settings().gameplay.autosave_keep = v;
+                  services_.settings_changed();
+              }
+          });
+    out.stepper(tr("settings.game.tutorial"),
+                out.button(tr("settings.game.tutorial.button"), tr("settings.game.tutorial.tooltip"), row_run([this] {
+                               services_.settings().gameplay.tutorial_seen = false;
+                               services_.settings_changed();
+                           }),
+                           g.tutorial_seen),
+                RowButton{});
+    out.rows.back().cls = "wide";
+    out.stepper(tr("settings.game.dataFolder"),
+                out.button(tr("settings.game.dataFolder.button"), tr("settings.game.dataFolder.tooltip"),
+                           row_run([this] { services_.open_data_folder(); })),
+                RowButton{});
+    out.rows.back().cls = "wide";
 }
 
 void SettingsScreen::restore_tab_defaults(UiHost& host) {

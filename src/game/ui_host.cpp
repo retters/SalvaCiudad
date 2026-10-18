@@ -21,7 +21,6 @@ using i18n::tr;
 
 namespace {
 
-constexpr std::uint64_t kDisplayConfirmNs = 15'000'000'000ull;
 
 constexpr std::uint32_t kLogoGlowImageId = 3;  // Next to minimap::kImageId and kPreviewImageId.
 constexpr int kMaxGlowSize = 2048;             // UiRenderer::kMaxImageSize.
@@ -128,22 +127,6 @@ const LogoStyle kLogoStyles[] = {
      ui::Color::rgb(0xDCC898)},
 };
 constexpr int kLogoStyleCount = static_cast<int>(std::size(kLogoStyles));
-
-// A centered dialog panel; returns the content rectangle.
-ui::Rect dialog_frame(ui::Context& ctx, float content_height, std::string_view title, float& y) {
-    const float pad = ctx.s(24.0f);
-    const float w = std::min(ctx.s(560.0f), ctx.width() - ctx.s(32.0f));
-    const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
-    const float h = std::min(ctx.height() - ctx.s(16.0f), content_height + title_h + 3 * pad);
-    const ui::Rect box{std::round((ctx.width() - w) * 0.5f), std::round((ctx.height() - h) * 0.5f), std::round(w),
-                       std::round(h)};
-    ctx.draw().rect({0, 0, ctx.width(), ctx.height()}, ctx.theme().overlay);
-    ctx.panel(box);
-    ctx.label({box.x + pad, box.y + pad, box.w - 2 * pad, title_h}, title,
-              ctx.style(ctx.theme().heading, ui::FontRole::Bold), ctx.theme().accent, ui::Align::Left);
-    y = box.y + pad + title_h + pad * 0.5f;
-    return {box.x + pad, y, box.w - 2 * pad, box.bottom() - pad - y};
-}
 
 }  // namespace
 
@@ -317,10 +300,10 @@ void UiHost::frame(ui::Context& ctx) {
     last_screen_ = screen_;
     if (screen_ == Screen::NewGame) {
         ctx.set_input_blocked(modal);
-        const NewGameScreen::Result r = new_game_.frame(ctx, modal);
+        const NewGameScreen::Result r = new_game_.frame(ctx, *this, modal);
         // The preview's picture, when a new one is ready (phase 56).
         if (std::optional<std::vector<std::uint8_t>> image = new_game_.take_preview()) {
-            services_.set_ui_image(kPreviewImageId, minimap::kImageSize, minimap::kImageSize, std::move(*image));
+            services_.set_hud_image("preview", minimap::kImageSize, minimap::kImageSize, *image);  // Phase 126: /live/preview.
         }
         // The form is remembered however it is left (phase 23).
         if (r != NewGameScreen::Result::None && services_.settings().new_game != new_game_.remembered()) {
@@ -344,7 +327,7 @@ void UiHost::frame(ui::Context& ctx) {
         }
     } else if (screen_ == Screen::Join) {
         ctx.set_input_blocked(modal);
-        const JoinScreen::Result r = join_.frame(ctx, modal);
+        const JoinScreen::Result r = join_.frame(ctx, *this, modal);
         if (r == JoinScreen::Result::Back) {
             screen_ = Screen::MainMenu;
         } else if (r == JoinScreen::Result::Joining) {
@@ -353,7 +336,7 @@ void UiHost::frame(ui::Context& ctx) {
         }
     } else if (screen_ == Screen::Lobby) {
         ctx.set_input_blocked(modal);
-        if (lobby_screen_.frame(ctx, modal) == LobbyScreen::Result::Leave) {
+        if (lobby_screen_.frame(ctx, *this, modal) == LobbyScreen::Result::Leave) {
             services_.leave_network();
             screen_ = Screen::MainMenu;
         }
@@ -370,7 +353,7 @@ void UiHost::frame(ui::Context& ctx) {
         ctx.set_input_blocked(modal);
         load_screen(ctx, modal);
     } else if (screen_ == Screen::Mods) {
-        if (!mods_screen_.frame(ctx, modal)) {
+        if (!mods_screen_.frame(ctx, *this, modal)) {
             screen_ = Screen::MainMenu;
         }
     } else if (screen_ == Screen::Settings) {
@@ -390,6 +373,8 @@ void UiHost::frame(ui::Context& ctx) {
     } else if (!messages_.empty()) {
         message_dialog(ctx);
     }
+    // Phase 126: the menus given this frame show; the others close.
+    menus_.show(services_.rml(), ctx.width(), ctx.height(), ctx.s(1.0f), 0.0f, 0.0f);
 }
 
 void UiHost::draw_logo(ui::Context& ctx, float center_x, float y, float max_width, float max_height, float& height_out,
@@ -552,123 +537,6 @@ UiHost::LogoGlow UiHost::build_logo_glow(const ui::TextRenderer& text, const Log
     return glow;
 }
 
-void UiHost::main_menu(ui::Context& ctx) {
-    const float margin = ctx.s(16.0f);
-    const float col_w = std::min(ctx.s(380.0f), ctx.width() - 2 * margin);
-    const float cx = ctx.width() * 0.5f;
-    const float button_h = ctx.s(48.0f);
-    const float gap = ctx.s(10.0f);
-
-    struct Entry {
-        const char* id;
-        std::string label;
-        std::string tooltip;
-        bool available;
-    };
-    const Entry entries[] = {
-        {"single", tr("menu.main.singlePlayer"), tr("menu.main.singlePlayer.tooltip"), true},
-        {"tutorial", tr("menu.main.tutorial"), tr("menu.main.tutorial.tooltip"),
-         services_.content() != nullptr && !services_.content()->tutorials.empty()},
-        {"host", tr("menu.main.hostGame"), tr("menu.main.hostGame.tooltip"), true},
-        {"join", tr("menu.main.joinGame"), tr("menu.main.joinGame.tooltip"), true},
-        {"load", tr("menu.main.loadGame"), tr("menu.main.loadGame.tooltip"), true},
-        {"mods", tr("menu.main.mods"), tr("menu.main.mods.tooltip"), true},
-        {"settings", tr("menu.main.settings"), tr("menu.main.settings.tooltip"), true},
-        {"quit", tr("menu.main.quit"), tr("menu.main.quit.tooltip"), true},
-    };
-
-    // Measure first so the whole column can be centered or scrolled.
-    // The logo takes at most a third of the window height.
-    const float logo_max_h = std::max(ctx.s(40.0f), ctx.height() * 0.33f);
-    float logo_h = 0.0f;
-    draw_logo(ctx, cx, 0.0f, ctx.width() - 2 * margin, logo_max_h, logo_h, false);
-    const ui::TextStyle notice_style = ctx.style(ctx.theme().body);
-    float notices_h = 0.0f;
-    for (const std::string& n : notices_) {
-        notices_h += ctx.paragraph_height(col_w - ctx.s(64.0f), n, notice_style) + ctx.s(20.0f) + gap;
-    }
-    const float buttons_h = static_cast<float>(std::size(entries)) * (button_h + gap);
-    const ui::TextStyle small = ctx.style(ctx.theme().small);
-    const float version_h = ctx.text().line_height(small);
-    const float content_h = notices_h + logo_h + ctx.s(36.0f) + buttons_h + margin * 2;
-    // The version sits in the corner if there is room, otherwise below the
-    // buttons, so it never covers them.
-    const bool version_in_corner = content_h + 2 * version_h <= ctx.height();
-
-    const ui::Rect viewport{0, 0, ctx.width(), ctx.height()};
-    const float top = ctx.begin_scroll(ctx.id("main_menu"), viewport);
-    float y = top + std::max(margin, (ctx.height() - content_h) * 0.5f + margin);
-
-    // Notices, each with a close button.
-    for (std::size_t i = 0; i < notices_.size();) {
-        const float text_h = ctx.paragraph_height(col_w - ctx.s(64.0f), notices_[i], notice_style);
-        const ui::Rect box{std::round(cx - col_w * 0.5f), std::round(y), std::round(col_w), std::round(text_h + ctx.s(20.0f))};
-        ctx.draw().rect(box, ctx.theme().danger.with_alpha(0.35f));
-        ctx.draw().rect_outline(box, ctx.theme().danger, std::max(1.0f, std::round(ctx.s(1.0f))));
-        ctx.paragraph({box.x + ctx.s(10.0f), box.y + ctx.s(10.0f), box.w - ctx.s(64.0f), text_h}, notices_[i],
-                      notice_style, ctx.theme().text);
-        const float close = ctx.s(32.0f);
-        ctx.push_id("notice");
-        const bool closed = ctx.button(ctx.id(std::to_string(i)), {box.right() - close - ctx.s(8.0f), box.y + ctx.s(8.0f), close, close},
-                                       "x", tr("menu.main.dismissNotice.tooltip"));
-        ctx.pop_id();
-        y += box.h + gap;
-        if (closed) {
-            notices_.erase(notices_.begin() + static_cast<std::ptrdiff_t>(i));
-        } else {
-            ++i;
-        }
-    }
-
-    draw_logo(ctx, cx, y, ctx.width() - 2 * margin, logo_max_h, logo_h, true);
-    y += logo_h + ctx.s(36.0f);
-
-    for (const Entry& e : entries) {
-        const ui::Rect r{std::round(cx - col_w * 0.5f), std::round(y), std::round(col_w), std::round(button_h)};
-        if (ctx.button(ctx.id(e.id), r, e.label, e.tooltip)) {
-            if (!e.available) {
-                show_message(tr("dialog.comingSoon.title"), tr("dialog.comingSoon.body", e.label));
-            } else if (std::string_view(e.id) == "load") {
-                saves_ = services_.list_saves();
-                load_return_ = Screen::MainMenu;
-                screen_ = Screen::Load;
-            } else if (std::string_view(e.id) == "mods") {
-                mods_screen_.open();
-                screen_ = Screen::Mods;
-            } else if (std::string_view(e.id) == "tutorial") {
-                start_tutorial(0);
-            } else if (std::string_view(e.id) == "single") {
-                new_game_.open(services_.content(), false, services_.settings().new_game);
-                host_new_game_ = false;
-                screen_ = Screen::NewGame;
-            } else if (std::string_view(e.id) == "host") {
-                new_game_.open(services_.content(), true, services_.settings().new_game);
-                host_new_game_ = true;
-                screen_ = Screen::NewGame;
-            } else if (std::string_view(e.id) == "join") {
-                join_.open();
-                screen_ = Screen::Join;
-            } else if (std::string_view(e.id) == "settings") {
-                open_settings();
-            } else if (std::string_view(e.id) == "quit") {
-                services_.request_quit();
-            }
-        }
-        y += button_h + gap;
-    }
-    const std::string version = tr("menu.main.version", std::string(full_version()));
-    if (!version_in_corner) {
-        ctx.label({margin, y, ctx.width() - 2 * margin, version_h}, version, small, ctx.theme().text_dim,
-                  ui::Align::Center);
-    }
-    ctx.end_scroll(content_h + (version_in_corner ? 0.0f : version_h + margin));
-
-    if (version_in_corner) {
-        ctx.label({margin, ctx.height() - margin - version_h, ctx.width() - 2 * margin, version_h}, version, small,
-                  ctx.theme().text_dim, ui::Align::Right);
-    }
-}
-
 // The camera line names the current mode and the key that changes it.
 std::string UiHost::camera_line() const {
     const char* mode_key = "camera.mode.aerial";
@@ -679,62 +547,6 @@ std::string UiHost::camera_line() const {
     }
     const std::string key = key_display_name(services_.settings().input.bindings.key(Action::CameraCycleMode, 0));
     return tr("camera.line", tr(mode_key), key);
-}
-
-void UiHost::generating_screen(ui::Context& ctx, bool modal) {
-    const MapGenStatus status = services_.map_generation_status();
-    if (status.state == MapGenStatus::State::Done) {
-        if (services_.enter_generated_map()) {
-            screen_ = Screen::MapView;
-            game_menu_open_ = false;
-            last_speed_ = speed::kNormal;
-        } else {
-            show_message(tr("generating.showFailed.title"), tr("generating.showFailed.body"));
-            screen_ = Screen::NewGame;
-        }
-        return;
-    }
-    if (status.state != MapGenStatus::State::Running) {
-        if (services_.net() != nullptr) {
-            return;  // The network game shows once its state is ready.
-        }
-        screen_ = Screen::NewGame;
-        return;
-    }
-
-    static constexpr const char* kStepKeys[kMapGenSteps] = {
-        "generating.step.relief",  "generating.step.lakes",     "generating.step.rivers",
-        "generating.step.soil",    "generating.step.biomes",    "generating.step.forests",
-        "generating.step.resources", "generating.step.starts",  "generating.step.view"};
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const float bar_h = ctx.s(18.0f);
-    const float button_h = ctx.s(44.0f);
-    const float line_h = ctx.text().line_height(body);
-    float y = 0.0f;
-    const ui::Rect content =
-        dialog_frame(ctx, line_h + ctx.s(12.0f) + bar_h + ctx.s(24.0f) + button_h, tr("generating.title"), y);
-    const int step = std::clamp(status.step, 0, kMapGenSteps - 1);
-    const float overall = status.overall();
-    const std::string percent = tr("generating.percent", static_cast<int>(std::lround(overall * 100.0f)));
-    ctx.label({content.x, y, content.w, line_h}, tr(kStepKeys[step]), body, ctx.theme().text);
-    ctx.label({content.x, y, content.w, line_h}, percent, body, ctx.theme().text_dim, ui::Align::Right);
-    y += line_h + ctx.s(12.0f);
-    const ui::Rect bar{content.x, std::round(y), content.w, std::round(bar_h)};
-    ctx.draw().rect(bar, ctx.theme().button_active);
-    ctx.draw().rect({bar.x, bar.y, std::round(bar.w * overall), bar.h}, ctx.theme().accent);
-    ctx.draw().rect_outline(bar, ctx.theme().panel_border, std::max(1.0f, std::round(ctx.s(1.0f))));
-    const float bw = std::min(ctx.s(180.0f), content.w);
-    const ui::Rect cancel{content.right() - bw, content.bottom() - button_h, bw, button_h};
-    if (ctx.button(ctx.id("generating_cancel"), cancel, tr("generating.cancel"), tr("generating.cancel.tooltip")) ||
-        (!modal && ctx.input().key(SDL_SCANCODE_ESCAPE))) {
-        services_.cancel_map_generation();
-        if (services_.net() != nullptr) {
-            services_.leave_network();
-            screen_ = Screen::MainMenu;
-        } else {
-            screen_ = Screen::NewGame;
-        }
-    }
 }
 
 void UiHost::game_keys(ui::Context& ctx) {
@@ -980,7 +792,7 @@ void UiHost::tutorial_panel(ui::Context& ctx) {
     }
     if (last) {
         RowButton finish = out.button(tr("tutorial.finish"), tr("tutorial.finish.tooltip"),
-                                      [this](GameSession&, const RowInput&, RowEffects&) {
+                                      [this](GameSession*, const RowInput&, RowEffects&) {
                                           services_.settings().gameplay.tutorial_seen = true;
                                           services_.settings_changed();
                                           tutorial_.reset();
@@ -989,14 +801,14 @@ void UiHost::tutorial_panel(ui::Context& ctx) {
         out.buttons({std::move(finish)});
     } else {
         out.buttons({out.button(tr("tutorial.skip"), tr("tutorial.skip.tooltip"),
-                                [this](GameSession&, const RowInput&, RowEffects&) {
+                                [this](GameSession*, const RowInput&, RowEffects&) {
                                     if (tutorial_) {
                                         ++tutorial_->step;
                                         tutorial_->step_started = false;
                                     }
                                 }),
                      out.button(tr("tutorial.quit"), tr("tutorial.quit.tooltip"),
-                                [this](GameSession&, const RowInput&, RowEffects&) { tutorial_.reset(); })});
+                                [this](GameSession*, const RowInput&, RowEffects&) { tutorial_.reset(); })});
     }
     hud_.panel("tutorial", std::move(out), GameHud::PanelPlace::Bottom, 560.0f);
 }
@@ -1030,305 +842,14 @@ void UiHost::end_panel(ui::Context& ctx) {
                  p == s->town() ? WinRow::Kind::Accent : WinRow::Kind::Text);
     }
     out.buttons({out.button(tr("end.watch"), tr("end.watch.tooltip"),
-                            [this](GameSession&, const RowInput&, RowEffects&) { end_seen_ = true; })});
+                            [this](GameSession*, const RowInput&, RowEffects&) { end_seen_ = true; })});
     out.buttons({out.button(tr("gameMenu.leave"), tr("gameMenu.leave.tooltip"),
-                            [this](GameSession&, const RowInput&, RowEffects&) {
+                            [this](GameSession*, const RowInput&, RowEffects&) {
                                 end_seen_ = true;
                                 leave_pending_ = true;  // Not from inside the game's own event: with the next frame.
                             })});
     hud_.panel("end", std::move(out), GameHud::PanelPlace::Center, 560.0f);
     (void)ctx;
-}
-
-void UiHost::game_menu(ui::Context& ctx) {
-    const float button_h = ctx.s(48.0f);
-    const float gap = ctx.s(10.0f);
-    struct Entry {
-        const char* id;
-        const char* label;
-        const char* tooltip;
-    };
-    static constexpr Entry kEntries[] = {
-        {"resume", "gameMenu.resume", "gameMenu.resume.tooltip"},
-        {"save", "gameMenu.save", "gameMenu.save.tooltip"},
-        {"load", "menu.main.loadGame", "menu.main.loadGame.tooltip"},
-        {"open", "gameMenu.open", "gameMenu.open.tooltip"},
-        {"access", "gameMenu.access", "gameMenu.access.tooltip"},
-        {"watch", "gameMenu.watch", "gameMenu.watch.tooltip"},
-        {"play", "gameMenu.play", "gameMenu.play.tooltip"},
-        {"settings", "menu.main.settings", "menu.main.settings.tooltip"},
-        {"leave", "gameMenu.leave", "gameMenu.leave.tooltip"},
-        {"quit", "gameMenu.quit", "menu.main.quit.tooltip"},
-    };
-    const bool playing = services_.session() != nullptr;
-    const bool networked = playing && services_.session()->networked();
-    if (access_dialog_) {
-        access_dialog(ctx);
-        return;
-    }
-    std::vector<const Entry*> entries;
-    for (const Entry& e : kEntries) {
-        const std::string_view id = e.id;
-        // Loading a saved game is for single player only. Opening the game
-        // to others too (phase 76), and not the tutorial's; once open, its
-        // host changes who may come in.
-        // Phase 79: a player goes to watch, where the game lets people
-        // watch, and comes back to its town.
-        const GameSession* session = services_.session();
-        const bool seated = networked && session->seat() != GameSession::kNoSeat;
-        if (id == "watch" ? seated && !session->spectating() && (session->game().access() & sim::access::kWatch) != 0
-            : id == "play" ? seated && session->spectating()
-            : id == "open" ? playing && !networked && !tutorial_
-            : id == "access" ? services_.hosting()
-                             : (id != "save" && id != "load") || (id == "save" && playing) ||
-                                   (id == "load" && playing && !networked)) {
-            entries.push_back(&e);
-        }
-    }
-    const float content_h = static_cast<float>(entries.size()) * (button_h + gap) - gap;
-    float y = 0.0f;
-    const ui::Rect content = dialog_frame(ctx, content_h, tr("gameMenu.title"), y);
-    for (const Entry* ep : entries) {
-        const Entry& e = *ep;
-        const ui::Rect r{content.x, std::round(y), content.w, std::round(button_h)};
-        if (ctx.button(ctx.id(std::string("game_menu_") + e.id), r, tr(e.label), tr(e.tooltip))) {
-            const std::string_view id = e.id;
-            if (id == "resume") {
-                game_menu_open_ = false;
-            } else if (id == "save") {
-                services_.save_game();
-            } else if (id == "load") {
-                saves_ = services_.list_saves();
-                load_return_ = Screen::MapView;
-                screen_ = Screen::Load;
-            } else if (id == "watch") {
-                services_.watch_game();
-                game_menu_open_ = false;
-            } else if (id == "play") {
-                services_.play_game(0);
-                game_menu_open_ = false;
-            } else if (id == "open" || id == "access") {
-                // What the game allows now; a game never opened offers both.
-                const std::uint8_t now = services_.session()->game().access();
-                access_dialog_ = true;
-                access_open_ = id == "open" || (now & sim::access::kOpen) != 0;
-                access_join_ = id == "open" || (now & sim::access::kJoin) != 0;
-                access_found_ = id == "open" || (now & sim::access::kFound) != 0;
-                access_watch_ = id == "open" || (now & sim::access::kWatch) != 0;
-            } else if (id == "settings") {
-                settings_return_ = Screen::MapView;
-                screen_ = Screen::Settings;
-            } else if (id == "leave") {
-                game_menu_open_ = false;
-                services_.leave_map();
-                services_.leave_network();
-                screen_ = Screen::MainMenu;
-            } else {
-                services_.request_quit();
-            }
-            return;
-        }
-        y += button_h + gap;
-    }
-    if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
-        game_menu_open_ = false;
-    }
-}
-
-// Phase 76. Who may come into the game: opening a single-player game to
-// others, or changing it as the host.
-void UiHost::access_dialog(ui::Context& ctx) {
-    const bool hosting = services_.hosting();
-    const float button_h = ctx.s(48.0f);
-    const float row_h = ctx.s(40.0f);
-    const float gap = ctx.s(10.0f);
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    struct Row {
-        const char* id;
-        const char* label;
-        bool* value;
-        bool shown;
-        bool enabled;
-    };
-    const Row rows[] = {
-        {"open", "access.open", &access_open_, hosting, true},
-        {"join", "access.join", &access_join_, true, access_open_ || !hosting},
-        {"found", "access.found", &access_found_, true, access_open_ || !hosting},
-        {"watch", "access.watch", &access_watch_, true, true},
-    };
-    int shown = 0;
-    for (const Row& r : rows) {
-        shown += r.shown ? 1 : 0;
-    }
-    const float note_h = ctx.text().line_height(body);
-    const float content_h = static_cast<float>(shown) * (row_h + gap) + note_h + gap + button_h;
-    float y = 0.0f;
-    const ui::Rect content = dialog_frame(ctx, content_h, tr(hosting ? "access.title.change" : "access.title.open"), y);
-    const float check = std::round(ctx.s(28.0f));
-    for (const Row& r : rows) {
-        if (!r.shown) {
-            continue;
-        }
-        const std::string tip = tr(std::string(r.label) + ".tooltip");
-        const ui::Rect box{content.x, std::round(y + (row_h - check) * 0.5f), check, check};
-        (void)ctx.checkbox(ctx.id(std::string("access_") + r.id), box, *r.value, tip, r.enabled);
-        ctx.label({content.x + check + gap, std::round(y), content.w - check - gap, row_h}, tr(r.label), body,
-                  r.enabled ? ctx.theme().text : ctx.theme().text_dim);
-        y += row_h + gap;
-    }
-    ctx.label({content.x, std::round(y), content.w, note_h}, tr(hosting ? "access.note.change" : "access.note.open"),
-              ctx.style(ctx.theme().small), ctx.theme().text_dim);
-    y += note_h + gap;
-    // Opening the game (not hosting yet): open to play if it lets people
-    // join or found; it may also be only to watch. Open to nobody's use is
-    // no use: one thing at least.
-    const bool open = hosting ? access_open_ : access_join_ || access_found_;
-    const bool valid = hosting ? !access_open_ || access_join_ || access_found_
-                               : access_join_ || access_found_ || access_watch_;
-    const float bw = (content.w - gap) * 0.5f;
-    const std::uint8_t access = static_cast<std::uint8_t>((open ? sim::access::kOpen : 0) |
-                                                         (access_join_ ? sim::access::kJoin : 0) |
-                                                         (access_found_ ? sim::access::kFound : 0) |
-                                                         (access_watch_ ? sim::access::kWatch : 0));
-    if (ctx.button(ctx.id("access_ok"), {content.x, std::round(y), bw, button_h},
-                   tr(hosting ? "access.apply" : "access.confirm"), {}, valid, true)) {
-        if (hosting) {
-            services_.set_access(access);
-        } else if (!services_.open_game(access)) {
-            show_message(tr("access.failed.title"), tr("lobby.hostFailed.body"));
-        }
-        access_dialog_ = false;
-        game_menu_open_ = false;
-        return;
-    }
-    if (ctx.button(ctx.id("access_back"), {content.x + bw + gap, std::round(y), bw, button_h}, tr("access.back")) ||
-        (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open())) {
-        access_dialog_ = false;
-    }
-}
-
-void UiHost::load_screen(ui::Context& ctx, bool modal) {
-    const float button_h = ctx.s(44.0f);
-    const float row_h = ctx.s(64.0f);
-    const float gap = ctx.s(8.0f);
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const ui::TextStyle small = ctx.style(ctx.theme().small);
-    const float list_h = saves_.empty() ? ctx.text().line_height(body)
-                                        : std::min(ctx.height() * 0.6f, static_cast<float>(saves_.size()) * (row_h + gap));
-    float y = 0.0f;
-    const ui::Rect content = dialog_frame(ctx, list_h + gap * 2 + button_h, tr("load.title"), y);
-    bool back = false;
-    if (saves_.empty()) {
-        ctx.label({content.x, y, content.w, list_h}, tr("load.empty"), body, ctx.theme().text_dim);
-    } else {
-        const ui::Rect view{content.x, y, content.w, list_h};
-        float ry = ctx.begin_scroll(ctx.id("load_list"), view);
-        const float bw = std::min(ctx.s(140.0f), content.w * 0.3f);
-        for (std::size_t i = 0; i < saves_.size(); ++i) {
-            const save::Entry& e = saves_[i];
-            const ui::Rect row{content.x, ry, content.w - ctx.s(12.0f), row_h};
-            ctx.draw().rect(row, ctx.theme().button_active.with_alpha(0.6f));
-            const float line = ctx.text().line_height(body);
-            // Phase 78: two buttons, to play it or to host it for others.
-            const float host_w = std::min(ctx.s(170.0f), content.w * 0.3f);
-            ctx.label({row.x + gap, row.y + gap, row.w - bw - host_w - 4 * gap, line}, e.header.name, body,
-                      e.readable ? ctx.theme().text : ctx.theme().text_disabled);
-            const std::string detail = e.readable ? tr("load.detail", e.header.saved_at, static_cast<int>(e.header.population),
-                                                       e.header.game_version)
-                                                  : tr("load.unreadable");
-            ctx.label({row.x + gap, row.y + gap + line, row.w - bw - host_w - 4 * gap, ctx.text().line_height(small)}, detail,
-                      small, ctx.theme().text_dim);
-            ctx.push_id("load_row");
-            if (ctx.button(ctx.id("host" + std::to_string(i)),
-                           {row.right() - bw - host_w - 2 * gap, row.y + (row_h - button_h) * 0.5f, host_w, button_h},
-                           tr("load.host"), tr("load.host.tooltip"), e.readable && services_.scene_available())) {
-                if (services_.load_game_as_host(e.file)) {
-                    lobby_screen_.open();
-                    screen_ = Screen::Lobby;
-                    game_menu_open_ = false;
-                    ctx.pop_id();
-                    ctx.end_scroll(static_cast<float>(saves_.size()) * (row_h + gap));
-                    return;
-                }
-            }
-            if (ctx.button(ctx.id(std::to_string(i)), {row.right() - bw - gap, row.y + (row_h - button_h) * 0.5f, bw, button_h},
-                           tr("load.load"), tr("load.load.tooltip"), e.readable)) {
-                if (services_.load_game(e.file)) {
-                    screen_ = Screen::MapView;
-                    game_menu_open_ = false;
-                    ctx.pop_id();
-                    ctx.end_scroll(static_cast<float>(saves_.size()) * (row_h + gap));
-                    return;
-                }
-            }
-            ctx.pop_id();
-            ry += row_h + gap;
-        }
-        ctx.end_scroll(static_cast<float>(saves_.size()) * (row_h + gap));
-    }
-    const float bw = std::min(ctx.s(180.0f), content.w);
-    back = ctx.button(ctx.id("load_back"), {content.right() - bw, content.bottom() - button_h, bw, button_h},
-                      tr("load.back"), tr("load.back.tooltip")) ||
-           (!modal && ctx.input().key(SDL_SCANCODE_ESCAPE));
-    if (back) {
-        screen_ = load_return_ == Screen::MapView && services_.current_map() != nullptr ? Screen::MapView
-                                                                                         : Screen::MainMenu;
-    }
-}
-
-void UiHost::message_dialog(ui::Context& ctx) {
-    const Message& m = messages_.front();
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const float w = std::min(ctx.s(560.0f), ctx.width() - ctx.s(32.0f)) - 2 * ctx.s(24.0f);
-    const float text_h = ctx.paragraph_height(w, m.body, body);
-    const float button_h = ctx.s(44.0f);
-    float y = 0.0f;
-    const ui::Rect content = dialog_frame(ctx, text_h + ctx.s(20.0f) + button_h, m.title, y);
-    ctx.paragraph({content.x, y, content.w, text_h}, m.body, body, ctx.theme().text);
-    const float bw = std::min(ctx.s(160.0f), content.w);
-    const ui::Rect ok{content.right() - bw, content.bottom() - button_h, bw, button_h};
-    const bool enter = ctx.input().key(SDL_SCANCODE_RETURN) || ctx.input().key(SDL_SCANCODE_ESCAPE) ||
-                       ctx.input().key(SDL_SCANCODE_KP_ENTER);
-    if (ctx.button(ctx.id("message_ok"), ok, tr("dialog.ok"), {}, true, true) || enter) {
-        messages_.erase(messages_.begin());
-    }
-}
-
-void UiHost::display_confirm_dialog(ui::Context& ctx) {
-    PendingDisplay& p = *pending_display_;
-    if (!p.started) {
-        p.started = true;
-        p.deadline_ns = ctx.now_ns() + kDisplayConfirmNs;
-    }
-    const std::uint64_t left_ns = p.deadline_ns > ctx.now_ns() ? p.deadline_ns - ctx.now_ns() : 0;
-    const auto seconds = static_cast<std::int64_t>((left_ns + 999'999'999ull) / 1'000'000'000ull);
-
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const std::string text = i18n::tr_n("dialog.keepDisplay.body", seconds);
-    const float w = std::min(ctx.s(560.0f), ctx.width() - ctx.s(32.0f)) - 2 * ctx.s(24.0f);
-    const float text_h = ctx.paragraph_height(w, text, body);
-    const float button_h = ctx.s(44.0f);
-    float y = 0.0f;
-    const ui::Rect content = dialog_frame(ctx, text_h + ctx.s(20.0f) + button_h, tr("dialog.keepDisplay.title"), y);
-    ctx.paragraph({content.x, y, content.w, text_h}, text, body, ctx.theme().text);
-
-    const float gap = ctx.s(12.0f);
-    const float bw = std::min(ctx.s(180.0f), (content.w - gap) * 0.5f);
-    const ui::Rect keep{content.right() - bw, content.bottom() - button_h, bw, button_h};
-    const ui::Rect revert{keep.x - gap - bw, keep.y, bw, button_h};
-    const bool keep_clicked = ctx.button(ctx.id("display_keep"), keep, tr("dialog.keepDisplay.keep"), {}, true, true);
-    const bool revert_clicked = ctx.button(ctx.id("display_revert"), revert, tr("dialog.keepDisplay.revert")) ||
-                                ctx.input().key(SDL_SCANCODE_ESCAPE);
-    if (keep_clicked) {
-        pending_display_.reset();
-    } else if (revert_clicked || left_ns == 0) {
-        const DisplaySettings previous = p.previous;
-        pending_display_.reset();
-        if (services_.apply_display(previous)) {
-            services_.settings().display = previous;
-            services_.settings_changed();
-        }
-    }
 }
 
 }  // namespace sc

@@ -3,8 +3,7 @@
 // game waits for, founding and arriving (hud_founding.cpp), the spectator's
 // strip, the tutorial and the end of the game (ui_host.cpp). Each is a
 // hud/panel.rml#<id> with rows of thing_rows.h, given again every frame it
-// stays; under the top bar (one below the other), above the build bar or in
-// the middle of the screen.
+// stays (rml_panels.h).
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -25,131 +24,16 @@ namespace sc {
 
 using i18n::tr;
 
-namespace {
-
-// The panels under the top bar, from the top down.
-constexpr std::array<const char*, 7> kTopOrder = {"spectator", "waiting", "found", "arrival", "question", "join", "vote"};
-
-std::size_t top_rank(const std::string& id) {
-    const auto it = std::find(kTopOrder.begin(), kTopOrder.end(), id);
-    return static_cast<std::size_t>(it - kTopOrder.begin());
-}
-
-}  // namespace
-
 TownNames GameHud::town_names() const {
     return [this](std::uint8_t p) { return town_name(p); };
 }
 
 void GameHud::panel(const std::string& id, ThingRows rows, PanelPlace place, float width) {
-    RmlPanel& p = panels_[id];
-    p.view = std::move(rows);
-    p.place = place;
-    p.width = width;
-    p.given = true;
+    panels_.give(id, std::move(rows), place, width);
 }
 
-void GameHud::rml_panels(ui::Context& ctx, GameSession& s) {
-    (void)s;
-    rml::RmlUi* rml = services_.rml();
-    if (rml == nullptr) {
-        panels_.clear();
-        return;
-    }
-    // Those not given since the last frame go.
-    for (auto it = panels_.begin(); it != panels_.end();) {
-        if (!it->second.given) {
-            if (!it->second.doc.empty()) {
-                (void)rml->show_document(it->second.doc, false);
-            }
-            it = panels_.erase(it);
-        } else {
-            ++it;
-        }
-    }
-    std::vector<std::string> ids;
-    for (const auto& [id, p] : panels_) {
-        ids.push_back(id);
-    }
-    std::stable_sort(ids.begin(), ids.end(), [](const std::string& a, const std::string& b) { return top_rank(a) < top_rank(b); });
-    float top = std::round(top_bar_bottom_ + ctx.s(10.0f));
-    for (const std::string& id : ids) {
-        RmlPanel& p = panels_[id];
-        p.given = false;
-        p.doc = "hud/panel.rml#" + id;
-        if (!rml->document_shown(p.doc)) {
-            (void)rml->show_document(p.doc, true);
-        }
-        Rml::ElementDocument* doc = rml->document(p.doc);
-        if (doc == nullptr) {
-            continue;
-        }
-        if (doc != p.attached) {
-            p.attached = doc;
-            p.row_keys.clear();
-            for (const char* type : {"click", "change"}) {
-                doc->AddEventListener(type, this);
-            }
-        }
-        rows_into(doc->GetElementById("rows"), p.view, p.row_keys);
-        const float w = std::round(std::min(ctx.s(p.width), ctx.width() - ctx.s(28.0f)));
-        doc->SetProperty("width", std::format("{:.0f}px", w));
-        const float h = doc->GetBox().GetSize(Rml::BoxArea::Border).y;
-        float y = top;
-        switch (p.place) {
-            case PanelPlace::Top:
-                top += h + ctx.s(8.0f);
-                break;
-            case PanelPlace::Bottom: {
-                // Above the build bar, in the middle: the windows keep the top.
-                const float bottom = build_bar_top_ > 0.0f ? build_bar_top_ : ctx.height() - ctx.s(110.0f);
-                y = bottom - h - ctx.s(12.0f);
-                break;
-            }
-            case PanelPlace::Center: y = (ctx.height() - h) * 0.5f; break;
-        }
-        doc->SetProperty("left", std::format("{:.0f}px", std::round((ctx.width() - w) * 0.5f)));
-        doc->SetProperty("top", std::format("{:.0f}px", std::round(std::max(0.0f, y))));
-        doc->PullToFront();
-    }
-}
-
-void GameHud::panel_event(Rml::Event& ev, const std::string& id) {
-    GameSession* s = services_.session();
-    const auto found = panels_.find(id);
-    if (s == nullptr || found == panels_.end()) {
-        return;
-    }
-    RowInput input;
-    int act = -1;
-    if (ev.GetType() == "change") {
-        Rml::Element* e = ev.GetTargetElement();
-        if (e == nullptr || !e->HasAttribute("data-act")) {
-            return;
-        }
-        act = e->GetAttribute<int>("data-act", -1);
-        input.text = ev.GetParameter<Rml::String>("value", "");
-        input.enter = ev.GetParameter<bool>("linebreak", false);
-        input.value = static_cast<int>(std::lround(std::strtod(e->GetAttribute<Rml::String>("value", "0").c_str(), nullptr)));
-    } else if (ev.GetType() == "click") {
-        for (Rml::Element* e = ev.GetTargetElement(); e != nullptr && e != ev.GetCurrentElement(); e = e->GetParentNode()) {
-            if (e->HasAttribute("data-act")) {
-                if (e->GetTagName() != "input") {
-                    act = e->GetAttribute<int>("data-act", -1);
-                }
-                break;
-            }
-        }
-    }
-    if (act < 0 || static_cast<std::size_t>(act) >= found->second.view.acts.size()) {
-        return;
-    }
-    const RowFn fn = found->second.view.acts[static_cast<std::size_t>(act)];  // A copy: it may change the panels.
-    RowEffects effects;
-    fn(*s, input, effects);
-    if (effects.focus) {
-        services_.focus_camera(effects.x, effects.z);
-    }
+void GameHud::rml_panels(ui::Context& ctx, GameSession&) {
+    panels_.show(services_.rml(), ctx.width(), ctx.height(), ctx.s(1.0f), top_bar_bottom_ + ctx.s(10.0f), build_bar_top_);
 }
 
 void GameHud::network_prompts(GameSession& s) {
@@ -176,7 +60,7 @@ void GameHud::network_prompts(GameSession& s) {
         out.line(tr("hud.net.vote", from, speed_text(vote->speed)), WinRow::Kind::Paragraph);
         const std::uint32_t vote_id = vote->id;
         const auto answer = [this, vote_id](bool yes) {
-            return [this, vote_id, yes](GameSession&, const RowInput&, RowEffects&) {
+            return [this, vote_id, yes](GameSession*, const RowInput&, RowEffects&) {
                 if (net::NetSession* n = services_.net()) {
                     n->answer_vote(yes);
                 }
@@ -210,7 +94,7 @@ void GameHud::question(GameSession& s) {
     ThingRows out;
     const float x = static_cast<float>(asked->at.x.raw()) / 65536.0f;
     const float z = static_cast<float>(asked->at.z.raw()) / 65536.0f;
-    RowButton see = out.button({}, tr("hud.ask.see"), [x, z](GameSession&, const RowInput&, RowEffects& e) {
+    RowButton see = out.button({}, tr("hud.ask.see"), [x, z](GameSession*, const RowInput&, RowEffects& e) {
         e.focus = true;
         e.x = x;
         e.z = z;
@@ -219,12 +103,12 @@ void GameHud::question(GameSession& s) {
     out.stepper(tr("hud.ask.turtles", static_cast<int>(asked->count)), std::move(see), RowButton{});
     out.line(tr("hud.ask.days", left), WinRow::Kind::Dim);
     const auto answer = [kind = asked->kind](std::int32_t which) {
-        return [kind, which](GameSession& gs, const RowInput&, RowEffects&) {
+        return [kind, which](GameSession* gs, const RowInput&, RowEffects&) {
             sim::Command c;
             c.type = sim::CommandType::AnswerHappening;
             c.def = static_cast<std::uint16_t>(kind);
             c.value = which;
-            gs.issue(c);
+            gs->issue(c);
         };
     };
     out.buttons({out.button(tr("hud.ask.turtles.keep"), tr("hud.ask.turtles.keep.tooltip", static_cast<int>(sim::village::kProtectDays)),

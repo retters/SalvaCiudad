@@ -282,12 +282,7 @@ void GameHud::hide_rml() {
     }
     rml_windows_.clear();
     rml_order_.clear();
-    for (const auto& [id, p] : panels_) {
-        if (!p.doc.empty()) {
-            (void)rml->show_document(p.doc, false);
-        }
-    }
-    panels_.clear();
+    panels_.hide(rml);
     rml->set_mark({});
 }
 

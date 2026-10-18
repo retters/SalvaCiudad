@@ -315,7 +315,7 @@ TEST_SUITE("hud") {
                     if ((!label.empty() && b.label == label) || (!mark.empty() && b.mark == mark)) {
                         RowEffects e;
                         if (b.enabled) {
-                            rows.acts[static_cast<std::size_t>(b.act)](session, RowInput{}, e);
+                            rows.acts[static_cast<std::size_t>(b.act)](&session, RowInput{}, e);
                             session.step();
                         }
                         return e;
@@ -351,7 +351,7 @@ TEST_SUITE("hud") {
             REQUIRE(fewer != nullptr);
             REQUIRE(fewer->enabled);
             RowEffects e;
-            rows.acts[static_cast<std::size_t>(fewer->act)](session, RowInput{}, e);
+            rows.acts[static_cast<std::size_t>(fewer->act)](&session, RowInput{}, e);
             session.step();
             CHECK(g.buildings().get(shop)->wanted_workers == wanted - 1);
         }
@@ -399,7 +399,7 @@ TEST_SUITE("hud") {
                                              [](const WinRow& r) { return r.kind == WinRow::Kind::Slider; });
             REQUIRE(slider != rows.rows.end());
             RowEffects e;
-            rows.acts[static_cast<std::size_t>(slider->act)](session, RowInput{500, {}, false}, e);  // Sell over 500.
+            rows.acts[static_cast<std::size_t>(slider->act)](&session, RowInput{500, {}, false}, e);  // Sell over 500.
             CHECK(draft.trade.sell == 500);
         }
         (void)press(post, tr("hud.auto.apply"));
@@ -450,7 +450,7 @@ TEST_SUITE("hud") {
                     if (b.label == label) {
                         REQUIRE(b.enabled);
                         RowEffects e;
-                        rows.acts[static_cast<std::size_t>(b.act)](session, input, e);
+                        rows.acts[static_cast<std::size_t>(b.act)](&session, input, e);
                         session.step();
                         return e;
                     }
@@ -482,7 +482,7 @@ TEST_SUITE("hud") {
             REQUIRE(field != rows.rows.end());
             CHECK(row_key(*field) == row_key(WinRow{*field}));
             RowEffects e;
-            rows.acts[static_cast<std::size_t>(field->act)](session, RowInput{0, "  Anselma ", true}, e);
+            rows.acts[static_cast<std::size_t>(field->act)](&session, RowInput{0, "  Anselma ", true}, e);
             session.step();
             session.step();
         }

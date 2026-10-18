@@ -22,6 +22,7 @@ class ElementDocument;
 
 #include "game/hud_model.h"
 #include "game/services.h"
+#include "game/rml_panels.h"
 #include "game/thing_rows.h"
 #include "game/window_list.h"
 #include "ui/context.h"
@@ -83,7 +84,7 @@ public:
     // Phase 125: a panel shown with the next frame (the tutorial's, the end
     // of the game): under the top bar, above the build bar, or in the middle.
     // A panel not given again goes.
-    enum class PanelPlace : std::uint8_t { Top, Bottom, Center };
+    using PanelPlace = RmlPanels::Place;
     void panel(const std::string& id, ThingRows rows, PanelPlace place, float width = 480.0f);
 
 private:
@@ -116,21 +117,8 @@ private:
     void rml_act(GameSession& s, const std::string& id, int act, const RowInput& input);
     ThingState things_;  // Phase 125: what the windows keep (trade drafts, renaming).
     [[nodiscard]] TownNames town_names() const;
-    // Phase 125: the panels (hud_rml_panels.cpp), each a hud/panel.rml#<id>.
-    struct RmlPanel {
-        ThingRows view;
-        PanelPlace place = PanelPlace::Top;
-        float width = 480.0f;
-        std::string doc;
-        Rml::ElementDocument* attached = nullptr;
-        std::vector<std::string> row_keys;
-        bool given = false;
-    };
-    std::map<std::string, RmlPanel> panels_;
-    std::vector<std::string> panel_order_;
+    // Phase 125: the panels (hud_rml_panels.cpp); `panels_` is below `services_`.
     void rml_panels(ui::Context& ctx, GameSession& s);
-    void panel_event(Rml::Event& ev, const std::string& id);
-    void rows_into(Rml::Element* box, const ThingRows& view, std::vector<std::string>& keys);
     std::map<std::string, RmlWindow> rml_windows_;
     std::vector<std::string> rml_order_;
     float rml_scale_ = 1.0f;
@@ -295,6 +283,7 @@ private:
     float right_top_ = 0.0f;  // Below the minimap: where windows on the right start.
 
     Services& services_;
+    RmlPanels panels_{services_};  // Phase 125 (after services_, which it needs).
 };
 
 }  // namespace sc

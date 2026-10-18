@@ -67,6 +67,8 @@
     "settings.back": "Back",
     "settings.value.percent": "{0} %",
     "settings.value.ms": "{0} ms",
+    "settings.value.on": "On",
+    "settings.value.off": "Off",
     "settings.display.mode": "Window mode",
     "settings.display.mode.tooltip": "Fullscreen gives the game the whole screen and may change its resolution. Borderless fills the screen without changing its resolution and makes switching to other programs faster. Windowed shows the game in a normal window.",
     "settings.display.mode.fullscreen": "Fullscreen",

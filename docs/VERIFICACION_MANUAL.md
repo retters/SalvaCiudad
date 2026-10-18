@@ -511,6 +511,22 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 126 (menús y pantallas en RmlUi)
+
+- [ ] El menú principal: el logotipo igual que antes y los botones debajo; cada uno abre lo suyo.
+- [ ] Configuración: las siete pestañas; cada cambio se aplica y se guarda; «Restaurar valores por omisión»; Esc vuelve.
+- [ ] Pantalla: cambiar el modo abre la cuenta regresiva; «Mantener» y «Volver» (o esperar 15 s) funcionan.
+- [ ] Controles: un clic en una tecla espera la siguiente; Esc la deja como estaba; Retroceso la borra.
+- [ ] Interfaz: cambiar el estilo con la pantalla abierta, la muestra de colores, el vidrio.
+- [ ] Partida nueva: escribir la semilla (solo dígitos), «Al azar», tamaño, pueblos, Variado y Personalizado con todas sus opciones; la vista previa se rehace; Enter o «Generar».
+- [ ] Generando: el avance y «Cancelar».
+- [ ] Cargar: jugar y «Como anfitrión».
+- [ ] Mods: activar, ordenar con las flechas, «Aplicar», abrir la carpeta.
+- [ ] Unirse: nombre, partidas de la red local, dirección y puerto, «Conectar».
+- [ ] Sala: modo, pueblo, partida, niebla, espectadores, nombre y color, listo y empezar.
+- [ ] Menú del juego, el diálogo de acceso y los mensajes.
+- [ ] Todo lo anterior en Vidrio oscuro.
+
 ### Fase 125 (aldeanos, recursos, animales, Comercio, Ejército y paneles en RmlUi)
 
 - [ ] La ventana de un aldeano muestra su retrato, Seguir y Renombrar, sus datos, su hogar y su trabajo (un clic abre esa ventana) y las barras de colores.

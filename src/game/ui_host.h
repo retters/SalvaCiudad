@@ -74,6 +74,13 @@ public:
         game_menu_open_ = false;
     }
 
+    // Phase 126: a menu panel shown with the next frame, in the middle over a
+    // veil (or at height `y`, in pixels, without the veil).
+    void menu(const std::string& id, ThingRows rows, float width = 520.0f, float y = -1.0f);
+    // Phase 126: the rows of a menu panel last given ("main", "game_menu",
+    // "settings"...), for the tests; null if it is not shown.
+    [[nodiscard]] const ThingRows* menu_rows(const std::string& id) const { return menus_.rows(id); }
+
     // What the 3D view behind the interface should show.
     enum class SceneMode : std::uint8_t { None, MenuBackground, Map };
     [[nodiscard]] SceneMode scene_mode() const;
@@ -171,6 +178,9 @@ private:
     Screen load_return_ = Screen::MainMenu;      // Where closing the load list goes.
     bool game_menu_open_ = false;
     GameHud hud_;
+    // Phase 126: the menus and screens out of a game (and the game menu),
+    // as RmlUi panels of rows (ui_host_menus.cpp).
+    RmlPanels menus_{services_};
     JoinScreen join_;
     LobbyScreen lobby_screen_;
     bool host_new_game_ = false;  // The new game screen is choosing a multiplayer map.

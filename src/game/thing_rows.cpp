@@ -26,7 +26,11 @@ sim::Command command(sim::CommandType type, sim::EntityId entity, std::int32_t v
 }
 
 RowFn issue(sim::Command c) {
-    return [c](GameSession& s, const RowInput&, RowEffects&) { s.issue(c); };
+    return [c](GameSession* s, const RowInput&, RowEffects&) {
+        if (s != nullptr) {
+            s->issue(c);
+        }
+    };
 }
 
 void house_lines(const sim::Game& game, const sim::Building& b, std::vector<std::string>& lines) {
@@ -110,7 +114,7 @@ void people_rows(ThingRows& out, const sim::Game& game, const std::vector<sim::E
         p.name = tr("hud.villager.listed", name, game.age_years(*v));
         p.sub = tr(task_text_key(v->task));
         p.act = static_cast<int>(out.acts.size());
-        out.acts.push_back([id](GameSession&, const RowInput&, RowEffects& e) {
+        out.acts.push_back([id](GameSession*, const RowInput&, RowEffects& e) {
             e.link = true;
             e.kind = WindowList::Kind::Villager;
             e.entity = id;
@@ -159,9 +163,9 @@ void farm_fields(ThingRows& out, const GameSession& s, const sim::Building& b, s
     const bool room = static_cast<std::int32_t>(b.fields.size()) < content.buildings[b.def].fields;
     out.buttons({out.button(
         tr("hud.farm.newField"), tr(room ? "hud.farm.newField.tooltip" : "hud.farm.full"),
-        [entity](GameSession& gs, const RowInput&, RowEffects&) {
-            gs.ui().field_farm = entity;
-            gs.ui().placing = sim::kNoDef;
+        [entity](GameSession* gs, const RowInput&, RowEffects&) {
+            gs->ui().field_farm = entity;
+            gs->ui().placing = sim::kNoDef;
         },
         room, s.ui().field_farm == entity)});
 }
@@ -394,13 +398,20 @@ void ThingRows::stepper(std::string text, RowButton minus, RowButton plus) {
 
 void ThingRows::choice(std::string text, int* pick, int count) {
     const int n = std::max(1, count);
-    RowButton prev = button({}, {}, [pick, n](GameSession&, const RowInput&, RowEffects&) { *pick = (*pick + n - 1) % n; },
+    RowButton prev = button({}, {}, [pick, n](GameSession*, const RowInput&, RowEffects&) { *pick = (*pick + n - 1) % n; },
                             count > 1);
     prev.icon = "icon-left";
-    RowButton next = button({}, {}, [pick, n](GameSession&, const RowInput&, RowEffects&) { *pick = (*pick + 1) % n; },
+    RowButton next = button({}, {}, [pick, n](GameSession*, const RowInput&, RowEffects&) { *pick = (*pick + 1) % n; },
                             count > 1);
     next.icon = "icon-right";
     stepper(std::move(text), std::move(prev), std::move(next));
+}
+
+RowButton ThingRows::check(std::string label, std::string tip, bool* value, bool enabled) {
+    RowButton b = button(std::move(label), std::move(tip),
+                         [value](GameSession*, const RowInput&, RowEffects&) { *value = !*value; }, enabled, *value);
+    b.icon = *value ? "icon-check" : "icon-minus";
+    return b;
 }
 
 void ThingRows::slider(std::string text, std::string tip, int* field, int lo, int hi, int step, bool enabled) {
@@ -412,7 +423,51 @@ void ThingRows::slider(std::string text, std::string tip, int* field, int lo, in
     row.max = hi;
     row.step = step;
     row.enabled = enabled;
-    row.act = add_act([field](GameSession&, const RowInput& in, RowEffects&) { *field = in.value; });
+    row.act = add_act([field](GameSession*, const RowInput& in, RowEffects&) { *field = in.value; });
+}
+
+RowFn row_run(std::function<void()> fn) {
+    return [fn = std::move(fn)](GameSession*, const RowInput&, RowEffects&) { fn(); };
+}
+
+// "Label   ‹ option ›": the arrows go through the options; `fn` gets the new index.
+void row_pick(ThingRows& out, std::string label, std::string tip, const std::vector<std::string>& options, int index, bool enabled,
+          std::function<void(int)> fn) {
+    const int n = static_cast<int>(options.size());
+    index = std::clamp(index, 0, std::max(0, n - 1));
+    RowButton prev = out.button({}, tip, row_run([fn, index, n] { fn((index + n - 1) % n); }), enabled && n > 1);
+    prev.icon = "icon-left";
+    RowButton next = out.button({}, tip, row_run([fn, index, n] { fn((index + 1) % n); }), enabled && n > 1);
+    next.icon = "icon-right";
+    out.stepper(std::move(label), std::move(prev), std::move(next));
+    WinRow& row = out.rows.back();
+    row.detail = n > 0 ? options[static_cast<std::size_t>(index)] : std::string();
+    row.tip = std::move(tip);
+    row.cls = enabled ? "wide" : "wide locked";
+}
+
+// "Label   [✓]": a check box that applies `fn` with the new value.
+void row_tick(ThingRows& out, std::string label, std::string tip, bool value, bool enabled, std::function<void(bool)> fn) {
+    RowButton b = out.button(tr(value ? "settings.value.on" : "settings.value.off"), tip, row_run([fn, value] { fn(!value); }),
+                             enabled, value);
+    b.icon = value ? "icon-check" : "icon-minus";
+    out.stepper(std::move(label), std::move(b), RowButton{});
+    out.rows.back().tip = std::move(tip);
+    out.rows.back().cls = enabled ? "wide" : "wide locked";
+}
+
+// A slider with its value as text above; `fn` gets each new value.
+void row_slide(ThingRows& out, std::string text, std::string tip, int value, int lo, int hi, int step, bool enabled,
+           std::function<void(int)> fn) {
+    out.line(std::move(text)).tip = tip;
+    WinRow& row = out.line({}, WinRow::Kind::Slider);
+    row.tip = std::move(tip);
+    row.value = value;
+    row.min = lo;
+    row.max = hi;
+    row.step = step;
+    row.enabled = enabled;
+    row.act = out.add_act([fn = std::move(fn)](GameSession*, const RowInput& in, RowEffects&) { fn(in.value); });
 }
 
 ThingRows building_rows(const GameSession& s, sim::EntityId entity, ThingState& state) {
@@ -647,9 +702,9 @@ ThingRows building_rows(const GameSession& s, sim::EntityId entity, ThingState& 
         if (b->fields.empty()) {
             out.buttons({out.button(
                 tr("hud.fold.mark"), tr("hud.fold.mark.tooltip"),
-                [entity](GameSession& gs, const RowInput&, RowEffects&) {
-                    gs.ui().field_farm = entity;
-                    gs.ui().placing = sim::kNoDef;
+                [entity](GameSession* gs, const RowInput&, RowEffects&) {
+                    gs->ui().field_farm = entity;
+                    gs->ui().placing = sim::kNoDef;
                 },
                 true, s.ui().field_farm == entity)});
         } else {
@@ -715,8 +770,8 @@ ThingRows building_rows(const GameSession& s, sim::EntityId entity, ThingState& 
         const bool building = b->state == sim::BuildingState::Construction;
         RowButton remove = out.button(tr(building ? "hud.building.cancel" : "hud.building.demolish"),
                                       tr(building ? "hud.building.cancel.tooltip" : "hud.building.demolish.tooltip"),
-                                      [entity](GameSession& gs, const RowInput&, RowEffects& e) {
-                                          gs.issue(command(sim::CommandType::RemoveBuilding, entity));
+                                      [entity](GameSession* gs, const RowInput&, RowEffects& e) {
+                                          gs->issue(command(sim::CommandType::RemoveBuilding, entity));
                                           e.close = true;
                                       });
         remove.icon = "icon-trash";
@@ -736,7 +791,11 @@ float meters(sim::Fixed f) {
 RowButton toggle(ThingRows& out, std::string label, std::string tip, std::function<void(GameSession&)> fn, bool on = false,
                  bool enabled = true) {
     return out.button(std::move(label), std::move(tip),
-                      [fn = std::move(fn)](GameSession& gs, const RowInput&, RowEffects&) { fn(gs); }, enabled, on);
+                      [fn = std::move(fn)](GameSession* gs, const RowInput&, RowEffects&) {
+                          if (gs != nullptr) {
+                              fn(*gs);
+                          }
+                      }, enabled, on);
 }
 
 }  // namespace
@@ -898,10 +957,10 @@ ThingRows villager_rows(const GameSession& s, const std::string& id, sim::Entity
         WinRow& field = out.line(state.rename_text, WinRow::Kind::Input);
         field.max = static_cast<int>(sim::kMaxNameBytes);
         field.tip = tr("hud.villager.name.tooltip");
-        field.act = out.add_act([st, apply](GameSession& gs, const RowInput& in, RowEffects&) {
+        field.act = out.add_act([st, apply](GameSession* gs, const RowInput& in, RowEffects&) {
             st->rename_text = in.text;
-            if (in.enter) {
-                apply(gs);
+            if (in.enter && gs != nullptr) {
+                apply(*gs);
             }
         });
         out.buttons({toggle(out, tr("hud.villager.name.ok"), tr("hud.villager.name.ok.tooltip"), apply, false,
@@ -937,7 +996,7 @@ ThingRows villager_rows(const GameSession& s, const std::string& id, sim::Entity
     // Its home and its workplace: a click opens that building's window.
     const auto link = [&](const char* key, const sim::Building& b, sim::EntityId building) {
         RowButton button = out.button(tr(key, tr(content.buildings[b.def].name_key)), tr("hud.building.open.tooltip"),
-                                      [building](GameSession&, const RowInput&, RowEffects& e) {
+                                      [building](GameSession*, const RowInput&, RowEffects& e) {
                                           e.link = true;
                                           e.kind = WindowList::Kind::Building;
                                           e.entity = building;
@@ -1414,7 +1473,7 @@ std::string row_rml(const WinRow& row, bool with_value) {
             return std::format("<div class=\"meter{}\"><div class=\"fill\" style=\"width: {:.1f}%;\"></div></div>", extra,
                                std::clamp(row.fraction, 0.0f, 1.0f) * 100.0f);
         case WinRow::Kind::Buttons: {
-            std::string out = "<div class=\"btns\">";
+            std::string out = "<div class=\"btns" + extra + "\">";
             for (const RowButton& b : row.buttons) {
                 out += button_rml(b);
             }
@@ -1423,8 +1482,15 @@ std::string row_rml(const WinRow& row, bool with_value) {
         case WinRow::Kind::Stepper: {
             std::string out = "<div class=\"kv" + extra + "\"" + tip_attr(row.tip) + "><span class=\"k\">" +
                               rml_escape(row.text) + "</span><div class=\"v\">";
-            for (const RowButton& b : row.buttons) {
-                out += button_rml(b);
+            const std::string value = row.detail.empty() ? std::string() : "<span class=\"val\">" + rml_escape(row.detail) + "</span>";
+            for (std::size_t i = 0; i < row.buttons.size(); ++i) {
+                if (i == 1 || (row.buttons.size() == 1 && i == 0 && !value.empty())) {
+                    out += value;
+                }
+                out += button_rml(row.buttons[i]);
+            }
+            if (row.buttons.empty()) {
+                out += value;
             }
             return out + "</div></div>";
         }

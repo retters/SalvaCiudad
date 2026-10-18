@@ -83,38 +83,6 @@ bool GameHud::rml_object(WindowList::Kind) {
     return true;  // Phase 125: all of them.
 }
 
-void GameHud::rows_into(Rml::Element* box, const ThingRows& view, std::vector<std::string>& shown) {
-    if (box == nullptr) {
-        return;
-    }
-    std::vector<std::string> keys;
-    keys.reserve(view.rows.size());
-    for (const WinRow& r : view.rows) {
-        keys.push_back(row_key(r));
-    }
-    if (keys.size() != shown.size() || box->GetNumChildren() != static_cast<int>(keys.size())) {
-        // Other rows: all again.
-        std::string all;
-        for (const WinRow& r : view.rows) {
-            all += "<div class=\"r\">" + row_rml(r) + "</div>";
-        }
-        box->SetInnerRML(all);
-    } else {
-        // The same rows: only those that changed, so a button under the
-        // pointer stays the same element while the rest moves on.
-        for (std::size_t i = 0; i < keys.size(); ++i) {
-            Rml::Element* row = box->GetChild(static_cast<int>(i));
-            if (keys[i] != shown[i]) {
-                row->SetInnerRML(row_rml(view.rows[i]));
-            } else if (Rml::Element* input = row->GetFirstChild(); input != nullptr && view.rows[i].kind == WinRow::Kind::Slider &&
-                                                                   control_value(input) != view.rows[i].value) {
-                input->SetAttribute("value", std::to_string(view.rows[i].value));
-            }
-        }
-    }
-    shown = std::move(keys);
-}
-
 void GameHud::rml_rows(Rml::ElementDocument& doc, RmlWindow& w) {
     rows_into(doc.GetElementById("rows"), w.view, w.row_keys);
 }
@@ -126,7 +94,7 @@ void GameHud::rml_act(GameSession& s, const std::string& id, int act, const RowI
     }
     const RowFn fn = found->second.view.acts[static_cast<std::size_t>(act)];  // A copy: it may change what holds it.
     RowEffects effects;
-    fn(s, input, effects);
+    fn(&s, input, effects);
     if (effects.close) {
         closing_.push_back(id);
     }
@@ -561,14 +529,6 @@ void GameHud::ProcessEvent(Rml::Event& ev) {
     GameSession* s = services_.session();
     if (s == nullptr) {
         return;
-    }
-    // A panel's (phase 125)?
-    for (const auto& [pid, panel] : panels_) {
-        if (panel.attached == ev.GetCurrentElement()) {
-            const std::string key = pid;  // The handler may change the panels.
-            panel_event(ev, key);
-            return;
-        }
     }
     // Which window: the document the listener is on.
     std::string id;

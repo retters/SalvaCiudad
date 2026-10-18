@@ -38,7 +38,7 @@ struct RowInput {
     bool enter = false;
 };
 
-using RowFn = std::function<void(GameSession&, const RowInput&, RowEffects&)>;
+using RowFn = std::function<void(GameSession*, const RowInput&, RowEffects&)>;
 
 struct RowButton {
     std::string label;
@@ -80,6 +80,7 @@ struct WinRow {
     std::string tip;
     std::string image;
     std::string cls;
+    std::string detail;  // Phase 126: a stepper's value, shown between its two buttons.
     float fraction = 0.0f;
     std::vector<RowButton> buttons;
     std::vector<RowPerson> people;
@@ -107,6 +108,9 @@ struct ThingRows {
     // A choice among `count` options shown as `text` with arrows; `pick`
     // is where the choice is kept (it must outlive the rows).
     void choice(std::string text, int* pick, int count);
+    // Phase 126: a check box: a button that turns `*value` (which must outlive
+    // the rows) on and off, with a check mark when on.
+    RowButton check(std::string label, std::string tip, bool* value, bool enabled = true);
     // A slider of `*field` with its text above.
     void slider(std::string text, std::string tip, int* field, int lo, int hi, int step, bool enabled = true);
 };
@@ -138,6 +142,16 @@ struct ThingState {
     std::string rename_id;  // The window whose villager is being renamed.
     std::string rename_text;
 };
+
+// Phase 126, for the menus: an action that only runs `fn`; "Label  ‹ option ›"
+// whose arrows go through `options` (`fn` gets the new index); "Label  [✓]"
+// (`fn` gets the new value); and a slider with its text above.
+[[nodiscard]] RowFn row_run(std::function<void()> fn);
+void row_pick(ThingRows& out, std::string label, std::string tip, const std::vector<std::string>& options, int index,
+              bool enabled, std::function<void(int)> fn);
+void row_tick(ThingRows& out, std::string label, std::string tip, bool value, bool enabled, std::function<void(bool)> fn);
+void row_slide(ThingRows& out, std::string text, std::string tip, int value, int lo, int hi, int step, bool enabled,
+               std::function<void(int)> fn);
 
 // A town's name as the HUD shows it.
 using TownNames = std::function<std::string(std::uint8_t)>;

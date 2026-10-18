@@ -1,5 +1,6 @@
 // The Settings screen: tabs for display, graphics, audio, controls,
 // interface, language and game. Every change applies and saves at once.
+// Phase 126: an RmlUi menu panel of rows (thing_rows.h).
 #pragma once
 
 #include <cstddef>
@@ -10,6 +11,7 @@
 
 #include "game/input_actions.h"
 #include "game/services.h"
+#include "game/thing_rows.h"
 #include "ui/context.h"
 
 namespace sc {
@@ -22,34 +24,31 @@ public:
 
     // Returns false when the player leaves the screen.
     bool frame(ui::Context& ctx, UiHost& host, bool input_blocked);
+    // The rows of the tab shown (the tests press their buttons).
+    [[nodiscard]] ThingRows rows(UiHost& host);
 
     [[nodiscard]] bool capturing_key() const { return capture_.has_value(); }
+    // A key pressed while a binding waits for one (as frame() does).
+    void key_pressed(SDL_Scancode key);
+
+    enum class Tab : std::uint8_t { Display, Graphics, Audio, Controls, Interface, Language, Game, Count };
+    void show_tab(Tab tab) { tab_ = tab; }
 
 private:
-    enum class Tab : std::uint8_t { Display, Graphics, Audio, Controls, Interface, Language, Game, Count };
-
-    struct Row {
-        ui::Rect label;
-        ui::Rect control;
-    };
-    // Lays out one "label | control" row (stacked when narrow) and draws the
-    // label with its tooltip.
-    Row row(ui::Context& ctx, float x, float& y, float width, std::string_view label, std::string_view tooltip);
-    void section(ui::Context& ctx, float x, float& y, float width, std::string_view title);
-
-    void tab_display(ui::Context& ctx, UiHost& host, float x, float& y, float w);
-    void tab_graphics(ui::Context& ctx, float x, float& y, float w);
-    void tab_audio(ui::Context& ctx, float x, float& y, float w);
-    void tab_controls(ui::Context& ctx, float x, float& y, float w);
-    void tab_interface(ui::Context& ctx, float x, float& y, float w);
-    void tab_language(ui::Context& ctx, float x, float& y, float w);
-    void tab_game(ui::Context& ctx, float x, float& y, float w);
+    void tab_display(ThingRows& out, UiHost& host);
+    void tab_graphics(ThingRows& out);
+    void tab_audio(ThingRows& out);
+    void tab_controls(ThingRows& out);
+    void tab_interface(ThingRows& out);
+    void tab_language(ThingRows& out);
+    void tab_game(ThingRows& out);
     void restore_tab_defaults(UiHost& host);
-    void handle_key_capture(ui::Context& ctx);
-    void capture_dialog(ui::Context& ctx);
 
     Services& services_;
     Tab tab_ = Tab::Display;
+    bool leave_ = false;
+    // Sliders write here; the change is applied when it differs.
+    std::vector<int> values_;
 
     struct Capture {
         Action action;

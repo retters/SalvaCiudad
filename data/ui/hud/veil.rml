@@ -1,0 +1,12 @@
+<rml>
+<head>
+	<title>Veil</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<style>
+		body { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: #0000006e; pointer-events: auto; }
+	</style>
+</head>
+<!-- Behind a menu screen (phase 126): it dims what is behind and keeps the
+     mouse from it. src/game/rml_panels.cpp shows it. -->
+<body></body>
+</rml>

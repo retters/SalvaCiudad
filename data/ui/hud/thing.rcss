@@ -409,3 +409,195 @@ input.field:focus
 	border-radius: 3dp;
 	background-color: #e8c45a;
 }
+
+/* Phase 126: a menu screen, over the veil. */
+body.hpanel.screen
+{
+	overflow-y: auto;
+}
+
+.hpanel.screen .ptitle
+{
+	font-size: var(--title-size);
+	padding-bottom: 10dp;
+}
+
+/* Phase 126: a stepper's value between its arrows, as the menus show it. */
+.kv .val
+{
+	min-width: 160dp;
+	padding: 0 8dp;
+	text-align: center;
+}
+
+.kv.wide .k
+{
+	flex: 0 0 42%;
+}
+
+.kv.wide .v
+{
+	flex: 1;
+	justify-content: flex-end;
+}
+
+.kv.wide .val
+{
+	flex: 1;
+}
+
+.btns.tabs .btn
+{
+	height: 36dp;
+}
+
+.r.notice .kv, .kv.notice
+{
+	padding: 8dp 10dp;
+	border-radius: var(--row-radius);
+	background-color: var(--bad-soft);
+}
+
+.btns.big .btn
+{
+	height: 44dp;
+}
+
+.swatches
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	height: 34dp;
+	padding: 0 8dp;
+	border-radius: var(--row-radius);
+}
+
+.swatch
+{
+	width: 22dp;
+	height: 22dp;
+	margin-right: 8dp;
+	border-radius: 6dp;
+}
+
+body.hpanel.screen scrollbarvertical
+{
+	width: 8dp;
+}
+
+body.hpanel.screen scrollbarvertical sliderbar
+{
+	border-radius: 4dp;
+	background-color: var(--switch-off);
+}
+
+.btns.modbar .btn
+{
+	flex: 0 0 auto;
+	min-width: 32dp;
+}
+
+/* The lobby's seats and this player's color. */
+.seats
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin-top: 8dp;
+}
+
+.seat
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	width: 48%;
+	height: 36dp;
+	margin: 0 1% 6dp;
+	padding: 0 8dp;
+	border-radius: var(--row-radius);
+	background-color: var(--row);
+}
+
+.seat .who
+{
+	flex: 1;
+}
+
+.seat .state
+{
+	font-size: var(--font-small);
+	color: var(--dim);
+}
+
+.seat .state.on
+{
+	color: var(--accent);
+}
+
+.btn.colorpick
+{
+	justify-content: flex-start;
+	margin: 6dp 0 0;
+}
+
+/* The new game's map preview. */
+.preview
+{
+	width: 256dp;
+	height: 256dp;
+	margin: 8dp auto 4dp;
+	border-radius: 8dp;
+	background-color: var(--row);
+	text-align: center;
+}
+
+.preview img
+{
+	width: 256dp;
+	height: 256dp;
+	border-radius: 8dp;
+}
+
+.preview img.old
+{
+	opacity: 0.55;
+}
+
+.preview p
+{
+	padding: 100dp 16dp 0;
+	color: var(--dim);
+}
+
+.para.center
+{
+	text-align: center;
+}
+
+.btns.checks .btn
+{
+	justify-content: flex-start;
+}
+
+/* Headings inside panels (the windows have theirs in hwin.rcss). */
+.hpanel .section
+{
+	margin-top: 12dp;
+	padding-bottom: 4dp;
+	font-weight: bold;
+	color: var(--accent);
+	border-bottom: 1dp var(--sep);
+}
+
+.kv.keys .btn
+{
+	width: 150dp;
+	margin-left: 6dp;
+}
+
+.btns.big .btn
+{
+	font-size: var(--font-size);
+}

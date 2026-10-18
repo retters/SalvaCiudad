@@ -5,6 +5,7 @@
 #include "core/file_io.h"
 #include "sim/worldgen.h"
 #include "game/menu_backgrounds.h"
+#include "game/settings_screen.h"
 #include "game/services.h"
 #include "game/ui_host.h"
 #include "i18n/translator.h"
@@ -247,6 +248,113 @@ TEST_SUITE("menus") {
         h.frame(20000);
         CHECK(h.services.applied.size() == 1);
         CHECK_FALSE(h.services.settings_value.display.vsync);
+    }
+
+    // Phase 126: the menus are RmlUi panels of rows; their buttons do what
+    // the old ones did.
+    TEST_CASE("the main menu's buttons open their screens") {
+        Harness h;
+        h.frame(0);
+        const ThingRows* main = h.host.menu_rows("main");
+        REQUIRE(main != nullptr);
+        const auto press = [&](const ThingRows& rows, const std::string& label) {
+            for (const WinRow& r : rows.rows) {
+                for (const RowButton& b : r.buttons) {
+                    if (b.label == label) {
+                        REQUIRE(b.enabled);
+                        RowEffects e;
+                        rows.acts[static_cast<std::size_t>(b.act)](nullptr, RowInput{}, e);
+                        return;
+                    }
+                }
+            }
+            FAIL("no button " << label);
+        };
+        press(*main, i18n::tr("menu.main.settings"));
+        h.frame(16);
+        CHECK(h.host.menu_rows("main") == nullptr);
+        REQUIRE(h.host.menu_rows("settings") != nullptr);
+        // Esc goes back.
+        ui::Input esc;
+        esc.keys.push_back(SDL_SCANCODE_ESCAPE);
+        h.frame(32, esc);
+        h.frame(48);
+        REQUIRE(h.host.menu_rows("main") != nullptr);
+        press(*h.host.menu_rows("main"), i18n::tr("menu.main.singlePlayer"));
+        h.frame(64);
+        REQUIRE(h.host.menu_rows("new_game") != nullptr);
+        press(*h.host.menu_rows("new_game"), i18n::tr("newGame.generate"));
+        h.frame(80);
+        CHECK(h.services.generation_started);
+    }
+
+    TEST_CASE("every setting is saved when changed, and each tab restores its defaults") {
+        Harness h;
+        SettingsScreen screen(h.services);
+        const Settings defaults;
+        for (int t = 0; t < static_cast<int>(SettingsScreen::Tab::Count); ++t) {
+            const auto tab = static_cast<SettingsScreen::Tab>(t);
+            if (tab == SettingsScreen::Tab::Display) {
+                continue;  // Its changes go through the countdown (the tests above).
+            }
+            screen.show_tab(tab);
+            // Each choice with arrows, a step on: the change is saved.
+            const std::size_t rows = screen.rows(h.host).rows.size();
+            for (std::size_t i = 0; i < rows; ++i) {
+                const ThingRows view = screen.rows(h.host);
+                REQUIRE(view.rows.size() == rows);
+                const WinRow& row = view.rows[i];
+                const RowButton* step = nullptr;
+                // A choice (its value between the arrows) or a check box.
+                const bool setting = !row.detail.empty() ||
+                                     (!row.buttons.empty() && (row.buttons.back().icon == "icon-check" || row.buttons.back().icon == "icon-minus"));
+                if (row.kind == WinRow::Kind::Stepper && setting && row.buttons.back().enabled) {
+                    step = &row.buttons.back();
+                }
+                RowEffects e;
+                const int saved = h.services.saves_requested;
+                const Settings before = h.services.settings_value;
+                if (step != nullptr) {
+                    view.acts[static_cast<std::size_t>(step->act)](nullptr, RowInput{}, e);
+                } else if (row.kind == WinRow::Kind::Slider && row.enabled) {
+                    const int to = row.value + row.step <= row.max ? row.value + row.step : row.value - row.step;
+                    view.acts[static_cast<std::size_t>(row.act)](nullptr, RowInput{to, {}, false}, e);
+                } else {
+                    continue;
+                }
+                CHECK_MESSAGE(h.services.saves_requested > saved, "tab " << t << ", row " << i << ": " << row.text);
+                CHECK_MESSAGE(!(h.services.settings_value == before), "tab " << t << ", row " << i << ": " << row.text);
+            }
+            // "Restore defaults" brings the tab back.
+            const ThingRows view = screen.rows(h.host);
+            const RowButton& restore = view.rows.back().buttons.front();
+            RowEffects e;
+            view.acts[static_cast<std::size_t>(restore.act)](nullptr, RowInput{}, e);
+            const Settings& s = h.services.settings_value;
+            switch (tab) {
+                case SettingsScreen::Tab::Graphics: CHECK(s.graphics == defaults.graphics); break;
+                case SettingsScreen::Tab::Audio: CHECK(s.audio == defaults.audio); break;
+                case SettingsScreen::Tab::Controls: CHECK(s.input == defaults.input); break;
+                case SettingsScreen::Tab::Interface: CHECK(s.ui == defaults.ui); break;
+                case SettingsScreen::Tab::Language: CHECK(s.language == defaults.language); break;
+                case SettingsScreen::Tab::Game: CHECK(s.gameplay == defaults.gameplay); break;
+                default: break;
+            }
+        }
+        // A key binding: the next key pressed.
+        screen.show_tab(SettingsScreen::Tab::Controls);
+        const ThingRows view = screen.rows(h.host);
+        const auto key_row = std::find_if(view.rows.begin(), view.rows.end(),
+                                          [](const WinRow& r) { return r.cls.find("keys") != std::string::npos; });
+        REQUIRE(key_row != view.rows.end());
+        RowEffects e;
+        view.acts[static_cast<std::size_t>(key_row->buttons.front().act)](nullptr, RowInput{}, e);
+        CHECK(screen.capturing_key());
+        screen.key_pressed(SDL_SCANCODE_F8);
+        CHECK_FALSE(screen.capturing_key());
+        Action action{};
+        std::size_t slot = 0;
+        CHECK(h.services.settings_value.input.bindings.find(SDL_SCANCODE_F8, action, slot));
     }
 
     TEST_CASE("the game interface places buildings, pauses and saves") {

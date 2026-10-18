@@ -4410,3 +4410,26 @@ Cuando una lista `data-for` se acorta, RmlUi todavía actualiza, en esa misma pa
 
 **D-12508. La prueba en red con dos instancias.**
 Con dos instancias locales (`--instance 1` y `2`, `--loopback`) se probó en vivo: el anfitrión crea la partida, funda con el panel nuevo («Fundar aquí»), la segunda instancia se une a la partida empezada, ve el panel de llegada, elige fundar y funda su pueblo. No se probaron en vivo pedir unirse a un pueblo ni la pregunta del pueblo: el anfitrión no permite unirse por omisión y cambiarlo se hace en el menú del juego (fase 126), y la pregunta de las tortugas depende de que ocurra el suceso. Sus órdenes las cubren las pruebas de red y de sucesos, y quedan en la lista manual. En dos capturas, tomadas justo después de un salto de cámara, faltaba toda la interfaz; no se pudo repetir en 18 capturas más y queda en la lista manual para ver si es la captura o la pantalla.
+
+## Fase 126: menús y pantallas fuera de partida en RmlUi (2026-10-18)
+
+**D-12601. Cada pantalla es un panel de filas, como las ventanas del juego.**
+El menú principal, Configuración (las siete pestañas, la reasignación de teclas y la cuenta regresiva de pantalla), Partida nueva (Variado y Personalizado con la vista previa), Cargar, Mods, Unirse, la sala, Generando, los mensajes, el menú del juego y el diálogo de acceso arman sus filas (`thing_rows.h`) cada cuadro y las dan a `UiHost::menu()`. El manejo de paneles salió de `GameHud` a una clase propia, `RmlPanels` (`rml_panels.*`), que usan el HUD y los menús; una pantalla va en el centro sobre un velo (`hud/veil.rml`) y se desplaza si no cabe. La lógica de cada pantalla (aplicar, guardar, la vista previa, conectar, la sala) es la de antes; cambió quién la dibuja.
+
+**D-12602. Las acciones reciben la partida como puntero.**
+Fuera de una partida no hay `GameSession`: las acciones de las filas la reciben como puntero, que en los menús es nulo. Las de las ventanas y paneles del juego siempre la tienen.
+
+**D-12603. Selectores, casillas y campos.**
+Un selector es «etiqueta  ‹ valor ›» con flechas que dan la vuelta (la fila de un paso lleva su valor entre los botones, `WinRow::detail`); una casilla es un botón «Sí»/«No» con su marca; los deslizadores llevan su valor en el texto de arriba. Los campos de texto (semilla, nombre, dirección y puerto) son campos de RmlUi: la semilla se queda solo con dígitos y con lo que cabe en 64 bits, como antes; la dirección y el puerto se validan al conectar.
+
+**D-12604. El logotipo sigue siendo el dibujo del juego.**
+El nombre con su resplandor lo dibuja el código de siempre (`draw_logo`), sin cambios, y el panel del menú se coloca debajo. Así sale idéntico (comparado en captura). La versión va en la esquina como antes.
+
+**D-12605. La vista previa del mapa es una imagen viva.**
+`/live/preview`, como el minimapa (`set_hud_image`); la imagen vieja ya no se sube al renderizador viejo.
+
+**D-12606. «Salir» desde el menú del juego espera al cuadro siguiente.**
+Como el «Salir» del panel final (D-12503): cerrar la partida desde dentro del evento de RmlUi borraría los documentos que lo están atendiendo.
+
+**D-12607. Pruebas.**
+`menus` suma: los botones del menú principal abren Configuración y Partida nueva, y «Generar» empieza la generación; en cada pestaña de Configuración (salvo Pantalla, que tiene sus pruebas de cuenta regresiva) cada selector, casilla y deslizador guarda el cambio, «Restaurar valores por omisión» devuelve la pestaña a sus valores, y una tecla se reasigna con la siguiente que se pulsa. `map_view` cambia la prueba que hacía clic por coordenadas en el formulario viejo por una que comprueba que sus botones son la última fila y que «Generar» genera, y que ningún texto queda sin traducir. Las demás pruebas de Partida nueva pasan sin cambios con `frame(ctx, modal)`, que hace lo mismo sin mostrarlo.
