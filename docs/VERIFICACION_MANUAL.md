@@ -511,18 +511,28 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 118 (RmlUi: vidrio y efectos)
+
+- [ ] Ctrl+F3 > Interfaz > «Ventana de prueba de RmlUi»: la ventana se ve como la maqueta Frosted: el mapa desenfocado detrás, grano fino, bordes blancos, una sombra suave abajo y las esquinas redondeadas recortando el vidrio.
+- [ ] Al arrastrar la ventana el vidrio sigue mostrando lo que tiene detrás, sin rayas ni saltos.
+- [ ] «Copias de la ventana» en 5: seis ventanas; F3 dice «vidrios 6, desenfoques del fondo 1».
+- [ ] «Vidrio simple»: la ventana queda casi opaca y sin desenfoque; al quitarlo vuelve el vidrio.
+- [ ] Con la escala de la interfaz en 0,75 y en 2,0, la sombra y las esquinas siguen bien.
+- [ ] En una partida (no solo en el menú), la ventana se ve igual sobre el pueblo.
+- [ ] **Tu opinión:** si el vidrio se parece al de la maqueta; si el grano o la sombra deberían ser más o menos marcados.
+
 ### Fase 117 (RmlUi: ventana de prueba)
 
 - [ ] Ctrl+F3 > Interfaz > «Ventana de prueba de RmlUi»: aparece la ventana del Cantero, con miniatura, retratos y textos en español.
-- [ ] Arrastrar la ventana por su título la mueve; la esquina de abajo a la derecha la agranda y la achica.
+- [x] Arrastrar la ventana por su título la mueve; la esquina de abajo a la derecha la agranda y la achica (2026-10-17; el contenido no siempre se reacomoda: fase 123).
 - [ ] Con el cursor sobre la ventana, la rueda no acerca la cámara y un clic no selecciona nada del mapa; fuera de ella, todo funciona como antes.
-- [ ] − y + cambian los trabajadores (0 a 2) y el título «Trabajadores (N)»; el interruptor pasa a «Producción: detenida»; el pin se pinta de violeta; − de la barra la minimiza; × la cierra (y la casilla se desmarca).
+- [ ] − y + cambian los trabajadores (0 a 2) y el título «Trabajadores (N)»; el interruptor pasa a «Producción: detenida»; el pin se pinta de violeta; − de la barra la minimiza (no funciona bien, 2026-10-17: fase 123); × la cierra (y la casilla se desmarca).
 - [ ] Configuración > Idioma: al pasar a inglés la ventana dice «Stonecutter» sin cerrarse.
 - [ ] Configuración > Interfaz: con escala 0,75 y 2,0 la ventana cambia de tamaño sin cortes; con otra fuente de la interfaz, la ventana la usa.
 - [ ] El inspector de RmlUi (misma pestaña) se abre y muestra el árbol de la ventana.
 - [ ] F3 muestra la línea «RmlUi (diseño + geometría, dibujos)» con valores pequeños.
 - [ ] Salir del juego con la ventana abierta no da error.
-- [ ] **Tu opinión:** si la ventana, aun sin vidrio ni sombras, se parece a la maqueta Frosted; si vale la pena seguir con RmlUi (punto de decisión, D-11710).
+- [x] **Tu opinión:** si la ventana, aun sin vidrio ni sombras, se parece a la maqueta Frosted; si vale la pena seguir con RmlUi (punto de decisión, D-11710). Se parece, con detalles; se sigue (D-11721).
 
 ### Fase 88 (despejar una obra talando)
 

@@ -222,6 +222,7 @@ TEST_SUITE("settings") {
         s.input.invert_zoom = true;
         s.ui.font = "some-font";
         s.ui.tooltip_delay_ms = 1200;
+        s.ui.glass = UiGlass::Simple;
         s.gameplay.autosave_minutes = 30;
         s.gameplay.tutorial_seen = true;
         const Settings expected = s;
@@ -290,6 +291,19 @@ TEST_SUITE("settings") {
         const auto r = load_text(dir, R"({"schemaVersion": 1, "ui": {"windows": "goods:1,2,3,0,0;\"x\"=rm"}})", s);
         CHECK(r.ignored_fields == 1);
         CHECK(s.ui.windows.empty());
+    }
+
+    TEST_CASE("the interface's glass is full or simple, nothing else") {
+        test::TempDir dir;
+        Settings s;
+        CHECK(s.ui.glass == UiGlass::Full);
+        auto r = load_text(dir, R"({"schemaVersion": 1, "ui": {"glass": "simple"}})", s);
+        CHECK(r.ignored_fields == 0);
+        CHECK(s.ui.glass == UiGlass::Simple);
+        Settings t;
+        r = load_text(dir, R"({"schemaVersion": 1, "ui": {"glass": "frosted"}})", t);
+        CHECK(r.ignored_fields == 1);
+        CHECK(t.ui.glass == UiGlass::Full);
     }
 
     TEST_CASE("the last new game round-trips") {

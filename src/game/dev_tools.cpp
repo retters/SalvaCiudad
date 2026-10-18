@@ -503,6 +503,21 @@ void DevTools::interface_tab(DevContext& ctx) {
     if (ImGui::Checkbox((tr("dev.ui.testWindow") + "###rmltest").c_str(), &shown)) {
         (void)ctx.rml->show_document(rml::TestWindow::kDocument, shown);
     }
+    // More copies, to see that the glass costs one blur however many there are.
+    int copies = rml_copies_;
+    if (ImGui::SliderInt((tr("dev.ui.copies") + "###rmlcopies").c_str(), &copies, 0, 5)) {
+        rml_copies_ = copies;
+        for (int i = 1; i <= 5; ++i) {
+            (void)ctx.rml->show_document(std::string(rml::TestWindow::kDocument) + "#" + std::to_string(i),
+                                         i <= copies);
+        }
+    }
+    if (ctx.glass != nullptr) {
+        bool simple = *ctx.glass == UiGlass::Simple;
+        if (ImGui::Checkbox((tr("dev.ui.simpleGlass") + "###rmlglass").c_str(), &simple)) {
+            *ctx.glass = simple ? UiGlass::Simple : UiGlass::Full;
+        }
+    }
     bool debugger = ctx.rml->debugger_shown();
     if (ImGui::Checkbox((tr("dev.ui.debugger") + "###rmldebug").c_str(), &debugger)) {
         ctx.rml->show_debugger(debugger);

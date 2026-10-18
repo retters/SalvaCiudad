@@ -37,6 +37,9 @@ struct DebugInfo {
     float rml_update_ms = 0.0f;
     float rml_render_ms = 0.0f;
     int rml_draws = 0;
+    int rml_layers = 0;          // Most layers at once (phase 118).
+    int rml_backdrops = 0;       // Glass elements.
+    int rml_backdrop_blurs = 0;  // Times the scene was blurred for them.
     // What is under the cursor on a map (phase 37), already in text; empty
     // when there is no map.
     std::vector<std::string> cursor;

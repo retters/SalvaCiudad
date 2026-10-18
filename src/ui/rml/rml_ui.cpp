@@ -90,13 +90,14 @@ bool RmlUi::show_document(const std::string& path, bool show) {
         if (!show) {
             return true;
         }
-        Rml::ElementDocument* doc = context_->LoadDocument(path);
+        Rml::ElementDocument* doc = context_->LoadDocument(path.substr(0, path.find('#')));
         if (doc == nullptr) {
             log::warn("rmlui: cannot load the document '{}'", path);
             return false;
         }
         documents_.push_back({path, doc, false});
         d = &documents_.back();
+        prepare(*d);
     }
     d->shown = show;
     if (show) {
@@ -138,14 +139,57 @@ void RmlUi::show_debugger(bool show) {
     }
 }
 
+void RmlUi::prepare(Document& d) {
+    d.document->SetClass("glass-simple", simple_glass_);
+    const std::size_t hash = d.path.find('#');
+    if (hash == std::string::npos) {
+        return;
+    }
+    int n = 0;
+    for (std::size_t i = hash + 1; i < d.path.size() && i < hash + 3; ++i) {
+        if (d.path[i] < '0' || d.path[i] > '9') {
+            return;
+        }
+        n = n * 10 + (d.path[i] - '0');
+    }
+    const std::string offset = std::to_string(n * 32) + "dp";
+    d.document->SetProperty("margin-left", offset);
+    d.document->SetProperty("margin-top", offset);
+}
+
+void RmlUi::close_documents() {
+    if (context_ == nullptr) {
+        return;
+    }
+    for (const Document& d : documents_) {
+        context_->UnloadDocument(d.document);
+    }
+    documents_.clear();
+    context_->Update();  // Unloading takes effect on the next update.
+}
+
+void RmlUi::set_simple_glass(bool simple) {
+    if (simple == simple_glass_) {
+        return;
+    }
+    simple_glass_ = simple;
+    for (const Document& d : documents_) {
+        d.document->SetClass("glass-simple", simple);
+    }
+}
+
 void RmlUi::reload_documents() {
     for (Document& d : documents_) {
         context_->UnloadDocument(d.document);
     }
     context_->Update();  // Unloading takes effect on the next update.
     for (Document& d : documents_) {
-        d.document = context_->LoadDocument(d.path);
-        if (d.document != nullptr && d.shown) {
+        d.document = context_->LoadDocument(d.path.substr(0, d.path.find('#')));
+        if (d.document == nullptr) {
+            continue;
+        }
+        prepare(d);
+        if (d.shown) {
             d.document->Show();
         }
     }

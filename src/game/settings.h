@@ -85,8 +85,13 @@ struct InputSettings {
     bool operator==(const InputSettings&) const = default;
 };
 
+// The glass of the player's interface (phase 118): the scene blurred behind
+// the windows, or translucent windows without blur (cheaper).
+enum class UiGlass { Full, Simple };
+
 struct UiSettings {
     std::string font = "alegreya-sans";  // Id from data/fonts/fonts.json.
+    UiGlass glass = UiGlass::Full;
     bool show_tooltips = true;
     int tooltip_delay_ms = 500;  // 0..3000.
     // Where the player left the game windows (GameHud's own compact format).

@@ -1960,6 +1960,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     const int inset_slot = d.inset_slot;
     d.inset_slot = -1;
     stats_ = RenderStats{};
+    picture_ = nullptr;
     stats_.msaa_samples = d.samples;
     stats_.shadow_cascades = d.cascades;
     stats_.shadow_map_size = d.shadow_size;
@@ -2355,7 +2356,11 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     ct.load_op = SDL_GPU_LOADOP_CLEAR;
     const bool blur = view.blur > 0.0f && d.blur_pipeline != nullptr && d.clamp_sampler != nullptr &&
                       d.ensure_post(frame.width, frame.height);
-    SDL_GPUTexture* scene_target = blur ? d.post_a : frame.target;
+    // The interface's glass needs the finished picture as a texture: it ends
+    // in post_a and is copied to the swapchain.
+    const bool keep = view.keep_picture && d.ensure_post(frame.width, frame.height);
+    picture_ = nullptr;
+    SDL_GPUTexture* scene_target = (blur || keep) ? d.post_a : frame.target;
     if (d.samples > 1) {
         ct.texture = d.color_msaa;
         ct.resolve_texture = scene_target;
@@ -2475,7 +2480,8 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             SDL_GPUTexture* to;
             float step[4];
         } passes[2] = {{d.post_a, d.post_b, {px / static_cast<float>(frame.width), 0.0f, 0.0f, 0.0f}},
-                       {d.post_b, frame.target, {0.0f, px / static_cast<float>(frame.height), 0.25f, 0.0f}}};
+                       {d.post_b, keep ? d.post_a : frame.target,
+                        {0.0f, px / static_cast<float>(frame.height), 0.25f, 0.0f}}};
         for (const auto& bp : passes) {
             SDL_GPUColorTargetInfo bt{};
             bt.texture = bp.to;
@@ -2493,6 +2499,19 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             SDL_EndGPURenderPass(blur_pass);
             ++stats_.draw_calls;
         }
+    }
+    if (keep) {
+        SDL_GPUBlitInfo bi{};
+        bi.source.texture = d.post_a;
+        bi.source.w = frame.width;
+        bi.source.h = frame.height;
+        bi.destination.texture = frame.target;
+        bi.destination.w = frame.width;
+        bi.destination.h = frame.height;
+        bi.load_op = SDL_GPU_LOADOP_DONT_CARE;
+        bi.filter = SDL_GPU_FILTER_NEAREST;
+        SDL_BlitGPUTexture(frame.cmd, &bi);
+        picture_ = d.post_a;
     }
     if (inset) {
         // The camera window's picture. The counts stay those of the main

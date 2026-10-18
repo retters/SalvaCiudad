@@ -59,13 +59,20 @@ public:
     [[nodiscard]] bool wants_keyboard() const;
 
     // A document by its path under the roots ("dev/prueba.rml"); kept open
-    // (hidden or shown) and reloaded with the language.
+    // (hidden or shown) and reloaded with the language. "path#N" is another
+    // copy of the same document, moved N times 32 dp right and down.
     bool show_document(const std::string& path, bool show);
     [[nodiscard]] bool document_shown(const std::string& path) const;
+    // Unloads every document (they load again when shown).
+    void close_documents();
     // The loaded document, or null.
     [[nodiscard]] Rml::ElementDocument* document(const std::string& path) const;
     void show_debugger(bool show);
     [[nodiscard]] bool debugger_shown() const { return debugger_shown_; }
+
+    // The simple glass (phase 118): every document's body gets the class
+    // "glass-simple", so its style can make the windows more opaque.
+    void set_simple_glass(bool simple);
 
     [[nodiscard]] const System& system() const { return system_; }
     // Milliseconds of CPU the last update() and render() took.
@@ -79,6 +86,7 @@ private:
         bool shown = false;
     };
     void reload_documents();
+    void prepare(Document& d);
     [[nodiscard]] Document* find(const std::string& path);
 
     System system_;
@@ -89,6 +97,7 @@ private:
     std::uint64_t language_generation_ = 0;
     bool family_changed_ = false;
     bool debugger_ready_ = false;
+    bool simple_glass_ = false;
     bool debugger_shown_ = false;
     bool pressed_ = false;  // A button went down over an element.
     double update_ms_ = 0.0;

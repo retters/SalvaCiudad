@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "game/settings.h"
 #include "game/terrain_names.h"
 #include "math/vec.h"
 #include "sim/content.h"
@@ -42,6 +43,7 @@ struct DevContext {
     math::Vec3 ray_dir;      // Normalized.
     bool clicked = false;    // A left click (not a drag) on the world.
     rml::RmlUi* rml = nullptr;  // The RmlUi interface (phase 117), in menus too.
+    UiGlass* glass = nullptr;   // The setting, changed in memory (phase 118).
 };
 
 struct DevObject {
@@ -126,6 +128,7 @@ private:
     std::string applied_search_;
     Filter applied_filter_ = Filter::Count;
     bool sort_by_distance_ = false;
+    int rml_copies_ = 0;  // Copies of RmlUi's test window shown (phase 118).
     bool list_dirty_ = true;
     std::vector<DevObject> list_;
 };

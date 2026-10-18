@@ -101,6 +101,7 @@ void DebugOverlay::build(const DebugInfo& info, const std::function<void()>& ext
         ImGui::Text("%s: %.2f", tr("debug.uiScale").c_str(), static_cast<double>(info.ui_scale));
         ImGui::Text("%s: %.3f + %.3f ms  (%d)", tr("debug.rmlui").c_str(), static_cast<double>(info.rml_update_ms),
                     static_cast<double>(info.rml_render_ms), info.rml_draws);
+        ImGui::Text("%s", tr("debug.rmlEffects", info.rml_layers, info.rml_backdrops, info.rml_backdrop_blurs).c_str());
         ImGui::Text("%s: %llu  (%u)", tr("debug.simTick").c_str(), static_cast<unsigned long long>(info.sim_tick),
                     info.sim_entities);
         ImGui::Text("%s: %016llx", tr("debug.simHash").c_str(), static_cast<unsigned long long>(info.sim_hash));

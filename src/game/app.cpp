@@ -228,7 +228,7 @@ bool App::init() {
         return false;
     }
     // RmlUi (phase 117) is optional while the old interface still exists.
-    if (!rml_renderer_.create(gpu_, ui_renderer_.atlas_texture(), ui_renderer_.sampler(), rml::FontEngine::kAtlasTexture) ||
+    if (!rml_renderer_.create(gpu_, ui_renderer_.atlas_texture(), rml::FontEngine::kAtlasTexture) ||
         !rml_.init(rml_renderer_, atlas_, fonts_, {paths_->game_data_dir() / "ui"}, settings_->settings().ui.font) ||
         !rml_test_.bind(*rml_.context())) {
         log::warn("rmlui: not available; the old interface goes on alone");
@@ -1036,6 +1036,8 @@ void App::render_frame(float dt) {
                 }
             }
             update_camera_windows();
+            // Glass in the interface's last frame: the scene keeps its picture.
+            view.keep_picture = rml_renderer_.wants_backdrop();
             scene_drawn = scene_.render(frame, view, lighting_);
         }
 
@@ -1099,6 +1101,9 @@ void App::render_frame(float dt) {
         ui_.end_frame();
         // RmlUi lays out and records its geometry now, so the glyphs it adds
         // to the shared atlas go up with the old interface's upload below.
+        const bool simple_glass = settings_->settings().ui.glass == UiGlass::Simple;
+        rml_renderer_.set_glass(simple_glass ? GlassMode::Simple : GlassMode::Full);
+        rml_.set_simple_glass(simple_glass);
         rml_renderer_.begin_frame(static_cast<int>(frame.width), static_cast<int>(frame.height));
         if (rml_.ready() && !still) {
             rml_test_.update();
@@ -1111,6 +1116,9 @@ void App::render_frame(float dt) {
         debug_info_.rml_update_ms = static_cast<float>(rml_.update_ms());
         debug_info_.rml_render_ms = static_cast<float>(rml_.render_ms());
         debug_info_.rml_draws = rml_renderer_.draw_count();
+        debug_info_.rml_layers = rml_renderer_.stats().layers;
+        debug_info_.rml_backdrops = rml_renderer_.stats().backdrops;
+        debug_info_.rml_backdrop_blurs = rml_renderer_.stats().backdrop_blurs;
 
         debug_info_.backend = gpu_.driver_name();
         debug_info_.width = frame.width;
@@ -1142,7 +1150,8 @@ void App::render_frame(float dt) {
         }
 
         const bool uploaded = ui_renderer_.upload(frame.cmd, ui_.draw(), atlas_);
-        const bool rml_uploaded = rml_renderer_.upload(frame.cmd);
+        // RmlUi into its own textures, before the main pass (phase 118).
+        const bool rml_drawn = rml_renderer_.render(frame.cmd, scene_drawn ? scene_.picture() : nullptr);
         debug_.prepare(frame.cmd);
         SDL_GPUColorTargetInfo target{};
         target.texture = frame.target;
@@ -1156,8 +1165,8 @@ void App::render_frame(float dt) {
             if (uploaded) {
                 ui_renderer_.draw(frame.cmd, pass, ui_.draw());
             }
-            if (rml_uploaded) {
-                rml_renderer_.draw(frame.cmd, pass);
+            if (rml_drawn) {
+                rml_renderer_.composite(frame.cmd, pass);
             }
             debug_.render(frame.cmd, pass);
             SDL_EndGPURenderPass(pass);
@@ -1470,6 +1479,7 @@ void App::leave_map() {
 DevContext App::dev_context(std::uint32_t width, std::uint32_t height) {
     DevContext ctx;
     ctx.rml = rml_.ready() ? &rml_ : nullptr;
+    ctx.glass = &settings_->settings().ui.glass;
     if (!dev_tools_.visible() || !scene_ok_ || !host_ || !interactive_scene()) {
         return ctx;
     }

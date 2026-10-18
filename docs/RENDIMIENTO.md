@@ -293,3 +293,17 @@ Ventana de prueba de RmlUi (la del Cantero de las maquetas) sobre el menú princ
 | Ejecutable `release` | 8,77 MB (7,06 MB el 2026-10-14, sin RmlUi) |
 
 El presupuesto de la fase era 0,3 ms de CPU para la ventana. Falta medir los efectos (vidrio, sombras), que llegan en la fase 118.
+
+### Efectos (fase 118)
+
+`release`, 1920 × 1080, sin vsync, menú principal, la ventana de prueba con el Frosted provisional (vidrio con `blur(18dp) saturate(160%)`, sombra de dos capas, grano y degradados). Promedio de tres lecturas de FPS por caso; las diferencias son tiempo de cuadro entero (SDL GPU no mide la GPU sola).
+
+| Caso | FPS | Tiempo por cuadro | Respecto a sin ventanas |
+|---|---|---|---|
+| Sin ventanas | 916 | 1,092 ms | — |
+| 1 ventana, vidrio completo | 817 | 1,224 ms | +0,13 ms |
+| 1 ventana, vidrio simple | 858 | 1,166 ms | +0,07 ms |
+| 6 ventanas, vidrio completo | 688 | 1,453 ms | +0,36 ms |
+| 6 ventanas, vidrio simple | 780 | 1,282 ms | +0,19 ms |
+
+Con seis ventanas el fondo se desenfoca una vez (línea «capas, vidrios, desenfoques del fondo» de F3). Presupuesto: 0,8 ms con vidrio completo y 0,1 ms con simple; se cumple. Memoria de video: unos 8 MB por textura del tamaño de la ventana, unos 55 MB a 1080p cuando hay interfaz de RmlUi en pantalla.

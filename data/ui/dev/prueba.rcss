@@ -1,5 +1,7 @@
-/* Phase 117 test window: a provisional Frosted, without the effects the
-   renderer does not draw yet (blur, shadows, rounded clipping; phase 118). */
+/* Test window of phases 117 and 118: a provisional Frosted, from the
+   mockup (docs/propuestas/interfaz/temas/frosted.css): grain over a white
+   gradient, the scene blurred behind, white edges and a soft shadow. The
+   real styles and their tokens come in phase 119. */
 
 body
 {
@@ -8,10 +10,18 @@ body
 	top: 140dp;
 	width: 360dp;
 	min-width: 280dp;
-	background-color: rgba(246, 248, 252, 235);
-	border: 1dp rgba(255, 255, 255, 230);
+	decorator: image(img/noise.png repeat), linear-gradient(160deg, rgba(255, 255, 255, 158), rgba(255, 255, 255, 97));
+	backdrop-filter: blur(18dp) saturate(160%);
+	box-shadow: rgba(255, 255, 255, 230) 0 1dp 0 0 inset, rgba(20, 30, 70, 51) 0 10dp 32dp 0;
+	border: 1dp rgba(255, 255, 255, 178);
 	border-radius: 16dp;
 	color: #1b1f24;
+}
+
+/* Simple glass: no blur behind, so the window is nearly opaque. */
+body.glass-simple
+{
+	decorator: image(img/noise.png repeat), linear-gradient(160deg, rgba(248, 249, 252, 242), rgba(238, 240, 246, 230));
 }
 
 .bar
@@ -109,7 +119,9 @@ body.minimized .bar
 	height: 128dp;
 	text-align: center;
 	border-radius: 12dp;
-	background-color: rgba(255, 255, 255, 140);
+	overflow: hidden;
+	decorator: radial-gradient(circle at 50% 75%, rgba(255, 255, 255, 178), rgba(255, 255, 255, 0) 65%);
+	background-color: rgba(255, 255, 255, 90);
 }
 
 .hero img

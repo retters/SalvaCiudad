@@ -249,6 +249,10 @@ sc_add_shader(shaders/grass.vert.hlsl vs_6_0 kGrassVertDxil)
 sc_add_shader(shaders/blur.frag.hlsl ps_6_0 kBlurFragDxil)
 sc_add_shader(shaders/rml.vert.hlsl vs_6_0 kRmlVertDxil)
 sc_add_shader(shaders/rml.frag.hlsl ps_6_0 kRmlFragDxil)
+sc_add_shader(shaders/rml_gradient.frag.hlsl ps_6_0 kRmlGradientFragDxil)
+sc_add_shader(shaders/rml_quad.vert.hlsl vs_6_0 kRmlQuadVertDxil)
+sc_add_shader(shaders/rml_post.frag.hlsl ps_6_0 kRmlPostFragDxil)
+sc_add_shader(shaders/rml_blur.frag.hlsl ps_6_0 kRmlBlurFragDxil)
 
 # The base language is built in, so the game shows text even if data/lang
 # is missing.

@@ -1,7 +1,8 @@
-// Phase 117: RmlUi's adapters (texts, files, keys, fonts) and documents, with
-// a render interface that only counts what it is given (no GPU).
+// Phases 117 and 118: RmlUi's adapters (texts, files, keys, fonts), documents
+// and the effects, with the game's render interface recording without a GPU.
 #include <doctest.h>
 
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -15,10 +16,12 @@
 #include <RmlUi/Core/DataModelHandle.h>
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
+#include <RmlUi/Core/Dictionary.h>
 #include <RmlUi/Core/RenderInterface.h>
 
 #include "core/file_io.h"
 #include "i18n/translator.h"
+#include "render/rml_renderer.h"
 #include "test_util.h"
 #include "ui/font_library.h"
 #include "ui/glyph_atlas.h"
@@ -33,32 +36,10 @@ namespace {
 
 const std::filesystem::path kData = std::filesystem::path(SC_SOURCE_DIR) / "data";
 
-class NullRender final : public Rml::RenderInterface {
-public:
-    Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex>, Rml::Span<const int>) override {
-        return ++next_;
-    }
-    void RenderGeometry(Rml::CompiledGeometryHandle, Rml::Vector2f, Rml::TextureHandle) override { ++draws; }
-    void ReleaseGeometry(Rml::CompiledGeometryHandle) override {}
-    Rml::TextureHandle LoadTexture(Rml::Vector2i& dimensions, const Rml::String&) override {
-        dimensions = Rml::Vector2i(16, 16);
-        return ++next_;
-    }
-    Rml::TextureHandle GenerateTexture(Rml::Span<const Rml::byte>, Rml::Vector2i) override { return ++next_; }
-    void ReleaseTexture(Rml::TextureHandle) override {}
-    void EnableScissorRegion(bool) override {}
-    void SetScissorRegion(Rml::Rectanglei) override {}
-
-    int draws = 0;
-
-private:
-    std::uintptr_t next_ = 100;
-};
-
 // RmlUi is global: one interface for the whole test run, with the game's
 // languages (Spanish active), fonts and data/ui.
 struct Fixture {
-    NullRender render;
+    RmlRenderer render;  // No device: it records and counts.
     ui::GlyphAtlas atlas{1024};
     ui::FontLibrary fonts;
     rml::RmlUi ui;
@@ -226,9 +207,9 @@ TEST_SUITE("rml") {
         CHECK(f.ui.wants_mouse());
         CHECK_FALSE(f.ui.process_event(mouse_motion(900.0f, 600.0f), 1.0f));
         CHECK_FALSE(f.ui.wants_mouse());
-        f.render.draws = 0;
+        f.render.begin_frame(1280, 720);
         f.ui.render();
-        CHECK(f.render.draws > 0);
+        CHECK(f.render.draw_count() > 0);
         doc->Close();
         f.ui.update(1280, 720, 1.0f);
         ctx.RemoveDataModel("contador");
@@ -276,5 +257,108 @@ TEST_SUITE("rml") {
         f.ui.update(1280, 720, 1.0f);
         CHECK(f.ui.system().errors() == errors);
         REQUIRE(f.ui.show_document(rml::TestWindow::kDocument, false));
+    }
+
+    TEST_CASE("the blur plans follow RmlUi's and the engine's blurs") {
+        CHECK(rml_fx::blur_plan(0.0f).levels == 0);
+        CHECK(rml_fx::blur_plan(1.0f).levels == 0);
+        CHECK(rml_fx::blur_plan(1.0f).sigma == doctest::Approx(1.0f));
+        const rml_fx::BlurPlan big = rml_fx::blur_plan(18.0f);
+        CHECK(big.levels == 3);  // 18 * 2 / 3 = 12: three halvings.
+        CHECK(big.sigma == doctest::Approx(18.0f / 8.0f));
+        CHECK(rml_fx::blur_plan(1e9f).sigma <= rml_fx::kMaxSinglePassSigma);
+        CHECK(rml_fx::blur_plan(std::nanf("")).levels == 0);
+        const auto w = rml_fx::blur_weights(2.0f);
+        CHECK(w[0] + 2.0f * (w[1] + w[2] + w[3]) == doctest::Approx(1.0f));
+        CHECK(w[0] > w[1]);
+        CHECK(w[2] > w[3]);
+        CHECK(rml_fx::blur_weights(0.0f)[0] == doctest::Approx(1.0f));
+        // The backdrop: more rounds for more blur, taps never too far apart.
+        CHECK(rml_fx::backdrop_plan(0.0f).passes == 0);
+        const rml_fx::BackdropPlan soft = rml_fx::backdrop_plan(5.0f);
+        CHECK(soft.levels == 1);  // Half resolution.
+        CHECK(soft.passes == 1);
+        const rml_fx::BackdropPlan glass = rml_fx::backdrop_plan(18.0f);
+        CHECK(glass.levels > 1);  // Frosted's blur of 18 pixels goes smaller.
+        CHECK(glass.passes <= 2);
+        CHECK(glass.step <= 1.5f);
+        const rml_fx::BackdropPlan most = rml_fx::backdrop_plan(1e9f);
+        CHECK(most.levels == rml_fx::kMaxBackdropLevels);
+        CHECK(most.passes <= 4);
+        // Half-size targets.
+        CHECK(rml_fx::half(1920) == 960);
+        CHECK(rml_fx::half(1081) == 541);
+        CHECK(rml_fx::half(1) == 1);
+    }
+
+    TEST_CASE("filters and gradients with bad numbers are refused") {
+        RmlRenderer r;
+        const float nan = std::nanf("");
+        const Rml::Dictionary good{{"sigma", Rml::Variant(4.0f)}};
+        const Rml::Dictionary bad{{"sigma", Rml::Variant(nan)}};
+        const Rml::CompiledFilterHandle blur = r.CompileFilter("blur", good);
+        CHECK(blur != 0);
+        CHECK(r.CompileFilter("blur", bad) == 0);
+        CHECK(r.CompileFilter("opacity", {{"value", Rml::Variant(nan)}}) == 0);
+        CHECK(r.CompileFilter("drop-shadow", {{"offset", Rml::Variant(Rml::Vector2f(nan, 0.0f))}}) == 0);
+        CHECK(r.CompileFilter("saturate", {{"value", Rml::Variant(1.6f)}}) != 0);
+        CHECK(r.CompileFilter("melt", good) == 0);
+        r.ReleaseFilter(blur);
+        CHECK(r.CompileShader("radial-gradient", {{"radius", Rml::Variant(Rml::Vector2f(0.0f, 1.0f))}}) == 0);
+        CHECK(r.CompileShader("linear-gradient", {}) == 0);  // No color stops.
+        CHECK(r.CompileShader("creation", {}) == 0);
+    }
+
+    TEST_CASE("six glass windows blur the scene once; the simple glass not at all") {
+        Fixture& f = fixture();
+        const int errors = f.ui.system().errors();
+        const std::string doc = rml::TestWindow::kDocument;
+        REQUIRE(f.ui.show_document(doc, true));
+        for (int i = 1; i <= 5; ++i) {
+            REQUIRE(f.ui.show_document(doc + "#" + std::to_string(i), true));
+        }
+        f.ui.update(1280, 720, 1.0f);
+        CHECK(f.ui.system().errors() == errors);
+        // The copies stand apart.
+        Rml::ElementDocument* first = f.ui.document(doc);
+        Rml::ElementDocument* third = f.ui.document(doc + "#2");
+        REQUIRE(first != nullptr);
+        REQUIRE(third != nullptr);
+        CHECK(third->GetAbsoluteOffset(Rml::BoxArea::Border).x ==
+              doctest::Approx(first->GetAbsoluteOffset(Rml::BoxArea::Border).x + 64.0f));
+
+        f.render.set_glass(GlassMode::Full);
+        f.render.begin_frame(1280, 720);
+        f.ui.render();
+        RmlRenderer::Stats s = f.render.stats();
+        CHECK(s.backdrops == 6);
+        CHECK(s.backdrop_blurs == 1);
+        CHECK(s.layers >= 2);
+        CHECK(s.composites >= 6);
+        CHECK(s.clip_writes > 0);  // The rounded corners clip the glass.
+        CHECK(f.render.wants_backdrop());
+        // The box shadows are drawn once into textures, then reused.
+        f.render.begin_frame(1280, 720);
+        f.ui.render();
+        CHECK(f.render.stats().saved_layers == 0);
+
+        f.render.set_glass(GlassMode::Simple);
+        f.ui.set_simple_glass(true);
+        f.ui.update(1280, 720, 1.0f);
+        CHECK(first->IsClassSet("glass-simple"));
+        f.render.begin_frame(1280, 720);
+        f.ui.render();
+        s = f.render.stats();
+        CHECK(s.backdrops == 6);
+        CHECK(s.backdrop_blurs == 0);
+        CHECK_FALSE(f.render.wants_backdrop());
+
+        f.render.set_glass(GlassMode::Full);
+        f.ui.set_simple_glass(false);
+        // Closed now: RmlUi's own static pools (the gradients') are gone
+        // before the fixture shuts RmlUi down at exit.
+        f.ui.close_documents();
+        CHECK_FALSE(f.ui.document_shown(doc));
+        CHECK(f.ui.system().errors() == errors);
     }
 }

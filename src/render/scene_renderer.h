@@ -132,6 +132,9 @@ struct SceneView {
     float snow = 0.0f;
     // Ice over the water, 0..1 (phase 18): whiter and still.
     float ice = 0.0f;
+    // Keep the finished picture as a texture (picture()) for the glass of
+    // the interface (phase 118); it is copied to the swapchain as well.
+    bool keep_picture = false;
 };
 
 struct RenderStats {
@@ -282,6 +285,9 @@ public:
     // Records the shadow passes and the main pass into the frame. The
     // swapchain ends up holding the (resolved) scene.
     bool render(GpuFrame& frame, const SceneView& view, const Lighting& lighting);
+    // The finished picture of the last render() that kept it, the size of
+    // the frame; null when it did not (SceneView::keep_picture).
+    [[nodiscard]] SDL_GPUTexture* picture() const { return picture_; }
 
     [[nodiscard]] const RenderStats& stats() const { return stats_; }
 
@@ -289,6 +295,7 @@ private:
     struct Impl;
     std::unique_ptr<Impl> impl_;
     RenderStats stats_;
+    SDL_GPUTexture* picture_ = nullptr;
 };
 
 // Levels from GraphicsSettings, in the units the renderer uses.

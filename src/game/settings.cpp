@@ -326,6 +326,15 @@ void read_ui(Reader& r, yyjson_mut_val* obj, UiSettings& ui) {
         ui.font = font;
     }
     r.count(f, "ui.font");
+    std::string glass;
+    json::Field g = json::get_string(obj, "glass", 16, glass);
+    if (g == json::Field::Ok && glass != "full" && glass != "simple") {
+        g = json::Field::Invalid;
+    }
+    if (g == json::Field::Ok) {
+        ui.glass = glass == "simple" ? UiGlass::Simple : UiGlass::Full;
+    }
+    r.count(g, "ui.glass");
     r.read_bool(obj, "showTooltips", "ui.showTooltips", ui.show_tooltips);
     r.read_int(obj, "tooltipDelayMs", "ui.tooltipDelayMs", 0, lim::kMaxTooltipDelayMs, ui.tooltip_delay_ms);
     std::string windows;
@@ -564,6 +573,7 @@ bool write_settings(yyjson_mut_doc* doc, const Settings& s) {
     yyjson_mut_val* u = json::ensure_object(doc, root, "ui");
     ok = ok && u != nullptr;
     ok = ok && json::set_string(doc, u, "font", s.ui.font);
+    ok = ok && json::set_string(doc, u, "glass", s.ui.glass == UiGlass::Simple ? "simple" : "full");
     ok = ok && json::set_bool(doc, u, "showTooltips", s.ui.show_tooltips);
     ok = ok && json::set_int(doc, u, "tooltipDelayMs", s.ui.tooltip_delay_ms);
     ok = ok && json::set_string(doc, u, "windows", s.ui.windows);
