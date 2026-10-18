@@ -17,6 +17,7 @@
 #include "game/services.h"
 #include "game/settings_screen.h"
 #include "ui/context.h"
+#include "ui/rml/rml_ui.h"
 
 namespace sc {
 
@@ -77,6 +78,10 @@ public:
     // Phase 126: a menu panel shown with the next frame, in the middle over a
     // veil (or at height `y`, in pixels, without the veil).
     void menu(const std::string& id, ThingRows rows, float width = 520.0f, float y = -1.0f);
+    // Phase 127: how the keyboard moves through the buttons now: all of it
+    // in the menus; in a game, Tab starts it (not while choosing where to
+    // found, where Tab is the next site).
+    [[nodiscard]] rml::RmlUi::Navigation navigation() const;
     // Phase 126: the rows of a menu panel last given ("main", "game_menu",
     // "settings"...), for the tests; null if it is not shown.
     [[nodiscard]] const ThingRows* menu_rows(const std::string& id) const { return menus_.rows(id); }

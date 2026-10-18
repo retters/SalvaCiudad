@@ -20,6 +20,7 @@
 #include <RmlUi/Core/Dictionary.h>
 #include <RmlUi/Core/RenderInterface.h>
 
+#include "game/rml_panels.h"
 #include "core/file_io.h"
 #include "i18n/translator.h"
 #include "render/rml_renderer.h"
@@ -526,6 +527,75 @@ TEST_SUITE("rml") {
         CHECK(d->GetProperty<Rml::Colourb>("color") == Rml::Colourb(27, 31, 36, 255));
         CHECK(f.ui.system().errors() == errors);
         f.ui.close_documents();
+    }
+
+    // Phase 127: the keyboard moves through the buttons of a panel.
+    TEST_CASE("Tab, Enter and Esc move through a panel's buttons; the arrows stay the game's after a click") {
+        Fixture& f = fixture();
+        const std::string doc_key = "hud/panel.rml#nav";
+        REQUIRE(f.ui.show_document(doc_key, true));
+        Rml::ElementDocument* doc = f.ui.document(doc_key);
+        REQUIRE(doc != nullptr);
+        ThingRows rows;
+        std::vector<int> pressed;
+        for (int i = 0; i < 3; ++i) {
+            rows.buttons({rows.button("B" + std::to_string(i), {},
+                                      [&pressed, i](GameSession*, const RowInput&, RowEffects&) { pressed.push_back(i); }, i != 2)});
+        }
+        std::vector<std::string> keys;
+        rows_into(doc->GetElementById("rows"), rows, keys);
+        // The clicks of the panel, as RmlPanels hears them.
+        struct Clicks final : Rml::EventListener {
+            ThingRows* rows = nullptr;
+            void ProcessEvent(Rml::Event& ev) override {
+                for (Rml::Element* e = ev.GetTargetElement(); e != nullptr; e = e->GetParentNode()) {
+                    if (e->HasAttribute("data-act")) {
+                        RowEffects fx;
+                        rows->acts[static_cast<std::size_t>(e->GetAttribute<int>("data-act", -1))](nullptr, RowInput{}, fx);
+                        return;
+                    }
+                }
+            }
+        } clicks;
+        clicks.rows = &rows;
+        doc->AddEventListener("click", &clicks);
+        f.ui.update(1280, 720, 1.0f);
+        const auto key = [&](SDL_Keycode k) {
+            SDL_Event e{};
+            e.type = SDL_EVENT_KEY_DOWN;
+            e.key.key = k;
+            const bool taken = f.ui.process_event(e, 1.0f);
+            f.ui.update(1280, 720, 1.0f);
+            return taken;
+        };
+        const auto focused = [&]() -> std::string {
+            Rml::Element* e = f.ui.context()->GetFocusElement();
+            return e != nullptr && e->HasAttribute("data-act") ? e->GetInnerRML() : std::string();
+        };
+        f.ui.set_navigation(rml::RmlUi::Navigation::Off);
+        CHECK_FALSE(key(SDLK_TAB));
+        f.ui.set_navigation(rml::RmlUi::Navigation::Windows);
+        CHECK_FALSE(key(SDLK_LEFT));  // Nothing has the focus: the camera's.
+        CHECK(key(SDLK_TAB));
+        CHECK(focused().find("B0") != std::string::npos);
+        CHECK(f.ui.context()->GetFocusElement()->IsPseudoClassSet("focus-visible"));
+        // The arrows go to the button below and back.
+        CHECK(key(SDLK_DOWN));
+        CHECK(focused().find("B1") != std::string::npos);
+        CHECK(key(SDLK_UP));
+        CHECK(focused().find("B0") != std::string::npos);
+        CHECK(key(SDLK_TAB));
+        CHECK(focused().find("B1") != std::string::npos);
+        CHECK(key(SDLK_RETURN));
+        REQUIRE(pressed.size() == 1);
+        CHECK(pressed[0] == 1);
+        CHECK(key(SDLK_TAB));  // The third is off: not reached, the first again.
+        CHECK(focused().find("B2") == std::string::npos);
+        CHECK(key(SDLK_ESCAPE));  // Out of the buttons...
+        CHECK_FALSE(key(SDLK_LEFT));  // ...and the arrows are the game's again.
+        doc->RemoveEventListener("click", &clicks);
+        f.ui.set_navigation(rml::RmlUi::Navigation::Off);
+        REQUIRE(f.ui.show_document(doc_key, false));
     }
 
     TEST_CASE("a tooltip shows the tip of what lies under the pointer, and the tutorial marks") {

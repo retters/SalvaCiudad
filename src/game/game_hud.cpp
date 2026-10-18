@@ -168,15 +168,6 @@ bool GameHud::pressed(const ui::Context& ctx, Action action) const {
     return false;
 }
 
-void GameHud::mark(ui::Context& ctx, const ui::Rect& r) const {
-    // A gold outline that pulses about once a second.
-    const double t = static_cast<double>(ctx.now_ns() % 1'000'000'000ull) / 1e9;
-    const auto alpha = static_cast<std::uint8_t>(140 + 115 * std::abs(std::sin(t * 3.14159)));
-    const float th = std::max(2.0f, std::round(ctx.s(3.0f)));
-    const ui::Rect o{r.x - th, r.y - th, r.w + 2 * th, r.h + 2 * th};
-    ctx.draw().rect_outline(o, ctx.theme().accent.with_alpha(alpha / 255.0f), th);
-}
-
 void GameHud::block(GameSession& s, const ui::Rect& r) {
     s.ui().hud_rects.push_back({r.x, r.y, r.w, r.h});
 }
@@ -233,9 +224,7 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
         if (pressed(ctx, Action::GameRotateBuilding) && (ui.placing != sim::kNoDef || choosing)) {
             ui.rotation = static_cast<std::uint8_t>((ui.rotation + 1) & 3u);
         }
-        if (ctx.input().key(SDL_SCANCODE_ESCAPE) && ctx.typing()) {
-            things_.rename_id.clear();  // Esc while typing a name: only the typing ends.
-        } else if (ctx.input().key(SDL_SCANCODE_ESCAPE)) {
+        if (ctx.input().key(SDL_SCANCODE_ESCAPE)) {
             if (ui.found_asked) {
                 ui.found_asked = false;  // The site again.
             } else if (ui.found_mode && ui.found_sent == 0) {
@@ -320,7 +309,6 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
         }
     }
     links_.clear();
-    windows_end(ctx);
     return open_menu;
 }
 

@@ -6,6 +6,7 @@
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_timer.h>
 
+#include <RmlUi/Core/ComputedValues.h>
 #include <RmlUi/Core/Core.h>
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -453,6 +454,55 @@ bool RmlUi::wants_keyboard() const {
     return focus->GetTagName() == "textarea" || (focus->GetTagName() == "input" && (type == "text" || type == "password"));
 }
 
+bool RmlUi::navigate(const SDL_Event& event, int mods) {
+    const SDL_Keycode key = event.key.key;
+    const bool tab = key == SDLK_TAB;
+    const bool arrow = key == SDLK_LEFT || key == SDLK_RIGHT || key == SDLK_UP || key == SDLK_DOWN;
+    const bool press = key == SDLK_RETURN || key == SDLK_KP_ENTER || key == SDLK_SPACE;
+    if (navigation_ == Navigation::Off || (!tab && !arrow && !press && key != SDLK_ESCAPE)) {
+        return false;
+    }
+    Rml::Element* focus = context_->GetFocusElement();
+    // A button (anything Tab reaches) has the focus, not a document or a row around it.
+    const bool focused = focus != nullptr && focus->GetComputedValues().tab_index() == Rml::Style::TabIndex::Auto;
+    const bool shown = focused && focus->IsPseudoClassSet("focus-visible");
+    if (key == SDLK_ESCAPE) {
+        // Out of the buttons: the keys are the game's again (and in the
+        // menus, Esc still goes back).
+        if (shown && navigation_ == Navigation::Windows) {
+            focus->Blur();
+            return true;
+        }
+        return false;
+    }
+    if (!focused && (tab || (arrow && navigation_ == Navigation::Menus))) {
+        // Nothing has the focus yet: the first button of the front panel
+        // or window (a menu screen first).
+        Rml::Element* first = nullptr;
+        for (int i = context_->GetNumDocuments() - 1; i >= 0 && first == nullptr; --i) {
+            Rml::ElementDocument* doc = context_->GetDocument(i);
+            if (doc == nullptr || !doc->IsVisible()) {
+                continue;
+            }
+            if (navigation_ == Navigation::Menus && !doc->IsClassSet("screen") && !doc->IsClassSet("hpanel")) {
+                continue;
+            }
+            first = doc->QuerySelector(".btn:not(.off), .row[data-act], input, .choice, .wbtn");
+        }
+        if (first != nullptr) {
+            first->Focus(true);
+            first->ScrollIntoView(Rml::ScrollAlignment::Adaptive);
+            return true;
+        }
+        return false;
+    }
+    if (tab || ((arrow || press) && (shown || (navigation_ == Navigation::Menus && focused)))) {
+        context_->ProcessKeyDown(key_from_sdl(key), mods);
+        return true;
+    }
+    return false;
+}
+
 bool RmlUi::process_event(const SDL_Event& event, float pixel_density) {
     if (context_ == nullptr) {
         return false;
@@ -493,7 +543,7 @@ bool RmlUi::process_event(const SDL_Event& event, float pixel_density) {
             return false;
         case SDL_EVENT_KEY_DOWN:
             if (!wants_keyboard()) {
-                return false;
+                return navigate(event, mods);
             }
             if (event.key.key == SDLK_ESCAPE) {
                 context_->GetFocusElement()->Blur();  // Esc leaves the field; the keys go back to the game.

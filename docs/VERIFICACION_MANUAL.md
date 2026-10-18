@@ -511,6 +511,16 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 127 (sin el sistema viejo; teclado)
+
+- [ ] En el menú principal, Tab y las flechas recorren los botones, con el foco visible; Enter abre el elegido.
+- [ ] En Configuración y en Partida nueva, Tab recorre pestañas, flechas, casillas y campos; Esc vuelve.
+- [ ] En la partida, Tab entra a la ventana de adelante; las flechas y Enter la recorren; Esc devuelve las teclas al juego.
+- [ ] Después de un clic en una ventana, las flechas siguen moviendo la cámara y Espacio sigue pausando.
+- [ ] Al elegir dónde fundar, Tab sigue yendo al siguiente sitio sugerido.
+- [ ] El aviso breve (por ejemplo, «Partida guardada») y la información del mapa se ven como paneles.
+- [ ] El foco se ve bien en Frosted y en Vidrio oscuro.
+
 ### Fase 126 (menús y pantallas en RmlUi)
 
 - [ ] El menú principal: el logotipo igual que antes y los botones debajo; cada uno abre lo suyo.

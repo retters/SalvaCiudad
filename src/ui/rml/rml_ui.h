@@ -69,6 +69,13 @@ public:
     [[nodiscard]] bool wants_mouse() const;
     // True while a text field has the keyboard.
     [[nodiscard]] bool wants_keyboard() const;
+    // Phase 127: moving through buttons without the mouse. In Menus, Tab,
+    // the arrows, Enter and Space are RmlUi's; in Windows, Tab starts it
+    // (the first button of the front panel or window), and the others are
+    // RmlUi's only while a button has the keyboard's focus (so the arrows
+    // stay the camera's after a click); Off: none.
+    enum class Navigation : std::uint8_t { Off, Windows, Menus };
+    void set_navigation(Navigation n) { navigation_ = n; }
 
     // A document by its path under the roots ("dev/prueba.rml"); kept open
     // (hidden or shown) and reloaded with the language. "path#N" is another
@@ -147,6 +154,8 @@ private:
     std::uint64_t tip_since_ns_ = 0;
     std::string tooltip_shown_;  // Its RML now.
     std::string mark_;
+    Navigation navigation_ = Navigation::Off;
+    bool navigate(const SDL_Event& event, int mods);
     bool debugger_shown_ = false;
     bool pressed_ = false;  // A button went down over an element.
     double update_ms_ = 0.0;

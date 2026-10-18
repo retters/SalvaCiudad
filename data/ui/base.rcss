@@ -25,3 +25,23 @@ span
 {
 	display: inline;
 }
+
+/* Phase 127: what the keyboard moves through (Tab, the arrows, Enter), and
+   where its focus is. Each style may draw the focus its own way. */
+.btn, .row, .choice, .wbtn, .dbtn, .bitem, .cat, input
+{
+	tab-index: auto;
+	nav: auto;
+}
+
+.btn:focus-visible, .row:focus-visible, .choice:focus-visible, .wbtn:focus-visible, .dbtn:focus-visible,
+.bitem:focus-visible, .cat:focus-visible, input:focus-visible
+{
+	border-color: var(--accent);
+	box-shadow: var(--accent) 0 0 0 2dp;
+}
+
+.btn.off
+{
+	tab-index: none;
+}

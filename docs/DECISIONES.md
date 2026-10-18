@@ -4433,3 +4433,20 @@ Como el «Salir» del panel final (D-12503): cerrar la partida desde dentro del 
 
 **D-12607. Pruebas.**
 `menus` suma: los botones del menú principal abren Configuración y Partida nueva, y «Generar» empieza la generación; en cada pestaña de Configuración (salvo Pantalla, que tiene sus pruebas de cuenta regresiva) cada selector, casilla y deslizador guarda el cambio, «Restaurar valores por omisión» devuelve la pestaña a sus valores, y una tecla se reasigna con la siguiente que se pulsa. `map_view` cambia la prueba que hacía clic por coordenadas en el formulario viejo por una que comprueba que sus botones son la última fila y que «Generar» genera, y que ningún texto queda sin traducir. Las demás pruebas de Partida nueva pasan sin cambios con `frame(ctx, modal)`, que hace lo mismo sin mostrarlo.
+
+## Fase 127: retiro del sistema viejo y navegación sin ratón (2026-10-18)
+
+**D-12701. Lo que queda de la interfaz vieja.**
+`ui::Context` se quedó con la entrada del cuadro, la escala, el tema de lo que el juego dibuja solo, la lista de dibujo y el texto: lo usan el logotipo con su resplandor, los velos detrás de los menús, los marcadores y la ayuda de los informes, y las herramientas de desarrollo. Se borraron los widgets (botón, casilla, deslizador, selector, campo de texto, desplazamiento, panel, etiqueta, párrafo, ayudas emergentes y la pila de ids), el marco viejo de las ventanas (`GameHud::window`, el arrastre y las pestañas viejas) y el resaltado viejo del tutorial. El aviso breve y la información del mapa sin partida son paneles; la versión va al pie del menú principal. ImGui queda solo en las herramientas (las de desarrollo, el panel de depuración y el visor).
+
+**D-12702. Prueba estática.**
+`ui` revisa cada `.cpp` y `.h` de `src`: ninguno llama a los widgets viejos sobre un contexto, y ImGui solo aparece en `game/dev_tools.cpp`, `render/debug_overlay*` y `viewer/`.
+
+**D-12703. Navegación con teclado: la de RmlUi, con cuidado de no quitarle teclas al juego.**
+Los botones, filas, campos y opciones tienen `tab-index: auto` y `nav: auto` (`base.rcss`); Tab y las flechas los recorren, y Enter o Espacio hacen clic sobre el enfocado (RmlUi). El juego decide cuándo le pasa esas teclas (`RmlUi::set_navigation`): en los menús, todas; en la partida, Tab entra a la ventana o panel de adelante y las flechas, Enter y Espacio son de RmlUi solo mientras un botón tiene el foco puesto por el teclado (`:focus-visible`). Así, después de un clic con el ratón las flechas siguen moviendo la cámara y Espacio sigue pausando. Esc saca el foco y devuelve las teclas al juego; en los menús, Esc sigue siendo «volver». Mientras se elige dónde fundar no hay navegación, porque Tab es el siguiente sitio sugerido. El foco se ve con el borde y un anillo del color `accent`; cada estilo puede cambiarlo.
+
+**D-12704. Las flechas no se pueden probar en vivo con mensajes enviados.**
+Los mensajes de teclado enviados llevan el código de tecla sin la marca de tecla extendida, y SDL lee la flecha abajo como el 2 del teclado numérico. Tab y Enter sí: en vivo, siete Tab y Enter abrieron Configuración desde el menú principal. Las flechas se prueban en `rml` con eventos de SDL.
+
+**D-12705. `docs/ESTILOS_UI.md`.**
+Cómo hacer un estilo: dónde va, `style.json`, los tokens por tipo y qué toca cada uno, las hojas comunes, los íconos, el vidrio, el foco del teclado y cómo probarlo.

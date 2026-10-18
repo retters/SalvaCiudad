@@ -1,5 +1,10 @@
 #include <doctest.h>
 
+#include <filesystem>
+#include <fstream>
+#include <regex>
+#include <sstream>
+
 #include "core/file_io.h"
 #include "test_util.h"
 #include "ui/context.h"
@@ -253,104 +258,33 @@ TEST_SUITE("ui") {
         CHECK(lib.ui_families().empty());
     }
 
-    TEST_CASE("widgets react to the mouse") {
-        auto font = load_ui_font();
-        GlyphAtlas atlas(512);
-        TextRenderer text(atlas);
-        text.set_font(FontRole::Regular, font.get());
-        Context ctx(text);
-        const Rect r{10, 10, 100, 30};
 
-        Input in;
-        in.mouse_x = 20;
-        in.mouse_y = 20;
-        in.mouse_down = true;
-        in.mouse_pressed = true;
-        ctx.begin_frame(in, 800, 600, 1.0f, 0, 0, 0);
-        CHECK_FALSE(ctx.button(ctx.id("b"), r, "OK"));
-        ctx.end_frame();
-
-        in.mouse_down = false;
-        in.mouse_pressed = false;
-        in.mouse_released = true;
-        ctx.begin_frame(in, 800, 600, 1.0f, 1, 0, 0);
-        CHECK(ctx.button(ctx.id("b"), r, "OK"));
-        ctx.end_frame();
-
-        // Blocked input (a dialog is open) ignores the click.
-        in.mouse_down = true;
-        in.mouse_pressed = true;
-        in.mouse_released = false;
-        ctx.begin_frame(in, 800, 600, 1.0f, 2, 0, 0);
-        ctx.set_input_blocked(true);
-        CHECK_FALSE(ctx.button(ctx.id("b"), r, "OK"));
-        ctx.end_frame();
-
-        // Releasing outside the button cancels the click.
-        in = Input{};
-        in.mouse_x = 20;
-        in.mouse_y = 20;
-        in.mouse_down = true;
-        in.mouse_pressed = true;
-        ctx.begin_frame(in, 800, 600, 1.0f, 3, 0, 0);
-        (void)ctx.button(ctx.id("b"), r, "OK");
-        ctx.end_frame();
-        in.mouse_x = 300;
-        in.mouse_down = false;
-        in.mouse_pressed = false;
-        in.mouse_released = true;
-        ctx.begin_frame(in, 800, 600, 1.0f, 4, 0, 0);
-        CHECK_FALSE(ctx.button(ctx.id("b"), r, "OK"));
-        ctx.end_frame();
-    }
-
-    TEST_CASE("sliders follow the mouse in steps") {
-        auto font = load_ui_font();
-        GlyphAtlas atlas(512);
-        TextRenderer text(atlas);
-        text.set_font(FontRole::Regular, font.get());
-        Context ctx(text);
-        Input in;
-        in.mouse_x = 60;  // 50 % of a 100 px slider starting at 10.
-        in.mouse_y = 20;
-        in.mouse_down = true;
-        in.mouse_pressed = true;
-        ctx.begin_frame(in, 800, 600, 1.0f, 0, 0, 0);
-        int v = 0;
-        CHECK(ctx.slider(ctx.id("s"), {10, 10, 100, 30}, v, 0, 100, 5, [](int x) { return std::to_string(x); }));
-        CHECK(v == 50);
-        ctx.end_frame();
-    }
-}
-
-TEST_SUITE("ui") {
-    TEST_CASE("tooltips appear after the delay and only while hovering") {
-        auto font = load_ui_font();
-        GlyphAtlas atlas(512);
-        TextRenderer text(atlas);
-        text.set_font(FontRole::Regular, font.get());
-        Context ctx(text);
-        ctx.set_tooltips(true, 500);
-        const Rect r{10, 10, 100, 30};
-        Input in;
-        in.mouse_x = 20;
-        in.mouse_y = 20;
-
-        const auto frame = [&](std::uint64_t ms) {
-            ctx.begin_frame(in, 800, 600, 1.0f, ms * 1'000'000ull, 0, 0);
-            (void)ctx.button(ctx.id("b"), r, "OK", "Help text");
-            const std::size_t before = ctx.draw().vertices().size();
-            ctx.end_frame();
-            return ctx.draw().vertices().size() > before;
+    // Phase 127: the old immediate-mode widgets are gone, and ImGui is only
+    // for the tools (the developer tools, the debug overlay, the viewer).
+    TEST_CASE("no screen uses the old widgets, and ImGui stays in the tools") {
+        const std::filesystem::path src = std::filesystem::path(SC_SOURCE_DIR) / "src";
+        const std::regex widget(R"((\bctx|\bui_|\bcontext)\s*(\.|->)\s*(button|checkbox|slider|selector|text_field|begin_scroll|end_scroll|panel|label|paragraph|tooltip_area|push_id|typing)\s*\()");
+        const std::regex imgui(R"(\bImGui::)");
+        const auto tool = [&](const std::filesystem::path& p) {
+            const std::string rel = std::filesystem::relative(p, src).generic_string();
+            return rel.starts_with("viewer/") || rel == "game/dev_tools.cpp" || rel.starts_with("render/debug_overlay");
         };
-        CHECK_FALSE(frame(0));
-        CHECK_FALSE(frame(400));
-        CHECK(frame(600));
-        in.mouse_x = 500;  // Leaves the button.
-        CHECK_FALSE(frame(700));
-        ctx.set_tooltips(false, 0);
-        in.mouse_x = 20;
-        CHECK_FALSE(frame(800));
-        CHECK_FALSE(frame(5000));
+        std::size_t files = 0;
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(src)) {
+            const std::string ext = entry.path().extension().string();
+            if (!entry.is_regular_file() || (ext != ".cpp" && ext != ".h")) {
+                continue;
+            }
+            ++files;
+            std::ifstream in(entry.path(), std::ios::binary);
+            std::stringstream text;
+            text << in.rdbuf();
+            const std::string code = text.str();
+            CHECK_MESSAGE(!std::regex_search(code, widget), entry.path().generic_string());
+            if (!tool(entry.path())) {
+                CHECK_MESSAGE(!std::regex_search(code, imgui), entry.path().generic_string());
+            }
+        }
+        CHECK(files > 100);
     }
 }

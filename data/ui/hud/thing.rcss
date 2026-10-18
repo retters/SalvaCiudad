@@ -601,3 +601,8 @@ body.hpanel.screen scrollbarvertical sliderbar
 {
 	font-size: var(--font-size);
 }
+
+.line.center
+{
+	text-align: center;
+}

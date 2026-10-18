@@ -29,6 +29,14 @@ RowButton act(ThingRows& out, std::string label, std::string tip, std::function<
 
 }  // namespace
 
+rml::RmlUi::Navigation UiHost::navigation() const {
+    if (menus_.any_screen() || screen_ != Screen::MapView) {
+        return rml::RmlUi::Navigation::Menus;
+    }
+    const GameSession* s = services_.session();
+    return s != nullptr && s->game().founded(s->local_player()) ? rml::RmlUi::Navigation::Windows : rml::RmlUi::Navigation::Off;
+}
+
 void UiHost::menu(const std::string& id, ThingRows rows, float width, float y) {
     menus_.give(id, std::move(rows), y >= 0.0f ? RmlPanels::Place::Center : RmlPanels::Place::Screen, width, y);
 }
@@ -105,12 +113,8 @@ void UiHost::main_menu(ui::Context& ctx) {
         })});
         out.rows.back().cls = "big";
     }
+    out.line(tr("menu.main.version", std::string(full_version())), WinRow::Kind::Dim).cls = "center";
     menu("main", std::move(out), 380.0f, y + logo_h + ctx.s(28.0f));
-
-    const ui::TextStyle small = ctx.style(ctx.theme().small);
-    const float version_h = ctx.text().line_height(small);
-    ctx.label({margin, ctx.height() - margin - version_h, ctx.width() - 2 * margin, version_h},
-              tr("menu.main.version", std::string(full_version())), small, ctx.theme().text_dim, ui::Align::Right);
 }
 
 void UiHost::generating_screen(ui::Context& ctx, bool modal) {

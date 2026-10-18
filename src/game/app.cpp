@@ -617,7 +617,7 @@ void App::handle_event(const SDL_Event& event) {
                 }
                 return;
             }
-            if (ui_.typing()) {
+            if (rml_.wants_keyboard()) {
                 return;  // Typing in a text field: no shortcuts.
             }
             if (event.key.repeat || (host_ && host_->wants_keyboard())) {
@@ -1092,7 +1092,6 @@ void App::render_frame(float dt) {
 
         // Interface on top.
         const Settings& s = settings_->settings();
-        ui_.set_tooltips(s.ui.show_tooltips, s.ui.tooltip_delay_ms);
         rml_.set_tooltips(s.ui.show_tooltips, s.ui.tooltip_delay_ms);
         ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
                         SDL_GetTicksNS(), atlas_.white_u(), atlas_.white_v());
@@ -1147,6 +1146,7 @@ void App::render_frame(float dt) {
         }
         if (!still) {
             host_->frame(ui_);
+            rml_.set_navigation(host_->navigation());  // Phase 127.
         }
         ui_.end_frame();
         // RmlUi lays out and records its geometry now, so the glyphs it adds
@@ -1257,7 +1257,7 @@ void App::frame() {
     input_.keys.clear();
     input_.text.clear();
     // Text arrives only while a field has the keyboard.
-    const bool typing = ui_.typing() || rml_.wants_keyboard();  // Phase 125: RmlUi's text fields too.
+    const bool typing = rml_.wants_keyboard();  // RmlUi's text fields (phase 125).
     if (window_.sdl() != nullptr && typing != SDL_TextInputActive(window_.sdl())) {
         if (typing) {
             (void)SDL_StartTextInput(window_.sdl());
@@ -3171,7 +3171,8 @@ void App::draw_marking() {
     const float line = ui_.text().line_height(style);
     const float pad = ui_.s(8.0f);
     dl.rect({0.0f, 0.0f, ui_.width(), line + 2.0f * pad}, ui_.theme().background.with_alpha(0.8f));
-    ui_.label({pad, pad, ui_.width() - 2.0f * pad, line}, tr("report.help"), style, ui_.theme().text, ui::Align::Center);
+    const std::string help = tr("report.help");
+    ui_.text().draw(dl, style, std::round((ui_.width() - ui_.text().measure(style, help)) * 0.5f), pad, help, ui_.theme().text);
 }
 
 void App::save_report(const FrameCapture& capture) {

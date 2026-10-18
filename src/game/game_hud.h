@@ -221,30 +221,16 @@ private:
     WindowList windows_;
     bool places_loaded_ = false;
     std::string hover_top_;  // The window in front under the cursor (last frame's places).
-    std::string dragging_;
-    bool resizing_ = false;
-    float grab_x_ = 0.0f;
-    float grab_y_ = 0.0f;
     // Phase 64: the tabs. The title bars (with the tab strip) drawn this
     // frame and the last, to drop a window on; the tab pressed, which is
     // pulled out when the mouse moves away with it.
     std::map<std::string, ui::Rect> bars_;
     std::map<std::string, ui::Rect> bars_last_;
-    std::string tab_pressed_;
-    float tab_press_x_ = 0.0f;
-    float tab_press_y_ = 0.0f;
     [[nodiscard]] std::string window_title(GameSession& s, const std::string& id) const;
     std::map<std::string, ui::Rect> shown_;       // Drawn this frame.
     std::map<std::string, ui::Rect> shown_last_;  // Drawn last frame (for the magnets and the depth).
     void save_places();
     void windows_begin(ui::Context& ctx);
-    void windows_end(ui::Context& ctx);
-    // Draws a window's frame, title, minimize, pin and close; `box` comes in
-    // with the default place and size and goes out where the player put it.
-    // False when it is minimized or was closed (`open` becomes false): its
-    // content is not drawn.
-    bool window(ui::Context& ctx, GameSession& s, const std::string& id, const std::string& title, ui::Rect& box,
-                bool& open);
     void open_window(const std::string& id);
     [[nodiscard]] float left_x(ui::Context& ctx) const;
     bool goods_open_ = false;
@@ -265,8 +251,7 @@ private:
     std::vector<Note> notes_;
     float build_bar_top_ = 0.0f;
     std::string highlight_;
-    // A pulsing outline around a highlighted element.
-    void mark(ui::Context& ctx, const ui::Rect& r) const;
+
 
     // Phase 24: the minimap's ground and fog (drawn by hud_rml.cpp since
     // phase 121).

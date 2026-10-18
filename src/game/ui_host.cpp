@@ -182,13 +182,10 @@ void UiHost::draw_toast(ui::Context& ctx) {
         toast_.clear();
         return;
     }
-    const ui::TextStyle st = ctx.style(ctx.theme().body);
-    const float w = std::min(ctx.width() - ctx.s(32.0f), ctx.text().measure(st, toast_) + ctx.s(40.0f));
-    const float h = ctx.text().line_height(st) + ctx.s(16.0f);
-    const ui::Rect r{std::round((ctx.width() - w) * 0.5f), std::round(ctx.s(60.0f)), std::round(w), std::round(h)};
-    ctx.draw().rect(r, ctx.theme().tooltip.with_alpha(0.9f));
-    ctx.draw().rect_outline(r, ctx.theme().accent, std::max(1.0f, std::round(ctx.s(1.0f))));
-    ctx.label(r, toast_, st, ctx.theme().text, ui::Align::Center);
+    // Phase 127: a small panel near the top.
+    ThingRows out;
+    out.line(toast_).cls = "center";
+    menus_.give("toast", std::move(out), RmlPanels::Place::Center, 420.0f, std::round(ctx.s(60.0f)));
 }
 
 bool UiHost::wants_keyboard() const {
@@ -633,19 +630,16 @@ void UiHost::map_hud(ui::Context& ctx) {
         }
         return;
     }
-    const float pad = ctx.s(12.0f);
-    const ui::TextStyle st = ctx.style(ctx.theme().body);
-    const float w = std::min(ctx.s(600.0f), ctx.width() - 2 * pad);
     static constexpr const char* kSizeKeys[] = {"newGame.size.small", "newGame.size.medium", "newGame.size.large",
                                                 "newGame.size.huge"};
     const auto size_index = static_cast<std::size_t>(map->settings.size);
     const std::string size = tr(kSizeKeys[std::min<std::size_t>(size_index, 3)], map->size);
-    const std::string text = tr("map.info", std::to_string(map->settings.seed), size) + "\n" + tr("map.hint") + "\n" +
-                             camera_line();
-    const float h = ctx.paragraph_height(w - 2 * pad, text, st);
-    const ui::Rect box{pad, pad, w, h + 2 * pad};
-    ctx.draw().rect(box, ctx.theme().tooltip.with_alpha(0.8f));
-    ctx.paragraph(box.inset(pad), text, st, ctx.theme().text);
+    // Phase 127: what the map is, as a panel.
+    ThingRows out;
+    out.line(tr("map.info", std::to_string(map->settings.seed), size));
+    out.line(tr("map.hint"), WinRow::Kind::Dim);
+    out.line(camera_line(), WinRow::Kind::Dim);
+    menus_.give("map_info", std::move(out), RmlPanels::Place::Center, 600.0f, std::round(ctx.s(12.0f)));
     if (game_menu_open_) {
         game_menu(ctx);
     } else if (ctx.input().key(SDL_SCANCODE_ESCAPE) && !modal_open()) {
