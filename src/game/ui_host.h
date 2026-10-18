@@ -101,6 +101,7 @@ private:
     void tutorial_panel(ui::Context& ctx);
     [[nodiscard]] bool tutorial_step_done(const sim::TutorialStep& step, std::uint64_t now_ns);
     bool end_seen_ = false;
+    bool leave_pending_ = false;  // Phase 125: "Leave" was pressed in the end panel.
     void load_screen(ui::Context& ctx, bool modal);
     void game_keys(ui::Context& ctx);
     [[nodiscard]] std::string camera_line() const;

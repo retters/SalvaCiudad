@@ -511,6 +511,21 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 125 (aldeanos, recursos, animales, Comercio, Ejército y paneles en RmlUi)
+
+- [ ] La ventana de un aldeano muestra su retrato, Seguir y Renombrar, sus datos, su hogar y su trabajo (un clic abre esa ventana) y las barras de colores.
+- [ ] Renombrar: escribir un nombre y Enter (u OK) lo cambia; Esc deja el campo y las teclas vuelven al juego.
+- [ ] Un árbol, una piedra, un arbusto, un animal, un lobo y un soldado abren su ventana con su ícono y sus líneas.
+- [ ] Comercio (con otro pueblo): el mapa del mundo, las flechas para pueblo y bienes, los deslizadores de cantidad, enviar, aceptar, rechazar y retirar.
+- [ ] Ejército: defender, defender aquí, retirarse, elegir enemigo con las flechas y atacar; los puntajes.
+- [ ] La pregunta de las tortugas sale bajo la barra superior con Ver y sus dos respuestas.
+- [ ] Al fundar: la indicación, la pregunta de confirmación y la espera a los demás fundadores.
+- [ ] Al llegar a una partida empezada y como espectador: el panel de llegada y la franja de espectador.
+- [ ] Un pedido de unión al pueblo y una votación de velocidad se responden con sus botones.
+- [ ] El tutorial muestra su panel sobre la barra de construcción; Saltar paso, Salir del tutorial y Terminar funcionan.
+- [ ] Al ganar o perder sale el panel final en el centro; Seguir mirando y Salir funcionan.
+- [ ] Al hacer clic en el minimapa o al fundar, la interfaz no desaparece ni un instante (en dos capturas faltó; D-12508).
+
 ### Fase 124 (ventanas de edificios en RmlUi)
 
 - [ ] Un clic en un edificio abre su ventana nueva a la derecha: ícono, nombre, la imagen con «Trabajando» o «Detenido», sus líneas y sus botones.

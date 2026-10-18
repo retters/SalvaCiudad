@@ -1,0 +1,17 @@
+<rml>
+<head>
+	<title>Panel</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
+	<link type="text/rcss" href="/hud/hud.rcss"/>
+	<link type="text/rcss" href="/hud/thing.rcss"/>
+</head>
+<!-- A panel of the game (phase 125): the town's question, a vote, founding,
+     arriving, the spectator's strip, the tutorial, the end of the game. Its
+     rows come from src/game (thing_rows.h), put in #rows and placed by
+     src/game/hud_rml_panels.cpp. -->
+<body class="window hpanel">
+	<div id="rows" class="content rows"></div>
+</body>
+</rml>

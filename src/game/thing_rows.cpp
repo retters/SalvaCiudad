@@ -6,6 +6,7 @@
 
 #include "game/game_hud.h"
 #include "game/game_session.h"
+#include "game/hud_model.h"
 #include "game/model_studio.h"
 #include "i18n/translator.h"
 
@@ -25,7 +26,7 @@ sim::Command command(sim::CommandType type, sim::EntityId entity, std::int32_t v
 }
 
 RowFn issue(sim::Command c) {
-    return [c](GameSession& s, int, RowEffects&) { s.issue(c); };
+    return [c](GameSession& s, const RowInput&, RowEffects&) { s.issue(c); };
 }
 
 void house_lines(const sim::Game& game, const sim::Building& b, std::vector<std::string>& lines) {
@@ -109,7 +110,7 @@ void people_rows(ThingRows& out, const sim::Game& game, const std::vector<sim::E
         p.name = tr("hud.villager.listed", name, game.age_years(*v));
         p.sub = tr(task_text_key(v->task));
         p.act = static_cast<int>(out.acts.size());
-        out.acts.push_back([id](GameSession&, int, RowEffects& e) {
+        out.acts.push_back([id](GameSession&, const RowInput&, RowEffects& e) {
             e.link = true;
             e.kind = WindowList::Kind::Villager;
             e.entity = id;
@@ -158,7 +159,7 @@ void farm_fields(ThingRows& out, const GameSession& s, const sim::Building& b, s
     const bool room = static_cast<std::int32_t>(b.fields.size()) < content.buildings[b.def].fields;
     out.buttons({out.button(
         tr("hud.farm.newField"), tr(room ? "hud.farm.newField.tooltip" : "hud.farm.full"),
-        [entity](GameSession& gs, int, RowEffects&) {
+        [entity](GameSession& gs, const RowInput&, RowEffects&) {
             gs.ui().field_farm = entity;
             gs.ui().placing = sim::kNoDef;
         },
@@ -254,23 +255,10 @@ void auto_trade(ThingRows& out, const GameSession& s, TradeDraft& draft) {
         draft.buy_max = current != nullptr && current->buy_max != 0 ? current->buy_max : 70;
     }
     TradeDraft* d = &draft;
-    const int count = static_cast<int>(goods.size());
     // The good: the arrows go through them.
-    RowButton prev = out.button({}, {}, [d, count](GameSession&, int, RowEffects&) { d->pick = (d->pick + count - 1) % count; });
-    prev.icon = "icon-left";
-    RowButton next = out.button({}, {}, [d, count](GameSession&, int, RowEffects&) { d->pick = (d->pick + 1) % count; });
-    next.icon = "icon-right";
-    out.stepper(tr(content.resources[picked].name_key), std::move(prev), std::move(next));
-    const auto slider = [&](std::string text, std::string tip, int value, int lo, int hi, int step, bool enabled, int* field) {
-        out.line(std::move(text)).tip = tip;
-        WinRow& row = out.line({}, WinRow::Kind::Slider);
-        row.tip = std::move(tip);
-        row.value = value;
-        row.min = lo;
-        row.max = hi;
-        row.step = step;
-        row.enabled = enabled;
-        row.act = out.add_act([field](GameSession&, int v, RowEffects&) { *field = v; });
+    out.choice(tr(content.resources[picked].name_key), &d->pick, static_cast<int>(goods.size()));
+    const auto slider = [&](std::string text, std::string tip, int, int lo, int hi, int step, bool enabled, int* field) {
+        out.slider(std::move(text), std::move(tip), field, lo, hi, step, enabled);
     };
     const auto amount = [](const char* key, int v) { return v < 0 ? tr("hud.auto.off") : tr(key, v); };
     // Only at a good price: over a share of the good's value when selling.
@@ -404,7 +392,30 @@ void ThingRows::stepper(std::string text, RowButton minus, RowButton plus) {
     }
 }
 
-ThingRows building_rows(const GameSession& s, sim::EntityId entity, TradeDraft& draft) {
+void ThingRows::choice(std::string text, int* pick, int count) {
+    const int n = std::max(1, count);
+    RowButton prev = button({}, {}, [pick, n](GameSession&, const RowInput&, RowEffects&) { *pick = (*pick + n - 1) % n; },
+                            count > 1);
+    prev.icon = "icon-left";
+    RowButton next = button({}, {}, [pick, n](GameSession&, const RowInput&, RowEffects&) { *pick = (*pick + 1) % n; },
+                            count > 1);
+    next.icon = "icon-right";
+    stepper(std::move(text), std::move(prev), std::move(next));
+}
+
+void ThingRows::slider(std::string text, std::string tip, int* field, int lo, int hi, int step, bool enabled) {
+    line(std::move(text)).tip = tip;
+    WinRow& row = line({}, WinRow::Kind::Slider);
+    row.tip = std::move(tip);
+    row.value = *field;
+    row.min = lo;
+    row.max = hi;
+    row.step = step;
+    row.enabled = enabled;
+    row.act = add_act([field](GameSession&, const RowInput& in, RowEffects&) { *field = in.value; });
+}
+
+ThingRows building_rows(const GameSession& s, sim::EntityId entity, ThingState& state) {
     const sim::Game& game = s.game();
     const sim::Content& content = game.content();
     const sim::Building* b = game.buildings().get(entity);
@@ -636,7 +647,7 @@ ThingRows building_rows(const GameSession& s, sim::EntityId entity, TradeDraft& 
         if (b->fields.empty()) {
             out.buttons({out.button(
                 tr("hud.fold.mark"), tr("hud.fold.mark.tooltip"),
-                [entity](GameSession& gs, int, RowEffects&) {
+                [entity](GameSession& gs, const RowInput&, RowEffects&) {
                     gs.ui().field_farm = entity;
                     gs.ui().placing = sim::kNoDef;
                 },
@@ -666,7 +677,7 @@ ThingRows building_rows(const GameSession& s, sim::EntityId entity, TradeDraft& 
         limit_row(out, tr("hud.post.reserve", b->limit), "hud.post.reserve.tooltip", entity, b->limit, 50, d.storage,
                   b->limit < d.storage);
         merchant(out, s, entity);
-        auto_trade(out, s, draft);
+        auto_trade(out, s, state.trade);
     }
     if (d.trains && complete) {
         barracks(out, s, *b, entity);
@@ -704,13 +715,602 @@ ThingRows building_rows(const GameSession& s, sim::EntityId entity, TradeDraft& 
         const bool building = b->state == sim::BuildingState::Construction;
         RowButton remove = out.button(tr(building ? "hud.building.cancel" : "hud.building.demolish"),
                                       tr(building ? "hud.building.cancel.tooltip" : "hud.building.demolish.tooltip"),
-                                      [entity](GameSession& gs, int, RowEffects& e) {
+                                      [entity](GameSession& gs, const RowInput&, RowEffects& e) {
                                           gs.issue(command(sim::CommandType::RemoveBuilding, entity));
                                           e.close = true;
                                       });
         remove.icon = "icon-trash";
         remove.danger = true;
         out.buttons({std::move(remove)});
+    }
+    return out;
+}
+
+namespace {
+
+float meters(sim::Fixed f) {
+    return static_cast<float>(f.raw()) / 65536.0f;
+}
+
+// A button that only changes what the windows keep.
+RowButton toggle(ThingRows& out, std::string label, std::string tip, std::function<void(GameSession&)> fn, bool on = false,
+                 bool enabled = true) {
+    return out.button(std::move(label), std::move(tip),
+                      [fn = std::move(fn)](GameSession& gs, const RowInput&, RowEffects&) { fn(gs); }, enabled, on);
+}
+
+}  // namespace
+
+bool node_there(const sim::Game& game, std::uint32_t index) {
+    return index < game.nodes().size() && index < game.map().features.size() &&
+           (game.nodes()[index].amount > 0 || game.nodes()[index].regrow_tick != 0);
+}
+
+const char* feature_name_key(sim::FeatureType type) {
+    switch (type) {
+        case sim::FeatureType::Stone: return "feature.stone";
+        case sim::FeatureType::StoneDeposit: return "feature.stoneDeposit";
+        case sim::FeatureType::IronOre: return "feature.ironOre";
+        case sim::FeatureType::BerryBush: return "feature.berryBush";
+        case sim::FeatureType::Herbs: return "feature.herbs";
+        case sim::FeatureType::BeeTree: return "feature.beeTree";
+        case sim::FeatureType::Nest: return "feature.nest";
+        case sim::FeatureType::Stump: return "feature.stump";
+        case sim::FeatureType::MushroomRing: return "feature.mushroomRing";
+        case sim::FeatureType::ClayDeposit: return "feature.clayDeposit";
+        case sim::FeatureType::CoalDeposit: return "feature.coalDeposit";
+        case sim::FeatureType::GoldDeposit: return "feature.goldDeposit";
+        case sim::FeatureType::LooseStones: return "feature.looseStones";
+        case sim::FeatureType::FishShoal: return "feature.fishShoal";
+        case sim::FeatureType::ReedBank: return "feature.reedBank";
+        case sim::FeatureType::Ducks: return "feature.ducks";
+        default: return "feature.tree";
+    }
+}
+
+const char* creature_name_key(sim::CreatureKind kind) {
+    switch (kind) {
+        case sim::CreatureKind::Deer: return "hud.creature.deer";
+        case sim::CreatureKind::Boar: return "hud.creature.boar";
+        case sim::CreatureKind::Wolf: return "hud.creature.wolf";
+        case sim::CreatureKind::Bear: return "hud.creature.bear";
+        case sim::CreatureKind::Raider: return "hud.creature.raider";
+        default: return "hud.creature.soldier";
+    }
+}
+
+const char* creature_state_key(sim::CreatureState state) {
+    switch (state) {
+        case sim::CreatureState::Flee: return "hud.creature.state.flee";
+        case sim::CreatureState::Chase: return "hud.creature.state.chase";
+        case sim::CreatureState::Approach: return "hud.creature.state.approach";
+        case sim::CreatureState::Bash: return "hud.creature.state.bash";
+        case sim::CreatureState::Leave: return "hud.creature.state.leave";
+        case sim::CreatureState::Travel: return "hud.creature.state.travel";
+        default: return "hud.creature.state.wander";
+    }
+}
+
+bool thing_place(const GameSession& s, WindowList::Kind kind, sim::EntityId entity, float& x, float& z) {
+    const sim::Game& game = s.game();
+    switch (kind) {
+        case WindowList::Kind::Building:
+            if (const sim::Building* b = game.buildings().get(entity)) {
+                x = static_cast<float>(b->x) + static_cast<float>(b->width) * 0.5f;
+                z = static_cast<float>(b->z) + static_cast<float>(b->depth) * 0.5f;
+                return true;
+            }
+            return false;
+        case WindowList::Kind::Villager:
+            if (const sim::Villager* v = game.villagers().get(entity)) {
+                x = meters(v->position.x);
+                z = meters(v->position.z);
+                return true;
+            }
+            return false;
+        case WindowList::Kind::Node:
+            if (node_there(game, entity.index)) {
+                x = meters(game.map().features[entity.index].x);
+                z = meters(game.map().features[entity.index].z);
+                return true;
+            }
+            return false;
+        case WindowList::Kind::Creature:
+            if (const sim::Creature* c = game.creatures().get(entity)) {
+                x = meters(c->position.x);
+                z = meters(c->position.z);
+                return true;
+            }
+            return false;
+        case WindowList::Kind::Walker:
+            if (s.ui().walker_info) {
+                const GameSession::Interaction::WalkerInfo info = s.ui().walker_info(entity.index);
+                x = info.x;
+                z = info.z;
+                return info.there;
+            }
+            return false;
+    }
+    return false;
+}
+
+ThingRows villager_rows(const GameSession& s, const std::string& id, sim::EntityId entity, ThingState& state) {
+    const sim::Game& game = s.game();
+    const sim::Content& content = game.content();
+    const sim::Villager* v = game.villagers().get(entity);
+    if (v == nullptr) {
+        return gone_rows(WindowList::Kind::Villager);
+    }
+    ThingRows out;
+    const std::int32_t age = game.age_years(*v);
+    const bool mine = v->owner == s.town();
+    const bool female = v->sex == sim::Sex::Female;
+    const char* kind_key = !game.adult(*v) ? (female ? "hud.villager.girl" : "hud.villager.boy")
+                                           : (female ? "hud.villager.woman" : "hud.villager.man");
+    std::string name = game.villager_name(*v);
+    if (name.empty()) {
+        name = tr(kind_key);
+    }
+    const sim::Building* home = game.buildings().get(v->home);
+    const sim::Building* job = game.buildings().get(v->job);
+    const std::string portrait = portrait_key(content, *v);
+    if (!portrait.empty()) {
+        out.icon = "/thumbs/" + portrait;
+        out.line({}, WinRow::Kind::Hero).image = out.icon;
+    }
+
+    // Following it (a double click on it does the same), and its name.
+    ThingState* st = &state;
+    const bool followed = s.ui().followed_villager == entity;
+    const bool renaming = state.rename_id == id && mine;
+    out.buttons({toggle(
+                     out, tr(followed ? "hud.villager.unfollow" : "hud.villager.follow"), tr("hud.villager.follow.tooltip"),
+                     [entity, followed](GameSession& gs) { gs.ui().followed_villager = followed ? sim::EntityId{} : entity; },
+                     followed),
+                 toggle(
+                     out, tr("hud.villager.rename"), tr("hud.villager.rename.tooltip"),
+                     [st, id, renaming, name](GameSession&) {
+                         st->rename_id = renaming ? std::string{} : id;
+                         st->rename_text = name;
+                     },
+                     renaming, mine)});
+    if (renaming) {
+        // Spaces at the ends are not part of a name.
+        const auto trimmed = [](std::string t) {
+            while (!t.empty() && t.back() == ' ') {
+                t.pop_back();
+            }
+            t.erase(0, std::min(t.size(), t.find_first_not_of(' ')));
+            return t;
+        };
+        const auto apply = [st, entity, trimmed](GameSession& gs) {
+            const std::string wanted = trimmed(st->rename_text);
+            if (!sim::valid_villager_name(wanted)) {
+                return;
+            }
+            sim::Command c;
+            c.type = sim::CommandType::RenameVillager;
+            c.entity = entity;
+            c.text = wanted;
+            gs.issue(c);
+            st->rename_id.clear();
+        };
+        WinRow& field = out.line(state.rename_text, WinRow::Kind::Input);
+        field.max = static_cast<int>(sim::kMaxNameBytes);
+        field.tip = tr("hud.villager.name.tooltip");
+        field.act = out.add_act([st, apply](GameSession& gs, const RowInput& in, RowEffects&) {
+            st->rename_text = in.text;
+            if (in.enter) {
+                apply(gs);
+            }
+        });
+        out.buttons({toggle(out, tr("hud.villager.name.ok"), tr("hud.villager.name.ok.tooltip"), apply, false,
+                            sim::valid_villager_name(trimmed(state.rename_text)))});
+    }
+
+    out.line(tr("hud.villager.who", tr(kind_key), age));
+    if (v->race < content.races.size()) {
+        out.line(tr("hud.villager.race", tr(content.races[v->race].name_key)));
+    }
+    out.line(tr("hud.villager.task", tr(v->order == sim::Order::Returning ? "task.scoutBack" : task_text_key(v->task))));
+    if (job == nullptr) {
+        out.line(tr(game.adult(*v) ? "hud.villager.laborer" : "hud.villager.child"));
+    } else if (const char* key = supply_key(content.buildings[job->def], *job)) {
+        out.line(tr(key));
+    }
+    // Phase 66: an explorer goes where a right click sends it.
+    if (job != nullptr && mine && content.buildings[job->def].work == sim::WorkKind::Explore) {
+        out.line(tr("hud.explorer.provisions", v->provisions * 100 / sim::village::kProvisions));
+        out.line(tr("hud.explorer.hint"), WinRow::Kind::Dim);
+    }
+    if (home == nullptr) {
+        out.line(tr("hud.villager.homeless"));
+    }
+    out.line(tr(v->clothes > 0 ? "hud.villager.clothes" : "hud.villager.noClothes"));
+    if (v->disease != 0 && v->disease <= content.diseases.size()) {
+        out.line(tr("hud.villager.sick", tr(content.diseases[v->disease - 1u].name_key), v->sick_days)).cls = "bad";
+    }
+    if (v->carrying.amount > 0 && v->carrying.resource < content.resources.size()) {
+        out.line(tr("hud.villager.carrying",
+                    tr("hud.amount", tr(content.resources[v->carrying.resource].name_key), v->carrying.amount)));
+    }
+    // Its home and its workplace: a click opens that building's window.
+    const auto link = [&](const char* key, const sim::Building& b, sim::EntityId building) {
+        RowButton button = out.button(tr(key, tr(content.buildings[b.def].name_key)), tr("hud.building.open.tooltip"),
+                                      [building](GameSession&, const RowInput&, RowEffects& e) {
+                                          e.link = true;
+                                          e.kind = WindowList::Kind::Building;
+                                          e.entity = building;
+                                      });
+        button.icon = key == std::string_view("hud.villager.home") ? "icon-home" : "icon-tools";
+        out.buttons({std::move(button)});
+    };
+    if (home != nullptr) {
+        link("hud.villager.home", *home, v->home);
+    }
+    if (job != nullptr) {
+        link("hud.villager.job", *job, v->job);
+    }
+    // Food, warmth and health; energy if the game has it; a line when in the dark.
+    const auto bar = [&](const char* key, float fraction, bool low, const char* cls) {
+        out.line(tr(key), WinRow::Kind::Dim);
+        WinRow& m = out.line({}, WinRow::Kind::Meter);
+        m.fraction = fraction;
+        m.cls = low ? "bad" : cls;
+    };
+    bar("hud.villager.food", static_cast<float>(v->food) / static_cast<float>(sim::village::kFoodMax),
+        v->food < sim::village::kEatBelow / 2, "food");
+    bar("hud.villager.warmth", static_cast<float>(v->warmth) / static_cast<float>(sim::village::kWarmthMax),
+        v->warmth < sim::village::kWarmthMax / 3, "warm");
+    bar("hud.villager.health", static_cast<float>(v->health) / static_cast<float>(sim::village::kHealthMax),
+        v->health < sim::village::kHealthMax / 2, "health");
+    if (game.rules().rest) {
+        bar("hud.villager.energy", static_cast<float>(v->energy) / static_cast<float>(sim::village::kEnergyMax), false,
+            "energy");
+    }
+    if (game.in_the_dark(*v)) {
+        out.line(tr("hud.villager.dark", sim::village::kDarkPercent)).cls = "night";
+    }
+    return out;
+}
+
+// A tree, a stone, a vein, a bush or herbs: what it is and what it gives.
+ThingRows node_rows(const GameSession& s, sim::EntityId entity) {
+    const sim::Game& game = s.game();
+    const sim::Content& content = game.content();
+    const std::uint32_t index = entity.index;
+    if (!node_there(game, index)) {
+        return gone_rows(WindowList::Kind::Node);
+    }
+    ThingRows out;
+    const sim::MapFeature& f = game.map().features[index];
+    const sim::Node& n = game.nodes()[index];
+    const bool tree = f.type == sim::FeatureType::Tree;
+    if (tree) {
+        out.line(tr("hud.node.tree", static_cast<int>((sim::MapData::tree_height_cm(f) + 50) / 100)));
+        // Phase 84: a fruit tree says what hangs from it.
+        if (f.species < content.flora.species.size() && content.flora.species[f.species].fruit_tree() && n.amount > 0) {
+            const std::int32_t fruit = game.fruit_on(index);
+            out.line(fruit > 0                                                ? tr("hud.node.fruit", fruit)
+                     : content.flora.species[f.species].fruit[f.size] > 0 ? tr("hud.node.noFruit")
+                                                                            : tr("hud.node.youngFruit"));
+        }
+    }
+    sim::DefIndex resource = sim::kNoDef;
+    const sim::FeatureDef* feature = nullptr;
+    for (const sim::FeatureDef& d : content.features) {
+        if (d.kind == f.type) {
+            resource = d.resource;
+            feature = &d;
+            break;
+        }
+    }
+    if (resource < content.resources.size()) {
+        // As the top bar shows the good: its pile's picture, or its icon.
+        HudItem item;
+        good_image(content.resources[resource], !content.resources[resource].pile.empty(), item);
+        out.icon = item.image;
+        out.icon_sprite = item.sprite;
+    }
+    if (feature != nullptr && feature->seasons != 0 && n.amount > 0 && resource < content.resources.size()) {
+        // Phase 98: what it has now, and when it gives.
+        static constexpr const char* kSeasons[] = {"hud.season.spring", "hud.season.summer", "hud.season.autumn",
+                                                   "hud.season.winter"};
+        const std::string what = tr(content.resources[resource].name_key);
+        const std::int32_t has = game.fruit_on(index);
+        out.line(has > 0 ? tr("feature.yield.now", what, has) : tr("feature.yield.empty"));
+        std::string when;
+        for (std::size_t season = 0; season < 4; ++season) {
+            if (((feature->seasons >> season) & 1u) != 0) {
+                when += (when.empty() ? "" : ", ") + tr(kSeasons[season]);
+            }
+        }
+        out.line(tr(!feature->after_rain     ? "feature.yield.season"
+                    : game.rules().rain != 0 ? "feature.yield.afterRain"
+                                             : "feature.yield.dry",
+                    what, when));
+    } else if (n.amount > 0 && resource < content.resources.size()) {
+        out.line(tr("hud.thing.gives", tr("hud.amount", tr(content.resources[resource].name_key), n.amount)));
+    } else if (n.amount <= 0) {
+        out.line(tr(tree ? "hud.node.sprout" : "hud.node.empty"));
+    }
+    if (tree && n.amount > 0 && n.grow_day != sim::kNeverGrows) {
+        out.line(tr("hud.node.growing"), WinRow::Kind::Dim);
+    }
+    if (n.reserved != 0) {
+        out.line(tr("hud.node.busy"), WinRow::Kind::Dim);
+    }
+    return out;
+}
+
+// An animal, a soldier or a raider: what it is, what it is doing and, for
+// game, what a hunter brings from one.
+ThingRows creature_rows(const GameSession& s, sim::EntityId entity, const TownNames& names) {
+    const sim::Game& game = s.game();
+    const sim::Content& content = game.content();
+    const sim::Creature* c = game.creatures().get(entity);
+    if (c == nullptr) {
+        return gone_rows(WindowList::Kind::Creature);
+    }
+    ThingRows out;
+    out.icon_sprite = true;
+    out.icon = c->kind == sim::CreatureKind::Raider || c->kind == sim::CreatureKind::Soldier ? "icon-sword" : "icon-paw";
+    switch (c->kind) {
+        case sim::CreatureKind::Deer:
+        case sim::CreatureKind::Boar: {
+            std::string gives;
+            const sim::DefIndex meat = content.find_resource("core:meat");
+            const sim::DefIndex hide = content.find_resource("core:hide");
+            if (meat != sim::kNoDef && game.hunt_meat() > 0) {
+                gives = tr("hud.amount", tr(content.resources[meat].name_key), game.hunt_meat());
+            }
+            if (hide != sim::kNoDef && game.hunt_hides() > 0) {
+                gives += (gives.empty() ? "" : ", ") + tr("hud.amount", tr(content.resources[hide].name_key), game.hunt_hides());
+            }
+            if (!gives.empty()) {
+                out.line(tr("hud.thing.gives", gives));
+            }
+            break;
+        }
+        case sim::CreatureKind::Wolf:
+        case sim::CreatureKind::Bear: out.line(tr("hud.creature.danger")).cls = "bad"; break;
+        case sim::CreatureKind::Raider: out.line(tr("hud.creature.raiderNote")).cls = "bad"; break;
+        default: out.line(tr("hud.creature.soldierOf", names(c->town))); break;
+    }
+    out.line(tr("hud.villager.task", tr(creature_state_key(c->state))));
+    out.line(tr("hud.creature.health", c->health));
+    return out;
+}
+
+// One of the people placed with the developer tools: not a villager of the
+// game, so only what it is and where.
+ThingRows walker_rows(const GameSession& s, sim::EntityId entity) {
+    const GameSession::Interaction& ui = s.ui();
+    const GameSession::Interaction::WalkerInfo info =
+        ui.walker_info ? ui.walker_info(entity.index) : GameSession::Interaction::WalkerInfo{};
+    if (!info.there) {
+        return gone_rows(WindowList::Kind::Walker);
+    }
+    ThingRows out;
+    out.icon = "icon-user";
+    out.icon_sprite = true;
+    const bool followed = ui.followed_walker == entity.index + 1;
+    const std::uint32_t index = entity.index;
+    out.buttons({toggle(
+        out, tr(followed ? "hud.villager.unfollow" : "hud.villager.follow"), tr("hud.villager.follow.tooltip"),
+        [index, followed](GameSession& gs) {
+            gs.ui().followed_walker = followed ? 0u : index + 1;
+            gs.ui().followed_villager = {};
+        },
+        followed)});
+    out.line(tr("hud.walker.note"));
+    out.line(tr("hud.walker.model", info.model), WinRow::Kind::Dim);
+    return out;
+}
+
+ThingRows thing_rows(const GameSession& s, const std::string& id, WindowList::Kind kind, sim::EntityId entity,
+                     ThingState& state, const TownNames& names) {
+    switch (kind) {
+        case WindowList::Kind::Building: return building_rows(s, entity, state);
+        case WindowList::Kind::Villager: return villager_rows(s, id, entity, state);
+        case WindowList::Kind::Node: return node_rows(s, entity);
+        case WindowList::Kind::Creature: return creature_rows(s, entity, names);
+        case WindowList::Kind::Walker: return walker_rows(s, entity);
+    }
+    return gone_rows(kind);
+}
+
+// Trade with other towns (phase 14): the world map with the caravans on the
+// way, a new offer, the offers made and received, and the caravans.
+ThingRows trade_rows(const GameSession& s, ThingState& state, const TownNames& names) {
+    const sim::Game& game = s.game();
+    const sim::Content& content = game.content();
+    const std::uint8_t town = s.town();
+    ThingRows out;
+    std::vector<std::uint8_t> towns;
+    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
+        if (game.town_exists(p) && p != town) {
+            towns.push_back(p);
+        }
+    }
+    if (towns.empty()) {
+        return out;
+    }
+    // Gold first, then the goods merchants trade.
+    std::vector<sim::DefIndex> goods;
+    if (game.gold() != sim::kNoDef) {
+        goods.push_back(game.gold());
+    }
+    for (std::size_t r = 0; r < content.resources.size(); ++r) {
+        if (content.resources[r].value > 0) {
+            goods.push_back(static_cast<sim::DefIndex>(r));
+        }
+    }
+    if (goods.empty()) {
+        return out;
+    }
+    OfferDraft& o = state.offer;
+    o.to = std::clamp(o.to, 0, static_cast<int>(towns.size()) - 1);
+    o.give = std::clamp(o.give, 0, static_cast<int>(goods.size()) - 1);
+    o.want = std::clamp(o.want, 0, static_cast<int>(goods.size()) - 1);
+
+    // The world map: one square per player's map, caravans on the way.
+    if (const std::int32_t region = game.map().region_size(); region > 0) {
+        const std::int32_t k = std::max(1, game.map().size / region);
+        std::string map = "<div class=\"world\"" " tip=\"" + rml_escape(tr("hud.trade.worldMap")) + "\">";
+        const float cell = 100.0f / static_cast<float>(k);
+        for (std::int32_t i = 0; i < k * k; ++i) {
+            const bool used = i < game.player_count() && game.player(static_cast<std::uint8_t>(i)).active;
+            map += std::format("<div class=\"wcell{}\" style=\"left: {:.2f}%; top: {:.2f}%; width: {:.2f}%; height: {:.2f}%;\">",
+                               !used ? " sea" : i == town ? " mine" : "", static_cast<float>(i % k) * cell,
+                               static_cast<float>(i / k) * cell, cell, cell);
+            if (used) {
+                map += "<span>" + std::to_string(i + 1) + "</span>";
+            }
+            map += "</div>";
+        }
+        const auto center = [&](std::uint8_t p) {
+            return std::pair<float, float>{(static_cast<float>(p % k) + 0.5f) * cell, (static_cast<float>(p / k) + 0.5f) * cell};
+        };
+        for (const sim::Caravan& c : game.caravans()) {
+            const float t = c.arrives > c.departs
+                                ? static_cast<float>(game.tick() - c.departs) / static_cast<float>(c.arrives - c.departs)
+                                : 1.0f;
+            const auto [ax, az] = center(c.from);
+            const auto [bx, bz] = center(c.to);
+            map += std::format("<div class=\"caravan\" style=\"left: {:.2f}%; top: {:.2f}%;\"></div>",
+                               ax + (bx - ax) * std::clamp(t, 0.0f, 1.0f), az + (bz - az) * std::clamp(t, 0.0f, 1.0f));
+        }
+        out.line(map + "</div>", WinRow::Kind::Raw);
+    }
+
+    // A new offer.
+    out.line(tr("hud.trade.new"), WinRow::Kind::Section);
+    out.choice(tr("hud.trade.to") + " " + names(towns[static_cast<std::size_t>(o.to)]), &o.to, static_cast<int>(towns.size()));
+    const sim::DefIndex give = goods[static_cast<std::size_t>(o.give)];
+    const sim::DefIndex want = goods[static_cast<std::size_t>(o.want)];
+    out.choice(tr("hud.trade.give") + " " + tr(content.resources[give].name_key), &o.give, static_cast<int>(goods.size()));
+    out.slider(std::to_string(o.give_amount), {}, &o.give_amount, 10, 500, 10);
+    out.choice(tr("hud.trade.want") + " " + tr(content.resources[want].name_key), &o.want, static_cast<int>(goods.size()));
+    out.slider(std::to_string(o.want_amount), {}, &o.want_amount, 10, 500, 10);
+    const std::int32_t have = game.tradeable(town, give);
+    const bool can = give != want && have >= o.give_amount;
+    sim::Command offer;
+    offer.type = sim::CommandType::OfferTrade;
+    offer.count = towns[static_cast<std::size_t>(o.to)];
+    offer.def = give;
+    offer.value = o.give_amount;
+    offer.def2 = want;
+    offer.value2 = o.want_amount;
+    out.buttons({out.button(tr("hud.trade.send"), can ? tr("hud.trade.send.tooltip") : tr("hud.trade.send.cannot", have),
+                            issue(offer), can)});
+
+    // Offers made and received.
+    std::vector<const sim::TradeOffer*> offers;
+    for (const sim::TradeOffer& t : game.offers()) {
+        if (t.from == town || t.to == town) {
+            offers.push_back(&t);
+        }
+    }
+    out.line(tr(offers.empty() ? "hud.trade.noOffers" : "hud.trade.offers"), WinRow::Kind::Section);
+    for (const sim::TradeOffer* t : offers) {
+        const bool mine = t->from == town;
+        const auto answer = [&](std::uint16_t yes) {
+            sim::Command c;
+            c.type = sim::CommandType::AnswerOffer;
+            c.value = static_cast<std::int32_t>(t->id);
+            c.count = yes;
+            return issue(c);
+        };
+        if (mine) {
+            out.stepper(tr("hud.trade.offerOut", names(t->to), t->give_amount, goods_name(game, t->give), t->want_amount,
+                           goods_name(game, t->want)),
+                        out.button(tr("hud.trade.withdraw"), {}, answer(0)), RowButton{});
+        } else {
+            out.stepper(tr("hud.trade.offerIn", names(t->from), t->give_amount, goods_name(game, t->give), t->want_amount,
+                           goods_name(game, t->want)),
+                        out.button(tr("hud.trade.accept"),
+                                   tr("hud.trade.accept.tooltip",
+                                      static_cast<int>(game.travel_ticks(t->from, t->to) / game.calendar_day_ticks())),
+                                   answer(1), game.tradeable(town, t->want) >= t->want_amount),
+                        out.button(tr("hud.trade.decline"), {}, answer(0)));
+        }
+    }
+    // Caravans on the way.
+    std::size_t caravans = 0;
+    for (const sim::Caravan& c : game.caravans()) {
+        caravans += c.from == town || c.to == town ? 1 : 0;
+    }
+    out.line(tr(caravans == 0 ? "hud.trade.noCaravans" : "hud.trade.caravans"), WinRow::Kind::Section);
+    std::size_t shown = 0;
+    for (const sim::Caravan& c : game.caravans()) {
+        if ((c.from != town && c.to != town) || shown >= 8) {
+            continue;
+        }
+        ++shown;
+        const std::uint64_t left = c.arrives > game.tick() ? c.arrives - game.tick() : 0;
+        const auto days = static_cast<int>((left + game.calendar_day_ticks() - 1) / game.calendar_day_ticks());
+        out.line(c.to == town ? tr("hud.trade.caravanIn", c.amount, goods_name(game, c.resource), names(c.from), days)
+                              : tr("hud.trade.caravanOut", c.amount, goods_name(game, c.resource), names(c.to), days),
+                 WinRow::Kind::Dim);
+    }
+    return out;
+}
+
+// The army (phase 16): its strength and orders, an attack, and the scores.
+ThingRows army_rows(const GameSession& s, ThingState& state, const TownNames& names) {
+    const sim::Game& game = s.game();
+    const std::uint8_t town = s.town();
+    const sim::PlayerState& ps = game.player(town);
+    ThingRows out;
+    std::vector<std::uint8_t> enemies;
+    std::vector<std::uint8_t> towns;
+    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
+        if (!game.town_exists(p)) {
+            continue;
+        }
+        towns.push_back(p);
+        if (game.enemies(town, p) && game.buildings().get(game.player(p).town_center) != nullptr) {
+            enemies.push_back(p);
+        }
+    }
+    out.line(tr("hud.army.strength", game.soldiers(town), game.military_power(town)));
+    static constexpr const char* kOrders[] = {"hud.army.order.defend", "hud.army.order.attack", "hud.army.order.retreat"};
+    out.line(ps.order == sim::ArmyOrderKind::Attack ? tr("hud.army.order.attacking", names(ps.enemy))
+                                                    : tr(kOrders[static_cast<std::size_t>(ps.order) % 3]),
+             WinRow::Kind::Dim);
+    const auto order = [](std::int32_t value, std::uint8_t enemy) {
+        sim::Command c;
+        c.type = sim::CommandType::ArmyOrder;
+        c.value = value;
+        c.count = enemy;
+        return issue(c);
+    };
+    RowButton defend = out.button(tr("hud.army.defend"), tr("hud.army.defend.tooltip"), order(0, 0));
+    defend.icon = "icon-shield";
+    out.buttons({std::move(defend)});
+    out.buttons({toggle(
+        out, tr("hud.army.defendHere"), tr("hud.army.defendHere.tooltip"),
+        [](GameSession& gs) { gs.ui().rally_mode = !gs.ui().rally_mode; }, s.ui().rally_mode)});
+    out.buttons({out.button(tr("hud.army.retreat"), tr("hud.army.retreat.tooltip"), order(2, 0))});
+    if (enemies.empty()) {
+        out.line(tr(game.rules().versus && game.rules().pvp ? "hud.army.noEnemies" : "hud.army.peace"), WinRow::Kind::Dim);
+    } else {
+        state.attack_pick = std::clamp(state.attack_pick, 0, static_cast<int>(enemies.size()) - 1);
+        const std::uint8_t enemy = enemies[static_cast<std::size_t>(state.attack_pick)];
+        out.choice(names(enemy), &state.attack_pick, static_cast<int>(enemies.size()));
+        RowButton attack = out.button(tr("hud.army.attack"), tr("hud.army.attack.tooltip"), order(1, enemy),
+                                      game.soldiers(town) > 0);
+        attack.icon = "icon-swords";
+        out.buttons({std::move(attack)});
+    }
+    // The scores.
+    out.line(tr("hud.army.scores"), WinRow::Kind::Section);
+    static constexpr const char* kOutcomes[] = {"hud.outcome.playing", "hud.outcome.won", "hud.outcome.lost"};
+    for (const std::uint8_t p : towns) {
+        out.line(tr("hud.army.scoreRow", names(p), game.score(p), game.military_power(p),
+                    tr(kOutcomes[static_cast<std::size_t>(game.player(p).outcome) % 3])),
+                 p == town ? WinRow::Kind::Accent : WinRow::Kind::Text);
     }
     return out;
 }
@@ -787,6 +1387,22 @@ std::string row_rml(const WinRow& row, bool with_value) {
             return std::format("<div class=\"{}{}\"{}>{}</div>", kClass[static_cast<int>(row.kind)], extra, tip_attr(row.tip),
                                rml_escape(row.text));
         }
+        case WinRow::Kind::Title:
+            return "<div class=\"ptitle" + extra + "\">" + rml_escape(row.text) + "</div>";
+        case WinRow::Kind::Paragraph:
+            return "<p class=\"para" + extra + "\">" + rml_escape(row.text) + "</p>";
+        case WinRow::Kind::Raw:
+            return row.text;
+        case WinRow::Kind::Input: {
+            std::string out = std::format("<input type=\"text\" class=\"field\" maxlength=\"{}\"", row.max);
+            if (with_value) {
+                out += " value=\"" + rml_escape(row.text) + "\"";
+            }
+            if (row.act >= 0) {
+                out += std::format(" data-act=\"{}\"", row.act);
+            }
+            return out + tip_attr(row.tip) + "/>";
+        }
         case WinRow::Kind::Hero: {
             std::string out = "<div class=\"hero\"><img src=\"" + rml_escape(row.image) + "\"/>";
             if (!row.text.empty()) {
@@ -795,7 +1411,7 @@ std::string row_rml(const WinRow& row, bool with_value) {
             return out + "</div>";
         }
         case WinRow::Kind::Meter:
-            return std::format("<div class=\"meter\"><div class=\"fill\" style=\"width: {:.1f}%;\"></div></div>",
+            return std::format("<div class=\"meter{}\"><div class=\"fill\" style=\"width: {:.1f}%;\"></div></div>", extra,
                                std::clamp(row.fraction, 0.0f, 1.0f) * 100.0f);
         case WinRow::Kind::Buttons: {
             std::string out = "<div class=\"btns\">";

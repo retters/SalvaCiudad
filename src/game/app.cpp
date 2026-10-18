@@ -1257,8 +1257,9 @@ void App::frame() {
     input_.keys.clear();
     input_.text.clear();
     // Text arrives only while a field has the keyboard.
-    if (window_.sdl() != nullptr && ui_.typing() != SDL_TextInputActive(window_.sdl())) {
-        if (ui_.typing()) {
+    const bool typing = ui_.typing() || rml_.wants_keyboard();  // Phase 125: RmlUi's text fields too.
+    if (window_.sdl() != nullptr && typing != SDL_TextInputActive(window_.sdl())) {
+        if (typing) {
             (void)SDL_StartTextInput(window_.sdl());
         } else {
             (void)SDL_StopTextInput(window_.sdl());

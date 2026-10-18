@@ -4384,3 +4384,29 @@ El botón de «+» de los trabajadores lleva `mark="workers"`: el tutorial lo il
 
 **D-12405. Prueba.**
 `hud` coloca, uno por uno, cada edificio del núcleo junto al centro del pueblo (216 sin los caminos, que una vez hechos no son edificios), lee su ventana en obra y terminada, y lo quita: ningún texto es una clave sin traducir ni tiene `{}` sin llenar. Luego aprieta botones de verdad: menos y más trabajadores, detener y reanudar, nuevo campo, la campana, demoler una casa (la ventana se cierra y luego dice que ya no está) y una regla de comercio automático con su deslizador. Otra prueba revisa el RML: texto escapado, y solo los botones activos tienen acción.
+
+## Fase 125: el resto de las ventanas y los paneles de la partida en RmlUi (2026-10-18)
+
+**D-12501. Todas las ventanas de cosas son filas.**
+Aldeano (retrato, seguir, renombrar, lo que es y hace, su hogar y su trabajo como enlaces, y las barras de comida, calor, salud y energía con sus colores), recurso del mapa (lo que da y cuándo), animal, soldado o saqueador, y las personas de prueba de las herramientas: `thing_rows.cpp`, como los edificios (D-12401). Ver centra la cámara en la cosa, sea cual sea (`thing_place`). Se borraron las ventanas viejas y su marco ya no dibuja ninguna.
+
+**D-12502. Comercio y Ejército son ventanas de filas.**
+Con el mismo documento (`hud/win/thing.rml#trade`, `#army`). Los selectores (a qué pueblo, qué bien, a qué enemigo) son flechas, como el bien del comercio automático (D-12403); las cantidades, deslizadores. El mapa del mundo se arma como RML (un cuadrado por mapa, un punto por caravana). Lo que se escribe (la oferta, el enemigo elegido, el nombre nuevo) vive en `ThingState`.
+
+**D-12503. Los paneles: `hud/panel.rml#<id>`.**
+La pregunta del pueblo, la votación de velocidad, «esperando a…», fundar, llegar, la franja del espectador y los pedidos de unión se arman con filas cada cuadro y se dan con `GameHud::panel()`; un panel que no se vuelve a dar se cierra. Los de arriba van uno debajo del otro bajo la barra superior, en un orden fijo; el del tutorial va sobre la barra de construcción y el del fin de la partida en el centro. Los dos de `UiHost` (tutorial y fin) aparecen un cuadro después de pedirse, porque la interfaz del juego se dibuja antes que ellos; no se nota. «Salir» del panel final se cumple al cuadro siguiente, fuera del evento de RmlUi.
+
+**D-12504. Los campos de texto de RmlUi.**
+Un campo de texto enfocado se queda con el teclado (y el juego activa la entrada de texto de SDL); un deslizador enfocado no, así la barra espaciadora y los atajos siguen siendo del juego. Esc saca el foco del campo. Enter en el campo del nombre lo aplica, igual que «OK».
+
+**D-12505. Escribir no se puede probar con mensajes enviados.**
+SDL solo acepta texto en la ventana que tiene el foco del teclado, y las pruebas en vivo no se lo quitan al usuario: Retroceso y Enter llegan, las letras no. Renombrar se probó en vivo borrando una letra y con Enter; escribir queda en la lista manual. La prueba automática escribe el nombre por la acción del campo.
+
+**D-12506. Un aviso de RmlUi que no es un error.**
+Cuando una lista `data-for` se acorta, RmlUi todavía actualiza, en esa misma pasada, las vistas de las copias que está quitando, que leen una vez más allá del final («Data array index out of bounds», «Could not get value from data variable 'x[i]…'»). Pasaba con los avisos y el registro de eventos desde la fase 121. Esos dos mensajes van al registro de depuración y no cuentan como avisos; los demás avisos de RmlUi siguen igual.
+
+**D-12507. Pruebas.**
+`hud` suma una prueba que lee las ventanas de 40 aldeanos, 200 recursos y todos los animales, aprieta Seguir y Dejar de seguir, renombra con Enter (el nombre llega a la simulación), da una orden al ejército y comprueba que solo no hay con quién comerciar. En vivo se probaron la ventana de aldeano, el renombre, la de un recurso y el panel del tutorial con «Saltar paso».
+
+**D-12508. La prueba en red con dos instancias.**
+Con dos instancias locales (`--instance 1` y `2`, `--loopback`) se probó en vivo: el anfitrión crea la partida, funda con el panel nuevo («Fundar aquí»), la segunda instancia se une a la partida empezada, ve el panel de llegada, elige fundar y funda su pueblo. No se probaron en vivo pedir unirse a un pueblo ni la pregunta del pueblo: el anfitrión no permite unirse por omisión y cambiarlo se hace en el menú del juego (fase 126), y la pregunta de las tortugas depende de que ocurra el suceso. Sus órdenes las cubren las pruebas de red y de sucesos, y quedan en la lista manual. En dos capturas, tomadas justo después de un salto de cámara, faltaba toda la interfaz; no se pudo repetir en 18 capturas más y queda en la lista manual para ver si es la captura o la pantalla.

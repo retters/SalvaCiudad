@@ -80,6 +80,11 @@ public:
     [[nodiscard]] float build_bar_top() const { return build_bar_top_; }
     // Out of a game: the RmlUi parts are hidden.
     void hide_rml();
+    // Phase 125: a panel shown with the next frame (the tutorial's, the end
+    // of the game): under the top bar, above the build bar, or in the middle.
+    // A panel not given again goes.
+    enum class PanelPlace : std::uint8_t { Top, Bottom, Center };
+    void panel(const std::string& id, ThingRows rows, PanelPlace place, float width = 480.0f);
 
 private:
     // Phase 121: the RmlUi parts (hud_rml.cpp).
@@ -108,8 +113,24 @@ private:
     };
     [[nodiscard]] static bool rml_object(WindowList::Kind kind);
     void rml_rows(Rml::ElementDocument& doc, RmlWindow& w);
-    void rml_act(GameSession& s, const std::string& id, int act, int value);
-    TradeDraft trade_draft_;
+    void rml_act(GameSession& s, const std::string& id, int act, const RowInput& input);
+    ThingState things_;  // Phase 125: what the windows keep (trade drafts, renaming).
+    [[nodiscard]] TownNames town_names() const;
+    // Phase 125: the panels (hud_rml_panels.cpp), each a hud/panel.rml#<id>.
+    struct RmlPanel {
+        ThingRows view;
+        PanelPlace place = PanelPlace::Top;
+        float width = 480.0f;
+        std::string doc;
+        Rml::ElementDocument* attached = nullptr;
+        std::vector<std::string> row_keys;
+        bool given = false;
+    };
+    std::map<std::string, RmlPanel> panels_;
+    std::vector<std::string> panel_order_;
+    void rml_panels(ui::Context& ctx, GameSession& s);
+    void panel_event(Rml::Event& ev, const std::string& id);
+    void rows_into(Rml::Element* box, const ThingRows& view, std::vector<std::string>& keys);
     std::map<std::string, RmlWindow> rml_windows_;
     std::vector<std::string> rml_order_;
     float rml_scale_ = 1.0f;
@@ -150,13 +171,9 @@ private:
     std::array<float, 8> minimap_corners_{};
     std::uint64_t minimap_drawn_ns_ = 0;
     // Phase 114: what a happening asks the town, with its two answers.
-    void question(ui::Context& ctx, GameSession& s);
-    // The windows of things on the map (phase 62): each acts on its own.
-    // Phase 124: the buildings' are RmlUi's (thing_rows.h).
-    void villager_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
-    void node_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
-    void creature_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
-    void walker_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    void question(GameSession& s);
+    // The windows of things on the map (phase 62) are RmlUi's since phases
+    // 124 and 125 (thing_rows.h).
     // A button of window `from` opens another thing: `from` stays (it is
     // pinned) and the thing becomes the selection, in a window of its own.
     void open_link(const std::string& from, WindowList::Kind kind, sim::EntityId entity);
@@ -166,24 +183,16 @@ private:
         sim::EntityId entity;
     };
     std::vector<Link> links_;
-    // The villager being renamed: its window and the text typed so far.
-    std::string rename_id_;
-    std::string rename_text_;
     // Phase 64: the camera windows. `open_camera` gives a thing a window
     // with a live picture of it (the one that has looked longest goes when
     // both are taken).
     void open_camera(GameSession& s, WindowList::Kind kind, sim::EntityId entity);
     [[nodiscard]] std::string thing_title(const sim::Game& game, WindowList::Kind kind, sim::EntityId entity) const;
-    // The first row of an object window: buttons as wide as their texts need.
-    [[nodiscard]] std::vector<ui::Rect> button_row(ui::Context& ctx, const ui::Rect& box, float y, float h,
-                                                  const std::vector<std::string>& labels) const;
     int camera_drag_ = -1;  // The camera window being turned with the mouse.
     float camera_drag_x_ = 0.0f;
     float camera_drag_y_ = 0.0f;
     std::uint32_t camera_opened_[kCameraWindows] = {};
     std::uint32_t camera_count_ = 0;
-    // A pinned window whose thing is no more.
-    void gone_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     // The selection on the map opens, or takes over, a window.
     void sync_selection(ui::Context& ctx, GameSession& s);
     std::vector<std::string> closing_;   // Object windows closed this frame.
@@ -197,32 +206,22 @@ private:
     void founding(ui::Context& ctx, GameSession& s);
     // Phase 77: the window of whoever arrives at a game already going, and
     // the founder's answer to somebody who asks to join the town.
-    void arrival(ui::Context& ctx, GameSession& s);
-    void join_requests(ui::Context& ctx, GameSession& s);
+    void arrival(GameSession& s);
+    void join_requests(GameSession& s);
     // Phase 79: what a spectator looks at (everything, or as one town
     // sees), and the way back to play.
-    void spectator(ui::Context& ctx, GameSession& s);
+    void spectator(GameSession& s);
     std::uint8_t answered_seat_ = 0xFF;  // The request answered last, and when (in turns).
     std::uint64_t answered_turn_ = 0;
     std::size_t next_site_ = 0;  // The suggested site the camera last went to.
     bool minimap_silhouette_ = false;  // The minimap shows the land's shape under the fog.
-    // Phase 14: trade with other towns.
-    void trade_window(ui::Context& ctx, GameSession& s);
-    // Phase 16: the army.
-    void army_window(ui::Context& ctx, GameSession& s);
+    // Phase 14: trade with other towns; phase 16: the army (RmlUi windows
+    // since phase 125).
     bool army_open_ = false;
-    int attack_pick_ = 0;
     [[nodiscard]] std::string town_name(std::uint8_t player) const;
-    [[nodiscard]] std::string goods_name(const sim::Game& game, sim::DefIndex r) const;
     bool trade_open_ = false;
-    int offer_to_ = 0;
-    int offer_give_ = 0;
-    int offer_give_amount_ = 20;
-    int offer_want_ = 1;
-    int offer_want_amount_ = 20;
-    // Multiplayer: who plays, whom the game waits for, speed votes.
     // Multiplayer: whom the game waits for, and a speed vote to answer.
-    void network_prompts(ui::Context& ctx, GameSession& s);
+    void network_prompts(GameSession& s);
     int shown_speed_ = 4;  // The last speed that was not the pause (quarters).
     std::uint32_t answered_vote_ = 0;
     std::uint8_t category_ = 0;  // Build bar group shown.

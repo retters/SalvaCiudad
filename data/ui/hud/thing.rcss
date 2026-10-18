@@ -281,3 +281,131 @@ input.slider:disabled
 {
 	opacity: 0.4;
 }
+
+/* Phase 125: the panels (hud/panel.rml), placed by the game. */
+body.hpanel
+{
+	position: absolute;
+	pointer-events: auto;
+}
+
+.ptitle
+{
+	padding: 2dp 0 6dp;
+	font-size: var(--title-size);
+	font-weight: var(--title-weight);
+	color: var(--title-text);
+}
+
+.para
+{
+	display: block;
+	padding: 2dp 0 4dp;
+}
+
+.line.bad
+{
+	color: var(--bad);
+}
+
+.line.night
+{
+	color: var(--info);
+}
+
+.kv.accent .k
+{
+	color: var(--accent);
+}
+
+/* A villager's needs. */
+.meter.bad .fill
+{
+	decorator: none;
+	background-color: var(--bad);
+}
+
+.meter.food .fill
+{
+	decorator: none;
+	background-color: #e0a33c;
+}
+
+.meter.warm .fill
+{
+	decorator: none;
+	background-color: #e08a3c;
+}
+
+.meter.health .fill
+{
+	decorator: none;
+	background-color: #6faf5a;
+}
+
+.meter.energy .fill
+{
+	decorator: none;
+	background-color: #7fb0e0;
+}
+
+/* A text field (a villager's new name). */
+input.field
+{
+	display: block;
+	width: 100%;
+	height: 32dp;
+	margin-top: 6dp;
+	padding: 6dp 10dp;
+	box-sizing: border-box;
+	border-radius: var(--btn-radius);
+	border: 1dp var(--btn-border);
+	background-color: var(--row);
+	cursor: text;
+}
+
+input.field:focus
+{
+	border-color: var(--accent);
+}
+
+/* The trade window's world map: a square per map, caravans on the way. */
+.world
+{
+	position: relative;
+	width: 150dp;
+	height: 150dp;
+	margin: 4dp auto 8dp;
+}
+
+.wcell
+{
+	position: absolute;
+	box-sizing: border-box;
+	border: 2dp transparent;
+	border-radius: 4dp;
+	background-color: #5f7f3f;
+	text-align: center;
+	font-size: var(--font-small);
+	color: #ffffff;
+}
+
+.wcell.sea
+{
+	background-color: #2a4a66;
+}
+
+.wcell.mine
+{
+	background-color: var(--accent);
+}
+
+.caravan
+{
+	position: absolute;
+	width: 6dp;
+	height: 6dp;
+	margin: -3dp 0 0 -3dp;
+	border-radius: 3dp;
+	background-color: #e8c45a;
+}

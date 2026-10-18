@@ -778,6 +778,13 @@ void UiHost::game_keys(ui::Context& ctx) {
 }
 
 void UiHost::map_hud(ui::Context& ctx) {
+    if (leave_pending_) {
+        leave_pending_ = false;
+        services_.leave_map();
+        services_.leave_network();
+        screen_ = Screen::MainMenu;
+        return;
+    }
     const sim::MapData* map = services_.current_map();
     if (map == nullptr) {
         screen_ = Screen::MainMenu;
@@ -963,61 +970,40 @@ void UiHost::tutorial_panel(ui::Context& ctx) {
         tutorial_->step_started = false;
         return;
     }
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const ui::TextStyle small = ctx.style(ctx.theme().small);
-    const float pad = ctx.s(14.0f);
-    const float w = std::round(std::min(ctx.s(560.0f), ctx.width() - ctx.s(300.0f)));
-    const float button_h = std::round(ctx.s(34.0f));
-    const std::string text = tr(step.text_key);
-    const float text_h = ctx.paragraph_height(w - 2 * pad, text, body);
-    const float line = ctx.text().line_height(small);
-    const float error_h = tutorial_->error.empty() ? 0.0f : line;
-    const float h = pad + line + ctx.s(4.0f) + text_h + error_h + pad + button_h + pad;
-    // Above the build bar, in the middle: the windows keep the top.
-    const float bottom = hud_.build_bar_top() > 0.0f ? hud_.build_bar_top() : ctx.height() - ctx.s(110.0f);
-    const ui::Rect box{std::round((ctx.width() - w) * 0.5f), std::round(bottom - h - ctx.s(12.0f)), w, std::round(h)};
-    ctx.panel(box);
-    if (GameSession* s = services_.session()) {
-        s->ui().hud_rects.push_back({box.x, box.y, box.w, box.h});
-    }
-    float y = box.y + pad;
-    ctx.label({box.x + pad, y, box.w - 2 * pad, line},
-              tr("tutorial.step", tr(t.name_key), static_cast<int>(tutorial_->step) + 1, static_cast<int>(t.steps.size())),
-              small, ctx.theme().accent);
-    y += line + ctx.s(4.0f);
-    y += ctx.paragraph({box.x + pad, y, box.w - 2 * pad, text_h}, text, body, ctx.theme().text);
+    // Phase 125: an RmlUi panel above the build bar, in the middle.
+    ThingRows out;
+    out.line(tr("tutorial.step", tr(t.name_key), static_cast<int>(tutorial_->step) + 1, static_cast<int>(t.steps.size())),
+             WinRow::Kind::Accent);
+    out.line(tr(step.text_key), WinRow::Kind::Paragraph);
     if (!tutorial_->error.empty()) {
-        ctx.label({box.x + pad, y, box.w - 2 * pad, line}, tr("tutorial.scriptError"), small, ctx.theme().danger);
-        y += line;
+        out.line(tr("tutorial.scriptError")).cls = "bad";
     }
-    y += pad;
-    const float bw = (box.w - 3 * pad) * 0.5f;
     if (last) {
-        if (ctx.button(ctx.id("tutorial_finish"), {box.x + pad, y, box.w - 2 * pad, button_h}, tr("tutorial.finish"),
-                       tr("tutorial.finish.tooltip"), true, true)) {
-            services_.settings().gameplay.tutorial_seen = true;
-            services_.settings_changed();
-            tutorial_.reset();
-        }
-        return;
+        RowButton finish = out.button(tr("tutorial.finish"), tr("tutorial.finish.tooltip"),
+                                      [this](GameSession&, const RowInput&, RowEffects&) {
+                                          services_.settings().gameplay.tutorial_seen = true;
+                                          services_.settings_changed();
+                                          tutorial_.reset();
+                                      });
+        finish.on = true;
+        out.buttons({std::move(finish)});
+    } else {
+        out.buttons({out.button(tr("tutorial.skip"), tr("tutorial.skip.tooltip"),
+                                [this](GameSession&, const RowInput&, RowEffects&) {
+                                    if (tutorial_) {
+                                        ++tutorial_->step;
+                                        tutorial_->step_started = false;
+                                    }
+                                }),
+                     out.button(tr("tutorial.quit"), tr("tutorial.quit.tooltip"),
+                                [this](GameSession&, const RowInput&, RowEffects&) { tutorial_.reset(); })});
     }
-    if (ctx.button(ctx.id("tutorial_skip"), {box.x + pad, y, bw, button_h}, tr("tutorial.skip"), tr("tutorial.skip.tooltip"))) {
-        ++tutorial_->step;
-        tutorial_->step_started = false;
-    }
-    if (ctx.button(ctx.id("tutorial_quit"), {box.x + 2 * pad + bw, y, bw, button_h}, tr("tutorial.quit"),
-                   tr("tutorial.quit.tooltip"))) {
-        tutorial_.reset();
-    }
+    hud_.panel("tutorial", std::move(out), GameHud::PanelPlace::Bottom, 560.0f);
 }
 
 void UiHost::end_panel(ui::Context& ctx) {
     GameSession* s = services_.session();
     const sim::Game& game = s->game();
-    const ui::TextStyle body = ctx.style(ctx.theme().body);
-    const float line = ctx.text().line_height(body);
-    const float button_h = ctx.s(48.0f);
-    const float gap = ctx.s(10.0f);
     std::vector<std::uint8_t> towns;
     for (std::uint8_t p = 0; p < game.player_count(); ++p) {
         if (game.town_exists(p)) {
@@ -1026,11 +1012,10 @@ void UiHost::end_panel(ui::Context& ctx) {
     }
     const sim::Outcome mine = game.player(s->town()).outcome;
     const char* title = mine == sim::Outcome::Won ? "end.won" : mine == sim::Outcome::Lost ? "end.lost" : "end.over";
-    const float content_h = line * static_cast<float>(towns.size() + 1) + gap + 2 * (button_h + gap);
-    float y = 0.0f;
-    const ui::Rect content = dialog_frame(ctx, content_h, tr(title), y);
-    ctx.label({content.x, y, content.w, line}, tr("end.header"), ctx.style(ctx.theme().small), ctx.theme().text_dim);
-    y += line;
+    // Phase 125: an RmlUi panel in the middle.
+    ThingRows out;
+    out.line(tr(title), WinRow::Kind::Title);
+    out.line(tr("end.header"), WinRow::Kind::Dim);
     static constexpr const char* kOutcomes[] = {"hud.outcome.playing", "hud.outcome.won", "hud.outcome.lost"};
     for (const std::uint8_t p : towns) {
         const sim::PlayerState& ps = game.player(p);
@@ -1040,24 +1025,19 @@ void UiHost::end_panel(ui::Context& ctx) {
                 name = lp.slot == p ? lp.name : name;
             }
         }
-        ctx.label({content.x, y, content.w, line},
-                  tr("end.row", name, tr(kOutcomes[static_cast<std::size_t>(ps.outcome) % 3]), game.score(p),
-                     game.population(p), game.military_power(p)),
-                  body, p == s->town() ? ctx.theme().accent : ctx.theme().text);
-        y += line;
+        out.line(tr("end.row", name, tr(kOutcomes[static_cast<std::size_t>(ps.outcome) % 3]), game.score(p), game.population(p),
+                    game.military_power(p)),
+                 p == s->town() ? WinRow::Kind::Accent : WinRow::Kind::Text);
     }
-    y += gap;
-    if (ctx.button(ctx.id("end_watch"), {content.x, y, content.w, button_h}, tr("end.watch"), tr("end.watch.tooltip"))) {
-        end_seen_ = true;
-    }
-    y += button_h + gap;
-    if (ctx.button(ctx.id("end_leave"), {content.x, y, content.w, button_h}, tr("gameMenu.leave"),
-                   tr("gameMenu.leave.tooltip"))) {
-        end_seen_ = true;
-        services_.leave_map();
-        services_.leave_network();
-        screen_ = Screen::MainMenu;
-    }
+    out.buttons({out.button(tr("end.watch"), tr("end.watch.tooltip"),
+                            [this](GameSession&, const RowInput&, RowEffects&) { end_seen_ = true; })});
+    out.buttons({out.button(tr("gameMenu.leave"), tr("gameMenu.leave.tooltip"),
+                            [this](GameSession&, const RowInput&, RowEffects&) {
+                                end_seen_ = true;
+                                leave_pending_ = true;  // Not from inside the game's own event: with the next frame.
+                            })});
+    hud_.panel("end", std::move(out), GameHud::PanelPlace::Center, 560.0f);
+    (void)ctx;
 }
 
 void UiHost::game_menu(ui::Context& ctx) {

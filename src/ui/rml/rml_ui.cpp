@@ -445,7 +445,12 @@ bool RmlUi::wants_keyboard() const {
         return false;
     }
     const Rml::Element* focus = context_->GetFocusElement();
-    return focus != nullptr && (focus->GetTagName() == "input" || focus->GetTagName() == "textarea");
+    if (focus == nullptr) {
+        return false;
+    }
+    // Only where text is typed: a focused slider or check box leaves the keys to the game.
+    const Rml::String type = focus->GetAttribute<Rml::String>("type", "text");
+    return focus->GetTagName() == "textarea" || (focus->GetTagName() == "input" && (type == "text" || type == "password"));
 }
 
 bool RmlUi::process_event(const SDL_Event& event, float pixel_density) {
@@ -489,6 +494,10 @@ bool RmlUi::process_event(const SDL_Event& event, float pixel_density) {
         case SDL_EVENT_KEY_DOWN:
             if (!wants_keyboard()) {
                 return false;
+            }
+            if (event.key.key == SDLK_ESCAPE) {
+                context_->GetFocusElement()->Blur();  // Esc leaves the field; the keys go back to the game.
+                return true;
             }
             context_->ProcessKeyDown(key_from_sdl(event.key.key), mods);
             return true;

@@ -216,7 +216,7 @@ TEST_SUITE("hud") {
             }
             return t.find('{') != std::string::npos;
         };
-        TradeDraft draft;
+        ThingState draft;
         const auto check_window = [&](sim::EntityId id) {
             const ThingRows rows = building_rows(session, id, draft);
             CHECK_FALSE(rows.gone);
@@ -315,7 +315,7 @@ TEST_SUITE("hud") {
                     if ((!label.empty() && b.label == label) || (!mark.empty() && b.mark == mark)) {
                         RowEffects e;
                         if (b.enabled) {
-                            rows.acts[static_cast<std::size_t>(b.act)](session, 0, e);
+                            rows.acts[static_cast<std::size_t>(b.act)](session, RowInput{}, e);
                             session.step();
                         }
                         return e;
@@ -351,7 +351,7 @@ TEST_SUITE("hud") {
             REQUIRE(fewer != nullptr);
             REQUIRE(fewer->enabled);
             RowEffects e;
-            rows.acts[static_cast<std::size_t>(fewer->act)](session, 0, e);
+            rows.acts[static_cast<std::size_t>(fewer->act)](session, RowInput{}, e);
             session.step();
             CHECK(g.buildings().get(shop)->wanted_workers == wanted - 1);
         }
@@ -399,12 +399,126 @@ TEST_SUITE("hud") {
                                              [](const WinRow& r) { return r.kind == WinRow::Kind::Slider; });
             REQUIRE(slider != rows.rows.end());
             RowEffects e;
-            rows.acts[static_cast<std::size_t>(slider->act)](session, 500, e);  // Sell over 500.
-            CHECK(draft.sell == 500);
+            rows.acts[static_cast<std::size_t>(slider->act)](session, RowInput{500, {}, false}, e);  // Sell over 500.
+            CHECK(draft.trade.sell == 500);
         }
         (void)press(post, tr("hud.auto.apply"));
         REQUIRE_FALSE(g.player(session.town()).trade_rules.empty());
         CHECK(g.player(session.town()).trade_rules.front().sell_above == 500);
+    }
+
+    // Phase 125: the windows of villagers, of things on the map, of animals
+    // and of the army are rows too.
+    TEST_CASE("the windows of villagers, things on the map and the army are translated and act") {
+        languages();
+        sim::GameSetup setup;
+        setup.seed = 9;
+        sim::MapSettings ms;
+        ms.size = sim::MapSize::Small;
+        ms.seed = 31;
+        std::optional<sim::MapData> map = sim::generate_map(ms, *content());
+        REQUIRE(map.has_value());
+        GameSession session(content(), std::move(*map), setup);
+        for (int i = 0; i < 60; ++i) {
+            session.step();
+        }
+        const sim::Game& g = session.game();
+        const TownNames names = [](std::uint8_t p) { return "T" + std::to_string(p); };
+        ThingState state;
+        const auto check_texts = [](const ThingRows& rows) {
+            for (const WinRow& r : rows.rows) {
+                std::vector<std::string> texts = {r.tip};
+                if (r.kind != WinRow::Kind::Raw && r.kind != WinRow::Kind::Input) {
+                    texts.push_back(r.text);
+                }
+                for (const RowButton& b : r.buttons) {
+                    texts.push_back(b.label);
+                    texts.push_back(b.tip);
+                }
+                for (const std::string& t : texts) {
+                    CHECK_MESSAGE(t.find("hud.") == std::string::npos, t);
+                    CHECK_MESSAGE(t.find("feature.") == std::string::npos, t);
+                    CHECK_MESSAGE(t.find("task.") == std::string::npos, t);
+                    CHECK_MESSAGE(t.find('{') == std::string::npos, t);
+                }
+                CHECK_FALSE(row_rml(r).empty());
+            }
+        };
+        const auto press = [&](const ThingRows& rows, const std::string& label, const RowInput& input = {}) {
+            for (const WinRow& r : rows.rows) {
+                for (const RowButton& b : r.buttons) {
+                    if (b.label == label) {
+                        REQUIRE(b.enabled);
+                        RowEffects e;
+                        rows.acts[static_cast<std::size_t>(b.act)](session, input, e);
+                        session.step();
+                        return e;
+                    }
+                }
+            }
+            FAIL("no button " << label);
+            return RowEffects{};
+        };
+
+        // Villagers: what each one is, and the buttons.
+        REQUIRE(g.villagers().size() > 0);
+        for (std::size_t i = 0; i < g.villagers().size() && i < 40; ++i) {
+            const ThingRows rows = villager_rows(session, "obj1", g.villagers().entities()[i], state);
+            CHECK_FALSE(rows.gone);
+            check_texts(rows);
+        }
+        const sim::EntityId who = g.villagers().entities()[0];
+        (void)press(villager_rows(session, "obj1", who, state), tr("hud.villager.follow"));
+        CHECK(session.ui().followed_villager == who);
+        (void)press(villager_rows(session, "obj1", who, state), tr("hud.villager.unfollow"));
+        CHECK_FALSE(session.ui().followed_villager.valid());
+        // Renaming: a text field, then Enter.
+        (void)press(villager_rows(session, "obj1", who, state), tr("hud.villager.rename"));
+        CHECK(state.rename_id == "obj1");
+        {
+            const ThingRows rows = villager_rows(session, "obj1", who, state);
+            const auto field = std::find_if(rows.rows.begin(), rows.rows.end(),
+                                            [](const WinRow& r) { return r.kind == WinRow::Kind::Input; });
+            REQUIRE(field != rows.rows.end());
+            CHECK(row_key(*field) == row_key(WinRow{*field}));
+            RowEffects e;
+            rows.acts[static_cast<std::size_t>(field->act)](session, RowInput{0, "  Anselma ", true}, e);
+            session.step();
+            session.step();
+        }
+        CHECK(state.rename_id.empty());
+        CHECK(g.villager_name(*g.villagers().get(who)) == "Anselma");
+        // Its home or work: a link to the building's window.
+        CHECK(villager_rows(session, "obj1", sim::EntityId{999999, 7}, state).gone);
+
+        // Natural features and animals.
+        std::size_t nodes = 0;
+        for (std::uint32_t i = 0; i < g.map().features.size() && nodes < 200; ++i) {
+            if (node_there(g, i)) {
+                ++nodes;
+                const ThingRows rows = node_rows(session, sim::EntityId{i, 0});
+                CHECK_FALSE(rows.gone);
+                check_texts(rows);
+            }
+        }
+        CHECK(nodes > 0);
+        for (std::size_t i = 0; i < g.creatures().size(); ++i) {
+            const ThingRows rows = creature_rows(session, g.creatures().entities()[i], names);
+            CHECK_FALSE(rows.gone);
+            check_texts(rows);
+        }
+        CHECK(walker_rows(session, sim::EntityId{0, 0}).gone);  // No developer tools here.
+
+        // The army: an order reaches the game.
+        ThingRows army = army_rows(session, state, names);
+        check_texts(army);
+        (void)press(army, tr("hud.army.retreat"));
+        session.step();
+        CHECK(g.player(session.town()).order == sim::ArmyOrderKind::Retreat);
+        (void)press(army_rows(session, state, names), tr("hud.army.defendHere"));
+        CHECK(session.ui().rally_mode);
+        // Alone on the map: nobody to trade with.
+        CHECK(trade_rows(session, state, names).rows.empty());
     }
 
     TEST_CASE("a window's rows as RML: escaped, and only enabled buttons act") {

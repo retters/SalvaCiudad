@@ -85,6 +85,14 @@ bool System::LogMessage(Rml::Log::Type type, const Rml::String& message) {
             log::error("rmlui: {}", message);
             break;
         case Rml::Log::LT_WARNING:
+            // When a data-for list gets shorter, RmlUi still updates the views of
+            // the copies it is removing in that same pass, and they read past the
+            // end once (D-12506): harmless, so only for the developer's log.
+            if (message.starts_with("Data array index out of bounds") ||
+                (message.starts_with("Could not get value from data variable '") && message.find('[') != Rml::String::npos)) {
+                log::debug("rmlui: {}", message);
+                break;
+            }
             ++warnings_;
             log::warn("rmlui: {}", message);
             break;
