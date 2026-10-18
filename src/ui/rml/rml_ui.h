@@ -86,6 +86,21 @@ public:
     // "glass-simple", so its style can make the windows more opaque.
     void set_simple_glass(bool simple);
 
+    // Tooltips (phase 121): the "tip" attribute of the element under the
+    // pointer (or of the nearest parent that has one) shows after `delay_ms`
+    // in hud/tooltip.rml; "tip-detail" is shown under it while Shift is
+    // held. Texts may hold @keys and are split into lines at '\n'.
+    void set_tooltips(bool show, int delay_ms) {
+        tooltips_on_ = show;
+        tooltip_delay_ms_ = delay_ms;
+    }
+    static constexpr const char* kTooltipDocument = "hud/tooltip.rml";
+    // What the tooltip shows now (empty: none), for the tests.
+    [[nodiscard]] const std::string& tooltip_shown() const { return tooltip_shown_; }
+    // The tutorial's pointer (phase 121): every element whose "mark"
+    // attribute is `key` gets the class "marked". Empty: none.
+    void set_mark(std::string key) { mark_ = std::move(key); }
+
     [[nodiscard]] const System& system() const { return system_; }
     // Milliseconds of CPU the last update() and render() took.
     [[nodiscard]] double update_ms() const { return update_ms_; }
@@ -100,6 +115,8 @@ private:
     void reload_documents();
     void prepare(Document& d);
     void scan_styles();
+    void update_tooltip();
+    void apply_marks();
     void build_style_sheet();
     [[nodiscard]] bool simple_glass_class() const;
     [[nodiscard]] Document* find(const std::string& path);
@@ -120,6 +137,15 @@ private:
     std::string style_sheet_;
     int icon_scale_ = 1;     // The icons' sprite sheet: 1x or 2x.
     bool style_changed_ = false;
+    bool tooltips_on_ = true;
+    int tooltip_delay_ms_ = 500;
+    float mouse_x_ = 0.0f;
+    float mouse_y_ = 0.0f;
+    Rml::Element* tip_element_ = nullptr;
+    std::string tip_text_;
+    std::uint64_t tip_since_ns_ = 0;
+    std::string tooltip_shown_;  // Its RML now.
+    std::string mark_;
     bool debugger_shown_ = false;
     bool pressed_ = false;  // A button went down over an element.
     double update_ms_ = 0.0;

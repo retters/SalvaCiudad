@@ -1,0 +1,19 @@
+<rml>
+<head>
+	<title>HUD: notices</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
+	<link type="text/rcss" href="hud.rcss"/>
+	<link type="text/rcss" href="notes.rcss"/>
+</head>
+<!-- The latest notices (phase 121), newest at the bottom; a click on one
+     with a place takes the camera there. Data model "notes". -->
+<body id="notes" data-model="notes">
+	<div class="note pill" data-for="n, i : notes" data-class-go="n.has_pos" data-event-click="go(i)"
+	     data-attr-tip="n.tip">
+		<img class="icon" sprite="icon-bell"/>
+		<span>{{n.text}}</span>
+	</div>
+</body>
+</rml>

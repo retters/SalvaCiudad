@@ -1,0 +1,16 @@
+<rml>
+<head>
+	<title>Tooltip</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
+	<link type="text/rcss" href="tooltip.rcss"/>
+</head>
+<!-- The tooltip (phase 121): the "tip" attribute of what lies under the
+     pointer, and "tip-detail" while Shift is held. Filled by src/ui/rml/rml_ui.cpp. -->
+<body id="tooltip">
+	<div id="text"></div>
+	<div id="detail"></div>
+	<div id="hint" class="hint">@hud.tip.shift</div>
+</body>
+</rml>

@@ -636,6 +636,7 @@
     "hud.speed.faster": "+",
     "hud.speed.faster.tooltip": "Faster (period). Keys 1, 2 and 3 set ×1, ×2 and ×3.",
     "hud.speed.value": "×{0:speed}",
+    "hud.tip.shift": "Shift: more detail",
     "hud.speed.lowered": "This machine cannot keep that speed up: the game goes down to ×{0:speed}.",
     "speed.quarter": "0.25",
     "speed.half": "0.5",

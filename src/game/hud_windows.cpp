@@ -22,10 +22,9 @@ using i18n::tr;
 
 namespace {
 
-constexpr float kTopBarH = 44.0f;
-constexpr float kDockW = 132.0f;
+constexpr float kTopBarH = 52.0f;  // The RmlUi top bar (data/ui/hud/top.rcss) and its margin.
+constexpr float kDockW = 76.0f;  // The RmlUi dock (data/ui/hud/dock.rcss) and its margin.
 constexpr float kSnap = 12.0f;
-constexpr std::uint64_t kNoteNs = 12'000'000'000;
 
 bool inside(const ui::Rect& r, float x, float y) {
     return x >= r.x && y >= r.y && x < r.right() && y < r.bottom();
@@ -334,65 +333,6 @@ void GameHud::open_window(const std::string& id) {
     windows_.raise(id);
 }
 
-// --- The launcher on the left -----------------------------------------------------------------
-
-void GameHud::dock(ui::Context& ctx, GameSession& s) {
-    const sim::Game& game = s.game();
-    const float pad = ctx.s(12.0f);
-    const float w = std::round(ctx.s(kDockW - 12.0f));
-    const float h = std::round(ctx.s(30.0f));
-    const float gap = ctx.s(4.0f);
-    float y = std::round(ctx.s(kTopBarH) + pad);
-    struct Entry {
-        const char* id;
-        const char* label;
-        const char* tooltip;
-        bool* open;
-        bool shown;
-    };
-    bool others = false;
-    bool barracks = false;
-    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
-        others = others || (game.town_exists(p) && p != s.town());
-    }
-    for (const sim::Building& b : game.buildings().data()) {
-        barracks = barracks || (b.owner == s.town() && game.content().buildings[b.def].trains);
-    }
-    const Entry entries[] = {
-        {"goods", "hud.dock.goods", "hud.dock.goods.tooltip", &goods_open_, true},
-        {"stats", "hud.dock.stats", "hud.dock.stats.tooltip", &stats_open_, true},
-        {"log", "hud.dock.log", "hud.dock.log.tooltip", &log_open_, true},
-        {"layers", "hud.dock.layers", "hud.dock.layers.tooltip", &layers_open_, true},
-        {"trade", "hud.trade", "hud.trade.tooltip", &trade_open_, others},
-        {"army", "hud.dock.army", "hud.army.tooltip", &army_open_, barracks || game.soldiers(s.town()) > 0},
-    };
-    for (const Entry& e : entries) {
-        if (!e.shown) {
-            continue;
-        }
-        const ui::Rect r{pad, y, w, h};
-        block(s, r);
-        if (highlight_ == std::string("dock:") + e.id) {
-            mark(ctx, r);
-        }
-        std::string label = tr(e.label);
-        if (std::string_view(e.id) == "army") {
-            label = tr("hud.army", game.soldiers(s.town()));
-        }
-        if (ctx.button(ctx.id(std::string("dock_") + e.id), r, label, tr(e.tooltip), true, *e.open)) {
-            if (*e.open && windows_.place(e.id).pinned) {
-                open_window(e.id);  // Pinned: only its own X closes it.
-            } else {
-                *e.open = !*e.open;
-                if (*e.open) {
-                    open_window(e.id);
-                }
-            }
-        }
-        y += h + gap;
-    }
-}
-
 float GameHud::left_x(ui::Context& ctx) const {
     return std::round(ctx.s(kDockW + 8.0f));
 }
@@ -609,33 +549,6 @@ void GameHud::notify(std::string text, bool has_pos, float x, float z, const sim
     notes_.push_back(std::move(n));
     if (notes_.size() > 100) {
         notes_.erase(notes_.begin());
-    }
-}
-
-void GameHud::notifications(ui::Context& ctx, GameSession& s, float bottom) {
-    const ui::TextStyle small = ctx.style(ctx.theme().small);
-    const float pad = ctx.s(12.0f);
-    const float h = std::round(ctx.text().line_height(small) + ctx.s(12.0f));
-    const float w = std::round(std::min(ctx.s(380.0f), ctx.width() * 0.4f));
-    const std::uint64_t now = ctx.now_ns();
-    float y = bottom - pad - h;
-    int drawn = 0;
-    for (std::size_t k = notes_.size(); k-- > 0 && drawn < 4;) {
-        const Note& n = notes_[k];
-        if (now - n.at_ns > kNoteNs) {
-            break;
-        }
-        const ui::Rect r{ctx.width() - pad - w, y, w, h};
-        block(s, r);
-        const std::string text = n.count > 1 ? n.text + " (×" + std::to_string(n.count) + ")" : n.text;
-        if (ctx.button(ctx.id("notification" + std::to_string(k)), r, text,
-                       n.has_pos ? tr("hud.log.goTo") : std::string{})) {
-            if (n.has_pos) {
-                services_.focus_camera(n.x, n.z);
-            }
-        }
-        y -= h + ctx.s(4.0f);
-        ++drawn;
     }
 }
 

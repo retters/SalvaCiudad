@@ -511,6 +511,19 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 121 (barra superior, dock, minimapa, avisos y tooltips)
+
+- [ ] En una partida: la barra de arriba muestra los bienes con su imagen, la población, la felicidad y el oro, los enfermos e incendios cuando los hay, el clima y la fecha, y la velocidad; cada cosa tiene su tooltip.
+- [ ] Los botones de velocidad pausan, aceleran y frenan como antes; el número dice la velocidad.
+- [ ] El dock abre y cierra Bienes, Estadísticas, Eventos y Capas (y Comercio y Ejército cuando corresponden).
+- [ ] Un aviso aparece abajo a la derecha, sobre la barra de construcción; un clic en uno con lugar lleva la cámara allí.
+- [ ] El minimapa muestra el mapa, la niebla, los caminos, los edificios y lo que ve la cámara; un clic y un arrastre mueven la cámara; la brújula gira con la cámara.
+- [ ] Con un explorador elegido, un clic derecho en el minimapa lo manda a ese lugar.
+- [ ] En el tutorial, el botón de velocidad y los del dock se iluminan cuando el paso los nombra.
+- [ ] Mantener Mayús sobre algo con detalle muestra el detalle.
+- [ ] En red (dos instancias) y como espectador, la barra muestra los jugadores y funciona.
+- [ ] Al salir al menú principal, el HUD nuevo desaparece.
+
 ### Fase 120 (miniaturas y retratos)
 
 - [ ] La ventana de prueba muestra el cantero renderizado por el juego (arriba a la izquierda y en grande) y los retratos de dos aldeanos elfos oscuros, con el fondo transparente.

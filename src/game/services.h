@@ -22,6 +22,10 @@
 
 namespace sc {
 
+namespace rml {
+class RmlUi;
+}
+
 struct Resolution {
     int width = 0;
     int height = 0;
@@ -58,6 +62,10 @@ public:
     [[nodiscard]] virtual const ui::FontLibrary& fonts() const = 0;
     // The interface styles that loaded (phase 119); empty without RmlUi.
     [[nodiscard]] virtual std::vector<UiStyleChoice> ui_styles() const = 0;
+    // The new interface (phase 121), or null without it.
+    [[nodiscard]] virtual rml::RmlUi* rml() = 0;
+    // An image the new interface shows as "/live/<name>" (phase 121).
+    virtual void set_hud_image(const std::string& name, int width, int height, const std::vector<std::uint8_t>& rgba) = 0;
 
     // True when the 3D view works (without it there are only menus).
     [[nodiscard]] virtual bool scene_available() const = 0;

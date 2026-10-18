@@ -319,3 +319,15 @@ Con seis ventanas el fondo se desenfoca una vez (línea «capas, vidrios, desenf
 | Imágenes de todas las definiciones | 308, en unos 3 s tras iniciar, en segundo plano |
 | CPU de esas imágenes | 0,7 s en total, 6 ms por cuadro como mucho más una carga de `.glb` |
 | Memoria | 64 KB por imagen, unos 20 MB en la CPU; en la GPU, solo las que se muestran |
+
+## HUD en RmlUi (fase 121)
+
+Una partida guardada con 1 000 aldeanos y la cámara al lado del pueblo, en pausa, `release`, 1920 × 1080, sin vsync, cinco lecturas de F3 por caso:
+
+| Versión | Lecturas (FPS) | Promedio | Diferencia |
+|---|---|---|---|
+| Fase 116 (HUD viejo) | 716, 727, 729, 730, 709 | 722 | — |
+| Fase 121, vidrio simple | 697, 738, 712, 731, 698 | 715 | −1,0 % |
+| Fase 121, vidrio completo | 619, 604, 638, 640, 590 | 618 | −14 % (+0,22 ms por cuadro) |
+
+RmlUi en esa escena: 0,056 ms de diseño y 0,061 ms de geometría de CPU por cuadro, 71 dibujos, 2 capas, 9 vidrios y un solo desenfoque del fondo.

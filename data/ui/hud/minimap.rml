@@ -1,0 +1,31 @@
+<rml>
+<head>
+	<title>HUD: minimap</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
+	<link type="text/rcss" href="hud.rcss"/>
+	<link type="text/rcss" href="minimap.rcss"/>
+</head>
+<!-- The minimap and the compass (phase 121). The map's picture is the
+     game's (/live/minimap: ground, fog, roads, buildings and what the
+     camera sees); the frame, the cardinal points and the compass are
+     here. Data model "mini". -->
+<body id="minimap" data-model="mini">
+	<div class="compass" tip="@hud.compass.tooltip">
+		<div class="needle" data-style-transform="needle">
+			<img class="north" sprite="icon-needle-n"/>
+			<img class="south" sprite="icon-needle-s"/>
+		</div>
+		<span class="compass-n" data-style-left="n_left" data-style-top="n_top">@hud.minimap.north</span>
+	</div>
+	<div class="frame pill">
+		<span class="cardinal n">@hud.minimap.north</span>
+		<span class="cardinal s">@hud.minimap.south</span>
+		<span class="cardinal e">@hud.minimap.east</span>
+		<span class="cardinal w">@hud.minimap.west</span>
+		<img id="map" src="/live/minimap" tip="@hud.minimap.tooltip"
+		     data-event-mousedown="map_press" data-event-drag="map_drag" data-event-dragend="map_release"/>
+	</div>
+</body>
+</rml>

@@ -27,6 +27,20 @@ inline constexpr std::uint32_t kImageId = 1;
 // explored shows land and water in two dark tones, nothing else.
 void apply_fog(std::vector<std::uint8_t>& rgba, std::int32_t map_size, const FogView& fog, bool silhouette = false);
 
+// Phase 121: what the HUD draws over the image (the roads, the buildings,
+// the sites and what the camera sees), now into the image itself, in its
+// texels (a map meter is kImageSize / map size texels). Colors are RGBA
+// with straight alpha; they are blended over what is there.
+struct Rgba {
+    std::uint8_t r = 0;
+    std::uint8_t g = 0;
+    std::uint8_t b = 0;
+    std::uint8_t a = 255;
+};
+void fill(std::vector<std::uint8_t>& rgba, float x, float y, float w, float h, Rgba color);
+// A line `thickness` texels wide.
+void line(std::vector<std::uint8_t>& rgba, float x0, float y0, float x1, float y1, float thickness, Rgba color);
+
 // Where north lies on the screen for a camera turned `yaw` radians (0
 // looks north; turning right is positive): a unit vector, x to the right
 // and y down the screen.

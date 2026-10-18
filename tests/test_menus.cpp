@@ -41,6 +41,8 @@ public:
     std::vector<std::string> monitor_names() override { return {"Monitor A"}; }
     std::vector<Resolution> fullscreen_resolutions(const std::string&) override { return {{1920, 1080}}; }
     const ui::FontLibrary& fonts() const override { return font_library; }
+    rml::RmlUi* rml() override { return nullptr; }
+    void set_hud_image(const std::string&, int, int, const std::vector<std::uint8_t>&) override {}
     std::vector<UiStyleChoice> ui_styles() const override {
         return {{"frosted", "Frosted", {0xeef0f4ffu, 0x1b1f24ffu, 0x5b5bd6ffu, 0x18794effu, 0xad5700ffu, 0xcd2b31ffu}},
                 {"vidrio", "Vidrio oscuro", {0x15142affu, 0xf1f0ffffu, 0x9b7bffffu, 0x49f2b0ffu, 0xffd166ffu, 0xff5c8affu}}};
@@ -261,31 +263,13 @@ TEST_SUITE("menus") {
         GameSession::Interaction& ui = h.services.game->ui();
         h.host.show_game();
         h.frame(0);
-        REQUIRE(ui.hud_rects.size() >= 2);
+        // Phase 121: the top bar and the minimap are RmlUi's (no RmlUi here);
+        // the build bar is the first part of the old interface.
+        REQUIRE(ui.hud_rects.size() >= 1);
         CHECK_FALSE(h.host.game_paused());
-        // Phase 24: the minimap's picture, and a click on it moves the camera.
-        CHECK(h.services.image_id == 1u);
-        CHECK(h.services.image_width == 256);
-        CHECK(h.services.image_bytes == 256u * 256u * 4u);
-        {
-            // At 1280 x 720: 200 wide, 28 from the right, 72 from the top.
-            ui::Input click;
-            click.mouse_x = 1280.0f - 28.0f - 150.0f;
-            click.mouse_y = 72.0f + 150.0f;
-            click.mouse_down = true;
-            click.mouse_pressed = true;
-            h.frame(8, click);
-            const float map_side = static_cast<float>(h.services.game->game().map().size);
-            CHECK(h.services.focused_x == doctest::Approx(map_side * 0.25f).epsilon(0.02));
-            CHECK(h.services.focused_z == doctest::Approx(map_side * 0.75f).epsilon(0.02));
-            CHECK(ui.over_hud(click.mouse_x, click.mouse_y));
-            ui::Input up;
-            up.mouse_released = true;
-            h.frame(12, up);
-        }
 
         // The first button of the build bar starts placing a building.
-        const auto bar = ui.hud_rects[1];
+        const auto bar = ui.hud_rects[0];
         ui::Input press;
         press.mouse_x = bar[0] + 8.0f + 75.0f;
         press.mouse_y = bar[1] + 8.0f + 32.0f + 6.0f + 22.0f;  // Below the category tabs.

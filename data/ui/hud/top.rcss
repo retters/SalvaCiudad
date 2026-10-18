@@ -1,0 +1,56 @@
+/* The top bar (phase 121). */
+
+body
+{
+	left: 0;
+	top: 0;
+	right: 0;
+	padding: 10dp 12dp 0 12dp;
+}
+
+.row-top
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.spacer
+{
+	flex: 1;
+}
+
+.weather
+{
+	margin-left: 2dp;
+}
+
+.speed .ibtn
+{
+	margin-left: 2dp;
+	margin-right: 2dp;
+	width: 30dp;
+	height: 30dp;
+}
+
+.ibtn.on
+{
+	background-color: var(--btn-on);
+}
+
+.ibtn.on img
+{
+	image-color: var(--btn-on-text);
+}
+
+.ibtn.off
+{
+	opacity: 0.4;
+}
+
+.speed-value
+{
+	min-width: 44dp;
+	text-align: center;
+	font-weight: bold;
+}

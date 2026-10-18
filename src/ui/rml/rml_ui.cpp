@@ -1,5 +1,6 @@
 #include "ui/rml/rml_ui.h"
 
+#include <algorithm>
 #include <format>
 
 #include <SDL3/SDL_keyboard.h>
@@ -310,8 +311,113 @@ void RmlUi::update(int width, int height, float dp_ratio) {
         style_changed_ = false;
         reload_documents();
     }
+    apply_marks();
+    update_tooltip();
     context_->Update();
     update_ms_ = ms_since(start);
+}
+
+namespace {
+
+// Text as RML: escaped, lines joined with <br/>.
+std::string tip_rml(std::string_view text) {
+    std::string out;
+    for (const char c : text) {
+        switch (c) {
+            case '&': out += "&amp;"; break;
+            case '<': out += "&lt;"; break;
+            case '>': out += "&gt;"; break;
+            case '\n': out += "<br/>"; break;
+            default: out += c;
+        }
+    }
+    return out;
+}
+
+}  // namespace
+
+void RmlUi::apply_marks() {
+    for (int i = 0; i < context_->GetNumDocuments(); ++i) {
+        Rml::ElementList marked;
+        context_->GetDocument(i)->QuerySelectorAll(marked, "[mark]");
+        for (Rml::Element* e : marked) {
+            e->SetClass("marked", !mark_.empty() && e->GetAttribute<Rml::String>("mark", "") == mark_);
+        }
+    }
+}
+
+void RmlUi::update_tooltip() {
+    // What lies under the pointer, or its nearest parent with a tip.
+    Rml::Element* found = nullptr;
+    Rml::String tip;
+    for (Rml::Element* e = context_->GetHoverElement(); e != nullptr; e = e->GetParentNode()) {
+        tip = e->GetAttribute<Rml::String>("tip", "");
+        if (!tip.empty()) {
+            found = e;
+            break;
+        }
+    }
+    const std::uint64_t now = SDL_GetTicksNS();
+    if (found != tip_element_ || tip != tip_text_) {
+        tip_element_ = found;
+        tip_text_ = tip;
+        tip_since_ns_ = now;
+    }
+    const bool show = tooltips_on_ && found != nullptr &&
+                      now - tip_since_ns_ >= static_cast<std::uint64_t>(std::max(0, tooltip_delay_ms_)) * 1'000'000ull;
+    Rml::ElementDocument* doc = document(kTooltipDocument);
+    if (!show) {
+        if (doc != nullptr && doc->IsVisible()) {
+            doc->Hide();
+        }
+        tooltip_shown_.clear();
+        return;
+    }
+    if (doc == nullptr) {
+        // Loaded (and shown) the first time it is needed.
+        if (!show_document(kTooltipDocument, true) || (doc = document(kTooltipDocument)) == nullptr) {
+            return;
+        }
+    }
+    const Rml::String detail = found->GetAttribute<Rml::String>("tip-detail", "");
+    const bool shift = (SDL_GetModState() & SDL_KMOD_SHIFT) != 0;
+    Rml::String text;
+    Rml::String more;
+    (void)system_.TranslateString(text, tip);
+    (void)system_.TranslateString(more, detail);
+    const std::string rml = tip_rml(text);
+    const std::string rml_detail = shift ? tip_rml(more) : std::string();
+    if (rml + "\x1f" + rml_detail != tooltip_shown_ || !doc->IsVisible()) {
+        tooltip_shown_ = rml + "\x1f" + rml_detail;
+        if (Rml::Element* t = doc->GetElementById("text")) {
+            t->SetInnerRML(rml);
+        }
+        if (Rml::Element* d = doc->GetElementById("detail")) {
+            d->SetInnerRML(rml_detail);
+            d->SetProperty("display", rml_detail.empty() ? "none" : "block");
+        }
+        if (Rml::Element* h = doc->GetElementById("hint")) {
+            h->SetProperty("display", !detail.empty() && !shift ? "block" : "none");
+        }
+    }
+    // Beside the pointer, inside the window (the size is last frame's).
+    const Rml::Vector2f size = doc->GetBox().GetSize(Rml::BoxArea::Border);
+    const Rml::Vector2i dims = context_->GetDimensions();
+    const float gap = 16.0f * context_->GetDensityIndependentPixelRatio();
+    float x = mouse_x_ + gap;
+    float y = mouse_y_ + gap * 1.25f;
+    if (x + size.x > static_cast<float>(dims.x)) {
+        x = std::max(0.0f, mouse_x_ - gap * 0.5f - size.x);
+    }
+    if (y + size.y > static_cast<float>(dims.y)) {
+        y = std::max(0.0f, mouse_y_ - gap * 0.5f - size.y);
+    }
+    doc->SetProperty("left", std::format("{:.1f}px", x));
+    doc->SetProperty("top", std::format("{:.1f}px", y));
+    if (!doc->IsVisible()) {
+        doc->Show(Rml::ModalFlag::None, Rml::FocusFlag::None);
+    }
+    doc->PullToFront();
 }
 
 void RmlUi::render() {
@@ -349,8 +455,9 @@ bool RmlUi::process_event(const SDL_Event& event, float pixel_density) {
     const int mods = modifiers_from_sdl(SDL_GetModState());
     switch (event.type) {
         case SDL_EVENT_MOUSE_MOTION:
-            context_->ProcessMouseMove(static_cast<int>(event.motion.x * pixel_density),
-                                       static_cast<int>(event.motion.y * pixel_density), mods);
+            mouse_x_ = event.motion.x * pixel_density;
+            mouse_y_ = event.motion.y * pixel_density;
+            context_->ProcessMouseMove(static_cast<int>(mouse_x_), static_cast<int>(mouse_y_), mods);
             return wants_mouse();
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
             const int button = button_from_sdl(event.button.button);

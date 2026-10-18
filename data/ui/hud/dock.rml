@@ -1,0 +1,19 @@
+<rml>
+<head>
+	<title>HUD: dock</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
+	<link type="text/rcss" href="hud.rcss"/>
+	<link type="text/rcss" href="dock.rcss"/>
+</head>
+<!-- The dock on the left (phase 121): the town's windows. Data model "dock". -->
+<body id="dock" data-model="dock">
+	<div class="dock pill">
+		<div class="dbtn" data-for="d : entries" data-class-on="d.open" data-attr-mark="d.mark"
+		     data-attr-tip="d.tip" data-event-click="toggle(d.id)">
+			<img data-attr-sprite="d.icon"/>
+		</div>
+	</div>
+</body>
+</rml>

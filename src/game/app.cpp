@@ -521,10 +521,24 @@ void App::cycle_window_mode() {
 void App::handle_event(const SDL_Event& event) {
     const float density = window_.sdl() != nullptr ? SDL_GetWindowPixelDensity(window_.sdl()) : 1.0f;
     debug_.process_event(event);
+    // Phase 121: over the minimap's picture (RmlUi's) the game still follows
+    // the pointer, and a right click is the game's: it sends an explorer.
+    bool over_minimap = false;
+    if (session_ && (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+                     event.type == SDL_EVENT_MOUSE_BUTTON_UP)) {
+        const std::array<float, 4>& m = session_->ui().minimap;
+        const float x = (event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x) * density;
+        const float y = (event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y) * density;
+        over_minimap = m[2] > 0.0f && x >= m[0] && y >= m[1] && x < m[0] + m[2] && y < m[1] + m[3];
+    }
+    const bool minimap_right = over_minimap && event.type != SDL_EVENT_MOUSE_MOTION && event.button.button == SDL_BUTTON_RIGHT;
     // RmlUi first: what it takes, the old interface and the camera never see.
     // A button release always goes on, so nothing stays pressed.
-    if (rml_.process_event(event, density)) {
-        if (event.type == SDL_EVENT_MOUSE_MOTION) {
+    if (!minimap_right && rml_.process_event(event, density)) {
+        if (event.type == SDL_EVENT_MOUSE_MOTION && over_minimap) {
+            input_.mouse_x = event.motion.x * density;
+            input_.mouse_y = event.motion.y * density;
+        } else if (event.type == SDL_EVENT_MOUSE_MOTION) {
             input_.mouse_x = -1.0f;
             input_.mouse_y = -1.0f;
         }
@@ -1077,6 +1091,7 @@ void App::render_frame(float dt) {
         // Interface on top.
         const Settings& s = settings_->settings();
         ui_.set_tooltips(s.ui.show_tooltips, s.ui.tooltip_delay_ms);
+        rml_.set_tooltips(s.ui.show_tooltips, s.ui.tooltip_delay_ms);
         ui_.begin_frame(input_, static_cast<float>(frame.width), static_cast<float>(frame.height), ui_scale(),
                         SDL_GetTicksNS(), atlas_.white_u(), atlas_.white_v());
         // The developer tools pick and place in the world before drawing.

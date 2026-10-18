@@ -1,0 +1,48 @@
+/* The dock (phase 121). */
+
+body
+{
+	left: 12dp;
+	top: 64dp;
+}
+
+.dock
+{
+	flex-direction: column;
+	height: auto;
+	padding: 6dp;
+	border-radius: 18dp;
+}
+
+.dbtn
+{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40dp;
+	height: 40dp;
+	margin: 2dp 0;
+	border-radius: 14dp;
+}
+
+.dbtn img
+{
+	width: 22dp;
+	height: 22dp;
+	image-color: var(--icon);
+}
+
+.dbtn:hover
+{
+	background-color: var(--btn-hover);
+}
+
+.dbtn.on
+{
+	background-color: var(--btn-on);
+}
+
+.dbtn.on img
+{
+	image-color: var(--btn-on-text);
+}

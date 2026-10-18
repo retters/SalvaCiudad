@@ -1,0 +1,87 @@
+/* The minimap and the compass (phase 121), top right under the top bar. */
+
+body
+{
+	right: 12dp;
+	top: 60dp;
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+}
+
+.frame
+{
+	display: block;
+	position: relative;
+	width: 200dp;   /* The picture; the padding is the band for the letters. */
+	height: 200dp;
+	padding: 18dp;
+	border-radius: 18dp;
+}
+
+#map
+{
+	display: block;
+	width: 200dp;
+	height: 200dp;
+	pointer-events: auto;
+	drag: drag;
+}
+
+.cardinal
+{
+	position: absolute;
+	width: 18dp;
+	line-height: 18dp;
+	text-align: center;
+	font-size: var(--font-small);
+	font-weight: bold;
+	color: var(--dim);
+}
+
+.cardinal.n { left: 109dp; top: 0; color: var(--bad); }
+.cardinal.s { left: 109dp; bottom: 0; }
+.cardinal.e { right: 0; top: 109dp; }
+.cardinal.w { left: 0; top: 109dp; }
+
+.compass
+{
+	position: relative;
+	width: 64dp;
+	height: 64dp;
+	margin-right: 8dp;
+	pointer-events: auto;
+}
+
+.needle
+{
+	position: absolute;
+	left: 16dp;
+	top: 16dp;
+	width: 32dp;
+	height: 32dp;
+	transform-origin: center;
+}
+
+.needle img
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 32dp;
+	height: 32dp;
+}
+
+.needle .north { image-color: var(--bad); }
+.needle .south { image-color: var(--text); }
+
+.compass-n
+{
+	position: absolute;
+	width: 16dp;
+	line-height: 16dp;
+	text-align: center;
+	font-size: var(--font-small);
+	font-weight: bold;
+	color: var(--text);
+}

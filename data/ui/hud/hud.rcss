@@ -1,0 +1,104 @@
+/* The player's HUD over the map (phase 121): glass pills along the top,
+   the dock on the left, the minimap and the compass on the right, the
+   notices at the bottom right and the tooltip. The look comes from the
+   active style's tokens, like the windows (/window.rcss). */
+
+body
+{
+	position: absolute;
+	pointer-events: none;  /* Only the pills take the mouse. */
+}
+
+.pill
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	height: 40dp;
+	padding: 0 12dp;
+	margin-right: 8dp;
+	decorator: var(--panel);
+	backdrop-filter: var(--panel-blur);
+	box-shadow: var(--panel-shadow);
+	border: var(--panel-border-width) var(--panel-border);
+	border-radius: 20dp;
+	color: var(--text);
+	pointer-events: auto;
+}
+
+.glass-simple .pill, .glass-simple.pill
+{
+	decorator: var(--panel-simple);
+	backdrop-filter: none;
+}
+
+.item
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin: 0 6dp;
+	white-space: nowrap;
+}
+
+.item img
+{
+	width: 22dp;
+	height: 22dp;
+	margin-right: 4dp;
+}
+
+.item img.icon
+{
+	width: 18dp;
+	height: 18dp;
+	image-color: var(--icon);
+}
+
+.item b
+{
+	font-weight: bold;
+}
+
+.stack
+{
+	display: flex;
+	flex-direction: column;
+	margin: 0 6dp;
+	font-size: var(--font-small);
+	line-height: 1.15em;
+	white-space: nowrap;
+}
+
+.dim
+{
+	color: var(--dim);
+}
+
+.bad
+{
+	color: var(--bad);
+}
+
+.gold
+{
+	color: var(--warn);
+}
+
+.cold
+{
+	color: var(--info);
+}
+
+/* Something the tutorial points at (attribute "mark"): a pulsing ring. */
+.marked
+{
+	box-shadow: var(--accent) 0 0 0 3dp;
+	animation: 1s cubic-in-out infinite alternate pulse;
+}
+
+@keyframes pulse
+{
+	from { opacity: 1; }
+	to { opacity: 0.65; }
+}

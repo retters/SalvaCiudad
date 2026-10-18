@@ -70,6 +70,10 @@ public:
     std::vector<Resolution> fullscreen_resolutions(const std::string& monitor) override;
     const ui::FontLibrary& fonts() const override { return fonts_; }
     std::vector<UiStyleChoice> ui_styles() const override;
+    rml::RmlUi* rml() override { return rml_.ready() ? &rml_ : nullptr; }
+    void set_hud_image(const std::string& name, int width, int height, const std::vector<std::uint8_t>& rgba) override {
+        rml_renderer_.set_live_image(name, width, height, rgba);
+    }
     void open_data_folder() override;
     mods::ModLibrary& mod_library() override { return mod_library_; }
     void apply_mods(const std::vector<std::string>& enabled) override;

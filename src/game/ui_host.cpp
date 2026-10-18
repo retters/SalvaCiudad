@@ -291,6 +291,9 @@ void UiHost::change_display(const DisplaySettings& wanted) {
 
 void UiHost::frame(ui::Context& ctx) {
     const bool modal = modal_open();
+    if (services_.session() == nullptr) {
+        hud_.hide_rml();  // The HUD's RmlUi parts are for a game.
+    }
     // Behind the menus, the 3D scene shows through a dark veil.
     const SceneMode mode = scene_mode();
     if (mode == SceneMode::None) {

@@ -1,0 +1,28 @@
+/* The tooltip (phase 121). */
+
+body
+{
+	position: absolute;
+	max-width: 360dp;
+	padding: 8dp 12dp;
+	background-color: var(--tip);
+	color: var(--tip-text);
+	border-radius: var(--tip-radius);
+	font-size: var(--font-small);
+	pointer-events: none;
+	z-index: 1000;
+}
+
+#detail
+{
+	margin-top: 6dp;
+	padding-top: 6dp;
+	border-top: 1dp var(--sep);
+}
+
+.hint
+{
+	margin-top: 4dp;
+	opacity: 0.7;
+	font-size: 12dp;
+}

@@ -1,15 +1,21 @@
 // The interface of a village game (section 6.4): the top bar with goods,
 // population, date and speed; the build bar; the launcher on the left; the
 // game windows, which overlap, move, snap, dock, minimize and are remembered
-// (hud_windows.cpp, window_list.h); and the notifications.
+// (hud_windows.cpp, window_list.h); and the notifications. Since phase 121
+// the top bar, the dock, the notices, the minimap and the compass are RmlUi
+// documents (hud_rml.cpp, data/ui/hud); the rest moves in later phases.
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
+#include <RmlUi/Core/DataModelHandle.h>
+
+#include "game/hud_model.h"
 #include "game/services.h"
 #include "game/window_list.h"
 #include "ui/context.h"
@@ -63,9 +69,30 @@ public:
     void set_highlight(std::string key) { highlight_ = std::move(key); }
     // Top of the build bar last frame (for panels that sit above it).
     [[nodiscard]] float build_bar_top() const { return build_bar_top_; }
+    // Out of a game: the RmlUi parts are hidden.
+    void hide_rml();
 
 private:
-    void top_bar(ui::Context& ctx, GameSession& s);
+    // Phase 121: the RmlUi parts (hud_rml.cpp).
+    void rml_frame(ui::Context& ctx, GameSession& s);
+    void rml_models(rml::RmlUi& rml);
+    void rml_minimap(ui::Context& ctx, GameSession& s, rml::RmlUi& rml);
+    void toggle_dock(const std::string& id);
+    bool rml_ready_ = false;
+    TopBarModel top_;
+    Rml::DataModelHandle top_model_;
+    std::vector<DockEntry> dock_;
+    Rml::DataModelHandle dock_model_;
+    std::vector<HudNote> notes_shown_;
+    std::vector<std::size_t> notes_index_;  // Of each shown notice in notes_.
+    Rml::DataModelHandle notes_model_;
+    std::string needle_ = "rotate(0deg)";
+    std::string needle_n_left_ = "24dp";
+    std::string needle_n_top_ = "0dp";
+    Rml::DataModelHandle mini_model_;
+    std::vector<std::uint8_t> minimap_fogged_;
+    std::array<float, 8> minimap_corners_{};
+    std::uint64_t minimap_drawn_ns_ = 0;
     void build_bar(ui::Context& ctx, GameSession& s);
     // Phase 114: what a happening asks the town, with its two answers.
     void question(ui::Context& ctx, GameSession& s);
@@ -162,7 +189,8 @@ private:
     int offer_want_ = 1;
     int offer_want_amount_ = 20;
     // Multiplayer: who plays, whom the game waits for, speed votes.
-    void network(ui::Context& ctx, GameSession& s, float& right);
+    // Multiplayer: whom the game waits for, and a speed vote to answer.
+    void network_prompts(ui::Context& ctx, GameSession& s);
     int shown_speed_ = 4;  // The last speed that was not the pause (quarters).
     std::uint32_t answered_vote_ = 0;
     std::uint8_t category_ = 0;  // Build bar group shown.
@@ -201,7 +229,6 @@ private:
                 bool& open);
     void open_window(const std::string& id);
     [[nodiscard]] float left_x(ui::Context& ctx) const;
-    void dock(ui::Context& ctx, GameSession& s);
     void goods_window(ui::Context& ctx, GameSession& s);
     void stats_window(ui::Context& ctx, GameSession& s);
     void log_window(ui::Context& ctx, GameSession& s);
@@ -222,16 +249,13 @@ private:
         int day = 1;
     };
     std::vector<Note> notes_;
-    void notifications(ui::Context& ctx, GameSession& s, float bottom);
     float build_bar_top_ = 0.0f;
     std::string highlight_;
     // A pulsing outline around a highlighted element.
     void mark(ui::Context& ctx, const ui::Rect& r) const;
 
-    // Phase 24: the minimap, with the four cardinal points, and the compass
-    // (hud_minimap.cpp).
-    void minimap(ui::Context& ctx, GameSession& s, bool blocked);
-    void compass(ui::Context& ctx, const ui::Rect& box, float yaw);
+    // Phase 24: the minimap's ground and fog (drawn by hud_rml.cpp since
+    // phase 121).
     const GameSession* minimap_session_ = nullptr;  // Whose map the image shows.
     sim::MapSettings minimap_settings_;
     // Phase 32: the map's image without fog, and the fog it was last drawn
@@ -241,7 +265,6 @@ private:
     std::uint32_t minimap_fog_revision_ = 0;
     int minimap_fog_mode_ = -1;
     std::uint64_t minimap_fog_ns_ = 0;
-    bool minimap_dragging_ = false;
     float top_bar_bottom_ = 0.0f;
     float right_top_ = 0.0f;  // Below the minimap: where windows on the right start.
 

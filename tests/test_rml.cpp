@@ -527,4 +527,33 @@ TEST_SUITE("rml") {
         CHECK(f.ui.system().errors() == errors);
         f.ui.close_documents();
     }
+
+    TEST_CASE("a tooltip shows the tip of what lies under the pointer, and the tutorial marks") {
+        Fixture& f = fixture();
+        Rml::Context& ctx = *f.ui.context();
+        Rml::ElementDocument* doc = ctx.LoadDocumentFromMemory(R"(<rml><head><link type="text/rcss" href="/base.rcss"/>
+            <style>body { width: 400dp; height: 300dp; } .b { width: 100dp; height: 40dp; }</style></head>
+            <body><div class="b" id="a" tip="@hud.speed.pause.tooltip" tip-detail="more">x</div>
+            <div class="b" id="c" mark="speed">y</div></body></rml>)");
+        REQUIRE(doc != nullptr);
+        doc->Show();
+        f.ui.set_tooltips(true, 0);
+        f.ui.set_mark("speed");
+        f.ui.update(1280, 720, 1.0f);
+        Rml::Element* a = doc->GetElementById("a");
+        const Rml::Vector2f c = center(*a);
+        (void)f.ui.process_event(mouse_motion(c.x, c.y), 1.0f);
+        f.ui.update(1280, 720, 1.0f);
+        CHECK(f.ui.tooltip_shown().find(i18n::translator().text("hud.speed.pause.tooltip")) != std::string::npos);
+        CHECK(doc->GetElementById("c")->IsClassSet("marked"));
+        CHECK_FALSE(a->IsClassSet("marked"));
+        // Away from it, the tooltip goes.
+        (void)f.ui.process_event(mouse_motion(900.0f, 700.0f), 1.0f);
+        f.ui.update(1280, 720, 1.0f);
+        CHECK(f.ui.tooltip_shown().empty());
+        f.ui.set_mark({});
+        doc->Close();
+        f.ui.close_documents();
+        f.ui.update(1280, 720, 1.0f);
+    }
 }

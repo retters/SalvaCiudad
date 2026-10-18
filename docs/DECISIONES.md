@@ -4310,3 +4310,26 @@ El plan decía un atlas (D-11709). Cada imagen es su propia textura de 128 × 12
 
 **D-12005. Las imágenes se piden por su ruta.**
 Un documento escribe `<img src="/thumbs/building/core/stonecutter"/>` o, para un aldeano, `/thumbs/person/core/dark_elf/f/21` (pueblo, sexo y bits de aspecto). `RmlRenderer` reconoce las rutas `thumbs/`, devuelve una textura vacía al momento y la llena cuando el estudio da los píxeles. La clave de un retrato sale solo de lo que guarda la partida, así que es la misma después de cargar (hay una prueba). Los recursos sin montón (la piedra, por ejemplo) no tienen modelo: van con su ícono.
+
+## Fase 121: barra superior, dock, minimapa, avisos y tooltips en RmlUi (2026-10-17)
+
+**D-12101. Las partes del HUD son documentos de `data/ui/hud` con modelos de datos.**
+`top.rml`, `dock.rml`, `notes.rml` y `minimap.rml`, cada uno con su modelo (`top`, `dock`, `notes`, `mini`). `GameHud` (`src/game/hud_rml.cpp`) los llena en cada cuadro y solo marca como cambiado lo que cambió. Los textos de la barra salen de `top_bar_model()` (`src/game/hud_model.cpp`), separado de RmlUi para probarlo: las mismas claves y los mismos datos que la barra vieja (prueba `hud`). Los botones hacen lo mismo que antes (velocidad, abrir ventanas, ir al lugar de un aviso, mover la cámara con el minimapa). Se borraron `top_bar`, `dock`, `notifications`, `minimap`, `compass` y `weather_icon` del HUD viejo y `hud_minimap.cpp`; quedan en el HUD viejo el aviso de a quién se espera y la votación de velocidad en red (`network_prompts`), hasta las fases siguientes. Las ventanas viejas se ubican con las medidas nuevas: debajo de la barra (52 dp) y a la derecha del dock (76 dp). Las partes de RmlUi se esconden fuera de una partida.
+
+**D-12102. Tooltips de RmlUi: el atributo `tip`, y `tip-detail` con Mayús.**
+Cualquier elemento con `tip` (o con un padre que lo tenga) muestra ese texto en `hud/tooltip.rml` junto al puntero, con la demora y el interruptor de Configuración. El texto puede tener `@claves` y saltos de línea; se escapa antes de ponerlo en el documento. `tip-detail` es el detalle: mientras se mantiene Mayús se ve debajo, y si no, una línea avisa que existe. El documento no recibe el ratón (`pointer-events: none`) y siempre queda delante. Es el sistema de tooltips de toda la interfaz nueva.
+
+**D-12103. El minimapa: la imagen la dibuja el juego entera, con lo que va encima.**
+La interfaz de RmlUi se compone sobre la vieja (D-11801): lo que la vieja dibujaba sobre la imagen del minimapa (caminos, edificios, sitios para fundar, lo que ve la cámara) quedaba debajo del marco nuevo. Ahora todo eso se dibuja dentro de la imagen (`minimap::fill` y `minimap::line`, en texeles) y la imagen llega a RmlUi como imagen viva (`/live/minimap`, que se reemplaza cada vez). Se rehace cuando la cámara se mueve, cuando cambió la niebla y cinco veces por segundo (los edificios). La brújula es una aguja de dos íconos nuevos (`needle-n`, `needle-s`) que gira con `transform`; la N la acompaña. Sobre la imagen, el juego sigue viendo el puntero y el clic derecho, que manda al explorador (fase 77).
+
+**D-12104. Imágenes de la barra y del dock.**
+Cada bien de la barra lleva la miniatura de su montón (fase 120); los que no tienen montón, un ícono (troncos, piedra, oro, marfil), y la comida su total con el ícono del pan. Los botones del dock son íconos con su nombre y su explicación en el tooltip. La barra muestra hasta 12 bienes; los demás van en «+N», con la lista en su tooltip.
+
+**D-12105. El tutorial señala con el atributo `mark`.**
+Un elemento con `mark="speed"` (o `dock:<id>`) recibe la clase `marked` cuando el tutorial lo señala: un anillo del color de acento que late. Así siguen funcionando los pasos del tutorial de antes.
+
+**D-12106. Medidas.**
+Misma partida guardada con 1 000 aldeanos, en pausa, `release`, 1920 × 1080, sin vsync, cinco lecturas de F3: fase 116, 722 FPS en promedio; ahora con vidrio simple, 715 (−1,0 %); con vidrio completo, 618 (−14 %, unos 0,22 ms más por cuadro). El criterio era perder como mucho un 2 % con vidrio simple, y se cumple. Con vidrio completo se pierden 0,22 ms, que a 700 FPS es un 14 % y a 60 FPS sería un 1,3 %. La partida de la fase 116 necesitó el mod `core` de ahora, porque el cambio de nombre cambió sus textos y con ellos su suma (las definiciones son las mismas).
+
+**D-12107. Pruebas.**
+La prueba de la interfaz de partida (`menus`) usaba el minimapa viejo: ahora no lo tiene (sin GPU no hay RmlUi) y la barra de construcción pasó a ser el primer rectángulo del HUD viejo. El minimapa y los tooltips se revisan a mano y con la prueba de tooltips de `rml`.

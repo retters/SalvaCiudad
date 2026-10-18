@@ -107,6 +107,61 @@ void apply_fog(std::vector<std::uint8_t>& rgba, std::int32_t map_size, const Fog
     }
 }
 
+void fill(std::vector<std::uint8_t>& rgba, float x, float y, float w, float h, Rgba color) {
+    if (rgba.size() != static_cast<std::size_t>(kImageSize) * kImageSize * 4 || color.a == 0) {
+        return;
+    }
+    const int x0 = std::clamp(static_cast<int>(std::floor(x)), 0, kImageSize);
+    const int y0 = std::clamp(static_cast<int>(std::floor(y)), 0, kImageSize);
+    const int x1 = std::clamp(static_cast<int>(std::ceil(x + w)), x0, kImageSize);
+    const int y1 = std::clamp(static_cast<int>(std::ceil(y + h)), y0, kImageSize);
+    const int a = color.a;
+    for (int ty = y0; ty < y1; ++ty) {
+        for (int tx = x0; tx < x1; ++tx) {
+            std::uint8_t* p = &rgba[(static_cast<std::size_t>(ty) * kImageSize + static_cast<std::size_t>(tx)) * 4];
+            p[0] = static_cast<std::uint8_t>((color.r * a + p[0] * (255 - a)) / 255);
+            p[1] = static_cast<std::uint8_t>((color.g * a + p[1] * (255 - a)) / 255);
+            p[2] = static_cast<std::uint8_t>((color.b * a + p[2] * (255 - a)) / 255);
+            p[3] = 255;
+        }
+    }
+}
+
+void line(std::vector<std::uint8_t>& rgba, float x0, float y0, float x1, float y1, float thickness, Rgba color) {
+    // Squares stamped along it, half a texel apart.
+    const float length = std::hypot(x1 - x0, y1 - y0);
+    const int steps = std::clamp(static_cast<int>(length * 2.0f) + 1, 1, kImageSize * 8);
+    const float half = thickness * 0.5f;
+    std::vector<std::uint8_t> mask(static_cast<std::size_t>(kImageSize) * kImageSize, 0);
+    int min_x = kImageSize, min_y = kImageSize, max_x = 0, max_y = 0;
+    for (int i = 0; i <= steps; ++i) {
+        const float t = static_cast<float>(i) / static_cast<float>(steps);
+        const float cx = x0 + (x1 - x0) * t;
+        const float cy = y0 + (y1 - y0) * t;
+        const int ax = std::clamp(static_cast<int>(std::floor(cx - half + 0.5f)), 0, kImageSize);
+        const int ay = std::clamp(static_cast<int>(std::floor(cy - half + 0.5f)), 0, kImageSize);
+        const int bx = std::clamp(static_cast<int>(std::floor(cx + half + 0.5f)), ax, kImageSize);
+        const int by = std::clamp(static_cast<int>(std::floor(cy + half + 0.5f)), ay, kImageSize);
+        for (int ty = ay; ty < std::max(by, ay + 1) && ty < kImageSize; ++ty) {
+            for (int tx = ax; tx < std::max(bx, ax + 1) && tx < kImageSize; ++tx) {
+                mask[static_cast<std::size_t>(ty) * kImageSize + static_cast<std::size_t>(tx)] = 1;
+                min_x = std::min(min_x, tx);
+                min_y = std::min(min_y, ty);
+                max_x = std::max(max_x, tx);
+                max_y = std::max(max_y, ty);
+            }
+        }
+    }
+    // Each texel once, so the color does not pile up where squares overlap.
+    for (int ty = min_y; ty <= max_y && ty < kImageSize; ++ty) {
+        for (int tx = min_x; tx <= max_x && tx < kImageSize; ++tx) {
+            if (mask[static_cast<std::size_t>(ty) * kImageSize + static_cast<std::size_t>(tx)] != 0) {
+                fill(rgba, static_cast<float>(tx), static_cast<float>(ty), 1.0f, 1.0f, color);
+            }
+        }
+    }
+}
+
 std::array<float, 2> north_on_screen(float yaw) {
     // The camera's right is (cos, sin) and its forward (sin, -cos) on the
     // ground (x, z); north is (0, -1). Up the screen is forward.

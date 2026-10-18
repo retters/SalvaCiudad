@@ -15,7 +15,7 @@ using i18n::tr;
 
 namespace {
 
-constexpr float kTopBarH = 44.0f;
+constexpr float kTopBarH = 52.0f;  // The RmlUi top bar (data/ui/hud/top.rcss) and its margin.
 constexpr float kBuildButtonW = 150.0f;
 constexpr float kBuildButtonH = 44.0f;
 constexpr float kWindowW = 420.0f;  // Room for the title beside its three buttons, and for four in a row.
@@ -237,39 +237,6 @@ bool GameHud::pressed(const ui::Context& ctx, Action action) const {
     return false;
 }
 
-// Phase 97: the sky in a few strokes. `kind`: 0 clear (a sun, or a moon by
-// night), 1 rain, 2 snow.
-void weather_icon(ui::Context& ctx, const ui::Rect& r, int kind, bool night) {
-    ui::DrawList& d = ctx.draw();
-    const float u = std::max(1.0f, std::round(r.h / 8.0f));  // A stroke.
-    const float cx = std::round(r.x + r.w * 0.5f);
-    const float cy = std::round(r.y + r.h * 0.5f);
-    if (kind == 0) {
-        const ui::Color c = night ? ui::Color::rgb(0xD8DCEB) : ui::Color::rgb(0xF2C94C);
-        d.rect({cx - 2.0f * u, cy - 2.0f * u, 4.0f * u, 4.0f * u}, c);
-        if (night) {
-            d.rect({cx - 0.5f * u, cy - 2.0f * u, 2.5f * u, 2.5f * u}, ui::Color::rgb(0x2B2620));  // A bite: the moon.
-        } else {
-            for (const auto& [dx, dy] : {std::pair{0.0f, -1.0f}, std::pair{0.0f, 1.0f}, std::pair{-1.0f, 0.0f}, std::pair{1.0f, 0.0f}}) {
-                d.rect({cx + dx * 3.5f * u - 0.5f * u, cy + dy * 3.5f * u - 0.5f * u, u, u}, c);
-            }
-        }
-        return;
-    }
-    // A cloud, and what falls from it.
-    const ui::Color cloud = ui::Color::rgb(0xAEB6C2);
-    d.rect({cx - 3.5f * u, cy - 2.0f * u, 7.0f * u, 2.5f * u}, cloud);
-    d.rect({cx - 2.0f * u, cy - 3.5f * u, 3.5f * u, 2.0f * u}, cloud);
-    for (int k = -1; k <= 1; ++k) {
-        const float x = cx + static_cast<float>(k) * 2.5f * u;
-        if (kind == 1) {
-            d.line(x + 0.5f * u, cy + 1.0f * u, x - 0.5f * u, cy + 3.5f * u, u, ui::Color::rgb(0x6FB1F0));
-        } else {
-            d.rect({x - 0.5f * u, cy + (k == 0 ? 2.5f : 1.5f) * u, u, u}, ui::Color::rgb(0xFFFFFF));
-        }
-    }
-}
-
 void GameHud::mark(ui::Context& ctx, const ui::Rect& r) const {
     // A gold outline that pulses about once a second.
     const double t = static_cast<double>(ctx.now_ns() % 1'000'000'000ull) / 1e9;
@@ -361,7 +328,8 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     // Under a window, the rest of the interface does not hear the mouse.
     const bool covered = !hover_top_.empty();
     ctx.set_input_blocked(blocked || covered);
-    top_bar(ctx, *s);
+    rml_frame(ctx, *s);
+    network_prompts(ctx, *s);
     // Phase 74: with no town yet there is nothing to build with.
     // Phase 79: nor for whoever watches.
     const bool has_town = game.founded(s->local_player()) && !s->spectating();
@@ -380,12 +348,9 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
         founding(ctx, *s);
     }
     join_requests(ctx, *s);
-    minimap(ctx, *s, blocked);  // It knows by itself what lies over it.
     if (ui.placing != sim::kNoDef || ui.field_farm.valid()) {
         placement_hint(ctx, *s);
     }
-    dock(ctx, *s);
-    notifications(ctx, *s, build_bar_top_);
 
     // The windows, from the back to the front; only the one in front under
     // the cursor (or the one being dragged) hears the mouse.
@@ -535,228 +500,19 @@ void GameHud::gone_window(ui::Context& ctx, GameSession& s, const WindowList::Ob
     (void)ctx.paragraph({box.x + pad, box.y + pad + title_h + pad, box.w - 2 * pad, text_h}, text, body, ctx.theme().text_dim);
 }
 
-void GameHud::top_bar(ui::Context& ctx, GameSession& s) {
-    const sim::Game& game = s.game();
-    const sim::Content& content = game.content();
-    const ui::Rect bar{0, 0, ctx.width(), std::round(ctx.s(kTopBarH))};
-    top_bar_bottom_ = bar.bottom();
-    ctx.draw().rect(bar, ctx.theme().panel);
-    ctx.draw().rect({0, bar.bottom() - 1, bar.w, 1}, ctx.theme().panel_border);
-    block(s, bar);
-    const ui::TextStyle st = ctx.style(ctx.theme().body);
-    const float pad = ctx.s(12.0f);
-    float x = pad;
-
-    // Population and date in the middle-right; speed on the right.
-    const std::int32_t pop = game.population(s.town());
-    const std::int32_t adults = game.population(s.town(), true);
-    const sim::Calendar cal = game.calendar();
-    const float button = std::round(ctx.s(36.0f));
-    const float gap = ctx.s(4.0f);
-    // Pause, and "- xN +" (phase 58).
-    const float label_w = std::round(ctx.s(56.0f));
-    float right = bar.right() - pad - 3 * button - label_w - 3 * gap;
-    {
-        const float by = std::round((bar.h - button) * 0.5f);
-        const int now = services_.game_speed();
-        const int most = services_.max_game_speed();
-        float sx = right;
-        if (ctx.button(ctx.id("hud.speed.pause"), {sx, by, button, button}, tr("hud.speed.pause"), tr("hud.speed.pause.tooltip"),
-                       true, now == speed::kPause)) {
-            services_.set_game_speed(now == speed::kPause ? shown_speed_ : speed::kPause);
-        }
-        if (now != speed::kPause) {
-            shown_speed_ = now;  // What "xN" says while paused, and where the pause goes back to.
-        }
-        sx += button + gap;
-        if (ctx.button(ctx.id("hud.speed.slower"), {sx, by, button, button}, tr("hud.speed.slower"),
-                       tr("hud.speed.slower.tooltip"), shown_speed_ > speed::kMin)) {
-            services_.set_game_speed(speed::slower(shown_speed_));
-        }
-        sx += button + gap;
-        ctx.label({sx, by, label_w, button}, tr("hud.speed.value", speed_text(shown_speed_)), st,
-                  now == speed::kPause ? ctx.theme().text_dim : ctx.theme().text, ui::Align::Center);
-        sx += label_w + gap;
-        const ui::Rect faster{sx, by, button, button};
-        if (highlight_ == "speed") {
-            mark(ctx, faster);
-        }
-        if (ctx.button(ctx.id("hud.speed.faster"), faster, tr("hud.speed.faster"), tr("hud.speed.faster.tooltip"),
-                       shown_speed_ < most)) {
-            services_.set_game_speed(speed::faster(shown_speed_, most));
-        }
-    }
-    network(ctx, s, right);
-    // Season and weather, then the date.
-    static constexpr const char* kSeasonKeys[] = {"hud.season.spring", "hud.season.summer", "hud.season.autumn",
-                                                  "hud.season.winter"};
-    std::string weather = tr("hud.weather", tr(kSeasonKeys[static_cast<std::size_t>(cal.season) % 4]),
-                             game.temperature());
-    // Day or night first, when the game has them.
-    const bool cycle = game.rules().day_night.enabled();
-    const sim::DayTime day_time = game.day_time();
-    if (cycle) {
-        weather = tr("hud.dayTime", tr(day_time.night ? "hud.night" : "hud.day"), weather);
-    }
-    // Phase 97: what falls from the sky, said first and drawn beside it
-    // (in a game where it may rain).
-    const bool rainy_game = game.rules().rain != 0;
-    const bool raining = rainy_game && game.raining();
-    const bool snowing = rainy_game && game.snowing();
-    if (raining || snowing) {
-        weather = tr("hud.dayTime", tr(raining ? "hud.weather.rain" : "hud.weather.snowfall"), weather);
-    }
-    const std::string date_text = tr("hud.date", static_cast<int>(cal.year), static_cast<int>(cal.month),
-                                     static_cast<int>(cal.day));
-    // Weather over the date, in two small lines.
-    const ui::TextStyle two = ctx.style(ctx.theme().small);
-    const float half = std::round(bar.h * 0.5f);
-    const float icon = rainy_game ? std::round(ctx.s(20.0f)) : 0.0f;
-    const float ww = std::max(ctx.text().measure(two, weather), ctx.text().measure(two, date_text)) + ctx.s(24.0f) + icon;
-    right -= ww;
-    if (rainy_game) {
-        weather_icon(ctx, {right + ctx.s(4.0f), bar.y + ctx.s(4.0f), icon - ctx.s(4.0f), half - ctx.s(4.0f)},
-                     raining ? 1 : snowing ? 2 : 0, cycle && day_time.night);
-    }
-    ctx.label({right + icon, bar.y + ctx.s(3.0f), ww - icon, half - ctx.s(3.0f)}, weather, two,
-              game.temperature() < 0 ? ui::Color::rgb(0x9CC7F0) : ctx.theme().text);
-    ctx.label({right + icon, bar.y + half, ww - icon, half - ctx.s(3.0f)}, date_text, two, ctx.theme().text_dim);
-    std::string weather_tip = tr(game.frozen() ? "hud.weather.frozen" : "hud.weather.tooltip", game.snow());
-    if (rainy_game) {
-        weather_tip += "\n" + (raining       ? tr("hud.weather.rain.tooltip")
-                               : snowing      ? tr("hud.weather.snowfall.tooltip")
-                               : game.muddy() ? tr("hud.weather.mud.tooltip")
-                                              : tr("hud.weather.dry.tooltip", game.days_without_rain()));
-    }
-    if (cycle) {
-        // Ten ticks a second at normal speed.
-        const int seconds = static_cast<int>((day_time.ticks_left + 9) / 10);
-        const std::string s2 = (seconds % 60 < 10 ? "0" : "") + std::to_string(seconds % 60);
-        weather_tip = tr(day_time.night ? "hud.night.tooltip" : "hud.day.tooltip", seconds / 60, s2) + "\n" + weather_tip;
-    }
-    ctx.tooltip_area(ctx.id("hud_weather"), {right, bar.y, ww, bar.h}, weather_tip);
-    // Two small lines in one slot of the bar.
-    const ui::TextStyle small2 = ctx.style(ctx.theme().small);
-    const float half2 = std::round(bar.h * 0.5f);
-    const auto stacked = [&](const std::string& top, ui::Color top_color, const std::string& bottom, ui::Color bottom_color,
-                             const char* id, const std::string& tooltip) {
-        const float w = std::max(ctx.text().measure(small2, top), ctx.text().measure(small2, bottom)) + ctx.s(20.0f);
-        right -= w;
-        ctx.label({right, bar.y + ctx.s(3.0f), w, half2 - ctx.s(3.0f)}, top, small2, top_color);
-        ctx.label({right, bar.y + half2, w, half2 - ctx.s(3.0f)}, bottom, small2, bottom_color);
-        ctx.tooltip_area(ctx.id(id), {right, bar.y, w, bar.h}, tooltip);
-    };
-    if (!game.founded(s.local_player())) {
-        return;  // Phase 74: no town yet, no goods or people to count.
-    }
-    // Happiness over the town's gold, and where the gold is.
-    const std::int32_t joy = game.happiness(s.town());
-    const sim::Game::GoldPlaces places = game.gold_places(s.town());
-    stacked(tr("hud.happiness", joy), joy < 35 ? ctx.theme().danger : ctx.theme().text,
-            tr("hud.gold", game.gold(s.town())), ui::Color::rgb(0xE8C45A), "hud_happiness",
-            tr("hud.happiness.tooltip") + "\n" + tr("hud.gold.tooltip", places.post, places.vaults, places.others));
-    // Troubles: the sick over the fires, only when there are some.
-    const std::int32_t sick = game.sick(s.town());
-    std::int32_t fires = 0;
-    for (const sim::Building& b : game.buildings().data()) {
-        fires += b.fire > 0 && b.owner == s.town() ? 1 : 0;
-    }
-    const std::int32_t raiders = game.raiders_near(s.town());
-    if (raiders > 0) {
-        stacked(tr("hud.raiders", raiders), ctx.theme().danger,
-                tr(game.player(s.town()).alarm ? "hud.alarm.on" : "hud.alarm.off"), ctx.theme().text_dim, "hud_raiders",
-                tr("hud.raiders.tooltip"));
-    }
-    if (sick > 0 || fires > 0) {
-        stacked(tr("hud.sick", sick), ctx.theme().text, tr("hud.fires", fires),
-                fires > 0 ? ctx.theme().danger : ctx.theme().text_dim, "hud_troubles", tr("hud.troubles.tooltip"));
-    }
-    // Trade with other towns.
-    bool others = false;
-    for (std::uint8_t p = 0; p < game.player_count(); ++p) {
-        others = others || (game.town_exists(p) && p != s.town());
-    }
-    const std::string pop_text = tr("hud.population", pop);
-    const float pw = ctx.text().measure(st, pop_text) + ctx.s(24.0f);
-    right -= pw;
-    ctx.label({right, bar.y, pw, bar.h}, pop_text, st, ctx.theme().text);
-    const sim::PlayerState& ps = game.player(s.town());
-    ctx.tooltip_area(ctx.id("hud_population"), {right, bar.y, pw, bar.h},
-                     tr("hud.population.tooltip", adults, ps.births, ps.arrivals, ps.deaths));
-
-    // Goods: food as one total (with the kinds in the tooltip), then
-    // everything else the town has.
-    const std::vector<std::int32_t> stored = game.stored(s.town());
-    std::int32_t food = 0;
-    std::string food_detail;
-    for (std::size_t r = 0; r < stored.size(); ++r) {
-        if (content.resources[r].category == sim::ResourceCategory::Food) {
-            food += stored[r];
-            if (stored[r] > 0) {
-                food_detail += (food_detail.empty() ? "" : "\n") + tr("hud.amount", tr(content.resources[r].name_key), stored[r]);
-            }
-        }
-    }
-    // What does not fit before the right side goes into a "+N" item.
-    const float more_w = ctx.text().measure(st, tr("hud.more", 99)) + ctx.s(18.0f);
-    int hidden = 0;
-    std::string hidden_detail;
-    const auto item = [&](const std::string& text, const std::string& tooltip, const char* id) {
-        const float w = ctx.text().measure(st, text) + ctx.s(18.0f);
-        if (hidden > 0 || x + w + more_w > right) {
-            ++hidden;
-            hidden_detail += (hidden_detail.empty() ? "" : "\n") + text;
-            return;
-        }
-        const ui::Rect r{x, bar.y, w, bar.h};
-        ctx.label(r, text, st, ctx.theme().text);
-        ctx.tooltip_area(ctx.id(id), r, tooltip);
-        x += w;
-    };
-    item(tr("hud.food", food), food_detail.empty() ? tr("hud.food.tooltip") : food_detail, "hud_food");
-    for (std::size_t r = 0; r < stored.size(); ++r) {
-        const sim::ResourceDef& def = content.resources[r];
-        if (def.category == sim::ResourceCategory::Food || def.category == sim::ResourceCategory::Gold ||
-            (stored[r] == 0 && def.id != "core:log" && def.id != "core:stone")) {
-            continue;
-        }
-        item(tr("hud.amount", tr(def.name_key), stored[r]), tr(def.name_key), def.id.c_str());
-    }
-    if (hidden > 0) {
-        const ui::Rect r{x, bar.y, more_w, bar.h};
-        ctx.label(r, tr("hud.more", hidden), st, ctx.theme().text_dim);
-        ctx.tooltip_area(ctx.id("hud_more"), r, hidden_detail);
-    }
-}
-
-void GameHud::network(ui::Context& ctx, GameSession& s, float& right) {
+void GameHud::network_prompts(ui::Context& ctx, GameSession& s) {
     net::NetSession* net = services_.net();
     if (net == nullptr || !s.networked()) {
         return;
     }
     const ui::TextStyle st = ctx.style(ctx.theme().body);
-    const float bar_h = std::round(ctx.s(kTopBarH));
-    // Players: a count, with the names in the tooltip.
-    int connected = 0;
-    std::string names;
+    const float bar_h = top_bar_bottom_;
     std::string waiting;
     for (const net::LobbyPlayer& p : net->lobby().players) {
-        connected += p.connected ? 1 : 0;
-        names += (names.empty() ? "" : "\n") + tr(p.connected ? "hud.net.player" : "hud.net.playerAway", p.name) +
-                 (p.watching && p.connected ? " " + tr("hud.net.watching") : std::string());
         if (net->waiting_for() && *net->waiting_for() == p.slot && p.slot != net->local_slot()) {
             waiting = p.name;
         }
     }
-    // Phase 79: and who watches without a seat.
-    for (const std::string& w : net->lobby().watchers) {
-        names += (names.empty() ? "" : "\n") + tr("hud.net.player", w) + " " + tr("hud.net.watching");
-    }
-    const std::string text = tr("hud.net.players", connected);
-    const float w = ctx.text().measure(st, text) + ctx.s(24.0f);
-    right -= w;
-    ctx.label({right, 0, w, bar_h}, text, st, ctx.theme().text);
-    ctx.tooltip_area(ctx.id("hud_players"), {right, 0, w, bar_h}, names);
 
     // Waiting for somebody.
     if (!waiting.empty()) {

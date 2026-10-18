@@ -119,6 +119,9 @@ public:
     static constexpr int kPictureSize = 128;
     [[nodiscard]] std::vector<std::string> take_picture_requests();
     void provide_picture(const std::string& key, const std::vector<std::uint8_t>& rgba);
+    // Images the game draws again and again (phase 121: the minimap), as
+    // "live/<name>": every call replaces the pixels (premultiplied RGBA).
+    void set_live_image(const std::string& name, int width, int height, const std::vector<std::uint8_t>& rgba);
 
     // Rml::RenderInterface.
     Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices,
@@ -269,6 +272,12 @@ private:
     std::uintptr_t next_effect_ = 1;
     std::unordered_map<std::string, std::vector<Rml::TextureHandle>> pictures_;  // By key.
     std::vector<std::string> picture_requests_;
+    struct Live {
+        int width = 1;
+        int height = 1;
+        std::vector<std::uint8_t> rgba{0, 0, 0, 0};
+    };
+    std::unordered_map<std::string, Live> live_;  // By name.
 
     // The frame being recorded.
     int width_ = 0;

@@ -1,0 +1,33 @@
+/* The notices (phase 121), over the build bar on the right. */
+
+body
+{
+	right: 12dp;
+	width: 380dp;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+.note
+{
+	height: auto;
+	min-height: 34dp;
+	margin: 4dp 0 0 0;
+	padding: 4dp 12dp;
+	border-radius: 14dp;
+	font-size: var(--font-small);
+}
+
+.note img
+{
+	width: 16dp;
+	height: 16dp;
+	margin-right: 8dp;
+	image-color: var(--accent);
+}
+
+.note.go:hover
+{
+	background-color: var(--btn-hover);
+}

@@ -478,6 +478,14 @@ Rml::TextureHandle RmlRenderer::add_texture(std::vector<std::uint8_t> rgba, int 
 }
 
 Rml::TextureHandle RmlRenderer::LoadTexture(Rml::Vector2i& texture_dimensions, const Rml::String& source) {
+    if (source.starts_with("live/")) {
+        const std::string name = source.substr(5);
+        const Live& l = live_[name];
+        const Rml::TextureHandle handle = add_texture(l.rgba, l.width, l.height);
+        pictures_[source].push_back(handle);
+        texture_dimensions = Rml::Vector2i(l.width, l.height);
+        return handle;
+    }
     if (source.starts_with("thumbs/")) {
         // A picture the game renders: empty until it comes.
         const std::string key = source.substr(7);
@@ -555,6 +563,35 @@ void RmlRenderer::provide_picture(const std::string& key, const std::vector<std:
     }
     if (it->second.empty()) {
         pictures_.erase(it);
+    }
+}
+
+void RmlRenderer::set_live_image(const std::string& name, int width, int height,
+                                 const std::vector<std::uint8_t>& rgba) {
+    if (width < 1 || height < 1 || width > kMaxTextureSize || height > kMaxTextureSize ||
+        rgba.size() != static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4) {
+        return;
+    }
+    Live& l = live_[name];
+    l.width = width;
+    l.height = height;
+    l.rgba = rgba;
+    const auto it = pictures_.find("live/" + name);
+    if (it == pictures_.end()) {
+        return;
+    }
+    std::erase_if(it->second, [this](Rml::TextureHandle h) { return !textures_.contains(h); });
+    for (const Rml::TextureHandle h : it->second) {
+        Texture& t = textures_[h];
+        if (t.width != width || t.height != height) {
+            if (device_ != nullptr) {
+                SDL_ReleaseGPUTexture(device_, t.texture);
+            }
+            t.texture = nullptr;
+            t.width = width;
+            t.height = height;
+        }
+        t.pending = rgba;
     }
 }
 

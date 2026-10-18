@@ -1,0 +1,63 @@
+<rml>
+<head>
+	<title>HUD: top</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
+	<link type="text/rcss" href="hud.rcss"/>
+	<link type="text/rcss" href="top.rcss"/>
+</head>
+<!-- The top bar (phase 121): goods, people, happiness and gold, troubles,
+     weather and date, speed. Data model "top" (src/game/hud_model.h). -->
+<body id="top" data-model="top">
+	<div class="row-top">
+		<div class="pill goods" data-if="founded">
+			<div class="item" data-for="g : goods" data-attr-tip="g.tip">
+				<img class="icon" data-if="g.sprite" data-attr-sprite="g.image"/>
+				<img data-if="!g.sprite" data-attr-src="g.image"/>
+				<b>{{g.text}}</b>
+			</div>
+			<div class="item dim" data-if="hidden > 0" data-attr-tip="hidden_tip">+{{hidden}}</div>
+		</div>
+		<div class="spacer"></div>
+		<div class="pill" data-if="founded">
+			<div class="item" data-attr-tip="population_tip"><img class="icon" sprite="icon-users"/><b>{{population}}</b></div>
+			<div class="stack" data-attr-tip="happiness_tip">
+				<span data-class-bad="unhappy">{{happiness}}</span>
+				<span class="gold">{{gold}}</span>
+			</div>
+			<div class="stack" data-if="troubles" data-attr-tip="troubles_tip">
+				<span>{{sick}}</span>
+				<span data-class-bad="burning" data-class-dim="!burning">{{fires}}</span>
+			</div>
+			<div class="stack" data-if="raiders" data-attr-tip="raiders_tip">
+				<span class="bad">{{raiders_text}}</span>
+				<span class="dim">{{alarm_text}}</span>
+			</div>
+		</div>
+		<div class="pill" data-attr-tip="weather_tip">
+			<img class="weather icon" data-attr-sprite="weather_icon"/>
+			<div class="stack">
+				<span data-class-cold="cold">{{weather}}</span>
+				<span class="dim">{{date}}</span>
+			</div>
+		</div>
+		<div class="pill" data-if="networked" data-attr-tip="players_tip">
+			<div class="item"><img class="icon" sprite="icon-users"/>{{players}}</div>
+		</div>
+		<div class="pill speed">
+			<div class="ibtn" data-class-on="paused" data-event-click="pause" tip="@hud.speed.pause.tooltip">
+				<img sprite="icon-pause"/>
+			</div>
+			<div class="ibtn" data-class-off="!can_slower" data-event-click="slower" tip="@hud.speed.slower.tooltip">
+				<img sprite="icon-slower"/>
+			</div>
+			<span class="speed-value" data-class-dim="paused">{{speed}}</span>
+			<div class="ibtn" mark="speed" data-class-off="!can_faster" data-event-click="faster"
+			     tip="@hud.speed.faster.tooltip">
+				<img sprite="icon-faster"/>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>
