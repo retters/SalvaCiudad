@@ -4,10 +4,12 @@
 // live in it: goods, statistics, events, layers and the camera windows.
 // WindowList stays the model (places, depth, groups, tabs, pins); the drag,
 // the magnets, docking and stacking work as in hud_windows.cpp, from
-// RmlUi's drag events. The other windows still use the old frame until
-// they move (phases 124 and 125).
+// RmlUi's drag events. Phase 124: the windows of buildings, whose rows come
+// from thing_rows.cpp (hud/win/thing.rml). The other windows still use the
+// old frame until they move (phase 125).
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <format>
 
 #include <RmlUi/Core/Context.h>
@@ -31,6 +33,7 @@ constexpr float kTopBarH = 52.0f;   // As in game_hud.cpp.
 constexpr float kMinW = 280.0f;     // Design units.
 constexpr float kSnap = 12.0f;
 constexpr float kTabH = 30.0f;
+constexpr float kThingW = 420.0f;   // The windows of things, as the old ones.
 
 struct FixedWindow {
     const char* id;
@@ -44,20 +47,6 @@ constexpr FixedWindow kFixed[] = {
     {"log", "hud/win/log.rml", "icon-list", 460.0f},
     {"layers", "hud/win/layers.rml", "icon-layers", 300.0f},
 };
-
-std::string escape(std::string_view text) {
-    std::string out;
-    for (const char c : text) {
-        switch (c) {
-            case '&': out += "&amp;"; break;
-            case '<': out += "&lt;"; break;
-            case '>': out += "&gt;"; break;
-            case '"': out += "&quot;"; break;
-            default: out += c;
-        }
-    }
-    return out;
-}
 
 bool inside(const ui::Rect& r, float x, float y) {
     return x >= r.x && y >= r.y && x < r.right() && y < r.bottom();
@@ -79,7 +68,67 @@ Rml::Element* frame_part(Rml::Element* e) {
     return nullptr;
 }
 
+// A slider's value, as its element has it (a range input keeps it in its
+// "value" attribute).
+int control_value(Rml::Element* e) {
+    return e != nullptr ? static_cast<int>(std::lround(std::strtod(e->GetAttribute<Rml::String>("value", "0").c_str(), nullptr)))
+                        : 0;
+}
+
 }  // namespace
+
+bool GameHud::rml_object(WindowList::Kind kind) {
+    return kind == WindowList::Kind::Building;
+}
+
+void GameHud::rml_rows(Rml::ElementDocument& doc, RmlWindow& w) {
+    Rml::Element* box = doc.GetElementById("rows");
+    if (box == nullptr) {
+        return;
+    }
+    std::vector<std::string> keys;
+    keys.reserve(w.view.rows.size());
+    for (const WinRow& r : w.view.rows) {
+        keys.push_back(row_key(r));
+    }
+    if (keys.size() != w.row_keys.size() || box->GetNumChildren() != static_cast<int>(keys.size())) {
+        // Other rows: all again.
+        std::string all;
+        for (const WinRow& r : w.view.rows) {
+            all += "<div class=\"r\">" + row_rml(r) + "</div>";
+        }
+        box->SetInnerRML(all);
+    } else {
+        // The same rows: only those that changed, so a button under the
+        // pointer stays the same element while the rest moves on.
+        for (std::size_t i = 0; i < keys.size(); ++i) {
+            Rml::Element* row = box->GetChild(static_cast<int>(i));
+            if (keys[i] != w.row_keys[i]) {
+                row->SetInnerRML(row_rml(w.view.rows[i]));
+            } else if (Rml::Element* input = row->GetFirstChild(); input != nullptr && w.view.rows[i].kind == WinRow::Kind::Slider &&
+                                                                   control_value(input) != w.view.rows[i].value) {
+                input->SetAttribute("value", std::to_string(w.view.rows[i].value));
+            }
+        }
+    }
+    w.row_keys = std::move(keys);
+}
+
+void GameHud::rml_act(GameSession& s, const std::string& id, int act, int value) {
+    const auto found = rml_windows_.find(id);
+    if (found == rml_windows_.end() || act < 0 || static_cast<std::size_t>(act) >= found->second.view.acts.size()) {
+        return;
+    }
+    const RowFn fn = found->second.view.acts[static_cast<std::size_t>(act)];  // A copy: it may change what holds it.
+    RowEffects effects;
+    fn(s, value, effects);
+    if (effects.close) {
+        closing_.push_back(id);
+    }
+    if (effects.link) {
+        open_link(id, effects.kind, effects.entity);
+    }
+}
 
 std::string GameHud::rml_window_doc(const std::string& id) const {
     for (const FixedWindow& f : kFixed) {
@@ -89,6 +138,9 @@ std::string GameHud::rml_window_doc(const std::string& id) const {
     }
     if (WindowList::is_camera_id(id) && id.size() == 4) {
         return std::string("hud/win/camera.rml#") + id[3];
+    }
+    if (WindowList::is_object_id(id)) {
+        return "hud/win/thing.rml#" + id;
     }
     return {};
 }
@@ -292,6 +344,11 @@ void GameHud::rml_windows(ui::Context& ctx, GameSession& s, rml::RmlUi& rml) {
             open.push_back("cam" + std::to_string(slot + 1));
         }
     }
+    for (const WindowList::Object& o : windows_.objects()) {
+        if (rml_object(o.kind)) {
+            open.push_back(o.id);
+        }
+    }
     for (const std::string& id : open) {
         if (!windows_.open(id)) {
             windows_.raise(id);  // Opened without a click: in front.
@@ -325,17 +382,20 @@ void GameHud::rml_windows(ui::Context& ctx, GameSession& s, rml::RmlUi& rml) {
         if (doc == nullptr) {
             continue;
         }
+        const WindowList::Object* obj = windows_.object(id);
         if (doc != w.attached) {
             // A new document (or reloaded with the language or the style).
             w.attached = doc;
             w.tabs.clear();
             w.title.clear();
-            for (const char* type : {"mousedown", "click", "dragstart", "drag", "dragend", "mousescroll"}) {
+            w.icon.clear();
+            w.row_keys.clear();
+            for (const char* type : {"mousedown", "click", "change", "dragstart", "drag", "dragend", "mousescroll"}) {
                 doc->AddEventListener(type, this);
             }
             const bool camera = WindowList::is_camera_id(id);
-            doc->SetClass("no-view", true);  // Ver and Cámara are for the windows of things.
-            if (Rml::Element* icon = doc->GetElementById("icon")) {
+            doc->SetClass("no-view", obj == nullptr);  // Ver and Cámara are for the windows of things.
+            if (Rml::Element* icon = doc->GetElementById("icon"); icon != nullptr && obj == nullptr) {
                 for (const FixedWindow& f : kFixed) {
                     if (id == f.id) {
                         icon->SetAttribute("sprite", f.icon);
@@ -352,13 +412,25 @@ void GameHud::rml_windows(ui::Context& ctx, GameSession& s, rml::RmlUi& rml) {
                 }
             }
         }
+        // Phase 124: a thing's rows and its picture.
+        if (obj != nullptr) {
+            w.view = obj->kind == WindowList::Kind::Building ? building_rows(s, obj->entity, trade_draft_)
+                                                             : gone_rows(obj->kind);
+            if (!w.view.icon.empty() && w.view.icon != w.icon) {
+                w.icon = w.view.icon;
+                if (Rml::Element* icon = doc->GetElementById("icon")) {
+                    icon->SetAttribute("src", w.icon);
+                }
+            }
+            rml_rows(*doc, w);
+        }
         WindowList::Place& p = windows_.place(id);
         // Title and pin.
-        const std::string title = window_title(s, id);
+        const std::string title = obj != nullptr && w.view.gone ? tr("hud.window.gone.title") : window_title(s, id);
         if (title != w.title) {
             w.title = title;
             if (Rml::Element* t = doc->GetElementById("title")) {
-                t->SetInnerRML(escape(title));
+                t->SetInnerRML(rml_escape(title));
             }
         }
         doc->SetClass("minimized", p.minimized);
@@ -373,8 +445,8 @@ void GameHud::rml_windows(ui::Context& ctx, GameSession& s, rml::RmlUi& rml) {
         const std::vector<std::string> tabs = windows_.tabs(id);
         std::string tab_rml;
         for (const std::string& t : tabs) {
-            tab_rml += std::format("<div class=\"tab{}\" data-tab=\"{}\">{}</div>", t == id ? " on" : "", escape(t),
-                                   escape(window_title(s, t)));
+            tab_rml += std::format("<div class=\"tab{}\" data-tab=\"{}\">{}</div>", t == id ? " on" : "", rml_escape(t),
+                                   rml_escape(window_title(s, t)));
         }
         if (tab_rml != w.tabs) {
             w.tabs = tab_rml;
@@ -394,8 +466,14 @@ void GameHud::rml_windows(ui::Context& ctx, GameSession& s, rml::RmlUi& rml) {
         if (WindowList::is_camera_id(id)) {
             width = static_cast<float>(render::kInsetWidth) + 30.0f;
         }
-        ui::Rect box{left_x(ctx), std::round(top + ctx.s(14.0f)),
-                     std::round(std::min(ctx.s(width), ctx.width() - ctx.s(28.0f))), 0.0f};
+        if (obj != nullptr) {
+            width = kThingW;
+        }
+        const float first_w = std::round(std::min(ctx.s(width), ctx.width() - ctx.s(28.0f)));
+        // The windows of things start on the right, below the minimap, as before.
+        ui::Rect box{obj != nullptr ? std::round(ctx.width() - first_w - ctx.s(14.0f)) : left_x(ctx),
+                     std::round(obj != nullptr ? std::max(top + ctx.s(14.0f), right_top_) : top + ctx.s(14.0f)), first_w,
+                     0.0f};
         if (p.w > 0.0f) {
             box.w = std::round(std::clamp(p.w * sc, ctx.s(kMinW), std::max(ctx.s(kMinW), ctx.width() - ctx.s(28.0f))));
         }
@@ -485,8 +563,39 @@ void GameHud::ProcessEvent(Rml::Event& ev) {
         windows_.raise(id);  // Touched: in front.
         return;
     }
+    const WindowList::Object* obj = windows_.object(id);
+    if (type == "change") {
+        // A slider of a thing's window.
+        Rml::Element* e = ev.GetTargetElement();
+        if (obj != nullptr && e != nullptr && e->HasAttribute("data-act")) {
+            rml_act(*s, id, e->GetAttribute<int>("data-act", -1), control_value(e));
+        }
+        return;
+    }
+    if (type == "click" && part == nullptr && obj != nullptr) {
+        // A button of a thing's window.
+        for (Rml::Element* e = ev.GetTargetElement(); e != nullptr && e != ev.GetCurrentElement(); e = e->GetParentNode()) {
+            if (e->HasAttribute("data-act")) {
+                if (e->GetTagName() != "input") {
+                    rml_act(*s, id, e->GetAttribute<int>("data-act", -1), 0);
+                }
+                break;
+            }
+        }
+        return;
+    }
     if (type == "click") {
-        if (part_id == "close") {
+        if (part_id == "view" && obj != nullptr) {
+            if (const sim::Building* b = obj->kind == WindowList::Kind::Building ? s->game().buildings().get(obj->entity)
+                                                                                 : nullptr) {
+                services_.focus_camera(static_cast<float>(b->x) + static_cast<float>(b->width) * 0.5f,
+                                       static_cast<float>(b->z) + static_cast<float>(b->depth) * 0.5f);
+            }
+        } else if (part_id == "camera" && obj != nullptr) {
+            open_camera(*s, obj->kind, obj->entity);
+        } else if (part_id == "close" && obj != nullptr) {
+            closing_.push_back(id);  // frame() lets its selection go with it.
+        } else if (part_id == "close") {
             if (bool* open = fixed_open(id)) {
                 *open = false;
             } else if (slot >= 0 && slot < kCameraWindows) {

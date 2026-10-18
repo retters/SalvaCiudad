@@ -511,6 +511,21 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 124 (ventanas de edificios en RmlUi)
+
+- [ ] Un clic en un edificio abre su ventana nueva a la derecha: ícono, nombre, la imagen con «Trabajando» o «Detenido», sus líneas y sus botones.
+- [ ] El ojo lleva la cámara al edificio y el botón de cámara abre la ventana de cámara.
+- [ ] En un taller: − y + cambian los trabajadores; el botón de trabajo lo detiene y lo reanuda; «guardar N» sube y baja.
+- [ ] Los residentes y los trabajadores salen con su retrato; un clic abre la ventana de esa persona y la del edificio queda fijada.
+- [ ] En una granja: los tres años de cada campo cambian de cultivo con un clic; la ✕ quita el campo; «Nuevo campo» deja marcarlo en el mapa.
+- [ ] En un redil: marcar y quitar el pasto, cambiar de rebaño y comprar un macho.
+- [ ] En un puesto de comercio: la reserva de oro, comprar y vender al comerciante, y una regla de comercio automático con los deslizadores y «Aplicar».
+- [ ] En un cuartel: entrenar y cancelar; la barra muestra el avance.
+- [ ] En el centro del pueblo: mejorar (atenuado si no alcanza) y la campana.
+- [ ] Demoler cierra la ventana; si estaba fijada y el edificio ya no está, dice que ya no existe.
+- [ ] En el tutorial, el «+» de los trabajadores se ilumina.
+- [ ] En Vidrio oscuro se ve con su estilo.
+
 ### Fase 123 (ventanas en RmlUi)
 
 - [ ] El dock abre Bienes, Estadísticas, Eventos y Capas, con el marco nuevo: ícono, título y botones cuadrados con tooltip.

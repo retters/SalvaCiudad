@@ -4367,3 +4367,20 @@ Las ventanas de edificios, aldeanos y cosas del mapa, la de comercio y la del ej
 
 **D-12305. Pruebas.**
 Las pruebas de ventanas de las fases 17, 62 y 64 (`windows`) prueban `WindowList`, que no cambió, y pasan sin cambios; incluida la de leer una disposición guardada antes. Arrastrar con el ratón no se puede probar con eventos enviados (D-11719) y queda en la lista de verificación manual.
+
+## Fase 124: ventanas de edificios en RmlUi (2026-10-17)
+
+**D-12401. El contenido de las ventanas de cosas es una lista de filas.**
+`src/game/thing_rows.*` arma, con el juego de cada cuadro, las filas de la ventana: líneas (normal, tenue, en el color de acento, título), la imagen del edificio con su estado, medidores, filas de botones, una etiqueta con sus botones a la derecha (trabajadores, «guardar N», el comerciante, la reserva de oro), listas de personas con su retrato y deslizadores. Cada botón lleva el índice de su acción (una función que da la orden a la simulación, o pide al HUD cerrar la ventana o abrir la de otra cosa). Así se pudo portar casi línea a línea `building_window()` y sus partes (campos, rebaño, comerciante, comercio automático, cuartel, centro del pueblo); los textos y las órdenes son los mismos. Se borró el código viejo. Las filas no saben nada de RmlUi, así que las pruebas leen sus textos y aprietan sus botones.
+
+**D-12402. Un documento por ventana, `hud/win/thing.rml#objN`, sin modelo de datos.**
+Se descartó un modelo de datos por ventana (habría que renombrar el modelo en cada copia del documento, porque RmlUi los nombra por contexto). `hud_rml_windows.cpp` pone cada fila en `#rows` como RML: si cambió la cantidad de filas, todas; si no, solo las que cambiaron, así un botón bajo el puntero sigue siendo el mismo elemento mientras el resto se actualiza (un medidor de obra cambia casi cada cuadro). Los clics llegan por el oyente de la ventana (`data-act`); los deslizadores por el evento `change`. El valor de un deslizador no cuenta para decidir si su fila se rehace (se perdería el arrastre); se le pone aparte cuando el juego lo cambia.
+
+**D-12403. Lo que cambió de forma.**
+Ver y Cámara pasaron a la barra de título (los íconos de ojo y cámara). El interruptor de trabajo es un botón resaltado cuando está detenido, y la imagen dice «Trabajando» o «Detenido». Los botones de − y + son íconos. El bien del comercio automático se elige con flechas en lugar de una lista desplegable (RmlUi la tiene, pero pide su propio estilo y no hacía falta). Los anexos de una casa van en una línea que la ventana parte sola (antes se partían a mano). El residente y el trabajador se listan con su retrato (fase 120), nombre, edad y lo que hace; más de cinco se desplazan. Demoler y Cancelar llevan el ícono de la papelera y el color de peligro.
+
+**D-12404. El tutorial y las ventanas que siguen viejas.**
+El botón de «+» de los trabajadores lleva `mark="workers"`: el tutorial lo ilumina como antes. Las ventanas de aldeanos, recursos del mapa, animales y personas de prueba siguen con el marco viejo hasta la fase 125.
+
+**D-12405. Prueba.**
+`hud` coloca, uno por uno, cada edificio del núcleo junto al centro del pueblo (216 sin los caminos, que una vez hechos no son edificios), lee su ventana en obra y terminada, y lo quita: ningún texto es una clave sin traducir ni tiene `{}` sin llenar. Luego aprieta botones de verdad: menos y más trabajadores, detener y reanudar, nuevo campo, la campana, demoler una casa (la ventana se cierra y luego dice que ya no está) y una regla de comercio automático con su deslizador. Otra prueba revisa el RML: texto escapado, y solo los botones activos tienen acción.

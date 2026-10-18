@@ -1,0 +1,283 @@
+/* The windows of things (phase 124): the rows src/game/thing_rows.cpp
+   builds, over /window.rcss and /hud/hwin.rcss. */
+
+.rows
+{
+	display: block;
+}
+
+.r
+{
+	display: block;
+}
+
+.line
+{
+	padding: 2dp 0;
+}
+
+.line.dim
+{
+	font-size: var(--font-small);
+	color: var(--dim);
+}
+
+.line.accent
+{
+	color: var(--accent);
+}
+
+/* Its picture, with whether it works. */
+.hero
+{
+	position: relative;
+	height: 128dp;
+	margin-bottom: 6dp;
+	text-align: center;
+	border-radius: var(--row-radius);
+	decorator: var(--thumb);
+	background-color: var(--row);
+}
+
+.hero img
+{
+	width: 120dp;
+	height: 120dp;
+	margin-top: 4dp;
+}
+
+.hero .chip
+{
+	position: absolute;
+	left: 8dp;
+	bottom: 8dp;
+}
+
+.meter
+{
+	height: 8dp;
+	margin: 6dp 0;
+	border-radius: 4dp;
+	background-color: var(--meter);
+}
+
+.meter .fill
+{
+	height: 8dp;
+	border-radius: 4dp;
+	decorator: var(--switch-on);
+}
+
+/* Buttons sharing a row. */
+.btns
+{
+	display: flex;
+	flex-direction: row;
+	margin-top: 6dp;
+}
+
+.btn
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	height: 32dp;
+	margin-left: 6dp;
+	padding: 0 8dp;
+	border-radius: var(--btn-radius);
+	border: 1dp var(--btn-border);
+	background-color: var(--btn);
+	box-shadow: var(--btn-shadow);
+	font-size: var(--font-small);
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.btns .btn:first-child
+{
+	margin-left: 0;
+}
+
+.btn:hover
+{
+	background-color: var(--btn-hover);
+}
+
+.btn.on
+{
+	background-color: var(--btn-on);
+	color: var(--btn-on-text);
+}
+
+.btn img
+{
+	width: 18dp;
+	height: 18dp;
+	image-color: var(--icon);
+}
+
+.btn span
+{
+	margin-left: 0;
+}
+
+.btn img + span
+{
+	margin-left: 6dp;
+}
+
+.btn.on img
+{
+	image-color: var(--btn-on-text);
+}
+
+.btn.square
+{
+	flex: 0 0 auto;
+	width: 32dp;
+	padding: 0;
+}
+
+.btn.danger
+{
+	color: var(--bad);
+}
+
+.btn.danger img
+{
+	image-color: var(--bad);
+}
+
+.btn.danger:hover
+{
+	background-color: var(--bad-soft);
+}
+
+.btn.off, .btn.off:hover
+{
+	opacity: 0.5;
+	color: var(--dim);
+	background-color: var(--btn);
+	box-shadow: none;
+}
+
+.btn.off img
+{
+	image-color: var(--dim);
+}
+
+/* A label with its buttons on the right. */
+.kv
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	min-height: 34dp;
+	margin-top: 4dp;
+}
+
+.kv .k
+{
+	flex: 1;
+	padding-right: 8dp;
+}
+
+.kv.locked .k
+{
+	color: var(--dim);
+}
+
+.kv .v
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.kv .btn
+{
+	flex: 0 0 auto;
+	min-width: 32dp;
+}
+
+/* People: a link each to its own window; more than five scroll. */
+.people
+{
+	max-height: 230dp;
+	overflow-y: auto;
+}
+
+.people .row
+{
+	margin-top: 4dp;
+	padding: 3dp 8dp;
+}
+
+.people .avatar
+{
+	width: 34dp;
+	height: 34dp;
+}
+
+.people .who
+{
+	flex: 1;
+}
+
+.people scrollbarvertical
+{
+	width: 6dp;
+	margin-left: 4dp;
+}
+
+.people scrollbarvertical sliderbar
+{
+	border-radius: 3dp;
+	background-color: var(--switch-off);
+}
+
+.section.dim
+{
+	margin-top: 10dp;
+	font-weight: normal;
+	color: var(--dim);
+}
+
+/* The automatic trade's sliders. */
+input.slider
+{
+	display: block;
+	width: 100%;
+	height: 22dp;
+	margin-bottom: 4dp;
+}
+
+input.slider slidertrack
+{
+	height: 6dp;
+	margin-top: 8dp;
+	border-radius: 3dp;
+	background-color: var(--meter);
+}
+
+input.slider sliderbar
+{
+	width: 16dp;
+	height: 16dp;
+	margin-top: 3dp;
+	border-radius: 8dp;
+	decorator: var(--switch-on);
+}
+
+input.slider sliderarrowdec, input.slider sliderarrowinc
+{
+	width: 0;
+	height: 0;
+}
+
+input.slider:disabled
+{
+	opacity: 0.4;
+}

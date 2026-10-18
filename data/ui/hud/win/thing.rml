@@ -1,0 +1,13 @@
+<rml>
+<head>
+	<title>Thing</title>
+	<link type="text/template" href="/hud/window.rml"/>
+	<link type="text/rcss" href="/hud/thing.rcss"/>
+</head>
+<!-- The window of a thing on the map (phase 124): its rows (lines, meters,
+     buttons, people, sliders) come from src/game/thing_rows.cpp, put in
+     #rows by src/game/hud_rml_windows.cpp. -->
+<body template="hudwindow">
+	<div id="rows" class="rows"></div>
+</body>
+</rml>

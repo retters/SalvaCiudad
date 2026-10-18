@@ -304,6 +304,7 @@ set(SC_ENGINE_SOURCES
     src/game/hud_model.cpp
     src/game/hud_rml.cpp
     src/game/hud_rml_windows.cpp
+    src/game/thing_rows.cpp
     src/game/minimap.cpp
     src/game/people.cpp
     src/game/sound_director.cpp

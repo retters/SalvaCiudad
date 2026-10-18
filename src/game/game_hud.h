@@ -22,6 +22,7 @@ class ElementDocument;
 
 #include "game/hud_model.h"
 #include "game/services.h"
+#include "game/thing_rows.h"
 #include "game/window_list.h"
 #include "ui/context.h"
 
@@ -100,7 +101,15 @@ private:
         std::string title;
         ui::Rect box;       // Where it was put, in pixels.
         float bar_h = 0.0f;
+        // Phase 124: a window of a thing, its rows and what each shown row was built from.
+        ThingRows view;
+        std::vector<std::string> row_keys;
+        std::string icon;
     };
+    [[nodiscard]] static bool rml_object(WindowList::Kind kind);
+    void rml_rows(Rml::ElementDocument& doc, RmlWindow& w);
+    void rml_act(GameSession& s, const std::string& id, int act, int value);
+    TradeDraft trade_draft_;
     std::map<std::string, RmlWindow> rml_windows_;
     std::vector<std::string> rml_order_;
     float rml_scale_ = 1.0f;
@@ -143,15 +152,11 @@ private:
     // Phase 114: what a happening asks the town, with its two answers.
     void question(ui::Context& ctx, GameSession& s);
     // The windows of things on the map (phase 62): each acts on its own.
-    void building_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
+    // Phase 124: the buildings' are RmlUi's (thing_rows.h).
     void villager_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     void node_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     void creature_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     void walker_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
-    // Phase 63. A list of villagers by name; a click opens each one's window.
-    [[nodiscard]] float people_height(ui::Context& ctx, std::size_t count) const;
-    void people_list(ui::Context& ctx, GameSession& s, const WindowList::Object& o, const ui::Rect& box, float& y,
-                     const std::vector<sim::EntityId>& people, const char* title_key);
     // A button of window `from` opens another thing: `from` stays (it is
     // pinned) and the thing becomes the selection, in a window of its own.
     void open_link(const std::string& from, WindowList::Kind kind, sim::EntityId entity);
@@ -181,13 +186,10 @@ private:
     void gone_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o);
     // The selection on the map opens, or takes over, a window.
     void sync_selection(ui::Context& ctx, GameSession& s);
-    sim::EntityId window_entity_;        // The building of the window being drawn.
     std::vector<std::string> closing_;   // Object windows closed this frame.
     const GameSession* windows_session_ = nullptr;
     WindowList::Kind selected_kind_ = WindowList::Kind::Building;
     sim::EntityId selected_shown_;       // The selection the windows last followed.
-    void farm_fields(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
-                     float row_h);
     // What placing a building, tracing a line or marking a field says, and
     // whether it is an error (phase 122: shown by hud/hint.rml).
     [[nodiscard]] std::string placement_text(GameSession& s, bool& bad) const;
@@ -204,16 +206,9 @@ private:
     std::uint64_t answered_turn_ = 0;
     std::size_t next_site_ = 0;  // The suggested site the camera last went to.
     bool minimap_silhouette_ = false;  // The minimap shows the land's shape under the fog.
-    // Phase 14: the merchant at a trading post, and trade with other towns.
-    [[nodiscard]] std::vector<sim::DefIndex> merchant_rows(const sim::Game& game, std::uint8_t town) const;
-    void merchant_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h);
-    // Automatic trade rules of the trading post (phase 29), and its height.
-    [[nodiscard]] float auto_trade_height(ui::Context& ctx, const sim::Game& game, std::uint8_t town, float row_h) const;
-    void auto_trade_section(ui::Context& ctx, GameSession& s, const ui::Rect& box, float& y, float row_h);
+    // Phase 14: trade with other towns.
     void trade_window(ui::Context& ctx, GameSession& s);
-    // Phase 16: the barracks and the army.
-    void barracks_section(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
-                          float row_h);
+    // Phase 16: the army.
     void army_window(ui::Context& ctx, GameSession& s);
     bool army_open_ = false;
     int attack_pick_ = 0;
@@ -222,16 +217,6 @@ private:
     bool trade_open_ = false;
     int offer_to_ = 0;
     int offer_give_ = 0;
-    // The rule being edited in the trading post's window: which good, and
-    // its "sell over" and "buy under" (kNoRule: off); `rule_loaded_` is the
-    // good they were read for.
-    int rule_pick_ = 0;
-    int rule_loaded_ = -1;
-    int rule_sell_ = -10;
-    int rule_buy_ = -10;
-    // Their price limits, percent; under 75: at any price.
-    int rule_sell_min_ = 70;
-    int rule_buy_max_ = 70;
     int offer_give_amount_ = 20;
     int offer_want_ = 1;
     int offer_want_amount_ = 20;
@@ -241,7 +226,6 @@ private:
     int shown_speed_ = 4;  // The last speed that was not the pause (quarters).
     std::uint32_t answered_vote_ = 0;
     std::uint8_t category_ = 0;  // Build bar group shown.
-    void house_lines(const sim::Game& game, const sim::Building& b, std::vector<std::string>& lines) const;
     [[nodiscard]] bool pressed(const ui::Context& ctx, Action action) const;
     void block(GameSession& s, const ui::Rect& r);
     [[nodiscard]] std::string cost_text(const sim::BuildingDef& def) const;
