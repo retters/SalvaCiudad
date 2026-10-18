@@ -25,6 +25,7 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -111,6 +112,13 @@ public:
     };
     [[nodiscard]] const Stats& stats() const { return stats_; }
     [[nodiscard]] int draw_count() const { return stats_.draws; }
+
+    // Pictures the game renders (phase 120): an image whose path starts with
+    // "thumbs/" is a key; it draws nothing until provide_picture() gives its
+    // pixels. take_picture_requests() lists the keys asked since last time.
+    static constexpr int kPictureSize = 128;
+    [[nodiscard]] std::vector<std::string> take_picture_requests();
+    void provide_picture(const std::string& key, const std::vector<std::uint8_t>& rgba);
 
     // Rml::RenderInterface.
     Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices,
@@ -259,6 +267,8 @@ private:
     std::unordered_map<Rml::CompiledFilterHandle, Filter> filters_;
     std::unordered_map<Rml::CompiledShaderHandle, Gradient> shaders_;
     std::uintptr_t next_effect_ = 1;
+    std::unordered_map<std::string, std::vector<Rml::TextureHandle>> pictures_;  // By key.
+    std::vector<std::string> picture_requests_;
 
     // The frame being recorded.
     int width_ = 0;

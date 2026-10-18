@@ -30,6 +30,7 @@
 #include "platform/window.h"
 #include "render/debug_overlay.h"
 #include "render/gpu_device.h"
+#include "game/model_studio.h"
 #include "render/rml_renderer.h"
 #include "render/scene_renderer.h"
 #include "render/ui_renderer.h"
@@ -222,6 +223,7 @@ private:
     RmlRenderer rml_renderer_;
     rml::RmlUi rml_;
     rml::TestWindow rml_test_;
+    ModelStudio studio_;  // Thumbnails and portraits (phase 120).
     std::string rml_style_;  // The style last given to rml_ (ui.style).
     // data/ui, then the ui folder of each loaded mod.
     [[nodiscard]] std::vector<std::filesystem::path> ui_roots() const;

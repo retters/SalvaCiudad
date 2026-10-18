@@ -511,6 +511,13 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 120 (miniaturas y retratos)
+
+- [ ] La ventana de prueba muestra el cantero renderizado por el juego (arriba a la izquierda y en grande) y los retratos de dos aldeanos elfos oscuros, con el fondo transparente.
+- [ ] Al iniciar, el menú no se traba mientras se hacen las imágenes (unos 3 s).
+- [ ] Con el mod de ejemplo activo, el registro del juego no muestra avisos «studio:» por el santuario.
+- [ ] **Tu opinión:** el ángulo de la cámara de las miniaturas y el encuadre de los retratos.
+
 ### Fase 119 (estilos de la interfaz)
 
 - [ ] Configuración > Interfaz: «Estilo de la interfaz» ofrece Frosted y Vidrio oscuro, con la franja de colores de cada uno; con la ventana de prueba abierta, el cambio se ve al momento y la ventana no se cierra.

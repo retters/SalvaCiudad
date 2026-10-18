@@ -4293,3 +4293,20 @@ Las raíces de la interfaz son `data/ui` y después la carpeta `ui/` de cada mod
 
 **D-11907. Lo pendiente de la revisión de la fase 117 (D-11721).**
 Los botones de ícono de la barra son cuadrados (`--btn-size`, con fondo, borde y sombra del estilo) y los íconos tienen los colores de la maqueta. Para que el texto se vea junto a un ícono en un contenedor flexible hay que envolverlo en un elemento (`<span>`): RmlUi no muestra el texto suelto de un elemento `flex`. Y `image-color` no se hereda en RmlUi (a diferencia de `color`): va en la regla de cada imagen, no en la del botón.
+
+## Fase 120: miniaturas y retratos renderizados por el juego (2026-10-17)
+
+**D-12001. Un segundo `SceneRenderer` como estudio.**
+`ModelStudio` (`src/game/model_studio.*`) tiene un `SceneRenderer` propio, sin terreno: pone un solo modelo (o un cuerpo, con su paleta) en el origen y lo renderiza con una cámara fija, de frente, a la derecha y desde arriba, como en las maquetas, a 128 × 128 píxeles con MSAA 4x. Así reutiliza los sombreadores, la luz, las paletas y el esqueleto sin tocar el dibujo del mapa. Se descartó dibujar las miniaturas dentro del renderer del mapa: habría que apartar sus instancias y sus listas de cada cuadro. El estudio usa su propio búfer de órdenes, que entrega con una valla (fence); el resultado se lee cuadros después, sin esperar a la GPU.
+
+**D-12002. Transparencia: dos cielos.**
+Cada imagen se renderiza dos veces, con el cielo negro y con el cielo blanco. Lo que cambia entre las dos es fondo. Los dos cielos no salen exactamente negro y blanco (la luz y el tono los cambian), así que se miden en una esquina de la imagen, que la cámara siempre deja vacía. El alfa y el color premultiplicado salen de esa diferencia, con bordes suaves y sin tocar los sombreadores. La niebla de distancia del juego crece con la distancia de dibujo; con una corta, teñía el modelo con el color del cielo y lo dejaba medio transparente, por eso el estudio dibuja con 2 000 m.
+
+**D-12003. Cuándo se dibujan.**
+Con el contenido (al iniciar y al aplicar mods) el estudio carga los cuerpos de todos los pueblos (633 ms medidos en el equipo de desarrollo, lo único que alarga la carga) y pone en cola la imagen de cada definición con modelo: edificios, cosas del mapa, animales, montones de recursos y cultivos. Las hace en segundo plano: en cada cuadro deja de empezar imágenes nuevas en cuanto gastó 6 ms de CPU (cargar un `.glb` es casi todo el trabajo), con un máximo de 4. Lo que pide un documento pasa adelante. Medido: 308 imágenes en unos 3 s después de iniciar, con 0,7 s de CPU repartidos en los cuadros. Un mod con modelos nuevos tiene sus miniaturas sin hacer nada, porque se recorren las referencias de modelos del contenido (`mods::BuildResult::model_refs`).
+
+**D-12004. Texturas sueltas en lugar de un atlas.**
+El plan decía un atlas (D-11709). Cada imagen es su propia textura de 128 × 128, porque RmlUi dibuja un `<img>` con la textura entera y un atlas pediría hojas de sprites que cambian mientras se llenan. Memoria: 64 KB por imagen; con las 310 del juego, unos 20 MB en la CPU (el límite era 64 MB), y en la GPU solo las que se muestran.
+
+**D-12005. Las imágenes se piden por su ruta.**
+Un documento escribe `<img src="/thumbs/building/core/stonecutter"/>` o, para un aldeano, `/thumbs/person/core/dark_elf/f/21` (pueblo, sexo y bits de aspecto). `RmlRenderer` reconoce las rutas `thumbs/`, devuelve una textura vacía al momento y la llena cuando el estudio da los píxeles. La clave de un retrato sale solo de lo que guarda la partida, así que es la misma después de cargar (hay una prueba). Los recursos sin montón (la piedra, por ejemplo) no tienen modelo: van con su ícono.

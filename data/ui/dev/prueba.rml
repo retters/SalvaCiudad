@@ -6,12 +6,12 @@
 	<link type="text/rcss" href="/style.rcss"/>
 	<link type="text/rcss" href="prueba.rcss"/>
 </head>
-<!-- Test window of phases 117 to 119: the stonecutter's window of the
+<!-- Test window of phases 117 to 120: the stonecutter's window of the
      interface mockups (docs/propuestas/interfaz), with test data, in the
      active style (/style.rcss is the style's sheet; icons are its sprites). -->
 <body class="window" data-model="prueba" data-class-minimized="minimized">
 	<handle class="bar" move_target="#document">
-		<img class="wicon" src="img/stonecutter.png"/>
+		<img class="wicon" src="/thumbs/building/core/stonecutter"/>
 		<div class="titles">
 			<div class="title">@building.stonecutter</div>
 			<div class="sub">@hud.build.cat.resources</div>
@@ -25,7 +25,7 @@
 	</handle>
 	<div class="content" data-if="!minimized">
 		<div class="hero">
-			<img src="img/stonecutter.png"/>
+			<img src="/thumbs/building/core/stonecutter"/>
 			<span class="chip ok" data-if="producing">@hud.building.working</span>
 			<span class="chip warn" data-if="!producing">@hud.building.stopped</span>
 		</div>
@@ -44,15 +44,15 @@
 			</div>
 		</div>
 		<div class="kv">
-			<span class="k"><img class="res" src="img/stone_back.png"/>@resource.stone</span>
+			<span class="k"><img class="res" sprite="icon-stone"/>@resource.stone</span>
 			<div class="v"><span class="value">+4</span></div>
 		</div>
 		<div class="row">
-			<img class="avatar" src="img/nyxar.png"/>
+			<img class="avatar" src="/thumbs/person/core/dark_elf/m/7"/>
 			<div class="who"><div>Nyxar (22)</div><div class="dim">@task.produce</div></div>
 		</div>
 		<div class="row">
-			<img class="avatar" src="img/thazza.png"/>
+			<img class="avatar" src="/thumbs/person/core/dark_elf/f/21"/>
 			<div class="who"><div>Thazza (32)</div><div class="dim">@task.goDeliver</div></div>
 		</div>
 		<div class="foot">

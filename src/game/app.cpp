@@ -239,6 +239,10 @@ bool App::init() {
     if (scene_.create(gpu_, settings_->settings().graphics)) {
         const std::filesystem::path core = pack_->dir(mods::kCoreModId);
         scene_ok_ = true;
+        // Thumbnails and portraits for the interface (phase 120).
+        if (studio_.create(gpu_)) {
+            studio_.set_content(pack_);
+        }
         // Every race's characters (phase 57).
         if (!walkers_.load(scene_, core, pack_->content)) {
             log::warn("villagers: no character models; people will not be drawn");
@@ -304,6 +308,7 @@ void App::shutdown() {
         (void)SDL_WaitForGPUIdle(gpu_.device());
     }
     debug_.destroy();
+    studio_.destroy();
     scene_.destroy();
     rml_.shutdown();
     rml_renderer_.destroy();
@@ -479,6 +484,7 @@ void App::apply_mods(const std::vector<std::string>& enabled) {
     leave_map();
     hide_menu_background();
     load_mods();
+    studio_.set_content(pack_);
     rml_.set_roots(ui_roots());
     rml_style_.clear();  // Look for the chosen style again: it may come from a mod.
     apply_language();
@@ -1143,6 +1149,14 @@ void App::render_frame(float dt) {
             }
             rml_.update(static_cast<int>(frame.width), static_cast<int>(frame.height), ui_scale());
             rml_.render();
+        }
+        // The pictures the interface asked for (phase 120).
+        for (const std::string& key : rml_renderer_.take_picture_requests()) {
+            studio_.request(key);
+        }
+        studio_.update();
+        for (const ModelStudio::Picture& p : studio_.take_ready()) {
+            rml_renderer_.provide_picture(p.key, p.rgba);
         }
         debug_info_.rml_update_ms = static_cast<float>(rml_.update_ms());
         debug_info_.rml_render_ms = static_cast<float>(rml_.render_ms());

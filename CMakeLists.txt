@@ -320,6 +320,7 @@ set(SC_ENGINE_SOURCES
     src/game/map_report.cpp
     src/game/terrain_names.cpp
     src/game/menu_backgrounds.cpp
+    src/game/model_studio.cpp
     src/game/model_file.cpp
     src/game/occluders.cpp
     src/game/ui_host.cpp
@@ -459,6 +460,7 @@ if(SC_BUILD_TESTS)
         tests/test_menus.cpp
         tests/test_ui.cpp
         tests/test_rml.cpp
+        tests/test_studio.cpp
         tests/test_math.cpp
         tests/test_model.cpp
         tests/test_camera.cpp
@@ -529,7 +531,7 @@ if(SC_BUILD_TESTS)
         target_link_options(salvasprosperia_tests PRIVATE /INCREMENTAL:NO)
     endif()
 
-    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life worldgen_hier_giants minimap nav windows explorer night rest rest_hour founding seats spectator resources resources_years cover fauna trace fences roads lanterns rain forage berries wine deposits stones annexes gardens coop pets herds smallgame fishing mammoths unicorn happenings turtles rml)
+    set(SC_TEST_SUITES file_io game_clock json log paths settings text i18n input_actions ui menus math model camera scene sim_fixed sim_rng sim_core sim_rules worldgen worldgen_sea worldgen_large flora worldgen_perf map_view new_game dev_tools terrain_mesh mods lua village village_years save net net_enet climate farming needs health trade gold auto_trade wildlife army audio races people sim_perf viewer variants fog terrain_names map_report worldgen_hier worldgen_hier_structures worldgen_hier_water worldgen_hier_life worldgen_hier_giants minimap nav windows explorer night rest rest_hour founding seats spectator resources resources_years cover fauna trace fences roads lanterns rain forage berries wine deposits stones annexes gardens coop pets herds smallgame fishing mammoths unicorn happenings turtles rml studio)
     # AddressSanitizer runs about twice as slow, and its times vary up to
     # twice between runs (D-3110).
     set(SC_TEST_TIMEOUT 120)

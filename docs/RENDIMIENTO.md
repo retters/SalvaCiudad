@@ -307,3 +307,15 @@ El presupuesto de la fase era 0,3 ms de CPU para la ventana. Falta medir los efe
 | 6 ventanas, vidrio simple | 780 | 1,282 ms | +0,19 ms |
 
 Con seis ventanas el fondo se desenfoca una vez (línea «capas, vidrios, desenfoques del fondo» de F3). Presupuesto: 0,8 ms con vidrio completo y 0,1 ms con simple; se cumple. Memoria de video: unos 8 MB por textura del tamaño de la ventana, unos 55 MB a 1080p cuando hay interfaz de RmlUi en pantalla.
+
+## Miniaturas y retratos (fase 120)
+
+`release`, equipo de desarrollo, registro del juego:
+
+| Medida | Valor |
+|---|---|
+| Crear el estudio (su `SceneRenderer`) | 9 ms |
+| Cargar los cuerpos de todos los pueblos | 633 ms (lo que se alarga la carga) |
+| Imágenes de todas las definiciones | 308, en unos 3 s tras iniciar, en segundo plano |
+| CPU de esas imágenes | 0,7 s en total, 6 ms por cuadro como mucho más una carga de `.glb` |
+| Memoria | 64 KB por imagen, unos 20 MB en la CPU; en la GPU, solo las que se muestran |

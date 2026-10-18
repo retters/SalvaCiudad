@@ -478,6 +478,21 @@ Rml::TextureHandle RmlRenderer::add_texture(std::vector<std::uint8_t> rgba, int 
 }
 
 Rml::TextureHandle RmlRenderer::LoadTexture(Rml::Vector2i& texture_dimensions, const Rml::String& source) {
+    if (source.starts_with("thumbs/")) {
+        // A picture the game renders: empty until it comes.
+        const std::string key = source.substr(7);
+        if (key.empty() || key.size() > 200) {
+            return 0;
+        }
+        const Rml::TextureHandle handle = next_texture_++;
+        Texture& t = textures_[handle];
+        t.width = kPictureSize;
+        t.height = kPictureSize;
+        pictures_[key].push_back(handle);
+        picture_requests_.push_back(key);
+        texture_dimensions = Rml::Vector2i(kPictureSize, kPictureSize);
+        return handle;
+    }
     Rml::FileInterface* files = Rml::GetFileInterface();
     Rml::String bytes;
     if (files == nullptr || !files->LoadFile(source, bytes) || bytes.empty() ||
@@ -516,6 +531,31 @@ Rml::TextureHandle RmlRenderer::GenerateTexture(Rml::Span<const Rml::byte> sourc
         return 0;
     }
     return add_texture(std::vector<std::uint8_t>(source.begin(), source.end()), w, h);
+}
+
+std::vector<std::string> RmlRenderer::take_picture_requests() {
+    std::vector<std::string> out;
+    out.swap(picture_requests_);
+    return out;
+}
+
+void RmlRenderer::provide_picture(const std::string& key, const std::vector<std::uint8_t>& rgba) {
+    const auto it = pictures_.find(key);
+    if (it == pictures_.end() ||
+        rgba.size() != static_cast<std::size_t>(kPictureSize) * static_cast<std::size_t>(kPictureSize) * 4) {
+        return;
+    }
+    // Handles RmlUi released meanwhile are dropped.
+    std::erase_if(it->second, [this](Rml::TextureHandle h) { return !textures_.contains(h); });
+    for (const Rml::TextureHandle h : it->second) {
+        Texture& t = textures_[h];
+        if (t.texture == nullptr && t.pending.empty()) {
+            t.pending = rgba;
+        }
+    }
+    if (it->second.empty()) {
+        pictures_.erase(it);
+    }
 }
 
 void RmlRenderer::ReleaseTexture(Rml::TextureHandle texture) {
