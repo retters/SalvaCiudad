@@ -990,6 +990,7 @@
     "hud.build.cat.services": "Servicios",
     "hud.build.cat.decoration": "Decoración",
     "hud.build.locked": "Necesita el centro del pueblo en el nivel {0:level}.",
+    "hud.build.level": "Nivel {0}",
     "hud.build.service": "Da {0:need} a los hogares a menos de {1:radius} m.",
     "need.food": "una dieta variada",
     "need.water": "agua",

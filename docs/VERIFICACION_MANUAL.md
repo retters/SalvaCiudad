@@ -511,6 +511,15 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 122 (barra de construcción)
+
+- [ ] La barra de abajo muestra las categorías como íconos y los edificios con su miniatura, nombre y costo; los bloqueados dicen su nivel.
+- [ ] El tooltip de un edificio dice costo, tamaño, trabajadores, habitantes y servicio, como antes.
+- [ ] Elegir un edificio lo deja listo para colocar, con la indicación encima de la barra; R gira, Mayús+clic coloca varios, Esc o el clic derecho cancelan.
+- [ ] Un muro o un camino se traza arrastrando y la indicación dice el largo y el costo; un campo o un pasto se marca.
+- [ ] En un lugar donde no se puede construir, la indicación dice por qué, en rojo.
+- [ ] En el tutorial, la categoría y el botón del edificio que pide se iluminan.
+
 ### Fase 121 (barra superior, dock, minimapa, avisos y tooltips)
 
 - [ ] En una partida: la barra de arriba muestra los bienes con su imagen, la población, la felicidad y el oro, los enfermos e incendios cuando los hay, el clima y la fecha, y la velocidad; cada cosa tiene su tooltip.

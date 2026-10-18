@@ -1,0 +1,36 @@
+<rml>
+<head>
+	<title>HUD: build bar</title>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
+	<link type="text/rcss" href="hud.rcss"/>
+	<link type="text/rcss" href="build.rcss"/>
+</head>
+<!-- The build bar (phase 122): the categories as icons, and the buildings of
+     the one shown with their picture and cost. Data model "build". -->
+<body id="build" data-model="build">
+	<div class="bar pill">
+		<div class="cats">
+			<div class="cat" data-for="c : cats" data-class-on="c.on" data-attr-mark="c.mark"
+			     data-attr-tip="c.name" data-event-click="category(c.index)">
+				<img data-attr-sprite="c.icon"/>
+			</div>
+		</div>
+		<div class="items">
+			<div class="bitem" data-for="b : items" data-class-on="b.on" data-class-locked="b.lock != ''"
+			     data-attr-mark="b.mark" data-attr-tip="b.tip" data-event-click="place(b.id)">
+				<img class="thumb" data-attr-src="b.image"/>
+				<div class="bname">{{b.name}}</div>
+				<div class="cost" data-if="b.lock == ''">
+					<span class="part" data-for="r : b.cost">
+						<img class="icon" data-if="r.sprite" data-attr-sprite="r.image"/>
+						<img data-if="!r.sprite" data-attr-src="r.image"/><span>{{r.text}}</span>
+					</span>
+				</div>
+				<div class="lock" data-if="b.lock != ''"><img class="icon" sprite="icon-lock"/><span>{{b.lock}}</span></div>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

@@ -31,7 +31,9 @@ constexpr const char* kTopDoc = "hud/top.rml";
 constexpr const char* kDockDoc = "hud/dock.rml";
 constexpr const char* kNotesDoc = "hud/notes.rml";
 constexpr const char* kMiniDoc = "hud/minimap.rml";
-constexpr const char* kDocs[] = {kTopDoc, kDockDoc, kNotesDoc, kMiniDoc};
+constexpr const char* kBuildDoc = "hud/build.rml";
+constexpr const char* kHintDoc = "hud/hint.rml";
+constexpr const char* kDocs[] = {kTopDoc, kDockDoc, kNotesDoc, kMiniDoc, kBuildDoc, kHintDoc};
 
 constexpr std::uint64_t kNoteNs = 12'000'000'000;  // A notice stays this long.
 constexpr std::size_t kNotesShown = 4;
@@ -182,6 +184,64 @@ void GameHud::rml_models(rml::RmlUi& rml) {
         m.BindEventCallback("map_release", [](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) {});
         mini_model_ = m.GetModelHandle();
     }
+    // The build bar.
+    if (Rml::DataModelConstructor m = c.CreateDataModel("build")) {
+        if (auto item = m.RegisterStruct<HudItem>()) {
+            item.RegisterMember("text", &HudItem::text);
+            item.RegisterMember("image", &HudItem::image);
+            item.RegisterMember("sprite", &HudItem::sprite);
+            item.RegisterMember("tip", &HudItem::tip);
+        }
+        m.RegisterArray<std::vector<HudItem>>();
+        if (auto cat = m.RegisterStruct<BuildCat>()) {
+            cat.RegisterMember("index", &BuildCat::index);
+            cat.RegisterMember("name", &BuildCat::name);
+            cat.RegisterMember("icon", &BuildCat::icon);
+            cat.RegisterMember("mark", &BuildCat::mark);
+            cat.RegisterMember("on", &BuildCat::on);
+        }
+        m.RegisterArray<std::vector<BuildCat>>();
+        if (auto item = m.RegisterStruct<BuildItem>()) {
+            item.RegisterMember("id", &BuildItem::id);
+            item.RegisterMember("name", &BuildItem::name);
+            item.RegisterMember("image", &BuildItem::image);
+            item.RegisterMember("cost", &BuildItem::cost);
+            item.RegisterMember("tip", &BuildItem::tip);
+            item.RegisterMember("lock", &BuildItem::lock);
+            item.RegisterMember("mark", &BuildItem::mark);
+            item.RegisterMember("on", &BuildItem::on);
+        }
+        m.RegisterArray<std::vector<BuildItem>>();
+        m.Bind("cats", &build_.cats);
+        m.Bind("items", &build_.items);
+        m.BindEventCallback("category", [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& args) {
+            if (!args.empty()) {
+                category_ = static_cast<std::uint8_t>(std::clamp(args[0].Get<int>(0), 0, static_cast<int>(kBuildCategories) - 1));
+            }
+        });
+        m.BindEventCallback("place", [this](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& args) {
+            GameSession* s = services_.session();
+            if (args.empty() || s == nullptr) {
+                return;
+            }
+            const sim::Game& game = s->game();
+            const sim::DefIndex def = game.content().find_building(args[0].Get<Rml::String>());
+            if (def == sim::kNoDef || game.content().buildings[def].tier > game.tier(s->town())) {
+                return;  // Locked.
+            }
+            GameSession::Interaction& ui = s->ui();
+            ui.placing = ui.placing == def ? sim::kNoDef : def;
+            ui.clear_selection();
+        });
+        build_model_ = m.GetModelHandle();
+    }
+    // The placing hint.
+    if (Rml::DataModelConstructor m = c.CreateDataModel("hint")) {
+        m.Bind("shown", &hint_shown_);
+        m.Bind("text", &hint_text_);
+        m.Bind("bad", &hint_bad_);
+        hint_model_ = m.GetModelHandle();
+    }
     rml_ready_ = true;
 }
 
@@ -230,8 +290,9 @@ void GameHud::rml_frame(ui::Context& ctx, GameSession& s) {
         rml_models(*rml);
     }
     const sim::Game& game = s.game();
+    const bool town = s.game().founded(s.local_player()) && !s.spectating();
     for (const char* doc : kDocs) {
-        if (!rml->document_shown(doc)) {
+        if (!rml->document_shown(doc) && (town || doc != std::string_view(kBuildDoc))) {
             (void)rml->show_document(doc, true);
         }
     }
@@ -332,6 +393,37 @@ void GameHud::rml_frame(ui::Context& ctx, GameSession& s) {
     }
 
     rml_minimap(ctx, s, *rml);
+
+    // The build bar: only with a town to build for (phase 74; phase 79: not
+    // for whoever watches).
+    const bool has_town = game.founded(s.local_player()) && !s.spectating();
+    if (!has_town && rml->document_shown(kBuildDoc)) {
+        (void)rml->show_document(kBuildDoc, false);
+    }
+    BuildBarModel build = has_town ? build_bar_model(game, s.town(), category_, s.ui().placing, highlight_) : BuildBarModel{};
+    if (!(build == build_)) {
+        build_ = std::move(build);
+        build_model_.DirtyAllVariables();
+    }
+    build_bar_top_ = ctx.height();
+    if (Rml::ElementDocument* bar = has_town ? rml->document(kBuildDoc) : nullptr) {
+        if (Rml::Element* panel = bar->GetFirstChild()) {
+            build_bar_top_ = panel->GetAbsoluteOffset(Rml::BoxArea::Border).y;
+        }
+    }
+    // The hint over it, while placing or marking.
+    bool bad = false;
+    const bool hint = s.ui().placing != sim::kNoDef || s.ui().field_farm.valid();
+    std::string text = hint ? placement_text(s, bad) : std::string();
+    if (hint != hint_shown_ || text != hint_text_ || bad != hint_bad_) {
+        hint_shown_ = hint;
+        hint_text_ = std::move(text);
+        hint_bad_ = bad;
+        hint_model_.DirtyAllVariables();
+    }
+    if (Rml::ElementDocument* d = rml->document(kHintDoc)) {
+        d->SetProperty("bottom", std::format("{:.1f}px", std::max(0.0f, ctx.height() - build_bar_top_ + std::round(ctx.s(8.0f)))));
+    }
 
     // Where the old parts lay out from: under the top bar, under the minimap.
     if (Rml::ElementDocument* d = rml->document(kTopDoc)) {

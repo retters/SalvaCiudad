@@ -1,0 +1,152 @@
+/* The build bar (phase 122), at the bottom in the middle. */
+
+body
+{
+	left: 0;
+	right: 0;
+	bottom: 10dp;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+}
+
+.bar
+{
+	flex-direction: column;
+	align-items: stretch;
+	height: auto;
+	max-width: 1200dp;
+	padding: 8dp 10dp;
+	border-radius: 20dp;
+}
+
+.cats
+{
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	padding-bottom: 6dp;
+	border-bottom: 1dp var(--sep);
+}
+
+.cat
+{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40dp;
+	height: 34dp;
+	margin: 0 2dp;
+	border-radius: 12dp;
+}
+
+.cat img
+{
+	width: 22dp;
+	height: 22dp;
+	image-color: var(--icon);
+}
+
+.cat:hover
+{
+	background-color: var(--btn-hover);
+}
+
+.cat.on
+{
+	background-color: var(--btn-on);
+}
+
+.cat.on img
+{
+	image-color: var(--btn-on-text);
+}
+
+.items
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	padding-top: 6dp;
+}
+
+.bitem
+{
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 92dp;
+	margin: 2dp;
+	padding: 4dp 2dp 6dp;
+	border-radius: var(--row-radius);
+	border: 1dp var(--row-border);
+	background-color: var(--row);
+}
+
+.bitem:hover
+{
+	background-color: var(--row-hover);
+}
+
+.bitem.on
+{
+	border-color: var(--accent);
+	background-color: var(--btn-hover);
+}
+
+.bitem.locked
+{
+	opacity: 0.55;
+}
+
+.thumb
+{
+	width: 56dp;
+	height: 56dp;
+}
+
+.bname
+{
+	font-size: var(--font-small);
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	width: 88dp;
+}
+
+.cost, .lock
+{
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	font-size: 12dp;
+	color: var(--dim);
+}
+
+.part
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin: 0 3dp;
+}
+
+.part img
+{
+	width: 15dp;
+	height: 15dp;
+	margin-right: 1dp;
+}
+
+.part img.icon, .lock img
+{
+	image-color: var(--icon);
+}
+
+.lock img
+{
+	width: 12dp;
+	height: 12dp;
+	margin-right: 3dp;
+}

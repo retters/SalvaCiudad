@@ -263,26 +263,14 @@ TEST_SUITE("menus") {
         GameSession::Interaction& ui = h.services.game->ui();
         h.host.show_game();
         h.frame(0);
-        // Phase 121: the top bar and the minimap are RmlUi's (no RmlUi here);
-        // the build bar is the first part of the old interface.
-        REQUIRE(ui.hud_rects.size() >= 1);
+        // Phases 121 and 122: the top bar, the minimap and the build bar are
+        // RmlUi's (no RmlUi here); a building is picked as its button does.
         CHECK_FALSE(h.host.game_paused());
-
-        // The first button of the build bar starts placing a building.
-        const auto bar = ui.hud_rects[0];
-        ui::Input press;
-        press.mouse_x = bar[0] + 8.0f + 75.0f;
-        press.mouse_y = bar[1] + 8.0f + 32.0f + 6.0f + 22.0f;  // Below the category tabs.
-        press.mouse_down = true;
-        press.mouse_pressed = true;
-        h.frame(16, press);
-        ui::Input release = press;
-        release.mouse_down = false;
-        release.mouse_pressed = false;
-        release.mouse_released = true;
-        h.frame(32, release);
+        const sim::DefIndex house = h.services.game->game().content().find_building("core:house");
+        REQUIRE(house != sim::kNoDef);
+        ui.placing = house;
+        h.frame(16);
         REQUIRE(ui.placing != sim::kNoDef);
-        CHECK(ui.over_hud(press.mouse_x, press.mouse_y));
 
         ui::Input key;
         key.keys.push_back(SDL_SCANCODE_R);
@@ -306,8 +294,8 @@ TEST_SUITE("menus") {
         CHECK(h.host.game_paused());
         // A pause is only speed 0: no veil, and the interface still works.
         CHECK_FALSE(h.host.scene_paused());
-        h.frame(114, press);
-        h.frame(116, release);
+        ui.placing = house;
+        h.frame(116);
         CHECK(ui.placing != sim::kNoDef);
         ui::Input esc;
         esc.keys = {SDL_SCANCODE_ESCAPE};

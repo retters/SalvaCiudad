@@ -83,6 +83,42 @@ struct DockEntry {
     bool operator==(const DockEntry&) const = default;
 };
 
+// The build bar (phase 122): the categories, and the buildings of the one
+// shown with their picture and cost.
+struct BuildCat {
+    int index = 0;
+    std::string name;
+    std::string icon;  // Sprite.
+    std::string mark;  // The tutorial's key when it points here, else empty.
+    bool on = false;
+    bool operator==(const BuildCat&) const = default;
+};
+
+struct BuildItem {
+    std::string id;     // "core:house"
+    std::string name;
+    std::string image;  // Its thumbnail.
+    std::vector<HudItem> cost;
+    std::string tip;    // Name, cost, size, workers... as the old bar's tooltip.
+    std::string lock;   // "Level 2" when locked, else empty.
+    std::string mark;   // "build:<id>"
+    bool on = false;    // Being placed.
+    bool operator==(const BuildItem&) const = default;
+};
+
+struct BuildBarModel {
+    std::vector<BuildCat> cats;
+    std::vector<BuildItem> items;
+    bool operator==(const BuildBarModel&) const = default;
+};
+
+inline constexpr std::size_t kBuildCategories = 12;
+
+// `highlight`: what the tutorial points at ("build:<id>" marks the building
+// and, while another category is shown, its category).
+[[nodiscard]] BuildBarModel build_bar_model(const sim::Game& game, std::uint8_t town, std::uint8_t category,
+                                            sim::DefIndex placing, const std::string& highlight);
+
 struct HudNote {
     std::string text;
     std::string tip;  // "Go there" when it has a place.

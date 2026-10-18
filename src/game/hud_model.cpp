@@ -47,6 +47,85 @@ void good_image(const sim::ResourceDef& def, bool has_model, HudItem& item) {
     }
 }
 
+BuildBarModel build_bar_model(const sim::Game& game, std::uint8_t town, std::uint8_t category,
+                              sim::DefIndex placing, const std::string& highlight) {
+    static constexpr const char* kCategoryKeys[kBuildCategories] = {
+        "hud.build.cat.housing", "hud.build.cat.food",       "hud.build.cat.resources", "hud.build.cat.industry",
+        "hud.build.cat.services", "hud.build.cat.decoration", "hud.build.cat.defense",   "hud.build.cat.plaza",
+        "hud.build.cat.garden",  "hud.build.cat.nature",     "hud.build.cat.monuments", "hud.build.cat.ruins"};
+    static constexpr const char* kCategoryIcons[kBuildCategories] = {
+        "icon-home",   "icon-wheat", "icon-pickaxe", "icon-factory",  "icon-well",     "icon-flower",
+        "icon-shield", "icon-fountain", "icon-stall", "icon-tree", "icon-landmark", "icon-ruins"};
+    const sim::Content& content = game.content();
+    BuildBarModel m;
+    // The tutorial may point at a building: its category too, while another is shown.
+    sim::DefIndex pointed = sim::kNoDef;
+    if (highlight.starts_with("build:")) {
+        pointed = content.find_building(std::string_view(highlight).substr(6));
+    }
+    const std::size_t shown = category % kBuildCategories;
+    for (std::size_t c = 0; c < kBuildCategories; ++c) {
+        BuildCat cat;
+        cat.index = static_cast<int>(c);
+        cat.name = tr(kCategoryKeys[c]);
+        cat.icon = kCategoryIcons[c];
+        cat.on = c == shown;
+        if (pointed != sim::kNoDef && content.buildings[pointed].category % kBuildCategories == c && c != shown) {
+            cat.mark = highlight;
+        }
+        m.cats.push_back(std::move(cat));
+    }
+    const std::int32_t tier = game.tier(town);
+    for (std::size_t i = 0; i < content.buildings.size(); ++i) {
+        const sim::BuildingDef& d = content.buildings[i];
+        if (d.kind == sim::BuildingKind::TownCenter || d.cart || d.category % kBuildCategories != shown) {
+            continue;
+        }
+        BuildItem item;
+        item.id = d.id;
+        item.name = tr(d.name_key);
+        item.image = "/thumbs/building/" + d.id;
+        std::replace(item.image.begin(), item.image.end(), ':', '/');
+        std::string cost;
+        for (const sim::ResourceAmount& c : d.cost) {
+            if (c.resource >= content.resources.size()) {
+                continue;
+            }
+            const sim::ResourceDef& r = content.resources[c.resource];
+            HudItem part;
+            part.id = r.id;
+            part.text = std::to_string(c.amount);
+            part.tip = tr("hud.amount", tr(r.name_key), c.amount);
+            good_image(r, !r.pile.empty(), part);
+            item.cost.push_back(std::move(part));
+            cost += (cost.empty() ? "" : ", ") + tr("hud.amount", tr(r.name_key), c.amount);
+        }
+        std::string tip = item.name + "\n" + tr("hud.build.cost", cost.empty() ? tr("hud.cost.free") : cost) + "\n" +
+                          tr("hud.build.size", d.width, d.depth);
+        if (d.workers > 0) {
+            tip += "\n" + tr("hud.build.workers", d.workers);
+        }
+        if (d.residents > 0) {
+            tip += "\n" + tr("hud.build.residents", d.residents);
+        }
+        if (d.storage > 0) {
+            tip += "\n" + tr("hud.build.storage", d.storage);
+        }
+        if (d.tier > tier) {
+            tip += "\n" + tr("hud.build.locked", d.tier);
+            item.lock = tr("hud.build.level", d.tier);
+        }
+        if (d.service != sim::kNoNeed) {
+            tip += "\n" + tr("hud.build.service", tr(need_text_key(d.service)), d.service_radius);
+        }
+        item.tip = std::move(tip);
+        item.mark = "build:" + d.id;
+        item.on = placing == static_cast<sim::DefIndex>(i);
+        m.items.push_back(std::move(item));
+    }
+    return m;
+}
+
 TopBarModel top_bar_model(const sim::Game& game, std::uint8_t town, std::uint8_t local_player, int speed,
                           int shown_speed, int max_speed, const HudNetInfo& net) {
     const sim::Content& content = game.content();

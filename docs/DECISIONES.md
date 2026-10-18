@@ -4333,3 +4333,20 @@ Misma partida guardada con 1 000 aldeanos, en pausa, `release`, 1920 × 1080, si
 
 **D-12107. Pruebas.**
 La prueba de la interfaz de partida (`menus`) usaba el minimapa viejo: ahora no lo tiene (sin GPU no hay RmlUi) y la barra de construcción pasó a ser el primer rectángulo del HUD viejo. El minimapa y los tooltips se revisan a mano y con la prueba de tooltips de `rml`.
+
+## Fase 122: barra de construcción y colocación en RmlUi (2026-10-17)
+
+**D-12201. La barra de construcción es `hud/build.rml`.**
+Las doce categorías son íconos con su nombre en el tooltip (casa, trigo, pico, fábrica, pozo, flor, escudo, fuente, puesto, árbol, monumento y ruinas). Los edificios de la categoría van con su miniatura (fase 120), su nombre y su costo con la imagen de cada bien; un edificio bloqueado se ve atenuado y dice el nivel que pide («Nivel 3»). El tooltip es el de antes: nombre, costo, tamaño, trabajadores, habitantes, lo que guarda, lo que pide y el servicio que da. El modelo sale de `build_bar_model()` (`hud_model.cpp`, con prueba). Un clic hace lo mismo que el botón viejo: elige el edificio para colocar o lo suelta, y un bloqueado no hace nada. Se borró `build_bar()`.
+
+**D-12202. La indicación de colocación es `hud/hint.rml`.**
+`placement_text()` arma el mismo texto que antes (colocar, girar, trazar muros y caminos con su largo y su costo, marcar campos, lo que alcanza un pescador, el claro del unicornio) y dice si es un error, que se muestra en rojo. Va sobre la barra de construcción. La colocación, el trazado y el marcado siguen en el mismo código del juego: solo cambió quién elige el edificio.
+
+**D-12203. El tutorial.**
+Cada edificio lleva `mark="build:<id>"`; si el tutorial señala un edificio de otra categoría, la categoría lleva esa misma marca hasta que se la elige, como antes.
+
+**D-12204. En RmlUi, el texto suelto dentro de un contenedor `flex` no se muestra.**
+Pasó con el costo y con la indicación (como con «Demoler» en la fase 119): todo texto junto a una imagen o dentro de un `flex` va en su propio `<span>`.
+
+**D-12205. Pruebas.**
+La prueba de la interfaz de partida (`menus`) elegía un edificio con un clic en la barra vieja; ahora lo elige como lo hace el botón (`placing`) y sigue probando girar, cancelar con Esc y colocar en pausa.

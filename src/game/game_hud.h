@@ -90,10 +90,15 @@ private:
     std::string needle_n_left_ = "24dp";
     std::string needle_n_top_ = "0dp";
     Rml::DataModelHandle mini_model_;
+    BuildBarModel build_;
+    Rml::DataModelHandle build_model_;
+    bool hint_shown_ = false;
+    std::string hint_text_;
+    bool hint_bad_ = false;
+    Rml::DataModelHandle hint_model_;
     std::vector<std::uint8_t> minimap_fogged_;
     std::array<float, 8> minimap_corners_{};
     std::uint64_t minimap_drawn_ns_ = 0;
-    void build_bar(ui::Context& ctx, GameSession& s);
     // Phase 114: what a happening asks the town, with its two answers.
     void question(ui::Context& ctx, GameSession& s);
     // The windows of things on the map (phase 62): each acts on its own.
@@ -143,7 +148,9 @@ private:
     sim::EntityId selected_shown_;       // The selection the windows last followed.
     void farm_fields(ui::Context& ctx, GameSession& s, const sim::Building& b, const ui::Rect& box, float& y,
                      float row_h);
-    void placement_hint(ui::Context& ctx, GameSession& s);
+    // What placing a building, tracing a line or marking a field says, and
+    // whether it is an error (phase 122: shown by hud/hint.rml).
+    [[nodiscard]] std::string placement_text(GameSession& s, bool& bad) const;
     // Phase 74: choosing where to found the town, and waiting for the others.
     void founding(ui::Context& ctx, GameSession& s);
     // Phase 77: the window of whoever arrives at a game already going, and

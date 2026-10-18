@@ -16,8 +16,6 @@ using i18n::tr;
 namespace {
 
 constexpr float kTopBarH = 52.0f;  // The RmlUi top bar (data/ui/hud/top.rcss) and its margin.
-constexpr float kBuildButtonW = 150.0f;
-constexpr float kBuildButtonH = 44.0f;
 constexpr float kWindowW = 420.0f;  // Room for the title beside its three buttons, and for four in a row.
 
 const char* place_error_key(sim::PlaceError e) {
@@ -334,10 +332,7 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     // Phase 79: nor for whoever watches.
     const bool has_town = game.founded(s->local_player()) && !s->spectating();
     if (has_town) {
-        build_bar(ctx, *s);
         question(ctx, *s);
-    } else {
-        build_bar_top_ = ctx.height();
     }
     if (s->spectating()) {
         spectator(ctx, *s);
@@ -348,9 +343,6 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
         founding(ctx, *s);
     }
     join_requests(ctx, *s);
-    if (ui.placing != sim::kNoDef || ui.field_farm.valid()) {
-        placement_hint(ctx, *s);
-    }
 
     // The windows, from the back to the front; only the one in front under
     // the cursor (or the one being dragged) hears the mouse.
@@ -609,91 +601,8 @@ void GameHud::question(ui::Context& ctx, GameSession& s) {
     }
 }
 
-void GameHud::build_bar(ui::Context& ctx, GameSession& s) {
-    const sim::Content& content = s.game().content();
-    GameSession::Interaction& ui = s.ui();
-    static constexpr const char* kCategoryKeys[] = {"hud.build.cat.housing",  "hud.build.cat.food",
-                                                    "hud.build.cat.resources", "hud.build.cat.industry",
-                                                    "hud.build.cat.services", "hud.build.cat.decoration",
-                                                    "hud.build.cat.defense",  "hud.build.cat.plaza",
-                                                    "hud.build.cat.garden",   "hud.build.cat.nature",
-                                                    "hud.build.cat.monuments", "hud.build.cat.ruins"};
-    constexpr std::size_t kCategories = std::size(kCategoryKeys);
-    std::vector<sim::DefIndex> defs;
-    for (std::size_t i = 0; i < content.buildings.size(); ++i) {
-        const sim::BuildingDef& d = content.buildings[i];
-        if (d.kind != sim::BuildingKind::TownCenter && !d.cart && d.category % kCategories == category_ % kCategories) {
-            defs.push_back(static_cast<sim::DefIndex>(i));
-        }
-    }
-    const float bw = std::round(ctx.s(kBuildButtonW));
-    const float bh = std::round(ctx.s(kBuildButtonH));
-    const float tab_h = std::round(ctx.s(32.0f));
-    const float gap = ctx.s(6.0f);
-    const float pad = ctx.s(8.0f);
-    // As many per row as fit; the tabs on top.
-    const auto per_row = static_cast<std::size_t>(std::max(1.0f, (ctx.width() - 2 * pad + gap) / (bw + gap)));
-    const std::size_t rows = std::max<std::size_t>(1, (defs.size() + per_row - 1) / per_row);
-    const std::size_t cols = std::max(std::min(per_row, defs.size()), std::min(per_row, kCategories));
-    const float w = static_cast<float>(cols) * (bw + gap) - gap + 2 * pad;
-    const float h = tab_h + gap + static_cast<float>(rows) * (bh + gap) - gap + 2 * pad;
-    const ui::Rect panel{std::round((ctx.width() - w) * 0.5f), std::round(ctx.height() - h), std::round(w), std::round(h)};
-    ctx.panel(panel);
-    block(s, panel);
-    build_bar_top_ = panel.y;
-    ctx.push_id("build_bar");
-    const float tab_w = std::min(bw, (w - 2 * pad - gap * static_cast<float>(kCategories - 1)) / static_cast<float>(kCategories));
-    // The tutorial may point at a building: its tab first, then its button.
-    sim::DefIndex pointed = sim::kNoDef;
-    if (highlight_.starts_with("build:")) {
-        pointed = content.find_building(std::string_view(highlight_).substr(6));
-    }
-    for (std::size_t c = 0; c < kCategories; ++c) {
-        const ui::Rect tr_rect{panel.x + pad + static_cast<float>(c) * (tab_w + gap), panel.y + pad, tab_w, tab_h};
-        if (ctx.button(ctx.id(kCategoryKeys[c]), tr_rect, tr(kCategoryKeys[c]), {}, true, category_ == c)) {
-            category_ = static_cast<std::uint8_t>(c);
-        }
-        if (pointed != sim::kNoDef && content.buildings[pointed].category % kCategories == c && category_ != c) {
-            mark(ctx, tr_rect);
-        }
-    }
-    const std::int32_t tier = s.game().tier(s.town());
-    for (std::size_t i = 0; i < defs.size(); ++i) {
-        const sim::BuildingDef& d = content.buildings[defs[i]];
-        const float bx = panel.x + pad + static_cast<float>(i % per_row) * (bw + gap);
-        const float by = panel.y + pad + tab_h + gap + static_cast<float>(i / per_row) * (bh + gap);
-        const bool locked = d.tier > tier;
-        std::string tooltip = tr(d.name_key) + "\n" + tr("hud.build.cost", cost_text(d)) + "\n" +
-                              tr("hud.build.size", d.width, d.depth);
-        if (d.workers > 0) {
-            tooltip += "\n" + tr("hud.build.workers", d.workers);
-        }
-        if (d.residents > 0) {
-            tooltip += "\n" + tr("hud.build.residents", d.residents);
-        }
-        if (d.storage > 0) {
-            tooltip += "\n" + tr("hud.build.storage", d.storage);
-        }
-        if (locked) {
-            tooltip += "\n" + tr("hud.build.locked", d.tier);
-        }
-        if (d.service != sim::kNoNeed) {
-            tooltip += "\n" + tr("hud.build.service", tr(need_text_key(d.service)), d.service_radius);
-        }
-        if (defs[i] == pointed) {
-            mark(ctx, {bx, by, bw, bh});
-        }
-        if (ctx.button(ctx.id(d.id), {bx, by, bw, bh}, tr(d.name_key), tooltip, !locked, ui.placing == defs[i])) {
-            ui.placing = ui.placing == defs[i] ? sim::kNoDef : defs[i];
-            ui.clear_selection();
-        }
-    }
-    ctx.pop_id();
-}
-
-void GameHud::placement_hint(ui::Context& ctx, GameSession& s) {
+std::string GameHud::placement_text(GameSession& s, bool& bad) const {
     const GameSession::Interaction& ui = s.ui();
-    const ui::TextStyle st = ctx.style(ctx.theme().body);
     const KeyBindings& b = services_.settings().input.bindings;
     std::string text = ui.field_farm.valid() ? tr("hud.place.field.hint")
                                              : tr("hud.place.hint", key_display_name(b.key(Action::GameRotateBuilding, 0)));
@@ -726,17 +635,12 @@ void GameHud::placement_hint(ui::Context& ctx, GameSession& s) {
             text = tr("hud.place.trace.count", ui.trace_modules, ui.trace_fit, cost.empty() ? tr("hud.place.trace.free") : cost);
         }
     }
-    ui::Color color = ctx.theme().text;
+    bad = false;
     if (ui.hover_valid && ui.hover_error != sim::PlaceError::None) {
         text = tr(place_error_key(ui.hover_error));
-        color = ctx.theme().danger;
+        bad = true;
     }
-    const float w = std::min(ctx.width() - ctx.s(32.0f), ctx.text().measure(st, text) + ctx.s(32.0f));
-    const float h = ctx.text().line_height(st) + ctx.s(14.0f);
-    const float y = ctx.height() - ctx.s(kBuildButtonH) * 2.0f - ctx.s(60.0f) - h;
-    const ui::Rect r{std::round((ctx.width() - w) * 0.5f), std::round(y), std::round(w), std::round(h)};
-    ctx.draw().rect(r, ctx.theme().tooltip.with_alpha(0.85f));
-    ctx.label(r, text, st, color, ui::Align::Center);
+    return text;
 }
 
 void GameHud::building_window(ui::Context& ctx, GameSession& s, const WindowList::Object& o) {

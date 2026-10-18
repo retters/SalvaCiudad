@@ -2,6 +2,7 @@
 // HUD (the keys below are those top_bar() used until phase 120).
 #include <doctest.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -108,5 +109,41 @@ TEST_SUITE("hud") {
                 CHECK(item.image.starts_with("/thumbs/resource/"));
             }
         }
+    }
+
+    TEST_CASE("the build bar lists a category's buildings with picture and cost, and the tutorial's marks") {
+        languages();
+        sim::GameSetup setup;
+        setup.seed = 5;
+        sim::MapSettings ms;
+        ms.size = sim::MapSize::Small;
+        ms.seed = 31;
+        std::optional<sim::MapData> map = sim::generate_map(ms, *content());
+        REQUIRE(map.has_value());
+        GameSession session(content(), std::move(*map), setup);
+        const sim::Game& g = session.game();
+        const sim::DefIndex house = g.content().find_building("core:house");
+        REQUIRE(house != sim::kNoDef);
+        const std::uint8_t cat = static_cast<std::uint8_t>(g.content().buildings[house].category % kBuildCategories);
+        BuildBarModel m = build_bar_model(g, session.town(), cat, house, {});
+        REQUIRE(m.cats.size() == kBuildCategories);
+        CHECK(m.cats[cat].on);
+        const auto it = std::find_if(m.items.begin(), m.items.end(), [](const BuildItem& b) { return b.id == "core:house"; });
+        REQUIRE(it != m.items.end());
+        CHECK(it->on);
+        CHECK(it->image == "/thumbs/building/core/house");
+        CHECK(it->name == tr(g.content().buildings[house].name_key));
+        CHECK(it->tip.find(tr("hud.build.size", g.content().buildings[house].width, g.content().buildings[house].depth)) !=
+              std::string::npos);
+        CHECK(it->cost.size() == g.content().buildings[house].cost.size());
+        CHECK(it->mark == "build:core:house");
+        for (const BuildItem& b : m.items) {
+            CHECK(b.id != "core:town_center");
+        }
+        // Pointed at from another category: that category is marked.
+        const std::uint8_t other = static_cast<std::uint8_t>((cat + 1) % kBuildCategories);
+        m = build_bar_model(g, session.town(), other, sim::kNoDef, "build:core:house");
+        CHECK(m.cats[cat].mark == "build:core:house");
+        CHECK(m.cats[other].mark.empty());
     }
 }
