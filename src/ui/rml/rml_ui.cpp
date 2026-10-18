@@ -229,8 +229,8 @@ void RmlUi::show_debugger(bool show) {
 void RmlUi::prepare(Document& d) {
     d.document->SetClass("glass-simple", simple_glass_class());
     const std::size_t hash = d.path.find('#');
-    if (hash == std::string::npos) {
-        return;
+    if (hash == std::string::npos || !d.path.starts_with("dev/")) {
+        return;  // Only the developer's copies are moved apart.
     }
     int n = 0;
     for (std::size_t i = hash + 1; i < d.path.size() && i < hash + 3; ++i) {

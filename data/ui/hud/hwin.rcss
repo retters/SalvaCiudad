@@ -1,0 +1,165 @@
+/* The game windows (phase 123), over /window.rcss. */
+
+body.hwin
+{
+	position: absolute;
+	pointer-events: auto;
+}
+
+.hwin .bar
+{
+	drag: drag;
+}
+
+.hwin .grip
+{
+	drag: drag;
+}
+
+.hwin.minimized .content, .hwin.minimized .grip
+{
+	display: none;
+}
+
+.hwin .wicon.sprite
+{
+	width: 24dp;
+	height: 24dp;
+	margin: 0 12dp 0 4dp;
+	image-color: var(--accent);
+}
+
+.hwin.no-view #view, .hwin.no-view #camera, .hwin.no-view #sep
+{
+	display: none;
+}
+
+/* The tabs of a stack (phase 64), over the window. */
+.tabs
+{
+	display: flex;
+	flex-direction: row;
+	position: absolute;
+	left: 10dp;
+	top: -30dp;
+	height: 30dp;
+}
+
+.tab
+{
+	padding: 6dp 12dp 0;
+	margin-right: 4dp;
+	border-radius: 10dp 10dp 0 0;
+	font-size: var(--font-small);
+	color: var(--dim);
+	background-color: var(--btn);
+	border: 1dp var(--btn-border);
+	drag: drag;
+}
+
+.tab.on
+{
+	color: var(--accent);
+	background-color: var(--panel-solid);
+}
+
+.tab:hover
+{
+	background-color: var(--btn-hover);
+}
+
+/* Lists inside the windows. */
+.section
+{
+	margin-top: 8dp;
+	font-weight: bold;
+	color: var(--accent);
+}
+
+.grid
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.cell
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	width: 50%;
+	height: 28dp;
+	font-size: var(--font-small);
+}
+
+.cell img
+{
+	width: 22dp;
+	height: 22dp;
+	margin-right: 6dp;
+}
+
+.cell img.icon
+{
+	width: 18dp;
+	height: 18dp;
+	image-color: var(--icon);
+}
+
+.line
+{
+	padding: 3dp 0;
+}
+
+.choice
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	height: 32dp;
+	margin-top: 4dp;
+	padding: 0 10dp;
+	border-radius: var(--btn-radius);
+	border: 1dp var(--btn-border);
+	background-color: var(--btn);
+}
+
+.choice:hover
+{
+	background-color: var(--btn-hover);
+}
+
+.choice.on
+{
+	background-color: var(--btn-on);
+	color: var(--btn-on-text);
+}
+
+.logrow
+{
+	padding: 5dp 8dp;
+	margin-top: 3dp;
+	border-radius: var(--row-radius);
+	font-size: var(--font-small);
+}
+
+.logrow.go:hover
+{
+	background-color: var(--row-hover);
+}
+
+.empty
+{
+	color: var(--dim);
+	font-size: var(--font-small);
+}
+
+.picture
+{
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 8dp;
+	drag: drag;
+}

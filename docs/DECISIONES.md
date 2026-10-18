@@ -4350,3 +4350,20 @@ Pasó con el costo y con la indicación (como con «Demoler» en la fase 119): t
 
 **D-12205. Pruebas.**
 La prueba de la interfaz de partida (`menus`) elegía un edificio con un clic en la barra vieja; ahora lo elige como lo hace el botón (`placing`) y sigue probando girar, cancelar con Esc y colocar en pausa.
+
+## Fase 123: sistema de ventanas en RmlUi (2026-10-17)
+
+**D-12301. El marco de las ventanas es una plantilla de RmlUi.**
+`data/ui/hud/window.rml` (plantilla `hudwindow`) tiene la pestaña de su pila, la barra de título con el ícono de la ventana, el título, los botones cuadrados de ícono (Ver, Cámara, Minimizar, Fijar, Cerrar, cada uno con su tooltip) y la esquina para cambiar el tamaño. Cada ventana es un documento de `data/ui/hud/win/` que usa la plantilla y pone su contenido en `#content`. `WindowList` sigue siendo el modelo: dónde está cada ventana, cuál va delante, los grupos, las pilas de pestañas, las fijadas, el límite de ventanas y lo que se guarda en `ui.windows`. `hud_rml_windows.cpp` coloca cada documento donde dice la lista, lo trae adelante en su orden y escucha sus eventos (`GameHud` es un `Rml::EventListener`).
+
+**D-12302. Arrastrar, imanes, grupos y pestañas: la lógica de antes, con los eventos de arrastre de RmlUi.**
+La barra de título y la esquina tienen `drag: drag`; `dragstart`, `drag` y `dragend` traen la posición del puntero. Mover usa `WindowList::magnets` (los bordes de la pantalla, la barra de construcción y las otras ventanas), el grupo se mueve junto, Ctrl saca la ventana de su grupo, soltarla sobre el título de otra la hace pestaña de esa y soltarla tocando otra las une en grupo, como en `hud_windows.cpp`. Arrastrar una pestaña la saca de su pila. La esquina cambia el ancho; el alto sale del contenido, que se reacomoda al ancho (D-11721). Minimizar deja solo la barra de título (D-11721). El primer lugar de una ventana nueva es el de antes: debajo de la que ya esté ahí.
+
+**D-12303. Las primeras ventanas: Bienes, Estadísticas, Eventos, Capas y las de cámara.**
+Con modelos de datos (`goods`, `stats`, `log`, `layers`) y los mismos textos que antes; los bienes llevan su imagen (fase 121). La ventana de cámara muestra la imagen que dibuja la escena como textura externa (`/ext/cam1`, `/ext/cam2`: `RmlRenderer::set_external_texture`, una textura que no es suya y nunca libera); arrastrar sobre ella gira la vista y la rueda la acerca. Se borraron las versiones viejas de esas cinco.
+
+**D-12304. Convivencia.**
+Las ventanas de edificios, aldeanos y cosas del mapa, la de comercio y la del ejército siguen con el marco viejo hasta las fases 124 y 125. Comparten `WindowList`, así que los imanes, las pestañas y los grupos funcionan entre ventanas viejas y nuevas; pero las de RmlUi se dibujan siempre encima de las viejas, porque la interfaz de RmlUi se compone después (D-11801).
+
+**D-12305. Pruebas.**
+Las pruebas de ventanas de las fases 17, 62 y 64 (`windows`) prueban `WindowList`, que no cambió, y pasan sin cambios; incluida la de leer una disposición guardada antes. Arrastrar con el ratón no se puede probar con eventos enviados (D-11719) y queda en la lista de verificación manual.

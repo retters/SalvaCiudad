@@ -1,0 +1,15 @@
+<rml>
+<head>
+	<title>Events</title>
+	<link type="text/template" href="/hud/window.rml"/>
+</head>
+<!-- The latest events, newest first; a click on one with a place takes the
+     camera there (phase 123). Data model "log". -->
+<body template="hudwindow">
+	<div data-model="log">
+		<div class="logrow" data-for="r, i : rows" data-class-go="r.has_pos" data-attr-tip="r.tip"
+		     data-event-click="go(i)"><span>{{r.text}}</span></div>
+		<div class="empty" data-if="rows.size == 0">@hud.log.empty</div>
+	</div>
+</body>
+</rml>

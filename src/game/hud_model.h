@@ -119,6 +119,20 @@ inline constexpr std::size_t kBuildCategories = 12;
 [[nodiscard]] BuildBarModel build_bar_model(const sim::Game& game, std::uint8_t town, std::uint8_t category,
                                             sim::DefIndex placing, const std::string& highlight);
 
+// Phase 123: a category of the goods window, and a row of the layers window.
+struct GoodsCat {
+    std::string name;
+    std::vector<HudItem> goods;
+    bool operator==(const GoodsCat&) const = default;
+};
+
+struct LayerRow {
+    std::string name;
+    std::string tip;
+    bool on = false;
+    bool operator==(const LayerRow&) const = default;
+};
+
 struct HudNote {
     std::string text;
     std::string tip;  // "Go there" when it has a place.

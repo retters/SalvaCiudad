@@ -374,7 +374,9 @@ void RmlRenderer::destroy() {
         p = nullptr;
     }
     for (auto& [handle, t] : textures_) {
-        SDL_ReleaseGPUTexture(device_, t.texture);
+        if (!t.external) {
+            SDL_ReleaseGPUTexture(device_, t.texture);
+        }
         t.texture = nullptr;
     }
     textures_.clear();
@@ -478,6 +480,18 @@ Rml::TextureHandle RmlRenderer::add_texture(std::vector<std::uint8_t> rgba, int 
 }
 
 Rml::TextureHandle RmlRenderer::LoadTexture(Rml::Vector2i& texture_dimensions, const Rml::String& source) {
+    if (source.starts_with("ext/")) {
+        const External& e = externals_[source.substr(4)];
+        const Rml::TextureHandle handle = next_texture_++;
+        Texture& t = textures_[handle];
+        t.texture = e.texture;
+        t.width = e.width;
+        t.height = e.height;
+        t.external = true;
+        pictures_[source].push_back(handle);
+        texture_dimensions = Rml::Vector2i(e.width, e.height);
+        return handle;
+    }
     if (source.starts_with("live/")) {
         const std::string name = source.substr(5);
         const Live& l = live_[name];
@@ -595,12 +609,27 @@ void RmlRenderer::set_live_image(const std::string& name, int width, int height,
     }
 }
 
+void RmlRenderer::set_external_texture(const std::string& name, SDL_GPUTexture* texture, int width, int height) {
+    External& e = externals_[name];
+    e.texture = texture;
+    e.width = std::max(width, 1);
+    e.height = std::max(height, 1);
+    const auto it = pictures_.find("ext/" + name);
+    if (it == pictures_.end()) {
+        return;
+    }
+    std::erase_if(it->second, [this](Rml::TextureHandle h) { return !textures_.contains(h); });
+    for (const Rml::TextureHandle h : it->second) {
+        textures_[h].texture = texture;
+    }
+}
+
 void RmlRenderer::ReleaseTexture(Rml::TextureHandle texture) {
     const auto it = textures_.find(texture);
     if (it == textures_.end()) {
         return;  // Also the atlas, which belongs to the old interface's renderer.
     }
-    if (device_ != nullptr) {
+    if (device_ != nullptr && !it->second.external) {
         SDL_ReleaseGPUTexture(device_, it->second.texture);
     }
     textures_.erase(it);

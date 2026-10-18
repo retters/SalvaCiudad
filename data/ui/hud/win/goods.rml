@@ -1,0 +1,22 @@
+<rml>
+<head>
+	<title>Goods</title>
+	<link type="text/template" href="/hud/window.rml"/>
+</head>
+<!-- What the town has, by category (phase 123). Data model "goods". -->
+<body template="hudwindow">
+	<div data-model="goods">
+		<div data-for="c : cats">
+			<div class="section">{{c.name}}</div>
+			<div class="grid">
+				<div class="cell" data-for="g : c.goods" data-attr-tip="g.tip">
+					<img class="icon" data-if="g.sprite" data-attr-sprite="g.image"/>
+					<img data-if="!g.sprite" data-attr-src="g.image"/>
+					<span>{{g.text}}</span>
+				</div>
+			</div>
+		</div>
+		<div class="empty" data-if="cats.size == 0">@hud.goods.none</div>
+	</div>
+</body>
+</rml>

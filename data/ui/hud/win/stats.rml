@@ -1,0 +1,12 @@
+<rml>
+<head>
+	<title>Statistics</title>
+	<link type="text/template" href="/hud/window.rml"/>
+</head>
+<!-- The town's figures (phase 123). Data model "stats". -->
+<body template="hudwindow">
+	<div data-model="stats">
+		<div class="line" data-for="l : lines">{{l}}</div>
+	</div>
+</body>
+</rml>

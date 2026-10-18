@@ -360,15 +360,16 @@ bool GameHud::frame(ui::Context& ctx, bool blocked) {
     };
     fixed("trade", trade_open_, &GameHud::trade_window);
     fixed("army", army_open_, &GameHud::army_window);
-    fixed("goods", goods_open_, &GameHud::goods_window);
-    fixed("stats", stats_open_, &GameHud::stats_window);
-    fixed("log", log_open_, &GameHud::log_window);
-    fixed("layers", layers_open_, &GameHud::layers_window);
+    // Phase 123: goods, statistics, events, layers and the camera windows
+    // are RmlUi's (rml_windows); here only their closing.
+    for (const char* id : {"goods", "stats", "log", "layers"}) {
+        if (!*fixed_open(id) && windows_.open(id)) {
+            windows_.close(id);
+        }
+    }
     for (int slot = 0; slot < kCameraWindows; ++slot) {
         const std::string id = "cam" + std::to_string(slot + 1);
-        if (ui.camera_windows[static_cast<std::size_t>(slot)].open) {
-            jobs.push_back({id, [this, &ctx, s, slot] { camera_window(ctx, *s, slot); }});
-        } else if (windows_.open(id)) {
+        if (!ui.camera_windows[static_cast<std::size_t>(slot)].open && windows_.open(id)) {
             windows_.close(id);
         }
     }
@@ -1989,60 +1990,6 @@ void GameHud::open_camera(GameSession& s, WindowList::Kind kind, sim::EntityId e
     w.distance = kind == WindowList::Kind::Building ? 30.0f : kind == WindowList::Kind::Node ? 20.0f : 9.0f;
     camera_opened_[slot] = ++camera_count_;
     windows_.raise("cam" + std::to_string(slot + 1));
-}
-
-// A live picture of a thing from an orbit of its own: dragging on it turns
-// the orbit, the wheel comes closer or goes away. The main camera stays.
-void GameHud::camera_window(ui::Context& ctx, GameSession& s, int slot) {
-    GameSession::Interaction::CameraWindow& cw = s.ui().camera_windows[static_cast<std::size_t>(slot)];
-    const std::string id = "cam" + std::to_string(slot + 1);
-    const float pad = ctx.s(14.0f);
-    const float title_h = ctx.text().line_height(ctx.style(ctx.theme().heading, ui::FontRole::Bold));
-    const float min_w = ctx.s(280.0f);
-    float w = std::min(ctx.s(static_cast<float>(render::kInsetWidth) + 28.0f), ctx.width() - 2 * pad);
-    // The picture keeps its shape, so the height follows the width the
-    // player gave the window.
-    if (const float own = windows_.place(id).w; own > 0.0f) {
-        w = std::round(std::clamp(own * ctx.s(1.0f), min_w, std::max(min_w, ctx.width() - 2 * pad)));
-    }
-    const float shape = static_cast<float>(render::kInsetHeight) / static_cast<float>(render::kInsetWidth);
-    const float top = pad + title_h + pad * 0.5f;
-    ui::Rect box{left_x(ctx), std::round(ctx.s(kTopBarH) + pad), std::round(w),
-                 std::round(top + std::round((w - 2 * pad) * shape) + pad)};
-    bool open = true;
-    const std::string title = thing_title(s.game(), static_cast<WindowList::Kind>(cw.kind), cw.entity);
-    if (!window(ctx, s, id, title, box, open)) {
-        if (!open) {
-            cw.open = false;
-        }
-        return;
-    }
-    const ui::Rect picture{box.x + pad, box.y + top, box.w - 2 * pad, std::round((box.w - 2 * pad) * shape)};
-    ctx.draw().rect(picture, ctx.theme().button);
-    ctx.draw().picture(picture, kCameraImageId + static_cast<std::uint32_t>(slot), 0.0f, 0.0f, 1.0f, 1.0f,
-                       ui::Color::rgb(0xFFFFFF));
-    ctx.draw().rect_outline(picture, ctx.theme().panel_border, std::max(1.0f, std::round(ctx.s(1.0f))));
-    ctx.tooltip_area(ctx.id("picture"), picture, tr("hud.camera.tooltip"));
-    const ui::Input& in = ctx.input();
-    const bool over = !ctx.input_blocked() && picture.contains(in.mouse_x, in.mouse_y);
-    if (over && in.mouse_pressed) {
-        camera_drag_ = slot;
-        camera_drag_x_ = in.mouse_x;
-        camera_drag_y_ = in.mouse_y;
-    }
-    if (camera_drag_ == slot) {
-        if (in.mouse_down) {
-            cw.yaw -= (in.mouse_x - camera_drag_x_) * 0.012f;
-            cw.pitch = std::clamp(cw.pitch + (in.mouse_y - camera_drag_y_) * 0.01f, 0.05f, 1.45f);
-            camera_drag_x_ = in.mouse_x;
-            camera_drag_y_ = in.mouse_y;
-        } else {
-            camera_drag_ = -1;
-        }
-    }
-    if (over && in.wheel != 0.0f) {
-        cw.distance = std::clamp(cw.distance * std::pow(0.88f, in.wheel), 3.0f, 80.0f);
-    }
 }
 
 void GameHud::open_link(const std::string& from, WindowList::Kind kind, sim::EntityId entity) {

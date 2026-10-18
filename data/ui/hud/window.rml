@@ -1,0 +1,31 @@
+<template name="hudwindow" content="content">
+<head>
+	<link type="text/rcss" href="/base.rcss"/>
+	<link type="text/rcss" href="/window.rcss"/>
+	<link type="text/rcss" href="/style.rcss"/>
+	<link type="text/rcss" href="/hud/hud.rcss"/>
+	<link type="text/rcss" href="/hud/hwin.rcss"/>
+</head>
+<!-- The frame of every game window (phase 123): the tabs of its stack, the
+     title bar with its icon and its square buttons, and the corner to
+     resize it. src/game/hud_rml_windows.cpp fills and moves it; the window's
+     own document puts its content in #content. -->
+<body class="window hwin">
+	<div id="tabs" class="tabs"></div>
+	<div id="bar" class="bar">
+		<img id="icon" class="wicon"/>
+		<div class="titles">
+			<div id="title" class="title"></div>
+			<div id="sub" class="sub"></div>
+		</div>
+		<div id="view" class="wbtn" tip="@hud.window.eye.tooltip"><img sprite="icon-eye"/></div>
+		<div id="camera" class="wbtn" tip="@hud.window.camera.tooltip"><img sprite="icon-camera"/></div>
+		<div id="sep" class="sep"></div>
+		<div id="minimize" class="wbtn" tip="@hud.window.minimize.tooltip"><img sprite="icon-minus"/></div>
+		<div id="pin" class="wbtn" tip="@hud.window.pin.tooltip"><img sprite="icon-pin"/></div>
+		<div id="close" class="wbtn close" tip="@hud.window.close.tooltip"><img sprite="icon-x"/></div>
+	</div>
+	<div id="content" class="content"></div>
+	<div id="grip" class="grip"></div>
+</body>
+</template>

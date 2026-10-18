@@ -511,6 +511,18 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fase 123 (ventanas en RmlUi)
+
+- [ ] El dock abre Bienes, Estadísticas, Eventos y Capas, con el marco nuevo: ícono, título y botones cuadrados con tooltip.
+- [ ] Arrastrar una ventana por su título la mueve; se pega a los bordes, a la barra de construcción y a otras ventanas.
+- [ ] Soltarla tocando otra las une: se mueven juntas; Ctrl al arrastrar la separa.
+- [ ] Soltarla sobre el título de otra la hace pestaña; un clic en una pestaña la muestra; arrastrar una pestaña la saca.
+- [ ] La esquina de abajo a la derecha cambia el ancho y el contenido se reacomoda.
+- [ ] Minimizar deja solo la barra de título; otra vez la abre.
+- [ ] Fijar y cerrar funcionan; al salir y volver a entrar, las ventanas vuelven a su lugar.
+- [ ] El botón Cámara de una ventana de edificio abre la ventana de cámara: arrastrar sobre la imagen gira, la rueda acerca.
+- [ ] En Vidrio oscuro las ventanas se ven con su estilo.
+
 ### Fase 122 (barra de construcción)
 
 - [ ] La barra de abajo muestra las categorías como íconos y los edificios con su miniatura, nombre y costo; los bloqueados dicen su nivel.

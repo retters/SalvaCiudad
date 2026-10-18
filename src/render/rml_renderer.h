@@ -122,6 +122,9 @@ public:
     // Images the game draws again and again (phase 121: the minimap), as
     // "live/<name>": every call replaces the pixels (premultiplied RGBA).
     void set_live_image(const std::string& name, int width, int height, const std::vector<std::uint8_t>& rgba);
+    // A texture someone else owns (phase 123: a camera window's picture), as
+    // "ext/<name>"; null draws nothing. Set it every frame it may change.
+    void set_external_texture(const std::string& name, SDL_GPUTexture* texture, int width, int height);
 
     // Rml::RenderInterface.
     Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices,
@@ -165,6 +168,7 @@ private:
         int width = 0;
         int height = 0;
         std::vector<std::uint8_t> pending;  // Premultiplied RGBA waiting for upload.
+        bool external = false;              // Not ours: never released here.
     };
     enum class FilterType : std::uint8_t { Opacity, Blur, DropShadow, ColorMatrix, MaskImage };
     struct Filter {
@@ -278,6 +282,12 @@ private:
         std::vector<std::uint8_t> rgba{0, 0, 0, 0};
     };
     std::unordered_map<std::string, Live> live_;  // By name.
+    struct External {
+        SDL_GPUTexture* texture = nullptr;
+        int width = 1;
+        int height = 1;
+    };
+    std::unordered_map<std::string, External> externals_;  // By name.
 
     // The frame being recorded.
     int width_ = 0;

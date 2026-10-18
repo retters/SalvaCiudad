@@ -1,0 +1,12 @@
+<rml>
+<head>
+	<title>Camera</title>
+	<link type="text/template" href="/hud/window.rml"/>
+</head>
+<!-- A camera window (phase 123): the live picture of a thing from its own
+     orbit; dragging turns it, the wheel comes closer. The picture is the
+     scene's (/ext/cam1, /ext/cam2), set by src/game/hud_rml_windows.cpp. -->
+<body template="hudwindow">
+	<img id="picture" class="picture" tip="@hud.camera.tooltip"/>
+</body>
+</rml>

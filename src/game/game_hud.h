@@ -14,6 +14,11 @@
 #include <vector>
 
 #include <RmlUi/Core/DataModelHandle.h>
+#include <RmlUi/Core/EventListener.h>
+
+namespace Rml {
+class ElementDocument;
+}
 
 #include "game/hud_model.h"
 #include "game/services.h"
@@ -52,9 +57,12 @@ struct GameDate {
 };
 [[nodiscard]] GameDate game_date(std::uint64_t tick);
 
-class GameHud {
+// Phase 123: it listens to the events of its RmlUi windows.
+class GameHud final : public Rml::EventListener {
 public:
     explicit GameHud(Services& services) : services_(services) {}
+    GameHud(const GameHud&) = delete;
+    GameHud& operator=(const GameHud&) = delete;
 
     // Draws the interface. `blocked`: a menu is open over it (no input).
     // Returns true when Esc should open the game menu (nothing else
@@ -78,6 +86,39 @@ private:
     void rml_models(rml::RmlUi& rml);
     void rml_minimap(ui::Context& ctx, GameSession& s, rml::RmlUi& rml);
     void toggle_dock(const std::string& id);
+    // Phase 123: the game windows in RmlUi (hud_rml_windows.cpp).
+    void ProcessEvent(Rml::Event& event) override;
+    void rml_windows(ui::Context& ctx, GameSession& s, rml::RmlUi& rml);
+    void rml_window_models(rml::RmlUi& rml);
+    void rml_window_contents(GameSession& s);
+    [[nodiscard]] std::string rml_window_doc(const std::string& id) const;
+    [[nodiscard]] bool* fixed_open(const std::string& id);
+    struct RmlWindow {
+        std::string doc;  // Its document's key.
+        Rml::ElementDocument* attached = nullptr;  // The document its events come from.
+        std::string tabs;   // The tab strip's RML, as last set.
+        std::string title;
+        ui::Rect box;       // Where it was put, in pixels.
+        float bar_h = 0.0f;
+    };
+    std::map<std::string, RmlWindow> rml_windows_;
+    std::vector<std::string> rml_order_;
+    float rml_scale_ = 1.0f;
+    float rml_width_ = 1.0f;
+    float rml_height_ = 1.0f;
+    std::string rml_drag_;  // The window being moved or resized.
+    bool rml_resizing_ = false;
+    float rml_grab_x_ = 0.0f;
+    float rml_grab_y_ = 0.0f;
+    std::vector<GoodsCat> goods_cats_;
+    Rml::DataModelHandle goods_model_;
+    std::vector<std::string> stats_lines_;
+    Rml::DataModelHandle stats_model_;
+    std::vector<HudNote> log_rows_;
+    std::vector<std::size_t> log_index_;
+    Rml::DataModelHandle log_model_;
+    std::vector<LayerRow> layer_rows_;
+    Rml::DataModelHandle layers_model_;
     bool rml_ready_ = false;
     TopBarModel top_;
     Rml::DataModelHandle top_model_;
@@ -126,7 +167,6 @@ private:
     // Phase 64: the camera windows. `open_camera` gives a thing a window
     // with a live picture of it (the one that has looked longest goes when
     // both are taken).
-    void camera_window(ui::Context& ctx, GameSession& s, int slot);
     void open_camera(GameSession& s, WindowList::Kind kind, sim::EntityId entity);
     [[nodiscard]] std::string thing_title(const sim::Game& game, WindowList::Kind kind, sim::EntityId entity) const;
     // The first row of an object window: buttons as wide as their texts need.
@@ -236,10 +276,6 @@ private:
                 bool& open);
     void open_window(const std::string& id);
     [[nodiscard]] float left_x(ui::Context& ctx) const;
-    void goods_window(ui::Context& ctx, GameSession& s);
-    void stats_window(ui::Context& ctx, GameSession& s);
-    void log_window(ui::Context& ctx, GameSession& s);
-    void layers_window(ui::Context& ctx, GameSession& s);
     bool goods_open_ = false;
     bool stats_open_ = false;
     bool log_open_ = false;

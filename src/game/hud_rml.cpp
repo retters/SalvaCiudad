@@ -235,6 +235,7 @@ void GameHud::rml_models(rml::RmlUi& rml) {
         });
         build_model_ = m.GetModelHandle();
     }
+    rml_window_models(rml);
     // The placing hint.
     if (Rml::DataModelConstructor m = c.CreateDataModel("hint")) {
         m.Bind("shown", &hint_shown_);
@@ -276,6 +277,11 @@ void GameHud::hide_rml() {
             (void)rml->show_document(doc, false);
         }
     }
+    for (const auto& [id, w] : rml_windows_) {
+        (void)rml->show_document(w.doc, false);
+    }
+    rml_windows_.clear();
+    rml_order_.clear();
     rml->set_mark({});
 }
 
@@ -424,6 +430,8 @@ void GameHud::rml_frame(ui::Context& ctx, GameSession& s) {
     if (Rml::ElementDocument* d = rml->document(kHintDoc)) {
         d->SetProperty("bottom", std::format("{:.1f}px", std::max(0.0f, ctx.height() - build_bar_top_ + std::round(ctx.s(8.0f)))));
     }
+
+    rml_windows(ctx, s, *rml);
 
     // Where the old parts lay out from: under the top bar, under the minimap.
     if (Rml::ElementDocument* d = rml->document(kTopDoc)) {

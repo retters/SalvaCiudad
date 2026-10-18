@@ -1,0 +1,13 @@
+<rml>
+<head>
+	<title>Layers</title>
+	<link type="text/template" href="/hud/window.rml"/>
+</head>
+<!-- What the map shows over itself (phase 123). Data model "layers". -->
+<body template="hudwindow">
+	<div data-model="layers">
+		<div class="choice" data-for="l, i : rows" data-class-on="l.on" data-attr-tip="l.tip"
+		     data-event-click="pick(i)"><span>{{l.name}}</span></div>
+	</div>
+</body>
+</rml>

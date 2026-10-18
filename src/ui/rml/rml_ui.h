@@ -72,7 +72,8 @@ public:
 
     // A document by its path under the roots ("dev/prueba.rml"); kept open
     // (hidden or shown) and reloaded with the language. "path#N" is another
-    // copy of the same document, moved N times 32 dp right and down.
+    // copy of the same document (one under "dev/" is moved N times 32 dp
+    // right and down, to see them apart).
     bool show_document(const std::string& path, bool show);
     [[nodiscard]] bool document_shown(const std::string& path) const;
     // Unloads every document (they load again when shown).

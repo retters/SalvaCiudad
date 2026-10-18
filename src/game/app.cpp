@@ -873,6 +873,8 @@ void App::update_camera_windows() {
     for (int slot = 0; slot < kCameraWindows; ++slot) {
         ui_renderer_.set_external_image(kCameraImageId + static_cast<std::uint32_t>(slot),
                                         playing ? scene_.inset_texture(slot) : nullptr);
+        rml_renderer_.set_external_texture("cam" + std::to_string(slot + 1), playing ? scene_.inset_texture(slot) : nullptr,
+                                           render::kInsetWidth, render::kInsetHeight);
     }
     if (!playing) {
         return;
