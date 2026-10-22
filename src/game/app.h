@@ -18,6 +18,7 @@
 #include "game/map_generation.h"
 #include "game/map_scene.h"
 #include "game/occluders.h"
+#include "game/perf_window.h"
 #include "game/services.h"
 #include "game/sound_director.h"
 #include "game/settings.h"
@@ -328,8 +329,13 @@ private:
     bool mouse_captured_ = false;
     float fps_window_s_ = 0.0f;
     int fps_window_frames_ = 0;
-    float perf_log_s_ = 0.0f;
-    int perf_log_frames_ = 0;
+    // Phase 129: what each frame cost, logged every few seconds on a map.
+    void log_perf(float dt);
+    PerfWindow perf_;
+    FrameSample sample_;  // This frame's, filled as it goes.
+    std::uint64_t perf_relayouts_ = 0;  // The renderer's counters at the last log.
+    std::uint64_t perf_sorted_ = 0;
+    std::uint64_t perf_bytes_ = 0;
     GameClock clock_;
     // Phase 61: following a villager and the ghost of the camera's anchor.
     void follow_villager(const CameraInput& in);

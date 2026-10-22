@@ -958,25 +958,41 @@ void App::update_frame_stats(float dt) {
         fps_window_s_ = 0.0f;
         fps_window_frames_ = 0;
     }
+}
+
+void App::log_perf(float dt) {
+    sample_.frame_ms = dt * 1000.0f;
+    const render::RenderStats& st = scene_.stats();
+    sample_.prepare_ms = st.prepare_ms;
+    sample_.cull_ms = st.cull_ms;
+    const FrameSample sample = sample_;
+    sample_ = FrameSample{};
     // On a map, log the average every few seconds so performance
     // can be checked without watching the screen.
-    if (interactive_scene()) {
-        perf_log_s_ += dt;
-        ++perf_log_frames_;
-        if (perf_log_s_ >= 5.0f) {
-            const render::RenderStats& st = scene_.stats();
-            log::info("perf: {:.1f} FPS average, {} of {} instances drawn, {} draw calls, {:.2f} M triangles, "
-                      "cull {:.2f} ms, {} terrain chunks, {} water chunks",
-                      static_cast<float>(perf_log_frames_) / perf_log_s_, st.instances_drawn, st.instances_total,
-                      st.draw_calls, static_cast<double>(st.triangles) / 1e6, st.cull_ms, st.terrain_chunks,
-                      st.water_chunks);
-            perf_log_s_ = 0.0f;
-            perf_log_frames_ = 0;
-        }
-    } else {
-        perf_log_s_ = 0.0f;
-        perf_log_frames_ = 0;
+    if (!interactive_scene()) {
+        perf_.clear();
+        perf_relayouts_ = st.relayouts;
+        perf_sorted_ = st.instances_sorted;
+        perf_bytes_ = st.instance_bytes_sent;
+        return;
     }
+    perf_.add(sample);
+    if (perf_.seconds() < 5.0f) {
+        return;
+    }
+    const PerfSummary p = perf_.take();
+    log::info("perf: {:.1f} FPS average, worst frame {:.1f} ms, {} over {:.0f} ms; per frame sim {:.2f} ms, world {:.2f} ms, "
+              "scene {:.2f} ms, rest {:.2f} ms; worst prepare {:.2f} ms, worst cull {:.2f} ms; {} relayouts, {} "
+              "instances sorted, {:.1f} MiB of instances sent; {} of {} instances drawn, {} draw calls, {:.2f} M "
+              "triangles, {} terrain chunks, {} water chunks",
+              p.fps, p.worst_ms, p.slow_frames, kSlowFrameMs, p.sim_ms, p.world_ms, p.scene_ms, p.other_ms,
+              p.worst_prepare_ms, p.worst_cull_ms, st.relayouts - perf_relayouts_, st.instances_sorted - perf_sorted_,
+              static_cast<double>(st.instance_bytes_sent - perf_bytes_) / (1024.0 * 1024.0), st.instances_drawn,
+              st.instances_total, st.draw_calls, static_cast<double>(st.triangles) / 1e6, st.terrain_chunks,
+              st.water_chunks);
+    perf_relayouts_ = st.relayouts;
+    perf_sorted_ = st.instances_sorted;
+    perf_bytes_ = st.instance_bytes_sent;
 }
 
 void App::render_frame(float dt) {
@@ -992,6 +1008,7 @@ void App::render_frame(float dt) {
         // Marking a report, or capturing one: the camera stays still.
         const bool still = world_only();
         if (scene_ok_ && host_->scene_mode() != UiHost::SceneMode::None) {
+            const std::uint64_t world_start = SDL_GetTicksNS();
             if (!still) {
                 handle_scene_click(frame.width, frame.height);
                 update_camera(dt);
@@ -1087,7 +1104,10 @@ void App::render_frame(float dt) {
             update_camera_windows();
             // Glass in the interface's last frame: the scene keeps its picture.
             view.keep_picture = rml_renderer_.wants_backdrop();
+            const std::uint64_t scene_start = SDL_GetTicksNS();
+            sample_.world_ms = static_cast<float>(scene_start - world_start) * 1e-6f;
             scene_drawn = scene_.render(frame, view, lighting_);
+            sample_.scene_ms = static_cast<float>(SDL_GetTicksNS() - scene_start) * 1e-6f;
         }
 
         // Interface on top.
@@ -1284,6 +1304,7 @@ void App::frame() {
     if (net_ && session_ && session_->networked()) {
         clock_.set_speed(net_->speed());
     }
+    const std::uint64_t sim_start = SDL_GetTicksNS();
     const std::uint64_t dropped_before = clock_.dropped_ticks();
     const int ticks = clock_.advance(static_cast<std::int64_t>(elapsed));
     // A machine that cannot keep the speed up goes one step down instead of
@@ -1318,6 +1339,7 @@ void App::frame() {
             menu_game_->step();
         }
     }
+    sample_.sim_ms = static_cast<float>(SDL_GetTicksNS() - sim_start) * 1e-6f;
     update_menu_background();
 
     if (session_ && host_) {
@@ -1329,6 +1351,7 @@ void App::frame() {
     if (!window_.minimized()) {
         render_frame(dt);
     }
+    log_perf(dt);
     apply_pending_vsync();
     save_settings_if_due(false);
 

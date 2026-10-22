@@ -1265,6 +1265,19 @@ Las fases 1 a 9 construyen los cimientos y un **primer juego jugable en multijug
    - *Criterios:* una prueba estática verifica que no quedan widgets del sistema viejo fuera de las herramientas; los menús se recorren sin ratón; `docs/VERIFICACION_MANUAL.md` actualizada.
 128. **Pulido y entrega.** `/analyze` limpio, lista de verificación manual completa, guías revisadas, `DECISIONES.md` revisado, ZIP de entrega y compilación en tu Linux.
 
+Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, para poder volver a `main` si no convence. En el registro de una partida en un mapa de 16 384 m (1,84 millones de objetos), el cuadro llegaba a tardar unos 410 ms cuando cambiaba una lista pequeña de objetos, y al alejar la cámara el suelo llegaba a 64 000 llamadas de dibujo; el GPU trabajaba al 25-30 %.
+
+129. **Medir el cuadro por partes.**
+   - La línea `perf:` del registro (cada 5 s) dice, además de lo de hoy: el peor cuadro y cuántos pasaron de 50 ms; el promedio por cuadro de la simulación, de la actualización del mundo (vista del pueblo, mapa, cubierta del suelo), del renderizador en el CPU y del resto; y, del renderizador, cuántas veces se rehízo la disposición de todas las instancias, cuántas instancias se reordenaron y el peor tiempo de preparación de instancias, ya separado del culling.
+   - *Criterios:* prueba sin GPU de la ventana de medidas (acumula, guarda el peor, cuenta los cuadros lentos y se vacía al informar); la línea sale en el registro de una partida real; el culling ya no incluye la preparación.
+130. **Instancias: que una lista que crece no rehaga las demás.**
+   - Un modelo que se queda sin lugar en el búfer de instancias se muda al final con el doble de lugar; los demás no se reordenan ni se vuelven a subir. Solo cuando el búfer entero se acaba se rehace la disposición, con lugar de sobra, y se crea uno más grande.
+   - La disposición se separa del GPU (`render/instance_layout.*`) para probarla sola.
+   - *Criterios:* pruebas: crecer una lista pequeña muchas veces sobre 1 000 000 de instancias rehace la disposición completa a lo más un par de veces, y cada mudanza sube solo esa lista; las posiciones de cada modelo nunca se pisan; los rangos subidos cubren todo lo que cambió. En una partida en mapa colosal no aparecen preparaciones de cientos de milisegundos al mover y alejar la cámara.
+131. **El suelo lejano en una sola llamada.**
+   - El suelo facetado se dibuja con una llamada indirecta por cuadro (una lista de comandos en el GPU) en lugar de una llamada y un envío de datos por cada trozo de 64 m; el primer color de cada trozo llega como dato por instancia. Lo mismo para las montañas decorativas.
+   - *Criterios:* el suelo se ve igual (captura antes y después desde el mismo lugar); con todo el mapa colosal a la vista, las llamadas de dibujo del suelo pasan de decenas de miles a unas pocas; sin errores en `debug-asan`.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

@@ -148,6 +148,15 @@ struct RenderStats {
     std::uint32_t characters_far = 0;  // Of those, with their far version (phase 57).
     std::uint32_t characters_total = 0;
     float cull_ms = 0.0f;
+    // Phase 129: laying out and sorting the instances this frame (not in
+    // cull_ms), and since the renderer was created: how many times every
+    // model's place in the instance buffer was laid out again, how many
+    // instances were sorted into their regions and how many bytes of
+    // instances went up to the GPU.
+    float prepare_ms = 0.0f;
+    std::uint64_t relayouts = 0;
+    std::uint64_t instances_sorted = 0;
+    std::uint64_t instance_bytes_sent = 0;
     int msaa_samples = 1;
     int shadow_cascades = 0;
     int shadow_map_size = 0;

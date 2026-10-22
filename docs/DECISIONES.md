@@ -4466,3 +4466,16 @@ La compilación en Linux queda para la máquina de Salvador, como dice la especi
 
 **D-12804. Guías.**
 El README dice el estado (fase 128 de 128), la interfaz nueva, el teclado, el preset `analyze` y cómo armar la entrega; `docs/VERIFICACION_MANUAL.md` empieza con el repaso general de la entrega. En esta bitácora se marcaron como reemplazadas las decisiones de convivencia de la interfaz vieja y la nueva (D-12304, D-12404) y se amplió D-11716 con D-12703.
+
+## Fase 129: medir el cuadro por partes (2026-10-21)
+
+Ronda de rendimiento del mapa colosal, en la rama `perf-colossal` (Salvador quiere poder volver a `main` si no le convence).
+
+**D-12901. El punto de partida, leído del registro.**
+En una partida de 16 384 m con 1,84 millones de instancias, la línea `perf:` mostraba culling de unos 410 ms en un tercio de las muestras y FPS de un solo dígito en esos tramos, mientras el GPU trabajaba al 25-30 %. El «total de instancias» de esa línea es el tamaño de la disposición con su holgura, así que cada vez que cambiaba se había rehecho la disposición entera: los 410 ms coinciden con esos cambios, y cuando el total se quedó fijo el juego fue a 100 FPS. Lo que la rehacía eran las listas pequeñas que crecen: la cubierta del suelo (se rellena al mover la cámara), la lluvia, el humo, los animales, las carretas y las flechas. Al alejar la cámara el suelo llegaba además a 64 000 llamadas de dibujo, una por trozo de 64 m.
+
+**D-12902. La línea `perf:` dice dónde se va el cuadro.**
+Cada 5 s, en una partida o un mapa: FPS, el peor cuadro y cuántos pasaron de 50 ms; el promedio por cuadro de la simulación, de la actualización del mundo (desde la cámara hasta antes de dibujar: vista del pueblo, mapa, cubierta del suelo, oclusores), del renderizador en el CPU y del resto (interfaz y espera de la pantalla, por diferencia); el peor tiempo de preparación de instancias y de culling; y cuántas veces se rehízo la disposición, cuántas instancias se reordenaron y cuántos MiB de instancias subieron. Los contadores del renderizador son acumulados (`RenderStats`) y la aplicación resta los del informe anterior. El tiempo del cuadro va de un inicio de cuadro al siguiente y las partes se miden dentro del mismo cuadro, por eso el resto nunca baja de cero. La medida vive en `game/perf_window.*`, sin GPU, con su prueba en la suite `scene`.
+
+**D-12903. El culling ya no incluye la preparación de instancias.**
+`RenderStats::cull_ms` empezaba antes de ordenar las instancias por región; ahora eso es `prepare_ms`. El panel de depuración y el informe de un reporte siguen mostrando `cull_ms`, que ahora es solo el culling.

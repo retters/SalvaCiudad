@@ -301,6 +301,7 @@ set(SC_ENGINE_SOURCES
     src/game/app.cpp
     src/game/build_info.cpp
     src/game/dev_tools.cpp
+    src/game/perf_window.cpp
     src/game/camera.cpp
     src/game/day_light.cpp
     src/game/game_clock.cpp
@@ -478,6 +479,7 @@ if(SC_BUILD_TESTS)
         tests/test_model.cpp
         tests/test_camera.cpp
         tests/test_scene.cpp
+        tests/test_frame_perf.cpp
         tests/test_sim.cpp
         tests/test_worldgen.cpp
         tests/test_map_view.cpp

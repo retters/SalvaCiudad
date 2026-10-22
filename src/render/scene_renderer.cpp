@@ -399,6 +399,9 @@ struct SceneRenderer::Impl {
     SDL_GPUBuffer* instance_buffer = nullptr;  // Storage: all instances.
     std::uint32_t instance_capacity = 0;
     bool layout_dirty = true;   // Some model outgrew its room: lay out again.
+    std::uint64_t relayouts = 0;         // For RenderStats (phase 129).
+    std::uint64_t instances_sorted = 0;
+    std::uint64_t instance_bytes_sent = 0;
     bool full_upload = true;    // The whole instance buffer must be sent.
     SDL_GPUBuffer* visible_buffer = nullptr;   // Vertex: visible indices.
     std::uint32_t visible_capacity = 0;
@@ -1140,6 +1143,7 @@ struct SceneRenderer::Impl {
     std::vector<std::pair<std::uint32_t, std::uint32_t>> prepare_instances() {
         std::vector<std::pair<std::uint32_t, std::uint32_t>> ranges;
         if (layout_dirty) {
+            ++relayouts;
             std::uint32_t base = 0;
             for (GpuModel& m : models) {
                 const auto count = static_cast<std::uint32_t>(m.instances.size());
@@ -1155,6 +1159,7 @@ struct SceneRenderer::Impl {
         for (GpuModel& m : models) {
             if (m.dirty) {
                 build_buckets(m);
+                instances_sorted += m.order.size();
                 for (std::uint32_t k = 0; k < m.order.size(); ++k) {
                     gpu_instances[m.base + k] = to_gpu(m.instances[m.order[k]]);
                 }
@@ -2024,6 +2029,10 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     d.draw_distance_now = draw_distance;
     // Culling (instances are grouped by region first, when they changed).
     const std::vector<std::pair<std::uint32_t, std::uint32_t>> instance_ranges = d.prepare_instances();
+    const auto t_prepared = std::chrono::steady_clock::now();
+    stats_.prepare_ms = std::chrono::duration<float, std::milli>(t_prepared - t0).count();
+    stats_.relayouts = d.relayouts;
+    stats_.instances_sorted = d.instances_sorted;
     d.visible.clear();
     // A model is drawn far when it is lower on screen than lod_pixels.
     const float pixels_per_meter_at_1m =
@@ -2064,7 +2073,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     if (!d.terrain.prepare(frame.cmd, frustum, view.eye, view_distance)) {
         log::warn("scene: terrain lists not uploaded this frame");
     }
-    stats_.cull_ms = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    stats_.cull_ms = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t_prepared).count();
 
     // Uploads, in one transfer: visible indices and characters every frame;
     // instances, bones and palettes when they changed.
@@ -2225,6 +2234,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
         SDL_EndGPUCopyPass(copy);
         if (upload_instances > 0) {
             d.full_upload = false;
+            d.instance_bytes_sent += upload_instances;
         }
         if (bones_to_upload > 0) {
             d.bones_dirty = false;
@@ -2236,6 +2246,7 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
             d.building_palettes_dirty = false;
         }
     }
+    stats_.instance_bytes_sent = d.instance_bytes_sent;
 
     const std::array<SDL_GPUTextureSamplerBinding, 3> war_bind = d.war_bindings();
     // Draws every model's visible instances; `with_materials` binds colors.
