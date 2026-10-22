@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <format>
+#include <string>
 
 #include <SDL3/SDL_error.h>
 
@@ -557,6 +559,18 @@ bool TerrainLayer::set(SDL_GPUDevice* device, const TerrainData& data) {
     log::info("terrain: {} x {} m in {} chunks; facets {} MiB of vertices, {} MiB of indices, {} MiB of colors", n, n,
               chunks_.size(), f.positions.size() * sizeof(float) >> 20, f.indices.size() * sizeof(std::uint16_t) >> 20,
               f.face_colors.size() * sizeof(std::uint32_t) >> 20);
+    // Phase 137: how many triangles the whole map has at each level, and the
+    // mountains around it.
+    std::string levels;
+    for (int lod = 0; lod < kFacetLods; ++lod) {
+        levels += std::format("{}{:.2f} M", lod == 0 ? "" : ", ", static_cast<double>(f.triangle_count(lod)) / 1e6);
+    }
+    std::uint64_t backdrop = 0;
+    for (const ChunkLod& part : f.backdrop) {
+        backdrop += part.index_count / 3;
+    }
+    log::info("terrain: triangles by level {}; mountains {:.2f} M in {} tiles", levels, static_cast<double>(backdrop) / 1e6,
+              f.backdrop.size());
     return true;
 }
 

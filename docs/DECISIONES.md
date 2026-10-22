@@ -4559,3 +4559,11 @@ Con el mapa gigante (8 192 m, `worldgen_perf` con `--no-skip`: 26,2 s) y medicio
 
 **D-13602. `debug-asan` al cerrar la ronda.**
 Como pidió Salvador, `debug-asan` no se corrió durante el desarrollo de estas fases sino al final: las 96 suites pasan (540 s) con las fases 129 a 135.
+
+## Fase 137: cuántos triángulos tiene el mapa (2026-10-22)
+
+**D-13701. El registro dice los triángulos del suelo por nivel y los de las montañas.**
+Después de `terrain:`, una línea con los triángulos del mapa entero en cada nivel de detalle del suelo facetado y los de las montañas de alrededor. En el mapa colosal: 55,5 M, 47,0 M y 1,43 M por nivel, y 0,51 M de montañas en 125 piezas.
+
+**D-13702. Con todo el mapa a la vista, los 18 M de triángulos son del agua, y se quedan.**
+Con todo el mapa colosal a la vista se dibujan unos 18,7 M de triángulos por cuadro: el suelo es 1,43 M (todo en su nivel más grueso) y las montañas 0,5 M; el resto es el agua, 27 000 trozos con facetas de 4 m. Se probó un cuarto nivel del suelo (16 m de error desde 3,2 km): solo bajaba 0,7 M y se quitó. Un agua más gruesa de lejos bajaría mucho más, pero el agua de cada vértice sale de las celdas que lo rodean, y con una rejilla de 8 o 16 m los ríos angostos se borrarían justo en la vista del mapa entero; por eso no se hizo (D-13101 ya quitó lo que pesaba en el CPU, y en el equipo de desarrollo esa vista va a unos 250 FPS). Si en otro equipo el GPU no alcanza, la salida sería dibujar los ríos aparte de los lagos y el mar.

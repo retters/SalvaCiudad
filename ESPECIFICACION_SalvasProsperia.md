@@ -1291,6 +1291,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 136. **Ordenar por regiones sin recalcular.** Cada lista de instancias que cambia se ordena por regiones de 64 m; la comparación calculaba las dos claves (con divisiones) en cada paso del ordenamiento. Se calculan una vez por instancia y se ordena por ellas, con el mismo orden de antes.
    - *Criterios:* el mismo orden que antes (pruebas de escena y de variantes); medida de la carga del mapa colosal y del cambio de estación antes y después.
 
+137. **Cuántos triángulos tiene el mapa.** El registro dice los triángulos del suelo por nivel de detalle y los de las montañas, para saber qué pesa en el GPU con todo el mapa a la vista.
+   - *Criterios:* la línea sale en el registro al cargar un mapa; lo medido queda en `DECISIONES.md`.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).
