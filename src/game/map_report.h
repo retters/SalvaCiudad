@@ -30,6 +30,24 @@ inline constexpr std::size_t kMaxStrokePoints = 4096;  // Per stroke.
 inline constexpr std::size_t kMaxCells = 200'000;      // Marked cells listed.
 inline constexpr const char* kFileName = "reporte.json";
 
+// Phase 129: a trip of the camera when the report is shown again, to
+// measure how the game runs along it (written by hand). Each step goes
+// from where the last one ended (or from the view) to its own place in
+// `seconds`.
+struct TourStep {
+    float seconds = 1.0f;
+    std::array<float, 2> offset{};  // x, z meters from the trip's start.
+    float yaw = 0.0f;
+    float pitch = 0.0f;
+    float distance = 0.0f;
+};
+inline constexpr std::size_t kMaxTourSteps = 64;
+struct Tour {
+    int speed = 0;         // Game speed in quarters (4 is x1); 0 paused.
+    bool at_town = false;  // It starts over the first town's center, not the view's target.
+    std::vector<TourStep> steps;
+};
+
 // Where the camera was, and the window it drew into.
 struct View {
     CameraMode mode = CameraMode::Aerial;
@@ -44,6 +62,8 @@ struct View {
     // Villagers to put in the middle of the view when the report is shown
     // again (--reporte), to measure how a crowd draws. Written by hand.
     std::uint32_t people = 0;
+    // Phase 129: written by hand; empty when there is none.
+    Tour tour;
 };
 inline constexpr std::int64_t kMaxReportPeople = 5000;
 

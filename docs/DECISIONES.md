@@ -4479,3 +4479,20 @@ Cada 5 s, en una partida o un mapa: FPS, el peor cuadro y cuántos pasaron de 50
 
 **D-12903. El culling ya no incluye la preparación de instancias.**
 `RenderStats::cull_ms` empezaba antes de ordenar las instancias por región; ahora eso es `prepare_ms`. El panel de depuración y el informe de un reporte siguen mostrando `cull_ms`, que ahora es solo el culling.
+
+## Fase 130: instancias, que una lista que crece no rehaga las demás (2026-10-22)
+
+**D-13001. Cada modelo tiene un lugar en el búfer, y el que se queda corto se muda solo.**
+Antes, cuando una lista pasaba de su lugar (su tamaño más un cuarto y 16), se rehacía la disposición de todos los modelos: se reordenaban por región sus 1,84 millones de instancias y se subía el búfer entero. Ahora `render/instance_layout.*` (sin GPU, con pruebas) lleva el lugar de cada modelo: el que se queda corto se muda al final del búfer con un cuarto más de lo que necesita y 64 de sobra, y los demás no se tocan; su lugar viejo queda abandonado hasta la próxima vez que se empaque. Solo cuando ya no cabe al final se empaca todo de nuevo; aun entonces los modelos que no cambiaron no se reordenan: sus instancias ya ordenadas se copian a su lugar nuevo, y se sube el búfer entero una vez.
+
+**D-13002. Cuánto lugar.**
+Un lugar nuevo es la cuenta más un cuarto y 64, para que las listas que empiezan vacías (humo, lluvia, animales, carretas, flechas) tengan lugar antes de necesitarlo. El búfer se crea con lo empacado más un cuarto y 65 536 lugares para mudanzas; con eso una lista que crece de 1 a 20 000 se muda unas decenas de veces sin empacar nada (prueba). El búfer de instancias ya no pide el doble de lo necesario como los demás (`ensure_buffer` con `spare` en falso), porque trae su propio lugar de sobra. Un modelo sin instancias que nunca tuvo lugar no ocupa nada (las versiones lejanas y los aspectos). `clear_instances` (al cambiar de mapa) empieza empacado de nuevo.
+
+**D-13003. El total de instancias del registro es el de verdad.**
+`RenderStats::instances_total` era el tamaño del búfer con su holgura; ahora es la suma de las instancias de todos los modelos.
+
+**D-13004. Medir con un recorrido de cámara (`--reporte`).**
+Para medir siempre lo mismo, un `reporte.json` puede llevar en `view.tour` un recorrido escrito a mano: la velocidad del juego (en cuartos, como `core/speed.h`), si empieza sobre el centro del primer pueblo (`atTown`) y hasta 64 pasos, cada uno con su duración, su desplazamiento en metros desde el inicio, giro, inclinación y distancia; la cámara va de un paso al siguiente en línea recta. Con recorrido, el reporte se muestra con el pueblo en pie, el juego corre a esa velocidad y al terminar cada paso se anota en el registro (`tour:`) y en el `despues_*.txt` lo mismo que la línea `perf:`. La validación es estricta, como el resto del reporte. El recorrido de esta ronda va en `tools/perf/colosal/reporte.json`.
+
+**D-13005. Medido con el recorrido colosal.**
+`release`, sin vsync, 1920 x 1080, calidad alta, en el equipo de desarrollo. En el registro de Salvador, antes de esta fase: preparaciones de unos 410 ms en un tercio de las muestras y de 2 a 7 FPS en los tramos con ellas. Con esta fase, en los 62 s del recorrido no se rehízo ninguna disposición; la preparación más lenta tardó 0,9 ms y el peor cuadro, 29 ms (desde el segundo paso; el primero carga el mapa). Junto al pueblo: de 112 a 129 FPS; a 1 km: 118; con todo el mapa a la vista (20 km): 80, con 61 600 llamadas de dibujo del suelo y 6,5 ms del renderizador en el CPU por cuadro, que es lo que ataca la fase 131. Cada cuadro gasta además unos 4 ms en la actualización del mundo, aun quieto junto al pueblo.

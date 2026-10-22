@@ -163,6 +163,62 @@ TEST_SUITE("map_report") {
         CHECK(refused(std::string(report::kMaxFileBytes + 1, ' ')));
     }
 
+    TEST_CASE("a report may carry a camera tour written by hand") {
+        const sim::MapData map = small_map(78);
+        TerrainNames names;
+        const std::string good = report::to_json(sample_report(map), map, sc::test::core_content(), names);
+        const auto with_tour = [&](std::string_view tour) {
+            std::string t = good;
+            const std::size_t at = t.find("\"snow\": 0.5");
+            REQUIRE(at != std::string::npos);
+            t.insert(at, "\"tour\": " + std::string(tour) + ", ");
+            return t;
+        };
+        report::Replay out;
+        std::string error;
+        // None: no steps.
+        REQUIRE(report::parse_replay(good, &sc::test::core_content(), out, error));
+        CHECK(out.view.tour.steps.empty());
+        REQUIRE(report::parse_replay(
+            with_tour(R"({"speed": 8, "atTown": true, "steps": [)"
+                      R"({"seconds": 5, "offset": [0, 0], "yaw": 0.6, "pitch": 0.9, "distance": 70},)"
+                      R"({"seconds": 2.5, "offset": [400, -30], "yaw": 1, "pitch": 1.1, "distance": 20000}]})"),
+            &sc::test::core_content(), out, error));
+        CHECK(out.view.tour.speed == 8);
+        CHECK(out.view.tour.at_town);
+        REQUIRE(out.view.tour.steps.size() == 2);
+        CHECK(out.view.tour.steps[1].seconds == doctest::Approx(2.5f));
+        CHECK(out.view.tour.steps[1].offset[0] == doctest::Approx(400.0f));
+        CHECK(out.view.tour.steps[1].offset[1] == doctest::Approx(-30.0f));
+        CHECK(out.view.tour.steps[1].distance == doctest::Approx(20000.0f));
+        // Speed and the town are optional.
+        REQUIRE(report::parse_replay(
+            with_tour(R"({"steps": [{"seconds": 1, "offset": [0, 0], "yaw": 0, "pitch": 1, "distance": 50}]})"),
+            &sc::test::core_content(), out, error));
+        CHECK(out.view.tour.speed == 0);
+        CHECK_FALSE(out.view.tour.at_town);
+        const auto refused = [&](std::string_view tour) {
+            report::Replay r;
+            std::string e;
+            const bool ok = report::parse_replay(with_tour(tour), &sc::test::core_content(), r, e);
+            CHECK_FALSE(e.empty());
+            return !ok;
+        };
+        const char* step = R"({"seconds": 1, "offset": [0, 0], "yaw": 0, "pitch": 1, "distance": 50})";
+        CHECK(refused("[]"));
+        CHECK(refused(R"({"steps": []})"));
+        CHECK(refused(R"({"speed": 99, "steps": [)" + std::string(step) + "]}"));
+        CHECK(refused(R"({"atTown": "yes", "steps": [)" + std::string(step) + "]}"));
+        CHECK(refused(R"({"steps": [{"seconds": 0, "offset": [0, 0], "yaw": 0, "pitch": 1, "distance": 50}]})"));
+        CHECK(refused(R"({"steps": [{"seconds": 1, "offset": [0], "yaw": 0, "pitch": 1, "distance": 50}]})"));
+        CHECK(refused(R"({"steps": [{"seconds": 1, "offset": [0, 0], "yaw": 0, "pitch": 1}]})"));
+        std::string many = R"({"steps": [)";
+        for (std::size_t i = 0; i <= report::kMaxTourSteps; ++i) {
+            many += (i > 0 ? "," : "") + std::string(step);
+        }
+        CHECK(refused(many + "]}"));
+    }
+
     TEST_CASE("the cells under a stroke follow the ground under each point") {
         // A camera looking straight down: pixel (x, y) is cell (x / 4, y / 4).
         const auto hit = [](float x, float y) -> std::optional<math::Vec3> {

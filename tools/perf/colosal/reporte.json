@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-22T00:00:00",
+  "game": {"version": "0.20.0", "build": "tour", "generatorVersion": 14, "contentHash": "0", "mods": ["core 0.7.0"]},
+  "map": {"seed": "601441504", "size": "colossal", "biomes": [], "temperature": 100, "humidity": 100, "climateRange": 30,
+          "rivers": 100, "lakes": 100, "forests": 100, "resources": 100, "relief": 100, "landforms": 100, "giants": 100,
+          "sea": "none", "players": 1, "separate": false, "islands": 3, "cells": 16384, "checksum": "0"},
+  "view": {"camera": "aerial", "target": [8192.0, 0.0, 8192.0], "yaw": 0.6, "pitch": 0.9, "distance": 70.0,
+           "width": 1920, "height": 1080, "season": "summer", "snow": 0.0, "context": "game", "fog": "none",
+           "tour": {"speed": 8, "atTown": true, "steps": [
+             {"seconds": 8, "offset": [0, 0], "yaw": 0.6, "pitch": 0.9, "distance": 70},
+             {"seconds": 10, "offset": [400, 0], "yaw": 0.6, "pitch": 0.9, "distance": 70},
+             {"seconds": 8, "offset": [400, 0], "yaw": 0.6, "pitch": 0.9, "distance": 1000},
+             {"seconds": 10, "offset": [400, 0], "yaw": 0.6, "pitch": 1.1, "distance": 20000},
+             {"seconds": 8, "offset": [400, 0], "yaw": 0.6, "pitch": 1.1, "distance": 20000},
+             {"seconds": 10, "offset": [0, 0], "yaw": 0.6, "pitch": 0.9, "distance": 70},
+             {"seconds": 8, "offset": [0, 0], "yaw": 0.6, "pitch": 0.9, "distance": 70}
+           ]}},
+  "cursor": {"cell": [0, 0]},
+  "strokes": []
+}

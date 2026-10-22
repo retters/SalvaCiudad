@@ -305,7 +305,7 @@ private:
     };
     Marking marking_;
     // `--reporte`: the report shown, and how far along.
-    enum class ReplayStep : std::uint8_t { None, Generating, Settling, Capture, Done };
+    enum class ReplayStep : std::uint8_t { None, Generating, Settling, Tour, Capture, Done };
     std::filesystem::path replay_dir_;
     std::optional<report::Replay> replay_;
     ReplayStep replay_step_ = ReplayStep::None;
@@ -317,6 +317,15 @@ private:
     int replay_measured_ = 0;
     std::uint64_t replay_measured_ns_ = 0;
     int replay_exit_code_ = 0;
+    // Phase 129: the camera's trip of a report, and what each step cost.
+    void start_tour(std::uint64_t now);
+    void update_tour(std::uint64_t now);
+    std::size_t tour_step_ = 0;
+    std::uint64_t tour_step_ns_ = 0;
+    math::Vec3 tour_origin_;
+    report::TourStep tour_from_;
+    PerfWindow tour_perf_;
+    std::string tour_notes_;
     float camera_wheel_ = 0.0f;   // Wheel notches since the last camera update.
     float camera_drag_px_ = 0.0f;  // Middle-button drag since the last update.
     bool middle_down_ = false;

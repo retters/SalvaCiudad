@@ -976,6 +976,9 @@ void App::log_perf(float dt) {
         perf_bytes_ = st.instance_bytes_sent;
         return;
     }
+    if (replay_step_ == ReplayStep::Tour) {
+        tour_perf_.add(sample);
+    }
     perf_.add(sample);
     if (perf_.seconds() < 5.0f) {
         return;
@@ -3316,6 +3319,9 @@ void App::update_replay() {
                 replay_step_ = ReplayStep::Settling;
                 replay_since_ns_ = now;
                 replay_frames_ = 0;
+                if (!v.tour.steps.empty()) {
+                    start_tour(now);
+                }
             } else if (const MapGenStatus::State st = map_generation_status().state;
                        !map_ && st != MapGenStatus::State::Running && st != MapGenStatus::State::Done) {
                 log::error("report: the map could not be made");
@@ -3338,9 +3344,70 @@ void App::update_replay() {
                 replay_step_ = ReplayStep::Capture;
             }
             break;
+        case ReplayStep::Tour:
+            update_tour(now);
+            break;
         default:
             break;
     }
+}
+
+void App::start_tour(std::uint64_t now) {
+    const report::View& v = replay_->view;
+    tour_origin_ = v.target;
+    if (v.tour.at_town && session_) {
+        const sim::Game& g = session_->game();
+        if (const sim::Building* tc = g.buildings().get(g.player(0).town_center)) {
+            tour_origin_.x = static_cast<float>(tc->x) + static_cast<float>(tc->width) * 0.5f;
+            tour_origin_.z = static_cast<float>(tc->z) + static_cast<float>(tc->depth) * 0.5f;
+        }
+    }
+    tour_from_ = report::TourStep{0.0f, {0.0f, 0.0f}, v.yaw, v.pitch, v.distance};
+    tour_step_ = 0;
+    tour_step_ns_ = now;
+    tour_perf_.clear();
+    tour_notes_ = std::format("Tour of {} steps from {:.0f}, {:.0f} at speed {}:\n", v.tour.steps.size(),
+                              static_cast<double>(tour_origin_.x), static_cast<double>(tour_origin_.z), v.tour.speed);
+    clock_.set_speed(v.tour.speed);
+    replay_step_ = ReplayStep::Tour;
+    update_tour(now);
+}
+
+void App::update_tour(std::uint64_t now) {
+    const std::vector<report::TourStep>& steps = replay_->view.tour.steps;
+    float t = static_cast<float>(static_cast<double>(now - tour_step_ns_) * 1e-9) / steps[tour_step_].seconds;
+    if (t >= 1.0f) {
+        const PerfSummary p = tour_perf_.take();
+        const report::TourStep& done = steps[tour_step_];
+        const std::string line = std::format(
+            "step {} (to {:.0f}, {:.0f} at {:.0f} m): {:.1f} FPS, worst frame {:.1f} ms, {} over {:.0f} ms; per frame "
+            "sim {:.2f} ms, world {:.2f} ms, scene {:.2f} ms, rest {:.2f} ms; worst prepare {:.2f} ms, worst cull "
+            "{:.2f} ms",
+            tour_step_ + 1, static_cast<double>(done.offset[0]), static_cast<double>(done.offset[1]),
+            static_cast<double>(done.distance), static_cast<double>(p.fps), static_cast<double>(p.worst_ms),
+            p.slow_frames, static_cast<double>(kSlowFrameMs), static_cast<double>(p.sim_ms),
+            static_cast<double>(p.world_ms), static_cast<double>(p.scene_ms), static_cast<double>(p.other_ms),
+            static_cast<double>(p.worst_prepare_ms), static_cast<double>(p.worst_cull_ms));
+        log::info("tour: {}", line);
+        tour_notes_ += line + "\n";
+        tour_from_ = done;
+        tour_step_ns_ = now;
+        t = 0.0f;
+        if (++tour_step_ >= steps.size()) {
+            clock_.set_speed(0);
+            replay_step_ = ReplayStep::Capture;
+            return;
+        }
+    }
+    const report::TourStep& to = steps[tour_step_];
+    const auto mix = [t](float a, float b) { return a + (b - a) * t; };
+    math::Vec3 target{tour_origin_.x + mix(tour_from_.offset[0], to.offset[0]), 0.0f,
+                      tour_origin_.z + mix(tour_from_.offset[1], to.offset[1])};
+    if (map_) {
+        target.y = map_surface_height(map_->map, target.x, target.z);
+    }
+    camera_.restore(replay_->view.mode, target, mix(tour_from_.yaw, to.yaw), mix(tour_from_.pitch, to.pitch),
+                    mix(tour_from_.distance, to.distance));
 }
 
 void App::finish_replay(const FrameCapture& capture) {
@@ -3367,6 +3434,7 @@ void App::finish_replay(const FrameCapture& capture) {
     if (map_) {
         notes += std::format("Map checksum now: {:016x}\n", map_->map.checksum());
     }
+    notes += tour_notes_;
     if (replay_measured_ > 0 && replay_measured_ns_ > 0) {
         const double seconds = static_cast<double>(replay_measured_ns_) / 1e9;
         const render::RenderStats& st = scene_.stats();

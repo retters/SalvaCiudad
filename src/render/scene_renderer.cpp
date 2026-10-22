@@ -6,11 +6,13 @@
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <limits>
 
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_timer.h>
 
 #include "core/log.h"
+#include "render/instance_layout.h"
 #include "shaders/blur_frag_dxil.h"
 #include "shaders/mesh_frag_dxil.h"
 #include "shaders/mesh_vert_dxil.h"
@@ -246,8 +248,7 @@ struct GpuModel {
     std::vector<std::uint32_t> slot_of;  // Index in `instances` -> region-sorted position.
     std::vector<Bucket> buckets;
     std::vector<BucketGroup> groups;
-    std::uint32_t base = 0;              // First slot in the GPU instance buffer.
-    std::uint32_t capacity = 0;          // Slots reserved there.
+    std::uint32_t base = 0;              // First slot in the GPU instance buffer (see InstanceLayout).
     bool dirty = true;                   // Whole range must be rebuilt.
     std::vector<std::uint32_t> changed;  // Sorted positions updated one by one.
     ModelClass model_class = ModelClass::Normal;
@@ -398,7 +399,9 @@ struct SceneRenderer::Impl {
 
     SDL_GPUBuffer* instance_buffer = nullptr;  // Storage: all instances.
     std::uint32_t instance_capacity = 0;
-    bool layout_dirty = true;   // Some model outgrew its room: lay out again.
+    InstanceLayout layout;      // Each model's slot in the buffer (phase 130).
+    std::vector<std::uint32_t> old_bases;  // Scratch for prepare_instances().
+    std::uint32_t instances_in_use = 0;
     std::uint64_t relayouts = 0;         // For RenderStats (phase 129).
     std::uint64_t instances_sorted = 0;
     std::uint64_t instance_bytes_sent = 0;
@@ -768,14 +771,18 @@ struct SceneRenderer::Impl {
         return transfer != nullptr;
     }
 
-    bool ensure_buffer(SDL_GPUBuffer*& buffer, std::uint32_t& capacity, std::uint32_t size, SDL_GPUBufferUsageFlags usage) {
+    // `spare`: twice the size asked for, so growing buffers are not made
+    // again every frame (the instance buffer brings its own room).
+    bool ensure_buffer(SDL_GPUBuffer*& buffer, std::uint32_t& capacity, std::uint32_t size, SDL_GPUBufferUsageFlags usage,
+                       bool spare = true) {
         if (buffer != nullptr && capacity >= size) {
             return true;
         }
         SDL_ReleaseGPUBuffer(device, buffer);
         SDL_GPUBufferCreateInfo info{};
         info.usage = usage;
-        info.size = std::max<std::uint32_t>(size, 64u * 1024u) * 2;
+        const std::uint32_t at_least = std::max<std::uint32_t>(size, 64u * 1024u);
+        info.size = spare && at_least <= std::numeric_limits<std::uint32_t>::max() / 2 ? at_least * 2 : at_least;
         buffer = SDL_CreateGPUBuffer(device, &info);
         capacity = buffer != nullptr ? info.size : 0;
         if (buffer == nullptr) {
@@ -1142,20 +1149,39 @@ struct SceneRenderer::Impl {
     // (first slot, count) ranges.
     std::vector<std::pair<std::uint32_t, std::uint32_t>> prepare_instances() {
         std::vector<std::pair<std::uint32_t, std::uint32_t>> ranges;
-        if (layout_dirty) {
-            ++relayouts;
-            std::uint32_t base = 0;
-            for (GpuModel& m : models) {
-                const auto count = static_cast<std::uint32_t>(m.instances.size());
-                m.base = base;
-                m.capacity = count + count / 4 + 16;
-                m.dirty = true;
-                base += m.capacity;
+        // Room (phase 130): a model that outgrew its slot moves to the end
+        // alone; only when the end has no room left is every slot laid out
+        // again, and then the models that did not change keep their sorted
+        // instances, copied to their new places.
+        layout.resize(models.size());
+        old_bases.resize(models.size());
+        bool relaid = false;
+        for (std::size_t mi = 0; mi < models.size(); ++mi) {
+            GpuModel& m = models[mi];
+            old_bases[mi] = m.base;
+            if (m.dirty &&
+                layout.reserve(mi, static_cast<std::uint32_t>(m.instances.size())) == InstanceLayout::Change::Relaid) {
+                relaid = true;
             }
-            gpu_instances.assign(base, GpuInstance{});
-            layout_dirty = false;
-            full_upload = true;
         }
+        for (std::size_t mi = 0; mi < models.size(); ++mi) {
+            models[mi].base = layout.slot(mi).base;
+        }
+        if (relaid) {
+            ++relayouts;
+            std::vector<GpuInstance> next(layout.end());
+            for (std::size_t mi = 0; mi < models.size(); ++mi) {
+                const GpuModel& m = models[mi];
+                if (!m.dirty && !m.order.empty()) {
+                    std::copy_n(gpu_instances.begin() + old_bases[mi], m.order.size(), next.begin() + m.base);
+                }
+            }
+            gpu_instances.swap(next);
+            full_upload = true;
+        } else if (gpu_instances.size() < layout.end()) {
+            gpu_instances.resize(layout.end());
+        }
+        instances_in_use = 0;
         for (GpuModel& m : models) {
             if (m.dirty) {
                 build_buckets(m);
@@ -1176,6 +1202,7 @@ struct SceneRenderer::Impl {
                 }
             }
             m.changed.clear();
+            instances_in_use += static_cast<std::uint32_t>(m.order.size());
         }
         if (full_upload) {
             ranges.clear();
@@ -1571,9 +1598,6 @@ void SceneRenderer::set_instances(ModelId model, std::span<const Instance> insta
         GpuModel& m = impl_->models[model];
         m.instances.assign(instances.begin(), instances.end());
         m.dirty = true;
-        if (m.instances.size() > m.capacity) {
-            impl_->layout_dirty = true;
-        }
     }
 }
 
@@ -1836,10 +1860,16 @@ void SceneRenderer::set_characters(std::span<const CharacterInstance> characters
 }
 
 void SceneRenderer::clear_instances() {
-    for (GpuModel& m : impl_->models) {
+    Impl& d = *impl_;
+    for (GpuModel& m : d.models) {
         m.instances.clear();
+        m.base = 0;
         m.dirty = true;
     }
+    // A new map starts packed.
+    d.layout.clear();
+    d.gpu_instances.clear();
+    d.full_upload = true;
 }
 
 void SceneRenderer::set_lights(std::span<const PointLight> lights, float strength, const math::Vec3& center) {
@@ -2078,9 +2108,12 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     // Uploads, in one transfer: visible indices and characters every frame;
     // instances, bones and palettes when they changed.
     d.rebuild_character_data();
-    stats_.instances_total = static_cast<std::uint32_t>(d.gpu_instances.size());
+    stats_.instances_total = d.instances_in_use;
     stats_.characters_total = static_cast<std::uint32_t>(d.gpu_characters.size());
-    const auto instance_bytes = static_cast<std::uint32_t>(d.gpu_instances.size() * sizeof(GpuInstance));
+    // The buffer holds the layout's room for moves too, so a model moving
+    // to the end does not make a new buffer (phase 130).
+    const auto instance_bytes = static_cast<std::uint32_t>(
+        std::max<std::size_t>(d.layout.capacity(), d.gpu_instances.size()) * sizeof(GpuInstance));
     const auto visible_bytes = static_cast<std::uint32_t>(d.visible.size() * sizeof(std::uint32_t));
     const auto character_bytes = static_cast<std::uint32_t>(d.gpu_characters.size() * sizeof(GpuCharacter));
     const auto bone_bytes = static_cast<std::uint32_t>(d.bone_rows.size() * sizeof(float));
@@ -2108,13 +2141,13 @@ bool SceneRenderer::render(GpuFrame& frame, const SceneView& view, const Lightin
     constexpr SDL_GPUBufferUsageFlags kStorage = SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ;
     // A new (bigger) instance buffer starts empty: everything goes up again.
     const std::uint32_t old_instance_capacity = d.instance_capacity;
-    if (!d.ensure_buffer(d.instance_buffer, d.instance_capacity, instance_bytes + 64, kStorage)) {
+    if (!d.ensure_buffer(d.instance_buffer, d.instance_capacity, instance_bytes + 64, kStorage, false)) {
         return false;
     }
     std::vector<std::pair<std::uint32_t, std::uint32_t>> send_instances = instance_ranges;
     if (d.instance_capacity != old_instance_capacity && !d.gpu_instances.empty()) {
         send_instances.assign(1, {0u, static_cast<std::uint32_t>(d.gpu_instances.size())});
-        upload_instances = instance_bytes;
+        upload_instances = static_cast<std::uint32_t>(d.gpu_instances.size() * sizeof(GpuInstance));
     }
     if (!d.ensure_buffer(d.visible_buffer, d.visible_capacity, visible_bytes + 16, SDL_GPU_BUFFERUSAGE_VERTEX) ||
         !d.ensure_buffer(d.character_buffer, d.character_capacity, character_bytes + 80, kStorage) ||

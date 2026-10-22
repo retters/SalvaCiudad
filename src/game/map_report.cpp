@@ -12,6 +12,7 @@
 
 #include "core/json.h"
 #include "core/log.h"
+#include "core/speed.h"
 #include "game/settings.h"
 
 namespace sc::report {
@@ -588,6 +589,38 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
         return false;
     }
     v.people = static_cast<std::uint32_t>(people);
+    if (yyjson_mut_val* tour = yyjson_mut_obj_get(view, "tour"); tour != nullptr) {
+        std::int64_t speed = 0;
+        bool at_town = false;
+        yyjson_mut_val* steps = yyjson_mut_obj_get(tour, "steps");
+        if (!yyjson_mut_is_obj(tour) || json::get_int(tour, "speed", 0, speed::kMax, speed) == json::Field::Invalid ||
+            json::get_bool(tour, "atTown", at_town) == json::Field::Invalid || !yyjson_mut_is_arr(steps) ||
+            yyjson_mut_arr_size(steps) == 0 || yyjson_mut_arr_size(steps) > kMaxTourSteps) {
+            error = "bad tour";
+            return false;
+        }
+        v.tour.speed = static_cast<int>(speed);
+        v.tour.at_town = at_town;
+        std::size_t idx = 0, max = 0;
+        yyjson_mut_val* item = nullptr;
+        yyjson_mut_arr_foreach(steps, idx, max, item) {
+            double seconds = 0.0, step_yaw = 0.0, step_pitch = 0.0, step_distance = 0.0;
+            double offset[2] = {};
+            if (!yyjson_mut_is_obj(item) || json::get_double(item, "seconds", 0.1, 600.0, seconds) != json::Field::Ok ||
+                !array_numbers(yyjson_mut_obj_get(item, "offset"), 2, 100000.0, offset) ||
+                json::get_double(item, "yaw", -1000.0, 1000.0, step_yaw) != json::Field::Ok ||
+                json::get_double(item, "pitch", -10.0, 10.0, step_pitch) != json::Field::Ok ||
+                json::get_double(item, "distance", 0.0, 100000.0, step_distance) != json::Field::Ok) {
+                error = "bad tour step";
+                return false;
+            }
+            v.tour.steps.push_back({static_cast<float>(seconds),
+                                    {static_cast<float>(offset[0]), static_cast<float>(offset[1])},
+                                    static_cast<float>(step_yaw),
+                                    static_cast<float>(step_pitch),
+                                    static_cast<float>(step_distance)});
+        }
+    }
     v.mode = static_cast<CameraMode>(mode);
     v.target = {static_cast<float>(target[0]), static_cast<float>(target[1]), static_cast<float>(target[2])};
     v.yaw = static_cast<float>(yaw);

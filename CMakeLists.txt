@@ -378,6 +378,7 @@ set(SC_ENGINE_SOURCES
     src/platform/window.cpp
     src/render/debug_overlay.cpp
     src/render/gpu_device.cpp
+    src/render/instance_layout.cpp
     src/render/model.cpp
     src/render/rml_renderer.cpp
     src/render/scene_renderer.cpp
@@ -480,6 +481,7 @@ if(SC_BUILD_TESTS)
         tests/test_camera.cpp
         tests/test_scene.cpp
         tests/test_frame_perf.cpp
+        tests/test_instance_layout.cpp
         tests/test_sim.cpp
         tests/test_worldgen.cpp
         tests/test_map_view.cpp
