@@ -1306,6 +1306,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 141. **La distancia al agua en dos barridos.** La distancia de cada celda al agua (para playas, arcilla, bosques y fertilidad) se buscaba con una cola que salta por la memoria; sin obstáculos es la distancia Manhattan, que dos barridos en orden dan igual.
    - *Criterios:* la suma de verificación de los mapas no cambia; medida antes y después.
 
+142. **La inundación de los lagos con menos memoria leída.** Durante la inundación, la altura y la altura llenada de cada vértice van juntas, y un vértice no alcanzado se reconoce por su altura llenada; así cada vértice y sus vecinos se leen de un tercio de las líneas de memoria, en el mismo orden de siempre.
+   - *Criterios:* la suma de verificación de los mapas no cambia; el pico de memoria de la generación no sube; medida antes y después.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

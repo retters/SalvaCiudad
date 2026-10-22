@@ -222,7 +222,7 @@ private:
 
     bool lakes() {
         const std::size_t count = h_.size();
-        filled_ = h_;
+        std::vector<std::int32_t>().swap(filled_);  // Made after the flood, from vx.
         flow_.assign(count, kUnvisited);
         // Lowest first by height, then a scrambled order, then the vertex:
         // on flat ground (filled hollows) the flow spreads unevenly instead
@@ -240,9 +240,22 @@ private:
         const std::size_t heights = static_cast<std::size_t>(std::clamp(*high, 0, 0xFFFFF)) + 1 - base;
         std::vector<std::vector<std::uint64_t>> open(heights);
         std::size_t draining = heights;
+        // Phase 142: during the flood each vertex's height and filled height
+        // go together (the filled height of one not reached yet is
+        // kUnreached), so looking at a vertex and its neighbors reads a
+        // third of the memory lines it did with three arrays.
+        struct Vertex {
+            std::int32_t h;
+            std::int32_t filled;
+        };
+        constexpr std::int32_t kUnreached = std::numeric_limits<std::int32_t>::min();
+        std::vector<Vertex> vx(count);
+        for (std::size_t i = 0; i < count; ++i) {
+            vx[i] = {h_[i], kUnreached};
+        }
         const auto push = [&](std::size_t i) {
             const std::uint64_t scramble = mix64(s_.seed ^ kFlatOrderSeed ^ i) & 0x7FFFu;
-            const auto height = static_cast<std::size_t>(std::clamp(filled_[i], 0, 0xFFFFF)) - base;
+            const auto height = static_cast<std::size_t>(std::clamp(vx[i].filled, 0, 0xFFFFF)) - base;
             std::vector<std::uint64_t>& heap = open[height];
             heap.push_back((scramble << 29) | i);
             if (height == draining) {
@@ -251,7 +264,8 @@ private:
         };
         for (std::int32_t i = 0; i < v_; ++i) {
             for (const std::size_t b : {vi(i, 0), vi(i, v_ - 1), vi(0, i), vi(v_ - 1, i)}) {
-                if (flow_[b] == kUnvisited) {
+                if (vx[b].filled == kUnreached) {
+                    vx[b].filled = vx[b].h;
                     flow_[b] = kFlowBorder;
                     push(b);
                 }
@@ -269,15 +283,10 @@ private:
                 // loaded meanwhile (the order is random on flat ground).
                 if (!heap.empty()) {
                     const std::size_t next = static_cast<std::size_t>(heap.front() & 0x1FFFFFFFu);
-                    prefetch(&filled_[next]);
-                    prefetch(&flow_[next]);
-                    prefetch(&h_[next]);
-                    if (next >= static_cast<std::size_t>(v_) && next + static_cast<std::size_t>(v_) < filled_.size()) {
-                        for (const std::size_t n : {next - static_cast<std::size_t>(v_), next + static_cast<std::size_t>(v_)}) {
-                            prefetch(&flow_[n]);
-                            prefetch(&h_[n]);
-                            prefetch(&filled_[n]);
-                        }
+                    prefetch(&vx[next]);
+                    if (next >= static_cast<std::size_t>(v_) && next + static_cast<std::size_t>(v_) < count) {
+                        prefetch(&vx[next - static_cast<std::size_t>(v_)]);
+                        prefetch(&vx[next + static_cast<std::size_t>(v_)]);
                     }
                 }
                 const auto idx32 = static_cast<std::uint32_t>(key & 0x1FFFFFFFu);
@@ -293,10 +302,10 @@ private:
                         continue;
                     }
                     const std::size_t n = vi(nx[k], nz[k]);
-                    if (flow_[n] != kUnvisited) {
+                    if (vx[n].filled != kUnreached) {
                         continue;
                     }
-                    filled_[n] = std::max(h_[n], filled_[idx]);
+                    vx[n].filled = std::max(vx[n].h, vx[idx].filled);
                     flow_[n] = back[k];
                     push(n);
                 }
@@ -306,6 +315,11 @@ private:
             }
             std::vector<std::uint64_t>().swap(heap);
         }
+        filled_.resize(count);
+        for (std::size_t i = 0; i < count; ++i) {
+            filled_[i] = vx[i].filled;
+        }
+        std::vector<Vertex>().swap(vx);
 
         // Deep, wide depressions become lakes; small puddles are filled in.
         lake_.assign(count, 0);
