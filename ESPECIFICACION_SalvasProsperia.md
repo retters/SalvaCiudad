@@ -1303,6 +1303,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 140. **Los ruidos del generador sin dividir.** Cada valor de ruido fractal del generador termina con una división de 64 bits entre el peso total de sus capas, miles de millones de veces en un mapa colosal. Como los pesos son potencias de dos, esa división se hace con una multiplicación y un desplazamiento, con el resultado exacto de antes.
    - *Criterios:* prueba de que el resultado es el de la división para cada suma posible (exhaustiva hasta 8 capas); la suma de verificación de los mapas no cambia; medida antes y después.
 
+141. **La distancia al agua en dos barridos.** La distancia de cada celda al agua (para playas, arcilla, bosques y fertilidad) se buscaba con una cola que salta por la memoria; sin obstáculos es la distancia Manhattan, que dos barridos en orden dan igual.
+   - *Criterios:* la suma de verificación de los mapas no cambia; medida antes y después.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

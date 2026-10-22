@@ -604,33 +604,40 @@ private:
     bool soil() {
         const std::size_t cells = terrain_.size();
         // Distance to water in meters (4-neighbor steps), capped at 255.
+        // Phase 141: with nothing in the way, the steps are the Manhattan
+        // distance to the nearest water, which two sweeps over the map give
+        // exactly (one from the top left, one from the bottom right) while
+        // reading memory in order; it used to be a search with a queue.
         dist_.assign(cells, 255);
-        std::vector<std::uint32_t> queue;
-        for (std::size_t c = 0; c < cells; ++c) {
-            if (water_[c] != 0) {
-                dist_[c] = 0;
-                queue.push_back(static_cast<std::uint32_t>(c));
-            }
-        }
-        for (std::size_t q = 0; q < queue.size(); ++q) {
-            const std::size_t c = queue[q];
-            const std::uint8_t d = dist_[c];
-            if (d >= 254) {
-                continue;
-            }
-            const std::int32_t x = static_cast<std::int32_t>(c % static_cast<std::size_t>(n_));
-            const std::int32_t z = static_cast<std::int32_t>(c / static_cast<std::size_t>(n_));
-            const std::int32_t nx[4] = {x - 1, x + 1, x, x};
-            const std::int32_t nz[4] = {z, z, z - 1, z + 1};
-            for (int k = 0; k < 4; ++k) {
-                if (nx[k] < 0 || nz[k] < 0 || nx[k] >= n_ || nz[k] >= n_) {
+        const auto un = static_cast<std::size_t>(n_);
+        for (std::int32_t z = 0; z < n_; ++z) {
+            for (std::int32_t x = 0; x < n_; ++x) {
+                const std::size_t c = ci(x, z);
+                if (water_[c] != 0) {
+                    dist_[c] = 0;
                     continue;
                 }
-                const std::size_t n = ci(nx[k], nz[k]);
-                if (dist_[n] > d + 1) {
-                    dist_[n] = static_cast<std::uint8_t>(d + 1);
-                    queue.push_back(static_cast<std::uint32_t>(n));
+                std::int32_t d = 255;
+                if (x > 0) {
+                    d = std::min<std::int32_t>(d, dist_[c - 1] + 1);
                 }
+                if (z > 0) {
+                    d = std::min<std::int32_t>(d, dist_[c - un] + 1);
+                }
+                dist_[c] = static_cast<std::uint8_t>(d);
+            }
+        }
+        for (std::int32_t z = n_ - 1; z >= 0; --z) {
+            for (std::int32_t x = n_ - 1; x >= 0; --x) {
+                const std::size_t c = ci(x, z);
+                std::int32_t d = dist_[c];
+                if (x + 1 < n_) {
+                    d = std::min<std::int32_t>(d, dist_[c + 1] + 1);
+                }
+                if (z + 1 < n_) {
+                    d = std::min<std::int32_t>(d, dist_[c + un] + 1);
+                }
+                dist_[c] = static_cast<std::uint8_t>(std::min(d, 255));
             }
         }
         if (!report(GenStage::Soil, 20)) {

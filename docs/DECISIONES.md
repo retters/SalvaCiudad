@@ -4588,3 +4588,8 @@ Antes se recorrían todos los trozos una vez por cada nivel del agua (ahora son 
 
 **D-14002. Medido con `worldgen_perf`.**
 Mismas sumas de verificación que antes. Mapa gigante: de 26,2 a 23,5 s (relieve 8,0 → 6,5, suelos 6,4 → 5,1). Mapa colosal de la prueba (semilla 12345): de 120,7 a 110,6 s (relieve 31,1 → 25,1, suelos 26,6 → 21,4). Lo que queda son los lagos (D-13503).
+
+## Fase 141: la distancia al agua en dos barridos (2026-10-22)
+
+**D-14101. Dos barridos en lugar de una búsqueda con cola.**
+Los suelos necesitan, para cada celda, cuántos pasos de 1 m (sin diagonales) hay hasta el agua, con tope en 255. Se calculaba con una búsqueda en anchura desde todas las celdas de agua, con una cola que en el mapa colosal llega a cientos de millones de entradas y salta por la memoria. Sin obstáculos, esos pasos son la distancia Manhattan al agua más cercana, y dos barridos la dan exacta: uno desde arriba a la izquierda (cada celda toma el menor de sus vecinos de arriba y de la izquierda más uno) y otro desde abajo a la derecha. Con el tope de 255 en cada paso el resultado es el mismo: la búsqueda dejaba en 255 lo que estaba a 255 pasos o más. Los mapas salen idénticos (las sumas de verificación de los mapas chico, gigante y colosal no cambian). En el mapa gigante, la búsqueda tomaba cerca de 1 s (se veía al final de la etapa de los ríos, porque el aviso de los suelos llegaba después de ella); los barridos, casi nada. Con la fase 140, el mapa gigante pasa de 26,2 a 22,5 s y el colosal de la prueba de 120,7 a 104,6 s, con la misma suma de verificación.
