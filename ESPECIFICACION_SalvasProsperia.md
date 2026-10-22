@@ -1294,6 +1294,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 137. **Cuántos triángulos tiene el mapa.** El registro dice los triángulos del suelo por nivel de detalle y los de las montañas, para saber qué pesa en el GPU con todo el mapa a la vista.
    - *Criterios:* la línea sale en el registro al cargar un mapa; lo medido queda en `DECISIONES.md`.
 
+138. **El agua lejana más ligera donde no hay orillas.** Un trozo todo cubierto de agua (dentro de un lago o del mar) usa facetas de 8 m desde 2 km y de 16 m desde 4 km; los que tienen orilla o río siguen igual, para no borrar los ríos.
+   - *Criterios:* menos triángulos con todo el mapa a la vista; la captura a 3 km igual a la de antes salvo lo que se mueve.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

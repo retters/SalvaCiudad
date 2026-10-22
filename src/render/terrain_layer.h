@@ -103,6 +103,7 @@ private:
         math::Vec3 center;
         float radius = 0.0f;
         bool water = false;
+        bool full_water = false;  // Phase 138: every cell under water (inside a lake or the sea).
     };
     struct Grid {
         SDL_GPUBuffer* vertices = nullptr;

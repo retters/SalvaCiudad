@@ -74,6 +74,12 @@ constexpr float kGrassSpacing = 0.55f;
 // small enough for rivers.
 constexpr int kMinWaterLod = 1;
 constexpr int kMaxWaterLod = 2;
+// Phase 138: a chunk all under water has no shore and no river to lose, so
+// far away it takes facets of 8 m and then 16 m, about 4 to 5 pixels on a
+// 1080-pixel screen where each one starts.
+constexpr int kFarWaterLod = 4;
+constexpr float kFullWaterDistances[2] = {2000.0f, 4000.0f};
+static_assert(kFarWaterLod < kTerrainLods);
 
 // Distances (meters) where each level of detail ends.
 constexpr float kLodDistances[kTerrainLods - 1] = {140.0f, 280.0f, 560.0f, 1120.0f};
@@ -504,6 +510,7 @@ bool TerrainLayer::set(SDL_GPUDevice* device, const TerrainData& data) {
                 }
             }
             bool wet = false;
+            bool full = true;
             for (std::int32_t z = oz; z < oz + kTerrainChunk; ++z) {
                 for (std::int32_t x = ox; x < ox + kTerrainChunk; ++x) {
                     const std::uint16_t w = data.water[static_cast<std::size_t>(z) * static_cast<std::size_t>(n) +
@@ -511,6 +518,8 @@ bool TerrainLayer::set(SDL_GPUDevice* device, const TerrainData& data) {
                     if (w != 0) {
                         wet = true;
                         hi = std::max(hi, w);
+                    } else {
+                        full = false;
                     }
                 }
             }
@@ -523,6 +532,7 @@ bool TerrainLayer::set(SDL_GPUDevice* device, const TerrainData& data) {
             const float half_h = (high - low) * 0.5f;
             c.radius = std::sqrt(2.0f * half * half + half_h * half_h);
             c.water = wet;
+            c.full_water = wet && full;
             chunks_.push_back(c);
             gpu_chunks.push_back({{ox, oz, 0, 0}, {low, high, wet ? 1.0f : 0.0f, 0.0f}});
         }
@@ -595,7 +605,7 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
             visible_backdrop_.push_back(static_cast<std::uint32_t>(i));
         }
     }
-    // Level of detail of each visible chunk (-1: not visible).
+    // Level of detail of each visible chunk's water (-1: not visible or dry).
     std::vector<std::int8_t> chosen(chunks_.size(), -1);
     const float half = static_cast<float>(kTerrainChunk) * 0.5f;
     for (std::size_t i = 0; i < chunks_.size(); ++i) {
@@ -612,17 +622,23 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
         }
         const float dy = std::max(std::abs(eye.y - c.center.y) - (c.radius - half), 0.0f);
         const float distance = std::sqrt(horizontal * horizontal + dy * dy);
-        chosen[i] = static_cast<std::int8_t>(terrain_lod_for_distance(distance));
+        if (c.water) {
+            int lod = std::clamp(terrain_lod_for_distance(distance), kMinWaterLod, kMaxWaterLod);
+            if (c.full_water) {
+                lod = distance >= kFullWaterDistances[1] ? kFarWaterLod : distance >= kFullWaterDistances[0] ? 3 : lod;
+            }
+            chosen[i] = static_cast<std::int8_t>(lod);
+        }
         int facet_lod = 0;
         while (facet_lod < kFacetLods - 1 && distance >= kFacetLodDistances[facet_lod]) {
             ++facet_lod;
         }
         visible_ground_.push_back({static_cast<std::uint32_t>(i), static_cast<std::uint8_t>(facet_lod)});
     }
-    for (int lod = kMinWaterLod; lod <= kMaxWaterLod; ++lod) {
+    for (int lod = kMinWaterLod; lod <= kFarWaterLod; ++lod) {
         water_ranges_[lod].first = static_cast<std::uint32_t>(lists_.size());
         for (std::size_t i = 0; i < chunks_.size(); ++i) {
-            if (chosen[i] >= 0 && chunks_[i].water && std::clamp<int>(chosen[i], kMinWaterLod, kMaxWaterLod) == lod) {
+            if (chosen[i] == lod) {
                 lists_.push_back(static_cast<std::uint32_t>(i));
             }
         }
@@ -810,7 +826,7 @@ void TerrainLayer::draw_water(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass
     std::copy(std::begin(look.war_params), std::end(look.war_params), wu.war_params);
     SDL_PushGPUFragmentUniformData(cmd, 0, &wu, sizeof(wu));
     SDL_BindGPUFragmentSamplers(pass, 0, look.war, 2);
-    for (int lod = kMinWaterLod; lod <= kMaxWaterLod; ++lod) {
+    for (int lod = kMinWaterLod; lod <= kFarWaterLod; ++lod) {
         const Range r = water_ranges_[lod];
         const WaterGeometryUniforms gu{view_proj, {cells_ + 1, cells_, 1 << lod, 0}, {time, 0.0f, 0.0f, 0.0f}};
         SDL_PushGPUVertexUniformData(cmd, 0, &gu, sizeof(gu));
