@@ -1285,6 +1285,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 134. **Una multitud medida y una caída al salir.** Un segundo recorrido (`tools/perf/multitud`) con 3 000 aldeanos de prueba junto al pueblo, en un mapa grande. Al hacerlo apareció una caída al cerrar el juego que viene de las fases de RmlUi; se corrige.
    - *Criterios:* el recorrido mide la multitud junto al pueblo; el juego sale sin caerse en las mismas condiciones que antes lo tiraban (en `debug` y en `release`).
 
+135. **La parte visual del mapa en varios hilos.** El registro dice cuánto tarda cada etapa de la generación. En el mapa colosal, armar lo que se ve del mapa (colores, textura y facetas del suelo) tomaba 16,9 s en un hilo; se reparte entre varios, con el mismo resultado.
+   - *Criterios:* pruebas de que las facetas salen iguales con cualquier número de hilos; la suma de verificación del mapa no cambia; medida antes y después.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

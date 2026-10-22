@@ -110,6 +110,32 @@ TEST_SUITE("terrain_mesh") {
         CHECK(a.face_colors == b.face_colors);
     }
 
+    TEST_CASE("the meshes come out the same on any number of threads") {
+        Ground g = bumpy_ground(320);  // 5 x 5 chunks.
+        for (std::size_t i = 0; i < g.classes.size(); i += 7) {
+            g.classes[i] = static_cast<std::uint8_t>(i % 3);  // Mixed ground: more facets here and there.
+        }
+        const FacetMeshes one = build_facet_meshes(g.cells, g.heights, g.classes, g.colors, 7, 1);
+        for (const std::size_t threads : {std::size_t{2}, std::size_t{3}, std::size_t{5}, std::size_t{9}, std::size_t{0}}) {
+            const FacetMeshes many = build_facet_meshes(g.cells, g.heights, g.classes, g.colors, 7, threads);
+            CHECK(many.cells == one.cells);
+            CHECK(many.positions == one.positions);
+            CHECK(many.indices == one.indices);
+            CHECK(many.face_colors == one.face_colors);
+            REQUIRE(many.chunks.size() == one.chunks.size());
+            for (std::size_t c = 0; c < one.chunks.size(); ++c) {
+                for (int lod = 0; lod < kFacetLods; ++lod) {
+                    const ChunkLod& a = one.chunks[c][static_cast<std::size_t>(lod)];
+                    const ChunkLod& b = many.chunks[c][static_cast<std::size_t>(lod)];
+                    CHECK(a.first_vertex == b.first_vertex);
+                    CHECK(a.first_index == b.first_index);
+                    CHECK(a.index_count == b.index_count);
+                    CHECK(a.first_face == b.first_face);
+                }
+            }
+        }
+    }
+
     TEST_CASE("bad input gives nothing") {
         Ground g = flat_ground(128);
         g.colors.pop_back();

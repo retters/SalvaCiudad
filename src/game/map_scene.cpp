@@ -389,6 +389,31 @@ std::vector<std::vector<render::Instance>> build_feature_instances(const sim::Ma
     return features;
 }
 
+namespace {
+
+// Phase 135: runs `row(z)` for z in [0, rows) on a few threads, each a run
+// of rows; only for rows that write their own part of the output.
+template <typename Row>
+void in_rows(std::int32_t rows, const Row& row) {
+    const std::size_t threads = std::clamp<std::size_t>(static_cast<std::size_t>(std::max(rows, 0)) / 256, 1,
+                                                        std::clamp<std::size_t>(std::thread::hardware_concurrency(), 1, 8));
+    const auto run = [&](std::size_t t) {
+        const auto first = static_cast<std::int32_t>(static_cast<std::size_t>(rows) * t / threads);
+        const auto last = static_cast<std::int32_t>(static_cast<std::size_t>(rows) * (t + 1) / threads);
+        for (std::int32_t z = first; z < last; ++z) {
+            row(z);
+        }
+    };
+    std::vector<std::jthread> workers;
+    workers.reserve(threads - 1);
+    for (std::size_t t = 1; t < threads; ++t) {
+        workers.emplace_back(run, t);
+    }
+    run(0);
+}
+
+}  // namespace
+
 MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& content) {
     MapVisuals v;
     render::TerrainData& t = v.terrain;
@@ -399,7 +424,7 @@ MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& conten
 
     // Every cell's color, for the facets and the color texture.
     std::vector<std::uint32_t> cell_colors(static_cast<std::size_t>(n) * static_cast<std::size_t>(n));
-    for (std::int32_t cz = 0; cz < n; ++cz) {
+    in_rows(n, [&](std::int32_t cz) {
         for (std::int32_t cx = 0; cx < n; ++cx) {
             const std::size_t cell = static_cast<std::size_t>(cz) * static_cast<std::size_t>(n) + static_cast<std::size_t>(cx);
             const Rgb8 c = ground_color(static_cast<sim::Terrain>(map.terrain[cell]), map.fertility[cell],
@@ -407,14 +432,14 @@ MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& conten
             cell_colors[cell] = 0xFF000000u | (static_cast<std::uint32_t>(c.b) << 16) |
                                 (static_cast<std::uint32_t>(c.g) << 8) | c.r;
         }
-    }
+    });
 
     // Ground colors, averaged down when the map is bigger than the texture.
     t.color_size = std::min(n, kMaxGroundColorSize);
     const std::int32_t shrink = n / t.color_size;
     const auto texels = static_cast<std::size_t>(t.color_size);
     t.colors.resize(texels * texels * 4);
-    for (std::int32_t ty = 0; ty < t.color_size; ++ty) {
+    in_rows(t.color_size, [&](std::int32_t ty) {
         for (std::int32_t tx = 0; tx < t.color_size; ++tx) {
             std::uint32_t sum[4] = {0, 0, 0, 0};
             for (std::int32_t dz = 0; dz < shrink; ++dz) {
@@ -439,7 +464,7 @@ MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& conten
             px[2] = static_cast<std::uint8_t>(sum[2] / count);
             px[3] = static_cast<std::uint8_t>(sum[3] / count);
         }
-    }
+    });
 
     // The faceted ground, with small facets where the kind of ground changes.
     std::vector<std::uint8_t> classes(map.terrain.size());

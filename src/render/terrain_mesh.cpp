@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <thread>
 #include <cmath>
 #include <cstdlib>
 
@@ -94,28 +95,90 @@ public:
             const std::vector<std::uint32_t>& colors, std::uint32_t seed)
         : cells_(cells), heights_(heights), classes_(classes), colors_(colors), seed_(seed) {}
 
-    FacetMeshes build() {
-        FacetMeshes out;
-        out.cells = cells_;
+    FacetMeshes build(std::size_t threads) const {
         const int per_side = cells_ / kTile;
-        out.chunks.resize(static_cast<std::size_t>(per_side) * static_cast<std::size_t>(per_side));
-        // 40 KB: on the heap, not the stack.
-        const auto owned = std::make_unique<Chunk>();
-        Chunk& chunk = *owned;
-        for (int cz = 0; cz < per_side; ++cz) {
-            for (int cx = 0; cx < per_side; ++cx) {
-                load(chunk, cx * kTile, cz * kTile);
-                compute_errors(chunk);
-                auto& lods = out.chunks[static_cast<std::size_t>(cz * per_side + cx)];
-                for (int lod = 0; lod < kFacetLods; ++lod) {
-                    lods[static_cast<std::size_t>(lod)] = emit(chunk, lod, out);
-                }
+        if (threads == 0) {
+            // A thread for every 16 rows of chunks (1 024 m), up to the cores.
+            threads = std::clamp<std::size_t>(static_cast<std::size_t>(per_side) / 16, 1,
+                                              std::clamp<std::size_t>(std::thread::hardware_concurrency(), 1, 8));
+        }
+        threads = std::clamp<std::size_t>(threads, 1, static_cast<std::size_t>(per_side));
+        // Each thread builds a run of rows on its own; the runs are joined in
+        // order and their chunks' first vertex, index and facet moved along,
+        // so the result is the same as building them one after the other.
+        std::vector<FacetMeshes> parts(threads);
+        const auto rows = [&](std::size_t t) {
+            const int first = static_cast<int>(static_cast<std::size_t>(per_side) * t / threads);
+            const int last = static_cast<int>(static_cast<std::size_t>(per_side) * (t + 1) / threads);
+            build_rows(first, last, parts[t]);
+        };
+        if (threads == 1) {
+            rows(0);
+        } else {
+            std::vector<std::jthread> workers;
+            workers.reserve(threads - 1);
+            for (std::size_t t = 1; t < threads; ++t) {
+                workers.emplace_back(rows, t);
             }
+            rows(0);
+        }  // The workers are joined here.
+        FacetMeshes out = std::move(parts[0]);
+        out.cells = cells_;
+        std::size_t positions = out.positions.size();
+        std::size_t indices = out.indices.size();
+        std::size_t faces = out.face_colors.size();
+        std::size_t chunks = out.chunks.size();
+        for (std::size_t t = 1; t < threads; ++t) {
+            positions += parts[t].positions.size();
+            indices += parts[t].indices.size();
+            faces += parts[t].face_colors.size();
+            chunks += parts[t].chunks.size();
+        }
+        out.positions.reserve(positions);
+        out.indices.reserve(indices);
+        out.face_colors.reserve(faces);
+        out.chunks.reserve(chunks);
+        for (std::size_t t = 1; t < threads; ++t) {
+            FacetMeshes& p = parts[t];
+            const auto vertex_base = static_cast<std::uint32_t>(out.positions.size() / 3);
+            const auto index_base = static_cast<std::uint32_t>(out.indices.size());
+            const auto face_base = static_cast<std::uint32_t>(out.face_colors.size());
+            for (auto& lods : p.chunks) {
+                for (ChunkLod& l : lods) {
+                    l.first_vertex += vertex_base;
+                    l.first_index += index_base;
+                    l.first_face += face_base;
+                }
+                out.chunks.push_back(lods);
+            }
+            out.positions.insert(out.positions.end(), p.positions.begin(), p.positions.end());
+            out.indices.insert(out.indices.end(), p.indices.begin(), p.indices.end());
+            out.face_colors.insert(out.face_colors.end(), p.face_colors.begin(), p.face_colors.end());
+            p = FacetMeshes{};  // Its memory goes back as soon as it is copied.
         }
         return out;
     }
 
 private:
+    // Chunk rows [first, last), into `out` (its offsets from 0).
+    void build_rows(int first, int last, FacetMeshes& out) const {
+        const int per_side = cells_ / kTile;
+        out.chunks.resize(static_cast<std::size_t>(last - first) * static_cast<std::size_t>(per_side));
+        // 40 KB: on the heap, not the stack.
+        const auto owned = std::make_unique<Chunk>();
+        Chunk& chunk = *owned;
+        for (int cz = first; cz < last; ++cz) {
+            for (int cx = 0; cx < per_side; ++cx) {
+                load(chunk, cx * kTile, cz * kTile);
+                compute_errors(chunk);
+                auto& lods = out.chunks[static_cast<std::size_t>((cz - first) * per_side + cx)];
+                for (int lod = 0; lod < kFacetLods; ++lod) {
+                    lods[static_cast<std::size_t>(lod)] = emit(chunk, lod, out);
+                }
+            }
+        }
+    }
+
     [[nodiscard]] float height_m(float x, float z) const {
         const float max = static_cast<float>(cells_);
         x = std::clamp(x, 0.0f, max);
@@ -517,14 +580,14 @@ std::size_t FacetMeshes::triangle_count(int lod) const {
 
 FacetMeshes build_facet_meshes(std::int32_t cells, const std::vector<std::uint16_t>& heights_cm,
                                const std::vector<std::uint8_t>& classes, const std::vector<std::uint32_t>& cell_colors,
-                               std::uint32_t seed) {
+                               std::uint32_t seed, std::size_t threads) {
     const auto area = static_cast<std::size_t>(cells) * static_cast<std::size_t>(cells);
     if (cells < kTile || cells % kTile != 0 ||
         heights_cm.size() != static_cast<std::size_t>(cells + 1) * static_cast<std::size_t>(cells + 1) ||
         classes.size() != area || cell_colors.size() != area) {
         return {};
     }
-    return Builder(cells, heights_cm, classes, cell_colors, seed).build();
+    return Builder(cells, heights_cm, classes, cell_colors, seed).build(threads);
 }
 
 }  // namespace sc::render

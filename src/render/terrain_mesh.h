@@ -50,10 +50,13 @@ struct FacetMeshes {
 // Builds all chunks. `heights_cm` has (cells + 1)^2 vertices; `classes`
 // and `cell_colors` (RGBA8, sRGB) have cells^2 entries. Each facet takes
 // the color of the cell at its center, a little varied. `seed` varies the
-// nudges and shades.
+// nudges and shades. Phase 135: on `threads` threads, each a run of chunk
+// rows joined in order (0: as many as the map's size and the machine call
+// for, up to 8); the result is the same with any number.
 [[nodiscard]] FacetMeshes build_facet_meshes(std::int32_t cells, const std::vector<std::uint16_t>& heights_cm,
                                              const std::vector<std::uint8_t>& classes,
-                                             const std::vector<std::uint32_t>& cell_colors, std::uint32_t seed);
+                                             const std::vector<std::uint32_t>& cell_colors, std::uint32_t seed,
+                                             std::size_t threads = 0);
 
 // Adds a ring of mountains outside the map, rising from the height of the
 // map's edge: grass low, rock on the slopes, snow on the peaks. Decoration
