@@ -14,7 +14,9 @@
              {"seconds": 10, "offset": [400, 0], "yaw": 0.6, "pitch": 1.1, "distance": 20000},
              {"seconds": 8, "offset": [400, 0], "yaw": 0.6, "pitch": 1.1, "distance": 20000},
              {"seconds": 10, "offset": [0, 0], "yaw": 0.6, "pitch": 0.9, "distance": 70},
-             {"seconds": 8, "offset": [0, 0], "yaw": 0.6, "pitch": 0.9, "distance": 70}
+             {"seconds": 8, "offset": [0, 0], "yaw": 0.6, "pitch": 0.9, "distance": 70},
+             {"seconds": 6, "offset": [400, 0], "yaw": 0.6, "pitch": 1.0, "distance": 3000},
+             {"seconds": 4, "offset": [400, 0], "yaw": 0.6, "pitch": 1.0, "distance": 3000}
            ]}},
   "cursor": {"cell": [0, 0]},
   "strokes": []

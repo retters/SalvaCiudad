@@ -147,6 +147,14 @@ private:
 
     // Per frame: visible water chunk indices, by level of detail.
     std::vector<std::uint32_t> lists_;
+    // Per frame (phase 131): the faceted ground as one indirect draw. Each
+    // command draws one tile or chunk; its first instance picks its first
+    // facet color in draw_faces_, which goes to the shader per instance.
+    // Both go up after lists_ in the same buffer.
+    std::vector<SDL_GPUIndexedIndirectDrawCommand> draws_;
+    std::vector<std::uint32_t> draw_faces_;
+    std::uint32_t faces_offset_ = 0;  // Bytes into list_buffer_.
+    std::uint32_t draws_offset_ = 0;
     Range water_ranges_[kTerrainLods];
     SDL_GPUBuffer* list_buffer_ = nullptr;
     std::uint32_t list_capacity_ = 0;

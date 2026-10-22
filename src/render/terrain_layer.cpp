@@ -217,7 +217,7 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
 
     SDL_GPUShader* ground_vs = make_shader(device_, kFacetVertDxil, kFacetVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 1);
     SDL_GPUShader* ground_fs =
-        make_shader(device_, kFacetFragDxil, kFacetFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 5, 1, 3);
+        make_shader(device_, kFacetFragDxil, kFacetFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 5, 1, 2);
     SDL_GPUShader* water_vs = make_shader(device_, kWaterVertDxil, kWaterVertDxil_size, SDL_GPU_SHADERSTAGE_VERTEX, 0, 3, 1);
     SDL_GPUShader* water_fs =
         make_shader(device_, kWaterFragDxil, kWaterFragDxil_size, SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 1);
@@ -238,7 +238,8 @@ bool TerrainLayer::create_pipelines(SDL_GPUDevice* device, SDL_GPUTextureFormat 
         SDL_GPUGraphicsPipelineCreateInfo gi{};
         gi.vertex_shader = ground_vs;
         gi.fragment_shader = ground_fs;
-        gi.vertex_input_state = {buffers, 1, attrs, 1};
+        // The positions, and each chunk's first facet color per instance.
+        gi.vertex_input_state = {buffers, 2, attrs, 2};
         gi.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
         // Skirts face outwards on every side; drawing both faces is simpler
         // than orienting them, and the ground's back faces are never seen.
@@ -613,15 +614,46 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
         }
         water_ranges_[lod].count = static_cast<std::uint32_t>(lists_.size()) - water_ranges_[lod].first;
     }
-    if (lists_.empty()) {
+    // The faceted ground: one indirect command per tile and chunk.
+    draws_.clear();
+    draw_faces_.clear();
+    if (facet_vertices_ != nullptr) {
+        const auto add = [&](const ChunkLod& part) {
+            SDL_GPUIndexedIndirectDrawCommand c{};
+            c.num_indices = part.index_count;
+            c.num_instances = 1;
+            c.first_index = part.first_index;
+            c.vertex_offset = static_cast<Sint32>(part.first_vertex);
+            c.first_instance = static_cast<Uint32>(draws_.size());
+            draws_.push_back(c);
+            draw_faces_.push_back(part.first_face);
+            stats_.triangles += part.index_count / 3;
+        };
+        for (const std::uint32_t tile : visible_backdrop_) {
+            if (backdrop_[tile].index_count > 0) {
+                add(backdrop_[tile]);
+            }
+        }
+        for (const auto& [chunk, lod] : visible_ground_) {
+            if (facet_lods_[chunk][lod].index_count > 0) {
+                add(facet_lods_[chunk][lod]);
+                ++stats_.chunks_drawn;
+            }
+        }
+    }
+    if (lists_.empty() && draws_.empty()) {
         return true;
     }
 
-    const auto bytes = static_cast<std::uint32_t>(lists_.size() * sizeof(std::uint32_t));
+    const auto list_bytes = static_cast<std::uint32_t>(lists_.size() * sizeof(std::uint32_t));
+    faces_offset_ = list_bytes;
+    draws_offset_ = faces_offset_ + static_cast<std::uint32_t>(draw_faces_.size() * sizeof(std::uint32_t));
+    const auto bytes =
+        draws_offset_ + static_cast<std::uint32_t>(draws_.size() * sizeof(SDL_GPUIndexedIndirectDrawCommand));
     if (list_buffer_ == nullptr || list_capacity_ < bytes) {
         SDL_ReleaseGPUBuffer(device_, list_buffer_);
         SDL_GPUBufferCreateInfo info{};
-        info.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
+        info.usage = SDL_GPU_BUFFERUSAGE_VERTEX | SDL_GPU_BUFFERUSAGE_INDIRECT;
         info.size = std::max<std::uint32_t>(bytes * 2, 16u * 1024u);
         list_buffer_ = SDL_CreateGPUBuffer(device_, &info);
         list_capacity_ = list_buffer_ != nullptr ? info.size : 0;
@@ -637,14 +669,19 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
     if (list_buffer_ == nullptr || list_transfer_ == nullptr) {
         log::error("terrain: cannot create the chunk lists: {}", SDL_GetError());
         lists_.clear();
+        draws_.clear();
         return false;
     }
     void* mapped = SDL_MapGPUTransferBuffer(device_, list_transfer_, true);
     if (mapped == nullptr) {
         lists_.clear();
+        draws_.clear();
         return false;
     }
-    std::memcpy(mapped, lists_.data(), bytes);
+    auto* out = static_cast<std::uint8_t*>(mapped);
+    std::memcpy(out, lists_.data(), list_bytes);
+    std::memcpy(out + faces_offset_, draw_faces_.data(), draw_faces_.size() * sizeof(std::uint32_t));
+    std::memcpy(out + draws_offset_, draws_.data(), draws_.size() * sizeof(SDL_GPUIndexedIndirectDrawCommand));
     SDL_UnmapGPUTransferBuffer(device_, list_transfer_);
     SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(cmd);
     const SDL_GPUTransferBufferLocation src{list_transfer_, 0};
@@ -657,8 +694,8 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
 void TerrainLayer::draw_ground(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,
                                SDL_GPUTexture* white, SDL_GPUSampler* sampler, SDL_GPUTexture* shadow_map,
                                SDL_GPUSampler* shadow_sampler, const SDL_GPUTextureSamplerBinding* war) {
-    if (cells_ == 0 || (visible_ground_.empty() && visible_backdrop_.empty()) || ground_pipeline_ == nullptr ||
-        facet_vertices_ == nullptr) {
+    if (cells_ == 0 || draws_.empty() || ground_pipeline_ == nullptr || facet_vertices_ == nullptr ||
+        list_buffer_ == nullptr) {
         return;
     }
     SDL_BindGPUGraphicsPipeline(pass, ground_pipeline_);
@@ -671,32 +708,13 @@ void TerrainLayer::draw_ground(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pas
     SDL_BindGPUFragmentStorageBuffers(pass, 0, &facet_colors_, 1);
     const MaterialUniforms mu{{1.0f, 1.0f, 1.0f, 1.0f}};
     SDL_PushGPUFragmentUniformData(cmd, 1, &mu, sizeof(mu));
-    const SDL_GPUBufferBinding vb{facet_vertices_, 0};
-    SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+    const SDL_GPUBufferBinding vb[2] = {{facet_vertices_, 0}, {list_buffer_, faces_offset_}};
+    SDL_BindGPUVertexBuffers(pass, 0, vb, 2);
     const SDL_GPUBufferBinding ib{facet_indices_, 0};
     SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_16BIT);
-    for (const std::uint32_t tile : visible_backdrop_) {
-        const ChunkLod& part = backdrop_[tile];
-        const std::uint32_t first_face[4] = {part.first_face, 0, 0, 0};
-        SDL_PushGPUFragmentUniformData(cmd, 2, first_face, sizeof(first_face));
-        SDL_DrawGPUIndexedPrimitives(pass, part.index_count, 1, part.first_index,
-                                     static_cast<std::int32_t>(part.first_vertex), 0);
-        ++stats_.draw_calls;
-        stats_.triangles += part.index_count / 3;
-    }
-    for (const auto& [chunk, lod] : visible_ground_) {
-        const ChunkLod& part = facet_lods_[chunk][lod];
-        if (part.index_count == 0) {
-            continue;
-        }
-        const std::uint32_t first_face[4] = {part.first_face, 0, 0, 0};
-        SDL_PushGPUFragmentUniformData(cmd, 2, first_face, sizeof(first_face));
-        SDL_DrawGPUIndexedPrimitives(pass, part.index_count, 1, part.first_index,
-                                     static_cast<std::int32_t>(part.first_vertex), 0);
-        ++stats_.draw_calls;
-        ++stats_.chunks_drawn;
-        stats_.triangles += part.index_count / 3;
-    }
+    // Every tile and chunk in one call (phase 131).
+    SDL_DrawGPUIndexedPrimitivesIndirect(pass, list_buffer_, draws_offset_, static_cast<Uint32>(draws_.size()));
+    ++stats_.draw_calls;
 }
 
 void TerrainLayer::draw_grass(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, const math::Mat4& view_proj,

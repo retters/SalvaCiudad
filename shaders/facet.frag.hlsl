@@ -5,15 +5,11 @@
 
 StructuredBuffer<uint> face_colors : register(t5, space2);  // After the five sampled textures.
 
-cbuffer FacetDraw : register(b2, space3)
-{
-    uint4 draw;  // x: this chunk's first facet in face_colors.
-};
-
 struct PixelInput
 {
     float4 position : SV_Position;
     float3 world_pos : TEXCOORD0;
+    nointerpolation uint first_face : TEXCOORD1;  // This chunk's first facet in face_colors.
 };
 
 float4 main(PixelInput input, uint primitive : SV_PrimitiveID) : SV_Target0
@@ -23,7 +19,7 @@ float4 main(PixelInput input, uint primitive : SV_PrimitiveID) : SV_Target0
     {
         n = -n;  // Facets are drawn from both sides; the ground faces up.
     }
-    uint rgba = face_colors[draw.x + primitive];
+    uint rgba = face_colors[input.first_face + primitive];
     float3 srgb = float3(rgba & 0xFFu, (rgba >> 8) & 0xFFu, (rgba >> 16) & 0xFFu) / 255.0;
     return shade(apply_snow(srgb_to_linear(srgb), n, 0.72), n, input.world_pos);
 }
