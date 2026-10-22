@@ -1277,6 +1277,8 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 131. **El suelo lejano en una sola llamada.**
    - El suelo facetado se dibuja con una llamada indirecta por cuadro (una lista de comandos en el GPU) en lugar de una llamada y un envío de datos por cada trozo de 64 m; el primer color de cada trozo llega como dato por instancia. Lo mismo para las montañas decorativas.
    - *Criterios:* el suelo se ve igual (captura antes y después desde el mismo lugar); con todo el mapa colosal a la vista, las llamadas de dibujo del suelo pasan de decenas de miles a unas pocas; sin errores en `debug-asan`.
+132. **Los animales que nadie ve.** Lo que quedó después de las fases 129 a 131, medido con el recorrido colosal (`tools/perf/colosal`): cada cuadro preparaba a todos los animales del mapa (posición en el suelo, animación, instancia) aunque el renderizador solo dibuja los que están a la distancia de dibujo de la cámara o de una ventana de cámara. Ahora solo se preparan esos; los asaltantes y soldados, siempre.
+   - *Criterios:* prueba de qué animales se preparan según los ojos; ningún animal que se dibujaría deja de verse (la distancia que se usa nunca es mayor que la real); medida antes y después en el recorrido.
 
 ## 14. Pendientes para después (no implementar ahora)
 

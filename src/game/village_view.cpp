@@ -1134,7 +1134,6 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         const sim::Creature& a = store.data()[k];
         const float x = to_float(a.previous.x) + (to_float(a.position.x) - to_float(a.previous.x)) * alpha;
         const float z = to_float(a.previous.z) + (to_float(a.position.z) - to_float(a.previous.z)) * alpha;
-        const math::Vec3 at{x, map_surface_height(game.map(), x, z), z};
         if (id.index >= creature_looks_.size()) {
             creature_looks_.resize(static_cast<std::size_t>(id.index) + 1);
         }
@@ -1159,9 +1158,16 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         if (a.state == sim::CreatureState::Travel) {
             continue;  // Away on the world map.
         }
+        // Phase 132: an animal no eye draws is left as it is (raiders and
+        // soldiers are few, and their torches light farther than that).
+        const bool fighter = a.kind == sim::CreatureKind::Raider || a.kind == sim::CreatureKind::Soldier;
+        if (!fighter && !seen_from_eyes(x, z)) {
+            continue;
+        }
         if (!mover_shown(game, a.kind == sim::CreatureKind::Soldier, a.town, x, z)) {
             continue;  // Under the fog of war.
         }
+        const math::Vec3 at{x, map_surface_height(game.map(), x, z), z};
         look.seen = frame_;
         look.position = at;
         if (a.kind == sim::CreatureKind::Raider || a.kind == sim::CreatureKind::Soldier) {
@@ -1256,6 +1262,27 @@ void VillageView::update_creatures(render::SceneRenderer& renderer, const sim::G
         renderer.set_instances(mark_model_, marks_);
     }
     renderer.set_characters(characters_);
+}
+
+bool VillageView::seen_from_eyes(float x, float z) const {
+    if (eyes_.empty()) {
+        return true;
+    }
+    // The ground is never higher than this (heights are centimeters in 16
+    // bits), so an eye above it is at least that far from what stands on it.
+    constexpr float kHighestGround = 656.0f;
+    // What moves between two frames, or comes into view at the edge.
+    constexpr float kMargin = 40.0f;
+    for (const Eye& e : eyes_) {
+        const float dx = x - e.position.x;
+        const float dz = z - e.position.z;
+        const float dy = std::max(0.0f, e.position.y - kHighestGround);
+        const float reach = e.reach + kMargin;
+        if (dx * dx + dz * dz + dy * dy <= reach * reach) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void VillageView::add_corpse(const CreatureLook& look) {

@@ -2,6 +2,7 @@
 // main loop, and provides the services the menus use.
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -345,6 +346,10 @@ private:
     std::uint64_t perf_relayouts_ = 0;  // The renderer's counters at the last log.
     std::uint64_t perf_sorted_ = 0;
     std::uint64_t perf_bytes_ = 0;
+    // Phase 132: where the animals are seen from: the main eye and each
+    // camera window's, with how far each draws them.
+    std::vector<VillageView::Eye> creature_eyes_;
+    std::array<std::optional<VillageView::Eye>, kCameraWindows> inset_eyes_{};
     GameClock clock_;
     // Phase 61: following a villager and the ghost of the camera's anchor.
     void follow_villager(const CameraInput& in);

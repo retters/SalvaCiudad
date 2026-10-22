@@ -1,7 +1,8 @@
-// What a frame costs (phases 129 to 131): the measures of the log.
+// What a frame costs (phases 129 to 132): the measures of the log.
 #include <doctest.h>
 
 #include "game/perf_window.h"
+#include "game/village_view.h"
 
 using namespace sc;
 
@@ -53,5 +54,28 @@ TEST_SUITE("scene") {
         odd.scene_ms = 8.0f;  // Timed against another frame's start: may exceed it.
         w.add(odd);
         CHECK(w.take().other_ms == doctest::Approx(0.0f));
+    }
+
+    TEST_CASE("animals are posed only near an eye that draws them") {
+        VillageView view;
+        // No eyes: every animal, as behind the menus.
+        CHECK(view.seen_from_eyes(5000.0f, 5000.0f));
+        const VillageView::Eye eyes[] = {
+            {{1000.0f, 120.0f, 1000.0f}, 600.0f},  // The main view, low over the ground.
+            {{4000.0f, 30.0f, 4000.0f}, 200.0f},   // A camera window.
+        };
+        view.set_eyes(eyes);
+        CHECK(view.seen_from_eyes(1000.0f, 1000.0f));
+        CHECK(view.seen_from_eyes(1600.0f, 1000.0f));       // At the draw distance.
+        CHECK(view.seen_from_eyes(1630.0f, 1000.0f));       // Within the margin.
+        CHECK_FALSE(view.seen_from_eyes(1700.0f, 1000.0f));
+        CHECK(view.seen_from_eyes(4150.0f, 4000.0f));       // Near the window's eye.
+        CHECK_FALSE(view.seen_from_eyes(2500.0f, 2500.0f));
+        // Zoomed out over the whole map: the eye is too high to draw any.
+        const VillageView::Eye high[] = {{{8000.0f, 20000.0f, 8000.0f}, 2500.0f}};
+        view.set_eyes(high);
+        CHECK_FALSE(view.seen_from_eyes(8000.0f, 8000.0f));
+        view.set_eyes({});
+        CHECK(view.seen_from_eyes(8000.0f, 8000.0f));
     }
 }

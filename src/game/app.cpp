@@ -877,6 +877,7 @@ void App::update_camera_windows() {
                                            render::kInsetWidth, render::kInsetHeight);
     }
     if (!playing) {
+        inset_eyes_ = {};
         return;
     }
     const sim::Game& g = session_->game();
@@ -927,6 +928,7 @@ void App::update_camera_windows() {
         }
         if (!at) {
             w.open = false;
+            inset_eyes_[static_cast<std::size_t>(slot)].reset();
         }
         targets[static_cast<std::size_t>(slot)] = at;
     }
@@ -947,6 +949,7 @@ void App::update_camera_windows() {
     // Far enough to give the thing its surroundings, near enough to be cheap.
     view.distance = std::clamp(w.distance * 8.0f, 120.0f, 400.0f);
     scene_.request_inset(slot, view);
+    inset_eyes_[static_cast<std::size_t>(slot)] = VillageView::Eye{eye, view.distance};
 }
 
 void App::update_frame_stats(float dt) {
@@ -1058,6 +1061,18 @@ void App::render_frame(float dt) {
                                   camera_.mode() == CameraMode::ThirdPerson ? std::optional<math::Vec3>(camera_.target())
                                                                             : std::nullopt,
                                   dt);
+                // Phase 132: the animals that can be drawn: near the eye,
+                // within the draw distance, or near a camera window's.
+                creature_eyes_.clear();
+                creature_eyes_.push_back(
+                    {camera_.eye(), std::max(scene_.stats().draw_distance,
+                                             render::draw_distance_for_level(settings_->settings().graphics.draw_distance))});
+                for (const std::optional<VillageView::Eye>& e : inset_eyes_) {
+                    if (e) {
+                        creature_eyes_.push_back(*e);
+                    }
+                }
+                village_.set_eyes(creature_eyes_);
                 village_.update(scene_, map_scene_, session_->game(), static_cast<float>(clock_.interpolation()), dt,
                                 speed);
                 // People placed with the developer tools walk among them.
@@ -1073,6 +1088,7 @@ void App::render_frame(float dt) {
             } else if (menu_game_ && menu_map_ && !map_) {
                 // Behind the menus: the map's own animals, at the game's pace.
                 village_.set_view(camera_.target().x, camera_.target().z, 0);
+                village_.set_eyes({});
                 village_.update(scene_, map_scene_, *menu_game_, static_cast<float>(clock_.interpolation()), dt,
                                 speed::multiplier(clock_.speed()));
                 map_scene_.update_sky(scene_, dt);

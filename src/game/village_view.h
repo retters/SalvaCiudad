@@ -108,6 +108,16 @@ public:
     // How far the camera is from what it looks at, in meters: the rain is
     // drawn thicker from far, or it would not be seen.
     void set_view_distance(float meters) { view_distance_ = meters; }
+    // Phase 132: the eyes the animals are seen from (the main view and the
+    // camera windows), each with how far it draws them. Animals farther
+    // from all of them are neither posed nor sent to the renderer, which
+    // would not draw them; empty: all of them are.
+    struct Eye {
+        math::Vec3 position;
+        float reach = 0.0f;
+    };
+    void set_eyes(std::span<const Eye> eyes) { eyes_.assign(eyes.begin(), eyes.end()); }
+    [[nodiscard]] bool seen_from_eyes(float x, float z) const;
     [[nodiscard]] std::size_t ground_cover_shown() const { return cover_.shown(); }
     void set_view(float x, float z, std::uint8_t town) {
         view_x_ = x;
@@ -305,6 +315,7 @@ private:
     std::unordered_map<sim::DefIndex, Model> winter_models_;
     bool winter_ = false;
     float view_distance_ = 60.0f;
+    std::vector<Eye> eyes_;
     void update_weather(render::SceneRenderer& renderer, const sim::Game& game, float dt, float speed);
     void update_overlay(render::SceneRenderer& renderer, const sim::Game& game, float dt);
     std::vector<render::Instance> animals_;

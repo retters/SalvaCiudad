@@ -4507,3 +4507,15 @@ Cada comando dibuja una instancia y su `first_instance` es su número en la list
 
 **D-13103. Medido con el recorrido colosal.**
 Mismas condiciones que D-13005, con el paso final a 3 km que se agregó al recorrido para comparar capturas. Con todo el mapa a la vista (20 km): de 61 600 llamadas de dibujo a 11 en todo el cuadro, el renderizador de 6,5-7,5 ms a 3,3 ms de CPU por cuadro y de 70-80 a 119 FPS; los 19 millones de triángulos siguen, pero el GPU los dibuja sin que el CPU lo frene. A 3 km: de 106-115 a 127-148 FPS. Junto al pueblo, de 112-129 a 124-139. La captura final, a 3 km, coincide con la de la fase 130 salvo las nubes y el agua, que se mueven con el tiempo (80 % de los píxeles idénticos y 0,9 % con diferencia visible).
+
+## Fase 132: los animales que nadie ve (2026-10-22)
+
+**D-13201. Dónde se iba la actualización del mundo.**
+Con una medición temporal por partes (quitada antes del commit), los 3,7 ms por cuadro de la actualización del mundo eran casi todos de `VillageView::update_creatures`: cada cuadro calculaba la altura del suelo, la animación y la instancia de todos los animales del mapa colosal, y los mandaba al renderizador, que después dibujaba solo los cercanos. Lo demás (cubierta del suelo, objetos, partículas, oclusores, niebla, cielo) sumaba menos de 0,2 ms.
+
+**D-13202. Solo se preparan los animales que algún ojo dibuja.**
+La aplicación le dice a la vista del pueblo desde dónde se ve (`VillageView::set_eyes`): la cámara principal, con la distancia de dibujo de la calidad elegida, y la última vista de cada ventana de cámara abierta, con la suya. Un animal que queda más lejos de todos los ojos, más 40 m de margen, no se prepara ni se manda; su estado se queda como estaba y retoma al acercarse. La distancia que se usa nunca es mayor que la real: la parte vertical cuenta solo lo que el ojo está por encima del suelo más alto posible (656 m), así que el filtro no esconde ningún animal que el renderizador fuera a dibujar. Los asaltantes y los soldados se preparan siempre: son pocos, sus antorchas alumbran hasta 512 m del centro de la vista (más que la distancia de dibujo más corta) y avisan de muertes para los carroñeros. Detrás de los menús no hay ojos y se preparan todos, como antes. Un animal que muere lejos de los ojos no deja cadáver, como ya pasaba con uno fuera de la vista.
+
+**D-13203. Medido con el recorrido colosal.**
+La actualización del mundo baja de 3,7 a 0,8 ms por cuadro y el renderizador de 2,3 a 1,4 ms (dibuja la misma lista de personajes, pero más corta). Junto al pueblo, de 124-139 a 283-345 FPS; con todo el mapa a la vista, de 119 a 249; a 3 km, de 127-148 a 285-395. El peor cuadro, después de cargar, de unos 16 a unos 11 ms.
+
