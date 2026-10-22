@@ -1288,6 +1288,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 135. **La parte visual del mapa en varios hilos.** El registro dice cuánto tarda cada etapa de la generación. En el mapa colosal, armar lo que se ve del mapa (colores, textura y facetas del suelo) tomaba 16,9 s en un hilo; se reparte entre varios, con el mismo resultado.
    - *Criterios:* pruebas de que las facetas salen iguales con cualquier número de hilos; la suma de verificación del mapa no cambia; medida antes y después.
 
+136. **Ordenar por regiones sin recalcular.** Cada lista de instancias que cambia se ordena por regiones de 64 m; la comparación calculaba las dos claves (con divisiones) en cada paso del ordenamiento. Se calculan una vez por instancia y se ordena por ellas, con el mismo orden de antes.
+   - *Criterios:* el mismo orden que antes (pruebas de escena y de variantes); medida de la carga del mapa colosal y del cambio de estación antes y después.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

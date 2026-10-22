@@ -1066,11 +1066,19 @@ struct SceneRenderer::Impl {
                 floor_div(bz, kBucketsPerGroup) * (std::int64_t{1} << 32) + floor_div(bx, kBucketsPerGroup);
             return std::pair{group, bz * (std::int64_t{1} << 32) + bx};
         };
-        m.order.resize(m.instances.size());
-        for (std::uint32_t k = 0; k < m.order.size(); ++k) {
-            m.order[k] = k;
+        // Each key once (phase 136): sorting by (key, index) gives the order
+        // a stable sort by key gives, without working the key out again at
+        // every comparison.
+        using Keyed = std::pair<std::pair<std::int64_t, std::int64_t>, std::uint32_t>;
+        std::vector<Keyed> keyed(m.instances.size());
+        for (std::uint32_t k = 0; k < keyed.size(); ++k) {
+            keyed[k] = {key(k), k};
         }
-        std::stable_sort(m.order.begin(), m.order.end(), [&](std::uint32_t a, std::uint32_t b) { return key(a) < key(b); });
+        std::sort(keyed.begin(), keyed.end());
+        m.order.resize(keyed.size());
+        for (std::uint32_t k = 0; k < keyed.size(); ++k) {
+            m.order[k] = keyed[k].second;
+        }
         m.slot_of.resize(m.order.size());
         for (std::uint32_t k = 0; k < m.order.size(); ++k) {
             m.slot_of[m.order[k]] = k;
@@ -1078,11 +1086,11 @@ struct SceneRenderer::Impl {
         std::size_t i = 0;
         std::int64_t last_group = 0;
         while (i < m.order.size()) {
-            const std::pair<std::int64_t, std::int64_t> k = key(m.order[i]);
+            const std::pair<std::int64_t, std::int64_t> k = keyed[i].first;
             std::size_t j = i;
             math::Vec3 lo = m.instances[m.order[i]].position;
             math::Vec3 hi = lo;
-            while (j < m.order.size() && key(m.order[j]) == k) {
+            while (j < m.order.size() && keyed[j].first == k) {
                 const math::Vec3 p = m.instances[m.order[j]].position;
                 lo = {std::min(lo.x, p.x), std::min(lo.y, p.y), std::min(lo.z, p.z)};
                 hi = {std::max(hi.x, p.x), std::max(hi.y, p.y), std::max(hi.z, p.z)};

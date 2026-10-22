@@ -4551,3 +4551,11 @@ De los 16,8 s de «view», 12,9 eran las facetas del suelo, 2,3 los colores de c
 
 **D-13503. Lo que se probó en la generación de la simulación y no se quedó.**
 Con el mapa gigante (8 192 m, `worldgen_perf` con `--no-skip`: 26,2 s) y mediciones temporales: los lagos toman 9,5 s, de los que 7,6 son la inundación por prioridad; los suelos, 6,4 s (1,3 de la distancia al agua y 5,1 de los ruidos por fila). Se probaron dos cosas en la inundación, las dos con la misma suma de verificación: partir cada altura en 32 768 montículos por la parte revuelta de la clave, y precargar los siguientes candidatos del montículo. Ninguna bajó el tiempo: lo que cuesta es visitar los vértices en orden de altura, que en el mapa están dispersos, y ese orden decide hacia dónde corre el agua (los ríos), así que no se puede cambiar sin cambiar los mapas. No se quedó ninguna de las dos. Bajar más la generación pediría hilos en la simulación (D-506) o cambiar el algoritmo y con él todos los mapas; queda para que Salvador lo decida.
+
+## Fase 136: ordenar por regiones sin recalcular (2026-10-22)
+
+**D-13601. Cada clave de región se calcula una vez.**
+`build_buckets` ordenaba los índices con `stable_sort` y una comparación que calculaba las claves de región de las dos instancias (dos `floor` y dos divisiones cada una) en cada paso. Ahora calcula la clave de cada instancia una vez, ordena los pares (clave, índice) y recorre las regiones con las claves ya hechas. Ordenar por (clave, índice) da exactamente el orden de un ordenamiento estable por clave. En el recorrido colosal: ordenar las 1,47 millones de instancias al cargar pasa de 416 a 204 ms, la preparación más lenta de cada cuadro de unos 0,5 a 0,25 ms, y los FPS suben un poco (junto al pueblo, de 345 a 367; a 3 km, de 388 a 421). El cambio de estación ya no ordena (D-13302), así que no cambia.
+
+**D-13602. `debug-asan` al cerrar la ronda.**
+Como pidió Salvador, `debug-asan` no se corrió durante el desarrollo de estas fases sino al final: las 96 suites pasan (540 s) con las fases 129 a 135.
