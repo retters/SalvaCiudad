@@ -4572,3 +4572,11 @@ Con todo el mapa colosal a la vista se dibujan unos 18,7 M de triángulos por cu
 
 **D-13801. Los trozos todo agua se vuelven más gruesos de lejos.**
 Lo que D-13702 dejó: los ríos angostos solo están en los trozos con agua y tierra. Un trozo con todas sus celdas bajo el agua (el adentro de un lago o del mar) es una superficie sin orilla que borrar, así que usa facetas de 8 m desde 2 km y de 16 m desde 4 km, unos 4 a 5 píxeles de una pantalla de 1 080 donde empieza cada uno, como las del suelo. Los demás siguen con 2 y 4 m. Las olas y la profundidad se toman en los vértices, como antes; de lejos no se distingue. En el mapa colosal entero a la vista: de 18,7 a 14,2 M de triángulos (la mayoría de los trozos con agua tienen orilla); la captura a 3 km coincide con la de antes salvo nubes y olas (0,22 % de los píxeles con diferencia visible). Los FPS no cambian en el equipo de desarrollo, donde esa vista ya no la limita el GPU; es alivio para GPUs más modestas.
+
+## Fase 139: las listas del agua en una pasada (2026-10-22)
+
+**D-13901. Dónde se va el culling con todo el mapa a la vista.**
+Medido por partes (mediciones quitadas antes del commit), con el mapa colosal entero a la vista: culling de instancias 0,13 ms, de personajes 0,002, de las sombras 0,1, y preparar el terreno 1,7 ms. Del terreno: recorrer los 65 536 trozos (prueba contra la vista, distancia, nivel) 1,0 ms; armar los 61 500 comandos del suelo 0,4; subirlos 0,1.
+
+**D-13902. Cada trozo con agua va a la lista de su nivel en la misma pasada.**
+Antes se recorrían todos los trozos una vez por cada nivel del agua (ahora son cuatro, D-13801), con un vector nuevo en cada cuadro. Ahora el recorrido de los trozos pone cada uno en la lista de su nivel (listas que se reutilizan) y luego se juntan en orden: el mismo orden de antes. Preparar el terreno baja de 1,7 a 1,5 ms. Lo que queda es el recorrido de los trozos (unos 15 ns cada uno) y armar los comandos; con esa vista a unos 250 FPS, no se siguió.

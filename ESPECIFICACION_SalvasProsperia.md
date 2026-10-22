@@ -1297,6 +1297,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 138. **El agua lejana más ligera donde no hay orillas.** Un trozo todo cubierto de agua (dentro de un lago o del mar) usa facetas de 8 m desde 2 km y de 16 m desde 4 km; los que tienen orilla o río siguen igual, para no borrar los ríos.
    - *Criterios:* menos triángulos con todo el mapa a la vista; la captura a 3 km igual a la de antes salvo lo que se mueve.
 
+139. **Las listas del agua en una pasada.** Con todo el mapa a la vista, preparar el terreno costaba 1,7 ms por cuadro, y parte era recorrer los 65 536 trozos una vez por cada nivel del agua. Ahora se recorren una vez.
+   - *Criterios:* las mismas listas en el mismo orden; medida antes y después.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

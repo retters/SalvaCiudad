@@ -148,6 +148,7 @@ private:
 
     // Per frame: visible water chunk indices, by level of detail.
     std::vector<std::uint32_t> lists_;
+    std::vector<std::uint32_t> water_by_lod_[kTerrainLods];  // Phase 139: scratch, one pass over the chunks.
     // Per frame (phase 131): the faceted ground as one indirect draw. Each
     // command draws one tile or chunk; its first instance picks its first
     // facet color in draw_faces_, which goes to the shader per instance.

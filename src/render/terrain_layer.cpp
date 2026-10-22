@@ -605,8 +605,10 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
             visible_backdrop_.push_back(static_cast<std::uint32_t>(i));
         }
     }
-    // Level of detail of each visible chunk's water (-1: not visible or dry).
-    std::vector<std::int8_t> chosen(chunks_.size(), -1);
+    // Each visible chunk's water, by level of detail (in chunk order).
+    for (std::vector<std::uint32_t>& list : water_by_lod_) {
+        list.clear();
+    }
     const float half = static_cast<float>(kTerrainChunk) * 0.5f;
     for (std::size_t i = 0; i < chunks_.size(); ++i) {
         const Chunk& c = chunks_[i];
@@ -627,7 +629,7 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
             if (c.full_water) {
                 lod = distance >= kFullWaterDistances[1] ? kFarWaterLod : distance >= kFullWaterDistances[0] ? 3 : lod;
             }
-            chosen[i] = static_cast<std::int8_t>(lod);
+            water_by_lod_[lod].push_back(static_cast<std::uint32_t>(i));
         }
         int facet_lod = 0;
         while (facet_lod < kFacetLods - 1 && distance >= kFacetLodDistances[facet_lod]) {
@@ -637,12 +639,8 @@ bool TerrainLayer::prepare(SDL_GPUCommandBuffer* cmd, const math::Frustum& frust
     }
     for (int lod = kMinWaterLod; lod <= kFarWaterLod; ++lod) {
         water_ranges_[lod].first = static_cast<std::uint32_t>(lists_.size());
-        for (std::size_t i = 0; i < chunks_.size(); ++i) {
-            if (chosen[i] == lod) {
-                lists_.push_back(static_cast<std::uint32_t>(i));
-            }
-        }
-        water_ranges_[lod].count = static_cast<std::uint32_t>(lists_.size()) - water_ranges_[lod].first;
+        lists_.insert(lists_.end(), water_by_lod_[lod].begin(), water_by_lod_[lod].end());
+        water_ranges_[lod].count = static_cast<std::uint32_t>(water_by_lod_[lod].size());
     }
     // The faceted ground: one indirect command per tile and chunk.
     draws_.clear();
