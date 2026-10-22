@@ -325,6 +325,7 @@ private:
     std::uint64_t tour_step_ns_ = 0;
     math::Vec3 tour_origin_;
     report::TourStep tour_from_;
+    std::optional<sim::Season> tour_season_;  // The season the tour shows now.
     PerfWindow tour_perf_;
     std::string tour_notes_;
     float camera_wheel_ = 0.0f;   // Wheel notches since the last camera update.

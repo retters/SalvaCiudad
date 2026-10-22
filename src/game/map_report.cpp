@@ -614,11 +614,21 @@ bool parse_replay(std::string_view text, const sim::Content* content, Replay& ou
                 error = "bad tour step";
                 return false;
             }
+            std::optional<sim::Season> step_season;
+            if (yyjson_mut_obj_get(item, "season") != nullptr) {
+                std::size_t named = 0;
+                if (!get_name(item, "season", kSeasons, named)) {
+                    error = "bad tour step";
+                    return false;
+                }
+                step_season = static_cast<sim::Season>(named);
+            }
             v.tour.steps.push_back({static_cast<float>(seconds),
                                     {static_cast<float>(offset[0]), static_cast<float>(offset[1])},
                                     static_cast<float>(step_yaw),
                                     static_cast<float>(step_pitch),
-                                    static_cast<float>(step_distance)});
+                                    static_cast<float>(step_distance),
+                                    step_season});
         }
     }
     v.mode = static_cast<CameraMode>(mode);

@@ -85,9 +85,12 @@ struct MapVisuals {
 inline constexpr std::int32_t kMaxGroundColorSize = 2048;
 
 [[nodiscard]] MapVisuals build_map_visuals(const sim::MapData& map, const sim::Content& content);
-// Only the feature instances, by visual slot.
+// Only the feature instances, by visual slot. Phase 133: on `threads`
+// threads (0: as many as the map's size and the machine call for, up to 8);
+// the result is the same with any number.
 [[nodiscard]] std::vector<std::vector<render::Instance>> build_feature_instances(
-    const sim::MapData& map, const sim::Content& content, TreeCalendar when = {}, bool snowy = false);
+    const sim::MapData& map, const sim::Content& content, TreeCalendar when = {}, bool snowy = false,
+    std::size_t threads = 0);
 // One feature's instance (for trees, scale is the height in meters; the
 // look is left at 0, see tree_look), colored for the season: snow whitens
 // everything, and bushes turn in autumn and fade in winter (trees change

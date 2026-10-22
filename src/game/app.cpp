@@ -1023,7 +1023,7 @@ void App::render_frame(float dt) {
                 // The season: trees, hats and light (a report's, when showing one).
                 const sim::Game& g = session_->game();
                 const sim::Calendar cal = g.calendar();
-                const sim::Season season = replay_ ? replay_->view.season : cal.season;
+                const sim::Season season = replay_ ? tour_season_.value_or(replay_->view.season) : cal.season;
                 // The trees turn over the first days of a season, each at
                 // its own time; a new game starts with them already turned.
                 const sim::Calendar first = sim::calendar(g.rules().climate, 0);
@@ -3381,6 +3381,7 @@ void App::start_tour(std::uint64_t now) {
     tour_from_ = report::TourStep{0.0f, {0.0f, 0.0f}, v.yaw, v.pitch, v.distance};
     tour_step_ = 0;
     tour_step_ns_ = now;
+    tour_season_ = v.tour.steps.front().season;
     tour_perf_.clear();
     tour_notes_ = std::format("Tour of {} steps from {:.0f}, {:.0f} at speed {}:\n", v.tour.steps.size(),
                               static_cast<double>(tour_origin_.x), static_cast<double>(tour_origin_.z), v.tour.speed);
@@ -3413,6 +3414,9 @@ void App::update_tour(std::uint64_t now) {
             clock_.set_speed(0);
             replay_step_ = ReplayStep::Capture;
             return;
+        }
+        if (steps[tour_step_].season) {
+            tour_season_ = steps[tour_step_].season;
         }
     }
     const report::TourStep& to = steps[tour_step_];

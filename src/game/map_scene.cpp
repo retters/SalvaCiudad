@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <numbers>
+#include <thread>
 
 #include "core/log.h"
 #include "game/builtin_models.h"
@@ -337,14 +338,52 @@ std::optional<math::Vec3> ground_hit(const sim::MapData& map, math::Vec3 origin,
 
 std::vector<std::vector<render::Instance>> build_feature_instances(const sim::MapData& map,
                                                                   const sim::Content& content, TreeCalendar when,
-                                                                  bool snowy) {
-    std::vector<std::vector<render::Instance>> features(visual_slot_count(content));
+                                                                  bool snowy, std::size_t threads) {
+    const std::size_t slots = visual_slot_count(content);
     // One instance per natural feature, standing on the ground.
-    for (const sim::MapFeature& f : map.features) {
-        const std::size_t slot = visual_slot(content, f, &map);
-        if (slot < features.size()) {
-            features[slot].push_back(feature_instance(map, f, &content, when.season, snowy));
-            features[slot].back().look = feature_look(content, f, when);
+    const auto build = [&](std::size_t first, std::size_t last, std::vector<std::vector<render::Instance>>& out) {
+        out.assign(slots, {});
+        for (std::size_t k = first; k < last; ++k) {
+            const sim::MapFeature& f = map.features[k];
+            const std::size_t slot = visual_slot(content, f, &map);
+            if (slot < slots) {
+                out[slot].push_back(feature_instance(map, f, &content, when.season, snowy));
+                out[slot].back().look = feature_look(content, f, when);
+            }
+        }
+    };
+    // Phase 133: a big map is split among a few threads, each a run of
+    // features in order; their lists are joined in the same order, so the
+    // result is the same as on one thread. Everything here only reads.
+    constexpr std::size_t kPerThread = 65536;
+    const std::size_t count = map.features.size();
+    if (threads == 0) {
+        threads = std::clamp<std::size_t>(count / kPerThread, 1,
+                                          std::clamp<std::size_t>(std::thread::hardware_concurrency(), 1, 8));
+    }
+    threads = std::clamp<std::size_t>(threads, 1, std::max<std::size_t>(count, 1));
+    std::vector<std::vector<std::vector<render::Instance>>> parts(threads);
+    if (threads == 1) {
+        build(0, count, parts[0]);
+        return std::move(parts[0]);
+    }
+    {
+        std::vector<std::jthread> workers;
+        workers.reserve(threads - 1);
+        for (std::size_t t = 1; t < threads; ++t) {
+            workers.emplace_back([&, t] { build(count * t / threads, count * (t + 1) / threads, parts[t]); });
+        }
+        build(0, count / threads, parts[0]);
+    }  // The workers are joined here.
+    std::vector<std::vector<render::Instance>> features = std::move(parts[0]);
+    for (std::size_t slot = 0; slot < slots; ++slot) {
+        std::size_t total = features[slot].size();
+        for (std::size_t t = 1; t < threads; ++t) {
+            total += parts[t][slot].size();
+        }
+        features[slot].reserve(total);
+        for (std::size_t t = 1; t < threads; ++t) {
+            features[slot].insert(features[slot].end(), parts[t][slot].begin(), parts[t][slot].end());
         }
     }
     return features;

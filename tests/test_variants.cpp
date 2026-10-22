@@ -524,4 +524,33 @@ TEST_SUITE("variants") {
             CHECK((turn != kTurnSteps / 2 || (turned > 0 && turned < cherries)));
         }
     }
+
+    TEST_CASE("the feature instances come out the same on any number of threads") {
+        const sim::Content& content = test::core_content();
+        sim::MapSettings settings;
+        settings.seed = 24;
+        settings.size = sim::MapSize::Small;
+        const std::optional<sim::MapData> map = sim::generate_map(settings, content);
+        REQUIRE(map.has_value());
+        REQUIRE(map->features.size() > 100);
+        const TreeCalendar when{sim::Season::Autumn, kTurnSteps / 2};
+        const auto one = build_feature_instances(*map, content, when, true, 1);
+        for (const std::size_t threads : {std::size_t{2}, std::size_t{3}, std::size_t{7}, std::size_t{0}}) {
+            const auto many = build_feature_instances(*map, content, when, true, threads);
+            REQUIRE(many.size() == one.size());
+            for (std::size_t slot = 0; slot < one.size(); ++slot) {
+                REQUIRE(many[slot].size() == one[slot].size());
+                for (std::size_t i = 0; i < one[slot].size(); ++i) {
+                    const render::Instance& a = one[slot][i];
+                    const render::Instance& b = many[slot][i];
+                    REQUIRE(a.position == b.position);
+                    REQUIRE(a.yaw == b.yaw);
+                    REQUIRE(a.scale == b.scale);
+                    REQUIRE(a.tint == b.tint);
+                    REQUIRE(a.look == b.look);
+                    REQUIRE(a.landmark == b.landmark);
+                }
+            }
+        }
+    }
 }

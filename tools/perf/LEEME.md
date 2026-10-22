@@ -15,7 +15,7 @@
 
 ## Recorridos
 
-- `colosal/`: el mapa colosal (16 384 m, semilla 601441504) de la ronda de rendimiento de las fases 129 a 131. Generarlo toma unos 150 s y unos 6 GB de memoria. Pasos: quieto a 70 m, avanzar 400 m, alejarse a 1 km y luego a 20 km (todo el mapa), quedarse, volver y quedarse.
+- `colosal/`: el mapa colosal (16 384 m, semilla 601441504) de la ronda de rendimiento de las fases 129 a 133. Generarlo toma unos 150 s y unos 6 GB de memoria. Pasos: quieto a 70 m, avanzar 400 m, alejarse a 1 km y luego a 20 km (todo el mapa), quedarse, volver y quedarse, cambiar a otoño y a invierno, y alejarse a 3 km para la captura final.
 
 ## Formato de `view.tour`
 
@@ -32,3 +32,4 @@
 - `speed`: velocidad del juego en cuartos (4 es x1, 0 en pausa).
 - `atTown`: empieza sobre el centro del primer pueblo; si no, sobre `view.target`.
 - `steps` (de 1 a 64): cada paso va desde donde terminó el anterior (el primero, desde la vista del reporte) hasta su lugar en `seconds`; `offset` son los metros en x y z desde el inicio.
+- `season` (opcional, en un paso): desde ese paso el mapa muestra esa estación (`spring`, `summer`, `autumn`, `winter`), como cuando cambia la estación en una partida; sirve para medir ese cambio.

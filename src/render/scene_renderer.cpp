@@ -259,6 +259,10 @@ struct GpuModel {
     // Which instances are drawn far now (by sorted position), so one at the
     // edge does not flicker between versions.
     std::vector<std::uint8_t> far_now;
+    // Every instance of the last set_instances kept its place and size
+    // (the trees of a new season): the regions are still right and the
+    // instances are not sorted again.
+    bool same_places = false;
 };
 
 struct Range {
@@ -1184,8 +1188,11 @@ struct SceneRenderer::Impl {
         instances_in_use = 0;
         for (GpuModel& m : models) {
             if (m.dirty) {
-                build_buckets(m);
-                instances_sorted += m.order.size();
+                if (!m.same_places) {
+                    build_buckets(m);
+                    instances_sorted += m.order.size();
+                }
+                m.same_places = false;
                 for (std::uint32_t k = 0; k < m.order.size(); ++k) {
                     gpu_instances[m.base + k] = to_gpu(m.instances[m.order[k]]);
                 }
@@ -1596,8 +1603,17 @@ void SceneRenderer::clear_terrain() {
 void SceneRenderer::set_instances(ModelId model, std::span<const Instance> instances) {
     if (model < impl_->models.size()) {
         GpuModel& m = impl_->models[model];
+        bool same = (!m.dirty || m.same_places) && !m.order.empty() && m.instances.size() == instances.size() &&
+                    m.order.size() == instances.size();
+        for (std::size_t i = 0; same && i < instances.size(); ++i) {
+            const Instance& a = m.instances[i];
+            const Instance& b = instances[i];
+            same = a.position.x == b.position.x && a.position.y == b.position.y && a.position.z == b.position.z &&
+                   a.scale == b.scale;
+        }
         m.instances.assign(instances.begin(), instances.end());
         m.dirty = true;
+        m.same_places = same;
     }
 }
 
@@ -1865,6 +1881,7 @@ void SceneRenderer::clear_instances() {
         m.instances.clear();
         m.base = 0;
         m.dirty = true;
+        m.same_places = false;
     }
     // A new map starts packed.
     d.layout.clear();

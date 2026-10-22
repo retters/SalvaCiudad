@@ -191,6 +191,11 @@ TEST_SUITE("map_report") {
         CHECK(out.view.tour.steps[1].offset[0] == doctest::Approx(400.0f));
         CHECK(out.view.tour.steps[1].offset[1] == doctest::Approx(-30.0f));
         CHECK(out.view.tour.steps[1].distance == doctest::Approx(20000.0f));
+        CHECK_FALSE(out.view.tour.steps[0].season);
+        REQUIRE(report::parse_replay(
+            with_tour(R"({"steps": [{"seconds": 1, "offset": [0, 0], "yaw": 0, "pitch": 1, "distance": 50, "season": "winter"}]})"),
+            &sc::test::core_content(), out, error));
+        CHECK(out.view.tour.steps[0].season == sim::Season::Winter);
         // Speed and the town are optional.
         REQUIRE(report::parse_replay(
             with_tour(R"({"steps": [{"seconds": 1, "offset": [0, 0], "yaw": 0, "pitch": 1, "distance": 50}]})"),
@@ -212,6 +217,7 @@ TEST_SUITE("map_report") {
         CHECK(refused(R"({"steps": [{"seconds": 0, "offset": [0, 0], "yaw": 0, "pitch": 1, "distance": 50}]})"));
         CHECK(refused(R"({"steps": [{"seconds": 1, "offset": [0], "yaw": 0, "pitch": 1, "distance": 50}]})"));
         CHECK(refused(R"({"steps": [{"seconds": 1, "offset": [0, 0], "yaw": 0, "pitch": 1}]})"));
+        CHECK(refused(R"({"steps": [{"seconds": 1, "offset": [0, 0], "yaw": 0, "pitch": 1, "distance": 50, "season": "monsoon"}]})"));
         std::string many = R"({"steps": [)";
         for (std::size_t i = 0; i <= report::kMaxTourSteps; ++i) {
             many += (i > 0 ? "," : "") + std::string(step);

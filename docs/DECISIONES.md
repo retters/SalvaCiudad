@@ -4519,3 +4519,16 @@ La aplicación le dice a la vista del pueblo desde dónde se ve (`VillageView::s
 **D-13203. Medido con el recorrido colosal.**
 La actualización del mundo baja de 3,7 a 0,8 ms por cuadro y el renderizador de 2,3 a 1,4 ms (dibuja la misma lista de personajes, pero más corta). Junto al pueblo, de 124-139 a 283-345 FPS; con todo el mapa a la vista, de 119 a 249; a 3 km, de 127-148 a 285-395. El peor cuadro, después de cargar, de unos 16 a unos 11 ms.
 
+## Fase 133: las estaciones sin reordenar (2026-10-22)
+
+**D-13301. El recorrido puede cambiar la estación.**
+Un paso de `view.tour` acepta `season`: desde ese paso el reporte muestra esa estación, como cuando cambia en una partida (los árboles cambian de modelo y los arbustos de color de golpe, porque un reporte muestra la estación ya volteada). El recorrido colosal pasa a otoño y a invierno junto al pueblo.
+
+**D-13302. Una lista con los mismos lugares conserva su orden.**
+Al cambiar la estación (o la nieve) `MapScene` vuelve a mandar las 1,46 millones de instancias del mapa, y el renderizador las reordenaba por región. Ahora `set_instances` compara la lista nueva con la anterior: si tiene las mismas instancias, cada una en el mismo lugar y del mismo tamaño, se conservan el orden y las regiones y solo se vuelven a convertir y subir. La comparación es exacta y cuesta una pasada; si algo se movió o cambió de tamaño, se reordena como siempre.
+
+**D-13303. Las instancias del mapa se arman en varios hilos.**
+`build_feature_instances` reparte los elementos del mapa en tramos seguidos entre hasta 8 hilos (uno cada 65 536 elementos, sin pasar de los núcleos de la máquina) y junta las listas de cada tramo en el mismo orden, así que el resultado es idéntico con cualquier número de hilos (prueba con 1, 2, 3 y 7). Solo lee el mapa y el contenido; la simulación sigue en el hilo principal (D-506). En los mapas chicos usa un solo hilo.
+
+**D-13304. Medido con el recorrido colosal.**
+El cuadro en que cambia la estación: 670 ms antes de esta fase (256 ms de `MapScene` y unos 400 de reordenar), 315 ms sin reordenar y 218 ms con los hilos (157 ms de `MapScene` y 47 de convertir y subir las instancias), en una máquina de varios núcleos. Pasa una vez por estación o cuando la nieve cuaja o se derrite. Lo que queda de `MapScene` es juntar las listas por modelo, compararlas y volver a poner a los árboles talados o recogidos como estaban; se puede seguir bajando, pero ya es un solo cuadro de cada muchos minutos.

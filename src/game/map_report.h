@@ -40,6 +40,9 @@ struct TourStep {
     float yaw = 0.0f;
     float pitch = 0.0f;
     float distance = 0.0f;
+    // Phase 132: from this step on the map shows this season (the trees
+    // turn as when the season changes in a game); none keeps the last one.
+    std::optional<sim::Season> season;
 };
 inline constexpr std::size_t kMaxTourSteps = 64;
 struct Tour {
