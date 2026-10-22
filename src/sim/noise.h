@@ -29,6 +29,34 @@ namespace sc::sim {
 // normalized to [-32768, 32767].
 [[nodiscard]] std::int32_t fbm(std::uint64_t seed, std::int32_t x, std::int32_t z, int log2_largest, int octaves);
 
+// Phase 140: the division of an fbm's weighted sum by its total weight,
+// for `octaves` layers weighing 2^16, 2^15, ... (every weight divides the
+// sum by 2^(17 - octaves)), done with a multiplication: the result is
+// exactly that of `sum / total`, truncated toward zero, for 1 to 15 octaves
+// and |sum| <= 32768 * total (the most the layers can add up to).
+class WeightDivider {
+public:
+    explicit WeightDivider(int octaves);
+    [[nodiscard]] bool exact() const { return exact_; }
+    [[nodiscard]] std::int64_t total() const { return total_; }
+    [[nodiscard]] std::int64_t operator()(std::int64_t sum) const {
+        if (!exact_) {
+            return total_ == 0 ? 0 : sum / total_;
+        }
+        const std::int64_t m = sum >> drop_;  // Exact: the sum is a multiple of 2^drop_.
+        const auto u = static_cast<std::uint64_t>(m < 0 ? -m : m);
+        const auto q = static_cast<std::int64_t>((u * magic_) >> shift_);
+        return m < 0 ? -q : q;
+    }
+
+private:
+    std::int64_t total_ = 0;
+    bool exact_ = false;
+    int drop_ = 0;
+    int shift_ = 0;
+    std::uint64_t magic_ = 0;
+};
+
 // fbm along a row of fixed z: at(x) gives exactly fbm(seed, x, z,
 // log2_largest, octaves), but keeps each layer's lattice corners while x
 // stays in the same cell, so walking a row costs a fraction of the hashing.
@@ -52,6 +80,7 @@ private:
     std::array<Octave, 32> octaves_{};
     int count_ = 0;
     std::int64_t weight_total_ = 0;
+    WeightDivider divide_{0};
 };
 
 }  // namespace sc::sim

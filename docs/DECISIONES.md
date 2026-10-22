@@ -4580,3 +4580,11 @@ Medido por partes (mediciones quitadas antes del commit), con el mapa colosal en
 
 **D-13902. Cada trozo con agua va a la lista de su nivel en la misma pasada.**
 Antes se recorrían todos los trozos una vez por cada nivel del agua (ahora son cuatro, D-13801), con un vector nuevo en cada cuadro. Ahora el recorrido de los trozos pone cada uno en la lista de su nivel (listas que se reutilizan) y luego se juntan en orden: el mismo orden de antes. Preparar el terreno baja de 1,7 a 1,5 ms. Lo que queda es el recorrido de los trozos (unos 15 ns cada uno) y armar los comandos; con esa vista a unos 250 FPS, no se siguió.
+
+## Fase 140: los ruidos del generador sin dividir (2026-10-22)
+
+**D-14001. La división entre el peso total, con una multiplicación exacta.**
+`fbm` y `FbmRow::at` terminaban con `sum / weight_total`, una división de 64 bits por valor: en un procesador como el del equipo de desarrollo (i9-9900K) cuesta de 40 a 90 ciclos, y el relieve y los suelos la hacen miles de millones de veces en un mapa colosal. Los pesos de las capas son 2^16, 2^15, …, así que con k capas el total es (2^k − 1) · 2^(17−k) y la suma es múltiplo de 2^(17−k): el cociente es (suma >> (17−k)) / (2^k − 1), con |suma >> (17−k)| < 2^(15+k). Esa división por una constante se hace con el recíproco redondeado hacia arriba y un desplazamiento (Granlund y Montgomery), exacta en ese rango, con el signo aparte para truncar hacia cero como antes (`WeightDivider` en `sim/noise.*`). Vale de 1 a 15 capas; con más se divide como antes. Una prueba compara con la división cada suma posible hasta 8 capas, y para 9 a 15 una muestra y los extremos. No hay coma flotante (la simulación no la usa).
+
+**D-14002. Medido con `worldgen_perf`.**
+Mismas sumas de verificación que antes. Mapa gigante: de 26,2 a 23,5 s (relieve 8,0 → 6,5, suelos 6,4 → 5,1). Mapa colosal de la prueba (semilla 12345): de 120,7 a 110,6 s (relieve 31,1 → 25,1, suelos 26,6 → 21,4). Lo que queda son los lagos (D-13503).

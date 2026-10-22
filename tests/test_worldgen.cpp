@@ -285,6 +285,40 @@ TEST_SUITE("worldgen") {
         CHECK(same);
     }
 
+    TEST_CASE("the weighted sum is divided exactly as by the total weight") {
+        // Every sum the layers can add up to, for up to 8 octaves; a spread
+        // of them and the ends for 9 to 15.
+        bool same = true;
+        for (int k = 1; k <= 15; ++k) {
+            const WeightDivider divide(k);
+            REQUIRE(divide.exact());
+            const std::int64_t total = divide.total();
+            const std::int64_t unit = std::int64_t{1} << (17 - k);  // Every sum is a multiple of it.
+            const std::int64_t most = 32768 * total / unit;
+            const std::int64_t stride = k <= 8 ? 1 : std::max<std::int64_t>(1, most / 400000);
+            const auto check = [&](std::int64_t m) {
+                const std::int64_t sum = m * unit;
+                same = same && divide(sum) == sum / total;
+            };
+            for (std::int64_t m = -most; m <= most; m += stride) {
+                check(m);
+            }
+            for (std::int64_t m = -most; m < -most + 300; ++m) {
+                check(m);
+                check(-m);
+            }
+            for (std::int64_t m = -300; m <= 300; ++m) {
+                check(m);
+            }
+        }
+        CHECK(same);
+        // Outside the worked-out case it divides as before.
+        const WeightDivider many(16);
+        CHECK_FALSE(many.exact());
+        CHECK(many(-123456789) == -123456789 / many.total());
+        CHECK(WeightDivider(0)(5) == 0);
+    }
+
     TEST_CASE("a map has about twice the rocks, bushes and herbs of before phase 82, and the same iron") {
         int count[static_cast<std::size_t>(FeatureType::Count)] = {};
         for (const std::uint64_t seed : {4242ull, 12345ull, 777ull}) {

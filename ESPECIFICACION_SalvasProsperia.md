@@ -1300,6 +1300,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 139. **Las listas del agua en una pasada.** Con todo el mapa a la vista, preparar el terreno costaba 1,7 ms por cuadro, y parte era recorrer los 65 536 trozos una vez por cada nivel del agua. Ahora se recorren una vez.
    - *Criterios:* las mismas listas en el mismo orden; medida antes y después.
 
+140. **Los ruidos del generador sin dividir.** Cada valor de ruido fractal del generador termina con una división de 64 bits entre el peso total de sus capas, miles de millones de veces en un mapa colosal. Como los pesos son potencias de dos, esa división se hace con una multiplicación y un desplazamiento, con el resultado exacto de antes.
+   - *Criterios:* prueba de que el resultado es el de la división para cada suma posible (exhaustiva hasta 8 capas); la suma de verificación de los mapas no cambia; medida antes y después.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).
