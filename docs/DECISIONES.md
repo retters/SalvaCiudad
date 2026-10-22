@@ -4601,3 +4601,8 @@ La inundación visita los vértices en un orden que salta por todo el mapa (D-13
 
 **D-14202. Medido.**
 Mismas sumas de verificación. Lagos del mapa gigante: de 9,4 a 7,8 s; del colosal de la prueba: de 49,2 a 38,8 s. Con las fases 140 a 142, la generación del mapa gigante pasa de 26,2 a 21,1 s, el colosal de la prueba de 120,7 a 94,1 s y el de 12 jugadores de `sim_perf` de 121,2 a 93,8 s.
+
+## Fase 143: guardar en segundo plano (2026-10-22)
+
+**D-14301. Comprimir, comprobar y escribir la partida, en otro hilo.**
+Guardar una partida colosal congelaba el juego unos 9,4 s (medido: serializar 1,2 s, comprimir 1,88 GB a 291 MB 5,7 s, releer para comprobar 2,1 s y escribir), y el autoguardado lo hace cada 10 minutos de juego. Ahora el hilo principal solo serializa (el estado tiene que ser el de un tick) y un hilo del juego comprime, comprueba y escribe; el aviso de «guardado» o el error salen al terminar. Antes de otro guardado, de cargar una partida o de salir se espera al que esté en curso; la lista de partidas no espera, porque el archivo se reemplaza de un paso (D-004). En vivo, con el autoguardado cada minuto en el recorrido colosal (cambio temporal), los dos autoguardados se escribieron (349 MB cada uno) y el cuadro más lento bajó a 1,6–2,0 s, que es la serialización de 1,97 GB; acelerarla (escribir los arreglos del mapa de un bloque en `BinaryWriter`) queda pendiente.

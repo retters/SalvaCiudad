@@ -303,6 +303,7 @@ void App::shutdown() {
     if (settings_) {
         save_settings_if_due(true);
     }
+    finish_save(true);  // A save under way is finished before leaving.
     // The interface's documents go first: unloading one tells its event
     // listeners (the HUD, its panels and windows, owned by the host), which
     // must still be there; the other way round they were told after being
@@ -1364,6 +1365,7 @@ void App::frame() {
         }
     }
     sample_.sim_ms = static_cast<float>(SDL_GetTicksNS() - sim_start) * 1e-6f;
+    finish_save(false);
     update_menu_background();
 
     if (session_ && host_) {
@@ -2254,13 +2256,36 @@ void App::write_save(const std::string& stem, const std::string& name, bool quie
     if (!session_ || !paths_) {
         return;
     }
-    const save::SaveData data = session_->make_save(name, mod_library_);
+    finish_save(true);  // One at a time.
+    save::SaveData data = session_->make_save(name, mod_library_);
     const std::filesystem::path file = paths_->saves_dir() / (stem + save::kExtension);
-    const bool ok = save::write_file(file, data);
-    if (ok) {
-        log::info("save: game saved ({} bytes of game state)", data.find("GAME")->data.size());
+    // Compressing, checking and writing take seconds on the largest maps
+    // (phase 143): they go on while the game goes on.
+    save_quiet_ = quiet;
+    save_state_ = SaveState::Writing;
+    save_thread_ = std::jthread([this, file, data = std::move(data)] {
+        const bool ok = save::write_file(file, data);
+        if (ok) {
+            log::info("save: game saved ({} bytes of game state)", data.find("GAME")->data.size());
+        }
+        save_state_ = ok ? SaveState::Written : SaveState::Failed;
+    });
+}
+
+void App::finish_save(bool wait) {
+    if (wait && save_thread_.joinable()) {
+        save_thread_.join();
     }
-    if (host_ && (!ok || !quiet)) {
+    const SaveState state = save_state_.load();
+    if (state != SaveState::Written && state != SaveState::Failed) {
+        return;
+    }
+    if (save_thread_.joinable()) {
+        save_thread_.join();
+    }
+    save_state_ = SaveState::Idle;
+    const bool ok = state == SaveState::Written;
+    if (host_ && (!ok || !save_quiet_)) {
         if (ok) {
             host_->toast(tr("save.done"));
         } else {
@@ -2301,10 +2326,13 @@ void App::autosave_if_due() {
 }
 
 std::vector<save::Entry> App::list_saves() {
+    // A save being written is replaced in one step (D-004): the list shows
+    // the file before or after it, never half of it.
     return paths_ ? save::list(paths_->saves_dir()) : std::vector<save::Entry>{};
 }
 
 GameSession::LoadResult App::read_save(const std::filesystem::path& file, std::unique_ptr<GameSession>& out) {
+    finish_save(true);  // It may be the file being written.
     save::SaveData data;
     const save::LoadError err = save::read_file(file, data);
     const std::shared_ptr<const sim::Content> content(pack_, &pack_->content);

@@ -1309,6 +1309,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 142. **La inundación de los lagos con menos memoria leída.** Durante la inundación, la altura y la altura llenada de cada vértice van juntas, y un vértice no alcanzado se reconoce por su altura llenada; así cada vértice y sus vecinos se leen de un tercio de las líneas de memoria, en el mismo orden de siempre.
    - *Criterios:* la suma de verificación de los mapas no cambia; el pico de memoria de la generación no sube; medida antes y después.
 
+143. **Guardar en segundo plano.** Comprimir, comprobar y escribir una partida pasa a otro hilo; el juego solo se detiene a copiar su estado.
+   - *Criterios:* las partidas se guardan y se cargan igual; el autoguardado de un mapa colosal ya no congela el juego varios segundos.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

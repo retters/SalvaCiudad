@@ -3,11 +3,13 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <SDL3/SDL_events.h>
@@ -193,6 +195,14 @@ private:
     // Shows a game's map (loaded or received) with a fresh view.
     bool show_map_of(const sim::MapData& map);
     void write_save(const std::string& stem, const std::string& name, bool quiet);
+    // Phase 143: the game state is copied on the main thread, then
+    // compressed, checked and written on this one. finish_save() reports a
+    // finished save; with `wait`, it first waits for one under way.
+    void finish_save(bool wait);
+    enum class SaveState : int { Idle, Writing, Written, Failed };
+    std::atomic<SaveState> save_state_{SaveState::Idle};
+    bool save_quiet_ = true;
+    std::jthread save_thread_;  // After what it uses: destroyed (joined) first.
     void draw_scene_markers(std::uint32_t width, std::uint32_t height);
     void draw_start_markers(std::uint32_t width, std::uint32_t height);
     void draw_supply_markers(std::uint32_t width, std::uint32_t height);
