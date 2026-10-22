@@ -17,6 +17,8 @@
 
 - `colosal/`: el mapa colosal (16 384 m, semilla 601441504) de la ronda de rendimiento de las fases 129 a 133. Generarlo toma unos 150 s y unos 6 GB de memoria. Pasos: quieto a 70 m, avanzar 400 m, alejarse a 1 km y luego a 20 km (todo el mapa), quedarse, volver y quedarse, cambiar a otoño y a invierno, y alejarse a 3 km para la captura final.
 
+- `multitud/`: un mapa grande (4 096 m, semilla 424242, unos 3 s en generarse) con 3 000 aldeanos de prueba (`view.people`) alrededor del pueblo, que es donde empieza un recorrido con `atTown`. Pasos: quieto a 70 m y a 250 m.
+
 ## Formato de `view.tour`
 
 ```json

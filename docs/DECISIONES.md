@@ -4532,3 +4532,11 @@ Al cambiar la estación (o la nieve) `MapScene` vuelve a mandar las 1,46 millone
 
 **D-13304. Medido con el recorrido colosal.**
 El cuadro en que cambia la estación: 670 ms antes de esta fase (256 ms de `MapScene` y unos 400 de reordenar), 315 ms sin reordenar y 218 ms con los hilos (157 ms de `MapScene` y 47 de convertir y subir las instancias), en una máquina de varios núcleos. Pasa una vez por estación o cuando la nieve cuaja o se derrite. Lo que queda de `MapScene` es juntar las listas por modelo, compararlas y volver a poner a los árboles talados o recogidos como estaban; se puede seguir bajando, pero ya es un solo cuadro de cada muchos minutos.
+
+## Fase 134: una multitud medida y una caída al salir (2026-10-22)
+
+**D-13401. La multitud de un reporte va donde empieza el recorrido.**
+`view.people` pone aldeanos de prueba en un cuadro alrededor de `view.target`; con un recorrido que empieza en el pueblo (`atTown`), ahora van alrededor del pueblo, que es donde mira la cámara. El recorrido `tools/perf/multitud` pone 3 000 en un mapa grande: junto al pueblo, unos 480 FPS a 70 m y a 250 m (`release`, sin vsync, calidad alta).
+
+**D-13402. Al salir, los documentos de RmlUi se descargan antes que el HUD.**
+Con la multitud el juego se caía al cerrarse, siempre después de guardar la captura (también en `debug`). Con un manejador de fallas temporal que escribió la pila (quitado antes del commit) se vio dónde: `App::shutdown` destruía `UiHost` (el HUD, sus paneles y ventanas, que son los que escuchan los eventos de sus documentos) antes de apagar RmlUi, y al descargar los documentos RmlUi avisaba a esos escuchas ya liberados. Casi siempre esa memoria seguía intacta y no pasaba nada, por eso no se había visto; con más memoria en uso se reutilizaba y el juego se caía. Ahora `shutdown` descarga los documentos primero (`RmlUi::close_documents`). Venía de las fases 124 a 126; podía pasar al salir de cualquier partida. Con la corrección, las mismas corridas que antes se caían siempre salen bien.

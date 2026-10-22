@@ -1282,6 +1282,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 133. **Las estaciones sin reordenar.** Al cambiar la estación (o la nieve) se vuelven a mandar al renderizador los 1,46 millones de elementos del mapa y el renderizador los reordenaba por región aunque no se movieran. Si todos conservan lugar y tamaño, se conserva el orden. El recorrido puede pedir una estación por paso para medirlo.
    - *Criterios:* medida del cambio de estación con y sin la mejora en el mismo recorrido; los árboles cambian de aspecto igual que antes; `debug`, `release` y, al cerrar la ronda, `debug-asan` sin errores.
 
+134. **Una multitud medida y una caída al salir.** Un segundo recorrido (`tools/perf/multitud`) con 3 000 aldeanos de prueba junto al pueblo, en un mapa grande. Al hacerlo apareció una caída al cerrar el juego que viene de las fases de RmlUi; se corrige.
+   - *Criterios:* el recorrido mide la multitud junto al pueblo; el juego sale sin caerse en las mismas condiciones que antes lo tiraban (en `debug` y en `release`).
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

@@ -303,6 +303,11 @@ void App::shutdown() {
     if (settings_) {
         save_settings_if_due(true);
     }
+    // The interface's documents go first: unloading one tells its event
+    // listeners (the HUD, its panels and windows, owned by the host), which
+    // must still be there; the other way round they were told after being
+    // freed, and the game could crash on the way out.
+    rml_.close_documents();
     host_.reset();
     if (gpu_.device() != nullptr) {
         (void)SDL_WaitForGPUIdle(gpu_.device());
@@ -3325,18 +3330,20 @@ void App::update_replay() {
                 const report::View& v = replay_->view;
                 camera_.restore(v.mode, v.target, v.yaw, v.pitch, v.distance);
                 clock_.set_speed(0);
-                // A crowd to measure with: a square of villagers 2 m apart.
-                const auto side = static_cast<std::uint32_t>(std::ceil(std::sqrt(static_cast<double>(v.people))));
-                for (std::uint32_t i = 0; i < v.people; ++i) {
-                    const float x = v.target.x + (static_cast<float>(i % side) - static_cast<float>(side) * 0.5f) * 2.0f;
-                    const float z = v.target.z + (static_cast<float>(i / side) - static_cast<float>(side) * 0.5f) * 2.0f;
-                    (void)walkers_.add_villager({x, 0.0f, z}, std::nullopt);
-                }
                 replay_step_ = ReplayStep::Settling;
                 replay_since_ns_ = now;
                 replay_frames_ = 0;
+                math::Vec3 crowd = v.target;
                 if (!v.tour.steps.empty()) {
                     start_tour(now);
+                    crowd = tour_origin_;  // Where the tour starts (the town, with atTown).
+                }
+                // A crowd to measure with: a square of villagers 2 m apart.
+                const auto side = static_cast<std::uint32_t>(std::ceil(std::sqrt(static_cast<double>(v.people))));
+                for (std::uint32_t i = 0; i < v.people; ++i) {
+                    const float x = crowd.x + (static_cast<float>(i % side) - static_cast<float>(side) * 0.5f) * 2.0f;
+                    const float z = crowd.z + (static_cast<float>(i / side) - static_cast<float>(side) * 0.5f) * 2.0f;
+                    (void)walkers_.add_villager({x, 0.0f, z}, std::nullopt);
                 }
             } else if (const MapGenStatus::State st = map_generation_status().state;
                        !map_ && st != MapGenStatus::State::Running && st != MapGenStatus::State::Done) {
