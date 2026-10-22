@@ -526,6 +526,17 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
+### Fases 129 a 135 (rendimiento del mapa colosal; rama `perf-colossal`)
+
+- [ ] Una partida en un mapa colosal, con vsync: al mover la cámara y al alejarla hasta ver todo el mapa, los FPS se quedan en el máximo de tu pantalla (o cerca) y no hay tirones. Antes caían a 7 o menos.
+- [ ] En `logs\salvasprosperia.log`, las líneas `perf:` dicen «0 relayouts» casi siempre y el peor cuadro por debajo de 50 ms, salvo al cargar.
+- [ ] El suelo, el agua y las montañas de alrededor se ven como antes, de cerca y de lejos (fase 131).
+- [ ] Los animales se ven igual que antes alrededor de la cámara; al acercarte a un rebaño lejano aparece moviéndose, sin saltos raros. En una ventana de cámara que sigue a un animal lejos de la vista principal, el animal y los que lo rodean se mueven (fase 132).
+- [ ] Al cambiar la estación (o al cuajar la nieve) los árboles y arbustos cambian como antes; el tirón de ese momento es corto (fase 133).
+- [ ] Salir del juego desde una partida, varias veces, con ventanas y avisos abiertos: nunca se cae (fase 134).
+- [ ] Generar un mapa colosal: el registro dice el tiempo de cada etapa (`map: stages:`) y el mapa de una semilla sale igual que en `main` (misma suma de verificación en la línea «generated in»).
+- [ ] Si algo de esto no te convence: `git switch main` vuelve a como estaba antes de la ronda.
+
 ### Fase 127 (sin el sistema viejo; teclado)
 
 - [ ] En el menú principal, Tab y las flechas recorren los botones, con el foco visible; Enter abre el elegido.

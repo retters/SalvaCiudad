@@ -8,6 +8,8 @@ El contenido (recursos, edificios, árboles, biomas, razas y sucesos) es un mod,
 
 Requisito para jugar: una tarjeta gráfica compatible con Direct3D 12 (ver D-201).
 
+Ronda de rendimiento (fases 129 a 135, rama `perf-colossal`): en el mapa colosal el juego ya no se traba al mover o alejar la cámara; el suelo lejano se dibuja en una sola llamada, solo se preparan los animales que se pueden ver y la parte visual del mapa se arma en varios hilos. Para medir siempre lo mismo hay recorridos de cámara en `tools/perf` (ver su `LEEME.md`).
+
 La interfaz está hecha con RmlUi (fases 117 a 127): ventanas que se mueven, se agrupan y se apilan en pestañas, miniaturas y retratos dibujados por el juego, y dos estilos, **Frosted** y **Vidrio oscuro**, que se cambian en vivo en Configuración › Interfaz. Un mod puede traer estilos propios; ver [docs/ESTILOS_UI.md](docs/ESTILOS_UI.md). Todo se recorre también con el teclado.
 
 ## Compilar en Windows
