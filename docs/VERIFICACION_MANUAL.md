@@ -526,7 +526,7 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] "Crear partida multijugador" usa el mismo formulario.
 - [ ] **Sin revisar en pantalla por Claude** (solo por pruebas): la mitad de abajo de Personalizado (el año y las reglas de la partida). Revisar que se lea bien.
 
-### Fases 129 a 135 (rendimiento del mapa colosal; rama `perf-colossal`)
+### Fases 129 a 144 (rendimiento del mapa colosal)
 
 - [ ] Una partida en un mapa colosal, con vsync: al mover la cámara y al alejarla hasta ver todo el mapa, los FPS se quedan en el máximo de tu pantalla (o cerca) y no hay tirones. Antes caían a 7 o menos.
 - [ ] En `logs\salvasprosperia.log`, las líneas `perf:` dicen «0 relayouts» casi siempre y el peor cuadro por debajo de 50 ms, salvo al cargar.
@@ -535,7 +535,8 @@ Casi todo se verifica con pruebas automáticas (`ctest`).
 - [ ] Al cambiar la estación (o al cuajar la nieve) los árboles y arbustos cambian como antes; el tirón de ese momento es corto (fase 133).
 - [ ] Salir del juego desde una partida, varias veces, con ventanas y avisos abiertos: nunca se cae (fase 134).
 - [ ] Generar un mapa colosal: el registro dice el tiempo de cada etapa (`map: stages:`) y el mapa de una semilla sale igual que en `main` (misma suma de verificación en la línea «generated in»).
-- [ ] Si algo de esto no te convence: `git switch main` vuelve a como estaba antes de la ronda.
+- [ ] En una partida colosal, guardar a mano y esperar un autoguardado (cada 10 minutos de juego): el juego se detiene menos de un segundo, el aviso «guardado» aparece unos segundos después, y la partida carga bien (fases 143 y 144).
+- [ ] Guardar y salir enseguida al menú o del juego: la partida queda completa y carga.
 
 ### Fase 127 (sin el sistema viejo; teclado)
 
