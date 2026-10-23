@@ -1312,6 +1312,9 @@ Ronda de rendimiento del mapa colosal (2026-10-21), en la rama `perf-colossal`, 
 143. **Guardar en segundo plano.** Comprimir, comprobar y escribir una partida pasa a otro hilo; el juego solo se detiene a copiar su estado.
    - *Criterios:* las partidas se guardan y se cargan igual; el autoguardado de un mapa colosal ya no congela el juego varios segundos.
 
+144. **Copiar la partida sin agrandar el búfer a cada rato.** Al guardar, el búfer de la partida crecía duplicándose y se copiaba entero cada vez; ahora se reserva de una vez lo que va a ocupar.
+   - *Criterios:* las partidas se guardan y cargan igual (pruebas de guardado y de red); medida de la copia en el mapa colosal antes y después.
+
 ## 14. Pendientes para después (no implementar ahora)
 
 - Reemplazar los animales y los aldeanos del juego por los modelos low poly nuevos (`art/blender/zoo`, `people`); entonces se borran los viejos y sus scripts, que quedan archivados en `J:\Back\salvasprosperia-alfa-1.zip` (pedido del usuario, 2026-10-02).

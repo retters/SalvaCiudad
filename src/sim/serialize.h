@@ -28,6 +28,9 @@ public:
         fixed(v.z);
     }
     void raw(std::span<const std::uint8_t> data) { bytes_.insert(bytes_.end(), data.begin(), data.end()); }
+    // Phase 144: room for `more` bytes, so a large save is not copied over
+    // and over as it grows.
+    void reserve_more(std::size_t more) { bytes_.reserve(bytes_.size() + more); }
     void string(std::string_view s);
 
     [[nodiscard]] const std::vector<std::uint8_t>& bytes() const { return bytes_; }

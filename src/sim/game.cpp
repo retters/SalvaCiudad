@@ -9433,6 +9433,12 @@ void Game::save(BinaryWriter& w) const {
     w.u32(kSaveVersion);
     w.u32(kGameRulesVersion);
     w.u64(content_->hash);
+    // Phase 144: the map's arrays are most of a save of a large map; the
+    // features and their nodes take about 60 bytes each, and the rest of
+    // the state fits in a few MiB.
+    const MapData& m = map_;
+    w.reserve_more(2 * (m.heights.size() + m.water.size() + m.region_owner.size() + m.structure_owner.size() + m.climate.size()) +
+                   m.terrain.size() + m.fertility.size() + m.biome.size() + 64 * m.features.size() + (std::size_t{32} << 20));
     write_map(w, map_);
     write_state(*this, w, seed_, rejected_, regrow_);
     w.u64(rng_.state());
